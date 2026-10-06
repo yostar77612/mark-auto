@@ -1,0 +1,621 @@
+import time
+import logging
+import numpy as np
+import pandas as pd
+import shioaji as sj
+from tqdm import tqdm
+from datetime import datetime
+from collections.abc import Iterable
+
+from ..config import API, PATH, TODAY, TODAY_STR
+from . import concat_df, get_contract
+from .time import time_tool
+from .crawler import crawler
+from .file import file_handler
+from .database import db
+from .database.tables import SecurityInfo
+from .objects import Margin
+from .objects.env import UserEnv
+from .objects.data import TradeData
+from .positions import TradeDataHandler
+
+
+class AccountInfo:
+    def __init__(self):
+        self.filename = f'{TODAY.year}_股票帳務資訊.xlsx'
+        self.DEFAULT_TABLE = pd.DataFrame(
+            columns=[
+                '交易日期',
+                'T日交割金額',
+                'T日帳戶餘額',
+                'T+1日交割金額',
+                'T+1日帳戶餘額',
+                'T+2日交割金額',
+                'T+2日帳戶餘額',
+                '庫存總成本',
+                '庫存現值',
+                '融資金額',
+                '融券金額',
+                '未實現損益',
+                '已實現損益',
+                '當日新增庫存未實現損益',
+                '總部位現值(含融資金額)',
+                '總部位現值(不含融資金額)',
+                '結算現值'
+            ])
+
+    def set_default_account(self, nth_account: int = 1):
+        if self.account_name[-1].isdigit():
+            nth_account = int(self.account_name[-1])
+
+        if nth_account > 1:
+            accounts = API.list_accounts()
+            accounts = [a for a in accounts if isinstance(a, sj.StockAccount)]
+            if len(accounts) > 1:
+                API.set_default_account(accounts[nth_account-1])
+            else:
+                logging.warning('The number of stock accounts of this ID is 1')
+
+    def login_(self, env):
+        self.account_name = env.ACCOUNT_NAME
+
+        n = 0
+        while n < 5:
+            try:
+                API.login(
+                    api_key=env.api_key(),
+                    secret_key=env.secret_key(),
+                    contracts_timeout=10000
+                )
+                break
+            except TimeoutError as e:
+                logging.warning(f'{e}')
+                n += 1
+                time.sleep(5)
+
+        self.set_default_account()
+        time.sleep(0.05)
+        logging.info(f'【{self.account_name}】log-in successful!')
+
+    def _list_settlements(self):
+        '''取得交割資訊'''
+        n = 0
+        while True:
+            try:
+                return API.settlements(API.stock_account)
+            except:
+                logging.warning('Cannot get settlement info, retrying...')
+                n += 1
+
+                if n >= 60:
+                    return 0
+
+                time.sleep(1)
+
+    def _obj_2_record(self, obj):
+        if obj is None:
+            return {}
+
+        if isinstance(obj, dict):
+            return obj
+
+        if hasattr(obj, 'model_dump') and callable(obj.model_dump):
+            return obj.model_dump()
+
+        if hasattr(obj, 'dict') and callable(obj.dict):
+            return obj.dict()
+
+        if hasattr(obj, '_asdict') and callable(obj._asdict):
+            return obj._asdict()
+
+        if hasattr(obj, 'keys') and callable(obj.keys):
+            return {key: obj[key] for key in obj.keys()}
+
+        if self._is_key_value_pairs(obj):
+            return dict(obj)
+
+        if hasattr(obj, '__dict__'):
+            return vars(obj)
+
+        return {'value': obj}
+
+    def _is_key_value_pairs(self, obj):
+        if not isinstance(obj, (list, tuple)):
+            return False
+
+        try:
+            return all(
+                isinstance(item, (list, tuple)) and
+                len(item) == 2 and
+                isinstance(item[0], str)
+                for item in obj
+            )
+        except TypeError:
+            return False
+
+    def _obj_2_df(self, objects):
+        '''把自API查詢得到的物件轉為DataFrame'''
+        if objects is None:
+            return pd.DataFrame()
+
+        if isinstance(objects, pd.DataFrame):
+            return objects.copy()
+
+        if isinstance(objects, dict):
+            return pd.DataFrame([objects])
+
+        if self._is_key_value_pairs(objects):
+            return pd.DataFrame([dict(objects)])
+
+        if (
+            isinstance(objects, Iterable) and
+            not isinstance(objects, (str, bytes)) and
+            not hasattr(objects, 'dict') and
+            not hasattr(objects, 'keys')
+        ):
+            return pd.DataFrame([self._obj_2_record(o) for o in objects])
+
+        return pd.DataFrame([self._obj_2_record(objects)])
+
+    def create_info_table(self):
+        if file_handler.Operate.is_in_dir(self.filename, f'{PATH}/daily_info/'):
+            return pd.ExcelFile(f'{PATH}/daily_info/{self.filename}')
+        else:
+            return self.DEFAULT_TABLE
+
+    def balance(self, mode='info'):
+        '''查帳戶餘額'''
+        n = 0
+        while n < 5:
+            try:
+                df = self._obj_2_df(API.account_balance())
+                df.date = pd.to_datetime(df.date).dt.date.astype(str)
+                balance = df[df.date == df.date.max()].acc_balance.values[0]
+
+                if mode == 'info':
+                    logging.debug(f'Account balance = {balance}')
+            except:
+                logging.exception('Catch an exception (balance):')
+                balance = None
+
+            if balance != None:
+                return balance
+
+            time.sleep(1)
+            n += 1
+
+        logging.debug('【Query account balance failed】')
+        return -1
+
+    def get_stock_name(self, stockid: str):
+        '''以股票代號查詢公司名稱'''
+        stockname = API.Contracts.Stocks[stockid]
+        if (stockname is not None):
+            return stockname.name
+        return stockname
+
+    def securityInfo(self):
+        '''查庫存明細'''
+
+        info_stock = self.get_stock_positions()
+        info_futures = self.get_futures_positions()
+
+        if not info_stock.empty and not info_futures.empty:
+            return pd.concat([info_stock, info_futures]).reset_index(drop=True)
+        elif info_stock.empty and not info_futures.empty:
+            return info_futures
+        elif not info_stock.empty and info_futures.empty:
+            return info_stock
+        return TradeData.Securities.InfoDefault
+
+    def query_close(self, stockid: str, date: str):
+        '''查證券收盤價'''
+        ticks = API.ticks(API.Contracts.Stocks[stockid], date)
+        df = pd.DataFrame({**ticks})
+        df.ts = pd.to_datetime(df.ts)
+        try:
+            return df.close.values[-1]
+        except:
+            return -1
+
+    def realized_profit(self, start: str = None, end: str = None):
+        '''
+        計算已實現損益
+        start:開始日期, 預設為最近一個營業日(查詢當日)
+        end: 結束日期, 預設為最近一個營業日(查詢當日)
+        '''
+
+        i = 0
+        while i < 5:
+            try:
+                day = time_tool._strf_timedelta(TODAY, i)
+                if not start:
+                    start_ = day
+                if not end:
+                    end_ = day
+
+                profitloss = self.get_settle_profitloss(start_, end_)
+                if profitloss.shape[0]:
+                    return profitloss.pnl.sum()
+                return 0
+            except:
+                # 遇休市則往前一天查詢, 直到查到資料為止
+                print(f"查無 {day} 已實現損益, 改查詢前一天\n")
+                i += 1
+                time.sleep(2)
+
+                if i == 5:
+                    return 0
+
+    def settle_info(self, mode='info'):
+        '''查詢 T ~ T+2 日的交割金額'''
+
+        df_fail = pd.DataFrame(columns=['date', 'amount', 'T'])
+
+        n = 0
+        while n < 5:
+            try:
+                settlement = self._list_settlements()
+                df = self._obj_2_df(settlement)
+
+                if df.empty and 18 <= datetime.now().hour <= 19:
+                    logging.warning('Settle info temporary not accessable.')
+                    return df_fail
+
+                if mode == 'info':
+                    logging.debug(f"Settlements:{df.to_dict('records')}")
+
+                return df
+
+            except:
+                logging.exception('Catch an exception (settle_info):')
+
+            time.sleep(1)
+            n += 1
+
+        return df_fail
+
+    def compute_total_cost(self, stocks: pd.DataFrame):
+        '''總成本合計'''
+        if stocks.shape[0]:
+            return (stocks.cost_price*stocks.quantity).sum()
+        return 0
+
+    def compute_total_unrealized_profit(self, stocks: pd.DataFrame):
+        '''未實現損益合計'''
+        if stocks.shape[0]:
+            return stocks.pnl.sum()
+        return 0
+
+    def compute_margin_amount(self, stocks: pd.DataFrame):
+        '''計算融資/融券金額'''
+        if stocks.shape[0]:
+            is_leverage = ('MarginTrading' == stocks.order_cond)
+            leverages = [
+                crawler.FromHTML.Leverage(s)['融資成數']/100 for s in stocks.code]
+            return sum(is_leverage*stocks.cost_price*stocks.quantity*leverages)
+        return 0
+
+    def compute_today_unrealized_profit(self, stocks: pd.DataFrame):
+        '今日新增庫存未實現損益合計'
+        if stocks.shape[0]:
+            return stocks[stocks.yd_quantity == 0].pnl.sum()
+        return 0
+
+    def query_all(self):
+        # 庫存明細(股)
+        stocks = self.securityInfo()
+        stocks = stocks[stocks.market == 'Stocks']
+
+        # 已實現損益
+        profit = self.realized_profit()
+
+        if not stocks.shape[0] and profit == 0:
+            logging.info('目前無庫存')
+            return None
+
+        if stocks.shape[0]:
+            print(f'\n{stocks}\n')
+
+        # 庫存成本 & 現值
+        total_cost = self.compute_total_cost(stocks)
+        unrealized_profit = self.compute_total_unrealized_profit(stocks)
+        total_market_value = total_cost + unrealized_profit
+
+        # 融資金額
+        margin_amount = self.compute_margin_amount(stocks)
+
+        # 帳戶餘額
+        balance = self.balance()
+        if balance < 0:
+            logging.error(f'Balance = {balance}, get balance from local')
+            balance = pd.read_excel(
+                f'{PATH}/daily_info/{self.filename}', sheet_name=self.account_name)
+            balance = balance['T+1日帳戶餘額'].values[-1]
+
+        # 今日新增庫存未實現損益
+        today_unrealized_profit = self.compute_today_unrealized_profit(stocks)
+
+        # 帳務交割資訊
+        settle_info = self.settle_info()
+        settles = settle_info.amount[1:].sum()
+
+        # 總現值 = 帳戶餘額 + T+1日交割金額 + T+2日交割金額 + 庫存現值
+        total_value = int(balance + total_market_value + settles)
+
+        now = int(total_value - margin_amount - unrealized_profit)
+        settle_t1 = settle_info.values[1, 1]
+        settle_t2 = settle_info.values[2, 1]
+        row = {
+            '交易日期': TODAY_STR,
+            'T日交割金額': settle_info.values[0, 1],
+            'T日帳戶餘額': int(balance),
+            'T+1日交割金額': settle_t1,
+            'T+1日帳戶餘額': balance + settle_t1,
+            'T+2日交割金額': settle_t2,
+            'T+2日帳戶餘額': balance + settle_t1 + settle_t2,
+            '庫存總成本': int(total_cost),
+            '庫存現值': int(total_market_value),
+            '融資金額': int(margin_amount),
+            '融券金額': 0,
+            '未實現損益': int(unrealized_profit),
+            '已實現損益': int(profit),
+            '當日新增庫存未實現損益': int(today_unrealized_profit),
+            '總部位現值(含融資金額)': int(total_value),
+            '總部位現值(不含融資金額)': int(total_value - margin_amount),
+            '結算現值': now
+        }
+        return row
+
+    def update_info(self, df, row):
+        tb = pd.read_excel(df, sheet_name='dentist_1')
+        return concat_df(tb, pd.DataFrame([row]), reset_index=True)
+
+    def get_account_margin(self):
+        '''期權保證金資訊'''
+
+        n = 0
+        while n < 5 and API.futopt_account.signed:
+            try:
+                margin = API.margin(API.futopt_account)
+            except:
+                logging.exception('Catch an exception (get_account_margin):')
+                margin = None
+
+            if margin:
+                return margin
+
+            time.sleep(1)
+            n += 1
+
+        return Margin
+
+    def get_stock_positions(self):
+        while True:
+            try:
+                stocks = API.list_positions(
+                    API.stock_account,
+                    unit=sj.Unit.Share
+                )
+                stocks = self._obj_2_df(stocks)
+                break
+            except:
+                logging.warning('Cannot get the security info, retrying')
+                time.sleep(1)
+        stocks = stocks.rename(columns={
+            'cond': 'order_cond',
+            'direction': 'action',
+            'price': 'cost_price',
+        })
+        if not stocks.empty and stocks.shape[1]:
+            # if stocks.shape[0]:
+            names = stocks.code.apply(self.get_stock_name)
+            stocks.pnl = stocks.pnl.astype(int)  # 未實現損益
+            stocks.order_cond = stocks.order_cond.apply(
+                lambda x: x._value_ if hasattr(x, '_value_') else x)  # 交易別
+            stocks.order_cond = stocks.order_cond.astype(str)  # 交易別
+            stocks.insert(1, 'name', names)
+            stocks[['account', 'market']] = [self.account_name, 'Stocks']
+            stocks['order'] = ''
+            return stocks
+        return TradeData.Securities.InfoDefault
+
+    def get_futures_positions(self):
+        '''查看期權帳戶持有部位'''
+
+        if API.futopt_account.signed:
+            try:
+                positions = API.list_positions(API.futopt_account)
+                if not positions:
+                    return TradeData.Securities.InfoDefault
+
+                df = self._obj_2_df(positions)
+                if df.shape[0]:
+                    df = df.rename(columns={
+                        'direction': 'action',
+                        'price': 'cost_price',
+                    })
+                    df[['account', 'market']] = [self.account_name, 'Futures']
+                    raw_quantity = df.quantity.abs().astype(int)
+                    df['order_cond'] = ''
+
+                    contracts = df.code.apply(lambda x: get_contract(x))
+                    df['isDue'] = contracts.apply(
+                        lambda x: TODAY_STR.replace('-', '/') == x.delivery_date)
+                    df.code = contracts.apply(lambda x: x.symbol)
+                    df.action = df.action.apply(
+                        lambda x: getattr(x, 'value', x))
+                    direction = df.action.map({'Buy': 1, 'Sell': -1}).fillna(1)
+                    df.quantity = raw_quantity * direction.astype(int)
+                    df['yd_quantity'] = df.quantity
+                    df['order'] = [
+                        {'quantity': quantity, 'action': action}
+                        for quantity, action in zip(raw_quantity, df.action)
+                    ]
+                    return df
+            except Exception as e:
+                logging.error(f'List futures positions failed: {e.args[0]}')
+        return TradeData.Securities.InfoDefault
+
+    def get_settle_profitloss(self, start_date: str, end_date: str, market='Stocks'):
+        '''查詢已實現損益'''
+
+        if start_date:
+            start_date = start_date.replace('-', '')
+
+        if end_date:
+            end_date = end_date.replace('-', '')
+
+        if market == 'Stocks':
+            account = API.stock_account
+        else:
+            account = API.futopt_account
+
+        profitloss_detail = []
+        profitloss = []
+        while profitloss == []:
+            profitloss = API.list_profit_loss(account, start_date, end_date)
+            time.sleep(2)
+
+        if market == 'Stocks':
+            profitloss_detail = profitloss
+        else:
+            for pls in tqdm(profitloss):
+                pl_detail = API.list_profit_loss_detail(account, pls.id)
+                profitloss_detail += pl_detail
+                time.sleep(0.2)  # 避免API回傳資料不完整，暫停0.2秒再查詢下一筆
+
+        if not len(profitloss_detail):
+            return TradeData.Futures.SettleDefault
+
+        df = self._obj_2_df(profitloss_detail)
+        df = df.sort_values('date').drop_duplicates()
+        df.date = df.date.apply(lambda x: f'{x[:4]}-{x[4:6]}-{x[6:]}')
+        # df['profit'] = df.pnl - df.tax - df.fee
+        return df
+
+    def dataUsage(self):
+        return round(API.usage().bytes/2**20, 2)
+
+
+class AccountHandler(AccountInfo):
+    def __init__(self, account_name: str) -> None:
+        super().__init__()
+
+        self.env = UserEnv(account_name)
+        TradeData.Account.Mode = self.env.MODE
+        TradeData.Account.Simulate = self.env.MODE == 'Simulation'
+        self.simulate_amount = np.iinfo(np.int64).max
+
+        # Stocks
+        self.total_market_value = 0
+
+        # Futures
+        self.ProfitAccCount = 0  # 權益總值
+
+    def _set_trade_risks(self):
+        '''設定交易風險值: 可交割金額、總市值'''
+
+        df = db.query(
+            SecurityInfo,
+            SecurityInfo.mode == TradeData.Account.Mode,
+            SecurityInfo.account == self.env.ACCOUNT_NAME,
+            SecurityInfo.market == 'Stocks'
+        )
+        cost_value = (df.quantity*df.cost_price).sum()
+        pnl = df.pnl.sum()
+        if TradeData.Account.Simulate:
+            account_balance = self.env.INIT_BALANCE
+            settle_info = pnl
+        else:
+            account_balance = self.balance()
+            settle_info = self.settle_info(mode='info').iloc[1:, 1].sum()
+
+        TradeData.Account.DesposalMoney = min(
+            account_balance+settle_info, self.env.MARGING_TRADING_AMOUNT)
+        self.total_market_value = TradeData.Account.DesposalMoney + cost_value + pnl
+
+        logging.info(
+            f'[AccountInfo] Desposal amount = {TradeData.Account.DesposalMoney} (limit: {self.env.MARGING_TRADING_AMOUNT})')
+
+    def _set_margin_limit(self):
+        '''計算可交割的保證金額，不可超過帳戶可下單的保證金額上限'''
+        if TradeData.Account.Simulate:
+            account_balance = 0
+            desposal_margin = self.simulate_amount
+            self.ProfitAccCount = self.simulate_amount
+        else:
+            account_balance = self.balance()
+            margin = self.get_account_margin()
+            desposal_margin = margin.available_margin
+            self.ProfitAccCount = margin.equity  # 權益總值
+
+        TradeData.Account.DesposalMargin = min(
+            account_balance+desposal_margin, self.env.MARGIN_AMOUNT)
+        logging.info(
+            f'[AccountInfo] Margin: total={self.ProfitAccCount}; available={TradeData.Account.DesposalMargin}; limit={self.env.MARGIN_AMOUNT}')
+
+    def _set_leverage(self, stockids: list):
+        '''
+        取得個股融資成數資料，
+        若帳戶設定為不可融資，則全部融資成數為0
+        '''
+
+        def check_leverage(stockid: str):
+            conf = TradeDataHandler.getStrategyConfig(stockid)
+            return len(stockid) == 4 and (
+                getattr(conf, 'ORDER_COND1', 'Cash') != 'Cash' or
+                getattr(conf, 'ORDER_COND2', 'Cash') != 'Cash'
+            )
+
+        targets = [s for s in stockids if check_leverage(s)]
+        df = pd.DataFrame([crawler.FromHTML.Leverage(s) for s in targets])
+        if df.empty:
+            return
+
+        df.columns = df.columns.str.replace(' ', '')
+        df.loc[df.個股融券信用資格 == 'N', '融券成數'] = 100
+        df.代號 = df.代號.astype(str)
+        df.融資成數 /= 100
+        df.融券成數 /= 100
+        df = df.set_index('代號')
+
+        if TradeData.Stocks.CanTrade:
+            TradeData.Stocks.Leverage.Long = df.融資成數.to_dict()
+            TradeData.Stocks.Leverage.Short = df.融券成數.to_dict()
+        else:
+            TradeData.Stocks.Leverage.Long = {code: 0 for code in targets}
+            TradeData.Stocks.Leverage.Short = {code: 1 for code in targets}
+
+        logging.info(f'Long leverages: {TradeData.Stocks.Leverage.Long}')
+        logging.info(f'Short leverages: {TradeData.Stocks.Leverage.Short}')
+
+    def _set_futures_code_list(self):
+        '''期貨商品代號與代碼對照表'''
+
+        if TradeData.Futures.CanTrade:
+            logging.debug('Set Futures_Code_List')
+            TradeData.Futures.CodeList.update({
+                f.code: f.symbol for m in API.Contracts.Futures for f in m
+            })
+            TradeData.Futures.CodeList.update({
+                f.symbol: f.symbol for m in API.Contracts.Futures for f in m
+            })
+            TradeData.Futures.CodeList.update({
+                f.code: f.symbol for m in API.Contracts.Options for f in m
+            })
+            TradeData.Futures.CodeList.update({
+                f.symbol: f.symbol for m in API.Contracts.Options for f in m
+            })
+
+    def activate_ca_(self):
+        logging.info(f'[AccountInfo] Activate {self.env.ACCOUNT_NAME} CA')
+        id = self.env.account_id()
+        try:
+            API.activate_ca(
+                ca_path=f"./lib/ekey/551/{id}/S/Sinopac.pfx",
+                ca_passwd=self.env.ca_passwd() if self.env.ca_passwd() else id,
+                person_id=id,
+            )
+        except Exception as e:
+            logging.error(f'{e.args[0]}')
