@@ -1,0 +1,3 @@
+# Native desktop runtime only. Legacy web UI and broker SDK are intentionally absent.
+PySide6==6.12.0
+tzdata==2026.5

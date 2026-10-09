@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "frozen_at": "2026-10-09T15:45:00Z",
   "baseline_commit": "1cacce4ee4eef4ce7e8760f8153ef64a74852d22",
   "rule": "Only evidence-backed PASS earns weight; failed/blocked/not_run earns zero. Safety failures veto release. Do not lower acceptance targets.",
@@ -217,36 +217,36 @@
           "id": "P5.1",
           "title": "持久模擬帳本及對帳恢復",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "Research source 76ad3a5 / identical remote tree at 8cea2729: 180 local tests PASS; fresh-checkout prior177 PASS plus Windows resource-close regressions; exact-head GitHub run37959451997 all4 WindowsServer/Linux Py3.11/3.12 core jobs and UI job PASS. Explicit platform-specific/optional UI skips covered by Linux UI job; not Win10/11 acceptance. Final research wheel/sdist built. Security review and five analysis documents completed. New desktop gates tracked separately."
         },
         {
           "id": "P5.2",
           "title": "故障注入與風控驗證",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "Research source 76ad3a5 / identical remote tree at 8cea2729: 180 local tests PASS; fresh-checkout prior177 PASS plus Windows resource-close regressions; exact-head GitHub run37959451997 all4 WindowsServer/Linux Py3.11/3.12 core jobs and UI job PASS. Explicit platform-specific/optional UI skips covered by Linux UI job; not Win10/11 acceptance. Final research wheel/sdist built. Security review and five analysis documents completed. New desktop gates tracked separately."
         },
         {
           "id": "P5.3",
           "title": "實盤停用與安全複掃",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "Research source 76ad3a5 / identical remote tree at 8cea2729: 180 local tests PASS; fresh-checkout prior177 PASS plus Windows resource-close regressions; exact-head GitHub run37959451997 all4 WindowsServer/Linux Py3.11/3.12 core jobs and UI job PASS. Explicit platform-specific/optional UI skips covered by Linux UI job; not Win10/11 acceptance. Final research wheel/sdist built. Security review and five analysis documents completed. New desktop gates tracked separately."
         },
         {
           "id": "P5.4",
           "title": "五份文件與操作維護說明",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "Research source 76ad3a5 / identical remote tree at 8cea2729: 180 local tests PASS; fresh-checkout prior177 PASS plus Windows resource-close regressions; exact-head GitHub run37959451997 all4 WindowsServer/Linux Py3.11/3.12 core jobs and UI job PASS. Explicit platform-specific/optional UI skips covered by Linux UI job; not Win10/11 acceptance. Final research wheel/sdist built. Security review and five analysis documents completed. New desktop gates tracked separately."
         },
         {
           "id": "P5.5",
           "title": "完整測試 UI 新檢出 CI 驗證",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "Research source 76ad3a5 / identical remote tree at 8cea2729: 180 local tests PASS; fresh-checkout prior177 PASS plus Windows resource-close regressions; exact-head GitHub run37959451997 all4 WindowsServer/Linux Py3.11/3.12 core jobs and UI job PASS. Explicit platform-specific/optional UI skips covered by Linux UI job; not Win10/11 acceptance. Final research wheel/sdist built. Security review and five analysis documents completed. New desktop gates tracked separately."
         }
       ]
     }
@@ -256,5 +256,85 @@
     "real_market_performance": "NOT_VERIFIED",
     "broker_certification": "BLOCKED",
     "real_money": "DISABLED"
-  }
+  },
+  "product_scope": {
+    "expanded_at": "2026-10-09T16:25:00Z",
+    "reason": "Owner made Windows10 22H2 x64 and Windows11 native installer mandatory; original research acceptance thresholds unchanged.",
+    "research_points": 100,
+    "desktop_points": 100,
+    "total_points": 200,
+    "calculation": "overall_percent=(earned_research_points+earned_desktop_points)/200*100; only evidence-backed PASS earns points; research progress remains separately visible"
+  },
+  "desktop_gates": [
+    {
+      "id": "D0",
+      "title": "原生桌面架構與可啟動最小版本",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D1",
+      "title": "繁中主要功能 GUI 閉環",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D2",
+      "title": "背景工作進度取消單例睡眠與關閉安全",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D3",
+      "title": "安全設定憑證與備份還原",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D4",
+      "title": "可重現 Windows 建置與供應鏈清單",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D5",
+      "title": "無開發環境安裝升級解除安裝與資料保留",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D6",
+      "title": "GitHub Release 安裝檔與校驗資訊",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    {
+      "id": "D7",
+      "title": "乾淨 Windows10 22H2 x64 全流程實測",
+      "weight": 10,
+      "status": "BLOCKED",
+      "evidence": "Available GitHub Windows runner is Windows Server, not clean Win10/11. No authorized user desktop or saved Windows test environment is available; no client-OS equivalence claimed."
+    },
+    {
+      "id": "D8",
+      "title": "乾淨 Windows11 x64 全流程實測",
+      "weight": 10,
+      "status": "BLOCKED",
+      "evidence": "Available GitHub Windows runner is Windows Server, not clean Win10/11. No authorized user desktop or saved Windows test environment is available; no client-OS equivalence claimed."
+    },
+    {
+      "id": "D9",
+      "title": "桌面使用維護文件安全效能與相容性報告",
+      "weight": 10,
+      "status": "NOT_RUN",
+      "evidence": null
+    }
+  ]
 }

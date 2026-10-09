@@ -100,4 +100,40 @@ class ProviderTests(unittest.TestCase):
         self.assertNotIn('fake-local-fixture-only', repr(transport))
 
 
+    def test_internal_credential_resolver_without_environment_mutation(self):
+        from quantlab.desktop_runtime import DesktopCredentialReference
+        import pickle
+        with tempfile.TemporaryDirectory() as tmp:
+            reference = DesktopCredentialReference(str(Path(tmp).resolve()))
+            transport = HTTPTransport(allow_network=True, credential_resolver=reference)
+            self.assertEqual(pickle.loads(pickle.dumps(reference)), reference)
+            before = dict(os.environ)
+            with patch('quantlab.desktop_runtime.CredentialVault.load', return_value='inert-resolver-fixture') as load:
+                self.assertEqual(load.call_count, 0)
+                transport(self.endpoint + '/good', {}, 1)
+                load.assert_called_once_with('model_api_key')
+            self.assertEqual(Handler.seen[-1][1], 'Bearer inert-resolver-fixture')
+            self.assertEqual(dict(os.environ), before)
+            self.assertNotIn(b'inert-resolver-fixture', pickle.dumps(transport))
+            self.assertNotIn('inert-resolver-fixture', repr(transport))
+
+    def test_resolver_validation_and_failure_sanitization(self):
+        with self.assertRaises(ValidationError):
+            HTTPTransport(credential_resolver='arbitrary.module.function')
+        with self.assertRaises(ValidationError):
+            HTTPTransport(api_key_env='KEY', credential_resolver=lambda: 'dummy')
+        def failing():
+            raise RuntimeError('must-not-leak-fixture')
+        with self.assertRaises(ValidationError) as caught:
+            HTTPTransport(allow_network=True, credential_resolver=failing)(self.endpoint + '/good', {}, 1)
+        self.assertNotIn('must-not-leak-fixture', str(caught.exception))
+        for invalid in (None, '', 'bad\r\nheader', 'x' * 8193, 42):
+            with self.subTest(value=type(invalid).__name__), self.assertRaises(ValidationError):
+                HTTPTransport(allow_network=True, credential_resolver=lambda: invalid)(self.endpoint + '/good', {}, 1)
+        called = []
+        with self.assertRaises(ValidationError):
+            HTTPTransport(credential_resolver=lambda: called.append(True))(self.endpoint + '/good', {}, 1)
+        self.assertEqual(called, [])
+
+
 if __name__ == '__main__': unittest.main()

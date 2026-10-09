@@ -1,5 +1,6 @@
 """Explicit, default-off HTTP transport. No requests occur at import/construction."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 import http.client
 import ipaddress
 import json
@@ -18,7 +19,8 @@ class HTTPTransport:
     """Pickle-safe settings for an isolated worker, never stored credential values.
 
     Endpoint must be the complete chat-completions URL. API keys are resolved
-    from one explicitly named environment variable at call time only. Plain HTTP
+    from an internal credential resolver or a named CLI environment variable
+    at call time only. Resolver objects must contain references, never secrets. Plain HTTP
     is restricted to literal loopback addresses or localhost (for local Ollama).
     No redirects, proxies, cookies, retries, or automatic endpoint discovery.
     """
@@ -26,6 +28,7 @@ class HTTPTransport:
     api_key_env: str | None = None
     max_request_bytes: int = 65536
     max_response_bytes: int = 262144
+    credential_resolver: Callable[[], str | None] | None = field(default=None, repr=False)
 
     def __post_init__(self):
         if type(self.allow_network) is not bool:
@@ -33,6 +36,10 @@ class HTTPTransport:
         for value in (self.max_request_bytes, self.max_response_bytes):
             if type(value) is not int or not 1024 <= value <= 1048576:
                 raise ValidationError('HTTP byte limits must be 1024..1048576')
+        if self.credential_resolver is not None and not callable(self.credential_resolver):
+            raise ValidationError('Credential resolver must be callable')
+        if self.credential_resolver is not None and self.api_key_env is not None:
+            raise ValidationError('Choose one credential source')
         if self.api_key_env is not None and (not isinstance(self.api_key_env, str) or not self.api_key_env.isidentifier()):
             raise ValidationError('API key environment variable name is invalid')
 
@@ -55,9 +62,12 @@ class HTTPTransport:
         if len(body) > self.max_request_bytes:
             raise ValidationError('HTTP request byte budget exceeded')
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-        if self.api_key_env:
-            key = os.environ.get(self.api_key_env)
-            if not key or any(c in key for c in '\r\n'):
+        if self.api_key_env or self.credential_resolver is not None:
+            try:
+                key = self.credential_resolver() if self.credential_resolver is not None else os.environ.get(self.api_key_env)
+            except Exception:
+                raise ValidationError('Configured API credential unavailable') from None
+            if not isinstance(key, str) or not 1 <= len(key) <= 8192 or any(c in key for c in '\r\n'):
                 raise ValidationError('Configured API credential unavailable or invalid')
             headers['Authorization'] = 'Bearer ' + key
         connection = None

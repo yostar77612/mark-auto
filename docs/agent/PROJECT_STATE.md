@@ -5,7 +5,7 @@
 ## 目前狀態
 
 - 分支 agent/quantlab-v1；原始 main 基準 1cacce4ee4eef4ce7e8760f8153ef64a74852d22。
-- Phase 0–4 已完成，固定工程完成率 85%，剩餘 15%。唯一計分來源 ACCEPTANCE.json。
+- Phase 0–4 已完成，原研究範圍工程完成率 85%，剩餘 15%。使用者於16:25 UTC新增必要桌面交付後，總分由100擴為200點，原標準不變；目前整體42.5%，剩餘57.5%。唯一計分來源 ACCEPTANCE.json。
 - 完整本地測試 176 PASS、0 SKIP，39.239 秒；Linux Python 3.12，包含 5 個 Streamlit AppTest。最終 fresh-checkout、遠端 CI 與安全複掃仍待驗收。
 - 原本本地提交 0430a74、5bcfbe5、2110016 均保留。GitHub App 新授權已可建立 Git 物件、開發分支與 PR；CLI 本身尚無登入。連線發布採相同 Git tree、新 Commit SHA，映射另列，不重寫原歷史。
 - PR：https://github.com/yostar77612/mark-auto/pull/1，尚未合併。
@@ -40,3 +40,27 @@ python -m quantlab --help
 streamlit run research_app.py --server.address 127.0.0.1
 
 研究 UI 依 requirements-ui.lock 安裝於獨立環境；不可用舊 run.py／gui.py 啟動研究。接手先讀本檔、ACCEPTANCE.json、IMPLEMENTATION_CONTRACTS.md，再 git status 保留既有成果。
+
+
+## 必要桌面交付（新增範圍，2026-10-09 16:25 UTC）
+
+Windows10 22H2 x64與Windows11 x64原生桌面、免裝Python、每使用者安裝程式與捷徑、繁中主要功能、背景工作／取消、單例與睡眠恢复、安全設定／備份還原、版本升級及GitHub Release已納入必要驗收。選用PySide6原生Qt與既有quantlab核心，保留Streamlit研究入口作輔助；不重寫帳務或策略引擎。
+
+桌面D0–D9每项10點，與原研究100點合計200點。分母增加來自使用者新增需求，不降低舊Gate，不把EXE建置當乾淨Windows10/11驗收。
+
+環境查核：無已儲存coding environment；可見Windows電腦均未授權此任務，不能使用。GitHub windows-latest實際為Windows Server，能做安裝／啟動自動測試但不能替代Win10/11。D7/D8先標BLOCKED，繼續其餘開發。
+
+main保護尚未啟用：branch metadata顯示protected=false，rulesets清單空；讀取管理級branch protection API回403 Resource not accessible by integration。這是缺administration權限，非Code/PR新授權失效；寫入分支與PR成功。不得聲稱保護生效，也不為此重新建立環境或索取Token。
+
+
+## 原研究版整合驗證（2026-10-09 16:32 UTC）
+
+原Phase0–5研究範圍100點通過，新增桌面0/100，整體100/200＝50%，剩餘50%。這不是最終桌面產品完成。
+
+研究修復提交76ad3a5對應遠端8cea2729fa5f0acca1d1ff947b08d173ffddcd71；本地180tests通過，GitHub run37959451997的Linux／Windows Server、Python3.11/3.12及UI共5jobs全成功。Windows曾實際揭露來源編碼、SQLite連線未close與短路徑比較問題，已修復並重驗。平台限定RLIMIT_AS／fork與選用UI的skip有明確原因，由Linux UI完整suite覆蓋；不可當Win10/11或Windows資源硬限制證明。研究wheel／sdist重新建置成功。
+
+正式下載最近30個官方CSV ZIP完成，仍provisional且未完成全部歷史日曆／逐盤品質驗證，不得產生正式策略排名。首次批次遇HTTP逾時失敗；一次有界重試成功，快取與原始檔不提交公開Git。
+
+原始0430a74與遠端eeccb3296e47e84fe8d0f68446dda6cae58976a0的Git tree均為df167ff071331a6eb75007a72c0d3637e4fc899a，檔案路徑／內容／模式完全一致。所有本地原始提交與新增未提交桌面工作均保留，未forcepush或reset。
+
+新桌面與新增CI安全／品質工作尚在開發，main尚未合併；之後以最終head全部必要Gate重新判定。
