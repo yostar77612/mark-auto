@@ -21,15 +21,15 @@ class SQLDatabase:
 
         try:
             self.connect(DBConfig.ENGINE)
-            logging.info(f"Connected to {DBConfig.ENGINE}: {self.sql_connect}")
+            logging.info("Database connected (connection details redacted).")
         except Exception as e:
             logging.warning(
-                f"{DBConfig.ENGINE} connection failed, change database to SQLite.")
+                "Database connection failed; trying fallback (details redacted).")
             try:
                 self.connect('sqlite')
-                logging.info(f"Fallback to SQLite: {self.sql_connect}")
+                logging.info("Fallback database connected (connection details redacted).")
             except Exception as e:
-                logging.error(f"SQLite connection failed: {e}")
+                logging.error("Database connection failed (details redacted).")
                 DBConfig.HAS_DB = False
 
         self.HAS_DB = DBConfig.HAS_DB
@@ -159,7 +159,7 @@ class SQLDatabase:
             session.commit()
         except:
             session.rollback()
-            logging.exception(f"Save data into {table.__tablename__} failed:")
+            logging.error(f"Save data into {table.__tablename__} failed:")
         finally:
             session.close()
 

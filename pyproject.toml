@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mark-auto-quantlab"
+version = "0.1.0"
+description = "Offline TMF strategy research and paper execution with explicit safety boundaries"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = ["tzdata==2026.5; sys_platform == 'win32'"]
+
+[tool.setuptools.packages.find]
+include = ["quantlab*"]
+exclude = ["trader*", "tests*"]

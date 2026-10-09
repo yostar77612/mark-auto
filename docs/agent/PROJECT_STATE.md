@@ -6,11 +6,11 @@
 
 - 分支：agent/quantlab-v1
 - 原始 main 基準：1cacce4ee4eef4ce7e8760f8153ef64a74852d22
-- Phase 0 已完成；固定工程完成率 15%，剩餘85%。計算依 ACCEPTANCE.json，不以測試數或耗時估算。
+- Phase 0、1 已完成；固定工程完成率 30%，剩餘70%。計算依 ACCEPTANCE.json，不以測試數或耗時估算。
 - 已查47個現行檔案、38個Python檔案皆AST解析成功；不是runtime驗證。
 - 掃描完整可達2個Commit、48個不同blob；未發現高可信度密鑰，仍有第三方CDN路徑常值歸屬待核實。
 - 已確認舊回測核心缺失、舊程式啟動涉及券商／DB副作用，以及TLS、Telegram和Log風險。
-- 進入Phase1安全修復，同步開發不依賴舊trader的quantlab研究模組。
+- Phase1安全修復驗證完成；Phase2–5研究、回測與模擬模組整合中。
 
 ## 固定決策
 
@@ -30,3 +30,11 @@
 ## 執行入口
 
 正式離線入口將為 python -m unittest discover -s tests -v 及 python -m quantlab。尚在建置，未宣稱可執行。禁止以run.py或gui.py作為研究測試入口。接手前先讀本檔、ACCEPTANCE.json、IMPLEMENTATION_CONTRACTS.md，再git status確認其他工作。
+
+## 最近驗證及外部阻塞
+
+2026-10-09：13個舊安全回歸、3個匯入隔離、7個核心模型測試通過；CI設定已解析驗證，遠端CI尚未執行。獨立UI環境依賴pip-audit完成、無已知漏洞回報（不代表無漏洞）。
+
+GitHub讀取正常且帳戶資料顯示push=true，但建立tree實際403 Resource not accessible by integration；HTTPS push缺少非互動認證。尚未推送或PR/合併。等擁有者修正App repository寫入授權，期間本地工作繼續。未嘗試繞過拒絕。
+
+舊trader匯入、舊CLI交易、舊GUI、pickle/Redis讀取與舊期貨ZIP下載刻意停用；新研究入口取代它們，舊券商整合未驗證。

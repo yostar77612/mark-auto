@@ -22,7 +22,9 @@ INDICATOR_RE = re.compile(
 
 
 def _account_dir(account: str) -> Path:
-    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", account or "unknown")
+    if not isinstance(account, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", account):
+        raise ValueError("Invalid account identifier.")
+    safe = account
     path = RUNTIME_ROOT / safe
     path.mkdir(parents=True, exist_ok=True)
     return path

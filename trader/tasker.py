@@ -276,7 +276,7 @@ def get_tasks():
     try:
         customTasks = import_module('trader.scripts.TaskList').customTasks
     except ModuleNotFoundError as e:
-        logging.error(e)
+        logging.error('Legacy task failed (details suppressed).')
         customTasks = {}
 
     for taskName, tasks in customTasks.items():

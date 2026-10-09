@@ -53,36 +53,36 @@
           "id": "P1.1",
           "title": "舊交易安全修復",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "13 legacy security + 3 architecture + 7 core tests passed; CI YAML validated, remote CI not yet run"
         },
         {
           "id": "P1.2",
           "title": "研究匯入無交易或網路副作用",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "13 legacy security + 3 architecture + 7 core tests passed; CI YAML validated, remote CI not yet run"
         },
         {
           "id": "P1.3",
           "title": "獨立離線測試入口",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "13 legacy security + 3 architecture + 7 core tests passed; CI YAML validated, remote CI not yet run"
         },
         {
           "id": "P1.4",
           "title": "離線 CI 設定",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "13 legacy security + 3 architecture + 7 core tests passed; CI YAML validated, remote CI not yet run"
         },
         {
           "id": "P1.5",
           "title": "安全防護回歸測試",
           "weight": 3.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "13 legacy security + 3 architecture + 7 core tests passed; CI YAML validated, remote CI not yet run"
         }
       ]
     },

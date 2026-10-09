@@ -1,5 +1,4 @@
 import os
-import ssl
 import sys
 import time
 import logging
@@ -34,7 +33,6 @@ from .utils.bot import TelegramBot
 from .utils import runtime
 
 
-ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class StrategyExecutor(AccountHandler, Subscriber):
@@ -87,7 +85,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                 logging.info(
                     f'[OrderCallback] subscribe_trade|{account.account_id}|{is_subscribed}')
             except Exception:
-                logging.exception(
+                logging.error(
                     f'[OrderCallback] subscribe_trade failed|{account.account_id}|')
 
     @staticmethod
@@ -95,7 +93,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
         try:
             callback(stat, msg)
         except Exception:
-            logging.exception(
+            logging.error(
                 f'[OrderCallback] notification failed|{stat}|')
 
     def _order_callback(self, stat, msg):
@@ -177,7 +175,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                     tick_data = self.update_quote_v1(tick, code=symbol)
                     # self.to_redis({symbol: tick_data})
             except KeyError:
-                logging.exception('KeyError: ')
+                logging.error('KeyError: ')
 
         @API.quote.on_quote
         def quote_callback(topic: str, quote: dict):
@@ -273,7 +271,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
             except KeyError as exc:
                 unavailable_targets.append(code)
                 logging.error(
-                    f'[Monitor List]Contract unavailable|{code}|{exc}'
+                    '[Monitor List] Contract unavailable (details suppressed).'
                 )
 
         if unavailable_targets:
@@ -341,7 +339,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                     TradeData.Contracts[order.target] = get_contract(
                         order.target)
         except Exception:
-            logging.exception(
+            logging.error(
                 f'[OptionOrder] register strategy failed|{order.target}|')
 
     def _build_orders_from_specs(
@@ -471,7 +469,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                     if hasattr(conf, 'transfer'):
                         conf.transfer(target, quantity)
                 except:
-                    logging.exception(f'Update position table failed:')
+                    logging.error(f'Update position table failed:')
 
                 return self.Order.OrderInfo(**infos)
 
@@ -819,7 +817,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                 pid=os.getpid(),
             )
         except Exception:
-            logging.exception('Update runtime status failed:')
+            logging.error('Update runtime status failed:')
 
     def _apply_runtime_command(self, stop_flag, pause_flag):
         command = runtime.read_command(self.account_name)
@@ -893,7 +891,7 @@ class StrategyExecutor(AccountHandler, Subscriber):
                 message,
             )
         except Exception as exc:
-            logging.exception("[GUI Command] failed:")
+            logging.error("[GUI Command] failed:")
             self._update_runtime_status(
                 "error",
                 f"GUI command failed: {exc}",

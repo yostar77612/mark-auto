@@ -1,3 +1,6 @@
+# Security remediation: disable legacy services before imports or credential access.
+raise RuntimeError('Legacy authenticated trading is disabled. Use the standalone offline quantlab tools; live execution requires a separately reviewed integration.')
+
 import os
 import subprocess
 import sys
@@ -90,6 +93,10 @@ def is_account_active(account: str) -> bool:
 
 
 def session_log_path(account: str) -> Path:
+    # Validate before interpolating into any path; this does not create directories.
+    import re
+    if not isinstance(account, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", account):
+        raise ValueError("Invalid account identifier.")
     return LOG_DIR / f"{account}.session.log"
 
 

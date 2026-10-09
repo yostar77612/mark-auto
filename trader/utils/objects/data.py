@@ -8,7 +8,7 @@ class Leverage:
 
 class Account:
     Mode = 'Simulation'  # 'Simulation' or 'All'
-    Simulate = False
+    Simulate = True
     DesposalMoney = 0
     DesposalMargin = 0
 
