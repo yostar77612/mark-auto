@@ -1,14 +1,16 @@
 # mark-auto 開發接續狀態
 
-更新：2026-10-09 17:08 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
+更新：2026-10-09 17:21 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
 ## 最新狀態與計分
 
-- 現有分支 `agent/quantlab-v1`、[PR #1](https://github.com/yostar77612/mark-auto/pull/1)，尚未合併。禁止重建儲存庫、force push 或刪除原始成果。
-- 原研究 Phase 0–5 的 100 點已完成其固定工程驗收；新增桌面 D0–D9 共 100 點尚待最終證據計分。合計 **100/200＝50%，剩餘 50%**。唯一計分來源 `ACCEPTANCE.json`；這不是最終桌面產品已完成。
-- 最新已發布來源：本地 `8bc19e1` 對應遠端 `d0665e1417a6c31d0978e93a9bf2d2194eba913d`，Git tree 均為 `66d2b25e769ccb11fa3700a0268aff83d1613dd9`。
-- 此來源 fresh checkout 在 Linux Python 3.12、同時安裝 Streamlit／PySide6：258 tests，253 PASS、5 個 Windows 專用測試 SKIP，56.269 秒。
-- 最新實際 Windows CI 發現 runtime IPC 結果拒收與三個短路徑比較失敗；已修 WinError109 EOF 分類與 canonical identity，新增三項回歸，本地261 tests（256 PASS、5 Windows-only SKIP）通過。另修 installer PowerShell 缺引號並新增實際 Parser.ParseFile gate，packaging 10 PASS、1 項 Linux 無 pwsh 未執行。遠端 Windows 待新 head 重驗，不能以 Linux 成功代替。Quantlab run `37963159170`；installer run `37963159264`。本輪不可合併或發布，直到新 head 的必要 Gate 全通過。
+- 現有分支 `agent/quantlab-v1`、[PR #1](https://github.com/yostar77612/mark-auto/pull/1)，尚未合併。原始歷史全部保留。
+- 原研究 100/100；桌面 D0–D4、D9 通過，共60/100；合計 **160/200＝80%，剩餘20%**。D5／D7／D8 clean client 要求 BLOCKED；D6 Release 尚待 main 整合後驗證。這是工程 Gate 進度，真模型／正式資料排名／券商仍獨立未驗證。
+- 最新產品來源本地 `3246cdc` 對應遠端 `b62803a529994f114cb4a4be301e0c62a757ac7e`，tree `53de19ad425c12da05291b64f8f6cd57373637ee`。
+- 此來源 fresh checkout Linux Python3.12 同時安裝兩套 UI：263 tests，257 PASS、6 個 Windows／PowerShell 限定項 SKIP，59秒。
+- exact-head Quantlab run `37964547136` 七 jobs 全成功，Windows installer run `37964547102` 的 build 與安全 job 成功。Windows Server2022 Python3.13.16：263 tests，256 PASS、7項 Linux／選用 Streamlit SKIP，由 Linux jobs 覆蓋其適用情境。
+- 實際 Windows 安裝、內建 runtime 與 native window、frozen 七步研究／Paper、捷徑、升級、拒絕操作執行中 app、正常關閉、解除安裝／資料保留已通過。開發工具從 PATH 移除並不等於乾淨 Win10／11。
+- WinError109正常管道結束誤判、短路徑比較與 PowerShell 缺引號已修復、實際 Windows 重驗成功。未繞過或降低 Gate。
 
 ## 已保留的原始成果與 Git 映射
 
@@ -24,6 +26,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 | 1f78a52 | 8b1f007abdb325c6ddc97707e1e2ab8c6211e5ca |
 | 468b86c | 4def6c8907bb00ee975e38912b029648eee97ad0 |
 | 8bc19e1 | d0665e1417a6c31d0978e93a9bf2d2194eba913d |
+| 3246cdc | b62803a529994f114cb4a4be301e0c62a757ac7e |
 
 `0430a74` 與 `eeccb329` 的 tree 均為 `df167ff071331a6eb75007a72c0d3637e4fc899a`：所有檔案路徑、內容、模式完全相同。原本本地歷史全部保留；本地原始 commit 不在遠端新 metadata 圖的祖先鏈，不能僅憑 PR 合併就刪掉本地分支。
 
@@ -48,7 +51,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 ## 接續順序與命令
 
 1. 先 `git status`，保留所有未提交修改；閱讀固定合約與驗收清單。
-2. 修復實際 Windows 回歸；聚焦測試後跑最終完整 Gate，同一分支發布，逐次核對 Git tree。
+2. 發布本輪驗收文件與狀態更新；產品碼不變，沿用同一分支，核對 tree 並等待 exact-head Gate。
 3. 最終 head 的研究／UI／品質／依賴／installer 全通過才可整合 main，並驗證 post-merge build 與 preview Release。
 4. 保存原始 Git 歷史與五份分析文件；清理分支前確認保存、已合併與無競態，不具安全刪除條件就保留並說明。
 5. 剩餘真 client OS、外部服務與權限阻塞誠實記錄，不降低門檻或以 mock 代替。

@@ -270,43 +270,43 @@
       "id": "D0",
       "title": "原生桌面架構與可啟動最小版本",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     },
     {
       "id": "D1",
       "title": "繁中主要功能 GUI 閉環",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     },
     {
       "id": "D2",
       "title": "背景工作進度取消單例睡眠與關閉安全",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     },
     {
       "id": "D3",
       "title": "安全設定憑證與備份還原",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     },
     {
       "id": "D4",
       "title": "可重現 Windows 建置與供應鏈清單",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     },
     {
       "id": "D5",
       "title": "無開發環境安裝升級解除安裝與資料保留",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "BLOCKED",
+      "evidence": "Windows Server installer lifecycle and PATH-isolated bundled-runtime launch PASS in run37964547102; machine still has build tools. Requirement for a clean machine with no Python/development environment remains unverified; do not substitute PATH isolation for clean Win10/11 acceptance."
     },
     {
       "id": "D6",
@@ -333,8 +333,8 @@
       "id": "D9",
       "title": "桌面使用維護文件安全效能與相容性報告",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     }
   ]
 }

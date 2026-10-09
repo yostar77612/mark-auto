@@ -185,3 +185,9 @@ R11 的條件若擴大為不受信任者可寫入、且交易程序持有秘密�
 | 長期資料與正式策略排名 | 部分符合 | 官方下載與品質框架存在；30 個 ZIP 不能證明完整歷史或有效樣本外 |
 
 立即優先處理所有實際失敗的安全／恢復 Gate；其後才可發布預覽。正式交付仍受 clean client OS、資料與外部連線驗收限制。無證據的憑證「未外洩」、長期穩定性或交易績效結論一律不得宣稱。
+
+### Windows 工程驗證結果（17:21 UTC 更新）
+
+來源 `3246cdc`／遠端 `b62803a` 已通過 [Quantlab 七 jobs](https://github.com/yostar77612/mark-auto/actions/runs/37964547136) 及 [Windows installer build／安全 Gate](https://github.com/yostar77612/mark-auto/actions/runs/37964547102)。Windows Server2022 Python3.13.16 完整 suite 263 tests：256 PASS、7項 Linux／選用 Streamlit 未執行，其適用情境由 Linux jobs 覆蓋；DPAPI、JobObject、mutex、junction、真 PowerShell parser 均實際執行。WinError109正常 EOF 誤分類及短路徑已修正，不再阻擋此來源整合。
+
+安裝測試通過 frozen 七步研究／Paper、程式來源 hashes、捷徑、正常視窗、升級、拒绝正在執行時更新／移除、正常關閉及解除安裝後資料保留。此處升級fixture使用同payload的0.0.0→0.1.1，**不是歷史資料 schema migration 證明**。移除PATH工具不是乾淨機；D5、D7、D8仍 BLOCKED。驗證產物包含OS／版本／執行結果與單次效能觀察，不作client OS或長期無人值守承諾。

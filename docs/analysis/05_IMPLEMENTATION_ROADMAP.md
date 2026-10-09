@@ -240,3 +240,9 @@ GitHub main規則需防直接推送、要求必要checks、禁止force-push與�
 桌面控制帳本在固定 bootstrap/control-v1，備份還原刻意不回退模型支出預留及 holdout 消耗。跨機移轉不能只拷貝 state-v1 就宣稱研究紀錄完整；版本不相容或舊控制帳本無法確認時必須阻擋新研究並保留原件。這補充取代前文一般性「registry 隨備份回退」描述，避免資料恢复改寫研究事實。
 
 整合驗證可重用相同 source tree／lockfile／test config 的證據，不為文件調整重跑無關大型實驗；但 PR 合併與發布仍由 exact-head 必要 checks 強制把關。未完成工作不得清理。GitHub connector 的不同 commit metadata 以完整 Git tree 等價核對；保存原始本地 Git 歷史，不能只保留遠端新 SHA。
+
+### 16.3 已通過桌面工程 Gate（17:21 UTC）
+
+來源 `3246cdc`／`b62803a` 的全部必要 PR jobs 已成功：Quantlab run37964547136、installer run37964547102。16.2 的第1–3項已完成其 Windows Server 工程驗證；下一步更新現有 PR、exact-head 通過後整合與發布預覽。桌面D0–D4及D9計60點，合計160/200＝80%，剩餘20%；D6 Release待發布，D5／D7／D8仍須乾淨client OS。固定權重不變。
+
+Linux fresh checkout263 tests（257 PASS、6 platform/tool skips）；Windows installer263 tests（256 PASS、7 Linux／Streamlit skips），各適用平台的專用 jobs 補足，未刪除失敗測試。通過安裝器生命週期並不代表無開發環境clean Win10／11通過。所有主要功能使用合成fixture的端到端測試都有明確標示，真模型／長期歷史／正式市場評估另列未驗證。
