@@ -389,7 +389,7 @@ class CrawlFromHTML:
 
         # 合併
         df = concat_df(df1, df2)
-        df.period = df.period.apply(lambda x: re.findall('[\d+/]+', x))
+        df.period = df.period.apply(lambda x: re.findall(r'[\d+/]+', x))
         df.證券代號 = df.證券代號.astype(str)
         df['startDate'] = df.period.apply(
             lambda x: x[0].replace(x[0][:3], str(int(x[0][:3])+1911)))

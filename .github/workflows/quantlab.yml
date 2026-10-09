@@ -1,7 +1,7 @@
 name: Quantlab offline gates
 on:
   push:
-    branches: [main, agent/quantlab-v1]
+    branches: [main]
   pull_request:
 permissions:
   contents: read

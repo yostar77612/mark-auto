@@ -55,7 +55,7 @@ class LegacySecurityTests(unittest.TestCase):
 
     def test_no_tls_bypass(self):
         for path in ROOT.joinpath('trader').rglob('*.py'):
-            source = path.read_text()
+            source = path.read_text(encoding='utf-8')
             self.assertNotIn('_create_unverified_context', source)
             for node in ast.walk(ast.parse(source)):
                 if isinstance(node, ast.Call):
@@ -75,7 +75,7 @@ class LegacySecurityTests(unittest.TestCase):
 
     def test_no_broker_order_submission_calls_remain(self):
         for path in ROOT.joinpath('trader').rglob('*.py'):
-            for n in ast.walk(ast.parse(path.read_text())):
+            for n in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == 'API':
                     self.assertNotIn(n.func.attr, ('place_order', 'place_comboorder'))
 
@@ -97,7 +97,7 @@ class LegacySecurityTests(unittest.TestCase):
             self.assertFalse(self.permission(chats, users))
         for chat, user in ((None, 456), (-123, None), ('-123', 456), (-123, '456'), (True, True)):
             self.assertFalse(self.permission({-123, 1}, {456, 1}, chat, user))
-        source = (ROOT / 'trader/utils/bot.py').read_text()
+        source = (ROOT / 'trader/utils/bot.py').read_text(encoding='utf-8')
         self.assertNotIn('[TEXT MESSAGE]', source)
         self.assertNotIn('TELEGRAM_USER_WHITELIST', source)
 
@@ -140,9 +140,9 @@ class LegacySecurityTests(unittest.TestCase):
             fn = extract('trader/utils/database/redis.py', [name], class_name='RedisTools')[name]
             with self.assertRaises(RuntimeError):
                 fn(None, 'untrusted')
-        source = (ROOT / 'trader/utils/file.py').read_text()
+        source = (ROOT / 'trader/utils/file.py').read_text(encoding='utf-8')
         self.assertNotIn('pd.read_pickle(', source)
-        source = (ROOT / 'trader/utils/database/redis.py').read_text()
+        source = (ROOT / 'trader/utils/database/redis.py').read_text(encoding='utf-8')
         self.assertNotIn('pickle.loads(', source)
         crawler_tree = tree('trader/utils/crawler.py')
         method = next(n for n in ast.walk(crawler_tree) if isinstance(n, ast.FunctionDef) and n.name == 'get_FuturesTickData')

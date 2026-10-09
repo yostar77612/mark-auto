@@ -1,3 +1,78 @@
+# mark-auto 台股期貨研究平台
+
+本專案新增獨立的 `quantlab` 離線研究核心與 `research_app.py` 操作介面。研究、模擬與正式券商交易分離；**真實交易固定停用**。原 AutoTradingPlatform 程式保留為來源與後續 Adapter 參考，其舊入口已停用。這不是獲利保證，也不是已驗證的實盤系統。
+
+## 快速開始
+
+需求：Python 3.11 以上。離線核心使用標準函式庫；Windows 可安裝 `tzdata` 以載入時區資料。
+
+```bash
+python -m unittest discover -s tests -v
+python -m quantlab demo --output ./quantlab-output/demo
+```
+
+`demo` 僅產生明確標示的 SYNTHETIC 行情，執行五種不同策略並匯出結果。不能把展示損益當作真實市場績效。
+
+### 本機研究介面
+
+使用獨立虛擬環境，不安裝舊券商套件清單：
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r requirements-ui.lock
+streamlit run research_app.py --server.address 127.0.0.1
+```
+
+介面提供本機資料匯入與品質檢查、五種策略、回測與報表、研究試驗、策略比較／選擇、Paper 帳本與歷史行情重播。不要公開暴露此本機檔案操作介面；本版本沒有多使用者身分驗證。
+
+### 明確資料與成本
+
+```bash
+python -m quantlab import examples/synthetic_bars.csv --kind synthetic_bars --calendar examples/synthetic_calendar.json --output ./quantlab-output/dataset.json
+python -m quantlab backtest ./quantlab-output/dataset.json --config examples/synthetic_config.json --output ./quantlab-output/reports
+python -m quantlab campaign ./quantlab-output/dataset.json --output ./quantlab-output/campaign
+```
+
+`examples` 的時段、價格、保證金與成本均為測試假設。正式研究需換成已查核的資料、有效日期化成本／保證金與交易所日曆。官方格式僅支援實際觀察並測試的欄位；未知格式、未覆蓋日期或缺漏資料須拒絕，不能猜測補值。付費行情與帳戶資訊不得提交 Git。
+
+### 官方免費資料更新
+
+```bash
+python -m quantlab refresh --cache ./quantlab-output/official --days 1 --format csv
+```
+
+僅從期交所已公布連結取得最近最多 30 個交易日期的 CSV／RPT ZIP。更新保留 SHA 版本、檢查 TLS、大小與解壓安全，不把重複下載當作新資料。下載結果先標為 provisional_unverified／ranking_eligible=false；夜盤檔案日期可能屬下一交易日，必須經明確交易日曆及匯入品質驗證才能研究。資料不足時不產生正式策略排名。原始行情與快取不得提交 Git。
+
+## 重要安全與驗證界線
+
+- `quantlab` 不匯入 `trader` 或券商 SDK，匯入本身不連線或建立帳戶。
+- 舊 `run.py`、`gui.py`、`trader` 啟動、pickle／Redis反序列化及舊下載流程刻意停用；不應嘗試用憑證啟動。
+- Paper 使用可稽核 SQLite 事件帳本；重啟／未知委託先凍結新單，完整對帳後才可恢复。停止不會偷偷平倉。
+- 預設策略研究使用明確標示的 fixture generator；它驗證工程流程，**不代表真實模型已完成驗證**。選用 HTTP 相容模型時必須明確開啟、提供端點及預算；本次未呼叫外部付費模型。
+- 五種策略家族為趨勢、均值回歸、通道突破、動能與波動壓縮突破。參數、資料及成本版本綁定每個結果；通過工程測試不代表策略通過投資績效門檻。
+- 回測提供下一根開盤成交、成本、保證金、雙邊換月及顯式結算事件；OHLC不能證明真實排隊／流動性。缺少必要換月或结算輸入時失敗封鎖。
+- Paper 重播是有限批次歷史事件處理，沒有實際即時行情；尚未支援的盤中停損／停利規則會拒絕，不會默默忽略。
+- 遠端 Windows/CI、實際模型、券商認證、完整歷史日曆及長時間真實運行狀態請看接續文件，不得由 Linux 合成測試推論通過。
+
+## 文件與開發接續
+
+- [目前狀態及下一步](docs/agent/PROJECT_STATE.md)
+- [固定驗收清單](docs/agent/ACCEPTANCE.json)
+- [介面合約及工作責任](docs/agent/IMPLEMENTATION_CONTRACTS.md)
+- [專案架構](docs/analysis/01_PROJECT_ARCHITECTURE.md)
+- [既有功能盤點](docs/analysis/02_EXISTING_FEATURES.md)
+- [程式品質與風險](docs/analysis/03_CODE_QUALITY_AND_RISKS.md)
+- [AI量化目標設計](docs/analysis/04_AI_QUANT_TARGET_DESIGN.md)
+- [MVP與開發Roadmap](docs/analysis/05_IMPLEMENTATION_ROADMAP.md)
+
+## 授權與原始來源
+
+保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。原始 upstream 精確提交版本尚未核實；以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
+
+---
+
 # AutoTradingPlatform
 
 [![PyPI - Status](https://img.shields.io/pypi/v/shioaji.svg?style=for-the-badge)](https://pypi.org/project/shioaji)

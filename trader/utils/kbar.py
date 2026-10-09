@@ -105,7 +105,7 @@ class KBarTool(TechnicalSignals):
 
     def _scale_converter(self, scale: str):
         '''Convert scale format from str to int'''
-        return int(re.findall('\d+', scale)[0])
+        return int(re.findall(r'\d+', scale)[0])
 
     def tbKBar(self, stockid: str, start: str, end: str = None):
         '''取得k棒資料'''

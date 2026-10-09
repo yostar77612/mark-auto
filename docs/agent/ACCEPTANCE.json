@@ -135,36 +135,36 @@
           "id": "P3.1",
           "title": "五種獨立策略與因果測試",
           "weight": 4.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed on Linux Python 3.12 with UI dependencies; tests/test_strategies.py, test_research.py and test_provider.py verify five families, restricted DSL, persistent budgets, process timeout and workspace-wide holdout reuse rejection. Real external model NOT_VERIFIED."
         },
         {
           "id": "P3.2",
           "title": "受限 DSL 與拒絕案例",
           "weight": 4.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed on Linux Python 3.12 with UI dependencies; tests/test_strategies.py, test_research.py and test_provider.py verify five families, restricted DSL, persistent budgets, process timeout and workspace-wide holdout reuse rejection. Real external model NOT_VERIFIED."
         },
         {
           "id": "P3.3",
           "title": "產生評估改善及來源標示",
           "weight": 4.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed on Linux Python 3.12 with UI dependencies; tests/test_strategies.py, test_research.py and test_provider.py verify five families, restricted DSL, persistent budgets, process timeout and workspace-wide holdout reuse rejection. Real external model NOT_VERIFIED."
         },
         {
           "id": "P3.4",
           "title": "持久預算與所有試驗紀錄",
           "weight": 4.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed on Linux Python 3.12 with UI dependencies; tests/test_strategies.py, test_research.py and test_provider.py verify five families, restricted DSL, persistent budgets, process timeout and workspace-wide holdout reuse rejection. Real external model NOT_VERIFIED."
         },
         {
           "id": "P3.5",
           "title": "樣本外及保留集隔離",
           "weight": 4.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed on Linux Python 3.12 with UI dependencies; tests/test_strategies.py, test_research.py and test_provider.py verify five families, restricted DSL, persistent budgets, process timeout and workspace-wide holdout reuse rejection. Real external model NOT_VERIFIED."
         }
       ]
     },
@@ -176,36 +176,36 @@
           "id": "P4.1",
           "title": "Streamlit 匯入至回測",
           "weight": 2.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed including 5 Streamlit AppTests and reporting/CLI/replay tests; immutable selection, restart, manifest-tamper and CSV safety tested. No live feed or broker."
         },
         {
           "id": "P4.2",
           "title": "策略版本比較與選擇",
           "weight": 2.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed including 5 Streamlit AppTests and reporting/CLI/replay tests; immutable selection, restart, manifest-tamper and CSV safety tested. No live feed or broker."
         },
         {
           "id": "P4.3",
           "title": "可追溯指標及匯出",
           "weight": 2.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed including 5 Streamlit AppTests and reporting/CLI/replay tests; immutable selection, restart, manifest-tamper and CSV safety tested. No live feed or broker."
         },
         {
           "id": "P4.4",
           "title": "空資料錯誤重複操作",
           "weight": 2.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed including 5 Streamlit AppTests and reporting/CLI/replay tests; immutable selection, restart, manifest-tamper and CSV safety tested. No live feed or broker."
         },
         {
           "id": "P4.5",
           "title": "重啟後持久狀態",
           "weight": 2.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "176-test full suite passed including 5 Streamlit AppTests and reporting/CLI/replay tests; immutable selection, restart, manifest-tamper and CSV safety tested. No live feed or broker."
         }
       ]
     },
