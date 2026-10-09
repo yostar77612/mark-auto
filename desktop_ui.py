@@ -52,9 +52,24 @@ class DesktopCredentialTransport:
         return HTTPTransport(allow_network=True, credential_resolver=resolver)(endpoint, request, timeout_seconds)
 
 
+def research_controls(paths):
+    """Irreversible budget/holdout ledgers must never be rolled back with user state."""
+    state = Path(paths.state)
+    legacy = list((state / 'provider_budgets').glob('*'))
+    legacy.extend((state / 'campaigns').glob('.holdout_registry.sqlite3*'))
+    if any(path.exists() and (not path.is_file() or path.stat().st_size > 0) for path in legacy):
+        raise ValidationError('發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。')
+    controls = Path(paths.controls)
+    if controls.resolve().is_relative_to(state.resolve()):
+        raise ValidationError('不可逆研究紀錄不得放在可還原狀態資料夾內')
+    return controls
+
+
 def campaign_generator(paths, options):
     from quantlab.research import FixtureGenerator, CompatibleProvider
-    if options.get('mode', 'fixture') == 'fixture': return FixtureGenerator()
+    if options.get('mode', 'fixture') == 'fixture':
+        research_controls(paths)
+        return FixtureGenerator()
     if options.get('mode') != 'compatible' or options.get('network_opt_in') is not True:
         raise ValidationError('真實模型必須明確同意本次網路與可能費用')
     local = validate_endpoint(options['endpoint'])
@@ -64,10 +79,60 @@ def campaign_generator(paths, options):
         raise ValidationError('遠端模型必須使用 Windows 安全儲存金鑰')
     identity = content_hash({k:v for k,v in options.items() if k != 'network_opt_in'})
     return CompatibleProvider(model=options['model'], endpoint=options['endpoint'],
-        transport=DesktopCredentialTransport(str(paths.root), options.get('use_credential', True)),
-        budget_path=Path(paths.state)/'provider_budgets'/(identity+'.sqlite3'), network_opt_in=True,
+        transport=DesktopCredentialTransport(str(getattr(paths, 'bootstrap', None) or paths.root), options.get('use_credential', True)),
+        budget_path=research_controls(paths)/'provider_budgets'/(identity+'.sqlite3'), network_opt_in=True,
         max_calls=options['max_calls'], max_tokens=options['max_tokens'], max_spend=options['max_spend'],
         tokens_per_call=options['tokens_per_call'], cost_per_token=options['cost_per_token'], timeout_seconds=options['timeout_seconds'])
+
+
+def candidate_record(root, reference):
+    """Resolve a persisted, hash-bound DSL candidate and independent evaluation gate."""
+    from quantlab.research import validate_dsl
+    campaigns = (Path(root) / 'campaigns').resolve()
+    folder = str(reference.get('campaign_folder', ''))
+    if len(folder) != 64 or any(c not in '0123456789abcdef' for c in folder):
+        raise ValidationError('研究版本識別碼無效')
+    path = campaigns / folder / 'campaign.json'
+    if not path.resolve().is_relative_to(campaigns): raise ValidationError('研究版本路徑無效')
+    state = read_json(path)
+    # JSON is a review export; qualify only if it equals the authoritative journal.
+    import sqlite3
+    from contextlib import closing
+    journal = path.with_name('campaign.sqlite3')
+    if not journal.resolve().is_relative_to(campaigns) or not journal.is_file():
+        raise ValidationError('找不到可核對的研究交易紀錄')
+    with closing(sqlite3.connect(journal.resolve().as_uri() + '?mode=ro', uri=True, timeout=1)) as database:
+        row = database.execute('SELECT payload FROM state WHERE id=1').fetchone()
+    if not row or canonical_json(json.loads(row[0])) != canonical_json(state):
+        raise ValidationError('研究匯出與原始交易紀錄不符；拒絕候選資格判定')
+    if state.get('selection_hash') != content_hash(state.get('selected', [])):
+        raise ValidationError('研究選擇清單雜湊不符或尚未完成選擇')
+    if state.get('campaign_id') != content_hash(state.get('binding')):
+        raise ValidationError('研究版本內容雜湊不符')
+    attempt = next((a for a in state.get('attempts', []) if a.get('attempt_id') == reference.get('attempt_id')), None)
+    if not attempt or attempt.get('status') != 'evaluated': raise ValidationError('候選尚未通過結構驗證與評估')
+    spec = validate_dsl(attempt.get('spec'))
+    digest = content_hash(spec)
+    if digest != attempt.get('strategy_hash') or digest != reference.get('strategy_hash'):
+        raise ValidationError('候選策略版本雜湊不符')
+    ranking = state['binding']['config']['ranking']
+    selected = any(x.get('strategy_hash') == digest for x in state.get('selected', []))
+    qualified = selected and state.get('status') == 'completed'
+    evaluations = {}
+    for split in ('oos', 'holdout'):
+        row = next((r for r in state.get('evaluations', {}).get(split, []) if r.get('strategy_hash') == digest), {})
+        metrics = row.get('metrics', {})
+        trades = metrics.get('trade_count', metrics.get('closed_trades', 0))
+        passed = (row.get('status') == 'evaluated' and metrics.get('net_pnl') is not None
+                  and Decimal(str(metrics['net_pnl'])) >= Decimal(str(ranking['minimum']))
+                  and trades >= ranking['min_trades'])
+        qualified = qualified and passed
+        evaluations[split] = {'qualified':passed, 'evaluation':row}
+    return spec, {'reference':reference, 'paper_qualified':bool(qualified), 'evaluations':evaluations,
+                  'source_type':state.get('source_manifest', {}).get('source_type', 'unknown'),
+                  'source_data_hash':state.get('source_manifest', {}).get('data_hash'),
+                  'real_model_status':state.get('real_model_status', 'not_verified'),
+                  'note':'僅依預先宣告門檻檢查；合成與 Fixture 結果不是投資或真實模型績效驗證'}
 
 
 def _root(paths):
@@ -136,13 +201,24 @@ def execute_ui_operation(operation, payload, paths):
         data = _dataset(root, payload)
         config = config_from_json(payload['config'])
         specs = list(builtin_strategies())
-        if not payload.get('batch'):
+        provenance = None
+        if payload.get('candidate'):
+            if payload.get('batch'): raise ValidationError('生成候選不可與預設家族批次混用')
+            spec, provenance = candidate_record(root, payload['candidate'])
+            source_hash = data.manifest.get('parent_data_hash', data.manifest['data_hash'])
+            if provenance['source_data_hash'] != source_hash: raise ValidationError('候選研究與目前資料來源不符；請切回原資料')
+            specs = [spec]
+        elif not payload.get('batch'):
             spec = next((s for s in specs if s.family == payload['family']), None)
             if spec is None:
                 raise ValidationError('未知策略家族')
             spec = StrategySpec(spec.strategy_id, spec.family, payload.get('parameters', dict(spec.parameters)), dict(spec.rules))
             validate_strategy(spec)
             specs = [spec]
+        if provenance:
+            manifest = {**data.manifest, 'desktop_candidate_reference': provenance['reference']}
+            manifest['manifest_hash'] = content_hash({k:v for k,v in manifest.items() if k not in ('imported_at','manifest_hash')})
+            data = Dataset(data.bars, manifest, dict(data.quality))
         reports = []
         for spec in specs:
             result = run_backtest(data, spec, config)
@@ -153,6 +229,7 @@ def execute_ui_operation(operation, payload, paths):
                 files = export_report(result, Path(staging))
                 folder = Path(files['result']).parent
                 write_json(folder / 'strategy.json', spec)
+                if provenance: write_json(folder / 'candidate_provenance.json', provenance)
                 destination = reports_root / files['result_hash']
                 if destination.exists():
                     if content_hash(load_result(destination / 'result.json')) != files['result_hash'] or read_json(destination / 'strategy.json') != to_dict(spec):
@@ -172,13 +249,19 @@ def execute_ui_operation(operation, payload, paths):
         options = payload.get('provider', {'mode':'fixture'})
         generator = campaign_generator(paths, options)
         name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': {k:v for k,v in options.items() if k != 'network_opt_in'}})
-        return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name)
+        return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name,
+                            holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
     if operation == 'ui_compare':
         if not payload.get('results'): raise ValidationError('請至少選擇一個結果')
         return {'rows': comparison_rows([load_result(p) for p in payload['results']])}
     if operation == 'ui_select':
         folder = Path(payload['result']).parent
         result = load_result(folder / 'result.json')
+        reference = result.manifest.get('dataset_manifest', {}).get('desktop_candidate_reference')
+        if reference:
+            spec, provenance = candidate_record(root, reference)
+            if not provenance['paper_qualified']: raise ValidationError('生成候選尚未通過 OOS／保留集門檻；只允許研究，不可啟用紙上策略')
+            if content_hash(spec) != result.manifest.get('spec_hash'): raise ValidationError('候選與回測策略不符')
         return save_selection(read_json(folder / 'strategy.json'), result, root / 'selection.json')
     if operation == 'ui_disable':
         selection = root / 'selection.json'
@@ -250,12 +333,12 @@ def execute_ui_operation(operation, payload, paths):
     raise ValidationError('未實作作業')
 
 
-from PySide6.QtCore import Qt, QTimer, QPointF
-from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF
+from PySide6.QtCore import Qt, QTimer, QPointF, QUrl
+from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QListWidget, QStackedWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox,
     QSpinBox, QCheckBox, QProgressBar, QFileDialog, QFormLayout, QScrollArea,
-    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox)
+    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication)
 
 
 class EquityPlot(QWidget):
@@ -292,6 +375,7 @@ class MainWindow(QMainWindow):
         self.root = _root(paths)
         self.actions = []
         self.last_operation = None
+        self.active_candidate = None
         self.setWindowTitle('TMF 量化研究桌面｜研究與紙上模擬')
         self.resize(1180, 800)
         self.setStyleSheet('''
@@ -318,6 +402,7 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
         self.status = QLabel('就緒'); self.status.setObjectName('status'); self.status.setWordWrap(True)
         outer.addWidget(self.status)
+        self.notification = QLabel(''); self.notification.setObjectName('local_notification'); self.notification.setWordWrap(True); self.notification.hide(); outer.addWidget(self.notification)
         progress = QHBoxLayout(); self.progress = QProgressBar(); self.progress.setRange(0, 100)
         self.cancel_button = QPushButton('取消背景作業'); self.cancel_button.setObjectName('cancel_job')
         self.cancel_button.clicked.connect(self.cancel_job); self.cancel_button.setEnabled(False)
@@ -392,6 +477,10 @@ class MainWindow(QMainWindow):
         self.campaign_config = self._text(layout, '研究設定 JSON（空白使用明示示範切分）', '', True)
         self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); layout.addWidget(self.provider_mode)
         self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign)
+        self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
+        self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); layout.addWidget(self.candidate_detail)
+        self.use_candidate_button = self._button(layout, '使用此不可變候選版本進行研究回測', 'use_candidate', self.use_candidate)
+        self._button(layout, '改用內建家族與可編輯參數', 'use_builtin', self.use_builtin)
         self.history = QPlainTextEdit(); self.history.setReadOnly(True); layout.addWidget(self.history)
 
     def _backtest_page(self):
@@ -412,7 +501,7 @@ class MainWindow(QMainWindow):
         self.comparison_list = QListWidget(); self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection); layout.addWidget(self.comparison_list)
         self._button(layout, '比較選取結果', 'compare_results', lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}))
         self.comparison = QPlainTextEdit(); self.comparison.setReadOnly(True); layout.addWidget(self.comparison)
-        self._button(layout, '啟用目前回測策略（僅研究／紙上）', 'select_strategy', self.select_strategy)
+        self.select_button = self._button(layout, '啟用目前回測策略（僅研究／紙上）', 'select_strategy', self.select_strategy)
         self._button(layout, '停用策略並停止紙上新委託', 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel(); self.selection_status.setWordWrap(True); layout.addWidget(self.selection_status)
 
@@ -440,7 +529,10 @@ class MainWindow(QMainWindow):
         layout = self._page('設定與備份')
         layout.addWidget(QLabel('本機工作區：' + str(self.paths.root)))
         layout.addWidget(QLabel('資料與帳戶狀態：' + str(self.root)))
+        layout.addWidget(QLabel('預算與保留集消耗紀錄不隨備份還原，也不因切換工作區重設。'))
         layout.addWidget(QLabel('日誌：' + str(self.paths.logs)))
+        self.workspace_path = self._text(layout, '下次啟動的工作區（不搬移、不覆寫現有資料）', str(self.paths.root))
+        self._button(layout, '設定下次啟動工作區', 'configure_workspace', self.configure_workspace)
         self.ai_endpoint = self._text(layout, '模型完整 chat/completions 端點（遠端 HTTPS / 本機 loopback HTTP）')
         self.ai_model = self._text(layout, '模型名稱')
         self.api_key = self._text(layout, 'API 金鑰（只存 Windows DPAPI；不寫入設定、日誌或備份）')
@@ -455,12 +547,19 @@ class MainWindow(QMainWindow):
         self.cost_per_token = self._text(layout, '保守每 token 費率（USD；遠端不可為零）', '0')
         self.ai_opt_in = QCheckBox('我同意下一次模型研究：傳送策略內容與訓練／驗證統計至上述端點，可能產生費用（不傳 OOS／保留集）'); layout.addWidget(self.ai_opt_in)
         self.ai_status = QLabel('外部真實模型：NOT_VERIFIED。預設 Fixture；只有明確選取相容模型並勾選逐次同意才可連線。預算不是供應商帳單保證。'); self.ai_status.setWordWrap(True); layout.addWidget(self.ai_status)
+        self.persist_logs = QCheckBox('保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）'); self.persist_logs.setChecked(True); layout.addWidget(self.persist_logs)
+        self.local_notifications = QCheckBox('作業完成／失敗時顯示本機提示並提醒此視窗'); self.local_notifications.setChecked(True); layout.addWidget(self.local_notifications)
         self._button(layout, '儲存非敏感偏好', 'save_settings', self.save_settings)
         self.backup_path = self._text(layout, '備份封存檔案路徑')
         self._button(layout, '建立本機備份', 'create_backup', lambda: self.backup(False))
         self.restore_confirm = QCheckBox('我確認還原會替換目前本機狀態，並會要求重新對帳'); layout.addWidget(self.restore_confirm)
         self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True))
-        layout.addWidget(QLabel('更新：沒有自動下載或更新。請使用已驗證來源的安裝程式。'))
+        from quantlab import __version__
+        self.version_label = QLabel(f'目前版本 {__version__} · 未簽章預覽版；尚無已驗證的最新版本資訊。')
+        self.version_label.setWordWrap(True); layout.addWidget(self.version_label)
+        layout.addWidget(QLabel('更新不會自動下載或執行；請核對官方專案、SHA-256 與發行說明。'))
+        self._button(layout, '開啟專案 Releases 頁面', 'open_releases', self.open_releases)
+        self._button(layout, '讀取精簡本機日誌', 'read_logs', self.read_logs)
         self.log_view = QPlainTextEdit(); self.log_view.setReadOnly(True); self.log_view.setPlaceholderText('本次工作階段的作業狀態。僅記錄作業名稱與結果類型，不記錄金鑰或供應商回應內容。'); layout.addWidget(self.log_view)
         layout.addStretch()
 
@@ -476,6 +575,9 @@ class MainWindow(QMainWindow):
         if name: target.setText(name)
 
     def _family_changed(self):
+        self.active_candidate = None
+        if hasattr(self, 'candidate_choice'): (self.root / 'active_candidate.json').unlink(missing_ok=True)
+        self.parameters.setReadOnly(False)
         from quantlab.strategies import builtin_strategies
         spec = builtin_strategies()[self.family.currentIndex()]
         self.parameters.setPlainText(canonical_json(spec.parameters))
@@ -494,7 +596,7 @@ class MainWindow(QMainWindow):
     def run_backtest(self):
         for field in (self.start_date, self.end_date):
             if field.text().strip(): datetime.strptime(field.text().strip(), '%Y-%m-%d')
-        self.start_job('ui_backtest', {'family':self.family.currentText(), 'parameters':json.loads(self.parameters.toPlainText()), 'config':json.loads(self.config.toPlainText()), 'start_date':self.start_date.text().strip(), 'end_date':self.end_date.text().strip(), 'batch':self.batch.isChecked()})
+        self.start_job('ui_backtest', {'family':self.family.currentText(), 'parameters':json.loads(self.parameters.toPlainText()), 'config':json.loads(self.config.toPlainText()), 'start_date':self.start_date.text().strip(), 'end_date':self.end_date.text().strip(), 'batch':self.batch.isChecked(), 'candidate':self.active_candidate})
 
     def run_campaign(self):
         text = self.campaign_config.toPlainText().strip()
@@ -534,11 +636,8 @@ class MainWindow(QMainWindow):
         self.paper_confirm.setChecked(False)
 
     def kill_paper(self):
-        if self.jobs.active:
-            self.jobs.cancel()
-            self.status.setText('已要求取消；等待背景作業停止後再啟用紙上停止開關')
-            self._kill_pending = True
-        else: self.paper_job('kill')
+        self.freeze_paper('使用者要求緊急停止')
+        self.status.setText('背景作業已停止；紙上新委託已凍結，重新執行前需明確對帳。')
 
     def start_job(self, operation, payload):
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
@@ -555,16 +654,20 @@ class MainWindow(QMainWindow):
         if not active:
             self.progress.setValue(0)
             self.run_button.setEnabled((self.root / 'dataset.json').exists())
+            self.use_candidate_button.setEnabled(bool(getattr(self, '_candidate_valid', False)))
+            self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
 
     def cancel_job(self):
-        self._safe(self.jobs.cancel)
-        self.status.setText('已要求取消；正在等待程序退出，未宣告成功。')
+        def cancel_and_recover():
+            self.freeze_paper('使用者取消背景作業')
+            self.status.setText('作業已停止；未完成還原已先復原，再凍結紙上執行。')
+        self._safe(cancel_and_recover)
 
     def poll_jobs(self):
         try:
             for event in self.jobs.poll():
                 kind = event.get('type', '')
-                self.log_view.appendPlainText((self.last_operation or 'background') + ' · ' + str(kind))
+                self.record_event(self.last_operation, kind)
                 if kind in ('result', 'completed', 'success'):
                     result = event.get('result', {})
                     text = canonical_json(result)
@@ -574,13 +677,13 @@ class MainWindow(QMainWindow):
                     if self.last_operation == 'ui_backup_restore': self.freeze_paper('備份已還原，請重新核對帳戶')
                     self.status.setText('作業完成，結果已保存於本機。')
                     self.refresh_views()
+                    self.notify_local('背景作業完成。詳細來源與限制請查看結果。')
                 elif kind in ('error', 'failed'):
                     if self.last_operation == 'ui_backup_restore':
-                        self.backups.recover()
                         self.freeze_paper('還原未完成，請重新核對帳戶')
                     self.status.setText('作業失敗：' + str(event.get('message', event.get('error', '未知錯誤'))))
+                    self.notify_local('背景作業失敗；請查看狀態並核對輸入。')
                 elif kind in ('cancelled', 'canceled'):
-                    if self.last_operation == 'ui_backup_restore': self.backups.recover()
                     self.freeze_paper('背景作業已取消')
                     self.status.setText('作業已取消；已完成的檔案保留，未完成部分不代表成功。')
                 else:
@@ -624,15 +727,69 @@ class MainWindow(QMainWindow):
         for p in sorted((self.root / 'campaigns').glob('*/*.json'))[:100]:
             history.append({'file':str(p), 'content':read_json(p)})
         self.history.setPlainText(canonical_json(history) if history else '尚無研究版本或 OOS 結果')
+        selected_ref = self.candidate_choice.currentData()
+        self.candidate_choice.blockSignals(True); self.candidate_choice.clear()
+        for entry in history:
+            state = entry['content']
+            if not isinstance(state, dict): continue
+            for attempt in state.get('attempts', []):
+                ref = {'campaign_folder':Path(entry['file']).parent.name, 'attempt_id':attempt.get('attempt_id'), 'strategy_hash':attempt.get('strategy_hash')}
+                label = f"{state.get('campaign_id','')[:10]} · {attempt.get('family','?')} · v{attempt.get('sequence','?')} · {attempt.get('status','?')}"
+                self.candidate_choice.addItem(label, ref)
+        index = self.candidate_choice.findData(selected_ref)
+        if index >= 0: self.candidate_choice.setCurrentIndex(index)
+        self.candidate_choice.blockSignals(False); self.inspect_candidate()
+        active_candidate = self.root / 'active_candidate.json'
+        if self.active_candidate is None and active_candidate.exists():
+            reference = read_json(active_candidate)
+            index = self.candidate_choice.findData(reference)
+            if index >= 0:
+                self.candidate_choice.setCurrentIndex(index); self.use_candidate()
 
     def show_result(self, index=None):
         path = self.result_choice.currentData()
+        self._selection_allowed = False
         if not path: self.plot.set_values([]); self.result_detail.setPlainText('尚無回測結果'); return
         try:
             result = load_result(path)
             self.plot.set_values(result.equity)
+            self._selection_allowed = True
+            reference = result.manifest.get('dataset_manifest', {}).get('desktop_candidate_reference')
+            if reference:
+                _, provenance = candidate_record(self.root, reference)
+                self._selection_allowed = provenance['paper_qualified']
+            self.select_button.setEnabled(self._selection_allowed and not self.jobs.active)
             self.result_detail.setPlainText(canonical_json({'metrics':result.metrics, 'warnings':result.warnings, 'manifest':result.manifest, 'fills':result.fills, 'rejects':result.rejects}))
         except Exception as exc: self.status.setText('結果驗證失敗：' + str(exc))
+
+    def inspect_candidate(self, index=None):
+        self._candidate_valid = False
+        reference = self.candidate_choice.currentData()
+        if not reference:
+            self.candidate_detail.setPlainText('尚無生成候選。執行研究後可檢視每個版本與獨立 OOS／保留集結果。')
+        else:
+            try:
+                spec, provenance = candidate_record(self.root, reference)
+                self.candidate_detail.setPlainText(canonical_json({'strategy':spec, **provenance}))
+                self._candidate_valid = True
+            except Exception:
+                self.candidate_detail.setPlainText('此候選尚未有效評估或雜湊不符；不可套用。完整拒絕／中斷原因見研究紀錄。')
+        self.use_candidate_button.setEnabled(self._candidate_valid and not self.jobs.active)
+
+    def use_candidate(self):
+        reference = self.candidate_choice.currentData()
+        spec, provenance = candidate_record(self.root, reference)
+        self.family.setCurrentText(spec.family)
+        self.active_candidate = reference
+        write_json(self.root / 'active_candidate.json', reference)
+        self.parameters.setPlainText(canonical_json(spec.parameters)); self.parameters.setReadOnly(True)
+        self.strategy_detail.setPlainText(canonical_json({'strategy':spec, **provenance}))
+        self.batch.setChecked(False)
+        self.status.setText('已套用不可變生成版本；研究回測不等於通過樣本外驗證。')
+
+    def use_builtin(self):
+        self._family_changed()
+        self.status.setText('已切回內建家族；參數可編輯。')
 
     def save_settings(self):
         if self.settings is None: raise ValidationError('設定儲存服務不可用')
@@ -641,8 +798,10 @@ class MainWindow(QMainWindow):
         value = self.settings.load()
         value.update({'ai_endpoint':self.ai_endpoint.text().strip(), 'ai_model':self.ai_model.text().strip(),
             'max_calls':self.max_calls.value(), 'max_tokens':self.max_tokens.value(), 'tokens_per_call':self.tokens_per_call.value(),
-            'timeout_seconds':self.timeout_seconds.value(), 'max_spend':self.max_spend.text().strip(), 'cost_per_token':self.cost_per_token.text().strip()})
+            'timeout_seconds':self.timeout_seconds.value(), 'max_spend':self.max_spend.text().strip(), 'cost_per_token':self.cost_per_token.text().strip(),
+            'persist_logs':self.persist_logs.isChecked(), 'local_notifications':self.local_notifications.isChecked()})
         self.settings.save(value)
+        self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.ai_opt_in.setChecked(False)
         self.status.setText('已保存非敏感偏好；網路同意已重設，未在設定中保存金鑰。')
 
@@ -658,6 +817,36 @@ class MainWindow(QMainWindow):
         for key in ('max_spend', 'cost_per_token'):
             if key in value: getattr(self, key).setText(value[key])
         self.ai_opt_in.setChecked(False)
+        self.persist_logs.setChecked(value.get('persist_logs', True) is True)
+        self.jobs.logging_enabled = self.persist_logs.isChecked()
+        self.local_notifications.setChecked(value.get('local_notifications', True) is True)
+        self.read_logs()
+
+    def configure_workspace(self):
+        from quantlab.desktop_runtime import WorkspaceLocator
+        if self.jobs.active: raise ValidationError('請先停止背景作業')
+        root = WorkspaceLocator(getattr(self.paths, 'bootstrap', None) or self.paths.root).configure(Path(self.workspace_path.text().strip()))
+        self.status.setText('下次啟動將使用：' + str(root) + '。請關閉後重新開啟；目前資料未搬移或覆寫。')
+
+    def open_releases(self):
+        # Verified repository Releases destination; never invent latest version or assets.
+        if not QDesktopServices.openUrl(QUrl('https://github.com/yostar77612/mark-auto/releases')):
+            raise ValidationError('無法開啟瀏覽器；專案 Releases 網址：https://github.com/yostar77612/mark-auto/releases')
+        self.status.setText('已要求預設瀏覽器開啟專案 Releases；未下載或執行更新。')
+
+    def notify_local(self, message):
+        if self.local_notifications.isChecked():
+            self.notification.setText(message); self.notification.setStyleSheet('background:#e8f1ff;padding:10px;border-radius:6px')
+            self.notification.show(); QApplication.alert(self, 1500)
+
+    def record_event(self, operation, kind):
+        from quantlab.desktop_runtime import RedactedEventLog
+        # Runtime owns redacted persistence; UI never appends the same event twice.
+        self.log_view.appendPlainText((operation if operation in UI_OPERATIONS else 'background') + ' · ' + (kind if kind in ('progress','result','error','cancelled') else 'status'))
+
+    def read_logs(self):
+        from quantlab.desktop_runtime import RedactedEventLog
+        self.log_view.setPlainText('\n'.join(RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').tail()))
 
     def save_api_key(self):
         from quantlab.desktop_runtime import CredentialVault
@@ -677,7 +866,18 @@ class MainWindow(QMainWindow):
         self.start_job('ui_backup_restore' if restore else 'ui_backup_create', {'path':self.backup_path.text()})
         self.restore_confirm.setChecked(False)
 
+    def _quiesce_and_recover(self):
+        # Never create state files until the writer has exited and pending swaps recover.
+        if self.jobs.active: self.jobs.cancel()
+        if self.jobs.active: raise ValidationError('背景程序尚未停止；禁止還原或寫入狀態')
+        if self.backups is not None:
+            self.backups.recover()
+        else:
+            from quantlab.desktop_runtime import BackupManager
+            BackupManager(self.paths).recover()
+
     def freeze_paper(self, reason):
+        self._quiesce_and_recover()
         self.paper_confirm.setChecked(False)
         if self.guard is not None: self.guard.reconciliation_required = True
         write_json(self.root / 'desktop_safety.json', {'reconciliation_required':True, 'reason':str(reason)})
@@ -691,6 +891,7 @@ class MainWindow(QMainWindow):
             event.ignore(); return
         try:
             self.jobs.close()
+            self._quiesce_and_recover()
             if self.guard is not None: self.guard.finish()
         except Exception:
             event.ignore(); self.status.setText('關閉失敗，背景作業尚未確認停止。'); return

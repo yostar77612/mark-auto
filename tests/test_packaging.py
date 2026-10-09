@@ -3,6 +3,10 @@ import importlib.util
 import os
 from pathlib import Path
 import re
+import runpy
+import sys
+import types
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -10,6 +14,38 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingTests(unittest.TestCase):
+    def test_build_inputs_are_committed_not_silently_gitignored(self):
+        required = {'desktop.py', 'desktop_ui.py', 'requirements-desktop.lock',
+                    'packaging/markauto.spec', 'packaging/markauto.iss',
+                    'packaging/build.ps1', 'packaging/collect_licenses.py',
+                    'packaging/THIRD_PARTY_NOTICES.md', 'LICENSE'}
+        required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
+        for name in required:
+            self.assertTrue((ROOT / name).is_file(), name)
+        if (ROOT / '.git').exists():
+            tracked = set(subprocess.check_output(['git', 'ls-files'], cwd=ROOT, text=True).splitlines())
+            self.assertFalse(required - tracked, f'Build inputs absent from Git: {sorted(required - tracked)}')
+
+    def test_freezer_bundles_exact_hash_provenance_source_files(self):
+        captured = {}
+        hooks = types.ModuleType('PyInstaller.utils.hooks')
+        hooks.collect_data_files = lambda name: []
+        def analysis(*args, **kwargs):
+            captured.update(kwargs)
+            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=kwargs['datas'])
+        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}):
+            runpy.run_path(str(ROOT / 'packaging/markauto.spec'), init_globals={
+                'SPECPATH': str(ROOT / 'packaging'), 'Analysis': analysis,
+                'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
+                'COLLECT': lambda *a, **kw: None})
+        datas = set(captured['datas'])
+        for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'):
+            self.assertIn((str(ROOT / 'quantlab' / name), 'quantlab'), datas)
+        harness = (ROOT / 'packaging/test_installer.ps1').read_text()
+        self.assertIn('Get-FileHash $shipped', harness)
+        for name in ('backtest_completed', 'campaign_completed', 'paper_completed', 'performance-observation.json'):
+            self.assertIn(name, harness)
+
     def gate_module(self):
         spec = importlib.util.spec_from_file_location('desktop_gates', ROOT / 'packaging/wait_for_gates.py')
         module = importlib.util.module_from_spec(spec)
@@ -50,6 +86,11 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('PrivilegesRequired=lowest', source)
         self.assertIn(r'DefaultDirName={localappdata}\Programs\MarkAuto', source)
         self.assertIn('MinVersion=10.0.19045', source)
+        self.assertIn('CloseApplications=no', source)
+        self.assertIn('RestartApplications=no', source)
+        self.assertIn('AppMutex=Local', source)
+        self.assertIn('RejectRunningApplication', source)
+        self.assertIn('skipifsilent unchecked', source)
         self.assertIn('{userprograms}', source)
         self.assertIn('{userdesktop}', source)
         self.assertNotRegex(source, r'(?m)^\[UninstallDelete\]')
@@ -74,6 +115,8 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('Get-FileHash', build)
         self.assertIn('f3c42116542c4cc57263c5ba6c4feabfc49fe771f2f98a79d2f7628b8762723b', build)
         self.assertIn('--require-hashes', build)
+        self.assertLess(build.index('from PySide6.QtWidgets'), build.index('unittest discover'))
+        self.assertLess(build.index('unittest discover'), build.index('-m PyInstaller'))
         self.assertNotIn('SkipCertificateCheck', build)
 
     def test_dynamic_qt_and_no_browser_ui(self):

@@ -5,8 +5,14 @@ if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be numeric x.y.z
 if (-not [Environment]::Is64BitProcess) { throw 'Build requires x64 Python/PowerShell' }
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {
+  python -c "import sys; assert sys.version_info[:3] == (3, 13, 16), sys.version; assert sys.maxsize > 2**32"
+  if ($LASTEXITCODE) { throw 'Build requires pinned CPython 3.13.16 x64' }
   python -m pip install --require-hashes --only-binary=:all: -r requirements-desktop.lock
   if ($LASTEXITCODE) { throw 'Dependency install failed' }
+  python -c "from PySide6.QtWidgets import QApplication; import PySide6; print('Native Qt preflight', PySide6.__version__)"
+  if ($LASTEXITCODE) { throw 'Native Qt preflight failed; refusing skipped UI tests' }
+  python -m unittest discover -s tests -v
+  if ($LASTEXITCODE) { throw 'Regression suite failed before freezing' }
   python packaging/collect_licenses.py
   if ($LASTEXITCODE) { throw 'License collection failed' }
   python -m PyInstaller --noconfirm --clean packaging/markauto.spec

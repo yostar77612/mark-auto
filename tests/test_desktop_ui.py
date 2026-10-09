@@ -196,6 +196,190 @@ class NativeDesktopTests(unittest.TestCase):
         with self.assertRaises(ValueError): campaign_generator(self.paths,opts)
         self.assertFalse((self.paths.state/'provider_budgets').exists())
 
+    def campaign(self, minimum='-100000000'):
+        from quantlab.reporting import load_dataset,demo_config
+        from quantlab.research import demo_campaign_config
+        from quantlab.core import canonical_json
+        cfg=demo_campaign_config(load_dataset(self.paths.state/'dataset.json'),demo_config())
+        cfg.update(families=['trend'],max_trials=1,max_improvements=0)
+        cfg['ranking']['minimum']=minimum
+        self.window.campaign_config.setPlainText(canonical_json(cfg))
+        self.click('run_campaign'); self.wait_job(60)
+
+    def test_generated_candidate_picker_backtest_selection_and_persistence(self):
+        from desktop_ui import candidate_record
+        from quantlab.reporting import load_result
+        self.demo(); self.campaign()
+        self.assertGreater(self.window.candidate_choice.count(),0)
+        self.click('use_candidate')
+        reference=self.window.active_candidate
+        self.assertIsNotNone(reference)
+        spec,meta=candidate_record(self.paths.state,reference)
+        self.assertTrue(meta['paper_qualified'])
+        self.assertTrue(self.window.parameters.isReadOnly())
+        self.click('run_backtest'); self.wait_job()
+        result=load_result(self.window.result_choice.currentData())
+        self.assertEqual(result.manifest['strategy']['strategy_id'],spec.strategy_id)
+        self.assertEqual(result.manifest['dataset_manifest']['desktop_candidate_reference'],reference)
+        self.click('select_strategy'); self.wait_job()
+        selection=json.loads((self.paths.state/'selection.json').read_text())
+        self.assertEqual(selection['strategy_hash'],reference['strategy_hash'])
+        self.window.active_candidate=None; self.window.refresh_views()
+        self.assertEqual(self.window.active_candidate,reference)
+        self.click('use_builtin'); self.assertIsNone(self.window.active_candidate)
+        self.assertFalse((self.paths.state/'active_candidate.json').exists())
+
+    def test_generated_unqualified_candidate_research_only(self):
+        from desktop_ui import execute_ui_operation
+        self.demo(); self.campaign('100000000')
+        self.click('use_candidate'); self.assertIsNotNone(self.window.active_candidate)
+        self.click('run_backtest'); self.wait_job()
+        self.assertFalse(self.window.select_button.isEnabled())
+        with self.assertRaises(ValueError):
+            execute_ui_operation('ui_select',{'result':self.window.result_choice.currentData()},self.paths)
+        self.assertFalse((self.paths.state/'selection.json').exists())
+        self.assertIn('false',self.window.candidate_detail.toPlainText())
+
+    def test_update_notifications_logs_and_persistent_preferences(self):
+        from PySide6.QtGui import QDesktopServices
+        with patch.object(QDesktopServices,'openUrl',return_value=True) as opened:
+            self.click('open_releases')
+            self.assertEqual(opened.call_args[0][0].toString(),'https://github.com/yostar77612/mark-auto/releases')
+        self.assertIn('未下載',self.window.status.text())
+        self.demo(); self.assertFalse(self.window.notification.isHidden())
+        self.click('read_logs'); self.assertIn('ui_demo',self.window.log_view.toPlainText())
+        self.window.local_notifications.setChecked(False); self.window.persist_logs.setChecked(False)
+        self.click('save_settings')
+        self.window.local_notifications.setChecked(True); self.window.persist_logs.setChecked(True)
+        self.window.load_settings()
+        self.assertFalse(self.window.local_notifications.isChecked()); self.assertFalse(self.window.persist_logs.isChecked())
+        self.window.notification.hide(); self.window.notify_local('test'); self.assertTrue(self.window.notification.isHidden())
+
+    def test_workspace_change_restart_only(self):
+        self.demo()
+        old=self.paths.state/'dataset.json'; data=old.read_bytes()
+        destination=Path(self.tmp.name)/'next-workspace'
+        self.window.workspace_path.setText(str(destination)); self.click('configure_workspace')
+        self.assertIn('下次啟動',self.window.status.text())
+        self.assertEqual(old.read_bytes(),data)
+        self.assertEqual(self.window.root,self.paths.state)
+        self.assertFalse((destination/'state-v1'/'dataset.json').exists())
+
+    def test_candidate_edited_export_cannot_change_qualification(self):
+        from desktop_ui import candidate_record
+        from quantlab.reporting import read_json,write_json
+        self.demo(); self.campaign()
+        reference=self.window.candidate_choice.currentData()
+        spec,meta=candidate_record(self.paths.state,reference)
+        self.assertTrue(meta['paper_qualified'])
+        path=self.paths.state/'campaigns'/reference['campaign_folder']/'campaign.json'
+        original=read_json(path)
+        edited=json.loads(json.dumps(original))
+        edited['evaluations']['oos'][0]['metrics']['net_pnl']='999999999'
+        write_json(path,edited)
+        with self.assertRaises(ValueError): candidate_record(self.paths.state,reference)
+        self.window.inspect_candidate(); self.assertFalse(self.window.use_candidate_button.isEnabled())
+        self.assertEqual(read_json(path),edited)  # Never silently repair an edited export.
+        write_json(path,original)
+        edited=json.loads(json.dumps(original)); edited['selected']=[]; edited['status']='completed'
+        write_json(path,edited)
+        with self.assertRaises(ValueError): candidate_record(self.paths.state,reference)
+
+    def test_freeze_recovers_cancelled_restore_before_any_state_write(self):
+        self.demo()
+        old=(self.paths.state/'dataset.json').read_bytes()
+        rollback=self.paths.root/'state-v1.rollback'
+        window=self.window
+        class InterruptedRestore:
+            active=True
+            def cancel(inner):
+                # Fault injection: worker reached old-state rename, then was joined.
+                os.replace(self.paths.state,rollback)
+                self.assertFalse(self.paths.state.exists())
+                inner.active=False
+        window.timer.stop(); original=window.jobs; window.jobs=InterruptedRestore()
+        try:
+            window.freeze_paper('sleep during restore')
+            self.assertEqual((self.paths.state/'dataset.json').read_bytes(),old)
+            self.assertTrue((self.paths.state/'desktop_safety.json').exists())
+        finally: window.jobs=original
+
+    def test_freeze_refuses_state_write_until_worker_joined(self):
+        self.demo()
+        rollback=self.paths.root/'state-v1.rollback'; os.replace(self.paths.state,rollback)
+        window=self.window
+        class UnjoinedWorker:
+            active=True
+            def cancel(inner): pass
+        window.timer.stop(); original=window.jobs; window.jobs=UnjoinedWorker()
+        try:
+            with self.assertRaises(ValueError): window.freeze_paper('worker stuck')
+            self.assertFalse(self.paths.state.exists())
+            self.assertTrue((rollback/'dataset.json').exists())
+        finally:
+            window.jobs=original; window.backups.recover()
+
+    def test_provider_budget_survives_older_backup_and_workspace_change(self):
+        from desktop_ui import campaign_generator
+        from quantlab.desktop_runtime import AppPaths
+        from quantlab.core import canonical_json
+        from quantlab.strategies import builtin_strategies
+        self.demo()
+        archive=Path(self.tmp.name)/'before-budget.zip'; self.window.backups.create(archive)
+        options=dict(mode='compatible',network_opt_in=True,endpoint='http://127.0.0.1:12345/v1',model='inert-fixture',
+                     use_credential=False,max_calls=1,max_tokens=10000,max_spend='0',cost_per_token='0',tokens_per_call=100,timeout_seconds=2)
+        response={'choices':[{'message':{'content':canonical_json(builtin_strategies()[0])}}]}
+        with patch('quantlab.provider.HTTPTransport.__call__',return_value=response) as transport:
+            campaign_generator(self.paths,options).generate({})
+            self.window.backups.restore(archive)
+            with self.assertRaises(ValueError): campaign_generator(self.paths,options).generate({})
+            other=AppPaths(Path(self.tmp.name)/'other-workspace',self.paths.bootstrap or self.paths.root).ensure()
+            self.assertEqual(other.controls,self.paths.controls)
+            with self.assertRaises(ValueError): campaign_generator(other,options).generate({})
+            self.assertEqual(transport.call_count,1)
+        self.assertFalse((self.paths.state/'provider_budgets').exists())
+        self.assertTrue(list((self.paths.controls/'provider_budgets').glob('*.sqlite3')))
+
+    def test_consumed_holdout_survives_older_backup_restore(self):
+        self.demo()
+        archive=Path(self.tmp.name)/'before-holdout.zip'; self.window.backups.create(archive)
+        self.campaign()
+        first=json.loads(self.window.summary.toPlainText())
+        self.assertEqual(first['holdout_status'],'reserved_consumed')
+        self.assertTrue((self.paths.controls/'holdout-registry.sqlite3').exists())
+        self.window.backups.restore(archive); self.window.refresh_views()
+        self.campaign()
+        second=json.loads(self.window.summary.toPlainText())
+        self.assertEqual(second['status'],'blocked_previously_consumed_holdout')
+        self.assertEqual(second['evaluations']['holdout'],[])
+        self.assertFalse((self.paths.state/'campaigns'/'.holdout_registry.sqlite3').exists())
+
+    def test_legacy_research_ledgers_fail_closed_without_migration(self):
+        from desktop_ui import campaign_generator
+        for relative in ['provider_budgets/legacy.sqlite3','campaigns/.holdout_registry.sqlite3']:
+            path=self.paths.state/relative; path.parent.mkdir(parents=True,exist_ok=True); path.write_bytes(b'legacy-used-ledger')
+            with self.assertRaises(ValueError): campaign_generator(self.paths,{'mode':'fixture'})
+            self.assertEqual(path.read_bytes(),b'legacy-used-ledger')
+            path.unlink()
+
+    def test_terminal_input_error_is_not_relabelled_as_cancelled(self):
+        class SlowErrorExit:
+            active=True
+            step=0
+            def poll(inner):
+                inner.step+=1
+                if inner.step==1: return [{'type':'error','message':'輸入驗證失敗'}]
+                inner.active=False
+                return []
+            def cancel(inner): raise AssertionError('An input error must not trigger user cancellation')
+        self.window.timer.stop(); original=self.window.jobs; self.window.jobs=SlowErrorExit()
+        self.window.last_operation='ui_import'
+        try:
+            self.window.poll_jobs(); self.assertIn('失敗',self.window.status.text())
+            self.window.poll_jobs(); self.assertIn('失敗',self.window.status.text())
+            self.assertNotIn('取消',self.window.status.text())
+        finally: self.window.jobs=original
+
     def test_service_rejects_unknown_code_and_network_without_consent(self):
         from desktop_ui import execute_ui_operation
         for op,payload in [('exec',{'code':'1+1'}),('ui_refresh',{})]:

@@ -1,4 +1,4 @@
-# Windows x64 / Python 3.12.10. Exact wheel hashes from PyPI release metadata.
+# Windows x64 / Python 3.13.16. Exact wheel hashes from PyPI release metadata.
 PySide6==6.12.0 \
     --hash=sha256:31a8d2893f2f28ab483b1534dde0438f27af6e234593de30425cb4729052d8f8
 PySide6_Addons==6.12.0 \

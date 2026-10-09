@@ -3,13 +3,14 @@
 Target: Windows 10 22H2 x64 and Windows 11 x64. End users install the EXE; Python,
 pip and Git are bundled/not required. Qt Widgets creates a native desktop window.
 Install defaults to `%LOCALAPPDATA%\Programs\MarkAuto`, without admin rights;
-Start-menu and desktop shortcuts are created. Uninstall via Windows Settings.
+Start-menu and desktop shortcuts are created. Uninstall via Windows Settings. Close the app yourself first: installer and
+uninstaller refuse while it is running, never force-close jobs or auto-relaunch it.
 User data lives separately at `%LOCALAPPDATA%\MarkAuto` and is retained by upgrade
 and uninstall. Remove that directory yourself only if you intend to erase data.
 
 ## Repeatable developer build
 
-Build on Windows x64 with Python 3.12.10 and PowerShell, from the repository root:
+Build on Windows x64 with Python 3.13.16 and PowerShell, from the repository root:
 
     ./packaging/build.ps1 -Version 0.1.1
     ./packaging/test_installer.ps1 -Version 0.1.1
@@ -67,3 +68,25 @@ credentials never appear in logs. Record exact failures, not just screenshots.
   https://api.github.com/repos/jrsoftware/issrc/releases/tags/is-6_4_3
 - Inno current commercial terms differ; do not silently upgrade builder:
   https://jrsoftware.org/isorder-terms.php
+
+## Python runtime security decision
+
+CPython 3.13.16 (2026-09-30) replaces the initial diagnostic 3.12.10 build.
+3.12.10 predates later security fixes, and newer 3.12 releases have no Windows
+installers. The official 3.13.16 x64 installer was downloaded and its SHA256
+matched Python.org; metadata is recorded in `python-runtime.json`. CI obtains
+that exact version through the pinned setup-python action, and the build
+asserts the actual interpreter version/bitness before dependency installation.
+The hash-locked complete Windows dependency closure resolves for Python 3.13;
+actual frozen runtime behavior still must pass Windows CI.
+
+Python 3.13 supports Windows 8.1+, Qt 6.12 supports Windows 10 1809+ and Windows11,
+and PyInstaller 6.22.3 supports Python 3.8–3.15 / Windows8+. Product minimum stays
+**Windows 10 22H2 x64**, not broadened by upstream support. 3.13.16 is itself the
+last full maintenance release; future security updates require reevaluation of
+a maintained Windows binary line, not indefinitely retaining this pin.
+
+- https://www.python.org/downloads/release/python-31316/
+- https://www.python.org/downloads/release/python-31215/
+- https://docs.python.org/3.13/using/windows.html
+- https://pypi.org/project/pyinstaller/6.22.3/

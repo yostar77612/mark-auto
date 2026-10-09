@@ -25,7 +25,7 @@ def main():
     artifacts = list((root / 'dist/installers').glob('*.exe'))
     result = {
         'source_commit': os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
-        'python': sys.version, 'os': platform.platform(), 'architecture': platform.machine(),
+        'python': sys.version, 'python_executable_sha256': sha256(sys.executable), 'os': platform.platform(), 'architecture': platform.machine(),
         'runner_image': os.environ.get('ImageOS'), 'runner_image_version': os.environ.get('ImageVersion'),
         'dependencies': sorted(f"{d.metadata['Name']}=={d.version}" for d in distributions()),
         'inputs_sha256': {str(p.relative_to(root)): sha256(p) for p in sorted(inputs)},

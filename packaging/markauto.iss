@@ -18,7 +18,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\MarkAuto.exe
-CloseApplications=yes
+CloseApplications=no
+AppMutex=Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420
 RestartApplications=no
 LicenseFile=..\LICENSE
 [Files]
@@ -27,5 +28,25 @@ Source: "..\dist\MarkAuto\*"; DestDir: "{app}"; Flags: ignoreversion recursesubd
 Name: "{userprograms}\Mark Auto\Mark Auto"; Filename: "{app}\MarkAuto.exe"; WorkingDir: "{app}"
 Name: "{userdesktop}\Mark Auto"; Filename: "{app}\MarkAuto.exe"; WorkingDir: "{app}"
 [Run]
-Filename: "{app}\MarkAuto.exe"; Description: "Launch Mark Auto"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\MarkAuto.exe"; Description: "Launch Mark Auto"; Flags: nowait postinstall skipifsilent unchecked
 ; Deliberately no [UninstallDelete]: %LOCALAPPDATA%\MarkAuto is never removed.
+
+[Code]
+function RejectRunningApplication(): Boolean;
+begin
+  Result := not CheckForMutexes('Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420');
+  if not Result then begin
+    Log('Mark Auto is running; installation/uninstallation refused without closing it.');
+    SuppressibleMsgBox('Close Mark Auto yourself before installing or uninstalling. No running work will be stopped automatically.', mbError, MB_OK, IDOK);
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  Result := RejectRunningApplication();
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  Result := RejectRunningApplication();
+end;

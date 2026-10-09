@@ -69,6 +69,7 @@ def _read_json(path):
 @dataclass(frozen=True)
 class AppPaths:
     root: Path
+    bootstrap: Path | None = None
 
     @classmethod
     def discover(cls):
@@ -93,13 +94,125 @@ class AppPaths:
         return self.root / 'logs'
 
     @property
+    def controls(self):
+        # Irreversible provider reservations and examined-holdout history must
+        # survive workspace switching and restoring older research backups.
+        return (self.bootstrap or self.root) / 'control-v1'
+
+    @property
     def credentials(self):
-        return self.root / 'credentials'
+        return (self.bootstrap or self.root) / 'credentials'
 
     def ensure(self):
-        for path in (self.root, self.state, self.cache, self.logs, self.credentials):
+        marker = self.root / 'workspace-format.json'
+        if marker.exists() and _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
+            raise RuntimeSafetyError('Unsupported workspace version; original preserved')
+        for path in (self.root, self.state, self.cache, self.logs, self.credentials, self.controls):
             path.mkdir(parents=True, exist_ok=True)
+        if not marker.exists():
+            atomic_write(marker, _json_bytes({'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}))
         return self
+
+
+class WorkspaceLocator:
+    """Fixed per-user bootstrap pointer; configuration applies on next startup.
+
+    Changing this pointer never moves, merges, deletes or overwrites workspace
+    contents. Credentials and the single-instance lock stay in the bootstrap.
+    """
+    def __init__(self, bootstrap):
+        self.bootstrap = Path(bootstrap)
+        self.pointer = self.bootstrap / 'workspace-location.json'
+
+    @property
+    def lock_path(self):
+        return self.bootstrap / 'desktop.lock'
+
+    @staticmethod
+    def _protected_windows_locations():
+        if sys.platform != 'win32':
+            return []
+        buffer = ctypes.create_unicode_buffer(32768)
+        result = []
+        if not ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer)):
+            raise RuntimeSafetyError('Cannot validate Windows system directory')
+        result.append(Path(buffer.value))
+        for identifier in (0x0026, 0x002a, 0x0023):  # Program Files, x86, ProgramData
+            if ctypes.windll.shell32.SHGetFolderPathW(None, identifier, None, 0, buffer) == 0:
+                result.append(Path(buffer.value))
+        return result
+
+    def _validate(self, value, *, probe=False):
+        if not isinstance(value, (str, Path)) or not str(value).strip():
+            raise RuntimeSafetyError('Workspace path is required')
+        text = str(value)
+        path = Path(value)
+        if not path.is_absolute() or text.startswith(('\\', '//')) or path == Path(path.anchor):
+            raise RuntimeSafetyError('Choose an absolute local folder, not a drive root or network share')
+        for ancestor in (path, *path.parents):
+            if ancestor.exists() or ancestor.is_symlink():
+                info = ancestor.lstat()
+                if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
+                    raise RuntimeSafetyError('Workspace path cannot contain symlinks or reparse points')
+        resolved = path.resolve()
+        if sys.platform == 'win32':
+            drive_type = ctypes.windll.kernel32.GetDriveTypeW(str(resolved.anchor))
+            if drive_type in (0, 1, 4):
+                raise RuntimeSafetyError('Workspace must be on an available local drive')
+            for part in resolved.parts[1:]:
+                BackupManager._safe_name(part)
+        for protected in self._protected_windows_locations():
+            if resolved.is_relative_to(protected.resolve()):
+                raise RuntimeSafetyError('Workspace cannot use a system or Program Files directory')
+        # Do not let a new workspace enclose the fixed bootstrap/vault.
+        if resolved != self.bootstrap.resolve() and self.bootstrap.resolve().is_relative_to(resolved):
+            raise RuntimeSafetyError('Workspace cannot contain the fixed application bootstrap')
+        for protected in (self.bootstrap / 'credentials', self.bootstrap / 'state-v1', self.bootstrap / 'cache', self.bootstrap / 'logs', self.bootstrap / 'control-v1'):
+            if resolved.is_relative_to(protected.resolve()):
+                raise RuntimeSafetyError('Choose a standalone workspace, not an internal application directory')
+        if path.exists():
+            if not path.is_dir():
+                raise RuntimeSafetyError('Workspace must be a directory')
+            for child_name in ('workspace-format.json', 'state-v1', 'cache', 'logs'):
+                child = path / child_name
+                if child.exists() or child.is_symlink():
+                    BackupManager._check_regular_path(child)
+            contents = list(path.iterdir())
+            marker = path / 'workspace-format.json'
+            if contents and resolved != self.bootstrap.resolve():
+                if not marker.is_file() or _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
+                    raise RuntimeSafetyError('Choose an empty folder or a compatible MarkAuto workspace')
+            if marker.exists() and _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
+                raise RuntimeSafetyError('Workspace version is incompatible')
+            settings = path / 'state-v1' / 'settings.json'
+            if settings.exists():
+                BackupManager._check_regular_path(settings)
+                SettingsStore(settings).load()
+        if probe:
+            path.mkdir(parents=True, exist_ok=True)
+            fd, temporary = tempfile.mkstemp(prefix='.markauto-write-probe-', dir=path)
+            os.close(fd)
+            os.unlink(temporary)
+        return resolved
+
+    def configure(self, next_root):
+        if self.pointer.exists():
+            value = _read_json(self.pointer)
+            if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
+                raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
+        destination = self._validate(next_root, probe=True)
+        self.bootstrap.mkdir(parents=True, exist_ok=True)
+        atomic_write(self.pointer, _json_bytes({'schema_version': STATE_VERSION, 'root': str(destination)}))
+        return destination
+
+    def load(self):
+        if not self.pointer.exists():
+            return AppPaths(self.bootstrap, self.bootstrap)
+        value = _read_json(self.pointer)
+        if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
+            raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
+        root = self._validate(value['root'], probe=True)
+        return AppPaths(root, self.bootstrap)
 
 
 class SettingsStore:
@@ -202,6 +315,75 @@ class DesktopCredentialReference:
         return CredentialVault(AppPaths(Path(self.root))).load(self.name)
 
 
+WINDOWS_APP_MUTEX = r'Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420'
+
+
+class WindowsAppMutex:
+    """Installer-visible lifetime guard; QLockFile still owns single-instance logic."""
+    def __init__(self):
+        self.handle = None
+        if sys.platform == 'win32':
+            from ctypes import wintypes
+            self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+            self.kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+            self.kernel.CreateMutexW.restype = wintypes.HANDLE
+            self.kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+            self.handle = self.kernel.CreateMutexW(None, False, WINDOWS_APP_MUTEX)
+            if not self.handle:
+                raise RuntimeSafetyError('Cannot establish installation safety guard')
+
+    def close(self):
+        if self.handle:
+            self.kernel.CloseHandle(self.handle)
+            self.handle = None
+
+
+class RedactedEventLog:
+    """Bounded local status log: only approved operation/status codes, never payloads."""
+    MAX_BYTES = 128 * 1024
+    EVENTS = frozenset({'started', 'progress', 'result', 'error', 'cancelled'})
+
+    def __init__(self, path):
+        self.path = Path(path)
+
+    def append(self, operation, event_type):
+        if operation not in OPERATIONS or event_type not in self.EVENTS:
+            raise RuntimeSafetyError('Only fixed operation and event codes can be logged')
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.exists():
+            BackupManager._check_regular_path(self.path)
+            if self.path.stat().st_size >= self.MAX_BYTES:
+                previous = self.path.with_suffix(self.path.suffix + '.1')
+                if previous.exists():
+                    BackupManager._check_regular_path(previous)
+                os.replace(self.path, previous)
+        record = {'time': round(time.time(), 3), 'operation': operation, 'event': event_type}
+        with self.path.open('ab') as stream:
+            stream.write(_json_bytes(record) + b'\n')
+
+    def tail(self, limit=200):
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise RuntimeSafetyError('Log limit must be 1..1000')
+        if not self.path.exists():
+            return []
+        BackupManager._check_regular_path(self.path)
+        with self.path.open('rb') as stream:
+            stream.seek(max(0, self.path.stat().st_size - self.MAX_BYTES))
+            lines = stream.read(self.MAX_BYTES + 256).splitlines()
+        result = []
+        for raw in lines[-limit:]:
+            try:
+                value = json.loads(raw)
+                if not isinstance(value, dict) or set(value) != {'time', 'operation', 'event'}:
+                    continue
+                if value['operation'] not in OPERATIONS or value['event'] not in self.EVENTS or type(value['time']) not in (int, float):
+                    continue
+                result.append(json.dumps(value, ensure_ascii=False))
+            except (ValueError, TypeError):
+                continue
+        return result
+
+
 class RuntimeGuard:
     """Every startup and clock discontinuity requires explicit paper reconciliation."""
     def __init__(self, paths):
@@ -232,6 +414,11 @@ class RuntimeGuard:
 class BackupManager:
     """Quiescent-only, bounded, hash-verified state backups; no secret/cache files.
 
+    Fixed-bootstrap credentials and control-v1 audit ledgers are excluded.
+    Restoring research state must never reset spend reservations or the history
+    of examined holdouts; those irreversible controls remain in their original
+    per-user location across workspace switches and backup restoration.
+
     Restore uses a same-volume staging directory and recovery marker. A crash
     between the two directory renames is recovered on next startup.
     """
@@ -243,15 +430,46 @@ class BackupManager:
             raise RuntimeSafetyError('Stop active jobs before backup or restore')
 
     def recover(self):
+        self._quiescent()
         rollback = self.paths.root / 'state-v1.rollback'
+        journal = self.paths.root / 'restore-transaction.json'
+        token = self.paths.state / '.restore-transaction'
+        transaction = None
+        if journal.exists():
+            try:
+                value = _read_json(journal)
+                if isinstance(value, dict) and value.get('phase') in ('prepared', 'committed') and isinstance(value.get('id'), str) and re.fullmatch(r'[a-f0-9]{32}', value['id']):
+                    transaction = value
+            except (OSError, ValueError):
+                pass  # Unknown journal is never evidence that rollback is disposable.
+        verified_commit = False
+        if transaction and transaction['phase'] == 'committed' and token.is_file():
+            try:
+                verified_commit = _read_json(token) == {'id': transaction['id']}
+            except (OSError, ValueError):
+                pass
         if rollback.exists():
-            if not self.paths.state.exists():
-                os.replace(rollback, self.paths.state)
-            else:
+            self._check_regular_path(rollback)
+            if verified_commit:
+                # Promotion identity and durable commit marker both agree.
                 shutil.rmtree(rollback)
-        for old in self.paths.root.glob('.restore-*'):
-            if old.is_dir() and not old.is_symlink():
-                shutil.rmtree(old)
+            else:
+                if self.paths.state.exists():
+                    self._check_regular_path(self.paths.state)
+                    # Never delete an ambiguous directory, even if another callback
+                    # recreated it during the interrupted two-rename window.
+                    preserved = self.paths.root / ('state-v1.interrupted-' + uuid.uuid4().hex)
+                    os.replace(self.paths.state, preserved)
+                os.replace(rollback, self.paths.state)
+        # Retire the promoted token before its journal. A crash in this order
+        # leaves only a harmless journal, never an orphan token in a new backup.
+        token = self.paths.state / '.restore-transaction'
+        if verified_commit and token.exists():
+            token.unlink()
+        if journal.exists():
+            journal.unlink()
+        # Unknown partial staging directories are intentionally preserved for
+        # diagnosis rather than guessed to be disposable user data.
 
     @staticmethod
     def _safe_name(name):
@@ -270,6 +488,7 @@ class BackupManager:
 
     def create(self, destination):
         self._quiescent()
+        self.recover()
         self.paths.ensure()
         destination = Path(destination).resolve()
         if destination.is_relative_to(self.paths.state.resolve()) or destination.is_relative_to(self.paths.credentials.resolve()):
@@ -288,6 +507,8 @@ class BackupManager:
                 if not path.is_file():
                     raise RuntimeSafetyError('Unsupported backup file')
                 name = self._safe_name(path.relative_to(self.paths.state).as_posix())
+                if name == '.restore-transaction':
+                    continue  # Internal control token, including legacy crash orphans.
                 size += path.stat().st_size
                 files.append((name, path))
                 if size > MAX_BACKUP or len(files) > MAX_FILES:
@@ -334,6 +555,8 @@ class BackupManager:
                     raise RuntimeSafetyError('Manifest does not match archive')
                 for name, expected in entries.items():
                     self._safe_name(name)
+                    if name == '.restore-transaction':
+                        raise RuntimeSafetyError('Backup contains a reserved restore control file')
                     raw = archive.read('state/' + name)
                     if not isinstance(expected, dict) or len(raw) != expected.get('size') or hashlib.sha256(raw).hexdigest() != expected.get('sha256'):
                         raise RuntimeSafetyError('Backup hash mismatch')
@@ -342,18 +565,22 @@ class BackupManager:
                     atomic_write(target, raw)
             settings = staging / 'settings.json'
             if settings.exists():
+                BackupManager._check_regular_path(settings)
                 SettingsStore(settings).load()
             rollback = self.paths.root / 'state-v1.rollback'
-            if self.paths.state.exists():
-                os.replace(self.paths.state, rollback)
+            journal = self.paths.root / 'restore-transaction.json'
+            transaction_id = uuid.uuid4().hex
+            atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}))
+            atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'prepared'}))
             try:
+                if self.paths.state.exists():
+                    os.replace(self.paths.state, rollback)
                 os.replace(staging, self.paths.state)
+                atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'committed'}))
             except BaseException:
-                if rollback.exists():
-                    os.replace(rollback, self.paths.state)
+                self.recover()
                 raise
-            if rollback.exists():
-                shutil.rmtree(rollback)
+            self.recover()
         finally:
             if staging.exists():
                 shutil.rmtree(staging)
@@ -368,7 +595,7 @@ UI_OPERATIONS = frozenset({
 OPERATIONS = UI_OPERATIONS | {'demo', 'backtest', 'campaign'}
 
 
-def _job_worker(sender, gate, operation, payload, root, job_id):
+def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
@@ -377,7 +604,7 @@ def _job_worker(sender, gate, operation, payload, root, job_id):
         sender.send_bytes(_json_bytes({'job_id': job_id, 'type': kind, **values}))
     try:
         emit('progress', message='Working', progress=0)
-        paths = AppPaths(Path(root))
+        paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
         if operation in UI_OPERATIONS:
             from desktop_ui import execute_ui_operation
             result = execute_ui_operation(operation, payload, paths)
@@ -461,6 +688,18 @@ class JobManager:
         self.job_id = None
         self._terminal = False
         self._pending = []
+        self._deferred = []
+        self.event_log = RedactedEventLog(paths.logs / 'desktop-events.jsonl')
+        self._operation = None
+        self.logging_enabled = True
+
+    def _log(self, event_type):
+        if not self.logging_enabled:
+            return
+        try:
+            self.event_log.append(self._operation, event_type)
+        except (OSError, RuntimeSafetyError):
+            pass  # Diagnostic storage cannot break cancellation or task completion.
 
     @property
     def active(self):
@@ -479,13 +718,15 @@ class JobManager:
                 raise RuntimeSafetyError('Unsupported job parameters')
             if operation == 'demo' and (type(payload.get('bars', 240)) is not int or not 20 <= payload.get('bars', 240) <= 10000):
                 raise RuntimeSafetyError('Demo bars must be 20..10000')
+        self._operation = operation
         context = mp.get_context('spawn')
         receiver, sender = context.Pipe(duplex=False)
         gate = context.Event()
         self._gate = gate
         self.job_id = uuid.uuid4().hex
         self._terminal = False
-        self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), self.job_id))
+        self._deferred = []
+        self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id))
         self.receiver = receiver
         try:
             self.process.start()
@@ -493,6 +734,7 @@ class JobManager:
             if sys.platform == 'win32':
                 self.tree = _WindowsProcessTree(self.process.pid)
             gate.set()
+            self._log('started')
         except BaseException:
             sender.close()
             self.cancel()
@@ -515,9 +757,12 @@ class JobManager:
                     break
                 if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error'}:
                     raise RuntimeSafetyError('Invalid worker response')
-                events.append(event)
+                self._log(event['type'])
                 if event['type'] in {'result', 'error'}:
                     self._terminal = True
+                    self._deferred.append(event)
+                else:
+                    events.append(event)
         except (OSError, ValueError):
             self.cancel()
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
@@ -529,8 +774,11 @@ class JobManager:
             if not eof and self.receiver.poll():
                 return events + self.poll()
             if not self._terminal:
+                self._log('error')
                 events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker stopped unexpectedly; incomplete output retained as partial'})
             self._release()
+            events.extend(self._deferred)
+            self._deferred = []
         return events
 
     def _release(self):
@@ -544,6 +792,8 @@ class JobManager:
             self.process.close()
         self.process = None
         self._gate = None
+        if self._operation == 'ui_backup_restore':
+            BackupManager(self.paths).recover()
 
     def cancel(self):
         if not self.active:
@@ -566,7 +816,14 @@ class JobManager:
                 proc.join(3)
             if proc.is_alive():
                 raise RuntimeSafetyError('Worker did not stop; do not restore or close')
-        self._pending.append({'job_id': self.job_id, 'type': 'cancelled', 'message': 'Cancelled; completed durable records are preserved'})
+        if self._terminal:
+            # A terminal outcome already received is authoritative even if the
+            # process still needed cleanup. Never relabel a failure as cancelled.
+            self._pending.extend(self._deferred)
+            self._deferred = []
+        else:
+            self._log('cancelled')
+            self._pending.append({'job_id': self.job_id, 'type': 'cancelled', 'message': 'Cancelled; completed durable records are preserved'})
         self._release()
 
     def close(self):
