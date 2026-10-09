@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal as D, localcontext, ROUND_UP
 from pathlib import Path
+from contextlib import closing
 import sqlite3
 import subprocess
 import sys
@@ -234,7 +235,7 @@ class PaperTests(unittest.TestCase):
 
     def test_corrupted_snapshot_detected(self):
         self.submit()
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("UPDATE materialized SET state='{}'")
         with self.assertRaises(JournalConflict):
             self.broker.snapshot()

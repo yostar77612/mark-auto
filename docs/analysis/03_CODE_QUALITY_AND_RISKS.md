@@ -144,3 +144,14 @@ R11 的條件若擴大為不受信任者可寫入、且交易程序持有秘密�
 4. **P2 可用性：** 可追溯 UI、錯誤訊息、恢復操作、效能基準，避免以圖表或漂亮 Sharpe 遮掩未驗證部分。
 
 未解決的高後果執行路徑、失敗的因果／帳務 golden、無法追溯的資料、越權模型輸出或 UNKNOWN 仍放行新單，均是一票否決的釋出阻擋條件。分數再高也不補償安全失敗。實際模型、真實市場策略表現、券商認證及實盤仍保持獨立 readiness，不能由 Mock 或合成資料測試代替。
+
+
+## 自主實作後複查（2026-10-09）
+
+以下是原始基線分析之後的工程處置，不回寫或混淆上方固定 SHA 證據。新 `quantlab` 研究樹不匯入券商 SDK；舊交易入口、危險反序列化與舊 ZIP 路徑已封鎖。實際修復與測試證據分別在 `tests/test_legacy_security.py`、`tests/test_architecture.py`。新資料下載 `quantlab/downloads.py` 有官方 HTTPS 白名單、大小／CRC／路徑及壓縮比限制，快取保留內容 SHA，未完成品質驗證的資料不能標為正式排名可用。
+
+最後審查另發現 provider 端點在 HTTP 呼叫前可能被記入 campaign：即使 transport 拒絕有帳密的 URL，研究初始化仍可能先保存它。已於 `quantlab/research.py:CompatibleProvider.__init__` 提早拒絕 userinfo、query、fragment、非法 port 與控制字元，錯誤不回顯 URL；`tests/test_research.py` 驗證拒絕發生在序列化與 budget 目錄建立前。這是防洩漏修復；未發現實際使用者憑證遭寫入。
+
+本地最終產品提交 `e5e56bb` 的完整可達掃描包含 7 個提交、132 個不同 blob、1,360,512 bytes，非 shallow；未找到高可信度密鑰。比對命中為合成負向測試、cost_per_token 名稱誤報及既有 CDN 路徑常值（仍保留待核实風險，不顯示其值）。靜態樣式掃描不能保證不存在秘密，也未測試任何疑似憑證有效性。後續文件提交以增量檢查驗證。
+
+全套本地與 fresh-checkout 各 177 項測試通過、無 skip，包含 5 個 UI AppTest；wheel／sdist 成功建置，wheel 不含 legacy trader。Windows／Linux 遠端 CI、整合 SHA 與最新進度以 `../agent/PROJECT_STATE.md` 為準，不能把此本地結果当成 Win10／Win11 桌面安裝驗證或長期實盤就緒。

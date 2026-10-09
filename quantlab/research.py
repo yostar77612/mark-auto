@@ -14,6 +14,7 @@ import re
 import sqlite3
 import time
 from decimal import Decimal, InvalidOperation
+from contextlib import closing
 from pathlib import Path
 from typing import Callable, Protocol
 from urllib.parse import urlsplit
@@ -229,7 +230,7 @@ class CompatibleProvider:
         binding = content_hash({'model': self.model, 'endpoint': self.endpoint,
             'calls': self.max_calls, 'tokens': self.max_tokens, 'spend': str(self.max_spend),
             'rate': str(self.cost_per_token), 'per_call': self.tokens_per_call, 'timeout': self.timeout})
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute('CREATE TABLE IF NOT EXISTS budget (binding TEXT, calls INTEGER, tokens INTEGER, spend TEXT)')
             db.execute('CREATE TABLE IF NOT EXISTS calls (sequence INTEGER PRIMARY KEY, request_hash TEXT, status TEXT, response_hash TEXT, reserved_tokens INTEGER, reserved_spend TEXT)')
             db.execute('BEGIN IMMEDIATE')
@@ -247,13 +248,13 @@ class CompatibleProvider:
         try:
             response = self.transport(self.endpoint, request, self.timeout)
         except BaseException:
-            with sqlite3.connect(self.path) as db:
+            with closing(sqlite3.connect(self.path)) as db, db:
                 db.execute('UPDATE calls SET status=? WHERE sequence=?', ('failed_or_interrupted', sequence))
             raise
         if not isinstance(response, dict):
             raise ValidationError('Malformed provider response')
         response_hash = content_hash(response)
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute('UPDATE calls SET status=?, response_hash=? WHERE sequence=?', ('transport_returned_not_verified', response_hash, sequence))
         self.receipts.append({'response_hash': response_hash, 'reserved_tokens': tokens,
                               'reserved_spend': str(spend), 'status': 'transport_returned_not_verified'})
@@ -460,7 +461,7 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
     reservation_id = content_hash({'bars_hash': holdout_hash, 'coverage': coverage})
     registry_path = Path(registry_path)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(registry_path, timeout=10) as registry:
+    with closing(sqlite3.connect(registry_path, timeout=10)) as registry, registry:
         registry.execute('CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, holdout_hash TEXT NOT NULL, campaign_id TEXT NOT NULL, selection_hash TEXT NOT NULL, source_directory TEXT NOT NULL)')
         registry.execute('CREATE TABLE IF NOT EXISTS coverage (reservation_id TEXT NOT NULL, contract_id TEXT NOT NULL, start TEXT NOT NULL, end TEXT NOT NULL, PRIMARY KEY(reservation_id,contract_id))')
         registry.execute('BEGIN IMMEDIATE')
@@ -513,10 +514,19 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
     lock = sqlite3.connect(output_dir / 'campaign.lock.sqlite3', timeout=1)
     try:
         lock.execute('BEGIN EXCLUSIVE')
-    except sqlite3.OperationalError as exc:
+    except BaseException as exc:
         lock.close()
-        raise ValidationError('Campaign is already running') from exc
-    db = sqlite3.connect(output_dir / 'campaign.sqlite3')
+        if isinstance(exc, sqlite3.OperationalError):
+            raise ValidationError('Campaign is already running') from exc
+        raise
+    try:
+        db = sqlite3.connect(output_dir / 'campaign.sqlite3')
+    except BaseException:
+        try:
+            lock.rollback()
+        finally:
+            lock.close()
+        raise
     def save(state):
         encoded = canonical_json(state)
         db.execute('INSERT OR REPLACE INTO state VALUES (1,?)', (encoded,))
@@ -666,6 +676,10 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
         save(state)
         return state
     finally:
-        db.close()
-        lock.rollback()
-        lock.close()
+        try:
+            db.close()
+        finally:
+            try:
+                lock.rollback()
+            finally:
+                lock.close()

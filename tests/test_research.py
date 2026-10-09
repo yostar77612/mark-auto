@@ -1,5 +1,6 @@
 """Offline synthetic corpus; no private/purchased data and no network calls."""
 import copy
+from contextlib import closing, contextmanager
 import json
 import multiprocessing
 import time
@@ -69,6 +70,40 @@ def memory_hog():
     return {'size': len(bytearray(256 * 1024 * 1024))}
 
 
+@contextmanager
+def tracked_sqlite_connections(*, fail_open_name=None, fail_statement=None):
+    """Retain handles so GC cannot conceal a missing explicit close."""
+    opened = []
+    original_connect = sqlite3.connect
+    class TrackingConnection(sqlite3.Connection):
+        closed_explicitly = False
+        def close(self):
+            self.closed_explicitly = True
+            return super().close()
+        def execute(self, statement, *args, **kwargs):
+            if fail_statement and statement.startswith(fail_statement):
+                raise sqlite3.OperationalError('inert connection failure fixture')
+            return super().execute(statement, *args, **kwargs)
+        def executemany(self, statement, *args, **kwargs):
+            if fail_statement and statement.startswith(fail_statement):
+                raise sqlite3.OperationalError('inert connection failure fixture')
+            return super().executemany(statement, *args, **kwargs)
+    def connect(path, *args, **kwargs):
+        if fail_open_name and Path(path).name == fail_open_name:
+            raise sqlite3.OperationalError('inert database-open failure fixture')
+        connection = original_connect(path, *args, factory=TrackingConnection, **kwargs)
+        opened.append(connection)
+        return connection
+    try:
+        with patch('quantlab.research.sqlite3.connect', side_effect=connect):
+            yield opened
+    finally:
+        # Cleanup after assertions, without letting GC make a broken test pass.
+        for connection in opened:
+            if not connection.closed_explicitly:
+                connection.close()
+
+
 class ResearchTests(unittest.TestCase):
     def test_provider_rejects_secret_endpoints_before_persistence(self):
         # Deliberately synthetic URL markers; never contact a provider.
@@ -100,6 +135,71 @@ class ResearchTests(unittest.TestCase):
                     serialize.assert_not_called()
                 self.assertNotIn('synthetic-secret', str(caught.exception))
                 self.assertFalse(path.parent.exists())
+
+    def assert_connections_closed(self, connections):
+        self.assertTrue(connections)
+        self.assertTrue(all(db.closed_explicitly for db in connections))
+        for db in connections:
+            with self.assertRaises(sqlite3.ProgrammingError):
+                db.execute('SELECT 1')
+
+    def test_provider_connections_close_on_success_failure_and_budget_rejection(self):
+        def success(*args):
+            return {'choices': [{'message': {'content': json.dumps(to_dict(builtin_strategies()[0]))}}]}
+        def failure(*args):
+            raise RuntimeError('inert transport failure')
+        for transport in (success, failure):
+            with self.subTest(transport=transport.__name__), tempfile.TemporaryDirectory() as tmp:
+                provider = CompatibleProvider(model='fixture', endpoint='https://example.invalid/v1',
+                    transport=transport, budget_path=Path(tmp) / 'provider.db', network_opt_in=True,
+                    max_calls=1, max_tokens=10000)
+                with tracked_sqlite_connections() as connections:
+                    if transport is success:
+                        provider.generate({})
+                    else:
+                        with self.assertRaises(RuntimeError): provider.generate({})
+                    with self.assertRaises(ValidationError): provider.generate({})
+                    self.assertEqual(len(connections), 3)
+                    self.assert_connections_closed(connections)
+                with closing(sqlite3.connect(Path(tmp) / 'provider.db')) as db:
+                    self.assertEqual(db.execute('SELECT calls FROM budget').fetchone()[0], 1)
+
+    def test_holdout_connections_close_and_failed_reservation_rolls_back(self):
+        from quantlab.research import _reserve_holdout
+        data, _ = inputs()
+        with tempfile.TemporaryDirectory() as tmp:
+            args = dict(registry_path=Path(tmp) / 'registry.db', campaign_id='fixture',
+                        selection_hash='fixture-selection', output_dir=Path(tmp) / 'campaign')
+            with tracked_sqlite_connections(fail_statement='INSERT INTO coverage') as connections:
+                with self.assertRaises(sqlite3.OperationalError): _reserve_holdout(data, **args)
+                self.assert_connections_closed(connections)
+            with closing(sqlite3.connect(args['registry_path'])) as db:
+                self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 0)
+            with tracked_sqlite_connections() as connections:
+                self.assertEqual(_reserve_holdout(data, **args)['status'], 'reserved_consumed')
+                self.assertEqual(_reserve_holdout(data, **args)['status'], 'previously_consumed')
+                self.assertEqual(len(connections), 2)
+                self.assert_connections_closed(connections)
+
+    def test_campaign_connections_close_including_initialization_failures(self):
+        data, config = inputs(); config['max_trials'] = 1
+        for failure in ('none', 'open_state', 'create_state', 'begin_lock'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                kwargs = {'fail_open_name': 'campaign.sqlite3'} if failure == 'open_state' else {}
+                if failure == 'create_state': kwargs['fail_statement'] = 'CREATE TABLE IF NOT EXISTS state'
+                if failure == 'begin_lock': kwargs['fail_statement'] = 'BEGIN EXCLUSIVE'
+                with tracked_sqlite_connections(**kwargs) as connections:
+                    with patch('quantlab.research._run_bounded', side_effect=ValidationError('inert candidate rejection')):
+                        if failure == 'none':
+                            run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
+                        else:
+                            expected = ValidationError if failure == 'begin_lock' else sqlite3.OperationalError
+                            with self.assertRaises(expected):
+                                run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
+                    self.assert_connections_closed(connections)
+                # Another caller can acquire the lock immediately after any exit.
+                with closing(sqlite3.connect(Path(tmp) / 'campaign' / 'campaign.lock.sqlite3', timeout=0.1)) as db, db:
+                    db.execute('BEGIN EXCLUSIVE')
 
     def test_all_families_validate(self):
         self.assertEqual(len(builtin_strategies()), 5)
@@ -231,7 +331,7 @@ class ResearchTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=2) as executor:
                 rows = list(executor.map(reserve, [1, 2]))
             self.assertEqual(sorted(r['status'] for r in rows), ['previously_consumed', 'reserved_consumed'])
-            with sqlite3.connect(Path(tmp) / 'registry.db') as db:
+            with closing(sqlite3.connect(Path(tmp) / 'registry.db')) as db, db:
                 self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 1)
 
     def test_no_winner_is_valid(self):
@@ -395,7 +495,7 @@ class ResearchTests(unittest.TestCase):
                           max_spend='100', cost_per_token='0.01', network_opt_in=True)
             with self.assertRaises(RuntimeError): CompatibleProvider(**kwargs).generate({})
             with self.assertRaises(ValidationError): CompatibleProvider(**kwargs).generate({})
-            with sqlite3.connect(path) as db:
+            with closing(sqlite3.connect(path)) as db, db:
                 self.assertEqual(db.execute('SELECT status FROM calls').fetchone()[0], 'failed_or_interrupted')
                 self.assertGreater(Decimal(db.execute('SELECT spend FROM budget').fetchone()[0]), 0)
 

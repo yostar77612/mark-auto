@@ -43,7 +43,7 @@ class ReportingTests(unittest.TestCase):
         with open(paths['fills'], newline='') as file:
             row = next(csv.DictReader(file))
         self.assertTrue(row['reason'].startswith("'"))
-        self.assertEqual(Path(paths['fills']).parent.parent, self.root)
+        self.assertEqual(Path(paths['fills']).parent.parent.resolve(), self.root.resolve())
         self.assertFalse((self.root.parent / 'escape').exists())
 
     def test_symlink_output_refused(self):
