@@ -28,7 +28,7 @@ def _disabled_legacy_reference():
         Command: $ python run.py -TASK auto_trader -ACCT account_name
 
         Parameters:
-        1. task: The name of tasks. 
+        1. task: The name of tasks.
            EX: auto_trader, account_info, update_and_select_stock
         2. account: An account name is required if task == 'auto_trader'
         """

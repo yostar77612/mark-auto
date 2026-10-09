@@ -1,0 +1,9 @@
+{
+  "provenance": "Synthetic independently hand-calculated TMF arithmetic, multiplier 10 TWD/point; not real market data",
+  "cases": [
+    {"name":"long_ten_points","side":1,"entry":"20000","exit":"20010","quantity":1,"commission":"0","tax_rate":"0","gross":"100","net":"100"},
+    {"name":"short_ten_points_loss","side":-1,"entry":"20000","exit":"20010","quantity":1,"commission":"0","tax_rate":"0","gross":"-100","net":"-100"},
+    {"name":"short_ten_points_profit","side":-1,"entry":"20010","exit":"20000","quantity":1,"commission":"0","tax_rate":"0","gross":"100","net":"100"},
+    {"name":"two_lots_costed","side":1,"entry":"20000","exit":"20010","quantity":2,"commission":"5","tax_rate":"0.00002","gross":"200","net":"163.9960"}
+  ]
+}

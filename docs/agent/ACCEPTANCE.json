@@ -94,36 +94,36 @@
           "id": "P2.1",
           "title": "官方本機資料格式及品質",
           "weight": 5.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "22 core/data + 33 strategy/engine tests; actual 2026-10-08 TAIFEX CSV/RPT/daily JSON import and OHLC reconciliation; explicit spread-volume scope; not full historical/market-execution certification"
         },
         {
           "id": "P2.2",
           "title": "版本化時段與到期規則",
           "weight": 5.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "22 core/data + 33 strategy/engine tests; actual 2026-10-08 TAIFEX CSV/RPT/daily JSON import and OHLC reconciliation; explicit spread-volume scope; not full historical/market-execution certification"
         },
         {
           "id": "P2.3",
           "title": "因果回測與帳務",
           "weight": 5.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "22 core/data + 33 strategy/engine tests; actual 2026-10-08 TAIFEX CSV/RPT/daily JSON import and OHLC reconciliation; explicit spread-volume scope; not full historical/market-execution certification"
         },
         {
           "id": "P2.4",
           "title": "成本與獨立 Golden Cases",
           "weight": 5.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "22 core/data + 33 strategy/engine tests; actual 2026-10-08 TAIFEX CSV/RPT/daily JSON import and OHLC reconciliation; explicit spread-volume scope; not full historical/market-execution certification"
         },
         {
           "id": "P2.5",
           "title": "Manifest 與三次重現",
           "weight": 5.0,
-          "status": "NOT_RUN",
-          "evidence": null
+          "status": "PASS",
+          "evidence": "22 core/data + 33 strategy/engine tests; actual 2026-10-08 TAIFEX CSV/RPT/daily JSON import and OHLC reconciliation; explicit spread-volume scope; not full historical/market-execution certification"
         }
       ]
     },

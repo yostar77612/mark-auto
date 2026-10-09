@@ -1,0 +1,2 @@
+# The TAIFEX-format fixture deliberately preserves padded source columns.
+tests/fixtures/data_synthetic_taifex.csv whitespace=-blank-at-eol

@@ -83,3 +83,12 @@ class CoreTests(unittest.TestCase):
         with self.assertRaises(TypeError): dataset.quality['errors'].append('bad')
         result = BacktestResult({}, (), (), ({'x': [1]},), (), {}, (), ())
         with self.assertRaises(TypeError): result.ledger[0]['x'].append(2)
+
+    def test_trusted_internal_process_serialization_keeps_immutability(self):
+        # Trusted in-process roundtrip only; production never accepts pickle files.
+        import pickle
+        from quantlab.core import StrategySpec
+        original = StrategySpec('x', 'trend', {'nested': [{'x': 1}]}, {})
+        restored = pickle.loads(pickle.dumps(original))
+        self.assertEqual(content_hash(original), content_hash(restored))
+        with self.assertRaises(TypeError): restored.parameters['nested'][0]['x'] = 2
