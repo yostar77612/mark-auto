@@ -1,3 +1,99 @@
+# mark-auto 台股期貨研究平台
+
+本專案新增獨立的 `quantlab` 離線研究核心與 `research_app.py` 操作介面。研究、模擬與正式券商交易分離；**真實交易固定停用**。原 AutoTradingPlatform 程式保留為來源與後續 Adapter 參考，其舊入口已停用。這不是獲利保證，也不是已驗證的實盤系統。
+
+## Windows 桌面版（必要產品交付，驗收中）
+
+原生 PySide6／Qt 桌面入口為 `desktop.py`，沿用同一個 `quantlab` 核心，不需要另啟 Web 服務。桌面安裝程式建置流程在 [packaging/README.md](packaging/README.md)。可下載安裝檔以 [GitHub Releases](https://github.com/yostar77612/mark-auto/releases) 實際發布的資產為準；沒有資產時不可把原始碼當安裝版。預覽版不代表 Windows 10／11 最終驗收已通過。
+
+### 一般使用者操作
+
+1. 下載對應版本的 Windows x64 setup EXE，先核對同版 SHA256SUMS 與發布限制。
+2. 安裝至個人程式目錄；安裝器建立桌面／開始功能表捷徑。一般使用者不需要 Python、pip、Git。
+3. 雙擊 MarkAuto，先看資料、模型及風控狀態。初次使用可建立明確標示的合成範例，熟悉操作，不能把其績效當真實投資結果。
+4. 在「資料匯入與更新」取得免費官方近期檔案，選擇明確契約／時段與已查核行情。下載成功不等於歷史完整或可正式排名。
+5. 在策略、回測及比較頁設定版本、日期與成本／風控，查看資金曲線及成交，匯出報告。研究候選沒過門檻時可全部淘汰。
+6. AI 預設 Fixture；需要外部相容模型時先設定模型／端點、預算及網路／可能費用同意。機密由使用者在桌面設定中輸入，Windows 系統保護保存，不放 Git 或備份。
+7. Paper 重啟、睡眠或異常後需明確對帳。未知狀態不會自動补單；緊急停止會凍結新工作，不假裝已成交／平倉。實盤在本版固定停用。
+8. 關閉時處理尚在執行的工作。下一次開啟保留設定與資料；更新前先備份，關閉舊程式後安裝新版本。
+
+程式安裝在 `%LOCALAPPDATA%\Programs\MarkAuto`；使用者資料在 `%LOCALAPPDATA%\MarkAuto`，不得混用 Program Files。Windows「設定 → 應用程式」可解除安裝；預設保留資料，避免誤刪歷史。備份／還原排除機密及不可回退的研究控制帳本、檢查版本與hash，還原前停止工作；遇版本不相容不覆寫原資料，可回裝相容舊版並還原已驗證備份。
+
+安裝器尚無正式程式碼簽章；若 Windows 顯示安全警告，不應停用或繞過安全機制。乾淨 Windows10 22H2 x64／Windows11 x64實測、標準使用者權限與長時間運作仍需獨立證據；Windows Server CI 不等同 client OS 測試。所有最新狀態以 [固定驗收](docs/agent/ACCEPTANCE.json) 為準。
+
+## 開發者／研究入口
+
+## 快速開始
+
+需求：Python 3.11 以上。離線核心使用標準函式庫；Windows 可安裝 `tzdata` 以載入時區資料。
+
+```bash
+python -m unittest discover -s tests -v
+python -m quantlab demo --output ./quantlab-output/demo
+```
+
+`demo` 僅產生明確標示的 SYNTHETIC 行情，執行五種不同策略並匯出結果。不能把展示損益當作真實市場績效。
+
+### 本機研究介面
+
+使用獨立虛擬環境，不安裝舊券商套件清單：
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r requirements-ui.lock
+streamlit run research_app.py --server.address 127.0.0.1
+```
+
+介面提供本機資料匯入與品質檢查、五種策略、回測與報表、研究試驗、策略比較／選擇、Paper 帳本與歷史行情重播。不要公開暴露此本機檔案操作介面；本版本沒有多使用者身分驗證。
+
+### 明確資料與成本
+
+```bash
+python -m quantlab import examples/synthetic_bars.csv --kind synthetic_bars --calendar examples/synthetic_calendar.json --output ./quantlab-output/dataset.json
+python -m quantlab backtest ./quantlab-output/dataset.json --config examples/synthetic_config.json --output ./quantlab-output/reports
+python -m quantlab campaign ./quantlab-output/dataset.json --output ./quantlab-output/campaign
+```
+
+`examples` 的時段、價格、保證金與成本均為測試假設。正式研究需換成已查核的資料、有效日期化成本／保證金與交易所日曆。官方格式僅支援實際觀察並測試的欄位；未知格式、未覆蓋日期或缺漏資料須拒絕，不能猜測補值。付費行情與帳戶資訊不得提交 Git。
+
+### 官方免費資料更新
+
+```bash
+python -m quantlab refresh --cache ./quantlab-output/official --days 1 --format csv
+```
+
+僅從期交所已公布連結取得最近最多 30 個交易日期的 CSV／RPT ZIP。更新保留 SHA 版本、檢查 TLS、大小與解壓安全，不把重複下載當作新資料。下載結果先標為 provisional_unverified／ranking_eligible=false；夜盤檔案日期可能屬下一交易日，必須經明確交易日曆及匯入品質驗證才能研究。資料不足時不產生正式策略排名。原始行情與快取不得提交 Git。
+
+## 重要安全與驗證界線
+
+- `quantlab` 不匯入 `trader` 或券商 SDK，匯入本身不連線或建立帳戶。
+- 舊 `run.py`、`gui.py`、`trader` 啟動、pickle／Redis反序列化及舊下載流程刻意停用；不應嘗試用憑證啟動。
+- Paper 使用可稽核 SQLite 事件帳本；重啟／未知委託先凍結新單，完整對帳後才可恢复。停止不會偷偷平倉。
+- 預設策略研究使用明確標示的 fixture generator；它驗證工程流程，**不代表真實模型已完成驗證**。選用 HTTP 相容模型時必須明確開啟、提供端點及預算；本次未呼叫外部付費模型。
+- 五種策略家族為趨勢、均值回歸、通道突破、動能與波動壓縮突破。參數、資料及成本版本綁定每個結果；通過工程測試不代表策略通過投資績效門檻。
+- 回測提供下一根開盤成交、成本、保證金、雙邊換月及顯式結算事件；OHLC不能證明真實排隊／流動性。缺少必要換月或结算輸入時失敗封鎖。
+- Paper 重播是有限批次歷史事件處理，沒有實際即時行情；尚未支援的盤中停損／停利規則會拒絕，不會默默忽略。
+- 遠端 Windows/CI、實際模型、券商認證、完整歷史日曆及長時間真實運行狀態請看接續文件，不得由 Linux 合成測試推論通過。
+
+## 文件與開發接續
+
+- [目前狀態及下一步](docs/agent/PROJECT_STATE.md)
+- [固定驗收清單](docs/agent/ACCEPTANCE.json)
+- [介面合約及工作責任](docs/agent/IMPLEMENTATION_CONTRACTS.md)
+- [專案架構](docs/analysis/01_PROJECT_ARCHITECTURE.md)
+- [既有功能盤點](docs/analysis/02_EXISTING_FEATURES.md)
+- [程式品質與風險](docs/analysis/03_CODE_QUALITY_AND_RISKS.md)
+- [AI量化目標設計](docs/analysis/04_AI_QUANT_TARGET_DESIGN.md)
+- [MVP與開發Roadmap](docs/analysis/05_IMPLEMENTATION_ROADMAP.md)
+
+## 授權與原始來源
+
+保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。原始 upstream 精確提交版本尚未核實；以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
+
+---
+
 # AutoTradingPlatform
 
 [![PyPI - Status](https://img.shields.io/pypi/v/shioaji.svg?style=for-the-badge)](https://pypi.org/project/shioaji)
@@ -205,3 +301,6 @@ python run.py -TASK update_and_select_stock
 
 ## Releases and Contributing
 AutoTradingPlatform has a 7-day release cycle, any updates will be committed by each Friday (git commits are not included).
+
+
+研究控制帳本固定保留在bootstrap/control-v1，不隨state-v1回退；因此還原舊資料不會重新取得已消耗的模型預算／保留集。整機移轉或重建仍需保留並查核控制紀錄，不能把一個新空工作區／機器當作從未研究過的樣本。舊版本帳本需要明確相容處理時會阻擋，不會偷偷重置。

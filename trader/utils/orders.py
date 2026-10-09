@@ -757,7 +757,9 @@ class OrderTool(FuturesMargin):
     def place_combo_order(self, content: namedtuple):
         '''Place an options combo order.'''
 
-        if TradeData.Account.Simulate:
+        if TradeData.Account.Simulate is not True:
+            raise RuntimeError('Live order submission is disabled.')
+        if TradeData.Account.Simulate is True:
             return self.appendOrder(content.target, content)
 
         combo_legs = self.content_attr(content, 'combo_legs')
@@ -780,7 +782,7 @@ class OrderTool(FuturesMargin):
             content.quantity
         )
         try:
-            result = API.place_comboorder(combo, order)
+            raise RuntimeError('Broker combo-order submission is disabled.')
             self._register_option_order_result(order_label, result)
             self._register_futures_order_content_meta(
                 content, result, order_label)
@@ -798,6 +800,8 @@ class OrderTool(FuturesMargin):
             raise
 
     def place_order(self, content: namedtuple):
+        if TradeData.Account.Simulate is not True:
+            raise RuntimeError('Live order submission is disabled.')
         logging.debug(f'[OrderState.Content|{content}|')
 
         target = content.target
@@ -842,7 +846,9 @@ class OrderTool(FuturesMargin):
                     price = TradeDataHandler.getQuotesNow(target)['price']
 
         # 下單
-        if TradeData.Account.Simulate:
+        if TradeData.Account.Simulate is not True:
+            raise RuntimeError('Live order submission is disabled.')
+        if TradeData.Account.Simulate is True:
             order_data = self.appendOrder(target, content)
             return order_data
 
@@ -887,7 +893,7 @@ class OrderTool(FuturesMargin):
                     order_quantity
                 )
                 try:
-                    result = API.place_order(contract, order)
+                    raise RuntimeError('Broker order submission is disabled.')
                     self._register_option_order_result(order_label, result)
                     self.check_order_status(
                         result,

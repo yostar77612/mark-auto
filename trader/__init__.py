@@ -1,3 +1,6 @@
+# Security remediation: disable legacy services before imports or credential access.
+raise RuntimeError('Legacy authenticated trading is disabled. Use the standalone offline quantlab tools; live execution requires a separately reviewed integration.')
+
 from concurrent.futures import ThreadPoolExecutor
 
 from .config import PATH

@@ -132,7 +132,7 @@ class TimeTool:
     def convert_date_format(self, x: str):
         '''轉換民國格式為西元格式'''
 
-        x = re.findall('\d+', x)
+        x = re.findall(r'\d+', x)
         year = int(x[0])
         if year < 1911:
             x[0] = str(year + 1911)

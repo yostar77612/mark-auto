@@ -54,6 +54,7 @@ class RedisTools:
                 self.redis_client.expire(key, self.ttl)
 
     def query(self, key: str):
+        raise RuntimeError("Legacy Redis pickle reads are disabled; migrate to a non-executable format.")
         '''query data from redis'''
 
         if not RedisConfig.HAS_REDIS:
@@ -75,11 +76,12 @@ class RedisTools:
             return 'Redis ConnectionError'
 
         try:
-            return pickle.loads(data)
+            raise RuntimeError('Pickle deserialization is disabled.')
         except TypeError:
             return None
 
     def query_keys(self, keys: str = None, match: str = None):
+        raise RuntimeError("Legacy Redis pickle reads are disabled; migrate to a non-executable format.")
 
         if not RedisConfig.HAS_REDIS:
             return
@@ -90,7 +92,7 @@ class RedisTools:
             _, keys = self.redis_client.scan(match=match)
 
         data = self.redis_client.mget(keys)
-        return [pickle.loads(d) for d in data if d]
+        raise RuntimeError('Pickle deserialization is disabled.')
 
     def delete_keys(self, keys: list):
         '''delete data stored in Redis by key'''

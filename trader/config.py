@@ -12,8 +12,16 @@ SystemConfig = configparser.ConfigParser()
 SystemConfig.read('./lib/config.ini', encoding='utf8')
 
 
-def create_api(simulation=False):
-    return sj.Shioaji(simulation=simulation)
+class DisabledBroker:
+    """Inert default: no client construction, credentials, login, or orders."""
+    def __getattr__(self, name):
+        raise RuntimeError("Legacy broker operations are disabled.")
+
+
+def create_api(simulation=True):
+    if simulation is not True:
+        raise ValueError("Live or invalid broker mode is disabled.")
+    return DisabledBroker()
 
 
 def getList(section, option, fallback=None):
@@ -118,6 +126,8 @@ class NotifyConfig:
     LINE_TOKEN = get_settings('NOTIFY', 'LINE_TOKEN')
     TELEGRAM_TOKEN = get_settings(
         'NOTIFY', 'TELEGRAM_TOKEN', dataType='json', default={})
+    TELEGRAM_ALLOWED_USER_IDS = get_settings(
+        'NOTIFY', 'TELEGRAM_ALLOWED_USER_IDS', dataType='list', default='')
     TELEGRAM_CHAT_ID = get_settings(
         'NOTIFY', 'TELEGRAM_CHAT_ID', dataType='json', default={})
 

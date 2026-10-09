@@ -152,7 +152,7 @@ class CrawlFromSJ:
                     file_handler.Process.save_table(
                         self.crawled_list, filename=self.tempFile)
             except:
-                logging.exception(f"Put back into queue: {stockid}")
+                logging.error(f"Put back into queue: {stockid}")
                 q.put(stockid)
 
             progress_bar(
@@ -344,10 +344,10 @@ class CrawlFromHTML:
     def Leverage(self, stockid: str):
         '''取得個股融資成數'''
 
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
         url = f'https://www.sinotrade.com.tw/Stock/Stock_3_8_6?code={stockid}'
-        html = requests.get(url, verify=False).text
+        response = requests.get(url, timeout=(5, 20))
+        response.raise_for_status()
+        html = response.text
         tb = pd.read_html(StringIO(html))[-1]
 
         if tb.shape[0] == 0:
@@ -369,7 +369,7 @@ class CrawlFromHTML:
                         columns={period: 'period'}).iloc[:-1, :]
                     return df
                 except:
-                    logging.exception('Catch an exception (PunishList):')
+                    logging.error('Catch an exception (PunishList):')
                     n += 1
                     time.sleep(1)
             return df_default
@@ -389,7 +389,7 @@ class CrawlFromHTML:
 
         # 合併
         df = concat_df(df1, df2)
-        df.period = df.period.apply(lambda x: re.findall('[\d+/]+', x))
+        df.period = df.period.apply(lambda x: re.findall(r'[\d+/]+', x))
         df.證券代號 = df.證券代號.astype(str)
         df['startDate'] = df.period.apply(
             lambda x: x[0].replace(x[0][:3], str(int(x[0][:3])+1911)))
@@ -528,10 +528,10 @@ class CrawlFromHTML:
             if 'data' not in result:
                 result['data'] = {}
         except requests.exceptions.ConnectionError as e:
-            logging.warning(e)
+            logging.warning('Crawler request failed (details suppressed).')
             result = {'data': {}}
         except:
-            logging.exception('【Error】DowJones:')
+            logging.error('【Error】DowJones:')
             result = {'data': {}}
 
         return result['data']
@@ -600,21 +600,8 @@ class CrawlFromHTML:
         return tb
 
     def get_FuturesTickData(self, date: str):
-        '''前30個交易日期貨每筆成交資料'''
-
-        try:
-            year = date.split('-')[0]
-            month = date.split('-')[1]
-            date = date.replace('-', '_')
-
-            result = requests.get(
-                f"{self.url_futures_tick}/Daily_{date}.zip", verify=False)
-            z = zipfile.ZipFile(io.BytesIO(result.content))
-            z.extractall(f'{PATH}/ticks/futures/{year}/Daily_{year}_{month}')
-        except zipfile.BadZipFile:
-            logging.error('輸入的日期非交易日')
-        except:
-            logging.exception('Catch an exception (get_FuturesTickData):')
+        """Disabled pending bounded archive ingestion and verified provider schema."""
+        raise RuntimeError("Legacy futures ZIP downloads are disabled. Import validated local CSV snapshots instead.")
 
     def get_CashSettle(self):
         '''取得交易當日全額交割股清單'''
@@ -633,7 +620,7 @@ class CrawlFromHTML:
             df = pd.read_html(self.url_futures_margin, encoding='utf8')
             return df[0]
         except:
-            logging.exception('查詢失敗：')
+            logging.error('查詢失敗：')
             return pd.DataFrame(columns=['商品別', '結算保證金', '維持保證金', '原始保證金'])
 
 

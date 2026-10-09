@@ -69,7 +69,7 @@ class AccountInfo:
                 )
                 break
             except TimeoutError as e:
-                logging.warning(f'{e}')
+                logging.warning('Broker login failed (details suppressed).')
                 n += 1
                 time.sleep(5)
 
@@ -454,7 +454,7 @@ class AccountInfo:
                     ]
                     return df
             except Exception as e:
-                logging.error(f'List futures positions failed: {e.args[0]}')
+                logging.error('Broker positions request failed (details suppressed).')
         return TradeData.Securities.InfoDefault
 
     def get_settle_profitloss(self, start_date: str, end_date: str, market='Stocks'):
@@ -503,6 +503,8 @@ class AccountHandler(AccountInfo):
         super().__init__()
 
         self.env = UserEnv(account_name)
+        if self.env.MODE != 'Simulation':
+            raise ValueError('Live or invalid account mode is disabled.')
         TradeData.Account.Mode = self.env.MODE
         TradeData.Account.Simulate = self.env.MODE == 'Simulation'
         self.simulate_amount = np.iinfo(np.int64).max
@@ -618,4 +620,4 @@ class AccountHandler(AccountInfo):
                 person_id=id,
             )
         except Exception as e:
-            logging.error(f'{e.args[0]}')
+            logging.error('Broker request failed (details suppressed).')

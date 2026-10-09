@@ -24,8 +24,30 @@ pause_flags = {}
 # Strategy-level stop flags, keyed by account then strategy name.
 strategy_stop_flags = {}
 
-# chat_id whitelist
-WHITELIST = {str(x) for x in NotifyConfig.TELEGRAM_CHAT_ID.values()}
+def _numeric_ids(values, *, positive=False):
+    """Reject the whole allowlist on malformed input; booleans are not IDs."""
+    if not isinstance(values, (list, tuple, set, dict)):
+        return frozenset()
+    if isinstance(values, dict):
+        values = values.values()
+    result = set()
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, (int, str)):
+            return frozenset()
+        text = str(value)
+        digits = text[1:] if text.startswith('-') else text
+        if not digits or not digits.isascii() or not digits.isdecimal():
+            return frozenset()
+        number = int(text)
+        if number == 0 or (positive and number < 1):
+            return frozenset()
+        result.add(number)
+    return frozenset(result)
+
+
+WHITELIST = _numeric_ids(NotifyConfig.TELEGRAM_CHAT_ID)
+USER_WHITELIST = _numeric_ids(
+    getattr(NotifyConfig, 'TELEGRAM_ALLOWED_USER_IDS', []), positive=True)
 
 
 def _patch_job_queue_timezone():
@@ -43,12 +65,16 @@ def _patch_job_queue_timezone():
         _jobqueue.JobQueue.scheduler_configuration = property(
             scheduler_configuration)
     except Exception:
-        logging.exception("Patch telegram JobQueue timezone failed:")
+        logging.error("Patch telegram JobQueue timezone failed:")
 
 
 class TelegramBot:
     def __init__(self, account_name: str):
         self.account_names = [account_name]
+        if not WHITELIST or not USER_WHITELIST:
+            self.app = None
+            logging.warning('Telegram disabled: numeric user and chat allowlists are required.')
+            return
         self._init_flags()
 
         # dict 判斷不要用 "is {}"
@@ -114,10 +140,10 @@ class TelegramBot:
             self._thread.start()
 
         except Conflict as e:
-            logging.error(f"Telegram Conflict: {e}")
+            logging.error("Telegram conflict (details suppressed).")
             self.app = None
         except Exception:
-            logging.exception("Initialize telegram application failed:")
+            logging.error("Initialize telegram application failed:")
             self.app = None
 
     def _run_polling_in_background(self):
@@ -134,7 +160,7 @@ class TelegramBot:
                 drop_pending_updates=False      # 依需求；若常重啟可設 True
             )
         except Exception:
-            logging.exception("run_polling 發生例外：")
+            logging.error("run_polling 發生例外：")
 
     def _init_flags(self):
         for name in self.account_names:
@@ -150,7 +176,7 @@ class TelegramBot:
         # 這些都屬於暫時性或可預期：降噪
         transient = (NetworkError, TimedOut, RetryAfter, Conflict)
         if isinstance(err, transient):
-            logging.warning("Telegram 暫時性網路異常：%s", err)
+            logging.warning("Telegram network error (details suppressed).")
             return
 
         if isinstance(err, TelegramError) and "terminated by other getUpdates request" in str(err):
@@ -159,51 +185,23 @@ class TelegramBot:
             # 這裡可視需要做應對；run_polling 會自動處理重連
             return
 
-        logging.exception("🚨 Handler 未預期錯誤", exc_info=err)
+        logging.error("Telegram handler failed (details suppressed).")
 
     async def post(self, update: Update, msg: str):
         if update and update.effective_message:
             await update.effective_message.reply_text(text=msg)
 
     def _check_permission(self, update: Optional[Update]) -> bool:
-        """回傳是否允許；白名單為空時一律放行；不允許時回覆 chat_id 方便加入白名單。"""
-        try:
-            if not update or not update.effective_chat:
-                return False
-
-            chat_id = str(update.effective_chat.id)
-            msg = (update.effective_message.text or "").strip(
-            ) if update.effective_message else ""
-            logging.info(f"[TEXT MESSAGE][{chat_id}] {msg}")
-
-            # 白名單為空 -> 放行（避免因設定缺漏導致完全不回覆）
-            if not WHITELIST:
-                logging.warning("⚠️ Telegram 白名單為空，允許所有聊天。")
-                return True
-
-            # 在白名單 -> 放行
-            if chat_id in WHITELIST:
-                return True
-
-            # 允許以 username 白名單（可選，用於群組/超級群）
-            try:
-                user = update.effective_user
-                uname = (user.username or "").lower() if user else ""
-                user_whitelist = {u.lower() for u in getattr(
-                    NotifyConfig, "TELEGRAM_USER_WHITELIST", [])}
-                if uname and uname in user_whitelist:
-                    return True
-            except Exception:
-                pass
-
-            # 不允許 -> 告知 chat_id 以便加入白名單
-            if update.effective_message:
-                update.effective_message.reply_text(
-                    f"⛔️ 未授權聊天（chat_id={chat_id}）。"
-                )
+        """Require both numeric user and intended chat, with no username fallback."""
+        if not WHITELIST or not USER_WHITELIST or update is None:
             return False
-        except Conflict:
-            return False
+        chat = getattr(update, 'effective_chat', None)
+        user = getattr(update, 'effective_user', None)
+        chat_id = getattr(chat, 'id', None)
+        user_id = getattr(user, 'id', None)
+        # Updates must contain Telegram numeric identities, never coercible strings.
+        return (type(chat_id) is int and type(user_id) is int
+                and chat_id in WHITELIST and user_id in USER_WHITELIST)
 
     def _parse_args(self, context: ContextTypes.DEFAULT_TYPE) -> Optional[str]:
         try:
@@ -268,7 +266,7 @@ class TelegramBot:
                     strategy = raw[len(prefix):].strip()
                     return account, strategy or None
         except Exception:
-            logging.exception('Parse stop command failed:')
+            logging.error('Parse stop command failed:')
 
         return None
 

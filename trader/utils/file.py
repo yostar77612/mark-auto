@@ -58,7 +58,7 @@ class DataProcessing:
     def read_table(filename: str, df_default: pd.DataFrame = None):
         if os.path.exists(filename):
             if '.pkl' in filename:
-                tb = pd.read_pickle(filename)
+                raise ValueError('Legacy pickle deserialization is disabled; use validated CSV.')
             elif '.xlsx' in filename:
                 tb = pd.read_excel(filename)
             else:

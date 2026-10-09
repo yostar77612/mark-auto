@@ -20,7 +20,7 @@ class TelegramNotify:
         try:
             requests.post(url, data=data)
         except Exception as e:
-            logging.error(f'Telegram Notify 發送失敗: {e}')
+            logging.error('Telegram notification failed (details suppressed).')
 
 
 class LineNotify:

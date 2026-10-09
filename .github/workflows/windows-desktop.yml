@@ -1,0 +1,116 @@
+name: Windows desktop installer
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['desktop-v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    name: Desktop static and dependency security gates
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Parse all packaging PowerShell before setup or build
+        shell: pwsh
+        run: ./packaging/validate_powershell.ps1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13.16'
+          architecture: x64
+      - run: python tools/quality_gate.py --history
+      - name: Resolve isolated desktop runtime closure
+        run: python -m pip install --ignore-installed --target audit-runtime -r requirements-desktop.txt
+      - run: python -m pip install pip-audit==2.10.1
+      - name: Fail closed on runtime vulnerabilities or audit failure
+        run: python -m pip_audit --path audit-runtime --cache-dir "${{ runner.temp }}/pip-audit-cache" --progress-spinner off --strict
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Parse all packaging PowerShell before setup or build
+        shell: pwsh
+        run: ./packaging/validate_powershell.ps1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13.16'
+          architecture: x64
+      - name: Build native runtime and unsigned per-user installers
+        shell: pwsh
+        run: ./packaging/build.ps1 -Version 0.1.1
+      - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
+        shell: pwsh
+        run: ./packaging/test_installer.ps1 -Version 0.1.1
+      - name: Remove upgrade fixture from deliverables
+        shell: pwsh
+        run: Remove-Item dist/installers/MarkAuto-0.0.0-windows-x64-setup.exe
+      - name: Write input and artifact digest manifest
+        run: python packaging/build_manifest.py
+      - name: Preserve exact build evidence and candidate installer
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-desktop-candidate
+          path: |
+            dist/installers/*.exe
+            dist/validation/
+            dist/build-manifest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 1
+  release:
+    needs: [build, quality]
+    # Only trusted main pushes/manual runs or explicitly named desktop tags publish.
+    # Pull requests never get a write token. Until clean Win10/11 evidence exists,
+    # every release is prominently marked as a prerelease, never production-ready.
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/desktop-v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: windows-desktop-candidate
+          path: release
+      - name: Require all exact-head Quantlab gates to pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python packaging/wait_for_gates.py
+      - name: Archive exact corresponding Qt and PySide source with verified upstream digests
+        run: python packaging/fetch_sources.py release
+      - name: Publish installable preview and evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="desktop-preview-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if [ "$REF_TYPE" = tag ]; then tag="$REF_NAME"; fi
+          printf '%s\n' 'Unsigned native Windows x64 installer preview.' '' \
+            'Windows Server 2022 CI install/launch/upgrade/uninstall evidence is attached.' \
+            'BLOCKED: clean Windows 10 22H2 and Windows 11 acceptance tests. This prerelease is not production-complete.' \
+            'No Python, pip or Git is needed on the end-user machine. Start-menu and desktop shortcuts are installed per-user.' \
+            'No signing certificate is configured. Windows may show an unknown-publisher warning; no security-warning bypass is recommended.' \
+            'See build-manifest.json, SHA256SUMS.txt and validation/*.json for exact build/OS evidence.' > release-notes.txt
+          mapfile -d '' assets < <(find release -type f -print0)
+          gh release create "$tag" "${assets[@]}" --target "$SOURCE_SHA" --prerelease --title "Mark Auto Windows preview $tag" --notes-file release-notes.txt
