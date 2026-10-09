@@ -221,3 +221,22 @@ GitHub main規則需防直接推送、要求必要checks、禁止force-push與�
 ### 16.1 增補後研究模組進度
 
 2026-10-09 16:32 UTC，研究範圍最後Windows資源關閉修復已通過[GitHub CI](https://github.com/yostar77612/mark-auto/actions/runs/37959451997)，五個job成功，本地180tests。原研究100/100；新增桌面尚未計分，因此總體50%，剩餘50%。新桌面、強化品質／供應鏈CI及真正client OS驗證仍必須完成，不能以研究CI成功取代。已下載30個最近官方CSV檔，但完整歷史品質／正式排名仍未核准。
+
+### 16.2 桌面整合與改善優先順序（2026-10-09 17:09 UTC）
+
+| 順序 | 工作與理由 | 相依與完成證據 | 狀態 |
+|---|---|---|---|
+| 1 | 修復 Windows IPC EOF 與 canonical path 回歸；避免完成工作遺失 | `desktop_runtime.py`、固定測試；新 head 全平台 CI | 修復中，合併阻擋 |
+| 2 | 驗證還原中斷不損資料、預算／holdout 不可回退、DPAPI／單例／取消 | runtime fault injection、Windows integration、UI tests | 已實作，最終 Gate 待驗 |
+| 3 | 實際 frozen backtest／campaign／Paper 及安裝升級移除 | Windows installer job、source hash、manifest；不能只看 EXE 是否存在 | 待 1 通過 |
+| 4 | 相同來源品質／安全／UI／回歸全成功後整合、發布 preview | PR exact-head checks、合併 SHA、Release 資產 SHA256／授權來源 | 待 1–3；沿用既有 PR |
+| 5 | main 強制保護與 clean Win10／Win11 全流程 | 管理權限與可用已授權標準使用者 VM；禁止假報 | 外部 BLOCKED，可與 1–4 平行準備 |
+| 6 | 真實免費模型與完整歷史品質驗證 | 已批准免費來源、實際端點、來源／日期／完整性及未見 holdout | 不阻礙離線開發；未完成不得正式策略排名 |
+| 7 | 券商與即時行情適配、長時間故障演練 | 官方 API／資格／授權／測試帳戶；UNKNOWN 對帳後才恢復 | 外部條件；實盘另行授權 |
+| 8 | 以量測改善 GUI 載入、批次吞吐與記憶體 | 固定 dataset／環境／seed，p50/p95、RSS、耗時、成本對照 | 與後續功能一起完成，不盲目大重構 |
+
+暫緩：微服務化、全面換語言、多 Agent 每微任務一分支、未量測先導入分散式回測、大型依賴注入框架、策略任意 Python 執行、自動下載執行更新器。這些會增加安全與維護面，現有桌面＋獨立核心＋有界 worker 足以支持已核定範圍。
+
+桌面控制帳本在固定 bootstrap/control-v1，備份還原刻意不回退模型支出預留及 holdout 消耗。跨機移轉不能只拷貝 state-v1 就宣稱研究紀錄完整；版本不相容或舊控制帳本無法確認時必須阻擋新研究並保留原件。這補充取代前文一般性「registry 隨備份回退」描述，避免資料恢复改寫研究事實。
+
+整合驗證可重用相同 source tree／lockfile／test config 的證據，不為文件調整重跑無關大型實驗；但 PR 合併與發布仍由 exact-head 必要 checks 強制把關。未完成工作不得清理。GitHub connector 的不同 commit metadata 以完整 Git tree 等價核對；保存原始本地 Git 歷史，不能只保留遠端新 SHA。

@@ -687,6 +687,7 @@ class JobManager:
         self.process = self.receiver = self.tree = None
         self.job_id = None
         self._terminal = False
+        self._pipe_eof = False
         self._pending = []
         self._deferred = []
         self.event_log = RedactedEventLog(paths.logs / 'desktop-events.jsonl')
@@ -725,6 +726,7 @@ class JobManager:
         self._gate = gate
         self.job_id = uuid.uuid4().hex
         self._terminal = False
+        self._pipe_eof = False
         self._deferred = []
         self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id))
         self.receiver = receiver
@@ -745,16 +747,26 @@ class JobManager:
         events, self._pending = self._pending, []
         if not self.active:
             return events
-        eof = False
-        try:
+
+        def drain():
             for _ in range(16):
-                if not self.receiver.poll():
-                    break
+                # The protocol ends at its terminal packet. Windows PeekNamedPipe
+                # raises ERROR_BROKEN_PIPE after sender close, unlike POSIX poll.
+                if self._terminal or self._pipe_eof:
+                    return
                 try:
-                    event = json.loads(self.receiver.recv_bytes(MAX_JSON))
+                    if not self.receiver.poll():
+                        return
+                    raw = self.receiver.recv_bytes(MAX_JSON)
                 except EOFError:
-                    eof = True
-                    break
+                    self._pipe_eof = True
+                    return
+                except OSError as exc:
+                    if getattr(exc, 'winerror', None) == 109:  # ERROR_BROKEN_PIPE
+                        self._pipe_eof = True
+                        return
+                    raise  # Invalid handles, oversized packets, etc. fail closed.
+                event = json.loads(raw)
                 if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error'}:
                     raise RuntimeSafetyError('Invalid worker response')
                 self._log(event['type'])
@@ -763,16 +775,20 @@ class JobManager:
                     self._deferred.append(event)
                 else:
                     events.append(event)
+
+        try:
+            drain()
+            exited = not self.process.is_alive()
+            if exited:
+                self.process.join()
+                # The child can send and exit between initial poll and liveness
+                # check. Drain once more before classifying an incomplete stream.
+                drain()
         except (OSError, ValueError):
             self.cancel()
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
             return events
-        if not self.process.is_alive():
-            self.process.join()
-            # The child can send and exit between the initial poll and liveness
-            # check; drain that final message before reporting a crash.
-            if not eof and self.receiver.poll():
-                return events + self.poll()
+        if exited:
             if not self._terminal:
                 self._log('error')
                 events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker stopped unexpectedly; incomplete output retained as partial'})

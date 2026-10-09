@@ -84,7 +84,7 @@ $window.Refresh()
   startup_sampling_interval_seconds=1;
   idle_working_set_bytes=$window.WorkingSet64;
   idle_sampling='Single sample two seconds after first detected main window, no task running';
-  process_id=$window.Id; os_caption=$os.Caption; os_build=$os.BuildNumber} | ConvertTo-Json | Set-Content "$results\performance-observation.json
+  process_id=$window.Id; os_caption=$os.Caption; os_build=$os.BuildNumber} | ConvertTo-Json | Set-Content "$results\performance-observation.json"
 # Running work must never be closed automatically by an upgrade or uninstall.
 foreach ($attempt in @('upgrade', 'uninstall')) {
   $command = if ($attempt -eq 'upgrade') { Join-Path $root "dist\installers\MarkAuto-$Version-windows-x64-setup.exe" } else { "$appDir\unins000.exe" }

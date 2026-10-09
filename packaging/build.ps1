@@ -1,6 +1,7 @@
 param([string]$Version = '0.1.1')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+& (Join-Path $PSScriptRoot 'validate_powershell.ps1')
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be numeric x.y.z' }
 if (-not [Environment]::Is64BitProcess) { throw 'Build requires x64 Python/PowerShell' }
 Push-Location (Split-Path $PSScriptRoot -Parent)

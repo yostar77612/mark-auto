@@ -128,3 +128,12 @@ run.py                         gui.py
 5. **避免不必要擴張。** 不先引入微服務、Kubernetes、分散式排程、向量資料庫或第二套前端。離線核心採標準函式庫，UI 作選用依賴；券商 bridge 等正式需求成立後再加。
 
 工程介面與檔案責任以 [IMPLEMENTATION_CONTRACTS.md](../agent/IMPLEMENTATION_CONTRACTS.md) 為準。改造方向並不自動授權付費資料、模型服務、帳戶開通或真實交易；這些 readiness 必須分開記錄。
+
+
+## 原生桌面實作增補（2026-10-09）
+
+使用者將Win10 22H2／Win11原生安裝版列為必要交付，新的桌面路徑為 `desktop.py → desktop_ui.MainWindow → quantlab.desktop_runtime.JobManager → quantlab` 既有服務。研究／帳務核心不匯入Qt；Qt選用依賴留在根目錄桌面層。Streamlit作輔助研究入口保留，舊gui.py仍封鎖。
+
+`desktop_runtime`負責固定bootstrap、可重啟套用的工作區選擇、Windows DPAPI、單例／安裝器mutex、程序樹、clock／power事件、交易凍結與安全備份還原。每使用者固定bootstrap包含credentials與不可回退的control-v1；資料state-v1可備份，支出預留／保留集已使用登記不可被舊備份重置。主視窗只送白名單資料作業，不執行AI程式碼。
+
+PyInstaller onedir保留可替換Qt DLL，以Inno Setup每使用者安裝；固定Python／輪檔hash、授權文字與相應來源，以及六個engine原始檔讓凍結版能計算相同provenance。詳細建置與client OS實測限制見 `packaging/README.md`；source可啟動、EXE可產生、WindowsServer測試與乾淨Win10/11四種證據分開。

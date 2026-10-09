@@ -17,7 +17,7 @@
 7. Paper 重啟、睡眠或異常後需明確對帳。未知狀態不會自動补單；緊急停止會凍結新工作，不假裝已成交／平倉。實盤在本版固定停用。
 8. 關閉時處理尚在執行的工作。下一次開啟保留設定與資料；更新前先備份，關閉舊程式後安裝新版本。
 
-程式安裝在 `%LOCALAPPDATA%\Programs\MarkAuto`；使用者資料在 `%LOCALAPPDATA%\MarkAuto`，不得混用 Program Files。Windows「設定 → 應用程式」可解除安裝；預設保留資料，避免誤刪歷史。備份／還原排除機密、檢查版本與hash，還原前停止工作；遇版本不相容不覆寫原資料，可回裝相容舊版並還原已驗證備份。
+程式安裝在 `%LOCALAPPDATA%\Programs\MarkAuto`；使用者資料在 `%LOCALAPPDATA%\MarkAuto`，不得混用 Program Files。Windows「設定 → 應用程式」可解除安裝；預設保留資料，避免誤刪歷史。備份／還原排除機密及不可回退的研究控制帳本、檢查版本與hash，還原前停止工作；遇版本不相容不覆寫原資料，可回裝相容舊版並還原已驗證備份。
 
 安裝器尚無正式程式碼簽章；若 Windows 顯示安全警告，不應停用或繞過安全機制。乾淨 Windows10 22H2 x64／Windows11 x64實測、標準使用者權限與長時間運作仍需獨立證據；Windows Server CI 不等同 client OS 測試。所有最新狀態以 [固定驗收](docs/agent/ACCEPTANCE.json) 為準。
 
@@ -301,3 +301,6 @@ python run.py -TASK update_and_select_stock
 
 ## Releases and Contributing
 AutoTradingPlatform has a 7-day release cycle, any updates will be committed by each Friday (git commits are not included).
+
+
+研究控制帳本固定保留在bootstrap/control-v1，不隨state-v1回退；因此還原舊資料不會重新取得已消耗的模型預算／保留集。整機移轉或重建仍需保留並查核控制紀錄，不能把一個新空工作區／機器當作從未研究過的樣本。舊版本帳本需要明確相容處理時會阻擋，不會偷偷重置。

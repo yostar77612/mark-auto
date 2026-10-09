@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import re
 import runpy
+import shutil
+import tempfile
 import sys
 import types
 import subprocess
@@ -14,6 +16,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('pwsh'), 'PowerShell unavailable; actual Parser.ParseFile runs in early Windows CI gate')
+    def test_actual_powershell_parser_accepts_scripts_and_rejects_broken_quote(self):
+        validator = ROOT / 'packaging/validate_powershell.ps1'
+        valid = subprocess.run(['pwsh', '-NoProfile', '-File', str(validator)], capture_output=True, text=True)
+        self.assertEqual(valid.returncode, 0, valid.stdout + valid.stderr)
+        with tempfile.TemporaryDirectory() as folder:
+            Path(folder, 'broken.ps1').write_text('Set-Content "missing-closing-quote\n', encoding='utf-8')
+            invalid = subprocess.run(['pwsh', '-NoProfile', '-File', str(validator), '-Directory', folder], capture_output=True, text=True)
+            self.assertNotEqual(invalid.returncode, 0)
+            self.assertIn('broken.ps1', invalid.stdout)
+
+    def test_powershell_gate_precedes_expensive_build(self):
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
+        build_job = workflow.split('  build:', 1)[1]
+        self.assertLess(build_job.index('validate_powershell.ps1'), build_job.index('actions/setup-python@'))
+        build = (ROOT / 'packaging/build.ps1').read_text()
+        self.assertLess(build.index('validate_powershell.ps1'), build.index('python -m pip'))
+        validator = (ROOT / 'packaging/validate_powershell.ps1').read_text()
+        self.assertIn('[System.Management.Automation.Language.Parser]::ParseFile', validator)
+        self.assertIn("-Filter '*.ps1' -File -Recurse", validator)
+
     def test_build_inputs_are_committed_not_silently_gitignored(self):
         required = {'desktop.py', 'desktop_ui.py', 'requirements-desktop.lock',
                     'packaging/markauto.spec', 'packaging/markauto.iss',

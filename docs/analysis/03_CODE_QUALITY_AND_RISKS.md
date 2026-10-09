@@ -155,3 +155,33 @@ R11 的條件若擴大為不受信任者可寫入、且交易程序持有秘密�
 本地最終產品提交 `e5e56bb` 的完整可達掃描包含 7 個提交、132 個不同 blob、1,360,512 bytes，非 shallow；未找到高可信度密鑰。比對命中為合成負向測試、cost_per_token 名稱誤報及既有 CDN 路徑常值（仍保留待核实風險，不顯示其值）。靜態樣式掃描不能保證不存在秘密，也未測試任何疑似憑證有效性。後續文件提交以增量檢查驗證。
 
 全套本地與 fresh-checkout 各 177 項測試通過、無 skip，包含 5 個 UI AppTest；wheel／sdist 成功建置，wheel 不含 legacy trader。Windows／Linux 遠端 CI、整合 SHA 與最新進度以 `../agent/PROJECT_STATE.md` 為準，不能把此本地結果当成 Win10／Win11 桌面安裝驗證或長期實盤就緒。
+
+
+## 桌面整合風險與已執行修復
+
+- 中斷還原與安全凍結競態：舊資料移到rollback後若先重建state再恢復，會危及原資料。現實作先join/cancel寫入程序，再恢復，最後才能寫安全狀態。刪除rollback必須有相符的durable commit identity與promoted token；模糊狀態隔離保存，不猜測成功。測試注入兩次rename之間中止、未退出worker與journal清理中斷。
+- 研究控制狀態回退：支出預留與已見holdout原先在可還原state內。現移到固定bootstrap/control-v1，舊備份／同bootstrap切換工作區不會重開預算或已消耗保留集。舊in-state控制帳本存在時阻擋新研究，不自行刪除或假定新帳本。這不是對使用者任意複製至另一台電腦的全域防作弊或帳單保證。
+- 候選資格資料被單獨修改：JSON結果須與唯讀SQLite authoritative state一致，並核對selection hash、策略與資料綁定；未合格的OOS／holdout不能在桌面啟用Paper。無法防禦同一OS帳號惡意改寫全部檔案，這個信任邊界須保留。
+- 凍結版來源完整性：six engine sources明確列入PyInstaller資料，安装後與source SHA逐檔核對。只有demo啟動不足；smoke必須完成真正凍結版backtest、bounded fixture campaign及paper流程。
+- Windows資源與輸入：終端錯誤訊息與子程序退出同步，失敗不被清理誤標成使用者取消；固定bootstrap lock和命名mutex避免切換工作區重複啟動；DPAPI、Job Object取消／父程序當機及junction拒絕以Windows integration tests驗證。
+- 供應鏈：桌面使用官方有Windows二進位安全更新的CPython3.13.16，取代3.12.10；版本／SHA／官網來源在 `packaging/python-runtime.json`。Qt6.12是Win10支援線，不能盲升不支援Win10版本。安裝器未簽章，不绕過Windows警告。
+
+本地fresh checkout `8bc19e1`：258 tests，共253 PASS與5個Windows限定項未在Linux執行；兩套UI測試均實際執行。遠端同tree為 `d0665e1417a6c31d0978e93a9bf2d2194eba913d`，Windows最終結果須獨立讀CI。Linux Qt可見視窗＋worker smoke單次0.932秒、子程序最高RSS83,908KiB；不是Windows首屏或效能SLO。先前1000bar回測中位0.522秒屬合成基準，不作市場資料吞吐保證。
+
+上述桌面處置的可定位證據：`quantlab/desktop_runtime.py`（`JobManager`、`WorkspaceLocator`、`DesktopCredentialReference`、backup/restore 與 recovery）、`desktop_ui.py`（`_quiesce_and_recover`、候選啟用與設定事件）、`tests/test_desktop_runtime.py`、`tests/test_desktop_ui.py`、`packaging/markauto.spec`、`packaging/test_installer.ps1`。Windows CI 尚未全通過時，這些是已實作／部分驗證，不是所有平台驗收完成。
+
+### 當前符合度與殘餘風險
+
+| 分類 | 當前狀態 | 證據與限制 |
+|---|---|---|
+| 核心因果、帳務與 Golden Cases | 工程 Gate 已符合 | `tests/test_backtest.py`、`tests/test_strategies.py`；市場參數與資料涵蓋另驗 |
+| 模型任意程式執行與券商隔離 | 已符合目前受限研究架構 | `quantlab/strategies.py`、`provider.py`、`tests/test_architecture.py`；不執行模型 Python |
+| 研究洩漏、預算與版本 | 工程控制已建立；桌面部分驗證 | `research.py`、`desktop_runtime.py`、相對應 tests；真模型／正式資料未驗證 |
+| 桌面安全恢復、DPAPI、單例 | 已實作；Windows 最終 Gate 尚待修復重驗 | runtime／UI tests；不得以 Linux skip 當 PASS |
+| 自動品質／憑證／依賴 Gate | 已建立並實際執行 | `.github/workflows/quantlab.yml`、`windows-desktop.yml`、`tools/quality_gate.py` |
+| main 強制保護 | 缺失且管理權限阻塞 | GitHub metadata `protected=false`、rulesets 空、protection API 403；流程自律不等於服務端防護 |
+| 乾淨 Win10／Win11 驗收 | 缺失，外部環境阻塞 | D7／D8 BLOCKED；Windows Server 不可替代 |
+| 正式即時交易、券商認證與長期無人值守 | 缺失／未驗證 | `LiveBroker` 停用、Paper 歷史批次；須獨立資格與實際故障演練 |
+| 長期資料與正式策略排名 | 部分符合 | 官方下載與品質框架存在；30 個 ZIP 不能證明完整歷史或有效樣本外 |
+
+立即優先處理所有實際失敗的安全／恢復 Gate；其後才可發布預覽。正式交付仍受 clean client OS、資料與外部連線驗收限制。無證據的憑證「未外洩」、長期穩定性或交易績效結論一律不得宣稱。

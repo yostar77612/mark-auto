@@ -253,3 +253,12 @@ log／metrics 共用 data batch、run、strategy hash、signal、intent、broker
 離線核心可指定 RPO 為已提交 journal 事件零丟失並以 crash tests 驗證。真 broker RPO／RTO、觀察期與最低事件數需依實際環境預先固定；未量測前不承諾無人值守。還原需要驗證檔案／版本 hash、事件重放、cash／position 一致；資料或對帳不足即維持停機。
 
 最終核準必須同時綁定策略版本、資料與成本、風險限額、執行環境、broker capability 與明確操作者。金融帳戶條款、憑證與真實交易另有授權與人工操作要求；開發完成度不包含真實獲利或交易權限。
+
+
+## 必要桌面產品形態增補
+
+最終一般使用者下載安裝檔、安裝、雙擊捷徑即可進入原生繁中Qt介面，不須Python／pip／Git，不另啟後端。UI與quantlab核心分離；模型僅產受限DSL，選用HTTP provider在隔離子程序以固定DPAPI resolver讀取金鑰，端點／費用／Token與呼叫上限及本次網路同意明確呈現。預設Fixture，外部模型仍需配置及驗證。
+
+候選picker重用不可變StrategySpec，不要求手動複製程式；產生、改善、凍結、OOS／holdout與研究歷史依既有服務。模型輸出無任意程式執行／檔案／券商權限。真正市場環境適用性与策略推薦必須有足夠資料與研究證據，不能把UI排序當投資建議。
+
+設定與資料在使用者應用資料區；可選工作區於下次重啟才切換，不自動搬移或覆寫。機密與研究不可回退帳本留固定bootstrap，不隨資料備份還原回退。預览安裝器、發版條件、未簽章及乾淨Win10/11外部Gate詳見Roadmap與packaging說明。

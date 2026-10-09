@@ -248,6 +248,79 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]['message'], 'validation failed')
         self.assertFalse(manager.active)
 
+    def test_windows_closed_pipe_after_terminal_preserves_result(self):
+        manager = JobManager(self.paths)
+        manager.job_id, manager._operation = 'windows-pipe', 'demo'
+        class Process:
+            def is_alive(self): return False
+            def join(self): pass
+            def close(self): pass
+        class Receiver:
+            frames = [b'{"job_id":"windows-pipe","type":"progress"}',
+                      b'{"job_id":"windows-pipe","type":"result","result":{"output":"fixture"}}']
+            polls = 0
+            def poll(self):
+                self.polls += 1
+                if not self.frames:
+                    error = OSError('The pipe has been ended')
+                    error.winerror = 109
+                    raise error
+                return True
+            def recv_bytes(self, limit): return self.frames.pop(0)
+            def close(self): pass
+        receiver = Receiver()
+        manager.process, manager.receiver = Process(), receiver
+        events = manager.poll()
+        self.assertEqual([e['type'] for e in events], ['progress', 'result'])
+        self.assertEqual(receiver.polls, 2)
+        self.assertFalse(manager.active)
+        self.assertEqual(manager.poll(), [])
+
+    def test_windows_pipe_eof_without_terminal_is_crash_not_malformed(self):
+        manager = JobManager(self.paths)
+        manager.job_id, manager._operation = 'windows-eof', 'demo'
+        class Process:
+            alive = True
+            def is_alive(self): return self.alive
+            def join(self): pass
+            def close(self): pass
+        class Receiver:
+            polls = 0
+            def poll(self):
+                self.polls += 1
+                error = OSError('The pipe has been ended')
+                error.winerror = 109
+                raise error
+            def close(self): pass
+        process, receiver = Process(), Receiver()
+        manager.process, manager.receiver = process, receiver
+        self.assertEqual(manager.poll(), [])
+        self.assertTrue(manager.active)
+        process.alive = False
+        events = manager.poll()
+        self.assertEqual(receiver.polls, 1)
+        self.assertEqual([e['type'] for e in events], ['error'])
+        self.assertIn('Worker stopped unexpectedly', events[0]['message'])
+        self.assertFalse(manager.active)
+
+    def test_non_eof_windows_pipe_error_still_rejected(self):
+        manager = JobManager(self.paths)
+        manager.job_id, manager._operation = 'invalid-pipe', 'demo'
+        class Process:
+            pid = None
+            def close(self): pass
+        class Receiver:
+            def poll(self):
+                error = OSError('invalid handle')
+                error.winerror = 6
+                raise error
+            def close(self): pass
+        manager.process, manager.receiver = Process(), Receiver()
+        events = manager.poll()
+        self.assertEqual(events[-1]['type'], 'error')
+        self.assertEqual(events[-1]['message'], 'Worker response rejected')
+        self.assertFalse(manager.active)
+
     def test_spawn_job_completes_and_can_restart(self):
         manager = JobManager(self.paths)
         self.addCleanup(manager.close)
@@ -311,7 +384,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(active.root, self.bootstrap)
         self.assertEqual(list(destination.iterdir()), [])
         restarted = self.locator.load().ensure()
-        self.assertEqual(restarted.root, destination)
+        self.assertEqual(restarted.root.resolve(), destination.resolve())
         self.assertEqual(restarted.credentials, self.current.credentials)
         self.assertEqual(self.locator.lock_path, lock)
         self.assertFalse((destination / 'credentials').exists())
@@ -344,7 +417,7 @@ class WorkspaceTests(unittest.TestCase):
         target = AppPaths(self.base / 'existing').ensure()
         (target.state / 'sentinel').write_text('keep')
         self.locator.configure(target.root)
-        self.assertEqual(self.locator.load().root, target.root)
+        self.assertEqual(self.locator.load().root.resolve(), target.root.resolve())
         self.assertEqual((target.state / 'sentinel').read_text(), 'keep')
 
     def test_pointer_atomic_failure_leaves_old_selection(self):
@@ -355,7 +428,7 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 self.locator.configure(self.base / 'second')
         self.assertEqual(self.locator.pointer.read_bytes(), original)
-        self.assertEqual(self.locator.load().root, first)
+        self.assertEqual(self.locator.load().root.resolve(), first.resolve())
 
     def test_invalid_and_unrelated_folders_are_never_overwritten(self):
         unrelated = self.base / 'unrelated'

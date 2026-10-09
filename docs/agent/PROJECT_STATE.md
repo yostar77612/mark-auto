@@ -1,66 +1,58 @@
 # mark-auto 開發接續狀態
 
-更新：2026-10-09 16:18 UTC。唯一來源：https://github.com/yostar77612/mark-auto。
+更新：2026-10-09 17:08 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
-## 目前狀態
+## 最新狀態與計分
 
-- 分支 agent/quantlab-v1；原始 main 基準 1cacce4ee4eef4ce7e8760f8153ef64a74852d22。
-- Phase 0–4 已完成，原研究範圍工程完成率 85%，剩餘 15%。使用者於16:25 UTC新增必要桌面交付後，總分由100擴為200點，原標準不變；目前整體42.5%，剩餘57.5%。唯一計分來源 ACCEPTANCE.json。
-- 完整本地測試 176 PASS、0 SKIP，39.239 秒；Linux Python 3.12，包含 5 個 Streamlit AppTest。最終 fresh-checkout、遠端 CI 與安全複掃仍待驗收。
-- 原本本地提交 0430a74、5bcfbe5、2110016 均保留。GitHub App 新授權已可建立 Git 物件、開發分支與 PR；CLI 本身尚無登入。連線發布採相同 Git tree、新 Commit SHA，映射另列，不重寫原歷史。
-- PR：https://github.com/yostar77612/mark-auto/pull/1，尚未合併。
+- 現有分支 `agent/quantlab-v1`、[PR #1](https://github.com/yostar77612/mark-auto/pull/1)，尚未合併。禁止重建儲存庫、force push 或刪除原始成果。
+- 原研究 Phase 0–5 的 100 點已完成其固定工程驗收；新增桌面 D0–D9 共 100 點尚待最終證據計分。合計 **100/200＝50%，剩餘 50%**。唯一計分來源 `ACCEPTANCE.json`；這不是最終桌面產品已完成。
+- 最新已發布來源：本地 `8bc19e1` 對應遠端 `d0665e1417a6c31d0978e93a9bf2d2194eba913d`，Git tree 均為 `66d2b25e769ccb11fa3700a0268aff83d1613dd9`。
+- 此來源 fresh checkout 在 Linux Python 3.12、同時安裝 Streamlit／PySide6：258 tests，253 PASS、5 個 Windows 專用測試 SKIP，56.269 秒。
+- 最新實際 Windows CI 發現 runtime IPC 結果拒收與三個短路徑比較失敗；已修 WinError109 EOF 分類與 canonical identity，新增三項回歸，本地261 tests（256 PASS、5 Windows-only SKIP）通過。另修 installer PowerShell 缺引號並新增實際 Parser.ParseFile gate，packaging 10 PASS、1 項 Linux 無 pwsh 未執行。遠端 Windows 待新 head 重驗，不能以 Linux 成功代替。Quantlab run `37963159170`；installer run `37963159264`。本輪不可合併或發布，直到新 head 的必要 Gate 全通過。
 
-## 已有功能與證據
+## 已保留的原始成果與 Git 映射
 
-獨立 quantlab 核心、版本化交易時段／到期、官方 CSV／RPT／日報匯入、因果回測與 Decimal 帳務、五種策略、受限 DSL、持久研究預算與保留集使用登記、報表版本選擇、Streamlit／CLI、Paper 日誌對帳與風控均已實作並本地測試。研究與券商 SDK 隔離；舊 trader 啟動與危險 legacy 路徑刻意停用。
+GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連接器發布。連接器建立新 commit metadata，因此 SHA 不同，但逐次驗證完整 tree 相同。
 
-實際 2026-10-08 官方資料匯入 1140 根分鐘 K，日夜 OHLC 比對一致。成交量差異與排除價差單口徑相符，但正式分配語義仍待確認。這不是完整歷史或實際撮合認證。
+| 本地原始提交 | 遠端提交 |
+|---|---|
+| 0430a74 | eeccb3296e47e84fe8d0f68446dda6cae58976a0 |
+| 5bcfbe5 | a90fcb846c358b6867cf3cdf902db858200b1766 |
+| 2110016 | b3ad661309d0a514a0889be5cbb214ad0a843933 |
+| e5e56bb（含 cde65fb） | 8597dd6e6a0f6f95337e2a17ca98798da9ca2252 |
+| 76ad3a5 | 8cea2729fa5f0acca1d1ff947b08d173ffddcd71 |
+| 1f78a52 | 8b1f007abdb325c6ddc97707e1e2ab8c6211e5ca |
+| 468b86c | 4def6c8907bb00ee975e38912b029648eee97ad0 |
+| 8bc19e1 | d0665e1417a6c31d0978e93a9bf2d2194eba913d |
 
-2026-10-09 已實際使用新 refresh CLI 取得期交所公布的 2026-10-12 CSV ZIP；來源檔屬下一交易日期，保留 provisional_unverified／ranking_eligible=false。下載不代表盤別完成或可排名。原始行情不放入 Git。
+`0430a74` 與 `eeccb329` 的 tree 均為 `df167ff071331a6eb75007a72c0d3637e4fc899a`：所有檔案路徑、內容、模式完全相同。原本本地歷史全部保留；本地原始 commit 不在遠端新 metadata 圖的祖先鏈，不能僅憑 PR 合併就刪掉本地分支。
 
-## 固定決策與安全界線
+## 目前實作
 
-保留 Apache 授權及舊程式來源參考。標準庫研究核心、Decimal、SQLite、薄 Streamlit／CLI。AI 只產受限 DSL；預設 fixture generator，不冒充真模型。LiveBroker 固定停用，無環境旗標捷徑；禁止真實資金與付費服務。不能依合成回測聲稱真實市場獲利。
+研究核心：標準庫 quantlab、版本化日夜盤與到期、官方資料匯入／有界免費下載、Decimal 因果回測、五種策略、受限 DSL、持久研究預算、樣本外與保留集隔離、報表／版本選擇、Paper 持久帳本／對帳／風控／故障恢復。
 
-Paper 重播為有限歷史批次，沒有實際行情串流；尚不支援的盤中停損／停利明確拒絕。持倉／委託未知時先凍結，不以補單猜測恢復。Windows 桌面打包、長期無人值守、真模型、完整歷史與券商認證尚非已完成狀態。
+桌面：PySide6 原生繁中介面，既有核心不重寫；七個頁面涵蓋總覽、資料、策略、回測、比較、Paper、設定。工作採 allowlist 子程序、進度／取消、Windows Job Object、單例與睡眠凍結。DPAPI 機密、每使用者 AppData、工作區切換、備份恢復、不可回退研究預算／holdout 控制已實作。
 
-## 下一步
+打包：鎖定 CPython 3.13.16、PySide6 6.12.0、PyInstaller 6.22.3、Inno Setup 6.4.3；每使用者安裝與捷徑、保留使用者資料、拒絕更新／移除正在運作的 app。Windows Server CI 必须實際完成 frozen research／Paper 流程與安裝升級移除，並附來源／依賴／授權／hash 證據。未簽章，Release 僅能標 preview。
 
-1. 保存最終模組提交並完成 fresh-checkout、建置、安全複掃。
-2. 發布相同 tree 至現有 PR，驗證 Linux／Windows CI；失敗修正，不降低標準。
-3. 必要 Gate 通過後合併 main，核對遠端；保留未合併的原始本地 SHA 歷史。
-4. 交付五份分析文件及外部就緒限制。
+## 已驗證與尚未驗證的界線
 
-## 執行入口
+- 原研究來源 `76ad3a5`／`8cea2729`：本地 180 tests 通過，GitHub run `37959451997` 的 Linux／Windows Server Python3.11/3.12 和 UI 五 jobs 全成功。這不取代新增桌面的最終 head 回歸。
+- 真實 2026-10-08 TAIFEX CSV／RPT／日報匯入 1140 根分鐘 K，OHLC 一致；價差成交量口徑仍待正式證據。最近 30 官方 ZIP 已下載，保持 `provisional_unverified`／`ranking_eligible=false`，原始行情不提交 Git。
+- 預設 AI 使用清楚標示的 Fixture；HTTP adapter 已測本機 synthetic server，但真外部模型未驗證。本輪未呼叫付費模型。
+- Paper 是有限歷史重播，沒有正式即時行情串流。盤中停損／停利未支援即拒絕。未知委託／部位先凍結，禁止猜測補單。
+- 實盤固定停用。真券商資格、行情授權、憑證、完整歷史品質與真市場策略績效尚未驗證。
+- Windows10 22H2／Windows11 乾淨環境實測 **BLOCKED**：目前無已授權可用 client OS；Windows Server 不能冒充通過。未使用使用者未授權電腦。
+- main 保護 **未啟用**：metadata `protected=false`，rulesets 空，管理級 protection API 403 `Resource not accessible by integration`。Code／PR 授權有效；缺管理權限不是證明需重新登入。不可宣稱有防護，也不自行擴權。
 
-python -m unittest discover -s tests -v
+## 接續順序與命令
 
-python -m quantlab --help
+1. 先 `git status`，保留所有未提交修改；閱讀固定合約與驗收清單。
+2. 修復實際 Windows 回歸；聚焦測試後跑最終完整 Gate，同一分支發布，逐次核對 Git tree。
+3. 最終 head 的研究／UI／品質／依賴／installer 全通過才可整合 main，並驗證 post-merge build 與 preview Release。
+4. 保存原始 Git 歷史與五份分析文件；清理分支前確認保存、已合併與無競態，不具安全刪除條件就保留並說明。
+5. 剩餘真 client OS、外部服務與權限阻塞誠實記錄，不降低門檻或以 mock 代替。
 
-streamlit run research_app.py --server.address 127.0.0.1
-
-研究 UI 依 requirements-ui.lock 安裝於獨立環境；不可用舊 run.py／gui.py 啟動研究。接手先讀本檔、ACCEPTANCE.json、IMPLEMENTATION_CONTRACTS.md，再 git status 保留既有成果。
-
-
-## 必要桌面交付（新增範圍，2026-10-09 16:25 UTC）
-
-Windows10 22H2 x64與Windows11 x64原生桌面、免裝Python、每使用者安裝程式與捷徑、繁中主要功能、背景工作／取消、單例與睡眠恢复、安全設定／備份還原、版本升級及GitHub Release已納入必要驗收。選用PySide6原生Qt與既有quantlab核心，保留Streamlit研究入口作輔助；不重寫帳務或策略引擎。
-
-桌面D0–D9每项10點，與原研究100點合計200點。分母增加來自使用者新增需求，不降低舊Gate，不把EXE建置當乾淨Windows10/11驗收。
-
-環境查核：無已儲存coding environment；可見Windows電腦均未授權此任務，不能使用。GitHub windows-latest實際為Windows Server，能做安裝／啟動自動測試但不能替代Win10/11。D7/D8先標BLOCKED，繼續其餘開發。
-
-main保護尚未啟用：branch metadata顯示protected=false，rulesets清單空；讀取管理級branch protection API回403 Resource not accessible by integration。這是缺administration權限，非Code/PR新授權失效；寫入分支與PR成功。不得聲稱保護生效，也不為此重新建立環境或索取Token。
-
-
-## 原研究版整合驗證（2026-10-09 16:32 UTC）
-
-原Phase0–5研究範圍100點通過，新增桌面0/100，整體100/200＝50%，剩餘50%。這不是最終桌面產品完成。
-
-研究修復提交76ad3a5對應遠端8cea2729fa5f0acca1d1ff947b08d173ffddcd71；本地180tests通過，GitHub run37959451997的Linux／Windows Server、Python3.11/3.12及UI共5jobs全成功。Windows曾實際揭露來源編碼、SQLite連線未close與短路徑比較問題，已修復並重驗。平台限定RLIMIT_AS／fork與選用UI的skip有明確原因，由Linux UI完整suite覆蓋；不可當Win10/11或Windows資源硬限制證明。研究wheel／sdist重新建置成功。
-
-正式下載最近30個官方CSV ZIP完成，仍provisional且未完成全部歷史日曆／逐盤品質驗證，不得產生正式策略排名。首次批次遇HTTP逾時失敗；一次有界重試成功，快取與原始檔不提交公開Git。
-
-原始0430a74與遠端eeccb3296e47e84fe8d0f68446dda6cae58976a0的Git tree均為df167ff071331a6eb75007a72c0d3637e4fc899a，檔案路徑／內容／模式完全一致。所有本地原始提交與新增未提交桌面工作均保留，未forcepush或reset。
-
-新桌面與新增CI安全／品質工作尚在開發，main尚未合併；之後以最終head全部必要Gate重新判定。
+開發測試：`python -m unittest discover -s tests -v`、`python tools/quality_gate.py --history`。
+桌面開發入口：`python desktop.py`。最終使用者使用安裝檔與捷徑，不需上述指令。
+舊 `run.py`／`gui.py` 不得作研究啟動入口。Streamlit 僅保留輔助介面。
