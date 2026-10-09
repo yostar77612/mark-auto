@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-10-09T15:45:00Z",
+  "baseline_commit": "1cacce4ee4eef4ce7e8760f8153ef64a74852d22",
+  "rule": "Only evidence-backed PASS earns weight; failed/blocked/not_run earns zero. Safety failures veto release. Do not lower acceptance targets.",
+  "phases": [
+    {
+      "phase": 0,
+      "weight": 15,
+      "items": [
+        {
+          "id": "P0.1",
+          "title": "來源清單與固定 SHA",
+          "weight": 3.0,
+          "status": "PASS",
+          "evidence": "Pinned source/static/security audit and IMPLEMENTATION_CONTRACTS.md"
+        },
+        {
+          "id": "P0.2",
+          "title": "完整可達歷史安全掃描",
+          "weight": 3.0,
+          "status": "PASS",
+          "evidence": "Pinned source/static/security audit and IMPLEMENTATION_CONTRACTS.md"
+        },
+        {
+          "id": "P0.3",
+          "title": "依賴及啟動路徑審查",
+          "weight": 3.0,
+          "status": "PASS",
+          "evidence": "Pinned source/static/security audit and IMPLEMENTATION_CONTRACTS.md"
+        },
+        {
+          "id": "P0.4",
+          "title": "架構与模組責任合約",
+          "weight": 3.0,
+          "status": "PASS",
+          "evidence": "Pinned source/static/security audit and IMPLEMENTATION_CONTRACTS.md"
+        },
+        {
+          "id": "P0.5",
+          "title": "基線與固定验收清單",
+          "weight": 3.0,
+          "status": "PASS",
+          "evidence": "Pinned source/static/security audit and IMPLEMENTATION_CONTRACTS.md"
+        }
+      ]
+    },
+    {
+      "phase": 1,
+      "weight": 15,
+      "items": [
+        {
+          "id": "P1.1",
+          "title": "舊交易安全修復",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P1.2",
+          "title": "研究匯入無交易或網路副作用",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P1.3",
+          "title": "獨立離線測試入口",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P1.4",
+          "title": "離線 CI 設定",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P1.5",
+          "title": "安全防護回歸測試",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "weight": 25,
+      "items": [
+        {
+          "id": "P2.1",
+          "title": "官方本機資料格式及品質",
+          "weight": 5.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P2.2",
+          "title": "版本化時段與到期規則",
+          "weight": 5.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P2.3",
+          "title": "因果回測與帳務",
+          "weight": 5.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P2.4",
+          "title": "成本與獨立 Golden Cases",
+          "weight": 5.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P2.5",
+          "title": "Manifest 與三次重現",
+          "weight": 5.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "weight": 20,
+      "items": [
+        {
+          "id": "P3.1",
+          "title": "五種獨立策略與因果測試",
+          "weight": 4.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P3.2",
+          "title": "受限 DSL 與拒絕案例",
+          "weight": 4.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P3.3",
+          "title": "產生評估改善及來源標示",
+          "weight": 4.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P3.4",
+          "title": "持久預算與所有試驗紀錄",
+          "weight": 4.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P3.5",
+          "title": "樣本外及保留集隔離",
+          "weight": 4.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "weight": 10,
+      "items": [
+        {
+          "id": "P4.1",
+          "title": "Streamlit 匯入至回測",
+          "weight": 2.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P4.2",
+          "title": "策略版本比較與選擇",
+          "weight": 2.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P4.3",
+          "title": "可追溯指標及匯出",
+          "weight": 2.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P4.4",
+          "title": "空資料錯誤重複操作",
+          "weight": 2.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P4.5",
+          "title": "重啟後持久狀態",
+          "weight": 2.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "weight": 15,
+      "items": [
+        {
+          "id": "P5.1",
+          "title": "持久模擬帳本及對帳恢復",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P5.2",
+          "title": "故障注入與風控驗證",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P5.3",
+          "title": "實盤停用與安全複掃",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P5.4",
+          "title": "五份文件與操作維護說明",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        },
+        {
+          "id": "P5.5",
+          "title": "完整測試 UI 新檢出 CI 驗證",
+          "weight": 3.0,
+          "status": "NOT_RUN",
+          "evidence": null
+        }
+      ]
+    }
+  ],
+  "external_readiness": {
+    "real_model": "NOT_VERIFIED",
+    "real_market_performance": "NOT_VERIFIED",
+    "broker_certification": "BLOCKED",
+    "real_money": "DISABLED"
+  }
+}
