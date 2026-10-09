@@ -150,3 +150,6 @@ quantlab-output/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# Version the reproducible native desktop build recipe.
+!packaging/markauto.spec
