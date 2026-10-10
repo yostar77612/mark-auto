@@ -19,14 +19,19 @@ def sha256(path):
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    inputs = [p for pattern in ('packaging/*', 'requirements-desktop.*', 'desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*', 'tools/quality_gate.py',
-                               'quantlab/*.py', 'examples/*', '.github/workflows/windows-desktop.yml')
+    inputs = [p for pattern in ('.gitattributes', 'packaging/*', 'packaging/local_ai/*', 'packaging/qt_notices/*', 'requirements-desktop.*', 'desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*', 'tools/quality_gate.py',
+                               'tools/install_sqlite_runtime.py', 'quantlab/*.py', 'examples/*', '.github/workflows/windows-desktop.yml')
               for p in root.glob(pattern) if p.is_file()]
     artifacts = list((root / 'dist/installers').glob('*.exe')) + list((root / 'dist').glob('MarkAuto-*-clean-windows-acceptance.zip'))
     result = {
         'source_commit': os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'python': sys.version, 'python_executable_sha256': sha256(sys.executable), 'os': platform.platform(), 'architecture': platform.machine(),
         'runner_image': os.environ.get('ImageOS'), 'runner_image_version': os.environ.get('ImageVersion'),
+        # Native SQLite is outside pip-audit's package database. Preserve its
+        # exact source, loaded DLL and setup validation alongside Python wheels.
+        'sqlite_runtime': json.loads((root / 'dist/validation/sqlite-runtime.json').read_text(encoding='utf-8')),
+        'bundled_sqlite_sha256': {p.relative_to(root / 'dist/MarkAuto').as_posix(): sha256(p)
+                                  for p in (root / 'dist/MarkAuto').rglob('sqlite3.dll')},
         'dependencies': sorted(f"{d.metadata['Name']}=={d.version}" for d in distributions()),
         'inputs_sha256': {p.relative_to(root).as_posix(): sha256(p)
                           for p in sorted(inputs, key=lambda entry: entry.relative_to(root).as_posix())},

@@ -134,7 +134,97 @@ CURRENT_CHATGPT_PROFILE_V2 = freeze({'protocol': 'mark_auto_0_2_3_campaign_chatg
                                   'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}],
  'provider_modes': ['chatgpt_plan']})
 
-SUPPORTED_PRODUCERS = (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2)
+# Reviewed provider.py extension: an optional connected-peer verifier executes
+# after connect and before POST; None preserves the original transport path.
+# Campaign/request/receipt/result schemas are unchanged. These literal profiles
+# preserve all prior producer objects, including the two ChatGPT descriptor sets.
+# The name identifies source support, not evidence that peer verification ran.
+# Provider mode validation is unchanged; only the exact engine tuple is added.
+TRANSPORT_VERIFIER_PRODUCER = freeze({'protocol': 'mark_auto_0_2_2_campaign_transport_verifier_v1',
+ 'engine_source_hashes': {'research.py': 'a5b8dda5003553261e1cd85cd4b0843b57891c878fcc72a4dcfd63893a77fc2a',
+                          'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
+                          'core.py': '74478947203447b16b7bd25010a01cffec02ff71129eadbfa02438b98f29c9e6',
+                          'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
+                          'backtest.py': '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91'},
+ 'prompt_template_hash': '31c09f395b9ca6c5ee53751fcf30131907ad513bf1708e048359421516102845',
+ 'result_source_hashes': {'core.py': '62363665d7c209a3cc791b872607823cdac75a8ae4c35a858f903824785ee42b',
+                          'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                          'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                          'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+ 'chatgpt_plan_implementations': [{'source_sha256': {'desktop_chatgpt_auth.py': '724b5811a74d7d25a537ba98616a8d4c5c18ea7e1257fa1ce234efbad29cb040',
+                                                     'desktop_chatgpt_provider.py': '96d8c73b52c8cf337e1837ee0cb625cc0f5367e140b3cce595141d86cbdaffdb'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': 'e33e2c9e07624e9180a2ccebd844f84e68d9d69923b4bcfe8cdfb8a7dab70055',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp313-amd64', 'linux-cp312-x86_64']},
+                                  {'source_sha256': {'desktop_chatgpt_auth.py': '358716a763635543c44ae624222a93157f86f7dde775a21c1fe0aa7fe168bdc4',
+                                                     'desktop_chatgpt_provider.py': '2bc5acf8ee545e68580a308101041a2c864406ba8cda06b4009e3bc51343e645'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': '9a1bdcef73499c4bc5ff06749301e859690581685f1905f23bfc883a463a2fb6',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp313-amd64']}],
+ 'result_source_hash_variants': [{'core.py': '62363665d7c209a3cc791b872607823cdac75a8ae4c35a858f903824785ee42b',
+                                  'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                                  'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                                  'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+                                 {'core.py': '99174ffa3e52ca940909a9e0ec91d98da801bd4fcfb4136064cbd7bfb9a5f1c9',
+                                  'data.py': '7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb',
+                                  'strategies.py': 'c35ed80ffe11787fbc93b964cbe6403d36921fbf9ca6d6f8a282301691da6132',
+                                  'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}]})
+
+TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2 = freeze({'protocol': 'mark_auto_0_2_2_campaign_transport_verifier_chatgpt_dependencies_v2',
+ 'engine_source_hashes': {'research.py': 'a5b8dda5003553261e1cd85cd4b0843b57891c878fcc72a4dcfd63893a77fc2a',
+                          'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
+                          'core.py': '74478947203447b16b7bd25010a01cffec02ff71129eadbfa02438b98f29c9e6',
+                          'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
+                          'backtest.py': '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91'},
+ 'prompt_template_hash': '31c09f395b9ca6c5ee53751fcf30131907ad513bf1708e048359421516102845',
+ 'result_source_hashes': {'core.py': '62363665d7c209a3cc791b872607823cdac75a8ae4c35a858f903824785ee42b',
+                          'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                          'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                          'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+ 'chatgpt_plan_implementations': [{'source_sha256': {'desktop_chatgpt_auth.py': '724b5811a74d7d25a537ba98616a8d4c5c18ea7e1257fa1ce234efbad29cb040',
+                                                     'desktop_chatgpt_provider.py': 'd793a8d5c632fd1f4fa98812c81bbe1b5170bcae6e2b54c4291983e429fcaac3'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': '90d3663f337b563186082c8011cbf5c9b1e34fee963ec69009a16ee7cede60d4',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp311-amd64',
+                                                          'windows-cp312-amd64',
+                                                          'windows-cp313-amd64',
+                                                          'linux-cp311-x86_64',
+                                                          'linux-cp312-x86_64']},
+                                  {'source_sha256': {'desktop_chatgpt_auth.py': '358716a763635543c44ae624222a93157f86f7dde775a21c1fe0aa7fe168bdc4',
+                                                     'desktop_chatgpt_provider.py': '832431f1ddbad981f38967222c385b4641e89891ce557f19147d7f99db15e7b4'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': 'c19a5cfe550b7b254cc6cf5a0b0a5813422d65492be82b7f9fb9d7ffdf7f54f3',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp311-amd64',
+                                                          'windows-cp312-amd64',
+                                                          'windows-cp313-amd64']}],
+ 'result_source_hash_variants': [{'core.py': '62363665d7c209a3cc791b872607823cdac75a8ae4c35a858f903824785ee42b',
+                                  'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                                  'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                                  'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+                                 {'core.py': '99174ffa3e52ca940909a9e0ec91d98da801bd4fcfb4136064cbd7bfb9a5f1c9',
+                                  'data.py': '7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb',
+                                  'strategies.py': 'c35ed80ffe11787fbc93b964cbe6403d36921fbf9ca6d6f8a282301691da6132',
+                                  'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}],
+ 'provider_modes': ['chatgpt_plan']})
+
+SUPPORTED_PRODUCERS = (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2,
+                       TRANSPORT_VERIFIER_PRODUCER, TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2)
 
 
 @dataclass(frozen=True)
@@ -921,7 +1011,8 @@ def _select_producer(binding):
             _fail('Unsupported source provider protocol implementation tuple or ambiguous profile')
     else:
         matches = [known for known in matches if known['protocol'] in
-                   (AUDITED_PRODUCER['protocol'], CURRENT_PRODUCER['protocol'])]
+                   (AUDITED_PRODUCER['protocol'], CURRENT_PRODUCER['protocol'],
+                    TRANSPORT_VERIFIER_PRODUCER['protocol'])]
         if len(matches) != 1:
             _fail('Unsupported or ambiguous audited source producer protocol')
     return matches[0]

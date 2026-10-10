@@ -61,6 +61,18 @@ class QualityGateTests(unittest.TestCase):
                 with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
                     self.assertEqual(scan(root), [], name)
 
+    def test_automatic_backup_component_keeps_desktop_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            name = 'desktop_automatic_backup.py'
+            for source in ('import trader', 'import shioaji', "eval('1')", "exec('1')"):
+                (root/name).write_text(source, encoding='utf-8')
+                with self.subTest(source=source), patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+                    self.assertTrue(scan(root))
+            (root/name).write_text('from PySide6.QtWidgets import QWidget', encoding='utf-8')
+            with patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+                self.assertEqual(scan(root), [])
+
     def test_research_dependencies_are_standard_library_only(self):
         for source in ("import PySide6", "from streamlit import title", "import requests"):
             self.assertTrue(python_findings(source, "quantlab/new.py", research=True))

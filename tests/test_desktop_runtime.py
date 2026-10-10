@@ -156,13 +156,13 @@ class RuntimeTests(unittest.TestCase):
     def test_restore_rolls_back_failed_promotion(self):
         (self.paths.state / 'keep').write_text('safe')
         archive = self._archive('new')
-        import os
-        real_replace = os.replace
+        from quantlab.desktop_runtime import _durable_replace
+        real_replace = _durable_replace
         def fail_promotion(source, dest):
             if Path(source).name.startswith('.restore-'):
                 raise OSError('injected failure')
             return real_replace(source, dest)
-        with patch('quantlab.desktop_runtime.os.replace', side_effect=fail_promotion):
+        with patch('quantlab.desktop_runtime._durable_replace', side_effect=fail_promotion):
             with self.assertRaises(OSError):
                 self.backups.restore(archive)
         self.assertEqual((self.paths.state / 'keep').read_text(), 'safe')

@@ -39,8 +39,9 @@ def process_can_run(pid):
     try: os.kill(pid, 0)
     except ProcessLookupError: return False
     if sys.platform.startswith('linux'):
-        try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-        except FileNotFoundError: return False
+        # Reaping can expose dead X (historically x) after zombie Z.
+        try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] not in {'Z', 'X', 'x'}
+        except (FileNotFoundError, ProcessLookupError): return False
     return True
 
 

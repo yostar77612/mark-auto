@@ -59,11 +59,18 @@ def python_findings(source: str, label: str, research: bool = False,
                     first_party.add("desktop_ui")
                 if set(modules) - sys.stdlib_module_names - first_party:
                     findings.append(f"{label}:{node.lineno}: research dependency must be standard library")
-            if BANNED_IMPORTS.intersection(modules):
+            prohibited = BANNED_IMPORTS.intersection(modules)
+            if label == 'desktop_local_ai_runtime.py':
+                prohibited.discard('subprocess')  # Sole hash-pinned desktop runtime adapter.
+            if prohibited:
                 findings.append(f"{label}:{node.lineno}: forbidden research import")
             if isinstance(node, ast.Call):
                 name = node.func.id if isinstance(node.func, ast.Name) else (
                     node.func.attr if isinstance(node.func, ast.Attribute) else "")
+                if label == 'desktop_local_ai_runtime.py' and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == 'subprocess':
+                    shell = next((kw.value for kw in node.keywords if kw.arg == 'shell'), None)
+                    if name != 'Popen' or not isinstance(shell, ast.Constant) or shell.value is not False:
+                        findings.append(f'{label}:{node.lineno}: only explicit shell-free pinned Popen is allowed')
                 if name in BANNED_CALLS:
                     findings.append(f"{label}:{node.lineno}: dynamic execution")
     return findings
@@ -98,7 +105,8 @@ def scan(root: Path, history: bool = False) -> list[str]:
                                             desktop=name in {"desktop_ui.py", "desktop_charts.py",
                                                              "desktop_forms.py", "desktop_market.py", "desktop_walk_forward.py",
                                                              "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py",
-                                                             "desktop_chatgpt_ui.py"}))
+                                                             "desktop_chatgpt_ui.py", "desktop_local_ai.py", "desktop_automatic_backup.py",
+                                                             "desktop_local_ai_runtime.py", "desktop_local_ai_smoke.py"}))
     if history:
         if git(root, "rev-parse", "--is-shallow-repository").strip() != b"false":
             findings.append("history: full checkout required")

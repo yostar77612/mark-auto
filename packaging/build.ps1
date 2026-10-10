@@ -8,20 +8,52 @@ Push-Location (Split-Path $PSScriptRoot -Parent)
 try {
   python -c "import sys; assert sys.version_info[:3] == (3, 13, 16), sys.version; assert sys.maxsize > 2**32"
   if ($LASTEXITCODE) { throw 'Build requires pinned CPython 3.13.16 x64' }
-  python -m pip install --require-hashes --only-binary=:all: -r requirements-desktop.lock
+  python packaging/version_resource.py --version $Version --output build/markauto-version.txt
+  if ($LASTEXITCODE) { throw 'Project executable version metadata generation failed' }
+  # Clone the exact interpreter before installing dependencies; never replace its DLL globally.
+  $privateRuntime = Join-Path (Get-Location) 'build/sqlite-python'
+  if ($env:GITHUB_PATH) {
+    python tools/install_sqlite_runtime.py --destination $privateRuntime --report dist/validation/sqlite-runtime.json --github
+  } else {
+    python tools/install_sqlite_runtime.py --destination $privateRuntime --report dist/validation/sqlite-runtime.json
+  }
+  if ($LASTEXITCODE) { throw 'Pinned private SQLite runtime setup failed' }
+  $python = Join-Path $privateRuntime 'python.exe'
+  $env:PATH = "$privateRuntime;$env:PATH"
+  & $python -m pip install --require-hashes --only-binary=:all: -r requirements-desktop.lock
   if ($LASTEXITCODE) { throw 'Dependency install failed' }
-  python -c "from PySide6.QtWidgets import QApplication; import PySide6; print('Native Qt preflight', PySide6.__version__)"
+  & $python -c "from PySide6.QtWidgets import QApplication; import PySide6; print('Native Qt preflight', PySide6.__version__)"
   if ($LASTEXITCODE) { throw 'Native Qt preflight failed; refusing skipped UI tests' }
   $env:MARKAUTO_REQUIRE_DESKTOP_AUTH_TESTS = '1'
-  python -c "from desktop_chatgpt_provider import implementation_provenance; print(implementation_provenance()['dependency_target'])"
+  & $python -c "from desktop_chatgpt_provider import implementation_provenance; print(implementation_provenance()['dependency_target'])"
   if ($LASTEXITCODE) { throw 'Native authentication dependencies or provenance unavailable' }
-  python -m unittest discover -s tests -v
+  & $python -m unittest discover -s tests -v
   if ($LASTEXITCODE) { throw 'Regression suite failed before freezing' }
-  python packaging/collect_licenses.py
+  & $python packaging/collect_licenses.py
   if ($LASTEXITCODE) { throw 'License collection failed' }
-  python -m PyInstaller --noconfirm --clean packaging/markauto.spec
+  & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec
   if ($LASTEXITCODE) { throw 'PyInstaller failed' }
-  python packaging/payload_inventory.py dist/MarkAuto dist/payload-inventory.txt dist/payload-inventory.iss
+  & $python packaging/qt_licenses.py --payload dist/MarkAuto --report dist/validation/qt-license-audit.json
+  if ($LASTEXITCODE) { throw 'Actual Qt payload/license-text scope audit failed' }
+  # Inspect the actual frozen EXE, not just its resource source. No DLL is modified.
+  $nativeVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path (Get-Location) 'dist/MarkAuto/MarkAuto.exe'))
+  $expectedParts = @($Version.Split('.') | ForEach-Object { [int]$_ }) + @(0)
+  $fileParts = @($nativeVersion.FileMajorPart, $nativeVersion.FileMinorPart, $nativeVersion.FileBuildPart, $nativeVersion.FilePrivatePart)
+  $productParts = @($nativeVersion.ProductMajorPart, $nativeVersion.ProductMinorPart, $nativeVersion.ProductBuildPart, $nativeVersion.ProductPrivatePart)
+  if ($nativeVersion.FileVersion -cne $Version -or $nativeVersion.ProductVersion -cne $Version -or
+      $nativeVersion.ProductName -cne 'MarkAuto' -or $nativeVersion.CompanyName -cne 'Mark Auto contributors' -or
+      $nativeVersion.OriginalFilename -cne 'MarkAuto.exe' -or $nativeVersion.InternalName -cne 'MarkAuto' -or
+      ($fileParts -join '.') -cne ($expectedParts -join '.') -or ($productParts -join '.') -cne ($expectedParts -join '.')) {
+    throw 'Frozen project executable version resource does not match the requested build'
+  }
+  New-Item dist/validation -ItemType Directory -Force | Out-Null
+  [ordered]@{
+    file = 'MarkAuto.exe'; file_version = $nativeVersion.FileVersion; product_version = $nativeVersion.ProductVersion
+    product_name = $nativeVersion.ProductName; company_name = $nativeVersion.CompanyName
+    fixed_file_version = $fileParts; fixed_product_version = $productParts
+    metadata_verified = $true; signature_verified = $false
+  } | ConvertTo-Json -Depth 4 | Set-Content dist/validation/executable-version.json -Encoding UTF8
+  & $python packaging/payload_inventory.py dist/MarkAuto dist/payload-inventory.txt dist/payload-inventory.iss
   if ($LASTEXITCODE) { throw 'Payload inventory failed' }
   $temporary = $env:RUNNER_TEMP
   if (-not $temporary) { $temporary = $env:TEMP }

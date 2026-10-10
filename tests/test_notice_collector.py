@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 VERSIONS={'PyJWT':'2.15.1','cryptography':'50.0.2','cffi':'2.1.1','pycparser':'3.11'}
+QT_VERSIONS={name:'6.12.0' for name in ('PySide6','PySide6_Essentials','PySide6_Addons','shiboken6')}
 EXPECTED_SHA='cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24'
 
 
@@ -38,6 +39,7 @@ class ZipCollectorTests(unittest.TestCase):
             temp=Path(temporary);source=temp/'packaging/third_party/chatgpt-auth-native-notices.zip'
             source.parent.mkdir(parents=True)
             shutil.copyfile(ROOT/'packaging/third_party/chatgpt-auth-native-notices.zip',source)
+            shutil.copytree(ROOT/'packaging/qt_notices',temp/'packaging/qt_notices')
             (temp/'LICENSE.txt').write_text('Fixture Python license')
             (temp/'outside-sentinel').write_text('unchanged')
             dependencies=[]
@@ -53,11 +55,13 @@ class ZipCollectorTests(unittest.TestCase):
                     return SimpleNamespace(st_mode=stat.S_IFDIR|0o700,st_file_attributes=0x400)
                 return original_lstat(path,*args,**kwargs)
             try:
-                with patch('importlib.metadata.distributions',return_value=dependencies),patch('importlib.metadata.version',side_effect=(versions or VERSIONS).__getitem__),patch('sys.base_prefix',str(temp)),patch.object(Path,'lstat',lstat),patch.object(zipfile.ZipFile,'extract',side_effect=AssertionError('Archive extraction forbidden')),patch.object(zipfile.ZipFile,'extractall',side_effect=AssertionError('Archive extraction forbidden')):
+                with patch('importlib.metadata.distributions',return_value=dependencies),patch('importlib.metadata.version',side_effect=(QT_VERSIONS | (versions or VERSIONS)).__getitem__),patch('sys.base_prefix',str(temp)),patch.object(Path,'lstat',lstat),patch.object(zipfile.ZipFile,'extract',side_effect=AssertionError('Archive extraction forbidden')),patch.object(zipfile.ZipFile,'extractall',side_effect=AssertionError('Archive extraction forbidden')):
                     namespace=runpy.run_path(str(ROOT/'packaging/collect_licenses.py'))
                 target=temp/'build/licenses/chatgpt-auth-native-notices.zip'
                 self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(),EXPECTED_SHA)
-                expected={'PYTHON-LICENSE.txt','chatgpt-auth-native-notices.zip'}
+                expected={'PYTHON-LICENSE.txt','chatgpt-auth-native-notices.zip','qt'}
+                for notice in (ROOT/'packaging/qt_notices').iterdir():
+                    self.assertEqual((target.parent/'qt'/notice.name).read_bytes(), notice.read_bytes())
                 if inventory:
                     expected.add('FixtureDependency')
                     self.assertEqual((target.parent/'FixtureDependency/LICENSE.txt').read_text(), 'Existing dependency notice')
@@ -69,6 +73,13 @@ class ZipCollectorTests(unittest.TestCase):
 
     def test_exact_archive_copied_unextracted(self):self.run_collector()
     def test_existing_distribution_license_inventory_retained(self):self.run_collector(inventory=True)
+    def test_qt_version_mismatch_fails(self):
+        with self.assertRaisesRegex(RuntimeError,'Qt notice dependency version mismatch'):
+            self.run_collector(versions=VERSIONS | {'PySide6':'6.11.0'})
+    def test_missing_qt_license_fails_before_output(self):
+        def mutate(t,s):(t/'packaging/qt_notices/GPL-3.0-only.txt').unlink()
+        with self.assertRaisesRegex(RuntimeError,'missing or unreviewed'):
+            self.run_collector(mutate)
     def test_missing_source_fails(self):
         with self.assertRaisesRegex(RuntimeError,'missing'):
             self.run_collector(lambda t,s:s.unlink())

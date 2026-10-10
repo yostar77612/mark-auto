@@ -1,0 +1,15 @@
+# Opt-in automatic research-state backups
+
+In Settings and Backup, choose an absolute local folder outside both the active workspace and the application's bootstrap folder, enable daily automatic backup, and save. Existing and new installations remain disabled until explicitly enabled.
+
+UNC/device destinations and Windows mapped network drives are rejected before filesystem probing. Hard-linked state files, configuration, and matching destination entries are rejected; symbolic links and Windows reparse points remain prohibited. Configuration must be a regular file, preventing a special file from blocking a settings read.
+
+The desktop checks once per minute while open. It waits for the research worker, local model server, local-model setup/probe worker, authentication flow, and pending reconciliation to be idle. It uses the existing cancellable backup worker, so archiving is not performed on the UI thread. Closing the application does not install a daemon or Windows scheduled task. Restore remains an explicit manual action with confirmation.
+
+A durable per-workspace attempt watermark lives in the application's bootstrap folder, outside restored research state and outside the irreversible AI-budget ledger. Each UTC day permits at most one admitted attempt. Cancellation, worker failure, a crash, or a clock moving backwards cannot cause a same-day automatic retry. Changing the destination or toggling the option does not reset this watermark. A clock incorrectly set far in the future can therefore delay future automatic backups; the visible status and manual backup remain available.
+
+Storage is bounded without automatic deletion: at most seven matching archives or orphan ZIP temporaries, a conservative 2 GiB managed-file budget, and at least 528 MiB free space before admission. The folder scan has a 10,000-entry bound. Matching unknown files and orphan temporary files count toward the cap, but are never deleted or overwritten. When capacity or configuration checks fail, the panel pauses with a visible error; move files or choose another external folder and save the settings to resume. No attempt is consumed while waiting on busy workers or failing capacity checks.
+
+Archives retain BackupManager's size/file limits, manifest hashes, schema-2 WAL runtime barrier, and raw state bytes. Credentials, cache/model files, scheduler configuration, and irreversible research controls are outside the archived research-state directory. Restoring does not refund AI budgets or reset consumed holdouts.
+
+Verification: tests/test_automatic_backup.py covers real archive/restore, raw-byte schema-2 preservation, exclusions, unsafe paths, malformed settings, day/restart/rollback handling, storage limits, failed writes and cancellations. tests/test_desktop_automatic_backup.py uses pinned Qt and a real JobManager archive worker to cover asynchronous completion, cancellation, idle admission and visible errors. Native Windows testing remains necessary for platform-specific filesystem and process behavior.

@@ -63,7 +63,10 @@ class PackagingTests(unittest.TestCase):
                     'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
                     'desktop_chatgpt_dependency_manifest.json',
                     'packaging/third_party/chatgpt-auth-native-notices.zip',
-                    'packaging/third_party/README.md'}
+                    'packaging/third_party/README.md', '.gitattributes',
+                    'packaging/qt_licenses.py', 'packaging/qt_notices/manifest.json',
+                    'packaging/qt_notices/QT-NOTICE.txt', 'packaging/qt_notices/QT-NATIVE-NOTICES.zip',
+                    'packaging/qt_notices/GPL-3.0-only.txt', 'packaging/qt_notices/LGPL-3.0-only.txt'}
         required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
         for name in required:
             self.assertTrue((ROOT / name).is_file(), name)
@@ -79,12 +82,23 @@ class PackagingTests(unittest.TestCase):
         hooks.copy_metadata = lambda name: metadata_names.append(name) or []
         def analysis(*args, **kwargs):
             captured.update(kwargs)
-            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=kwargs['datas'])
-        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}):
+            # Real Analysis output is destination-first TOC, unlike its source-first inputs.
+            datas = [(str(Path(destination) / Path(source).name), source, 'DATA')
+                     for source, destination in kwargs['datas']]
+            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=datas)
+        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}), \
+                patch('quantlab.sqlite_runtime.verify') as verify_sqlite, \
+                patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries, \
+                patch('quantlab.local_ai.collect_support_binaries', return_value=[('inert-verified-vc.dll','local-ai-dependencies')]) as collect_local_ai:
             runpy.run_path(str(ROOT / 'packaging/markauto.spec'), init_globals={
                 'SPECPATH': str(ROOT / 'packaging'), 'Analysis': analysis,
                 'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
                 'COLLECT': lambda *a, **kw: None})
+        collect_local_ai.assert_called_once()
+        self.assertEqual(captured['binaries'], [('inert-verified-vc.dll','local-ai-dependencies')])
+        verify_sqlite.assert_called_once()
+        verify_binaries.assert_called_once()
+        self.assertIn(str(ROOT / 'packaging/sqlite_runtime_hook.py'), captured['runtime_hooks'])
         datas = set(captured['datas'])
         self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
         for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
@@ -155,7 +169,8 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / 'packaging/third_party').mkdir(parents=True)
-            (root / 'dist').mkdir()
+            (root / 'dist/validation').mkdir(parents=True)
+            (root / 'dist/validation/sqlite-runtime.json').write_text(json.dumps({'runtime': 'test-only'}))
             shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
             names = ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
                      'desktop_chatgpt_ui.py', 'desktop_chatgpt_dependency_manifest.json',
@@ -229,3 +244,27 @@ class PackagingTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class LocalAIActualFreezePinTests(unittest.TestCase):
+    def test_actual_freezer_calls_strict_existing_dependency_verifier(self):
+        from quantlab import local_ai
+        from unittest.mock import patch
+        folder=Path('/inert/verified/shiboken6')
+        with patch.object(local_ai.sys,'platform','win32'), patch.object(local_ai,'application_dependencies',return_value=folder) as verify:
+            result=local_ai.collect_support_binaries()
+        verify.assert_called_once()
+        self.assertEqual(result,[(str(folder/name),'local-ai-dependencies') for name in local_ai.manifest()['support_dlls']])
+
+    def test_actual_freezer_refuses_different_qt_vc_bytes(self):
+        from quantlab import local_ai
+        from unittest.mock import patch
+        with patch.object(local_ai.sys,'platform','win32'),patch.object(local_ai,'application_dependencies',side_effect=local_ai.LocalAIError('dependency')):
+            with self.assertRaises(local_ai.LocalAIError):local_ai.collect_support_binaries()
+
+    def test_actual_freezer_is_not_a_linux_structural_mock(self):
+        from quantlab import local_ai
+        from unittest.mock import patch
+        with patch.object(local_ai.sys,'platform','linux'),patch.object(local_ai,'application_dependencies') as verify:
+            with self.assertRaises(local_ai.LocalAIError):local_ai.collect_support_binaries()
+            verify.assert_not_called()

@@ -18,7 +18,8 @@ from quantlab.core import Dataset, ValidationError, canonical_json, content_hash
 from quantlab.reporting import save_dataset
 from quantlab.research import _reserve_holdout, run_campaign, FixtureGenerator, demo_campaign_config
 from quantlab.saved_candidate_pool import (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2, MAX_AUDIT_BYTES, SavedCandidatePoolError,
-    admit_saved_campaign_pool, load_original_dataset)
+    admit_saved_campaign_pool, load_original_dataset, TRANSPORT_VERIFIER_PRODUCER,
+    TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2, SUPPORTED_PRODUCERS)
 from quantlab.walk_forward import (build_walk_forward_plan, planned_evaluations,
     read_walk_forward_state, run_walk_forward, walk_forward_plan_from_dict)
 from tests.saved_pool_fixtures import make_saved_source, make_chatgpt_source, write_source, shifted_dataset
@@ -369,7 +370,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                              output_dir=folder, holdout_registry_path=self.registry)
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(state['attempts'][0]['status'], 'evaluated')
-        self.assertEqual(state['binding']['engine_source_hashes'], CURRENT_PRODUCER['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
         before = (folder / 'campaign.json').read_bytes()
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
         self.assertEqual(len(admission.candidate_pool), 1)
@@ -632,6 +633,129 @@ class SavedCandidatePoolTests(unittest.TestCase):
             with self.assertRaises(SavedCandidatePoolError):
                 self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
 
+    def test_transport_verifier_profiles_preserve_exact_prior_profiles_and_source_scope(self):
+        self.assertEqual(content_hash(CURRENT_CHATGPT_PROFILE_V2),
+                         'ce3b2af865ea0338575c065b988a64ebcd4974e58617a93779e6edb684ec37de')
+        for old, new, expected in (
+            (CURRENT_PRODUCER, TRANSPORT_VERIFIER_PRODUCER,
+             '346eceee2a55514c22a32ae028402c8a74c9b52ab44befa0f90608ae68e549be'),
+            (CURRENT_CHATGPT_PROFILE_V2, TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2,
+             'e86f5b691ea3b0c015f0354ca2d6ec0b49c6300c25b62255b4f8a9da13f2b55e')):
+            self.assertEqual(content_hash(new), expected)
+            prior_shape = to_dict(new)
+            prior_shape['protocol'] = old['protocol']
+            prior_shape['engine_source_hashes']['provider.py'] = old['engine_source_hashes']['provider.py']
+            self.assertEqual(prior_shape, old)
+            with self.assertRaises(TypeError):
+                new['engine_source_hashes']['provider.py'] = 'f' * 64
+        # Read only to verify the literal audit pin. Runtime admission never does this.
+        import quantlab.research as research
+        actual = {name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
+                  for name in TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes']}
+        self.assertEqual(actual, TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
+        self.assertEqual(content_hash(research.PROMPT), TRANSPORT_VERIFIER_PRODUCER['prompt_template_hash'])
+
+    def test_transport_verifier_fixture_and_compatible_profiles_are_canonical_without_rewrites(self):
+        provider = {'mode': 'openai_compatible', 'model': 'fixture',
+            'endpoint': 'https://example.invalid/v1/chat/completions', 'network_opt_in': True,
+            'transport_type': 'quantlab.provider.HTTPTransport',
+            'limits': {'calls': 15, 'tokens': 1000000, 'spend': '0', 'rate': '0', 'tokens_per_call': 2048, 'timeout': 30}}
+        for name, supplied in (('fixture', None), ('compatible', provider)):
+            folder, ref, original, _ = make_saved_source(self.root / ('transport-' + name),
+                producer=TRANSPORT_VERIFIER_PRODUCER, provider=supplied)
+            before = {path.name: path.read_bytes() for path in folder.iterdir()}
+            admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+            with patch('quantlab.saved_candidate_pool.SUPPORTED_PRODUCERS', tuple(reversed(SUPPORTED_PRODUCERS))):
+                reordered = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+            self.assertEqual(admission.admission, reordered.admission)
+            self.assertEqual(admission.admission['producer'], TRANSPORT_VERIFIER_PRODUCER)
+            self.assertEqual(before, {path.name: path.read_bytes() for path in folder.iterdir()})
+            self.assertEqual(walk_forward_plan_from_dict(to_dict(self.plan(admission))), self.plan(admission))
+
+    def test_transport_verifier_chatgpt_profiles_select_only_exact_descriptor_pairs(self):
+        for producer in (TRANSPORT_VERIFIER_PRODUCER, TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2):
+            for index, implementation in enumerate(producer['chatgpt_plan_implementations']):
+                for target in implementation['dependency_targets']:
+                    with self.subTest(protocol=producer['protocol'], implementation=index, target=target):
+                        folder, ref, original, _ = make_chatgpt_source(
+                            self.root / f"transport-chatgpt-{producer['protocol']}-{index}-{target}",
+                            producer=producer, implementation=index, dependency_target=target)
+                        with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                            admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref,
+                                                   original_dataset=original)
+                        self.assertEqual(admission.admission['producer'], producer)
+                        self.assertEqual(admission.admission['real_model_status'], 'not_verified')
+
+    def test_transport_verifier_unknown_and_mixed_engine_hashes_remain_unsupported(self):
+        producers = []
+        for name in TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes']:
+            producer = to_dict(TRANSPORT_VERIFIER_PRODUCER)
+            producer['engine_source_hashes'][name] = 'f' * 64
+            producers.append(producer)
+        for name in ('research.py', 'backtest.py'):
+            producer = to_dict(TRANSPORT_VERIFIER_PRODUCER)
+            producer['engine_source_hashes'][name] = AUDITED_PRODUCER['engine_source_hashes'][name]
+            producers.append(producer)
+        producer = to_dict(TRANSPORT_VERIFIER_PRODUCER)
+        producer['prompt_template_hash'] = 'f' * 64
+        producers.append(producer)
+        for index, producer in enumerate(producers):
+            with self.subTest(index=index):
+                folder, ref, original, _ = make_saved_source(self.root / f'transport-unknown-{index}', producer=producer)
+                with self.assertRaises(SavedCandidatePoolError) as error:
+                    self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+                self.assertEqual(error.exception.reason_code, 'source_producer_unsupported')
+
+    def test_transport_verifier_mixed_chatgpt_descriptors_and_unknown_targets_refuse(self):
+        for index, mutate in enumerate((
+            lambda item: item.update(dependency_manifest_sha256=TRANSPORT_VERIFIER_PRODUCER[
+                'chatgpt_plan_implementations'][0]['dependency_manifest_sha256']),
+            lambda item: item['source_sha256'].update({'desktop_chatgpt_auth.py':
+                TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2['chatgpt_plan_implementations'][1][
+                    'source_sha256']['desktop_chatgpt_auth.py']}),
+            lambda item: item['source_sha256'].update({'desktop_chatgpt_provider.py':
+                TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2['chatgpt_plan_implementations'][1][
+                    'source_sha256']['desktop_chatgpt_provider.py']}),
+            lambda item: item['dependency_versions'].update(cryptography='50.0.1'))):
+            producer = to_dict(TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2)
+            mutate(producer['chatgpt_plan_implementations'][0])
+            folder, ref, original, _ = make_chatgpt_source(self.root / f'transport-mixed-chatgpt-{index}', producer=producer)
+            with self.assertRaises(SavedCandidatePoolError) as error:
+                self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+            self.assertEqual(error.exception.reason_code, 'source_provider_provenance_invalid')
+        for producer in (TRANSPORT_VERIFIER_PRODUCER, TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2):
+            folder, ref, original, _ = make_chatgpt_source(self.root / (producer['protocol'] + '-unknown-target'),
+                producer=producer, dependency_target='windows-cp314-amd64')
+            with self.assertRaises(SavedCandidatePoolError) as error:
+                self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+            self.assertEqual(error.exception.reason_code, 'source_provider_provenance_invalid')
+
+    def test_transport_verifier_source_profile_does_not_admit_unknown_literal_mode(self):
+        folder, ref, original, _ = make_saved_source(self.root / 'transport-local-ai',
+            producer=TRANSPORT_VERIFIER_PRODUCER,
+            provider={'mode': 'local_free_ai', 'model': 'fixture', 'endpoint': 'http://127.0.0.1:18974/v1/chat/completions'})
+        with self.assertRaises(SavedCandidatePoolError) as error:
+            self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+        self.assertEqual(error.exception.reason_code, 'source_provider_unsupported')
+
+    def test_transport_verifier_gui_local_provider_uses_existing_compatible_protocol(self):
+        from quantlab.local_ai import provider as local_provider
+        from quantlab.research import _provider_identity
+        # The descriptor is real, while campaign outputs/receipts are manufactured
+        # schema fixtures. No model, owned process, network, or credential is used.
+        with patch('quantlab.local_ai.HTTPTransport.__call__', side_effect=AssertionError('no network')):
+            provider = _provider_identity(local_provider(self.root / 'local-controls',
+                                                        owner={'pid': 123, 'created': 456}))
+            self.assertEqual(provider['mode'], 'openai_compatible')
+            self.assertEqual(provider['transport_type'], 'quantlab.provider.HTTPTransport')
+            self.assertEqual(provider['output_mode'], 'registry_json_schema')
+            folder, ref, original, _ = make_saved_source(self.root / 'transport-gui-local-ai',
+                producer=TRANSPORT_VERIFIER_PRODUCER, provider=provider)
+            admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+        self.assertEqual(admission.admission['producer'], TRANSPORT_VERIFIER_PRODUCER)
+        self.assertEqual(admission.admission['provider_mode'], 'openai_compatible')
+        self.assertEqual(admission.admission['real_model_status'], 'not_verified')
+
     def produce_current(self, generator=None):
         self.original = shifted_dataset(self.original, days=-1)
         source_config = replace(self.builtin.backtest_config, costs=replace(
@@ -651,9 +775,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
 
     def test_genuine_current_fixture_campaign_to_saved_walk_forward_no_hash_relabelling(self):
         folder, reference, state = self.produce_current()
-        self.assertEqual(state['binding']['engine_source_hashes'], CURRENT_PRODUCER['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
-        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_3_campaign_v1')
+        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_2_campaign_transport_verifier_v1')
         self.assertEqual(admission.admission['source_campaign_ref'], reference)
         self.assertEqual(admission.admission['source_campaign_id'], state['campaign_id'])
         self.assertEqual(len(admission.candidate_pool), 15)

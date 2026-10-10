@@ -50,6 +50,11 @@ jobs:
       - name: Build native runtime and unsigned per-user installers
         shell: pwsh
         run: ./packaging/build.ps1 -Version 0.2.2
+      - name: Validate one actual frozen free local AI call (no market input or paid fallback)
+        shell: pwsh
+        run: |
+          python packaging/validate_local_ai.py --executable "$PWD/dist/MarkAuto/MarkAuto.exe" --cache "$env:RUNNER_TEMP/markauto-local-ai-cache" --work "$env:RUNNER_TEMP/markauto-local-ai-attempt" --report "$PWD/dist/validation/local-ai-smoke.json"
+          if ($LASTEXITCODE) { throw 'Actual frozen local AI validation failed; preserved evidence is not acceptance' }
       - name: Record actual public daily-source availability (BLOCKED is not product acceptance)
         run: python tools/validate_market_download.py dist/validation/public-market-download.json
       - name: Fetch hash-pinned actual previously released baseline
