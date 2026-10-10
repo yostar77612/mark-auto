@@ -96,7 +96,8 @@ class UpdateRecoveryTests(unittest.TestCase):
     def test_recovery_supports_explicit_legacy_and_versioned_baselines(self):
         script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
         self.assertIn("[string]$BaselineVersion = '0.1.1'", script)
-        self.assertIn("[string]$Version = '0.2.0'", script)
+        from quantlab import __version__
+        self.assertIn(f"[string]$Version = '{__version__}'", script)
         self.assertIn("if ($expectedVersion -eq '0.1.1')", script)
         self.assertIn("$full -ne (Join-Path $trustedRoot 'MarkAuto.exe')", script)
         self.assertIn('Join-Path $trustedRoot "payloads\\$expectedVersion"', script)

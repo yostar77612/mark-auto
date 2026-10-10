@@ -24,6 +24,88 @@ class _SmokeSettingsView:
         self._settings = deepcopy(settings)
 
 
+def _auth_smoke_dependencies():
+    """Offline synthetic packaging proof; no host registration, vault or model calls."""
+    import json
+    import socket
+    import time
+    import jwt
+    import cffi
+    import pycparser
+    import cryptography
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.backends.openssl.backend import backend
+    import desktop_chatgpt_auth as auth
+    from desktop_chatgpt_provider import implementation_provenance
+
+    def deny_network(*args, **kwargs):
+        raise RuntimeError('Network forbidden in synthetic auth packaging smoke')
+
+    versions = {'PyJWT': jwt.__version__, 'cryptography': cryptography.__version__,
+                'cffi': cffi.__version__, 'pycparser': pycparser.__version__}
+    expected = {'PyJWT': '2.15.1', 'cryptography': '50.0.2', 'cffi': '2.1.1', 'pycparser': '3.11'}
+    if versions != expected or 'OpenSSL 4.0.3' not in backend.openssl_version_text():
+        raise ValueError('Auth packaging dependency mismatch')
+    before = set(Path.cwd().iterdir())
+    network_functions = {name: getattr(socket, name) for name in ('socket', 'create_connection', 'getaddrinfo')}
+    try:
+        for name in network_functions:
+            setattr(socket, name, deny_network)
+        provenance = implementation_provenance()
+        parsed = pycparser.CParser().parse('typedef unsigned long size_t; struct sample { int value; };')
+        ffi = cffi.FFI()
+        ffi.cdef('struct sample { int value; };')
+        if len(parsed.ext) != 2 or ffi.new('struct sample *', {'value': 17}).value != 17:
+            raise ValueError('Parser or native CFFI packaging failed')
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        jwk = dict(json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key())),
+                   kid='packaging-fixture', alg='RS256', use='sig')
+        claims = dict(iss=auth.ISSUER, sub='packaging-fixture', aud='fixture-client',
+                      nonce='fixture-nonce', iat=int(time.time()), exp=int(time.time()) + 60)
+        token = jwt.encode(claims, key, algorithm='RS256', headers={'kid': 'packaging-fixture'})
+
+        class FixtureTransport:
+            def request(self, method, url, *, form=None):
+                if method != 'GET' or form is not None:
+                    raise ValueError('Unexpected synthetic auth operation')
+                if url == auth.DISCOVERY:
+                    value = dict(auth.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'])
+                elif url == auth.JWKS:
+                    value = {'keys': [jwk]}
+                else:
+                    raise ValueError('Unexpected synthetic auth endpoint')
+                return auth.HttpResponse(200, json.dumps(value).encode('utf-8'))
+
+        validator = auth.IdentityValidator(FixtureTransport())
+        identity = validator.verify(token, 'fixture-client', 'fixture-nonce')
+        if identity.get('subject') != 'packaging-fixture':
+            raise ValueError('Synthetic identity validation failed')
+        for client, nonce in [('different-client', 'fixture-nonce'), ('fixture-client', 'wrong-nonce')]:
+            try:
+                validator.verify(token, client, nonce)
+            except auth.AuthError:
+                pass
+            else:
+                raise ValueError('Identity binding failure accepted')
+        try:
+            jwt.decode(token, jwt.PyJWK.from_dict(jwk), algorithms=['HS256'],
+                       issuer=auth.ISSUER, audience='fixture-client')
+        except jwt.InvalidAlgorithmError:
+            pass
+        else:
+            raise ValueError('JWT algorithm confusion accepted')
+    finally:
+        for name, function in network_functions.items():
+            setattr(socket, name, function)
+    if set(Path.cwd().iterdir()) != before:
+        raise ValueError('Auth packaging parser wrote into working directory')
+    return {'status': 'passed', 'source_type': 'synthetic', 'network_used': False,
+            'versions': versions, 'native_openssl': backend.openssl_version_text(),
+            'parser_and_cffi': True, 'rs256_identity_binding': True, 'implementation_provenance': provenance,
+            'real_oauth_status': 'not_verified', 'real_model_status': 'not_verified',
+            'scope': 'offline packaging only; not an account grant or actual model verification'}
+
+
 def _smoke_steps():
     """Fixed offline fixtures only. No endpoints, credentials, or arbitrary commands."""
     from quantlab.core import to_dict
@@ -238,6 +320,7 @@ def main(argv=None):
             smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=paths.cache)
             smoke_jobs = JobManager(AppPaths(Path(smoke_directory.name)))
             smoke_deadline = time.monotonic() + 120
+            auth_report = _auth_smoke_dependencies()
             market_report, manual_config, manual_candidate = _market_smoke_ui(app)
             manual_export_path = Path(smoke_directory.name) / 'manual-request.json'
             market_results = {}
@@ -302,7 +385,7 @@ def main(argv=None):
                 smoke_jobs.close()
                 completed = len(smoke_result['results']) == original_step_count
                 market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
-                passed = completed and market_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
+                passed = completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
                 completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
                 report = {'status': 'passed' if passed else 'failed', 'data_dir': str(paths.root),
                     'version': __version__, 'native_window_visible': window.isVisible(), 'worker_completed': completed,
@@ -310,7 +393,7 @@ def main(argv=None):
                     'campaign_completed': 'ui_campaign' in completed_operations,
                     'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
                     'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
-                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report}
+                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report}
                 atomic_write(args.smoke_test, _json_bytes(report))
                 smoke_directory.cleanup()
                 window.close()

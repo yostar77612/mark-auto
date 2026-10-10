@@ -1,0 +1,53 @@
+{
+  "targets": {
+    "linux-cp312-x86_64": {
+      "dependencies": [
+        {
+          "distribution": "PyJWT",
+          "version": "2.15.1",
+          "wheel_sha256": "42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"
+        },
+        {
+          "distribution": "cryptography",
+          "version": "50.0.2",
+          "wheel_sha256": "9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079"
+        },
+        {
+          "distribution": "cffi",
+          "version": "2.1.1",
+          "wheel_sha256": "c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf"
+        },
+        {
+          "distribution": "pycparser",
+          "version": "3.11",
+          "wheel_sha256": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80"
+        }
+      ]
+    },
+    "windows-cp313-amd64": {
+      "dependencies": [
+        {
+          "distribution": "cryptography",
+          "version": "50.0.2",
+          "wheel_sha256": "7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c"
+        },
+        {
+          "distribution": "PyJWT",
+          "version": "2.15.1",
+          "wheel_sha256": "42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"
+        },
+        {
+          "distribution": "cffi",
+          "version": "2.1.1",
+          "wheel_sha256": "1aa5645c30469b09530c4ebca77ebf8f17618293c58f8549cb1a543a50236e7d"
+        },
+        {
+          "distribution": "pycparser",
+          "version": "3.11",
+          "wheel_sha256": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80"
+        }
+      ]
+    }
+  },
+  "version": 1
+}

@@ -28,3 +28,17 @@ only on source links for LGPL source availability. No commercial Qt license,
 paid installer service or code-signing certificate is used. Inno Setup 6.4.3 is
 used under its permissive license, available at:
 https://github.com/jrsoftware/issrc/blob/is-6_4_3/license.txt
+
+## Desktop ChatGPT authentication dependencies
+
+The desktop also includes PyJWT 2.15.1 (MIT), cryptography 50.0.2
+(Apache-2.0 OR BSD-3-Clause), cffi 2.1.1 (MIT-0), and pycparser 3.11
+(BSD-3-Clause). Their installed license texts remain in `_internal/licenses`.
+Native OpenSSL 4.0.3, Rust dependency and vendored libffi notices, exact-wheel
+SBOMs, source URLs and verification records are in the standard ZIP archive
+`_internal/licenses/chatgpt-auth-native-notices.zip`. Open this archive with
+Windows Explorer or another ZIP reader; the application never extracts it.
+See `_internal/licenses/chatgpt-auth-provenance/README.md` for its pinned hash,
+component scope and the distinction between verified source archives and
+independently verified exact-version upstream notice texts. Build-only
+components are labeled separately. A dependency change requires renewed review.

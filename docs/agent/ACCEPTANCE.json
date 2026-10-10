@@ -362,51 +362,56 @@
         "id": "M1",
         "title": "真實商品/來源/首頁/自選",
         "weight": 20,
-        "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "status": "PASS",
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Actual officialTAIEX/TX/MTX/TMF records, nativeMTX/MXF mapping, source/freshness/unknown timestamps, correct prior-close basis and watchlist UI validated. No realtime entitlement claim."
       },
       {
         "id": "M2",
         "title": "多週期互動K線",
         "weight": 20,
         "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. TMF minute and all eight aggregation/interaction paths tested; shippedTX/MXF minute import still absent. Retain conservative whole-market PARTIAL until a market-only importer is validated."
       },
       {
         "id": "M3",
         "title": "技術指標正確性",
         "weight": 15,
         "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. 0.2.0 math verified; actualMACD1x label gap found. Next0.2.1 repair and targeted tests exist but exact-headWindowsGate still pending."
       },
       {
         "id": "M4",
         "title": "一般使用者研究/交易表單",
         "weight": 20,
         "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Typed workflows verified; actualPaper fixed-risk summary missing in0.2.0. Next0.2.1 reuse of enforcedRiskLimits factory tested; releaseGate pending."
       },
       {
         "id": "M5",
         "title": "訊號與成交獨立圖層",
         "weight": 5,
-        "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "status": "PASS",
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. 6839observed trainingbars,1917signals,3831fills; 5748distinctshape markers with contract/data/strategyhash binding. Main code tests independently toggle/validate signals and fills; screenshotnotlive, no new OOS/holdout."
       },
       {
         "id": "M6",
         "title": "合規AI操作模式",
         "weight": 10,
         "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Manual export/import offline source/hash/DSL verified, actualfree local inference evidence usesllama.cpp notOllama. Officialsubscription integration next0.2.1 pendingnative/usergrant; selected-route obligations not retrospectively redefined to claimPASS."
       },
       {
         "id": "M7",
         "title": "繁中深色/DPI/偏好",
         "weight": 10,
         "status": "PARTIAL",
-        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. ActualLinuxQt100/125/150% and preference restart validated; finalWindows10/11 cleanclientDPI/usability remainsBLOCKED."
       }
-    ]
+    ],
+    "accepted_weight": 25,
+    "overall_accepted_weight": 195,
+    "overall_total_weight": 300,
+    "overall_percent": 65.0,
+    "remaining_percent": 35.0
   }
 }

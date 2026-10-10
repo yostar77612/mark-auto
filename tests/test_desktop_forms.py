@@ -15,6 +15,16 @@ class DesktopFormsTests(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
         cls.app = QApplication.instance() or QApplication([])
 
+    def test_policy_header_units_are_visible_and_have_full_tooltips(self):
+        from desktop_forms import _Rows
+        columns = [('margin', '保證金 TWD／口'), ('session', '盤別（日盤 day／夜盤 night）')]
+        form = _Rows('header_fixture', columns)
+        header = form.table.horizontalHeader()
+        for index, (_, label) in enumerate(columns):
+            self.assertEqual(form.table.horizontalHeaderItem(index).toolTip(), label)
+            self.assertGreaterEqual(form.table.columnWidth(index), header.fontMetrics().horizontalAdvance(label))
+        form.close()
+
     def test_all_strategy_families_roundtrip(self):
         from desktop_forms import StrategyForm
         from quantlab.strategies import builtin_strategies, validate_strategy

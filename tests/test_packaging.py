@@ -37,6 +37,17 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('[System.Management.Automation.Language.Parser]::ParseFile', validator)
         self.assertIn("-Filter '*.ps1' -File -Recurse", validator)
 
+    def test_real_release_baseline_pin_matches_upgrade_workflow(self):
+        import runpy
+        baseline = runpy.run_path(str(ROOT / 'packaging/fetch_baseline.py'))
+        names = [name for name in baseline['ASSETS'] if name.endswith('.exe')]
+        self.assertEqual(len(names), 1)
+        baseline_version = names[0].removeprefix('MarkAuto-').removesuffix('-windows-x64-setup.exe')
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
+        self.assertIn(f'-BaselineVersion {baseline_version} ', workflow)
+        self.assertIn(f'--baseline-version {baseline_version} ', workflow)
+        self.assertIn('baseline/' + names[0], workflow)
+
     def test_manifest_includes_every_root_desktop_component(self):
         source = (ROOT / 'packaging/build_manifest.py').read_text()
         self.assertIn("'desktop*.py'", source)
@@ -48,7 +59,11 @@ class PackagingTests(unittest.TestCase):
         required = {'desktop.py', 'desktop_ui.py', 'requirements-desktop.lock',
                     'packaging/markauto.spec', 'packaging/markauto.iss',
                     'packaging/build.ps1', 'packaging/collect_licenses.py',
-                    'packaging/THIRD_PARTY_NOTICES.md', 'LICENSE'}
+                    'packaging/THIRD_PARTY_NOTICES.md', 'LICENSE',
+                    'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
+                    'desktop_chatgpt_dependency_manifest.json',
+                    'packaging/third_party/chatgpt-auth-native-notices.zip',
+                    'packaging/third_party/README.md'}
         required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
         for name in required:
             self.assertTrue((ROOT / name).is_file(), name)
@@ -60,6 +75,8 @@ class PackagingTests(unittest.TestCase):
         captured = {}
         hooks = types.ModuleType('PyInstaller.utils.hooks')
         hooks.collect_data_files = lambda name: []
+        metadata_names = []
+        hooks.copy_metadata = lambda name: metadata_names.append(name) or []
         def analysis(*args, **kwargs):
             captured.update(kwargs)
             return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=kwargs['datas'])
@@ -69,6 +86,11 @@ class PackagingTests(unittest.TestCase):
                 'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
                 'COLLECT': lambda *a, **kw: None})
         datas = set(captured['datas'])
+        self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
+        for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
+            self.assertIn((str(ROOT / name), '.'), datas)
+        for name in ('jwt', 'cryptography.hazmat.bindings._rust', '_cffi_backend', 'pycparser'):
+            self.assertIn(name, captured['hiddenimports'])
         for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'):
             self.assertIn((str(ROOT / 'quantlab' / name), 'quantlab'), datas)
         harness = (ROOT / 'packaging/test_installer.ps1').read_text()
@@ -107,9 +129,47 @@ class PackagingTests(unittest.TestCase):
         records = lock.replace('\\\n', '').splitlines()
         for record in records:
             if record and not record.startswith('#'):
-                self.assertRegex(record, r'^[-\w]+==[\d.]+\s+--hash=sha256:[a-f0-9]{64}')
+                self.assertRegex(record, r'^[-\w]+(?:\[[\w,.-]+\])?==[\d.]+\s+--hash=sha256:[a-f0-9]{64}')
         self.assertIn('PySide6==6.12.0', lock)
         self.assertNotIn('shioaji', lock.lower())
+
+    def test_auth_notice_and_provenance_build_inputs(self):
+        import hashlib
+        source = (ROOT / 'packaging/build_manifest.py').read_text()
+        for pattern in ('desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*'):
+            self.assertIn(pattern, source)
+        archive = ROOT / 'packaging/third_party/chatgpt-auth-native-notices.zip'
+        self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(),
+                         'cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24')
+        self.assertIn('_internal/licenses/chatgpt-auth-native-notices.zip',
+                      (ROOT / 'packaging/THIRD_PARTY_NOTICES.md').read_text())
+        for name in ('PyJWT[crypto]==2.15.1', 'cryptography==50.0.2', 'cffi==2.1.1', 'pycparser==3.11'):
+            self.assertIn(name, (ROOT / 'requirements-desktop.txt').read_text())
+            self.assertIn(name, (ROOT / 'requirements-desktop.lock').read_text())
+        for name in ('PyJWT[crypto]==2.15.1', 'cryptography==50.0.2', 'cffi==2.1.1', 'pycparser==3.11'):
+            self.assertNotIn(name, (ROOT / 'requirements.txt').read_text())
+
+    def test_source_manifest_hashes_auth_and_notice_inputs(self):
+        import hashlib
+        import json
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'packaging/third_party').mkdir(parents=True)
+            (root / 'dist').mkdir()
+            shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
+            names = ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
+                     'desktop_chatgpt_ui.py', 'desktop_chatgpt_dependency_manifest.json',
+                     'packaging/third_party/chatgpt-auth-native-notices.zip',
+                     'packaging/third_party/README.md', 'requirements-desktop.lock')
+            for name in names:
+                (root / name).write_bytes(('fixture:' + name).encode())
+            with patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'), \
+                    patch('importlib.metadata.distributions', return_value=[]):
+                runpy.run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
+            manifest = json.loads((root / 'dist/build-manifest.json').read_text())
+            for name in names:
+                self.assertEqual(manifest['inputs_sha256'][name],
+                                 hashlib.sha256((root / name).read_bytes()).hexdigest())
 
     def test_installer_is_per_user_and_preserves_data(self):
         source = (ROOT / 'packaging/markauto.iss').read_text()

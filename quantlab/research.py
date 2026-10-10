@@ -316,7 +316,11 @@ class CompatibleProvider:
                 'Choose lookbacks much shorter than training bar count; trend fast must be below slow.')
         request = {'model': self.model, 'messages': [
             {'role': 'system', 'content': PROMPT},
-            {'role': 'user', 'content': canonical_json(request_context)}],
+            {'role': 'user', 'content': canonical_json(request_context) + (
+                '\nBefore returning JSON, compare your chosen parameters with previous.output.parameters. '
+                'At least one parameter value must differ. A new strategy_id alone is invalid. '
+                'Choose the changed value yourself within the same schema; do not alter risk controls.'
+                if request_context.get('task') == 'improve_previous_candidate' else '')}],
             'max_tokens': self.tokens_per_call, 'response_format': response_format}
         # Reserve input bytes as a conservative token upper bound plus output cap.
         tokens = len(canonical_json(request).encode('utf-8')) + self.tokens_per_call
@@ -602,6 +606,149 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
             'registry_path': str(registry_path.resolve())}
 
 
+def _validated_provider_descriptor(value):
+    """Bound opt-in provenance JSON; reviewed providers own semantic redaction.
+
+    This validates structure, not arbitrary plugins' truthfulness or secrecy.
+    No conversion hooks, paths, source imports or descriptor IO live here.
+    """
+    count = 0
+    def visit(item, depth=0):
+        nonlocal count
+        count += 1
+        if depth > 8 or count > 512:
+            raise ValidationError('Provider descriptor structure exceeds bounds')
+        if item is None or type(item) in (bool, int):
+            if type(item) is int and abs(item) > 2**53:
+                raise ValidationError('Provider descriptor integer exceeds bounds')
+            return
+        if type(item) is str:
+            if len(item.encode('utf-8')) > 2048:
+                raise ValidationError('Provider descriptor string exceeds bounds')
+            return
+        if type(item) is dict:
+            if len(item) > 64:
+                raise ValidationError('Provider descriptor object exceeds bounds')
+            for key, child in item.items():
+                if type(key) is not str or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_.-]{0,63}', key):
+                    raise ValidationError('Invalid provider descriptor key')
+                visit(child, depth + 1)
+            return
+        if type(item) is list:
+            if len(item) > 64:
+                raise ValidationError('Provider descriptor list exceeds bounds')
+            for child in item:
+                visit(child, depth + 1)
+            return
+        raise ValidationError('Provider descriptor must contain strict JSON primitives')
+    if type(value) is not dict or value.get('version') != 1 or type(value.get('version')) is not int:
+        raise ValidationError('Unsupported provider descriptor version')
+    visit(value)
+    if len(canonical_json(value).encode('utf-8')) > 16384:
+        raise ValidationError('Provider descriptor byte budget exceeded')
+    return copy.deepcopy(value)
+
+
+def _provider_identity(generator):
+    mode = getattr(generator, 'mode', 'custom_unverified')
+    provider = {'mode': mode, 'model': getattr(generator, 'model', None),
+                'endpoint': getattr(generator, 'endpoint', None)}
+    if isinstance(generator, CompatibleProvider):
+        if generator.output_mode != 'json_object':
+            provider['output_mode'] = generator.output_mode
+        provider['limits'] = {'calls': generator.max_calls, 'tokens': generator.max_tokens,
+            'spend': str(generator.max_spend), 'rate': str(generator.cost_per_token),
+            'tokens_per_call': generator.tokens_per_call, 'timeout': generator.timeout}
+        provider['network_opt_in'] = generator.network_opt_in
+        provider['transport_type'] = type(generator.transport).__module__ + '.' + type(generator.transport).__qualname__
+    # Absent capability adds no key: legacy provider sub-bindings are unchanged.
+    descriptor = getattr(generator, 'provider_descriptor', None)
+    if descriptor is not None:
+        if not callable(descriptor):
+            raise ValidationError('Provider descriptor capability must be callable')
+        provider['descriptor'] = _validated_provider_descriptor(descriptor())
+    return provider
+
+
+def _validated_receipt_snapshot(snapshot, expected_descriptor):
+    """Strict allowlisted audit envelope; no raw bodies/paths/credentials accepted."""
+    if (type(snapshot) is not dict or set(snapshot) != {'version', 'provider_descriptor_hash', 'receipts'}
+        or type(snapshot['version']) is not int or snapshot['version'] != 1
+        or snapshot['provider_descriptor_hash'] != content_hash(expected_descriptor)):
+        raise ValidationError('Provider receipt binding mismatch')
+    receipts = snapshot['receipts']
+    if type(receipts) is not list or len(receipts) > 100:
+        raise ValidationError('Provider receipt snapshot exceeds bounds')
+    fields = {'billing_route', 'paid_api_fallback', 'token_upper_bound_enforced',
+              'spend_upper_bound_enforced', 'account_credit_policy', 'sequence',
+              'request_hash', 'request_bytes', 'status', 'response_hash', 'token_usage',
+              'received_bytes', 'elapsed_seconds'}
+    statuses = {
+        'completed', 'reserved_unknown', 'failed_or_interrupted', 'eligibility_blocked',
+        'quota_paused', 'transient_blocked', 'invalid_request', 'configuration_blocked',
+        'credential_diagnosis', 'grant_blocked', 'remote_error', 'cancelled',
+        'deadline_exceeded', 'http_transport_failed', 'invalid_json', 'duplicate_json_key',
+        'nonfinite_json', 'json_depth', 'json_object_required', 'stream_byte_limit',
+        'event_count', 'event_byte_limit', 'done_without_completion', 'ambiguous_event_type',
+        'duplicate_event_type', 'invalid_utf8', 'invalid_stream_chunk', 'truncated_event',
+        'invalid_terminal_status', 'ambiguous_terminal', 'missing_output', 'invalid_output',
+        'tools_or_unknown_output', 'incomplete_message', 'refusal_or_unknown_content',
+        'ambiguous_candidate', 'candidate_byte_limit', 'candidate_family_mismatch',
+        'invalid_credential', 'compressed_response', 'redirect_rejected', 'invalid_content_type',
+        'request_byte_limit', 'ambiguous_terminal', 'invalid_event', 'invalid_response_id',
+        'response_id_mismatch', 'response_incomplete', 'refusal_or_tool_event',
+        'eof_without_completion'}
+    for sequence, receipt in enumerate(receipts, 1):
+        if type(receipt) is not dict or set(receipt) != fields:
+            raise ValidationError('Invalid provider receipt fields')
+        if (receipt['billing_route'] != 'chatgpt_plan' or receipt['account_credit_policy'] != 'unverified_user_setting'
+            or any(receipt[key] is not False for key in ('paid_api_fallback', 'token_upper_bound_enforced', 'spend_upper_bound_enforced'))
+            or type(receipt['sequence']) is not int or receipt['sequence'] != sequence
+            or receipt['status'] not in statuses):
+            raise ValidationError('Invalid provider receipt claims')
+        for key in ('request_hash', 'response_hash'):
+            value = receipt[key]
+            if key == 'response_hash' and value is None:
+                continue
+            if type(value) is not str or not re.fullmatch('[a-f0-9]{64}', value):
+                raise ValidationError('Invalid provider receipt digest')
+        if type(receipt['request_bytes']) is not int or not 1 <= receipt['request_bytes'] <= 65536:
+            raise ValidationError('Invalid provider receipt byte count')
+        received = receipt['received_bytes']
+        if received is not None and (type(received) is not int or not 0 <= received <= 1048576 + 8192):
+            raise ValidationError('Invalid provider receipt byte count')
+        elapsed = receipt['elapsed_seconds']
+        if elapsed is not None and (type(elapsed) not in (int, float) or not math.isfinite(elapsed) or not 0 <= elapsed <= 3600):
+            raise ValidationError('Invalid provider receipt runtime')
+        usage = receipt['token_usage']
+        if usage != 'unknown':
+            if (type(usage) is not dict or set(usage) != {'input_tokens', 'output_tokens', 'total_tokens'}
+                or any(type(value) is not int or not 0 <= value <= 2**53 for value in usage.values())
+                or usage['input_tokens'] + usage['output_tokens'] != usage['total_tokens']):
+                raise ValidationError('Invalid observed token usage')
+    return copy.deepcopy(receipts)
+
+
+def _reconcile_provider_receipts(generator, provider, state, attempt, generation_finished):
+    """Parent calls only after bounded worker has stopped/joined, before selection."""
+    hook = getattr(generator, 'read_receipt_snapshot', None)
+    if hook is None:
+        return
+    try:
+        if not callable(hook) or 'descriptor' not in provider:
+            raise ValidationError('Receipt snapshot requires an opt-in descriptor')
+        receipts = _validated_receipt_snapshot(hook(), provider['descriptor'])
+        if generation_finished and len(receipts) <= len(state.get('provider_receipts', [])):
+            raise ValidationError('Completed generation lacks a new durable receipt')
+        state['provider_receipts'] = receipts
+        if not generation_finished or any(receipt['status'] != 'completed' for receipt in receipts):
+            state['status'] = 'blocked_provider_outcome'
+    except Exception:
+        # Keep the last validated snapshot, never the malformed data or exception.
+        state['status'] = 'blocked_provider_audit'
+        attempt['warnings'].append('Provider receipt audit could not be reconciled')
+
+
 def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output_dir: Path,
                  holdout_registry_path: Path | None = None) -> dict:
     """Durable reservations prevent duplicate trials on reruns or crashes.
@@ -616,16 +763,7 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
     output_dir.mkdir(parents=True, exist_ok=True)
     registry_path = Path(holdout_registry_path) if holdout_registry_path is not None else output_dir.parent / '.holdout_registry.sqlite3'
     mode = getattr(generator, 'mode', 'custom_unverified')
-    provider = {'mode': mode, 'model': getattr(generator, 'model', None),
-                'endpoint': getattr(generator, 'endpoint', None)}
-    if isinstance(generator, CompatibleProvider):
-        if generator.output_mode != 'json_object':
-            provider['output_mode'] = generator.output_mode
-        provider['limits'] = {'calls': generator.max_calls, 'tokens': generator.max_tokens,
-            'spend': str(generator.max_spend), 'rate': str(generator.cost_per_token),
-            'tokens_per_call': generator.tokens_per_call, 'timeout': generator.timeout}
-        provider['network_opt_in'] = generator.network_opt_in
-        provider['transport_type'] = type(generator.transport).__module__ + '.' + type(generator.transport).__qualname__
+    provider = _provider_identity(generator)
     binding = {'config': to_dict(config), 'data_hash': _dataset_identity(dataset),
                'split_hashes': {k: _dataset_identity(v) for k, v in splits.items()},
                'provider': provider, 'prompt_template_hash': content_hash(PROMPT),
@@ -717,6 +855,7 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
             state['attempts'].append(attempt)
             save(state)
             trial_start = time.monotonic()
+            generation_finished = False
             try:
                 context = {'family': family, 'iteration': iteration, 'seed': config['seed'],
                            'parameter_contract': copy.deepcopy(PARAMETER_CONTRACTS[family]),
@@ -725,9 +864,11 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                            'previous': copy.deepcopy({'output': parent['output'], 'metrics': {k: v['metrics'] for k, v in parent['metrics'].items()}, 'status': parent['status']}) if parent else None}
                 attempt['generator_context'] = copy.deepcopy(context)
                 generated = _run_bounded(_generate_candidate, (generator, context, iteration), deadline=deadline, config=config)
+                generation_finished = True
                 state['resource_enforcement']['process_memory_isolation'] = 'enforced_rlimit_as' if generated['memory_limit_enforced'] else 'unsupported_platform'
                 payload = generated['value']['payload']
-                state['provider_receipts'].extend(generated['value']['receipts'])
+                if getattr(generator, 'read_receipt_snapshot', None) is None:
+                    state['provider_receipts'].extend(generated['value']['receipts'])
                 _bounded_json(payload)
                 attempt['output'] = copy.deepcopy(payload)
                 attempt['output_hash'] = content_hash(payload)
@@ -753,9 +894,12 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                 attempt['status'] = 'timed_out' if isinstance(exc, ResourceTimeout) else ('rejected' if isinstance(exc, ValidationError) else 'failed')
                 attempt['warnings'].append(type(exc).__name__)
             finally:
+                _reconcile_provider_receipts(generator, provider, state, attempt, generation_finished)
                 attempt['elapsed_seconds'] = time.monotonic() - trial_start
                 state['elapsed_seconds'] = prior_elapsed + time.monotonic() - started
                 save(state)
+            if state['status'] in ('blocked_provider_outcome', 'blocked_provider_audit'):
+                return state
         # Freeze by validation only BEFORE OOS/holdout evaluation.
         selected = []
         for family in config['families']:
@@ -808,6 +952,78 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
         try:
             db.close()
         finally:
+            try:
+                lock.rollback()
+            finally:
+                lock.close()
+
+
+def reconcile_interrupted_campaign(*, output_dir: Path, generator: Generator,
+                                   descendants_stopped: bool = False) -> dict:
+    """Reconcile an interrupted outer campaign after the host stops its subtree.
+
+    No generation/evaluation or control reset is permitted here. SQLite remains
+    authoritative; campaign.json is its replaceable projection. This function
+    never creates a missing campaign or lock database. The caller must retain the
+    exact original provider, not reconstruct different account/model/limit data.
+    """
+    if descendants_stopped is not True:
+        raise ValidationError('Campaign descendants must be stopped before reconciliation')
+    output_dir = Path(output_dir)
+    db_path = output_dir / 'campaign.sqlite3'
+    lock_path = output_dir / 'campaign.lock.sqlite3'
+    if not db_path.is_file() or not lock_path.is_file():
+        raise ValidationError('Existing campaign audit databases are required')
+    lock = db = None
+    try:
+        lock = sqlite3.connect(lock_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)
+        lock.execute('BEGIN EXCLUSIVE')
+        db = sqlite3.connect(db_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)
+        db.execute('BEGIN IMMEDIATE')
+        row = db.execute('SELECT payload FROM state WHERE id=1').fetchone()
+        if not row or type(row[0]) is not str or len(row[0].encode('utf-8')) > 16777216:
+            raise ValidationError('Invalid campaign audit state')
+        state = json.loads(row[0], object_pairs_hook=_unique_keys,
+                           parse_constant=lambda _: (_ for _ in ()).throw(ValidationError('Nonfinite campaign state')))
+        if (type(state) is not dict or type(state.get('binding')) is not dict
+            or state.get('campaign_id') != content_hash(state['binding'])
+            or type(state.get('attempts')) is not list or len(state['attempts']) > 100
+            or type(state.get('provider_receipts')) is not list
+            or type(state.get('status')) is not str):
+            raise ValidationError('Invalid campaign audit state')
+        provider = _provider_identity(generator)
+        if state['binding'].get('provider') != provider or 'descriptor' not in provider:
+            raise ValidationError('Interrupted campaign provider identity mismatch')
+        hook = getattr(generator, 'read_receipt_snapshot', None)
+        if not callable(hook):
+            raise ValidationError('Durable provider receipt snapshot is required')
+        receipts = _validated_receipt_snapshot(hook(), provider['descriptor'])
+        # Never reopen or rewrite a completed/previously blocked campaign.
+        if state['status'] != 'running':
+            return state
+        for attempt in state['attempts']:
+            if type(attempt) is not dict or type(attempt.get('warnings')) is not list:
+                raise ValidationError('Invalid campaign attempt state')
+            if attempt.get('status') == 'running':
+                attempt['status'] = 'interrupted'
+                attempt['warnings'].append('Interrupted outer worker consumed budget; no implicit retry')
+        state['provider_receipts'] = receipts
+        state['status'] = 'blocked_interrupted'
+        encoded = canonical_json(state)
+        if len(encoded.encode('utf-8')) > 16777216:
+            raise ValidationError('Campaign audit state exceeds bounds')
+        db.execute('UPDATE state SET payload=? WHERE id=1', (encoded,))
+        db.commit()
+        temporary = output_dir / 'campaign.json.tmp'
+        temporary.write_text(encoded, encoding='utf-8')
+        temporary.replace(output_dir / 'campaign.json')
+        return state
+    except Exception:
+        raise ValidationError('Interrupted campaign audit reconciliation failed') from None
+    finally:
+        if db is not None:
+            db.close()
+        if lock is not None:
             try:
                 lock.rollback()
             finally:

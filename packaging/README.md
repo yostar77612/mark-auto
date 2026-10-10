@@ -12,8 +12,8 @@ and uninstall. Remove that directory yourself only if you intend to erase data.
 
 Build on Windows x64 with Python 3.13.16 and PowerShell, from the repository root:
 
-    ./packaging/build.ps1 -Version 0.2.0
-    ./packaging/test_installer.ps1 -Version 0.2.0
+    ./packaging/build.ps1 -Version 0.2.1
+    ./packaging/test_installer.ps1 -Version 0.2.1
     python packaging/build_manifest.py
 
 Only developers need Python. The hash-locked Windows dependency closure and
@@ -114,3 +114,22 @@ Local model validation tooling is developer-only and opt-in; no Qwen model/runti
 is bundled or downloaded automatically by this installer. Desktop users configure
 their own compatible endpoint. Structured JSON Schema mode means constrained
 built-in-family parameter generation, not arbitrary program generation.
+
+
+## 0.2.1 official subscription packaging
+
+The Windows build explicitly requires all pinned authentication dependencies and
+source/metadata provenance before the complete test suite. The normal frozen
+smoke additionally verifies native CFFI, parser, OpenSSL, RS256/JWK identity and
+nonce/audience rejection with fresh synthetic keys while network calls are blocked.
+It does not register a host, grant an account, contact a model or prove eligibility.
+Source hashes and dependency metadata are bundled for runtime admission; missing
+or mismatched items block subscription research. Original seven smoke operations
+and the market/manual checks remain required.
+
+The fixed reviewed native notice archive is retained unextracted under licenses,
+with provenance explained in third_party/README.md. Default networking, paid API
+fallback and real-money trading remain disabled. The current clean-client kit
+contains the actual released0.2.0 baseline and0.2.1 candidate; build-manifest and
+installer hashes must match before either is run. Clean Windows10/11 and real
+user-grant acceptance remain separate from Windows Server engineering CI.

@@ -248,3 +248,28 @@ CI run38010756018揭露deadline測試fixture競態：30ms計時包含SSL初始�
 同次Windows CI另發現payload path驗收把原字串和GetFullPath結果要求完全相同，可能誤拒TEMP含8.3別名的合法路徑。改為canonical target/trusted root比對，同時明確拒絕relative/drive-relative/UNC、dot traversal、ADS；原精確layout/reparse門檻保留，動態測試增加ShortPath。來源packaging/test_update_recovery.ps1、tests/test_update_recovery.py；Windows需重驗，Linux skip不作成功。新市場/原7步整合source smoke及其完整Linux suite459項451PASS8skip（72.056s）；另最新recovery focused10PASS1Windows skip。原失敗CI不能被這些本地結果抹除。
 
 第二輪 e066693 的Quantlab七jobs全部PASS，Windows build及frozen市場/原7步、安裝生命週期通過，官方日行情實際HTTP下載診斷VERIFIED。接續歷史版本恢復驗收正確阻擋了前一輪正常關閉留下的設定：新UI會保存市場/視窗偏好，而uninstall保留資料。處置不刪設定或降低hash驗收：lifecycle明示opt-in且啟動前證明設定/工作區指標不存在，完成後寫create-only ownership receipt；recovery驗version/path/hash後將已知test-owned設定搬至唯一保留副本，未知資料仍拒絕。--smoke-test另採載入已驗證真設定後的記憶體view，僅自動化測試不回寫偏好；正常GUI持久化不變。來源desktop.py、tests/test_desktop_market_smoke.py、兩支installer/recovery harness與對應tests。失敗診斷artifacts改always保留，但release依賴必要Gate不變。最新Windows重驗前仍BLOCKED。build manifest涵蓋全部desktop*.py，包含新chart/form/dashboard來源。
+
+## 0.2.1 官方訂閱整合安全驗收（實作中）
+
+官方授權與Responses SDK邊界置於root desktop_chatgpt_auth.py／desktop_chatgpt_provider.py／desktop_chatgpt_ui.py；quantlab仍僅stdlib，唯一既有runtime→desktop_ui橋接維持。新增檔案納入原禁止券商匯入/動態程式執行Gate。沒有實際OAuth授權或訂閱推論，所有fixture僅為工程測試。
+
+重點威脅與驗證位置：
+- 授權callback重播、錯host/state/nonce/audience/issuer、JWKS不明key、RS256演算法混淆：auth模組及test_chatgpt_auth.py；使用PyJWT驗簽而非自製密碼學。
+- 明文凭證、跨使用者檔案、junction/鎖/refresh中斷：DPAPI vault、private DACL與tests/test_chatgpt_windows.py，只有實際Windows測試通過才可列native PASS；Linux skip不計。
+- 跨研究/模型/工作區重置支出或未知請求重送：固定bootstrap control帳本、先預留/不退還、帳戶暫停及嚴格完整receipt。獨立審查曾實際重現「global DB遺失後新研究可重建」和「campaign DB遺失被當空receipt」；已列release-blocking待修復，不得以一般SQLite交易成功忽略資料遺失情境。
+- 父程序被取消但子孫仍推論：desktop_runtime整個process group／Windows Job active count，以及same-manager停止證明/不可變launch snapshot。terminal IPC packet不等於已退出，未知狀態禁止新操作；tests/test_desktop_chatgpt_integration.py含忽略TERM子孫反例。
+- 不可信新provider稽核資料：research.py限制descriptor深度/大小與receipt欄位、sequence、status、hash，未知結果在下一trial/selection/holdout前阻擋；outer中斷只進行本機exclusive-lock對帳，保存既有attempt/holdout，不重新產生任何結果。
+
+四個desktop-only依賴固定PyJWT2.15.1、cryptography50.0.2、cffi2.1.1、pycparser3.11，wheel digest與雙平台manifest保存。native attribution以已獨立審閱的固定ZIP交付，不解壓不可信archive至產品路徑。archive完整SHA256 cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24，含93個hash驗證檔與manifest；5個來源archive403仍如實記錄，必要notice以官方immutable Git物件補證，不宣稱archive全部下載。詳細inventory在packaging/third_party及發行licenses ZIP。這是工程授權清單，不是法律保證。
+
+完整桌面smoke另呼叫offline auth_smoke：新鮮synthetic RSA key、真native OpenSSL/CFFI/parser、實際IdentityValidator、錯nonce/audience與algorithm rejection；socket/DNS當場阻擋並恢復，沒有寫入真vault或授權。real_oauth_status及real_model_status保持not_verified。Windows frozen與實際帳戶需各自證據。
+
+01:28 UTC補驗：上述missing-control release blocker已在staging修復，原failed repro保留。bootstrap建立create-only/fsync marker（不隨workspace/backup回退）；marker、global DB、schema或已登記campaign ledger任一遺失／部分初始化／count回退即阻擋，不能當新帳本重建。global plan_ledgers index與預留在同一attached transaction更新；snapshot以單次read-only attached transaction驗binding/count/rows，不再RW/create重讀。獨立76項offline組合與原刪檔反例通過；這不保證使用者惡意同時刪除所有bootstrap痕跡或真斷電耐久。tests/test_chatgpt_plan.py、test_chatgpt_research.py為對應可重現案例，正式exact-head/Windows Gate仍待。
+
+固定驗收另發現兩個UI接線缺口：MACD histogram數值為1倍但實際圖例未揭露倍數；PaperActionForm雖有risk說明但未實例化到主畫面。0.2.1用實際圖例與同一RiskLimits factory產生唯讀風控摘要修正，不新增無效可編輯參數，也不改實際風控門檻。tests/test_desktop_market_acceptance.py直接檢查MainWindow與非零histogram，避免只測未使用元件。
+
+### 0.2.0 合併後正式產物核對（01:39 UTC）
+
+mainfc2dfac，postmerge Windows38013204925 build/security/release及Quantlab38013204921通過；[0.2.0 Release](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38013204925-1)實際下載校验：EXE36,848,324bytes／SHA256be1c749e9fc83ede8c9a0e18d9be99a3c7e3104b4798dda6ccb1834f29471f29；kit72,511,372bytes／SHA2566aef9b3fe5a81913528fee9436a98c4e85edd3fa46a69f5e78a2f4dd058be3f3，ZIP8entries CRC PASS。build-manifest6,539bytes／SHA2567cf66be9406b842949cdf5501c2c28915a6baad532a46dcd4d911e818174e33d绑定fc2dfac。復原報告保留928舊檔/5資料sentinels/原設定，lifecycle設定另保留hash副本未刪。官方HTTP證據TAIEX6bars、TAIFEX19series38bars，皆EOD，非即時。
+
+下一版baseline改固定為以上真0.2.0；初次633測試只有舊baseline測試仍期待0.1.2的metadata失敗，故依已實際下載的新版commit/size/digest更新固定fixture，並加強manifest與完整EXE digest斷言。品質門檻、未知檔保留及內容驗證沒有放寬，失敗紀錄保留；CI仍須在最終head重跑完整矩陣。
