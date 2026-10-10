@@ -130,7 +130,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                         for entry in Path('/proc').iterdir():
                             if not entry.name.isdigit(): continue
                             try: fields = (entry / 'stat').read_text().rsplit(')', 1)[1].split()
-                            except FileNotFoundError: continue
+                            except (FileNotFoundError, ProcessLookupError): continue
                             if int(fields[1]) == process.pid: owned.add(int(entry.name))
                     owner = SimpleNamespace(tree=None, _operation='ui_walk_forward_run')
                     for pid in owned:

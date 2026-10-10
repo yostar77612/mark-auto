@@ -46,7 +46,7 @@ def process_can_run(pid):
     except ProcessLookupError: return False
     if sys.platform.startswith('linux'):
         try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-        except FileNotFoundError: return False
+        except (FileNotFoundError, ProcessLookupError): return False
     return True
 
 

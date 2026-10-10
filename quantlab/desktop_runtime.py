@@ -1074,7 +1074,7 @@ class JobManager:
                 for item in Path('/proc').iterdir():
                     if not item.name.isdigit(): continue
                     try: fields=(item/'stat').read_text().rsplit(')',1)[1].split()
-                    except FileNotFoundError: continue
+                    except (FileNotFoundError, ProcessLookupError): continue
                     if int(fields[2]) == pid and fields[0] != 'Z': live=True;break
                 if not live: return
             if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')

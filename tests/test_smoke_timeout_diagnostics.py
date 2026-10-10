@@ -1,20 +1,62 @@
 """Controlled timeout evidence and owned child cleanup; not native acceptance."""
 import json
+import errno
+import select
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import sys
+import subprocess
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from quantlab.desktop_runtime import RuntimeSafetyError
+from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
 
 from tests.smoke_timeout_diagnostics import output_summary, run_smoke_process
 from tests.test_desktop_smoke_terminal import process_can_run
 
 
+@contextmanager
+def process_exits_during_proc_read():
+    """Exercise real Linux ESRCH between opening and reading a proc stat file."""
+    victim = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+    folder = Path('/proc', str(victim.pid))
+    original_read, original_iterdir = Path.read_text, Path.iterdir
+    observed = []
+
+    def read(path, *args, **kwargs):
+        if path == folder / 'stat' and not observed:
+            with path.open() as stream:
+                victim.kill()
+                victim.wait(timeout=6)
+                try:
+                    return stream.read()
+                except ProcessLookupError as error:
+                    observed.append(error.errno)
+                    raise
+        return original_read(path, *args, **kwargs)
+
+    def iterdir(path):
+        if path == Path('/proc') and not observed:
+            return iter([folder, *(entry for entry in original_iterdir(path) if entry != folder)])
+        return original_iterdir(path)
+
+    try:
+        with patch.object(Path, 'read_text', read), patch.object(Path, 'iterdir', iterdir):
+            yield victim.pid, observed
+    finally:
+        if victim.poll() is None:
+            victim.kill()
+        victim.wait(timeout=6)
+
+
 class SmokeTimeoutDiagnosticTests(unittest.TestCase):
     def test_timeout_preserves_only_sanitized_evidence_and_stops_real_subtree(self):
+        self.assert_timeout_cleanup()
+
+    def assert_timeout_cleanup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             report, pids, writes = (root / name for name in ('report.json', 'pids.json', 'writes.jsonl'))
@@ -53,7 +95,7 @@ time.sleep(60)
             self.assertNotIn('private/user/root', raw)
             value = json.loads(raw)
             self.assertEqual(value['timeout_seconds'], 5)
-            self.assertTrue(value['cleanup_verified'])
+            self.assertTrue(value['cleanup_verified'], json.dumps(value, sort_keys=True))
             self.assertEqual(value['report']['status'], 'failed')
             self.assertEqual(len(value['report_writes']), 1)
             self.assertEqual(len(value['worker_alive_before']), 2)
@@ -103,3 +145,72 @@ Path(sys.argv[1]).write_text(json.dumps([child.pid]), encoding='utf-8')
         self.assertEqual(result['stack_frames'], [{'module': 'desktop.py', 'line': 770, 'function': 'main'}])
         self.assertNotIn('DO_NOT_RETAIN', json.dumps(result))
         self.assertNotIn('/private', json.dumps(result))
+
+
+@unittest.skipUnless(sys.platform.startswith('linux'), 'Linux /proc disappearance semantics')
+class ProcDisappearanceTests(unittest.TestCase):
+    def test_timeout_cleanup_survives_real_unrelated_proc_exit_during_scan(self):
+        with process_exits_during_proc_read() as (_, observed):
+            SmokeTimeoutDiagnosticTests().assert_timeout_cleanup()
+        self.assertEqual(observed, [errno.ESRCH])  # ESRCH, not ENOENT.
+
+    def test_group_join_survives_real_unrelated_proc_exit_during_scan(self):
+        code = "import subprocess,sys,time; child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)']); print(child.pid,flush=True); time.sleep(60)"
+        worker = subprocess.Popen([sys.executable, '-c', code], start_new_session=True, stdout=subprocess.PIPE, text=True)
+        try:
+            self.assertTrue(select.select([worker.stdout], [], [], 6)[0], 'Nested worker did not start')
+            grandchild_pid = int(worker.stdout.readline())
+            self.assertTrue(process_can_run(grandchild_pid))
+            with process_exits_during_proc_read() as (_, observed):
+                JobManager._join_descendants(SimpleNamespace(tree=None, _operation='ui_walk_forward_run'), worker.pid)
+            self.assertEqual(observed, [errno.ESRCH])
+            self.assertFalse(process_can_run(worker.pid))
+            self.assertFalse(process_can_run(grandchild_pid))
+        finally:
+            try: os.killpg(worker.pid, 9)
+            except ProcessLookupError: pass
+            worker.wait(timeout=6)
+            worker.stdout.close()
+
+    def test_liveness_survives_real_process_exit_during_stat_read(self):
+        with process_exits_during_proc_read() as (pid, observed):
+            self.assertFalse(process_can_run(pid))
+        self.assertEqual(observed, [errno.ESRCH])
+
+    def test_group_join_and_liveness_do_not_hide_permission_or_unknown_errors(self):
+        for error in (PermissionError(errno.EACCES, 'denied'), OSError(errno.EIO, 'unknown I/O failure')):
+            with self.subTest(error=type(error).__name__), \
+                    patch('quantlab.desktop_runtime.os.killpg'), \
+                    patch('tests.test_desktop_smoke_terminal.os.kill'), \
+                    patch.object(Path, 'iterdir', return_value=iter([Path('/proc/123')])), \
+                    patch.object(Path, 'read_text', side_effect=error):
+                with self.assertRaises(type(error)):
+                    JobManager._join_descendants(SimpleNamespace(tree=None, _operation='ui_walk_forward_run'), 123)
+                with self.assertRaises(type(error)):
+                    process_can_run(123)
+
+    def test_timeout_scan_permission_and_unknown_errors_keep_cleanup_unverified(self):
+        for error in (PermissionError(errno.EACCES, 'denied'), OSError(errno.EIO, 'unknown I/O failure')):
+            with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                original_read, original_iterdir = Path.read_text, Path.iterdir
+                denied = Path('/proc/123/stat')
+
+                def read(path, *args, **kwargs):
+                    if path == denied:
+                        raise error
+                    return original_read(path, *args, **kwargs)
+
+                def iterdir(path):
+                    return iter([denied.parent]) if path == Path('/proc') else original_iterdir(path)
+
+                with patch.object(Path, 'read_text', read), patch.object(Path, 'iterdir', iterdir):
+                    with self.assertRaisesRegex(AssertionError, 'unchanged deadline'):
+                        run_smoke_process([sys.executable, '-c', 'import time; time.sleep(60)'],
+                            cwd=root, env=os.environ.copy(), report=root / 'report', pidfile=root / 'pids',
+                            writes=root / 'writes', process_can_run=process_can_run,
+                            artifact_dir=root / 'artifacts', timeout=1)
+                artifact, = (root / 'artifacts').glob('smoke-timeout-*.json')
+                value = json.loads(artifact.read_text(encoding='utf-8'))
+                self.assertFalse(value['cleanup_verified'], value)
+                self.assertEqual(value['cleanup_error_type'], type(error).__name__)

@@ -553,7 +553,7 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-10T06:20:00Z",
+    "as_of_utc": "2026-10-10T06:40:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
       "version": "0.2.1",
@@ -568,42 +568,48 @@
     },
     "candidate": {
       "version": "0.2.2",
-      "pr": 5,
-      "branch": "main",
-      "remote_head_short": "94aca467",
-      "local_equivalent_short": "552a2d4",
-      "identical_tree_short": "53c2a99",
-      "status": "MERGED_POSTMERGE_FAIL_REPAIR",
-      "merged": true,
+      "pr": 6,
+      "branch": "agent/windows-release-validation",
+      "remote_head_short": "dbe7c655",
+      "local_equivalent_short": "0ab452e",
+      "identical_tree_short": "87f7d938",
+      "status": "DRAFT_PR6_FAIL_REPAIR_NARROW_LINUX_FIX_PENDING_PUSH",
+      "merged": false,
       "published": false,
-      "latest_ci_observation": "Postmerge Quantlab38029388781 final8/10 PASS: both Windows research, Linux/UI/static/audits passed. Windows311 core796:785 PASS,10 skips,1 Paper30s failure,465.966s. Windows312 core796:784 PASS,10 skips,1 Paper30s failure and1 GenericSmokeTerminal SystemExit40s timeout error,472.222s. Postmerge Server38029388676 still running. No0.2.2 release; earlier PR all-native PASS does not override these failures.",
+      "latest_ci_observation": "PR6 Quantlab38030765302 final8/10 PASS. Windows312 core801:791 PASS/10 skips,360.075s. Windows311 core801:790 PASS/10 skips/1 Paper30s failure,509.566s. UI1021:1007 PASS/13 skips/1 new diagnostic cleanup_verified failure,426.451s. Both Linux and Windows research/security passed. PR6 Server38030765321 still running. Main94 Server completed PASS but release114150590389 refused exact-head Quantlab failure. No0.2.2 release.",
       "unpublished_local_repairs": {
-        "status": "LOCAL_VERIFIED_NATIVE_PENDING_NOT_A_ROOT_CAUSE_FIX",
-        "planned_scope": [
-          "Smoke timeout diagnostic capture",
-          "Verified child-process subtree cleanup",
-          "Preserve partial report and artifacts after timeout"
-        ],
-        "root_cause": "NOT_ESTABLISHED",
-        "product_features_added": false,
+        "status": "NARROW_LINUX_VANISHED_PROCESS_FIX_LOCAL_VERIFIED_PENDING_PUSH_NATIVE",
+        "mechanism": "Independent real Linux reproduction: open /proc/PID/stat, then process exits and is reaped; read can raise ESRCH ProcessLookupError rather than FileNotFoundError.",
+        "scope": "Narrow desktop_runtime vanished-process handling plus two test helpers and regression cases; no added product feature. Permission and unknown errors remain fail-closed.",
+        "exact_failed_ui_artifact_root_cause": "NOT_PROVEN_BY_THIS_REPRODUCTION",
+        "paper_performance_fix": "NOT_ESTABLISHED",
+        "isolated_tests": {
+          "passed": 45,
+          "seconds": 53.422
+        },
+        "independent_tests": {
+          "passed": 10,
+          "seconds": 12.138
+        },
+        "root_regression": {
+          "passed": 43,
+          "seconds": 52.626,
+          "composition": "10 diagnostics +9 original terminal +24 WFO runtime",
+          "log": "quant-audit/smoke-esrch-root-tests.log"
+        },
+        "counts_policy": "Overlapping sets; never add them as unique test coverage. Isolated45 includes two additional terminal-proof cases.",
+        "discovery": {
+          "total": 1026,
+          "core": 806,
+          "research": 220,
+          "full_suite_execution": false
+        },
+        "static_history_scan": "IN_PROGRESS_NO_RESULT_CLAIMED",
         "product_storage_changes": "NONE",
+        "persistence_changes": "NONE",
         "temporary_storage_move": "NONE",
         "timeout_changes": "NONE",
-        "native_validation": "REQUIRED_FOR_NEXT_SOURCE_HEAD",
-        "branch": "agent/windows-release-validation",
-        "focused_root_tests": {
-          "passed": 28,
-          "skipped": 0,
-          "scope": "5 diagnostics + 9 original terminal + 9 partition + 5 release provenance; overlapping independent runs not added"
-        },
-        "static_history_findings": 0,
-        "discovery": {
-          "all": 1021,
-          "core": 801,
-          "research": 220,
-          "scope": "Discovery only, not full suite execution"
-        },
-        "independent_review": "Approved sanitized evidence and real subtree cleanup; native Windows nested Job Object execution pending"
+        "native_validation": "REQUIRED_FOR_NEW_SOURCE_AFTER_PUSH"
       },
       "full_ci_details_key": "candidate_022_ci",
       "local_suite": {
@@ -633,8 +639,8 @@
         "scope": "Unchanged suite in an isolated actual Linux 3.11 environment. Existing local applicability skips retained. This is not the final combined root or native integrated suite."
       },
       "final_root_suite": {
-        "status": "NO_NEW_FINAL_ROOT_FULL_SUITE_CLAIMED",
-        "scope": "Earlier root/candidate local counts remain historical. Current conclusion relies on exact-head PR success and separately failed postmerge native jobs; upcoming test-only diagnostic work is not yet verified."
+        "status": "ONLY_FOCUSED43_PASS_AND_DISCOVERY1026_CURRENT",
+        "scope": "Root43 regression PASS52.626s; discovery1026=806core+220research is not a full-suite execution. Narrow fix remains pending push/exact-head native validation."
       },
       "previous_checkpoint_evidence": [
         {
@@ -873,78 +879,55 @@
           "performance_diagnostic_status": "NATIVE_DIAGNOSTIC_EVIDENCE_OBTAINED_PERFORMANCE_NOT_FIXED"
         }
       ],
-      "current_source_identity": "Merged main94aca467, exact tree53c2a9930cf6fd05536fe2470af7d223d0535d6b. Earlier PR head06bcc3a and local552a2d4 map to this product tree; any later diagnostic/test-only changes require their own source identity and native validation.",
+      "current_source_identity": "Current draft PR6 pushed head dbe7c655 / local0ab452e / tree87f7d938c29dfd7cfa45089402bbb4af0f037dce. Narrow Linux vanished-process repair is subsequent uncommitted work, pending push/native validation; it is not covered by these CI results.",
       "latest_remote_ci": {
-        "head": "94aca46777bd19619c9cbc0721a888173395243e",
-        "quantlab_run": 38029388781,
+        "head_short": "dbe7c655",
+        "pr": 6,
+        "quantlab_run": 38030765302,
         "status": "FAIL",
         "jobs_passed": 8,
         "jobs_total": 10,
-        "linux_ui_static_audits": "PASS",
-        "windows_research311": "PASS",
-        "windows_research312": "PASS",
+        "windows312_core": {
+          "total": 801,
+          "passed": 791,
+          "skipped": 10,
+          "failures": 0,
+          "errors": 0,
+          "seconds": 360.075,
+          "status": "PASS"
+        },
         "windows311_core": {
-          "total": 796,
-          "passed": 785,
+          "total": 801,
+          "passed": 790,
           "skipped": 10,
           "failures": 1,
           "errors": 0,
-          "seconds": 465.966,
-          "paper960bar30s_case": "FAIL"
-        },
-        "windows312_core": {
-          "job": 114146946655,
-          "total": 796,
-          "passed": 784,
-          "skipped": 10,
-          "failures": 1,
-          "errors": 1,
-          "seconds": 472.222,
-          "paper960bar30s_case": "FAIL",
-          "generic_smoke_SystemExit40s_case": "ERROR_TIMEOUT",
-          "log": "quant-audit/ci-auth-targets/native-94aca467/windows312-core.log"
-        },
-        "windows_server_run": 38029388676,
-        "windows_server_status": "IN_PROGRESS_NO_FINAL_RESULT",
-        "release": "NOT_PUBLISHED",
-        "linux311": {
-          "total": 1016,
-          "passed": 998,
-          "skipped": 18,
-          "seconds": 382.055,
-          "status": "PASS"
-        },
-        "linux312": {
-          "total": 1016,
-          "passed": 998,
-          "skipped": 18,
-          "seconds": 305.411,
-          "status": "PASS"
+          "seconds": 509.566,
+          "status": "FAIL",
+          "failure": "Original960-bar typed120000 Paper30-second gate"
         },
         "ui": {
-          "total": 1016,
-          "passed": 1003,
+          "total": 1021,
+          "passed": 1007,
           "skipped": 13,
-          "seconds": 448.669,
-          "status": "PASS"
+          "failures": 1,
+          "errors": 0,
+          "seconds": 426.451,
+          "status": "FAIL",
+          "failure": "New smoke-timeout diagnostic cleanup_verified assertion"
         },
-        "windows311_research": {
-          "total": 220,
-          "passed": 216,
-          "skipped": 4,
-          "seconds": 611.21,
-          "status": "PASS"
-        },
-        "windows312_research": {
-          "total": 220,
-          "passed": 216,
-          "skipped": 4,
-          "seconds": 624.649,
-          "status": "PASS"
-        }
+        "linux311": "PASS",
+        "linux312": "PASS",
+        "windows_research311": "PASS",
+        "windows_research312": "PASS",
+        "security_static_audits": "PASS",
+        "windows_server_run": 38030765321,
+        "windows_server_status": "IN_PROGRESS_NO_FINAL_RESULT",
+        "release": "NOT_PUBLISHED",
+        "evidence_root": "quant-audit/ci-auth-targets/native-dbe7c655"
       },
       "performance_diagnostic_next": {
-        "status": "POSTMERGE_TIMEOUTS_UNRESOLVED_TEST_ONLY_DIAGNOSTICS_PLANNED",
+        "status": "PAPER30_STILL_FAILS_PR6_WINDOWS311_NO_PERFORMANCE_FIX",
         "artifact_sha256_prefix": "54cc9098",
         "full_digest_claimed": false,
         "complete_cases": 10,
@@ -979,10 +962,10 @@
         "process_death_timeout_seconds": 10,
         "workflow_follow_up": "The completed one-off connection-study workflow steps were removed. The tool and evidence are preserved; post-failure Paper diagnostics run on the core shard only. No product storage or TEMP move.",
         "test_data_location": "Original tests already use C: OS-temp. TEMP and test-data locations were not moved, including no relocation to D: RUNNER_TEMP; disposable diagnostic comparisons are separate.",
-        "next": "Collect failure evidence and verify child-tree cleanup; no storage/mode/TEMP changes or weakened budgets."
+        "next": "Validate narrowly handled Linux process disappearance without weakening permission/unknown-error failure-closed behavior; separately investigate original Paper30 gate. No persistence or deadline changes."
       },
-      "identical_tree": "53c2a9930cf6fd05536fe2470af7d223d0535d6b",
-      "mapping_scope": "Main merge identity is current. local_equivalent_short identifies the last exact-tree tested local checkpoint, not any subsequent uncommitted working-tree modifications. Remote merged branch was deleted automatically.",
+      "identical_tree": "87f7d938c29dfd7cfa45089402bbb4af0f037dce",
+      "mapping_scope": "PR6 identity is current; main remains94aca467. Existing PR5 merge and PR06bcc3a full-success records are historical baseline evidence, not PR6 completion.",
       "source_equivalent_candidate_suite": {
         "total": 981,
         "passed": 966,
@@ -1001,11 +984,11 @@
         "scope": "Earlier actual root 773-test complete suite after terminal/path/connection-cleanup repairs. Predates the 25-file WFO/reporting copy and final CandidateSummary/diagnostic additions; not the final combined run."
       },
       "source_failures_current": [
-        "Postmerge Windows311 and312 typed120000 960-bar Paper replay did not complete within original30 seconds.",
-        "Postmerge Windows312 GenericSmokeTerminal SystemExit subcase exceeded original40-second subprocess timeout."
+        "PR6 Windows311 original Paper30-second gate failed.",
+        "PR6 UI new diagnostic cleanup_verified assertion failed. Narrow Linux ESRCH mechanism reproduced, but exact failed UI artifact root cause is unproven."
       ],
       "ci_partition_plan": {
-        "status": "PR_EXACT_NATIVE_EXECUTION_VERIFIED_POSTMERGE_CORE_FAILED",
+        "status": "PR6_1021_EXECUTED_WITH_TWO_REQUIRED_JOB_FAILURES_NEXT1026_DISCOVERY_ONLY",
         "files": 5,
         "independent_tests": 14,
         "shards_per_windows_python": 2,
@@ -1035,7 +1018,13 @@
         "completed_one_off_study_workflow_steps": "REMOVED_AFTER_EVIDENCE_RETAINED",
         "diagnostic_tool_and_evidence": "PRESERVED",
         "post_failure_paper_diagnostic": "CORE_ONLY",
-        "interpretation": "PR downloaded inventories prove1016 exact unique tests per profile and actual execution, not discovery alone. The same partition does not excuse postmerge core failures; all10 named jobs remain required."
+        "interpretation": "Earlier1016 discovery/PR proof retained. Pushed PR6 has1021=801core+220research and failed Windows311/UI jobs; unpushed narrow repair has1026 discovery only. Required10 jobs and all budgets unchanged.",
+        "current_discovery": {
+          "total": 1026,
+          "core": 806,
+          "research": 220,
+          "full_suite_execution": false
+        }
       },
       "merge_commit": "94aca46777bd19619c9cbc0721a888173395243e",
       "merged_at_utc": "2026-10-10T05:59:46Z",
@@ -1083,12 +1072,122 @@
         "pr_asset_hash_crc": "VERIFIED_NOT_POSTMERGE_RELEASE_DIGESTS",
         "evidence_root": "quant-audit/ci-auth-targets/native-06bcc3a",
         "scope": "Earlier PR full-native candidate evidence; postmerge failures remain release vetoes."
-      }
+      },
+      "last_main_postmerge_evidence": {
+        "head": "94aca46777bd19619c9cbc0721a888173395243e",
+        "quantlab_run": 38029388781,
+        "status": "FAIL",
+        "jobs_passed": 8,
+        "jobs_total": 10,
+        "linux_ui_static_audits": "PASS",
+        "windows_research311": "PASS",
+        "windows_research312": "PASS",
+        "windows311_core": {
+          "total": 796,
+          "passed": 785,
+          "skipped": 10,
+          "failures": 1,
+          "errors": 0,
+          "seconds": 465.966,
+          "paper960bar30s_case": "FAIL"
+        },
+        "windows312_core": {
+          "job": 114146946655,
+          "total": 796,
+          "passed": 784,
+          "skipped": 10,
+          "failures": 1,
+          "errors": 1,
+          "seconds": 472.222,
+          "paper960bar30s_case": "FAIL",
+          "generic_smoke_SystemExit40s_case": "ERROR_TIMEOUT",
+          "log": "quant-audit/ci-auth-targets/native-94aca467/windows312-core.log"
+        },
+        "windows_server_run": 38029388676,
+        "windows_server_status": "BUILD_SECURITY_PASS_RELEASE_REFUSED",
+        "release": "REFUSED_EXACT_HEAD_QUANTLAB_FAILURE",
+        "linux311": {
+          "total": 1016,
+          "passed": 998,
+          "skipped": 18,
+          "seconds": 382.055,
+          "status": "PASS"
+        },
+        "linux312": {
+          "total": 1016,
+          "passed": 998,
+          "skipped": 18,
+          "seconds": 305.411,
+          "status": "PASS"
+        },
+        "ui": {
+          "total": 1016,
+          "passed": 1003,
+          "skipped": 13,
+          "seconds": 448.669,
+          "status": "PASS"
+        },
+        "windows311_research": {
+          "total": 220,
+          "passed": 216,
+          "skipped": 4,
+          "seconds": 611.21,
+          "status": "PASS"
+        },
+        "windows312_research": {
+          "total": 220,
+          "passed": 216,
+          "skipped": 4,
+          "seconds": 624.649,
+          "status": "PASS"
+        },
+        "windows_server_tests": {
+          "total": 1016,
+          "passed": 1002,
+          "skipped": 14,
+          "seconds": 816.337
+        },
+        "installer_actual021_upgrade_recovery": "PASS_WINDOWS_SERVER_ONLY",
+        "release_job": 114150590389
+      },
+      "prior_diagnostic_checkpoint": {
+        "as_of_utc": "2026-10-10T06:20:00Z",
+        "unpublished_local_repairs": {
+          "status": "LOCAL_VERIFIED_NATIVE_PENDING_NOT_A_ROOT_CAUSE_FIX",
+          "planned_scope": [
+            "Smoke timeout diagnostic capture",
+            "Verified child-process subtree cleanup",
+            "Preserve partial report and artifacts after timeout"
+          ],
+          "root_cause": "NOT_ESTABLISHED",
+          "product_features_added": false,
+          "product_storage_changes": "NONE",
+          "temporary_storage_move": "NONE",
+          "timeout_changes": "NONE",
+          "native_validation": "REQUIRED_FOR_NEXT_SOURCE_HEAD",
+          "branch": "agent/windows-release-validation",
+          "focused_root_tests": {
+            "passed": 28,
+            "skipped": 0,
+            "scope": "5 diagnostics + 9 original terminal + 9 partition + 5 release provenance; overlapping independent runs not added"
+          },
+          "static_history_findings": 0,
+          "discovery": {
+            "all": 1021,
+            "core": 801,
+            "research": 220,
+            "scope": "Discovery only, not full suite execution"
+          },
+          "independent_review": "Approved sanitized evidence and real subtree cleanup; native Windows nested Job Object execution pending"
+        },
+        "scope": "Earlier06:20 local diagnostic checkpoint, before PR6 execution; unchanged earlier historical fields remain preserved."
+      },
+      "merge_commit_scope": "The retained merge_commit/merged_at_utc describe already-merged PR5 baseline main94aca467, not current draft PR6."
     },
     "priority_release_blockers": [
-      "Postmerge main94aca467 Quantlab38029388781 failed two required Windows core jobs: Paper30s on both, plus GenericSmokeTerminal SystemExit40s timeout on312. Earlier PR PASS does not override this veto.",
-      "Postmerge Windows Server38029388676 is still in progress. Release verification is not complete and0.2.2 is not published.",
-      "Diagnostic/test-only timeout evidence, verified subtree cleanup and artifact preservation are being prepared; no root-cause fix or new native PASS claimed. Original30/40/10-second per-test limits and15-minute Quantlab job limits remain unchanged."
+      "PR6 dbe7c655 Quantlab38030765302 failed Windows311 Paper30 and UI new cleanup_verified assertion; Windows312 core now passed. Required10 jobs are not all PASS.",
+      "PR6 Server38030765321 still running. Main94 Server1016 and lifecycle passed, but release114150590389 refused exact-head Quantlab failure; no0.2.2 release.",
+      "Narrow Linux ESRCH fix passed isolated45, independent10, root43 overlapping focused tests, not final full/native gates; pending push. Exact failed UI artifact root cause and Paper performance fix are not established; permission/unknown errors, persistence and deadlines remain unchanged."
     ],
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
@@ -1148,7 +1247,7 @@
       "seconds": 270.314,
       "scope": "WFO/reporting isolated combined stage only; subsequent unchanged-durability SQLite connection cleanup passed5 storage tests; not released or native/actual research acceptance"
     },
-    "release_plan": "PR5 merged to main94aca467; candidate version0.2.2 remains unpublished because postmerge failed. Latest public release and actual upgrade baseline remain verified0.2.1. Prepare bounded diagnostic/test-only follow-up, then verify its native gates and actual release; no0.2.3 or invented0.2.2 baseline.",
+    "release_plan": "Draft PR6 agent/windows-release-validation repairs release validation after merged main94aca467 failed postmerge. dbe7c655 CI is8/10 PASS; narrow Linux vanished-process follow-up is unpushed/native-unverified. Keep version0.2.2 unpublished and actual0.2.1 download/baseline. No new release or M4 points.",
     "integrated_suite_location_note": "Earlier981 ran in isolated candidate before25 exact files were copied, then final CandidateSummary/diagnostics followed. PR06bcc3a complete1016/native success and main94aca467 postmerge failure are newer, separate evidence; no duplicate root full-run claim.",
     "environment_observation": {
       "as_of_utc": "2026-10-10T05:02:00Z",
@@ -1168,7 +1267,9 @@
       "main_protected": false,
       "bundle": "quant-audit/mark-auto-preserved-20261010-0602.bundle",
       "bundle_bytes": 1123457,
-      "bundle_verified_complete_history_including_merge": true
+      "bundle_verified_complete_history_including_merge": true,
+      "branch_observation_as_of_utc": "2026-10-10T06:02:00Z",
+      "current_followup_branch": "agent/windows-release-validation (PR6); earlier remote_branches=[main] was the06:02 snapshot, not a current complete listing."
     },
     "acceptance_decision_current": {
       "score_unchanged": true,
