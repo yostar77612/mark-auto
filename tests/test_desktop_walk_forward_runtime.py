@@ -4,6 +4,8 @@ Mock process/Job Object checks are protocol tests, not native Windows evidence.
 """
 import copy
 from contextlib import closing
+from functools import partial
+import multiprocessing
 import importlib.util
 import json
 from pathlib import Path
@@ -29,6 +31,25 @@ def plan_payload():
     return to_dict(build_walk_forward_plan(backtest_config=demo_config(),
         train_bars=60, validation_bars=40, oos_bars=40, fold_count=3,
         final_holdout=(220, 240), process_start_method='spawn'))
+
+
+def _held_walk_forward_evaluation(dataset, spec, config, started, release):
+    """Keep a genuine nested evaluator alive while its durable reservation is read."""
+    from quantlab.walk_forward import _evaluate_split
+    started.set()
+    release.wait(30)
+    return _evaluate_split(dataset, spec, config)
+
+
+def _cancellable_walk_forward_worker(*args, evaluation_started, evaluation_release):
+    from quantlab.walk_forward import _run_bounded
+
+    def held_evaluation(function, arguments, **kwargs):
+        return _run_bounded(_held_walk_forward_evaluation,
+            (*arguments, evaluation_started, evaluation_release), **kwargs)
+
+    with patch('quantlab.walk_forward._run_bounded', side_effect=held_evaluation):
+        _job_worker(*args)
 
 
 class WalkForwardRuntimeTests(unittest.TestCase):
@@ -409,8 +430,13 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
 
     def test_generated_cancel_requires_original_job_then_reconciles_without_evaluation(self):
         reference = self.preview()
-        job_id = self.manager.start('ui_walk_forward_run', {
-            'plan': self.plan, 'preview_identity': reference})
+        context = multiprocessing.get_context('spawn')
+        evaluation_started, evaluation_release = context.Event(), context.Event()
+        worker = partial(_cancellable_walk_forward_worker,
+            evaluation_started=evaluation_started, evaluation_release=evaluation_release)
+        with patch('quantlab.desktop_runtime._job_worker', worker):
+            job_id = self.manager.start('ui_walk_forward_run', {
+                'plan': self.plan, 'preview_identity': reference})
         journal = self.paths.state / 'walk_forward' / reference / 'walk_forward.sqlite3'
         observed = None
         event_evidence = []
@@ -423,7 +449,10 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
 
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            if journal.exists():
+            # A concurrent SELECT can make the zero-timeout writer fail before
+            # cancellation. Read only once the genuine nested evaluator is held
+            # after its reservation commit, with the parent writer quiescent.
+            if evaluation_started.is_set() and journal.exists():
                 try:
                     candidate = read_journal()
                     if candidate:

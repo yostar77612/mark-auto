@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   offline:
+    name: ${{ matrix.group == 'research' && 'offline research' || 'offline' }} (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
@@ -18,8 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python: ['3.11', '3.12']
+        include:
+          - {os: ubuntu-latest, python: '3.11', group: all}
+          - {os: ubuntu-latest, python: '3.12', group: all}
+          - {os: windows-latest, python: '3.11', group: core}
+          - {os: windows-latest, python: '3.12', group: core}
+          - {os: windows-latest, python: '3.11', group: research}
+          - {os: windows-latest, python: '3.12', group: research}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -42,33 +48,30 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: desktop-auth-${{ matrix.os }}-${{ matrix.python }}
+          name: desktop-auth-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}
           path: |
             dist/validation/desktop-auth-install.json
             qt-install-report.json
           if-no-files-found: warn
           retention-days: 7
-      - run: python -m unittest discover -s tests -v
-      # One bounded diagnostic for the remaining fsync bottleneck; never a replacement gate.
-      - name: Observe connection lifetime and actual volumes (not acceptance)
-        if: always() && runner.os == 'Windows' && matrix.python == '3.12'
-        run: python tools/diagnose_paper_replay.py dist/validation/paper-replay-timing-connections.json --connections-only
-      - name: Preserve native connection decision evidence
-        if: always() && runner.os == 'Windows' && matrix.python == '3.12'
+      - name: Run exact-coverage offline test group
+        run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json
+      - name: Preserve exact-head discovery and selection evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: paper-connections-windows312
-          path: dist/validation/paper-replay-timing-connections.json
-          if-no-files-found: warn
+          name: test-inventory-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}
+          path: dist/validation/test-inventory.json
+          if-no-files-found: error
           retention-days: 7
       - name: Observe native Paper timing after failure (not acceptance)
-        if: failure() && runner.os == 'Windows'
+        if: failure() && runner.os == 'Windows' && matrix.group == 'core'
         run: python tools/diagnose_paper_replay.py dist/validation/paper-replay-timing.json
       - name: Preserve failed native timing evidence
-        if: failure() && runner.os == 'Windows'
+        if: failure() && runner.os == 'Windows' && matrix.group == 'core'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: paper-timing-${{ matrix.os }}-${{ matrix.python }}
+          name: paper-timing-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}
           path: dist/validation/paper-replay-timing*.json
           if-no-files-found: warn
           retention-days: 7

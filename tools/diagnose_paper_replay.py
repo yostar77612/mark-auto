@@ -144,9 +144,11 @@ def _filesystem(root):
     return result
 
 
-def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id):
+def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id,
+                      reconciliation_admitted=False):
     if operation != 'ui_paper_replay':
-        return _original_worker(sender, gate, operation, payload, root, bootstrap, job_id)
+        return _original_worker(sender, gate, operation, payload, root, bootstrap, job_id,
+                                reconciliation_admitted)
     timings = Timings()
     target = Path(os.environ['MARKAUTO_DIAGNOSTIC_OUTPUT']) / (job_id + '.json')
     metadata = {'observation_only': True, 'worker_pid': os.getpid(), 'operation': operation,
@@ -191,7 +193,8 @@ def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id)
             sender.close()
     try:
         with timings.measure('worker.body'):
-            _original_worker(Sender(), gate, operation, payload, root, bootstrap, job_id)
+            _original_worker(Sender(), gate, operation, payload, root, bootstrap, job_id,
+                             reconciliation_admitted)
     finally:
         stop.set()
         writer.join()

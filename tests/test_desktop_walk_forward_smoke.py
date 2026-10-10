@@ -76,7 +76,7 @@ class WalkForwardSmokeFixtureTests(unittest.TestCase):
             self.assertFalse((paths.controls / 'holdout-registry.sqlite3').exists())
         self.assertEqual([operation for operation, _ in _smoke_steps()],
             ['ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'])
-        source = (ROOT / 'desktop.py').read_text()
+        source = (ROOT / 'desktop.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', source)
 
     def test_omitted_core_module_cannot_prepare_smoke(self):
@@ -161,7 +161,8 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
                 elif name == 'source_binding': state['binding']['source_data_hash'] = '0' * 64
                 else: state['final_holdout_status'] = 'evaluated'
                 state['state_hash'] = content_hash({k: v for k, v in state.items() if k != 'state_hash'})
-                with sqlite3.connect(self.journal) as db:
+                # A transaction context commits but does not close the Windows file handle.
+                with closing(sqlite3.connect(self.journal)) as db, db:
                     db.execute('UPDATE state SET payload=? WHERE id=1', (canonical_json(state),))
                 with self.subTest(corruption=name), self.assertRaises(ValueError): self.check()
         finally:

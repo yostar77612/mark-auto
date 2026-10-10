@@ -13,6 +13,8 @@ REQUIRED_JOBS = frozenset({
     "Static quality and credential gate", "Dependency audit (ui)", "ui",
     "offline (ubuntu-latest, 3.11)", "offline (ubuntu-latest, 3.12)",
     "offline (windows-latest, 3.11)", "offline (windows-latest, 3.12)",
+    "offline research (windows-latest, 3.11)", "offline research (windows-latest, 3.12)",
+    "Dependency audit (qt-linux311)",
 })
 
 

@@ -1,8 +1,9 @@
 """Generated-fixture saved-pool desktop boundaries, no model/network/market data."""
 import copy
 import importlib.util
+import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -32,10 +33,14 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
     def test_pending_request_has_no_dsl_and_budget_is_never_replaced(self):
         payload = pending_saved_plan(); payload['max_evaluations'] = 620
         before = copy.deepcopy(payload)
-        source = local_source(Path('/tmp') / 'explicit-original.json')
+        temporary = tempfile.TemporaryDirectory(); self.addCleanup(temporary.cleanup)
+        original = Path(temporary.name).resolve() / 'explicit-original.json'
+        source = local_source(original)
+        self.assertTrue(original.is_absolute()); self.assertFalse(original.exists())
         chronology = validate_walk_forward_request(payload, source)
         self.assertEqual(payload, before)
         self.assertEqual(chronology.max_runtime_seconds, payload['max_runtime_seconds'])
+        self.assertFalse(original.exists()); self.assertEqual(list(original.parent.iterdir()), [])
         for key, value in (('candidate_pool', []), ('pool_admission', {})):
             with self.assertRaises(ValidationError): validate_walk_forward_request({**payload, key: value}, source)
         for budget in (True, 0, 621, '33', 1.5):
@@ -43,7 +48,7 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
 
     def test_explicit_local_reference_rejects_provider_paths_and_mixed_pools(self):
         payload = pending_saved_plan()
-        source = local_source(Path('/tmp') / 'explicit-original.json')
+        source = local_source(Path(tempfile.gettempdir()).resolve() / 'explicit-original.json')
         for path in ('https://provider.example/data.json', 'file:///tmp/data.json', '../data.json',
                      '//remote/share/data.json', '/tmp/../other.json', '/tmp/bad\x00.json'):
             with self.subTest(path=path), self.assertRaises(ValidationError):
@@ -53,6 +58,27 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
             with self.assertRaises(ValidationError): validate_walk_forward_request(payload, bad)
         _, builtin = inputs()
         with self.assertRaises(ValidationError): validate_walk_forward_request(to_dict(builtin), source)
+
+    def test_windows_drive_grammar_keeps_local_absolute_security_boundary(self):
+        # PureWindowsPath exercises the actual read-only grammar on every OS;
+        # rooted-without-drive /tmp must never become a positive Windows fixture.
+        payload = pending_saved_plan(); before = copy.deepcopy(payload)
+        accepted = (str(PureWindowsPath('C:/Users/RUNNER~1/AppData/Local/Temp/original.json')),
+                    'C:/Users/runneradmin/AppData/Local/Temp/original.json')
+        rejected = ('/tmp/original.json', str(PureWindowsPath('/Temp/original.json')), 'C:original.json',
+                    str(PureWindowsPath('//server/share/original.json')), '//server/share/original.json',
+                    str(PureWindowsPath('//?/C:/Temp/original.json')), str(PureWindowsPath('//./C:/Temp/original.json')),
+                    str(PureWindowsPath('C:/Temp/../original.json')), 'file:///C:/Temp/original.json',
+                    'https://provider.example/original.json', 'C:/Temp/bad' + chr(0) + '.json')
+        with patch('quantlab.desktop_runtime.Path', PureWindowsPath):
+            for name in accepted:
+                source = local_source(name); source_before = copy.deepcopy(source)
+                validate_walk_forward_request(payload, source)
+                self.assertEqual(source, source_before)
+            for name in rejected:
+                with self.subTest(path=name), self.assertRaises(ValidationError):
+                    validate_walk_forward_request(payload, local_source(name))
+        self.assertEqual(payload, before)
 
     def test_runtime_rejects_mixed_or_forged_requests_before_spawn(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -357,12 +383,39 @@ class SavedPoolHostTests(unittest.TestCase):
         with patch.object(w.jobs, 'start', return_value='preview-job') as start:
             w.preview_walk_forward()
         payload = start.call_args.args[1]
-        self.assertEqual(payload['saved_source'], local_source(source))
+        self.assertEqual(payload['saved_source'], local_source(source.resolve(strict=True)))
         self.assertNotIn('candidate_pool', payload['plan']); self.assertNotIn('pool_admission', payload['plan'])
         w._wf_preview = {'preview_identity': 'b' * 64}; w.walk_forward_consent.setChecked(True)
         w.walk_forward_form.fields['pool_origin'].setCurrentIndex(0)
         self.assertIsNone(w._wf_preview); self.assertFalse(w.walk_forward_consent.isChecked())
         self.assertIsNone(w._walk_forward_saved_source())
+
+    def test_picker_canonical_alias_survives_cancel_and_payload_without_writes(self):
+        w, source = self.prepare_source()
+        alias_dir = source.parent / 'picker-alias'; alias_dir.mkdir()
+        alias = alias_dir / '..' / source.name
+        canonical = source.resolve(strict=True)
+        self.assertNotEqual(str(alias), str(canonical))
+        protected = [source, self.paths.state / 'dataset.json',
+                     self.paths.state / 'campaigns' / ('a' * 64) / 'campaign.json',
+                     self.paths.state / 'campaigns' / ('a' * 64) / 'campaign.sqlite3']
+        before = {path: path.read_bytes() for path in protected}
+        w.walk_forward_form.fields['pool_origin'].setCurrentIndex(1)
+        w.walk_forward_campaign.setCurrentIndex(1)
+        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=(str(alias), '')):
+            w.pick_walk_forward_original()
+        self.assertEqual(w.walk_forward_original.text(), str(canonical))
+        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=('', '')):
+            w.pick_walk_forward_original()
+        with patch.object(w.jobs, 'start', return_value='preview-job') as start:
+            w.preview_walk_forward()
+        payload = start.call_args.args[1]
+        self.assertEqual(payload['saved_source'], local_source(canonical))
+        self.assertNotEqual(payload['saved_source'], local_source(alias))
+        self.assertNotIn('candidate_pool', payload['plan']); self.assertNotIn('pool_admission', payload['plan'])
+        self.assertEqual({path: path.read_bytes() for path in protected}, before)
+        self.assertFalse((self.paths.controls / 'holdout-registry.sqlite3').exists())
+        self.assertFalse((self.paths.state / 'walk_forward').exists())
 
     def test_changed_saved_file_discards_async_preview(self):
         w, source = self.prepare_source()
@@ -429,8 +482,12 @@ class SavedPoolHostTests(unittest.TestCase):
         normal, advanced = w.walk_forward_preview.toPlainText(), w.walk_forward_advanced.toPlainText()
         self.assertFalse(w.walk_forward_advanced_group.isChecked())
         self.assertTrue(w.walk_forward_advanced.isHidden())
+        from quantlab.core import canonical_json
+        decoded = json.loads(advanced.split('\n', 1)[1])
+        self.assertEqual(decoded, json.loads(canonical_json(preview)))
         for text in (preview['source_identity'], preview['preview_identity'], preview['registry_identity']['resolved_path']):
-            self.assertNotIn(text, normal); self.assertIn(text, advanced)
+            self.assertNotIn(text, normal)
+        self.assertEqual(decoded['registry_identity']['resolved_path'], preview['registry_identity']['resolved_path'])
         self.assertNotIn('source_hashes', normal)
         self.assertNotIn('滑價點數', normal)
         self.assertIn('slippage_ticks', advanced)
@@ -438,6 +495,27 @@ class SavedPoolHostTests(unittest.TestCase):
             self.assertIn(text, normal)
         w.walk_forward_advanced_group.setChecked(True)
         self.assertFalse(w.walk_forward_advanced.isHidden())
+
+    def test_advanced_preview_round_trips_windows_backslashes_and_unicode(self):
+        from desktop_ui import execute_ui_operation
+        from desktop_walk_forward import preview_text
+        from quantlab.core import canonical_json
+        w, _ = self.prepare_source()
+        preview = execute_ui_operation('ui_walk_forward_preview', {'plan': w._walk_forward_input_key()[1]}, self.paths)
+        baseline_normal = preview_text(preview)
+        preview['registry_identity']['resolved_path'] = str(PureWindowsPath('C:/Users/研究測試/AppData/Local/Temp/holdout-registry.sqlite3'))
+        before = canonical_json(preview)
+        advanced = preview_text(preview, advanced=True)
+        normal = preview_text(preview)
+        self.assertEqual(json.loads(advanced.split('\n', 1)[1]), json.loads(before))
+        path = preview['registry_identity']['resolved_path']
+        self.assertEqual(json.loads(advanced.split('\n', 1)[1])['registry_identity']['resolved_path'], path)
+        self.assertNotIn(path, advanced)  # Raw text search is not JSON value equality.
+        self.assertEqual(normal, baseline_normal)
+        self.assertNotIn(path, normal); self.assertNotIn('registry_identity', normal)
+        self.assertEqual(canonical_json(preview), before)
+        self.assertFalse((self.paths.controls / 'holdout-registry.sqlite3').exists())
+        self.assertFalse((self.paths.state / 'walk_forward').exists())
 
 
 @unittest.skipUnless(HAS_QT, 'Pinned Qt required')

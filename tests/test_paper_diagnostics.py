@@ -320,3 +320,56 @@ class ConnectionDiagnosticTests(unittest.TestCase):
             self.assertEqual(len(children), 2)
             self.assertTrue(all(child.returncode is not None for child in children))
             self.assertTrue(all(child['returncode'] is not None for child in result['children']))
+
+
+class DiagnosticWorkerArgumentsTests(unittest.TestCase):
+    def test_passthrough_preserves_new_reconciliation_argument_and_legacy_default(self):
+        import tools.diagnose_paper_replay as diagnostic
+        args = (object(), object(), 'ui_backtest', object(), 'owned-root', None, 'owned-job')
+        marker = object()
+        for admitted in (False, True, marker):
+            with self.subTest(admitted=admitted), patch.object(diagnostic, '_original_worker') as worker:
+                self.assertIs(diagnostic._diagnosed_worker(*args, admitted), worker.return_value)
+                self.assertEqual(worker.call_args.args[:7], args)
+                self.assertIs(worker.call_args.args[7], admitted)
+        with patch.object(diagnostic, '_original_worker') as worker:
+            diagnostic._diagnosed_worker(*args)
+            self.assertEqual(worker.call_args.args[:7], args)
+            self.assertIs(worker.call_args.args[7], False)
+
+    def test_measured_paper_path_forwards_argument_without_changing_sender_or_leaking_hooks(self):
+        from contextlib import ExitStack
+        import os
+        import quantlab.paper as paper
+        import quantlab.paper_replay as replay
+        import tools.diagnose_paper_replay as diagnostic
+        originals = [(paper.PaperBroker, name, getattr(paper.PaperBroker, name))
+                     for name in ('_restore', 'snapshot')]
+        originals += [(replay.PaperReplay, name, getattr(replay.PaperReplay, name))
+                      for name in ('__init__', 'snapshot', '_quote_policy', 'step', '_fault')]
+        original_connect = sqlite3.connect
+        for admitted in (False, True, object()):
+            with self.subTest(admitted=admitted), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+                stack.enter_context(patch.dict(os.environ, {'MARKAUTO_DIAGNOSTIC_OUTPUT': directory}))
+                stack.enter_context(patch.object(sqlite3, 'connect', original_connect))
+                for cls, name, original in originals:
+                    stack.enter_context(patch.object(cls, name, original))
+                sender, gate, payload = MagicMock(), object(), object()
+                def run(measured_sender, *args):
+                    measured_sender.send_bytes(b'offline-observation')
+                    measured_sender.close()
+                worker = stack.enter_context(patch.object(diagnostic, '_original_worker', side_effect=run))
+                diagnostic._diagnosed_worker(sender, gate, 'ui_paper_replay', payload,
+                                            directory, None, 'probe', admitted)
+                self.assertEqual(worker.call_args.args[1:7],
+                                 (gate, 'ui_paper_replay', payload, directory, None, 'probe'))
+                self.assertIs(worker.call_args.args[7], admitted)
+                sender.send_bytes.assert_called_once_with(b'offline-observation')
+                sender.close.assert_called_once()
+                report = json.loads((Path(directory) / 'probe.json').read_text())
+                self.assertEqual(report['timings']['worker.body']['calls'], 1)
+                self.assertEqual(report['timings']['ipc.send']['calls'], 1)
+                self.assertEqual(report['active'], [])
+            self.assertIs(sqlite3.connect, original_connect)
+            for cls, name, original in originals:
+                self.assertIs(getattr(cls, name), original)
