@@ -1,5 +1,6 @@
 """Small, inert local-AI fixtures; never download or execute a model/runtime."""
 import copy
+from contextlib import closing
 import ctypes
 import hashlib
 import io
@@ -10,6 +11,7 @@ import sqlite3
 import socket
 import stat
 import struct
+import subprocess
 import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -517,7 +519,7 @@ class LocalAIFixtureTests(unittest.TestCase):
             self.assertEqual(local_ai.usage(controls)['calls'], 2)
         self.assertEqual(len(seen), 2)
         self.assertTrue(all(endpoint == local_ai.ENDPOINT for endpoint, _, _ in seen))
-        with sqlite3.connect(controls / 'local-ai-v1.sqlite3') as db:
+        with closing(sqlite3.connect(controls / 'local-ai-v1.sqlite3')) as db:
             self.assertEqual(db.execute('SELECT status FROM calls ORDER BY sequence').fetchall(),
                              [('failed_or_interrupted',), ('transport_returned_not_verified',)])
 
@@ -665,10 +667,10 @@ class LocalAIOwnershipTests(unittest.TestCase):
             self.assertNotIn('"pid"', encoded_identity)
             self.assertNotIn('"created"', encoded_identity)
             first.generate({'family': 'trend'})
-            with sqlite3.connect(first.path) as db:
+            with closing(sqlite3.connect(first.path)) as db:
                 first_binding = db.execute('SELECT binding FROM budget').fetchone()[0]
             second.generate({'family': 'trend'})
-            with sqlite3.connect(second.path) as db:
+            with closing(sqlite3.connect(second.path)) as db:
                 self.assertEqual(db.execute('SELECT binding,calls FROM budget').fetchone(), (first_binding, 2))
         self.assertEqual(transport.call_count, 2)
 
@@ -811,6 +813,46 @@ class OwnedTransportLoopbackTests(unittest.TestCase):
 
 
 class PackagedLocalAIManifestTests(unittest.TestCase):
+    def test_autocrlf_checkout_preserves_exact_pinned_artifacts(self):
+        root = Path(__file__).resolve().parents[1]
+        resource = Path('packaging/local_ai')
+        fixture = Path('tests/fixtures/desktop_runtime_0_2_1.py.txt')
+        spec = local_ai.manifest()
+        names = [resource / 'manifest.json', fixture,
+                 *(resource / name for name in spec['licenses'])]
+        expected = {name: (root / name).read_bytes() for name in names}
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory).resolve()
+            (checkout / '.gitattributes').write_bytes((root / '.gitattributes').read_bytes())
+            for name, raw in expected.items():
+                target = checkout / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+            control = checkout / 'unpinned.py'
+            control.write_bytes(b'# ordinary source\npass\n')
+
+            def git(*args):
+                return subprocess.run(['git', '-C', str(checkout), *args], check=True,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            git('init', '--quiet')
+            git('-c', 'core.autocrlf=false', 'add', '--', '.gitattributes',
+                'unpinned.py', *(name.as_posix() for name in names))
+            for name in [*names, Path('unpinned.py')]:
+                (checkout / name).unlink()
+            # Exercise Git's real checkout filters, not a simulated replacement.
+            git('-c', 'core.autocrlf=true', 'checkout-index', '--all', '--force')
+            self.assertEqual(control.read_bytes(), b'# ordinary source\r\npass\r\n')
+            for name, raw in expected.items():
+                with self.subTest(path=name):
+                    self.assertEqual((checkout / name).read_bytes(), raw)
+            with patch.object(local_ai, 'resources', return_value=checkout / resource):
+                self.assertEqual(local_ai.manifest(), spec)
+                for name, pin in spec['licenses'].items():
+                    local_ai.verify_file(local_ai.resources() / name, pin)
+            self.assertEqual(hashlib.sha256((checkout / fixture).read_bytes()).hexdigest(),
+                             'f9ba44bd191d05347a183da62d706008000c41841b9871ab01b4f6f73385637d')
+
     def test_real_manifest_is_small_pinned_inventory_and_licenses_only(self):
         spec = local_ai.manifest()
         self.assertEqual(spec['profile'], 'llamacpp-b11429-qwen15-v1')

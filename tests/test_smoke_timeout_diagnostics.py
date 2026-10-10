@@ -2,7 +2,8 @@
 import json
 import errno
 import select
-from contextlib import contextmanager
+import sqlite3
+from contextlib import closing, contextmanager
 import os
 from pathlib import Path
 import sys
@@ -14,7 +15,8 @@ from unittest.mock import patch
 
 from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
 
-from tests.smoke_timeout_diagnostics import output_summary, run_smoke_process
+from tests.smoke_timeout_diagnostics import (WorkerTimings, diagnosed_smoke_worker,
+    instrument_walk_forward, output_summary, run_smoke_process)
 from tests.test_desktop_smoke_terminal import process_can_run
 
 
@@ -145,6 +147,92 @@ Path(sys.argv[1]).write_text(json.dumps([child.pid]), encoding='utf-8')
         self.assertEqual(result['stack_frames'], [{'module': 'desktop.py', 'line': 770, 'function': 'main'}])
         self.assertNotIn('DO_NOT_RETAIN', json.dumps(result))
         self.assertNotIn('/private', json.dumps(result))
+
+
+class WorkerTimingTests(unittest.TestCase):
+    def test_active_phase_and_failed_call_are_recorded_without_exception_text(self):
+        timings = WorkerTimings()
+        with self.assertRaisesRegex(RuntimeError, 'DO_NOT_RETAIN'):
+            with timings.measure('worker.body'), timings.measure('wfo.evaluate'):
+                observed = timings.snapshot()
+                self.assertEqual([row['phase'] for row in observed['active']],
+                                 ['worker.body', 'wfo.evaluate'])
+                raise RuntimeError('DO_NOT_RETAIN')
+        observed = timings.snapshot()
+        self.assertEqual(observed['active'], [])
+        self.assertEqual({row['phase']: row['calls'] for row in observed['timings']},
+                         {'worker.body': 1, 'wfo.evaluate': 1})
+        self.assertNotIn('DO_NOT_RETAIN', json.dumps(observed))
+        with self.assertRaises(ValueError):
+            with timings.measure('/private/not-a-phase'):
+                self.fail('Unknown phase accepted')
+
+    def test_worker_waits_for_admission_before_instrumentation(self):
+        from unittest.mock import Mock
+        gate = Mock(); gate.wait.return_value = False
+        with patch('tests.smoke_timeout_diagnostics.instrument_walk_forward') as instrument, \
+                patch('tests.smoke_timeout_diagnostics._original_job_worker') as worker:
+            diagnosed_smoke_worker(None, gate, 'ui_walk_forward_run', {}, None, None, 'fixture')
+        gate.wait.assert_called_once_with(15)
+        instrument.assert_not_called(); worker.assert_not_called()
+
+    def test_sqlite_semantics_and_explicit_factories_are_unchanged_and_wrappers_restore(self):
+        from quantlab import walk_forward
+        original_connect, original_save = sqlite3.connect, walk_forward._save_state
+        timings = WorkerTimings()
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / 'fixture.sqlite3'
+            with closing(sqlite3.connect(database)) as db:
+                expected = [db.execute('PRAGMA ' + name).fetchone()[0]
+                            for name in ('journal_mode', 'synchronous')]
+            with self.assertRaisesRegex(RuntimeError, 'restore-on-error'):
+                with instrument_walk_forward(timings):
+                    with closing(sqlite3.connect(database)) as db:
+                        self.assertEqual([db.execute('PRAGMA ' + name).fetchone()[0]
+                            for name in ('journal_mode', 'synchronous')], expected)
+                        db.execute('CREATE TABLE fixture (value TEXT)')
+                        db.execute('INSERT INTO fixture VALUES (?)', ('DO_NOT_RETAIN',))
+                        db.commit()
+                        with self.assertRaises(ValueError):
+                            with db:
+                                db.execute('INSERT INTO fixture VALUES (?)', ('rollback',))
+                                raise ValueError('rollback')
+                    for args, kwargs in (((':memory:',), {'factory': sqlite3.Connection}),
+                                         ((':memory:', 5.0, 0, '', True, sqlite3.Connection), {})):
+                        with closing(sqlite3.connect(*args, **kwargs)) as db:
+                            self.assertIs(type(db), sqlite3.Connection)
+                    raise RuntimeError('restore-on-error')
+            self.assertIs(sqlite3.connect, original_connect)
+            self.assertIs(walk_forward._save_state, original_save)
+            with closing(sqlite3.connect(database)) as db:
+                self.assertEqual(db.execute('SELECT value FROM fixture').fetchall(), [('DO_NOT_RETAIN',)])
+        encoded = json.dumps(timings.snapshot())
+        self.assertNotIn('DO_NOT_RETAIN', encoded)
+        self.assertNotIn(str(database), encoded)
+        self.assertNotIn('SELECT', encoded)
+        calls = {row['phase']: row['calls'] for row in timings.snapshot()['timings']}
+        self.assertEqual(calls['sqlite.commit'], 1)
+        self.assertEqual(calls['sqlite.transaction_exit'], 1)
+
+    def test_timing_sanitizer_rejects_unknown_labels_fields_and_unbounded_numbers(self):
+        good = {'phase': 'wfo.evaluate', 'elapsed_ms': 123, 'calls': 2}
+        raw = {'stage': 'worker_timing', 'operation': 'ui_walk_forward_run',
+            'active': [{'phase': 'sqlite.commit', 'elapsed_ms': 3, 'sql': 'DO_NOT_RETAIN'}],
+            'timings': [dict(good, path='/private/root', secret='DO_NOT_RETAIN'),
+                dict(good, phase='/private/root'), dict(good, phase=[]),
+                dict(good, elapsed_ms=-1), dict(good, elapsed_ms=7200001),
+                dict(good, elapsed_ms=True), dict(good, calls=True),
+                dict(good, calls=1000001), None, 'DO_NOT_RETAIN']}
+        result = output_summary('SMOKE_DIAGNOSTIC ' + json.dumps(raw))['events'][0]
+        self.assertEqual(result['timings'], [good])
+        self.assertEqual(result['active'], [{'phase': 'sqlite.commit', 'elapsed_ms': 3}])
+        self.assertNotIn('DO_NOT_RETAIN', json.dumps(result))
+        self.assertNotIn('/private', json.dumps(result))
+        for field in ('active', 'timings'):
+            raw[field] = {'unexpected': 'DO_NOT_RETAIN'}
+        result = output_summary('SMOKE_DIAGNOSTIC ' + json.dumps(raw))['events'][0]
+        self.assertEqual(result['active'], [])
+        self.assertEqual(result['timings'], [])
 
 
 @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux /proc disappearance semantics')

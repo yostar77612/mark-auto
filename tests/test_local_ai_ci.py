@@ -1,5 +1,6 @@
 """Offline evidence/ownership tests; no real download, Windows process, or model call."""
 import copy
+from contextlib import closing
 import ctypes
 from dataclasses import replace
 import hashlib
@@ -132,7 +133,7 @@ class CIFixture(unittest.TestCase):
 
     def mutate_db(self, sql, config=None):
         config = config or self.config
-        with sqlite3.connect(config.attempt / 'control-v1' / 'local-ai-v1.sqlite3') as db:
+        with closing(sqlite3.connect(config.attempt / 'control-v1' / 'local-ai-v1.sqlite3')) as db, db:
             db.execute(sql)
 
     def argv(self, config=None, phase=None):

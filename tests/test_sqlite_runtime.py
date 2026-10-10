@@ -94,7 +94,7 @@ class SQLiteRuntimeSupplyTests(unittest.TestCase):
             pin = {'version': version, 'source_id': source_id, 'windows_x64': {'dll_sha256': digest}}
             manifest = root / 'pin.json'
             manifest.write_text(json.dumps(pin))
-            with patch.object(sqlite_runtime, 'loaded_library', return_value=dll):
+            with patch.object(sqlite_runtime, 'loaded_library', return_value=dll.resolve()):
                 self.assertEqual(sqlite_runtime.verify(manifest, root)['library_sha256'], digest)
                 with self.assertRaises(RuntimeError):
                     sqlite_runtime.verify(manifest, root, '0' * 64)

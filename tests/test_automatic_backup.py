@@ -1,9 +1,10 @@
 import json
 import os
 from pathlib import Path
+import stat
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import zipfile
 
 from quantlab.automatic_backup import AutomaticBackup, MAX_ARCHIVES
@@ -183,6 +184,44 @@ class AutomaticBackupTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeSafetyError, 'Hard-linked'):
             self.auto.complete(archive=archive, status='success')
 
+    def test_managed_links_rejected_despite_incomplete_directory_metadata(self):
+        self.enable(); self.directory.mkdir()
+        target = self.base/'target'; target.write_bytes(b'keep')
+        before = self.auto.path.read_bytes()
+        for name in (f'markauto-{self.auto.workspace_id[:16]}-linked.zip', 'orphan.zip.tmp'):
+            for kind in ('hardlink', 'symlink'):
+                with self.subTest(name=name, kind=kind):
+                    link = self.directory/name
+                    if kind == 'hardlink':
+                        os.link(target, link)
+                        self.assertEqual(link.lstat().st_nlink, 2)
+                    else:
+                        link.symlink_to(target)
+                    try:
+                        # Windows DirEntry.stat() omits link counts. Also cover
+                        # stale regular-file metadata for a replaced symlink.
+                        cached = list(target.stat())
+                        for field in (stat.ST_INO, stat.ST_DEV, stat.ST_NLINK):
+                            cached[field] = 0
+                        entry = Mock(spec=os.DirEntry)
+                        entry.name = link.name
+                        entry.path = str(link)
+                        entry.stat.return_value = os.stat_result(cached)
+                        with patch('quantlab.automatic_backup.os.scandir') as scan:
+                            scan.return_value.__enter__.return_value = [entry]
+                            with self.assertRaisesRegex(RuntimeSafetyError, 'unsafe matching'):
+                                self.auto.claim_due(quiescent=True)
+                        self.assertEqual(self.auto.path.read_bytes(), before)
+                        self.assertIsNone(self.auto.load()['last_attempt_day'])
+                        self.assertEqual(target.read_bytes(), b'keep')
+                        self.assertEqual(link.read_bytes(), b'keep')
+                        if kind == 'symlink':
+                            self.assertTrue(link.is_symlink())
+                        else:
+                            self.assertEqual(link.lstat().st_nlink, 2)
+                    finally:
+                        link.unlink()
+
     def test_unavailable_old_destination_can_be_disabled_or_replaced(self):
         self.enable()
         self.auto.claim_due(quiescent=True)
@@ -190,7 +229,7 @@ class AutomaticBackupTests(unittest.TestCase):
         replacement = self.base/'replacement'
         original_check = self.auto.destination_directory
         def check(path):
-            if path == str(self.directory): raise RuntimeSafetyError('old drive unavailable')
+            if Path(path).resolve() == self.directory.resolve(): raise RuntimeSafetyError('old drive unavailable')
             return original_check(path)
         with patch.object(self.auto, 'destination_directory', side_effect=check) as checked:
             self.auto.configure(enabled=False, directory=str(self.directory))
@@ -200,7 +239,7 @@ class AutomaticBackupTests(unittest.TestCase):
         with patch.object(self.auto, 'destination_directory', side_effect=check) as checked:
             self.auto.configure(enabled=True, directory=str(replacement))
             checked.assert_called_once_with(str(replacement))
-        self.assertEqual(self.auto.load()['directory'], str(replacement))
+        self.assertEqual(self.auto.load()['directory'], str(replacement.resolve()))
         self.assertEqual(self.auto.load()['last_attempt_day'], watermark)
         self.assertIsNone(self.auto.claim_due(quiescent=True))
 

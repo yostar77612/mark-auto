@@ -16,7 +16,7 @@ import time
 import unittest
 from unittest.mock import Mock
 
-from tests.smoke_timeout_diagnostics import run_smoke_process
+from tests.smoke_timeout_diagnostics import output_summary, run_smoke_process
 
 from desktop import _close_smoke_worker
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
@@ -78,6 +78,8 @@ class GenericSmokeTerminalProcessTests(unittest.TestCase):
 from pathlib import Path
 import desktop
 import quantlab.desktop_runtime as runtime
+from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
+runtime._job_worker = diagnosed_smoke_worker
 from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))
@@ -146,6 +148,15 @@ JobManager.start = tracked_start
                 self.assertTrue(execution_root.name.startswith('markauto-smoke-startup-'))
                 shutil.rmtree(execution_root)  # Process and every recorded worker are independently stopped.
             if complete:
+                observations = [event for event in output_summary(result.stderr)['events']
+                                if event['stage'] == 'worker_timing']
+                self.assertTrue(observations, 'Real spawned WFO worker did not emit timing evidence')
+                self.assertEqual(observations[-1]['active'], [])
+                calls = {row['phase']: row['calls'] for row in observations[-1]['timings']}
+                self.assertEqual(calls['wfo.evaluate'], 22)
+                self.assertEqual(calls['process.start'], 22)
+                self.assertEqual(calls['wfo.save'], 63)
+                self.assertGreaterEqual(calls['sqlite.commit'], 63)
                 self.assertEqual(len(value['steps']), 7)
                 self.assertTrue(all(row['passed'] for row in value['steps']))
                 for key in ('auth_smoke', 'market_smoke', 'history_smoke'):

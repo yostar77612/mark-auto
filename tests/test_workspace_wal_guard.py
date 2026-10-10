@@ -165,7 +165,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         # Compile the actual worker adapter without importing optional Qt widgets.
         import ast
         source = Path(__file__).resolve().parents[1] / 'desktop_ui.py'
-        tree = ast.parse(source.read_text())
+        tree = ast.parse(source.read_text(encoding='utf-8'))
         function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'execute_ui_operation')
         broker = types.SimpleNamespace(reconcile=lambda snapshot: None, _margin_schedule=())
         namespace = {'UI_OPERATIONS': {'ui_paper_replay'}, '_root': lambda paths: paths.state,

@@ -32,8 +32,8 @@ class RuntimeAdapterTests(unittest.TestCase):
             locked.return_value.__enter__.return_value=(Path('/verified/runtime/llama-server.exe'),Path('/verified/model.gguf'),Path('/trusted'))
             with self.assertRaises(ValueError): runtime.serve(None, Mock())
             args, options = start.call_args
-            self.assertEqual(args[0][0], '/verified/runtime/llama-server.exe')
-            self.assertFalse(options['shell']); self.assertEqual(options['cwd'], '/verified/runtime')
+            self.assertEqual(args[0][0], str(Path('/verified/runtime/llama-server.exe')))
+            self.assertFalse(options['shell']); self.assertEqual(options['cwd'], str(Path('/verified/runtime')))
             self.assertNotIn('/evil', options['env']['PATH'])
             self.assertNotIn('LLAMA_ARG_MODEL', options['env'])
             self.assertNotIn('PYTHONPATH', options['env'])

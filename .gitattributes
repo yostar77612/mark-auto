@@ -1,2 +1,9 @@
 # The TAIFEX-format fixture deliberately preserves padded source columns.
 tests/fixtures/data_synthetic_taifex.csv whitespace=-blank-at-eol
+
+# These artifacts are SHA-256-pinned as raw bytes, including their line endings.
+packaging/local_ai/manifest.json -text
+packaging/local_ai/LICENSE-LLVM-OpenMP.txt -text
+packaging/local_ai/LICENSE-Qwen-Apache-2.0.txt -text
+packaging/local_ai/LICENSE-llama.cpp-MIT.txt -text
+tests/fixtures/desktop_runtime_0_2_1.py.txt -text

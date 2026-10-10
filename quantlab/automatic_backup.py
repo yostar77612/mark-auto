@@ -80,7 +80,9 @@ class AutomaticBackup:
                     if entry.name.startswith(prefix) or entry.name.endswith('.zip.tmp'):
                         # Also count orphan temporary/unknown matching files;
                         # never delete or assume they are safe to overwrite.
-                        info = entry.stat(follow_symlinks=False)
+                        # Windows DirEntry.stat() reports st_nlink as zero;
+                        # get fresh metadata without following symlinks.
+                        info = os.stat(entry.path, follow_symlinks=False)
                         if not stat.S_ISREG(info.st_mode) or info.st_nlink > 1 or getattr(info, 'st_file_attributes', 0) & 0x400:
                             raise RuntimeSafetyError('Automatic backup folder contains an unsafe matching entry')
                         count += 1
