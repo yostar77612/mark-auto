@@ -738,20 +738,19 @@ class SavedCandidatePoolTests(unittest.TestCase):
             self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
         self.assertEqual(error.exception.reason_code, 'source_provider_unsupported')
 
-    def test_transport_verifier_gui_local_provider_uses_existing_compatible_protocol(self):
-        from quantlab.local_ai import provider as local_provider
-        from quantlab.research import _provider_identity
-        # The descriptor is real, while campaign outputs/receipts are manufactured
-        # schema fixtures. No model, owned process, network, or credential is used.
-        with patch('quantlab.local_ai.HTTPTransport.__call__', side_effect=AssertionError('no network')):
-            provider = _provider_identity(local_provider(self.root / 'local-controls',
-                                                        owner={'pid': 123, 'created': 456}))
-            self.assertEqual(provider['mode'], 'openai_compatible')
-            self.assertEqual(provider['transport_type'], 'quantlab.provider.HTTPTransport')
-            self.assertEqual(provider['output_mode'], 'registry_json_schema')
-            folder, ref, original, _ = make_saved_source(self.root / 'transport-gui-local-ai',
-                producer=TRANSPORT_VERIFIER_PRODUCER, provider=provider)
-            admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
+    def test_historical_local_provider_receipts_remain_readable_without_runtime(self):
+        # Historical descriptor only: existing saved research stays readable.
+        # No runtime, model download, process, or inference path is retained.
+        provider = {'mode': 'openai_compatible',
+            'model': 'Qwen/Qwen2.5-1.5B-Instruct-GGUF',
+            'endpoint': 'http://127.0.0.1:18765/v1/chat/completions',
+            'output_mode': 'registry_json_schema',
+            'limits': {'calls':100, 'tokens':1000000, 'spend':'0', 'rate':'0',
+                       'tokens_per_call':1024, 'timeout':120},
+            'network_opt_in':True, 'transport_type':'quantlab.provider.HTTPTransport'}
+        folder, ref, original, _ = make_saved_source(self.root / 'historical-local-provider',
+            producer=TRANSPORT_VERIFIER_PRODUCER, provider=provider)
+        admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
         self.assertEqual(admission.admission['producer'], TRANSPORT_VERIFIER_PRODUCER)
         self.assertEqual(admission.admission['provider_mode'], 'openai_compatible')
         self.assertEqual(admission.admission['real_model_status'], 'not_verified')

@@ -206,3 +206,10 @@ load_history(root,cache_id)->HistoryLoad; list_history(root)->tuple[HistoryLoad,
 - 打包smoke必須保留原七步與manual兩步、offline auth，加獨立history_import真worker/cache重載及三商品×八周期24次原生圖表繪製。synthetic fixture明示、network/model不得呼叫、120秒原上限不變，缺模組/假結果/cache改動/failure均使整體失敗。
 
 所有component與完整回歸後，原生Windows exact-head build/install/真releasedbaseline升級/中斷恢復與下載產物hash核對仍為必要Gate。cleanWindows10/11不得用Server代替。
+
+
+## 2026-10-10 11:16 UTC — user-authorized AI-route supersession
+
+Official Sign in with ChatGPT subscription integration is REQUIRED. This replaces the older optional/alternative-route wording and local-model delivery requirement above and in Roadmap §19: no local-model feature, Qwen/Ollama/Hugging Face/GGUF download or local inference, and no paid API or credits fallback. Implementation is IN_PROGRESS; no correction-source test or native PASS is claimed. Preserve all earlier evidence, M6 weight10/PARTIAL,210/300, and every unrelated locked gate.
+
+The existing official PKCE/OIDC, DPAPI, worker cleanup, source/receipt provenance, persistent budgets and holdout restrictions remain. Real OAuth grant and bounded subscription requests require owner authorization; mocks cannot certify them. Included-only usage is a user-attested prerequisite with Settings > Usage guidance, not verified server configuration or an application monetary cap. The [official Help Center](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites) states that optional credit use is global and also requires the app limit at100%; an app limit below100% prevents that app's credit use. The reviewed guidance provides no per-request subscription-only flag. Do not infer that signing in alone prevents credit charges or alter owner settings automatically.

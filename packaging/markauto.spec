@@ -7,15 +7,11 @@ root = Path(SPECPATH).parent
 from quantlab.sqlite_runtime import verify, verify_binaries
 # Fail before freezing if dependency analysis would collect an unpinned DLL.
 verify(root / 'packaging/sqlite-runtime.json', Path(sys.base_prefix))
-# Strict actual build verification is separate from structural spec inspection.
-from quantlab.local_ai import collect_support_binaries
-local_ai_binaries = collect_support_binaries()
 analysis = Analysis(
     [str(root / 'desktop.py')], pathex=[str(root)],
-    binaries=local_ai_binaries,
+    binaries=[],
     runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')],
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
-           (str(root / 'packaging' / 'local_ai'), 'packaging/local_ai'),
            (str(root / 'examples'), 'examples'),
            (str(root / 'desktop_chatgpt_auth.py'), '.'),
            (str(root / 'desktop_chatgpt_provider.py'), '.'),
@@ -32,6 +28,8 @@ analysis = Analysis(
            (str(root / 'quantlab' / 'research.py'), 'quantlab'),
            (str(root / 'quantlab' / 'walk_forward.py'), 'quantlab'),
            (str(root / 'quantlab' / 'saved_candidate_pool.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'research_analysis.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'indicators.py'), 'quantlab'),
            (str(root / 'quantlab' / 'provider.py'), 'quantlab'),
            (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')] + collect_data_files('tzdata')
           + [entry for name in ('PyJWT', 'cryptography', 'cffi', 'pycparser')

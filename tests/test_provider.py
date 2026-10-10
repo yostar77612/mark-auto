@@ -135,5 +135,31 @@ class ProviderTests(unittest.TestCase):
             HTTPTransport(credential_resolver=lambda: called.append(True))(self.endpoint + '/good', {}, 1)
         self.assertEqual(called, [])
 
+    def test_connection_verifier_runs_before_request_body_or_headers(self):
+        # Generic transport protection retained after the local-model adapter retired.
+        before = len(Handler.seen)
+        observations = []
+        def verify(sock):
+            self.assertIsNotNone(sock)
+            self.assertEqual(sock.getpeername(), ('127.0.0.1', self.server.server_port))
+            observations.append(len(Handler.seen))
+        transport = HTTPTransport(allow_network=True, connection_verifier=verify,
+                                  credential_resolver=lambda:'inert-verifier-test')
+        result = transport(self.endpoint+'/good', {'fixture_market_data':[1,2,3]}, 2)
+        self.assertEqual(observations, [before])
+        self.assertEqual(len(Handler.seen), before+1)
+        self.assertIn('choices', result)
+
+    def test_connection_verifier_rejection_sends_no_request_or_credential(self):
+        before = len(Handler.seen)
+        def reject(sock): raise ValidationError('inert peer rejection')
+        transport = HTTPTransport(allow_network=True, connection_verifier=reject,
+                                  credential_resolver=lambda:'must-not-transmit')
+        with self.assertRaises(ValidationError):
+            transport(self.endpoint+'/good', {'fixture_market_data':['must-not-transmit']}, 2)
+        time.sleep(.05)
+        self.assertEqual(len(Handler.seen), before)
+
+
 
 if __name__ == '__main__': unittest.main()

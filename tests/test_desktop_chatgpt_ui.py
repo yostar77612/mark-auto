@@ -69,7 +69,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         self.assertEqual(self.requests,[]);self.assertEqual(self.quiesce,[]);self.assertFalse(self.controller.busy)
         self.assertFalse(self.panel.buttons['begin'].isEnabled());self.assertFalse(self.panel.consent.isChecked())
         self.assertIn('不能視為已用 0',self.panel.usage.text())
-        self.assertIn('不保證零費用',self.panel.disclosure.text());self.assertIn('不會偷偷切換',self.panel.disclosure.text())
+        self.assertIn('不保證零費用',self.panel.disclosure.text());self.assertIn('不切換付費 API',self.panel.disclosure.text())
 
     def test_connect_requires_user_ack_and_actual_join_then_explicit_browser(self):
         c=self.controller;c.set_host_available(True)
@@ -136,7 +136,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         c.worker_joined(r.request_id,joined=True);self.panel.max_calls.setValue(2)
         with self.assertRaises(ValueError):self.panel.build_plan_options()
         c.set_usage(REF,[],account_status={'state':'ready','pending':False})
-        self.panel.consent.setChecked(True);options=self.panel.build_plan_options()
+        self.panel.consent.setChecked(True);self.panel.included_usage_only.setChecked(True);options=self.panel.build_plan_options()
         self.assertEqual(options.mode,'chatgpt_plan');self.assertFalse(options.paid_api_fallback);self.assertEqual(options.registration,REF)
         self.assertFalse(self.panel.consent.isChecked())
         c.usage_known=False;self.panel.consent.setChecked(True)
@@ -166,6 +166,246 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         self.panel.restore_preferences(value);self.assertFalse(self.panel.consent.isChecked())
         for extra in ('api_key','registration','network_opt_in'):
             with self.assertRaises(ValueError):self.panel.restore_preferences({**value,extra:'fixture'})
+
+    def prepared_plan(self):
+        c=self.ready();r=c.request('models',REF,confirmed=True);c.acknowledge_quiescence(r.request_id,joined=True)
+        c.apply_event(self.ui.ConnectionEvent(r.request_id,'result','plan_ready',((REF,'plan_ready'),),REF,
+            models=('fixture-slug',),model_labels=(('fixture-slug','官方顯示名稱'),)))
+        c.worker_joined(r.request_id,joined=True);self.panel.max_calls.setValue(2)
+        c.set_usage(REF,[],account_status={'state':'ready','pending':False})
+        return c
+
+    def test_included_only_confirmation_is_separate_bound_and_one_run_only(self):
+        c=self.prepared_plan();self.panel.consent.setChecked(True)
+        with self.assertRaisesRegex(ValueError,'included usage only'):self.panel.build_plan_options()
+        self.panel.included_usage_only.setChecked(True)
+        self.assertEqual(self.panel._included_usage_registration,REF)
+        options=self.panel.build_plan_options()
+        self.assertEqual(options.model,'fixture-slug');self.assertTrue(options.included_usage_policy_confirmed)
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.assertIsNone(self.panel._included_usage_registration)
+        self.panel.consent.setChecked(True)
+        with self.assertRaisesRegex(ValueError,'included usage only'):self.panel.build_plan_options()
+        self.panel.included_usage_only.setChecked(True)
+        c.active_registration=OTHER;c.changed.emit()
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.assertIsNone(self.panel._included_usage_registration)
+
+    def test_included_only_confirmation_does_not_survive_auth_or_settings_change(self):
+        c=self.prepared_plan();self.panel.included_usage_only.setChecked(True)
+        self.panel.max_calls.setValue(3)
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.panel.included_usage_only.setChecked(True)
+        c.request('select',REF,confirmed=True)
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.panel.included_usage_only.setChecked(True)
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.assertIsNone(self.panel._included_usage_registration)
+        self.assertNotIn('included_usage_policy_confirmed',self.panel.preferences())
+
+    def test_model_labels_preserve_slug_payload_and_invalid_labels_reject(self):
+        self.prepared_plan()
+        self.assertEqual(self.panel.model.currentText(),'官方顯示名稱')
+        self.assertEqual(self.panel.model.currentData(),'fixture-slug')
+        for labels in ((('other','Wrong'),),(('fixture-slug','bad\nlabel'),),
+                       (('fixture-slug','one'),('fixture-slug','two'))):
+            with self.subTest(labels=labels),self.assertRaises(ValueError):
+                self.ui.ConnectionEvent(1,'result',models=('fixture-slug',),model_labels=labels)
+
+    def test_subscription_options_never_infer_missing_consent_flags(self):
+        for flags in ({},{'network_opt_in':True},{'included_usage_policy_confirmed':True}):
+            with self.subTest(flags=flags),self.assertRaises(ValueError):
+                self.ui.SubscriptionOptions(REF,'fixture-slug',2,30,**flags)
+
+    def test_usage_link_is_fixed_explicit_and_does_not_grant_consent(self):
+        with patch('PySide6.QtGui.QDesktopServices.openUrl',return_value=True) as opened:
+            self.assertFalse(opened.called)
+            self.panel.manage_usage.click()
+            self.assertEqual(opened.call_args.args[0].toString(),'https://chatgpt.com/settings/usage')
+        self.assertFalse(self.panel.consent.isChecked());self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.assertEqual(self.requests,[])
+
+    def test_plan_reconsent_requires_explicit_selected_identity_only_account(self):
+        c=self.ready()
+        with self.assertRaises(ValueError):c.request('enable_plan',REF,confirmed=True)
+        c.state='identity_only';c.changed.emit()
+        self.panel._act('enable_plan');self.assertFalse(c.busy)
+        self.panel.consent.setChecked(True);self.panel._act('enable_plan')
+        self.assertEqual(self.quiesce[-1].action,'enable_plan')
+        self.assertEqual(self.quiesce[-1].registration,REF)
+        self.assertEqual(self.quiesce[-1].max_runtime_seconds,600)
+        with self.assertRaises(ValueError):self.ui.ConnectionRequest(1,'enable_plan',user_confirmed=True)
+        url=authorization_url(client_id='issued-fixture',prompt='consent')
+        self.assertEqual(self.ui.official_authorization_url(url),url)
+        for params in ({'prompt':'login'},{'prompt':'consent'},{'force_reconsent':'true'}):
+            with self.assertRaises(ValueError):self.ui.official_authorization_url(authorization_url(**params))
+
+    def test_worker_explicit_enable_plan_uses_existing_registration(self):
+        class ConsentSession(FixtureSession):
+            def begin(self,registration=None,*,enable_plan=False):
+                self.calls.append((registration,enable_plan));self.state='authorizing'
+                return authorization_url(client_id='issued-fixture',prompt='consent')
+        session=ConsentSession();events=[]
+        request=self.ui.ConnectionRequest(1,'enable_plan',REF,user_confirmed=True)
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=events.append,cancelled=lambda:False,session_factory=lambda:session)
+        self.assertEqual(session.calls,[(REF,True),'poll'])
+        self.assertEqual(result.state,'plan_ready');self.assertEqual(len(events),1)
+
+    def test_unverified_retry_row_can_only_start_explicit_reauthorization(self):
+        c=self.controller;c.set_host_available(True)
+        r=c.request('list')
+        c.apply_event(self.ui.ConnectionEvent(r.request_id,'result','disconnected',((REF,'registration_retry_required'),)))
+        c.worker_joined(r.request_id,joined=True)
+        for action in ('select','sign_out','refresh','models','clear_pause','enable_plan'):
+            with self.subTest(action=action),self.assertRaises(ValueError):c.request(action,REF,confirmed=True)
+        self.panel.included_usage_only.setChecked(True)
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+        self.panel.consent.setChecked(True);self.panel._act('reauthorize')
+        self.assertEqual(self.quiesce[-1].action,'begin');self.assertEqual(self.quiesce[-1].registration,REF)
+        self.assertIsNone(c.active_registration)
+
+    def test_worker_surfaces_unverified_retry_without_making_it_active(self):
+        class RetrySession(FixtureSession):
+            def poll(self,timeout):
+                self.state='registration_retry_required';self.rows=[{'registration':REF,'state':'registration_retry_required'}]
+            def status_summary(self):
+                return {'registrations':self.rows,'active_registration':None,'state':'disconnected'}
+        request=self.ui.ConnectionRequest(1,'begin',user_confirmed=True)
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=lambda e:None,cancelled=lambda:False,session_factory=RetrySession)
+        self.assertEqual(result.state,'registration_retry_required')
+        self.assertIsNone(result.active_registration)
+        self.assertEqual(result.registrations,((REF,'registration_retry_required'),))
+
+    def test_explicit_plan_reconsent_cancel_and_timeout_keep_prior_account(self):
+        class SlowConsentSession(FixtureSession):
+            def __init__(self):
+                super().__init__();self.active_registration=REF;self.rows=[{'registration':REF,'state':'identity_only'}]
+            def begin(self,registration=None,*,enable_plan=False):
+                self.calls.append((registration,enable_plan));self.state='authorizing'
+                return authorization_url(client_id='issued-fixture',prompt='consent')
+            def poll(self,timeout):self.calls.append('poll')
+        session=SlowConsentSession();events=[];cancel_count=[0]
+        def cancelled():
+            cancel_count[0]+=1;return cancel_count[0]>1
+        request=self.ui.ConnectionRequest(1,'enable_plan',REF,user_confirmed=True)
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=events.append,cancelled=cancelled,session_factory=lambda:session)
+        self.assertEqual(result.state,'cancelled');self.assertEqual(result.active_registration,REF)
+        self.assertEqual(session.rows,[{'registration':REF,'state':'identity_only'}])
+        session=SlowConsentSession();times=iter((0,121))
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=lambda e:None,cancelled=lambda:False,
+            session_factory=lambda:session,clock=lambda:next(times))
+        self.assertEqual(result.state,'timeout');self.assertEqual(session.active_registration,REF)
+        self.assertIn('cancel',session.calls)
+
+    def test_primary_sign_in_is_inert_until_click_and_waits_real_join_before_first_use(self):
+        c=self.controller;c.set_host_available(True)
+        self.assertTrue(self.panel.advanced.isHidden());self.assertEqual(self.requests,[])
+        self.panel.primary_sign_in.click();request=self.requests[-1]
+        self.assertEqual(request.action,'list');self.assertEqual(self.quiesce,[]);self.assertEqual(self.browser,[])
+        with patch.object(self.ui.QMessageBox,'question',return_value=self.ui.QMessageBox.StandardButton.Yes) as question:
+            c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','host_initialization_required'))
+            self.app.processEvents();question.assert_not_called()
+            c.worker_joined(request.request_id,joined=False);self.app.processEvents();question.assert_not_called()
+            c.worker_joined(request.request_id,joined=True);self.app.processEvents()
+            question.assert_called_once()
+            self.assertEqual(question.call_args.args[-1],self.ui.QMessageBox.StandardButton.Cancel)
+        first=self.quiesce[-1]
+        self.assertEqual(first.action,'first_sign_in');self.assertTrue(first.user_confirmed)
+        self.assertEqual(first.max_runtime_seconds,600);self.assertIsNone(first.registration)
+        c.acknowledge_quiescence(first.request_id,joined=True)
+        self.assertEqual(self.browser,[])
+        event=self.ui.ConnectionEvent(first.request_id,'authorization','authorizing',authorization_url=authorization_url())
+        c.apply_event(event);self.app.processEvents()
+        self.assertEqual(self.browser,[authorization_url()])
+        c.apply_event(event);self.app.processEvents()
+        self.assertEqual(self.browser,[authorization_url()])
+        self.assertFalse(self.panel.included_usage_only.isChecked())
+
+    def test_primary_first_use_decline_stops_without_authorization(self):
+        c=self.controller;c.set_host_available(True);self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','host_initialization_required'))
+        with patch.object(self.ui.QMessageBox,'question',return_value=self.ui.QMessageBox.StandardButton.Cancel):
+            c.worker_joined(request.request_id,joined=True);self.app.processEvents()
+        self.assertEqual(self.quiesce,[]);self.assertEqual(self.browser,[]);self.assertIsNone(self.panel._primary_flow)
+
+    def test_primary_returning_login_reuses_selected_account_without_initialization(self):
+        c=self.ready();self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        with patch.object(self.ui.QMessageBox,'question') as question:
+            c.worker_joined(request.request_id,joined=True);self.app.processEvents();question.assert_not_called()
+        request=self.quiesce[-1]
+        self.assertEqual(request.action,'begin');self.assertEqual(request.registration,REF)
+        self.assertEqual(self.browser,[])
+
+    def test_primary_cancel_blocks_pending_next_step_and_stale_browser_event(self):
+        c=self.ready();self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.worker_joined(request.request_id,joined=True)
+        self.panel._cancel_primary();self.app.processEvents()
+        self.assertEqual(self.quiesce,[]);self.assertIsNone(self.panel._primary_flow)
+        self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.worker_joined(request.request_id,joined=True);self.app.processEvents()
+        request=self.quiesce[-1];c.acknowledge_quiescence(request.request_id,joined=True)
+        self.assertFalse(c.apply_event(self.ui.ConnectionEvent(request.request_id-1,'authorization','authorizing',authorization_url=authorization_url())))
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'authorization','authorizing',authorization_url=authorization_url()))
+        self.panel._cancel_primary();self.app.processEvents()
+        self.assertEqual(self.browser,[])
+
+    def test_primary_repeated_click_and_failed_read_cannot_chain(self):
+        c=self.controller;c.set_host_available(True);self.panel.primary_sign_in.click()
+        first=self.requests[-1];self.panel.primary_sign_in.click()
+        self.assertEqual(len(self.requests),1)
+        c.apply_event(self.ui.ConnectionEvent(first.request_id,'error','unknown',error_code='operation_failed'))
+        c.worker_joined(first.request_id,joined=True);self.app.processEvents()
+        self.assertIsNone(self.panel._primary_flow);self.assertEqual(self.quiesce,[])
+
+    def test_first_sign_in_worker_requires_safe_first_use_before_begin(self):
+        class FirstUseSession(FixtureSession):
+            def initialize_host(self,*,first_use_only=False):
+                self.calls.append(('initialize',first_use_only));return 'fixture-host'
+        session=FirstUseSession();events=[]
+        request=self.ui.ConnectionRequest(1,'first_sign_in',user_confirmed=True)
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=events.append,cancelled=lambda:False,session_factory=lambda:session)
+        self.assertEqual(session.calls,[('initialize',True),'begin','poll']);self.assertEqual(result.state,'plan_ready')
+        self.assertEqual(len(events),1)
+        class LostHostSession(FirstUseSession):
+            def initialize_host(self,*,first_use_only=False):
+                from desktop_chatgpt_auth import AuthError
+                raise AuthError('explicit_host_recovery_required')
+        session=LostHostSession();events=[]
+        result=self.ui.run_connection_request(request,bootstrap='/fixture',emit=events.append,cancelled=lambda:False,session_factory=lambda:session)
+        self.assertEqual(result.error_code,'explicit_host_recovery_required');self.assertEqual(events,[]);self.assertEqual(session.calls,[])
+        with self.assertRaises(ValueError):self.ui.ConnectionRequest(1,'first_sign_in',REF,user_confirmed=True)
+
+    def test_parent_window_close_and_host_abandon_cancel_queued_primary_step(self):
+        from PySide6.QtWidgets import QWidget,QVBoxLayout
+        parent=QWidget();layout=QVBoxLayout(parent);layout.addWidget(self.panel)
+        parent.show();self.app.processEvents();c=self.ready()
+        self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.worker_joined(request.request_id,joined=True)
+        parent.close();self.app.processEvents()
+        self.assertEqual(self.quiesce,[]);self.assertIsNone(self.panel._primary_flow)
+        parent.show();self.app.processEvents();self.panel.primary_sign_in.click();request=self.requests[-1]
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.worker_joined(request.request_id,joined=True);self.panel.abandon_primary_sign_in();self.app.processEvents()
+        self.assertEqual(self.quiesce,[]);self.assertIsNone(self.panel._primary_flow)
+        self.panel.setParent(None);parent.deleteLater()
+
+    def test_active_account_label_is_verified_masked_and_independent_of_dropdown(self):
+        c=self.controller;c.set_host_available(True);request=c.request('list')
+        label='已驗證帳戶 ••••abcdef12（電子郵件未提供）'
+        event=self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),(OTHER,'registration_retry_required')),REF,
+                                     account_labels=((REF,label),))
+        c.apply_event(event);c.worker_joined(request.request_id,joined=True)
+        self.assertIn(label,self.panel.active_account.text())
+        self.panel.account.setCurrentIndex(self.panel.account.findData(OTHER))
+        self.assertIn(label,self.panel.active_account.text())
+        self.assertIn('待驗證註冊',self.panel.account.currentText())
+        for labels in (((OTHER,label),),((REF,'fixture-user@example.invalid'),)):
+            with self.assertRaises(ValueError):
+                self.ui.ConnectionEvent(1,'result','plan_ready',event.registrations,REF,account_labels=labels)
 
     def test_worker_begin_is_one_session_no_implicit_initialize_and_transient_url(self):
         session=FixtureSession();events=[]

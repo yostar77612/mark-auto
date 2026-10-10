@@ -46,12 +46,12 @@ class AutomaticBackupPanel(QWidget):
     def tick(self):
         w = self.window
         if self.paused or self.archive is not None or getattr(w, '_closing', False): return
-        panel = getattr(w, 'local_ai_panel', None)
-        busy = (w.jobs.active or (panel is not None and (panel.server.active or panel.task.active))
+        busy = (w.jobs.active
+                or getattr(getattr(w, 'chatgpt_panel', None), 'primary_sign_in_pending', False)
                 or w.chatgpt_controller.busy or w._wf_pending_reconcile or w._pending_plan_reconcile
                 or w._pending_usage_refresh or getattr(w, '_kill_pending', False))
         if busy:
-            if self.enabled.isChecked(): self.status.setText('等待研究、模型服務與設定作業全部停止後備份。')
+            if self.enabled.isChecked(): self.status.setText('等待研究、授權與設定作業全部停止後備份。')
             return
         try:
             payload = self.scheduler.claim_due(quiescent=True)

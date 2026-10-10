@@ -53,7 +53,8 @@ class QualityGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in ("desktop_ui.py", "desktop_charts.py", "desktop_forms.py", "desktop_market.py",
-                         "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py", "desktop_chatgpt_ui.py"):
+                         "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py", "desktop_chatgpt_ui.py",
+                         "desktop_tls_smoke.py"):
                 (root / name).write_text("import trader\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
                     self.assertTrue(scan(root), name)

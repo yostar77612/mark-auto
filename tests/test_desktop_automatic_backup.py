@@ -26,8 +26,8 @@ class AutomaticBackupPanelTests(unittest.TestCase):
         w.paths = AppPaths(Path(self.tmp.name)/'workspace').ensure()
         w.jobs = JobManager(w.paths)
         w.start_job = lambda operation, payload: w.jobs.start(operation, payload)
-        w.local_ai_panel = SimpleNamespace(server=SimpleNamespace(active=False), task=SimpleNamespace(active=False))
         w.chatgpt_controller = SimpleNamespace(busy=False)
+        w.chatgpt_panel = SimpleNamespace(primary_sign_in_pending=False)
         w._wf_pending_reconcile = w._pending_plan_reconcile = w._pending_usage_refresh = False
         self.panel = AutomaticBackupPanel(w); self.panel.timer.stop()
         self.addCleanup(w.deleteLater); self.addCleanup(w.jobs.close)
@@ -55,7 +55,7 @@ class AutomaticBackupPanelTests(unittest.TestCase):
 
     def test_all_manager_busy_and_reconciliation_defer(self):
         w = self.window
-        for item, attribute in ((w.local_ai_panel.server,'active'), (w.local_ai_panel.task,'active'),
+        for item, attribute in ((w.chatgpt_panel,'primary_sign_in_pending'),
                                 (w.chatgpt_controller,'busy'), (w,'_wf_pending_reconcile'),
                                 (w,'_pending_plan_reconcile'), (w,'_pending_usage_refresh'), (w,'_closing')):
             setattr(item, attribute, True); self.panel.tick()
@@ -121,9 +121,9 @@ class IntegratedAutomaticBackupTests(unittest.TestCase):
             window = MainWindow(paths, jobs, SettingsStore(paths.state/'settings.json'), BackupManager(paths, jobs))
             try:
                 panel = window.automatic_backup_panel
-                panel.timer.stop(); window.local_ai_panel.timer.stop(); window.timer.stop()
+                panel.timer.stop(); window.timer.stop()
                 panel.enabled.setChecked(True); panel.directory.setText(str(Path(temp)/'archives')); panel.save()
-                for manager in (jobs, window.local_ai_panel.server, window.local_ai_panel.task):
+                for manager in (jobs,):
                     manager.start('ui_demo', {})
                     panel.tick()
                     self.assertIsNone(panel.scheduler.load()['last_attempt_day'])

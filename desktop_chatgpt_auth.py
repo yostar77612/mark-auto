@@ -256,7 +256,13 @@ class IdentityValidator:
 
 
 def _validate_record(record):
-    if not isinstance(record, dict) or set(record) != {'schema','host_id','active','registrations'} or type(record['schema']) is not int or record['schema'] != 1:
+    base={'schema','host_id','active','registrations'}
+    if not isinstance(record,dict) or type(record.get('schema')) is not int:
+        raise AuthError('invalid_record')
+    if record['schema']==1 and set(record)==base:
+        # Read-only normalization; the next explicit write persists schema 2.
+        record={**record,'schema':2,'registration_retries':{}}
+    elif record['schema']!=2 or set(record)!=base|{'registration_retries'}:
         raise AuthError('invalid_record')
     try:
         host = uuid.UUID(record['host_id'][9:])
@@ -283,6 +289,16 @@ def _validate_record(record):
                 raise AuthError('invalid_tokens')
             if not isinstance(tokens['scopes'],list) or any(s not in SCOPES.split() for s in tokens['scopes']) or len(set(tokens['scopes'])) != len(tokens['scopes']) or any(not _number(tokens[k]) for k in ('expires_at','earliest_refresh_at')):
                 raise AuthError('invalid_tokens')
+    retries=record['registration_retries']
+    if not isinstance(retries,dict) or len(retries)>32:
+        raise AuthError('invalid_registration_retry')
+    clients={row['identity']['client_id'] for row in registrations.values()}
+    for ref,retry in retries.items():
+        if (not isinstance(ref,str) or not re.fullmatch('[a-f0-9]{32}',ref) or ref in registrations
+            or not isinstance(retry,dict) or set(retry)!={'client_id'} or not _client(retry['client_id'])
+            or retry['client_id'] in clients):
+            raise AuthError('invalid_registration_retry')
+        clients.add(retry['client_id'])
     _bytes(record)
     return record
 
@@ -302,6 +318,7 @@ class DPAPIVault:
             raise AuthError('invalid_bootstrap')
         self.directory=root/'credentials'/'chatgpt-oauth-v1'
         self.path=self.directory/'accounts.dpapi'
+        self.host_marker=root/'chatgpt-oauth-host-v1.marker'
         self._thread_lock=threading.RLock()
 
     def _windows(self):
@@ -393,6 +410,24 @@ class DPAPIVault:
         except Exception:
             raise AuthError('vault_read_failed') from None
 
+    def assert_first_use(self):
+        # A missing credential file is not sufficient evidence of first use.
+        root=self.directory.parent.parent
+        evidence=(self.host_marker,root/'chatgpt-plan-controls-v1.marker')
+        for path in evidence:
+            self._check_path(path)
+            if path.exists():raise AuthError('explicit_host_recovery_required')
+        # Partial vault writes/backups are evidence too. The lock alone is
+        # created by local status reads and carries no account information.
+        if self.directory.exists():
+            for index,path in enumerate(self.directory.iterdir()):
+                if index>=64 or path.name!='vault.lock':raise AuthError('explicit_host_recovery_required')
+        controls=root/'control-v1';self._check_path(controls)
+        if controls.exists():
+            for index,path in enumerate(controls.iterdir()):
+                if index>=1024 or path.name.casefold().startswith(('chatgpt-plan-','chatgpt-analysis-')):
+                    raise AuthError('explicit_host_recovery_required')
+
     def save(self,record):
         self._windows()
         raw=_bytes(_validate_record(record))
@@ -400,7 +435,9 @@ class DPAPIVault:
         try:
             encrypted=CredentialVault._crypt(raw)
             if len(encrypted)>MAX_RECORD:raise AuthError('record_size')
+            self._check_path(self.host_marker)
             atomic_write(self.path,encrypted)
+            atomic_write(self.host_marker,b'markauto-chatgpt-host-v1\n')
         except Exception:
             raise AuthError('vault_write_failed') from None
 
@@ -415,6 +452,7 @@ class _Pending:
     registration: str | None
     identity: dict | None
     listener: object
+    client_id: str | None = None
 
 
 class LoopbackListener:
@@ -480,12 +518,18 @@ class AuthSession:
     def __reduce_ex__(self,protocol):
         raise TypeError('AuthSession cannot cross process boundaries')
 
-    def initialize_host(self):
+    def initialize_host(self,*,first_use_only=False):
         """Explicit first-install/recovery action; never silently regenerate at startup."""
+        if type(first_use_only) is not bool:raise AuthError('invalid_first_use_confirmation')
         with self.vault.lock():
             record=self.vault.load()
+            if first_use_only:
+                if record is not None:raise AuthError('explicit_host_recovery_required')
+                checker=getattr(self.vault,'assert_first_use',None)
+                if checker is None:raise AuthError('first_use_check_unavailable')
+                checker()
             if record is None:
-                record=dict(schema=1,host_id='urn:uuid:'+str(uuid.uuid4()),active=None,registrations={})
+                record=dict(schema=2,host_id='urn:uuid:'+str(uuid.uuid4()),active=None,registrations={},registration_retries={})
                 self.vault.save(record)
             return _validate_record(record)['host_id']
 
@@ -494,7 +538,9 @@ class AuthSession:
         if record is None:raise AuthError('host_initialization_required')
         return _validate_record(record)
 
-    def begin(self,registration=None):
+    def begin(self,registration=None,*,enable_plan=False):
+        if type(enable_plan) is not bool or enable_plan and registration is None:
+            raise AuthError('explicit_registered_plan_consent_required')
         with self._mutex:
             if self._pending is not None:raise AuthError('authorization_busy')
             # Host setup/recovery is a separate explicit operation. Never infer
@@ -503,22 +549,27 @@ class AuthSession:
                 record=self.vault.load()
                 if record is None:
                     raise AuthError('host_initialization_required')
-                _validate_record(record)
+                record=_validate_record(record)
                 selected=record['registrations'].get(registration) if registration else None
-                if registration and selected is None:raise AuthError('unknown_registration')
+                retry=record['registration_retries'].get(registration) if registration else None
+                if registration and selected is None and retry is None:raise AuthError('unknown_registration')
+                if enable_plan and selected is None:raise AuthError('explicit_registered_plan_consent_required')
+                client=selected['identity']['client_id'] if selected is not None else (retry['client_id'] if retry is not None else DYNAMIC_CLIENT)
                 self.active_registration=record['active']
             try:listener=self._listener_factory(self.accept_callback)
             except Exception:raise AuthError('callback_bind_failed') from None
             self._cancel.clear()
             pending=_Pending(secrets.token_urlsafe(32),secrets.token_urlsafe(32),secrets.token_urlsafe(64),
                 'http://127.0.0.1:'+str(listener.port)+'/auth/callback',time.monotonic()+600,registration,
-                None if selected is None else selected['identity'].copy(),listener)
+                None if selected is None else selected['identity'].copy(),listener,
+                None if client==DYNAMIC_CLIENT else client)
             self._pending=pending;self.state='authorizing'
-            params=dict(client_id=DYNAMIC_CLIENT if selected is None else selected['identity']['client_id'],
+            params=dict(client_id=client,
                 ext_agent_host_id=record['host_id'],response_type='code',redirect_uri=pending.redirect,scope=SCOPES,
                 resource=RESOURCE,state=pending.state,nonce=pending.nonce,code_challenge_method='S256',
                 code_challenge=pkce_challenge(pending.verifier))
-            if selected is None:params['agent_name_hint']='MarkAuto QuantLab'
+            if client==DYNAMIC_CLIENT:params['agent_name_hint']='MarkAuto QuantLab'
+            if enable_plan:params['prompt']='consent'
             # Retained ID-token hints deliberately omitted: URL contains no tokens.
             return AUTHORIZE+'?'+urlencode(params)
 
@@ -564,8 +615,8 @@ class AuthSession:
             if 'error' in query:
                 pending.listener.close();self._pending=None;self.state='cancelled'
                 raise AuthError('authorization_denied')
-            client=query.get('client_id',None if pending.identity is None else pending.identity['client_id'])
-            if not _client(client) or pending.identity and client!=pending.identity['client_id']:
+            client=query.get('client_id',pending.client_id)
+            if not _client(client) or pending.client_id is not None and client!=pending.client_id:
                 raise AuthError('invalid_client_id')
             if not _text(query.get('code'),4096):raise AuthError('invalid_code')
             # Consume before any exchange, including failures. No replay of a code.
@@ -573,7 +624,14 @@ class AuthSession:
             try:
                 response=self.transport.request('POST',TOKEN,form=dict(grant_type='authorization_code',client_id=client,
                     code=query['code'],code_verifier=pending.verifier,redirect_uri=pending.redirect,resource=RESOURCE))
-                if response.status!=200:raise AuthError('code_exchange_failed')
+                if response.status!=200:
+                    error=_json(response.body).get('error')
+                    if isinstance(error,dict):error=error.get('code')
+                    if error=='invalid_grant' and pending.identity is None:
+                        self._retain_registration_retry(pending,client)
+                        self.state='registration_retry_required'
+                        raise AuthError(self.state)
+                    raise AuthError('code_exchange_failed')
                 data=_json(response.body)
                 identity=self.validator.verify(data.get('id_token'),client,pending.nonce)
                 if pending.identity is not None and identity!=pending.identity:raise AuthError('account_mismatch')
@@ -585,10 +643,13 @@ class AuthSession:
                     record=self._load()
                     ref=pending.registration or uuid.uuid4().hex
                     old=record['registrations'].get(ref)
-                    if pending.registration and (old is None or old['identity']!=identity):raise AuthError('registration_changed')
+                    if pending.identity is not None and (old is None or old['identity']!=identity):raise AuthError('registration_changed')
+                    if pending.registration and pending.identity is None:
+                        if record['registration_retries'].get(ref)!={'client_id':client}:raise AuthError('registration_changed')
                     # A new attempt must not alias an already saved registration.
-                    if not pending.registration and any(r['identity']==identity for r in record['registrations'].values()):raise AuthError('registration_already_saved')
+                    if pending.identity is None and any(r['identity']==identity for r in record['registrations'].values()):raise AuthError('registration_already_saved')
                     record['registrations'][ref]=dict(identity=identity,tokens=tokens,generation=1 if old is None else old['generation']+1,operation=None)
+                    record['registration_retries'].pop(ref,None)
                     record['active']=ref
                     with self._commit_mutex:
                         if self._cancel.is_set() or time.monotonic()>=pending.deadline:
@@ -597,8 +658,23 @@ class AuthSession:
                         self.active_registration=ref;self.state=self._state(tokens)
                 return ref
             except Exception:
-                self.state='cancelled' if self._cancel.is_set() else 'authorization_failed'
+                self.state='cancelled' if self._cancel.is_set() else ('registration_retry_required' if self.state=='registration_retry_required' else 'authorization_failed')
                 raise AuthError(self.state) from None
+
+    def _retain_registration_retry(self,pending,client):
+        # This unverified ID is only an OAuth routing hint. It can never supply
+        # an active identity, credential, model catalog, or inference grant.
+        with self.vault.lock():
+            record=self._load()
+            ref=pending.registration or uuid.uuid4().hex
+            if ref in record['registrations']:raise AuthError('registration_changed')
+            old=record['registration_retries'].get(ref)
+            if old is not None and old!={'client_id':client}:raise AuthError('registration_changed')
+            record['registration_retries'][ref]={'client_id':client}
+            with self._commit_mutex:
+                if self._cancel.is_set() or time.monotonic()>=pending.deadline:
+                    raise AuthError('authorization_cancelled')
+                self.vault.save(_validate_record(record))
 
     def _tokens(self,data,previous=None):
         if data.get('token_type')!='Bearer' or not _text(data.get('access_token')):
@@ -644,9 +720,12 @@ class AuthSession:
             for ref,row in record['registrations'].items():
                 state=('reauthorization_required' if row['operation'] or row['tokens'] is None
                        else self._state(row['tokens']))
-                summaries.append({'registration': ref, 'state': state})
+                digest=hashlib.sha256((row['identity']['issuer']+'\0'+row['identity']['subject']).encode()).hexdigest()[-8:]
+                summaries.append({'registration':ref,'state':state,
+                                  'account_label':'已驗證帳戶 ••••'+digest+'（電子郵件未提供）'})
                 if ref==record['active']:
                     active_state=state
+            summaries.extend({'registration':ref,'state':'registration_retry_required'} for ref in record['registration_retries'])
             return {'registrations': summaries, 'active_registration': record['active'],
                     'state': active_state}
 
@@ -654,8 +733,9 @@ class AuthSession:
         """Local opaque references/status only. Never exposes ID claims or tokens."""
         with self.vault.lock():
             record=self._load()
-            return [{'registration':ref,'state':'reauthorization_required' if row['operation'] or row['tokens'] is None else self._state(row['tokens'])}
+            return ([{'registration':ref,'state':'reauthorization_required' if row['operation'] or row['tokens'] is None else self._state(row['tokens'])}
                     for ref,row in record['registrations'].items()]
+                    +[{'registration':ref,'state':'registration_retry_required'} for ref in record['registration_retries']])
 
     def select(self,registration):
         with self.vault.lock():

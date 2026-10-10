@@ -553,7 +553,7 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-10T10:33:00Z",
+    "as_of_utc": "2026-10-10T12:14:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
       "version": "0.2.1",
@@ -570,13 +570,13 @@
       "version": "0.2.2",
       "pr": 6,
       "branch": "agent/windows-release-validation",
-      "remote_head_short": "e68b3301",
-      "local_equivalent_short": "46f6e047",
-      "identical_tree_short": "7227e014",
-      "status": "E68_CI_FAILURES_RETAINED_REVIEWED_ROOT_INTEGRATION_NEW_NATIVE_PENDING",
+      "remote_head_short": "17db263a",
+      "local_equivalent_short": "1673d676",
+      "identical_tree_short": "27a571ae",
+      "status": "SIWC_ONLY_AND_ON_DEMAND_ANALYSIS_ROOT_APPLIED_FOCUSED_PASS_NEW_NATIVE_PENDING",
       "merged": false,
       "published": false,
-      "latest_ci_observation": "Quantlab38042425646 terminal8PASS/1Linux312FAIL/1Win311researchCANCELLED; both Windows core and original Paper30/generic40PASS. Installer38042425591 native suite/freeze/compilePASS, actual AI download child exit1; frozen inference and lifecycle NOT_RUN.",
+      "latest_ci_observation": "Quantlab38045449459 terminal9PASS/Win312researchCANCELLED. Windows38045449411 native1311/build/QtgatePASS; model_download/local_ai_network failure in1.031s,0calls/lifecycleNOT_RUN. Actual119PE audit verifies7 removals and retained hashes; not live TLS/IME or release.",
       "unpublished_local_repairs": {
         "status": "PUSHED_NARROW_LINUX_FIX_FULL_LINUX_UI_AND_WINDOWS_NESTED_CLEANUP_PASS",
         "mechanism": "Independent real Linux reproduction: open /proc/PID/stat, then process exits and is reaped; read can raise ESRCH ProcessLookupError rather than FileNotFoundError.",
@@ -612,7 +612,7 @@
         "native_validation": "Linux/UI full suites and Windows nested cleanup passed at0088b505; original Paper performance gate still fails.",
         "field_name_scope": "Legacy field name retained for continuity; this narrow fix is now pushed, no longer uncommitted."
       },
-      "full_ci_details_key": "current_snapshot.native_ci_e68b3301",
+      "full_ci_details_key": "current_snapshot.native_ci_17db263a",
       "local_suite": {
         "total": 981,
         "passed": 966,
@@ -880,7 +880,7 @@
           "performance_diagnostic_status": "NATIVE_DIAGNOSTIC_EVIDENCE_OBTAINED_PERFORMANCE_NOT_FIXED"
         }
       ],
-      "current_source_identity": "Last tested e68b3301/local46f6e047 exact tree7227e014. Later root WFO normalization, test-only Linux observer, AI failed-child diagnostics, opt-in read-only KVM query and Qt notice/payload exclusions require new exact-head native proof. Linux1263 full suite covers WFO-only checkpoint before the later deltas.",
+      "current_source_identity": "Frozen first-phase full-suite source: base HEAD f57ac5f39d86187945f9891b5cb7a16f5c674044, index tree96ceacdf62224f39522bdccdbbd2b97d0e37cd06,246 tracked-file hashes in quant-audit/subscription-phase1-source.json; post-run verification found drift[]. Producer-profile and restart-test repairs were applied only after full-suite termination and are separately tested. No new native result claimed. First-phase checkpoint is local695c25c5006e1fe04fb49ade50288f759a963546/treee10b49af26629ca2e6f323c82b966c737cef4352. Second-phase12-file module inventory is quant-audit/subscription-phase2-docs/source-inventory.json after evidence-ownership/text repairs; no final commit or whole-suite/native result claimed.",
       "latest_remote_ci": {
         "head": "0088b505f236a54323c6cfd94cd00df51ea9db25",
         "quantlab_run": 38032142094,
@@ -1020,8 +1020,8 @@
         "supported_minimal_optimization": "WAL/FULL candidate now under integration; no exact-head native proof that it meets original30-second gate.",
         "diagnostic_acceptance": "Observation-only completion does not count as original30-second PASS."
       },
-      "identical_tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
-      "mapping_scope": "Tested e68 candidate before subsequent uncommitted integration, not Release.",
+      "identical_tree": "27a571aebcf21b1842d584127f0814e1abcce7e1",
+      "mapping_scope": "Tested17db candidate before follow-on root deltas; not merge or Release.",
       "source_equivalent_candidate_suite": {
         "total": 981,
         "passed": 966,
@@ -1323,8 +1323,8 @@
         },
         "scope": "Earlier source remains historical; later Linux/UI PASS does not rewrite its failure."
       },
-      "remote_head": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
-      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
+      "remote_head": "17db263a87f4df39a82bfa9b80d7694afcf28879",
+      "local_equivalent": "1673d676a507373720a9f83485046f588a22f143",
       "candidate_artifact_verification": {
         "artifact_id": 11663227244,
         "source_commit": "703686e2a00a732fae87aad63fd638a2e2777675",
@@ -1369,18 +1369,18 @@
         "evidence": "quant-audit/ci-auth-targets/native-0088b505/windows-candidate/source-and-artifact-verification.json"
       },
       "previous_ci_observation_0088b505": "Quantlab38032142094 final9/10 PASS. Sole failure Windows311 core806:790PASS15skips1Paper30s failure433.599s. Windows312core806:791PASS15skips339.431s; UI1026:1013PASS13skips366.894s; other Linux/research/securityPASS. Linux ESRCH repair now passed full Linux/UI, and Windows nested cleanup passed. Original Paper performance gate remains failed; Server result recorded separately.",
-      "previous_ci_observation_16974db3": "Quantlab38040818017 terminal: 7 PASS, 2 Windows core FAIL, Windows311 research CANCELLED at unchanged 15-minute cumulative job cap. Original 960-bar/30-second Paper test PASS on Windows311 and Windows312 with actual SQLite3.54.0 WAL/FULL. Installer38040817985 failed before freeze; no installer or frozen AI call."
+      "previous_ci_observation_16974db3": "Quantlab38040818017 terminal: 7 PASS, 2 Windows core FAIL, Windows311 research CANCELLED at unchanged 15-minute cumulative job cap. Original 960-bar/30-second Paper test PASS on Windows311 and Windows312 with actual SQLite3.54.0 WAL/FULL. Installer38040817985 failed before freeze; no installer or frozen AI call.",
+      "previous_ci_observation_e68b3301": "Quantlab38042425646 terminal8PASS/1Linux312FAIL/1Win311researchCANCELLED; both Windows core and original Paper30/generic40PASS. Installer38042425591 native suite/freeze/compilePASS, actual AI download child exit1; frozen inference and lifecycle NOT_RUN."
     },
     "priority_release_blockers": [
-      "e68 Linux312 process-observer cleanup=false failure; X/x contract fixed with real X reproduction but exact original CI cause NOT_PROVEN without process-state artifact. New exact-head test proof required.",
-      "Win311 research reaches original15-minute cap:222 completed218PASS4skip,223rd interrupted,4 not started. Root WFO single-normalization retains same hash bytes/all commits; its Linux full PASS does not prove native timing.",
-      "e68 AI download child exit1 in0.616s, cleanup verified, no timeout/frozen phase/model calls; underlying cause unknown. Root diagnostic repairs evidence loss only. Installer/lifecycle must still run.",
-      "Actual e68 Qt OpenSSL3.5.5 pair affected by official advisories. Exact backend/pair and unused VirtualKeyboard/PDF exclusion plus full notices are root-applied but require actual new frozen inventory/TLS/GUI/source-asset verification; pip audit is not native clearance.",
-      "CleanWin10/11 media and actual EULAs obtained, but full ISO integrity, hosted-use scope, registration/activation and owner acceptance remain unresolved. No KVM query/guest execution yet; no fees or unauthorized desktops."
+      "17db Win312 research cancelled at original15-minute cap:204PASS4skip completed,209th interrupted at db.commit,18 not started. Six-file synthetic storage diagnostic root-applied; separate Windows3.12 CI job implemented and native measurement NOT_RUN. Product storage/commits/gates unchanged; no performance-fix claim.",
+      "First-phase official SIWC subscription integration and local-model product removal are root-applied with source-bound local tests. New native/frozen evidence remains NOT_RUN; actual owner grant/subscription inference remains EXTERNAL_BLOCKED. Included-only is user-attested, not server-settings verification or a guaranteed monetary cap. Prior17db download failure remains historical evidence, not a request to restore a forbidden route.",
+      "Actual17db installer static119PE audit confirms all7 exclusions and retained DLL/PYD hashes/notices. TLS local tests include genuine owned-loopback HTTPS; Windows loaded-DLL evidence remains mocked. Native loaded TLS/HTTPS/IME and source-release delivery remain unverified.",
+      "KVM API12 actual query passed, but no VM/guest execution. Follow-on C self-test69 cases are mocked; Windows rights/owner acceptance/activation/client validation remain unresolved. No demonstrated Microsoft breach or basis for mandatory paid license/new EULA/collector gate."
     ],
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
-        "explicit_current_requirements": "Walk-forward; Profit Factor/Sharpe from user section5.1 and stop/target/position-cost reference lines from user section3.4, as reconciled by the integrator.",
+        "explicit_current_requirements": "Walk-forward; Profit Factor/Sharpe from user section5.1 and stop/target/position-cost reference lines from user section3.4, as reconciled by the integrator. At11:16 user explicitly replaced local/alternative AI routes with required official SIWC subscription; no local-model feature or paid API/credits fallback.",
         "unadopted_design_extensions": [
           "Average Trade",
           "Sortino",
@@ -1422,7 +1422,7 @@
     "external_limits": {
       "clean_windows10": "EXTERNAL_BLOCKED",
       "clean_windows11": "EXTERNAL_BLOCKED",
-      "actual_chatgpt_grant_inference": "NOT_VERIFIED",
+      "actual_chatgpt_grant_inference": "EXTERNAL_BLOCKED_NOT_VERIFIED_OWNER_AUTHORIZATION_REQUIRED",
       "taiex_intraday_permission": "EXTERNAL_BLOCKED_UNVERIFIED_NO_AUTOMATIC_POLLING",
       "main_protection": "NOT_ENABLED_ADMIN_API_403",
       "signing": "UNSIGNED_PREVIEW_NO_SECURITY_WARNING_BYPASS",
@@ -1436,7 +1436,7 @@
       "seconds": 270.314,
       "scope": "WFO/reporting isolated combined stage only; subsequent unchanged-durability SQLite connection cleanup passed5 storage tests; not released or native/actual research acceptance"
     },
-    "release_plan": "Freeze the combined reviewed WFO/observer/diagnostic/host-query/Qt packaging source after focused checks, push same draftPR6 and run original remote gates. Preserve every failure and per-source scope; no paid fallback, live trading, relaxed caps or premature score/Release claim.",
+    "release_plan": "Official-only SIWC/removal and on-demand critique/comparison are root-applied as two source-bound phases. Preserve the first-phase failed full run and post-terminal19-case repair; second-phase backend/host focused evidence is separate. Publish one combined same-PR exact-head CI update and retain all original research/storage/security/build/lifecycle/client gates. No new whole-suite/native/actual-grant PASS, paid API/credits fallback, score change, main merge or Release.",
     "integrated_suite_location_note": "Earlier981 ran in isolated candidate before25 exact files were copied, then final CandidateSummary/diagnostics followed. PR06bcc3a complete1016/native success and main94aca467 postmerge failure are newer, separate evidence; no duplicate root full-run claim.",
     "environment_observation": {
       "as_of_utc": "2026-10-10T07:05:00Z",
@@ -1481,32 +1481,33 @@
     "owner_action_dependencies": {
       "principle": "Assistant retains technical ownership; only narrowly nondelegable account/license/explicit-term/persistent-access decisions require owner approval.",
       "main_protection": "Administration scope unavailable; assistant prepares exact action/repository/permissions and checks allowed routes, rather than assigning GitHub setup homework. No bypass.",
-      "clean_clients": "Assistant owns technical preparation. Both actual evaluation agreements are available, but hosted-use coverage/registration/activation and owner acceptance remain unresolved. Do not demand purchased rights by default or start Setup/guest without the required specific approvals.",
-      "actual_ai": "Free local AI is primary and optional GUI-managed setup is root-integrated. New native frozen one-call inference is NOT_RUN. Official API remains optional/default-off, with no paid fallback.",
+      "clean_clients": "Actual KVM query access is verified, but no guest execution. Actual evaluation EULAs available; hosted-use/registration/activation and informed owner acceptance remain separate unresolved gates. Neither a blanket prohibition nor mandatory paid license/new legal collection workflow is established.",
+      "actual_ai": "Official SIWC subscription integration REQUIRED; local-model and paid API/credits fallback forbidden. Actual grant and bounded request require owner authorization and included-only user attestation/Usage guidance; application cannot claim verified server credit settings or monetary cap. First-phase engineering is root-applied with source-bound local evidence; actual owner authorization remains separate.",
       "taiex_intraday": "Establish legitimate automated-use permission beforepolling; assistant prepares evidence and exactremainingpermissionrequest.",
       "real_research": "Oct8 originalWFO stillBLOCKED_NO_RUN170consumedbars; no registry/windowescape."
     },
-    "requirements_delivery_observation": "Both e68 Windows cores, UI, Linux311, Windows312 research and installer native1256 suite pass. Linux312 observer failure, Win311 research cancellation, actual AI download failure/lifecycle skip and native payload remediation still block aggregate delivery. Fixed score and Oct8 research restrictions unchanged.",
+    "requirements_delivery_observation": "Both official-only SIWC/removal and on-demand critique/comparison are now root-applied with source-bound local evidence. The latter recomputes local training/validation evidence, requires explicit one-call consent, caches exact completed results and cannot rewrite strategies/ranking or submit orders. Actual owner grant, new native/frozen and clean-client acceptance remain unverified. Preserve first-phase failed full1292 and later19PASS separately; M4/M6 PARTIAL and210/300 unchanged.",
     "baseline_source_provenance": {
-      "last_tested_remote": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
-      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
-      "tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
-      "scope": "e68 candidate aggregate not accepted; later root integration not native-tested."
+      "last_tested_remote": "17db263a87f4df39a82bfa9b80d7694afcf28879",
+      "local_equivalent": "1673d676a507373720a9f83485046f588a22f143",
+      "tree": "27a571aebcf21b1842d584127f0814e1abcce7e1",
+      "scope": "Last native-tested baseline:17db aggregate not accepted. First-phase SIWC-only working source and local regression evidence are separately recorded in ai_requirement_supersession.phase1_engineering; no new native claim."
     },
     "active_integration": {
-      "status": "REVIEWED_ROOT_WFO_OBSERVER_DIAGNOSTIC_QT_INTEGRATION_NEW_NATIVE_PENDING",
+      "status": "SIWC_ONLY_AND_ON_DEMAND_ANALYSIS_ROOT_APPLIED_FOCUSED_PASS_NEW_NATIVE_PENDING",
       "modules": [
         "Root-applied replay WAL/FULL preserves every original durable commit boundary, ledger/order identity and original 960-bar Windows 30-second test",
         "Root-applied official hash-pinned private SQLite 3.54.0 with packaging runtime hook",
         "Root-applied old 0.2.1 workspace guard/schema2 backup, host probe, version metadata and actual old-EXE refusal harness; native harness NOT_RUN",
-        "Root-applied optional GUI-managed llama.cpp/Qwen2.5-1.5B provider with official hash-pinned runtime, model and support DLLs; no paid fallback",
-        "Root-applied default-off daily backups, shared BackupManager hardlink rejection and offline removable-drive configuration recovery; final combined/native validation pending"
+        "Root-applied official-only SIWC: shared primary login, managed authorization lifecycle, model/account display and included-only attestation; local model UI/runtime/downloader/build/CI feature path removed, paid/custom-endpoint product paths closed. Local regression evidence below; no real grant or new native claim.",
+        "Root-applied default-off daily backups, shared BackupManager hardlink rejection and offline removable-drive configuration recovery; final combined/native validation pending",
+        "Root-applied bounded on-demand critique/comparison: deterministic training/validation and causal indicator preview; explicit one-call subscription consent, independent durable receipts, exact completed cache/offline reopen, original-subtree stop/join/reconcile, untrusted narrative and local candidate/split numeric evidence. No holdout/OOS, automatic strategy application, orders or real grant/inference tested."
       ],
       "required_evidence": [
-        "New exact-head complete original remote gates with same work/hash bytes/all durable commits and unchanged budgets",
-        "Actual AI failed-child details and one frozen model call/lifecycle; root diagnostic does not establish download cause",
-        "New frozen payload inventory proves exact seven-file exclusions and retained Python3.5.9/qwindows/Schannel/cert backends, native GUI/IME/TLS and source-asset availability",
-        "Preserve original Linux312 cause uncertainty, prior failures, fixed ledger and clean-client/legal boundaries"
+        "New exact-head remote evidence after reviewed follow-on root deltas; preserve original workload/budgets/commit semantics",
+        "New exact-source official-only native engineering proof; source-bound local tests are recorded separately. Actual owner grant and bounded subscription request remain EXTERNAL_BLOCKED until authorized. Included-only attestation/Usage guidance is not server-side credit verification.",
+        "Actual frozen loaded TLS/HTTPS/IME and lifecycle/source-release delivery, separately from verified static119PE payload",
+        "Tiny self-authored KVM workload execution pending; no Windows guest without legal/owner gates"
       ],
       "new_native_pass": false,
       "completed_modules_claimed": false,
@@ -1532,7 +1533,7 @@
         "counts_policy": "Overlapping scopes are not additive. Pre-AI full suite excludes later AI/automatic-backup integration; focused checks are not final combined, final-source or native certification. Root venv SQLite 3.53.1 is independently re-probed; current machine-observed runtime is recorded separately. Earlier manually summarized Qt metadata is not independent historical measurement. Genuine private SQLite 3.54.0 Linux checks do not certify Windows or the final combined root.",
         "workspace_guard": "Exact released 0.2.1 source fixture verifies startup and schema2 archive refusal. Actual released-EXE native proof harness is now root-applied, but NOT_RUN.",
         "local_ai_patch": "ROOT_APPLIED_FOCUSED_VERIFIED_NATIVE_FROZEN_ONE_CALL_NOT_RUN",
-        "new_ci": "E68_TERMINAL_NOT_ACCEPTED_NEW_ROOT_NATIVE_NOT_RUN",
+        "new_ci": "17DB_TERMINAL_NOT_ACCEPTED_FOLLOWON_NATIVE_NOT_RUN",
         "pre_ai_root_full": {
           "total": 1096,
           "passed": 1081,
@@ -1629,7 +1630,7 @@
           "scope": "Latest product/code delta static and full reachable-history scan; not native acceptance"
         },
         "native_local_ai_one_call": {
-          "status": "E68_DOWNLOAD_CHILD_FAILED_FROZEN_PHASE_NOT_RUN",
+          "status": "17DB_MODEL_DOWNLOAD_LOCAL_AI_NETWORK_FAILED_FROZEN_PHASE_NOT_RUN",
           "actual_model_calls_in_new_native_run": 0,
           "planned_call_limit": 1,
           "download_seconds": 300,
@@ -1700,11 +1701,11 @@
         "native_result": "16974DB3_NATIVE_AGGREGATE_FAILED_DIFFERENT_PORTABILITY_CASES"
       },
       "local_ai_redistribution_review": {
-        "status": "SEPARATE_REVIEW_PENDING",
-        "scope": "Exact Microsoft DLL provenance/notice path documented; entitlement and downstream protective terms remain separate review. Qt full GPL/LGPL/native notices and source links root-applied, but new payload and release source assets not yet verified; no all-licenses-cleared claim.",
+        "status": "DOWNSTREAM_SUFFICIENCY_UNDETERMINED_NO_DEMONSTRATED_BREACH",
+        "scope": "Actual17db runtime/notice bytes statically verified. Microsoft downstream protective-terms sufficiency remains undetermined; no demonstrated breach and no established mandatory paid license, new EULA or collector. Do not invent a new acceptance gate. Live TLS/IME/source-release delivery remain separate technical proof.",
         "evidence": "quant-audit/microsoft-runtime-redistribution-review-20261010.md"
       },
-      "new_native_pass_scope": "e68 individual Windows cores/Paper30/generic40 and installer native suite pass; aggregate acceptance remains false and later integration has no new native result.",
+      "new_native_pass_scope": "All native and local results recorded below predate11:16 AI-route correction. No corrected-source/native/real-grant PASS claimed; historical failures remain unchanged.",
       "portability_repair": {
         "status": "ROOT_APPLIED_FOCUSED183_PASS_NATIVE_PENDING",
         "changed_files": 11,
@@ -1873,6 +1874,151 @@
           "status": "PASS",
           "findings": 0
         }
+      },
+      "post_17db_root_deltas": {
+        "tls": {
+          "files": 5,
+          "total": 70,
+          "passed": 70,
+          "skipped": 0,
+          "seconds": 0.299,
+          "log": "quant-audit/frozen-tls-root-20261010.log",
+          "scope": "Local genuine owned-loopback HTTPS and certificate/hostname rejection tests plus mocked Windows DLL/path contracts; no Windows loaded TLS execution"
+        },
+        "quality_boundary": {
+          "files": 2,
+          "total": 14,
+          "passed": 14,
+          "seconds": 0.027,
+          "log": "quant-audit/frozen-tls-quality-boundary-root-20261010.log"
+        },
+        "kvm_execution_selftest": {
+          "files": 3,
+          "total": 69,
+          "passed": 69,
+          "seconds": 0.952,
+          "log": "quant-audit/kvm-execution-ci-root-20261010.log",
+          "scope": "Mocked fixed project-owned payload VM/vCPU contract; actual execution NOT_RUN, no Windows image"
+        },
+        "ai_host_compatibility": {
+          "status": "PROVEN_EXACT_HOST_DEFECT_ROOT_APPLIED_NATIVE_ATTRIBUTION_INFERENCE",
+          "added_host": "us.aws.cdn.hf.co",
+          "evidence": [
+            "quant-audit/ci-17db263a/model-head-metadata.json",
+            "quant-audit/ci-17db263a/model-cdn-official-provenance.json"
+          ],
+          "head_probe": {
+            "method": "HEAD",
+            "tls_verified": true,
+            "body_bytes_read": 0,
+            "redirect": "huggingface.co302 -> us.aws.cdn.hf.co200",
+            "content_length": 1117320736,
+            "linked_etag_matches_pinned_model_sha256": true
+          },
+          "finding": "Official metadata lists the exact redirect host; prior allowlist rejects it. Only this host added, with existing TLS/size/hash/no-auth/proxy restrictions unchanged.",
+          "native_cause_scope": "17db failed artifact did not record rejected host; matching that failure to this proven compatibility defect is inference, not confirmed native cause.",
+          "focused": {
+            "total": 62,
+            "passed": 62,
+            "skipped": 0,
+            "seconds": 1.111,
+            "log": "quant-audit/model-cdn-root-20261010.log"
+          },
+          "model_calls": 0
+        },
+        "storage_benchmark": {
+          "status": "DIAGNOSTIC_AND_SEPARATE_WINDOWS312_JOB_ROOT_APPLIED_NATIVE_NOT_RUN",
+          "proposal": "docs/engineering/WFO_STORAGE_DIAGNOSTIC.md",
+          "scope": "Synthetic pinned fixtures; bounded observational DELETE/PERSIST comparison, not a product-storage change or permission to ship PERSIST. Native measurement NOT_RUN. COMPLETE means only measurement/byte-count checks completed; it is not product acceptance.",
+          "measurement_cap_seconds": 180,
+          "planned_separate_job_minutes": 6,
+          "product_storage_changes": "NONE",
+          "original_commit_and_test_job_gates": "UNCHANGED"
+        },
+        "counts_policy": "All full/focused scopes are source-bound and overlap; never sum. Full1372 predates final diagnostic-only delta, which has corrected focused78 evidence only. No second full run or native acceptance implied.",
+        "typed_network_cause": {
+          "status": "ROOT_APPLIED",
+          "scope": "Finite typed DNS/certificate/timeout/connection diagnostics for download stages; sanitized output without raw exception text or URLs. No cause retroactively assigned to historical native failures."
+        },
+        "combined_focused": {
+          "total": 151,
+          "passed": 151,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0,
+          "seconds": 2.367,
+          "log": "quant-audit/followon-integrated-targeted-20261010.log",
+          "modules": [
+            "tests.test_local_ai_ci",
+            "tests.test_local_ai",
+            "tests.test_desktop_tls_smoke",
+            "tests.test_wfo_storage_diagnostic"
+          ],
+          "scope": "Root local focused only; real owned-loopback HTTPS is separate from mocked Windows DLL evidence. No new native inference, VM execution or storage-performance result."
+        },
+        "full_root_before_final_diagnostic_delta": {
+          "status": "PASS_LINUX_PRE_FINAL_DIAGNOSTIC_SOURCE",
+          "total": 1372,
+          "passed": 1357,
+          "skipped": 15,
+          "failures": 0,
+          "errors": 0,
+          "seconds": 291.628,
+          "exit_code": 0,
+          "platform": "Linux",
+          "python_version": "3.12.14",
+          "sqlite_version": "3.53.1",
+          "qt_version": "6.12.0",
+          "log": "quant-audit/followon-root-full-20261010.log",
+          "source_manifest": "quant-audit/followon-root-source-20261010.json",
+          "pre_run_source_hashes": 219,
+          "hashes_unchanged_at_run_completion": true,
+          "scope": "Full source before exclusive mkstemp report fix and separate Windows diagnostic job. Does not certify subsequent diagnostic-only delta or native Windows."
+        },
+        "final_diagnostic_only_delta": {
+          "status": "ROOT_APPLIED_REVIEWED_FOCUSED_VERIFIED_NATIVE_NOT_RUN",
+          "changes": [
+            "Exclusive mkstemp diagnostic report publication plus3 regressions",
+            "Separate Windows3.12 storage diagnostic job plus7 offline contracts"
+          ],
+          "product_storage_mode_and_commits": "UNCHANGED",
+          "measurement_complete_is_product_acceptance": false,
+          "initial_focused": {
+            "total": 70,
+            "passed": 68,
+            "skipped": 1,
+            "errors": 1,
+            "seconds": 2.44,
+            "log": "quant-audit/followon-final-delta-20261010.log",
+            "cause": "Mistyped tests.test_run_test_group module; preserve failed command"
+          },
+          "corrected_focused": {
+            "total": 78,
+            "passed": 77,
+            "skipped": 1,
+            "failures": 0,
+            "errors": 0,
+            "seconds": 2.962,
+            "exit_code": 0,
+            "log": "quant-audit/followon-final-delta-corrected-20261010.log",
+            "scope": "Corrected command uses tests.test_test_group; no test/code change to hide typo. Existing PowerShell applicability skip."
+          },
+          "full_rerun": false,
+          "static_history_findings": 0,
+          "diff_check": "PASS",
+          "native": "NOT_RUN"
+        }
+      },
+      "superseded_ai_delivery_requirements": {
+        "effective_at_utc": "2026-10-10T11:16:00Z",
+        "prior_ai_module": "Root-applied optional GUI-managed llama.cpp/Qwen2.5-1.5B provider with official hash-pinned runtime, model and support DLLs; no paid fallback",
+        "prior_required_evidence": [
+          "New exact-head remote evidence after reviewed follow-on root deltas; preserve original workload/budgets/commit semantics",
+          "New native download after proven exact-host repair; old failure attribution remains inference. Separate bounded storage diagnostic has CI integration but still needs native measurement; no research-cap or product-storage change.",
+          "Actual frozen loaded TLS/HTTPS/IME and lifecycle/source-release delivery, separately from verified static119PE payload",
+          "Tiny self-authored KVM workload execution pending; no Windows guest without legal/owner gates"
+        ],
+        "scope": "Retained history, superseded for local-model delivery only. Historical local_evidence/native_local_ai_one_call and post_17db_root_deltas are not current obligations or proof of official SIWC."
       }
     },
     "upstream_content_correspondence": {
@@ -1913,7 +2059,7 @@
     },
     "autonomous_execution_plan": {
       "responsibility": "Assistant owns engineering, environment investigation/preparation and authorized tests. Do not default to asking user to build VMs, run tests, or perform technical GitHub setup.",
-      "ai_priority": "Free local AI primary; optional GUI-managed setup is root-integrated. Official API default-off; no paid fallback or another tool/account credential. Actual native frozen one-call proof remains NOT_RUN.",
+      "ai_priority": "Official SIWC subscription required; first-phase product source removes local-model features and closes paid API/credits fallback paths. Included-only owner attestation and Usage guidance are implemented, without server-verification or monetary-cap claims. Actual OAuth/inference requires owner authorization; no startup calls.",
       "windows_route": "Use already-authorized standard public Server runners for their actual scope; assess nested x64 guest resources read-only, then legitimate exact client media/entitlement and explicit terms where required. No confirmed zero-cost authorized cleanWin10/11x64 route exists yet.",
       "nondelegable_approvals": "Ask only the precise action/target at account-holder, license/explicit terms, credential or persistent-access boundaries. No blanket technical homework.",
       "safety": "No fees, live trading, security bypass, hidden scope expansion or weakened gates."
@@ -1922,7 +2068,7 @@
       "windows": {
         "evidence": "quant-audit/windows-eval-terms-and-offline-ci-20261010.md",
         "status": "BOTH_OFFICIAL_MEDIA_AND_ACTUAL_EULAS_OBTAINED_HOSTED_USE_ACTIVATION_ACCEPTANCE_UNRESOLVED",
-        "nested_guest": "Opt-in read-only KVM API query implemented; actual sudo/API query and guest execution NOT_RUN. Runner-user access=false alone does not establish privileged API unavailability. No permission/security changes.",
+        "nested_guest": "Actual read-only API12 query succeeded without permission changes. Tiny project-owned execution self-test code passes mocked local checks but has not run in KVM. No Windows VM/client proof.",
         "server_scope": "Observed Windows Server2025 native profiles cannot substitute for cleanWin10/11x64.",
         "windows10_media": {
           "status": "OFFICIAL_ENTERPRISE_EVAL_22H2_X64_ENDPOINT_REACHABLE",
@@ -1947,7 +2093,22 @@
           "owner_acceptance": "NOT_OBTAINED",
           "offline_ci_design": "PROPOSAL_ONLY_NO_GUEST_EXECUTION",
           "scope": "No blanket prohibition or clearance for cloud testing; evaluation app-testing support does not resolve remote-only terms."
-        }
+        },
+        "kvm_actual_query": {
+          "status": "PASS_API_AVAILABLE",
+          "api_version": 12,
+          "user_memory": 1,
+          "irqchip": 1,
+          "recommended_vcpus": 4,
+          "max_vcpus": 4096,
+          "close_status": "closed",
+          "artifact_id": 11667623060,
+          "artifact_sha256": "d605336efdef16003e0d17e8133666f0952044642d8abd4dc0d14248a2eb6f40",
+          "vm_created": false,
+          "guest_started": false,
+          "evidence": "quant-audit/ci-17db263a/windows-guest-kvm-api.json"
+        },
+        "next_plan_evidence": "quant-audit/windows-eval-owner-consent-and-kvm-next-20261010.md"
       },
       "signing": {
         "evidence": "quant-audit/signpath-eligibility-20261010.md",
@@ -2170,10 +2331,10 @@
       "scope": "Preserve all failures, no blanket native/client/AI PASS"
     },
     "native_payload_security": {
-      "status": "E68_AFFECTED_QT_COMPONENT_ROOT_EXCLUSION_APPLIED_NEW_PAYLOAD_PROOF_PENDING",
-      "inventory": "quant-audit/openssl-security-e68b3301/payload-pe-tls-inventory.json",
-      "pe_files": 126,
-      "affected_pair": "Qt libssl-3-x64.dll/libcrypto-3-x64.dll3.5.5 via optional qopensslbackend",
+      "status": "17DB_ACTUAL_STATIC_EXCLUSIONS_NOTICES_VERIFIED_LIVE_TLS_IME_PENDING",
+      "inventory": "quant-audit/ci-17db263a/payload-pe-tls-inventory.json",
+      "pe_files": 119,
+      "affected_pair": "Affected e68 Qt3.5.5 backend/pair are physically absent from actual17db installer; old finding retained separately",
       "advisory": "https://openssl-library.org/news/secadv/20260929.txt",
       "cves": [
         "CVE-2026-35189",
@@ -2197,8 +2358,360 @@
         "Schannel",
         "certificate-onlyTLSbackend"
       ],
-      "scope": "Known bundled component risk; pip-audit PASS is not native clearance. New payload filtering, retained TLS/GUI and license/source delivery remain unverified.",
-      "independent_patch_review": "APPROVED_NO_BLOCKERS_NEW_PAYLOAD_STILL_UNVERIFIED"
+      "scope": "Independent actual installer119PE audit verifies exact7 removals, unchanged retained DLL/PYD bytes/import closure and complete notice integrity. No live TLS/HTTPS/IME/source-release/legal clearance claim.",
+      "independent_patch_review": "APPROVED_AND_ACTUAL_STATIC_PAYLOAD_VERIFIED"
+    },
+    "previous_baseline_source_provenance_e68b3301": {
+      "last_tested_remote": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
+      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
+      "tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
+      "scope": "e68 candidate aggregate not accepted; later root integration not native-tested."
+    },
+    "native_ci_17db263a": {
+      "head": "17db263a87f4df39a82bfa9b80d7694afcf28879",
+      "local_equivalent": "1673d676a507373720a9f83485046f588a22f143",
+      "tree": "27a571aebcf21b1842d584127f0814e1abcce7e1",
+      "quantlab": {
+        "run_id": 38045449459,
+        "jobs": {
+          "passed": 9,
+          "failed": 0,
+          "cancelled": 1
+        },
+        "windows_host": "Windows Server2025",
+        "ui": {
+          "total": 1311,
+          "passed": 1298,
+          "skipped": 13,
+          "seconds": 435.974
+        },
+        "linux311": {
+          "total": 1311,
+          "passed": 1293,
+          "skipped": 18,
+          "seconds": 407.321
+        },
+        "linux312": {
+          "total": 1311,
+          "passed": 1293,
+          "skipped": 18,
+          "seconds": 285.459
+        },
+        "windows311_core": {
+          "total": 1084,
+          "passed": 1067,
+          "skipped": 17,
+          "seconds": 345.736
+        },
+        "windows312_core": {
+          "total": 1084,
+          "passed": 1067,
+          "skipped": 17,
+          "seconds": 577.56
+        },
+        "windows311_research": {
+          "total": 227,
+          "passed": 223,
+          "skipped": 4,
+          "seconds": 653.687
+        },
+        "windows312_research": {
+          "status": "CANCELLED_ORIGINAL15MINUTE_CAP",
+          "completed": 208,
+          "passed": 204,
+          "skipped": 4,
+          "interrupted_test_ordinal": 209,
+          "interrupted_stack": "db.commit",
+          "not_started": 18,
+          "full_pass": false
+        }
+      },
+      "installer": {
+        "run_id": 38045449411,
+        "status": "FAILED_MODEL_DOWNLOAD",
+        "host": "Windows Server2022",
+        "python_version": "3.13.16",
+        "qt_version": "6.12.0",
+        "native_suite": {
+          "total": 1311,
+          "passed": 1290,
+          "skipped": 21,
+          "seconds": 765.646
+        },
+        "build": "PASS",
+        "qt_payload_gate": "PASS",
+        "model_download": {
+          "status": "FAILED",
+          "seconds": 1.031,
+          "category": "local_ai_network",
+          "child_exit_code": 1,
+          "numeric_http_status": null,
+          "timed_out": false,
+          "cleanup_verified": true,
+          "cause": "UNDETERMINED_CATEGORY_DOES_NOT_PROVE_DNS_TLS_HTTP_OR_OUTAGE"
+        },
+        "frozen_phase": "NOT_RUN",
+        "model_calls": 0,
+        "install_lifecycle": "NOT_RUN"
+      },
+      "artifact": {
+        "id": 11667554811,
+        "zip_bytes": 77720491,
+        "zip_sha256": "97bfa4f2a0660730f44f6c14581bc2084e43984de0ace5c50a6db2ca01c6a49b",
+        "members": 6,
+        "download_hash_crc": "VERIFIED",
+        "installer_022_bytes": 39383283,
+        "installer_022_sha256": "c2efa3f64424eaf24e6acec699bc1e3579927669d97dc52a36ad81046f398b58",
+        "frozen_application_exe_sha256": "7b383ca4e260163647ddd814e98dfbb5e7c546c73e0f9fe1d85ed2b666b688aa",
+        "published": false,
+        "final_digest_manifest_and_client_kit": "NOT_PRODUCED_LATER_STEPS_SKIPPED"
+      },
+      "actual_payload_audit": {
+        "status": "PASS_STATIC_SCOPE_ONLY",
+        "pe_files": 119,
+        "payload_entries": 982,
+        "exact_removed_pe_files": 7,
+        "added_pe_files": 0,
+        "retained_dll_pyd_hashes": "UNCHANGED_FROM_E68",
+        "removed_dependency_imports": 0,
+        "python_openssl": "3.5.9.0_EXACT_PAIR_RETAINED",
+        "qt_notice_files_verified": 5,
+        "notice_records": {
+          "components": 49,
+          "texts": 52,
+          "sources": 67
+        },
+        "not_proven": [
+          "Loaded TLS paths",
+          "Frozen HTTPS success",
+          "Native IME operation",
+          "Full legal clearance",
+          "Source-asset release delivery",
+          "Clean client acceptance"
+        ]
+      },
+      "evidence_directory": "quant-audit/ci-17db263a",
+      "assessment": "quant-audit/ci-17db263a/terminal-assessment.md",
+      "scope": "Terminal failure and static artifact proof only; no merge/release/client/AI acceptance"
+    },
+    "previous_native_payload_security_e68b3301": {
+      "status": "17DB_ACTUAL_STATIC_EXCLUSIONS_NOTICES_VERIFIED_LIVE_TLS_IME_PENDING",
+      "inventory": "quant-audit/ci-17db263a/payload-pe-tls-inventory.json",
+      "pe_files": 119,
+      "affected_pair": "Affected e68 Qt3.5.5 backend/pair are physically absent from actual17db installer; old finding retained separately",
+      "advisory": "https://openssl-library.org/news/secadv/20260929.txt",
+      "cves": [
+        "CVE-2026-35189",
+        "CVE-2026-84782"
+      ],
+      "python_pair": "Distinct unsuffixed3.5.9 imported by _ssl.pyd/_hashlib.pyd; not the affected Qt pair",
+      "app_qt_network_ssl_usage": "NOT_FOUND_IN_REVIEWED_SOURCE",
+      "exploitation_or_python_https_vulnerability": "NOT_CLAIMED",
+      "exclusions": [
+        "qopensslbackend.dll",
+        "libssl-3-x64.dll",
+        "libcrypto-3-x64.dll",
+        "Qt6VirtualKeyboard.dll",
+        "qtvirtualkeyboardplugin.dll",
+        "Qt6Pdf.dll",
+        "qpdf.dll"
+      ],
+      "retained": [
+        "PythonOpenSSL3.5.9",
+        "qwindows",
+        "Schannel",
+        "certificate-onlyTLSbackend"
+      ],
+      "scope": "Independent actual installer119PE audit verifies exact7 removals, unchanged retained DLL/PYD bytes/import closure and complete notice integrity. No live TLS/HTTPS/IME/source-release/legal clearance claim.",
+      "independent_patch_review": "APPROVED_AND_ACTUAL_STATIC_PAYLOAD_VERIFIED"
+    },
+    "ai_requirement_supersession": {
+      "effective_at_utc": "2026-10-10T11:16:00Z",
+      "authority": "Explicit user correction",
+      "implementation_status": "SIWC_ONLY_AND_ON_DEMAND_ANALYSIS_ROOT_APPLIED_FOCUSED_PASS_NEW_NATIVE_PENDING",
+      "required_route": "Official Sign in with ChatGPT subscription integration",
+      "excluded_current_features": [
+        "Local AI/model runtime",
+        "Qwen/Ollama/Hugging Face/GGUF downloads",
+        "Local model inference",
+        "Paid API fallback",
+        "Credits fallback"
+      ],
+      "replaces": "Earlier local-AI-primary/official-optional choices and local-model download/frozen-inference delivery obligations only; this is a user-authorized requirement replacement, not a reduction of unrelated gates.",
+      "historical_references": [
+        "05_IMPLEMENTATION_ROADMAP.md section19 M6 alternatives",
+        "IMPLEMENTATION_CONTRACTS.md resumed acceptance v2 case3 and optional route in0.2.1 contract"
+      ],
+      "required_contract": "IMPLEMENTATION_CONTRACTS.md official0.2.1 auth/provider/receipt/budget protections plus dated11:16 supersession",
+      "official_help": "https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites",
+      "included_only_control": {
+        "design": "Implemented explicit per-run user-attested included-only prerequisite and ChatGPT Settings > Usage guidance; consent is not restored from saved preferences.",
+        "credit_conditions": "Official guidance: global optional credit sharing plus app limit100% permits eligible credit use; app limit below100% prevents that app using credits.",
+        "per_request_subscription_only_flag": "NOT_DOCUMENTED_IN_REVIEWED_GUIDANCE",
+        "server_settings_verified": false,
+        "monetary_cap_guaranteed": false,
+        "owner_settings_changed": false
+      },
+      "real_grant_inference": "EXTERNAL_BLOCKED_NOT_VERIFIED_OWNER_AUTHORIZATION_REQUIRED",
+      "mock_certifies_real_grant": false,
+      "new_tests_claimed": true,
+      "local_feature_removal_verified": true,
+      "score_change": false,
+      "m6_status": "PARTIAL",
+      "unrelated_locked_gates": "UNCHANGED",
+      "local_recovery": {
+        "commit": "f57ac5f39d86187945f9891b5cb7a16f5c674044",
+        "equivalent_unpublished_commit_short": "d81ecb55",
+        "tree": "48ad5a1b6f8a813f2069b344c0629d48a3f090a6",
+        "remote_unchanged": "17db263a87f4df39a82bfa9b80d7694afcf28879"
+      },
+      "evidence_policy": "Preserve all historical local-model experiments, failed downloads and full/focused/native results; none certifies the corrected official-only scope. Do not rerun the forbidden local-model path.",
+      "local_feature_removal_verification_scope": "Source inspection and offline product/CLI/build-contract regressions only; no new frozen payload or native acceptance. Historical generic provider/replay infrastructure and producer receipts are retained, without an executable product fallback; user model files/caches were not deleted.",
+      "phase1_engineering": {
+        "source": {
+          "base_head": "f57ac5f39d86187945f9891b5cb7a16f5c674044",
+          "pre_run_index_tree": "96ceacdf62224f39522bdccdbbd2b97d0e37cd06",
+          "pre_run_tracked_files": 246,
+          "inventory": "quant-audit/subscription-phase1-source.json",
+          "post_run_verification": "quant-audit/subscription-phase1-source-verification.json",
+          "source_hash_drift": []
+        },
+        "full_suite": {
+          "status": "FAIL",
+          "total": 1292,
+          "pass": 1271,
+          "skip": 20,
+          "errors": 1,
+          "failures": 0,
+          "seconds": 1250.24,
+          "exit_code": 1,
+          "error": "tests.test_desktop_market_integration.MarketHostTests.test_restart_loads_saved_preferences_without_network: AttributeError for removed ai_opt_in widget",
+          "skip_scope": {
+            "platform_or_powershell": 15,
+            "optional_streamlit_uninstalled_locally": 5,
+            "ci_ui_installs_streamlit": true
+          },
+          "log": "quant-audit/subscription-phase1-full.log",
+          "full_pass_claimed": false,
+          "full_rerun_after_delta": false
+        },
+        "later_deltas": [
+          {
+            "scope": "Exact first-phase producer profile",
+            "status": "ROOT_APPLIED_AFTER_FULL_TERMINAL_TARGETED_PASS",
+            "focused_pass": 8
+          },
+          {
+            "scope": "Restart consent test-only repair preserves no-network and no-restored-consent assertions",
+            "status": "ROOT_APPLIED_AFTER_FULL_TERMINAL_TARGETED_PASS",
+            "focused_module_pass": 14,
+            "strengthened_final_test_pass": 1,
+            "patch_sha256": "243c1b71b2ef4a7aa9f42a53f95fbddda04aaa9b9ba3d6dc5a0eb8ff4e447222"
+          },
+          {
+            "scope": "Root complete14-case market integration module plus5 first-phase producer profile cases after both deltas",
+            "status": "PASS",
+            "total": 19,
+            "pass": 19,
+            "skip": 0,
+            "seconds": 16.203,
+            "exit_code": 0,
+            "log": "quant-audit/subscription-phase1-root-delta.log"
+          }
+        ],
+        "focused_evidence": [
+          {
+            "scope": "Independent combined subscription/removal baseline",
+            "pass": 273,
+            "skip": 1,
+            "skip_reason": "PowerShell unavailable",
+            "log": "quant-audit/subscription-security-review-final-combined.log"
+          },
+          {
+            "scope": "Primary login panel/auth stage3",
+            "pass": 127,
+            "log": "quant-audit/subscription-safety-stage3-tests.log"
+          },
+          {
+            "scope": "Primary login host lifecycle integration",
+            "pass": 43,
+            "log": "quant-audit/primary-login-host/final-43-pass.log"
+          },
+          {
+            "scope": "Exact first-phase producer profile preserves earlier literal identities",
+            "pass": 8,
+            "log": "quant-audit/subscription-producer-profile/focused-final.log"
+          }
+        ],
+        "count_policy": "Overlapping focused sets are source-bound and not additive; post-start deltas are not certified by the initial full run.",
+        "local_runtime": {
+          "python": "3.12.14",
+          "sqlite": "3.53.1",
+          "qt": "6.12.0",
+          "scope": "Functional local regression only; private3.54 load verifier correctly refused unchanged builtin. Product/CI pinned3.54 requirement unchanged. No native pinned-runtime/performance acceptance.",
+          "evidence": "quant-audit/subscription-sqlite-local-limit.json"
+        },
+        "new_native_frozen_lifecycle": "NOT_RUN",
+        "actual_official_grant_inference": "NOT_RUN_EXTERNAL_BLOCKED_OWNER_AUTHORIZATION_REQUIRED",
+        "clean_win10_win11": "NOT_RUN_EXTERNAL_BLOCKED",
+        "next_critique_comparison_module": "Subsequently root-applied as separate phase2_engineering; not certified by phase1 full or delta.",
+        "merged": false,
+        "published": false,
+        "score_change": false,
+        "checkpoint_commit": "695c25c5006e1fe04fb49ade50288f759a963546",
+        "checkpoint_tree": "e10b49af26629ca2e6f323c82b966c737cef4352"
+      },
+      "phase2_engineering": {
+        "status": "ROOT_APPLIED_FOCUSED_PASS_NEW_NATIVE_PENDING",
+        "baseline_commit": "695c25c5006e1fe04fb49ade50288f759a963546",
+        "baseline_tree": "e10b49af26629ca2e6f323c82b966c737cef4352",
+        "source_inventory": "quant-audit/subscription-phase2-docs/source-inventory.json",
+        "source_files": 12,
+        "applied_patches": {
+          "subscription-analysis-backend.patch": "6346b83f311d78f61fea259d7e4f38c8e089bb730235773feafc1fc17df391b1",
+          "subscription-analysis-host-guard.patch": "3dbcaf76ed79c76b61cff176d54dc1560ed56cf1ec050c93f6859ad9543f63cd",
+          "desktop-analysis-host/desktop-analysis.patch": "70030a470623b9c7066c46a98441c4f3434253a67cb2deb220552d12dd686e9f",
+          "subscription-producer-profile/siwc-analysis-capable-profile.patch": "8aeb24ff3fd7cb692cc80531dfaad8ab1cd40f96da1cb99315adbd159b529b71",
+          "analysis-evidence-ownership/analysis-evidence-ownership.patch": "a8746b9e2eaf516c98e75ec53a1d1f006cde1b093b943d596a3f4877db872635"
+        },
+        "final_text_delta": "One-character Traditional Chinese correction; exact final bytes covered by source inventory.",
+        "scope": "Explicit on-demand critique of one or comparison of2-5 selected candidates; locally recomputed training/validation and bounded causal SMA/RSI/MACD evidence only. No holdout/OOS in transmitted packet. Original campaign budgets, deterministic ranking/strategy engine, holdout and Paper/live-disabled controls remain unchanged.",
+        "safety": "Separate one-call durable ledger and installation account barriers; exact completed cache and offline reopening; no retry of ambiguous consumed requests. Cancel/death/close must stop and join original subtree before reconcile. Surviving analysis ledger blocks first-use guard reset. AI text is untrusted interpretation, numeric values are locally resolved per candidate/split; no automatic strategy edit, ranking override or orders.",
+        "root_backend": {
+          "total": 141,
+          "pass": 141,
+          "skip": 0,
+          "seconds": 29.688,
+          "log": "quant-audit/subscription-phase2-root-backend.log"
+        },
+        "root_host": {
+          "total": 152,
+          "pass": 151,
+          "skip": 1,
+          "skip_reason": "PowerShell unavailable",
+          "seconds": 78.542,
+          "log": "quant-audit/subscription-phase2-root-host.log"
+        },
+        "static_history_findings": 0,
+        "diff_check": "PASS",
+        "visual_qa": {
+          "scope": "Isolated synthetic fixture only; candidate/split ownership repair included",
+          "sizes": [
+            "1440x1000",
+            "1366x768"
+          ],
+          "evidence": "quant-audit/desktop-analysis-host/visual-qa/"
+        },
+        "overlapping_sets_not_additive": true,
+        "final_whole_suite": "NOT_RUN",
+        "new_native_frozen_lifecycle": "NOT_RUN",
+        "actual_official_grant_inference": "NOT_RUN_EXTERNAL_BLOCKED",
+        "clean_win10_win11": "NOT_RUN_EXTERNAL_BLOCKED",
+        "same_pr_combined_ci": "PLANNED_NOT_YET_RESULT",
+        "merged": false,
+        "published": false,
+        "score_change": false
+      }
     }
   }
 }

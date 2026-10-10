@@ -150,6 +150,7 @@ class DesktopExpiryTests(unittest.TestCase):
             jobs = JobManager(paths)
             window = MainWindow(paths, jobs, SettingsStore(paths.state/'settings.json'), BackupManager(paths, jobs))
             try:
+                window.provider_mode.setCurrentIndex(window.provider_mode.findData('fixture'))
                 window.campaign_form.from_payload(to_dict(demo_campaign_config(synthetic_dataset(160), demo_config())))
                 self.add(window.backtest_form)
                 with patch.object(window, 'start_job') as launch:

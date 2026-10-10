@@ -29,7 +29,7 @@ import time
 
 from desktop_chatgpt_auth import OAuthCredentialReference
 from quantlab.core import ValidationError, canonical_json, content_hash
-from quantlab.research import PROMPT, validate_dsl, _validated_receipt_snapshot
+from quantlab.research import PROMPT, PARAMETER_CONTRACTS, validate_dsl, _validated_receipt_snapshot
 
 MODELS_URL = 'https://api.openai.com/v1/models'
 RESPONSES_URL = 'https://api.openai.com/v1/responses'
@@ -47,8 +47,10 @@ ERROR_STATES = {
 
 class PlanError(ValidationError):
     """Fixed allowlisted local codes only, never remote text or tokens."""
-    def __init__(self, code):
+    def __init__(self, code, *, http_status=None, remote_code=None):
         self.code = code
+        self.http_status = http_status if type(http_status) is int and 100<=http_status<=599 else None
+        self.remote_code = remote_code if isinstance(remote_code,str) and remote_code in ERROR_STATES else None
         super().__init__(code)
 
 
@@ -92,11 +94,14 @@ def _check(deadline, cancelled):
     if time.monotonic() >= deadline: _fail('deadline_exceeded')
 
 
-def _remote_error(value):
-    error = value.get('error', value.get('detail', {})) if isinstance(value, dict) else {}
-    if isinstance(error, dict): code = error.get('code', error.get('type'))
-    else: code = error
-    _fail(ERROR_STATES.get(code, 'remote_error') if isinstance(code,str) else 'remote_error')
+def _remote_error(value, *, http_status=None):
+    # Admission `detail` is diagnostic prose, never a stable machine code.
+    # Retain only safe status and documented codes; no remote prose or URLs.
+    error = value.get('error') if isinstance(value, dict) else None
+    code = error.get('code') if isinstance(error,dict) else None
+    code = code if isinstance(code,str) and code in ERROR_STATES else None
+    fallback = {401:'credential_diagnosis',403:'grant_blocked',503:'transient_blocked'}.get(http_status,'remote_error')
+    raise PlanError(ERROR_STATES.get(code,fallback),http_status=http_status,remote_code=code)
 
 
 def parse_models(value):
@@ -191,7 +196,7 @@ class SSEParser:
         if self.pending or self.data:_fail('truncated_event')
 
 
-def parse_completed(response, family):
+def _completed_payload(response):
     if not isinstance(response,dict) or response.get('status')!='completed':_fail('invalid_terminal_status')
     if response.get('error') or response.get('incomplete_details'): _fail('ambiguous_terminal')
     output=response.get('output')
@@ -211,14 +216,24 @@ def parse_completed(response, family):
             texts.append(part['text'])
     if len(texts)!=1: _fail('ambiguous_candidate')
     if len(texts[0].encode('utf-8'))>16384:_fail('candidate_byte_limit')
-    candidate=_json(texts[0]);validate_dsl(candidate)
-    if candidate['family']!=family: _fail('candidate_family_mismatch')
+    candidate=_json(texts[0])
     usage=response.get('usage');observed='unknown'
     if isinstance(usage,dict) and all(type(usage.get(k)) is int and 0 <= usage[k] <= 2**53
                                     for k in ('input_tokens','output_tokens','total_tokens')):
         if usage['input_tokens']+usage['output_tokens']==usage['total_tokens']:
             observed={k:usage[k] for k in ('input_tokens','output_tokens','total_tokens')}
     return candidate,observed
+
+
+def parse_completed(response, family):
+    candidate,usage=_completed_payload(response)
+    validate_dsl(candidate)
+    if candidate['family']!=family: _fail('candidate_family_mismatch')
+    # AI selects signal parameters only. The general engine also accepts manual
+    # risk sizing/stops, which are never an authorized model output here.
+    if set(candidate['parameters'])!=set(PARAMETER_CONTRACTS[family]):
+        _fail('invalid_output')
+    return candidate,usage
 
 
 class PlanHTTPTransport:
@@ -269,7 +284,9 @@ class PlanHTTPTransport:
             if not 200<=response.status<300:
                 if 300<=response.status<400:_fail('redirect_rejected')
                 raw=b''.join(chunks())
-                _remote_error(_json(raw))
+                try:value=_json(raw)
+                except PlanError:value={}
+                _remote_error(value,http_status=response.status)
             expected='text/event-stream' if method=='POST' else 'application/json'
             if response.getheader('Content-Type','').split(';',1)[0].strip().lower()!=expected:_fail('invalid_content_type')
             yield chunks()
@@ -693,6 +710,26 @@ class ChatGPTPlanProvider:
         if len(receipts)>=self.max_calls:_fail('call_budget_exhausted')
 
     def generate(self,context, *, cancelled=None):
+        return self._execute(context,cancelled=cancelled)
+
+    def _analysis_purpose(self):
+        if self.max_calls!=1:_fail('invalid_limit')
+        if (not isinstance(self.campaign_id,str)
+            or not re.fullmatch(r'analysis-[a-f0-9]{64}',self.campaign_id)
+            or self.path.name!='chatgpt-'+self.campaign_id+'.sqlite3'):
+            _fail('analysis_purpose_required')
+
+    def analysis_preflight(self):
+        self._analysis_purpose()
+        self._preflight()
+
+    def analyze(self,context, *, cancelled=None):
+        self._analysis_purpose()
+        from quantlab.research_analysis import validate_analysis_context
+        context=validate_analysis_context(context)
+        return self._execute(context,cancelled=cancelled,analysis=True)
+
+    def _execute(self,context, *, cancelled=None,analysis=False):
         if not self.network_opt_in:_fail('network_disabled')
         if not self.included_usage_policy_confirmed:_fail('included_usage_policy_confirmation_required')
         if not self.max_calls:_fail('call_budget_exhausted')
@@ -700,7 +737,11 @@ class ChatGPTPlanProvider:
         started=time.monotonic()
         limits={'deadline':started+self.timeout,'stall_seconds':self.stall,
                 'max_request_bytes':self.max_request_bytes,'max_response_bytes':self.max_response_bytes}
-        request={'model':self.model,'instructions':PROMPT,'input':[{'role':'user','content':canonical_json(context)}],
+        instructions=PROMPT
+        if analysis:
+            from quantlab.research_analysis import ANALYSIS_PROMPT
+            instructions=ANALYSIS_PROMPT
+        request={'model':self.model,'instructions':instructions,'input':[{'role':'user','content':canonical_json(context)}],
                  'store':False,'stream':True}
         raw=canonical_json(request).encode('utf-8')
         if len(raw)>self.max_request_bytes:_fail('request_byte_limit')
@@ -737,7 +778,14 @@ class ChatGPTPlanProvider:
                     if kind=='response.incomplete':_fail('response_incomplete')
                     if 'refusal' in kind or 'function_call' in kind or 'tool_call' in kind:_fail('refusal_or_tool_event')
                     if kind=='response.completed':
-                        completed=parse_completed(response,context.get('family'))
+                        if analysis:
+                            from quantlab.research_analysis import validate_analysis_response
+                            value,usage=_completed_payload(response)
+                            try:value=validate_analysis_response(value,context)
+                            except ValidationError:_fail('invalid_output')
+                            completed=(value,usage)
+                        else:
+                            completed=parse_completed(response,context.get('family'))
                 if completed is not None:break
             if completed is None:
                 parser.finish();_fail('eof_without_completion')
@@ -760,6 +808,21 @@ class ChatGPTPlanProvider:
         context['improvement_instruction']='Propose a distinct candidate in the same family using training and validation feedback only. Keep risk controls unchanged.'
         return self.generate(context)
 
+
+
+def analysis_provider(plan, credential_reference, *, network_opt_in=False,
+                      included_usage_policy_confirmed=False):
+    """Reconstruct exactly one separately budgeted analysis, never a campaign."""
+    from quantlab.research_analysis import validate_analysis_plan
+    validate_analysis_plan(plan)
+    if (type(credential_reference) is not OAuthCredentialReference
+        or credential_reference.registration != plan['binding']['registration']):
+        _fail('oauth_reference_required')
+    return ChatGPTPlanProvider(model=plan['binding']['model'],credential_reference=credential_reference,
+        budget_path=_controls_for(credential_reference)/('chatgpt-analysis-'+plan['analysis_id']+'.sqlite3'),
+        campaign_id='analysis-'+plan['analysis_id'],max_calls=1,
+        timeout_seconds=plan['binding']['timeout_seconds'],network_opt_in=network_opt_in,
+        included_usage_policy_confirmed=included_usage_policy_confirmed)
 
 def clear_account_pause(credential_reference, controls_path, *, user_confirmed=False):
     """Host-only explicit recovery after the user verifies quota/account status.

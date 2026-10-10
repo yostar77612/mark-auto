@@ -110,10 +110,14 @@ independent manifests, shared lifecycle tests, built-in PowerShell-only clean-cl
 preflight and manual acceptance runbook. See [clean-client guide](clean_windows_README.md).
 Generating the kit or passing Server CI never passes clean Windows10/11 gates.
 
-Local model validation tooling is developer-only and opt-in; no Qwen model/runtime
-is bundled or downloaded automatically by this installer. Desktop users configure
-their own compatible endpoint. Structured JSON Schema mode means constrained
-built-in-family parameter generation, not arbitrary program generation.
+The 2026-10-10 11:16 UTC requirement supersedes the historical local/compatible
+provider routes. The current candidate removes local-model setup/runtime assets
+and custom paid/local endpoint controls. Its AI route is official ChatGPT plan
+OAuth; no model download or API-key fallback is required. Historical validation
+results remain historical, not proof of subscription inference. A standalone
+frozen Python TLS gate uses an ephemeral loopback fixture only, with no account,
+model download or inference. Actual subscription grants and clean-client results
+remain separate required evidence.
 
 
 ## 0.2.1 official subscription packaging

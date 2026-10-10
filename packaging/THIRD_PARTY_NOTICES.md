@@ -66,27 +66,20 @@ The official source archive is https://www.sqlite.org/2026/sqlite-amalgamation-3
 No commercial license or service is required. The upstream public-domain
 statement also covers distribution of compiled SQLite binaries.
 
-## Optional local AI components and Microsoft runtime
+## Removed local AI route and remaining Microsoft runtime obligations
 
-The fixed local-AI profile uses llama.cpp b11429 (MIT),
-Qwen2.5-1.5B-Instruct GGUF (Apache-2.0), and the runtime archive's LLVM OpenMP
-component. Exact notices are packaged under `_internal/packaging/local_ai/`:
-`LICENSE-llama.cpp-MIT.txt`, `LICENSE-Qwen-Apache-2.0.txt`, and
-`LICENSE-LLVM-OpenMP.txt`. The adjacent `manifest.json` records upstream sources,
-versions, sizes and hashes. Runtime and model setup is an explicit user action.
+The 2026-10-10 subscription-only candidate removes the dedicated llama.cpp/Qwen/
+GGUF setup route, its local-AI notice assets and the duplicate
+`_internal/local-ai-dependencies` collection. Earlier notices and profiles remain
+in Git history. The current installer does not ship or download a local model.
+This change does not delete user caches or historical research evidence.
 
-The installer also includes Microsoft `msvcp140.dll`, `vcruntime140.dll`, and
-`vcruntime140_1.dll`, version 14.44.35211.0, under
-`_internal/local-ai-dependencies`. These unmodified bytes come from the pinned
-`shiboken6-6.12.0-cp310-abi3-win_amd64.whl`, SHA-256
-`a1906cb8116869178c64b6bab52623bbc8b4ceed7b30bfc3c9aa0f6e67f6438e`.
-Per-file hashes are recorded in the local-AI manifest.
-
-Microsoft's binaries are subject to applicable Microsoft terms, not this
-project's Apache-2.0 or Qt's LGPL license. The collected
-`_internal/licenses/PYTHON-LICENSE.txt` preserves the Windows Python notice
-file; its presence does not establish redistribution rights for separate
-local-AI use. The applicable redistribution basis and downstream conditions
-remain under review before formal release; this candidate does not claim legal
-clearance. Microsoft's guidance is available at
-https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files.
+Qt and CPython still require their applicable native dependencies and notices.
+Removing the dedicated local-AI copy does not remove Microsoft redistribution
+obligations for binaries that remain in the actual frozen payload. Microsoft's
+binaries are not licensed by this project's Apache-2.0 grant or Qt's LGPL grant.
+The collected `_internal/licenses/PYTHON-LICENSE.txt` retains the Windows Python
+notice; its presence alone is not a legal determination for every bundled DLL.
+Final payload provenance and applicable downstream conditions must be assessed
+against the actual build, without inventing a new paid-license or EULA requirement.
+See https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files.
