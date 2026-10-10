@@ -13,7 +13,7 @@ from pathlib import Path
 from desktop_chatgpt_auth import OAuthCredentialReference
 from quantlab.core import ValidationError
 from desktop_chatgpt_provider import (ChatGPTPlanProvider, PlanError, SSEParser,
-    parse_models, parse_completed, ERROR_STATES, RESPONSES_URL, PlanHTTPTransport as RealTransport, clear_account_pause, read_account_status)
+    parse_models, parse_completed, ERROR_STATES, RESPONSES_URL, PlanHTTPTransport as RealTransport, clear_account_pause, read_account_status, discover_models)
 
 CANDIDATE = {'strategy_id':'mock_trend','family':'trend','parameters':{'fast':5,'slow':20},'rules':{}}
 
@@ -53,6 +53,14 @@ def competing_reservation(path, queue):
         with patch('desktop_chatgpt_provider.implementation_provenance',return_value={'source_sha256': {'offline_fixture':'a'*64}}):
             queue.put(provider(Path(path))._reserve('0'*64,100))
     except PlanError:queue.put(None)
+
+def competing_distinct_registration(path, registration, filename, queue):
+    root=Path(path)
+    with patch('desktop_chatgpt_provider.implementation_provenance',return_value={'source_sha256':{'offline_fixture':'a'*64}}):
+        p=provider(root,credential_reference=OAuthCredentialReference(str(root/'auth'),registration),
+                   budget_path=root/'auth'/'control-v1'/filename,campaign_id=filename)
+        try:queue.put(p._reserve('a'*64,100))
+        except PlanError:queue.put(None)
 
 class FakeSocket:
     def settimeout(self,value):pass
@@ -471,3 +479,171 @@ class PlanTests(unittest.TestCase):
                 db.execute('UPDATE plan_calls SET usage=?',('{"api_key":"SECRET_FIXTURE"}',))
             with self.assertRaises(PlanError):p.read_receipt_snapshot()
             self.assertTrue(all(db.closed_explicitly for db in opened))
+
+    def distinct_registration(self,letter='b',filename='b.sqlite',**changes):
+        root=self.tmp_path
+        return provider(root,credential_reference=OAuthCredentialReference(str(root/'auth'),letter*32),
+                        budget_path=root/'auth'/'control-v1'/filename,campaign_id=filename,**changes)
+
+    def test_cross_registration_unknown_blocks_reserve_status_discovery_and_generate(self):
+        a=provider(self.tmp_path);a._reserve('a'*64,100)
+        b=self.distinct_registration()
+        self.assertEqual(read_account_status(b.credential_reference,b.path.parent),
+                         {'state':'reserved_unknown','pending':True})
+        with self.assertRaises(PlanError):b._reserve('b'*64,100)
+        with patch.object(MockTransport,'models') as metadata:
+            with self.assertRaises(PlanError):b.generate({'family':'trend'})
+            with self.assertRaises(PlanError):discover_models(b.credential_reference,network_opt_in=True)
+            metadata.assert_not_called()
+        self.assertEqual(len(a.read_receipt_snapshot()['receipts']),1)
+        self.assertEqual(b.read_receipt_snapshot()['receipts'],[])
+        # Reconstructing another opaque grant is an offline signout/re-register
+        # simulation, not an actual authentication flow or a same-human claim.
+        c=self.distinct_registration('c','c.sqlite')
+        with self.assertRaises(PlanError):c._reserve('c'*64,100)
+        self.assertTrue(read_account_status(c.credential_reference,c.path.parent)['pending'])
+
+    def test_cross_registration_known_pause_clear_is_selected_explicit_and_no_refund(self):
+        a=provider(self.tmp_path);a._reserve('a'*64,100);a._finish(1,'quota_paused')
+        b=self.distinct_registration()
+        self.assertEqual(read_account_status(b.credential_reference,b.path.parent),{'state':'quota_paused','pending':False})
+        with self.assertRaises(PlanError):b._reserve('b'*64,100)
+        with self.assertRaises(PlanError):clear_account_pause(b.credential_reference,b.path.parent,user_confirmed=True)
+        with self.assertRaises(PlanError):clear_account_pause(a.credential_reference,a.path.parent)
+        before=a.read_receipt_snapshot()
+        clear_account_pause(a.credential_reference,a.path.parent,user_confirmed=True)
+        self.assertEqual(a.read_receipt_snapshot(),before)
+        with self.assertRaises(PlanError):a._reserve('b'*64,100)
+        self.assertEqual(b._reserve('b'*64,100),1)
+        b._finish(1,'completed')
+        self.assertEqual(len(a.read_receipts()),1)
+        self.assertEqual(len(b.read_receipts()),1)
+        self.assertNotEqual(a.provider_descriptor()['registration'],b.provider_descriptor()['registration'])
+
+    def test_clear_selected_known_pause_refuses_unknown_elsewhere(self):
+        b=self.distinct_registration();b._reserve('b'*64,100)
+        a=provider(self.tmp_path)
+        # A delayed metadata error may arrive while another call is already
+        # reserved; mock the durable error only, never send HTTP.
+        a._pause_account('quota_paused')
+        with self.assertRaises(PlanError):clear_account_pause(a.credential_reference,a.path.parent,user_confirmed=True)
+        self.assertEqual(read_account_status(a.credential_reference,a.path.parent),{'state':'reserved_unknown','pending':True})
+        b._finish(1,'completed')
+        clear_account_pause(a.credential_reference,a.path.parent,user_confirmed=True)
+        self.assertEqual(read_account_status(a.credential_reference,a.path.parent),{'state':'ready','pending':False})
+        self.assertEqual(len(b.read_receipts()),1)
+
+    def test_completed_registration_does_not_reset_owned_call_caps(self):
+        a=provider(self.tmp_path,max_calls=1);a._reserve('a'*64,100);a._finish(1,'completed')
+        b=self.distinct_registration(max_calls=1)
+        self.assertEqual(b.read_receipts(),[])
+        self.assertEqual(b._reserve('b'*64,100),1);b._finish(1,'completed')
+        with self.assertRaises(PlanError):a._reserve('c'*64,100)
+        with self.assertRaises(PlanError):b._reserve('c'*64,100)
+        self.assertEqual([row['sequence'] for row in a.read_receipts()],[1])
+        self.assertEqual([row['sequence'] for row in b.read_receipts()],[1])
+
+    def test_concurrent_distinct_registration_reservation_is_installation_atomic(self):
+        context=multiprocessing.get_context('spawn');queue=context.Queue()
+        processes=[context.Process(target=competing_distinct_registration,args=(str(self.tmp_path),letter*32,letter+'.sqlite',queue)) for letter in 'abcdef']
+        try:
+            for process in processes:process.start()
+            results=[queue.get(timeout=10) for _ in processes]
+            for process in processes:process.join(10)
+            self.assertEqual([value for value in results if value is not None],[1])
+            for letter in 'abcdef':
+                p=self.distinct_registration(letter,letter+'.sqlite')
+                self.assertEqual(read_account_status(p.credential_reference,p.path.parent),{'state':'reserved_unknown','pending':True})
+        finally:
+            for process in processes:
+                if process.is_alive():process.kill();process.join()
+                process.close()
+            queue.close();queue.join_thread()
+
+    def test_other_registration_expected_ledger_damage_blocks_all_new_work(self):
+        import sqlite3
+        from tests.test_research import tracked_sqlite_connections
+        for damage in ('missing','corrupt','reset','rollback'):
+            with self.subTest(damage=damage),tracked_sqlite_connections() as opened:
+                root=self.tmp_path/damage
+                a=provider(root,max_calls=3);a._reserve('a'*64,100);a._finish(1,'completed')
+                old=a.path.read_bytes();a._reserve('b'*64,100);a._finish(2,'completed')
+                b=provider(root,credential_reference=OAuthCredentialReference(str(root/'auth'),'b'*32),
+                           budget_path=a.path.parent/'b.sqlite',campaign_id='b')
+                if damage=='missing':a.path.unlink()
+                else:a.path.write_bytes({'corrupt':b'corrupt fixture','reset':b'','rollback':old}[damage])
+                with self.assertRaises(PlanError):read_account_status(b.credential_reference,b.path.parent)
+                with self.assertRaises(PlanError):b._reserve('c'*64,100)
+                with self.assertRaises(PlanError):clear_account_pause(b.credential_reference,b.path.parent,user_confirmed=True)
+                with patch.object(MockTransport,'models') as metadata:
+                    with self.assertRaises(PlanError):b.generate({'family':'trend'})
+                    with self.assertRaises(PlanError):discover_models(b.credential_reference,network_opt_in=True)
+                    metadata.assert_not_called()
+                if damage=='missing':self.assertFalse(a.path.exists())
+                with closing(sqlite3.connect(a.account_path)) as db:
+                    self.assertEqual(db.execute('SELECT calls FROM plan_ledgers').fetchall(),[(2,)])
+                self.assertTrue(opened)
+                self.assertTrue(all(db.closed_explicitly for db in opened))
+
+    def test_delayed_metadata_error_cannot_downgrade_unknown_inference(self):
+        import threading
+        import sqlite3
+        entered=threading.Event();release=threading.Event();errors=[]
+        class DelayedMetadata(MockTransport):
+            def models(self,reference,limits,cancelled):
+                if threading.current_thread().name=='late_metadata':
+                    entered.set()
+                    if not release.wait(5):raise AssertionError('Fixture synchronization failed')
+                    raise PlanError('quota_paused')
+                return super().models(reference,limits,cancelled)
+            def stream(self,*args,**kwargs):
+                raise PlanError('http_transport_failed')
+        a=provider(self.tmp_path)
+        b=provider(self.tmp_path,budget_path=a.path.parent/'late.sqlite',campaign_id='late')
+        def late_call():
+            try:b.generate({'family':'trend'})
+            except PlanError as exc:errors.append(exc.code)
+        with patch('desktop_chatgpt_provider.PlanHTTPTransport',DelayedMetadata):
+            thread=threading.Thread(target=late_call,name='late_metadata');thread.start()
+            try:
+                self.assertTrue(entered.wait(5))
+                with self.assertRaises(PlanError):a.generate({'family':'trend'})
+                release.set();thread.join(5);self.assertFalse(thread.is_alive())
+            finally:release.set();thread.join(5)
+        self.assertEqual(errors,['quota_paused'])
+        with closing(sqlite3.connect(a.account_path)) as db:
+            self.assertEqual(db.execute('SELECT state FROM plan_accounts').fetchall(),[('http_transport_failed',)])
+        with self.assertRaises(PlanError):clear_account_pause(b.credential_reference,b.path.parent,user_confirmed=True)
+        c=self.distinct_registration('c','new-grant.sqlite')
+        with self.assertRaises(PlanError):c._reserve('c'*64,100)
+        self.assertTrue(read_account_status(c.credential_reference,c.path.parent)['pending'])
+        self.assertEqual(a.read_receipts()[0]['status'],'http_transport_failed')
+
+    def test_indexed_ledger_inspection_deadline_is_bounded_and_closes_handles(self):
+        from tests.test_research import tracked_sqlite_connections
+        a=provider(self.tmp_path);a._reserve('a'*64,100);a._finish(1,'completed')
+        with tracked_sqlite_connections() as opened,patch('desktop_chatgpt_provider.time.monotonic',side_effect=[0,6]):
+            with self.assertRaises(PlanError):read_account_status(a.credential_reference,a.path.parent)
+            self.assertTrue(opened)
+            self.assertTrue(all(db.closed_explicitly for db in opened))
+
+    def test_standalone_discovery_persists_known_pause_without_inference_debit(self):
+        import sqlite3
+        catalog={'models':[{'slug':'fixture-model','display_name':'Fixture','visibility':'list'}]}
+        for state in sorted(set(ERROR_STATES.values())):
+            with self.subTest(state=state):
+                root=self.tmp_path/state;a=provider(root)
+                b=provider(root,credential_reference=OAuthCredentialReference(str(root/'auth'),'b'*32),
+                           budget_path=a.path.parent/'b.sqlite',campaign_id='b')
+                with patch.object(MockTransport,'models',side_effect=[PlanError(state),catalog]) as metadata:
+                    with self.assertRaises(PlanError):discover_models(a.credential_reference,network_opt_in=True)
+                    self.assertEqual(read_account_status(b.credential_reference,b.path.parent),{'state':state,'pending':False})
+                    with self.assertRaises(PlanError):discover_models(b.credential_reference,network_opt_in=True)
+                    self.assertEqual(metadata.call_count,1)
+                    self.assertFalse(a.path.exists());self.assertFalse(b.path.exists())
+                    with closing(sqlite3.connect(a.account_path)) as db:
+                        self.assertEqual(db.execute('SELECT COUNT(*) FROM plan_ledgers').fetchone()[0],0)
+                    clear_account_pause(a.credential_reference,a.path.parent,user_confirmed=True)
+                    self.assertEqual(discover_models(b.credential_reference,network_opt_in=True),[{'slug':'fixture-model','display_name':'Fixture'}])
+                    self.assertEqual(metadata.call_count,2)
+                self.assertEqual(a.read_receipts(),[]);self.assertEqual(b.read_receipts(),[])

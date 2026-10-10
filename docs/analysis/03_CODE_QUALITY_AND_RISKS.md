@@ -275,3 +275,12 @@ mainfc2dfac，postmerge Windows38013204925 build/security/release及Quantlab3801
 下一版baseline改固定為以上真0.2.0；初次633測試只有舊baseline測試仍期待0.1.2的metadata失敗，故依已實際下載的新版commit/size/digest更新固定fixture，並加強manifest與完整EXE digest斷言。品質門檻、未知檔保留及內容驗證沒有放寬，失敗紀錄保留；CI仍須在最終head重跑完整矩陣。
 
 0.2.1首輪Windows CI（38014286480／38014286482）保留FAILED證據，未合併。四個根因分開處理：六個測試fixture用了SQLite connection context但未close，導致Windows刪除temporary時WinError32；改為closing＋原transaction，另保留connection物件測production成功/錯誤路徑明確close，沒有用GC/延遲/忽略cleanup掩蓋。DACL測試把SDDL縮寫LA直接和full SID文字比較；改讀原binaryACE並EqualSid，同時仍要求protected、單一allowACE、full access，另加異主體/異domain RID500反例，不允許泛用LA例外。deadline合成測試原只patch POSIX killpg，現分別測Linux killpg與Windows terminate分支，保留join/close/unknown-error全部斷言；native JobObject測試獨立。唯一production修正是build-manifest輸入路徑統一POSIX字元，原Windows反斜線key令跨平台雜湊查核失敗；既有kit/PowerShell讀取兼容兩種格式。92focused tests85PASS7native/tool skip，原完整633Linux結果保留，最終headWindows必須重驗。
+
+
+0.2.1第二輪exact-head `7dc3536f`／本地`797f3cd`，Quantlab `38014802083`七jobs與Windows `38014802079` build/security全部通過：635測試624PASS11適用profile skip，原生DPAPI/DACL/refresh-lock、frozen crypto、安裝/升級/中斷復原Gate通過。這是Windows Server runner，非clean Win10/11。release因PR不是main正常skipped。
+
+合併前新增offline反例實際重現release-blocking缺口：同bootstrap但不同OAuth registration，A預留未知請求後B仍status ready且能預留。來源 `desktop_chatgpt_provider.py` registration-keyed account lookup；不能假定issuer/client/subject跨registration必然代表相同人，也不能因此允許重試不確定呼叫。PR4保持未合併，修復方向為本安裝跨registration的active/unknown/paused屏障及既有ledger完整性確認，保留各自receipt/身分。新增反例與並行/明確解除已知pause驗收先固定，修復後重新跑exact-head Gate。沒有真正授權、token或網路推論。
+
+獨立反例再確認兩個同源缺口：A已完成但其預期ledger遺失／毀損／回退時，B仍可當ready；較晚返回的model catalog已知quota錯誤能覆蓋先前未知推論狀態，使人工解除pause後誤允許新call。另standalone模型發現原未保存新觀察到的quota/auth pause。修復保持最小同一provider邊界：以全域交易內有界索引驗全部已登記ledger、receipt推導不可清除未知屏障、已知錯誤不得降低未知狀態、共用已知pause持久化。各registration身分和收據仍隔離，不查email或假定subject跨client相等。正式採用仍以最後來源的獨立反例／完整CI為準，原PASS不覆蓋後續修改。
+
+02:11 UTC修復來源凍結：provider SHA256 `96d8c73b52c8cf337e1837ee0cb625cc0f5367e140b3cce595141d86cbdaffdb`、testplan `5a23e18746a2428883acd57d8a2d79a9e6ae107e8f2f1d58767463c7a6b7509b`。獨立10項反例、106相關回歸、35受支援auth測試通過，無剩餘範圍內阻擋；初始錯用非固定依賴環境的失敗另外保留。根目錄完整644測試629PASS15原生Windows/PowerShell不適用skip（85.155s），quality＋全可達Git歷史掃描0finding。新版exact-head Windows/PR Gate仍必須重新通過後才可合併；這些本地證據不是實際官方帳戶驗證。

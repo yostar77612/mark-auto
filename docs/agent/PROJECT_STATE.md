@@ -1,16 +1,18 @@
 # mark-auto 開發接續狀態
 
-更新：2026-10-10 00:46 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
+更新：2026-10-10 02:05 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
 ## 最新狀態與計分
 
-- PR #2 已整合 main `28c9f9020e5f44a7a986380e3a6d16bdb7235b2d`；0.1.2 unsigned preview 與 no-Python clean-client kit 已發布且實際下載 SHA256 核對。Release：https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1 。
-- Windows Server2022 實際執行341 tests（334 PASS，7適用平台/工具skip）、0.1.1→0.1.2歷史版本升級、安裝程序中止/復原與資料保存；不能替代乾淨 Win10/11。原200點仍170 PASS＝85%；新增市場100點仍待完整Gate。合計170/300＝56.67%，剩43.33%，不是工時估計。
-- 當前唯一市場功能分支 `agent/market-desktop-v1`，候選0.2.0；市場模型/官方日行情、互動K線/指標、繁中typedforms、受限manual策略交換已實作。完整最終來源與Windows打包/安裝Gate驗證中；正式ChatGPT訂閱OAuth獨立下一模組，未混入候選。
-- 真AI：免費Qwen1.5B實際生成3個受限候選，透過產品流程完成回測/OOS/holdout/比較；1個虧損、2個零交易，不合投資晉級。額外2次改善僅改名，被語意去重拒絕；有效新改善FAILED，保留累計11次真實呼叫的所有失敗。
-- 真行情：12連續交易日13,680分鐘K、24盤獨立官方OHLC；Oct7缺分鐘拒絕。市場首屏用真官方TAIEX/TX/MTX/TMF資料，明示EOD/history/cache。雲端直連官方端點DNS失敗，線上更新標BLOCKED，Windows另收集實際連線診斷。
-- 圖表訓練區間重播已實際經桌面worker取得淨損益−143,590 TWD、1,917訊號、3,831成交；非新模型、OOS/holdout或真交易。100/125/150% Linux offscreen截圖已檢視，不宣稱Windows DPI實測。
-- main管理級保護仍403/未啟用；實盤固定停用。D5/D7/D8乾淨client OS與正式OAuth使用者授權仍需外部條件。
+- PR #3 已整合 main `fc2dfacbf297004095e971ec10cf3620307417a2`；0.2.0 unsigned preview 與 no-Python clean-client kit 已發布並實際下載校驗SHA256／ZIP CRC。Release：https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38013204925-1 。
+- 原200點170 PASS＝85%；新增市場範圍M1/M5共25/100 PASS；合计195/300＝65%，剩35%，是固定驗收權重，不是工時估計。M2/M3/M4尚待相應版本完整Gate，M6/M7未全滿，不能提前給分。
+- 現有PR #4／`agent/chatgpt-desktop-v1`候選0.2.1，remote `7dc3536f`與本地`797f3cd`完整tree相同。Quantlab `38014802083`七jobs與Windows `38014802079` build/security全通過；635 tests624PASS11適用profile skip，原生加密／DPAPI／安裝／真0.2.0升級／中斷復原PASS。Server runner不等於clean Win10/11。
+- PR4合併暫緩：offline反例發現新增OAuth registration能繞過另一registration尚未確認的呼叫屏障；修復已通過獨立151項檢查及完整644測試629PASS15平台skip；最終head原生Windows仍須重驗。沒有真帳戶授權或訂閱模型呼叫，不能以工程fixture冒充。
+- 下一個行情分鐘匯入模組僅在隔離staging：TX/MTX/TMF真CSV/RPT900bars、24商品/周期組合及159項獨立組合測試通過；另source smoke保留原7步＋manual2步＋auth並新增24圖表組合。尚未整合、未原生Windows/frozen驗證，不能當已發布。
+- 真AI：免費Qwen1.5B實際生成3候選並完成回測/OOS/holdout/比較，1個虧損、2個零交易，不合投資晉級。v3兩次duplicate失敗保留；v4固定1次實際改善產生不同參數，技術去重PASS，沒有新回測/OOS/holdout或獲利改善證據。累計14次真免費呼叫，不追加無限制搜尋。
+- 真行情：12連續交易日13,680分鐘、24盤獨立官方OHLC；Oct7缺分鐘拒絕。0.2.0 Windows實際官方HTTP診斷VERIFIED，來源皆EOD非realtime；雲端直接HTTP的DNS限制保留，不把另一环境成功改寫舊失敗。
+- 圖表真訓練區間重播淨損益−143,590 TWD、1,917訊號、3,831成交；非新模型/OOS/holdout或真交易。Linux截圖檢視通過，非Windows DPI實測。
+- clean Win10 22H2 x64／Win11 x64仍EXTERNAL BLOCKED；main管理級保護403／未啟用，簽章及使用者官方授權未取得。真資金交易固定停用。
 
 ## 已保留的原始成果與 Git 映射
 
@@ -42,7 +44,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 
 - 原研究來源 `76ad3a5`／`8cea2729`：本地 180 tests 通過，GitHub run `37959451997` 的 Linux／Windows Server Python3.11/3.12 和 UI 五 jobs 全成功。這不取代新增桌面的最終 head 回歸。
 - 真實 2026-10-08 TAIFEX CSV／RPT／日報匯入 1140 根分鐘 K，OHLC 一致；價差成交量口徑仍待正式證據。最近 30 官方 ZIP 已下載，保持 `provisional_unverified`／`ranking_eligible=false`，原始行情不提交 Git。
-- 預設AI使用明示Fixture；本輪另以實際免費本地Qwen推論驗證受限家族參數生成與整體研究流程，未呼叫付費模型。有效新改善候選FAILED（只改名），去重拒絕成功；累計11真calls，失敗紀錄保留。
+- 預設AI使用明示Fixture；本輪另以實際免費本地Qwen推論驗證受限家族參數生成與整體研究流程，未呼叫付費模型。早期有效新改善候選FAILED（只改名），去重拒絕成功；後續v4限1call產生不同參數，技術去重PASS，累計14真calls，全部舊失敗保留；沒有改善獲利證據。
 - Paper 是有限歷史重播，沒有正式即時行情串流。盤中停損／停利未支援即拒絕。未知委託／部位先凍結，禁止猜測補單。
 - 實盤固定停用。真券商資格、行情授權、憑證、完整歷史品質與真市場策略績效尚未驗證。
 - Windows10 22H2／Windows11 乾淨環境實測 **BLOCKED**：目前無已授權可用 client OS；Windows Server 不能冒充通過。未使用使用者未授權電腦。
@@ -51,7 +53,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 ## 接續順序與命令
 
 1. 先 `git status`，保留所有未提交修改；閱讀固定合約與驗收清單。
-2. 凍結0.2.0市場来源，完整回歸後在本輪唯一模組分支發布PR；實際Windows編譯/安裝/中斷復原失敗就修正，不降低標準。
+2. 修復並獨立驗證PR4跨registration安全屏障，在原功能分支更新；exact-head完整Gate後才整合。其後接續已保留的行情匯入模組，不覆蓋新修正。
 3. 最終 head 的研究／UI／品質／依賴／installer 全通過才可整合 main，並驗證 post-merge build 與 preview Release。
 4. 保存原始 Git 歷史與五份分析文件；清理分支前確認保存、已合併與無競態，不具安全刪除條件就保留並說明。
 5. 剩餘真 client OS、外部服務與權限阻塞誠實記錄，不降低門檻或以 mock 代替。

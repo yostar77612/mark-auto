@@ -294,9 +294,15 @@ def discover_models(credential_reference, *, network_opt_in=False, timeout_secon
     if network_opt_in is not True:_fail('network_disabled')
     if type(credential_reference) is not OAuthCredentialReference:_fail('oauth_reference_required')
     timeout=_integer(timeout_seconds,1,120)
+    if read_account_status(credential_reference,_controls_for(credential_reference))['state']!='ready':
+        _fail('account_paused')
     limits={'deadline':time.monotonic()+timeout,'stall_seconds':min(10,timeout),
             'max_response_bytes':262144,'max_request_bytes':65536}
-    return parse_models(PlanHTTPTransport().models(credential_reference,limits,cancelled))
+    try:
+        return parse_models(PlanHTTPTransport().models(credential_reference,limits,cancelled))
+    except PlanError as exc:
+        if exc.code in set(ERROR_STATES.values()):_persist_account_pause(credential_reference,exc.code)
+        raise
 
 
 def implementation_provenance():
@@ -400,11 +406,80 @@ def _open_account_controls(reference, *, initialize=False, readonly=True):
         raise PlanError('account_controls_unavailable') from None
 
 
+def _persist_account_pause(credential_reference,status):
+    if status not in set(ERROR_STATES.values()):_fail('invalid_pause_state')
+    db=_open_account_controls(credential_reference,initialize=True,readonly=False)
+    with closing(db),db:
+        db.execute('BEGIN IMMEDIATE')
+        existing=db.execute('SELECT state,owner FROM plan_accounts WHERE registration=?',
+                            (credential_reference.registration,)).fetchone()
+        # A delayed known metadata error cannot downgrade a prior unknown
+        # inference outcome into a user-clearable pause. Active owners remain
+        # attached so a completed call can still retain a new known pause.
+        if existing and existing[0] is not None:
+            if existing[0] not in set(ERROR_STATES.values())|{'reserved_unknown'}:
+                return
+            if existing[0]=='reserved_unknown' and existing[1] is None:
+                return
+        db.execute('INSERT INTO plan_accounts (registration,state) VALUES (?,?) ON CONFLICT(registration) DO UPDATE SET state=excluded.state',
+                   (credential_reference.registration,status))
+
+
+def _installation_barrier(db, controls, schema='main'):
+    """Conservative local barrier across grants; never infer a human identity.
+
+    The row owners and their receipt ledgers remain distinct. Public status does
+    not reveal which other registration caused the installation-wide pause.
+    """
+    if schema not in ('main','account_controls'):_fail('account_controls_invalid')
+    try:
+        expectations=db.execute('SELECT filename,binding,calls FROM '+schema+'.plan_ledgers LIMIT 1025').fetchall()
+        if len(expectations)>1024:_fail('account_controls_invalid')
+        unknown_receipt=False
+        deadline=time.monotonic()+5
+        seen=set()
+        for filename,binding,calls in expectations:
+            if time.monotonic()>=deadline:_fail('account_controls_unavailable')
+            if (type(filename) is not str or not re.fullmatch(r'[A-Za-z0-9_.-]{1,128}',filename)
+                or filename in ('.','..','chatgpt-plan-account-controls.sqlite')
+                or filename.casefold() in seen or type(binding) is not str
+                or not re.fullmatch('[a-f0-9]{64}',binding) or type(calls) is not int or not 1<=calls<=100):
+                _fail('account_controls_invalid')
+            seen.add(filename.casefold())
+            path=controls/filename
+            _reject_links(path)
+            if not path.is_file():_fail('campaign_controls_missing')
+            # The caller retains the global read/write transaction while each
+            # indexed ledger is inspected. Every legitimate ledger mutation also
+            # needs that global write transaction. No directory scan/identities.
+            with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=min(1,max(.001,deadline-time.monotonic())))) as ledger:
+                ledger.execute('BEGIN')
+                _,receipts=_checked_campaign_rows(ledger,'main',(binding,calls))
+                if any(row[3]!='completed' and row[3] not in set(ERROR_STATES.values()) for row in receipts):
+                    unknown_receipt=True
+            if time.monotonic()>=deadline:_fail('account_controls_unavailable')
+        rows=db.execute('SELECT state,owner FROM '+schema+'.plan_accounts '
+                        'WHERE state IS NOT NULL OR owner IS NOT NULL LIMIT 1025').fetchall()
+    except sqlite3.Error:
+        raise PlanError('account_controls_unavailable') from None
+    if unknown_receipt:return {'state':'reserved_unknown','pending':True}
+    if not rows:return {'state':'ready','pending':False}
+    if len(rows)>1024:return {'state':'blocked','pending':True}
+    if any(owner is not None or state=='reserved_unknown' for state,owner in rows):
+        return {'state':'reserved_unknown','pending':True}
+    known=set(ERROR_STATES.values())
+    if any(type(state) is not str or state not in known for state,_ in rows):
+        return {'state':'blocked','pending':True}
+    # A deterministic known state is sufficient for admission; no identities or
+    # details about other account registrations are returned to the UI.
+    return {'state':sorted(state for state,_ in rows)[0],'pending':False}
+
+
 def _checked_campaign_rows(db, schema, expected):
     """Must run in the same transaction as the global expectation read."""
     try:
         budget=db.execute('SELECT binding,calls,blocked FROM '+schema+'.plan_budget WHERE id=1').fetchone()
-        rows=db.execute('SELECT sequence,request_hash,request_bytes,status,response_hash,usage,received_bytes,elapsed_seconds FROM '+schema+'.plan_calls ORDER BY sequence').fetchall()
+        rows=db.execute('SELECT sequence,request_hash,request_bytes,status,response_hash,usage,received_bytes,elapsed_seconds FROM '+schema+'.plan_calls ORDER BY sequence LIMIT 101').fetchall()
         if (not budget or expected is None or budget[:2]!=expected or type(budget[1]) is not int
             or not 1<=budget[1]<=100 or len(rows)!=budget[1]
             or [row[0] for row in rows]!=list(range(1,budget[1]+1))):
@@ -511,16 +586,11 @@ class ChatGPTPlanProvider:
         db=_open_account_controls(self.credential_reference)
         if db is None:return None
         with closing(db):
-            row=db.execute('SELECT state FROM plan_accounts WHERE registration=?',
-                           (self.credential_reference.registration,)).fetchone()
-            return row[0] if row else None
+            status=_installation_barrier(db,_controls_for(self.credential_reference))
+            return None if status['state']=='ready' else status['state']
 
     def _pause_account(self,status):
-        db=_open_account_controls(self.credential_reference,initialize=True,readonly=False)
-        with closing(db),db:
-            db.execute('BEGIN IMMEDIATE')
-            db.execute('INSERT INTO plan_accounts (registration,state) VALUES (?,?) ON CONFLICT(registration) DO UPDATE SET state=excluded.state',
-                       (self.credential_reference.registration,status))
+        _persist_account_pause(self.credential_reference,status)
 
     def _reserve(self,request_hash,request_bytes):
         binding=content_hash(self.provider_descriptor())
@@ -535,9 +605,8 @@ class ChatGPTPlanProvider:
                 db.execute('CREATE TABLE plan_budget (id INTEGER PRIMARY KEY CHECK(id=1),binding TEXT,calls INTEGER,blocked TEXT)')
                 db.execute('CREATE TABLE plan_calls (sequence INTEGER PRIMARY KEY, request_hash TEXT,request_bytes INTEGER,status TEXT,response_hash TEXT,usage TEXT,received_bytes INTEGER,elapsed_seconds REAL)')
                 row=(binding,0,None);db.execute('INSERT INTO plan_budget VALUES (1,?,?,?)',row)
-            account=db.execute('SELECT state FROM account_controls.plan_accounts WHERE registration=?',
-                               (self.credential_reference.registration,)).fetchone()
-            if account and account[0]:_fail('account_paused')
+            if _installation_barrier(db,self.path.parent,'account_controls')['state']!='ready':
+                _fail('account_paused')
             if row[0]!=binding:_fail('immutable_budget_binding')
             if row[2]:_fail('campaign_paused')
             if db.execute("SELECT 1 FROM plan_calls WHERE status='reserved_unknown'").fetchone():_fail('previous_completion_unknown')
@@ -693,16 +762,20 @@ def clear_account_pause(credential_reference, controls_path, *, user_confirmed=F
     if db is None:return
     with closing(db),db:
         db.execute('BEGIN IMMEDIATE')
+        barrier=_installation_barrier(db,controls)
+        if barrier['pending']:_fail('active_or_unknown_request')
         row=db.execute('SELECT state,owner FROM plan_accounts WHERE registration=?',
                        (credential_reference.registration,)).fetchone()
         if row and row[0]:
             if row[1] is not None:_fail('active_or_unknown_request')
             if row[0] not in set(ERROR_STATES.values()):_fail('unknown_outcome_requires_manual_resolution')
             db.execute('UPDATE plan_accounts SET state=NULL WHERE registration=?',(credential_reference.registration,))
+        elif barrier['state']!='ready':
+            _fail('pause_owned_by_another_registration')
 
 
 def read_account_status(credential_reference, controls_path):
-    """Read-only, sanitized account pause status for UI; never repairs/resumes."""
+    """Read-only installation-wide pause status; no other identities disclosed."""
     if type(credential_reference) is not OAuthCredentialReference:_fail('oauth_reference_required')
     controls=_controls_for(credential_reference)
     if Path(controls_path)!=controls:_fail('installation_controls_path_required')
@@ -710,12 +783,5 @@ def read_account_status(credential_reference, controls_path):
     _reject_links(path)
     db=_open_account_controls(credential_reference)
     if db is None:return {'state':'ready','pending':False}
-    try:
-        with closing(db):
-            row=db.execute('SELECT state,owner FROM plan_accounts WHERE registration=?',
-                           (credential_reference.registration,)).fetchone()
-    except sqlite3.Error:
-        raise PlanError('account_controls_unavailable') from None
-    if not row or row[0] is None:return {'state':'ready','pending':False}
-    state=row[0] if row[0] in set(ERROR_STATES.values())|{'reserved_unknown'} else 'blocked'
-    return {'state':state,'pending':row[1] is not None or row[0]=='reserved_unknown'}
+    with closing(db):
+        return _installation_barrier(db,controls)
