@@ -22,7 +22,7 @@ def main():
     inputs = [p for pattern in ('packaging/*', 'requirements-desktop.*', 'desktop.py', 'desktop_ui.py', 'tools/quality_gate.py',
                                'quantlab/*.py', 'examples/*', '.github/workflows/windows-desktop.yml')
               for p in root.glob(pattern) if p.is_file()]
-    artifacts = list((root / 'dist/installers').glob('*.exe'))
+    artifacts = list((root / 'dist/installers').glob('*.exe')) + list((root / 'dist').glob('MarkAuto-*-clean-windows-acceptance.zip'))
     result = {
         'source_commit': os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'python': sys.version, 'python_executable_sha256': sha256(sys.executable), 'os': platform.platform(), 'architecture': platform.machine(),

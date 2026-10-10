@@ -121,10 +121,57 @@ def _quality():
     return {'valid': True, 'errors': [], 'warnings': [], 'missing_intervals': 0, 'duplicate_rows': 0, 'malformed_rows': []}
 
 
+def _session_coverage(bars, calendar):
+    """Check every declared applicable session, including wholly absent sessions.
+
+    No trading days are inferred. Contract-specific closed/early-close records
+    shadow generic records. Calendar scope is the required import scope.
+    """
+    gaps = []
+    contracts = {bar.contract_id for bar in bars}
+    for contract in sorted(contracts):
+        for record in calendar.sessions:
+            if record.get('contract_id') not in (None, '', contract) or record.get('closed'):
+                continue
+            if not record.get('contract_id') and any(
+                    other.get('contract_id') == contract and
+                    (other['trade_date'], other['session']) == (record['trade_date'], record['session'])
+                    for other in calendar.sessions):
+                continue
+            # Explicit expiry facts can exclude later generic calendar records.
+            try:
+                calendar.lookup(record['open'], contract)
+            except ValidationError:
+                continue
+            selected = sorted((b for b in bars if b.contract_id == contract and
+                               b.trade_date == record['trade_date'] and b.session == record['session'] and
+                               record['open'] <= b.timestamp and b.end <= record['end']),
+                              key=lambda b: b.timestamp)
+            cursor = record['open']
+            for bar in selected:
+                if bar.timestamp > cursor:
+                    gaps.append({'contract_id': contract, 'trade_date': record['trade_date'],
+                                 'session': record['session'], 'start': cursor, 'end': bar.timestamp})
+                cursor = max(cursor, bar.end)
+            if cursor < record['end']:
+                gaps.append({'contract_id': contract, 'trade_date': record['trade_date'],
+                             'session': record['session'], 'start': cursor, 'end': record['end']})
+    return gaps
+
+
 def _dataset(bars, *, calendar, source_type, quality, extra=None):
     bars = tuple(sorted(bars, key=lambda b: (b.timestamp, b.contract_id, b.end)))
     if not bars:
         quality['errors'].append('empty dataset')
+    coverage_gaps = _session_coverage(bars, calendar)
+    quality['session_coverage_gaps'] = coverage_gaps
+    if coverage_gaps:
+        if source_type == 'synthetic':
+            quality['warnings'].append('Synthetic partial-session fixture; not full-session market history.')
+        else:
+            message = 'incomplete declared sessions: leading, trailing, interior or whole-session data missing'
+            if message not in quality['errors']:
+                quality['errors'].append(message)
     quality['valid'] = not quality['errors']
     manifest = {
         'schema_version': 1, 'source_type': source_type, 'source_url': '', 'source_filename': '', 'source_hash': '',

@@ -175,6 +175,50 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(RuntimeSafetyError):
             self.backups.create(self.paths.state / 'a.zip')
 
+    def test_backup_protects_all_internal_destinations_before_recovery(self):
+        for relocated in (False, True):
+            with self.subTest(relocated=relocated):
+                base = Path(self.temp.name) / str(relocated)
+                bootstrap = base / 'bootstrap'
+                paths = AppPaths(base / 'workspace' if relocated else bootstrap,
+                                 bootstrap if relocated else None).ensure()
+                roots = {paths.root, bootstrap}
+                sentinels = {}
+                for root in roots:
+                    for name in ('workspace-format.json', 'workspace-location.json',
+                                 'desktop.lock', 'restore-transaction.json',
+                                 'state-v1/settings.json', 'credentials/key.dpapi',
+                                 'control-v1/ledger.json', 'cache/item', 'logs/item',
+                                 'state-v1.rollback/item', 'future-internal/item'):
+                        target = root / name
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_bytes(b'original protected sentinel')
+                        sentinels[target] = target.read_bytes()
+                manager = BackupManager(paths)
+                for target in sentinels:
+                    with self.subTest(target=target):
+                        with self.assertRaises(RuntimeSafetyError):
+                            manager.create(target)
+                        for path, original in sentinels.items():
+                            self.assertEqual(path.read_bytes(), original)
+                for root in roots:
+                    with self.assertRaises(RuntimeSafetyError):
+                        manager.create(root / 'new-backup.zip')
+                    self.assertFalse((root / 'new-backup.zip').exists())
+
+    def test_backup_external_destination_succeeds_for_relocated_workspace(self):
+        base = Path(self.temp.name)
+        paths = AppPaths(base / 'relocated', self.paths.root).ensure()
+        (paths.state / 'research.json').write_bytes(b'research state')
+        ledger = paths.controls / 'ledger.json'
+        ledger.write_bytes(b'irreversible control')
+        archive = base / 'external' / 'backup.zip'
+        BackupManager(paths).create(archive)
+        with zipfile.ZipFile(archive) as z:
+            self.assertEqual(set(z.namelist()), {'manifest.json', 'state/research.json'})
+            self.assertEqual(z.read('state/research.json'), b'research state')
+        self.assertEqual(ledger.read_bytes(), b'irreversible control')
+
     def test_guard_crash_and_clock_discontinuity(self):
         guard = RuntimeGuard(self.paths)
         self.assertFalse(guard.start())

@@ -65,6 +65,12 @@ def research_controls(paths):
     return controls
 
 
+def provider_binding_options(options):
+    # Adding the optional output-mode selector must not reopen a legacy budget.
+    return {key: value for key, value in options.items()
+            if key != 'network_opt_in' and not (key == 'output_mode' and value == 'json_object')}
+
+
 def campaign_generator(paths, options):
     from quantlab.research import FixtureGenerator, CompatibleProvider
     if options.get('mode', 'fixture') == 'fixture':
@@ -77,12 +83,13 @@ def campaign_generator(paths, options):
         raise ValidationError('遠端模型必須填寫正數單位費率及最高費用；不得假設免費')
     if not local and options.get('use_credential') is not True:
         raise ValidationError('遠端模型必須使用 Windows 安全儲存金鑰')
-    identity = content_hash({k:v for k,v in options.items() if k != 'network_opt_in'})
+    identity = content_hash(provider_binding_options(options))
     return CompatibleProvider(model=options['model'], endpoint=options['endpoint'],
         transport=DesktopCredentialTransport(str(getattr(paths, 'bootstrap', None) or paths.root), options.get('use_credential', True)),
         budget_path=research_controls(paths)/'provider_budgets'/(identity+'.sqlite3'), network_opt_in=True,
         max_calls=options['max_calls'], max_tokens=options['max_tokens'], max_spend=options['max_spend'],
-        tokens_per_call=options['tokens_per_call'], cost_per_token=options['cost_per_token'], timeout_seconds=options['timeout_seconds'])
+        tokens_per_call=options['tokens_per_call'], cost_per_token=options['cost_per_token'], timeout_seconds=options['timeout_seconds'],
+        output_mode=options.get('output_mode', 'json_object'))
 
 
 def candidate_record(root, reference):
@@ -248,7 +255,7 @@ def execute_ui_operation(operation, payload, paths):
             config['backtest_config'] = config_from_json(config['backtest_config'])
         options = payload.get('provider', {'mode':'fixture'})
         generator = campaign_generator(paths, options)
-        name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': {k:v for k,v in options.items() if k != 'network_opt_in'}})
+        name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
         return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name,
                             holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
     if operation == 'ui_compare':
@@ -535,6 +542,8 @@ class MainWindow(QMainWindow):
         self._button(layout, '設定下次啟動工作區', 'configure_workspace', self.configure_workspace)
         self.ai_endpoint = self._text(layout, '模型完整 chat/completions 端點（遠端 HTTPS / 本機 loopback HTTP）')
         self.ai_model = self._text(layout, '模型名稱')
+        self.output_mode = QComboBox(); self.output_mode.addItem('一般 JSON DSL（相容模式）', 'json_object'); self.output_mode.addItem('JSON Schema：內建家族參數生成（服務須支援；不支援即失敗）', 'registry_json_schema')
+        layout.addWidget(QLabel('模型輸出協定：結構化模式不代表新策略邏輯或績效保證')); layout.addWidget(self.output_mode)
         self.api_key = self._text(layout, 'API 金鑰（只存 Windows DPAPI；不寫入設定、日誌或備份）')
         self.api_key.setEchoMode(QLineEdit.EchoMode.Password); self.api_key.setObjectName('api_key')
         self._button(layout, '儲存金鑰至 Windows 安全儲存庫', 'save_api_key', self.save_api_key)
@@ -550,7 +559,7 @@ class MainWindow(QMainWindow):
         self.persist_logs = QCheckBox('保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）'); self.persist_logs.setChecked(True); layout.addWidget(self.persist_logs)
         self.local_notifications = QCheckBox('作業完成／失敗時顯示本機提示並提醒此視窗'); self.local_notifications.setChecked(True); layout.addWidget(self.local_notifications)
         self._button(layout, '儲存非敏感偏好', 'save_settings', self.save_settings)
-        self.backup_path = self._text(layout, '備份封存檔案路徑')
+        self.backup_path = self._text(layout, '備份封存檔案路徑（請選工作區與應用資料夾以外的位置）')
         self._button(layout, '建立本機備份', 'create_backup', lambda: self.backup(False))
         self.restore_confirm = QCheckBox('我確認還原會替換目前本機狀態，並會要求重新對帳'); layout.addWidget(self.restore_confirm)
         self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True))
@@ -603,7 +612,7 @@ class MainWindow(QMainWindow):
         options = {'mode':self.provider_mode.currentData()}
         if options['mode'] == 'compatible':
             options.update(endpoint=self.ai_endpoint.text().strip(), model=self.ai_model.text().strip(),
-                network_opt_in=self.ai_opt_in.isChecked(), use_credential=self.use_key.isChecked(),
+                network_opt_in=self.ai_opt_in.isChecked(), use_credential=self.use_key.isChecked(), output_mode=self.output_mode.currentData(),
                 max_calls=self.max_calls.value(), max_tokens=self.max_tokens.value(),
                 max_spend=self.max_spend.text().strip(), cost_per_token=self.cost_per_token.text().strip(),
                 tokens_per_call=self.tokens_per_call.value(), timeout_seconds=self.timeout_seconds.value())
@@ -796,7 +805,7 @@ class MainWindow(QMainWindow):
         endpoint = self.ai_endpoint.text().strip()
         if endpoint: validate_endpoint(endpoint)
         value = self.settings.load()
-        value.update({'ai_endpoint':self.ai_endpoint.text().strip(), 'ai_model':self.ai_model.text().strip(),
+        value.update({'ai_endpoint':self.ai_endpoint.text().strip(), 'ai_model':self.ai_model.text().strip(), 'output_mode':self.output_mode.currentData(),
             'max_calls':self.max_calls.value(), 'max_tokens':self.max_tokens.value(), 'tokens_per_call':self.tokens_per_call.value(),
             'timeout_seconds':self.timeout_seconds.value(), 'max_spend':self.max_spend.text().strip(), 'cost_per_token':self.cost_per_token.text().strip(),
             'persist_logs':self.persist_logs.isChecked(), 'local_notifications':self.local_notifications.isChecked()})
@@ -812,6 +821,10 @@ class MainWindow(QMainWindow):
         if endpoint: validate_endpoint(endpoint)
         self.ai_endpoint.setText(endpoint)
         self.ai_model.setText(value.get('ai_model', ''))
+        mode = value.get('output_mode', 'json_object')
+        index = self.output_mode.findData(mode)
+        if index < 0: raise ValidationError('不支援的模型輸出協定；原設定保留')
+        self.output_mode.setCurrentIndex(index)
         for key in ('max_calls', 'max_tokens', 'tokens_per_call', 'timeout_seconds'):
             if key in value: getattr(self, key).setValue(value[key])
         for key in ('max_spend', 'cost_per_token'):

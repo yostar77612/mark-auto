@@ -1,16 +1,15 @@
 # mark-auto 開發接續狀態
 
-更新：2026-10-09 17:21 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
+更新：2026-10-09 22:53 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
 ## 最新狀態與計分
 
-- 現有分支 `agent/quantlab-v1`、[PR #1](https://github.com/yostar77612/mark-auto/pull/1)，尚未合併。原始歷史全部保留。
-- 原研究 100/100；桌面 D0–D4、D9 通過，共60/100；合計 **160/200＝80%，剩餘20%**。D5／D7／D8 clean client 要求 BLOCKED；D6 Release 尚待 main 整合後驗證。這是工程 Gate 進度，真模型／正式資料排名／券商仍獨立未驗證。
-- 最新產品來源本地 `3246cdc` 對應遠端 `b62803a529994f114cb4a4be301e0c62a757ac7e`，tree `53de19ad425c12da05291b64f8f6cd57373637ee`。
-- 此來源 fresh checkout Linux Python3.12 同時安裝兩套 UI：263 tests，257 PASS、6 個 Windows／PowerShell 限定項 SKIP，59秒。
-- exact-head Quantlab run `37964547136` 七 jobs 全成功，Windows installer run `37964547102` 的 build 與安全 job 成功。Windows Server2022 Python3.13.16：263 tests，256 PASS、7項 Linux／選用 Streamlit SKIP，由 Linux jobs 覆蓋其適用情境。
-- 實際 Windows 安裝、內建 runtime 與 native window、frozen 七步研究／Paper、捷徑、升級、拒絕操作執行中 app、正常關閉、解除安裝／資料保留已通過。開發工具從 PATH 移除並不等於乾淨 Win10／11。
-- WinError109正常管道結束誤判、短路徑比較與 PowerShell 缺引號已修復、實際 Windows 重驗成功。未繞過或降低 Gate。
+- PR #1 已合併 main `5943b6e7b4cea5b917e4d4d8f62541474a2cc54d`，0.1.1 preview 已發布並實際下載驗證；遠端舊分支由既有自動清理設定刪除。原始本地歷史及main均已保存Git bundle。
+- 本輪接續必要驗收，唯一模組分支 `agent/desktop-acceptance-v2`，候選0.1.2，不重啟專案。原研究100＋桌面70＝**170/200＝85%，剩15%** 是既有固定Gate計分，不是正式产品驗收完成。D5/D7/D8仍需clean client OS；新发现的安全缺陷會阻擋新版release，即使歷史分數不變。
+- 真AI已實跑：官方免費Qwen1.5B，3個schema受限家族參數候選，透過產品HTTP/CompatibleProvider完成回測、OOS、holdout及比較。1個虧損，2個零交易；自由JSON先前6次僅1合法候選，失敗沒有丟棄。不能當投資策略晉級或自由程式創造證明。
+- 真行情：12個連續交易日、13,680分鐘K、24盤獨立官方OHLC核對；Oct7缺1分鐘隔離，不能跨gap補bar。2025免費官方全年日行情已下載，仍非分鐘歷史驗收。
+- 已補並測試：盤首/盤尾/整盤缺漏、備份目的地覆寫內部帳本、Paper衝突/截斷回報和儲存恢復後阻新單。最終凍結來源Linux完整測試341項，334PASS、7環境/工具限定skip（58.792秒）；Windows專用Gate仍待執行。
+- Windows版本化完整payload、逐檔inventory校驗、真0.1.1→0.1.2升級/中斷恢復、standalone clean-client kit已實作；尚未跑新版Windows Gate時不得預先宣稱通过。實盤繼續固定停用。
 
 ## 已保留的原始成果與 Git 映射
 
@@ -42,7 +41,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 
 - 原研究來源 `76ad3a5`／`8cea2729`：本地 180 tests 通過，GitHub run `37959451997` 的 Linux／Windows Server Python3.11/3.12 和 UI 五 jobs 全成功。這不取代新增桌面的最終 head 回歸。
 - 真實 2026-10-08 TAIFEX CSV／RPT／日報匯入 1140 根分鐘 K，OHLC 一致；價差成交量口徑仍待正式證據。最近 30 官方 ZIP 已下載，保持 `provisional_unverified`／`ranking_eligible=false`，原始行情不提交 Git。
-- 預設 AI 使用清楚標示的 Fixture；HTTP adapter 已測本機 synthetic server，但真外部模型未驗證。本輪未呼叫付費模型。
+- 預設AI使用明示Fixture；本輪另以實際免費本地Qwen推論驗證受限家族參數生成與整體研究流程，未呼叫付費模型。有效新改善候選FAILED（只改名），去重拒絕成功；累計11真calls，失敗紀錄保留。
 - Paper 是有限歷史重播，沒有正式即時行情串流。盤中停損／停利未支援即拒絕。未知委託／部位先凍結，禁止猜測補單。
 - 實盤固定停用。真券商資格、行情授權、憑證、完整歷史品質與真市場策略績效尚未驗證。
 - Windows10 22H2／Windows11 乾淨環境實測 **BLOCKED**：目前無已授權可用 client OS；Windows Server 不能冒充通過。未使用使用者未授權電腦。
@@ -51,7 +50,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 ## 接續順序與命令
 
 1. 先 `git status`，保留所有未提交修改；閱讀固定合約與驗收清單。
-2. 發布本輪驗收文件與狀態更新；產品碼不變，沿用同一分支，核對 tree 並等待 exact-head Gate。
+2. 凍結0.1.2來源，完整回歸後在本輪唯一分支發布PR；實際Windows編譯/安裝/中斷復原失敗就修正，不降低標準。
 3. 最終 head 的研究／UI／品質／依賴／installer 全通過才可整合 main，並驗證 post-merge build 與 preview Release。
 4. 保存原始 Git 歷史與五份分析文件；清理分支前確認保存、已合併與無競態，不具安全刪除條件就保留並說明。
 5. 剩餘真 client OS、外部服務與權限阻塞誠實記錄，不降低門檻或以 mock 代替。
@@ -59,3 +58,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 開發測試：`python -m unittest discover -s tests -v`、`python tools/quality_gate.py --history`。
 桌面開發入口：`python desktop.py`。最終使用者使用安裝檔與捷徑，不需上述指令。
 舊 `run.py`／`gui.py` 不得作研究啟動入口。Streamlit 僅保留輔助介面。
+
+## 新增產品範圍
+
+22:52 UTC使用者正式加入市場優先儀表板、真行情/K線/技術指標及無JSON的專業研究交易介面，詳05 Roadmap第18節。原85%只限原範圍；新增及新版整體百分比待盤點凍結權重，不沿用85%。本輪安全修復先驗收整合，再接續市場/UI模組，不以0.1.2預覽當全部完成。

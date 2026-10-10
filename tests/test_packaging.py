@@ -80,18 +80,18 @@ class PackagingTests(unittest.TestCase):
         run = {'head_sha': 'abc', 'event': 'push', 'run_number': 1, 'run_attempt': 1,
                'status': 'completed', 'conclusion': 'success', 'id': 2, 'html_url': 'https://example.test/run'}
         with patch.dict(os.environ, GITHUB_REPOSITORY='owner/repo', GITHUB_SHA='abc'):
-            with patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
-                              {'jobs': [{'conclusion': 'success'}], 'total_count': 1}]):
+            with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
+                              {'jobs': [{'name': name, 'conclusion': 'success'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)}]):
                 gate.main()
-            with patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
-                              {'jobs': [{'conclusion': 'skipped'}], 'total_count': 1}]):
+            with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
+                              {'jobs': [{'name': name, 'conclusion': 'skipped'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)}]):
                 with self.assertRaises(RuntimeError):
                     gate.main()
             run['conclusion'] = 'failure'
-            with patch.object(gate, 'api', return_value={'workflow_runs': [run]}):
+            with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', return_value={'workflow_runs': [run]}):
                 with self.assertRaises(RuntimeError):
                     gate.main()
-            with patch.object(gate.time, 'monotonic', side_effect=[0, 1201]):
+            with patch.object(gate, 'require_main_ancestry'), patch.object(gate.time, 'monotonic', side_effect=[0, 1201]):
                 with self.assertRaises(RuntimeError):
                     gate.main()
 

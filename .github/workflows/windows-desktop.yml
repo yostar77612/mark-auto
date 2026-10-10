@@ -49,10 +49,26 @@ jobs:
           architecture: x64
       - name: Build native runtime and unsigned per-user installers
         shell: pwsh
-        run: ./packaging/build.ps1 -Version 0.1.1
+        run: ./packaging/build.ps1 -Version 0.1.2
+      - name: Fetch hash-pinned actual previously released baseline
+        run: python packaging/fetch_baseline.py baseline
+      - name: Write candidate digest before actual-version upgrade validation
+        run: python packaging/build_manifest.py
       - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
         shell: pwsh
-        run: ./packaging/test_installer.ps1 -Version 0.1.1
+        run: ./packaging/test_installer.ps1 -Version 0.1.2
+      - name: Test actual released baseline and interrupted upgrade recovery
+        shell: pwsh
+        run: ./packaging/test_update_recovery.ps1 -Version 0.1.2 -BaselineInstaller baseline/MarkAuto-0.1.1-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json
+      - name: Assemble standalone clean Windows client acceptance kit
+        shell: pwsh
+        run: |
+          New-Item candidate-release -ItemType Directory -Force | Out-Null
+          Copy-Item dist/installers/MarkAuto-0.1.2-windows-x64-setup.exe candidate-release/
+          Copy-Item dist/build-manifest.json candidate-release/
+          python packaging/clean_windows_kit.py --baseline baseline --baseline-version 0.1.1 --candidate candidate-release --version 0.1.2 --output clean-windows-kit
+          if ($LASTEXITCODE) { throw 'Clean client kit generation failed' }
+          Compress-Archive -Path clean-windows-kit/* -DestinationPath dist/MarkAuto-0.1.2-clean-windows-acceptance.zip
       - name: Remove upgrade fixture from deliverables
         shell: pwsh
         run: Remove-Item dist/installers/MarkAuto-0.0.0-windows-x64-setup.exe
@@ -66,6 +82,7 @@ jobs:
           path: |
             dist/installers/*.exe
             dist/validation/
+            dist/MarkAuto-0.1.2-clean-windows-acceptance.zip
             dist/build-manifest.json
             dist/SHA256SUMS.txt
           if-no-files-found: error
@@ -111,6 +128,7 @@ jobs:
             'BLOCKED: clean Windows 10 22H2 and Windows 11 acceptance tests. This prerelease is not production-complete.' \
             'No Python, pip or Git is needed on the end-user machine. Start-menu and desktop shortcuts are installed per-user.' \
             'No signing certificate is configured. Windows may show an unknown-publisher warning; no security-warning bypass is recommended.' \
+            'The clean-windows-acceptance ZIP includes old/new installers and a no-Python test kit; preparing it is not a passed client-OS test.' \
             'See build-manifest.json, SHA256SUMS.txt and validation/*.json for exact build/OS evidence.' > release-notes.txt
           mapfile -d '' assets < <(find release -type f -print0)
           gh release create "$tag" "${assets[@]}" --target "$SOURCE_SHA" --prerelease --title "Mark Auto Windows preview $tag" --notes-file release-notes.txt

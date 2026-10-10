@@ -262,3 +262,9 @@ log／metrics 共用 data batch、run、strategy hash、signal、intent、broker
 候選picker重用不可變StrategySpec，不要求手動複製程式；產生、改善、凍結、OOS／holdout與研究歷史依既有服務。模型輸出無任意程式執行／檔案／券商權限。真正市場環境適用性与策略推薦必須有足夠資料與研究證據，不能把UI排序當投資建議。
 
 設定與資料在使用者應用資料區；可選工作區於下次重啟才切換，不自動搬移或覆寫。機密與研究不可回退帳本留固定bootstrap，不隨資料備份還原回退。預览安裝器、發版條件、未簽章及乾淨Win10/11外部Gate詳見Roadmap與packaging說明。
+
+### 0.1.2 實作決策補充
+
+真模型可選registry_json_schema輸出模式，限定現有策略家族的參數生成；typed/bounded JSON schema負責協定，原DSL與跨欄位validator仍負責可信驗證。預設json_object維持原budget identity，切換明確新協定需獨立綁定；沒有無聲fallback或手改模型答案。UI只顯示已取得的回應／證據，不因provider名稱宣稱真模型獲認證。實際樣本顯示虧損與零交易，因此系統能力驗證和策略晉級分離。
+
+Windows更新以每次fresh完整payload與逐檔hash驗證後啟用捷徑，保留旧版本做恢復；不新增常駐updater／新語言核心，不大改既有Python交易引擎。無clean Win10/11可用時交付獨立PowerShell驗收kit，但最終Gate保持BLOCKED。

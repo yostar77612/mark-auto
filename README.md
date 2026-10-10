@@ -304,3 +304,13 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 
 
 研究控制帳本固定保留在bootstrap/control-v1，不隨state-v1回退；因此還原舊資料不會重新取得已消耗的模型預算／保留集。整機移轉或重建仍需保留並查核控制紀錄，不能把一個新空工作區／機器當作從未研究過的樣本。舊版本帳本需要明確相容處理時會阻擋，不會偷偷重置。
+
+
+## 0.1.2 接續驗收更新
+
+- 新版使用完整版本化payload，校驗全部檔案後才更新捷徑，避免新舊DLL混合；異常更新可保留舊版並重跑安裝，詳見 `packaging/update_recovery.md`。保留/中斷payload會占用磁碟，不自動刪除任意資料。
+- 備份必須存於工作區與固定MarkAuto應用資料夾之外，避免覆寫機密、帳本、鎖定與不可回退研究控制。
+- 模型設定新增『JSON Schema：內建家族參數生成』。服务须支援該協定，不支援直接失敗，不偷偷改用fixture。預設相容模式與既有budget綁定保留。
+- 已完成官方免費模型與真實12日行情的有限技術整合：一個策略虧損，兩個零交易，沒有可宣稱正式晉級的策略。完整失敗/限制列於 `docs/analysis/03_CODE_QUALITY_AND_RISKS.md`。
+- Windows Release附無Python/Git需求的clean-client验收kit；詳見 `packaging/clean_windows_README.md`。無已授權乾淨Win10/11環境時依然EXTERNAL BLOCKED。
+- 最新可下載版本以GitHub Release的實際資產與SHA256為準；此原始碼分支的變更不代表新安裝檔已發布。實盤繼續停用。

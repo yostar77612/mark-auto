@@ -121,3 +121,21 @@ Real-money activation, real broker certification, paid data/model calls, product
 - PaperBroker adds constructor-pinned risk_sessions and margin_schedule; quotes cannot redefine trusted dates, sessions or margin. Missing policy prevents orders.
 - Generator and backtest operations run in bounded worker processes; actual platform memory-limit capability is recorded. HTTP transport defaults off and does not follow redirects. Real provider credentials and model evaluation are not part of fixture test evidence.
 - Optional replay orchestrator uses selected strategy hashes, persisted cursor and idempotent event IDs; unsupported intrabar protective rules reject rather than silently diverge.
+
+## Resumed product acceptance v2 — frozen before fixes (2026-10-09 22:30 UTC)
+
+Owner explicitly requires continuation from main5943b6e; no restart, paid resources, live trading or weaker gates. One module branch `agent/desktop-acceptance-v2`, candidate0.1.2. Prior fixed200-point acceptance remains unchanged; D6 publication is now evidence-backed, while clean-client gates cannot gain points from preparing tools.
+
+Required cases before implementation:
+1. Clean-client kit must validate genuine Win10 22H2 x64 or Win11 x64 client OS, native architecture, standard-user operation, absent developer tools and clean isolated app/data state. Existing Server CI remains separately labeled. No external Windows image/license assumptions, no security-warning bypass. Missing manual/full-feature evidence blocks full product acceptance.
+2. Actual released0.1.1→candidate0.1.2 upgrade must verify each version's own manifest/source hashes and app version, retain user data, refuse active-app update/uninstall, and complete restart/uninstall. Same-payload0.0.0 fixture remains limited packaging evidence only.
+3. Actual bounded free local model must produce restricted DSL through the product CompatibleProvider/HTTPTransport path, with model source/revision/hash/license, inputs, failures, elapsed time and budgets recorded. No generated code execution, fixture fallback or fake model result. Train inputs only; OOS/holdout do not enter generation context. A smaller model failing is evidence, not permission to replace its result manually.
+4. Official-history integration must use downloaded source bytes/hashes, independently evidenced session/contract calendars and complete bar coverage. Short verified data may prove engineering integration but cannot justify formal strategy ranking or investment performance.
+5. Paper recovery must freeze on conflicting duplicate events, transport uncertainty, stale quotes and storage failures; repeated/reordered callbacks and crash/replay recovery cannot create extra orders. Offline fault injection is not evidence of real broker/feed reconnection.
+6. Exact candidate source must pass regression, native UI, quality/history-secret scan, dependency audit, Windows installer lifecycle and release-integrity gates. Compare emitted manifest/digest with actual downloaded EXE. Signing/protection limitations remain explicit, not silently marked enabled.
+
+Ownership: clean-client worker owns packaging/test_installer.ps1, clean_windows tools and related tests; model worker owns minimal research prompt/context and validator/tests; data worker owns official-history validator/tests; paper worker owns paper/replay and their tests. Coordinator owns version/build/workflows, integration and existing documentation. No overlapping edits without coordination. Failures are fixed against the frozen cases, never removed/skipped to obtain PASS.
+
+### Bounded actual-model experiment ledger (predeclared per experiment)
+
+Experiment1: official0.5B/free JSON,3calls; experiment2: official1.5B/free JSON,3calls; experiment3: same1.5B/structured registry schema on newly declared12-day technical splits,3calls. All previous failures remain preserved; no profitability threshold changed. Final separate improvement-loop acceptance: same1.5B, structured trend, one improvement, synthetic engineering fixture only,2calls, no real consumed holdout reuse. Total cap11actual calls, total model downloads1,608,720,768bytes below2GiB; no further model selection or performance chasing. Different experiment datasets/protocols prohibit causal claims of improved investment performance.

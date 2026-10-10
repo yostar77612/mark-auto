@@ -191,3 +191,34 @@ R11 的條件若擴大為不受信任者可寫入、且交易程序持有秘密�
 來源 `3246cdc`／遠端 `b62803a` 已通過 [Quantlab 七 jobs](https://github.com/yostar77612/mark-auto/actions/runs/37964547136) 及 [Windows installer build／安全 Gate](https://github.com/yostar77612/mark-auto/actions/runs/37964547102)。Windows Server2022 Python3.13.16 完整 suite 263 tests：256 PASS、7項 Linux／選用 Streamlit 未執行，其適用情境由 Linux jobs 覆蓋；DPAPI、JobObject、mutex、junction、真 PowerShell parser 均實際執行。WinError109正常 EOF 誤分類及短路徑已修正，不再阻擋此來源整合。
 
 安裝測試通過 frozen 七步研究／Paper、程式來源 hashes、捷徑、正常視窗、升級、拒绝正在執行時更新／移除、正常關閉及解除安裝後資料保留。此處升級fixture使用同payload的0.0.0→0.1.1，**不是歷史資料 schema migration 證明**。移除PATH工具不是乾淨機；D5、D7、D8仍 BLOCKED。驗證產物包含OS／版本／執行結果與單次效能觀察，不作client OS或長期無人值守承諾。
+
+## 0.1.2 接續驗收與新發現（2026-10-09）
+
+此節優先於前文歷史快照，並保留缺陷原始事實。0.1.1已交付的是unsigned preview，不代表安全與產品驗收結束。
+
+| 風險／原本缺口 | 本輪處置與證據 | 驗收界線 |
+|---|---|---|
+| High：備份目的地可覆寫control-v1帳本／bootstrap指標 | `BackupManager.create`在任何恢復/寫入前拒絕active workspace及固定bootstrap內目的地；`test_desktop_runtime.py`覆蓋所有sentinels及搬移工作區 | 外部備份成功且內部資料保持；Windows整合仍須重跑 |
+| High：Paper衝突duplicate、截斷fill或SQLite恢復後仍可能送新單 | `paper.py`持久quarantine及同程序storage-uncertainty latch；`test_paper.py`／`test_paper_replay.py`新增12案例，61focused tests | timeout模擬、實際SQLiterollback／程序當機，不是假稱真券商重連 |
+| High：official/proxy資料缺盤首／盘尾／整盤仍可匯入 | `data.py`共用_dataset完整calendar coverage，新增5回歸；synthetic短fixture保留明示warning | 真Oct7缺03:29–03:30被拒絕，不能補造bar |
+| High：overlay更新殘留舊DLL／中斷混合runtime | `markauto.iss`每次全新payload、編譯綁定inventory與全部檔案hash後才啟用捷徑；`test_update_recovery.ps1`實際kill安裝程序驗收 | Windows實跑前不計PASS；保留旧payload會占磁碟，不任意刪使用者檔案 |
+| Medium：發布來源可不是main、任意單job成功可混充完整Gate | `wait_for_gates.py`檢查main ancestry及7個必要named jobs，全數成功才發布；`test_release_provenance.py`負向測試 | 不等於main服務端保護已啟用 |
+| Medium：真小模型不理解未提供的DSL／自由JSON不可靠 | `research.py`明示schema/train-only context，新增可選registry_json_schema；desktop設定持久化且預設budget identity不變 | 前6calls失敗保留，structured3calls有效；無默默fallback，不宣稱任意AST可靠 |
+
+### 真實整合結果
+
+免費官方Qwen1.5B的3個受限家族參數候選，經原生provider/HTTP→train/validation→固定選擇→OOS/holdout→多策略比較完成。這是實際推論，不是mock。Trend的OOS為-33,820、holdout為-49,546 TWD；另兩候選各split零交易，不能視為最佳獲利策略。資料僅12日，費用/保證金屬明示假設，沒有經濟／實盤資格。資料、模型、runtime與請求回應的hash及全部失敗紀錄保留供重現；原始行情不發布至Git。
+
+官方12日資料為2026-09-17至10-06同一TMF202610契約，13,680根分鐘K、24盤OHLC符合另一官方日行情；2026-10-07缺1分鐘，拒絕而不判定一定是資料故障（也可能無成交，無證據不能補bar）。免費2025年度日行情涵蓋243交易日，但不能轉稱分鐘級歷史。到期日依[官方年度calendar](https://www.taifex.com.tw/file/taifex/CHINESE/4/2026Calendar.pdf)與[TMF規格](https://www.taifex.com.tw/cht/2/tMF)核驗為已公布10/21台北13:30；後續正式公告可再變更。
+
+### Windows／簽章／權限的實際限制
+
+[Windows11 Enterprise](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise)有90日評估管道，涉及註冊、既定授權條件及可用VM；不是永久免費授權。Win10舊evaluation URL目前導向終止支援資訊；[ISO媒體](https://www.microsoft.com/en-us/software-download/windows10ISO)存在不等於新VM已有免費授權。未下載非官方OS、接受新協議、繞過啟用或使用付費試用。現有Linux無KVM且無授權clean client；無法以Server／ARM／PATH隱藏工具冒充Win10/11 x64。
+
+EXE仍unsigned；ASLR/DEP靜態存在不等於通過全面安全檢測。[SignPath Foundation](https://signpath.org/terms.html)免費簽章有OSS資格、MFA、角色/政策與人工批准要求，尚未核准；Store的免費簽章針對其MSIX管道，不會自動簽既有EXE。[SmartScreen](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation)亦可能警告已簽章的新檔，不建議繞過保護。沒有購買或建立簽章憑證。
+
+main仍protected=false、rulesets空，管理級API403。Code/PR/Actions正常，不代表具管理授權。此限制維持EXTERNAL BLOCKED；未申請擴權或假裝保護啟用。
+
+### 真模型改善迴路補驗
+
+另以獨立明示 synthetic 512 bars 驗證一次初始生成＋一次改善，未重用真實OOS/holdout。第二次真HTTP請求包含先前train/validation回饋、改善指令與parent/iteration；模型只將trend_0改名trend_1，fast=2/slow=4未變。正規化語意指紋忽略名稱、等價數值及default lag/quantity，成功拒絕重複而保留raw/call/父鏈，沒有重跑回測。工程feedback/去重PASS；有效不同改善候選FAILED，績效改善不成立，不能寫成外部授權阻塞。累計11次真推論已停止；研究40、provider8、真AI工具9 focused tests通過。

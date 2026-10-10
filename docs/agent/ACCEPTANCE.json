@@ -252,10 +252,13 @@
     }
   ],
   "external_readiness": {
-    "real_model": "NOT_VERIFIED",
+    "real_model": "VERIFIED_NARROW: local official Qwen1.5B schema-constrained built-in-family parameter generation, actual HTTP + backtest/OOS/holdout/comparison; not arbitrary AST reliability, profitability or remote-provider certification",
     "real_market_performance": "NOT_VERIFIED",
     "broker_certification": "BLOCKED",
-    "real_money": "DISABLED"
+    "real_money": "DISABLED",
+    "clean_windows_10": "EXTERNAL_BLOCKED: no authorized licensed clean Windows10 22H2 x64 client environment",
+    "clean_windows_11": "EXTERNAL_BLOCKED: no authorized licensed clean Windows11 x64 client environment",
+    "main_protection": "EXTERNAL_BLOCKED: protected=false, rulesets empty, administration API403; no protection configured"
   },
   "product_scope": {
     "expanded_at": "2026-10-09T16:25:00Z",
@@ -312,8 +315,8 @@
       "id": "D6",
       "title": "GitHub Release 安裝檔與校驗資訊",
       "weight": 10,
-      "status": "NOT_RUN",
-      "evidence": null
+      "status": "PASS",
+      "evidence": "Published and independently downloaded 0.1.1 preview from main5943b6e: https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-37966600264-1 ; SHA256 f67b49c75de1c82e1caa5f7e3b255c176bec3ddcfe6baf1c78e189c46f0427df matches GitHub digest, sums and manifest. New0.1.2 release separately pending; publication does not pass clean-client gates."
     },
     {
       "id": "D7",
@@ -336,5 +339,15 @@
       "status": "PASS",
       "evidence": "Source 3246cdc / identical tree at b62803a529994f114cb4a4be301e0c62a757ac7e. Fresh Linux checkout:263 tests,257 PASS,6 platform/tool-specific skips; exact-head Quantlab run37964547136 all7 jobs PASS. Windows Server2022 CPython3.13.16 installer run37964547102 build+security PASS:263 tests,256 PASS,7 Linux/optional Streamlit skips covered by Linux jobs; native Qt, DPAPI, JobObject, mutex, restore faults, actual PowerShell parser, frozen seven-step research/Paper, source hashes, shortcuts, active-app upgrade/uninstall rejection, upgrade and data preservation. D9 reports document client OS BLOCKED and limited performance observations; not production or real-model certification."
     }
-  ]
+  ],
+  "resumed_acceptance_v2": {
+    "baseline_main": "5943b6e7b4cea5b917e4d4d8f62541474a2cc54d",
+    "candidate_version": "0.1.2",
+    "fixed_weight_rule": "Original200points unchanged;85%baseline is not production acceptance. Any new safety failure vetoes release until fixed and required gates pass.",
+    "actual_model": "Three structured-output candidates from official1.5B evaluated on13680official minute bars; trend loses and other2no trades. Earlier6free-JSON calls retained as failures/partial. No investment qualification.",
+    "official_data": "12complete consecutive trade dates Sep17-Oct6,24independent daily OHLC comparisons;Oct7missingminute rejected;2025daily history downloaded but not falsely promoted to minute coverage.",
+    "paper_faults": "Conflicting/malformed events and storage uncertainty repaired with reconciliation latch;61focused tests. Actual live-feed/broker reconnection NOT_VERIFIED.",
+    "windows_upgrade": "Side-by-side payload verification + actual released0.1.1 upgrade/crash recovery tests implemented; Windows execution pending exact-head CI.",
+    "clean_client_toolkit": "No-Python kit implemented; generated binary kit and actual clean Win10/11 tests still distinct gates."
+  }
 }
