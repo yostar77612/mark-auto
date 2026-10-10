@@ -592,7 +592,7 @@ class BackupManager:
 
 
 UI_OPERATIONS = frozenset({
-    'ui_demo', 'ui_import', 'ui_refresh', 'ui_backtest', 'ui_campaign',
+    'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_backtest', 'ui_campaign',
     'ui_compare', 'ui_select', 'ui_disable', 'ui_paper_snapshot',
     'ui_paper_reconcile', 'ui_paper_kill', 'ui_paper_replay',
     'ui_paper_submit', 'ui_paper_cancel', 'ui_backup_create', 'ui_backup_restore',

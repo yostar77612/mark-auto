@@ -139,3 +139,15 @@ Ownership: clean-client worker owns packaging/test_installer.ps1, clean_windows 
 ### Bounded actual-model experiment ledger (predeclared per experiment)
 
 Experiment1: official0.5B/free JSON,3calls; experiment2: official1.5B/free JSON,3calls; experiment3: same1.5B/structured registry schema on newly declared12-day technical splits,3calls. All previous failures remain preserved; no profitability threshold changed. Final separate improvement-loop acceptance: same1.5B, structured trend, one improvement, synthetic engineering fixture only,2calls, no real consumed holdout reuse. Total cap11actual calls, total model downloads1,608,720,768bytes below2GiB; no further model selection or performance chasing. Different experiment datasets/protocols prohibit causal claims of improved investment performance.
+
+## 市場優先桌面新增合約（2026-10-10 00:15 UTC，實作前凍結）
+
+使用者22:52 UTC新增正式需求；原200點不變，新增100點，逐項二元PASS，FAIL/BLOCKED/NOT_RUN為0，安全缺陷否決發布。原170/200=85%；新增初始0/100=0%；整體初始170/300=56.67%，剩43.33%。這是驗收加權非工時估計。分數不得用資料不足、畫面存在或mock成功取代。
+
+M1真實來源/首頁/自選20；M2多週期互動K線20；M3全部指定指標15；M4一般表單AI/回測/比較/Paper/風控20；M5訊號與成交圖層5；M6合規AI操作模式10；M7繁中深色/DPI/偏好10。每項完整標準見05 Roadmap第19節；舊D5/D7/D8仍需clean client證據。
+
+首批只新增唯讀市場型別/官方資料適配、聚合/指標與Qt圖表元件；不更改TMF交易核心、放寬研究資料品質或引入旧trader。TX/MXF/指數市場顯示不代表其交易回測已支援。官方小台每日代碼MTX對應UI MXF必須明示。正常功能不得要求使用者手寫JSON。
+
+資料/指標固定：每bar綁實際symbol、exchange trade_date與session；分鐘以sessionopen錨定，不跨休市。日依交易日合併已知日夜盤，週ISO交易日週，缺漏/未收盤保留partial與來源，不補造。日資料不能變分鐘。SMA n完整bars；EMA以n樣本SMA seed再alpha2/(n+1)；RSI Wilder14，以n差值seed，全平50、無跌100；MACD12/26/9與hist=MACD-signal；KD9/3/3 seed50/50，平幅RSV50；Bollinger20/2母體std；VWAP sessionreset，OHLCV typical-price估計且明示，零累積量None。每項缺值/warmup不填0，不讀未来。參數/週期改動重算。
+
+Golden cases含跨午夜/假期/到期短盤、乱序duplicate/缺bars/partial、不同contract絕不混合；prefix因果、手算/獨立公式指標、零量與平價，圖層signal/fill分開且hash一致。新模組測試與全核心回歸，Windows打包證據及實際畫面/交互後才給分。

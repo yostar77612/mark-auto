@@ -222,3 +222,23 @@ main仍protected=false、rulesets空，管理級API403。Code/PR/Actions正常�
 ### 真模型改善迴路補驗
 
 另以獨立明示 synthetic 512 bars 驗證一次初始生成＋一次改善，未重用真實OOS/holdout。第二次真HTTP請求包含先前train/validation回饋、改善指令與parent/iteration；模型只將trend_0改名trend_1，fast=2/slow=4未變。正規化語意指紋忽略名稱、等價數值及default lag/quantity，成功拒絕重複而保留raw/call/父鏈，沒有重跑回測。工程feedback/去重PASS；有效不同改善候選FAILED，績效改善不成立，不能寫成外部授權阻塞。累計11次真推論已停止；研究40、provider8、真AI工具9 focused tests通過。
+
+## 新增市場/UI範圍的實作前安全界線
+
+舊trader行情工具有全域交易初始化，不能直接解除封鎖或匯入桌面；新增僅讀市場型別與TMF交易資料分開。TX/MXF/index行情展示不等於其回測或下單引擎通過。官方小台每日原碼MTX與UI MXF需明示映射；價格前收與前结算不可混用（實際10/8 TX前收差-630、官方前結算差-619）。日資料日期不代表精確成交時間，缺OHLC不得由成交量猜補，公開歷史不得冒充即時。
+
+OpenAI現在有[官方OSS/本機Sign in with ChatGPT計畫用量](https://developers.openai.com/siwc/token-sharing-open-source)途徑，並非一般API免費額度。需要本應用自己的使用者授權、PKCE/OIDC驗證與安全儲存，不能拷貝其他工具token。HTTP Responses/SSE與既有chat-completions協定不同；不支持max_output_tokens時，客戶端截流/逾時不能聲稱限制伺服器token消耗，須独立透明用量政策。實際登入/授權與帳戶可用性尚未驗證；付費API與額外credit不自動啟用。
+
+### 0.1.2 Windows實測與正式保留證據（2026-10-10 00:38 UTC）
+
+PR#2已合併28c9f902，最後head9008522完整tree6338b6ef9828892e53fbf1a543ada0ec9bd8f154與本地ccb74d2等價；Quantlab7jobs38008659312、Windowsbuild/security38008659297全PASS。Windows測到原inventory排序隨OS不同及NTFS ADS未被rglob看見，已修productioncode固定排序並列舉拒絕ADS；失敗測試沒有刪除/跳過/降門檻。341測試334PASS、7適用其他環境/選用工具skip。
+
+合併後38009150044在WindowsServer2022build20348完成真0.1.1→0.1.2、安裝程序實際kill、舊runtime恢復、新payload驗證啟用、保留927個原檔及5資料sentinels、實際schema1設定位元不變，並完成同版本重裝修復split-shortcut。這是單一程序當機點，非完整斷電耐久證明；compatible設定保留不是跨schema migration。原生命週期10checks也PASS。單次啟動1.033秒、working set77,676,544bytes，不是Win10/11SLO。
+
+[Release與驗收工具包](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1)已實際下載：EXE36,695,486bytes、SHA256 0f92f70fb17bc3f0c2c816cbb5f963ecb2de6dde40745759f415a4755e85c469；kit72,324,965bytes、SHA256317f98560ae1c29ee4d7c99e81ed2d8bab55d010114f765b756cdcd9ae076079，ZIPCRC通過。Win10/11clean、main管理權限與簽章限制未因此解除。
+
+### 0.2.0 市場模組架構 Gate 修復（2026-10-10 00:46 UTC）
+
+靜態Gate發現3個Qt檔案放在quantlab研究樹，違反既有stdlib-only邊界；沒有放寬研究規則。已將desktop_charts.py、desktop_forms.py、desktop_market.py移至既有desktop_ui.py旁，UI向quantlab資料/策略依賴，核心不依賴Qt；同時把既有desktop禁止券商/dynamic-execution掃描延伸到全部4個UI檔，新增負向回歸。證據：tools/quality_gate.py、tests/test_quality_gate.py。可選Qt測試遵循原矩陣分層，在有完整桌面依賴的Windows job必須執行；minimalstdlib job明示skip，不能算桌面PASS。
+
+最新報價卡與歷史圖表分離；只持有較新已驗證分鐘history時可以顯示卡，但不升格為即時。日期/盤別無法排序時不虛構日行情時間。證據：desktop_ui.py與tests/test_desktop_market_integration.py。官方直連DNS失敗保留BLOCKED；本地匯入標history/source-unverified，不能以URL字串證明來源真實性。

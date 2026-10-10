@@ -2,6 +2,8 @@
 import importlib.util
 import hashlib
 import json
+import os
+import shutil
 import re
 import subprocess
 import sys
@@ -90,6 +92,69 @@ class UpdateRecoveryTests(unittest.TestCase):
         self.assertIn('state-v1\\settings.json', script)
         self.assertIn('baseline-existing-settings-smoke', script)
         self.assertIn('Assert-ActualSettings', script)
+
+    def test_recovery_supports_explicit_legacy_and_versioned_baselines(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        self.assertIn("[string]$BaselineVersion = '0.1.1'", script)
+        self.assertIn("[string]$Version = '0.2.0'", script)
+        self.assertIn("if ($expectedVersion -eq '0.1.1')", script)
+        self.assertIn('$full -ne "$appDir\\MarkAuto.exe"', script)
+        self.assertIn('Join-Path $appDir "payloads\\$expectedVersion"', script)
+        self.assertIn('(Split-Path $directory -Parent) -ne $versionRoot', script)
+        self.assertIn("if ($BaselineVersion -ne '0.1.1') { Assert-Inventory $oldDir }", script)
+        self.assertEqual(script.count('Smoke $oldExe $BaselineVersion'), 3)
+        self.assertNotIn("Smoke $oldExe '0.1.1'", script)
+
+    def test_recovery_preserves_all_prior_payloads_and_unknown_files(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        capture = script.split('$prior = @{}', 1)[1].split('$sentinels = @{}', 1)[0]
+        self.assertIn('Get-SafePayloadFiles $appDir', capture)
+        self.assertIn("'^unins\\d+\\.(exe|dat|msg)$'", capture)
+        self.assertNotIn('payloads', capture)
+        self.assertEqual(capture.count('continue'), 1)
+        self.assertIn("$obsolete = Join-Path $oldDir '_internal\\obsolete-test.dll'", script)
+        self.assertIn('Assert-NoReparsePath $full', script)
+        self.assertIn('Assert-NoReparsePath $link', script)
+        traversal = script.split('function Get-SafePayloadFiles', 1)[1].split('function Assert-PayloadTarget', 1)[0]
+        self.assertLess(traversal.index('[IO.FileAttributes]::ReparsePoint'), traversal.index('if ($entry.PSIsContainer)'))
+        self.assertNotIn('-Recurse', traversal)
+
+    def test_recovery_artifact_provenance_is_required_before_setup(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        self.assertIn('MarkAuto-$BaselineVersion-windows-x64-setup.exe', script)
+        self.assertIn("$manifest.source_commit -notmatch '^[0-9a-fA-F]{40}$'", script)
+        self.assertIn('artifacts_sha256.PSObject.Properties[(Split-Path $file -Leaf)]', script)
+        self.assertIn('Get-FileHash -LiteralPath $file -Algorithm SHA256', script)
+        self.assertLess(script.index('$baselineEvidence = Assert-Artifact'), script.index("Run-Setup $BaselineInstaller 'baseline-install'"))
+        self.assertIn('baseline_source_commit=$baselineEvidence.source_commit', script)
+        self.assertIn('candidate_source_commit=$candidateEvidence.source_commit', script)
+
+    @unittest.skipUnless(os.name == 'nt' and shutil.which('pwsh'), 'Windows PowerShell path contract execution required')
+    def test_windows_payload_target_contract_legacy_versioned_and_escape(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        helpers = '\n'.join(re.search(r'(?ms)^function ' + name + r'\(.*?(?=^function |\Z)', script).group(0)
+                            for name in ('Assert-NoReparsePath', 'Assert-PayloadTarget'))
+        with tempfile.TemporaryDirectory() as temporary:
+            check = Path(temporary, 'check.ps1')
+            check.write_text("param([string]$Root)\n$ErrorActionPreference = 'Stop'\n" + helpers + r"""
+$appDir = Join-Path $Root 'MarkAuto'
+$versioned = Join-Path $appDir 'payloads\0.1.2\is-owned'
+New-Item -ItemType Directory -Path $versioned -Force | Out-Null
+$legacyExe = Join-Path $appDir 'MarkAuto.exe'
+$versionedExe = Join-Path $versioned 'MarkAuto.exe'
+[IO.File]::WriteAllText($legacyExe, 'fixture')
+[IO.File]::WriteAllText($versionedExe, 'fixture')
+Assert-PayloadTarget $legacyExe '0.1.1'
+Assert-PayloadTarget $versionedExe '0.1.2'
+foreach ($case in @(@($legacyExe, '0.1.2'), @($versionedExe, '0.1.1'), @($versionedExe, '0.2.0'), @((Join-Path $Root 'MarkAuto.exe'), '0.1.2'))) {
+  $rejected = $false
+  try { Assert-PayloadTarget $case[0] $case[1] } catch { $rejected = $true }
+  if (-not $rejected) { throw 'Unsafe layout accepted' }
+}
+""", encoding='utf-8')
+            result = subprocess.run(['pwsh', '-NoProfile', '-File', str(check), '-Root', temporary],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_real_windows_interruption_and_data_contract(self):
         script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()

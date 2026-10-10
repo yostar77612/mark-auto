@@ -276,3 +276,29 @@ Linux fresh checkout263 tests（257 PASS、6 platform/tool skips）；Windows in
 本輪0.1.2安全/安裝修復先完成其固定Gate與整合，再依序盤點→真行情儀表板→K線/指標→AI/回測表單→比較/Paper/風控→UI回歸→Win10/11驗收。AI優先官方允許的訂閱途徑、免費本機或手動交換；ChatGPT訂閱不得視為API額度，付費API預設停用，不使用Cookie/未授權自動化。真即時資料權限不足時提供真歷史功能並明示來源/時間，禁止假行情。
 
 原固定範圍85%仍僅代表170/200歷史Gate；新增範圍尚待盤點凍結權重，未驗收不計分；新版整體完成率待新分母凍結後重算，不能宣稱仍85%。各項門檻維持；第二/第三優先進階功能先列評估，不拖延必要行情/UI。真AI有效改善候選目前FAILED，工程迴路通過不等於模型品質通過，後續修復須預先限制實驗預算及避免反覆使用holdout。
+
+## 19 新市場與易用性固定驗收（新增100點）
+
+
+以下由使用者自主工程授權下凍結，實作前生效（2026-10-10 00:15 UTC）。每項 PASS 必須有指定 commit + 測試／實際資料／平台證據；BLOCKED/FAIL/NOT_RUN 不得給分。必要時先拆成固定子項，每個子項二元通過，不事後主觀打折。
+
+- **M1 真實商品與來源，20 點**：首頁可見加權指數與 TX/MXF/TMF 真實合約月份；watchlist 新增刪除排序；每筆來源、exchange timestamp、receive timestamp、timezone、延遲值／未知原因。Realtime、delayed、EOD、history、offline 為明確狀態；過期／離線不得繼續以 realtime 呈現；未知 entitlement 不可推斷 realtime。漲跌參照為前收或結算必須標明，二者不可混用。
+- **M2 K 線及時段，20 點**：1/3/5/15/30/60 分、日、週；OHLC/量、crosshair、zoom/pan、同商品選擇同步；分鐘聚合以明示 session-open 錨定，不跨日／夜盘間斷；日依 exchange trade_date 組合交易日，週依明示交易日週規則。測試夜盤跨午夜、假期、短日、到期、重複／亂序／缺資料、最後部分 bar。日週本身依定義聚合多個 session，不能簡化成一律禁止跨 session。不得用日線製造分線。
+- **M3 指標正確性，15 點**：MA5/10/20/60、EMA、RSI、MACD、KD、Bollinger、VWAP，各有周期／平滑／seed／warmup／缺值規則。固定 SMA；EMA alpha=2/(n+1) 與明示 seed；RSI Wilder14；MACD12/26/9且 histogram 倍數標示；KD9/3/3 seed50、high/low範圍；Bollinger20/2與母體或樣本標準差固定；VWAP以明示session重設、零量回傳缺值。只有 OHLCV 時使用 typical-price volume approximation 並標為估計，若要求真實成交 VWAP 則必須用 tick 成交加權。參數按 bar 數而非鐘錶分鐘；切週期重算。禁止未成熟指標填0或未來資料滲入。
+- **M4 人可操作表單，20 點**：AI 研究（split、预算、選擇條件）、策略參數、回測（日期／資金／費用／保證金）、比較表、紙上委託／對帳／風控均不必手寫JSON；欄位型別、範圍、單位、錯誤原因與空態；保留所有現有審核、策略hash、holdout與帳本驗證。操作結果以表格／摘要可讀，JSON僅進階檢視。
+- **M5 研究與成交圖層，5 點**：signal 使用 signal timestamp、target position、reason；fill 使用 fill timestamp、實際模擬成交價、方向、量、成本。形狀／圖例不同且可各自關閉，不能把訊號畫成成交；以 contract、data hash、strategy hash 綁定，禁止跨版本錯配。畫面一律標明回測／紙上，不暗示實盤。
+- **M6 合規 AI 模式，10 點**：官方文件確認的 ChatGPT 訂閱模式若存在才提供；否則有清楚替代路徑。付費 API 默認關閉、明示目的地與預算；Ollama 真實 loopback 流程；manual export/import 用受限上下文與 validate_dsl，保留候選來源與雜湊，永不執行任意程式。依採用路徑凍結可驗收子項，不能假定所有替代路徑必須全部同時存在，也不能以不可用官方訂閱阻止已批准替代路徑完成。
+- **M7 桌面呈現與持久化，10 點**：專業繁中深色首屏、台灣紅漲綠跌並有+/−文字、focus／鍵盤和對比；1366×768與1920×1080在125/150% DPI主要流程可用，短視窗以合理捲動不遮必要控制；保存 watchlist、選定商品／周期／指標／主題／窗體位置，重啟還原並修正離屏位置。不得保存一次性的網路同意或秘密到一般設定。
+
+額外 release veto：實單始終停用；舊 trader 不可被新桌面匯入；來源／freshness假標、跨商品價格錯配、未授權傳輸、秘密外洩、因新UI绕過風控或保留集保護，任一未解決即不可發佈。效能可先建議 10,000 根歷史 bar 下游標／拖曳 p95<100ms、一般操作主執行緒不阻塞>250ms；需指定參考硬體與可重現腳本後才凍結，不能只寫「流暢」。
+
+
+原200點保持不變；新增100點初始0PASS。原85%、新增0%、整體170/300=56.67%，剩43.33%。分母在實作前固定，不按已完成程度倒推權重；此為驗收加權而非工時估計。
+
+### 原範圍0.1.2整合完成與新版0.2.0進行中
+
+原本安全/安裝修復已通過exact-head Gate並整合main28c9f902；合併後[38009150044](https://github.com/yostar77612/mark-auto/actions/runs/38009150044)完成Release及實際下載校驗，仍unsigned preview。保留所有原始分支歷史，本地ccb74d2與remote9008522僅metadata不同。
+
+新版使用單一功能分支agent/market-desktop-v1：獨立readonly多商品市場模型與官方daily/cache/import、session-safe多週期/Decimal指標、原生Qt行情/K線、typedforms及manual策略交換，沿用原核心；市場商品與交易支援分開（交易研究仍TMF）。正常首屏繁中、technicalsource置收合診斷，圖表顯示台北時間但底層UTC。OAuth/訂閱provider另階段驗證，不把offline單元測試說成真帳戶驗證。
+
+原始市場來源真實bytes及TMF訓練區間重播已確認；雲端直接官方HTTP因DNS解析失敗，明示BLOCKED，不放寬TLS或proxy限制。Windows建置另產生public-market-download.json，VERIFIED才可作線上來源證據；診斷工具成功寫出BLOCKED報告不代表市場Gate PASS。完整新增驗收尚未計分。

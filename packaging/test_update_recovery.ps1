@@ -1,4 +1,5 @@
-param([string]$Version = '0.1.2',
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.0',
+      [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.1.1',
       [Parameter(Mandatory=$true)][string]$BaselineInstaller,
       [Parameter(Mandatory=$true)][string]$BaselineManifest,
       [Parameter(Mandatory=$true)][string]$CandidateManifest)
@@ -24,19 +25,70 @@ if (Test-Path "$appDir\unins000.exe") { throw 'Recovery test requires no install
 if ((Test-Path $startMenu) -or (Test-Path $desktop)) { throw 'Existing app shortcut: refusing to replace an unknown installation' }
 function Assert-Artifact([string]$file, [string]$manifestPath) {
   $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  if ($manifest.source_commit -notmatch '^[0-9a-fA-F]{40}$') { throw 'Release manifest must identify its exact source commit' }
   $property = $manifest.artifacts_sha256.PSObject.Properties[(Split-Path $file -Leaf)]
-  if (-not $property -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $property.Value) { throw 'Installer digest does not match supplied release manifest' }
+  if (-not $property -or $property.Value -notmatch '^[0-9a-fA-F]{64}$' -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $property.Value) { throw 'Installer digest does not match supplied release manifest' }
+  return $manifest
 }
-Assert-Artifact $BaselineInstaller $BaselineManifest
-Assert-Artifact $candidate $CandidateManifest
-if ((Split-Path $BaselineInstaller -Leaf) -ne 'MarkAuto-0.1.1-windows-x64-setup.exe') { throw 'Recovery baseline must be the actual released 0.1.1 artifact' }
+if ((Split-Path $BaselineInstaller -Leaf) -ne "MarkAuto-$BaselineVersion-windows-x64-setup.exe") { throw 'Recovery baseline filename must match the explicitly requested released version' }
+$baselineEvidence = Assert-Artifact $BaselineInstaller $BaselineManifest
+$candidateEvidence = Assert-Artifact $candidate $CandidateManifest
 function Run-Setup([string]$installer, [string]$stage) {
   $p = Start-Process $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\$stage.log`"") -PassThru -Wait
   if ($p.ExitCode -ne 0) { throw "$stage failed: $($p.ExitCode)" }
 }
+function Assert-NoReparsePath([string]$path) {
+  $current = [IO.Path]::GetFullPath($path)
+  while ($current) {
+    $item = Get-Item -LiteralPath $current -Force
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse path refused in recovery evidence or shortcut' }
+    $parent = Split-Path $current -Parent
+    if ($parent -eq $current) { break }
+    $current = $parent
+  }
+}
+function Get-SafePayloadFiles([string]$directory) {
+  Assert-NoReparsePath $directory
+  foreach ($entry in Get-ChildItem -LiteralPath $directory -Force) {
+    if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse entry refused before payload traversal' }
+    if ($entry.PSIsContainer) { Get-SafePayloadFiles $entry.FullName } else { $entry }
+  }
+}
+function Assert-PayloadTarget([string]$exe, [string]$expectedVersion) {
+  $full = [IO.Path]::GetFullPath($exe)
+  if ($full -ne $exe -or (Split-Path $full -Leaf) -ne 'MarkAuto.exe') { throw 'Unexpected executable path' }
+  $directory = Split-Path $full -Parent
+  if ($expectedVersion -eq '0.1.1') {
+    if ($full -ne "$appDir\MarkAuto.exe") { throw 'Legacy baseline must use its exact root executable' }
+  } else {
+    $versionRoot = Join-Path $appDir "payloads\$expectedVersion"
+    if ((Split-Path $directory -Parent) -ne $versionRoot) { throw 'Executable must be inside one owned versioned payload directory' }
+  }
+  if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw 'Payload executable missing' }
+  Assert-NoReparsePath $full
+}
+function Assert-Inventory([string]$directory) {
+  $inventoryPath = Join-Path $directory 'payload-inventory.txt'
+  Assert-NoReparsePath $inventoryPath
+  $inventory = @(Get-Content -LiteralPath $inventoryPath)
+  $seen = @{}
+  foreach ($row in $inventory) {
+    if ($row -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Malformed active inventory' }
+    $digest = $Matches[1]; $relative = $Matches[2]
+    if ([IO.Path]::IsPathRooted($relative) -or $relative.Contains(':') -or $relative -match '(^|[\\/])\.\.?([\\/]|$)' -or $seen.ContainsKey($relative)) { throw 'Unsafe or duplicate inventory path' }
+    $seen[$relative] = $true
+    $file = Join-Path $directory $relative
+    Assert-NoReparsePath $file
+    if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw 'Active payload hash mismatch' }
+  }
+  if (-not $seen.ContainsKey('MarkAuto.exe') -or @(Get-SafePayloadFiles $directory).Count -ne $inventory.Count + 1) { throw 'Incomplete or unexpected active payload file' }
+}
 function Target([string]$link) {
   if (-not (Test-Path -LiteralPath $link)) { throw "Missing shortcut: $link" }
-  return $shell.CreateShortcut($link).TargetPath
+  Assert-NoReparsePath $link
+  $target = $shell.CreateShortcut($link).TargetPath
+  Assert-NoReparsePath $target
+  return $target
 }
 function Assert-ActualSettings {
   if ($settingsDigest -and (-not (Test-Path -LiteralPath $settingsPath) -or (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash -ne $settingsDigest)) {
@@ -45,6 +97,7 @@ function Assert-ActualSettings {
 }
 function Smoke([string]$exe, [string]$versionExpected, [string]$stage) {
   Assert-ActualSettings
+  Assert-PayloadTarget $exe $versionExpected
   $report = Join-Path $results "$stage.json"
   $p = Start-Process $exe -ArgumentList @('--smoke-test',"`"$report`"") -WorkingDirectory $env:TEMP -PassThru
   if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'Recovery smoke timed out' }
@@ -53,10 +106,18 @@ function Smoke([string]$exe, [string]$versionExpected, [string]$stage) {
   if ($evidence.status -ne 'passed' -or $evidence.version -ne $versionExpected -or $evidence.live_status -ne 'disabled' -or [IO.Path]::GetFullPath($evidence.data_dir) -ne [IO.Path]::GetFullPath($dataDir)) { throw 'Recovery smoke evidence invalid or settings workspace not used' }
   Assert-ActualSettings
 }
+# Refuse a redirected existing install root before even the legacy installer runs.
+Assert-NoReparsePath $env:LOCALAPPDATA
+$programsDir = Split-Path $appDir -Parent
+if (Get-Item -LiteralPath $programsDir -Force -ErrorAction SilentlyContinue) { Assert-NoReparsePath $programsDir }
+if (Get-Item -LiteralPath $appDir -Force -ErrorAction SilentlyContinue) { [void]@(Get-SafePayloadFiles $appDir) }
 Run-Setup $BaselineInstaller 'baseline-install'
 $oldExe = Target $startMenu
-if ($oldExe -ne "$appDir\MarkAuto.exe" -or (Target $desktop) -ne $oldExe) { throw 'Released baseline shortcut layout changed' }
-Smoke $oldExe '0.1.1' 'baseline-smoke'
+Assert-PayloadTarget $oldExe $BaselineVersion
+$oldDir = Split-Path $oldExe -Parent
+if ((Target $desktop) -ne $oldExe) { throw 'Released baseline shortcuts disagree' }
+if ($BaselineVersion -ne '0.1.1') { Assert-Inventory $oldDir }
+Smoke $oldExe $BaselineVersion 'baseline-smoke'
 # Released 5943b6e SettingsStore uses this exact schema at state-v1/settings.json.
 # Both released and candidate desktop startup load it; no schema migration claim.
 foreach ($directory in @($dataDir, (Split-Path $settingsPath -Parent))) {
@@ -67,15 +128,15 @@ $settingsBytes = [Text.Encoding]::UTF8.GetBytes($settingsFixture)
 $stream = [IO.File]::Open($settingsPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
 try { $stream.Write($settingsBytes, 0, $settingsBytes.Length) } finally { $stream.Dispose() }
 $settingsDigest = (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash
-Smoke $oldExe '0.1.1' 'baseline-existing-settings-smoke'
+Smoke $oldExe $BaselineVersion 'baseline-existing-settings-smoke'
 # Freeze old-payload and unknown-file expectations before invoking the candidate.
-$obsolete = Join-Path $appDir '_internal\obsolete-test.dll'
+$obsolete = Join-Path $oldDir '_internal\obsolete-test.dll'
+Assert-NoReparsePath (Split-Path $obsolete -Parent)
 if (Test-Path $obsolete) { throw 'Unexpected preexisting test marker' }
 [IO.File]::WriteAllBytes($obsolete, [Text.Encoding]::UTF8.GetBytes('never load this retired dependency'))
 $prior = @{}
-foreach ($file in Get-ChildItem -LiteralPath $appDir -Recurse -File) {
-  if ($file.DirectoryName -eq $appDir -and $file.Name -like 'unins*') { continue }
-  if ($file.FullName.StartsWith("$appDir\payloads\", [StringComparison]::OrdinalIgnoreCase)) { continue }
+foreach ($file in Get-SafePayloadFiles $appDir) {
+  if ($file.DirectoryName -eq $appDir -and $file.Name -match '^unins\d+\.(exe|dat|msg)$') { continue }
   $prior[$file.FullName] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
 }
 $sentinels = @{}
@@ -88,6 +149,7 @@ foreach ($relative in @('settings\preferences.json','history\run.json','reports\
 }
 function Assert-PriorPayload {
   foreach ($path in $prior.Keys) {
+    Assert-NoReparsePath $path
     if (-not (Test-Path -LiteralPath $path) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $prior[$path]) { throw "Prior runtime changed: $path" }
   }
 }
@@ -153,20 +215,15 @@ if (Test-Path (Join-Path $partial 'payload-inventory.txt')) { throw 'Interruptio
 if ((Target $startMenu) -ne $oldExe -or (Target $desktop) -ne $oldExe) { throw 'Incomplete payload activated' }
 Assert-PriorPayload
 Assert-Sentinels
-Smoke $oldExe '0.1.1' 'interrupted-before-activation'
+Smoke $oldExe $BaselineVersion 'interrupted-before-activation'
 # Recovery is a normal rerun of the exact candidate, with a fresh immutable directory.
 Run-Setup $candidate 'retry-install'
 $newExe = Target $startMenu
 $newDir = Split-Path $newExe -Parent
 if (-not $newDir.StartsWith("$payloadRoot\", [StringComparison]::OrdinalIgnoreCase) -or $newDir -eq $partial -or (Target $desktop) -ne $newExe) { throw 'Retry did not activate one fresh payload' }
 if (Test-Path (Join-Path $newDir '_internal\obsolete-test.dll')) { throw 'Obsolete dependency leaked into new payload' }
-$inventory = @(Get-Content -LiteralPath (Join-Path $newDir 'payload-inventory.txt'))
-foreach ($row in $inventory) {
-  if ($row -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Malformed active inventory' }
-  $digest = $Matches[1]; $relative = $Matches[2]
-  if ((Get-FileHash -LiteralPath (Join-Path $newDir $relative) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw 'Active payload hash mismatch' }
-}
-if (@(Get-ChildItem -LiteralPath $newDir -Recurse -File).Count -ne $inventory.Count + 1) { throw 'Unexpected active payload file' }
+Assert-PayloadTarget $newExe $Version
+Assert-Inventory $newDir
 Assert-PriorPayload
 Assert-Sentinels
 Smoke $newExe $Version 'recovered-smoke'
@@ -182,18 +239,22 @@ $firstTarget = $newExe
 Run-Setup $candidate 'same-version-reinstall'
 $secondTarget = Target $startMenu
 if ($secondTarget -eq $firstTarget -or (Target $desktop) -ne $secondTarget) { throw 'Same-version install reused an existing payload' }
+Assert-PayloadTarget $secondTarget $Version
+Assert-Inventory (Split-Path $firstTarget -Parent)
+Assert-Inventory (Split-Path $secondTarget -Parent)
 Smoke $firstTarget $Version 'retained-candidate-smoke'
 Smoke $secondTarget $Version 'reinstalled-smoke'
 Assert-PriorPayload
 Assert-Sentinels
-@{status='passed'; baseline='released 0.1.1'; candidate=$Version;
+@{status='passed'; baseline="released $BaselineVersion"; candidate=$Version;
+  baseline_source_commit=$baselineEvidence.source_commit; candidate_source_commit=$candidateEvidence.source_commit;
   interruption='actual setup process tree killed during extraction before inventory/shortcut activation';
   recovery='rerun exact candidate; fresh payload verified before both shortcuts activate';
   split_shortcut_recovery='constructed old/new shortcut state, repaired by actual ordinary rerun; not an additional crash checkpoint';
   preserved_prior_files=$prior.Count; preserved_data_sentinels=$sentinels.Count;
   actual_settings=@{relative_path='state-v1/settings.json'; schema_version=1; sha256=$settingsDigest;
     fixture='non-sensitive existing-schema preferences, created only when absent';
-    execution='released 0.1.1 and candidate startup load actual settings; bytes checked before and after every subsequent smoke';
+    execution="released $BaselineVersion and candidate startup load actual settings; bytes checked before and after every subsequent smoke";
     scope='compatible existing settings preservation, not historical schema migration'};
   partial_payload=$partial; prior_target=$oldExe; first_verified_target=$firstTarget; active_target=$secondTarget;
   limitations=@('One real process-crash extraction checkpoint, not exhaustive power-loss durability proof',

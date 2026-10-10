@@ -1,4 +1,4 @@
-param([string]$Version = '0.1.2', [string]$BaselineVersion = '0.0.0',
+param([string]$Version = '0.2.0', [string]$BaselineVersion = '0.0.0',
       [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest

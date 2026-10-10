@@ -316,7 +316,7 @@
       "title": "GitHub Release 安裝檔與校驗資訊",
       "weight": 10,
       "status": "PASS",
-      "evidence": "Published and independently downloaded 0.1.1 preview from main5943b6e: https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-37966600264-1 ; SHA256 f67b49c75de1c82e1caa5f7e3b255c176bec3ddcfe6baf1c78e189c46f0427df matches GitHub digest, sums and manifest. New0.1.2 release separately pending; publication does not pass clean-client gates."
+      "evidence": "0.1.2 main28c9f902 release downloaded and verified SHA2560f92f70fb17bc3f0c2c816cbb5f963ecb2de6dde40745759f415a4755e85c469; https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1 ; cleanclient BLOCKED."
     },
     {
       "id": "D7",
@@ -347,7 +347,66 @@
     "actual_model": "Three structured-output candidates from official1.5B evaluated on13680official minute bars; trend loses and other2no trades. Earlier6free-JSON calls retained as failures/partial. No investment qualification.",
     "official_data": "12complete consecutive trade dates Sep17-Oct6,24independent daily OHLC comparisons;Oct7missingminute rejected;2025daily history downloaded but not falsely promoted to minute coverage.",
     "paper_faults": "Conflicting/malformed events and storage uncertainty repaired with reconciliation latch;61focused tests. Actual live-feed/broker reconnection NOT_VERIFIED.",
-    "windows_upgrade": "Side-by-side payload verification + actual released0.1.1 upgrade/crash recovery tests implemented; Windows execution pending exact-head CI.",
-    "clean_client_toolkit": "No-Python kit implemented; generated binary kit and actual clean Win10/11 tests still distinct gates."
+    "windows_upgrade": "PASS Windows Server actual0.1.1→0.1.2/crash/settings preservation run38009150044; not clean Win10/11.",
+    "clean_client_toolkit": "Published0.1.2 kit SHA256317f98560ae1c29ee4d7c99e81ed2d8bab55d010114f765b756cdcd9ae076079 independently downloaded/ZIP CRC PASS; cleanclient execution BLOCKED.",
+    "integrated_commit": "28c9f9020e5f44a7a986380e3a6d16bdb7235b2d",
+    "windows_server_status": "PASS: PR38008659297 and postmerge38009150044 actual released upgrade/crash/settings preservation; cleanclient remainsBLOCKED",
+    "release_url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1"
+  },
+  "market_desktop_scope": {
+    "frozen_at": "2026-10-10T00:15:00Z",
+    "weight": 100,
+    "rule": "Binary evidence-backed PASS only; original200 unchanged; all safety vetoes remain",
+    "gates": [
+      {
+        "id": "M1",
+        "title": "真實商品/來源/首頁/自選",
+        "weight": 20,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M2",
+        "title": "多週期互動K線",
+        "weight": 20,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M3",
+        "title": "技術指標正確性",
+        "weight": 15,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M4",
+        "title": "一般使用者研究/交易表單",
+        "weight": 20,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M5",
+        "title": "訊號與成交獨立圖層",
+        "weight": 5,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M6",
+        "title": "合規AI操作模式",
+        "weight": 10,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      },
+      {
+        "id": "M7",
+        "title": "繁中深色/DPI/偏好",
+        "weight": 10,
+        "status": "PARTIAL",
+        "evidence": "0.2.0 exact staged product snapshot:450tests442PASS8platform/tool skips in64.153s; stdlib profile450tests367PASS83optional/platform skips. Static history gate0findings. Real-source parsing/training-only Qt evidence and Linux100/125/150%DPI available. Windows package/client and full module acceptance pending; fixed contract unchanged."
+      }
+    ]
   }
 }

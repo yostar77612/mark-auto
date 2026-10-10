@@ -95,7 +95,8 @@ def scan(root: Path, history: bool = False) -> list[str]:
         findings.extend(secret_findings(source, name))
         if path.suffix == ".py":
             findings.extend(python_findings(source, name, name.startswith("quantlab/"),
-                                            desktop=name == "desktop_ui.py"))
+                                            desktop=name in {"desktop_ui.py", "desktop_charts.py",
+                                                             "desktop_forms.py", "desktop_market.py"}))
     if history:
         if git(root, "rev-parse", "--is-shallow-repository").strip() != b"false":
             findings.append("history: full checkout required")
