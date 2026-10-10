@@ -100,6 +100,15 @@ def validate_decimal(value, name, minimum=None, tick=False):
 
 
 def _json_value(value):
+    # Exact builtin leaves cannot carry Enum/dataclass/subclass conversion rules.
+    # Keep every other value on the original validating normalization path.
+    kind = type(value)
+    if kind is str or kind is int or kind is bool or value is None:
+        return value
+    if kind is float:
+        if not math.isfinite(value):
+            raise ValidationError("nonfinite JSON number")
+        return value
     if is_dataclass(value) and not isinstance(value, type):
         return {f.name: _json_value(getattr(value, f.name)) for f in fields(value)}
     if isinstance(value, Decimal):

@@ -15,7 +15,7 @@
 3. 雙擊 MarkAuto，先看資料、模型及風控狀態。初次使用可建立明確標示的合成範例，熟悉操作，不能把其績效當真實投資結果。
 4. 在「資料匯入與更新」取得免費官方近期檔案，選擇明確契約／時段與已查核行情。下載成功不等於歷史完整或可正式排名。
 5. 在策略、回測及比較頁設定版本、日期與成本／風控，查看資金曲線及成交，匯出報告。研究候選沒過門檻時可全部淘汰。
-6. AI 預設 Fixture；需要外部相容模型時先設定模型／端點、預算及網路／可能費用同意。機密由使用者在桌面設定中輸入，Windows 系統保護保存，不放 Git 或備份。
+6. 本候選分支的 AI 主路線改為官方 ChatGPT 訂閱登入，不需 API Key 或本地模型。首次由本人在官方頁面授權；研究前確認僅使用方案內額度及本次請求上限。離線示範明確標為 Fixture，不冒充真實 AI。此修正尚不代表已發布的 0.2.1 安裝檔完成新版驗收。
 7. Paper 重啟、睡眠或異常後需明確對帳。未知狀態不會自動补單；緊急停止會凍結新工作，不假裝已成交／平倉。實盤在本版固定停用。
 8. 關閉時處理尚在執行的工作。下一次開啟保留設定與資料；更新前先備份，關閉舊程式後安裝新版本。
 
@@ -122,7 +122,7 @@ python -m quantlab refresh --cache ./quantlab-output/official --days 1 --format 
 
 ## 授權與原始來源
 
-保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。原始 upstream 精確提交版本尚未核實；以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
+保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。2026-10-10 已核對原始匯入 `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的全部 47 個受版控檔案，其 Git 模式、類型與 blob 均與 [上游 AutoTradingPlatform 固定提交 a0ecf889](https://github.com/chrisli-kw/AutoTradingPlatform/tree/a0ecf8895716bf5883184fdd27a52023f9700bf3) 逐檔相同。上游另有未匯入的 `trader/APItest.py`、`trader/performance/backtest.py`；因此這是內容來源對應，不代表完整 tree 或 Git 歷史相同，也不是維護者權利的額外聲明。以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
 
 ---
 
@@ -355,3 +355,15 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - 新行情商品不代表已支援該商品下單/回測；研究交易核心仍限定TMF，實單停用。
 - ChatGPT手動交換可匯出研究要求及匯入受限策略；來源記為manual_unverified，不冒充API實測。相容本機模型與付費API設定維持明確同意/預算/安全儲存，付費預設關閉。官方訂閱登入另行驗證，不複製Cookie或其他工具憑證。
 - 新版需通過Windows打包與全部既有安全回歸才發布；clean Win10/11仍須獨立環境。
+
+### ChatGPT 訂閱 AI（2026-10-10 需求修正，候選驗收中）
+
+本節依 2026-10-10 11:16 UTC 的正式需求修正，取代前述舊版本的相容端點、本地模型及付費 API 選項。歷史測試與版本紀錄保留，不算作 ChatGPT 真實推論證據。
+
+- AI 主要入口為官方 **Sign in with ChatGPT**。不下載 Qwen、Ollama、GGUF 或本地推論引擎，不提供自動付費 API／Credits fallback。
+- 身分登入與訂閱用量授權分開；必須取得所需權限及官方實際可用模型，才可開始明確核准的研究。Windows 使用系統保護儲存憑證；不把 Token 寫入一般設定、日誌、備份或安裝檔。
+- 官方帳戶可另外允許 App 使用 Credits。本程式不開啟該選項、不購買 Credits，也沒有已公開的介面可讀取或強制設定此帳戶政策。每次研究前須確認已停用 App Credits，或 MarkAuto 的 App 用量上限低於 100%；未確認即停止。這是使用者確認，不是伺服器政策驗證或金額上限保證。詳見 [官方用量設定說明](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites)。
+- 研究只傳送明示的策略及訓練／驗證資料，不讓 AI 控制下單或風控。策略需通過獨立回測；額度不足、授權失效、未知請求結果均停止，不無限重試或重設已用額度。
+- 舊模型快取、設定與歷史研究不會在升級時任意刪除。候選版不再載入或啟動本地模型；舊候選操作說明可查 Git 歷史。
+
+官方流程參考 [OpenAI SIWC quickstart](https://developers.openai.com/siwc/quickstart)。實際帳戶授權／完整訂閱回應、乾淨 Windows 10／11 安裝操作仍須各自驗證；離線 OAuth 或 parser 測試不能取代。最新驗收及尚缺的 AI 分析功能以 [Roadmap](docs/analysis/05_IMPLEMENTATION_ROADMAP.md) 與固定驗收表為準。

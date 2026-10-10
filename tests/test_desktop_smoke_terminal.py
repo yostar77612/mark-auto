@@ -16,13 +16,15 @@ import time
 import unittest
 from unittest.mock import Mock
 
+from tests.smoke_timeout_diagnostics import output_summary, run_smoke_process
+
 from desktop import _close_smoke_worker
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def process_can_run(pid):
+def process_can_run(pid, *, linux_states=None):
     if sys.platform == 'win32':
         from ctypes import wintypes as w
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
@@ -40,11 +42,24 @@ def process_can_run(pid):
             return status.value == 259
         finally:
             kernel.CloseHandle(handle)
+    if linux_states is not None and sys.platform.startswith('linux'):
+        linux_states[str(pid)] = '?'
     try: os.kill(pid, 0)
-    except ProcessLookupError: return False
+    except ProcessLookupError:
+        if linux_states is not None and sys.platform.startswith('linux'):
+            linux_states[str(pid)] = '-'
+        return False
     if sys.platform.startswith('linux'):
-        try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-        except FileNotFoundError: return False
+        try: state = Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0]
+        except (FileNotFoundError, ProcessLookupError):
+            if linux_states is not None:
+                linux_states[str(pid)] = '-'
+            return False
+        if linux_states is not None:
+            linux_states[str(pid)] = state if state in {'R', 'S', 'D', 'T', 't', 'Z', 'X', 'x', 'K', 'W', 'P', 'I'} else '?'
+        # Linux can expose dead X (historically x) briefly while reaping Z.
+        # Stopped, sleeping, blocked and unknown states remain unproved cleanup.
+        return state not in {'Z', 'X', 'x'}
     return True
 
 
@@ -72,10 +87,12 @@ class GenericSmokeTerminalProcessTests(unittest.TestCase):
             home = Path(temporary).resolve(); report = home / 'report.json'; pidfile = home / 'worker-pids.json'
             writes = home / 'report-writes.jsonl'
             bootstrap = home / 'LocalAppData/MarkAuto' if sys.platform == 'win32' else home / '.local/share/MarkAuto'
-            code = '''import sys, os, json
+            code = '''import sys, os, json, time, faulthandler
 from pathlib import Path
 import desktop
 import quantlab.desktop_runtime as runtime
+from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
+runtime._job_worker = diagnosed_smoke_worker
 from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))
@@ -87,23 +104,43 @@ def audited_write(path, raw):
   with Path(sys.argv[3]).open('a') as stream: stream.write(json.dumps(json.loads(raw)) + '\\n')
  return original_write(path, raw)
 runtime.atomic_write = audited_write
+diagnostic_started = time.monotonic()
+def trace(stage, **values):
+ print('SMOKE_DIAGNOSTIC ' + json.dumps(dict(stage=stage, elapsed_ms=int((time.monotonic()-diagnostic_started)*1000), **values)), file=sys.stderr, flush=True)
+original_poll = JobManager.poll
+def tracked_poll(self):
+ events = original_poll(self)
+ for event in events:
+  if event['type'] in ('result', 'error', 'cancelled'): trace('terminal', operation=self._operation, event=event['type'])
+ return events
+JobManager.poll = tracked_poll
+diagnostic_original_cleanup = desktop._close_smoke_worker
+def tracked_cleanup(manager):
+ trace('cleanup_start')
+ result = diagnostic_original_cleanup(manager)
+ trace('cleanup_end', verified=result['verified'])
+ return result
+desktop._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):
+ trace('start_requested', operation=operation)
  value = original_start(self, operation, payload)
+ trace('started', operation=operation, pid=self.process.pid)
  pids.append(self.process.pid)
  Path(sys.argv[2]).write_text(json.dumps(pids))
  return value
 JobManager.start = tracked_start
 '''
-            code += injected + "\nraise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
+            code += injected + "\nfaulthandler.dump_traceback_later(35)\ntry:\n status = desktop.main(['--smoke-test', sys.argv[1]])\n trace('main_return', status=status)\nfinally: faulthandler.cancel_dump_traceback_later()\nraise SystemExit(status)\n"
             (home / 'sitecustomize.py').write_text("import socket\ndef denied(*args, **kwargs): raise AssertionError('No network')\nsocket.create_connection = socket.getaddrinfo = denied\noriginal = socket.socket.connect\ndef connect(self, address):\n if self.family in (socket.AF_INET, socket.AF_INET6): return denied()\n return original(self, address)\nsocket.socket.connect = socket.socket.connect_ex = connect\n")
             env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), LOCALAPPDATA=str(home / 'LocalAppData'),
                        APPDATA=str(home / 'AppData'), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'),
                        PYTHONPATH=str(home) + os.pathsep + str(ROOT))
             started = time.monotonic()
-            result = subprocess.run([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
-                                    env=env, capture_output=True, text=True, timeout=40)
+            result = run_smoke_process([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
+                env=env, report=report, pidfile=pidfile, writes=writes, process_can_run=process_can_run,
+                artifact_dir=ROOT / 'dist/validation', timeout=40)
             self.assertLess(time.monotonic() - started, 40)
             self.assertEqual(result.returncode, 0 if expected == 'passed' else 1, result.stderr[-3000:])
             self.assertTrue(report.exists(), result.stderr[-3000:])
@@ -124,6 +161,15 @@ JobManager.start = tracked_start
                 self.assertTrue(execution_root.name.startswith('markauto-smoke-startup-'))
                 shutil.rmtree(execution_root)  # Process and every recorded worker are independently stopped.
             if complete:
+                observations = [event for event in output_summary(result.stderr)['events']
+                                if event['stage'] == 'worker_timing']
+                self.assertTrue(observations, 'Real spawned WFO worker did not emit timing evidence')
+                self.assertEqual(observations[-1]['active'], [])
+                calls = {row['phase']: row['calls'] for row in observations[-1]['timings']}
+                self.assertEqual(calls['wfo.evaluate'], 22)
+                self.assertEqual(calls['process.start'], 22)
+                self.assertEqual(calls['wfo.save'], 63)
+                self.assertGreaterEqual(calls['sqlite.commit'], 63)
                 self.assertEqual(len(value['steps']), 7)
                 self.assertTrue(all(row['passed'] for row in value['steps']))
                 for key in ('auth_smoke', 'market_smoke', 'history_smoke'):

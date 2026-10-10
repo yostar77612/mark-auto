@@ -41,7 +41,7 @@ def _json_bytes(value):
     return raw
 
 
-def atomic_write(path, raw):
+def atomic_write(path, raw, *, durable=False):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix='.' + path.name, suffix='.tmp', dir=path.parent)
@@ -50,10 +50,113 @@ def atomic_write(path, raw):
             stream.write(raw)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(name, path)
+        if durable:
+            _durable_replace(name, path)
+        else:
+            os.replace(name, path)
     finally:
         if os.path.exists(name):
             os.unlink(name)
+
+
+
+WORKSPACE_FORMAT = {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}
+REPLAY_REQUIREMENT = {'profile': 'wal_full', 'minimum_runtime': '3.51.3'}
+GUARDED_BACKUP_VERSION = 2
+
+
+def _workspace_format(value):
+    if not isinstance(value, dict) or type(value.get('schema_version')) is not int:
+        raise RuntimeSafetyError('Unsupported workspace version; original preserved')
+    if value == WORKSPACE_FORMAT:
+        return value
+    if (isinstance(value, dict) and set(value) == set(WORKSPACE_FORMAT) | {'sqlite_replay'}
+            and {key: value[key] for key in WORKSPACE_FORMAT} == WORKSPACE_FORMAT
+            and value['sqlite_replay'] == REPLAY_REQUIREMENT):
+        return value
+    raise RuntimeSafetyError('Unsupported workspace version; original preserved')
+
+
+def _verify_replay_runtime(value):
+    if 'sqlite_replay' not in value:
+        return
+    import sqlite3
+    from contextlib import closing
+    with closing(sqlite3.connect(':memory:')) as connection:
+        version = connection.execute('SELECT sqlite_version()').fetchone()[0]
+    try:
+        actual = tuple(int(part) for part in version.split('.'))
+    except (ValueError, AttributeError):
+        actual = ()
+    if actual != sqlite3.sqlite_version_info or actual < (3, 51, 3):
+        raise RuntimeSafetyError('This workspace requires a WAL-safe SQLite runtime (3.51.3 or newer)')
+
+
+def _sync_directory(path):
+    if sys.platform != 'win32':
+        fd = os.open(path, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
+def _durable_replace(source, destination):
+    if sys.platform == 'win32':
+        from ctypes import wintypes
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        move = kernel.MoveFileExW
+        move.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD]
+        move.restype = wintypes.BOOL
+        if not move(str(source), str(destination), 0x1 | 0x8):
+            raise ctypes.WinError(ctypes.get_last_error())
+    else:
+        os.replace(source, destination)
+        _sync_directory(Path(destination).parent)
+        if Path(source).parent != Path(destination).parent:
+            _sync_directory(Path(source).parent)
+
+
+def _marker_stream(marker):
+    if sys.platform != 'win32':
+        return marker.open('wb')
+    # WRITE_THROUGH also flushes NTFS metadata for a newly created marker.
+    # FlushFileBuffers via os.fsync below remains the explicit WAL barrier.
+    import msvcrt
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                       ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create.restype = wintypes.HANDLE
+    handle = create(str(marker), 0x40000000, 0, None, 2, 0x80000000 | 0x80, None)
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        fd = msvcrt.open_osfhandle(handle, os.O_WRONLY | os.O_BINARY)
+    except BaseException:
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel.CloseHandle(handle)
+        raise
+    return os.fdopen(fd, 'wb')
+
+
+def _write_workspace_format(root, value):
+    """Flush the existing inode before any WAL access; torn writes fail closed.
+
+    Do not replace an existing marker: retaining its durable directory entry
+    avoids relying on rename durability for the compatibility barrier.
+    """
+    value = _workspace_format(value)
+    marker = Path(root) / 'workspace-format.json'
+    if marker.exists() or marker.is_symlink():
+        BackupManager._check_regular_path(marker)
+    raw = _json_bytes(value)
+    with _marker_stream(marker) as stream:
+        stream.write(raw)
+        stream.flush()
+        os.fsync(stream.fileno())
+    _sync_directory(root)
 
 
 def _read_json(path):
@@ -105,12 +208,20 @@ class AppPaths:
 
     def ensure(self):
         marker = self.root / 'workspace-format.json'
-        if marker.exists() and _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
-            raise RuntimeSafetyError('Unsupported workspace version; original preserved')
+        if marker.exists() or marker.is_symlink():
+            BackupManager._check_regular_path(marker)
+            _verify_replay_runtime(_workspace_format(_read_json(marker)))
         for path in (self.root, self.state, self.cache, self.logs, self.credentials, self.controls):
             path.mkdir(parents=True, exist_ok=True)
         if not marker.exists():
-            atomic_write(marker, _json_bytes({'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}))
+            _write_workspace_format(self.root, WORKSPACE_FORMAT)
+        return self
+
+    def require_replay_wal(self):
+        self.ensure()
+        required = {**WORKSPACE_FORMAT, 'sqlite_replay': REPLAY_REQUIREMENT}
+        _verify_replay_runtime(required)
+        _write_workspace_format(self.root, required)
         return self
 
 
@@ -180,10 +291,10 @@ class WorkspaceLocator:
             contents = list(path.iterdir())
             marker = path / 'workspace-format.json'
             if contents and resolved != self.bootstrap.resolve():
-                if not marker.is_file() or _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
+                if not marker.is_file():
                     raise RuntimeSafetyError('Choose an empty folder or a compatible MarkAuto workspace')
-            if marker.exists() and _read_json(marker) != {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}:
-                raise RuntimeSafetyError('Workspace version is incompatible')
+            if marker.exists():
+                _verify_replay_runtime(_workspace_format(_read_json(marker)))
             settings = path / 'state-v1' / 'settings.json'
             if settings.exists():
                 BackupManager._check_regular_path(settings)
@@ -450,7 +561,8 @@ class BackupManager:
                 verified_commit = _read_json(token) == {'id': transaction['id']}
             except (OSError, ValueError):
                 pass
-        if rollback.exists():
+        had_rollback = rollback.exists()
+        if had_rollback:
             self._check_regular_path(rollback)
             if verified_commit:
                 # Promotion identity and durable commit marker both agree.
@@ -461,8 +573,13 @@ class BackupManager:
                     # Never delete an ambiguous directory, even if another callback
                     # recreated it during the interrupted two-rename window.
                     preserved = self.paths.root / ('state-v1.interrupted-' + uuid.uuid4().hex)
-                    os.replace(self.paths.state, preserved)
-                os.replace(rollback, self.paths.state)
+                    _durable_replace(self.paths.state, preserved)
+                _durable_replace(rollback, self.paths.state)
+        # Only a verified promotion can remove a WAL requirement. A real
+        # pre-upgrade snapshot is old-binary compatible again after commit.
+        if transaction and (had_rollback or verified_commit) and 'prior_format' in transaction and 'restored_format' in transaction:
+            selected = transaction['restored_format'] if verified_commit else transaction['prior_format']
+            _write_workspace_format(self.paths.root, _workspace_format(selected))
         # Retire the promoted token before its journal. A crash in this order
         # leaves only a harmless journal, never an orphan token in a new backup.
         token = self.paths.state / '.restore-transaction'
@@ -487,6 +604,8 @@ class BackupManager:
         info = Path(path).lstat()
         if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
             raise RuntimeSafetyError('Symlinks and Windows reparse points cannot be backed up')
+        if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
+            raise RuntimeSafetyError('Hard-linked files cannot be backed up')
 
     def create(self, destination):
         self._quiescent()
@@ -524,7 +643,10 @@ class BackupManager:
         fd, tmp = tempfile.mkstemp(dir=destination.parent, suffix='.zip.tmp')
         os.close(fd)
         try:
+            workspace_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
             manifest = {'schema_version': STATE_VERSION, 'app_version': __version__, 'files': {}}
+            if 'sqlite_replay' in workspace_format:
+                manifest.update(schema_version=GUARDED_BACKUP_VERSION, workspace_format=workspace_format)
             with zipfile.ZipFile(tmp, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
                 for name, path in files:
                     self._check_regular_path(path)
@@ -555,8 +677,16 @@ class BackupManager:
                 if 'manifest.json' not in names or archive.getinfo('manifest.json').file_size > MAX_JSON:
                     raise RuntimeSafetyError('Missing or oversized backup manifest')
                 manifest = json.loads(archive.read('manifest.json'))
-                if not isinstance(manifest, dict) or manifest.get('schema_version') != STATE_VERSION or not isinstance(manifest.get('files'), dict):
+                if not isinstance(manifest, dict) or manifest.get('schema_version') not in (STATE_VERSION, GUARDED_BACKUP_VERSION) or not isinstance(manifest.get('files'), dict):
                     raise RuntimeSafetyError('Incompatible backup state version')
+                restored_format = WORKSPACE_FORMAT
+                if manifest['schema_version'] == GUARDED_BACKUP_VERSION:
+                    restored_format = _workspace_format(manifest.get('workspace_format'))
+                    _verify_replay_runtime(restored_format)
+                    if 'sqlite_replay' not in restored_format:
+                        raise RuntimeSafetyError('Guarded backup is missing its runtime requirement')
+                elif 'workspace_format' in manifest:
+                    raise RuntimeSafetyError('Unexpected backup runtime requirement')
                 entries = manifest['files']
                 if set(names) != {'manifest.json'} | {'state/' + n for n in entries}:
                     raise RuntimeSafetyError('Manifest does not match archive')
@@ -569,21 +699,27 @@ class BackupManager:
                         raise RuntimeSafetyError('Backup hash mismatch')
                     target = staging / name
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    atomic_write(target, raw)
+                    atomic_write(target, raw, durable=True)
             settings = staging / 'settings.json'
             if settings.exists():
                 BackupManager._check_regular_path(settings)
                 SettingsStore(settings).load()
             rollback = self.paths.root / 'state-v1.rollback'
             journal = self.paths.root / 'restore-transaction.json'
+            self.paths.ensure()
+            prior_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
+            # Guard before promotion; never inspect or open SQLite during restore.
+            if 'sqlite_replay' in restored_format:
+                _write_workspace_format(self.paths.root, restored_format)
             transaction_id = uuid.uuid4().hex
-            atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}))
-            atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'prepared'}))
+            formats = {'prior_format': prior_format, 'restored_format': restored_format}
+            atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}), durable=True)
+            atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'prepared', **formats}), durable=True)
             try:
                 if self.paths.state.exists():
-                    os.replace(self.paths.state, rollback)
-                os.replace(staging, self.paths.state)
-                atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'committed'}))
+                    _durable_replace(self.paths.state, rollback)
+                _durable_replace(staging, self.paths.state)
+                atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'committed', **formats}), durable=True)
             except BaseException:
                 self.recover()
                 raise
@@ -596,11 +732,13 @@ class BackupManager:
 UI_OPERATIONS = frozenset({
     'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile', 'ui_backtest', 'ui_campaign',
     'ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read', 'ui_walk_forward_reconcile',
+    'ui_analysis_preview', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile',
     'ui_compare', 'ui_select', 'ui_disable', 'ui_paper_snapshot',
     'ui_paper_reconcile', 'ui_paper_kill', 'ui_paper_replay',
     'ui_paper_submit', 'ui_paper_cancel', 'ui_backup_create', 'ui_backup_restore',
 })
 OPERATIONS = UI_OPERATIONS | {'demo', 'backtest', 'campaign'}
+ANALYSIS_OPERATIONS = frozenset({'ui_analysis_preview', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile'})
 WALK_FORWARD_OPERATIONS = frozenset({
     'ui_walk_forward_preview', 'ui_walk_forward_run',
     'ui_walk_forward_read', 'ui_walk_forward_reconcile',
@@ -622,7 +760,7 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
             from desktop_ui import execute_ui_operation
             result = execute_ui_operation(operation, payload, paths, emit=emit,
                 descendants_stopped=reconciliation_admitted is True and operation in (
-                    'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile'))
+                    'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'))
         else:
             from argparse import Namespace
             from .__main__ import execute
@@ -752,6 +890,33 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
     return walk_forward_plan_from_dict(template)
 
 
+def validate_analysis_request(request):
+    """References only: no model context, credentials or caller-selected budgets."""
+    if (type(request) is not dict or set(request) != {'campaign_reference', 'original_dataset',
+            'attempt_ids', 'task', 'registration', 'model', 'timeout_seconds'}):
+        raise RuntimeSafetyError('Invalid analysis request fields')
+    for field, length in (('campaign_reference',64), ('registration',32)):
+        if type(request[field]) is not str or not re.fullmatch('[a-f0-9]{'+str(length)+'}',request[field]):
+            raise RuntimeSafetyError('Invalid analysis reference')
+    attempts=request['attempt_ids']; task=request['task']
+    if (task not in ('critique','compare') or type(attempts) is not list
+        or not (len(attempts)==1 if task=='critique' else 2<=len(attempts)<=5)
+        or any(type(value) is not str or not re.fullmatch('[a-f0-9]{64}',value) for value in attempts)
+        or len(set(attempts))!=len(attempts)):
+        raise RuntimeSafetyError('Select bounded distinct analysis candidates')
+    original=request['original_dataset']
+    if type(original) is not dict or set(original)!={'kind','path'} or original['kind']!='local_dataset_file':
+        raise RuntimeSafetyError('Explicit original dataset required')
+    path=original['path']
+    if (type(path) is not str or not path or len(path)>4096 or chr(0) in path
+        or '://' in path or path.startswith(('//',chr(92)*2)) or not Path(path).is_absolute() or '..' in Path(path).parts):
+        raise RuntimeSafetyError('Explicit local dataset path required')
+    if (type(request['model']) is not str or not re.fullmatch('[A-Za-z0-9._:-]{1,128}',request['model'])
+        or type(request['timeout_seconds']) is not int or not 1<=request['timeout_seconds']<=120):
+        raise RuntimeSafetyError('Invalid analysis model or timeout')
+    return request
+
+
 class JobManager:
     """One spawned bounded-IPC task at a time; no arbitrary callable execution."""
     def __init__(self, paths):
@@ -770,6 +935,9 @@ class JobManager:
         self._requires_tree_quiescence = False
         self._subscription_job = False
         self._quiesced_subscription_id = None
+        self._analysis_job_identity = None
+        self._analysis_result_reference = None
+        self._quiesced_analysis = None
         # This proof is deliberately process-local. An on-disk running journal,
         # a caller-provided flag, or a restarted manager cannot establish it.
         self._walk_forward_reference = None
@@ -836,6 +1004,9 @@ class JobManager:
         if operation not in OPERATIONS or not isinstance(payload, dict):
             raise RuntimeSafetyError('Unsupported operation')
         _json_bytes(payload)
+        if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
+            or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
+            raise RuntimeSafetyError('Unsupported model provider; local models and paid API fallback are disabled')
         if operation not in UI_OPERATIONS:
             allowed = {'demo': {'bars'}, 'backtest': {'dataset', 'family'}, 'campaign': {'dataset'}}[operation]
             if set(payload) - allowed:
@@ -845,6 +1016,8 @@ class JobManager:
         deadline = None
         auth_request_id = None
         reconciliation_admitted = False
+        analysis_job_identity = None
+        analysis_result_reference = None
         walk_forward_reference = None
         walk_forward_result_reference = None
         if operation in WALK_FORWARD_OPERATIONS:
@@ -891,6 +1064,31 @@ class JobManager:
                 reconciliation_admitted = True
             if deadline is None:
                 deadline = time.monotonic() + 60
+        elif operation in ANALYSIS_OPERATIONS:
+            allowed={'ui_analysis_preview':{'request'},
+                     'ui_analysis_run':{'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'},
+                     'ui_analysis_read':{'analysis_id'},
+                     'ui_analysis_reconcile':{'analysis_id','registration','stopped_job_id'}}[operation]
+            if set(payload)!=allowed: raise RuntimeSafetyError('Invalid analysis job fields')
+            if operation in ('ui_analysis_preview','ui_analysis_run'):
+                request=validate_analysis_request(payload['request'])
+                deadline=time.monotonic()+120+10+(request['timeout_seconds'] if operation=='ui_analysis_run' else 0)
+            else: deadline=time.monotonic()+60
+            if operation!='ui_analysis_preview':
+                reference=payload['expected_analysis_id'] if operation=='ui_analysis_run' else payload['analysis_id']
+                if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}',reference):
+                    raise RuntimeSafetyError('Invalid analysis identity')
+                analysis_result_reference=reference
+            if operation=='ui_analysis_run':
+                if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}',payload['expected_plan_hash']):
+                    raise RuntimeSafetyError('Invalid immutable analysis plan hash')
+                if any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
+                    raise RuntimeSafetyError('Explicit one-call analysis consent required')
+                analysis_job_identity=(reference,request['registration'])
+            if operation=='ui_analysis_reconcile':
+                if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
+                    raise RuntimeSafetyError('Matching analysis subtree stop proof required')
+                reconciliation_admitted=True
         elif operation == 'ui_chatgpt_auth':
             request = payload.get('request')
             if set(payload) != {'request'} or not isinstance(request, dict):
@@ -913,6 +1111,9 @@ class JobManager:
         job_id = uuid.uuid4().hex
         if walk_forward_reference is not None:
             self._claim_walk_forward(walk_forward_reference, job_id)
+        self._analysis_job_identity = analysis_job_identity
+        self._analysis_result_reference = analysis_result_reference
+        if analysis_job_identity is not None: self._quiesced_analysis = None
         self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
         if self._subscription_job: self._quiesced_subscription_id = None
         self._walk_forward_reference = walk_forward_reference
@@ -920,7 +1121,7 @@ class JobManager:
         if walk_forward_reference is not None:
             self._quiesced_walk_forward = None
         self._tree_quiesced = False
-        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
+        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ANALYSIS_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
         self._operation = operation
         self._deadline = deadline
         self._auth_request_id = auth_request_id
@@ -977,9 +1178,13 @@ class JobManager:
                     result = event.get('result')
                     if not isinstance(result, dict) or result.get('reference') != self._walk_forward_result_reference:
                         raise RuntimeSafetyError('Walk-forward worker reference mismatch')
+                if event['type'] == 'result' and self._analysis_result_reference is not None:
+                    result=event.get('result')
+                    if not isinstance(result,dict) or result.get('analysis_id')!=self._analysis_result_reference:
+                        raise RuntimeSafetyError('Analysis worker reference mismatch')
                 if event['type'] == 'auth_progress':
                     auth_event = event.get('auth_event')
-                    allowed = {'request_id','kind','state','registrations','active_registration','authorization_url','error_code','revocation_confirmed','models'}
+                    allowed = {'request_id','kind','state','registrations','active_registration','authorization_url','error_code','revocation_confirmed','models','model_labels','account_labels'}
                     if self._operation != 'ui_chatgpt_auth' or not isinstance(auth_event, dict) or set(auth_event) - allowed or auth_event.get('request_id') != self._auth_request_id or auth_event.get('kind') not in ('authorization', 'progress'):
                         raise RuntimeSafetyError('Invalid private authentication event')
                     # Transient OAuth query data must never enter persistent logs.
@@ -1044,6 +1249,8 @@ class JobManager:
         self._gate = None
         self._deadline = None
         self._auth_request_id = None
+        if self._analysis_job_identity is not None and self._tree_quiesced:
+            self._quiesced_analysis = (self.job_id,*self._analysis_job_identity)
         if self._subscription_job:
             self._quiesced_subscription_id = self.job_id
         if self._walk_forward_reference is not None and self._tree_quiesced and ownership_error is None:
@@ -1058,8 +1265,8 @@ class JobManager:
             self.tree.stop_and_join()
             return
         if not pid or sys.platform == 'win32':
-            if self._operation in WALK_FORWARD_OPERATIONS:
-                raise RuntimeSafetyError('Cannot prove walk-forward subtree stopped; reconciliation blocked')
+            if self._operation in WALK_FORWARD_OPERATIONS or self._operation in ANALYSIS_OPERATIONS:
+                raise RuntimeSafetyError('Cannot prove managed subtree stopped; reconciliation blocked')
             return
         try: os.killpg(pid, signal.SIGKILL)
         except ProcessLookupError: return
@@ -1074,7 +1281,7 @@ class JobManager:
                 for item in Path('/proc').iterdir():
                     if not item.name.isdigit(): continue
                     try: fields=(item/'stat').read_text().rsplit(')',1)[1].split()
-                    except FileNotFoundError: continue
+                    except (FileNotFoundError, ProcessLookupError): continue
                     if int(fields[2]) == pid and fields[0] != 'Z': live=True;break
                 if not live: return
             if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')

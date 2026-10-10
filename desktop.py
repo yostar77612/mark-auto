@@ -523,7 +523,13 @@ def _retain_smoke_directory(directory):
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
+    parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
     args = parser.parse_args(argv)
+    if args.tls_smoke is not None:
+        if args.smoke_test or not args.tls_smoke.is_absolute():
+            parser.error('--tls-smoke requires an absolute report path and cannot combine with --smoke-test')
+        from desktop_tls_smoke import write_report
+        return write_report(args.tls_smoke)
     if args.smoke_test is not None and not args.smoke_test.is_absolute():
         parser.error('--smoke-test requires an absolute report path')
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer

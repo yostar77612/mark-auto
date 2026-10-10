@@ -60,10 +60,13 @@ class PackagingTests(unittest.TestCase):
                     'packaging/markauto.spec', 'packaging/markauto.iss',
                     'packaging/build.ps1', 'packaging/collect_licenses.py',
                     'packaging/THIRD_PARTY_NOTICES.md', 'LICENSE',
-                    'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
+                    'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_tls_smoke.py',
                     'desktop_chatgpt_dependency_manifest.json',
                     'packaging/third_party/chatgpt-auth-native-notices.zip',
-                    'packaging/third_party/README.md'}
+                    'packaging/third_party/README.md', '.gitattributes',
+                    'packaging/qt_licenses.py', 'packaging/qt_notices/manifest.json',
+                    'packaging/qt_notices/QT-NOTICE.txt', 'packaging/qt_notices/QT-NATIVE-NOTICES.zip',
+                    'packaging/qt_notices/GPL-3.0-only.txt', 'packaging/qt_notices/LGPL-3.0-only.txt'}
         required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
         for name in required:
             self.assertTrue((ROOT / name).is_file(), name)
@@ -79,12 +82,22 @@ class PackagingTests(unittest.TestCase):
         hooks.copy_metadata = lambda name: metadata_names.append(name) or []
         def analysis(*args, **kwargs):
             captured.update(kwargs)
-            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=kwargs['datas'])
-        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}):
+            # Real Analysis output is destination-first TOC, unlike its source-first inputs.
+            datas = [(str(Path(destination) / Path(source).name), source, 'DATA')
+                     for source, destination in kwargs['datas']]
+            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=datas)
+        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}), \
+                patch('quantlab.sqlite_runtime.verify') as verify_sqlite, \
+                patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries:
             runpy.run_path(str(ROOT / 'packaging/markauto.spec'), init_globals={
                 'SPECPATH': str(ROOT / 'packaging'), 'Analysis': analysis,
                 'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
                 'COLLECT': lambda *a, **kw: None})
+        self.assertEqual(captured['binaries'], [])
+        self.assertFalse(any('local_ai' in str(entry) or 'local-ai' in str(entry) for entry in captured['datas']))
+        verify_sqlite.assert_called_once()
+        verify_binaries.assert_called_once()
+        self.assertIn(str(ROOT / 'packaging/sqlite_runtime_hook.py'), captured['runtime_hooks'])
         datas = set(captured['datas'])
         self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
         for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
@@ -155,7 +168,8 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / 'packaging/third_party').mkdir(parents=True)
-            (root / 'dist').mkdir()
+            (root / 'dist/validation').mkdir(parents=True)
+            (root / 'dist/validation/sqlite-runtime.json').write_text(json.dumps({'runtime': 'test-only'}))
             shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
             names = ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
                      'desktop_chatgpt_ui.py', 'desktop_chatgpt_dependency_manifest.json',

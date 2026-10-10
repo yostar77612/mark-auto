@@ -166,6 +166,19 @@ def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id,
     import quantlab.paper as paper
     import quantlab.paper_replay as replay
     sqlite3.connect = _instrument_connect(sqlite3.connect, timings)
+    original_connection = replay.PaperReplay._connection
+    @contextmanager
+    def observed_connection(self):
+        with original_connection(self) as db:
+            metadata['replay_storage'] = {
+                'requested_profile': self.storage_profile,
+                'journal_mode': db.execute('PRAGMA journal_mode').fetchone()[0],
+                'synchronous': db.execute('PRAGMA synchronous').fetchone()[0],
+                'wal_autocheckpoint': db.execute('PRAGMA wal_autocheckpoint').fetchone()[0],
+                'sqlite_source_id': db.execute('SELECT sqlite_source_id()').fetchone()[0],
+            }
+            yield db
+    replay.PaperReplay._connection = observed_connection
     def wrap(cls, name, label):
         original = getattr(cls, name)
         def call(self, *args, **kwargs):

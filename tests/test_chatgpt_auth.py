@@ -168,6 +168,159 @@ class AuthTests(unittest.TestCase):
         with self.assertRaises(a.AuthError): self.callback(client_id='other')
         self.callback(client_id=None)
         self.assertEqual(registration, self.session.active_registration)
+    def make_registration_retry(self,client='retry-client'):
+        self.begin();original=self.transport.request
+        def fail_exchange(method,url,**kwargs):
+            if url==a.TOKEN:return a.HttpResponse(400,b'{"error":"invalid_grant"}')
+            return original(method,url,**kwargs)
+        with patch.object(self.transport,'request',side_effect=fail_exchange):
+            with self.assertRaisesRegex(a.AuthError,'registration_retry_required'):
+                self.callback(client_id=client)
+        return next(ref for ref,row in self.vault.record['registration_retries'].items() if row['client_id']==client)
+
+    def test_schema1_migration_retains_verified_rows_and_is_read_only_until_write(self):
+        ref=self.connect();old=copy.deepcopy(self.vault.record)
+        old['schema']=1;old.pop('registration_retries');self.vault.record=copy.deepcopy(old)
+        migrated=a._validate_record(old)
+        self.assertEqual(migrated['schema'],2);self.assertEqual(migrated['registration_retries'],{})
+        self.assertEqual(migrated['registrations'],old['registrations'])
+        self.assertEqual(old['schema'],1);self.assertNotIn('registration_retries',old)
+        writes=self.vault.writes;self.new_session().status_summary()
+        self.assertEqual(self.vault.writes,writes);self.assertEqual(self.vault.record,old)
+        self.new_session().select(ref)
+        self.assertEqual(self.vault.record,migrated)
+
+    def test_invalid_grant_retains_only_unverified_routing_id_and_explicit_retry_reuses_it(self):
+        ref=self.make_registration_retry();record=copy.deepcopy(self.vault.record)
+        self.assertEqual(record['registrations'],{});self.assertIsNone(record['active'])
+        self.assertEqual(record['registration_retries'][ref],{'client_id':'retry-client'})
+        self.session=self.new_session();summary=self.session.status_summary()
+        self.assertEqual(summary['registrations'],[{'registration':ref,'state':'registration_retry_required'}])
+        self.assertNotIn('retry-client',json.dumps(summary))
+        for action in (self.session.select,self.session.access_token,self.session.refresh,self.session.sign_out):
+            with self.assertRaises(a.AuthError):action(ref)
+        self.assertEqual(self.vault.record,record)
+        before=len(self.transport.calls);url=self.begin(ref)
+        self.assertEqual(len(self.transport.calls),before)
+        self.assertEqual(self.query['client_id'],['retry-client'])
+        self.assertNotIn('agent_name_hint',self.query);self.assertNotIn('prompt',self.query)
+        self.callback(client_id=None)
+        self.assertEqual(self.session.active_registration,ref)
+        self.assertEqual(self.vault.record['registration_retries'],{})
+        self.assertEqual(self.vault.record['registrations'][ref]['identity']['client_id'],'retry-client')
+        self.assertEqual(self.session.access_token(ref),'fixture-access-0')
+
+    def test_retry_never_replaces_existing_identity_or_promotes_invalid_token(self):
+        active=self.connect();original=copy.deepcopy(self.vault.record['registrations'][active])
+        retry=self.make_registration_retry()
+        self.assertEqual(self.vault.record['active'],active)
+        self.assertEqual(self.vault.record['registrations'][active],original)
+        self.session=self.new_session();self.begin(retry)
+        with self.assertRaises(a.AuthError):self.callback(client_id='changed-client')
+        self.assertEqual(self.session.state,'authorizing')
+        self.claim_changes={'aud':'wrong-audience'}
+        with self.assertRaises(a.AuthError):self.callback(client_id=None)
+        self.assertIn(retry,self.vault.record['registration_retries'])
+        self.assertNotIn(retry,self.vault.record['registrations'])
+        self.assertEqual(self.vault.record['active'],active)
+        self.assertEqual(self.vault.record['registrations'][active],original)
+
+    def test_retry_record_rejects_identity_tokens_active_alias_and_duplicate_clients(self):
+        ref=self.make_registration_retry();base=copy.deepcopy(self.vault.record)
+        for extra in ({'tokens':{}},{'identity':{}},{'scopes':['chatgpt.tokens.use.direct']}):
+            bad=copy.deepcopy(base);bad['registration_retries'][ref].update(extra)
+            with self.assertRaises(a.AuthError):a._validate_record(bad)
+        bad=copy.deepcopy(base);bad['active']=ref
+        with self.assertRaises(a.AuthError):a._validate_record(bad)
+        bad=copy.deepcopy(base);bad['registration_retries']['f'*32]={'client_id':'retry-client'}
+        with self.assertRaises(a.AuthError):a._validate_record(bad)
+        bad=copy.deepcopy(base);bad['registration_retries'][ref]={'client_id':a.DYNAMIC_CLIENT}
+        with self.assertRaises(a.AuthError):a._validate_record(bad)
+        with self.assertRaises(a.AuthError):self.session.begin(ref,enable_plan=True)
+
+    def test_cancelled_or_failed_retry_persistence_does_not_create_identity(self):
+        self.begin();original=self.transport.request
+        def cancelled_exchange(method,url,**kwargs):
+            if url==a.TOKEN:
+                self.session._cancel.set()
+                return a.HttpResponse(400,b'{"error":"invalid_grant"}')
+            return original(method,url,**kwargs)
+        with patch.object(self.transport,'request',side_effect=cancelled_exchange):
+            with self.assertRaises(a.AuthError):self.callback(client_id='retry-client')
+        self.assertEqual(self.vault.record['registration_retries'],{})
+        self.assertEqual(self.vault.record['registrations'],{})
+        self.session=self.new_session();self.begin();self.vault.fail_at=self.vault.writes+1
+        with patch.object(self.transport,'request',return_value=a.HttpResponse(400,b'{"error":"invalid_grant"}')):
+            with self.assertRaises(a.AuthError):self.callback(client_id='retry-client')
+        self.assertEqual(self.vault.record['registration_retries'],{})
+        self.assertEqual(self.vault.record['registrations'],{})
+
+    def test_first_use_initializer_requires_guard_and_never_recreates_existing_host(self):
+        with self.assertRaisesRegex(a.AuthError,'first_use_check_unavailable'):
+            self.session.initialize_host(first_use_only=True)
+        self.assertIsNone(self.vault.record)
+        self.vault.assert_first_use=lambda:None
+        host=self.session.initialize_host(first_use_only=True)
+        saved=copy.deepcopy(self.vault.record)
+        with self.assertRaisesRegex(a.AuthError,'explicit_host_recovery_required'):
+            self.session.initialize_host(first_use_only=True)
+        self.assertEqual(self.vault.record,saved);self.assertEqual(self.vault.record['host_id'],host)
+        self.assertEqual(self.transport.calls,[])
+
+    def test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence(self):
+        for evidence in ('chatgpt-oauth-host-v1.marker','chatgpt-plan-controls-v1.marker',
+                         'control-v1/chatgpt-plan-account-controls.sqlite','control-v1/chatgpt-plan-old.sqlite3',
+                         'credentials/chatgpt-oauth-v1/accounts.dpapi.bak'):
+            with self.subTest(evidence=evidence),tempfile.TemporaryDirectory() as tmp:
+                vault=a.DPAPIVault(str(Path(tmp)));vault.directory.mkdir(parents=True)
+                (vault.directory/'vault.lock').write_bytes(b'0')
+                vault.assert_first_use()
+                target=Path(tmp)/evidence;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(b'fixture')
+                with self.assertRaisesRegex(a.AuthError,'explicit_host_recovery_required'):vault.assert_first_use()
+        with tempfile.TemporaryDirectory() as tmp:
+            vault=a.DPAPIVault(str(Path(tmp)))
+            vault.host_marker.symlink_to(Path(tmp)/'missing')
+            with self.assertRaises(a.AuthError):vault.assert_first_use()
+
+    def test_first_use_guard_rejects_surviving_analysis_ledger_without_other_host_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);vault=a.DPAPIVault(str(root))
+            controls=root/'control-v1';controls.mkdir()
+            unrelated=controls/'other-feature.sqlite3';unrelated.write_bytes(b'fixture')
+            vault.assert_first_use()
+            ledger=controls/('chatgpt-analysis-'+'a'*64+'.sqlite3')
+            ledger.write_bytes(b'prior-analysis-fixture')
+            before={path.name:path.read_bytes() for path in controls.iterdir()}
+            with self.assertRaisesRegex(a.AuthError,'explicit_host_recovery_required'):
+                vault.assert_first_use()
+            self.assertFalse(vault.path.exists());self.assertFalse(vault.host_marker.exists())
+            self.assertFalse((root/'chatgpt-plan-controls-v1.marker').exists())
+            self.assertEqual({path.name:path.read_bytes() for path in controls.iterdir()},before)
+
+    def test_dpapi_save_retains_nonsecret_host_history_if_credential_file_is_lost(self):
+        self.session.initialize_host();record=copy.deepcopy(self.vault.record)
+        with tempfile.TemporaryDirectory() as tmp:
+            vault=a.DPAPIVault(str(Path(tmp)));vault.directory.mkdir(parents=True)
+            with patch.object(vault,'_windows'),patch('quantlab.desktop_runtime.CredentialVault._crypt',return_value=b'fixture-encrypted'):
+                vault.save(record)
+            self.assertEqual(vault.host_marker.read_bytes(),b'markauto-chatgpt-host-v1\n')
+            vault.path.unlink()
+            with self.assertRaisesRegex(a.AuthError,'explicit_host_recovery_required'):vault.assert_first_use()
+            self.assertNotIn(record['host_id'].encode(),vault.host_marker.read_bytes())
+
+    def test_explicit_plan_reconsent_is_never_part_of_ordinary_login(self):
+        self.begin();self.assertNotIn('prompt',self.query)
+        self.callback();registration=self.session.active_registration
+        self.begin(registration);self.assertNotIn('prompt',self.query);self.session.cancel()
+        url=self.session.begin(registration,enable_plan=True)
+        query=parse_qs(urlsplit(url).query)
+        self.assertEqual(query['prompt'],['consent'])
+        self.assertEqual(query['client_id'],['fixture-client'])
+        self.assertNotIn('agent_name_hint',query);self.assertNotIn('force_reconsent',query)
+        self.session.cancel()
+        for registration,value in ((None,True),(registration,'yes')):
+            with self.assertRaises(a.AuthError):self.session.begin(registration,enable_plan=value)
+
     def test_a4_invalid_signed_claim_matrix_preserves_account(self):
         registration = self.connect()
         for changes in [dict(iss='https://evil.invalid'), dict(aud='wrong'),dict(nonce='wrong'),dict(sub=''),
@@ -515,7 +668,10 @@ class AuthTests(unittest.TestCase):
         with patch.object(self.vault,'load',wraps=self.vault.load) as load:
             summary=restarted.status_summary()
             load.assert_called_once_with()
-        self.assertEqual(summary,{'registrations':[{'registration':ref,'state':'plan_ready'}],
+        self.assertRegex(summary['registrations'][0]['account_label'],r'^已驗證帳戶 ••••[a-f0-9]{8}（電子郵件未提供）$')
+        self.assertNotIn('fixture-user',json.dumps(summary))
+        self.assertNotIn('same@example.invalid',json.dumps(summary))
+        self.assertEqual(summary,{'registrations':[{'registration':ref,'state':'plan_ready','account_label':summary['registrations'][0]['account_label']}],
                                   'active_registration':ref,'state':'plan_ready'})
         self.assertEqual(len(self.transport.calls),before)
         self.assertNotIn('fixture-access',json.dumps(summary))

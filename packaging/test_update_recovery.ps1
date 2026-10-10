@@ -148,6 +148,77 @@ function Smoke([string]$exe, [string]$versionExpected, [string]$stage) {
   if ($evidence.status -ne 'passed' -or $evidence.version -ne $versionExpected -or $evidence.live_status -ne 'disabled' -or [IO.Path]::GetFullPath($evidence.data_dir) -ne [IO.Path]::GetFullPath($dataDir)) { throw 'Recovery smoke evidence invalid or settings workspace not used' }
   Assert-ActualSettings
 }
+function Assert-ReleasedWorkspaceGuard([string]$exe) {
+  # Reuse the already verified/installed release, never fetch another installer.
+  # Exact 0.2.1 desktop.py checks WorkspaceLocator before MainWindow or SQLite;
+  # --smoke-test catches that RuntimeSafetyError and exits without a GUI dialog.
+  if ($BaselineVersion -ne '0.2.1') {
+    return @{status='not_run'; reason='Native guard proof is scoped to the exact published 0.2.1 baseline'}
+  }
+  if ($baselineEvidence.source_commit -ne '2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8') {
+    throw 'Required 0.2.1 native guard proof has an unexpected baseline source commit'
+  }
+  Assert-PayloadTarget $exe $BaselineVersion
+  Assert-ActualSettings
+  $pointer = Join-Path $dataDir 'workspace-location.json'
+  if (Get-OptionalStateItem $pointer) { throw 'Guard proof requires absent workspace pointer; existing preferences preserved' }
+  $fixture = Join-Path $results ('guarded-workspace-' + [guid]::NewGuid().ToString('N'))
+  New-Item (Join-Path $fixture 'state-v1\replays') -ItemType Directory | Out-Null
+  $marker = '{"kind":"markauto_workspace","schema_version":1,"sqlite_replay":{"profile":"wal_full","minimum_runtime":"3.51.3"}}'
+  [IO.File]::WriteAllBytes((Join-Path $fixture 'workspace-format.json'), [Text.Encoding]::UTF8.GetBytes($marker))
+  # Deliberately not a database: the proof must refuse before attempting SQLite.
+  foreach ($name in @('proof.sqlite3', 'proof.sqlite3-wal', 'proof.sqlite3-shm')) {
+    [IO.File]::WriteAllBytes((Join-Path $fixture "state-v1\replays\$name"), [Text.Encoding]::UTF8.GetBytes('must remain unopened: ' + $name))
+  }
+  $before = @{}
+  foreach ($file in Get-SafePayloadFiles $fixture) {
+    $before[$file.FullName] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+  }
+  $pointerBytes = [Text.Encoding]::UTF8.GetBytes((@{schema_version=1; root=$fixture} | ConvertTo-Json -Compress))
+  $pointerCreated = $false
+  $pointerDigest = $null
+  $report = Join-Path $results 'released-wal-workspace-refusal.json'
+  if (Get-OptionalStateItem $report) { throw 'Guard refusal report already exists; refusing stale proof' }
+  try {
+    $stream = [IO.File]::Open($pointer, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
+    $pointerCreated = $true
+    try { $stream.Write($pointerBytes, 0, $pointerBytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+    $pointerDigest = (Get-FileHash -LiteralPath $pointer -Algorithm SHA256).Hash
+    $p = Start-Process $exe -ArgumentList @('--smoke-test',"`"$report`"") -WorkingDirectory $env:TEMP -PassThru
+    if (-not $p.WaitForExit(30000)) {
+      & taskkill.exe /PID $p.Id /T /F | Out-Null
+      if (-not $p.WaitForExit(15000)) { throw 'Owned old-runtime guard process did not exit after timeout' }
+      throw 'Old-runtime workspace refusal timed out; no pass claimed'
+    }
+    if ($p.ExitCode -ne 1) { throw 'Old runtime did not return the expected startup refusal exit code' }
+    if (-not (Test-Path -LiteralPath $report -PathType Leaf)) { throw 'Old-runtime guard refusal report missing' }
+    $evidence = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+    if ($evidence.status -ne 'failed' -or $evidence.version -ne '0.2.1' -or
+        $evidence.market_smoke.error_type -ne 'RuntimeSafetyError' -or @($evidence.steps).Count -ne 0 -or
+        $evidence.live_status -ne 'disabled') { throw 'Old-runtime refusal was not the expected pre-worker safety failure' }
+    $after = @(Get-SafePayloadFiles $fixture)
+    if ($after.Count -ne $before.Count) { throw 'Old runtime added or removed guarded workspace files' }
+    foreach ($file in $after) {
+      if (-not $before.ContainsKey($file.FullName) -or (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash -ne $before[$file.FullName]) {
+        throw 'Old runtime changed guarded workspace bytes'
+      }
+    }
+    Assert-ActualSettings
+    return @{status='passed'; baseline_version=$BaselineVersion; baseline_source_commit=$baselineEvidence.source_commit;
+      executable=$exe; report=$report; fixture=$fixture; exit_code=$p.ExitCode; unchanged_files=$before.Count;
+      scope='Actual released EXE refuses guarded workspace before worker/SQLite startup; sentinel files are not databases';
+      archive_refusal='Exact released-source test only; no old-EXE backup-restore command-line entrypoint'}
+  } finally {
+    if ($pointerCreated) {
+      Assert-NoReparsePath $pointer
+      if (-not $pointerDigest -or (Get-FileHash -LiteralPath $pointer -Algorithm SHA256).Hash -ne $pointerDigest) {
+        throw 'Owned guard pointer changed; preserve it for diagnosis instead of deleting unknown state'
+      }
+      # Only the exact test-created, unchanged pointer is removed. Fixture stays.
+      [IO.File]::Delete($pointer)
+    }
+  }
+}
 Preserve-OwnedLifecycleSettings
 if ((Get-OptionalStateItem $settingsPath) -or (Get-OptionalStateItem (Join-Path $dataDir 'workspace-location.json'))) {
   throw 'Unknown settings/workspace state: refusing to overwrite or relocate existing user preferences'
@@ -175,6 +246,7 @@ $stream = [IO.File]::Open($settingsPath, [IO.FileMode]::CreateNew, [IO.FileAcces
 try { $stream.Write($settingsBytes, 0, $settingsBytes.Length) } finally { $stream.Dispose() }
 $settingsDigest = (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash
 Smoke $oldExe $BaselineVersion 'baseline-existing-settings-smoke'
+$workspaceGuardEvidence = Assert-ReleasedWorkspaceGuard $oldExe
 # Freeze old-payload and unknown-file expectations before invoking the candidate.
 $obsolete = Join-Path $oldDir '_internal\obsolete-test.dll'
 Assert-NoReparsePath (Split-Path $obsolete -Parent)
@@ -294,6 +366,7 @@ Assert-PriorPayload
 Assert-Sentinels
 @{status='passed'; baseline="released $BaselineVersion"; candidate=$Version;
   baseline_source_commit=$baselineEvidence.source_commit; candidate_source_commit=$candidateEvidence.source_commit;
+  released_workspace_guard=$workspaceGuardEvidence;
   interruption='actual setup process tree killed during extraction before inventory/shortcut activation';
   recovery='rerun exact candidate; fresh payload verified before both shortcuts activate';
   split_shortcut_recovery='constructed old/new shortcut state, repaired by actual ordinary rerun; not an additional crash checkpoint';

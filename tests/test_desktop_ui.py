@@ -26,6 +26,8 @@ class NativeDesktopTests(unittest.TestCase):
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
         self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state/'settings.json'), BackupManager(self.paths, self.jobs))
+        self.assertEqual(self.window.provider_mode.currentData(), 'chatgpt_plan')
+        self.window.provider_mode.setCurrentIndex(self.window.provider_mode.findData('fixture'))
         self.window.show(); self.app.processEvents()
         self.addCleanup(self.cleanup_window)
 
@@ -121,7 +123,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.click('paper_kill'); self.wait_job(); self.assertIn('kill_switch',self.window.paper_detail.toPlainText())
 
     def test_settings_backup_restore_confirmation(self):
-        self.window.ai_endpoint.setText('https://example.invalid/v1'); self.window.ai_model.setText('unverified')
+        self.window.local_notifications.setChecked(False)
         self.click('save_settings'); self.assertIn('已保存',self.window.status.text())
         self.demo(); backup=Path(self.tmp.name)/'backup.zip'; self.window.backup_path.setText(str(backup))
         self.click('create_backup'); self.wait_job(); self.assertTrue(backup.exists())
@@ -129,24 +131,22 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.restore_confirm.setChecked(True); self.click('restore_backup'); self.wait_job()
         self.assertTrue((self.paths.state/'desktop_safety.json').exists())
 
-    def test_output_mode_persists_without_reopening_legacy_budget_identity(self):
+    def test_legacy_provider_settings_remain_inert_and_budget_identity_unchanged(self):
         from desktop_ui import provider_binding_options
         old = {'mode': 'compatible', 'model': 'example', 'network_opt_in': True}
         self.assertEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='json_object')))
         self.assertNotEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='registry_json_schema')))
-        self.window.output_mode.setCurrentIndex(1)
+        legacy = {'ai_endpoint':'http://127.0.0.1:18765/v1/chat/completions',
+                  'ai_model':'historical-model', 'output_mode':'unknown-historical-mode',
+                  'max_calls':1, 'max_spend':'0'}
+        self.window.settings.save(legacy)
+        self.window.load_settings()
         self.click('save_settings')
         saved = self.window.settings.load()
-        self.assertEqual(saved['output_mode'], 'registry_json_schema')
-        self.window.output_mode.setCurrentIndex(0)
-        self.window.load_settings()
-        self.assertEqual(self.window.output_mode.currentData(), 'registry_json_schema')
-        self.window.settings.save({'output_mode': 'unknown-mode'})
-        with self.assertRaises(ValueError):
-            self.window.load_settings()
-        self.assertEqual(self.window.settings.load()['output_mode'], 'unknown-mode')
-        self.window.settings.save({})
-        self.window.load_settings()
+        for key, value in legacy.items(): self.assertEqual(saved[key], value)
+        self.assertFalse(self.jobs.active)
+        self.assertFalse(hasattr(self.window, 'ai_endpoint'))
+        self.assertFalse(hasattr(self.window, 'output_mode'))
 
     def test_invalid_policy_cannot_poison_startup(self):
         self.demo(); self.click('paper_snapshot')
@@ -159,52 +159,45 @@ class NativeDesktopTests(unittest.TestCase):
         self.click('demo_policy'); self.click('paper_snapshot'); self.wait_job()
         self.assertTrue((self.paths.state/'paper_policy.json').exists())
 
-    def test_endpoint_rejects_embedded_secrets(self):
-        for endpoint in ['https://user:pass@example.invalid/v1', 'https://example.invalid/v1?key=secret', 'https://example.invalid/#secret']:
-            self.window.ai_endpoint.setText(endpoint); self.click('save_settings')
-            self.assertIn('不得包含',self.window.status.text())
-        self.assertFalse((self.paths.state/'settings.json').exists())
+    def test_chatgpt_entry_uses_shared_primary_flow_on_explicit_click(self):
+        with patch.object(self.window.chatgpt_controller, 'request') as request:
+            self.click('chatgpt_sign_in_entry')
+            request.assert_called_once_with('list')
+        self.assertEqual(self.window.provider_mode.currentData(), 'chatgpt_plan')
+        self.assertTrue(self.window.stack.currentWidget().isAncestorOf(self.window.chatgpt_panel))
+        self.assertFalse(self.jobs.active)
+        self.assertFalse(self.window.chatgpt_panel.consent.isChecked())
 
-    def test_model_paid_opt_in_and_local_transport_button(self):
-        import threading
-        from http.server import ThreadingHTTPServer
-        from tests.test_provider import Handler
-        from quantlab.reporting import load_dataset, demo_config
-        from quantlab.research import demo_campaign_config
-        from quantlab.core import canonical_json
+    def test_product_has_no_custom_endpoint_key_or_local_model_controls(self):
+        from PySide6.QtWidgets import QPushButton
+        self.assertEqual([self.window.provider_mode.itemData(i)
+                          for i in range(self.window.provider_mode.count())],
+                         ['chatgpt_plan', 'fixture', 'manual'])
+        for name in ('ai_endpoint','ai_model','api_key','use_key','ai_opt_in','local_ai_panel'):
+            self.assertFalse(hasattr(self.window, name), name)
+        self.assertIsNone(self.window.findChild(QPushButton, 'save_api_key'))
+
+    def test_retired_model_cache_and_control_evidence_are_never_deleted(self):
+        cache = self.paths.root/'cache'/'local-ai'/'historical-profile'/'model.gguf'
+        ledger = self.paths.controls/'local-ai-v1.sqlite3'
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_bytes(b'INERT historical user-owned cache sentinel')
+        ledger.write_bytes(b'INERT irreversible historical control sentinel')
+        before = {path:path.read_bytes() for path in (cache,ledger)}
+        self.window.load_settings(); self.window.save_settings()
+        self.window.freeze_paper('test safe stop without retired model workers')
+        self.window.close(); self.app.processEvents()
+        self.assertEqual({path:path.read_bytes() for path in before},before)
+
+    def test_removed_provider_selection_fails_before_worker_or_network(self):
         self.demo()
-        self.window.provider_mode.setCurrentIndex(1)
-        self.click('run_campaign'); self.assertIn('本次網路',self.window.status.text()); self.assertFalse(self.jobs.active)
-        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
-        thread=threading.Thread(target=server.serve_forever,daemon=True); thread.start()
-        try:
-            self.window.ai_endpoint.setText(f'http://127.0.0.1:{server.server_port}/good')
-            self.window.ai_model.setText('inert-local-fixture')
-            self.window.use_key.setChecked(False); self.window.ai_opt_in.setChecked(True)
-            data=load_dataset(self.paths.state/'dataset.json'); cfg=demo_campaign_config(data,demo_config())
-            cfg.update(families=['trend'],max_trials=1,max_improvements=0)
-            self.window.campaign_config.setPlainText(canonical_json(cfg))
-            before=len(Handler.seen)
-            self.click('run_campaign'); self.wait_job(60)
-            self.assertEqual(len(Handler.seen),before+1)
-            self.assertFalse(self.window.ai_opt_in.isChecked())
-            state=json.loads(self.window.summary.toPlainText())
-            self.assertEqual(state['real_model_status'],'not_verified')
-            self.assertEqual(state['attempts'][0]['status'],'evaluated')
-        finally:
-            server.shutdown(); server.server_close(); thread.join(timeout=3)
-
-    def test_vault_key_button_never_persists_plaintext(self):
-        secret='inert-credential-widget-test-only'
-        self.window.api_key.setText(secret)
-        with patch('quantlab.desktop_runtime.CredentialVault.save') as save:
-            self.click('save_api_key')
-            save.assert_called_once_with('model_api_key',secret)
-        self.assertEqual(self.window.api_key.text(),'')
-        self.assertNotIn(secret,self.window.status.text())
-        self.click('save_settings')
-        for path in self.paths.state.rglob('*'):
-            if path.is_file(): self.assertNotIn(secret.encode(),path.read_bytes())
+        for mode in ('compatible','local','ollama','paid_api'):
+            self.window.provider_mode.addItem('unsupported test fixture', mode)
+            self.window.provider_mode.setCurrentIndex(self.window.provider_mode.count()-1)
+            with patch.object(self.window, 'start_job') as start:
+                with self.assertRaises(ValueError): self.window.run_campaign()
+                start.assert_not_called()
+        self.assertFalse(self.jobs.active)
 
     def test_remote_free_assumption_and_secret_endpoint_rejected_before_files(self):
         from desktop_ui import campaign_generator
@@ -338,8 +331,18 @@ class NativeDesktopTests(unittest.TestCase):
         finally:
             window.jobs=original; window.backups.recover()
 
-    def test_provider_budget_survives_older_backup_and_workspace_change(self):
-        from desktop_ui import campaign_generator
+    def test_historical_provider_budget_survives_older_backup_and_workspace_change(self):
+        from desktop_ui import research_controls
+        from quantlab.research import CompatibleProvider
+        from quantlab.provider import HTTPTransport
+        def historical_provider(paths, options):
+            # Retained ledger semantics tested directly; no product provider path.
+            return CompatibleProvider(model=options["model"], endpoint=options["endpoint"],
+                transport=HTTPTransport(allow_network=True),
+                budget_path=research_controls(paths)/"provider_budgets"/"historical.sqlite3",
+                network_opt_in=True, max_calls=options["max_calls"], max_tokens=options["max_tokens"],
+                max_spend=options["max_spend"], cost_per_token=options["cost_per_token"],
+                tokens_per_call=options["tokens_per_call"], timeout_seconds=options["timeout_seconds"])
         from quantlab.desktop_runtime import AppPaths
         from quantlab.core import canonical_json
         from quantlab.strategies import builtin_strategies
@@ -349,12 +352,12 @@ class NativeDesktopTests(unittest.TestCase):
                      use_credential=False,max_calls=1,max_tokens=10000,max_spend='0',cost_per_token='0',tokens_per_call=100,timeout_seconds=2)
         response={'choices':[{'message':{'content':canonical_json(builtin_strategies()[0])}}]}
         with patch('quantlab.provider.HTTPTransport.__call__',return_value=response) as transport:
-            campaign_generator(self.paths,options).generate({})
+            historical_provider(self.paths,options).generate({})
             self.window.backups.restore(archive)
-            with self.assertRaises(ValueError): campaign_generator(self.paths,options).generate({})
+            with self.assertRaises(ValueError): historical_provider(self.paths,options).generate({})
             other=AppPaths(Path(self.tmp.name)/'other-workspace',self.paths.bootstrap or self.paths.root).ensure()
             self.assertEqual(other.controls,self.paths.controls)
-            with self.assertRaises(ValueError): campaign_generator(other,options).generate({})
+            with self.assertRaises(ValueError): historical_provider(other,options).generate({})
             self.assertEqual(transport.call_count,1)
         self.assertFalse((self.paths.state/'provider_budgets').exists())
         self.assertTrue(list((self.paths.controls/'provider_budgets').glob('*.sqlite3')))

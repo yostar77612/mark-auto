@@ -150,11 +150,19 @@ class MarketHostTests(unittest.TestCase):
         from desktop_ui import MainWindow
         self.window.market.timeframe_combo.setCurrentIndex(3)
         self.window.save_settings()
-        with patch('quantlab.market_providers.build_opener',side_effect=AssertionError('restart network')):
+        with patch('quantlab.market_providers.build_opener',side_effect=AssertionError('restart network')) as market_network, \
+             patch('desktop_chatgpt_ui.ConnectionController.request',side_effect=AssertionError('restart subscription action')) as subscription_action, \
+             patch('desktop_chatgpt_auth.AuthSession',side_effect=AssertionError('restart auth session')) as auth_session, \
+             patch('PySide6.QtGui.QDesktopServices.openUrl',side_effect=AssertionError('restart browser')) as browser:
             restored=MainWindow(self.paths,self.jobs,self.window.settings,self.window.backups)
         try:
+            for action in (market_network, subscription_action, auth_session, browser):
+                action.assert_not_called()
             self.assertEqual(restored.market.timeframe_combo.currentData(),'15m')
-            self.assertFalse(restored.ai_opt_in.isChecked())
+            self.assertFalse(restored.chatgpt_panel.consent.isChecked())
+            self.assertFalse(restored.chatgpt_panel.included_usage_only.isChecked())
+            self.assertFalse(restored.chatgpt_panel.primary_sign_in_pending)
+            self.assertFalse(restored.chatgpt_controller.busy)
             self.assertFalse(restored.paper_confirm.isChecked())
         finally: restored.close()
 

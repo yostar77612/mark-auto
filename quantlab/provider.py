@@ -29,6 +29,7 @@ class HTTPTransport:
     max_request_bytes: int = 65536
     max_response_bytes: int = 262144
     credential_resolver: Callable[[], str | None] | None = field(default=None, repr=False)
+    connection_verifier: Callable | None = field(default=None, repr=False)
 
     def __post_init__(self):
         if type(self.allow_network) is not bool:
@@ -36,6 +37,8 @@ class HTTPTransport:
         for value in (self.max_request_bytes, self.max_response_bytes):
             if type(value) is not int or not 1024 <= value <= 1048576:
                 raise ValidationError('HTTP byte limits must be 1024..1048576')
+        if self.connection_verifier is not None and not callable(self.connection_verifier):
+            raise ValidationError('Connection verifier must be callable')
         if self.credential_resolver is not None and not callable(self.credential_resolver):
             raise ValidationError('Credential resolver must be callable')
         if self.credential_resolver is not None and self.api_key_env is not None:
@@ -93,6 +96,10 @@ class HTTPTransport:
             timer = threading.Timer(timeout_seconds, interrupt_socket)
             timer.daemon = True
             timer.start()
+            if self.connection_verifier is not None:
+                connection.connect()
+                active_socket[0] = connection.sock
+                self.connection_verifier(connection.sock)  # No content/credentials sent before peer proof.
             connection.request('POST', parts.path or '/', body=body, headers=headers)
             active_socket[0] = connection.sock
             if time.monotonic() >= deadline:

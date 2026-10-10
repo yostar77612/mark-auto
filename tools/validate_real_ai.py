@@ -1,13 +1,10 @@
-"""Opt-in, bounded local-model integration evidence; never a profitability claim.
+"""Historical evidence analysis helpers; local-model execution is retired.
 
-Run with official, separately downloaded llama.cpp b11429 and Qwen GGUF files.
-No downloads, installation, credentials, broker calls, or model-generated code.
-The recording proxy forwards bytes unchanged. Production CompatibleProvider and
-HTTPTransport perform the requests; run_campaign performs all split evaluations.
+The command entry point fails closed without loading, downloading, or starting
+a model. Retained replay and provenance helpers allow old evidence to be audited.
 """
 from __future__ import annotations
 
-import argparse
 import copy
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -18,7 +15,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import socket
-import subprocess
 import sys
 import tarfile
 import threading
@@ -288,111 +284,9 @@ def replay_and_compare(dataset, config, record, provenance, output):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--model-file', type=Path, required=True)
-    parser.add_argument('--server', type=Path, required=True)
-    parser.add_argument('--runtime-archive', type=Path, required=True)
-    parser.add_argument('--dataset', type=Path, required=True)
-    parser.add_argument('--backtest-config', type=Path, required=True)
-    parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--replay-response', type=Path,
-                        help='Replay a saved HTTP record unchanged; makes zero model calls')
-    parser.add_argument('--output-mode', choices=('json_object', 'registry_json_schema'), default='json_object')
-    parser.add_argument('--improvement-check', action='store_true',
-                        help='Two real calls: one trend candidate and one feedback-based improvement, synthetic data only')
-    parser.add_argument('--families', nargs='+', choices=FAMILIES,
-                        default=['trend', 'mean_reversion', 'momentum'])
-    args = parser.parse_args(argv)
-    if len(args.families) > 3 or len(set(args.families)) != len(args.families):
-        parser.error('At most three distinct model proposals per experiment')
-    if args.improvement_check and (args.families != ['trend'] or args.output_mode != 'registry_json_schema' or args.replay_response):
-        parser.error('Improvement check requires --families trend --output-mode registry_json_schema and no replay')
-    if args.output.exists():
-        parser.error('Use a new output directory; never overwrite prior experiment evidence')
-    args.output.mkdir(parents=True)
-    started = time.monotonic()
-    provenance = verify_artifacts(args.model_file, args.server, args.runtime_archive)
-    dataset = load_dataset(args.dataset)
-    if args.improvement_check and (dataset.manifest.get('source_type') != 'synthetic' or
-                                  provenance['model_id'] != 'Qwen/Qwen2.5-1.5B-Instruct-GGUF'):
-        raise ValidationError('Improvement check requires explicitly synthetic data and the pinned 1.5B model')
-    config = demo_campaign_config(dataset, config_from_json(read_json(args.backtest_config)))
-    if dataset.manifest.get('source_type') != 'synthetic':
-        contracts = {bar.contract_id for bar in dataset.bars}
-        if contracts - config['backtest_config'].instrument_expiries.keys():
-            raise ValidationError('Real-data experiment requires explicit instrument expiries before inference')
-    calls = 2 if args.improvement_check else len(args.families)
-    config.update(families=args.families, max_trials=calls, max_improvements=int(args.improvement_check),
-                  max_runtime_seconds=480, purge_bars=1,
-                  ranking={'metric': 'net_pnl', 'minimum': '-1000000000000', 'min_trades': 0})
-    # Comparing all valid candidates is explicit: negative/zero-trade results stay visible.
-    # This permissive threshold is for integration evidence, never investment selection.
-    write_json(args.output / 'predeclared-config.json', to_dict(config))
-    port = free_port()
-    command = [str(args.server.resolve()), '-m', str(args.model_file.resolve()),
-               '--host', '127.0.0.1', '--port', str(port), '-t', '2', '-tb', '2',
-               '-c', '4096', '-np', '1', '-ngl', '0', '--seed', '7', '--temp', '0']
-    provenance.update(command=command, platform=sys.platform,
-                      experiment_purpose='synthetic_improvement_loop' if args.improvement_check else 'strategy_generation',
-                      output_mode=args.output_mode,
-                      started_at=datetime.now(timezone.utc).isoformat(),
-                      dataset_path=str(args.dataset.resolve()),
-                      dataset_sha256=sha256_file(args.dataset),
-                      external_api_spend='0', compute='existing local CPU; infrastructure cost not estimated',
-                      no_fixture_fallback=True, no_generated_code_execution=True)
-    if args.replay_response:
-        provenance.update(mode='frozen_model_output_replay',
-                          replay_response_path=str(args.replay_response.resolve()),
-                          replay_response_file_sha256=sha256_file(args.replay_response),
-                          command=None)
-        write_json(args.output / 'provenance.json', provenance)
-        result = replay_and_compare(dataset, config, read_json(args.replay_response), provenance, args.output)
-        print(json.dumps(result, indent=2))
-        return 0
-    write_json(args.output / 'provenance.json', provenance)
-    with (args.output / 'server.log').open('wb') as log:
-        process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
-        try:
-            deadline = time.monotonic() + 60
-            while True:
-                if process.poll() is not None:
-                    raise ValidationError('Local model server exited during startup; inspect server.log')
-                try:
-                    with urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=1) as response:
-                        if response.status == 200:
-                            break
-                except (OSError, urllib.error.URLError):
-                    pass
-                if time.monotonic() >= deadline:
-                    raise ValidationError('Local model startup deadline exceeded')
-                time.sleep(0.2)
-            with recording_proxy(port, args.output) as (endpoint, records):
-                provider = CompatibleProvider(model=provenance['model_id'], endpoint=endpoint,
-                    transport=HTTPTransport(allow_network=True), budget_path=args.output / 'provider.sqlite3',
-                    network_opt_in=True, timeout_seconds=120, max_calls=calls,
-                    max_tokens=60000, tokens_per_call=512, max_spend='0', cost_per_token='0',
-                    output_mode=args.output_mode)
-                state = run_campaign(dataset, config=config, generator=provider,
-                                     output_dir=args.output / 'campaign',
-                                     holdout_registry_path=args.output.parent / '.holdout_registry.sqlite3')
-            summary = summarize_evidence(state, records)
-            summary.update(artifact_verified_local_model_process=True,
-                           evidence_scope='experimental integration only; data sufficiency requires separate assessment',
-                           elapsed_seconds=time.monotonic() - started)
-            if args.improvement_check:
-                summary['improvement_check'] = improvement_evidence(state, records)
-            write_json(args.output / 'summary.json', summary)
-            print(json.dumps(summary, indent=2))
-            if args.improvement_check:
-                return 0 if summary['improvement_check']['loop_protocol_pass'] and summary['http_receipts_match_recorded_responses'] else 1
-            return 0 if summary['multi_strategy_comparison_completed'] and summary['http_receipts_match_recorded_responses'] else 1
-        finally:
-            process.terminate()
-            try:
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=10)
+    """The retired local-model executable path must never start inference."""
+    print('Local-model validation is retired. Use official ChatGPT subscription authorization; no local model or paid API fallback is supported.', file=sys.stderr)
+    return 2
 
 
 if __name__ == '__main__':

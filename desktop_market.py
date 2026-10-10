@@ -6,7 +6,7 @@ an intent only; host must perform its existing consent/background-job workflow.
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import re
-from PySide6.QtCore import Qt, Signal, QTime
+from PySide6.QtCore import Qt, Signal, QTime, QSignalBlocker
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,
     QPushButton,QLineEdit,QComboBox,QListWidget,QListWidgetItem,QSplitter,
     QGroupBox,QCheckBox,QSpinBox,QDoubleSpinBox,QScrollArea,QTabWidget,
@@ -312,6 +312,7 @@ class MarketDashboard(QWidget):
             message='本機歷史／自行聲明時段未驗證；每契約最新匯入快照。'+message
         if self._error: message='來源更新失敗，顯示既有資料。'+message
         self.message.setText(message)
+        self._indicator_message_base=message
         self._apply_indicators()
         self.series_rendered.emit(self._selected)
 
@@ -324,34 +325,66 @@ class MarketDashboard(QWidget):
             else: value.update({name:spin.value() for name,spin in controls.items()})
             config[key]=value
         if config['MACD']['fast']>=config['MACD']['slow']:
+            self._restore_indicator_controls()
             self.message.setText('MACD 快線期數必須小於慢線；保留上一組有效參數。'); return
-        self._indicator_config=config; self._apply_indicators(); self.preferences_changed.emit()
+        changed={key for key in config if config[key]!=self._indicator_config[key]}
+        failures=self._apply_indicators(config,reject_failures=changed)
+        if failures:
+            self._restore_indicator_controls()
+            self.message.setText(self._indicator_failure_text(failures)+' 已還原上一組參數與圖線。')
+            return
+        self._indicator_config=config; self.preferences_changed.emit()
 
-    def _apply_indicators(self):
+    def _restore_indicator_controls(self):
+        # Block every widget signal during rollback, including external observers.
+        widgets=[widget for check,controls in self._indicator_widgets.values() for widget in (check,*controls.values())]
+        blockers=[QSignalBlocker(widget) for widget in widgets]
+        try:
+            for key,(check,controls) in self._indicator_widgets.items():
+                check.setChecked(self._indicator_config[key]['enabled'])
+                for name,spin in controls.items():
+                    value=self._indicator_config[key]['periods'][int(name[-1])] if name.startswith('periods_') else self._indicator_config[key][name]
+                    spin.setValue(value)
+        finally:
+            for blocker in blockers: blocker.unblock()
+
+    @staticmethod
+    def _indicator_failure_text(failures):
+        return '、'.join(failures)+' 無法計算：資料量或參數超出指標計算限制，請縮短期數或切換較大 K 線週期。'
+
+    def _apply_indicators(self,config=None,*,reject_failures=()):
         bars=getattr(self,'_display_bars',()); closes=[]; highs=[]; lows=[]; keep=[]
         for index,bar in enumerate(bars):
             previous=bars[index-1] if index else None
             if previous is not None and bar.interval.endswith('m') and (bar.trade_date,bar.session,bar.session_open)==(previous.trade_date,previous.session,previous.session_open) and bar.timestamp>previous.end:
                 closes.append(None); highs.append(None); lows.append(None)
             keep.append(len(closes)); closes.append(bar.close); highs.append(bar.high); lows.append(bar.low)
-        overlays={}; panels={}; names=[]
-        for key,options in self._indicator_config.items():
+        overlays={}; panels={}; names=[]; failures=[]
+        for key,options in (self._indicator_config if config is None else config).items():
             if not options['enabled']: continue
             names.append(key); kwargs={k:v for k,v in options.items() if k!='enabled'}
-            if key=='MA':
-                for period in kwargs['periods']: overlays[f'MA{period}']=indicators.sma(closes,period=period)
-            elif key=='EMA': overlays['EMA']=indicators.ema(closes,**kwargs)
-            elif key=='RSI': panels['RSI']={'RSI':indicators.rsi(closes,**kwargs)}
-            elif key=='MACD': panels['MACD']=indicators.macd(closes,**kwargs)
-            elif key=='KD': panels['KD']=indicators.kd(highs,lows,closes,**kwargs)
-            elif key=='Bollinger': overlays.update({'BB '+k:v for k,v in indicators.bollinger(closes,**kwargs).items()})
-            elif key=='VWAP': overlays['VWAP 估計']=indicators.session_vwap(bars)
-        self.indicator_summary.setText(' / '.join(names)+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
+            try:
+                if key=='MA':
+                    for period in kwargs['periods']: overlays[f'MA{period}']=indicators.sma(closes,period=period)
+                elif key=='EMA': overlays['EMA']=indicators.ema(closes,**kwargs)
+                elif key=='RSI': panels['RSI']={'RSI':indicators.rsi(closes,**kwargs)}
+                elif key=='MACD': panels['MACD']=indicators.macd(closes,**kwargs)
+                elif key=='KD': panels['KD']=indicators.kd(highs,lows,closes,**kwargs)
+                elif key=='Bollinger': overlays.update({'BB '+k:v for k,v in indicators.bollinger(closes,**kwargs).items()})
+                elif key=='VWAP': overlays['VWAP 估計']=indicators.session_vwap(bars)
+            except indicators.IndicatorResourceLimitError:
+                failures.append(key)
+        rejected=tuple(key for key in failures if key in reject_failures)
+        if rejected: return rejected
+        self.indicator_summary.setText(' / '.join(name+('（無法計算）' if name in failures else '') for name in names)+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
         overlays={name:values if name=='VWAP 估計' else tuple(values[i] for i in keep) for name,values in overlays.items()}
         panes={f'{panel} {key}':tuple(values[i] for i in keep) for panel,entries in panels.items() for key,values in entries.items()}
         if 'MACD histogram' in panes:
             panes['MACD histogram 1×'] = panes.pop('MACD histogram')
         self.chart.set_overlays(overlays,panes=panes,pane_styles={'MACD histogram 1×':'histogram'} if 'MACD histogram 1×' in panes else {})
+        message=getattr(self,'_indicator_message_base','唯讀行情；歷史資料不代表即時報價。')
+        self.message.setText(message+(' '+self._indicator_failure_text(failures)+' 未顯示這些指標。' if failures else ''))
+        return ()
 
     def preferences(self):
         return {'version':1,'watchlist':list(self._watch),'selected':self._selected,'timeframe':self._timeframe,'indicators':deepcopy(self._indicator_config),'theme':'dark'}

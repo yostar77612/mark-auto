@@ -1,40 +1,104 @@
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->
-## 當前交付摘要（2026-10-10 05:32 UTC）
+## 22:42接續優先順序（不新增產品範圍或權重）
 
-- **已發布：0.2.1 unsigned preview**，main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[正式下載與該版 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。已實際核對八項主要 assets／56 個來源輸入、EXE 與 kit SHA-256／ZIP CRC；postmerge Windows 與 Quantlab 全部 PASS。這是研究／Paper 預覽版，並非 clean-client 或投資合格證明。
-- **正在修復：PR #5／候選 0.2.2，DRAFT／FAIL_REPAIR_IN_PROGRESS**。remote `12e088f` 已推送同一 PR／分支，對應 local `2021cd7`、tree `f1753d1de9d4949ab75f97f796f06ffb27ed565d`。WFO／報表／普通 UI 已包含，但完整 Windows gate 未過；未合併、未發布，沒有新 EXE 或 0.2.3 Release。
-- **最新 exact-head CI：** Quantlab `38026398885` 的 Linux3.11：1000 項、982 PASS／18 skips、372.491 秒；Linux3.12：982 PASS／18 skips、368.935 秒；UI：987 PASS／13 skips、411.012 秒；audit／static PASS。Win3.11／3.12 整個 job 達 15 分鐘而 CANCELLED，不能記 PASS；兩者原 960-bar／30 秒 Paper case 各自 PASS 只屬單項證據。
-- **Server 與修補狀態：** Server `38026398890` 全套 1000 項／918.891 秒，4 failures、2 errors、14 skips，包含原 Paper 30 秒 FAIL，建置在新 EXE 前停止。六類來源失敗分開追蹤：Windows 不合法 `/tmp` 絕對路徑 fixture、raw JSON 與 escaped path 斷言、8.3 canonical 路徑 fixture、source.read_text 缺 UTF-8、取消測試的 SQLite observer 造成 writer lock、Paper 原門檻。另有 Win311／312 SQLite teardown handle 明確 close 修補。
-- **05:32 修補已備妥，原生仍待：** UI test-only 的 3 個新案例已獨立審查：57 focused PASS、25 independent PASS；WFO 兩檔測試修補 33 PASS／36.641 秒；diagnostic arity 18 PASS／2.781 秒。最後混合 root 85 項＝84 PASS＋1 個既有 PowerShell skip，11.791 秒。這些集合重疊，不加總；原 reservation／取消／安全斷言與 timeout 保留，沒有以局部 PASS 認證整個候選。
-- **CI 分片與覆蓋：** 五檔 partition 修補已獨立審查，14 項 PASS；root discovery 為 1016 個唯一案例＝796 core＋220 research，兩組不重疊、聯集完整、無 import errors，**這是測試發現而非全套執行**。Windows 兩個 Python profile 各分兩個 shards，Linux／UI／Server 不分片；發布要求 10 個具名 jobs（含 Qt311 audit）。全部每項門檻與各 job 15 分鐘不變，最後 exact-head／native CI 未驗。已完成的一次性 connection study workflow steps 移除，tool／證據保留，失敗後 Paper 診斷只在 core 執行。
-- **原生 I/O 診斷不是產品修補：** artifact SHA-256 前綴 `54cc9098` 的完整 10 cases 涵蓋 FULL／NORMAL、每 profile 240 commits，30 個 children 皆 joined。每 120 commits：C: DELETE reopen 5.153／4.017 秒，DELETE step 4.439／3.929 秒，PERSIST step 5.764／5.902 秒反而較慢；D: DELETE 0.112／0.105 秒。可見 I/O 環境敏感度，不能據此宣布效能已修復；未改產品儲存、FULL 耐久、原 30 秒／10 秒 Gate，也未搬移 TEMP 或改變測試資料位置。
-- **研究仍有明確限制：** saved-pool 的 157 項獨立審查屬整合前證據，目前功能已在已推送但未發布的候選；不是 adaptive AI 或正式排名認證。真實 Oct8 WFO 仍為 `BLOCKED_NO_RUN`，完整 guard 與既有 consumed coverage 重疊 170 bars；0 新評估／模型呼叫／reservation，不改 window 或另建 registry 繞過。
-- **固定歷史驗收帳本：210/300＝70%，未接受 90 點**。原研究 100、桌面 70、市場 40；僅已取得證據的整項 PASS 計分。這不是剩餘工時、完整原需求或生產就緒百分比；後來重新確認的必要需求仍明列，分母／門檻不降低。
-- **外部與安全邊界：** clean Win10 22H2 x64／Win11 x64 為 EXTERNAL_BLOCKED；實際 ChatGPT grant／訂閱推論 NOT_VERIFIED；TAIEX 盤中自動使用權限未核實；main protection 未啟用且管理 API 403；unsigned 不繞過安全警告；真資金交易固定 DISABLED。 05:02 環境重查列出兩台桌機，一台已連線但未授權執行工作，另一台離線；沒有 saved coding environment，仍無已授權的乾淨 Windows 驗收環境，未要求更改設定。
+完整可恢復來源與Gate結果以[PROJECT_STATE最新檢查點](../agent/PROJECT_STATE.md)為準；下方12:14及更早內容為保留歷史。
 
+1. **AUTO／最高優先：** 同一PR整合已review的指標一致性、量測支持的scalar快路徑、frozen TLS tuple及timeout evidence修補；保留原960bars／30s、完整smoke40s、研究job15min、COMMIT／FULL及所有失敗紀錄。
+2. **AUTO：** 必要完整exact-head native CI、實際frozen TLS、install／launch／真0.2.1 upgrade／interrupted recovery／uninstall／data preservation及產物digest／source對應。新失敗先診斷與定向修復，不能以舊來源PASS、mock或盲目重跑代替。
+3. **AUTO有條件整合：** 全部適用工程Gate通過且tree／未保存工作／回歸核對後才合併；正式發布另受固定clean-client／實際AI等驗收約束，不把preview稱正式完成。
+4. **EXTERNAL BLOCKED獨立追蹤：** owner ChatGPT grant／真推論、Win10／11乾淨測試的合法權利及實際驗證、main Administration與正式簽章。KVM可執行且本repo是public標準免費runner，但Windows hosting授權尚未確立；不預設要求使用者自行建VM，也不擅自接受license／填註冊或啟用實盤。
+5. **暫緩：** 無實測收益的PERSIST模式切換、大型效能重構、新本地AI／付費fallback、額外功能／分支。進度仍210/300＝70%，剩餘30%；已實作、已驗證、未執行及外部阻塞不得互換。
 
-已推送身分對照：remote `12e088f`／local `2021cd7` 的 tree 同為 `f1753d1de9d4949ab75f97f796f06ffb27ed565d`。下列 wrapper／fixture／CI 分片的後續修補須以其最後來源再驗，不由這次 Linux PASS 自動繼承。
+## 當前整合狀態與最後已驗證基線（2026-10-10 12:14 UTC）
+
+### 11:16 使用者更正：官方訂閱為必要 AI 路徑（取代先前選路）
+
+官方 **Sign in with ChatGPT（SIWC）訂閱整合為必要需求**，第一階段已root套用：AI策略中心單一登入入口沿用既有官方PKCE/OIDC／受管worker，補齊帳戶／模型顯示、明示included-only確認及取消／關閉保護。本機模型UI、設定、runtime、下載器、打包與舊CI推論要求已移除；paid API／自訂endpoint入口亦關閉，無credits fallback；獨立TLS證據與歷史producer／研究紀錄保留。此更正只替換AI選路，不降低其他驗收；M4／M6仍PARTIAL、210/300＝70%，原研究隔離、耐久、工作量／deadline、安全、安裝及clean-client gates不變。
+
+included-only確認與ChatGPT Settings > Usage指引已實作，仍是使用者自述，不是server credits設定查證或金額上限保證。官方能力邊界見[Help Center](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites)及IMPLEMENTATION_CONTRACTS同日更正。實際OAuth grant／模型呼叫仍NOT_RUN、EXTERNAL_BLOCKED，須owner授權；mock不代替此證據。
+
+**第一階段來源／回歸：** full來源index tree `96ceacdf62224f39522bdccdbbd2b97d0e37cd06`，246個來源hash於終態核對不變（`quant-audit/subscription-phase1-source.json`／`subscription-phase1-source-verification.json`）。 1292項＝1271 PASS／20 skips／1 ERROR、1250.240秒、exit1；唯一ERROR為restart test仍引用已移除的`ai_opt_in`。20 skips為15個platform／PowerShell及5個此環境未裝Streamlit的optional UI tests，CI UI仍安裝它。原FAIL log保留於`quant-audit/subscription-phase1-full.log`。終態後才套用精確producer profile及test-only consent修補，root delta19項全PASS、0 skip、16.203秒、exit0（完整market14項＋profile5項；`quant-audit/subscription-phase1-root-delta.log`）。未重跑full，不追溯改寫FAIL。 獨立組合273 PASS／1 PowerShell skip、登入面板127 PASS、host43 PASS、精確producer profile8 PASS各按來源記錄，不相加。這是本機功能證據；實際環境Python3.12.14／SQLite3.53.1／Qt6.12.0，私有3.54載入probe被正確拒絕，未改產品runtime或CI的3.54要求。新native／frozen TLS／lifecycle及clean Win10／11仍NOT_RUN，未merge／未發布。按需策略評論／比較另列第二階段證據，不追溯算入此第一階段full。
+
+**第二階段按需評論／比較亦已root套用。** 基於第一階段checkpoint `695c25c5006e1fe04fb49ade50288f759a963546`／tree `e10b49af26629ca2e6f323c82b966c737cef4352`，加入本機重新計算的training／validation、SMA／RSI／MACD證據預覽及明示同意後的單次官方訂閱分析；排除holdout／OOS，獨立耐久receipt、精確快取與offline重開不重打模型，取消／死亡先join原worker再對帳。AI文字為未受信解讀，數值按candidate／split由本機證據顯示，不覆寫策略、排名或下單。新增ledger亦納入first-use host guard；兩代精確producer profiles與歷史identities保留。
+
+root backend **141 PASS／29.688秒**；host／runtime／packaging等 **152項＝151 PASS／1 PowerShell skip、78.542秒**，static／history 0 findings、diff check PASS。證據為`quant-audit/subscription-phase2-root-backend.log`、`subscription-phase2-root-host.log`及`subscription-phase2-docs/source-inventory.json`；isolated 1440×1000／1366×768視覺檢查僅synthetic fixture。沒有最終來源whole-suite／新native／實際grant PASS；待同一PR合併更新後的exact-head CI，不是已merge main或Release，也不改70%。
+
+### 更正前來源與歷史證據（保留原結果，不認證第一階段SIWC-only）
+
+恢復來源`f57ac5f39d86187945f9891b5cb7a16f5c674044`與未推送`d81ecb55`同tree `48ad5a1b6f8a813f2069b344c0629d48a3f090a6`；下列17db及其後更正前結果保留全部失敗，不追溯改寫。
+
+**最後受測來源與後續root delta分開。** remote `17db263a87f4df39a82bfa9b80d7694afcf28879`／local `1673d676a507373720a9f83485046f588a22f143`為同tree `27a571aebcf21b1842d584127f0814e1abcce7e1`。Quantlab9 PASS／Win312 research CANCELLED；Windows build／Qt gate PASS但AI model_download FAIL，未進inference／lifecycle。其後exact-host／typed診斷／TLS／storage診斷／KVM修補已有本機full／focused證據，依來源分列，新native仍NOT_RUN。
+
+- **公開下載仍只有0.2.1 unsigned preview。** [已核驗安裝檔與證據](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)，release main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；PR5已合併main94aca467，但候選0.2.2／PR6仍Draft、未合併／未發布。
+- **最新Quantlab38045449459終態：9 PASS／Win312 research CANCELLED。** UI1311項＝1298 PASS／13 skips、435.974秒；Linux311／312各1311項＝1293 PASS／18 skips、407.321／285.459秒；Windows311／312 core各1084項＝1067 PASS／17 skips、345.736／577.560秒。Win311 research227項＝223 PASS／4 skips、653.687秒；Win312於原15分鐘cap完成208項＝204 PASS／4 skips，第209項在`db.commit()`被中斷、18項未開始。storage診斷已套用、native量測待，沒有已修好或放寬cap的結論；e68取消與Linux312 observer原cause未知紀錄保留。
+- **最新Windows38045449411已FAIL；建置成功不等於AI或安裝通過。** Installer環境Windows Server2022／CPython3.13.16／Qt6.12.0原生1311項＝1290 PASS／21 skips、765.646秒，build／Qt payload gate PASS。model_download於1.031秒失敗、category=`local_ai_network`、child exit1、無numeric HTTP status、非timeout、cleanup=true；0 model calls，frozen inference／install／lifecycle NOT_RUN。此category不能推論DNS、TLS、HTTP狀態或服務中斷；後續exact-host發現與原生歸因分界見下。Quantlab Windows cores為Server2025，兩種Server證據均不取代clean client。
+- **實際17db263a installer靜態payload已獨立核驗。** artifact11667554811 ZIP 77,720,491 bytes／SHA256 `97bfa4f2a0660730f44f6c14581bc2084e43984de0ace5c50a6db2ca01c6a49b`，6 members，download hash／CRC PASS；0.2.2 installer 39,383,283 bytes／SHA256 `c2efa3f64424eaf24e6acec699bc1e3579927669d97dc52a36ad81046f398b58`。119個PE／982 payload entries證明原7項精確移除、無新增PE，retained DLL/PYD hashes全不變，依賴不引用已移除檔；Python3.5.9、qwindows／Schannel／cert backend與5份Qt notices均核對。這關閉該產物的靜態排除／notice-integrity證据，尚不認證loaded TLS、frozen HTTPS、IME、完整legal clearance、source-release交付或client。證據：`quant-audit/ci-17db263a/terminal-assessment.md`；app EXE hash是`7b383ca4…66b688aa`，非installer hash。未merge／未Release。
+- **下載相容性缺口已證明並窄修，原生歸因仍待。** 固定model URL的TLS-verified HEAD為Hugging Face302→`us.aws.cdn.hf.co`200，Content-Length 1,117,320,736、linkedETag符合model SHA，0 body bytes；官方metadata列出此exact host，舊allowlist確實拒絕。只新增此host及有限typed network-cause診斷，TLS／size／hash／no-auth／proxy限制不變。17db失敗artifact未記rejected host，對該次失敗的歸因仍是inference。root combined151 PASS／2.367秒（`quant-audit/followon-integrated-targeted-20261010.log`）；其中TLS包含真owned-loopback HTTPS及憑證拒絕測試，Windows DLL載入證據仍mock。六檔synthetic storage診斷已套用，獨立CI job已實作、native量測未跑；product storage／COMMIT／原cap不變，未宣稱效能修復。HEAD與官方來源證據：`quant-audit/ci-17db263a/model-head-metadata.json`、`model-cdn-official-provenance.json`。
+- **最新root full與其後diagnostic-only delta分開。** Linux1372項＝1357 PASS／15既有skips、291.628秒、exit0（`quant-audit/followon-root-full-20261010.log`），`followon-root-source-20261010.json`的219個pre-run hashes於完成後核對不變。其後才套用exclusive mkstemp report修補／3 regressions及獨立Windows3.12 storage job／7 offline contracts，故不算入該full來源。final focused初次70項＝68 PASS／1 skip／1 import error（錯拼module、2.440秒）保留；只改命令後78項＝77 PASS／1既有PowerShell skip、2.962秒、exit0（`quant-audit/followon-final-delta-corrected-20261010.log`），static／history0 findings、diff check PASS。未重跑full；新native仍NOT_RUN。storage job已實作，180秒量測／6分鐘job且保存INCOMPLETE；product storage mode／原COMMIT／原gates不變，量測COMPLETE也不等於產品驗收。
+- **後續root測試與KVM證據分界。** TLS5檔focused70 PASS／0.299秒、quality boundary2檔14 PASS／0.027秒，KVM C／test／job3檔combined69 PASS／0.952秒，TLS含真owned-loopback HTTPS、Windows DLL證據則mock；quality／KVM為contract／mock，沒有Windows loaded TLS或VM執行。既有1311項root全套只屬17db263a前的來源。實際read-only KVM API12 query已成功（USER_MEMORY=1、IRQCHIP=1、recommended vCPUs=4、max=4096），artifact11667623060 SHA256 `d605336efdef16003e0d17e8133666f0952044642d8abd4dc0d14248a2eb6f40`；未create VM／run guest。新固定自撰payload execution self-test尚未原生執行，不涉及Windows OS映像。
+- **歷史e68b3301／Quantlab38042425646：8 PASS／1 Linux312 FAIL／1 Win311 research CANCELLED。** Windows311／312 core各1029項＝1014 PASS／15 skips、406.239／339.883秒；UI1256項＝1243 PASS／13 skips、290.850秒；Linux3111256項＝1238 PASS／18 skips、426.842秒。Linux3121256項＝1237 PASS／18 skips／1 failure、417.872秒，為test-only process observer的cleanup=false；另已真實觀測Linux X dead state並修補X/x契約，但原CI未留process-state artifact，exact cause仍NOT_PROVEN。Win312 research227項＝223 PASS／4 skips、764.237秒；Win311在原15分鐘cap前完成222項＝218 PASS／4 skips，第223項被中斷、4項未開始，不記整套PASS。
+- **歷史e68b3301／installer38042425591已FAIL，但已完成native全套與建置。** 原生1256項＝1237 PASS／19 skips、832.716秒，PyInstaller與兩個installer編譯PASS；AI download child於0.616秒exit1、非timeout、cleanup=true，未進frozen phase／0 model calls，其後install／lifecycle skipped。artifact11666369640 ZIP 83,451,533 bytes／SHA256 `b62c4e04edd9a3483f41f9a6d3701b83f7e6d8d8c320c4b04841af47e66c1d31`已下載核hash／CRC，5 members；0.2.2 installer 42,248,905 bytes／SHA256 `f7512490e8a7f5c07f456c7919ceb3b4e9db09f01325a172ca73127c75a8fd7a`，未發布。controller的`7600d5e8…672aaf6`是frozen app EXE hash，不能稱installer hash。證據：`quant-audit/ci-e68b3301/`。
+- **歷史17db263a前整合的本機證據分開記錄。** WFO single-normalization保留相同hash bytes、全部原COMMIT與SQLite語義；當次root全套1263項＝1248 PASS／15 skips、290.403秒，source manifest `quant-audit/wfo-single-normalization-root-source-20261010.json`固定該次來源，不認證其後host／observer／Qt delta。其後Linux observer focused31 PASS／66.977秒；AI child失敗證據保留修補focused107 PASS／1.293秒，只修parent讀取／去敏順序，底層download cause仍未知。KVM opt-in query程式43 PASS＋partition9 PASS，但無實際sudo／KVM query；錯拼test module的44項／1 import error原log保留。所有重疊集合不相加，原300／660／10／120／135秒、15／35分鐘cap與單次嘗試不變。
+- **歷史e68b3301 native風險與修補證據（後續17db靜態核驗如上）。** e68b3301實際126個PE的audit確認Qt另名`-x64` OpenSSL3.5.5，涉及[官方2026-09-29公告](https://openssl-library.org/news/secadv/20260929.txt)的CVE-2026-35189（TLS記憶體DoS）與CVE-2026-84782（DTLS）。Python `_ssl`／`_hashlib`使用不同basename的3.5.9；未找到app QtNetwork／QSsl呼叫，不宣稱Python HTTPS受此漏洞影響或已遭利用。root已套用精確移除qopensslbackend／3.5.5 pair與unused VirtualKeyboard／PDF的打包規則，保留Python3.5.9、qwindows、Schannel／cert backend，補完整GPL／LGPL與固定native notices／source links。新frozen payload未建置，不能宣稱已移除、已完成授權交付或pip-audit PASS等於native安全。Qt root初次65項＝63 PASS／1 failure／1 skip、0.757秒，是6個新build inputs尚未Git追蹤的guard；僅stage後原樣重驗65項＝64 PASS／1 PowerShell skip、0.780秒（`quant-audit/qt-packaging-root-tracked-20261010.log`），未改test／product來消除該失敗。獨立126-PE審查無blocker、static／history0 findings；最後整合root Linux全套1311項＝1296 PASS／15 applicability skips、288.641秒、exit0（`quant-audit/integrated-root-full-20261010.log`）；`quant-audit/integrated-root-source-20261010.json`所列來源hash已核對一致。這是Python3.12.14／SQLite3.53.1／Qt6.12.0的完整本機證據，新exact-head native CI仍NOT_RUN，不認證新Windows frozen payload或clean client。
+- **歷史0088b505／Quantlab38032142094為9/10 PASS、整體FAIL。** Windows3.11 core806項＝790 PASS／15 skips／1 failure、433.599秒，唯一失敗仍是原960-bar Paper30秒。Windows3.12 core806項＝791 PASS／15 skips、339.431秒；UI1026項＝1013 PASS／13 skips、366.894秒；其他Linux／research／security通過。窄Linux ESRCH與Windows nested cleanup已有此來源驗證，不能冒稱新WAL／runtime／AI整合已通過。
+- **歷史0088b505／Server38032142096 build／security及安裝流程PASS。** Server2022完整1026項＝1007 PASS／19 skips、808.047秒，該profile原Paper30秒／SystemExit40秒、frozen/history/WFO、真0.2.1升級／中斷恢復／移除保存通過；PR release skipped。實際候選artifact11663227244、PR merge703686e2、60個source inputs及EXE／kit／ZIP hashes已驗證，與0088b505同tree；這不是Release，也不能抵銷Windows311失敗或替代clean client。
+- **歷史16974db3／Quantlab38040818017已終態：7 PASS／2 Windows core FAIL／1 Windows311 research CANCELLED。** Windows311 core1023項＝993 PASS／15 skips／7 failures／8 errors、546.573秒；Windows312 core1023項＝994 PASS／15 skips／6 failures／8 errors、399.402秒。UI1250項＝1237 PASS／13 skips、331.067秒；Linux311／312各1250項＝1232 PASS／18 skips、422.830／421.385秒；Windows312 research227項＝223 PASS／4 skips、636.478秒。Windows311 research達原15分鐘累計job上限，被取消時stack在WFO `_save_state` 的 `db.commit()`，數秒前測試仍在推進；不據此宣稱單一commit死鎖或任意加時。
+- **歷史16974db3／installer38040817985在freeze前FAIL，沒有新installer或frozen AI呼叫。** 完整1250項＝1217 PASS／19 skips／6 failures／8 errors、874.196秒，與Windows312 core共14個相容性反例；Windows311 core另有一個terminal-cleanup測試失敗。build未進入freeze／實際單次AI／安裝驗證，這些保持NOT_RUN；不能沿用0088b505舊artifact的PASS。原生日誌與終態證據保留於`quant-audit/ci-16974db3/`。
+- **歷史16974db3後的11檔相容性修補與failure-only WFO timing診斷已root套用。** Linux Python3.12.14／SQLite3.53.1／Qt6.12.0整合focused183項全PASS、0 skip、51.275秒（`quant-audit/windows-repair-integrated-focused-20261010.log`），static／完整可達history為0 findings，diff check PASS。這是修補後focused，沒有第二次root完整全套或新native PASS；WFO尚未做效能優化，原30／40／10秒、15／35分鐘job及所有驗收門檻不變，接續同PR新exact-head CI。
+- **先前本機證據與負面結果按來源保留。** pre-AI root完整1096項＝1081 PASS／15 applicability skips、291.408秒，log `quant-audit/pre-ai-wal-integrated-full-20261010.log`與source manifest `quant-audit/pre-ai-wal-integrated-source-20261010.json`固定該次來源。其後本機AI focused153項＝152 PASS／1 skip、5.866秒；自動備份初次focused21項全PASS、0.966秒；offline-drive設定恢復修補後23項全PASS、0.962秒。focused logs見`local-ai-integrated-focused-20261010.log`、`automatic-backup-integrated-20261010.log`及`automatic-backup-integrated-final-20261010.log`。該次root venv實測為Linux Python3.12.14／SQLite3.53.1／Qt6.12.0，見`quant-audit/integrated-final-source-20261010.json`；早先手記Qt版本不作獨立量測證據。最終combined suite本次FAIL：1243項＝1225 PASS／15 skips／2 failures／1 error、300.720秒（`quant-audit/integrated-final-full-20261010.log`）。三項均為saved-candidate producer來源綁定未涵蓋provider hook變更後的source hash；現有fail-closed防線正確拒絕未匹配來源。兩個新的literal 0_2_2 transport-verifier profiles已獨立審查並root套用；原三個literal profiles與historical exact-hash測試未改，只將三個真正current-generated identity assertions移至新profile，tamper／mixed-source拒絕保留。修補後root focused150／150 PASS、0 skip、30.760秒（`quant-audit/provenance-integrated-focused-20261010.log`）；隔離54與138項PASS為重疊範圍，不相加。本次1243項FAIL保留，沒有第二次root完整重跑；其後16974db3原生終態另列於上方；不追溯改寫本次1243項FAIL。另`/usr/bin/python3`私有SQLite3.54.0載入probe及Paper111項＝110 PASS／1 skip、5.172秒屬獨立Linux範圍，見`/tmp/markauto-sqlite354-verified-setup.log`、`/tmp/sqlite354-paper-tests.log`。各集合不相加、不互相認證；目前root全套不是3.54或Windows證據。
+- **歷史AI選路（11:16已被使用者更正取代，不再是目前交付要求）。** 可選llama.cpp／Qwen2.5-1.5B路徑使用官方固定hash runtime／model／support DLL來源；無付費fallback，official API預設off。localAI licenses與三個Microsoft DLL來源通知已補入packaging；實際新payload bytes／notices已靜態核驗；Microsoft downstream protective-terms充分性仍未定，未有demonstrated breach，也沒有強制付費license／新EULA／collector的依據，不自行增加這些驗收gate。17db263a supervisor的model_download仍失敗，category local_ai_network而無HTTP status；frozen phase／模型呼叫未執行；上述exact-host修補尚待新native，不能追溯確認舊失敗cause；mock、歷史14次呼叫或focused PASS均不能替代新路徑證據。
+- **每日自動備份與審查修補已root套用，最終驗證仍待。** 預設off，開啟後app運作且所有manager閒置才嘗試，每UTC日最多一次；7份／2 GiB上限、連結保護、不自動刪檔或還原。獨立審查指出舊共用備份可經regular-file hardlink納入外部內容；共用BackupManager的hardlink拒絕已套用並包含於21項focused PASS。移除式磁碟離線時停用／更換目的地的設定恢復亦已修補，root focused23 PASS；最終combined／native未驗，不能宣稱漏洞或整項已完整閉合。
+- **耐久與門檻不降級。** 舊來源同960 bars診斷worker35.562622秒，960次FULL cursor commits30.6026735秒，UI35.937秒；瓶頸位於耐久寫入路徑，物理原因未知。16974db3及最新e68b3301使用實際SQLite3.54.0／WAL／FULL，原960 bars／30秒測試已在Windows311／312 PASS；host為Windows Server2025，不能當clean client PASS。仍保留原per-bar耐久／帳本identity／風控與30秒、40秒、process-death10秒、job預算，不減bar／commit、不搬TEMP。不再無變更重跑湊綠，但經審查的新實作必須原生重驗。
+- **執行責任與AI優先順序已更新。** 依使用者最新授權，assistant承擔工程、環境調查、可合法執行的設定與驗證，不預設把VM、測試或GitHub設定交給使用者。官方SIWC訂閱為必要路徑；本機模型與付費API／credits fallback禁止，不借用其他工具帳戶。零費用、零真資金交易及原驗收門檻保持。不可代行的帳戶、license、明示條款或持久權限，只提出精確最小確認，不包裝成整套技術作業。
+- **外部證據如實保留。** 目前没有已驗證且已授權的零費用clean Win10/11 x64完整路徑；Win10／Win11官方EnterpriseEval x64媒體均可達，actual bundled EULA已以bounded ranges取出並核對檔案digest；full ISO hash、hosted-use涵蓋、registration／activation及owner接受尚未闭合，沒有Windows安裝／執行。opt-in KVM API12實際query已成功且close完成，沒有create VM或改權限；固定自撰payload execution self-test只有mock PASS、尚未執行；offline CI設計是提案，不是授權。KVM query成功不等於guest execution；Windows guest仍待資源／license／執行證據。SignPath僅可準備免付費申請材料，尚未獲接納。08:18只讀查核rulesets=[]、main保護仍未啟用；GitHub App無Administration scope，先前403未解除，換CLI／GraphQL／workflow token不會增加權限。實際服務、TAIEX盤中權利、clean client不以mock／Server替代。
+- **原始匯入來源已有範圍明確的證據。** 原import `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的47檔，其Git mode／type／blob全部與官方upstream `chrisli-kw/AutoTradingPlatform@a0ecf8895716bf5883184fdd27a52023f9700bf3`相同；upstream共49檔，另有`trader/APItest.py`與`trader/performance/backtest.py`未在該import。這證明47檔內容對應，不證明整棵tree／完整history相同，也不是維護者owner attestation；Apache LICENSE與Li Kuei-Wei署名保留。
+- **210/300＝70%、M4 PARTIAL不變。** 17db263a兩個Windows core／Linux／UI PASS，但Windows312 research取消、SIWC第一階段已套用且有來源限定回歸，但新native／lifecycle未驗及loaded TLS／IME等範圍仍阻交付（原model_download失敗歷史保留）；其餘外部條件分開列示，不能把餘項全說成external。Oct8 WFO仍BLOCKED_NO_RUN，170 consumed bars、0新評估／model calls／reservation；不改window／registry。除上述使用者AI選路更正外，原需求、權重、失敗與歷史不重寫。
 
 ### 原需求、設計提案與未驗證項目
 
-- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；工作樹整合及本地 PASS 不等於已發布交付。
+- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；已合併及PR階段PASS不等於postmerge／已發布交付。
 - **尚未採用的完整目標設計延伸：** 04 §9.1 提出的 Average Trade、Sortino、Calmar、延伸分解與成本壓力測試保留為提案。02 歷史原文已明示「若最終採用該完整規格」；未取得使用者直接要求這些延伸的原始證據，因此不把設計表的「必須公開的計算與例外」升格為本輪新增驗收門檻，也不刪除提案。
-- **尚未驗證的結果：** 最終 exact-head native／發布、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
+- **尚未驗證的結果：** 修補後完整CI／發布、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
 
 ## 目前接續順序與依賴
 
 | 步驟 | 要完成的結果 | 前置／保持不變 | 完成判準與未達成時處理 |
 |---|---|---|---|
-| 1 關閉來源／原生失敗 | 六類Server失敗及Win311／312 teardown明確分開，Paper效能未修復 | 保留原960 bars／30秒、process-death10秒、FULL耐久、reservation／cancel／security斷言 | 接續wrapper18／WFO33項局部修補；UI fixture獨立結果待；不改產品storage或把TEMP當效能修補，最後完整native重驗 |
-| 2 執行最後完整CI | 兩Windows Python各兩shards已實作、partition14項獨立PASS；Linux／UI／Server不分片 | discovery1016唯一＝796core＋220research精確聯集，非全套執行；10具名release jobs含Qt311 audit，原各項與job15分鐘不改 | 最後head所有必要jobs、native frozen／installer／真0.2.1upgrade／recovery及source-binary須成立；目前沒有新EXE |
-| 3 保存診斷與限制 | 一次性connection study已完成，workflow步驟移除；tool及證據保留，失敗Paper診斷core-only | C／D差異及PERSIST較慢觀察保留；沒有產品storage／TEMP／security變更 | 不加新功能、不漏測試、不延長預算；各局部集合不加總，最後native／發布仍待 |
+| 1 重驗更正後research與AI工程 | 保留17db research取消與舊model_download FAIL；SIWC-only第一階段已套用，本機回歸依上方來源分列，新native待驗 | 原COMMIT、hash bytes、工作量及既有非本機模型gates不變 | 新exact-head source/native證據；localAI要求由明示更正取代，不追溯把歷史FAIL改PASS |
+| 2 官方SIWC與備份普通流程 | 官方登入／移除及按需分析兩階段已root套用；新native待驗；備份原要求不變 | 既有auth／DSL／budget／holdout保護；禁止paid API／credits fallback | 工程測試與真grant分開；後者須owner授權及included-only自述前置，mock不給分。備份仍按原gate驗證 |
+| 3 自主準備環境／權限路徑 | assistant持續承擔host調查、合法client方案、SignPath與protection方案 | 無已驗證免費Win10/11 x64；App無admin；provider／license／條款各有不可代行邊界 | 僅需帳戶持有人決定時精確確認，不把整套VM／測試／GitHub設定丟給使用者；不繞權限、不新增費用 |
 | 4 處理真實資料研究限制 | 保留 Oct8 BLOCKED_NO_RUN 與既有負／零交易結果 | 原 protocol、完整 guard、170 consumed bars、既有 authoritative registry | 不執行被阻擋研究；不改 windows／fresh registry。只有另有符合原規範的資料及預宣告才可另開研究，零新呼叫是目前正確停止結果 |
 | 5 完成合法外部驗收 | clean Win10／Win11／DPI、實際 ChatGPT grant／推論、TAIEX 盤中權限 | 使用者授權、合法環境與來源，無付費／權限／警告繞過 | 各項單獨提供真證據；未提供時保持 EXTERNAL_BLOCKED／NOT_VERIFIED，不用 Server 或 mock 補分 |
-| 6 最終交付／同步 | exact commit／tree／CI／Release／asset hashes 與功能狀態一致 | 保留原始 Git 歷史、需求／權重及失敗；發布須在授權範圍 | 授權整合後重驗 postmerge／實際下載；更新本頁摘要、02／03、PROJECT_STATE 與 ACCEPTANCE 當前區段，歷史不反向改寫 |
+| 6 最終交付／同步 | exact commit／tree／CI／Release／asset hashes 與功能狀態一致 | 保留原始 Git 歷史、需求／權重及失敗；發布須在授權範圍 | 解除postmerge失敗後核對真正Release／實際下載；更新本頁摘要、02／03、PROJECT_STATE 與 ACCEPTANCE 當前區段，歷史不反向改寫 |
 
-第 1、2 步是當前依賴鏈；第 3 的呈現複查已完成，但新原生 fixtures／CI 分片的獨立局部驗證已完成，最後原生 CI 仍待。WFO／報表已接入同一候選，後續來源變更必須重新綁定驗收證據。外部阻塞可以並列記錄，不能拿來掩蓋可自行修復的工程缺口。
+0088b505的Paper30秒失敗照原來源保留；16974db3兩個Windows core的原960 bars／30秒均PASS。接續同hash bytes／全COMMIT的WFO single-normalization與observer／AI診斷／Qt打包之新exact-head原生驗證，不改CI gates，不以單項成功抵銷整體FAIL／CANCELLED。
+
+### 最後已驗證0088b505的CI分項（不認證當前整合）
+
+| Profile／run38032142094 | Total | PASS | SKIP | FAIL | 秒 |
+|---|---:|---:|---:|---:|---:|
+| Windows3.11 core | 806 | 790 | 15 | 1（原Paper30秒） | 433.599 |
+| Windows3.12 core | 806 | 791 | 15 | 0 | 339.431 |
+| Windows3.11 research | 220 | 216 | 4 | 0 | 755.447 |
+| Windows3.12 research | 220 | 216 | 4 | 0 | 592.822 |
+| Linux3.11 | 1026 | 1008 | 18 | 0 | 327.405 |
+| Linux3.12 | 1026 | 1008 | 18 | 0 | 394.240 |
+| UI | 1026 | 1013 | 13 | 0 | 366.894 |
+
+Static／security／audit jobs亦通過。全部10個required jobs中9個PASS；Server38032142096另列，不把Server的1007 PASS／19 skips拿來抵銷Windows3.11失敗。
+
+### 自主接續計畫與不可代行的邊界
+
+1. **固定更正後來源並重驗：** 11:16只替換AI選路；既有research、storage、security、Windows build／lifecycle與clean-client原gates不變。歷史17db失敗及1372／78來源證據保留，SIWC第一階段已套用，本機回歸終態及後續delta按上方來源分列，新native仍NOT_RUN；不再安排已禁止的本機模型下載／推論。官方真grant／請求仍須owner授權。
+2. **保留原持久語義：** WAL候選需逐個原邊界COMMIT＋FULL、無外包整段transaction／降級NORMAL或OFF，既有mutex、cursor／pending plan／stable IDs不變；broker DELETE／FULL仍分開。SQLite版本／官方hash／native載入來源、local filesystem、舊版本workspace拒絕及DB／WAL／SHM備份恢复都須有實證；guard已用精確0.2.1 source fixture證明startup／schema2 archive拒絕；實際舊EXE拒絕測試程式已加入但尚NOT_RUN，仍需原生結果。備份hardlink修補與移除式磁碟離線設定恢復須完成最終整合回歸。這是必要待驗證清單，不是完成宣告。
+3. **重驗已整合官方SIWC訂閱流程：** 移除本機模型功能及其下載／推論交付要求，保留舊證據；改接既有官方PKCE/OIDC、DPAPI、subscription provider與同一worker生命週期。included-only前置為owner自述確認與Usage指引，不假稱程式能查證credits設定或有server monetary cap；無付費fallback。官方流程與產品移除已有本機工程證據，尚無新native／真grant；bounded模型呼叫仍EXTERNAL_BLOCKED，不以mock補PASS。M6與其餘權重不變。
+4. **Windows驗證由assistant持續承擔：** 已授權標準public GitHub runner可提供Server證據；先做只讀host能力／磁碟調查。Nested x64 guest在GitHub官方文件中是實驗性、無保證路徑；需實際可用加速／資源、合法精確Win10 22H2／Win11媒體及所需license／條款確認。此cloud shell目前無現成KVM／VM工具，不代表免費虛擬化普遍不可能。Win10／Win11官方EnterpriseEval x64媒體均可達，actual bundled EULA已以bounded ranges取出並核對檔案digest；full ISO hash、hosted-use涵蓋、registration／activation及owner接受尚未闭合，沒有Windows安裝／執行。opt-in KVM API12實際query已成功且close完成，沒有create VM或改權限；固定自撰payload execution self-test只有mock PASS、尚未執行；offline CI設計是提案，不是授權。退役evaluation landing page不等於媒體撤回；Windows11 ARM、Server或未授權Azure試用均不可冒充目標client；不繞TPM／Secure Boot／啟用限制、不預設使用者需準備VM或跑測試。
+5. **保護與簽章保持誠實：** assistant準備main protection精確所需scope／規則與可行路徑，現有連線缺Administration則只停在該操作，不反覆撞403、不換transport冒充授權，也不索取聊天中的token。SignPath可先準備真實申請草稿；47檔upstream內容對應已驗，但完整lineage／維護者權利陳述、打包界線與metadata／政策仍需分別補證；OSI授權、MFA／角色、來源到binary及每次release核准仍待確認。外部提交、帳戶／條款、GitHub App或簽章persistent access須個別具備所需授權；不買付費簽章、不保證免SmartScreen。
+6. **保留每次結果：** 舊0088b505的806core／220research、9/10與同工作量diagnostic作為固定比較；新來源完整清單與依賴另行記錄。全部PASS／FAIL／ERROR／SKIP、elapsed、source／runtime hashes、OS／volume、cursor／orders／fills與清理／恢復證據保留；不按結果追加無變更重跑，不將別台host PASS寫成失敗CI已通過。
+
+本計畫亦依據`windows-eval-terms-and-offline-ci-20261010.md`、`openssl-security-e68b3301/payload-pe-tls-inventory.json`與`qt-notice-proposal/REVIEW.md`；其餘既有查核：`windows-environment-options-20261010.md`、`signpath-eligibility-20261010.md`、`github-protection-options-20261010.json`。可用方案、授權缺口與推論分開；不新增權重、不把準備材料算成外部已通過。
 
 ## 固定驗收與必要需求對照
 
@@ -43,10 +107,10 @@
 | Phase 0–5 | 100/100，按當時固定工程子項證據 | 原條款全文保留；不外推至其後重核的完整 WFO／統計規格或真市場 readiness |
 | D0–D9 | 70/100；D5／D7／D8 各 10 未接受 | clean client 門檻原封保留，不因 toolkit／Server 可執行而 PASS |
 | M1／M3／M5 | 20＋15＋5＝40/100 | 只接受原限定功能與證據；不補 M2／M4／M6／M7 |
-| M2／M4 | PARTIAL，0 分 | 原完整市場／普通流程要求保留；PR #5 及必要報表／參考線已在工作樹整合，尚待最後 native／發布驗證 |
-| M6／M7 | PARTIAL，0 分 | 官方訂閱 source/native 工程已交付，但實際 grant／inference 未測；最終 clean Windows DPI 未測 |
-| WFO 重新核對要求 | 已整合未發布；早期來源等價候選 981 項通過，最後全部來源的完整／native 待驗 | 一次四段 OOS 不是 WFO；固定／保存池仍非 adaptive 生成／改善，也不證明真實未見性；設計提案界線不變 |
-| PF／Sharpe／停損停利／成本參考 | 已整合未發布；普通繁中呈現與參考快照包含早期來源等價候選 981 項證據 | 使用者原文§5.1／§3.4要求；定義／null原因／普通接線已驗本地，最後native與發布仍待；不因此自稱研究獲利 |
+| M2／M4 | PARTIAL，0 分 | 原完整市場／普通流程要求保留；已合併／候選實作不等於交付；最新仍有Win312research取消／AI model_download失敗／lifecycle未驗，M4不加分，M2完整TAIEX分鐘範圍仍未閉合 |
+| M6／M7 | PARTIAL，0 分 | 官方SIWC-only source工程已套用，新native及實際 grant／inference 未測；最終 clean Windows DPI 未測 |
+| WFO 重新核對要求 | 已合併未發布；17db Linux／UI／Windows311research通過，Windows312research取消；storage benchmark調查未定案 | 一次四段 OOS 不是 WFO；固定／保存池仍非 adaptive 生成／改善，也不證明真實未見性；設計提案界線不變 |
+| PF／Sharpe／停損停利／成本參考 | 已合併未發布；普通繁中呈現與參考快照已涵蓋PR完整1016，postmerge失敗待修 | 使用者原文§5.1／§3.4要求；定義／null原因／普通接線已經PR原生驗證，但postmerge與發布尚未通過；不因此自稱研究獲利 |
 | 完整報表設計延伸 | Average Trade／Sortino／Calmar／延伸分解／成本壓力測試尚未採用 | 來源為 04 §9.1 設計提案；02 舊文有條件採用說明。保留提案及未提供狀態；無使用者直接要求證據，不加成本輪驗收阻塞，也不自稱已完成 |
 | 歷史總帳 | **210/300＝70%，90 點未接受** | 非工時、投資認證或完整需求證書；不新增權重、不更換分母來美化結果，必要缺口仍阻交付 |
 
@@ -55,14 +119,17 @@
 記錄 UTC 時間、released main/version/tag、candidate remote/local/tree、每個必要 job 的真正終態、完整 suite 的 total/pass/fail/skip 與環境、release-blocking 反例是否對最後 bytes 重測、隔離模組是否實際整合、外部阻塞及原固定分數。下方歷史只新增真正新證據，不再整段複製前頁摘要；ACCEPTANCE 的舊 gate／失敗證據不能用舊整份副本覆蓋。
 
 
-### 04:24 整合來源 Gate 更新
+### 歷史檢查點：04:24 整合來源 Gate（當時狀態，不是目前待辦）
 
 - 候選修補完整 Linux root suite：773 項，758 PASS＋15 個既有 native Windows／PowerShell applicability skips，127.279 秒、exit 0；歷史掃描 0 findings。涵蓋 smoke 終態、canonical fixture 與 FULL 設定失敗關閉連線，SQLite mode／耐久邊界／既有門檻不變。此結果取代上文針對較早來源的「最終 root 待驗」，原生 exact-head CI 仍待。
 - Qt CI-only 相容鎖及獨立 Linux311 套件稽核已納入 workflow；官方來源、完整 SHA-256、強制重新安裝及 pip report 保留。Windows 產品依賴鎖不變；套件 advisory audit 不等於所有 native library 已安全認證。
 - 後續 WFO／報表 combined staging 完整 947 項：932 PASS＋15 既有 applicability skips，270.314 秒。再套用同一 Paper 連線小修補後 5 項 storage regression PASS；仍非已發布或 Windows／真實研究驗收。
 
 
-驗證位置補註：較早 981 項實際執行於隔離候選，25 檔依 manifest 複製；之後 CandidateSummary／diagnostic-only 才另加。現已推送的 12e088f 有上述 1000 項 exact-head CI 證據，但 Windows cancelled／failed；後續本地 18／33 項不等於重跑整套，也不覆蓋已局部驗證但原生未重驗的 UI fixtures／CI shards。所有計數按來源／平台分列，不相加。
+歷史驗證位置補註：較早981項在隔離候選執行，25檔按manifest複製；不是最後root全套。12e088f的1000項失敗／cancelled與05:32局部18／33／85項屬先前checkpoint；其後06bcc3a的完整PR1016已通過，但94aca467 postmerge又出現上列兩種timeout。所有來源、平台及計數分開，不相加或追溯改寫。
+
+
+最後原生受測PR #6 head17db263a／local1673d676／tree27a571ae：Quantlab9 PASS／Win312 research CANCELLED，Windows AI下載FAIL；119-PE靜態排除與notice核驗PASS。其後下載／TLS／storage／KVM delta已有本機full／focused證據，依來源分列，下一native待；全部歷史負面結果及210/300不變。
 
 <!-- CURRENT_STATUS_END -->
 

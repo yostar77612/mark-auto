@@ -59,7 +59,8 @@ def python_findings(source: str, label: str, research: bool = False,
                     first_party.add("desktop_ui")
                 if set(modules) - sys.stdlib_module_names - first_party:
                     findings.append(f"{label}:{node.lineno}: research dependency must be standard library")
-            if BANNED_IMPORTS.intersection(modules):
+            prohibited = BANNED_IMPORTS.intersection(modules)
+            if prohibited:
                 findings.append(f"{label}:{node.lineno}: forbidden research import")
             if isinstance(node, ast.Call):
                 name = node.func.id if isinstance(node.func, ast.Name) else (
@@ -98,7 +99,8 @@ def scan(root: Path, history: bool = False) -> list[str]:
                                             desktop=name in {"desktop_ui.py", "desktop_charts.py",
                                                              "desktop_forms.py", "desktop_market.py", "desktop_walk_forward.py",
                                                              "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py",
-                                                             "desktop_chatgpt_ui.py"}))
+                                                             "desktop_chatgpt_ui.py", "desktop_automatic_backup.py",
+                                                             "desktop_tls_smoke.py"}))
     if history:
         if git(root, "rev-parse", "--is-shallow-repository").strip() != b"false":
             findings.append("history: full checkout required")

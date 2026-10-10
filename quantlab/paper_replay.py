@@ -11,6 +11,7 @@ from decimal import Decimal
 import json
 from pathlib import Path
 import sqlite3
+import sys
 
 from .core import ValidationError, canonical_json, content_hash, freeze
 from .data import validate_dataset
@@ -18,9 +19,48 @@ from .strategies import generate_signals, validate_strategy
 from .backtest import calculate_costs
 
 
+def _require_wal_runtime():
+    # Older runtimes contain the WAL-reset race. Do not silently fall back.
+    if sqlite3.sqlite_version_info < (3, 51, 3):
+        raise ValidationError("WAL replay requires patched SQLite 3.51.3 or newer")
+
+
+def _require_local_wal_path(path):
+    """WAL shared memory is supported only on a verified local filesystem."""
+    resolved = path.resolve()
+    if sys.platform == "win32":
+        import ctypes
+        if str(resolved).startswith(("\\\\", "//")) or ctypes.windll.kernel32.GetDriveTypeW(str(resolved.anchor)) not in (2, 3, 6):
+            raise ValidationError("WAL replay requires an available local drive")
+    elif sys.platform.startswith("linux"):
+        # The longest mountpoint covers nested mounts; unknown types fail closed.
+        mounts = []
+        for line in Path("/proc/self/mountinfo").read_text().splitlines():
+            before, after = line.split(" - ", 1)
+            name = before.split()[4]
+            for escaped, character in (("\\040", " "), ("\\011", "\t"), ("\\012", "\n"), ("\\134", "\\")):
+                name = name.replace(escaped, character)
+            mount = Path(name)
+            if resolved.is_relative_to(mount):
+                mounts.append((len(mount.parts), after.split()[0]))
+        if not mounts or max(mounts)[1] not in {"ext2", "ext3", "ext4", "xfs", "btrfs", "f2fs", "tmpfs", "overlay", "zfs"}:
+            raise ValidationError("WAL replay requires a verified local filesystem")
+    else:
+        raise ValidationError("WAL replay filesystem verification is unavailable on this platform")
+
+
+
 class PaperReplay:
     def __init__(self, path, *, dataset, strategy, broker, margin_per_contract=None,
-                 margin_version=None, margin_schedule=None):
+                 margin_version=None, margin_schedule=None, storage_profile="rollback_full"):
+        if storage_profile not in ("rollback_full", "wal_full"):
+            raise ValidationError("Unsupported replay storage profile")
+        # All replay readers may encounter a migrated WAL database. Check before
+        # opening it; raw header reads can invalidate POSIX SQLite file locks.
+        _require_wal_runtime()
+        _require_local_wal_path(Path(path))
+        self.storage_profile = storage_profile
+        self._wal_ready = False
         validate_dataset(dataset)
         validate_strategy(strategy)
         if any(key in strategy.parameters for key in ('stop_ticks', 'target_ticks')):
@@ -70,20 +110,47 @@ class PaperReplay:
                                       'Preserve this workspace and its orders; reconcile existing execution before using a separate workspace.')
             if not row:
                 db.execute('INSERT INTO replay VALUES (1, ?, 0, 0, NULL)', (self.binding,))
+        if storage_profile == 'wal_full':
+            with self._connection() as db:
+                mode = db.execute('PRAGMA journal_mode=WAL').fetchone()[0]
+                if mode != 'wal':
+                    raise ValidationError('SQLite refused durable WAL replay storage')
+            self._wal_ready = True
 
     @contextmanager
-    def _db(self):
+    def _connection(self):
+        _require_wal_runtime()
+        _require_local_wal_path(self.path)
         db = sqlite3.connect(self.path, timeout=30)
         try:
             db.execute('PRAGMA synchronous=FULL')
-            with db:
-                yield db
+            if db.execute('PRAGMA synchronous').fetchone() != (2,):
+                raise ValidationError('SQLite refused FULL replay durability')
+            # Preserve bounded automatic checkpointing, including on runtimes
+            # built with a different default. Busy checkpoints leave durable WAL.
+            db.execute('PRAGMA wal_autocheckpoint=1000')
+            if self._wal_ready and db.execute('PRAGMA journal_mode').fetchone() != ('wal',):
+                raise ValidationError('Replay WAL storage mode changed externally')
+            yield db
         finally:
             db.close()
 
+    @contextmanager
+    def _db(self, connection=None):
+        if connection is not None:
+            # Reuse the handle, never the transaction or a read snapshot.
+            with connection:
+                yield connection
+        else:
+            with self._connection() as db, db:
+                yield db
+
     def snapshot(self):
         with self._db() as db:
-            row = db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone()
+            return self._snapshot(db)
+
+    def _snapshot(self, db):
+        row = db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone()
         return {'binding': self.binding, 'cursor': row[0], 'total_bars': len(self.dataset.bars),
                 'active': bool(row[1]), 'pending_plan': row[2] is not None,
                 'complete': row[0] >= len(self.dataset.bars), 'mode': 'historical_synthetic_execution',
@@ -133,63 +200,69 @@ class PaperReplay:
         lock = sqlite3.connect(str(self.path) + '.lock', timeout=0)
         try:
             lock.execute('BEGIN IMMEDIATE')
-            for _ in range(max_bars):
-                replay = self.snapshot()
-                state = self.broker.snapshot()
-                if not replay['active'] or replay['complete'] or state['kill_switch'] or state['reconciliation_required']:
-                    break
-                index = replay['cursor']
-                bar = self.dataset.bars[index]
-                policy = self._quote_policy(bar)
-                with self._db() as db:
-                    saved = db.execute('SELECT plan FROM replay WHERE id=1').fetchone()[0]
-                    if saved is None:
-                        plan = []
-                        current = state['positions'].get(bar.contract_id, 0)
-                        target = self.targets.get(index, current) if bar.volume > 0 else current
-                        # Single-contract legs also split reversals into close then open.
-                        for leg in range(abs(target - current)):
-                            oid = content_hash([self.binding, index, leg])
-                            plan.append({'client_order_id': oid, 'strategy_hash': content_hash(self.strategy),
-                                         'contract_id': bar.contract_id, 'side': 'buy' if target > current else 'sell',
-                                         'quantity': 1, 'order_type': 'market', 'created_at': bar.timestamp})
-                        if plan:
-                            db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
-                    else:
-                        plan = json.loads(saved)
-                    if not plan:
-                        # The empty decision and consumed cursor are one durable
-                        # write. A restart must not reinterpret an already-satisfied
-                        # target after the account changes, nor persist [] first.
-                        db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
-                if not plan:
-                    self._fault('after_empty_cursor')
-                    continue
-                self._fault('after_plan_before_submit')
-                for intent in plan:
-                    state = self.broker.snapshot()
-                    if state['kill_switch'] or state['reconciliation_required']:
-                        return self.snapshot()
-                    policy = self._quote_policy(bar)
-                    quote = {'account_id': state['account_id'], 'contract_id': bar.contract_id,
-                             'timestamp': bar.timestamp, 'price': bar.open, **policy}
-                    order = self.broker.submit(intent, quote=quote, now=bar.timestamp)
-                    self._fault('after_submit_before_fill')
-                    if order['status'] in ('accepted', 'filled'):
-                        price = bar.open + (1 if intent['side'] == 'buy' else -1) * self.broker.costs.slippage_ticks
-                        commission, tax = calculate_costs(price, 1, self.broker.costs)
-                        oid = intent['client_order_id']
-                        self.broker.apply_event({'event_id': oid + ':fill', 'fill_id': oid + ':fill',
-                                                 'order_id': oid, 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
-                                                 'quantity': 1, 'price': price, 'commission': commission, 'tax': tax})
-                        self._fault('after_fill_before_cursor')
-                    elif order['status'] not in ('rejected', 'cancelled'):
-                        raise ValidationError('Replay order is unresolved; reconcile before retry')
-                with self._db() as db:
-                    db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
-            return self.snapshot()
+            # An idle handle prevents last-close WAL checkpoints on every bar.
+            # Transactions still end at every original durable boundary.
+            with self._connection() as connection:
+                return self._step(max_bars, connection)
         except sqlite3.OperationalError as exc:
             raise ValidationError('Replay is already active or its storage is unavailable') from exc
         finally:
             lock.rollback()
             lock.close()
+
+    def _step(self, max_bars, connection):
+        for _ in range(max_bars):
+            replay = self._snapshot(connection)
+            state = self.broker.snapshot()
+            if not replay['active'] or replay['complete'] or state['kill_switch'] or state['reconciliation_required']:
+                break
+            index = replay['cursor']
+            bar = self.dataset.bars[index]
+            policy = self._quote_policy(bar)
+            with self._db(connection) as db:
+                saved = db.execute('SELECT plan FROM replay WHERE id=1').fetchone()[0]
+                if saved is None:
+                    plan = []
+                    current = state['positions'].get(bar.contract_id, 0)
+                    target = self.targets.get(index, current) if bar.volume > 0 else current
+                    # Single-contract legs also split reversals into close then open.
+                    for leg in range(abs(target - current)):
+                        oid = content_hash([self.binding, index, leg])
+                        plan.append({'client_order_id': oid, 'strategy_hash': content_hash(self.strategy),
+                                     'contract_id': bar.contract_id, 'side': 'buy' if target > current else 'sell',
+                                     'quantity': 1, 'order_type': 'market', 'created_at': bar.timestamp})
+                    if plan:
+                        db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
+                else:
+                    plan = json.loads(saved)
+                if not plan:
+                    # The empty decision and consumed cursor are one durable
+                    # write. A restart must not reinterpret an already-satisfied
+                    # target after the account changes, nor persist [] first.
+                    db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
+            if not plan:
+                self._fault('after_empty_cursor')
+                continue
+            self._fault('after_plan_before_submit')
+            for intent in plan:
+                state = self.broker.snapshot()
+                if state['kill_switch'] or state['reconciliation_required']:
+                    return self._snapshot(connection)
+                policy = self._quote_policy(bar)
+                quote = {'account_id': state['account_id'], 'contract_id': bar.contract_id,
+                         'timestamp': bar.timestamp, 'price': bar.open, **policy}
+                order = self.broker.submit(intent, quote=quote, now=bar.timestamp)
+                self._fault('after_submit_before_fill')
+                if order['status'] in ('accepted', 'filled'):
+                    price = bar.open + (1 if intent['side'] == 'buy' else -1) * self.broker.costs.slippage_ticks
+                    commission, tax = calculate_costs(price, 1, self.broker.costs)
+                    oid = intent['client_order_id']
+                    self.broker.apply_event({'event_id': oid + ':fill', 'fill_id': oid + ':fill',
+                                             'order_id': oid, 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
+                                             'quantity': 1, 'price': price, 'commission': commission, 'tax': tax})
+                    self._fault('after_fill_before_cursor')
+                elif order['status'] not in ('rejected', 'cancelled'):
+                    raise ValidationError('Replay order is unresolved; reconcile before retry')
+            with self._db(connection) as db:
+                db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
+        return self._snapshot(connection)

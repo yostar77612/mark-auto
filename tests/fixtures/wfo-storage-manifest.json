@@ -1,0 +1,16 @@
+{
+  "smoke": {
+    "file": "wfo-storage-smoke.json.gz",
+    "archive_sha256": "8e5978508122e8a0126e05aa265cbf006d86be5882ae8e781d4c7e92c5f344dc",
+    "count": 63,
+    "payload_bytes": 7812890,
+    "stream_sha256": "f8cd1c9e3d2853c4090c68bfa0c5de0e09ba9a67c7ce0cd58c39446c31962837"
+  },
+  "large": {
+    "file": "wfo-storage-large.json.gz",
+    "archive_sha256": "1dd730fa20f9985928ed3398ad887c106c593cc19e38094d2fa58b787dd5ffab",
+    "count": 574,
+    "payload_bytes": 63764608,
+    "stream_sha256": "b6c44afdce037325b5dfff4a701720cc41502185f9fef6e4d981a1ef15d64bd3"
+  }
+}

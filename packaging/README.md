@@ -110,10 +110,14 @@ independent manifests, shared lifecycle tests, built-in PowerShell-only clean-cl
 preflight and manual acceptance runbook. See [clean-client guide](clean_windows_README.md).
 Generating the kit or passing Server CI never passes clean Windows10/11 gates.
 
-Local model validation tooling is developer-only and opt-in; no Qwen model/runtime
-is bundled or downloaded automatically by this installer. Desktop users configure
-their own compatible endpoint. Structured JSON Schema mode means constrained
-built-in-family parameter generation, not arbitrary program generation.
+The 2026-10-10 11:16 UTC requirement supersedes the historical local/compatible
+provider routes. The current candidate removes local-model setup/runtime assets
+and custom paid/local endpoint controls. Its AI route is official ChatGPT plan
+OAuth; no model download or API-key fallback is required. Historical validation
+results remain historical, not proof of subscription inference. A standalone
+frozen Python TLS gate uses an ephemeral loopback fixture only, with no account,
+model download or inference. Actual subscription grants and clean-client results
+remain separate required evidence.
 
 
 ## 0.2.1 official subscription packaging
@@ -140,3 +144,58 @@ user-grant acceptance remain separate from Windows Server engineering CI.
 Build defaults target0.2.2. Upgrade and standalone client kit use the actually downloaded, source/size/SHA-pinned0.2.1 release as baseline. Existing0.2.1 documentation above remains historical. The original seven research/Paper smoke operations, two manual exchange operations and offline native auth checks remain required; independent history_smoke additionally executes the real bounded history worker, reloads its cache and renders three products across eight timeframes. Its invented30tick CSV is labelledsynthetic and never implies actualexchange/client/model acceptance. Missing module, forgedresult, corruptedsource/cache or timeout fails the complete smoke.
 
 Normal typedexpiry/date input and effective-dated Paper margins are included. Existing scalar PaperReplay callers retain their binding. Desktop schedule mode refuses an incompatible old replay at the same path without modifying its journal or generating replacement orders; retain and reconcile prior state, never erase it to bypass validation. No broker/live order capability is enabled.
+
+
+### Pinned native SQLite and replay safety
+
+The tested Windows Python 3.11/3.12 profiles and packaged CPython 3.13.16 stay
+unchanged. `tools/install_sqlite_runtime.py` copies the full Windows base Python
+into a new private build directory, then replaces only that copy's SQLite DLL
+with official SQLite 3.54.0. It rejects existing/overlapping destinations and
+verifies that the original DLL remains unchanged. Always start from an ordinary
+base interpreter, not a venv. Remove an old build/sqlite-python directory manually
+before repeating a package build; the setup script never overwrites a runtime.
+Use that copy's `python.exe` for source execution and all build/test commands.
+It is not a relocatable Python redistributable; PyInstaller creates the final app.
+
+Linux CI compiles the same pinned official amalgamation using the runner's C
+compiler and scopes the resulting `libsqlite3.so.0` through job-local
+LD_LIBRARY_PATH. It never installs to /usr or changes the system SQLite package.
+Setup downloads are online; application and original offline test workloads have
+no new network requirement. No durability setting or test timeout is changed.
+
+The pin was verified against the official download page on 2026-10-10, including
+published SHA3-256 archive digests and the release's sqlite3.c digest/source ID.
+3.51.3 is the minimum upstream WAL-reset fix; 3.54.0 was chosen as the current
+published binary/source pair with cumulative upstream fixes. It includes newer
+query/planner and floating conversion changes, so full original tests, native
+Windows timing gates, and frozen lifecycle tests remain required; a setup probe
+is not acceptance. See https://www.sqlite.org/changes.html and
+https://www.sqlite.org/wal.html#walresetbug.
+
+Every provisioned runtime is probed in a fresh child using real
+SELECT sqlite_version(), sqlite_source_id(), actual loaded native-library path,
+its SHA256 and compile options. Frozen startup runs the same exact-version,
+source-ID, in-bundle-path and DLL-digest checks, including frozen child processes.
+PyInstaller also fails if analysis selects any different SQLite DLL. Setup and
+build manifests retain the native provenance because pip-audit alone cannot
+certify a non-wheel SQLite DLL. Source pin, compiler and output digest are saved
+for Linux; locally compiled Linux binaries are not claimed bit-identical.
+
+## Frozen Python TLS version evidence
+
+The TLS report records CPython's actual five-field `ssl.OPENSSL_VERSION_INFO`,
+exactly `[3, 5, 0, 9, 0]` for the retained OpenSSL 3.5.9 runtime. This is distinct
+from the Windows DLL resource version `[3, 5, 9, 0]`. CPython 3.13.16 decodes the
+runtime numeric version `0x30500090` as major/minor/fix/patch/status, placing the
+OpenSSL 3.x patch in the fourth field. Both the runtime and report validators
+require the exact tuple and integer fields; three-field synthetic evidence is
+not accepted. DLL SHA256, size, exact loaded bundle path, notice pins, verified
+loopback HTTPS and cleanup requirements remain unchanged.
+
+Source: https://github.com/python/cpython/blob/v3.13.16/Modules/_ssl.c#L6238-L6272
+
+Correcting the tuple check is not native Windows acceptance. The previously
+failed frozen report remains failed; a rebuilt executable must pass the gate
+before installer acceptance can continue. Public trust stores, Qt Schannel,
+accounts and models are outside this fixture's proof.

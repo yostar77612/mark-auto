@@ -13,13 +13,60 @@ class ChatGPTHostTests(unittest.TestCase):
     setUp=support.NativeDesktopTests.setUp
     cleanup_window=support.NativeDesktopTests.cleanup_window
 
-    def test_startup_inert_and_legacy_provider_indices(self):
+    def test_startup_inert_and_subscription_primary_provider_choices(self):
         w=self.window
         self.assertFalse(self.jobs.active)
         self.assertEqual(w.chatgpt_controller.state,'unknown')
         self.assertFalse(w.chatgpt_controller.account_status_known)
-        self.assertEqual([w.provider_mode.itemData(i) for i in range(4)],['fixture','compatible','manual','chatgpt_plan'])
+        self.assertEqual([w.provider_mode.itemData(i) for i in range(w.provider_mode.count())],['chatgpt_plan','fixture','manual'])
         self.assertFalse(w.chatgpt_panel.consent.isChecked())
+
+    def test_json_event_roundtrip_restores_model_label_tuples(self):
+        import json
+        from desktop_ui import connection_event_from_payload
+        from desktop_chatgpt_ui import ConnectionEvent
+        for event in (ConnectionEvent(1,'result'),
+                      ConnectionEvent(2,'result','plan_ready',registrations=((REF,'plan_ready'),),
+                          active_registration=REF,models=('official-fixture-slug',),
+                          model_labels=(('official-fixture-slug','Friendly Official Fixture'),),
+                          account_labels=((REF,'已驗證帳戶 ••••abcd1234（電子郵件未提供）'),))):
+            self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))),event)
+
+    def test_usage_and_campaign_binding_use_discovered_slug_not_display_label(self):
+        from desktop_ui import execute_ui_operation, _dataset, plan_provider, demo_config
+        from quantlab.research import demo_campaign_config
+        from quantlab.core import canonical_json
+        w=self.window;c=w.chatgpt_controller;p=w.chatgpt_panel
+        execute_ui_operation('ui_demo',{},self.paths)
+        data=_dataset(self.paths.state,{})
+        config=demo_campaign_config(data,demo_config())
+        w.campaign_config.setPlainText(canonical_json(config))
+        c.state='plan_ready';c.active_registration=REF;c.registrations=((REF,'plan_ready'),)
+        c.models=('official-fixture-slug',);c.model_labels=(('official-fixture-slug','Friendly Official Fixture'),)
+        c.changed.emit();p.max_calls.setValue(1)
+        self.assertEqual(p.model.currentText(),'Friendly Official Fixture')
+        self.assertEqual(p.model.currentData(),'official-fixture-slug')
+        request=w._plan_usage_request()
+        self.assertEqual(request['provider']['model'],'official-fixture-slug')
+        self.assertFalse(request['provider']['network_opt_in'])
+        binding=w._current_plan_binding()
+        c.set_usage(REF,[],account_status={'state':'ready','pending':False})
+        p.consent.setChecked(True);p.included_usage_only.setChecked(True)
+        options={**asdict(p.build_plan_options()),'expected_binding':binding}
+        generator,active_binding=plan_provider(self.paths,data,config,options)
+        self.assertEqual(active_binding,binding)
+        self.assertEqual(generator.model,'official-fixture-slug')
+        self.assertFalse(p.consent.isChecked());self.assertFalse(p.included_usage_only.isChecked())
+
+    def test_both_authorization_modes_require_managed_private_events(self):
+        from desktop_ui import execute_ui_operation
+        from desktop_chatgpt_ui import ConnectionRequest
+        for action in ('begin','first_sign_in','enable_plan'):
+            request=ConnectionRequest(1,action,REF if action=='enable_plan' else None,user_confirmed=True)
+            with patch('desktop_chatgpt_ui.run_connection_request') as run:
+                with self.assertRaises(ValueError):
+                    execute_ui_operation('ui_chatgpt_auth',{'request':request.payload()},self.paths)
+                run.assert_not_called()
 
     def test_explicit_local_status_runs_existing_manager_without_network(self):
         w=self.window
@@ -36,7 +83,7 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_switch_requires_actual_stop_join_before_dispatch(self):
         w=self.window; trace=[]
-        with patch.object(w,'_quiesce_and_recover',side_effect=lambda:trace.append('joined')), patch.object(w,'poll_jobs'), patch.object(w,'start_job',side_effect=lambda *a:trace.append('dispatch')):
+        with patch.object(w,'_quiesce_and_recover',side_effect=lambda **kwargs:trace.append('joined')), patch.object(w,'poll_jobs'), patch.object(w,'start_job',side_effect=lambda *a:trace.append('dispatch')):
             r=w.chatgpt_controller.request('select',REF,confirmed=True)
         self.assertEqual(trace,['joined','dispatch'])
         w.chatgpt_controller.worker_joined(r.request_id,joined=True,terminal_received=False)
@@ -64,7 +111,7 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(c.account_pending)
 
     def test_unauthorized_plan_never_reaches_campaign_worker(self):
-        w=self.window;w.provider_mode.setCurrentIndex(3)
+        w=self.window;w.provider_mode.setCurrentIndex(w.provider_mode.findData('chatgpt_plan'))
         with patch.object(w,'start_job') as start:
             with self.assertRaises(ValueError):w.run_campaign()
         start.assert_not_called()

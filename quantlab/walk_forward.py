@@ -7,6 +7,7 @@ No mode claims untouched data, formal research ranking or paper qualification.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import multiprocessing
 import math
@@ -360,8 +361,16 @@ def _state_summary(state):
 
 def _save_state(db, output_dir, state):
     state['summary'] = _state_summary(state)
-    state['state_hash'] = content_hash({k: v for k, v in state.items() if k != 'state_hash'})
-    encoded = canonical_json(state)
+    # Normalize/validate once, then bind and write that same detached snapshot.
+    # Rewalking all nested result values for the second JSON encoding is costly;
+    # these options are exactly canonical_json's, after its existing validator.
+    snapshot = to_dict({k: v for k, v in state.items() if k != 'state_hash'})
+    unhashed = json.dumps(snapshot, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
+    state['state_hash'] = hashlib.sha256(unhashed.encode('utf-8')).hexdigest()
+    del unhashed
+    snapshot['state_hash'] = state['state_hash']
+    encoded = json.dumps(snapshot, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
+    del snapshot
     if len(encoded.encode('utf-8')) > MAX_STATE_BYTES:
         raise ValidationError('Walk-forward journal byte budget exceeded')
     db.execute('INSERT OR REPLACE INTO state VALUES (1,?)', (encoded,))

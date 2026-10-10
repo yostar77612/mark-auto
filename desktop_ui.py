@@ -7,9 +7,6 @@ from pathlib import Path
 import json
 from datetime import datetime
 from decimal import Decimal
-from dataclasses import dataclass
-from urllib.parse import urlsplit
-import ipaddress
 
 from quantlab.core import (Dataset, StrategySpec, Instrument, ValidationError, canonical_json,
                    content_hash, to_dict)
@@ -18,39 +15,11 @@ from quantlab.reporting import (read_json, write_json, load_dataset, save_datase
                         save_selection, load_selection)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
+    'analysis_preview', 'analysis_run', 'analysis_read', 'analysis_reconcile',
     'walk_forward_preview', 'walk_forward_run', 'walk_forward_read', 'walk_forward_reconcile',
     'demo', 'import', 'refresh', 'market_refresh', 'chatgpt_auth', 'chatgpt_usage', 'chatgpt_reconcile', 'backtest', 'campaign', 'compare', 'select', 'disable',
     'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
     'backup_create', 'backup_restore'))
-
-
-def validate_endpoint(endpoint):
-    try:
-        url = urlsplit(endpoint)
-        loopback = url.hostname == 'localhost'
-        if url.hostname and not loopback:
-            try: loopback = ipaddress.ip_address(url.hostname).is_loopback
-            except ValueError: pass
-        if not url.hostname or url.username or url.password or '?' in endpoint or '#' in endpoint or any(c.isspace() for c in endpoint):
-            raise ValueError()
-        if url.scheme != 'https' and not (url.scheme == 'http' and loopback): raise ValueError()
-        if url.port == 0: raise ValueError()
-        return loopback
-    except ValueError:
-        raise ValidationError('模型端點不得包含帳密、查詢參數或片段；遠端必須 HTTPS，本機可使用 loopback HTTP') from None
-
-
-@dataclass(frozen=True)
-class DesktopCredentialTransport:
-    """Pickle-safe root/name only; credentials resolve in isolated provider child."""
-    root: str
-    use_credential: bool = True
-
-    def __call__(self, endpoint, request, timeout_seconds):
-        from quantlab.provider import HTTPTransport
-        from quantlab.desktop_runtime import DesktopCredentialReference
-        resolver = DesktopCredentialReference(root=self.root, name='model_api_key') if self.use_credential else None
-        return HTTPTransport(allow_network=True, credential_resolver=resolver)(endpoint, request, timeout_seconds)
 
 
 def research_controls(paths):
@@ -67,30 +36,18 @@ def research_controls(paths):
 
 
 def provider_binding_options(options):
-    # Adding the optional output-mode selector must not reopen a legacy budget.
+    # Preserve historical provider identities; these options cannot enable a removed provider.
     return {key: value for key, value in options.items()
-            if key != 'network_opt_in' and not (key == 'output_mode' and value == 'json_object')}
+            if key != 'network_opt_in' and not (options.get('mode') == 'local' and key == 'owner') and not (key == 'output_mode' and value == 'json_object')}
 
 
 def campaign_generator(paths, options):
-    from quantlab.research import FixtureGenerator, CompatibleProvider
-    if options.get('mode', 'fixture') == 'fixture':
-        research_controls(paths)
-        return FixtureGenerator()
-    if options.get('mode') != 'compatible' or options.get('network_opt_in') is not True:
-        raise ValidationError('真實模型必須明確同意本次網路與可能費用')
-    local = validate_endpoint(options['endpoint'])
-    if not local and (Decimal(options['cost_per_token']) <= 0 or Decimal(options['max_spend']) <= 0):
-        raise ValidationError('遠端模型必須填寫正數單位費率及最高費用；不得假設免費')
-    if not local and options.get('use_credential') is not True:
-        raise ValidationError('遠端模型必須使用 Windows 安全儲存金鑰')
-    identity = content_hash(provider_binding_options(options))
-    return CompatibleProvider(model=options['model'], endpoint=options['endpoint'],
-        transport=DesktopCredentialTransport(str(getattr(paths, 'bootstrap', None) or paths.root), options.get('use_credential', True)),
-        budget_path=research_controls(paths)/'provider_budgets'/(identity+'.sqlite3'), network_opt_in=True,
-        max_calls=options['max_calls'], max_tokens=options['max_tokens'], max_spend=options['max_spend'],
-        tokens_per_call=options['tokens_per_call'], cost_per_token=options['cost_per_token'], timeout_seconds=options['timeout_seconds'],
-        output_mode=options.get('output_mode', 'json_object'))
+    """Only explicit deterministic fixtures use this non-subscription adapter."""
+    from quantlab.research import FixtureGenerator
+    if not isinstance(options, dict) or options != {'mode': 'fixture'}:
+        raise ValidationError('模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援')
+    research_controls(paths)
+    return FixtureGenerator()
 
 
 def connection_event_from_payload(payload):
@@ -99,6 +56,9 @@ def connection_event_from_payload(payload):
     value = dict(payload)
     value['registrations'] = tuple(tuple(row) for row in value.get('registrations', ()))
     value['models'] = tuple(value.get('models', ()))
+    for key in ('model_labels', 'account_labels'):
+        if key in value:
+            value[key] = tuple(tuple(row) for row in value[key])
     return ConnectionEvent(**value)
 
 
@@ -225,11 +185,117 @@ def _paper(root):
                        risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
 
 
+def analysis_plan(paths, request, *, emit=None):
+    from quantlab.desktop_runtime import validate_analysis_request
+    from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
+    from desktop_chatgpt_provider import implementation_provenance
+    validate_analysis_request(request)
+    research_controls(paths)
+    if emit: emit('progress',message='正在重新計算選定候選的訓練／驗證證據；不送出或評分 OOS／保留集。')
+    from quantlab.saved_candidate_pool import load_original_dataset
+    data=load_original_dataset(Path(request['original_dataset']['path']))
+    packet=build_analysis_packet(source_campaign_dir=_root(paths)/'campaigns'/request['campaign_reference'],
+        original_dataset=data,attempt_ids=request['attempt_ids'],task=request['task'],max_runtime_seconds=120)
+    return make_analysis_plan(packet,model=request['model'],registration=request['registration'],
+        provider_implementation=implementation_provenance(),timeout_seconds=request['timeout_seconds'])
+
+
+def analysis_provider_for(paths, plan, *, authorized=False):
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import analysis_provider
+    reference=OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),plan['binding']['registration'])
+    return analysis_provider(plan,reference,network_opt_in=authorized,included_usage_policy_confirmed=authorized)
+
+
+ANALYSIS_NOTICE='本次重新計算的訓練／驗證結果；舊結果僅作來源索引，未驗證原始產生者。'
+ANALYSIS_WARNING='未驗證的 AI 解讀／研究建議：敘述可能錯誤，風險安全性未驗證；不自動套用參數、不改選擇、不下單。'
+ANALYSIS_METRICS={'net_pnl':'淨損益','realized_gross_pnl':'已實現毛損益','unrealized_pnl':'未實現損益',
+    'total_costs':'總成本','slippage_cost':'滑價成本','return':'報酬率','max_drawdown':'最大回撤',
+    'max_drawdown_pct':'最大回撤比率','trade_count':'交易數','fill_count':'成交數','win_rate':'勝率',
+    'profit_factor':'Profit Factor','sharpe':'Sharpe','sharpe_observations':'Sharpe觀測數',
+    'sharpe_sample_count':'Sharpe樣本數','open_position':'未平倉數'}
+ANALYSIS_KINDS={'market':'行情解讀','entry_exit':'進出場邏輯','backtest':'回測解讀','weakness':'弱點',
+    'risk':'風險提醒','improvement':'研究改進方向','comparison':'候選比較'}
+
+
+def analysis_preview_text(plan):
+    from quantlab.research_analysis import validate_analysis_plan
+    validate_analysis_plan(plan)
+    binding=plan['binding'];context=binding['packet']['context'];training=context['training']
+    lines=[ANALYSIS_NOTICE,ANALYSIS_WARNING,
+        '僅傳送以下訓練 OHLC／指標及重新計算的 train／validation 摘要；不傳送 OOS／holdout。',
+        '官方模型：'+binding['model']+'；最多一個不可退還的請求；網路期限 '+str(binding['timeout_seconds'])+' 秒。',
+        '預覽識別：'+plan['analysis_id'],
+        '訓練觀測：'+str(training['window_count'])+'／'+str(training['bar_count'])+' 根（僅末端有限視窗，非完整行情）']
+    for row in context['strategies']:
+        lines.append('候選 '+row['strategy_hash']+'；家族 '+row['spec']['family']+'；參數 '+canonical_json(row['spec']['parameters']))
+    for row in context['evidence']:
+        lines.append(('訓練' if row['split']=='train' else '驗證')+' · '+row['strategy_hash'][:16]+' · 本機數值：')
+        lines.append('；'.join(ANALYSIS_METRICS.get(key,key)+'='+('不可用' if value is None else str(value)) for key,value in row['metrics'].items()))
+    lines.append('完整送出內容可在下方進階證據中逐字核對；預覽本身不連網、不保留模型額度。')
+    return '\n'.join(lines)
+
+
+def analysis_record_text(record):
+    # read_analysis/run_analysis already enforce record and evidence bindings.
+    from quantlab.research_analysis import validate_analysis_plan, validate_analysis_response
+    plan=validate_analysis_plan(record['plan']);context=plan['binding']['packet']['context']
+    lines=[ANALYSIS_WARNING,ANALYSIS_NOTICE,'保存識別：'+plan['analysis_id'],'狀態：'+{'completed':'完成（不代表真帳戶已驗收）','blocked':'已封鎖，不重送','running':'中斷或完成未知，不重送'}.get(record['status'],'未知')]
+    if record['status']!='completed':return '\n'.join(lines)
+    response=validate_analysis_response(record['response'],context)
+    evidence={row['evidence_id']:row for row in context['evidence']};training=context['training']
+    for row in response['findings']:
+        lines+=['',ANALYSIS_KINDS[row['kind']]+'：'+row['text'],'候選：'+', '.join(value[:16] for value in row['strategy_hashes'])]
+        if 'signal_parameter' in row:lines.append('僅供另行研究的訊號參數：'+row['signal_parameter']+'（不套用）')
+        for ref in row['evidence_refs']:
+            if ref['evidence_id']==training['evidence_id']:
+                lines.append('本機訓練視窗證據：'+ref['field']+'；'+str(training['window_count'])+' 根；完整數值見保存的送出證據。')
+            else:
+                local=evidence[ref['evidence_id']];value=local['metrics'][ref['field']]
+                split=('訓練' if local['split']=='train' else '驗證')+'（'+local['split']+'）'
+                lines.append('候選 '+local['strategy_hash'][:16]+' · 本機'+split+' '+ANALYSIS_METRICS.get(ref['field'],ref['field'])+'：'+('不可用' if value is None else str(value)))
+    return '\n'.join(lines)
+
+
 def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_stopped=False):
     """Allowlisted process-worker adapter; no Qt objects are created here."""
     if operation not in UI_OPERATIONS:
         raise ValidationError('未知桌面作業')
+    if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
+        or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
+        raise ValidationError('不支援的模型研究來源；不提供本機模型或付費 API 備援')
     root = _root(paths)
+    if operation.startswith('ui_analysis_'):
+        from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis
+        from desktop_chatgpt_auth import OAuthCredentialReference
+        from desktop_chatgpt_provider import read_account_status
+        output=root/'analyses'
+        if operation in ('ui_analysis_preview','ui_analysis_run'):
+            allowed={'request'} if operation=='ui_analysis_preview' else {'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'}
+            if set(payload)!=allowed:raise ValidationError('分析請求欄位不符')
+            if operation=='ui_analysis_run' and any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
+                raise ValidationError('請明確同意本次一個訂閱請求')
+            plan=analysis_plan(paths,payload['request'],emit=emit)
+            if operation=='ui_analysis_preview':
+                provider=analysis_provider_for(paths,plan)
+                reference=OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),plan['binding']['registration'])
+                snapshot=provider.read_receipt_snapshot()
+                account=read_account_status(reference,research_controls(paths))
+                return {'analysis_id':plan['analysis_id'],'plan':plan,'receipt_snapshot':snapshot,'account_status':account}
+            if payload['expected_analysis_id']!=plan['analysis_id'] or payload['expected_plan_hash']!=content_hash(plan):raise ValidationError('資料／來源／模型／期限已改變，請重新預覽並同意')
+            if emit:emit('progress',message='證據已核對；正在執行唯一訂閱分析請求，取消不退還已保留次數。')
+            result=run_analysis(output_root=output,plan=plan,provider=analysis_provider_for(paths,plan,authorized=True),
+                expected_analysis_id=payload['expected_analysis_id'],user_confirmed=True)
+            return {'analysis_id':plan['analysis_id'],**result}
+        expected={'analysis_id'} if operation=='ui_analysis_read' else {'analysis_id','registration','stopped_job_id'}
+        if set(payload)!=expected:raise ValidationError('保存分析請求欄位不符')
+        if operation=='ui_analysis_reconcile' and descendants_stopped is not True:raise ValidationError('分析程序樹尚未停止，禁止核對')
+        record=read_analysis(output,payload['analysis_id'])
+        if operation=='ui_analysis_reconcile':
+            if record['plan']['binding']['registration']!=payload['registration']:raise ValidationError('原始分析帳戶不符')
+            record=reconcile_analysis(output_root=output,analysis_id=payload['analysis_id'],
+                provider=analysis_provider_for(paths,record['plan']),descendants_stopped=True)
+        return {'analysis_id':payload['analysis_id'],'record':record,'cache_hit':True}
     if operation.startswith('ui_walk_forward_'):
         from desktop_walk_forward import execute_walk_forward
         return execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped)
@@ -241,7 +307,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         def private_event(event):
             if emit is None: raise ValidationError('授權需要受管理程序與私人進度通道')
             emit('auth_progress', auth_event=asdict(event))
-        if request.action == 'begin' and emit is None: raise ValidationError('授權需要受管理程序')
+        if request.action in ('begin', 'first_sign_in', 'enable_plan') and emit is None: raise ValidationError('授權需要受管理程序')
         result = run_connection_request(request, bootstrap=str(getattr(paths,'bootstrap',None) or paths.root),
             emit=private_event, cancelled=lambda:False)
         if result.authorization_url is not None: raise ValidationError('授權網址不可進入結果紀錄')
@@ -401,7 +467,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         config = payload.get('config') or demo_campaign_config(data, demo_config())
         if isinstance(config.get('backtest_config'), dict):
             config['backtest_config'] = config_from_json(config['backtest_config'])
-        options = payload.get('provider', {'mode':'fixture'})
+        options = payload['provider']
         if options.get('mode') == 'chatgpt_plan':
             generator, plan_identity = plan_provider(paths, data, config, options)
             options = {'mode':'chatgpt_plan','binding':plan_identity}
@@ -487,9 +553,10 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             data = _dataset(root, payload)
             selection = load_selection(root / 'selection.json')
             binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
+            paths.require_replay_wal()
             replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data,
                                  strategy=StrategySpec(**selection['strategy']), broker=broker,
-                                 margin_schedule=broker._margin_schedule)
+                                 margin_schedule=broker._margin_schedule, storage_profile="wal_full")
             replay.start()
             try:
                 replay.step(max_bars=payload.get('max_bars', 100))
@@ -619,6 +686,11 @@ class MainWindow(QMainWindow):
         self._plan_launch = None
         self._pending_plan_reconcile = False
         self._pending_usage_refresh = False
+        self._analysis_preview = None
+        self._analysis_request_key = None
+        self._analysis_launch = None
+        self._analysis_running = False
+        self._pending_analysis_reconcile = False
         self.setWindowTitle('TMF 量化研究桌面｜研究與紙上模擬')
         self.resize(1366, 768)
         self.setStyleSheet('''
@@ -654,6 +726,9 @@ class MainWindow(QMainWindow):
         progress.addWidget(self.progress); progress.addWidget(self.cancel_button); outer.addLayout(progress)
         self.setCentralWidget(body)
         self._dashboard(); self._data_page(); self._strategy_page(); self._backtest_page(); self._compare_page(); self._paper_page(); self._settings_page()
+        self.chatgpt_panel.model.currentIndexChanged.connect(self._invalidate_analysis_preview)
+        self.chatgpt_panel.timeout.valueChanged.connect(self._invalidate_analysis_preview)
+        self.chatgpt_panel.account.currentIndexChanged.connect(self._invalidate_analysis_preview)
         self._connect_walk_forward_inputs()
         self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex); self.navigation.setCurrentRow(0)
         self.timer = QTimer(self); self.timer.timeout.connect(self.poll_jobs); self.timer.start(150)
@@ -769,7 +844,8 @@ class MainWindow(QMainWindow):
 
     def _strategy_page(self):
         from quantlab.strategies import builtin_strategies
-        layout = self._page('策略與版本')
+        layout = self._page('AI 策略中心')
+        self.chatgpt_sign_in_entry = self._button(layout, '使用 ChatGPT 帳戶登入', 'chatgpt_sign_in_entry', self.show_chatgpt_sign_in)
         layout.addWidget(QLabel('五種有限策略家族與受驗證參數；禁止任意 Python 策略程式。'))
         self.strategy_form = StrategyForm(); layout.addWidget(self.strategy_form)
         advanced = self._advanced(layout)
@@ -783,7 +859,7 @@ class MainWindow(QMainWindow):
         self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
         self.campaign_config = self._text(advanced, '研究設定 JSON（空白使用明示示範切分）', '', True)
         self._remember(self.campaign_config)
-        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); layout.addWidget(self.provider_mode)
+        self.provider_mode = QComboBox(); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); self.provider_mode.addItem('離線 Fixture（非真實 AI，需明確選取）', 'fixture'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); layout.addWidget(self.provider_mode)
         manual = QWidget(); manual_layout = QVBoxLayout(manual); layout.addWidget(manual); manual.hide()
         self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
         self.manual_path = self._text(manual_layout, '手動 AI 回應檔案（選檔或直接貼回回應；不自動連線）')
@@ -1043,6 +1119,130 @@ class MainWindow(QMainWindow):
         self.select_button = self._button(layout, '啟用目前回測策略（僅研究／紙上）', 'select_strategy', self.select_strategy)
         self._button(layout, '停用策略並停止紙上新委託', 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel(); self.selection_status.setWordWrap(True); layout.addWidget(self.selection_status)
+        self._analysis_section(layout)
+
+    def _analysis_section(self, layout):
+        title=QLabel('ChatGPT 已保存候選分析／比較（另行明確操作）');layout.addWidget(title)
+        warning=QLabel(ANALYSIS_WARNING+'\n'+ANALYSIS_NOTICE);warning.setWordWrap(True);layout.addWidget(warning)
+        self.analysis_candidates=QListWidget();self.analysis_candidates.setObjectName('analysis_candidates')
+        self.analysis_candidates.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection);layout.addWidget(self.analysis_candidates)
+        self.analysis_original=QLineEdit();self.analysis_original.setReadOnly(True);self.analysis_original.setObjectName('analysis_original_dataset')
+        self.analysis_original.setPlaceholderText('必須明確選取來源研究當時的完整原始資料檔');layout.addWidget(self.analysis_original)
+        self._button(layout,'選取分析的原始資料檔','pick_analysis_original',self.pick_analysis_original)
+        self._button(layout,'預覽單一候選分析（不連網）','preview_candidate_analysis',lambda:self.preview_analysis('critique'))
+        self._button(layout,'預覽同研究候選比較（不連網）','preview_candidate_comparison',lambda:self.preview_analysis('compare'))
+        self.analysis_preview=QPlainTextEdit();self.analysis_preview.setReadOnly(True);self.analysis_preview.setObjectName('analysis_preview');layout.addWidget(self.analysis_preview)
+        self.analysis_evidence=QPlainTextEdit();self.analysis_evidence.setReadOnly(True);self.analysis_evidence.setObjectName('analysis_evidence');self._advanced(layout).addWidget(self.analysis_evidence)
+        self.analysis_consent=QCheckBox('我已核對預覽與送出證據；同意最多一個訂閱分析請求，取消／失敗不重送，不套用建議。')
+        self.analysis_consent.setObjectName('analysis_one_call_consent');layout.addWidget(self.analysis_consent)
+        note=QLabel('沿用設定頁的 ChatGPT 帳戶、官方模型、本次連線與 included-only 用量確認；不新增金鑰或供應商。')
+        note.setWordWrap(True);layout.addWidget(note)
+        self.analysis_start=self._button(layout,'明確送出已預覽分析／比較','run_candidate_analysis',self.run_analysis)
+        self.analysis_start.setEnabled(False)
+        self.analysis_saved=QComboBox();self.analysis_saved.setObjectName('analysis_saved');layout.addWidget(self.analysis_saved)
+        self._button(layout,'唯讀重開已保存分析（不連網）','read_candidate_analysis',self.read_analysis)
+        self.analysis_findings=QPlainTextEdit();self.analysis_findings.setReadOnly(True);self.analysis_findings.setObjectName('analysis_findings');layout.addWidget(self.analysis_findings)
+        self.analysis_candidates.itemSelectionChanged.connect(self._invalidate_analysis_preview)
+        self.analysis_original.textChanged.connect(self._invalidate_analysis_preview)
+
+    def _invalidate_analysis_preview(self, *args):
+        self._analysis_preview=None;self._analysis_request_key=None
+        if hasattr(self,'analysis_consent'):
+            self.analysis_consent.setChecked(False);self.analysis_start.setEnabled(False)
+            self.analysis_preview.clear();self.analysis_evidence.clear()
+
+    def pick_analysis_original(self):
+        name,_=QFileDialog.getOpenFileName(self,'選取來源研究的完整原始資料檔','','JSON (*.json)')
+        if not name:return
+        if '://' in name or name.startswith(('//',chr(92)*2)) or not Path(name).is_absolute():raise ValidationError('請選取本機絕對路徑')
+        path=Path(name).resolve(strict=True)
+        if not path.is_file():raise ValidationError('請選取原始資料檔')
+        self.analysis_original.setText(str(path))
+
+    def _analysis_request(self, task):
+        from quantlab.desktop_runtime import validate_analysis_request
+        refs=[item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
+        if not refs or len({ref['campaign_folder'] for ref in refs})!=1:raise ValidationError('請選取同一已保存研究的候選')
+        c=self.chatgpt_controller;p=self.chatgpt_panel
+        if c.busy or c.state!='plan_ready' or not c.active_registration or p.model.currentData() not in c.models:raise ValidationError('請先核對共享 ChatGPT 連線與官方模型')
+        request={'campaign_reference':refs[0]['campaign_folder'],'original_dataset':{'kind':'local_dataset_file','path':self.analysis_original.text()},
+            'attempt_ids':sorted(ref['attempt_id'] for ref in refs),'task':task,'registration':c.active_registration,
+            'model':p.model.currentData(),'timeout_seconds':p.timeout.value()}
+        validate_analysis_request(request);return request
+
+    def preview_analysis(self, task):
+        request=self._analysis_request(task)
+        self._invalidate_analysis_preview();self._analysis_request_key=content_hash(request)
+        self.start_job('ui_analysis_preview',{'request':request})
+
+    def run_analysis(self):
+        from desktop_chatgpt_ui import SubscriptionOptions
+        preview=self._analysis_preview
+        if preview is None or not self.analysis_consent.isChecked():raise ValidationError('請先核對分析預覽並同意唯一請求')
+        plan=preview['plan'];request=self._analysis_request(plan['binding']['packet']['context']['task'])
+        if content_hash(request)!=self._analysis_request_key:raise ValidationError('分析選擇已變更，請重新預覽')
+        c=self.chatgpt_controller;p=self.chatgpt_panel
+        if (not c.account_status_known or c.account_paused or c.account_pending
+            or preview['receipt_snapshot']['receipts']):raise ValidationError('分析額度已使用或帳戶未知；只允許唯讀保存結果，不重送')
+        if (not p.consent.isChecked() or not p.included_usage_only.isChecked()
+            or p._included_usage_registration!=request['registration'] or p.account.currentData()!=request['registration']):
+            raise ValidationError('請在共享連線區核對本次授權及 included-only 用量確認')
+        SubscriptionOptions(request['registration'],request['model'],1,request['timeout_seconds'],network_opt_in=True,included_usage_policy_confirmed=True)
+        payload={'request':request,'expected_analysis_id':plan['analysis_id'],'expected_plan_hash':content_hash(plan),'user_confirmed':True,
+            'network_opt_in':True,'included_usage_policy_confirmed':True}
+        self.analysis_consent.setChecked(False);p.consent.setChecked(False);p._reset_included_usage()
+        job_id=self.start_job('ui_analysis_run',payload)
+        self._analysis_launch={'analysis_id':plan['analysis_id'],'registration':request['registration'],'stopped_job_id':job_id}
+        self._analysis_running=True;self._analysis_preview=None
+        c.invalidate_campaign_usage();self._plan_usage_binding=None
+
+    def read_analysis(self):
+        reference=self.analysis_saved.currentData()
+        if not reference:raise ValidationError('請先選取已保存分析')
+        self._invalidate_analysis_preview()
+        self.start_job('ui_analysis_read',{'analysis_id':reference})
+
+    def _analysis_event(self, event):
+        if self.last_operation not in ('ui_analysis_preview','ui_analysis_run','ui_analysis_read','ui_analysis_reconcile'):return False
+        kind=event.get('type')
+        if kind=='progress':self.status.setText(str(event.get('message','分析作業進行中，可取消')));return True
+        if kind not in ('result','error','failed','cancelled','canceled'):return True
+        operation=self.last_operation
+        self.record_event(operation,kind)
+        if operation=='ui_analysis_run':
+            self._analysis_running=False;self._pending_analysis_reconcile=self._analysis_launch is not None
+            self.chatgpt_controller.account_status_known=False;self.chatgpt_controller.invalidate_campaign_usage()
+            self._pending_usage_refresh=True
+        if kind=='result':
+            result=event['result']
+            if operation=='ui_analysis_preview':
+                plan=result['plan'];task=plan['binding']['packet']['context']['task']
+                if content_hash(self._analysis_request(task))!=self._analysis_request_key:
+                    self._invalidate_analysis_preview();self.status.setText('預覽期間選擇已變更，請重新核對。');return True
+                if result['analysis_id']!=plan['analysis_id']:raise ValidationError('分析預覽識別不符')
+                self._analysis_preview=result
+                self.chatgpt_controller.set_account_status(plan['binding']['registration'],result['account_status'])
+                self.analysis_preview.setPlainText(analysis_preview_text(plan))
+                self.analysis_evidence.setPlainText(canonical_json(plan['binding']['packet']['context']))
+                self.analysis_start.setEnabled(not result['receipt_snapshot']['receipts'])
+                self.status.setText('分析證據已預覽；僅本機核對，尚未送出模型請求。')
+            else:
+                self.analysis_findings.setPlainText(analysis_record_text(result['record']))
+                self.analysis_evidence.setPlainText(canonical_json(result['record']['plan']['binding']['packet']['context']))
+                self.status.setText('已保存／唯讀載入 AI 解讀；不套用建議或改變策略。')
+                self._refresh_analysis_saved()
+        else:
+            self.analysis_consent.setChecked(False)
+            self.status.setText('分析未完成，已保留未知／失敗紀錄，不會重送：'+str(event.get('message','已取消')))
+        return True
+
+    def _refresh_analysis_saved(self):
+        old=self.analysis_saved.currentData();self.analysis_saved.clear()
+        for path in sorted((self.root/'analyses').glob('*/analysis.json')):
+            name=path.parent.name
+            if len(name)==64 and all(char in '0123456789abcdef' for char in name):self.analysis_saved.addItem(name,name)
+        index=self.analysis_saved.findData(old)
+        if index>=0:self.analysis_saved.setCurrentIndex(index)
 
     def _paper_page(self):
         layout = self._page('紙上交易與復原')
@@ -1099,22 +1299,6 @@ class MainWindow(QMainWindow):
         self.chatgpt_controller.request_ready.connect(self._chatgpt_dispatch)
         self.chatgpt_controller.cancel_requested.connect(self._chatgpt_cancel)
         self.chatgpt_controller.browser_requested.connect(self._chatgpt_open_browser)
-        self.ai_endpoint = self._text(layout, '模型完整 chat/completions 端點（遠端 HTTPS / 本機 loopback HTTP）')
-        self.ai_model = self._text(layout, '模型名稱')
-        self.output_mode = QComboBox(); self.output_mode.addItem('一般 JSON DSL（相容模式）', 'json_object'); self.output_mode.addItem('JSON Schema：內建家族參數生成（服務須支援；不支援即失敗）', 'registry_json_schema')
-        layout.addWidget(QLabel('模型輸出協定：結構化模式不代表新策略邏輯或績效保證')); layout.addWidget(self.output_mode)
-        self.api_key = self._text(layout, 'API 金鑰（只存 Windows DPAPI；不寫入設定、日誌或備份）')
-        self.api_key.setEchoMode(QLineEdit.EchoMode.Password); self.api_key.setObjectName('api_key')
-        self._button(layout, '儲存金鑰至 Windows 安全儲存庫', 'save_api_key', self.save_api_key)
-        self.use_key = QCheckBox('使用 Windows 安全儲存金鑰（遠端必須；本機無驗證服務可取消）'); self.use_key.setChecked(True); layout.addWidget(self.use_key)
-        self.max_calls = QSpinBox(); self.max_calls.setRange(1,100); self.max_calls.setValue(1); layout.addWidget(QLabel('最多呼叫次數（失敗仍保留預算）')); layout.addWidget(self.max_calls)
-        self.max_tokens = QSpinBox(); self.max_tokens.setRange(1,1000000); self.max_tokens.setValue(20000); layout.addWidget(QLabel('總 token 保守預算（含輸入位元組上限）')); layout.addWidget(self.max_tokens)
-        self.tokens_per_call = QSpinBox(); self.tokens_per_call.setRange(1,32768); self.tokens_per_call.setValue(2048); layout.addWidget(QLabel('每次最大輸出 tokens')); layout.addWidget(self.tokens_per_call)
-        self.timeout_seconds = QSpinBox(); self.timeout_seconds.setRange(1,120); self.timeout_seconds.setValue(30); layout.addWidget(QLabel('單次逾時秒數')); layout.addWidget(self.timeout_seconds)
-        self.max_spend = self._text(layout, '最高費用（USD；供應商實際帳單仍需自行核對）', '0')
-        self.cost_per_token = self._text(layout, '保守每 token 費率（USD；遠端不可為零）', '0')
-        self.ai_opt_in = QCheckBox('我同意下一次模型研究：傳送策略內容與訓練／驗證統計至上述端點，可能產生費用（不傳 OOS／保留集）'); layout.addWidget(self.ai_opt_in)
-        self.ai_status = QLabel('外部真實模型：NOT_VERIFIED。預設 Fixture；只有明確選取相容模型並勾選逐次同意才可連線。預算不是供應商帳單保證。'); self.ai_status.setWordWrap(True); layout.addWidget(self.ai_status)
         self.persist_logs = QCheckBox('保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）'); self.persist_logs.setChecked(True); layout.addWidget(self.persist_logs)
         self.local_notifications = QCheckBox('作業完成／失敗時顯示本機提示並提醒此視窗'); self.local_notifications.setChecked(True); layout.addWidget(self.local_notifications)
         self._button(layout, '儲存非敏感偏好', 'save_settings', self.save_settings)
@@ -1122,6 +1306,8 @@ class MainWindow(QMainWindow):
         self._button(layout, '建立本機備份', 'create_backup', lambda: self.backup(False))
         self.restore_confirm = QCheckBox('我確認還原會替換目前本機狀態，並會要求重新對帳'); layout.addWidget(self.restore_confirm)
         self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True))
+        from desktop_automatic_backup import AutomaticBackupPanel
+        self.automatic_backup_panel = AutomaticBackupPanel(self); layout.addWidget(self.automatic_backup_panel)
         from quantlab import __version__
         self.version_label = QLabel(f'目前版本 {__version__} · 未簽章預覽版；尚無已驗證的最新版本資訊。')
         self.version_label.setWordWrap(True); layout.addWidget(self.version_label)
@@ -1188,6 +1374,8 @@ class MainWindow(QMainWindow):
     def run_campaign(self):
         config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
         options = {'mode':self.provider_mode.currentData()}
+        if options['mode'] not in ('chatgpt_plan', 'fixture', 'manual'):
+            raise ValidationError('不支援的模型研究來源；不提供本機模型或付費 API 備援')
         if options['mode'] == 'chatgpt_plan':
             from dataclasses import asdict
             options = asdict(self.chatgpt_panel.build_plan_options())
@@ -1197,15 +1385,6 @@ class MainWindow(QMainWindow):
             plan_provider(self.paths, _dataset(self.root, {}), checked, options)
         if options['mode'] == 'manual':
             options.update(response_path=self.manual_path.text().strip(), response_text=self.manual_response.toPlainText())
-        if options['mode'] == 'compatible':
-            options.update(endpoint=self.ai_endpoint.text().strip(), model=self.ai_model.text().strip(),
-                network_opt_in=self.ai_opt_in.isChecked(), use_credential=self.use_key.isChecked(), output_mode=self.output_mode.currentData(),
-                max_calls=self.max_calls.value(), max_tokens=self.max_tokens.value(),
-                max_spend=self.max_spend.text().strip(), cost_per_token=self.cost_per_token.text().strip(),
-                tokens_per_call=self.tokens_per_call.value(), timeout_seconds=self.timeout_seconds.value())
-            if options['network_opt_in'] is not True: raise ValidationError('請至設定核對供應商、費率與預算，並勾選本次網路及費用同意')
-            # Construction checks only; no HTTP or credential reads in the GUI.
-            campaign_generator(self.paths, options)
         subscription_campaign = options['mode'] == 'chatgpt_plan'
         launched_job = self.start_job('ui_campaign', {'config':config, 'provider':options})
         self._subscription_campaign = subscription_campaign
@@ -1213,7 +1392,6 @@ class MainWindow(QMainWindow):
             local_options = {**options,'network_opt_in':False,'included_usage_policy_confirmed':False}
             self._plan_launch = json.loads(canonical_json({'config':config,'provider':local_options,'binding':options['expected_binding'],'stopped_job_id':launched_job}))
             self.chatgpt_controller.invalidate_campaign_usage()
-        self.ai_opt_in.setChecked(False)
 
     def export_manual_request(self):
         config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
@@ -1251,10 +1429,35 @@ class MainWindow(QMainWindow):
         self.freeze_paper('使用者要求緊急停止')
         self.status.setText('背景作業已停止；紙上新委託已凍結，重新執行前需明確對帳。')
 
+    def show_chatgpt_sign_in(self):
+        """One research entry to the existing official connection panel."""
+        self.provider_mode.setCurrentIndex(self.provider_mode.findData('chatgpt_plan'))
+        for index in range(self.stack.count()):
+            page = self.stack.widget(index)
+            if page.isAncestorOf(self.chatgpt_panel):
+                self.navigation.setCurrentRow(index)
+                self.chatgpt_panel.primary_sign_in.setFocus()
+                # The panel is taller than one viewport: show its title and
+                # consent disclosure, rather than centering a clipped widget.
+                page.verticalScrollBar().setValue(self.chatgpt_panel.mapTo(page.widget(), self.chatgpt_panel.rect().topLeft()).y())
+                page.horizontalScrollBar().setValue(0)
+                self.status.setText('正在核對本機 ChatGPT 連線；官方登入會在系統瀏覽器開啟，授權由您決定。')
+                self.chatgpt_panel.primary_sign_in.click()
+                return
+        raise ValidationError('找不到官方 ChatGPT 連線區')
+
     def _chatgpt_quiesce(self, request):
         try:
-            self._quiesce_and_recover()
+            self._quiesce_and_recover(preserve_primary_sign_in=True)
             self.poll_jobs()
+            if self.jobs.active and self.last_operation == 'ui_analysis_reconcile':
+                # The original analysis tree is joined, but its local evidence
+                # reconciliation owns the slot. This auth request was never
+                # dispatched: fail it explicitly rather than strand or queue it.
+                self.chatgpt_panel.abandon_primary_sign_in()
+                self.chatgpt_controller.worker_joined(request.request_id, joined=True, terminal_received=False)
+                self.status.setText('分析停止紀錄正在本機核對；本次連線動作未執行，完成後請重新操作。')
+                return
             self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=not self.jobs.active)
         except Exception:
             self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=False)
@@ -1262,8 +1465,16 @@ class MainWindow(QMainWindow):
     def _chatgpt_dispatch(self, request):
         try:
             if self.jobs.active:
-                self._quiesce_and_recover()
+                self._quiesce_and_recover(preserve_primary_sign_in=True)
             self.poll_jobs()
+            if self.jobs.active and self.last_operation == 'ui_analysis_reconcile':
+                # Primary sign-in starts with local list (no quiesce signal).
+                # It must not remain busy after reconciliation takes the slot.
+                self.chatgpt_panel.abandon_primary_sign_in()
+                self.chatgpt_controller.worker_joined(request.request_id, joined=True, terminal_received=False)
+                self._chatgpt_job_request=None;self._chatgpt_job_id=None
+                self.status.setText('分析停止紀錄正在本機核對；本次登入未執行，完成後請重新按登入。')
+                return
             self._chatgpt_job_request = request
             self._chatgpt_job_id = self.start_job('ui_chatgpt_auth', {'request':request.payload()})
         except Exception:
@@ -1272,6 +1483,7 @@ class MainWindow(QMainWindow):
             self.status.setText('連線背景作業無法啟動；請核對本機狀態。')
 
     def _chatgpt_cancel(self, request_id):
+        self.chatgpt_panel.abandon_primary_sign_in()
         self._pending_usage_refresh = False
         if self.jobs.active: self.jobs.cancel()
         if self.jobs.active: return
@@ -1283,6 +1495,8 @@ class MainWindow(QMainWindow):
         self.chatgpt_panel.consent.setChecked(False)
 
     def _chatgpt_open_browser(self, url):
+        if getattr(self, '_closing', False) or not self.chatgpt_controller.host_available:
+            return
         from desktop_chatgpt_ui import official_authorization_url
         from PySide6.QtCore import QUrl
         from PySide6.QtGui import QDesktopServices
@@ -1291,10 +1505,10 @@ class MainWindow(QMainWindow):
 
     def _plan_usage_request(self):
         c = self.chatgpt_controller; panel = self.chatgpt_panel
-        if c.state != 'plan_ready' or not c.active_registration or panel.model.currentText() not in c.models:
+        if c.state != 'plan_ready' or not c.active_registration or panel.model.currentData() not in c.models:
             raise ValidationError('請先明確核對連線與官方模型清單')
         options = {'mode':'chatgpt_plan','registration':c.active_registration,
-            'model':panel.model.currentText(),'max_calls':panel.max_calls.value(),
+            'model':panel.model.currentData(),'max_calls':panel.max_calls.value(),
             'timeout_seconds':panel.timeout.value(),'network_opt_in':False,
             'included_usage_policy_confirmed':False,'paid_api_fallback':False}
         config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
@@ -1307,6 +1521,7 @@ class MainWindow(QMainWindow):
         return plan_provider(self.paths, _dataset(self.root, {}), config, payload['provider'], for_usage=True)[1]
 
     def inspect_plan_usage(self):
+        self._invalidate_analysis_preview()
         if self.chatgpt_controller.busy: raise ValidationError('請先等待連線背景作業結束')
         payload = self._plan_usage_request()
         self.chatgpt_controller.invalidate_campaign_usage()
@@ -1359,6 +1574,8 @@ class MainWindow(QMainWindow):
         return True
 
     def start_job(self, operation, payload):
+        if operation not in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile'):
+            self.chatgpt_panel.abandon_primary_sign_in()
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
         job_id = self.jobs.start(operation, payload)
         self.last_operation = operation
@@ -1380,6 +1597,7 @@ class MainWindow(QMainWindow):
             self.use_candidate_button.setEnabled(bool(getattr(self, '_candidate_valid', False)))
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
             self.walk_forward_start.setEnabled(self._wf_preview is not None)
+            self.analysis_start.setEnabled(self._analysis_preview is not None and not self._analysis_preview['receipt_snapshot']['receipts'])
 
     def cancel_job(self):
         def cancel_and_recover():
@@ -1392,7 +1610,9 @@ class MainWindow(QMainWindow):
             for event in self.jobs.poll():
                 if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
                     continue  # A joined old worker can never overwrite a newer view.
+                self.automatic_backup_panel.handle_job_event(event)
                 if self._walk_forward_event(event): continue
+                if self._analysis_event(event): continue
                 kind = event.get('type', '')
                 if self._chatgpt_event(event): continue
                 if self._subscription_campaign and kind in ('result','error','failed','cancelled'):
@@ -1435,6 +1655,10 @@ class MainWindow(QMainWindow):
                 if self._wf_pending_reconcile and self._wf_launch is not None:
                     self._wf_pending_reconcile = False
                     self.start_job('ui_walk_forward_reconcile', self._wf_launch)
+                    return
+                if self._pending_analysis_reconcile and self._analysis_launch is not None:
+                    self._pending_analysis_reconcile=False
+                    self.start_job('ui_analysis_reconcile',dict(self._analysis_launch))
                     return
                 if getattr(self,'_close_after_reconcile',False):
                     self._close_after_reconcile = False
@@ -1526,6 +1750,7 @@ class MainWindow(QMainWindow):
 
     def refresh_views(self):
         self._refresh_walk_forward_references()
+        self._refresh_analysis_saved()
         path = self.root / 'dataset.json'
         data = None
         if path.exists():
@@ -1577,6 +1802,8 @@ class MainWindow(QMainWindow):
         self.history.setPlainText(canonical_json(history) if history else '尚無研究版本或 OOS 結果')
         self.history_table.set_rows([{'family': a.get('family'), 'sequence': a.get('sequence'), 'status': a.get('status'), 'strategy_hash': a.get('strategy_hash')} for entry in history for a in entry['content'].get('attempts', [])])
         self.evaluation_table.set_rows([{'評估區段': split, 'status': row.get('status'), 'strategy_hash': row.get('strategy_hash'), **row.get('metrics', {})} for entry in history for split, rows in entry['content'].get('evaluations', {}).items() for row in rows])
+        selected_analysis=[item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
+        self.analysis_candidates.blockSignals(True);self.analysis_candidates.clear()
         selected_ref = self.candidate_choice.currentData()
         self.candidate_choice.blockSignals(True); self.candidate_choice.clear()
         for entry in history:
@@ -1586,9 +1813,16 @@ class MainWindow(QMainWindow):
                 ref = {'campaign_folder':Path(entry['file']).parent.name, 'attempt_id':attempt.get('attempt_id'), 'strategy_hash':attempt.get('strategy_hash')}
                 label = f"{state.get('campaign_id','')[:10]} · {attempt.get('family','?')} · v{attempt.get('sequence','?')} · {attempt.get('status','?')}"
                 self.candidate_choice.addItem(label, ref)
+                if attempt.get('status')=='evaluated' and Path(entry['file']).name=='campaign.json':
+                    family=attempt.get('spec',{}).get('family',attempt.get('family','候選'))
+                    family={'trend':'趨勢','mean_reversion':'均值回歸','breakout':'突破','momentum':'動能','volatility':'波動'}.get(family,family)
+                    self.analysis_candidates.addItem(f"{state.get('campaign_id','')[:10]} · {family} · {str(attempt.get('strategy_hash',''))[:12]}（已評估）")
+                    item=self.analysis_candidates.item(self.analysis_candidates.count()-1);item.setData(Qt.ItemDataRole.UserRole,ref)
+                    item.setSelected(ref in selected_analysis)
         index = self.candidate_choice.findData(selected_ref)
         if index >= 0: self.candidate_choice.setCurrentIndex(index)
         self.candidate_choice.blockSignals(False); self.inspect_candidate()
+        self.analysis_candidates.blockSignals(False)
         active_candidate = self.root / 'active_candidate.json'
         if self.active_candidate is None and active_candidate.exists():
             reference = read_json(active_candidate)
@@ -1813,36 +2047,21 @@ class MainWindow(QMainWindow):
 
     def save_settings(self):
         if self.settings is None: raise ValidationError('設定儲存服務不可用')
-        endpoint = self.ai_endpoint.text().strip()
-        if endpoint: validate_endpoint(endpoint)
         value = self.settings.load()
-        value.update({'ai_endpoint':self.ai_endpoint.text().strip(), 'ai_model':self.ai_model.text().strip(), 'output_mode':self.output_mode.currentData(),
-            'max_calls':self.max_calls.value(), 'max_tokens':self.max_tokens.value(), 'tokens_per_call':self.tokens_per_call.value(),
-            'timeout_seconds':self.timeout_seconds.value(), 'max_spend':self.max_spend.text().strip(), 'cost_per_token':self.cost_per_token.text().strip(),
-            'persist_logs':self.persist_logs.isChecked(), 'local_notifications':self.local_notifications.isChecked()})
+        # Preserve legacy provider settings as inert historical data. They are
+        # never read into executable provider options or overwritten on save.
+        value.update({'persist_logs':self.persist_logs.isChecked(),
+                      'local_notifications':self.local_notifications.isChecked()})
         value['market'] = self.market.preferences()
         value['window'] = {'x': self.x(), 'y': self.y(), 'width': self.width(), 'height': self.height()}
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
-        self.ai_opt_in.setChecked(False)
-        self.status.setText('已保存非敏感偏好；網路同意已重設，未在設定中保存金鑰。')
+        self.chatgpt_panel.consent.setChecked(False)
+        self.status.setText('已保存非敏感偏好；訂閱同意已重設。')
 
     def load_settings(self):
         if self.settings is None: return
         value = self.settings.load()
-        endpoint = value.get('ai_endpoint', '')
-        if endpoint: validate_endpoint(endpoint)
-        self.ai_endpoint.setText(endpoint)
-        self.ai_model.setText(value.get('ai_model', ''))
-        mode = value.get('output_mode', 'json_object')
-        index = self.output_mode.findData(mode)
-        if index < 0: raise ValidationError('不支援的模型輸出協定；原設定保留')
-        self.output_mode.setCurrentIndex(index)
-        for key in ('max_calls', 'max_tokens', 'tokens_per_call', 'timeout_seconds'):
-            if key in value: getattr(self, key).setValue(value[key])
-        for key in ('max_spend', 'cost_per_token'):
-            if key in value: getattr(self, key).setText(value[key])
-        self.ai_opt_in.setChecked(False)
         self.persist_logs.setChecked(value.get('persist_logs', True) is True)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.local_notifications.setChecked(value.get('local_notifications', True) is True)
@@ -1859,9 +2078,11 @@ class MainWindow(QMainWindow):
         self.read_logs()
 
     def configure_workspace(self):
+        self.chatgpt_panel.abandon_primary_sign_in()
         from quantlab.desktop_runtime import WorkspaceLocator
         if self.jobs.active: raise ValidationError('請先停止背景作業')
         self.chatgpt_panel.consent.setChecked(False)
+        self._invalidate_analysis_preview()
         self.chatgpt_controller.invalidate_campaign_usage()
         self._plan_usage_binding = None
         root = WorkspaceLocator(getattr(self.paths, 'bootstrap', None) or self.paths.root).configure(Path(self.workspace_path.text().strip()))
@@ -1887,17 +2108,8 @@ class MainWindow(QMainWindow):
         from quantlab.desktop_runtime import RedactedEventLog
         self.log_view.setPlainText('\n'.join(RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').tail()))
 
-    def save_api_key(self):
-        from quantlab.desktop_runtime import CredentialVault
-        secret = self.api_key.text()
-        try:
-            CredentialVault(self.paths).save('model_api_key', secret)
-            self.status.setText('金鑰已存至目前 Windows 使用者的安全儲存庫；不包含於備份。')
-        finally:
-            self.api_key.clear()
-            del secret
-
     def backup(self, restore):
+        self.chatgpt_panel.abandon_primary_sign_in()
         if self.backups is None: raise ValidationError('備份服務不可用')
         if not self.backup_path.text().strip(): raise ValidationError('請填寫備份路徑')
         if restore and not self.restore_confirm.isChecked(): raise ValidationError('請先確認還原取代本機狀態')
@@ -1905,7 +2117,9 @@ class MainWindow(QMainWindow):
         self.start_job('ui_backup_restore' if restore else 'ui_backup_create', {'path':self.backup_path.text()})
         self.restore_confirm.setChecked(False)
 
-    def _quiesce_and_recover(self):
+    def _quiesce_and_recover(self, *, preserve_primary_sign_in=False):
+        if not preserve_primary_sign_in:
+            self.chatgpt_panel.abandon_primary_sign_in()
         # Never create state files until the writer has exited and pending swaps recover.
         if self.jobs.active: self.jobs.cancel()
         if self.jobs.active: raise ValidationError('背景程序尚未停止；禁止還原或寫入狀態')
@@ -1933,10 +2147,12 @@ class MainWindow(QMainWindow):
         self.status.setText('紙上執行已凍結：' + str(reason) + '；每次執行需核對快照並明確對帳。')
 
     def closeEvent(self, event):
+        self.chatgpt_panel.abandon_primary_sign_in()
         if self.jobs.active and QMessageBox.question(self, '背景作業尚未完成', '取消背景作業並關閉？', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             event.ignore(); return
         try:
             self._closing = True
+            self.chatgpt_controller.set_host_available(False)
             self.chatgpt_panel.consent.setChecked(False)
             self.jobs.close()
             self._quiesce_and_recover()
@@ -1947,6 +2163,12 @@ class MainWindow(QMainWindow):
                 self._close_after_reconcile = True
                 event.ignore()
                 return
+            if (self._analysis_running or self._pending_analysis_reconcile) and self._analysis_launch is not None:
+                self._analysis_running=False;self._pending_analysis_reconcile=False
+                self.jobs.poll()
+                self.start_job('ui_analysis_reconcile',dict(self._analysis_launch))
+                self._close_after_reconcile=True
+                event.ignore();return
             if (self._subscription_campaign or self._pending_plan_reconcile) and self._plan_launch is not None:
                 self._subscription_campaign = False
                 self._pending_plan_reconcile = False
@@ -1961,8 +2183,10 @@ class MainWindow(QMainWindow):
             if self.guard is not None: self.guard.finish()
         except Exception:
             self._closing = False
+            self.chatgpt_controller.set_host_available(True)
             event.ignore(); self.status.setText('關閉失敗，背景作業尚未確認停止。'); return
         self._safe(self.save_market_preferences)
+        self.chatgpt_controller.set_host_available(False)
         self.timer.stop(); event.accept()
 
 

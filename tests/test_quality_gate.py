@@ -53,13 +53,26 @@ class QualityGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in ("desktop_ui.py", "desktop_charts.py", "desktop_forms.py", "desktop_market.py",
-                         "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py", "desktop_chatgpt_ui.py"):
+                         "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py", "desktop_chatgpt_ui.py",
+                         "desktop_tls_smoke.py"):
                 (root / name).write_text("import trader\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
                     self.assertTrue(scan(root), name)
                 (root / name).write_text("from PySide6.QtWidgets import QWidget\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
                     self.assertEqual(scan(root), [], name)
+
+    def test_automatic_backup_component_keeps_desktop_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            name = 'desktop_automatic_backup.py'
+            for source in ('import trader', 'import shioaji', "eval('1')", "exec('1')"):
+                (root/name).write_text(source, encoding='utf-8')
+                with self.subTest(source=source), patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+                    self.assertTrue(scan(root))
+            (root/name).write_text('from PySide6.QtWidgets import QWidget', encoding='utf-8')
+            with patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+                self.assertEqual(scan(root), [])
 
     def test_research_dependencies_are_standard_library_only(self):
         for source in ("import PySide6", "from streamlit import title", "import requests"):

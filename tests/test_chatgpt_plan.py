@@ -226,6 +226,69 @@ class PlanTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):p.generate({'family':'trend'})
                 assert len(MockTransport.requests)==1
 
+    def test_admission_diagnostics_do_not_interpret_or_retain_detail_text(self):
+        from desktop_chatgpt_provider import _remote_error
+        for value,status,expected,remote in (
+            ({'detail':'subscription_sharing_user_not_eligible'},403,'grant_blocked',None),
+            ({'detail':'fixture-secret https://example.invalid/?token=secret'},503,'transient_blocked',None),
+            ({'error':{'code':'subscription_sharing_usage_limit_exceeded','message':'fixture-secret'}},429,'quota_paused','subscription_sharing_usage_limit_exceeded'),
+            ({'error':{'type':'subscription_sharing_user_not_eligible'}},401,'credential_diagnosis',None),
+            ({'error':{'code':'unrecognized-secret-code'}},400,'remote_error',None),
+        ):
+            with self.subTest(status=status,value=value):
+                with self.assertRaises(PlanError) as caught:_remote_error(value,http_status=status)
+                self.assertEqual(caught.exception.code,expected)
+                self.assertEqual(caught.exception.http_status,status)
+                self.assertEqual(caught.exception.remote_code,remote)
+                self.assertNotIn('secret',repr(caught.exception))
+                self.assertNotIn('secret',repr(vars(caught.exception)))
+
+    def test_model_cannot_change_user_owned_quantity_stops_or_targets(self):
+        import copy
+        from quantlab.research import validate_dsl
+        for key,value in (('quantity',100),('stop_ticks',1),('target_ticks',100000)):
+            with self.subTest(key=key):
+                candidate=copy.deepcopy(CANDIDATE);candidate['parameters'][key]=value
+                # Manual engine capability is retained; the model boundary rejects.
+                validate_dsl(candidate)
+                response=terminal()['response'];response['output'][0]['content'][0]['text']=json.dumps(candidate)
+                with self.assertRaisesRegex(PlanError,'invalid_output'):
+                    parse_completed(response,'trend')
+                MockTransport.events=[frame({'type':'response.completed','response':response})]
+                p=provider(self.tmp_path/key)
+                with self.assertRaisesRegex(PlanError,'invalid_output'):
+                    p.generate({'family':'trend'})
+                receipts=p.read_receipts()
+                self.assertEqual(len(receipts),1)
+                self.assertEqual(receipts[0]['status'],'invalid_output')
+                self.assertIsNone(receipts[0]['response_hash'])
+                with self.assertRaises(PlanError):p.generate({'family':'trend'})
+
+    def test_model_exact_family_parameters_with_optional_exit_still_work(self):
+        import copy
+        candidate=copy.deepcopy(CANDIDATE)
+        node={'op':'gt','left':{'op':'const','value':1},'right':{'op':'const','value':0}}
+        candidate['rules']={'long':node,'short':{'op':'not','arg':node},'exit':node}
+        response=terminal()['response'];response['output'][0]['content'][0]['text']=json.dumps(candidate)
+        actual,_=parse_completed(response,'trend')
+        self.assertEqual(actual,candidate)
+
+    def test_empty_and_nonjson_admission_responses_keep_safe_status(self):
+        import time
+        reference=provider(self.tmp_path).credential_reference
+        limits=dict(deadline=time.monotonic()+30,stall_seconds=10,max_request_bytes=65536,max_response_bytes=262144)
+        request={'model':'fixture-model','input':[],'instructions':'mock','stream':True,'store':False}
+        with patch('http.client.HTTPSConnection',FakeHTTPS),patch.object(OAuthCredentialReference,'__call__',return_value='fixture-oauth-secret'):
+            for status,expected in ((401,'credential_diagnosis'),(403,'grant_blocked'),(503,'transient_blocked')):
+                for body in (b'',b'not-json fixture-secret'):
+                    FakeResponse.status=status;FakeResponse.headers={};FakeResponse.chunks=[body] if body else []
+                    with self.subTest(status=status,body=body),self.assertRaises(PlanError) as caught:
+                        list(RealTransport().stream(reference,request,limits))
+                    self.assertEqual(caught.exception.code,expected)
+                    self.assertEqual(caught.exception.http_status,status)
+                    self.assertIsNone(caught.exception.remote_code)
+                    self.assertNotIn('secret',repr(vars(caught.exception)))
+
     def test_p5_crash_barrier(self):
         p=provider(self.tmp_path);p._reserve('0'*64,100)
         restarted=provider(self.tmp_path)

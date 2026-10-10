@@ -147,3 +147,184 @@ class DashboardTests(unittest.TestCase):
         self.panel.set_quote_series(())
         self.assertIn('尚無可用資料',self.panel.cards['TMF'].text())
         self.assertTrue(self.panel.chart.bars)
+
+
+@unittest.skipUnless(HAS_QT, 'Install pinned desktop requirements to test Qt widgets')
+class IndicatorWorkBoundaryTests(unittest.TestCase):
+    """Synthetic-only normal-control regressions frozen before the AUTO fix.
+
+    Editing parameters is atomic. A later data/timeframe change can instead make
+    an indicator explicitly unavailable, without discarding new candles or
+    claiming that old indicator curves use the new data/settings.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.app=QApplication.instance() or QApplication([])
+        instrument=InstrumentRef('TAIFEX','TX','TAIFEX:TX:202610','202610')
+        bars=[]
+        for n in range(5001):
+            timestamp=datetime(2026,1,1,tzinfo=timezone.utc)+timedelta(days=n//300,minutes=n%300)
+            opening=timestamp.replace(hour=0,minute=0)
+            bars.append(MarketBar(instrument,timestamp.date().isoformat(),'day',Decimal(100),Decimal(101),Decimal(99),Decimal(100),1,interval='1m',timestamp=timestamp,end=timestamp+timedelta(minutes=1),session_open=opening,session_end=opening+timedelta(minutes=300),source_id='synthetic'))
+        source=SourceProvenance('https://example.org/synthetic','a'*64,'合成測試，非真實行情','https://example.org/license',datetime(2026,2,1,tzinfo=timezone.utc),bars[-1].trade_date,bars[0].trade_date,bars[-1].trade_date,mode='history')
+        cls.large=MarketSeries(instrument,tuple(bars),source)
+        cls.small=MarketSeries(instrument,tuple(bars[:1000]),source)
+
+    def setUp(self):
+        import sys
+        self.panel=MarketDashboard()
+        self.addCleanup(DashboardTests.dispose,self,self.panel)
+        self.panel.timeframe_combo.setCurrentIndex(self.panel.timeframe_combo.findData('1m'))
+        self.panel.set_market_series(self.large)
+        self.errors=[]
+        old=sys.excepthook
+        self.addCleanup(setattr,sys,'excepthook',old)
+        sys.excepthook=lambda kind,value,trace:self.errors.append(str(value))
+
+    def check_parameter_rollback(self,key):
+        p=self.panel
+        enabled,controls=p._indicator_widgets[key]
+        enabled.setChecked(True)
+        prefs=p.preferences()
+        old_overlays=dict(p.chart.overlays); old_panes=dict(p.chart.panes)
+        saved=QSignalSpy(p.preferences_changed)
+        changed=QSignalSpy(controls['period'].valueChanged)
+        observed=[]
+        controls['period'].valueChanged.connect(lambda value: observed.append(value))
+        controls['period'].setValue(1000)
+        self.assertEqual(self.errors,[])
+        self.assertEqual(p.preferences(),prefs)
+        self.assertEqual(controls['period'].value(),prefs['indicators'][key]['period'])
+        self.assertEqual(dict(p.chart.overlays),old_overlays)
+        self.assertEqual(dict(p.chart.panes),old_panes)
+        self.assertEqual(saved.count(),0)
+        self.assertEqual(changed.count(),1,'rollback must block nested valueChanged signals')
+        self.assertEqual(observed,[1000])
+        self.assertIn(key,p.message.text()); self.assertIn('限制',p.message.text()); self.assertIn('還原',p.message.text())
+        controls['period'].setValue(21)
+        self.assertEqual(self.errors,[])
+        self.assertEqual(saved.count(),1)
+        self.assertEqual(p.preferences()['indicators'][key]['period'],21)
+        self.assertNotIn('無法計算',p.message.text())
+        self.assertEqual(len(p.chart.bars),5001)
+        if key=='Bollinger': self.assertEqual(next(i for i,v in enumerate(p.chart.overlays['BB middle']) if v is not None),20)
+
+    def test_bollinger_5001_by_1000_atomic_rollback_and_recovery(self):
+        self.check_parameter_rollback('Bollinger')
+
+    def test_kd_5001_by_1000_atomic_rollback_and_recovery(self):
+        self.check_parameter_rollback('KD')
+
+    def test_data_growth_keeps_new_candles_and_other_indicators(self):
+        p=self.panel; p.set_market_series(self.small)
+        enabled,controls=p._indicator_widgets['Bollinger']
+        controls['period'].setValue(1000); enabled.setChecked(True)
+        self.assertIsNotNone(p.chart.overlays['BB middle'][-1])
+        saved=QSignalSpy(p.preferences_changed)
+        p.set_market_series(self.large)
+        self.assertEqual(self.errors,[])
+        self.assertEqual(p.chart.bars,p._display_bars)
+        self.assertEqual(len(p.chart.bars),5001)
+        self.assertNotIn('BB middle',p.chart.overlays)
+        self.assertIsNotNone(p.chart.overlays['MA5'][-1])
+        self.assertEqual(controls['period'].value(),1000)
+        self.assertEqual(p.preferences()['indicators']['Bollinger']['period'],1000)
+        self.assertIn('Bollinger',p.message.text()); self.assertIn('未顯示',p.message.text())
+        self.assertEqual(saved.count(),0)
+        p.set_market_series(self.small)
+        self.assertIsNotNone(p.chart.overlays['BB middle'][-1])
+        self.assertNotIn('無法計算',p.message.text())
+
+    def test_timeframe_expansion_omits_unavailable_kd(self):
+        p=self.panel
+        p.timeframe_combo.setCurrentIndex(p.timeframe_combo.findData('5m'))
+        enabled,controls=p._indicator_widgets['KD']
+        controls['period'].setValue(1000); enabled.setChecked(True)
+        self.assertIsNotNone(p.chart.panes['KD k'][-1])
+        p.timeframe_combo.setCurrentIndex(p.timeframe_combo.findData('1m'))
+        self.assertEqual(self.errors,[])
+        self.assertEqual(len(p.chart.bars),5001)
+        self.assertNotIn('KD k',p.chart.panes)
+        self.assertIsNotNone(p.chart.overlays['MA5'][-1])
+        self.assertIn('KD',p.message.text()); self.assertIn('未顯示',p.message.text())
+        self.assertEqual(p.preferences()['indicators']['KD']['period'],1000)
+
+    def test_saved_parameters_are_safe_on_large_snapshot_and_recover(self):
+        p=self.panel; prefs=p.preferences()
+        for key in ('Bollinger','KD'): prefs['indicators'][key].update(enabled=True,period=1000)
+        p.restore_preferences(prefs)
+        p.set_market_series(self.large)
+        self.assertEqual(self.errors,[])
+        self.assertEqual(p.preferences(),prefs)
+        self.assertNotIn('BB middle',p.chart.overlays); self.assertNotIn('KD k',p.chart.panes)
+        self.assertIsNotNone(p.chart.overlays['MA5'][-1])
+        self.assertIn('Bollinger',p.message.text()); self.assertIn('KD',p.message.text())
+        p.set_market_series(self.small)
+        self.assertIsNotNone(p.chart.overlays['BB middle'][-1]); self.assertIsNotNone(p.chart.panes['KD k'][-1])
+        self.assertNotIn('無法計算',p.message.text())
+
+    def test_macd_invalid_edit_rolls_back_without_recursive_signals(self):
+        p=self.panel; _,controls=p._indicator_widgets['MACD']
+        prefs=p.preferences(); saved=QSignalSpy(p.preferences_changed)
+        changed=QSignalSpy(controls['fast'].valueChanged)
+        controls['fast'].setValue(controls['slow'].value())
+        self.assertEqual(self.errors,[])
+        self.assertEqual(p.preferences(),prefs)
+        self.assertEqual(controls['fast'].value(),prefs['indicators']['MACD']['fast'])
+        self.assertEqual(saved.count(),0); self.assertEqual(changed.count(),1)
+        self.assertIn('MACD',p.message.text())
+
+    def test_core_work_cap_and_widget_domain_unchanged(self):
+        from quantlab import indicators
+        self.assertEqual(indicators.MAX_WINDOW_WORK,5_000_000)
+        for key in ('Bollinger','KD'):
+            controls=self.panel._indicator_widgets[key][1]
+            self.assertEqual((controls['period'].minimum(),controls['period'].maximum()),(1,1000))
+        values=(Decimal(100),)*5001
+        self.assertTrue(issubclass(indicators.IndicatorResourceLimitError,ValueError))
+        with self.assertRaisesRegex(indicators.IndicatorResourceLimitError,'work limit'): indicators.bollinger(values,period=1000)
+        with self.assertRaisesRegex(indicators.IndicatorResourceLimitError,'work limit'): indicators.kd(values,values,values,period=1000)
+        with self.assertRaisesRegex(indicators.IndicatorResourceLimitError,'observation limit'): indicators.sma((Decimal(100),)*100001)
+        with self.assertRaises(ValueError) as caught: indicators.sma([True])
+        self.assertNotIsInstance(caught.exception,indicators.IndicatorResourceLimitError)
+
+    def test_two_unavailable_indicators_can_be_repaired_individually(self):
+        p=self.panel; prefs=p.preferences()
+        for key in ('Bollinger','KD'): prefs['indicators'][key].update(enabled=True,period=1000)
+        p.restore_preferences(prefs)
+        saved=QSignalSpy(p.preferences_changed)
+        p._indicator_widgets['KD'][1]['period'].setValue(20)
+        self.assertEqual(self.errors,[])
+        self.assertEqual(p.preferences()['indicators']['KD']['period'],20)
+        self.assertIsNotNone(p.chart.panes['KD k'][-1])
+        self.assertNotIn('BB middle',p.chart.overlays)
+        self.assertIn('Bollinger',p.message.text()); self.assertNotIn('KD 無法',p.message.text())
+        p._indicator_widgets['Bollinger'][0].setChecked(False)
+        self.assertFalse(p.preferences()['indicators']['Bollinger']['enabled'])
+        self.assertEqual(saved.count(),2)
+        self.assertNotIn('無法計算',p.message.text())
+        self.assertIsNotNone(p.chart.panes['KD k'][-1])
+
+    def test_two_unavailable_indicators_can_be_disabled_individually(self):
+        p=self.panel; prefs=p.preferences()
+        for key in ('Bollinger','KD'): prefs['indicators'][key].update(enabled=True,period=1000)
+        p.restore_preferences(prefs)
+        p._indicator_widgets['Bollinger'][0].setChecked(False)
+        self.assertFalse(p.preferences()['indicators']['Bollinger']['enabled'])
+        self.assertNotIn('BB middle',p.chart.overlays); self.assertNotIn('KD k',p.chart.panes)
+        self.assertIn('KD',p.message.text())
+        p._indicator_widgets['KD'][1]['period'].setValue(20)
+        self.assertEqual(p.preferences()['indicators']['KD']['period'],20)
+        self.assertIsNotNone(p.chart.panes['KD k'][-1])
+        self.assertNotIn('無法計算',p.message.text())
+        self.assertEqual(self.errors,[])
+
+    def test_unexpected_value_error_is_not_mislabeled_as_resource_limit(self):
+        from unittest.mock import patch
+        p=self.panel
+        original=p.message.text()
+        with patch('desktop_market.indicators.sma',side_effect=ValueError('INTERNAL BUG SENTINEL')):
+            with self.assertRaisesRegex(ValueError,'INTERNAL BUG SENTINEL'):
+                p._apply_indicators()
+        self.assertEqual(p.message.text(),original)
+        self.assertNotIn('限制',p.message.text())
