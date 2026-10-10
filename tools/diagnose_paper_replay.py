@@ -251,6 +251,122 @@ def _process_probes(directory, deadline):
     return result
 
 
+@contextmanager
+def _rollback_connection(connect, path, mode):
+    if mode not in ('DELETE', 'TRUNCATE', 'PERSIST'):
+        raise ValueError('Unsupported diagnostic rollback mode')
+    db = connect(path, timeout=1)
+    try:
+        selected = db.execute('PRAGMA journal_mode=' + mode).fetchone()[0]
+        db.execute('PRAGMA synchronous=FULL')
+        if selected != mode.lower() or db.execute('PRAGMA synchronous').fetchone()[0] != 2:
+            raise RuntimeError('Diagnostic storage settings not accepted')
+        with db:
+            yield db
+    finally:
+        db.close()
+
+
+def _journal_mode_probe(output, mode, root):
+    """960 disposable cursor commits; no application database is ever opened."""
+    if mode not in ('DELETE', 'TRUNCATE', 'PERSIST'):
+        raise ValueError('Unsupported diagnostic rollback mode')
+    root = Path(root)
+    path = root / 'replays' / (mode.lower() + '.sqlite3')
+    path.parent.mkdir(exist_ok=True)
+    if path.exists():
+        raise ValueError('Diagnostic database must be new')
+    timings = Timings()
+    connect = _instrument_connect(sqlite3.connect, timings)
+    metadata = {'probe': 'rollback_journal_comparison', 'mode': mode,
+                'sqlite': sqlite3.sqlite_version, 'commits_expected': 960,
+                'verified_pragmas': {'journal_mode': mode.lower(), 'synchronous': 2},
+                **_filesystem(root)}
+    consumed = 0
+    def record(complete=False):
+        _write_json(output, {**metadata, 'complete': complete,
+                            'commits_completed': consumed, **timings.snapshot()})
+    def connection():
+        return _rollback_connection(connect, path, mode)
+    with connection() as db:
+        db.execute('CREATE TABLE replay (id INTEGER PRIMARY KEY, binding TEXT, cursor INTEGER, active INTEGER, plan TEXT)')
+        db.execute('INSERT INTO replay VALUES (1, ?, 0, 1, NULL)', ('0' * 64,))
+    record()
+    last_report = time.monotonic()
+    for index in range(960):
+        # Match the ordinary empty-bar read/open/close and durable cursor shape.
+        with connection() as db:
+            row = db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone()
+            if row != (index, 1, None):
+                raise RuntimeError('Diagnostic cursor did not persist')
+        with connection() as db:
+            if db.execute('SELECT plan FROM replay WHERE id=1').fetchone()[0] is not None:
+                raise RuntimeError('Unexpected diagnostic plan')
+            db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
+        consumed += 1
+        if time.monotonic() - last_report >= 1:
+            record()
+            last_report = time.monotonic()
+    class RollbackProbe(Exception):
+        pass
+    try:
+        with connection() as db:
+            db.execute('UPDATE replay SET cursor=-1 WHERE id=1')
+            raise RollbackProbe()
+    except RollbackProbe:
+        pass
+    # An ordinary new connection must recover the exact durable cursor, including
+    # after the deliberate rollback. This also exercises default-mode reopening.
+    db = sqlite3.connect(path, timeout=1)
+    try:
+        if db.execute('SELECT cursor FROM replay WHERE id=1').fetchone()[0] != 960:
+            raise RuntimeError('Diagnostic durable cursor verification failed')
+        if db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+            raise RuntimeError('Diagnostic database integrity failed')
+    finally:
+        db.close()
+    metadata['rollback_and_reopen_verified'] = True
+    record(complete=True)
+    return 0
+
+
+def _journal_mode_comparison(directory, deadline):
+    import subprocess
+    import tempfile
+    results = []
+    # The controller owns the entire disposable tree, even if a probe is killed.
+    # subprocess.run waits for the no-descendant child before this tree is removed.
+    with tempfile.TemporaryDirectory(prefix='paper-sync-comparison-') as root:
+        for mode in ('DELETE', 'TRUNCATE', 'PERSIST'):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                results.append({'mode': mode, 'complete': False, 'not_started': True, 'reason': 'deadline'})
+                continue
+            output = directory / ('journal-' + mode.lower() + '.json')
+            command = [sys.executable, str(Path(__file__).resolve()), str(output),
+                       '--journal-child', mode, '--journal-root', root]
+            started = time.monotonic()
+            try:
+                completed = subprocess.run(command, cwd=ROOT, timeout=remaining,
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                entry = {'mode': mode, 'seconds': time.monotonic() - started,
+                         'returncode': completed.returncode, 'complete': completed.returncode == 0}
+            except subprocess.TimeoutExpired:
+                entry = {'mode': mode, 'seconds': time.monotonic() - started,
+                         'timed_out': True, 'complete': False}
+            if output.exists():
+                observation = json.loads(output.read_text(encoding='utf-8'))
+                entry['complete'] = (entry['complete'] and observation.get('complete') is True
+                    and observation.get('mode') == mode and observation.get('commits_completed') == 960
+                    and observation.get('verified_pragmas') == {'journal_mode': mode.lower(), 'synchronous': 2}
+                    and observation.get('rollback_and_reopen_verified') is True
+                    and observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls') == 960)
+            else:
+                entry['complete'] = False
+            results.append(entry)
+    return results
+
+
 def observe(output, *, limit=180):
     """Use normal controls and the original JobManager, with a diagnostic deadline."""
     started = time.monotonic()
@@ -340,12 +456,50 @@ def observe(output, *, limit=180):
     return 0 if report['status'] == 'measured' and report['workers'] else 1
 
 
+def observe_persistence(output, *, limit=180):
+    """Separate bounded calibration; it never runs or replaces an acceptance test."""
+    import tempfile
+    started = time.monotonic()
+    deadline = started + limit - 6
+    output = Path(output).resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix='paper-journal-timing-', dir=output.parent))
+    report = {'observation_only': True, 'kind': 'rollback_journal_comparison',
+              'observation_limit_seconds': limit, 'commits_per_mode': 960,
+              'python': sys.version, 'sqlite': sqlite3.sqlite_version,
+              'os': platform.platform(), 'os_build': platform.version(),
+              'status': 'observation_incomplete', 'complete': False}
+    try:
+        report['comparisons'] = _journal_mode_comparison(directory, deadline)
+        if len(report['comparisons']) == 3 and all(item['complete'] for item in report['comparisons']):
+            report.update(status='measured', complete=True)
+    except (Exception, KeyboardInterrupt) as error:
+        report['error_type'] = type(error).__name__
+    finally:
+        report['elapsed_seconds'] = time.monotonic() - started
+        report['details'] = [json.loads(path.read_text(encoding='utf-8')) for path in sorted(directory.glob('journal-*.json'))]
+        _write_json(output, report)
+        print(json.dumps(report, ensure_ascii=True, sort_keys=True), flush=True)
+    return 0 if report['complete'] else 1
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
     parser.add_argument('--broker-child', choices=['before_event_commit', 'after_event_commit'])
+    parser.add_argument('--journal-child', choices=['DELETE', 'TRUNCATE', 'PERSIST'])
+    parser.add_argument('--journal-root', type=Path)
+    parser.add_argument('--persistence-only', action='store_true')
     args = parser.parse_args()
+    if args.persistence_only:
+        if args.journal_child or args.journal_root or args.broker_child:
+            parser.error('Persistence-only mode cannot combine child arguments')
+        return observe_persistence(args.output)
+    if args.journal_child:
+        if args.journal_root is None or args.broker_child:
+            parser.error('Journal probe requires its owned fixture directory')
+        return _journal_mode_probe(args.output, args.journal_child, args.journal_root)
     if args.broker_child:
         return _broker_probe(args.output, args.broker_child)
     return observe(args.output)

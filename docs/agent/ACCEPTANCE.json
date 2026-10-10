@@ -461,6 +461,37 @@
       "skipped": 12,
       "remaining": "Windows-latest Python3.11/3.12 unchanged30s replay timeout;3.12 process-death10s timeout; Linux Qt system dependency repair pending newCI"
     },
-    "diagnostic": "After-failure observation only, same synthetic workload,180s bounded cleanup; never substitutes for unchanged acceptance"
+    "diagnostic": "After-failure observation only, same synthetic workload,180s bounded cleanup; never substitutes for unchanged acceptance",
+    "latest_native_evidence": {
+      "head": "71f8feb73f4f73d09f9ffe14d1f8e6970ab63ecc",
+      "windows_run": 38020197303,
+      "build_job": 114119289481,
+      "status": "Server2022 build/security/install/upgrade/recovery PASS; complete Quantlab matrix FAIL; not merged",
+      "tests": 741,
+      "passed": 729,
+      "skipped": 12,
+      "seconds": 235.185
+    },
+    "native_timing_evidence": {
+      "job": 114119289510,
+      "os": "Windows Server2025",
+      "python": "3.12.10",
+      "sqlite": "3.49.1",
+      "bars": 960,
+      "worker_seconds": 29.718,
+      "cursor_commits": 960,
+      "cursor_commit_seconds": 25.713,
+      "worker_tree_stopped": true,
+      "acceptance_timeout_seconds": 30,
+      "scope": "Diagnostic only; original acceptance FAILED, not overridden"
+    },
+    "current_repairs": [
+      "Complete Linux Qt runtime now loads; full source smoke revealed missing pinned auth dependency closure. Install all four pinned auth packages and run offline preflight before unchanged suite.",
+      "Compare replay-shaped disposable DELETE/TRUNCATE/PERSIST FULL-sync writes before changing production persistence. No WAL enablement on unpatched SQLite3.49.1."
+    ],
+    "release_blockers": [
+      "Native30s replay timeout remains unresolved pending measured persistence repair",
+      "Smoke MainWindow startup modifies real paper/safety state; reproduced on isolated fixture. Whole-startup isolation repair required before merge."
+    ]
   }
 }
