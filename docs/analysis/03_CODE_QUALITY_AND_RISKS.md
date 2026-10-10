@@ -242,3 +242,7 @@ PR#2已合併28c9f902，最後head9008522完整tree6338b6ef9828892e53fbf1a543ada
 靜態Gate發現3個Qt檔案放在quantlab研究樹，違反既有stdlib-only邊界；沒有放寬研究規則。已將desktop_charts.py、desktop_forms.py、desktop_market.py移至既有desktop_ui.py旁，UI向quantlab資料/策略依賴，核心不依賴Qt；同時把既有desktop禁止券商/dynamic-execution掃描延伸到全部4個UI檔，新增負向回歸。證據：tools/quality_gate.py、tests/test_quality_gate.py。可選Qt測試遵循原矩陣分層，在有完整桌面依賴的Windows job必須執行；minimalstdlib job明示skip，不能算桌面PASS。
 
 最新報價卡與歷史圖表分離；只持有較新已驗證分鐘history時可以顯示卡，但不升格為即時。日期/盤別無法排序時不虛構日行情時間。證據：desktop_ui.py與tests/test_desktop_market_integration.py。官方直連DNS失敗保留BLOCKED；本地匯入標history/source-unverified，不能以URL字串證明來源真實性。
+
+CI run38010756018揭露deadline測試fixture競態：30ms計時包含SSL初始化，慢runner在fake connect前合法逾時。未放寬產品30s限制或測試0.5s關閉門檻；僅隔離handler時計，仍以真30ms threading.Timer驗證shutdown，新增已逾時不連線案例。23focused、200重複及10次故意60ms SSL初始化均通過；原失敗保留，下一head重新驗收。desktop.py另把原7步frozen smoke保留，再增加獨立synthetic market_smoke（真Qt非空圖表/週期/指標/typedforms、manual export/import worker與來源hash），任一失敗阻擋overall。這是打包工程測試，不是行情/AI實測替代。
+
+同次Windows CI另發現payload path驗收把原字串和GetFullPath結果要求完全相同，可能誤拒TEMP含8.3別名的合法路徑。改為canonical target/trusted root比對，同時明確拒絕relative/drive-relative/UNC、dot traversal、ADS；原精確layout/reparse門檻保留，動態測試增加ShortPath。來源packaging/test_update_recovery.ps1、tests/test_update_recovery.py；Windows需重驗，Linux skip不作成功。新市場/原7步整合source smoke及其完整Linux suite459項451PASS8skip（72.056s）；另最新recovery focused10PASS1Windows skip。原失敗CI不能被這些本地結果抹除。

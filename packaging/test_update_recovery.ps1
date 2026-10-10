@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 $root = Split-Path $PSScriptRoot -Parent
 $results = Join-Path $root 'dist\validation\update-recovery'
 New-Item $results -ItemType Directory -Force | Out-Null
-$appDir = Join-Path $env:LOCALAPPDATA 'Programs\MarkAuto'
+$appDir = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs\MarkAuto'))
 $dataDir = Join-Path $env:LOCALAPPDATA 'MarkAuto'
 $settingsPath = Join-Path $dataDir 'state-v1\settings.json'
 $settingsDigest = $null
@@ -55,13 +55,17 @@ function Get-SafePayloadFiles([string]$directory) {
   }
 }
 function Assert-PayloadTarget([string]$exe, [string]$expectedVersion) {
+  # GetFullPath expands existing 8.3 names (for example RUNNER~1 in TEMP).
+  # Compare canonical trusted paths, not raw spelling; reject traversal explicitly.
+  if ($exe -notmatch '^[A-Za-z]:\\' -or $exe.Substring(2).Contains(':') -or $exe -match '(^|[\\/])\.\.?([\\/]|$)') { throw 'Executable path must be absolute local and contain no traversal or alternate stream' }
   $full = [IO.Path]::GetFullPath($exe)
-  if ($full -ne $exe -or (Split-Path $full -Leaf) -ne 'MarkAuto.exe') { throw 'Unexpected executable path' }
+  $trustedRoot = [IO.Path]::GetFullPath($appDir)
+  if ((Split-Path $full -Leaf) -ne 'MarkAuto.exe') { throw 'Unexpected executable filename' }
   $directory = Split-Path $full -Parent
   if ($expectedVersion -eq '0.1.1') {
-    if ($full -ne "$appDir\MarkAuto.exe") { throw 'Legacy baseline must use its exact root executable' }
+    if ($full -ne (Join-Path $trustedRoot 'MarkAuto.exe')) { throw 'Legacy baseline must use its exact root executable' }
   } else {
-    $versionRoot = Join-Path $appDir "payloads\$expectedVersion"
+    $versionRoot = Join-Path $trustedRoot "payloads\$expectedVersion"
     if ((Split-Path $directory -Parent) -ne $versionRoot) { throw 'Executable must be inside one owned versioned payload directory' }
   }
   if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw 'Payload executable missing' }

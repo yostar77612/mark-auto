@@ -135,14 +135,17 @@ class MarketAdversarialTests(unittest.TestCase):
 
     def test_deadline_timer_interrupts_connected_socket(self):
         from quantlab.market_providers import _DeadlineHTTPSHandler
-        import threading,time
+        import threading
+        from types import SimpleNamespace
         closed=threading.Event()
         class FakeSocket:
             shutdown_called=False
             def shutdown(self,how):self.shutdown_called=True
             def close(self):closed.set()
         sock=FakeSocket()
-        handler=_DeadlineHTTPSHandler(time.monotonic()+0.03)
+        # Only the handler's deadline accounting uses this virtual clock.
+        # SSL setup may take any time; the real Timer still fires after 30 ms.
+        handler=_DeadlineHTTPSHandler(0.03)
         def fake_connect(connection):connection.sock=sock
         def fake_open(connection_class,req,**kwargs):
             connection=connection_class('official.test',timeout=20)
@@ -150,9 +153,24 @@ class MarketAdversarialTests(unittest.TestCase):
             self.assertTrue(closed.wait(0.5),'deadline must wake blocked connection')
             self.assertTrue(sock.shutdown_called)
         try:
-            with patch('quantlab.market_providers.HTTPSConnection.connect',fake_connect), patch.object(handler,'do_open',side_effect=fake_open):handler.https_open(None)
+            with patch('quantlab.market_providers.time',SimpleNamespace(monotonic=lambda:0)), patch('quantlab.market_providers.HTTPSConnection.connect',fake_connect), patch.object(handler,'do_open',side_effect=fake_open):handler.https_open(None)
         finally:handler.cleanup()
         self.assertTrue(all(not timer.is_alive() for timer in handler.timers))
+
+    def test_expired_deadline_rejects_before_connect(self):
+        from quantlab.market_providers import _DeadlineHTTPSHandler
+        from types import SimpleNamespace
+        handler=_DeadlineHTTPSHandler(0.03)
+        def fake_open(connection_class,req,**kwargs):
+            connection=connection_class('official.test',timeout=20)
+            self.assertIsNone(connection.sock)
+            connection.connect()
+        try:
+            with patch('quantlab.market_providers.time',SimpleNamespace(monotonic=lambda:0.04)), patch('quantlab.market_providers.HTTPSConnection.connect') as connect, patch.object(handler,'do_open',side_effect=fake_open):
+                with self.assertRaisesRegex(MarketValidationError,'time limit'):handler.https_open(None)
+                connect.assert_not_called()
+            self.assertEqual(handler.timers,[])
+        finally:handler.cleanup()
 
     def test_windows_reparse_points_rejected(self):
         from quantlab.market_providers import _reject_link

@@ -98,12 +98,22 @@ class UpdateRecoveryTests(unittest.TestCase):
         self.assertIn("[string]$BaselineVersion = '0.1.1'", script)
         self.assertIn("[string]$Version = '0.2.0'", script)
         self.assertIn("if ($expectedVersion -eq '0.1.1')", script)
-        self.assertIn('$full -ne "$appDir\\MarkAuto.exe"', script)
-        self.assertIn('Join-Path $appDir "payloads\\$expectedVersion"', script)
+        self.assertIn("$full -ne (Join-Path $trustedRoot 'MarkAuto.exe')", script)
+        self.assertIn('Join-Path $trustedRoot "payloads\\$expectedVersion"', script)
         self.assertIn('(Split-Path $directory -Parent) -ne $versionRoot', script)
         self.assertIn("if ($BaselineVersion -ne '0.1.1') { Assert-Inventory $oldDir }", script)
         self.assertEqual(script.count('Smoke $oldExe $BaselineVersion'), 3)
         self.assertNotIn("Smoke $oldExe '0.1.1'", script)
+
+    def test_windows_canonical_aliases_keep_explicit_traversal_rejection(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        guard = script.split('function Assert-PayloadTarget', 1)[1].split('function Assert-Inventory', 1)[0]
+        self.assertNotIn('$full -ne $exe', guard)
+        self.assertIn('$trustedRoot = [IO.Path]::GetFullPath($appDir)', guard)
+        self.assertIn("$exe -notmatch '^[A-Za-z]:\\\\'", guard)
+        self.assertIn("$exe.Substring(2).Contains(':')", guard)
+        self.assertIn("$exe -match '(^|[\\\\/])\\.\\.?([\\\\/]|$)'", guard)
+        self.assertIn('Assert-NoReparsePath $full', guard)
 
     def test_recovery_preserves_all_prior_payloads_and_unknown_files(self):
         script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
@@ -146,9 +156,19 @@ $versionedExe = Join-Path $versioned 'MarkAuto.exe'
 [IO.File]::WriteAllText($versionedExe, 'fixture')
 Assert-PayloadTarget $legacyExe '0.1.1'
 Assert-PayloadTarget $versionedExe '0.1.2'
-foreach ($case in @(@($legacyExe, '0.1.2'), @($versionedExe, '0.1.1'), @($versionedExe, '0.2.0'), @((Join-Path $Root 'MarkAuto.exe'), '0.1.2'))) {
+# Exercise the exact 8.3 spelling that GetFullPath may expand on Windows CI.
+$fso = New-Object -ComObject Scripting.FileSystemObject
+$shortLegacy = $fso.GetFile($legacyExe).ShortPath
+$shortVersioned = $fso.GetFile($versionedExe).ShortPath
+Assert-PayloadTarget $shortLegacy '0.1.1'
+Assert-PayloadTarget $shortVersioned '0.1.2'
+Write-Output ('short_alias_expansion=' + ($shortLegacy -ne [IO.Path]::GetFullPath($shortLegacy)))
+foreach ($case in @(@($legacyExe, '0.1.2'), @($versionedExe, '0.1.1'), @($versionedExe, '0.2.0'), @((Join-Path $Root 'MarkAuto.exe'), '0.1.2'),
+    @('MarkAuto.exe', '0.1.1'), @('C:MarkAuto.exe', '0.1.1'),
+    @((Join-Path $appDir 'payloads\..\MarkAuto.exe'), '0.1.1'),
+    @((Join-Path $appDir '.\MarkAuto.exe'), '0.1.1'), @(($legacyExe + ':stream'), '0.1.1'))) {
   $rejected = $false
-  try { Assert-PayloadTarget $case[0] $case[1] } catch { $rejected = $true }
+  try { Assert-PayloadTarget -exe ($case[0]) -expectedVersion ($case[1]) } catch { $rejected = $true }
   if (-not $rejected) { throw 'Unsafe layout accepted' }
 }
 """, encoding='utf-8')
