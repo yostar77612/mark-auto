@@ -1,4 +1,5 @@
 """Source/manifest fixtures plus pinned native dependency admission, no network."""
+import copy
 import hashlib
 import importlib.metadata
 import json
@@ -12,6 +13,8 @@ import desktop_chatgpt_provider as p
 
 VERSIONS={'PyJWT':'2.15.1','cryptography':'50.0.2','cffi':'2.1.1','pycparser':'3.11'}
 ROOT=Path(p.__file__).parent
+TARGETS={'windows-cp311-amd64','windows-cp312-amd64','windows-cp313-amd64',
+         'linux-cp311-x86_64','linux-cp312-x86_64'}
 
 class ProvenanceStructureTests(unittest.TestCase):
     """Metadata/platform mocks are explicit synthetic fixtures, not native proof."""
@@ -58,6 +61,50 @@ class ProvenanceStructureTests(unittest.TestCase):
         with patch.object(p.platform,'machine',return_value='arm64'):
             with self.assertRaises(p.PlanError):p.implementation_provenance()
 
+    def test_all_declared_native_targets_and_reject_unknown_platforms(self):
+        for system,versions in (('win32',(11,12,13)),('linux',(11,12))):
+            for minor in versions:
+                for machine in ('AMD64','x86_64'):
+                    with self.subTest(system=system,minor=minor,machine=machine):
+                        with patch.object(p.sys,'platform',system),patch.object(p.sys,'version_info',(3,minor,0)),patch.object(p.platform,'machine',return_value=machine):
+                            target=p.implementation_provenance()['dependency_target']
+                            expected=f"{'windows' if system=='win32' else 'linux'}-cp3{minor}-{'amd64' if system=='win32' else 'x86_64'}"
+                            self.assertEqual(target,expected)
+        for system,version,machine,implementation,bits in (
+            ('darwin',(3,12,0),'x86_64','CPython',2**63-1),
+            ('linux',(3,13,0),'x86_64','CPython',2**63-1),
+            ('win32',(3,14,0),'AMD64','CPython',2**63-1),
+            ('linux',(3,10,0),'x86_64','CPython',2**63-1),
+            ('linux',(3,12,0),'aarch64','CPython',2**63-1),
+            ('linux',(3,12,0),'x86_64','PyPy',2**63-1),
+            ('win32',(3,12,0),'AMD64','CPython',2**31-1)):
+            with self.subTest(system=system,version=version,machine=machine,implementation=implementation,bits=bits):
+                with patch.object(p.sys,'platform',system),patch.object(p.sys,'version_info',version),patch.object(p.platform,'machine',return_value=machine),patch.object(p.platform,'python_implementation',return_value=implementation),patch.object(p.sys,'maxsize',bits):
+                    with self.assertRaises(p.PlanError) as caught:p.implementation_provenance()
+                    self.assertEqual(caught.exception.code,'unsupported_dependency_target')
+
+    def test_manifest_guards_apply_to_every_target(self):
+        original=Path.read_bytes
+        baseline=json.loads((ROOT/'desktop_chatgpt_dependency_manifest.json').read_text())
+        mutations=[]
+        for version in (True,0,2,'1'):
+            item=copy.deepcopy(baseline);item['version']=version;mutations.append(item)
+        item=copy.deepcopy(baseline);item['extra']=1;mutations.append(item)
+        item=copy.deepcopy(baseline);item['targets']['linux-cp313-x86_64']=copy.deepcopy(item['targets']['linux-cp312-x86_64']);mutations.append(item)
+        for target in TARGETS:
+            item=copy.deepcopy(baseline);del item['targets'][target];mutations.append(item)
+            for field,value in (('distribution','unknown'),('version','0.0.0'),('wheel_sha256','A'*64),('wheel_sha256','0'*63),('wheel_sha256',None)):
+                item=copy.deepcopy(baseline);item['targets'][target]['dependencies'][0][field]=value;mutations.append(item)
+            item=copy.deepcopy(baseline);item['targets'][target]['dependencies'][1]=copy.deepcopy(item['targets'][target]['dependencies'][0]);mutations.append(item)
+            item=copy.deepcopy(baseline);item['targets'][target]['dependencies'].pop();mutations.append(item)
+            item=copy.deepcopy(baseline);item['targets'][target]['dependencies'][0]['extra']=1;mutations.append(item)
+        for index,item in enumerate(mutations):
+            with self.subTest(index=index):
+                raw=json.dumps(item).encode()
+                with patch.object(Path,'read_bytes',lambda path:raw if path.name=='desktop_chatgpt_dependency_manifest.json' else original(path)):
+                    with self.assertRaises(p.PlanError) as caught:p.implementation_provenance()
+                    self.assertEqual(caught.exception.code,'invalid_dependency_manifest')
+
 class NativePinnedProvenanceTests(unittest.TestCase):
     """Desktop-full Windows and explicitly required profiles must never skip."""
     @classmethod
@@ -68,7 +115,10 @@ class NativePinnedProvenanceTests(unittest.TestCase):
             if required:raise AssertionError('Pinned desktop authentication dependencies are mandatory in this profile')
             raise unittest.SkipTest('Optional stdlib-only profile; pinned desktop dependencies not installed')
         if observed!=VERSIONS:raise AssertionError('Installed desktop dependencies do not match exact locked versions')
-        supported=(sys.platform=='win32' and sys.version_info[:2]==(3,13)) or (sys.platform=='linux' and sys.version_info[:2]==(3,12))
+        supported=(platform.python_implementation()=='CPython' and sys.maxsize>2**32
+                   and platform.machine().lower() in ('amd64','x86_64')
+                   and ((sys.platform=='win32' and sys.version_info[:2] in ((3,11),(3,12),(3,13)))
+                        or (sys.platform=='linux' and sys.version_info[:2] in ((3,11),(3,12)))))
         if not supported:
             if required:raise AssertionError('Desktop provenance target is unsupported')
             raise unittest.SkipTest('Optional profile is outside declared native test targets')
@@ -76,7 +126,7 @@ class NativePinnedProvenanceTests(unittest.TestCase):
     def test_real_installed_versions_and_shipped_provenance(self):
         descriptor=p.implementation_provenance()
         assert descriptor['dependency_versions']==VERSIONS
-        assert descriptor['dependency_target'] in ('windows-cp313-amd64','linux-cp312-x86_64')
+        assert descriptor['dependency_target'] in TARGETS
         assert set(descriptor['source_sha256'])=={'desktop_chatgpt_auth.py','desktop_chatgpt_provider.py'}
 
 class NativeProfileBoundaryTests(unittest.TestCase):

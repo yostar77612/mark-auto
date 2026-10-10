@@ -35,9 +35,7 @@ jobs:
       # pinned Qt runtime rather than skipping tests when Qt is absent.
       - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
       - name: Install pinned offline auth smoke runtime
-        run: 'python -m pip install --only-binary=:all: PyJWT[crypto]==2.15.1 cryptography==50.0.2 cffi==2.1.1 pycparser==3.11'
-      - name: Verify complete desktop smoke runtime before tests
-        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Measure durable rollback modes on native temporary storage
         if: runner.os == 'Windows'
         run: python tools/diagnose_paper_replay.py dist/validation/paper-persistence-timing.json --persistence-only
@@ -47,6 +45,16 @@ jobs:
         with:
           name: paper-persistence-${{ matrix.python }}
           path: dist/validation/paper-persistence-timing.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Verify complete desktop smoke runtime before tests
+        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Preserve hash-locked authentication runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: desktop-auth-${{ matrix.os }}-${{ matrix.python }}
+          path: dist/validation/desktop-auth-install.json
           if-no-files-found: warn
           retention-days: 7
       - run: python -m unittest discover -s tests -v
@@ -78,9 +86,17 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
       - name: Install pinned offline auth smoke runtime
-        run: 'python -m pip install --only-binary=:all: PyJWT[crypto]==2.15.1 cryptography==50.0.2 cffi==2.1.1 pycparser==3.11'
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete desktop smoke runtime before tests
         run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Preserve hash-locked authentication runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: desktop-auth-ui-linux312
+          path: dist/validation/desktop-auth-install.json
+          if-no-files-found: warn
+          retention-days: 7
       - run: python -m unittest discover -s tests -v
   quality:
     name: Static quality and credential gate

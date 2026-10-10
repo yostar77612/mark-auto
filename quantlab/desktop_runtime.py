@@ -205,13 +205,15 @@ class WorkspaceLocator:
         atomic_write(self.pointer, _json_bytes({'schema_version': STATE_VERSION, 'root': str(destination)}))
         return destination
 
-    def load(self):
+    def load(self, *, probe=True):
+        # Smoke may inspect settings without creating a workspace or write probe.
+        # Ordinary startup retains its existing writable-workspace validation.
         if not self.pointer.exists():
             return AppPaths(self.bootstrap, self.bootstrap)
         value = _read_json(self.pointer)
         if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
             raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
-        root = self._validate(value['root'], probe=True)
+        root = self._validate(value['root'], probe=probe)
         return AppPaths(root, self.bootstrap)
 
 

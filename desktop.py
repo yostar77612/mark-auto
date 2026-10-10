@@ -379,16 +379,26 @@ def main(argv=None):
     app.setApplicationName('MarkAuto')
     app.setOrganizationName('MarkAuto')
     app.setApplicationVersion(__version__)
-    bootstrap = AppPaths.discover().root
+    user_bootstrap = AppPaths.discover().root
+    smoke_startup_directory = None
+    if args.smoke_test:
+        import tempfile
+        # Isolate even GUI startup, recovery, guards and paper freeze. Only the
+        # validated user settings snapshot is read from the configured workspace.
+        smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-')
+    bootstrap = Path(smoke_startup_directory.name) if smoke_startup_directory else user_bootstrap
     bootstrap.mkdir(parents=True, exist_ok=True)
     locator = WorkspaceLocator(bootstrap)
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
         QMessageBox.information(None, 'MarkAuto is already running', 'Use the existing MarkAuto window. A second worker will not be started.')
+        if smoke_startup_directory is not None:
+            smoke_startup_directory.cleanup()
         return 2
     jobs = guard = installation_guard = None
     smoke_jobs = smoke_directory = None
+    settings_paths = None
     try:
         installation_guard = WindowsAppMutex()
         paths = locator.load()
@@ -397,7 +407,8 @@ def main(argv=None):
         paths.ensure()
         guard = RuntimeGuard(paths)
         previous_unclean = guard.start()
-        settings = SettingsStore(paths.state / 'settings.json')
+        settings_paths = WorkspaceLocator(user_bootstrap).load(probe=False) if args.smoke_test else paths
+        settings = SettingsStore(settings_paths.state / 'settings.json')
         validated_settings = settings.load()  # Fail closed on incompatible/corrupt state.
         if args.smoke_test:
             settings = _SmokeSettingsView(validated_settings)  # Smoke must preserve saved user bytes.
@@ -526,7 +537,12 @@ def main(argv=None):
                 history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
                 passed = completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
                 completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
-                report = {'status': 'passed' if passed else 'failed', 'data_dir': str(paths.root),
+                # data_dir remains the inspected settings location for installer
+                # compatibility; mutable execution uses smoke_data_dir. The
+                # explicitly requested report path is also written by the caller
+                # contract and is excluded from the user-state read-only claim.
+                report = {'status': 'passed' if passed else 'failed', 'data_dir': str(settings_paths.root),
+                    'smoke_data_dir': str(paths.root), 'user_state_read_only': True,
                     'version': __version__, 'native_window_visible': window.isVisible(), 'worker_completed': completed,
                     'backtest_completed': 'ui_backtest' in completed_operations,
                     'campaign_completed': 'ui_campaign' in completed_operations,
@@ -547,6 +563,8 @@ def main(argv=None):
         # No exception values or secret-bearing tracebacks in a general GUI dialog.
         if args.smoke_test:
             atomic_write(args.smoke_test, _json_bytes({'status': 'failed', 'version': __version__,
+                'data_dir': str(settings_paths.root) if settings_paths else None,
+                'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
                 'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
                 'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
                     'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
@@ -566,6 +584,8 @@ def main(argv=None):
         if installation_guard is not None:
             installation_guard.close()
         lock.unlock()
+        if smoke_startup_directory is not None:
+            smoke_startup_directory.cleanup()
 
 
 if __name__ == '__main__':

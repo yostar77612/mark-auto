@@ -492,6 +492,40 @@
     "release_blockers": [
       "Native30s replay timeout remains unresolved pending measured persistence repair",
       "Smoke MainWindow startup modifies real paper/safety state; reproduced on isolated fixture. Whole-startup isolation repair required before merge."
-    ]
+    ],
+    "auth_matrix_preflight": {
+      "head": "055e976936ce6f44ff2a79db8c9cdf07d70694fe",
+      "run": 38021395788,
+      "linux312_and_ui": "PASS complete suite",
+      "windows311_windows312_linux311": "FAIL unsupported_dependency_target at explicit preflight; suite not executed in these lanes",
+      "repair": "Preserve original matrix/tests. Explicitly audit three additional CPython x64 manifest targets and hash-locked wheel installs; no weakening unknown-target guards."
+    },
+    "smoke_isolation_local": {
+      "tests": 7,
+      "passed": 7,
+      "seconds": 13.133,
+      "scope": "Linux source subprocess with real Qt/spawn, all inspected user-state file bytes/names unchanged; native Windows portable source tests pending exact-head CI",
+      "known_folder_discovery": "Not verified by fixture-pinned discovery; unchanged separate installer/native checks apply",
+      "release_gate": "No merge before final native validation"
+    },
+    "auth_isolation_local_suite": {
+      "total": 759,
+      "passed": 744,
+      "skipped": 15,
+      "seconds": 103.709,
+      "scope": "Complete local Linux suite; native exact-head pending, generic smoke cleanup terminal refinement separately pending"
+    },
+    "dependency_target_repair": {
+      "targets": [
+        "windows-cp311-amd64",
+        "windows-cp312-amd64",
+        "windows-cp313-amd64",
+        "linux-cp311-x86_64",
+        "linux-cp312-x86_64"
+      ],
+      "install": "tools/install_desktop_auth.py; exact four-wheel closure, --require-hashes, binary-only, isolated official PyPI, forced reinstall and report digest validation",
+      "local": "Actual fresh and already-installed Linux312 reinstall + unchanged OpenSSL4.0.3 preflight PASS; official9distinct wheels all downloaded/hash-verified; three added target native executions pending",
+      "runtime_audit": "Exact four auth dependencies clean; full-vEnv bootstrap pip findings separately recorded, not covered by runtime-only result"
+    }
   }
 }
