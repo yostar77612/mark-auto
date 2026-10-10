@@ -19,17 +19,63 @@ import struct
 import subprocess
 import sys
 import time
+import urllib.error
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
-from quantlab.local_ai import manifest, MANIFEST_SHA256, PROFILE, safe_path, verify_file, download
+from quantlab.local_ai import manifest, MANIFEST_SHA256, PROFILE, LocalAIError, safe_path, verify_file, download
 from quantlab.desktop_runtime import _WindowsProcessTree, atomic_write, _json_bytes
 
 DOWNLOAD_SECONDS=300
 FROZEN_SECONDS=660
 CLEANUP_SECONDS=10
 MAX_REPORT_BYTES=65536
+FAILURE_STAGES=frozenset({'worker_preflight','attempt_marker','phase_claim','manifest','cache_prepare',
+    'runtime_download','runtime_verify','model_download','model_verify','frozen_run','phase_report'})
+FAILURE_CATEGORIES=frozenset({'http_error','url_error','os_error','invalid_evidence','runtime_error','exception',
+    *('local_ai_'+code for code in ('platform','unsafe_path','artifact','archive','missing','network',
+      'consent','occupied','loading','probe','request','ownership','dependency'))})
+
+
+def failure_detail(exc, stage):
+    carried=worker_diagnostic({'status':'failed','failure':getattr(exc,'_markauto_ci_failure',None)})
+    if carried.get('failure'):return carried['failure']
+    if stage not in FAILURE_STAGES:stage='worker_preflight'
+    if isinstance(exc,LocalAIError):category='local_ai_'+exc.code
+    elif isinstance(exc,urllib.error.HTTPError):category='http_error'
+    elif isinstance(exc,urllib.error.URLError):category='url_error'
+    elif isinstance(exc,OSError):category='os_error'
+    elif isinstance(exc,ValueError):category='invalid_evidence'
+    elif isinstance(exc,RuntimeError):category='runtime_error'
+    else:category='exception'
+    result={'stage':stage,'category':category if category in FAILURE_CATEGORIES else 'exception'}
+    # local_ai.download deliberately hides raw network exception text. Its
+    # context still permits a numeric HTTP status without leaking a signed URL.
+    seen=set();current=exc
+    for _ in range(8):
+        if not isinstance(current,BaseException) or id(current) in seen:break
+        seen.add(id(current))
+        if isinstance(current,urllib.error.HTTPError) and type(current.code) is int and 100<=current.code<=599:
+            result['http_status']=current.code;break
+        current=current.__cause__ or current.__context__
+    return result
+
+
+def worker_diagnostic(value):
+    """Do not copy arbitrary worker output into the preserved artifact."""
+    if value.get('status')=='passed':return {'phase_report':'passed'}
+    failure=value.get('failure')
+    if value.get('status')!='failed' or not isinstance(failure,dict):return {'phase_report':'invalid'}
+    if (type(failure.get('stage')) is not str or failure['stage'] not in FAILURE_STAGES
+        or type(failure.get('category')) is not str or failure['category'] not in FAILURE_CATEGORIES):
+        return {'phase_report':'invalid'}
+    clean={key:failure[key] for key in ('stage','category')}
+    if 'http_status' in failure:
+        status=failure['http_status']
+        if type(status) is not int or not 100<=status<=599:return {'phase_report':'invalid'}
+        clean['http_status']=status
+    return {'phase_report':'failed','failure':clean}
 
 
 @dataclass(frozen=True)
@@ -165,15 +211,20 @@ def validate_result(config,exit_code):
 
 
 def download_phase(config):
-    spec=manifest();config.cache.mkdir(parents=True,exist_ok=True)
-    records={}
-    for name in ('runtime','model'):
-        pin=spec[name];target=config.cache/pin['filename'];hit=target.exists()
-        # Existing bytes must verify; corrupt cache is not silently replaced.
-        download(pin,target)
-        verify_file(target,pin)
-        records[name]={'sha256':pin['sha256'],'bytes':pin['bytes'],'cache_hit':hit}
-    return records
+    stage='manifest'
+    try:
+        spec=manifest();stage='cache_prepare';config.cache.mkdir(parents=True,exist_ok=True)
+        records={}
+        for name in ('runtime','model'):
+            pin=spec[name];target=config.cache/pin['filename'];hit=target.exists()
+            # Existing bytes must verify; corrupt cache is not silently replaced.
+            stage=name+'_download';download(pin,target)
+            stage=name+'_verify';verify_file(target,pin)
+            records[name]={'sha256':pin['sha256'],'bytes':pin['bytes'],'cache_hit':hit}
+        return records
+    except Exception as exc:
+        exc._markauto_ci_failure=failure_detail(exc,stage)
+        raise
 
 
 def frozen_phase(config):
@@ -260,10 +311,20 @@ def run(config):
         'scope':'actual Windows Server frozen technical probe; not clean client or investment acceptance'}
     try:
         for phase,seconds in (('download',DOWNLOAD_SECONDS),('probe',FROZEN_SECONDS)):
-            outcome=supervise(child_command(config,phase),seconds);result['phases'][phase]=outcome
+            outcome=supervise(child_command(config,phase),seconds);result['phases'][phase]=dict(outcome)
+            phase_data=None
+            # Preserve a failed child's finite, sanitized diagnosis before the
+            # exit gate rejects it. Never inspect evidence while cleanup is unverified.
+            if outcome['cleanup_verified']:
+                try:
+                    phase_data=read_json(config.work/(phase+'-phase.json'))
+                    diagnostic=worker_diagnostic(phase_data)
+                except Exception as exc:
+                    diagnostic={'phase_report':'unavailable','failure':failure_detail(exc,'phase_report')}
+                result['phases'][phase].update(diagnostic)
+            else:result['phases'][phase]['phase_report']='not_read_unverified_cleanup'
             if outcome['timed_out'] or not outcome['cleanup_verified'] or outcome['exit_code']!=0 or outcome['seconds']>seconds+CLEANUP_SECONDS:raise RuntimeError('Controlled phase failed')
-            phase_data=read_json(config.work/(phase+'-phase.json'))
-            if phase_data.get('status')!='passed':raise RuntimeError('Worker phase failed')
+            if phase_data is None or phase_data.get('status')!='passed':raise RuntimeError('Worker phase failed')
             result['phases'][phase]['evidence']=phase_data['evidence']
         result['proof']=validate_result(config,0)
         result['status']='passed'
@@ -279,19 +340,22 @@ def main(argv=None):
     args=parser.parse_args(argv);config=Config(args.executable,args.cache,args.work,args.report)
     if args.internal_phase:
         if sys.platform!='win32':return 1
-        result={'status':'failed'};claimed=False
+        result={'status':'failed'};claimed=False;stage='worker_preflight'
         phase_report=config.work/(args.internal_phase+'-phase.json')
         try:
             config.validate(fresh=False)
             if phase_report.exists():return 1
+            stage='attempt_marker'
             if read_json(config.work/'attempt.json').get('manifest_sha256')!=MANIFEST_SHA256:raise ValueError('Missing authorized attempt marker')
+            stage='phase_claim'
             claim=config.work/(args.internal_phase+'-started.json')
             safe_path(claim)
             with claim.open('x',encoding='utf-8') as stream:json.dump({'phase':args.internal_phase,'retry':False},stream)
             claimed=True
+            stage='manifest' if args.internal_phase=='download' else 'frozen_run'
             result['evidence']=(download_phase if args.internal_phase=='download' else frozen_phase)(config)
             result['status']='passed'
-        except Exception as exc:result['error_type']=type(exc).__name__
+        except Exception as exc:result['failure']=failure_detail(exc,stage)
         if claimed and not phase_report.exists():atomic_write(phase_report,_json_bytes(result))
         return 0 if result['status']=='passed' else 1
     try:return run(config)

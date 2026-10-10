@@ -1,6 +1,7 @@
 # Windows x64 onedir: LGPL Qt shared libraries remain replaceable.
 from pathlib import Path
 import sys
+import runpy
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 root = Path(SPECPATH).parent
 from quantlab.sqlite_runtime import verify, verify_binaries
@@ -40,9 +41,17 @@ analysis = Analysis(
                    'jwt', 'cryptography', 'cryptography.hazmat.bindings._rust',
                    'cffi', '_cffi_backend', 'pycparser'],
     excludes=['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets',
+              'PySide6.QtVirtualKeyboard', 'PySide6.QtPdf', 'PySide6.QtPdfWidgets',
               'streamlit', 'shioaji', 'trader', 'PyQt5', 'PyQt6'],
     noarchive=False,
 )
+# QtGui's upstream hook collects optional plugins regardless of direct imports.
+# Remove reviewed VirtualKeyboard/PDF and optional OpenSSL-backend components
+# from all TOCs; preserve Windows Schannel and Python HTTPS. Independently audit
+# actual output after freezing, including retained native dependency hashes.
+qt_licenses = runpy.run_path(str(root / 'packaging/qt_licenses.py'))
+analysis.binaries = qt_licenses['filter_payload_toc'](analysis.binaries)
+analysis.datas = qt_licenses['filter_payload_toc'](analysis.datas)
 # Native SQLite is not a pip distribution. Check the actual collected library.
 verify_binaries(analysis.binaries, root / 'packaging/sqlite-runtime.json')
 pyz = PYZ(analysis.pure)

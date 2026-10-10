@@ -63,7 +63,10 @@ class PackagingTests(unittest.TestCase):
                     'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
                     'desktop_chatgpt_dependency_manifest.json',
                     'packaging/third_party/chatgpt-auth-native-notices.zip',
-                    'packaging/third_party/README.md'}
+                    'packaging/third_party/README.md', '.gitattributes',
+                    'packaging/qt_licenses.py', 'packaging/qt_notices/manifest.json',
+                    'packaging/qt_notices/QT-NOTICE.txt', 'packaging/qt_notices/QT-NATIVE-NOTICES.zip',
+                    'packaging/qt_notices/GPL-3.0-only.txt', 'packaging/qt_notices/LGPL-3.0-only.txt'}
         required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
         for name in required:
             self.assertTrue((ROOT / name).is_file(), name)
@@ -79,7 +82,10 @@ class PackagingTests(unittest.TestCase):
         hooks.copy_metadata = lambda name: metadata_names.append(name) or []
         def analysis(*args, **kwargs):
             captured.update(kwargs)
-            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=kwargs['datas'])
+            # Real Analysis output is destination-first TOC, unlike its source-first inputs.
+            datas = [(str(Path(destination) / Path(source).name), source, 'DATA')
+                     for source, destination in kwargs['datas']]
+            return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=datas)
         with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}), \
                 patch('quantlab.sqlite_runtime.verify') as verify_sqlite, \
                 patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries, \

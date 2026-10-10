@@ -553,7 +553,7 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-10T09:37:00Z",
+    "as_of_utc": "2026-10-10T10:33:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
       "version": "0.2.1",
@@ -570,13 +570,13 @@
       "version": "0.2.2",
       "pr": 6,
       "branch": "agent/windows-release-validation",
-      "remote_head_short": "16974db3",
-      "local_equivalent_short": "227b97a",
-      "identical_tree_short": "ef8baf96",
-      "status": "NATIVE_CI_FAILED_PORTABILITY_REPAIR_FOCUSED183_PASS_NEW_NATIVE_PENDING",
+      "remote_head_short": "e68b3301",
+      "local_equivalent_short": "46f6e047",
+      "identical_tree_short": "7227e014",
+      "status": "E68_CI_FAILURES_RETAINED_REVIEWED_ROOT_INTEGRATION_NEW_NATIVE_PENDING",
       "merged": false,
       "published": false,
-      "latest_ci_observation": "Quantlab38040818017 terminal: 7 PASS, 2 Windows core FAIL, Windows311 research CANCELLED at unchanged 15-minute cumulative job cap. Original 960-bar/30-second Paper test PASS on Windows311 and Windows312 with actual SQLite3.54.0 WAL/FULL. Installer38040817985 failed before freeze; no installer or frozen AI call.",
+      "latest_ci_observation": "Quantlab38042425646 terminal8PASS/1Linux312FAIL/1Win311researchCANCELLED; both Windows core and original Paper30/generic40PASS. Installer38042425591 native suite/freeze/compilePASS, actual AI download child exit1; frozen inference and lifecycle NOT_RUN.",
       "unpublished_local_repairs": {
         "status": "PUSHED_NARROW_LINUX_FIX_FULL_LINUX_UI_AND_WINDOWS_NESTED_CLEANUP_PASS",
         "mechanism": "Independent real Linux reproduction: open /proc/PID/stat, then process exits and is reaped; read can raise ESRCH ProcessLookupError rather than FileNotFoundError.",
@@ -612,7 +612,7 @@
         "native_validation": "Linux/UI full suites and Windows nested cleanup passed at0088b505; original Paper performance gate still fails.",
         "field_name_scope": "Legacy field name retained for continuity; this narrow fix is now pushed, no longer uncommitted."
       },
-      "full_ci_details_key": "current_snapshot.native_ci_16974db3",
+      "full_ci_details_key": "current_snapshot.native_ci_e68b3301",
       "local_suite": {
         "total": 981,
         "passed": 966,
@@ -880,7 +880,7 @@
           "performance_diagnostic_status": "NATIVE_DIAGNOSTIC_EVIDENCE_OBTAINED_PERFORMANCE_NOT_FIXED"
         }
       ],
-      "current_source_identity": "Last tested remote16974db3/local227b97a exact tree ef8baf96614fa65201a220f6654f944cb64cc778. Subsequent uncommitted 11-file portability repairs plus failure-only WFO timing diagnostics pass 183 focused Linux tests; no WFO optimization, changed CI gate, second root full run or new native result claimed.",
+      "current_source_identity": "Last tested e68b3301/local46f6e047 exact tree7227e014. Later root WFO normalization, test-only Linux observer, AI failed-child diagnostics, opt-in read-only KVM query and Qt notice/payload exclusions require new exact-head native proof. Linux1263 full suite covers WFO-only checkpoint before the later deltas.",
       "latest_remote_ci": {
         "head": "0088b505f236a54323c6cfd94cd00df51ea9db25",
         "quantlab_run": 38032142094,
@@ -1020,8 +1020,8 @@
         "supported_minimal_optimization": "WAL/FULL candidate now under integration; no exact-head native proof that it meets original30-second gate.",
         "diagnostic_acceptance": "Observation-only completion does not count as original30-second PASS."
       },
-      "identical_tree": "ef8baf96614fa65201a220f6654f944cb64cc778",
-      "mapping_scope": "Remote/local/tree fields identify the tested 16974db3 candidate before the subsequent uncommitted portability/diagnostic repair; not a released build.",
+      "identical_tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
+      "mapping_scope": "Tested e68 candidate before subsequent uncommitted integration, not Release.",
       "source_equivalent_candidate_suite": {
         "total": 981,
         "passed": 966,
@@ -1323,8 +1323,8 @@
         },
         "scope": "Earlier source remains historical; later Linux/UI PASS does not rewrite its failure."
       },
-      "remote_head": "16974db3bfaa1be624ffe4ecc5a049f7b1491779",
-      "local_equivalent": "227b97a6e87728be132f76c9a8256d0e2c12c002",
+      "remote_head": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
+      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
       "candidate_artifact_verification": {
         "artifact_id": 11663227244,
         "source_commit": "703686e2a00a732fae87aad63fd638a2e2777675",
@@ -1368,13 +1368,15 @@
         "scope": "PR candidate only, not Release or authorization to distribute the failed candidate as a formal product. Windows311Paper30 failure, draftPR6, score210/300 andM4PARTIAL unchanged.",
         "evidence": "quant-audit/ci-auth-targets/native-0088b505/windows-candidate/source-and-artifact-verification.json"
       },
-      "previous_ci_observation_0088b505": "Quantlab38032142094 final9/10 PASS. Sole failure Windows311 core806:790PASS15skips1Paper30s failure433.599s. Windows312core806:791PASS15skips339.431s; UI1026:1013PASS13skips366.894s; other Linux/research/securityPASS. Linux ESRCH repair now passed full Linux/UI, and Windows nested cleanup passed. Original Paper performance gate remains failed; Server result recorded separately."
+      "previous_ci_observation_0088b505": "Quantlab38032142094 final9/10 PASS. Sole failure Windows311 core806:790PASS15skips1Paper30s failure433.599s. Windows312core806:791PASS15skips339.431s; UI1026:1013PASS13skips366.894s; other Linux/research/securityPASS. Linux ESRCH repair now passed full Linux/UI, and Windows nested cleanup passed. Original Paper performance gate remains failed; Server result recorded separately.",
+      "previous_ci_observation_16974db3": "Quantlab38040818017 terminal: 7 PASS, 2 Windows core FAIL, Windows311 research CANCELLED at unchanged 15-minute cumulative job cap. Original 960-bar/30-second Paper test PASS on Windows311 and Windows312 with actual SQLite3.54.0 WAL/FULL. Installer38040817985 failed before freeze; no installer or frozen AI call."
     },
     "priority_release_blockers": [
-      "16974db3 Windows core and installer have 14 shared portability failures/errors; Windows311 core adds one terminal-cleanup failure. Eleven-file repair passes Linux focused183 but requires new exact-head native validation.",
-      "Windows311 research cancelled at the unchanged cumulative 15-minute job cap while the stack was in WFO _save_state/db.commit and tests had progressed seconds earlier. Failure-only timing diagnostics are added; no single-commit hang claim, WFO optimization or relaxed cap.",
-      "Installer38040817985 stopped before freeze; actual frozen one-call AI, new installer, old-EXE refusal/upgrade/recovery artifact proof remain NOT_RUN. Earlier0088b505 artifacts do not certify this source.",
-      "Clean Win10/11 x64, actual service/data rights and main administration/signing remain unverified. Official Win10 evaluation media is reachable; complete ISO integrity, applicable EULA/evaluation rights and VM execution remain unverified."
+      "e68 Linux312 process-observer cleanup=false failure; X/x contract fixed with real X reproduction but exact original CI cause NOT_PROVEN without process-state artifact. New exact-head test proof required.",
+      "Win311 research reaches original15-minute cap:222 completed218PASS4skip,223rd interrupted,4 not started. Root WFO single-normalization retains same hash bytes/all commits; its Linux full PASS does not prove native timing.",
+      "e68 AI download child exit1 in0.616s, cleanup verified, no timeout/frozen phase/model calls; underlying cause unknown. Root diagnostic repairs evidence loss only. Installer/lifecycle must still run.",
+      "Actual e68 Qt OpenSSL3.5.5 pair affected by official advisories. Exact backend/pair and unused VirtualKeyboard/PDF exclusion plus full notices are root-applied but require actual new frozen inventory/TLS/GUI/source-asset verification; pip audit is not native clearance.",
+      "CleanWin10/11 media and actual EULAs obtained, but full ISO integrity, hosted-use scope, registration/activation and owner acceptance remain unresolved. No KVM query/guest execution yet; no fees or unauthorized desktops."
     ],
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
@@ -1434,7 +1436,7 @@
       "seconds": 270.314,
       "scope": "WFO/reporting isolated combined stage only; subsequent unchanged-durability SQLite connection cleanup passed5 storage tests; not released or native/actual research acceptance"
     },
-    "release_plan": "Continue PR6 with the reviewed 11-file portability repair and failure-only WFO timing diagnostics. Focused183 passes; freeze new exact source and rerun original remote gates. No WFO optimization or CI gate changes. Keep0.2.1 the sole verified public installer,0.2.2 unpublished,210/300/M4PARTIAL; no fees, real funds or unauthorized desktops.",
+    "release_plan": "Freeze the combined reviewed WFO/observer/diagnostic/host-query/Qt packaging source after focused checks, push same draftPR6 and run original remote gates. Preserve every failure and per-source scope; no paid fallback, live trading, relaxed caps or premature score/Release claim.",
     "integrated_suite_location_note": "Earlier981 ran in isolated candidate before25 exact files were copied, then final CandidateSummary/diagnostics followed. PR06bcc3a complete1016/native success and main94aca467 postmerge failure are newer, separate evidence; no duplicate root full-run claim.",
     "environment_observation": {
       "as_of_utc": "2026-10-10T07:05:00Z",
@@ -1479,20 +1481,20 @@
     "owner_action_dependencies": {
       "principle": "Assistant retains technical ownership; only narrowly nondelegable account/license/explicit-term/persistent-access decisions require owner approval.",
       "main_protection": "Administration scope unavailable; assistant prepares exact action/repository/permissions and checks allowed routes, rather than assigning GitHub setup homework. No bypass.",
-      "clean_clients": "Assistant retains environment/testing work. Verified official Win10 evaluation media reachability precedes exact EULA/rights and integrity review; no automatic demand for a purchased license or user-built VM. Explicit agreements/registration/security changes require their specific approval.",
+      "clean_clients": "Assistant owns technical preparation. Both actual evaluation agreements are available, but hosted-use coverage/registration/activation and owner acceptance remain unresolved. Do not demand purchased rights by default or start Setup/guest without the required specific approvals.",
       "actual_ai": "Free local AI is primary and optional GUI-managed setup is root-integrated. New native frozen one-call inference is NOT_RUN. Official API remains optional/default-off, with no paid fallback.",
       "taiex_intraday": "Establish legitimate automated-use permission beforepolling; assistant prepares evidence and exactremainingpermissionrequest.",
       "real_research": "Oct8 originalWFO stillBLOCKED_NO_RUN170consumedbars; no registry/windowescape."
     },
-    "requirements_delivery_observation": "Fixed/saved WFO, PF/descriptive Sharpe, snapshots and normal UI remain implemented/unreleased. Latest16974db3 UI/Linux/Windows312 research pass and both original Windows Paper30 tests pass, but Windows core portability failures, Windows311 research cancellation and pre-freeze installer failure still block delivery. ActualOct8WFO remains blocked.",
+    "requirements_delivery_observation": "Both e68 Windows cores, UI, Linux311, Windows312 research and installer native1256 suite pass. Linux312 observer failure, Win311 research cancellation, actual AI download failure/lifecycle skip and native payload remediation still block aggregate delivery. Fixed score and Oct8 research restrictions unchanged.",
     "baseline_source_provenance": {
-      "last_tested_remote": "16974db3bfaa1be624ffe4ecc5a049f7b1491779",
-      "local_equivalent": "227b97a6e87728be132f76c9a8256d0e2c12c002",
-      "tree": "ef8baf96614fa65201a220f6654f944cb64cc778",
-      "scope": "Exact tested candidate source; native aggregate failed. Later portability/timing delta is uncommitted and not native-verified."
+      "last_tested_remote": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
+      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
+      "tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
+      "scope": "e68 candidate aggregate not accepted; later root integration not native-tested."
     },
     "active_integration": {
-      "status": "NATIVE_CI_FAILED_PORTABILITY_REPAIR_FOCUSED183_PASS_NEW_NATIVE_PENDING",
+      "status": "REVIEWED_ROOT_WFO_OBSERVER_DIAGNOSTIC_QT_INTEGRATION_NEW_NATIVE_PENDING",
       "modules": [
         "Root-applied replay WAL/FULL preserves every original durable commit boundary, ledger/order identity and original 960-bar Windows 30-second test",
         "Root-applied official hash-pinned private SQLite 3.54.0 with packaging runtime hook",
@@ -1501,10 +1503,10 @@
         "Root-applied default-off daily backups, shared BackupManager hardlink rejection and offline removable-drive configuration recovery; final combined/native validation pending"
       ],
       "required_evidence": [
-        "New exact-head full/native gates after the 11-file portability repair; original acceptance tests and CI caps unchanged",
-        "Failure-only WFO timing evidence for the cumulative Windows311 research cap; no WFO optimization claimed",
-        "Frozen actual one-call local AI and cleanup, new installer and actual0.2.1 old-EXE refusal/upgrade/recovery proof",
-        "Keep all historical failed/cancelled results, provenance controls and per-boundary WAL/FULL durability intact"
+        "New exact-head complete original remote gates with same work/hash bytes/all durable commits and unchanged budgets",
+        "Actual AI failed-child details and one frozen model call/lifecycle; root diagnostic does not establish download cause",
+        "New frozen payload inventory proves exact seven-file exclusions and retained Python3.5.9/qwindows/Schannel/cert backends, native GUI/IME/TLS and source-asset availability",
+        "Preserve original Linux312 cause uncertainty, prior failures, fixed ledger and clean-client/legal boundaries"
       ],
       "new_native_pass": false,
       "completed_modules_claimed": false,
@@ -1530,7 +1532,7 @@
         "counts_policy": "Overlapping scopes are not additive. Pre-AI full suite excludes later AI/automatic-backup integration; focused checks are not final combined, final-source or native certification. Root venv SQLite 3.53.1 is independently re-probed; current machine-observed runtime is recorded separately. Earlier manually summarized Qt metadata is not independent historical measurement. Genuine private SQLite 3.54.0 Linux checks do not certify Windows or the final combined root.",
         "workspace_guard": "Exact released 0.2.1 source fixture verifies startup and schema2 archive refusal. Actual released-EXE native proof harness is now root-applied, but NOT_RUN.",
         "local_ai_patch": "ROOT_APPLIED_FOCUSED_VERIFIED_NATIVE_FROZEN_ONE_CALL_NOT_RUN",
-        "new_ci": "16974DB3_TERMINAL_FAILED_REPAIR_NATIVE_NOT_RUN",
+        "new_ci": "E68_TERMINAL_NOT_ACCEPTED_NEW_ROOT_NATIVE_NOT_RUN",
         "pre_ai_root_full": {
           "total": 1096,
           "passed": 1081,
@@ -1627,7 +1629,7 @@
           "scope": "Latest product/code delta static and full reachable-history scan; not native acceptance"
         },
         "native_local_ai_one_call": {
-          "status": "NOT_RUN_INSTALLER_PREFREEZE_FAILURE",
+          "status": "E68_DOWNLOAD_CHILD_FAILED_FROZEN_PHASE_NOT_RUN",
           "actual_model_calls_in_new_native_run": 0,
           "planned_call_limit": 1,
           "download_seconds": 300,
@@ -1699,10 +1701,10 @@
       },
       "local_ai_redistribution_review": {
         "status": "SEPARATE_REVIEW_PENDING",
-        "scope": "Packaged localAI licenses and exact three Microsoft DLL provenance notices updated; normal CPython Microsoft notice path established, but actual frozen bytes and unmodified-DLL separate localAI redistribution basis still need review. No illegal-use or all-licenses-cleared conclusion; no confirmed owner-action dependency.",
+        "scope": "Exact Microsoft DLL provenance/notice path documented; entitlement and downstream protective terms remain separate review. Qt full GPL/LGPL/native notices and source links root-applied, but new payload and release source assets not yet verified; no all-licenses-cleared claim.",
         "evidence": "quant-audit/microsoft-runtime-redistribution-review-20261010.md"
       },
-      "new_native_pass_scope": "No overall native acceptance PASS. Original Paper30 test individually PASS on Windows311/312 for16974db3; subsequent repair has no native result.",
+      "new_native_pass_scope": "e68 individual Windows cores/Paper30/generic40 and installer native suite pass; aggregate acceptance remains false and later integration has no new native result.",
       "portability_repair": {
         "status": "ROOT_APPLIED_FOCUSED183_PASS_NATIVE_PENDING",
         "changed_files": 11,
@@ -1734,6 +1736,142 @@
           "seconds": 0.054,
           "scope": "Existing PowerShell applicability skip; separate focused scope, not additive or native acceptance",
           "log": "quant-audit/windows-repair-packaging-focused-20261010.log"
+        }
+      },
+      "current_root_deltas": {
+        "wfo_single_normalization": {
+          "status": "ROOT_APPLIED_REVIEWED",
+          "hash_bytes": "IDENTICAL",
+          "durable_commits": "ALL_ORIGINAL_COMMITS_UNCHANGED",
+          "sqlite_changes": "NONE",
+          "full_suite": {
+            "total": 1263,
+            "passed": 1248,
+            "skipped": 15,
+            "failures": 0,
+            "errors": 0,
+            "seconds": 290.403,
+            "python_version": "3.12.14",
+            "sqlite_version": "3.53.1",
+            "qt_version": "6.12.0",
+            "platform": "Linux",
+            "source_manifest": "quant-audit/wfo-single-normalization-root-source-20261010.json",
+            "log": "quant-audit/wfo-single-normalization-root-full-20261010.log",
+            "scope": "Root WFO delta before host/observer/diagnostic/Qt additions; not final combined/native"
+          }
+        },
+        "linux_observer": {
+          "status": "ROOT_APPLIED_TEST_ONLY",
+          "tests": 31,
+          "passed": 31,
+          "skipped": 0,
+          "seconds": 66.977,
+          "log": "quant-audit/linux-cleanup-observer-root-20261010.log",
+          "reproduction": "Actual kernel X dead-state observed; X/x contracts corrected while live/unknown states stay fail-closed",
+          "original_ci_cause": "NOT_PROVEN_ORIGINAL_PROCESS_STATE_ARTIFACT_ABSENT",
+          "product_code_deadline_changes": "NONE"
+        },
+        "ai_download_diagnostics": {
+          "status": "ROOT_APPLIED_EVIDENCE_LOSS_FIX_ONLY",
+          "tests": 107,
+          "passed": 107,
+          "skipped": 0,
+          "seconds": 1.293,
+          "log": "quant-audit/local-ai-download-diagnostic-root-20261010.log",
+          "fix": "Read and sanitize failed child evidence before exit-code gate",
+          "underlying_download_cause": "UNKNOWN",
+          "all_caps_and_single_attempt": "UNCHANGED"
+        },
+        "kvm_readonly_query": {
+          "status": "OPT_IN_CODE_ROOT_APPLIED_ACTUAL_QUERY_NOT_RUN",
+          "first_command": {
+            "total": 44,
+            "errors": 1,
+            "cause": "Mistyped test module import",
+            "log": "quant-audit/kvm-readonly-root-tests-20261010.log"
+          },
+          "corrected_focused": {
+            "total": 43,
+            "passed": 43,
+            "seconds": 0.035,
+            "log": "quant-audit/kvm-readonly-root-tests-corrected-20261010.log"
+          },
+          "partition": {
+            "total": 9,
+            "passed": 9,
+            "seconds": 0.607,
+            "log": "quant-audit/kvm-readonly-partition-root-20261010.log"
+          },
+          "scope": "Read-only API/capability queries only; no VM creation, guest start, device permission/security change or actual sudo invocation"
+        },
+        "qt_packaging": {
+          "status": "ROOT_APPLIED_FOCUSED64_PASS_1_SKIP_NEW_NATIVE_PAYLOAD_PENDING",
+          "changed_files": 15,
+          "first_root_focused": {
+            "total": 65,
+            "passed": 63,
+            "failures": 1,
+            "skipped": 1,
+            "seconds": 0.757,
+            "log": "quant-audit/qt-packaging-root-20261010.log",
+            "failure": "Six new build inputs not yet tracked by Git; must preserve and rerun after authorized staging"
+          },
+          "isolated_focused": {
+            "total": 65,
+            "passed": 64,
+            "skipped": 1,
+            "scope": "Isolated proposal only; not root or native"
+          },
+          "isolated_wrong_environment_full": {
+            "total": 1261,
+            "failures": 15,
+            "errors": 24,
+            "skipped": 240,
+            "scope": "Default Python missing Qt/auth dependencies; negative run retained, not desktop acceptance"
+          },
+          "notice_archive": {
+            "component_records": 49,
+            "distinct_text_blobs": 52,
+            "source_records": 67,
+            "scope": "Conservative notices, not fabricated compile-time SBOM"
+          },
+          "review": "quant-audit/qt-notice-proposal/REVIEW.md",
+          "native_removal_and_tls_gui_source_delivery": "PENDING",
+          "tracked_root_focused": {
+            "total": 65,
+            "passed": 64,
+            "failures": 0,
+            "skipped": 1,
+            "seconds": 0.78,
+            "log": "quant-audit/qt-packaging-root-tracked-20261010.log",
+            "scope": "Same command after staging15 authorized paths; no test/product-code change to resolve initial Git-tracked-input guard. Skip is existing PowerShell parser applicability. Saved command exit checked."
+          },
+          "independent_review": "APPROVED_NO_BLOCKERS_126_PE_AUDIT_SCOPE"
+        },
+        "counts_policy": "Scopes overlap; never sum. WFO full suite predates subsequent changes. No final combined/native PASS inferred.",
+        "final_integrated_root_full": {
+          "status": "PASS_LINUX_NEW_NATIVE_NOT_RUN",
+          "started_at_utc": "2026-10-10T10:27:56Z",
+          "log": "quant-audit/integrated-root-full-20261010.log",
+          "scope": "Complete integrated root suite after WFO/observer/diagnostic/KVM/Qt changes; listed source hashes match current root. No new native CI, frozen Windows payload or clean-client acceptance claimed.",
+          "total": 1311,
+          "passed": 1296,
+          "skipped": 15,
+          "failures": 0,
+          "errors": 0,
+          "seconds": 288.641,
+          "exit_code": 0,
+          "platform": "Linux",
+          "python_version": "3.12.14",
+          "sqlite_version": "3.53.1",
+          "qt_version": "6.12.0",
+          "source_manifest": "quant-audit/integrated-root-source-20261010.json",
+          "source_hashes_rechecked": true,
+          "source_files_checked": 186
+        },
+        "final_static_history_gate": {
+          "status": "PASS",
+          "findings": 0
         }
       }
     },
@@ -1782,22 +1920,33 @@
     },
     "external_route_research": {
       "windows": {
-        "evidence": "quant-audit/windows-client-entitlements-followup-20261010.md",
-        "status": "OFFICIAL_WIN10_MEDIA_REACHABLE_BOTH_CLIENT_AUTHORIZED_ROUTE_STILL_UNVERIFIED",
-        "nested_guest": "CI host has svm and /dev/kvm but runner lacks device read/write access; QEMU/swtpm absent, guest execution untested. No permission or security change made.",
+        "evidence": "quant-audit/windows-eval-terms-and-offline-ci-20261010.md",
+        "status": "BOTH_OFFICIAL_MEDIA_AND_ACTUAL_EULAS_OBTAINED_HOSTED_USE_ACTIVATION_ACCEPTANCE_UNRESOLVED",
+        "nested_guest": "Opt-in read-only KVM API query implemented; actual sudo/API query and guest execution NOT_RUN. Runner-user access=false alone does not establish privileged API unavailability. No permission/security changes.",
         "server_scope": "Observed Windows Server2025 native profiles cannot substitute for cleanWin10/11x64.",
         "windows10_media": {
           "status": "OFFICIAL_ENTERPRISE_EVAL_22H2_X64_ENDPOINT_REACHABLE",
           "head_http_status": 200,
           "content_length": 5550497792,
           "bounded_range_http_status": 206,
-          "bytes_downloaded": 2048,
           "full_iso_downloaded": false,
           "full_hash_verified": false,
           "expected_sha256_from_microsoft": "EF7312733A9F5D7D51CFA04AC497671995674CA5E1058D5164D6028F0938D668",
-          "exact_eula_and_applicable_entitlement": "UNVERIFIED",
+          "exact_eula_and_applicable_entitlement": "ACTUAL_BUNDLED_EULA_EXTRACTED; applicability/hosted-use and owner acceptance unresolved",
           "vm_execution": "NOT_RUN",
-          "scope": "Media-location blocker removed only; retired landing pages do not establish withdrawn media. No license acceptance or execution compliance claimed."
+          "scope": "Official media/metadata/EULA file digest checked; complete ISO hash and installed build not verified; no rights or execution claim.",
+          "initial_media_probe_bytes_downloaded": 2048
+        },
+        "windows_evaluation_terms": {
+          "win10_eula_sha256": "d7b69005eb679f71c2961225bf26e789c312596808d017a3f434eaa691fb52d1",
+          "win11_eula_sha256": "6b5d4b32236a921bacdefe19852ec0699ca2eacd72d4e57f50a2de06ede21c8e",
+          "acquisition": "Actual EnterpriseEval image license.rtf from official ISO bounded ranges",
+          "full_iso_hashes": "NOT_COMPUTED",
+          "hosted_use_coverage": "UNRESOLVED",
+          "registration_and_activation": "UNRESOLVED",
+          "owner_acceptance": "NOT_OBTAINED",
+          "offline_ci_design": "PROPOSAL_ONLY_NO_GUEST_EXECUTION",
+          "scope": "No blanket prohibition or clearance for cloud testing; evaluation app-testing support does not resolve remote-only terms."
         }
       },
       "signing": {
@@ -1915,6 +2064,141 @@
       },
       "evidence_directory": "quant-audit/ci-16974db3",
       "preservation": "Retain earlier0088b505 and1243-test root negative results; later focused repairs do not rewrite this native failure."
+    },
+    "previous_baseline_source_provenance_16974db3": {
+      "last_tested_remote": "16974db3bfaa1be624ffe4ecc5a049f7b1491779",
+      "local_equivalent": "227b97a6e87728be132f76c9a8256d0e2c12c002",
+      "tree": "ef8baf96614fa65201a220f6654f944cb64cc778",
+      "scope": "Exact tested candidate source; native aggregate failed. Later portability/timing delta is uncommitted and not native-verified."
+    },
+    "native_ci_e68b3301": {
+      "head": "e68b33019a9ad21efa4b0786ca1020b9f12e862f",
+      "local_equivalent": "46f6e04728caf08a9e94ed598c1e426b0121e944",
+      "tree": "7227e0142b0520441e510c69a79dcaddabe7c411",
+      "host_scope": "Windows Server2025, not clean client",
+      "quantlab": {
+        "run_id": 38042425646,
+        "jobs": {
+          "passed": 8,
+          "failed": 1,
+          "cancelled": 1
+        },
+        "windows311_core": {
+          "total": 1029,
+          "passed": 1014,
+          "skipped": 15,
+          "seconds": 406.239
+        },
+        "windows312_core": {
+          "total": 1029,
+          "passed": 1014,
+          "skipped": 15,
+          "seconds": 339.883
+        },
+        "original_paper30_and_generic40": "PASS_BOTH_WINDOWS_CORE_PROFILES_UNCHANGED",
+        "ui": {
+          "total": 1256,
+          "passed": 1243,
+          "skipped": 13,
+          "seconds": 290.85
+        },
+        "linux311": {
+          "total": 1256,
+          "passed": 1238,
+          "skipped": 18,
+          "seconds": 426.842
+        },
+        "linux312": {
+          "total": 1256,
+          "passed": 1237,
+          "skipped": 18,
+          "failures": 1,
+          "seconds": 417.872,
+          "failure": "Test-only observer cleanup=false; exact CI cause not proven"
+        },
+        "windows312_research": {
+          "total": 227,
+          "passed": 223,
+          "skipped": 4,
+          "seconds": 764.237
+        },
+        "windows311_research": {
+          "status": "CANCELLED_ORIGINAL_15_MINUTE_CAP",
+          "completed": 222,
+          "passed": 218,
+          "skipped": 4,
+          "interrupted_test_ordinal": 223,
+          "not_started": 4,
+          "full_pass": false
+        }
+      },
+      "installer": {
+        "run_id": 38042425591,
+        "status": "FAILED_AI_DOWNLOAD_PHASE",
+        "native_suite": {
+          "total": 1256,
+          "passed": 1237,
+          "skipped": 19,
+          "seconds": 832.716
+        },
+        "freeze": "PASS",
+        "installer_compiles": 2,
+        "ai_download": {
+          "exit_code": 1,
+          "seconds": 0.616,
+          "timed_out": false,
+          "cleanup_verified": true,
+          "cause": "UNKNOWN"
+        },
+        "frozen_phase": "NOT_RUN",
+        "model_calls": 0,
+        "install_lifecycle": "SKIPPED_AFTER_AI_FAILURE"
+      },
+      "artifact": {
+        "id": 11666369640,
+        "zip_bytes": 83451533,
+        "zip_sha256": "b62c4e04edd9a3483f41f9a6d3701b83f7e6d8d8c320c4b04841af47e66c1d31",
+        "members": 5,
+        "download_hash_crc": "VERIFIED",
+        "installer_022_bytes": 42248905,
+        "installer_022_sha256": "f7512490e8a7f5c07f456c7919ceb3b4e9db09f01325a172ca73127c75a8fd7a",
+        "frozen_application_exe_sha256": "7600d5e858a0c0e921dbabf0b4b48856622c03fdd22a20c3b36830490672aaf6",
+        "published": false,
+        "verification": "quant-audit/ci-e68b3301/installer-artifact-verification.json"
+      },
+      "evidence_directory": "quant-audit/ci-e68b3301",
+      "scope": "Preserve all failures, no blanket native/client/AI PASS"
+    },
+    "native_payload_security": {
+      "status": "E68_AFFECTED_QT_COMPONENT_ROOT_EXCLUSION_APPLIED_NEW_PAYLOAD_PROOF_PENDING",
+      "inventory": "quant-audit/openssl-security-e68b3301/payload-pe-tls-inventory.json",
+      "pe_files": 126,
+      "affected_pair": "Qt libssl-3-x64.dll/libcrypto-3-x64.dll3.5.5 via optional qopensslbackend",
+      "advisory": "https://openssl-library.org/news/secadv/20260929.txt",
+      "cves": [
+        "CVE-2026-35189",
+        "CVE-2026-84782"
+      ],
+      "python_pair": "Distinct unsuffixed3.5.9 imported by _ssl.pyd/_hashlib.pyd; not the affected Qt pair",
+      "app_qt_network_ssl_usage": "NOT_FOUND_IN_REVIEWED_SOURCE",
+      "exploitation_or_python_https_vulnerability": "NOT_CLAIMED",
+      "exclusions": [
+        "qopensslbackend.dll",
+        "libssl-3-x64.dll",
+        "libcrypto-3-x64.dll",
+        "Qt6VirtualKeyboard.dll",
+        "qtvirtualkeyboardplugin.dll",
+        "Qt6Pdf.dll",
+        "qpdf.dll"
+      ],
+      "retained": [
+        "PythonOpenSSL3.5.9",
+        "qwindows",
+        "Schannel",
+        "certificate-onlyTLSbackend"
+      ],
+      "scope": "Known bundled component risk; pip-audit PASS is not native clearance. New payload filtering, retained TLS/GUI and license/source delivery remain unverified.",
+      "independent_patch_review": "APPROVED_NO_BLOCKERS_NEW_PAYLOAD_STILL_UNVERIFIED"
     }
   }
 }

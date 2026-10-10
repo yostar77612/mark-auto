@@ -7,3 +7,6 @@ packaging/local_ai/LICENSE-LLVM-OpenMP.txt -text
 packaging/local_ai/LICENSE-Qwen-Apache-2.0.txt -text
 packaging/local_ai/LICENSE-llama.cpp-MIT.txt -text
 tests/fixtures/desktop_runtime_0_2_1.py.txt -text
+
+# Qt notice inputs are independently SHA-256-pinned as original upstream bytes.
+packaging/qt_notices/** -text

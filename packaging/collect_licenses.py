@@ -5,6 +5,7 @@ import shutil
 import hashlib
 import stat
 import sys
+import runpy
 
 
 # Exact independently reviewed notice archive: 93 files plus its manifest.
@@ -52,6 +53,11 @@ def _reviewed_notice_bytes():
 # Check the entire immutable input before creating/copying build output. Never
 # extract ZIP members or trust paths/component lists asserted by the input.
 reviewed_notices = _reviewed_notice_bytes()
+qt_licenses = runpy.run_path(str(Path(__file__).with_name('qt_licenses.py')))
+for name, expected in qt_licenses['QT_DEPENDENCY_VERSIONS'].items():
+    if version(name) != expected:
+        raise RuntimeError('Qt notice dependency version mismatch')
+reviewed_qt_notices = qt_licenses['reviewed_notice_bytes'](Path('packaging/qt_notices'))
 
 output = Path('build/licenses')
 _reject_reparse_ancestry(output)
@@ -76,3 +82,6 @@ _reject_reparse_ancestry(native_target)
 if native_target.exists() and not stat.S_ISREG(native_target.lstat().st_mode):
     raise RuntimeError('Native-notice destination must be a regular file')
 native_target.write_bytes(reviewed_notices)
+
+# Full LGPL/GPL texts are explicit inputs, independent of wheel metadata omissions.
+qt_licenses['copy_notice_bytes'](reviewed_qt_notices, output / 'qt')

@@ -130,6 +130,23 @@ jobs:
       - run: python -m unittest discover -s tests -p test_quality_gate.py -v
       - name: Observe potential Windows x64 guest host resources (not acceptance)
         run: python tools/probe_windows_guest_host.py --output dist/validation/windows-guest-host.json
+      - name: Query existing KVM API without creating a guest (not acceptance)
+        shell: bash
+        run: |
+          mkdir -p dist/validation
+          # Hosted Ubuntu supports passwordless sudo. Keep the privileged
+          # invocation fixed and isolated; only the unprivileged shell writes.
+          if timeout --kill-after=2s 10s sudo -n /usr/bin/python3 -I -B -S tools/probe_windows_guest_host.py --query-kvm-api > dist/validation/windows-guest-kvm-api.json 2>/dev/null; then
+            :
+          else
+            status=$?
+            outcome=command_failed
+            case "$status" in
+              124) outcome=command_timed_out ;;
+              137) outcome=command_killed ;;
+            esac
+            printf '{"schema_version":1,"observation_only":true,"windows_client_acceptance":"NOT_RUN","guest_started":false,"kvm_api":{"status":"%s","command_exit_code":%s}}\n' "$outcome" "$status" > dist/validation/windows-guest-kvm-api.json
+          fi
       - name: Test read-only host capability report
         run: python -m unittest discover -s tests -p test_windows_guest_host.py -v
       - name: Preserve host availability evidence without starting a guest
@@ -137,7 +154,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: windows-guest-host-availability
-          path: dist/validation/windows-guest-host.json
+          path: |
+            dist/validation/windows-guest-host.json
+            dist/validation/windows-guest-kvm-api.json
           if-no-files-found: warn
           retention-days: 7
   security:

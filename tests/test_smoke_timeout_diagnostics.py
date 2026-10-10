@@ -2,6 +2,7 @@
 import json
 import errno
 import select
+import signal
 import sqlite3
 from contextlib import closing, contextmanager
 import os
@@ -103,6 +104,10 @@ time.sleep(60)
             self.assertEqual(len(value['worker_alive_before']), 2)
             self.assertTrue(all(value['worker_alive_before'].values()))
             self.assertFalse(any(value['worker_alive_after'].values()))
+            if sys.platform.startswith('linux'):
+                self.assertEqual(set(value['worker_linux_state_before']), set(value['worker_alive_before']))
+                self.assertEqual(set(value['worker_linux_state_after']), set(value['worker_alive_after']))
+                self.assertTrue(set(value['worker_linux_state_after'].values()) <= {'Z', 'X', 'x', '-'})
             self.assertEqual(value['stderr']['events'][0]['operation'], 'ui_campaign')
             self.assertTrue(all(not process_can_run(pid) for pid in json.loads(pids.read_text())))
 
@@ -237,6 +242,45 @@ class WorkerTimingTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux /proc disappearance semantics')
 class ProcDisappearanceTests(unittest.TestCase):
+    def test_liveness_classifies_kernel_dead_states_and_retains_unknowns(self):
+        from tests.test_desktop_walk_forward_terminal import process_can_run as walk_forward_can_run
+        for state in ('R', 'S', 'D', 'T', 't', 'K', 'W', 'P', 'I', 'Z', 'X', 'x', '-', '?', 'DO_NOT_RETAIN'):
+            with self.subTest(state=state), \
+                    patch('tests.test_desktop_smoke_terminal.os.kill') as probe, \
+                    patch.object(Path, 'read_text', return_value=f'123 (private command) {state} 1 123'):
+                observed = {}
+                self.assertEqual(process_can_run(123, linux_states=observed), state not in {'Z', 'X', 'x'})
+                probe.assert_called_once_with(123, 0)
+                self.assertEqual(walk_forward_can_run(123), state not in {'Z', 'X', 'x'})
+                self.assertEqual(observed, {'123': '?' if state in {'-', '?', 'DO_NOT_RETAIN'} else state})
+                self.assertNotIn('private', json.dumps(observed))
+                self.assertNotIn('DO_NOT_RETAIN', json.dumps(observed))
+
+    def test_owned_stopped_process_is_live_until_killed_zombie_and_reaped(self):
+        worker = subprocess.Popen([sys.executable, '-c', 'import time; print("ready", flush=True); time.sleep(60)'],
+                                  stdout=subprocess.PIPE, text=True)
+        try:
+            self.assertTrue(select.select([worker.stdout], [], [], 6)[0], 'Owned worker did not start')
+            self.assertEqual(worker.stdout.readline().strip(), 'ready')
+            self.assertTrue(process_can_run(worker.pid))
+            os.kill(worker.pid, signal.SIGSTOP)
+            os.waitid(os.P_PID, worker.pid, os.WSTOPPED)
+            observed = {}
+            self.assertTrue(process_can_run(worker.pid, linux_states=observed))
+            self.assertEqual(observed, {str(worker.pid): 'T'})
+            worker.kill()
+            os.waitid(os.P_PID, worker.pid, os.WEXITED | os.WNOWAIT)
+            self.assertFalse(process_can_run(worker.pid, linux_states=observed))
+            self.assertEqual(observed, {str(worker.pid): 'Z'})
+            worker.wait(timeout=6)
+            self.assertFalse(process_can_run(worker.pid, linux_states=observed))
+            self.assertEqual(observed, {str(worker.pid): '-'})
+        finally:
+            if worker.poll() is None:
+                worker.kill()
+            worker.wait(timeout=6)
+            worker.stdout.close()
+
     def test_timeout_cleanup_survives_real_unrelated_proc_exit_during_scan(self):
         with process_exits_during_proc_read() as (_, observed):
             SmokeTimeoutDiagnosticTests().assert_timeout_cleanup()
@@ -261,11 +305,16 @@ class ProcDisappearanceTests(unittest.TestCase):
             worker.stdout.close()
 
     def test_liveness_survives_real_process_exit_during_stat_read(self):
+        from tests.test_desktop_walk_forward_terminal import process_can_run as walk_forward_can_run
         with process_exits_during_proc_read() as (pid, observed):
             self.assertFalse(process_can_run(pid))
         self.assertEqual(observed, [errno.ESRCH])
+        with process_exits_during_proc_read() as (pid, observed):
+            self.assertFalse(walk_forward_can_run(pid))
+        self.assertEqual(observed, [errno.ESRCH])
 
     def test_group_join_and_liveness_do_not_hide_permission_or_unknown_errors(self):
+        from tests.test_desktop_walk_forward_terminal import process_can_run as walk_forward_can_run
         for error in (PermissionError(errno.EACCES, 'denied'), OSError(errno.EIO, 'unknown I/O failure')):
             with self.subTest(error=type(error).__name__), \
                     patch('quantlab.desktop_runtime.os.killpg'), \
@@ -276,6 +325,8 @@ class ProcDisappearanceTests(unittest.TestCase):
                     JobManager._join_descendants(SimpleNamespace(tree=None, _operation='ui_walk_forward_run'), 123)
                 with self.assertRaises(type(error)):
                     process_can_run(123)
+                with self.assertRaises(type(error)):
+                    walk_forward_can_run(123)
 
     def test_timeout_scan_permission_and_unknown_errors_keep_cleanup_unverified(self):
         for error in (PermissionError(errno.EACCES, 'denied'), OSError(errno.EIO, 'unknown I/O failure')):

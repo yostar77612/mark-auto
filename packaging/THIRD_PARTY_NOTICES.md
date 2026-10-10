@@ -5,9 +5,22 @@ includes Python (PSF license), PySide6/Shiboken6 and Qt 6.12.0 (open-source lice
 including LGPL-3.0), tzdata (Apache-2.0/public-domain data), and the PyInstaller
 bootloader (GPL with its distribution exception). Copies of installed dependency
 license/notice files are under `_internal/licenses`. Python's license is included
-there too. Qt's third-party notices are collected from the distributed wheels.
+there too. Available upstream wheel notices are retained. Explicit full GNU GPLv3
+and LGPLv3 texts, Qt component attribution, reviewed module scope and exact
+source-archive links/hashes are in `_internal/licenses/qt/`. See `QT-NOTICE.txt`
+and `manifest.json` there. `QT-NATIVE-NOTICES.zip` preserves native codec,
+Core/Gui/Network/Qml, Mesa/LLVM and identified OpenSSL license texts with exact
+source-version URLs and copyright notices; identical texts share one hash.
+The Microsoft runtime files have separate terms.
+This notice does not relicense Qt or Microsoft code under Apache-2.0.
 
-Qt Core/Gui/Widgets are used dynamically, not statically. The onedir distribution
+The shipped Qt module/plugin scope is audited from the actual frozen payload.
+Unused Qt Virtual Keyboard and Qt PDF components are excluded; Windows' qwindows
+platform plugin remains for native windowing and input-method integration.
+The optional Qt OpenSSL backend and its affected OpenSSL 3.5.5 -x64 DLL pair
+are excluded. Qt Schannel/certificate-only backends and Python's separately
+named OpenSSL 3.5.9 libraries remain.
+Qt Core/Gui/Widgets and other included LGPL modules are used dynamically, not statically. The onedir distribution
 keeps their DLLs replaceable under `_internal/PySide6` and associated plugins.
 You may replace LGPL-covered libraries with compatible modified versions and
 reverse-engineer this application to debug those modifications as LGPL permits.
@@ -18,7 +31,7 @@ contrary restriction for these LGPL purposes.
 Corresponding upstream source for the exact unmodified libraries:
 - PySide6/Shiboken6 6.12.0: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/
 - Qt 6.12.0: https://download.qt.io/official_releases/qt/6.12/6.12.0/single/
-- Qt licensing: https://doc.qt.io/qtforpython-6/licenses.html
+- Qt licensing: https://doc.qt.io/qtforpython-6.12/licenses.html
 - Python source/license: https://www.python.org/downloads/source/
 - PyInstaller exception: https://pyinstaller.org/en/stable/license.html
 

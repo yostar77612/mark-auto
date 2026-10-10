@@ -269,10 +269,11 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                 except ProcessLookupError: pass
             pids = read_json(pidfile)
             pids = [pid for pid in pids if type(pid) is int and pid > 0] if isinstance(pids, list) else []
-            def liveness(pid):
-                try: return process_can_run(pid)
+            def liveness(pid, states):
+                try: return process_can_run(pid, linux_states=states)
                 except (OSError, AssertionError): return None
-            before = {str(pid): liveness(pid) for pid in pids}
+            before_states, after_states = {}, {}
+            before = {str(pid): liveness(pid, before_states) for pid in pids}
             cleanup_error = None
             try:
                 if tree is not None:
@@ -296,7 +297,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
             except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                 cleanup_error = type(error).__name__
                 stdout, stderr = expired.stdout, expired.stderr
-            after = {str(pid): liveness(pid) for pid in pids}
+            after = {str(pid): liveness(pid, after_states) for pid in pids}
             audited = []
             try:
                 if writes.stat().st_size <= 262144:
@@ -306,6 +307,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
             evidence = {'scope': 'synthetic smoke timeout diagnostic; not acceptance',
                 'timeout_seconds': timeout, 'report': report_summary(read_json(report)),
                 'report_writes': audited, 'worker_alive_before': before, 'worker_alive_after': after,
+                'worker_linux_state_before': before_states, 'worker_linux_state_after': after_states,
                 'cleanup_verified': cleanup_error is None and process.poll() is not None and all(value is False for value in after.values()),
                 'cleanup_error_type': cleanup_error, 'stdout': output_summary(stdout), 'stderr': output_summary(stderr)}
             artifact_dir.mkdir(parents=True, exist_ok=True)

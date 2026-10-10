@@ -13,6 +13,7 @@ import struct
 import sys
 import tempfile
 import unittest
+import urllib.error
 from unittest.mock import Mock, patch
 import zlib
 
@@ -614,6 +615,105 @@ class PhaseTests(CIFixture):
             self.assertEqual(ci.main(self.argv(replace(self.config, cache=self.root / 'dist' / 'cache'), phase='download')), 1)
         download.assert_not_called()
         self.assertFalse((self.config.work / 'download-started.json').exists())
+
+
+class FailureDiagnosticTests(CIFixture):
+    def http_error(self, code=403):
+        return urllib.error.HTTPError('https://github.com/private?token=SECRET_URL', code,
+                                      'SECRET_EXCEPTION', {'Authorization':'SECRET_HEADER'}, None)
+
+    def test_real_download_wrapper_keeps_runtime_http_status_without_secrets(self):
+        opener=Mock();opener.open.side_effect=self.http_error()
+        with patch.object(local_ai.urllib.request,'build_opener',return_value=opener):
+            with self.assertRaises(local_ai.LocalAIError) as caught:ci.download_phase(self.config)
+        self.assertEqual(ci.failure_detail(caught.exception,'worker_preflight'),
+            {'stage':'runtime_download','category':'local_ai_network','http_status':403})
+        opener.open.assert_called_once()
+        self.assertFalse((self.config.cache/'model.gguf').exists())
+
+    def test_model_failure_is_distinct_after_verified_runtime_without_retry(self):
+        opener=Mock();opener.open.side_effect=[DownloadResponse(self.raw['runtime'],self.spec['runtime']['url']),
+                                              self.http_error(429)]
+        with patch.object(local_ai.urllib.request,'build_opener',return_value=opener):
+            with self.assertRaises(local_ai.LocalAIError) as caught:ci.download_phase(self.config)
+        self.assertEqual(ci.failure_detail(caught.exception,'worker_preflight'),
+            {'stage':'model_download','category':'local_ai_network','http_status':429})
+        self.assertEqual(opener.open.call_count,2)
+        self.assertEqual((self.config.cache/'runtime.zip').read_bytes(),self.raw['runtime'])
+
+    def test_manifest_and_cache_failures_are_not_labelled_http(self):
+        with patch.object(ci,'manifest',side_effect=local_ai.LocalAIError('artifact')), \
+             patch.object(ci,'download') as download:
+            with self.assertRaises(local_ai.LocalAIError) as caught:ci.download_phase(self.config)
+        self.assertEqual(ci.failure_detail(caught.exception,'worker_preflight'),
+            {'stage':'manifest','category':'local_ai_artifact'})
+        download.assert_not_called()
+        with patch.object(Path,'mkdir',side_effect=PermissionError('SECRET_PATH')), \
+             patch.object(ci,'download') as download:
+            with self.assertRaises(PermissionError) as caught:ci.download_phase(self.config)
+        self.assertEqual(ci.failure_detail(caught.exception,'worker_preflight'),
+            {'stage':'cache_prepare','category':'os_error'})
+        download.assert_not_called()
+
+    def test_failed_actual_worker_report_survives_nonzero_exit_gate(self):
+        opener=Mock();opener.open.side_effect=self.http_error()
+        def supervise(command,seconds):
+            self.assertEqual(seconds,300)
+            code=ci.main(command[2:])
+            return {'exit_code':code,'timed_out':False,'cleanup_verified':True,'seconds':.616}
+        with patch.object(ci.sys,'platform','win32'), \
+             patch.object(local_ai.ssl,'create_default_context',return_value=Mock()), \
+             patch.object(local_ai.urllib.request,'build_opener',return_value=opener), \
+             patch.object(ci,'supervise',side_effect=supervise) as supervisor, \
+             patch.object(ci,'frozen_phase') as frozen,patch.object(ci,'validate_result') as validate:
+            self.assertEqual(ci.run(self.config),1)
+        report=ci.read_json(self.config.controller_report)
+        self.assertEqual(report['status'],'failed')
+        self.assertEqual(report['phases']['download']['failure'],
+            {'stage':'runtime_download','category':'local_ai_network','http_status':403})
+        self.assertEqual(report['phases']['download']['phase_report'],'failed')
+        self.assertEqual(set(report['phases']),{'download'})
+        supervisor.assert_called_once();opener.open.assert_called_once()
+        frozen.assert_not_called();validate.assert_not_called()
+        text=self.config.controller_report.read_text(encoding='utf-8')
+        self.assertNotIn('SECRET',text);self.assertNotIn('https://',text)
+        self.assertTrue((self.config.work/'download-started.json').is_file())
+        with patch.object(ci.sys,'platform','win32'),patch.object(ci,'supervise') as supervisor:
+            with self.assertRaises(ValueError):ci.run(self.config)
+        supervisor.assert_not_called()
+
+    def test_worker_diagnostic_drops_raw_text_headers_urls_and_extra_keys(self):
+        diagnostic=ci.worker_diagnostic({'status':'failed','exception':'SECRET_EXCEPTION',
+            'failure':{'stage':'model_download','category':'local_ai_network','http_status':503,
+                       'url':'SECRET_URL','headers':{'Authorization':'SECRET_TOKEN'}}})
+        self.assertEqual(diagnostic,{'phase_report':'failed','failure':
+            {'stage':'model_download','category':'local_ai_network','http_status':503}})
+        self.assertNotIn('SECRET',json.dumps(diagnostic))
+
+    def test_malformed_or_unallowlisted_diagnostic_is_not_published(self):
+        failures=[None,[],{'stage':[],'category':'exception'},
+            {'stage':'SECRET_URL','category':'exception'},
+            {'stage':'manifest','category':'SECRET_EXCEPTION'},
+            *({'stage':'runtime_download','category':'http_error','http_status':code}
+              for code in (True,'403',99,600))]
+        for failure in failures:
+            with self.subTest(failure=failure):
+                self.assertEqual(ci.worker_diagnostic({'status':'failed','failure':failure}),
+                                 {'phase_report':'invalid'})
+
+    def test_unverified_cleanup_never_reads_worker_report(self):
+        outcome={'exit_code':1,'timed_out':False,'cleanup_verified':False,'seconds':1}
+        with patch.object(ci.sys,'platform','win32'),patch.object(ci,'supervise',return_value=outcome), \
+             patch.object(ci,'read_json',side_effect=AssertionError('Worker may still be writing')) as read:
+            self.assertEqual(ci.run(self.config),1)
+        read.assert_not_called()
+        report=ci.read_json(self.config.controller_report)
+        self.assertEqual(report['phases']['download']['phase_report'],'not_read_unverified_cleanup')
+
+    def test_exception_context_cycle_is_bounded_and_message_is_never_inspected(self):
+        error=RuntimeError('SECRET_MESSAGE');error.__context__=error
+        self.assertEqual(ci.failure_detail(error,'phase_report'),
+                         {'stage':'phase_report','category':'runtime_error'})
 
 
 class APIFunction:

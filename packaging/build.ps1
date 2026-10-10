@@ -33,6 +33,8 @@ try {
   if ($LASTEXITCODE) { throw 'License collection failed' }
   & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec
   if ($LASTEXITCODE) { throw 'PyInstaller failed' }
+  & $python packaging/qt_licenses.py --payload dist/MarkAuto --report dist/validation/qt-license-audit.json
+  if ($LASTEXITCODE) { throw 'Actual Qt payload/license-text scope audit failed' }
   # Inspect the actual frozen EXE, not just its resource source. No DLL is modified.
   $nativeVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path (Get-Location) 'dist/MarkAuto/MarkAuto.exe'))
   $expectedParts = @($Version.Split('.') | ForEach-Object { [int]$_ }) + @(0)

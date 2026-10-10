@@ -24,7 +24,7 @@ from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def process_can_run(pid):
+def process_can_run(pid, *, linux_states=None):
     if sys.platform == 'win32':
         from ctypes import wintypes as w
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
@@ -42,11 +42,24 @@ def process_can_run(pid):
             return status.value == 259
         finally:
             kernel.CloseHandle(handle)
+    if linux_states is not None and sys.platform.startswith('linux'):
+        linux_states[str(pid)] = '?'
     try: os.kill(pid, 0)
-    except ProcessLookupError: return False
+    except ProcessLookupError:
+        if linux_states is not None and sys.platform.startswith('linux'):
+            linux_states[str(pid)] = '-'
+        return False
     if sys.platform.startswith('linux'):
-        try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-        except (FileNotFoundError, ProcessLookupError): return False
+        try: state = Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0]
+        except (FileNotFoundError, ProcessLookupError):
+            if linux_states is not None:
+                linux_states[str(pid)] = '-'
+            return False
+        if linux_states is not None:
+            linux_states[str(pid)] = state if state in {'R', 'S', 'D', 'T', 't', 'Z', 'X', 'x', 'K', 'W', 'P', 'I'} else '?'
+        # Linux can expose dead X (historically x) briefly while reaping Z.
+        # Stopped, sleeping, blocked and unknown states remain unproved cleanup.
+        return state not in {'Z', 'X', 'x'}
     return True
 
 
