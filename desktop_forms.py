@@ -12,7 +12,7 @@ import re
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QLabel, QLineEdit,
     QComboBox, QCheckBox, QTableWidget, QTableWidgetItem, QAbstractItemView,
-    QPushButton, QHBoxLayout)
+    QPushButton, QHBoxLayout, QHeaderView)
 
 from quantlab.core import ValidationError, StrategySpec, validate_date, validate_contract, to_dict
 from quantlab.strategies import DEFAULTS, FAMILIES, validate_strategy
@@ -153,6 +153,20 @@ class BacktestForm(_Form):
             self.field(key, label)
         self.field('tax_rounding','稅額取整方式', choices=[('四捨五入至新台幣元','half_up_twd'), ('向下取整至新台幣元','floor_twd'), ('向上取整至新台幣元','ceiling_twd'), ('不取整','none')])
         self.note('初始值為明示合成假設，並非現行市場費率或保證金。已載入的進階時序政策會完整保留。')
+        self.expiry_note = self.note(
+            '真實／代理資料須逐一填寫明確合約（TAIFEX:TMF:YYYYMM）及到期日（最後交易日，YYYY-MM-DD）。請先自行核對期交所微臺指期貨契約規格 '
+            'https://www.taifex.com.tw/cht/2/tMF、該年度交易行事曆及異動公告，再輸入日期；已載入的日期也須核對。'
+            '本表僅檢查格式，不會驗證來源或推算第三個星期三，也不代表已取得結算價格。回測與研究 Campaign 共用此設定。')
+        self.expiry_note.setObjectName('instrument_expiries_note')
+        self.expiry_note.setTextFormat(Qt.TextFormat.PlainText)
+        self.expiry_note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+        self.expiries = _Rows('instrument_expiries', [
+            ('contract_id','合約代碼'), ('expiry_date','到期日（YYYY-MM-DD）')])
+        self.expiries.table.horizontalHeaderItem(0).setToolTip('明確合約（TAIFEX:TMF:YYYYMM）')
+        self.expiries.table.horizontalHeaderItem(1).setToolTip('到期日／最後交易日（YYYY-MM-DD）')
+        self.expiries.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.expiries.table.setAccessibleName('合約到期日（須自行核對官方來源）')
+        self.outer.addWidget(self.expiries)
         from quantlab.reporting import demo_config
         self.from_payload({'config':to_dict(demo_config()), 'start_date':'', 'end_date':''})
 
@@ -163,11 +177,23 @@ class BacktestForm(_Form):
         config = {**to_dict(parsed), **config}
         self._config = config
         self.load(config); self.load(config['costs'])
+        self.expiries.load([{'contract_id':contract, 'expiry_date':expiry}
+            for contract,expiry in config['instrument_expiries'].items()])
         self.load({k:payload.get(k, '') for k in ('start_date','end_date')})
         return self
 
     def build_payload(self):
         config = deepcopy(self._config)
+        expiries = {}
+        for index,row in enumerate(self.expiries.values(), 1):
+            contract, expiry = row['contract_id'], row['expiry_date']
+            try:
+                validate_contract(contract); validate_date(expiry)
+            except ValidationError:
+                raise ValidationError(f'合約到期日第 {index} 列：須為 TAIFEX:TMF:YYYYMM 有效合約及 YYYY-MM-DD 有效日期') from None
+            if contract in expiries: raise ValidationError(f'合約到期日第 {index} 列：合約重複 {contract}')
+            expiries[contract] = expiry
+        config['instrument_expiries'] = expiries
         config['initial_cash'] = self.num('initial_cash')
         config['max_position'] = self.num('max_position', 1, 1000000, integer=True)
         config['seed'] = self.num('seed', 0, 2147483647, integer=True)

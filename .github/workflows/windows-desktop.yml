@@ -49,7 +49,7 @@ jobs:
           architecture: x64
       - name: Build native runtime and unsigned per-user installers
         shell: pwsh
-        run: ./packaging/build.ps1 -Version 0.2.1
+        run: ./packaging/build.ps1 -Version 0.2.2
       - name: Record actual public daily-source availability (BLOCKED is not product acceptance)
         run: python tools/validate_market_download.py dist/validation/public-market-download.json
       - name: Fetch hash-pinned actual previously released baseline
@@ -58,19 +58,19 @@ jobs:
         run: python packaging/build_manifest.py
       - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
         shell: pwsh
-        run: ./packaging/test_installer.ps1 -Version 0.2.1 -CreateRecoveryHandoff
+        run: ./packaging/test_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff
       - name: Test actual released baseline and interrupted upgrade recovery
         shell: pwsh
-        run: ./packaging/test_update_recovery.ps1 -Version 0.2.1 -BaselineVersion 0.2.0 -BaselineInstaller baseline/MarkAuto-0.2.0-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json -LifecycleHandoff dist/validation/lifecycle-state-handoff.json
+        run: ./packaging/test_update_recovery.ps1 -Version 0.2.2 -BaselineVersion 0.2.1 -BaselineInstaller baseline/MarkAuto-0.2.1-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json -LifecycleHandoff dist/validation/lifecycle-state-handoff.json
       - name: Assemble standalone clean Windows client acceptance kit
         shell: pwsh
         run: |
           New-Item candidate-release -ItemType Directory -Force | Out-Null
-          Copy-Item dist/installers/MarkAuto-0.2.1-windows-x64-setup.exe candidate-release/
+          Copy-Item dist/installers/MarkAuto-0.2.2-windows-x64-setup.exe candidate-release/
           Copy-Item dist/build-manifest.json candidate-release/
-          python packaging/clean_windows_kit.py --baseline baseline --baseline-version 0.2.0 --candidate candidate-release --version 0.2.1 --output clean-windows-kit
+          python packaging/clean_windows_kit.py --baseline baseline --baseline-version 0.2.1 --candidate candidate-release --version 0.2.2 --output clean-windows-kit
           if ($LASTEXITCODE) { throw 'Clean client kit generation failed' }
-          Compress-Archive -Path clean-windows-kit/* -DestinationPath dist/MarkAuto-0.2.1-clean-windows-acceptance.zip
+          Compress-Archive -Path clean-windows-kit/* -DestinationPath dist/MarkAuto-0.2.2-clean-windows-acceptance.zip
       - name: Remove upgrade fixture from deliverables
         shell: pwsh
         run: Remove-Item dist/installers/MarkAuto-0.0.0-windows-x64-setup.exe
@@ -84,7 +84,7 @@ jobs:
           path: |
             dist/installers/*.exe
             dist/validation/
-            dist/MarkAuto-0.2.1-clean-windows-acceptance.zip
+            dist/MarkAuto-0.2.2-clean-windows-acceptance.zip
             dist/build-manifest.json
             dist/SHA256SUMS.txt
           if-no-files-found: error

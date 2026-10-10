@@ -171,3 +171,38 @@ No acceptance threshold or original research identity files are weakened to make
 ### 0.2.1 跨授權復原反例補驗（02:02 UTC，修復前固定）
 
 同一bootstrap下兩個不同opaque registration，A先預留但未知時，B的status/models/preflight/reserve不得顯示可繼續或送網路；並行兩者只能一個取得預留。暫停不可藉登出／新增授權繞過，不推論兩個subject代表同一人；只在本安裝建立保守的全域安全屏障，各registration的身分與receipt仍分開。任一已登記ledger遺失／毀損／count回退，不能透過另一registration重建或繼續呼叫。明確解除選定的已知pause只在沒有任何active/unknown時允許，不得解除別人的pause、退還未知次數或重置預算。已完成且完整的其他ledger不能被當作未完成而永遠阻塞。這些是原不可繞過復原合約的反例，不更改驗收門檻或增加付費／真帳戶操作。
+
+
+## 0.2.2 行情與一般操作驗收模組
+
+承接已合併0.2.1；以下行情合約於01:34 UTC隔離實作前凍結，本段納回唯一工程合約。實際CSV/RPT bytes不提交或打包。
+
+# Market-only native tick history module — frozen 2026-10-10 01:34 UTC
+
+Staging only: /tmp/mark-auto-market-history, copied from /tmp/mark-auto-oauth-host. No source checkout edits, commits, release delay, paid/network/model/broker changes. Existing trading/research validators remain unchanged. Scope is the next module after 0.2.1, not a retrospective acceptance change.
+
+## Owned scope
+New quantlab/market_history.py; desktop_ui.py and desktop_market.py only for typed local history import/reload controls; new tests/test_market_history.py, tests/test_market_history_ui.py; optional tools/validate_market_history_import.py. Existing UI tests may receive narrowly necessary additions. No account/OAuth/provider logic changes. Source/data/calendar remain local; do not bundle real ticks or derived bars.
+
+## Frozen behavior and tests
+1. Stream observed TAIFEX nine-column CSV/comma-delimited RPT, UTF-8 or CP950; maximum64MiB,1,000,000rows,120seconds, cancellation callback checked throughout. Reject unknown/fixed-width schema, wrong columns, nonfinite/nonintegral prices, invalid dates, odd/nonpositive B+S quantity, unsafe paths and selected malformed rows. Do not parse arbitrary JSON as normal market history input.
+2. Explicit TX/MTX/TMF actual monthly/weekly contracts using InstrumentRef; MTX displayed as MXF. Preserve all same-second trades and source row order. Exclude/count spreads, unrelated products/contracts and out-of-selected-session ticks; do not merge expiry identities. Single-sided quantity=B+S/2.
+3. Typed session records require explicit contract, exchange trade date, local opening/closing dates/times and endpoint inclusion. No perpetual calendar, holiday inference, date+1 attribution or silently cloned TMF calendar. Official product pages support product schedule rules; manually entered dated session attribution remains user-declared/unverified unless independent source manifest is supplied. UI never requires handwritten JSON. Tests cover day/night midnight/holiday attribution, short expiry, overlap and uncovered intervals.
+4. Aggregate actual trades into session-open-anchored1m MarketBar values with real timestamp/end/trade_date/session/sourcehash. Explicit inclusive close tick goes into last bucket. No absent minute filled; count gaps, warn incomplete coverage, retain partial state without implying tick completeness. Reuse existing chart_data.aggregate_bars for all8timeframes; daily/weekly completeness remains conservatively unknown without calendar certification. No invented index minute data.
+5. Separate managed market-history cache with immutable source/session-policy hashes, normalized bounded bars and counters. Never cache raw64MiB input as oversized JSON. Atomic validated cache, symlink/Windows reparse rejection, collision/unknown-file refusal, verified reload and restart. Local imports remain history/unverified with explicit license warning; no broker/research eligibility or remote authenticity claims. Cancellation/error cannot replace last good import.
+6. GUI uses normal file/session/contract controls and background-job execution; Cancel before and during import, repeated import, validation errors and restart tested. Existing market daily/TMF research and other account functionality remain intact.
+7. Actual private integration: source CSV/RPT SHA6807f4c3b7f977cb7e5109b1135fe69bbfe18d7c6b71a445e6576bb6be6163a8,34363020bytes, must reproduce exactly300day minutes each TX/MTX/TMF202610 on2026-10-08 and independent daily OHLC. Preserve outright volume differences and distinguish actual-file evidence from synthetic edge tests. Never bundle raw or derived exchange files.
+8. Read-only graph/no network tests, focused existing market/chart/UI regressions; ownership diff and output hashes supplied. Tests cannot be weakened/skipped to obtain PASS. Missing source support or environment evidence remains explicit BLOCKED.
+
+## Proposed public boundary
+MarketSession(instrument,trade_date,session,open,end,include_end=False,source=official_product_url): frozen validated UTC record. source means reference, not authenticated policy proof.
+import_history(path,root,*,sessions,received_at=None,cancelled=None)->HistoryLoad(series tuple,policy_hash,source_hash,counters,warnings,cache_id).
+load_history(root,cache_id)->HistoryLoad; list_history(root)->tuple[HistoryLoad,...]. The UI owns choosing exact contract/session records. No default live/network activity.
+
+### 既有普通操作反例，修復前固定
+
+- 真資料回測仍需明確每合約到期日。BacktestForm新增型別化合約/日期table，不推算第三個星期三、不宣称日期已查證，不改核心檢查。載入原mapping/advancedconfig完整保留；重複/非法/未完成列拒絕。同一payload供普通回測和研究。僅允許既有training區間真資料重播，不再消耗模型/OOS/holdout。
+- 紙上replay必須使用已鎖定的有效日margin policy，含source/version完整身分，夜盤依exchange trade_date。不能硬編100000覆蓋使用者有效120000。scalar既有caller身分與riskguard保留；schedule mode同一replay路徑遇舊身分必須保留原檔並拒絕，不新建路徑重送、不遷移或清空既有orders。測試多個有效日、缺coverage、version/source/future-row改變、各中断點、重啟與重複操作無額外委託。
+- 打包smoke必須保留原七步與manual兩步、offline auth，加獨立history_import真worker/cache重載及三商品×八周期24次原生圖表繪製。synthetic fixture明示、network/model不得呼叫、120秒原上限不變，缺模組/假結果/cache改動/failure均使整體失敗。
+
+所有component與完整回歸後，原生Windows exact-head build/install/真releasedbaseline升級/中斷恢復與下載產物hash核對仍為必要Gate。cleanWindows10/11不得用Server代替。

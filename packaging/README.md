@@ -12,8 +12,8 @@ and uninstall. Remove that directory yourself only if you intend to erase data.
 
 Build on Windows x64 with Python 3.13.16 and PowerShell, from the repository root:
 
-    ./packaging/build.ps1 -Version 0.2.1
-    ./packaging/test_installer.ps1 -Version 0.2.1
+    ./packaging/build.ps1 -Version 0.2.2
+    ./packaging/test_installer.ps1 -Version 0.2.2
     python packaging/build_manifest.py
 
 Only developers need Python. The hash-locked Windows dependency closure and
@@ -133,3 +133,10 @@ fallback and real-money trading remain disabled. The current clean-client kit
 contains the actual released0.2.0 baseline and0.2.1 candidate; build-manifest and
 installer hashes must match before either is run. Clean Windows10/11 and real
 user-grant acceptance remain separate from Windows Server engineering CI.
+
+
+## 0.2.2 normal-workflow and history acceptance
+
+Build defaults target0.2.2. Upgrade and standalone client kit use the actually downloaded, source/size/SHA-pinned0.2.1 release as baseline. Existing0.2.1 documentation above remains historical. The original seven research/Paper smoke operations, two manual exchange operations and offline native auth checks remain required; independent history_smoke additionally executes the real bounded history worker, reloads its cache and renders three products across eight timeframes. Its invented30tick CSV is labelledsynthetic and never implies actualexchange/client/model acceptance. Missing module, forgedresult, corruptedsource/cache or timeout fails the complete smoke.
+
+Normal typedexpiry/date input and effective-dated Paper margins are included. Existing scalar PaperReplay callers retain their binding. Desktop schedule mode refuses an incompatible old replay at the same path without modifying its journal or generating replacement orders; retain and reconcile prior state, never erase it to bypass validation. No broker/live order capability is enabled.

@@ -35,9 +35,9 @@ class BaselineDownloadTests(unittest.TestCase):
                 self.assertEqual(list(Path(folder).iterdir()), [])
 
     def test_pins_match_actual_delivered_baseline(self):
-        self.assertEqual(baseline.SOURCE, 'fc2dfacbf297004095e971ec10cf3620307417a2')
-        self.assertEqual(baseline.ASSETS['MarkAuto-0.2.0-windows-x64-setup.exe'],
-                         ('be1c749e9fc83ede8c9a0e18d9be99a3c7e3104b4798dda6ccb1834f29471f29', 36848324))
+        self.assertEqual(baseline.SOURCE, '2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8')
+        self.assertEqual(baseline.ASSETS['MarkAuto-0.2.1-windows-x64-setup.exe'],
+                         ('cce3f6242068affa91ab5c242f6ac655bbb59c677e4abda8b85065b97e48e0b1', 41583381))
         self.assertEqual(baseline.ASSETS['build-manifest.json'],
-                         ('7cf66be9406b842949cdf5501c2c28915a6baad532a46dcd4d911e818174e33d', 6539))
+                         ('4c6c6b0a0ddff170c5394b7b04f03f3575c29b54087c9e042a60c3fb38bc5639', 7247))
         self.assertTrue(baseline.BASE.startswith('https://github.com/yostar77612/mark-auto/releases/download/'))

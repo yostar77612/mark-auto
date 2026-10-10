@@ -323,3 +323,26 @@ mainfc2dfac／PR#3，head655f47df與本地e62d897完整tree853300ac一致，原�
 獨立逐項審查及exact-main UI重拍後，M1真實商品/來源20點與M5訊號/成交5點完成：新增25/100，原170/200保持，整體195/300＝65%，剩35%。此百分比因使用者增加100點必要市場/UI範圍而重算，並非把原85%已完成成果刪掉。M2保守保留PARTIAL（TX/MXF分鐘檔尚無產品匯入入口）；M3／M4缺口已於下一版修復但未完成新版Gate，M6正式選定路徑/實際帳戶證據未全滿，M7乾淨WindowsDPI仍BLOCKED。每個整項未全通過即0點，不因局部實作提高分數。
 
 0.2.0交付已完成：postmerge38013204925通過並發布[安裝檔及clean-client kit](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38013204925-1)，兩者實際下載hash與ZIPCRC核對PASS。這是可下載preview交付，不解除Win10/11乾淨實測限制。0.2.1驗收改以這份真實0.2.0為固定升級baseline，保留舊版本和原紀錄。
+
+
+## 21 行情／普通表單收尾與研究重驗
+
+0.2.1已在完整exact-head Gate後透過PR4合併main2ed1e3e5；644項Windows測試633PASS11平台/profile skip，Linux629PASS15平台skip，跨registration safety獨立151項通過，真0.2.0升級/中斷復原PASS。Postmerge安裝檔仍需核對完成，真帳戶授權與乾淨Win10/11不因此通過。
+
+依風險、效益及依賴順序：
+1. 已封堵跨授權unknown-call、ledger遺失/回退及lateerror降級，保持復原不重試不確定請求。
+2. 本模組把TX/MTX/TMF分鐘檔匯入、真資料到期表單與effective-dated Paper margin接入正常GUI；沿用既有模組，不放寬資料與風控。完整品質/Windows打包升級通過再發布0.2.2。
+3. 補齊真正Walk-forward。單次四切分不能替代rolling多fold；先凍結固定pool/chronology/全程budget/持久selection/consumedrange規範，舊研究與暴露資料不能冒充fresh。此工程缺口可自主處理，不推給使用者。
+4. 真實ChatGPT由使用者官方流程授權；沒有授權不實際呼叫，paidAPI仍停用，accountcredit與server token限制不可冒充可控。
+5. cleanWin10 22H2x64/Win11x64用同版本無開發工具kit實際完成GUI/安裝/升級/移除/保存/DPI驗收，缺環境明示EXTERNALBLOCKED；mainadmin403同理。簽章為目前unsigned與Windowsreputation限制，不自行新增購買憑證的驗收權重或繞過安全提示。
+
+M2、M3、M4按完整項目證據評分，不因多幾個測試先加分。M6真實所選AI路徑與M7clientDPI尚未全滿。原200+新增100分母維持，並額外誠實列出完整需求重驗缺口，不能以195/300已記錄的65%當所有規範再認證。暫緩非必要portfolio optimizer、自動靜默更新、新背景服務及大規模效能重構；先完成既定普通操作和安全Gate。
+
+
+### 02:36 UTC發布與分數核對
+
+0.2.1 [Release](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)已實際下載核對：EXE41,583,381bytes／SHA256cce3f6242068affa91ab5c242f6ac655bbb59c677e4abda8b85065b97e48e0b1；clean-kit77,401,239bytes／SHA256850e2157d8b6652bc5d269bcd6dc76eba88f0ec7f81c29a75bc7e5b5a91768d4，8entriesCRC PASS；manifest7,247bytes／SHA2564c6c6b0a0ddff170c5394b7b04f03f3575c29b54087c9e042a60c3fb38bc5639綁main2ed1e3e。PostmergeWindows38016622951三jobs與Quantlab38016622996七jobsPASS。獨立重核全部8下載asset及56source inputs，Windows CRLF hash差與Git LF的確切轉換相符，沒有假定hash相同。更新復原保留929舊檔、5sentinel、真設定與lifecycle副本。Server單次啟動1.0279063s/RSS103309312bytes，非clientSLO。
+
+M3完整15點可驗證，新增40/100，原170/200保留，已記錄總210/300＝70%，剩30%。M2/M4仍待候選0.2.2完整Gate，TAIEX分線能力/來源權限未解，M6真授權、M7cleanDPI仍未滿。重新比對使用者原文另確認ProfitFactor/Sharpe實作與停損/停利/成本參考線接線待補，連同Walk-forward列工程工作，不能拿既有窄項分數掩蓋。不得用新權重或移除需求美化百分比。
+
+0.2.2沿用上述真正已發布0.2.1baseline，hash及測試固定fixture依實際下載更新。曾不必要修改recovery腳本舊default導致一項相容性測試失敗，已還原原default而非改門檻；工作流/kit仍明示0.2.1。後續40packaging測試36PASS4PowerShellskip，失敗log保留。另Qt對話框exec被原AST dynamic-call Gate同名拒絕，改用Qt正式非同步open/accepted/finished流程，加重複開啟／取消／关闭期间不啟動工作檢查，54相關測試PASS，原Gate不改，沒有改名或getattr隱藏呼叫。

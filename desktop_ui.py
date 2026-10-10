@@ -282,6 +282,22 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             manager.restore(Path(payload['path']))
             return {'restored': True, 'reconciliation_required': True}
         return {'backup': str(manager.create(Path(payload['path'])))}
+    if operation == 'ui_market_refresh' and 'history_import' in payload:
+        if payload.get('history_import') is not True or set(payload) != {'history_import','local_path','sessions','dated_policy_confirmed'}:
+            raise ValidationError('本機歷史匯入請求欄位不符；不可混入網路或每日來源設定')
+        from quantlab.market_history import import_history, session_from_dict
+        if payload.get('dated_policy_confirmed') is not True:
+            raise ValidationError('請先明確確認自行聲明的日期時段')
+        records = payload.get('sessions')
+        if not isinstance(records, list) or not 1 <= len(records) <= 128:
+            raise ValidationError('請選擇 1 至 128 個明確時段')
+        if emit is not None: emit('progress', message='正在匯入本機逐筆歷史；來源及日期時段未驗證，可取消。')
+        result = import_history(Path(payload['local_path']), root / 'market_history',
+                                sessions=tuple(session_from_dict(row) for row in records))
+        return {'mode': 'local_unverified_history', 'cache_id': result.cache_id,
+                'source_hash': result.source_hash, 'policy_hash': result.policy_hash,
+                'counters': dict(result.counters), 'warnings': list(result.warnings),
+                'contracts': len(result.series), 'bars': sum(len(x.bars) for x in result.series)}
     if operation == 'ui_market_refresh':
         from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
         # File imports use the same fixed official schema and atomic cache path.
@@ -469,7 +485,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
             replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data,
                                  strategy=StrategySpec(**selection['strategy']), broker=broker,
-                                 margin_per_contract=Decimal('100000'), margin_version='synthetic-assumption-v1')
+                                 margin_schedule=broker._margin_schedule)
             replay.start()
             try:
                 replay.step(max_bars=payload.get('max_bars', 100))
@@ -570,7 +586,7 @@ class EquityPlot(QWidget):
         painter.drawPolyline(points)
 
 
-from desktop_market import MarketDashboard
+from desktop_market import MarketDashboard, MarketHistoryDialog
 from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, PaperPolicyForm,
     PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard)
 
@@ -692,6 +708,25 @@ class MainWindow(QMainWindow):
             provider, format_name = self.market_provider.currentData()
             self.start_job('ui_market_refresh', {'provider': provider, 'format': format_name, 'local_path': name})
 
+    def import_market_history(self):
+        if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
+        if getattr(self, '_closing', False):
+            raise ValidationError('視窗正在關閉，不能啟動新匯入')
+        existing = getattr(self, '_history_dialog', None)
+        if existing is not None:
+            existing.raise_(); existing.activateWindow(); return
+        dialog = MarketHistoryDialog(self)
+        self._history_dialog = dialog
+        def accepted():
+            if not getattr(self, '_closing', False):
+                self._safe(lambda: self.start_job('ui_market_refresh', dialog.payload()))
+        def finished(_):
+            if self._history_dialog is dialog: self._history_dialog = None
+            dialog.deleteLater()
+        dialog.accepted.connect(accepted)
+        dialog.finished.connect(finished)
+        dialog.open()
+
     def save_market_preferences(self):
         if self.settings is None: return
         value = self.settings.load()
@@ -705,6 +740,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.overview)
         self.market_provider = QComboBox(); self.market_provider.addItem('TWSE 加權指數官方格式 JSON', ('twse', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 JSON', ('taifex', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 CSV', ('taifex', 'csv')); layout.addWidget(self.market_provider)
         self._button(layout, '匯入官方唯讀行情（不變更研究資料）', 'import_market_file', self.import_market_file)
+        self._button(layout, '匯入逐筆歷史 CSV / RPT（明確時段，唯讀）', 'import_market_history', self.import_market_history)
         self.import_path = self._text(layout, '本機 CSV / RPT / JSON 檔案')
         self._button(layout, '選擇資料檔案', 'browse_data', lambda: self._browse(self.import_path))
         self.calendar_path = self._text(layout, '版本化交易日曆 JSON（必填）')
@@ -1188,6 +1224,7 @@ class MainWindow(QMainWindow):
         from quantlab.market_providers import load_cached
         series, errors, quotes = {}, [], []
         self._market_data_bindings = {}
+        self._market_research_series = {}
         for provider in ('twse', 'taifex'):
             try:
                 loaded = load_cached(provider, self.root / 'market_cache')
@@ -1206,8 +1243,19 @@ class MainWindow(QMainWindow):
                     series[item.instrument.contract_id] = item
                     quotes.append(item)
                     self._market_data_bindings[item.instrument.contract_id] = dataset.manifest['data_hash']
+                    self._market_research_series[item.instrument.contract_id] = item
             except (ValueError, KeyError, TypeError) as exc:
                 errors.append('研究資料無法作為已驗證市場歷史：' + str(exc))
+        try:
+            from quantlab.market_history import list_history
+            histories = list_history(self.root / 'market_history')
+            # Keep immutable imports separate; newest received snapshot wins per
+            # exact contract. Do not blend policies or minute/daily observations.
+            incoming = [item for loaded in histories for item in loaded.series]
+            for item in sorted(incoming, key=lambda item: (item.provenance.received_at, item.provenance.sha256)):
+                series[item.instrument.contract_id] = item
+        except (ValueError, OSError) as exc:
+            errors.append('本機逐筆歷史快取驗證失敗：' + str(exc))
         self.market.set_quote_series(latest_market_observations(quotes), stale=True)
         self.market.set_market_series(tuple(series.values()), stale=True, error='；'.join(errors))
         selection = self.root / 'selection.json'
@@ -1345,6 +1393,7 @@ class MainWindow(QMainWindow):
         selected = self.market.contract_combo.currentData()
         item = self.market.selected_series()
         if item is None or self._market_data_bindings.get(selected) != data.manifest['data_hash']: return
+        if item != self._market_research_series.get(selected): return
         trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], '回測')
         markers = []
         from bisect import bisect_left, bisect_right

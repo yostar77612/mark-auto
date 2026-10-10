@@ -242,6 +242,129 @@ def _check_market_worker_result(phase, result, export_path):
     return {'engine_source_hashes': hashes, 'real_model_status': 'not_verified'}
 
 
+def _history_smoke_fixture(workspace):
+    """Tiny invented native-schema CSV and explicit synthetic dated session policy."""
+    from datetime import datetime, timedelta
+    import hashlib
+    from quantlab.market_history import PRODUCT_SOURCES
+    header = '成交日期,商品代號,到期月份(週別),成交時間,成交價格,成交數量(B+S),近月價格,遠月價格,開盤集合競價\n'
+    rows, sessions = [], []
+    for product, base in (('TX', 100), ('MTX', 200), ('TMF', 300)):
+        for index, minute in enumerate((0, 1, 2, 3, 5, 15, 30, 59, 60)):
+            stamp = datetime(2026, 10, 8, 8, 45) + timedelta(minutes=minute)
+            rows.append(f'20261008,{product},202610,{stamp:%H%M%S},{base + index},2,-,-,')
+            if minute == 0:
+                rows.append(f'20261008,{product},202610,084559,{base + 2},4,-,-,')
+        sessions.append({'contract_id': f'TAIFEX:{product}:202610', 'trade_date': '2026-10-08',
+            'session': 'day', 'open': '2026-10-08T00:45:00+00:00',
+            'end': '2026-10-08T01:46:00+00:00', 'include_end': False,
+            'source': PRODUCT_SOURCES[product]})
+    raw = (header + '\n'.join(rows) + '\n').encode('utf-8')
+    path = Path(workspace) / 'SYNTHETIC-packaging-fixture-not-exchange-data.csv'
+    path.write_bytes(raw)
+    payload = {'history_import': True, 'local_path': str(path), 'sessions': sessions,
+               'dated_policy_confirmed': True}
+    return {'status': 'pending', 'source_type': 'synthetic', 'generator': 'fixture',
+        'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance',
+        'network_used': False, 'live_status': 'disabled', 'real_model_status': 'not_verified',
+        'real_market_status': 'not_verified', 'windows_client_status': 'not_verified',
+        'fixture_sha256': hashlib.sha256(raw).hexdigest(), 'steps': []}, payload
+
+
+def _check_history_worker_result(result, paths, payload, fixture_sha256):
+    """Reload the worker's bounded cache; never accept an IPC-only success claim."""
+    import hashlib
+    import json
+    from datetime import datetime, timedelta, timezone
+    from decimal import Decimal
+    from quantlab.market_history import load_history, list_history
+    with Path(payload['local_path']).open('rb') as stream:
+        source = stream.read(2049)  # This fixed fixture is smaller than 2 KiB.
+    if len(source) > 2048 or hashlib.sha256(source).hexdigest() != fixture_sha256:
+        raise ValueError('Synthetic history source changed')
+    cache = paths.state / 'market_history'
+    loaded = load_history(cache, result.get('cache_id'))
+    if tuple(item.cache_id for item in list_history(cache)) != (loaded.cache_id,):
+        raise ValueError('Unexpected history cache contents')
+    policy = sorted(payload['sessions'], key=lambda row: (row['contract_id'], row['open']))
+    policy_hash = hashlib.sha256(json.dumps(policy, sort_keys=True, separators=(',', ':'),
+                                           ensure_ascii=False).encode('utf-8')).hexdigest()
+    counters = {'rows': 30, 'accepted_ticks': 30, 'spread_rows': 0,
+                'excluded_rows': 0, 'outside_session_rows': 0, 'missing_minutes': 156}
+    if (result.get('mode') != 'local_unverified_history' or result.get('contracts') != 3
+            or result.get('bars') != 27 or result.get('source_hash') != fixture_sha256
+            or loaded.source_hash != fixture_sha256 or result.get('policy_hash') != policy_hash
+            or loaded.policy_hash != policy_hash or result.get('counters') != counters
+            or dict(loaded.counters) != counters or not loaded.warnings
+            or result.get('warnings') != list(loaded.warnings)):
+        raise ValueError('History worker result or cache provenance mismatch')
+    expected = {'TAIFEX:TX:202610': ('TX', 100), 'TAIFEX:MTX:202610': ('MXF', 200),
+                'TAIFEX:TMF:202610': ('TMF', 300)}
+    if {item.instrument.contract_id for item in loaded.series} != set(expected):
+        raise ValueError('History product identities missing')
+    start = datetime(2026, 10, 8, 0, 45, tzinfo=timezone.utc)
+    for item in loaded.series:
+        symbol, base = expected[item.instrument.contract_id]
+        if (item.instrument.symbol != symbol or item.instrument.expiry != '202610'
+                or len(item.bars) != 9 or item.provenance.mode != 'history'
+                or item.provenance.sha256 != fixture_sha256):
+            raise ValueError('History series identity or provenance mismatch')
+        for index, (bar, minute) in enumerate(zip(item.bars, (0, 1, 2, 3, 5, 15, 30, 59, 60))):
+            price = Decimal(base + index)
+            high = Decimal(base + 2) if index == 0 else price
+            if ((bar.open, bar.high, bar.low, bar.close, bar.volume) !=
+                    (price, high, price, high, 3 if index == 0 else 1)
+                    or bar.timestamp != start + timedelta(minutes=minute)
+                    or bar.end != start + timedelta(minutes=minute + 1)
+                    or bar.session_open != start or bar.session_end != start + timedelta(minutes=61)
+                    or bar.trade_date != '2026-10-08' or bar.session != 'day'
+                    or bar.interval != '1m' or not bar.partial or bar.source_id != fixture_sha256):
+                raise ValueError('History synthetic tick normalization mismatch')
+    return loaded.series, {'cache_id': loaded.cache_id, 'policy_hash': policy_hash,
+        'source_hash': loaded.source_hash, 'counters': counters, 'cache_reloaded': True,
+        'contracts': sorted(expected), 'bars': 27, 'mode': result['mode']}
+
+
+def _history_smoke_ui(app, series):
+    """Render all product/timeframe combinations from the reloaded worker cache."""
+    import shiboken6
+    from desktop_market import MarketDashboard
+    from desktop_charts import CandlestickChart
+    dashboard = MarketDashboard()
+    try:
+        dashboard.setWindowTitle('SYNTHETIC HISTORY FIXTURE — not actual market acceptance')
+        dashboard.resize(1280, 900)
+        dashboard.set_market_series(series)
+        dashboard.show(); app.processEvents()
+        expected = {'1m': 9, '3m': 6, '5m': 6, '15m': 5, '30m': 3, '60m': 2, '1d': 1, '1w': 1}
+        counts, rendered = {}, {}
+        for item in series:
+            contract = item.instrument.contract_id
+            dashboard.contract_combo.setCurrentIndex(dashboard.contract_combo.findData(contract))
+            if dashboard.selected_series() != item or not isinstance(dashboard.chart, CandlestickChart):
+                raise ValueError('History chart product selection failed')
+            counts[contract], rendered[contract] = {}, {}
+            for timeframe, count in expected.items():
+                index = dashboard.timeframe_combo.findData(timeframe)
+                if index < 0:
+                    raise ValueError('History chart timeframe missing')
+                dashboard.timeframe_combo.setCurrentIndex(index)
+                app.processEvents()
+                pixmap = dashboard.chart.grab(); image = pixmap.toImage()
+                colors = {image.pixel(x, y) for x in range(0, image.width(), max(1, image.width() // 20))
+                          for y in range(0, image.height(), max(1, image.height() // 20))}
+                bars = dashboard.chart.bars
+                if (len(bars) != count or any(bar.contract_id != contract for bar in bars)
+                        or pixmap.isNull() or dashboard.chart.last_rendered_bar_count != count or len(colors) < 4):
+                    raise ValueError('History product/timeframe chart did not render expected candles')
+                counts[contract][timeframe] = len(bars)
+                rendered[contract][timeframe] = dashboard.chart.last_rendered_bar_count
+        return {'timeframe_bars': counts, 'chart_rendered_bars': rendered,
+                'chart_render_checks': 24, 'modules': ['quantlab.market_history', 'desktop_market', 'desktop_charts']}
+    finally:
+        dashboard.close(); shiboken6.delete(dashboard)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
@@ -322,6 +445,7 @@ def main(argv=None):
             smoke_deadline = time.monotonic() + 120
             auth_report = _auth_smoke_dependencies()
             market_report, manual_config, manual_candidate = _market_smoke_ui(app)
+            history_report, history_payload = _history_smoke_fixture(Path(smoke_directory.name))
             manual_export_path = Path(smoke_directory.name) / 'manual-request.json'
             market_results = {}
             smoke_steps = _smoke_steps()
@@ -329,6 +453,7 @@ def main(argv=None):
             smoke_steps.extend([
                 ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
                 ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
+                ('ui_market_refresh', history_payload),
             ])
             smoke_index = 0
             smoke_jobs.start(*smoke_steps[0])
@@ -338,10 +463,22 @@ def main(argv=None):
             def complete_smoke():
                 nonlocal smoke_index
                 operation = smoke_steps[smoke_index][0]
-                market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if smoke_index >= original_step_count else None
+                market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
+                history_phase = smoke_index == original_step_count + 2
                 for event in smoke_jobs.poll():
                     if event['type'] == 'result':
                         result = event.get('result', {})
+                        if history_phase:
+                            try:
+                                series, evidence = _check_history_worker_result(result, smoke_jobs.paths,
+                                    history_payload, history_report['fixture_sha256'])
+                                history_report.update(evidence)
+                                history_report.update(_history_smoke_ui(app, series))
+                                history_report['steps'].append({'operation': 'history_import', 'passed': True})
+                            except Exception as exc:
+                                smoke_result['failed'] = True
+                                history_report['steps'].append({'operation': 'history_import', 'passed': False, 'error_type': type(exc).__name__})
+                            continue
                         if market_phase:
                             try:
                                 evidence = _check_market_worker_result(market_phase, result, manual_export_path)
@@ -370,7 +507,8 @@ def main(argv=None):
                         smoke_result['failed'] |= not valid
                     elif event['type'] in ('error', 'cancelled'):
                         smoke_result['failed'] = True
-                        (market_report['steps'] if market_phase else smoke_result['steps']).append({'operation': market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
+                        step_report = history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
+                        step_report.append({'operation': 'history_import' if history_phase else market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
                 timed_out = time.monotonic() > smoke_deadline
                 if smoke_jobs.active and not timed_out:
                     return
@@ -385,7 +523,8 @@ def main(argv=None):
                 smoke_jobs.close()
                 completed = len(smoke_result['results']) == original_step_count
                 market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
-                passed = completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
+                history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
+                passed = completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
                 completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
                 report = {'status': 'passed' if passed else 'failed', 'data_dir': str(paths.root),
                     'version': __version__, 'native_window_visible': window.isVisible(), 'worker_completed': completed,
@@ -393,7 +532,7 @@ def main(argv=None):
                     'campaign_completed': 'ui_campaign' in completed_operations,
                     'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
                     'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
-                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report}
+                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report}
                 atomic_write(args.smoke_test, _json_bytes(report))
                 smoke_directory.cleanup()
                 window.close()
@@ -410,7 +549,10 @@ def main(argv=None):
             atomic_write(args.smoke_test, _json_bytes({'status': 'failed', 'version': __version__,
                 'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
                 'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
-                    'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'}}))
+                    'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
+                'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
+                    'source_type': 'synthetic',
+                    'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}))
             return 1
         QMessageBox.critical(None, 'MarkAuto could not start', f'{type(exc).__name__}: startup failed. Your existing data has been preserved. Restore a compatible backup or reinstall the previous version.')
         return 1

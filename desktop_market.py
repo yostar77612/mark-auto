@@ -6,11 +6,12 @@ an intent only; host must perform its existing consent/background-job workflow.
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import re
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QTime
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,QLabel,
     QPushButton,QLineEdit,QComboBox,QListWidget,QListWidgetItem,QSplitter,
     QGroupBox,QCheckBox,QSpinBox,QDoubleSpinBox,QScrollArea,QTabWidget,
-    QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit)
+    QTableWidget,QTableWidgetItem,QHeaderView,QAbstractItemView,QPlainTextEdit,
+    QDialog,QDialogButtonBox,QFileDialog,QTimeEdit,QFormLayout)
 from quantlab.market import MarketSeries, QuoteSnapshot, MarketValidationError
 from quantlab.chart_data import TIMEFRAMES, aggregate_bars
 from quantlab import indicators
@@ -307,6 +308,8 @@ class MarketDashboard(QWidget):
         self.diagnostics.setPlainText(details); self.source_status.setToolTip(details)
         self.message.setToolTip('\n'.join(warnings))
         message='部分區間完整性尚未確認，僅供行情查看。' if warnings else '唯讀行情；歷史資料不代表即時報價。'
+        if provenance.mode=='history' and '政策SHA256=' in provenance.timestamp_basis:
+            message='本機歷史／自行聲明時段未驗證；每契約最新匯入快照。'+message
         if self._error: message='來源更新失敗，顯示既有資料。'+message
         self.message.setText(message)
         self._apply_indicators()
@@ -408,3 +411,135 @@ class MarketDashboard(QWidget):
             table.setRowCount(len(rows))
             for r,cells in enumerate(rows):
                 for c,value in enumerate(cells): table.setItem(r,c,QTableWidgetItem(value))
+
+
+class MarketHistoryDialog(QDialog):
+    """Typed, local-only import request. Dates are never inferred from a clock/calendar."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('匯入本機 TAIFEX 逐筆歷史'); self.resize(800, 720)
+        self.sessions = []; self._payload = None
+        layout = QVBoxLayout(self)
+        layout.addWidget(_label('唯讀歷史／本機來源未驗證。只接受九欄 CSV／逗號分隔 RPT；不下載、不交易、不變更研究資料。請自行核對來源及授權。', 'history_disclosure'))
+        self.path = _named(QLineEdit(), 'history_path', '本機 CSV 或 RPT 路徑'); self.path.setPlaceholderText('選擇本機 CSV／RPT 檔案')
+        file_row = QHBoxLayout(); file_row.addWidget(self.path)
+        self.browse = _named(QPushButton('選擇檔案'), 'history_browse', '選擇本機逐筆檔案')
+        self.browse.clicked.connect(self.choose_file); file_row.addWidget(self.browse); layout.addLayout(file_row)
+        form = QFormLayout(); layout.addLayout(form)
+        self.product = _named(QComboBox(), 'history_product', '實際商品')
+        for label, value in [('臺指期 TX', 'TX'), ('小臺指 MXF / MTX', 'MTX'), ('微臺指 TMF', 'TMF')]: self.product.addItem(label, value)
+        form.addRow('商品', self.product)
+        self.month = _named(QLineEdit(), 'history_month', '實際到期年月 YYYYMM'); self.month.setPlaceholderText('YYYYMM，例如 202610')
+        form.addRow('到期年月（必填）', self.month)
+        self.expiry_type = _named(QComboBox(), 'history_expiry_type', '月或週契約')
+        self.expiry_type.addItem('月契約', 'monthly'); self.expiry_type.addItem('週契約', 'weekly')
+        self.week = _named(QSpinBox(), 'history_week', '到期週次'); self.week.setRange(1,5); self.week.setEnabled(False)
+        expiry_row = QHBoxLayout(); expiry_row.addWidget(self.expiry_type); expiry_row.addWidget(self.week); form.addRow('契約類別', expiry_row)
+        self.trade_date = _named(QLineEdit(), 'history_trade_date', '明確指定交易日'); self.trade_date.setPlaceholderText('YYYY-MM-DD；夜盤歸屬日請自行核對')
+        form.addRow('交易所交易日（必填）', self.trade_date)
+        self.session = _named(QComboBox(), 'history_session', '日盤或夜盤'); self.session.addItem('日盤', 'day'); self.session.addItem('夜盤', 'night')
+        form.addRow('時段', self.session)
+        self.open_date = _named(QLineEdit(), 'history_open_date', '台北開盤日期'); self.open_date.setPlaceholderText('YYYY-MM-DD')
+        self.end_date = _named(QLineEdit(), 'history_end_date', '台北收盤日期'); self.end_date.setPlaceholderText('YYYY-MM-DD；跨午夜須自行填寫')
+        self.open_time = _named(QTimeEdit(QTime(8,45)), 'history_open_time', '台北開盤時間')
+        self.end_time = _named(QTimeEdit(QTime(13,45)), 'history_end_time', '台北收盤時間')
+        for widget in (self.open_time,self.end_time): widget.setDisplayFormat('HH:mm')
+        for title, date_widget, time_widget in [('開盤（台北 UTC+8）', self.open_date, self.open_time), ('收盤（台北 UTC+8）', self.end_date, self.end_time)]:
+            row = QHBoxLayout(); row.addWidget(date_widget); row.addWidget(time_widget); form.addRow(title,row)
+        self.include_end = _named(QCheckBox('包含收盤整點成交（放入最後一根）'), 'history_include_end', '包含收盤端點')
+        form.addRow(self.include_end)
+        self.source = _label('', 'history_product_source'); layout.addWidget(self.source)
+        layout.addWidget(_label('預設時間僅供填寫：日盤 08:45–13:45，到期日收盤 13:30；夜盤 15:00–翌日 05:00。日期、假日及夜盤交易日歸屬均不推定，這不是官方完整交易日曆。', 'history_policy_disclosure'))
+        self.confirm = _named(QCheckBox('我已核對此實際契約、交易日、開收盤日期／時間與端點；這是我自行聲明的未驗證時段'), 'history_confirm', '確認自行聲明的日期時段')
+        layout.addWidget(self.confirm)
+        row = QHBoxLayout()
+        self.add = _named(QPushButton('加入已確認時段'), 'history_add_session', '加入時段'); self.add.clicked.connect(self.add_session); row.addWidget(self.add)
+        self.remove = _named(QPushButton('移除選取時段'), 'history_remove_session', '移除時段'); self.remove.clicked.connect(self.remove_session); row.addWidget(self.remove)
+        layout.addLayout(row)
+        self.session_list = _named(QListWidget(), 'history_sessions', '已確認時段列表'); layout.addWidget(self.session_list)
+        self.error = _label('', 'history_error'); layout.addWidget(self.error)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText('背景匯入已確認時段')
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消')
+        self.buttons.accepted.connect(self.accept_import); self.buttons.rejected.connect(self.reject); layout.addWidget(self.buttons)
+        for widget in (self.month,self.trade_date,self.open_date,self.end_date): widget.textChanged.connect(self._unconfirm)
+        for widget in (self.product,self.expiry_type): widget.currentIndexChanged.connect(self._unconfirm)
+        self.week.valueChanged.connect(self._unconfirm)
+        for widget in (self.open_time,self.end_time): widget.timeChanged.connect(self._unconfirm)
+        self.include_end.toggled.connect(self._unconfirm)
+        self.session.currentIndexChanged.connect(self._session_defaults)
+        self.expiry_type.currentIndexChanged.connect(lambda: self.week.setEnabled(self.expiry_type.currentData()=='weekly'))
+        self.product.currentIndexChanged.connect(self._source_label); self._source_label()
+
+    def _unconfirm(self, *args):
+        self.confirm.setChecked(False)
+
+    def _source_label(self, *args):
+        from quantlab.market_history import PRODUCT_SOURCES
+        self.source.setText('商品時間規則參考（不是日期歸屬證明）：' + PRODUCT_SOURCES[self.product.currentData()])
+
+    def _session_defaults(self, *args):
+        night = self.session.currentData() == 'night'
+        self.open_time.setTime(QTime(15,0) if night else QTime(8,45))
+        self.end_time.setTime(QTime(5,0) if night else QTime(13,45))
+        self._unconfirm()
+
+    def choose_file(self):
+        name, _ = QFileDialog.getOpenFileName(self, '選擇本機 TAIFEX 九欄逐筆資料', '', 'TAIFEX CSV / RPT (*.csv *.rpt *.CSV *.RPT)')
+        if name: self.path.setText(name)
+
+    def session_payload(self):
+        from datetime import date, datetime, timezone, timedelta
+        from quantlab.market_history import PRODUCT_SOURCES, session_from_dict
+        if not self.confirm.isChecked(): raise ValueError('請先確認此時段的實際契約與日期歸屬')
+        month = self.month.text().strip()
+        if not re.fullmatch(r'\d{4}(?:0[1-9]|1[0-2])', month): raise ValueError('請填寫有效到期年月 YYYYMM')
+        expiry = month + ('W' + str(self.week.value()) if self.expiry_type.currentData()=='weekly' else '')
+        def local_time(field, clock):
+            value = field.text().strip()
+            if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value): raise ValueError('請明確填寫 YYYY-MM-DD 日期')
+            day = date.fromisoformat(value)
+            return datetime(day.year,day.month,day.day,clock.time().hour(),clock.time().minute(),tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc).isoformat()
+        product = self.product.currentData()
+        value = dict(contract_id=f'TAIFEX:{product}:{expiry}', trade_date=self.trade_date.text().strip(), session=self.session.currentData(),
+            open=local_time(self.open_date,self.open_time), end=local_time(self.end_date,self.end_time), include_end=self.include_end.isChecked(), source=PRODUCT_SOURCES[product])
+        session_from_dict(value)
+        return value
+
+    def add_session(self):
+        try:
+            if len(self.sessions)>=128: raise ValueError('單次最多 128 個明確時段')
+            value = self.session_payload()
+            if value in self.sessions: raise ValueError('這個時段已加入')
+            # Reject overlap before starting a worker; module revalidates every request.
+            from datetime import datetime
+            for existing in self.sessions:
+                if existing['contract_id'] != value['contract_id']: continue
+                if (existing['trade_date'],existing['session']) == (value['trade_date'],value['session']): raise ValueError('同契約交易日的時段不可重複或重疊')
+                a,b = datetime.fromisoformat(existing['open']),datetime.fromisoformat(existing['end'])
+                c,d = datetime.fromisoformat(value['open']),datetime.fromisoformat(value['end'])
+                if max(a,c)<min(b,d) or (b==c and existing['include_end']) or (d==a and value['include_end']): raise ValueError('同契約時段不可重疊')
+            self.sessions.append(value)
+            label = f"{value['contract_id']} | 交易日 {value['trade_date']} | {value['session']} | 台北 {self.open_date.text()} {self.open_time.text()} → {self.end_date.text()} {self.end_time.text()} | 收盤端點 {'含' if value['include_end'] else '不含'}"
+            self.session_list.addItem(label); self.confirm.setChecked(False); self.error.clear()
+        except (ValueError,TypeError,KeyError) as exc: self.error.setText(str(exc))
+
+    def remove_session(self):
+        row = self.session_list.currentRow()
+        if row >= 0: self.sessions.pop(row); self.session_list.takeItem(row)
+
+    def request_payload(self):
+        from pathlib import Path
+        path = self.path.text().strip()
+        if not path or Path(path).suffix.lower() not in ('.csv','.rpt'): raise ValueError('請選擇本機 CSV 或 RPT 檔案')
+        if not self.sessions: raise ValueError('請先加入至少一個已確認時段')
+        return {'history_import':True, 'local_path':path, 'sessions':deepcopy(self.sessions), 'dated_policy_confirmed':True}
+
+    def accept_import(self):
+        try: self._payload = self.request_payload()
+        except ValueError as exc: self.error.setText(str(exc)); return
+        self.accept()
+
+    def payload(self):
+        if self._payload is None: raise ValueError('匯入尚未確認')
+        return deepcopy(self._payload)

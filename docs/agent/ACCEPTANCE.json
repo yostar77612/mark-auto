@@ -370,21 +370,21 @@
         "title": "多週期互動K線",
         "weight": 20,
         "status": "PARTIAL",
-        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. TMF minute and all eight aggregation/interaction paths tested; shippedTX/MXF minute import still absent. Retain conservative whole-market PARTIAL until a market-only importer is validated."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. TMF minute and all eight aggregation/interaction paths tested; shippedTX/MXF minute import still absent. Retain conservative whole-market PARTIAL until a market-only importer is validated. 0.2.2candidate reviewed market-only TX/MTX/TMF importer and24timeframes; pending nativefinalhead. TAIEXminuteavailability/license stillunresolved; no retroactive narrowed scope."
       },
       {
         "id": "M3",
         "title": "技術指標正確性",
         "weight": 15,
-        "status": "PARTIAL",
-        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. 0.2.0 math verified; actualMACD1x label gap found. Next0.2.1 repair and targeted tests exist but exact-headWindowsGate still pending."
+        "status": "PASS",
+        "evidence": "main2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8; actual MACD histogram 1x host label/nonzero unscaled values and all indicator goldens. Exact-head Quantlab38016153246 seven jobs PASS; Windows38016153320 644tests633PASS11skip, frozen/install/real0.2.0upgrade/recoveryPASS. Postmerge38016622951/38016622996PASS. Actual0.2.1EXE/kit downloaded hash+CRC verified; independent reviewer rehashed all8assets and56source inputs including WindowsCRLF. CleanclientDPI remains separate M7BLOCKED."
       },
       {
         "id": "M4",
         "title": "一般使用者研究/交易表單",
         "weight": 20,
         "status": "PARTIAL",
-        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Typed workflows verified; actualPaper fixed-risk summary missing in0.2.0. Next0.2.1 reuse of enforcedRiskLimits factory tested; releaseGate pending."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Typed workflows verified; actualPaper fixed-risk summary missing in0.2.0. Next0.2.1 reuse of enforcedRiskLimits factory tested; releaseGate pending. Subsequent ordinary real-data expiry input and typed120000 Paper-margin mismatch reproduced; fixes in0.2.2candidate, full724tests709PASS15skip plus54async-dialog and40packaging checks, nativefinalhead stillpending. Explicitrequired ProfitFactor/Sharpe assumptions and chartprotective/costreferences are separate newlyreconciled requirements, not falselycertifiedbyolderweight."
       },
       {
         "id": "M5",
@@ -398,7 +398,7 @@
         "title": "合規AI操作模式",
         "weight": 10,
         "status": "PARTIAL",
-        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Manual export/import offline source/hash/DSL verified, actualfree local inference evidence usesllama.cpp notOllama. Officialsubscription integration next0.2.1 pendingnative/usergrant; selected-route obligations not retrospectively redefined to claimPASS."
+        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Manual export/import offline source/hash/DSL verified, actualfree local inference evidence usesllama.cpp notOllama. Officialsubscription integration next0.2.1 pendingnative/usergrant; selected-route obligations not retrospectively redefined to claimPASS. Officialsubscription0.2.1merged/Windowsnative/frozenPASS, realusergrant/inference NOT_VERIFIED."
       },
       {
         "id": "M7",
@@ -408,10 +408,15 @@
         "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. ActualLinuxQt100/125/150% and preference restart validated; finalWindows10/11 cleanclientDPI/usability remainsBLOCKED."
       }
     ],
-    "accepted_weight": 25,
-    "overall_accepted_weight": 195,
+    "accepted_weight": 40,
+    "overall_accepted_weight": 210,
     "overall_total_weight": 300,
-    "overall_percent": 65.0,
-    "remaining_percent": 35.0
+    "overall_percent": 70.0,
+    "remaining_percent": 30.0
+  },
+  "requirements_reconciliation": {
+    "walk_forward": "IMPLEMENTATION_PENDING; fixed four-way OOS split is not walk-forward. Separate predeclared bounded module in development.",
+    "extended_reports_and_reference_layers": "IMPLEMENTATION_PENDING; original user text requires ProfitFactor/Sharpe and protective/cost references; do not interpret prior narrow weights as recertification of these.",
+    "score_scope": "Historical fixed300-point ledger, not hours and not blanket production/all-requirements certification; newly confirmed requirements remain explicit blockers until satisfied."
   }
 }
