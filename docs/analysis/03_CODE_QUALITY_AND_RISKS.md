@@ -328,3 +328,13 @@ Paper 局部修復已經獨立套用並进入完整回歸：`paper._restore` 每
 空決策與 consumed cursor 合成一次 FULL-sync transaction；不能在重啟後重新解讀已滿足的 target，舊版持久化 `[]` 也按既有決策消耗。量測相同 960 bars、17 orders、5 fills、31 journal events：Linux replay 4.254 秒 → 0.517 秒，原 typed Qt/spawn-worker 案例 8.105 秒 → 3.899 秒；原 30 秒上限不改。這是 Linux 量測，Windows 仍須 exact-head CI 實測，不能先報通過。
 
 修復後完整 Linux suite：738 項，723 PASS、15 項既有 Windows／PowerShell 平台檢查未執行，105.539 秒；靜態／完整 Git 歷史 Gate 0 findings。原 960-bar／30 秒 GUI case 通過，Windows exact-head 驗證仍待新 CI，不以 Linux 結果替代。
+
+
+CI 環境補齊另保留兩次失敗：run 38019029420 因 shell 參數 `--only-binary=:all:` 未作 YAML 字串引用而解析失敗，已引用並本地解析檢查；後續 head 716763a / Linux job 114116001456 在 Qt wheel 安裝後缺 `libEGL.so.1`。現明確安裝 Ubuntu 官方 libegl1 / libopengl0 / libxkbcommon0 並設定 offscreen，保留完整測試，不把 GUI 缺環境改成跳過。Windows 正式產品仍使用自己的原生 Qt 環境與鎖檔；Linux headless 測試不作 Windows 相容性替代。
+
+
+### 2026-10-10 03:18 UTC：原生結果差異與下一次診斷
+
+head 716763a 的 Windows Server 2022 / Python 3.13.16 run 38019136760 已通過 build、安全、738 項原生測試（726 PASS、12 profile skips）、frozen history smoke、安裝與真正 0.2.1 升級／中斷復原。此結果不能替代尚失敗的完整矩陣：Windows-latest / Python 3.11 的相同 30 秒 replay case 仍逾時；Python 3.12 另有原本 10 秒 process-death golden 逾時。未合併，未發布 0.2.2。
+
+增加僅在 Windows CI 失敗後執行的 `tools/diagnose_paper_replay.py`，以同一 960-bar／120000 typed UI 與真 spawn worker 觀測 SQLite connect／transaction／commit／close、restore、啟動及完整工作時間，並測量原 before/after-event-commit fixture。它不改 SQL、sync、原 30 秒／10 秒 Gate；獨立 180 秒上限僅用於取得診斷，有清理保留與子樹停止，輸出明示非驗收。失敗的原 CI 不因診斷成功變成 PASS。先取得 Windows 時間分布，再決定 scoped connection reuse 是否必要；尚未改 journaling mode 或持久化語意。

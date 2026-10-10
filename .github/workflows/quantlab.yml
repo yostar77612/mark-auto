@@ -13,6 +13,8 @@ jobs:
   offline:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
     strategy:
       fail-fast: false
       matrix:
@@ -26,13 +28,29 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install tzdata==2026.5
+      - name: Install Linux Qt system runtime
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       # The complete suite includes native desktop integration. Install its
       # pinned Qt runtime rather than skipping tests when Qt is absent.
       - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
       - run: python -m unittest discover -s tests -v
+      - name: Observe native Paper timing after failure (not acceptance)
+        if: failure() && runner.os == 'Windows'
+        run: python tools/diagnose_paper_replay.py dist/validation/paper-replay-timing.json
+      - name: Preserve failed native timing evidence
+        if: failure() && runner.os == 'Windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: paper-timing-${{ matrix.os }}-${{ matrix.python }}
+          path: dist/validation/paper-replay-timing*.json
+          if-no-files-found: warn
+          retention-days: 7
   ui:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -41,6 +59,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-ui.lock
+      - name: Install Linux Qt system runtime
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
       - run: python -m unittest discover -s tests -v
   quality:

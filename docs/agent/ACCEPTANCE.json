@@ -446,6 +446,21 @@
       "skipped": 15,
       "seconds": 105.539,
       "scope": "Full Linux suite; platform-specific Windows/PowerShell checks not run locally; exact-head native CI still pending"
-    }
+    },
+    "additional_environment_failures": {
+      "yaml_parse_run": 38019029420,
+      "linux_qt_system_job": 114116001456,
+      "repair": "Quoted binary-only pip command; install official Linux libegl1/libopengl0/libxkbcommon0 and explicit offscreen mode; unchanged complete suites"
+    },
+    "intermediate_native_evidence": {
+      "head": "716763a12f338c310130cac6645f806144f3d6a9",
+      "windows_run": 38019136760,
+      "status": "Native Server2022 build/security/lifecycle/recovery PASS; full matrix still FAIL",
+      "tests": 738,
+      "passed": 726,
+      "skipped": 12,
+      "remaining": "Windows-latest Python3.11/3.12 unchanged30s replay timeout;3.12 process-death10s timeout; Linux Qt system dependency repair pending newCI"
+    },
+    "diagnostic": "After-failure observation only, same synthetic workload,180s bounded cleanup; never substitutes for unchanged acceptance"
   }
 }
