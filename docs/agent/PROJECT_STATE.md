@@ -1,5 +1,52 @@
 # mark-auto 開發接續狀態
 
+<!-- CURRENT_STATUS_START -->
+## 當前交付摘要（2026-10-10 04:24 UTC）
+
+- **已發布：0.2.1 unsigned preview**，main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[正式下載與該版 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。已實際核對八項主要 assets／56 個來源輸入、EXE 與 kit SHA-256／ZIP CRC；postmerge Windows 與 Quantlab 全部 PASS。這是研究／Paper 預覽版，並非 clean-client 或投資合格證明。
+- **正在修復：PR #5／候選 0.2.2，DRAFT／FAIL_REPAIR_IN_PROGRESS**。已推送 remote `977fc948`、local 對應 `b1fe3ca`，同 tree `34714062`；未合併、未發布。該 head 三個 Windows profiles 的原 960-bar／30 秒 Paper 與 10 秒 process-death 均 PASS，Windows jobs 只因三個新隔離 fixture 的 8.3／標準路徑比較失敗。Linux 3.12／UI PASS；Linux 3.11 完成 759 項斷言後於 Python finalization 出現 `bool_dealloc`／exit 134，整個 job 仍 FAIL。
+- **修補與驗證界線：** 不載入專案的 Linux 3.11／Qt 6.12.0 `Signal.emit` 最小案例已重現 mortal-bool refcount 問題；官方 6.11.2 的最小案例 refcount delta＝0，未改動的 759 項 suite exit 0，保留 20 個既有本地適用性 skips。`requirements-qt-ci.lock` 只將 Linux 3.11 CI 固定為 6.11.2，其他矩陣維持 6.12.0，六個官方 wheel hashes 已核對；正式 Windows 3.13 lock 不變，整合 native CI 仍待。root generic terminal 9 項、隔離／路徑 16 項本地 PASS，完整路徑／no-write 斷言未放寬；最後小型資源洩漏修補後的完整 root suite 尚待完成。此前 root 759 項＝744 PASS＋15 skips／103.709 秒仍只屬當時來源證據。
+- **隔離完成、尚未交付：** 固定候選池及已保存候選 Walk-forward、普通桌面流程、PF／描述性 Sharpe／持倉成本與保護參考線已有範圍內實作及審查；saved-pool 最新獨立 157 項 PASS，仍是 staging，未發布、不先給分。真實 Oct8 WFO 為 `BLOCKED_NO_RUN`：完整 guard 與既有 consumed coverage 重疊 170 bars；0 新評估／模型呼叫／reservation，不改 window 或另建 registry 繞過。
+- **固定歷史驗收帳本：210/300＝70%，未接受 90 點**。原研究 100、桌面 70、市場 40；僅已取得證據的整項 PASS 計分。這不是剩餘工時、完整原需求或生產就緒百分比；後來重新確認的必要需求仍明列，分母／門檻不降低。
+- **外部與安全邊界：** clean Win10 22H2 x64／Win11 x64 為 EXTERNAL_BLOCKED；實際 ChatGPT grant／訂閱推論 NOT_VERIFIED；TAIEX 盤中自動使用權限未核實；main protection 未啟用且管理 API 403；unsigned 不繞過安全警告；真資金交易固定 DISABLED。
+
+### 原需求、設計提案與未驗證項目
+
+- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；隔離完成不等於已交付。
+- **尚未採用的完整目標設計延伸：** 04 §9.1 提出的 Average Trade、Sortino、Calmar、延伸分解與成本壓力測試保留為提案。02 歷史原文已明示「若最終採用該完整規格」；未取得使用者直接要求這些延伸的原始證據，因此不把設計表的「必須公開的計算與例外」升格為本輪新增驗收門檻，也不刪除提案。
+- **尚未驗證的結果：** 最終整合／native、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
+
+## 現在應接續的工作
+
+1. 當前主工作是 **PR #5／agent/market-history-acceptance-v1／候選 0.2.2**；PR #4 已合併並隨 0.2.1 發布。下方舊「修 PR4／待 0.2.1」是歷史，不是最新待辦。
+2. 977fc948 三個 Windows profiles 原 30 秒 Paper／10 秒 process-death 已 PASS；Windows jobs 只餘三項新 fixture 路徑比較失敗。Linux311 的759斷言完成後 exit134 仍 FAIL；無專案 Qt6.12.0 最小案例已重現，6.11.2 的最小案例及原759 suite通過。接續完成 Linux311 專用lock、canonical fixture、generic terminal及小型資源洩漏修補後的完整root／exact-head native；原生、來源及生命週期全部閉合前保持Draft。
+3. 可並行準備已審查的 WFO、PF／Sharpe／參考線整合，但它們目前仍是隔離成果；不得改動正在驗證的 bytes 後沿用舊 PASS。
+4. 真實 Oct8 WFO 停在 BLOCKED_NO_RUN；保留原來源／registry／window，不重設、不新增呼叫或評估來規避。外部 clean client／grant／盤中授權另列。
+5. 每次整合前保留未提交修改與原本本地歷史；需要清理分支時先確認完整保存、tree 映射與無競態。無安全條件便保留，不擅刪。
+
+### 導覽與單一事實來源
+
+- [功能矩陣](../analysis/02_EXISTING_FEATURES.md)：已發布／候選／隔離實作分欄，以及原 F01–F35 與所有歷史證據。
+- [風險與發布否決](../analysis/03_CODE_QUALITY_AND_RISKS.md)：當前優先風險、negative results、必要閉合證據。
+- [依賴與固定驗收](../analysis/05_IMPLEMENTATION_ROADMAP.md)：下一步順序，Phase／D／M 原門檻及需求對照。
+- [機器可讀帳本](ACCEPTANCE.json)：原 gate 與權重保留；current_snapshot 為有日期的摘要，candidate_022_ci 由整合者持續更新，不用舊副本覆蓋。
+
+開發命令仍為 `python -m unittest discover -s tests -v` 與 `python tools/quality_gate.py --history`。使用者開已發布 installer／捷徑；舊 `run.py`／`gui.py` 不作研究入口。未授權的帳戶、電腦、付費服務或真資金交易一律不因接續工作而開啟。
+
+
+### 04:24 整合來源 Gate 更新
+
+- 候選修補完整 Linux root suite：773 項，758 PASS＋15 個既有 native Windows／PowerShell applicability skips，127.279 秒、exit 0；歷史掃描 0 findings。涵蓋 smoke 終態、canonical fixture 與 FULL 設定失敗關閉連線，SQLite mode／耐久邊界／既有門檻不變。此結果取代上文針對較早來源的「最終 root 待驗」，原生 exact-head CI 仍待。
+- Qt CI-only 相容鎖及獨立 Linux311 套件稽核已納入 workflow；官方來源、完整 SHA-256、強制重新安裝及 pip report 保留。Windows 產品依賴鎖不變；套件 advisory audit 不等於所有 native library 已安全認證。
+- 後續 WFO／報表 combined staging 完整 947 項：932 PASS＋15 既有 applicability skips，270.314 秒。再套用同一 Paper 連線小修補後 5 項 storage regression PASS；仍非已發布或 Windows／真實研究驗收。
+
+<!-- CURRENT_STATUS_END -->
+
+## 歷史原文與逐次證據（依原記錄保留）
+
+以下完整保留本次整理前的內容、要求、來源、失敗與各時點判定。內文即使寫「目前／最新」，也只屬原有日期快照；現在的交付與下一步以本檔最上方有日期的摘要為準。原始基線盤點、固定驗收條款與年代順序均未被當成新版本成功證據。
+
+
 更新：2026-10-10 02:36 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
 ## 最新接續：02:36 UTC

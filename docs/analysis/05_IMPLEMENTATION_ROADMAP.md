@@ -1,5 +1,66 @@
 # TMF AI 研究平台實作路線與固定驗收
 
+<!-- CURRENT_STATUS_START -->
+## 當前交付摘要（2026-10-10 04:24 UTC）
+
+- **已發布：0.2.1 unsigned preview**，main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[正式下載與該版 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。已實際核對八項主要 assets／56 個來源輸入、EXE 與 kit SHA-256／ZIP CRC；postmerge Windows 與 Quantlab 全部 PASS。這是研究／Paper 預覽版，並非 clean-client 或投資合格證明。
+- **正在修復：PR #5／候選 0.2.2，DRAFT／FAIL_REPAIR_IN_PROGRESS**。已推送 remote `977fc948`、local 對應 `b1fe3ca`，同 tree `34714062`；未合併、未發布。該 head 三個 Windows profiles 的原 960-bar／30 秒 Paper 與 10 秒 process-death 均 PASS，Windows jobs 只因三個新隔離 fixture 的 8.3／標準路徑比較失敗。Linux 3.12／UI PASS；Linux 3.11 完成 759 項斷言後於 Python finalization 出現 `bool_dealloc`／exit 134，整個 job 仍 FAIL。
+- **修補與驗證界線：** 不載入專案的 Linux 3.11／Qt 6.12.0 `Signal.emit` 最小案例已重現 mortal-bool refcount 問題；官方 6.11.2 的最小案例 refcount delta＝0，未改動的 759 項 suite exit 0，保留 20 個既有本地適用性 skips。`requirements-qt-ci.lock` 只將 Linux 3.11 CI 固定為 6.11.2，其他矩陣維持 6.12.0，六個官方 wheel hashes 已核對；正式 Windows 3.13 lock 不變，整合 native CI 仍待。root generic terminal 9 項、隔離／路徑 16 項本地 PASS，完整路徑／no-write 斷言未放寬；最後小型資源洩漏修補後的完整 root suite 尚待完成。此前 root 759 項＝744 PASS＋15 skips／103.709 秒仍只屬當時來源證據。
+- **隔離完成、尚未交付：** 固定候選池及已保存候選 Walk-forward、普通桌面流程、PF／描述性 Sharpe／持倉成本與保護參考線已有範圍內實作及審查；saved-pool 最新獨立 157 項 PASS，仍是 staging，未發布、不先給分。真實 Oct8 WFO 為 `BLOCKED_NO_RUN`：完整 guard 與既有 consumed coverage 重疊 170 bars；0 新評估／模型呼叫／reservation，不改 window 或另建 registry 繞過。
+- **固定歷史驗收帳本：210/300＝70%，未接受 90 點**。原研究 100、桌面 70、市場 40；僅已取得證據的整項 PASS 計分。這不是剩餘工時、完整原需求或生產就緒百分比；後來重新確認的必要需求仍明列，分母／門檻不降低。
+- **外部與安全邊界：** clean Win10 22H2 x64／Win11 x64 為 EXTERNAL_BLOCKED；實際 ChatGPT grant／訂閱推論 NOT_VERIFIED；TAIEX 盤中自動使用權限未核實；main protection 未啟用且管理 API 403；unsigned 不繞過安全警告；真資金交易固定 DISABLED。
+
+### 原需求、設計提案與未驗證項目
+
+- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；隔離完成不等於已交付。
+- **尚未採用的完整目標設計延伸：** 04 §9.1 提出的 Average Trade、Sortino、Calmar、延伸分解與成本壓力測試保留為提案。02 歷史原文已明示「若最終採用該完整規格」；未取得使用者直接要求這些延伸的原始證據，因此不把設計表的「必須公開的計算與例外」升格為本輪新增驗收門檻，也不刪除提案。
+- **尚未驗證的結果：** 最終整合／native、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
+
+## 目前接續順序與依賴
+
+| 步驟 | 要完成的結果 | 前置／保持不變 | 完成判準與未達成時處理 |
+|---|---|---|---|
+| 1 關閉 PR #5 發布否決 | Linux311 Qt finalization、canonical fixture、smoke 非破壞性／terminal 與最後資源洩漏修補整合 | 977fc948 三個 Windows profiles 原 960 bars／30 秒及 process-death 10 秒已 PASS；原 journal／FULL／驗收不改 | 使用明示 Linux311 Qt6.11.2 CI lock，其他矩陣Qt6.12.0／正式Win313 lock不變；完成最後完整 root suite及新 exact-head native。磁碟比較無一致收益，mode不改；僅診斷 benchmark step移除，驗收保留 |
+| 2 驗候選完整交付 | history importer／expiry table／typed margin 與所有既有能力 | 同一 PR、真 0.2.1 upgrade baseline、原矩陣及 fixed dependencies | 最終 head 的 core／UI／quality／security／native／frozen／installer／recovery 必要 Gate 全過；局部／舊 head 不替代 |
+| 3 整合已審查必要模組 | 固定池／saved-candidate WFO＋普通 UI、PF／描述性 Sharpe＋reference snapshots | 使用最後 reviewed source hashes，保護現有 history／auth／report identity，保留全部反例 | affected tests 後再做整合全套與 exact-head native/frozen；未整合不當已交付；不以 fixed/saved pool 冒稱 adaptive AI |
+| 4 處理真實資料研究限制 | 保留 Oct8 BLOCKED_NO_RUN 與既有負／零交易結果 | 原 protocol、完整 guard、170 consumed bars、既有 authoritative registry | 不執行被阻擋研究；不改 windows／fresh registry。只有另有符合原規範的資料及預宣告才可另開研究，零新呼叫是目前正確停止結果 |
+| 5 完成合法外部驗收 | clean Win10／Win11／DPI、實際 ChatGPT grant／推論、TAIEX 盤中權限 | 使用者授權、合法環境與來源，無付費／權限／警告繞過 | 各項單獨提供真證據；未提供時保持 EXTERNAL_BLOCKED／NOT_VERIFIED，不用 Server 或 mock 補分 |
+| 6 最終交付／同步 | exact commit／tree／CI／Release／asset hashes 與功能狀態一致 | 保留原始 Git 歷史、需求／權重及失敗；發布須在授權範圍 | 授權整合後重驗 postmerge／實際下載；更新本頁摘要、02／03、PROJECT_STATE 與 ACCEPTANCE 當前區段，歷史不反向改寫 |
+
+第 1、2 步是當前依賴鏈；第 3 的隔離準備可持續，但不能覆蓋 PR #5 正在驗證的來源。外部阻塞可以並列記錄，不能拿來掩蓋可自行修復的工程缺口。
+
+## 固定驗收與必要需求對照
+
+| 清單／必要工作 | 現存記錄 | 當前應如何解讀 |
+|---|---|---|
+| Phase 0–5 | 100/100，按當時固定工程子項證據 | 原條款全文保留；不外推至其後重核的完整 WFO／統計規格或真市場 readiness |
+| D0–D9 | 70/100；D5／D7／D8 各 10 未接受 | clean client 門檻原封保留，不因 toolkit／Server 可執行而 PASS |
+| M1／M3／M5 | 20＋15＋5＝40/100 | 只接受原限定功能與證據；不補 M2／M4／M6／M7 |
+| M2／M4 | PARTIAL，0 分 | 原完整市場／普通流程要求保留；PR #5 及必要報表／參考線尚待整合／驗證 |
+| M6／M7 | PARTIAL，0 分 | 官方訂閱 source/native 工程已交付，但實際 grant／inference 未測；最終 clean Windows DPI 未測 |
+| WFO 重新核對要求 | isolated implementation/review；released integration pending | 一次四段 OOS 不是 WFO。固定池／已保存池的 bounded replay 不證明 adaptive 生成／改善，更不證真實未見性；如實揭露本版邊界，設計提案原文保留，不從提案自行新增驗收門檻 |
+| PF／Sharpe／停損停利／成本參考 | isolated implementation/review；released integration pending | 本輪使用者原文 §5.1／§3.4 已明確要求；須有定義、null 原因、普通結果接線與原生 gate，元件存在不代表接線完成 |
+| 完整報表設計延伸 | Average Trade／Sortino／Calmar／延伸分解／成本壓力測試尚未採用 | 來源為 04 §9.1 設計提案；02 舊文有條件採用說明。保留提案及未提供狀態；無使用者直接要求證據，不加成本輪驗收阻塞，也不自稱已完成 |
+| 歷史總帳 | **210/300＝70%，90 點未接受** | 非工時、投資認證或完整需求證書；不新增權重、不更換分母來美化結果，必要缺口仍阻交付 |
+
+### 每次狀態更新只改這些當前欄位
+
+記錄 UTC 時間、released main/version/tag、candidate remote/local/tree、每個必要 job 的真正終態、完整 suite 的 total/pass/fail/skip 與環境、release-blocking 反例是否對最後 bytes 重測、隔離模組是否實際整合、外部阻塞及原固定分數。下方歷史只新增真正新證據，不再整段複製前頁摘要；ACCEPTANCE 的舊 gate／失敗證據不能用舊整份副本覆蓋。
+
+
+### 04:24 整合來源 Gate 更新
+
+- 候選修補完整 Linux root suite：773 項，758 PASS＋15 個既有 native Windows／PowerShell applicability skips，127.279 秒、exit 0；歷史掃描 0 findings。涵蓋 smoke 終態、canonical fixture 與 FULL 設定失敗關閉連線，SQLite mode／耐久邊界／既有門檻不變。此結果取代上文針對較早來源的「最終 root 待驗」，原生 exact-head CI 仍待。
+- Qt CI-only 相容鎖及獨立 Linux311 套件稽核已納入 workflow；官方來源、完整 SHA-256、強制重新安裝及 pip report 保留。Windows 產品依賴鎖不變；套件 advisory audit 不等於所有 native library 已安全認證。
+- 後續 WFO／報表 combined staging 完整 947 項：932 PASS＋15 既有 applicability skips，270.314 秒。再套用同一 Paper 連線小修補後 5 項 storage regression PASS；仍非已發布或 Windows／真實研究驗收。
+
+<!-- CURRENT_STATUS_END -->
+
+## 歷史原文與逐次證據（依原記錄保留）
+
+以下完整保留本次整理前的內容、要求、來源、失敗與各時點判定。內文即使寫「目前／最新」，也只屬原有日期快照；現在的交付與下一步以本檔最上方有日期的摘要為準。原始基線盤點、固定驗收條款與年代順序均未被當成新版本成功證據。
+
+
 建議採方案 C 的有界版本：保留 Python、Streamlit、既有授權、操作經驗與可抽取公式，新增與舊交易樹隔離的最小研究核心。先完成本機行情到策略比較的可重現閉環，再驗證 paper 恢復；真實模型、真券商與實盤各自設外部就緒條件。
 
 本路線提供可交給工程 Agent 接續的工作契約與停止標準。原始基線為 `1cacce4ee4eef4ce7e8760f8153ef64a74852d22`，查核日期 2026-10-09。原始分析已完成，後續自主實作進行中；本文的要求不是對未完成項目的成功宣告。

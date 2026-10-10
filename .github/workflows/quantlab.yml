@@ -33,20 +33,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       # The complete suite includes native desktop integration. Install its
       # pinned Qt runtime rather than skipping tests when Qt is absent.
-      - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
       - name: Install pinned offline auth smoke runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
-      - name: Measure durable rollback modes on native temporary storage
-        if: runner.os == 'Windows'
-        run: python tools/diagnose_paper_replay.py dist/validation/paper-persistence-timing.json --persistence-only
-      - name: Preserve native persistence measurement
-        if: always() && runner.os == 'Windows'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: paper-persistence-${{ matrix.python }}
-          path: dist/validation/paper-persistence-timing.json
-          if-no-files-found: warn
-          retention-days: 7
       - name: Verify complete desktop smoke runtime before tests
         run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Preserve hash-locked authentication runtime evidence
@@ -54,7 +43,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: desktop-auth-${{ matrix.os }}-${{ matrix.python }}
-          path: dist/validation/desktop-auth-install.json
+          path: |
+            dist/validation/desktop-auth-install.json
+            qt-install-report.json
           if-no-files-found: warn
           retention-days: 7
       - run: python -m unittest discover -s tests -v
@@ -84,7 +75,7 @@ jobs:
       - run: python -m pip install -r requirements-ui.lock
       - name: Install Linux Qt system runtime
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
-      - run: 'python -m pip install --only-binary=:all: PySide6-Essentials==6.12.0 shiboken6==6.12.0'
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
       - name: Install pinned offline auth smoke runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete desktop smoke runtime before tests
@@ -94,7 +85,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: desktop-auth-ui-linux312
-          path: dist/validation/desktop-auth-install.json
+          path: |
+            dist/validation/desktop-auth-install.json
+            qt-install-report.json
           if-no-files-found: warn
           retention-days: 7
       - run: python -m unittest discover -s tests -v
@@ -123,19 +116,28 @@ jobs:
           - profile: ui
             os: ubuntu-latest
             requirements: requirements-ui.lock
+            python: '3.12'
+          - profile: qt-linux311
+            os: ubuntu-latest
+            requirements: requirements-qt-ci.lock
+            python: '3.11'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: ${{ matrix.requirements }}
       # Keep the selected runtime closure separate from audit tooling. Legacy
       # requirements.txt is deliberately outside this audit and is NOT certified.
-      - name: Resolve complete runtime dependency closure
+      - name: Resolve complete UI runtime dependency closure
+        if: matrix.profile == 'ui'
         run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}
+      - name: Resolve hash-locked Linux CP311 Qt compatibility closure
+        if: matrix.profile == 'qt-linux311'
+        run: 'python -m pip --isolated install --index-url https://pypi.org/simple --ignore-installed --target audit-runtime --require-hashes --only-binary=:all: --no-cache-dir -r requirements-qt-ci.lock'
       - name: Install verified PyPA audit release
         run: python -m pip install pip-audit==2.10.1
       - name: Fail on known runtime vulnerabilities or audit errors

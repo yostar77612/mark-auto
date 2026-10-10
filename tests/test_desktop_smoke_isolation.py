@@ -30,15 +30,15 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_default_does_not_create_user_directories(self):
         from quantlab.desktop_runtime import WorkspaceLocator
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / 'absent-bootstrap'
+            root = Path(temporary).resolve() / 'absent-bootstrap'
             self.assertEqual(WorkspaceLocator(root).load(probe=False).root, root)
             self.assertFalse(root.exists())
 
     def test_read_only_redirect_validates_without_mkdir_or_probe(self):
         from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
         with tempfile.TemporaryDirectory() as temporary:
-            bootstrap = Path(temporary) / 'bootstrap'; bootstrap.mkdir()
-            workspace = Path(temporary) / 'redirected'
+            bootstrap = Path(temporary).resolve() / 'bootstrap'; bootstrap.mkdir()
+            workspace = Path(temporary).resolve() / 'redirected'
             pointer = bootstrap / 'workspace-location.json'
             pointer.write_text(json.dumps({'schema_version': 1, 'root': str(workspace)}))
             locator = WorkspaceLocator(bootstrap)
@@ -52,7 +52,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_redirect_rejects_invalid_paths(self):
         from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
+            root = Path(temporary).resolve(); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
             pointer = bootstrap / 'workspace-location.json'
             locator = WorkspaceLocator(bootstrap)
             for value in ({'schema_version': 99, 'root': str(root / 'other')},
@@ -65,7 +65,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_redirect_rejects_symlink_when_supported(self):
         from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
+            root = Path(temporary).resolve(); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
             pointer = bootstrap / 'workspace-location.json'
             locator = WorkspaceLocator(bootstrap)
             target = root / 'target'; target.mkdir()
@@ -85,7 +85,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
         from desktop_ui import _paper
         from quantlab.desktop_runtime import AppPaths
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
+            home = Path(temporary).resolve()
             local_appdata = home / 'LocalAppData'
             bootstrap = local_appdata / 'MarkAuto' if sys.platform == 'win32' else home / '.local/share/MarkAuto'
             workspace = home / 'configured-workspace' if redirected else bootstrap

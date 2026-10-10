@@ -365,6 +365,39 @@ def _history_smoke_ui(app, series):
         dashboard.close(); shiboken6.delete(dashboard)
 
 
+def _start_smoke_job(manager, operation, payload):
+    # Every smoke job needs the existing bounded whole-subtree join protocol,
+    # including ordinary fixture jobs which do not normally require that proof.
+    try:
+        return manager.start(operation, payload)
+    finally:
+        if manager.active:
+            manager._requires_tree_quiescence = True
+
+
+def _close_smoke_worker(manager):
+    """No release/cleanup claim until the existing manager confirms quiescence."""
+    if manager is None:
+        return {'verified': True, 'error_type': None}
+    error_type = None
+    try:
+        if manager.active:
+            manager._requires_tree_quiescence = True
+            if sys.platform == 'win32' and manager.tree is None:
+                raise RuntimeError('Missing isolated worker tree')
+        manager.close()
+    except BaseException as exc:
+        error_type = type(exc).__name__
+    return {'verified': error_type is None and not manager.active, 'error_type': error_type}
+
+
+def _retain_smoke_directory(directory):
+    # Unverified cleanup forbids deleting evidence. TemporaryDirectory would
+    # otherwise delete it at interpreter shutdown even if cleanup is skipped.
+    if directory is not None:
+        directory._finalizer.detach()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
@@ -399,6 +432,9 @@ def main(argv=None):
     jobs = guard = installation_guard = None
     smoke_jobs = smoke_directory = None
     settings_paths = None
+    smoke_report = None
+    smoke_cleanup_verified = True
+    smoke_shutdown_completed = False
     try:
         installation_guard = WindowsAppMutex()
         paths = locator.load()
@@ -467,12 +503,12 @@ def main(argv=None):
                 ('ui_market_refresh', history_payload),
             ])
             smoke_index = 0
-            smoke_jobs.start(*smoke_steps[0])
+            _start_smoke_job(smoke_jobs, *smoke_steps[0])
             smoke_result = {'failed': False, 'results': {}, 'steps': []}
             smoke_timer = QTimer(window)
             smoke_timer.setInterval(100)
             def complete_smoke():
-                nonlocal smoke_index
+                nonlocal smoke_index, smoke_report
                 operation = smoke_steps[smoke_index][0]
                 market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
                 history_phase = smoke_index == original_step_count + 2
@@ -528,7 +564,7 @@ def main(argv=None):
                     next_operation, payload = smoke_steps[smoke_index]
                     if next_operation == 'ui_select':
                         payload = {'result': smoke_result['results']['ui_backtest']['reports'][0]['result']}
-                    smoke_jobs.start(next_operation, payload)
+                    _start_smoke_job(smoke_jobs, next_operation, payload)
                     return
                 smoke_timer.stop()
                 smoke_jobs.close()
@@ -541,7 +577,7 @@ def main(argv=None):
                 # compatibility; mutable execution uses smoke_data_dir. The
                 # explicitly requested report path is also written by the caller
                 # contract and is excluded from the user-state read-only claim.
-                report = {'status': 'passed' if passed else 'failed', 'data_dir': str(settings_paths.root),
+                smoke_report = {'status': 'passed' if passed else 'failed', 'data_dir': str(settings_paths.root),
                     'smoke_data_dir': str(paths.root), 'user_state_read_only': True,
                     'version': __version__, 'native_window_visible': window.isVisible(), 'worker_completed': completed,
                     'backtest_completed': 'ui_backtest' in completed_operations,
@@ -549,43 +585,107 @@ def main(argv=None):
                     'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
                     'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
                     'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report}
-                atomic_write(args.smoke_test, _json_bytes(report))
-                smoke_directory.cleanup()
                 window.close()
                 app.exit(0 if passed else 1)
-            smoke_timer.timeout.connect(complete_smoke)
+            def guarded_complete_smoke():
+                nonlocal smoke_report, smoke_cleanup_verified
+                try:
+                    complete_smoke()
+                except BaseException as exc:
+                    # Qt swallows timer exceptions, so stop this callback and
+                    # preserve a redacted failure for final cleanup/reporting.
+                    smoke_timer.stop()
+                    cleanup = _close_smoke_worker(smoke_jobs)
+                    smoke_cleanup_verified = cleanup['verified']
+                    operation = smoke_steps[smoke_index][0]
+                    smoke_result['steps'].append({'operation': operation, 'passed': False,
+                                                  'error_type': type(exc).__name__})
+                    smoke_report = {'status': 'failed', 'version': __version__,
+                        'data_dir': str(settings_paths.root), 'smoke_data_dir': str(paths.root),
+                        'user_state_read_only': True, 'source_type': 'synthetic', 'generator': 'fixture',
+                        'live_status': 'disabled', 'real_model_status': 'not_verified',
+                        'native_window_visible': window.isVisible(), 'worker_completed': False,
+                        'timed_out': time.monotonic() > smoke_deadline,
+                        'error_type': type(exc).__name__, 'worker_cleanup': cleanup,
+                        'steps': smoke_result['steps'], 'auth_smoke': auth_report,
+                        'market_smoke': market_report, 'history_smoke': history_report}
+                    app.exit(1)
+            smoke_timer.timeout.connect(guarded_complete_smoke)
             smoke_timer.start()
         status = app.exec()
         jobs.close()
         guard.finish()
+        smoke_shutdown_completed = True
         return status
     except Exception as exc:
         # No exception values or secret-bearing tracebacks in a general GUI dialog.
         if args.smoke_test:
-            atomic_write(args.smoke_test, _json_bytes({'status': 'failed', 'version': __version__,
-                'data_dir': str(settings_paths.root) if settings_paths else None,
-                'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
-                'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
-                'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
-                    'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
-                'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
-                    'source_type': 'synthetic',
-                    'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}))
+            if smoke_report is None:
+                smoke_report = {'status': 'failed', 'version': __version__,
+                    'data_dir': str(settings_paths.root) if settings_paths else None,
+                    'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
+                    'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
+                    'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
+                        'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
+                    'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
+                        'source_type': 'synthetic',
+                        'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}
+            smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
         QMessageBox.critical(None, 'MarkAuto could not start', f'{type(exc).__name__}: startup failed. Your existing data has been preserved. Restore a compatible backup or reinstall the previous version.')
         return 1
     finally:
-        if smoke_jobs is not None:
-            smoke_jobs.close()
-        if smoke_directory is not None:
-            smoke_directory.cleanup()
+        if args.smoke_test:
+            # Publish exactly once, after every cleanup step, so a late failure
+            # cannot leave a successful report or a precomputed zero return code.
+            cleanup_errors = []
+            for manager in (smoke_jobs, jobs):
+                cleanup = _close_smoke_worker(manager)
+                smoke_cleanup_verified = smoke_cleanup_verified and cleanup['verified']
+                if cleanup['error_type'] is not None:
+                    cleanup_errors.append(cleanup['error_type'])
+            for close in (installation_guard.close if installation_guard is not None else None, lock.unlock):
+                if close is not None:
+                    try:
+                        close()
+                    except BaseException as exc:
+                        smoke_cleanup_verified = False
+                        cleanup_errors.append(type(exc).__name__)
+            directories = (smoke_directory, smoke_startup_directory)
+            if smoke_cleanup_verified:
+                for directory in directories:
+                    if directory is not None:
+                        try:
+                            directory.cleanup()
+                        except BaseException as exc:
+                            smoke_cleanup_verified = False
+                            cleanup_errors.append(type(exc).__name__)
+                            break
+            if not smoke_cleanup_verified:
+                for directory in directories:
+                    _retain_smoke_directory(directory)
+            if smoke_report is None:
+                smoke_report = {'status': 'failed', 'version': __version__, 'steps': [],
+                    'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
+                    'data_dir': str(settings_paths.root) if settings_paths else None,
+                    'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
+                    'error_type': 'SmokeDidNotComplete'}
+            if not smoke_cleanup_verified or not smoke_shutdown_completed:
+                smoke_report['status'] = 'failed'
+            if not smoke_shutdown_completed:
+                smoke_report.setdefault('error_type', 'ShutdownIncomplete')
+            smoke_report['worker_cleanup'] = {'verified': smoke_cleanup_verified,
+                                              'error_types': cleanup_errors}
+            try:
+                atomic_write(args.smoke_test, _json_bytes(smoke_report))
+            except BaseException:
+                return 1  # An unwritable requested report path cannot mean PASS.
+            return 0 if smoke_report['status'] == 'passed' else 1
         if jobs is not None:
             jobs.close()
         if installation_guard is not None:
             installation_guard.close()
         lock.unlock()
-        if smoke_startup_directory is not None:
-            smoke_startup_directory.cleanup()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,28 @@
+# Exact Qt wheels for the existing x64 CPython CI matrix only.
+# Linux CP311: official 6.12.0 Linux bindings return borrowed None/True;
+# repeated Qt calls corrupt mortal singleton refcounts and abort finalization.
+# Verified 6.11.2 compatibility wheels preserve refs and pass unchanged tests.
+# Linux CP312 and Windows CP311/312 retain 6.12.0. No other profile fallback.
+# Windows CP313 product/build dependencies remain in requirements-desktop.lock.
+# Always install with --require-hashes --only-binary=:all:.
+
+# pyside6_essentials-6.11.2-cp310-abi3-manylinux_2_34_x86_64.whl
+PySide6-Essentials==6.11.2 ; implementation_name == 'cpython' and sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.11' \
+    --hash=sha256:aaf9f25f0f324874085fa5b26a610318db8a8e243cf85bb3e5400595191c7778
+# shiboken6-6.11.2-cp310-abi3-manylinux_2_34_x86_64.whl
+shiboken6==6.11.2 ; implementation_name == 'cpython' and sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.11' \
+    --hash=sha256:7a7a0a72a9ed26c9bf77d42246b1c736486befb8f31aa2fb29957ea4cdd1c1c2
+
+# pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
+PySide6-Essentials==6.12.0 ; implementation_name == 'cpython' and sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.12' \
+    --hash=sha256:16f4b5e41daf49235ae048458243da9efe5f3d8040f9cc5aa454ce69893d3bd9
+# shiboken6-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
+shiboken6==6.12.0 ; implementation_name == 'cpython' and sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.12' \
+    --hash=sha256:3bde565bb0890044b5c7f63808adddede5abc241e9395a2bfed61919884d6240
+
+# pyside6_essentials-6.12.0-cp310-abi3-win_amd64.whl
+PySide6-Essentials==6.12.0 ; implementation_name == 'cpython' and sys_platform == 'win32' and (platform_machine == 'AMD64' or platform_machine == 'x86_64') and (python_version == '3.11' or python_version == '3.12') \
+    --hash=sha256:c9a95102aa23c1f86516a30d5a9be37552d324eee7e567eb7508973f1218cb42
+# shiboken6-6.12.0-cp310-abi3-win_amd64.whl
+shiboken6==6.12.0 ; implementation_name == 'cpython' and sys_platform == 'win32' and (platform_machine == 'AMD64' or platform_machine == 'x86_64') and (python_version == '3.11' or python_version == '3.12') \
+    --hash=sha256:a1906cb8116869178c64b6bab52623bbc8b4ceed7b30bfc3c9aa0f6e67f6438e

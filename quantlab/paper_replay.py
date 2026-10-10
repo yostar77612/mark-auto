@@ -74,8 +74,8 @@ class PaperReplay:
     @contextmanager
     def _db(self):
         db = sqlite3.connect(self.path, timeout=30)
-        db.execute('PRAGMA synchronous=FULL')
         try:
+            db.execute('PRAGMA synchronous=FULL')
             with db:
                 yield db
         finally:
