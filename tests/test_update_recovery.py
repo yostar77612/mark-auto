@@ -176,6 +176,85 @@ foreach ($case in @(@($legacyExe, '0.1.2'), @($versionedExe, '0.1.1'), @($versio
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_lifecycle_handoff_is_opt_in_absence_owned_and_hash_bound(self):
+        lifecycle = (ROOT / 'packaging/test_installer.ps1').read_text()
+        recovery = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        self.assertIn('[switch]$CreateRecoveryHandoff', lifecycle)
+        self.assertLess(lifecycle.index('Recovery handoff requires absent initial settings'),
+                        lifecycle.index('Install-Version $BaselineVersion'))
+        self.assertIn('[IO.FileMode]::CreateNew', lifecycle)
+        self.assertIn("initial_settings_absent=$true", lifecycle)
+        self.assertIn('settings_sha256=$digest', lifecycle)
+        guard = recovery.split('function Preserve-OwnedLifecycleSettings', 1)[1].split('function Get-SafePayloadFiles', 1)[0]
+        for condition in ('if (-not $LifecycleHandoff) { return }', 'Assert-NoReparsePath $LifecycleHandoff',
+                          'Assert-NoReparsePath $settingsPath', '$receipt.candidate_version -ne $Version',
+                          '$receipt.candidate_sha256 -ne $candidateHash', '$receipt.app_data_path',
+                          '$receipt.initial_settings_absent -ne $true', '$receipt.settings_sha256',
+                          'workspace-location.json', '[IO.File]::Move($settingsPath, $archive)'):
+            self.assertIn(condition, guard)
+        self.assertNotIn('Remove-Item', guard)
+        self.assertNotIn('WriteAllBytes', guard)
+        self.assertIn(".lifecycle-' + [guid]::NewGuid()", guard)
+        self.assertIn('Unknown settings/workspace state: refusing', recovery)
+        self.assertIn('Preserved lifecycle preferences changed or disappeared', recovery)
+
+    @unittest.skipUnless(os.name == 'nt' and shutil.which('pwsh'), 'Windows PowerShell handoff execution required')
+    def test_windows_handoff_preserves_owned_bytes_and_rejects_changed_state(self):
+        script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
+        helpers = '\n'.join(re.search(r'(?ms)^function ' + name + r'\b.*?(?=^function |\Z)', script).group(0)
+                            for name in ('Assert-NoReparsePath', 'Get-OptionalStateItem', 'Preserve-OwnedLifecycleSettings'))
+        with tempfile.TemporaryDirectory() as temporary:
+            check = Path(temporary, 'handoff.ps1')
+            check.write_text("param([string]$Root)\n$ErrorActionPreference = 'Stop'\n" + helpers + r"""
+$root = [IO.Path]::GetFullPath($Root)
+$results = Join-Path $root 'dist\validation\update-recovery'
+$dataDir = Join-Path $root 'owned-test-data'
+$settingsPath = Join-Path $dataDir 'state-v1\settings.json'
+$Version = '0.2.0'
+$candidate = Join-Path $root 'candidate.exe'
+$LifecycleHandoff = Join-Path $root 'dist\validation\lifecycle-state-handoff.json'
+New-Item -ItemType Directory -Path $results -Force | Out-Null
+New-Item -ItemType Directory -Path (Split-Path $settingsPath -Parent) -Force | Out-Null
+[IO.File]::WriteAllText($candidate, 'fixture candidate, not a real installer')
+[IO.File]::WriteAllText($settingsPath, 'unique test-owned preference bytes')
+$originalHash = (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$receipt = @{schema_version=1; owner='installer-lifecycle-test'; initial_settings_absent=$true;
+  initial_workspace_pointer_absent=$true; lifecycle_passed=$true; candidate_version=$Version;
+  candidate_sha256=(Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant();
+  app_data_path=$dataDir; settings_relative_path='state-v1/settings.json'; settings_created=$true;
+  settings_sha256=('0' * 64)}
+$receipt | ConvertTo-Json | Set-Content -LiteralPath $LifecycleHandoff
+$rejected = $false
+try { Preserve-OwnedLifecycleSettings } catch { $rejected = $true }
+if (-not $rejected -or (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $originalHash) { throw 'Changed-state refusal lost original preferences' }
+$receipt.settings_sha256 = $originalHash
+$receipt.app_data_path = Join-Path $root 'unowned-data'
+$receipt | ConvertTo-Json | Set-Content -LiteralPath $LifecycleHandoff
+$rejected = $false
+try { Preserve-OwnedLifecycleSettings } catch { $rejected = $true }
+if (-not $rejected -or -not (Test-Path -LiteralPath $settingsPath)) { throw 'Unowned path accepted' }
+$receipt.app_data_path = $dataDir
+$receipt | ConvertTo-Json | Set-Content -LiteralPath $LifecycleHandoff
+Preserve-OwnedLifecycleSettings
+if ((Test-Path -LiteralPath $settingsPath) -or -not (Test-Path -LiteralPath $lifecycleArchive)) { throw 'Owned state not archived' }
+if ((Get-FileHash -LiteralPath $lifecycleArchive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $originalHash) { throw 'Archived bytes differ' }
+$rejected = $false
+try { Preserve-OwnedLifecycleSettings } catch { $rejected = $true }
+if (-not $rejected) { throw 'Consumed handoff replay was accepted' }
+""", encoding='utf-8')
+            result = subprocess.run(['pwsh', '-NoProfile', '-File', str(check), '-Root', temporary],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_failure_evidence_upload_does_not_weaken_release_gate(self):
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
+        self.assertIn('-CreateRecoveryHandoff', workflow)
+        self.assertIn('-LifecycleHandoff dist/validation/lifecycle-state-handoff.json', workflow)
+        upload = workflow.split('- name: Preserve exact build evidence and candidate installer', 1)[1].split('  release:', 1)[0]
+        self.assertIn('if: always()', upload)
+        self.assertIn('needs: [build, quality]', workflow.split('  release:', 1)[1])
+        self.assertIn('packaging/wait_for_gates.py', workflow)
+
     def test_real_windows_interruption_and_data_contract(self):
         script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
         for required in ('taskkill.exe', '/T', '/F', 'BaselineManifest', 'CandidateManifest',

@@ -1,5 +1,6 @@
 param([string]$Version = '0.2.0', [string]$BaselineVersion = '0.0.0',
-      [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '')
+      [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '',
+      [switch]$CreateRecoveryHandoff)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 if (-not $BaselineAppVersion) { $BaselineAppVersion = $Version }
@@ -13,6 +14,24 @@ $os = Get-CimInstance Win32_OperatingSystem
   windows_11_clean='BLOCKED: requires independent clean client VM'} | ConvertTo-Json | Set-Content "$results\os-evidence.json"
 $appDir = Join-Path $env:LOCALAPPDATA 'Programs\MarkAuto'
 $dataDir = Join-Path $env:LOCALAPPDATA 'MarkAuto'
+$handoffSettings = Join-Path $dataDir 'state-v1\settings.json'
+$handoffPath = Join-Path $results 'lifecycle-state-handoff.json'
+function Get-OptionalStateItem([string]$path) {
+  try { return Get-Item -LiteralPath $path -Force -ErrorAction Stop }
+  catch [System.Management.Automation.ItemNotFoundException] { return $null }
+}
+if ($CreateRecoveryHandoff) {
+  # Ownership begins before any test launch, never inferred merely from location.
+  foreach ($unknown in @($handoffSettings, (Join-Path $dataDir 'workspace-location.json'), (Join-Path $dataDir 'installer-preservation-test.txt'), $handoffPath)) {
+    if (Get-OptionalStateItem $unknown) { throw 'Recovery handoff requires absent initial settings/workspace/receipt; existing state preserved' }
+  }
+  $inspect = [IO.Path]::GetFullPath($handoffSettings)
+  while ($inspect) {
+    $item = Get-OptionalStateItem $inspect
+    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse state cannot be owned by lifecycle test' }
+    $inspect = Split-Path $inspect -Parent
+  }
+}
 New-Item $dataDir -ItemType Directory -Force | Out-Null
 $sentinel = Join-Path $dataDir 'installer-preservation-test.txt'
 $sentinelValue = [guid]::NewGuid().ToString()
@@ -120,3 +139,17 @@ Assert-Sentinel
 @{status='passed'; tests=@('install','bundled-runtime-launch','start-menu-shortcut','desktop-shortcut','version-upgrade','reject-active-upgrade','reject-active-uninstall','native-window-close','uninstall','preserve-user-data');
   upgrade_scope=$(if ($BaselineVersion -eq '0.0.0') { 'installer version upgrade with same application payload; not historical data schema migration' } else { 'distinct released versions; sentinel preservation only, historical schema migration requires separate evidence' });
   client_os_acceptance='BLOCKED'; signing='unsigned'} | ConvertTo-Json | Set-Content "$results\installer-results.json"
+
+if ($CreateRecoveryHandoff) {
+  if (Test-Path -LiteralPath (Join-Path $dataDir 'workspace-location.json')) { throw 'Unexpected workspace pointer; no ownership handoff issued' }
+  $created = Test-Path -LiteralPath $handoffSettings -PathType Leaf
+  $digest = if ($created) { (Get-FileHash -LiteralPath $handoffSettings -Algorithm SHA256).Hash.ToLowerInvariant() } else { $null }
+  $receipt = @{schema_version=1; owner='installer-lifecycle-test'; initial_settings_absent=$true;
+    initial_workspace_pointer_absent=$true; lifecycle_passed=$true; candidate_version=$Version;
+    candidate_sha256=(Get-FileHash -LiteralPath (Join-Path $root "dist\installers\MarkAuto-$Version-windows-x64-setup.exe") -Algorithm SHA256).Hash.ToLowerInvariant();
+    app_data_path=[IO.Path]::GetFullPath($dataDir); settings_relative_path='state-v1/settings.json';
+    settings_created=$created; settings_sha256=$digest}
+  $bytes = [Text.Encoding]::UTF8.GetBytes(($receipt | ConvertTo-Json))
+  $receiptStream = [IO.File]::Open($handoffPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
+  try { $receiptStream.Write($bytes, 0, $bytes.Length) } finally { $receiptStream.Dispose() }
+}

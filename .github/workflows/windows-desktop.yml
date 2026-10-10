@@ -58,10 +58,10 @@ jobs:
         run: python packaging/build_manifest.py
       - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
         shell: pwsh
-        run: ./packaging/test_installer.ps1 -Version 0.2.0
+        run: ./packaging/test_installer.ps1 -Version 0.2.0 -CreateRecoveryHandoff
       - name: Test actual released baseline and interrupted upgrade recovery
         shell: pwsh
-        run: ./packaging/test_update_recovery.ps1 -Version 0.2.0 -BaselineVersion 0.1.2 -BaselineInstaller baseline/MarkAuto-0.1.2-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json
+        run: ./packaging/test_update_recovery.ps1 -Version 0.2.0 -BaselineVersion 0.1.2 -BaselineInstaller baseline/MarkAuto-0.1.2-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json -LifecycleHandoff dist/validation/lifecycle-state-handoff.json
       - name: Assemble standalone clean Windows client acceptance kit
         shell: pwsh
         run: |
@@ -77,7 +77,7 @@ jobs:
       - name: Write input and artifact digest manifest
         run: python packaging/build_manifest.py
       - name: Preserve exact build evidence and candidate installer
-        if: success()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: windows-desktop-candidate

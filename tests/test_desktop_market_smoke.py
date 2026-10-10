@@ -25,6 +25,18 @@ class MarketSmokeContractTests(unittest.TestCase):
         self.assertIn("market_report['status'] == 'passed'", script)
         self.assertIn("'market_smoke': market_report", script)
 
+    def test_smoke_settings_snapshot_has_no_persistent_side_effects(self):
+        from desktop import _SmokeSettingsView
+        source = {'market': {'version': 1}, 'sentinel': 'keep'}
+        view = _SmokeSettingsView(source)
+        source['market']['version'] = 2
+        loaded = view.load(); loaded['market']['version'] = 3
+        self.assertEqual(view.load()['market']['version'], 1)
+        view.save({'window': {'width': 800}})
+        self.assertEqual(view.load(), {'window': {'width': 800}})
+        self.assertEqual(source['sentinel'], 'keep')
+        with self.assertRaises(ValueError): view.save([])
+
     def test_manual_result_without_provenance_cannot_pass(self):
         from desktop import _check_market_worker_result
         for phase, value in [('manual_export', {}), ('manual_import', {'status': 'completed'}),
@@ -112,12 +124,17 @@ class MarketSmokeWidgetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             report = home / 'report.json'
+            settings = home / '.local/share/MarkAuto/state-v1/settings.json'
+            settings.parent.mkdir(parents=True)
+            original = b'{\n \"schema_version\": 1, \"settings\": {\"sentinel\": \"preserve exact bytes\", \"persist_logs\": false}\n}\n'
+            settings.write_bytes(original)
             env = dict(os.environ, HOME=str(home), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'cache'))
             result = subprocess.run([sys.executable, str(ROOT / 'desktop.py'), '--smoke-test', str(report)],
                                     cwd=ROOT, env=env, capture_output=True, text=True, timeout=150)
             self.assertEqual(result.returncode, 0, result.stdout[-1000:] + result.stderr[-2000:])
             value = json.loads(report.read_text())
             self.assertEqual(value['status'], 'passed')
+            self.assertEqual(settings.read_bytes(), original, 'smoke must not rewrite saved preferences')
             self.assertEqual(len(value['steps']), 7)
             self.assertTrue(all(row['passed'] for row in value['steps']))
             market = value['market_smoke']

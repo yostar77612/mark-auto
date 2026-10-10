@@ -7,6 +7,23 @@ from pathlib import Path
 import sys
 
 
+class _SmokeSettingsView:
+    """Validated settings snapshot for automated smoke; never writes user preferences."""
+    def __init__(self, settings):
+        from copy import deepcopy
+        self._settings = deepcopy(settings)
+
+    def load(self):
+        from copy import deepcopy
+        return deepcopy(self._settings)
+
+    def save(self, settings):
+        from copy import deepcopy
+        if not isinstance(settings, dict):
+            raise ValueError('Smoke preferences must be a dictionary')
+        self._settings = deepcopy(settings)
+
+
 def _smoke_steps():
     """Fixed offline fixtures only. No endpoints, credentials, or arbitrary commands."""
     from quantlab.core import to_dict
@@ -176,7 +193,9 @@ def main(argv=None):
         guard = RuntimeGuard(paths)
         previous_unclean = guard.start()
         settings = SettingsStore(paths.state / 'settings.json')
-        settings.load()  # Fail closed on incompatible/corrupt state; never overwrite it.
+        validated_settings = settings.load()  # Fail closed on incompatible/corrupt state.
+        if args.smoke_test:
+            settings = _SmokeSettingsView(validated_settings)  # Smoke must preserve saved user bytes.
         jobs = JobManager(paths)
         backups.jobs = jobs
         from desktop_ui import MainWindow
