@@ -4,6 +4,7 @@ import pickle
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from unittest.mock import patch
 
 import unittest
@@ -405,7 +406,7 @@ class PlanTests(unittest.TestCase):
                 if kind=='global':p.account_path.write_bytes(b'not a sqlite database')
                 elif kind=='campaign':p.path.write_bytes(b'not a sqlite database')
                 else:
-                    with sqlite3.connect(p.path) as db:db.execute('UPDATE plan_calls SET usage=?',('{"api_key":"SECRET_FIXTURE"}',))
+                    with closing(sqlite3.connect(p.path)) as db, db:db.execute('UPDATE plan_calls SET usage=?',('{"api_key":"SECRET_FIXTURE"}',))
                 for operation in (p.read_receipt_snapshot,lambda:p._reserve('b'*64,100)):
                     with self.assertRaises(PlanError) as caught:operation()
                     assert 'SECRET_FIXTURE' not in str(caught.exception)
@@ -450,3 +451,23 @@ class PlanTests(unittest.TestCase):
         before=p.account_path.read_bytes()
         with self.assertRaises(PlanError):p._reserve('a'*64,100)
         assert p.account_path.read_bytes()==before
+
+    def test_provider_connections_close_explicitly_on_success_and_rejection(self):
+        import sqlite3
+        from tests.test_research import tracked_sqlite_connections
+        # Retain every connection object so CPython refcounts/GC cannot conceal
+        # leaked handles on POSIX while Windows keeps the files locked.
+        with tracked_sqlite_connections() as opened:
+            p=provider(self.tmp_path)
+            p._reserve('a'*64,100)
+            self.assertEqual(p.read_receipt_snapshot()['receipts'][0]['status'],'reserved_unknown')
+            p._finish(1,'completed')
+            self.assertEqual(len(p.read_receipts()),1)
+            self.assertTrue(opened)
+            self.assertTrue(all(db.closed_explicitly for db in opened))
+            with self.assertRaises(PlanError):provider(self.tmp_path,max_calls=3).read_receipt_snapshot()
+            self.assertTrue(all(db.closed_explicitly for db in opened))
+            with closing(sqlite3.connect(p.path)) as db, db:
+                db.execute('UPDATE plan_calls SET usage=?',('{"api_key":"SECRET_FIXTURE"}',))
+            with self.assertRaises(PlanError):p.read_receipt_snapshot()
+            self.assertTrue(all(db.closed_explicitly for db in opened))

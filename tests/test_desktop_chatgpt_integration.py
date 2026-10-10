@@ -101,15 +101,23 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_parent_deadline_stops_and_joins_before_unknown_result(self):
         from unittest.mock import Mock
-        manager=self.jobs;manager.job_id='fixture';manager._operation='ui_chatgpt_auth';manager._deadline=0
-        proc=Mock(pid=123);proc.is_alive.side_effect=[True,True,False,False]
-        manager.process=proc;manager.receiver=Mock();manager.receiver.poll.return_value=False
-        with patch('quantlab.desktop_runtime.os.killpg') as kill:
-            events=manager.poll()
-        kill.assert_called_once();proc.join.assert_called();proc.close.assert_called_once()
-        self.assertFalse(manager.active)
-        self.assertEqual(events[-1]['error_type'],'DeadlineExceeded')
-        self.assertFalse(any(e['type']=='cancelled' for e in events))
+        # Explicit synthetic platform branches; native Job Object tests are separate.
+        for platform in ('linux', 'win32'):
+            with self.subTest(platform=platform):
+                manager=self.jobs;manager.job_id='fixture';manager._operation='ui_chatgpt_auth';manager._deadline=0
+                proc=Mock(pid=123);proc.is_alive.side_effect=[True,True,False,False]
+                manager.process=proc;manager.receiver=Mock();manager.receiver.poll.return_value=False
+                with patch('quantlab.desktop_runtime.sys.platform',platform), \
+                        patch('quantlab.desktop_runtime.os.killpg',create=True) as kill:
+                    events=manager.poll()
+                if platform=='linux':
+                    kill.assert_called_once();proc.terminate.assert_not_called()
+                else:
+                    kill.assert_not_called();proc.terminate.assert_called_once()
+                proc.join.assert_called();proc.close.assert_called_once()
+                self.assertFalse(manager.active)
+                self.assertEqual(events[-1]['error_type'],'DeadlineExceeded')
+                self.assertFalse(any(e['type']=='cancelled' for e in events))
 
     def test_plan_binding_stable_and_requires_current_usage_identity(self):
         from desktop_ui import plan_provider,execute_ui_operation,_dataset,demo_config

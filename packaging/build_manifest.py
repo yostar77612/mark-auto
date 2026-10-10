@@ -28,7 +28,8 @@ def main():
         'python': sys.version, 'python_executable_sha256': sha256(sys.executable), 'os': platform.platform(), 'architecture': platform.machine(),
         'runner_image': os.environ.get('ImageOS'), 'runner_image_version': os.environ.get('ImageVersion'),
         'dependencies': sorted(f"{d.metadata['Name']}=={d.version}" for d in distributions()),
-        'inputs_sha256': {str(p.relative_to(root)): sha256(p) for p in sorted(inputs)},
+        'inputs_sha256': {p.relative_to(root).as_posix(): sha256(p)
+                          for p in sorted(inputs, key=lambda entry: entry.relative_to(root).as_posix())},
         'artifacts_sha256': {p.name: sha256(p) for p in sorted(artifacts)},
         'repeatability': 'Pinned input recipe; PE/compiler timestamps mean bit-identical output is not promised.',
         'signing': 'UNSIGNED: no signing certificate or security-warning bypass',

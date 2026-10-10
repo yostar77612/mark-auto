@@ -43,7 +43,60 @@ def _contend_lock(root, pipe):
         pipe.send('acquired')
 
 
-def _security_sddl(path):
+def _private_dacl_matches_sid(descriptor, expected_sid):
+    """Validate binary ACL identity; SDDL may abbreviate a trustee as LA."""
+    import ctypes
+    from ctypes import wintypes as w
+    class AclSizeInformation(ctypes.Structure):
+        _fields_ = [('AceCount', w.DWORD), ('AclBytesInUse', w.DWORD),
+                    ('AclBytesFree', w.DWORD)]
+    class AllowedAce(ctypes.Structure):
+        _fields_ = [('AceType', w.BYTE), ('AceFlags', w.BYTE),
+                    ('AceSize', w.WORD), ('Mask', w.DWORD), ('SidStart', w.DWORD)]
+    adv = ctypes.WinDLL('advapi32', use_last_error=True)
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    adv.GetSecurityDescriptorControl.argtypes = [ctypes.c_void_p,
+        ctypes.POINTER(w.WORD), ctypes.POINTER(w.DWORD)]
+    adv.GetSecurityDescriptorDacl.argtypes = [ctypes.c_void_p,
+        ctypes.POINTER(w.BOOL), ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(w.BOOL)]
+    adv.GetAclInformation.argtypes = [ctypes.c_void_p, ctypes.c_void_p, w.DWORD, ctypes.c_int]
+    adv.GetAce.argtypes = [ctypes.c_void_p, w.DWORD, ctypes.POINTER(ctypes.c_void_p)]
+    adv.ConvertStringSidToSidW.argtypes = [w.LPCWSTR, ctypes.POINTER(ctypes.c_void_p)]
+    adv.IsValidSid.argtypes = [ctypes.c_void_p]
+    adv.EqualSid.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    kernel.LocalFree.argtypes = [ctypes.c_void_p]
+    control, revision = w.WORD(), w.DWORD()
+    present, defaulted = w.BOOL(), w.BOOL()
+    dacl, ace_pointer, expected = ctypes.c_void_p(), ctypes.c_void_p(), ctypes.c_void_p()
+    info = AclSizeInformation()
+    if not adv.GetSecurityDescriptorControl(descriptor, ctypes.byref(control), ctypes.byref(revision)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not adv.GetSecurityDescriptorDacl(descriptor, ctypes.byref(present), ctypes.byref(dacl), ctypes.byref(defaulted)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not control.value & 0x1000 or not present.value or not dacl.value:
+        return False  # SE_DACL_PROTECTED; absent/null DACL grants broader access.
+    if not adv.GetAclInformation(dacl, ctypes.byref(info), ctypes.sizeof(info), 2):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if info.AceCount != 1:
+        return False
+    if not adv.GetAce(dacl, 0, ctypes.byref(ace_pointer)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    ace = ctypes.cast(ace_pointer, ctypes.POINTER(AllowedAce)).contents
+    if ace.AceType != 0 or ace.Mask != 0x1f01ff or ace.AceFlags & 0x08:
+        return False  # ACCESS_ALLOWED_ACE, FILE_ALL_ACCESS, not INHERIT_ONLY.
+    trustee = ctypes.c_void_p(ace_pointer.value + AllowedAce.SidStart.offset)
+    if not adv.IsValidSid(trustee):
+        return False
+    try:
+        if not adv.ConvertStringSidToSidW(expected_sid, ctypes.byref(expected)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return bool(adv.EqualSid(trustee, expected))
+    finally:
+        if expected:
+            kernel.LocalFree(expected)
+
+
+def _security_sddl(path, expected_sid):
     """Read actual kernel DACL, rather than mocking ACL installation."""
     import ctypes
     from ctypes import wintypes as w
@@ -66,7 +119,7 @@ def _security_sddl(path):
         if not adv.ConvertSecurityDescriptorToStringSecurityDescriptorW(
                 descriptor, 1, 4, ctypes.byref(text), None):
             raise ctypes.WinError(ctypes.get_last_error())
-        return text.value
+        return text.value, _private_dacl_matches_sid(descriptor, expected_sid)
     finally:
         if text:
             kernel.LocalFree(text)
@@ -168,17 +221,54 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         sid = _current_sid()
         for path in (self.vault.directory, self.vault.path, self.vault.directory/'vault.lock'):
             with self.subTest(path=path.name):
-                sddl = _security_sddl(path)
+                sddl, private_current_user = _security_sddl(path, sid)
                 self.assertTrue(sddl.startswith('D:P'), sddl)
                 self.assertEqual(sddl.count('('), 1, sddl)
                 ace = sddl[sddl.index('(')+1:sddl.index(')')].split(';')
                 self.assertEqual(ace[0], 'A')
                 self.assertEqual(ace[2], 'FA')
-                self.assertEqual(ace[5], sid)
+                self.assertTrue(private_current_user, sddl)
                 for ancestor in (path, *path.parents):
                     info = ancestor.lstat()
                     self.assertFalse(stat.S_ISLNK(info.st_mode))
                     self.assertFalse(getattr(info, 'st_file_attributes', 0) & 0x400)
+
+    def test_binary_dacl_identity_handles_admin_and_regular_sids(self):
+        import ctypes
+        from ctypes import wintypes as w
+        adv = ctypes.WinDLL('advapi32', use_last_error=True)
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        adv.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+            w.LPCWSTR, w.DWORD, ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p]
+        kernel.LocalFree.argtypes = [ctypes.c_void_p]
+        # Synthetic principals: no account creation, ACL installation or lookup.
+        admin = 'S-1-5-21-101-202-303-500'
+        regular = 'S-1-5-21-101-202-303-1001'
+        other_admin = 'S-1-5-21-404-505-606-500'
+        cases = [
+            (f'D:P(A;OICI;FA;;;{admin})', admin, True),
+            (f'D:P(A;OICI;FA;;;{regular})', regular, True),
+            (f'D:P(A;OICI;FA;;;{admin})', regular, False),
+            (f'D:P(A;OICI;FA;;;{regular})', admin, False),
+            (f'D:P(A;OICI;FA;;;{other_admin})', admin, False),
+            (f'D:(A;OICI;FA;;;{regular})', regular, False),
+            (f'D:P(A;OICI;FR;;;{regular})', regular, False),
+            (f'D:P(D;OICI;FA;;;{regular})', regular, False),
+            (f'D:P(A;OICIIO;FA;;;{regular})', regular, False),
+            (f'D:P(A;OICI;FA;;;{regular})(A;OICI;FA;;;WD)', regular, False),
+            ('D:P', regular, False),
+        ]
+        for sddl, expected_sid, accepted in cases:
+            with self.subTest(sddl=sddl, expected_sid=expected_sid):
+                descriptor = ctypes.c_void_p()
+                try:
+                    if not adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                            sddl, 1, ctypes.byref(descriptor), None):
+                        raise ctypes.WinError(ctypes.get_last_error())
+                    self.assertEqual(_private_dacl_matches_sid(descriptor, expected_sid), accepted)
+                finally:
+                    if descriptor:
+                        kernel.LocalFree(descriptor)
 
     def test_actual_junction_ancestor_is_rejected(self):
         target = Path(self.temp.name)/'junction-target'

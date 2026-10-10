@@ -1,5 +1,6 @@
 """Offline receipt-hook proposals; all model/worker results are synthetic."""
 import copy
+from contextlib import closing
 import importlib.util
 from pathlib import Path
 import sys
@@ -9,7 +10,7 @@ from unittest.mock import patch
 
 from quantlab.core import ValidationError, content_hash
 from desktop_chatgpt_auth import OAuthCredentialReference
-from tests.test_research import inputs
+from tests.test_research import inputs, tracked_sqlite_connections
 from quantlab import research as r
 import desktop_chatgpt_provider as pmod
 
@@ -246,10 +247,21 @@ class OuterCampaignReconciliationTests(unittest.TestCase):
             if process.is_alive():process.kill();process.join()
             process.close();receiver.close()
         self.provider=outer_fixture_provider(self.root);self.output=self.root/'research'
+        # Hold references until after the assertion: garbage collection must
+        # never turn an unclosed parent-side handle into a passing cleanup test.
+        tracker=tracked_sqlite_connections()
+        self.opened_connections=tracker.__enter__()
+        self.addCleanup(tracker.__exit__,None,None,None)
+        self.addCleanup(self.assert_parent_connections_closed)
+
+    def assert_parent_connections_closed(self):
+        self.assertTrue(self.opened_connections)
+        self.assertTrue(all(db.closed_explicitly for db in self.opened_connections),
+                        'Every fixture and reconciliation handle must close explicitly')
 
     def payload(self):
         import sqlite3,json
-        with sqlite3.connect(self.output/'campaign.sqlite3') as db:
+        with closing(sqlite3.connect(self.output/'campaign.sqlite3')) as db, db:
             return json.loads(db.execute('SELECT payload FROM state WHERE id=1').fetchone()[0])
 
     def test_actual_outer_kill_reconciles_new_receipt_without_holdout(self):
@@ -268,7 +280,7 @@ class OuterCampaignReconciliationTests(unittest.TestCase):
         import sqlite3
         before=self.payload();changed=outer_fixture_provider(self.root);changed.model='different'
         with self.assertRaises(ValidationError):r.reconcile_interrupted_campaign(output_dir=self.output,generator=changed,descendants_stopped=True)
-        with sqlite3.connect(self.output/'campaign.lock.sqlite3') as lock:
+        with closing(sqlite3.connect(self.output/'campaign.lock.sqlite3')) as lock, lock:
             lock.execute('BEGIN EXCLUSIVE')
             with self.assertRaises(ValidationError):r.reconcile_interrupted_campaign(output_dir=self.output,generator=self.provider,descendants_stopped=True)
         assert self.payload()==before
@@ -279,7 +291,7 @@ class OuterCampaignReconciliationTests(unittest.TestCase):
         before['attempts'].insert(0,previous);before['holdout_consumed']=True
         before['holdout_status']='reserved';before['holdout_registry']={'fixture':'must-remain','status':'reserved'}
         before['evaluations']={'oos':[{'fixture':'prior-result'}],'holdout':[]}
-        with sqlite3.connect(self.output/'campaign.sqlite3') as db:db.execute('UPDATE state SET payload=? WHERE id=1',(json.dumps(before),))
+        with closing(sqlite3.connect(self.output/'campaign.sqlite3')) as db, db:db.execute('UPDATE state SET payload=? WHERE id=1',(json.dumps(before),))
         state=r.reconcile_interrupted_campaign(output_dir=self.output,generator=self.provider,descendants_stopped=True)
         assert state['attempts'][0]==previous and state['attempts'][1]['status']=='interrupted'
         for key in ('holdout_consumed','holdout_status','holdout_registry','evaluations','selected'):
@@ -290,8 +302,8 @@ class OuterCampaignReconciliationTests(unittest.TestCase):
         absent=self.root/'absent'
         with self.assertRaises(ValidationError):r.reconcile_interrupted_campaign(output_dir=absent,generator=self.provider,descendants_stopped=True)
         assert not absent.exists()
-        with sqlite3.connect(self.output/'campaign.sqlite3') as db:db.execute('UPDATE state SET payload=? WHERE id=1',('{corrupt',))
+        with closing(sqlite3.connect(self.output/'campaign.sqlite3')) as db, db:db.execute('UPDATE state SET payload=? WHERE id=1',('{corrupt',))
         before_json=(self.output/'campaign.json').read_bytes()
         with self.assertRaises(ValidationError):r.reconcile_interrupted_campaign(output_dir=self.output,generator=self.provider,descendants_stopped=True)
-        with sqlite3.connect(self.output/'campaign.sqlite3') as db:assert db.execute('SELECT payload FROM state WHERE id=1').fetchone()[0]=='{corrupt'
+        with closing(sqlite3.connect(self.output/'campaign.sqlite3')) as db, db:assert db.execute('SELECT payload FROM state WHERE id=1').fetchone()[0]=='{corrupt'
         assert (self.output/'campaign.json').read_bytes()==before_json
