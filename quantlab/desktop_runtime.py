@@ -488,11 +488,16 @@ class BackupManager:
 
     def create(self, destination):
         self._quiescent()
+        destination = Path(destination).resolve()
+        # Validate before recovery/ensure: even a rejected destination must not
+        # alter journals, locks, vaults or irreversible accounting controls.
+        # Keep archives outside both the active workspace and fixed bootstrap;
+        # this also protects future internal files without a brittle allowlist.
+        for root in (self.paths.root, self.paths.bootstrap or self.paths.root):
+            if destination.is_relative_to(Path(root).resolve()):
+                raise RuntimeSafetyError('Backup must be outside workspace and application bootstrap directories')
         self.recover()
         self.paths.ensure()
-        destination = Path(destination).resolve()
-        if destination.is_relative_to(self.paths.state.resolve()) or destination.is_relative_to(self.paths.credentials.resolve()):
-            raise RuntimeSafetyError('Backup must be outside state and credential directories')
         files, size = [], 0
         self._check_regular_path(self.paths.state)
         state_root = self.paths.state.resolve()

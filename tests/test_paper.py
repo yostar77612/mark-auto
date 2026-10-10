@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from quantlab.core import Instrument, CostSpec, ValidationError
 from quantlab.paper import PaperBroker, RiskLimits, JournalConflict, ReconciliationError, LiveBroker, LiveTradingDisabled
@@ -53,6 +54,161 @@ class PaperTests(unittest.TestCase):
             value.update(fill_id=f'f-{oid}-{seq}', quantity=1, price=D('20000'), commission=D('10'), tax=D('4'))
         value.update(changes)
         return value
+
+    def test_conflicting_event_latches_quarantine_across_restart(self):
+        self.submit()
+        original = self.event()
+        self.broker.apply_event(original)
+        before = self.broker.snapshot()
+        with self.assertRaises(JournalConflict):
+            self.broker.apply_event(dict(original, price='20001'))
+        after = self.broker.snapshot()
+        self.assertTrue(after['reconciliation_required'])
+        self.assertTrue(after['quarantined'])
+        self.assertEqual(after['fills'], before['fills'])
+        self.assertEqual(after['cash'], before['cash'])
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        other = PaperBroker(self.path, **self.kw)
+        with self.assertRaises(ReconciliationError):
+            other.reconcile(other.snapshot())
+        self.assertEqual(other.apply_event(original)['status'], 'duplicate')
+
+    def test_truncated_event_freezes_without_manufacturing_fill(self):
+        self.submit(quantity=2)
+        event = self.event()
+        del event['commission']
+        with self.assertRaisesRegex(ValidationError, 'missing fill fields'):
+            self.broker.apply_event(event)
+        state = self.broker.snapshot()
+        self.assertTrue(state['reconciliation_required'])
+        self.assertFalse(state['fills'])
+        self.assertFalse(state['positions'])
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        diagnostic = next(iter(state['quarantined'].values()))
+        self.assertEqual(diagnostic['rejected_payload']['event_id'], event['event_id'])
+
+    def test_simulated_transport_timeout_reattach_requires_resolution(self):
+        # This is fault injection at the synthetic ACK boundary, not a socket/broker test.
+        def timeout(point):
+            if point == 'after_intent_commit':
+                raise TimeoutError('simulated transport silence before ACK')
+        self.broker._fault = timeout
+        with self.assertRaises(TimeoutError):
+            self.submit()
+        self.broker._fault = lambda point: None
+        self.assertEqual(self.submit()['status'], 'submitting')
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        self.broker = PaperBroker(self.path, **self.kw)
+        state = self.broker.snapshot()
+        self.assertEqual(state['orders']['a']['status'], 'unknown')
+        with self.assertRaises(ReconciliationError):
+            self.broker.reconcile(state)
+        state['order_statuses'] = {'a': 'accepted'}
+        self.broker.reconcile(state)
+        self.assertEqual(self.submit()['status'], 'accepted')
+        self.broker.apply_event(self.event())
+        self.assertEqual(len(self.broker.snapshot()['fills']), 1)
+        self.assertEqual(len(self.broker.snapshot()['order_send_timestamps']), 1)
+
+    def test_feed_silence_age_boundary_and_fresh_quote_recovery(self):
+        boundary = NOW + timedelta(seconds=5)
+        self.assertEqual(self.broker.submit(self.intent('boundary'), quote=self.quote(), now=boundary)['status'], 'accepted')
+        stale = boundary + timedelta(microseconds=1)
+        self.assertEqual(self.broker.submit(self.intent('stale'), quote=self.quote(), now=stale)['reason'], 'stale_or_future_quote')
+        self.assertEqual(self.broker.submit(self.intent('fresh'), quote=self.quote(timestamp=stale), now=stale)['status'], 'accepted')
+        self.assertFalse(self.broker.snapshot()['fills'])
+
+    def test_sqlite_event_write_failure_atomic_and_reattach_retry(self):
+        self.submit()
+        before = self.broker.snapshot()
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute("CREATE TRIGGER fail_event BEFORE UPDATE ON materialized BEGIN SELECT RAISE(ABORT, 'injected storage failure'); END")
+        with self.assertRaises(sqlite3.DatabaseError):
+            self.broker.apply_event(self.event())
+        # Inspect raw persisted state while the synthetic storage fault is active.
+        with closing(sqlite3.connect(self.path)) as db:
+            import json
+            self.assertEqual(json.loads(db.execute('SELECT state FROM materialized').fetchone()[0]), before)
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('DROP TRIGGER fail_event')
+        self.assertEqual(self.submit('same-process-blocked')['reason'], 'reconciliation_required')
+        self.broker = PaperBroker(self.path, **self.kw)
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        self.broker.reconcile(self.broker.snapshot())
+        self.assertEqual(self.broker.apply_event(self.event())['status'], 'applied')
+        self.assertEqual(self.broker.apply_event(self.event())['status'], 'duplicate')
+        self.assertEqual(len(self.broker.snapshot()['fills']), 1)
+
+    def test_commit_failure_rolls_back_and_requires_reconciliation(self):
+        self.submit()
+        real_connect = sqlite3.connect
+        class FailedCommit(sqlite3.Connection):
+            def commit(self):
+                raise sqlite3.OperationalError('injected commit I/O failure')
+        def connect(*args, **kwargs):
+            return real_connect(*args, **kwargs, factory=FailedCommit)
+        with patch('quantlab.paper.sqlite3.connect', side_effect=connect):
+            with self.assertRaises(sqlite3.OperationalError):
+                self.broker.apply_event(self.event())
+        state = self.broker.snapshot()
+        self.assertFalse(state['fills'])
+        self.assertEqual(state['cash'], '100000')
+        self.assertTrue(state['reconciliation_required'])
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        self.broker.reconcile(self.broker.snapshot())
+        self.assertEqual(self.broker.apply_event(self.event())['status'], 'applied')
+
+    def test_unavailable_file_connection_latches_recovery(self):
+        self.submit()
+        with patch('quantlab.paper.sqlite3.connect', side_effect=sqlite3.OperationalError('unable to open database file')):
+            with self.assertRaises(sqlite3.OperationalError):
+                self.broker.apply_event(self.event())
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
+        self.assertFalse(self.broker.snapshot()['fills'])
+        self.broker.reconcile(self.broker.snapshot())
+        self.assertEqual(self.broker.apply_event(self.event())['status'], 'applied')
+
+    def test_actual_process_death_at_fill_commit_boundaries(self):
+        for point in ('before_event_commit', 'after_event_commit'):
+            with self.subTest(point=point):
+                path = Path(self.tmp.name) / (point + '.sqlite')
+                script = """
+import os
+from pathlib import Path
+from tests.test_paper import PaperTests
+from quantlab.paper import PaperBroker
+fixture = PaperTests()
+fixture.setUp()
+fixture.broker = PaperBroker(Path(PATH), **fixture.kw)
+fixture.broker.reconcile(dict(account_id='synthetic', cash='100000', positions={}, orders={}, fills={}))
+fixture.submit()
+def fail(point):
+    if point == POINT:
+        os._exit(73)
+fixture.broker._fault = fail
+fixture.broker.apply_event(fixture.event())
+""".replace('PATH', repr(str(path))).replace('POINT', repr(point))
+                result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 73, result.stderr)
+                other = PaperBroker(path, **self.kw)
+                state = other.snapshot()
+                self.assertTrue(state['reconciliation_required'])
+                self.assertEqual(len(state['fills']), int(point == 'after_event_commit'))
+                other.reconcile(state)
+                status = other.apply_event(self.event())['status']
+                self.assertEqual(status, 'duplicate' if point == 'after_event_commit' else 'applied')
+                self.assertEqual(len(other.snapshot()['fills']), 1)
+                self.assertEqual(other.snapshot()['cash'], '99986')
+
+    def test_unknown_external_position_cannot_unblock_reattach(self):
+        self.broker = PaperBroker(self.path, **self.kw)
+        state = self.broker.snapshot()
+        state['positions'][CID] = 1
+        with self.assertRaisesRegex(ReconciliationError, 'positions discrepancy'):
+            self.broker.reconcile(state)
+        self.assertFalse(self.broker.snapshot()['positions'])
+        self.assertFalse(self.broker.snapshot()['fills'])
+        self.assertEqual(self.submit('blocked')['reason'], 'reconciliation_required')
 
     def test_durable_idempotence_and_conflicting_intent(self):
         first = self.submit()

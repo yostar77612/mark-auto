@@ -1,4 +1,4 @@
-param([string]$Version = '0.1.1')
+param([string]$Version = '0.1.2')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 & (Join-Path $PSScriptRoot 'validate_powershell.ps1')
@@ -18,6 +18,8 @@ try {
   if ($LASTEXITCODE) { throw 'License collection failed' }
   python -m PyInstaller --noconfirm --clean packaging/markauto.spec
   if ($LASTEXITCODE) { throw 'PyInstaller failed' }
+  python packaging/payload_inventory.py dist/MarkAuto dist/payload-inventory.txt dist/payload-inventory.iss
+  if ($LASTEXITCODE) { throw 'Payload inventory failed' }
   $temporary = $env:RUNNER_TEMP
   if (-not $temporary) { $temporary = $env:TEMP }
   $compilerInstaller = Join-Path $temporary 'innosetup-6.4.3.exe'

@@ -2,6 +2,8 @@ from decimal import Decimal
 from pathlib import Path
 import tempfile
 import unittest
+import sqlite3
+from contextlib import closing
 from quantlab.core import Instrument, ValidationError
 from quantlab.paper import PaperBroker, RiskLimits
 from quantlab.paper_replay import PaperReplay
@@ -52,7 +54,8 @@ class ReplayTests(unittest.TestCase):
     def test_crash_after_fill_retry_no_duplicate(self):
         self.replay.start()
         def crash(point):
-            raise RuntimeError('simulated interrupted process')
+            if point == 'after_fill_before_cursor':
+                raise RuntimeError('simulated interrupted process')
         self.replay._fault = crash
         with self.assertRaises(RuntimeError):
             self.replay.step(max_bars=120)
@@ -69,6 +72,57 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(self.broker.snapshot()['fills'], fills)
         replay.step(max_bars=120)
         self.assertTrue(replay.snapshot()['complete'])
+
+    def _reattach_after_boundary(self, boundary):
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        def crash(point):
+            if point == boundary:
+                raise TimeoutError('injected offline interruption: ' + point)
+        self.replay._fault = crash
+        with self.assertRaises(TimeoutError):
+            self.replay.step(max_bars=1)
+        pending = self.replay.snapshot()
+        self.assertEqual(pending['cursor'], 0)
+        self.assertTrue(pending['pending_plan'])
+        self.assertFalse(self.broker.snapshot()['fills'])
+        self.assertEqual(len(self.broker.snapshot()['orders']),
+                         0 if boundary == 'after_plan_before_submit' else 1)
+        self.broker = self.new_broker()
+        resumed = self.new_replay()
+        self.assertEqual(resumed.step()['cursor'], 0)
+        with self.assertRaises(ValidationError):
+            resumed.start()
+        self.broker.reconcile(self.broker.snapshot())
+        resumed.start()
+        self.assertEqual(resumed.step(max_bars=1)['cursor'], 1)
+        self.assertEqual(len(self.broker.snapshot()['orders']), 1)
+        self.assertEqual(len(self.broker.snapshot()['fills']), 1)
+        self.assertEqual(len(self.broker.snapshot()['order_send_timestamps']), 1)
+
+    def test_reattach_after_durable_plan_before_submit(self):
+        self._reattach_after_boundary('after_plan_before_submit')
+
+    def test_reattach_after_ack_before_fill(self):
+        self._reattach_after_boundary('after_submit_before_fill')
+
+    def test_cursor_write_failure_preserves_fill_and_idempotent_plan(self):
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        with closing(sqlite3.connect(self.replay.path)) as db, db:
+            db.execute("CREATE TRIGGER fail_cursor BEFORE UPDATE ON replay WHEN NEW.cursor != OLD.cursor BEGIN SELECT RAISE(ABORT, 'injected cursor failure'); END")
+        with self.assertRaises(sqlite3.DatabaseError):
+            self.replay.step(max_bars=1)
+        before = self.broker.snapshot()
+        self.assertEqual(len(before['fills']), 1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 0)
+        self.assertTrue(self.replay.snapshot()['pending_plan'])
+        with closing(sqlite3.connect(self.replay.path)) as db, db:
+            db.execute('DROP TRIGGER fail_cursor')
+        self.assertEqual(self.replay.step(max_bars=1)['cursor'], 1)
+        after = self.broker.snapshot()
+        for field in ('fills', 'orders', 'positions', 'cash', 'order_send_timestamps'):
+            self.assertEqual(after[field], before[field])
 
     def test_binding_and_budget(self):
         with self.assertRaises(ValidationError):

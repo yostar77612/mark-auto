@@ -251,6 +251,7 @@ class PaperBroker:
         self._margin_schedule = freeze(_json(margin_schedule))
         self._validate_policy()
         self.path = Path(journal_path)
+        self._storage_uncertain = False
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._config = content_hash(dict(journal_schema=4, instrument=instrument, costs=costs, limits=limits,
                                          risk_sessions=self._risk_sessions, margin_schedule=self._margin_schedule))
@@ -334,13 +335,22 @@ class PaperBroker:
     @contextmanager
     def _transaction(self):
         with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
-            db = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
+            try:
+                db = sqlite3.connect(str(self.path), timeout=30, isolation_level=None)
+            except sqlite3.Error:
+                self._storage_uncertain = True
+                raise
+            was_uncertain = self._storage_uncertain
             try:
                 db.execute('PRAGMA synchronous=FULL')
                 db.execute('BEGIN IMMEDIATE')
                 yield db
                 db.commit()
-            except BaseException:
+            except BaseException as exc:
+                if was_uncertain or isinstance(exc, sqlite3.Error):
+                    # Storage may have lost an inbound event or an ACK. Once
+                    # storage returns, durably latch reconciliation before use.
+                    self._storage_uncertain = True
                 db.rollback()
                 raise
             finally:
@@ -362,6 +372,11 @@ class PaperBroker:
         saved = db.execute('SELECT state FROM materialized WHERE id=1').fetchone()
         if not saved or canonical_json(state) != saved[0]:
             raise JournalConflict('materialized snapshot disagrees with journal replay')
+        if self._storage_uncertain:
+            state = self._append(db, state, 'reconcile_failure',
+                                 {'reason': 'storage failure; explicit reconciliation required'},
+                                 self._next_id(db, 'storage_recovery'))
+            self._storage_uncertain = False
         return state
 
     def _append(self, db, state, operation, payload, identity):
@@ -577,6 +592,24 @@ class PaperBroker:
             return deepcopy(state['orders'][order_id])
 
     def apply_event(self, event: dict):
+        try:
+            return self._apply_event(event)
+        except ValidationError as exc:
+            # Invalid inbound execution data is uncertainty, not a harmless input
+            # typo. Commit a separate diagnostic after the failed transaction has
+            # rolled back, then preserve the original API exception for callers.
+            try:
+                rejected = _json(event)
+            except (TypeError, ValueError):
+                rejected = {'unserializable_type': type(event).__name__}
+            with self._transaction() as db:
+                state = self._restore(db)
+                identity = self._next_id(db, 'invalid_event')
+                self._append(db, state, 'quarantine',
+                             {'event_id': identity, 'reason': str(exc), 'rejected_payload': rejected}, identity)
+            raise
+
+    def _apply_event(self, event: dict):
         if not isinstance(event, dict):
             raise ValidationError('event must be an object')
         event = deepcopy(event)
@@ -639,7 +672,8 @@ class PaperBroker:
                 state = self._append(db, state, 'consecutive_loss_halt',
                                      {'event_id':event['event_id'], 'observed':state['max_consecutive_losses_observed'], 'limit':self.limits.max_consecutive_losses}, identity + ':loss_halt')
             self._fault('before_event_commit')
-            return {'status': 'quarantined' if invalid else 'applied', 'event_id': event['event_id']}
+        self._fault('after_event_commit')
+        return {'status': 'quarantined' if invalid else 'applied', 'event_id': event['event_id']}
 
     def reconcile(self, snapshot: dict):
         if not isinstance(snapshot, dict):

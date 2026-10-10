@@ -131,3 +131,58 @@ class DataTests(unittest.TestCase):
         supplied['end'] = parse_timestamp('2026-10-08T14:00:00+08:00')
         self.assertEqual(calendar.sessions[0]['end'], row['end'])
         with self.assertRaises(TypeError): calendar.sessions[0]['end'] = supplied['end']
+
+class FullOfficialSessionCoverageTests(unittest.TestCase):
+    def calendar(self, two_sessions=False):
+        records = [{'open': '2026-10-08T08:45:00+08:00', 'end': '2026-10-08T08:48:00+08:00',
+                    'trade_date': '2026-10-08', 'session': 'day', 'source': 'synthetic-coverage-test'}]
+        if two_sessions:
+            records.append({'open': '2026-10-07T23:59:00+08:00', 'end': '2026-10-08T00:01:00+08:00',
+                            'trade_date': '2026-10-08', 'session': 'night', 'source': 'synthetic-coverage-test'})
+        return SessionCalendar(records, version='coverage-tests')
+
+    def test_real_classified_inputs_fail_closed_at_both_edges(self):
+        for source in ('official_local', 'proxy'):
+            for times in (('08:46:00', '08:47:00'), ('08:45:00', '08:46:00')):
+                data = aggregate_ticks([tick(t, '20000', source_type=source) for t in times],
+                                       timeframe_minutes=1, calendar=self.calendar())
+                self.assertFalse(data.quality['valid'])
+                self.assertEqual(len(data.bars), 2)
+                self.assertEqual(len(data.quality['session_coverage_gaps']), 1)
+                with self.assertRaises(ValidationError): validate_dataset(data)
+
+    def test_whole_missing_night_session_rejected(self):
+        data = aggregate_ticks([tick(t, '20000', source_type='official_local')
+                                for t in ('08:45:00','08:46:00','08:47:00')],
+                               timeframe_minutes=1, calendar=self.calendar(True))
+        self.assertFalse(data.quality['valid'])
+        self.assertEqual(data.quality['session_coverage_gaps'][0]['session'], 'night')
+
+    def test_complete_day_night_cross_midnight_stays_valid(self):
+        rows = [tick(t, '20000', source_type='official_local') for t in ('08:45:00','08:46:00','08:47:00')]
+        for stamp in ('2026-10-07T23:59:00+08:00', '2026-10-08T00:00:00+08:00'):
+            rows.append(dict(rows[0], timestamp=parse_timestamp(stamp)))
+        data = aggregate_ticks(rows, timeframe_minutes=1, calendar=self.calendar(True))
+        validate_dataset(data)
+        self.assertEqual(len(data.bars), 5)
+
+    def test_other_contract_specific_session_not_required(self):
+        records = [dict(s) for s in self.calendar().sessions]
+        records.append({'open':'2026-10-07T15:00:00+08:00','end':'2026-10-08T05:00:00+08:00',
+                        'trade_date':'2026-10-08','session':'night','source':'synthetic',
+                        'contract_id':'TAIFEX:TMF:202611'})
+        data = aggregate_ticks([tick(t, '20000', source_type='official_local')
+                                for t in ('08:45:00','08:46:00','08:47:00')],
+                               timeframe_minutes=1, calendar=SessionCalendar(records,version='contract-filter'))
+        validate_dataset(data)
+
+    def test_official_daily_missing_whole_session_rejected(self):
+        import json
+        row = {'Date':'20261008','Contract':'TMF','ContractMonth(Week)':'202610',
+               'Open':'20000','High':'20010','Low':'19990','Last':'20005',
+               'Volume':'10','TradingSession':'一般'}
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'daily.json'; path.write_text(json.dumps([row]))
+            data=import_taifex(path,kind='daily_json',calendar=self.calendar(True),contract_id=CID)
+        self.assertFalse(data.quality['valid'])
+        with self.assertRaises(ValidationError): validate_dataset(data)

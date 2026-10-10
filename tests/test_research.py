@@ -51,6 +51,18 @@ class InvalidGenerator(FixtureGenerator):
     def improve(self, context): raise RuntimeError('private provider detail')
 
 
+class RenamedDuplicateGenerator(FixtureGenerator):
+    def improve(self, context):
+        return self.generate(context)
+
+
+def invalid_improvement_transport(endpoint, request, timeout):
+    # Inert unit-test provider only; no network or real-model acceptance.
+    context = json.loads(request['messages'][-1]['content'])
+    payload = to_dict(builtin_strategies()[0]) if context['iteration'] == 0 else {'code': 'invalid DSL fixture'}
+    return {'choices': [{'message': {'content': json.dumps(payload)}}]}
+
+
 class HangingGenerator(FixtureGenerator):
     def generate(self, context):
         while True:
@@ -105,6 +117,176 @@ def tracked_sqlite_connections(*, fail_open_name=None, fail_statement=None):
 
 
 class ResearchTests(unittest.TestCase):
+    def test_production_prompt_explains_schema_without_candidate_answer(self):
+        from quantlab.research import PROMPT, FAMILIES
+        for key in ('strategy_id', 'family', 'parameters', 'rules', 'schema_version'):
+            self.assertIn(key, PROMPT)
+        for family in FAMILIES:
+            self.assertIn(family + ':', PROMPT)
+        self.assertIn('Choose parameter values yourself', PROMPT)
+        self.assertNotIn('fixture_', PROMPT)
+        self.assertNotIn('trend-v1', PROMPT)
+
+    def test_candidate_fingerprint_normalizes_numbers_defaults_and_cosmetic_ids(self):
+        from quantlab.research import candidate_fingerprint
+        from decimal import localcontext
+        first = {'strategy_id': 'first', 'family': 'mean_reversion',
+                 'parameters': {'lookback': 20, 'entry_bps': '0123.4500'}, 'rules': {}}
+        second = copy.deepcopy(first)
+        second['strategy_id'] = 'renamed'
+        second['parameters'].update(entry_bps='123.45', quantity=1)
+        a, b = validate_dsl(first), validate_dsl(second)
+        self.assertEqual(candidate_fingerprint(a), candidate_fingerprint(b))
+        with localcontext() as context:
+            context.prec = 2
+            self.assertEqual(candidate_fingerprint(a), candidate_fingerprint(b))
+        second['parameters']['lookback'] = 21
+        self.assertNotEqual(candidate_fingerprint(a), candidate_fingerprint(validate_dsl(second)))
+
+    def test_duplicate_improvement_is_retained_but_not_retested(self):
+        data, config = inputs()
+        config.update(families=['trend'], max_trials=2, max_improvements=1)
+        config['ranking']['minimum'] = '-1000000'
+        with tempfile.TemporaryDirectory() as tmp:
+            state = run_campaign(data, config=config, generator=RenamedDuplicateGenerator(), output_dir=Path(tmp)/'campaign')
+        first, second = state['attempts']
+        self.assertEqual(first['status'], 'evaluated')
+        self.assertEqual(second['status'], 'rejected')
+        self.assertNotEqual(first['output']['strategy_id'], second['output']['strategy_id'])
+        self.assertEqual(first['candidate_fingerprint'], second['candidate_fingerprint'])
+        self.assertEqual(second['duplicate_of'], first['attempt_id'])
+        self.assertEqual(second['parent_id'], first['attempt_id'])
+        self.assertEqual(second['metrics'], {})
+        self.assertIn('duplicate_candidate_not_retested', second['warnings'])
+
+    def test_distinct_improvement_receives_only_previous_training_feedback(self):
+        data, config = inputs()
+        config.update(families=['trend'], max_trials=2, max_improvements=1)
+        config['ranking']['minimum'] = '-1000000'
+        with tempfile.TemporaryDirectory() as tmp:
+            state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp)/'campaign')
+        first, second = state['attempts']
+        self.assertEqual([first['status'], second['status']], ['evaluated', 'evaluated'])
+        self.assertNotEqual(first['candidate_fingerprint'], second['candidate_fingerprint'])
+        previous = second['generator_context']['previous']
+        self.assertEqual(previous['output'], first['output'])
+        self.assertEqual(set(previous['metrics']), {'train', 'validation'})
+        self.assertEqual(previous['metrics']['validation'], first['metrics']['validation']['metrics'])
+        self.assertNotIn('oos', second['generator_context'])
+        self.assertNotIn('holdout', second['generator_context'])
+
+    def test_invalid_improvement_consumes_real_provider_budget_without_fallback(self):
+        data, config = inputs()
+        config.update(families=['trend'], max_trials=2, max_improvements=1)
+        config['ranking']['minimum'] = '-1000000'
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'budget.db'
+            provider = CompatibleProvider(model='unit-test-mock-not-real', endpoint='https://example.invalid/v1',
+                transport=invalid_improvement_transport, budget_path=path, network_opt_in=True,
+                max_calls=2, max_tokens=30000)
+            state = run_campaign(data, config=config, generator=provider, output_dir=Path(tmp)/'campaign')
+            with closing(sqlite3.connect(path)) as db:
+                self.assertEqual(db.execute('SELECT calls FROM budget').fetchone()[0], 2)
+        first, second = state['attempts']
+        self.assertEqual([first['status'], second['status']], ['evaluated', 'rejected'])
+        self.assertEqual(second['output'], {'code': 'invalid DSL fixture'})
+        self.assertEqual(second['metrics'], {})
+        self.assertEqual(len(state['provider_receipts']), 2)
+
+    def test_provider_improve_marks_task_without_mutating_or_injecting_answers(self):
+        requests = []
+        def transport(endpoint, request, timeout):
+            requests.append(request)
+            return {'choices': [{'message': {'content': '{}'}}]}
+        context = {'family': 'trend', 'iteration': 1, 'previous': {'metrics': {'train': {}, 'validation': {}}}}
+        before = copy.deepcopy(context)
+        with tempfile.TemporaryDirectory() as tmp:
+            provider = CompatibleProvider(model='unit-test-mock', endpoint='https://example.invalid/v1',
+                transport=transport, budget_path=Path(tmp)/'budget.db', network_opt_in=True,
+                max_calls=1, max_tokens=20000, output_mode='registry_json_schema')
+            provider.improve(context)
+        sent = json.loads(requests[0]['messages'][-1]['content'])
+        self.assertEqual(context, before)
+        self.assertEqual(sent['task'], 'improve_previous_candidate')
+        self.assertEqual(sent['previous'], before['previous'])
+        self.assertIn('not just strategy_id', sent['improvement_instruction'])
+
+    def test_registry_schema_is_closed_but_keeps_cross_field_validator(self):
+        from quantlab.research import registry_json_schema, FAMILIES
+        from quantlab.strategies import DEFAULTS
+        for family in FAMILIES:
+            schema = registry_json_schema(family)
+            self.assertFalse(schema['additionalProperties'])
+            self.assertEqual(schema['properties']['family']['const'], family)
+            params = schema['properties']['parameters']
+            self.assertFalse(params['additionalProperties'])
+            self.assertEqual(set(params['required']), set(DEFAULTS[family]))
+            self.assertTrue(all(v['type'] == 'integer' and v['minimum'] < v['maximum']
+                                for v in params['properties'].values()))
+            self.assertFalse(schema['properties']['rules']['additionalProperties'])
+        with self.assertRaises(ValidationError): registry_json_schema('unknown')
+        with self.assertRaises(ValidationError):
+            validate_dsl({'strategy_id': 'unit-invalid', 'family': 'trend',
+                          'parameters': {'fast': 20, 'slow': 10}, 'rules': {}})
+
+    def test_structured_request_is_explicit_and_never_falls_back(self):
+        requests = []
+        def transport(endpoint, request, timeout):
+            requests.append(request)
+            raise ValidationError('unit-test unsupported schema response')
+        with tempfile.TemporaryDirectory() as tmp:
+            provider = CompatibleProvider(model='unit-test', endpoint='https://example.invalid/v1',
+                transport=transport, budget_path=Path(tmp)/'budget.db', network_opt_in=True,
+                max_calls=1, max_tokens=10000, output_mode='registry_json_schema')
+            with self.assertRaises(ValidationError): provider.generate({'family': 'trend'})
+            self.assertEqual(len(requests), 1)
+            fmt = requests[0]['response_format']
+            self.assertEqual(fmt['type'], 'json_schema')
+            self.assertTrue(fmt['json_schema']['strict'])
+            self.assertEqual(fmt['json_schema']['schema']['properties']['family']['const'], 'trend')
+            with self.assertRaises(ValidationError): provider.generate({'family': 'trend'})
+            self.assertEqual(len(requests), 1)
+
+    def test_default_output_mode_preserves_existing_durable_budget_identity(self):
+        def transport(*args):
+            return {'choices': [{'message': {'content': '{}'}}]}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'budget.db'
+            options = dict(model='unit-test', endpoint='https://example.invalid/v1',
+                transport=transport, budget_path=path, network_opt_in=True,
+                max_calls=1, max_tokens=10000)
+            CompatibleProvider(**options).generate({})
+            with closing(sqlite3.connect(path)) as db:
+                binding = db.execute('SELECT binding FROM budget').fetchone()[0]
+            legacy = {'model': 'unit-test', 'endpoint': 'https://example.invalid/v1',
+                      'calls': 1, 'tokens': 10000, 'spend': '0', 'rate': '0',
+                      'per_call': 2048, 'timeout': 30}
+            self.assertEqual(binding, content_hash(legacy))
+            with self.assertRaisesRegex(ValidationError, 'budget exhausted'):
+                CompatibleProvider(**options, output_mode='json_object').generate({})
+            with self.assertRaisesRegex(ValidationError, 'immutable'):
+                CompatibleProvider(**options, output_mode='registry_json_schema').generate({'family': 'trend'})
+
+    def test_parameter_contract_matches_each_registry_family(self):
+        from quantlab.research import PARAMETER_CONTRACTS
+        from quantlab.strategies import DEFAULTS
+        self.assertEqual(set(PARAMETER_CONTRACTS), set(DEFAULTS))
+        for family, defaults in DEFAULTS.items():
+            self.assertEqual(set(PARAMETER_CONTRACTS[family]), set(defaults))
+            self.assertTrue(all(isinstance(v, str) for v in PARAMETER_CONTRACTS[family].values()))
+
+    def test_training_summary_uses_only_partitioned_training_bars(self):
+        from quantlab.research import _campaign_config, training_summary
+        data, config = inputs()
+        splits = _campaign_config(data, config)
+        summary = training_summary(splits['train'])
+        self.assertEqual(summary['bar_count'], len(splits['train'].bars))
+        self.assertEqual(summary['hash'], content_hash(splits['train'].bars))
+        self.assertEqual(summary['last_close'], str(splits['train'].bars[-1].close))
+        self.assertEqual(summary['total_volume'], sum(b.volume for b in splits['train'].bars))
+        self.assertEqual(set(summary), {'bar_count', 'hash', 'first_close', 'last_close', 'high', 'low', 'total_volume'})
+        self.assertNotEqual(summary['hash'], content_hash(data.bars))
+
     def test_provider_rejects_secret_endpoints_before_persistence(self):
         # Deliberately synthetic URL markers; never contact a provider.
         endpoints = [

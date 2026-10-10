@@ -246,3 +246,33 @@ GitHub main規則需防直接推送、要求必要checks、禁止force-push與�
 來源 `3246cdc`／`b62803a` 的全部必要 PR jobs 已成功：Quantlab run37964547136、installer run37964547102。16.2 的第1–3項已完成其 Windows Server 工程驗證；下一步更新現有 PR、exact-head 通過後整合與發布預覽。桌面D0–D4及D9計60點，合計160/200＝80%，剩餘20%；D6 Release待發布，D5／D7／D8仍須乾淨client OS。固定權重不變。
 
 Linux fresh checkout263 tests（257 PASS、6 platform/tool skips）；Windows installer263 tests（256 PASS、7 Linux／Streamlit skips），各適用平台的專用 jobs 補足，未刪除失敗測試。通過安裝器生命週期並不代表無開發環境clean Win10／11通過。所有主要功能使用合成fixture的端到端測試都有明確標示，真模型／長期歷史／正式市場評估另列未驗證。
+
+## 17 接續正式產品驗收：0.1.2（新增必要驗證，非重做專案）
+
+基準main5943b6e已發布0.1.1 preview，D6計分修正為已完成，原固定總分170/200＝85%，剩15%。D5無開發環境clean機、D7 Win10 22H2 x64、D8 Win11 x64保持EXTERNAL BLOCKED。準備驗收工具不能換算為作業系統實測PASS；新發現安全缺陷會否決新版發布，即使歷史計分未歸零。
+
+本輪順序與完成證據：
+1. 修正備份控制帳本、Paper uncertainty及官方資料完整性缺陷；先凍結案例，再修實作，保留失敗before證據。資料12日／13,680 bars真實驗證，Oct7缺分鐘拒絕。
+2. 以免費官方本地模型驗證實際生成／回測／樣本外／比較；自由JSON失敗如實保留，structured mode只限制輸出合約，不手填答案、不放寬原DSL validator。虧損和零交易均揭露，不能把流程PASS當策略投資PASS。
+3. Windows installer轉為完整分版本payload，保持先前可執行版本；真已發布0.1.1→新版及實際安裝程序中斷由Windows CI驗收，不以相同payload的0.0.0 fixture替代。構造的split-shortcut情境獨立標記，不冒充真斷電。
+4. 發布zip型clean-client kit：兩版EXE、各自manifest、內建PowerShell程序及完整人工檢核。目標端不需要Python/Git；拒絕Server、ARM、錯誤build、開發工具、既有資料/安裝、提權或非互動工作階段，不刪資料製造clean。完整操作／真AI/行情／歷史state migration另保留證據要求。
+5. 全部必要exact-head回歸、品質、相依漏洞、Windows實際build/install/recovery通過才合併本輪唯一分支；Release再檢查main可達及7個named gates。實際下載校驗新版EXE及kit，不以建置開始當交付。
+6. 更新原有文件與功能矩陣，交付新版預覽及外部限制；未具clean Win10/11證據仍不得宣稱正式完成。
+
+免費合法環境調查與可重現程序在`packaging/clean_windows_README.md`；更新復原/保留payload磁碟影響在`packaging/update_recovery.md`。兩者是可執行交付的操作附件，03/05仍集中記錄風險與Roadmap，不拆出大量重複規範。
+
+### 未完成條款的處理
+
+- clean Windows授權/VM：EXTERNAL BLOCKED。Microsoft官方評估媒體或使用者既有合規授權可作後續路徑；不能擅自接受協議/啟用或購買資源。
+- main強制保護：EXTERNAL BLOCKED，管理API403；本地/CI流程不能代替GitHub規則。
+- 真券商、即時行情斷線重連：NOT VERIFIED／需要官方權限資格；已有Paper模擬故障測試不是實際外部連線證明。
+- 正式策略晉級：NOT QUALIFIED，短資料、假設成本、實際虧損/零交易，不能建立可信正式排行榜。這是資料/研究證據不足，不可謊稱只是API授權缺失。
+- 自由AST可靠生成：實驗FAILED／PARTIAL；受限家族參數structured方式已技術驗證。保持模式名稱與能力界線，不以新架構掩蓋限制。
+
+## 18 新增正式產品範圍：市場優先桌面（2026-10-09 22:52 UTC）
+
+使用者新增專業交易儀表板、加權指數/TX/MXF/TMF實際契約、合法真行情與時效標籤、自選清單、互動蠟燭/成交量/十字游標/縮放拖曳、1/3/5/15/30/60分與日週K、MA5/10/20/60及EMA/RSI/MACD/KD/Bollinger/VWAP、訊號與成交分開圖示。AI研究/回測/比較/Paper/風控改為一般使用者表單與圖表，原始JSON移進階診斷；深色繁中、台灣漲紅跌綠且文字符號並用、DPI與小視窗、偏好持久化。核心及已驗證安全機制沿用，新增UI必須打包至Windows桌面。
+
+本輪0.1.2安全/安裝修復先完成其固定Gate與整合，再依序盤點→真行情儀表板→K線/指標→AI/回測表單→比較/Paper/風控→UI回歸→Win10/11驗收。AI優先官方允許的訂閱途徑、免費本機或手動交換；ChatGPT訂閱不得視為API額度，付費API預設停用，不使用Cookie/未授權自動化。真即時資料權限不足時提供真歷史功能並明示來源/時間，禁止假行情。
+
+原固定範圍85%仍僅代表170/200歷史Gate；新增範圍尚待盤點凍結權重，未驗收不計分；新版整體完成率待新分母凍結後重算，不能宣稱仍85%。各項門檻維持；第二/第三優先進階功能先列評估，不拖延必要行情/UI。真AI有效改善候選目前FAILED，工程迴路通過不等於模型品質通過，後續修復須預先限制實驗預算及避免反覆使用holdout。

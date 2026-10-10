@@ -129,6 +129,25 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.restore_confirm.setChecked(True); self.click('restore_backup'); self.wait_job()
         self.assertTrue((self.paths.state/'desktop_safety.json').exists())
 
+    def test_output_mode_persists_without_reopening_legacy_budget_identity(self):
+        from desktop_ui import provider_binding_options
+        old = {'mode': 'compatible', 'model': 'example', 'network_opt_in': True}
+        self.assertEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='json_object')))
+        self.assertNotEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='registry_json_schema')))
+        self.window.output_mode.setCurrentIndex(1)
+        self.click('save_settings')
+        saved = self.window.settings.load()
+        self.assertEqual(saved['output_mode'], 'registry_json_schema')
+        self.window.output_mode.setCurrentIndex(0)
+        self.window.load_settings()
+        self.assertEqual(self.window.output_mode.currentData(), 'registry_json_schema')
+        self.window.settings.save({'output_mode': 'unknown-mode'})
+        with self.assertRaises(ValueError):
+            self.window.load_settings()
+        self.assertEqual(self.window.settings.load()['output_mode'], 'unknown-mode')
+        self.window.settings.save({})
+        self.window.load_settings()
+
     def test_invalid_policy_cannot_poison_startup(self):
         self.demo(); self.click('paper_snapshot')
         deadline=time.monotonic()+10

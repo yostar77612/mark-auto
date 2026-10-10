@@ -25,7 +25,48 @@ from .backtest import run_backtest
 
 FAMILIES = ('trend', 'mean_reversion', 'channel_breakout', 'momentum', 'volatility_compression')
 FIELDS = {'open', 'high', 'low', 'close', 'volume'}
-PROMPT = 'quantlab-v1: Return only the bounded strategy JSON DSL. Training and validation summaries only. Risk controls are immutable.'
+PROMPT = '''quantlab-v2: Propose one strategy for the requested family using only the supplied training summary and prior train/validation results. Return one JSON object, without prose or code.
+Required keys: strategy_id (1..64 ASCII letters, digits, underscore or hyphen), family (exactly the requested family), parameters (object), rules (object). Optional schema_version must be 1.
+Choose parameter values yourself. The current context's parameter_contract lists the exact parameter keys to emit; family names are never parameter keys. Required parameters by family:
+trend: fast and slow integers, 1 <= fast < slow <= 1000.
+mean_reversion: lookback integer 2..1000, entry_bps positive decimal string <= 10000.
+channel_breakout: lookback integer 2..1000.
+momentum: lookback integer 2..1000, threshold_bps positive decimal string <= 10000, max_holding_bars integer 1..1000.
+volatility_compression: lookback integer 2..1000, max_range_bps positive decimal string <= 10000.
+Use only the required family parameters; do not alter quantity, stops, costs, margin or risk controls. Prefer lookbacks comfortably shorter than the training bar count.
+Use rules={} to use the built-in causal family signal logic. Alternatively rules must contain long and short boolean AST nodes, optionally exit. Numeric AST nodes: {"op":"const","value":decimal_string_or_integer}; {"op":"field","name":OHLCV_field,"lag":nonnegative_integer}; or {"op":indicator,"field":OHLCV_field,"period":integer_1_to_500,"lag":nonnegative_integer}. OHLCV_field is open, high, low, close or volume; indicator is sma, highest, lowest or return_bps; lag is optional and at most 500. Boolean nodes: {"op":comparison,"left":numeric_node,"right":numeric_node} with comparison gt/gte/lt/lte/eq; {"op":"and" or "or","args":[boolean_nodes]} with 2..8 arguments; {"op":"not","arg":boolean_node}. Maximum AST depth 12 and 128 nodes. No other operators, expressions, executable code, or extra keys.
+Training summaries are descriptive, not proof of profitability. Risk controls are immutable.'''
+PARAMETER_CONTRACTS = {
+    'trend': {'fast': 'integer 1..999, strictly below slow', 'slow': 'integer 2..1000, strictly above fast'},
+    'mean_reversion': {'lookback': 'integer 2..1000', 'entry_bps': 'decimal string greater than 0 and at most 10000'},
+    'channel_breakout': {'lookback': 'integer 2..1000'},
+    'momentum': {'lookback': 'integer 2..1000', 'threshold_bps': 'decimal string greater than 0 and at most 10000', 'max_holding_bars': 'integer 1..1000'},
+    'volatility_compression': {'lookback': 'integer 2..1000', 'max_range_bps': 'decimal string greater than 0 and at most 10000'},
+}
+
+
+def registry_json_schema(family):
+    """Constrain registry-family parameter generation, not arbitrary AST creation.
+
+    All values remain model choices. Integer basis points are a supported subset
+    of the decimal DSL. Cross-field semantics still require validate_dsl.
+    """
+    if family not in PARAMETER_CONTRACTS:
+        raise ValidationError('Unknown schema family')
+    properties = {}
+    for name in PARAMETER_CONTRACTS[family]:
+        minimum = 1 if name in ('fast', 'max_holding_bars', 'entry_bps', 'threshold_bps', 'max_range_bps') else 2
+        maximum = 10000 if name.endswith('_bps') else (999 if name == 'fast' else 1000)
+        properties[name] = {'type': 'integer', 'minimum': minimum, 'maximum': maximum}
+    return {'type': 'object', 'additionalProperties': False,
+            'required': ['strategy_id', 'family', 'parameters', 'rules', 'schema_version'],
+            'properties': {
+                'strategy_id': {'type': 'string', 'pattern': '^[A-Za-z0-9_-]{1,64}$'},
+                'family': {'type': 'string', 'const': family},
+                'parameters': {'type': 'object', 'additionalProperties': False,
+                               'required': list(properties), 'properties': properties},
+                'rules': {'type': 'object', 'properties': {}, 'additionalProperties': False},
+                'schema_version': {'type': 'integer', 'const': 1}}}
 
 
 def _unique_keys(pairs):
@@ -150,6 +191,45 @@ def validate_dsl(payload: dict) -> StrategySpec:
     return spec
 
 
+def candidate_fingerprint(spec: StrategySpec) -> str:
+    """Canonical behavioral structure, excluding cosmetic strategy IDs.
+
+    Normalize numeric spellings and explicit default quantity/lag. This detects
+    repeated structures, not every logically equivalent Boolean expression.
+    Decimal tuples avoid ambient rounding and giant exponent expansion.
+    """
+    validate_strategy(spec)
+    def number(value):
+        parsed = _number(value)
+        if not parsed:
+            return [0, '0', 0]
+        sign, digits, exponent = parsed.as_tuple()
+        digits = list(digits)
+        while digits[-1] == 0:
+            digits.pop()
+            exponent += 1
+        return [sign, ''.join(str(d) for d in digits), exponent]
+    def rule(node):
+        result = {}
+        for key, value in node.items():
+            if key == 'value' and node['op'] == 'const':
+                result[key] = number(value)
+            elif isinstance(value, dict):
+                result[key] = rule(value)
+            elif isinstance(value, (list, tuple)):
+                result[key] = [rule(item) for item in value]
+            else:
+                result[key] = value
+        if node['op'] in ('field', 'sma', 'highest', 'lowest', 'return_bps'):
+            result.setdefault('lag', 0)
+        return result
+    parameters = dict(spec.parameters)
+    parameters.setdefault('quantity', 1)
+    return content_hash({'family': spec.family,
+                         'parameters': {key: number(value) for key, value in parameters.items()},
+                         'rules': {key: rule(value) for key, value in spec.rules.items()}})
+
+
 class Generator(Protocol):
     def generate(self, context: dict) -> dict: ...
     def improve(self, context: dict) -> dict: ...
@@ -187,7 +267,8 @@ class CompatibleProvider:
                  budget_path: Path, network_opt_in: bool = False,
                  timeout_seconds: int = 30, max_calls: int = 0,
                  max_tokens: int = 0, max_spend: str = '0',
-                 tokens_per_call: int = 2048, cost_per_token: str = '0'):
+                 tokens_per_call: int = 2048, cost_per_token: str = '0',
+                 output_mode: str = 'json_object'):
         if not model or not isinstance(model, str) or not isinstance(endpoint, str) or not endpoint.startswith(('https://', 'http://127.0.0.1:', 'http://localhost:', 'http://[::1]:')):
             raise ValidationError('Explicit model and HTTPS or loopback HTTP endpoint required')
         # Validate before retaining the endpoint or creating any budget files:
@@ -203,6 +284,9 @@ class CompatibleProvider:
         if invalid:
             raise ValidationError('Provider endpoint must be valid and cannot contain credentials, query or fragment')
         self.model, self.endpoint, self.transport = model, endpoint, transport
+        if output_mode not in ('json_object', 'registry_json_schema'):
+            raise ValidationError('Unsupported provider output mode')
+        self.output_mode = output_mode
         self.network_opt_in = network_opt_in is True
         self.timeout = _integer(timeout_seconds, 1, 120, 'timeout')
         self.max_calls = _integer(max_calls, 0, 100, 'max_calls')
@@ -220,16 +304,30 @@ class CompatibleProvider:
     def generate(self, context: dict) -> dict:
         if not self.network_opt_in:
             raise ValidationError('Provider network access is disabled')
+        request_context = copy.deepcopy(context)
+        response_format = {'type': 'json_object'}
+        if self.output_mode == 'registry_json_schema':
+            response_format = {'type': 'json_schema', 'json_schema': {
+                'name': 'quantlab_registry_candidate', 'strict': True,
+                'schema': registry_json_schema(context.get('family'))}}
+            request_context['output_contract'] = (
+                'registry_json_schema mode: choose your own integer parameter values, including basis points. '
+                'Return rules={} to use the requested built-in family. Do not generate an AST. '
+                'Choose lookbacks much shorter than training bar count; trend fast must be below slow.')
         request = {'model': self.model, 'messages': [
             {'role': 'system', 'content': PROMPT},
-            {'role': 'user', 'content': canonical_json(context)}],
-            'max_tokens': self.tokens_per_call, 'response_format': {'type': 'json_object'}}
+            {'role': 'user', 'content': canonical_json(request_context)}],
+            'max_tokens': self.tokens_per_call, 'response_format': response_format}
         # Reserve input bytes as a conservative token upper bound plus output cap.
         tokens = len(canonical_json(request).encode('utf-8')) + self.tokens_per_call
         spend = Decimal(tokens) * self.cost_per_token
-        binding = content_hash({'model': self.model, 'endpoint': self.endpoint,
+        budget_identity = {'model': self.model, 'endpoint': self.endpoint,
             'calls': self.max_calls, 'tokens': self.max_tokens, 'spend': str(self.max_spend),
-            'rate': str(self.cost_per_token), 'per_call': self.tokens_per_call, 'timeout': self.timeout})
+            'rate': str(self.cost_per_token), 'per_call': self.tokens_per_call, 'timeout': self.timeout}
+        # Preserve the pre-option identity for default JSON-object budgets.
+        if self.output_mode != 'json_object':
+            budget_identity['output_mode'] = self.output_mode
+        binding = content_hash(budget_identity)
         with closing(sqlite3.connect(self.path)) as db, db:
             db.execute('CREATE TABLE IF NOT EXISTS budget (binding TEXT, calls INTEGER, tokens INTEGER, spend TEXT)')
             db.execute('CREATE TABLE IF NOT EXISTS calls (sequence INTEGER PRIMARY KEY, request_hash TEXT, status TEXT, response_hash TEXT, reserved_tokens INTEGER, reserved_spend TEXT)')
@@ -267,6 +365,12 @@ class CompatibleProvider:
             raise ValidationError('Malformed compatible provider response') from exc
 
     def improve(self, context: dict) -> dict:
+        context = copy.deepcopy(context)
+        context['task'] = 'improve_previous_candidate'
+        context['improvement_instruction'] = (
+            'Use previous training and validation feedback to propose a distinct candidate in the same family. '
+            'Change parameters or rules, not just strategy_id. Keep risk controls unchanged. '
+            'Do not claim performance improved before the new candidate is evaluated.')
         return self.generate(context)
 
 
@@ -427,6 +531,21 @@ def _summary(result):
             'result_hash': content_hash(result), 'manifest': to_dict(result.manifest)}
 
 
+def training_summary(dataset):
+    """Small deterministic description of this training split only, never bars.
+
+    This is descriptive context, not an optimizer or a candidate recommendation.
+    Caller supplies the already partitioned training dataset.
+    """
+    bars = dataset.bars
+    if not bars:
+        raise ValidationError('Training summary requires bars')
+    return {'bar_count': len(bars), 'hash': content_hash(bars),
+            'first_close': str(bars[0].close), 'last_close': str(bars[-1].close),
+            'high': str(max(b.high for b in bars)), 'low': str(min(b.low for b in bars)),
+            'total_volume': sum(b.volume for b in bars)}
+
+
 def _eligible(summary, ranking):
     metrics = summary['metrics']
     value = metrics.get('net_pnl')
@@ -500,6 +619,8 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
     provider = {'mode': mode, 'model': getattr(generator, 'model', None),
                 'endpoint': getattr(generator, 'endpoint', None)}
     if isinstance(generator, CompatibleProvider):
+        if generator.output_mode != 'json_object':
+            provider['output_mode'] = generator.output_mode
         provider['limits'] = {'calls': generator.max_calls, 'tokens': generator.max_tokens,
             'spend': str(generator.max_spend), 'rate': str(generator.cost_per_token),
             'tokens_per_call': generator.tokens_per_call, 'timeout': generator.timeout}
@@ -598,7 +719,8 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
             trial_start = time.monotonic()
             try:
                 context = {'family': family, 'iteration': iteration, 'seed': config['seed'],
-                           'training': {'bar_count': len(splits['train'].bars), 'hash': content_hash(splits['train'].bars)},
+                           'parameter_contract': copy.deepcopy(PARAMETER_CONTRACTS[family]),
+                           'training': training_summary(splits['train']),
                            'validation': {'bar_count': len(splits['validation'].bars), 'hash': content_hash(splits['validation'].bars)},
                            'previous': copy.deepcopy({'output': parent['output'], 'metrics': {k: v['metrics'] for k, v in parent['metrics'].items()}, 'status': parent['status']}) if parent else None}
                 attempt['generator_context'] = copy.deepcopy(context)
@@ -614,6 +736,13 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                     raise ValidationError('Provider changed requested family')
                 attempt['strategy_hash'] = content_hash(spec)
                 attempt['spec'] = to_dict(spec)
+                attempt['candidate_fingerprint'] = candidate_fingerprint(spec)
+                duplicate = next((prior for prior in state['attempts'][:-1]
+                                  if prior.get('candidate_fingerprint') == attempt['candidate_fingerprint']), None)
+                if duplicate is not None:
+                    attempt['duplicate_of'] = duplicate['attempt_id']
+                    attempt['warnings'].append('duplicate_candidate_not_retested')
+                    raise ValidationError('Repeated candidate structure')
                 for split in ('train', 'validation'):
                     if prior_elapsed + time.monotonic() - started >= config['max_runtime_seconds']:
                         raise ValidationError('Campaign runtime budget exhausted')

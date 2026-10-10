@@ -114,6 +114,7 @@ class PaperReplay:
                         db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
                     else:
                         plan = json.loads(saved)
+                self._fault('after_plan_before_submit')
                 for intent in plan:
                     state = self.broker.snapshot()
                     if state['kill_switch'] or state['reconciliation_required']:
@@ -124,6 +125,7 @@ class PaperReplay:
                     quote = {'account_id': state['account_id'], 'contract_id': bar.contract_id,
                              'timestamp': bar.timestamp, 'price': bar.open, **policy}
                     order = self.broker.submit(intent, quote=quote, now=bar.timestamp)
+                    self._fault('after_submit_before_fill')
                     if order['status'] in ('accepted', 'filled'):
                         price = bar.open + (1 if intent['side'] == 'buy' else -1) * self.broker.costs.slippage_ticks
                         commission, tax = calculate_costs(price, 1, self.broker.costs)
