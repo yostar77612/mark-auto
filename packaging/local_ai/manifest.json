@@ -1,0 +1,1151 @@
+{
+  "profile": "llamacpp-b11429-qwen15-v1",
+  "runtime": {
+    "filename": "llama-b11429-bin-win-cpu-x64.zip",
+    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-win-cpu-x64.zip",
+    "bytes": 19398918,
+    "sha256": "1283323272b04cd07905816a597a0da810918102de958f4ff6f7bbaa70ed2efe"
+  },
+  "model": {
+    "filename": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    "bytes": 1117320736,
+    "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+  },
+  "runtime_members": {
+    "ggml-base.dll": {
+      "bytes": 803328,
+      "sha256": "19b7666b4cd7dc01e219e247783ffd1979694d6f1635bbf3209ae5fa0fc169c0"
+    },
+    "ggml-cpu-alderlake.dll": {
+      "bytes": 1434624,
+      "sha256": "176045703530b923eb565052d9c622e1453c7013ac11823926f89260768cdddd"
+    },
+    "ggml-cpu-cannonlake.dll": {
+      "bytes": 1614336,
+      "sha256": "c9723eab21d1d80e38f3791088739c56a8a36f7db5ad2340811eac2d3fd45af7"
+    },
+    "ggml-cpu-cascadelake.dll": {
+      "bytes": 1598976,
+      "sha256": "1db7a13737763d444c278ac218ad9dc5dc850e1fcd98bc07ece307ae6f64dda6"
+    },
+    "ggml-cpu-cooperlake.dll": {
+      "bytes": 1608704,
+      "sha256": "482a40664f87b8e94bdab53c13b14fa6b722ffd743a7a7c4fa7d5cec6ed44852"
+    },
+    "ggml-cpu-haswell.dll": {
+      "bytes": 1439232,
+      "sha256": "8022a1d17a56f537b956683a484dc1a0f95ab4b01e95b4c57d53bb1e6c3e529f"
+    },
+    "ggml-cpu-icelake.dll": {
+      "bytes": 1606144,
+      "sha256": "c096a02ec4a9fecca14a14bd9ed5d6c9fa7569cc2a678b08dd1978646abe1e2a"
+    },
+    "ggml-cpu-ivybridge.dll": {
+      "bytes": 1314816,
+      "sha256": "1792967edf602b0a459cbb519e71a3037fba5854ba273b8328467c9d9dc201f1"
+    },
+    "ggml-cpu-piledriver.dll": {
+      "bytes": 1307648,
+      "sha256": "b47a82e5d9087f03a54a840e848e4f2e0b44312309065e60b8d0cd421202233c"
+    },
+    "ggml-cpu-sandybridge.dll": {
+      "bytes": 1289728,
+      "sha256": "007dc9fca693bf1e3941c1d46bb273de587c2d0947625884ccd68154d190e03c"
+    },
+    "ggml-cpu-sapphirerapids.dll": {
+      "bytes": 1885696,
+      "sha256": "72b1203f01d4aa12f22d45415d91dc046f15e3eb3da49f7110b59c888bee9978"
+    },
+    "ggml-cpu-skylakex.dll": {
+      "bytes": 1608192,
+      "sha256": "ccf578111e9688c2c51f0279ab4e56351fa084f7d6e43e7c091d961fdbb03081"
+    },
+    "ggml-cpu-sse42.dll": {
+      "bytes": 915456,
+      "sha256": "740d3e84289733501b70274904c9d1135bdc579babf7c82825f5ae0133e5afbd"
+    },
+    "ggml-cpu-x64.dll": {
+      "bytes": 908288,
+      "sha256": "b1089f3ad0cc1363519c3583b033648cf471297bdd5482e72c71dcf5c5cb0765"
+    },
+    "ggml-cpu-zen4.dll": {
+      "bytes": 1615360,
+      "sha256": "7f257519148e3b81fc718acad0f7afcd381d2b429fe0032a1f97e365d7ff2db5"
+    },
+    "ggml-rpc-server.exe": {
+      "bytes": 117248,
+      "sha256": "621d99411e46c721cc7a479cfb38491525f857b9159ad2656193994751d183fa"
+    },
+    "ggml-rpc.dll": {
+      "bytes": 168960,
+      "sha256": "7ba393c88878711014e57bfe77a45ec99bbcc106f945baec1c90614370dd9459"
+    },
+    "ggml.dll": {
+      "bytes": 79872,
+      "sha256": "2dc74873c47a09294431af997f7d5c31bdbc0eafc49c2c30ea03b7331c1a5c3c"
+    },
+    "libomp.dll": {
+      "bytes": 768000,
+      "sha256": "a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c"
+    },
+    "LICENSE-LLVM-OpenMP": {
+      "bytes": 19741,
+      "sha256": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+    },
+    "llama-batched-bench-impl.dll": {
+      "bytes": 61952,
+      "sha256": "fffda75084850c467df634417ac29b0aa814146021f334cd18d91a16e97b3048"
+    },
+    "llama-batched-bench.exe": {
+      "bytes": 9216,
+      "sha256": "0185ab3a5799d3452282ee01d0b501ef385769c0642a9375af2983a1834792c3"
+    },
+    "llama-bench-impl.dll": {
+      "bytes": 403968,
+      "sha256": "34e052bc21d7e81a174c4cb2f48aa93b26863a2fb6f326d70e17c732179b55ae"
+    },
+    "llama-bench.exe": {
+      "bytes": 9216,
+      "sha256": "168ad39c85bb45b1b43b133074317bc577ed7b0a34d380d6a559207683b94114"
+    },
+    "llama-cli-impl.dll": {
+      "bytes": 3315712,
+      "sha256": "5dc73fb3fecc0da17f6b18999a4516e6e346dcc0e1cff10379ab16a4fca182cc"
+    },
+    "llama-cli.exe": {
+      "bytes": 9216,
+      "sha256": "db2ca6b1255759101d8933370c992a9f2e219a0d62bc6528072eb4e0e7a323ba"
+    },
+    "llama-common.dll": {
+      "bytes": 7924224,
+      "sha256": "cb5011455243a8b6a91fed00fbb33d93fdb53fa7c417fc59f27a004af85d7d9b"
+    },
+    "llama-completion-impl.dll": {
+      "bytes": 136192,
+      "sha256": "92c753b5d1328540a43349466f892abbd34c3f902351f19b0aa58bc1752a97af"
+    },
+    "llama-completion.exe": {
+      "bytes": 9216,
+      "sha256": "aaf0bba4723883b8a4f25e9d02bb23802cad1cc5f5cb2aab53098691bf7c4c0d"
+    },
+    "llama-fit-params-impl.dll": {
+      "bytes": 43008,
+      "sha256": "b92509e2088e1fd2e4b0a3be809dc014019ed6430987ae6d30a2bae14ecf69ca"
+    },
+    "llama-fit-params.exe": {
+      "bytes": 9216,
+      "sha256": "c2bf85d263a04a73ed4af00e08a42296daac5a33255e31952e133b474848a494"
+    },
+    "llama-gemma3-cli.exe": {
+      "bytes": 27136,
+      "sha256": "1031f697b423794b145c38818d1350d22b07d6526aececbf84299a568a47184c"
+    },
+    "llama-gguf-split.exe": {
+      "bytes": 60416,
+      "sha256": "8743e2535624e84b0bba34a36bb7b7fdfea8dc5648d8139048644ddc03d4253d"
+    },
+    "llama-imatrix.exe": {
+      "bytes": 252416,
+      "sha256": "bd0e416ace4c93b30a110ce231d0afe9307b3a0ae7dc0438b4ca4b020fe9a7c6"
+    },
+    "llama-llava-cli.exe": {
+      "bytes": 27136,
+      "sha256": "1031f697b423794b145c38818d1350d22b07d6526aececbf84299a568a47184c"
+    },
+    "llama-minicpmv-cli.exe": {
+      "bytes": 27136,
+      "sha256": "193513388b62212ee816f752e64db9a377288f3bd3acb3fb509e23ca547fa387"
+    },
+    "llama-mtmd-cli.exe": {
+      "bytes": 92672,
+      "sha256": "e0f682258ece3fb940d8f0e6f334208ba3b8a1810739384093cfae63fb671851"
+    },
+    "llama-mtmd-debug.exe": {
+      "bytes": 55808,
+      "sha256": "bff6e878ab5814fadc82509558b81b9c17b25fee708db2fb76695c99722db527"
+    },
+    "llama-perplexity-impl.dll": {
+      "bytes": 197632,
+      "sha256": "7c07c54f84dfa2c6503e83f6f2bfe9788e7f0d00280517f10e7deddcf38beb99"
+    },
+    "llama-perplexity.exe": {
+      "bytes": 9216,
+      "sha256": "dda4774f04508bf4092e3d4e2cd13bc47b5433d3581793556f91284fb8b3c567"
+    },
+    "llama-quantize-impl.dll": {
+      "bytes": 137216,
+      "sha256": "a46a92fcd97eaf4db39a7460f48b744387ce257c02fa48f43f591f086d4f9f1a"
+    },
+    "llama-quantize.exe": {
+      "bytes": 9216,
+      "sha256": "645013b453bd71f82c7849b8ceb57a745aab69fdf30fca022b20afba9cfcf3cf"
+    },
+    "llama-qwen2vl-cli.exe": {
+      "bytes": 27136,
+      "sha256": "193513388b62212ee816f752e64db9a377288f3bd3acb3fb509e23ca547fa387"
+    },
+    "llama-results.exe": {
+      "bytes": 46592,
+      "sha256": "c131056ff1c1b2e737ec2bb2506df4883d9791e0239ac4a8d398298d742f73ff"
+    },
+    "llama-server-impl.dll": {
+      "bytes": 9170944,
+      "sha256": "8bdf535224880cf5b919ada99e6cb225338cce4d444b8e5b4acd1e2bb10bc0a0"
+    },
+    "llama-server.exe": {
+      "bytes": 9216,
+      "sha256": "7e236243c9b670c6a49410c03186fd575c57a0efe3fd8a21d8727503d571d5b6"
+    },
+    "llama-tokenize.exe": {
+      "bytes": 58880,
+      "sha256": "cdfc60f1714c630c5bc8e4c798e0399370688fb252ee7c6064f522247ae756ad"
+    },
+    "llama-tts.exe": {
+      "bytes": 41984,
+      "sha256": "a040c7203eb66dd61591f1c309165117d517e5d6c01ca086de126451b24ff847"
+    },
+    "llama.dll": {
+      "bytes": 3311616,
+      "sha256": "48d2b52f4d6b2d7db2ca4698edbb95ecb4511b792396c566e1340668b6415a71"
+    },
+    "llama.exe": {
+      "bytes": 104448,
+      "sha256": "466d9ea880c580baaea54d83dee8c70fa3b711e19076fe97a03bcd919924aa92"
+    },
+    "mtmd.dll": {
+      "bytes": 1795072,
+      "sha256": "817ba2841e73b9ef1170f2e235d30ef4cca5d4ec520a4817ca60e3737cff79ad"
+    }
+  },
+  "licenses": {
+    "LICENSE-llama.cpp-MIT.txt": {
+      "bytes": 1078,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    "LICENSE-Qwen-Apache-2.0.txt": {
+      "bytes": 11343,
+      "sha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e"
+    },
+    "LICENSE-LLVM-OpenMP.txt": {
+      "bytes": 19741,
+      "sha256": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+    }
+  },
+  "provenance": {
+    "verified_utc": "2026-10-10T08:22:16.088361+00:00",
+    "runtime_release": "https://github.com/ggml-org/llama.cpp/releases/tag/b11429",
+    "runtime_commit": "d81235049384534c167caea52b85a694f6103d14",
+    "runtime_asset_id": 613152134,
+    "runtime_release_api": "https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/b11429",
+    "runtime_checksum_listing": "https://github.com/ggml-org/llama.cpp/releases/expanded_assets/b11429",
+    "runtime_archive_downloaded_and_hashed": true,
+    "runtime_zip_crc_verified": true,
+    "runtime_layout": "flat",
+    "runtime_uncompressed_bytes": 49497373,
+    "model_repository": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+    "model_revision": "91cad51170dc346986eccefdc2dd33a9da36ead9",
+    "model_metadata_api": "https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF/revision/91cad51170dc346986eccefdc2dd33a9da36ead9?blobs=true",
+    "model_existing_local_bytes_rehashed": true,
+    "license_sources": {
+      "LICENSE-llama.cpp-MIT.txt": "https://raw.githubusercontent.com/ggml-org/llama.cpp/d81235049384534c167caea52b85a694f6103d14/LICENSE",
+      "LICENSE-Qwen-Apache-2.0.txt": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/LICENSE",
+      "LICENSE-LLVM-OpenMP.txt": "https://github.com/ggml-org/llama.cpp/releases/download/b11429/llama-b11429-bin-win-cpu-x64.zip#LICENSE-LLVM-OpenMP"
+    },
+    "license_note": "The Windows ZIP contains LICENSE-LLVM-OpenMP but not the llama.cpp MIT LICENSE. Preserve every ZIP member and package all three pinned notices.",
+    "pe_imports": {
+      "ggml-base.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-alderlake.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-cannonlake.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-cascadelake.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-cooperlake.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-haswell.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-icelake.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-ivybridge.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-piledriver.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-sandybridge.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-sapphirerapids.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-skylakex.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-sse42.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-x64.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-cpu-zen4.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "ADVAPI32.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "libomp.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-rpc-server.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "ggml-rpc.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll",
+          "WS2_32.dll"
+        ]
+      },
+      "ggml.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "libomp.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "KERNEL32.dll",
+          "PSAPI.DLL"
+        ]
+      },
+      "llama-batched-bench-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-batched-bench.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-batched-bench-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-bench-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-bench.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-bench-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-cli-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "CRYPT32.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama-server-impl.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll",
+          "WS2_32.dll"
+        ]
+      },
+      "llama-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-cli-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-common.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "CRYPT32.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "SHELL32.dll",
+          "VCRUNTIME140.dll",
+          "VCRUNTIME140_1.dll",
+          "WS2_32.dll"
+        ]
+      },
+      "llama-completion-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-completion.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-completion-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-fit-params-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-fit-params.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-fit-params-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-gemma3-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-gguf-split.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-imatrix.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-llava-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-minicpmv-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-mtmd-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "mtmd.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-mtmd-debug.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "mtmd.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-perplexity-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-perplexity.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-perplexity-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-quantize-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-quantize.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-quantize-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-qwen2vl-cli.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-results.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-server-impl.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "CRYPT32.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "mtmd.dll",
+          "VCRUNTIME140.dll",
+          "VCRUNTIME140_1.dll",
+          "WS2_32.dll"
+        ]
+      },
+      "llama-server.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-server-impl.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-tokenize.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama-tts.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "ggml-base.dll",
+          "KERNEL32.dll",
+          "llama-common.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "mtmd.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "llama.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll",
+          "VCRUNTIME140_1.dll"
+        ]
+      },
+      "llama.exe": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "KERNEL32.dll",
+          "llama-batched-bench-impl.dll",
+          "llama-bench-impl.dll",
+          "llama-cli-impl.dll",
+          "llama-common.dll",
+          "llama-completion-impl.dll",
+          "llama-fit-params-impl.dll",
+          "llama-perplexity-impl.dll",
+          "llama-quantize-impl.dll",
+          "llama-server-impl.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      },
+      "mtmd.dll": {
+        "machine": "0x8664",
+        "imports": [
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "ggml-base.dll",
+          "ggml.dll",
+          "KERNEL32.dll",
+          "llama.dll",
+          "MSVCP140.dll",
+          "VCRUNTIME140.dll"
+        ]
+      }
+    },
+    "pe_imports_note": "Static PE import-table inventory. Dynamic DLL loading is not completely represented; preserve every archive member. No binaries executed.",
+    "support_dlls": {
+      "source": "shiboken6-6.12.0-cp310-abi3-win_amd64.whl",
+      "wheel_sha256": "a1906cb8116869178c64b6bab52623bbc8b4ceed7b30bfc3c9aa0f6e67f6438e",
+      "distribution": "Existing hash-pinned application dependency; copied to isolated local-ai dependency directory from installed shiboken6 package at freeze time. No separate installation."
+    }
+  },
+  "support_dlls": {
+    "msvcp140.dll": {
+      "bytes": 549176,
+      "sha256": "1ba4d7c0a95d375da138a057a57593b33510ad5bda6c5e2686afd68faa5b4231"
+    },
+    "vcruntime140.dll": {
+      "bytes": 116024,
+      "sha256": "e7be9112ee9a5b9f44b44bff24cb761cca9b1ed7550b612f77b70edfcf5fdabf"
+    },
+    "vcruntime140_1.dll": {
+      "bytes": 41272,
+      "sha256": "f02cd4a862b85a9a3153d27e15e5a213f5df8e3d77004ed2e87b8a7e8873d97c"
+    }
+  }
+}

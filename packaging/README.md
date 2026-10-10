@@ -140,3 +140,40 @@ user-grant acceptance remain separate from Windows Server engineering CI.
 Build defaults target0.2.2. Upgrade and standalone client kit use the actually downloaded, source/size/SHA-pinned0.2.1 release as baseline. Existing0.2.1 documentation above remains historical. The original seven research/Paper smoke operations, two manual exchange operations and offline native auth checks remain required; independent history_smoke additionally executes the real bounded history worker, reloads its cache and renders three products across eight timeframes. Its invented30tick CSV is labelledsynthetic and never implies actualexchange/client/model acceptance. Missing module, forgedresult, corruptedsource/cache or timeout fails the complete smoke.
 
 Normal typedexpiry/date input and effective-dated Paper margins are included. Existing scalar PaperReplay callers retain their binding. Desktop schedule mode refuses an incompatible old replay at the same path without modifying its journal or generating replacement orders; retain and reconcile prior state, never erase it to bypass validation. No broker/live order capability is enabled.
+
+
+### Pinned native SQLite and replay safety
+
+The tested Windows Python 3.11/3.12 profiles and packaged CPython 3.13.16 stay
+unchanged. `tools/install_sqlite_runtime.py` copies the full Windows base Python
+into a new private build directory, then replaces only that copy's SQLite DLL
+with official SQLite 3.54.0. It rejects existing/overlapping destinations and
+verifies that the original DLL remains unchanged. Always start from an ordinary
+base interpreter, not a venv. Remove an old build/sqlite-python directory manually
+before repeating a package build; the setup script never overwrites a runtime.
+Use that copy's `python.exe` for source execution and all build/test commands.
+It is not a relocatable Python redistributable; PyInstaller creates the final app.
+
+Linux CI compiles the same pinned official amalgamation using the runner's C
+compiler and scopes the resulting `libsqlite3.so.0` through job-local
+LD_LIBRARY_PATH. It never installs to /usr or changes the system SQLite package.
+Setup downloads are online; application and original offline test workloads have
+no new network requirement. No durability setting or test timeout is changed.
+
+The pin was verified against the official download page on 2026-10-10, including
+published SHA3-256 archive digests and the release's sqlite3.c digest/source ID.
+3.51.3 is the minimum upstream WAL-reset fix; 3.54.0 was chosen as the current
+published binary/source pair with cumulative upstream fixes. It includes newer
+query/planner and floating conversion changes, so full original tests, native
+Windows timing gates, and frozen lifecycle tests remain required; a setup probe
+is not acceptance. See https://www.sqlite.org/changes.html and
+https://www.sqlite.org/wal.html#walresetbug.
+
+Every provisioned runtime is probed in a fresh child using real
+SELECT sqlite_version(), sqlite_source_id(), actual loaded native-library path,
+its SHA256 and compile options. Frozen startup runs the same exact-version,
+source-ID, in-bundle-path and DLL-digest checks, including frozen child processes.
+PyInstaller also fails if analysis selects any different SQLite DLL. Setup and
+build manifests retain the native provenance because pip-audit alone cannot
+certify a non-wheel SQLite DLL. Source pin, compiler and output digest are saved
+for Linux; locally compiled Linux binaries are not claimed bit-identical.

@@ -1,0 +1,5 @@
+Unmodified published quantlab/desktop_runtime.py from MarkAuto 0.2.1.
+Git tag: desktop-preview-38016622951-1
+Commit: 2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8
+SHA256: f9ba44bd191d05347a183da62d706008000c41841b9871ab01b4f6f73385637d
+Offline old-reader compatibility regression fixture; not imported by production.

@@ -1,35 +1,48 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
-## 當前交付摘要（2026-10-10 06:40 UTC）
+## 當前整合狀態與最後已驗證基線（2026-10-10 09:12 UTC）
 
-- **實際下載仍是 0.2.1 unsigned preview**，release main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[已核驗的下載與 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。八項主要 assets／56 個來源輸入、EXE／kit SHA-256與ZIP CRC及該版postmerge均已通過。**0.2.2尚未發布**，README保持這個已驗證入口。
-- **PR #5已合併；目前接續PR #6，候選仍0.2.2。** main仍是 `94aca46777bd19619c9cbc0721a888173395243e`；PR #6為Draft，remote `dbe7c655`／local `0ab452e`，同tree `87f7d938c29dfd7cfa45089402bbb4af0f037dce`，分支 `agent/windows-release-validation`。新的Linux程序消失修補尚待push／exact-head驗證；不要把此未提交修補算入dbe7c655的CI。
-- **PR階段的成功單獨保留：** head `06bcc3a` 的10個Quantlab必要jobs通過，每profile inventory 1016唯一案例＝796 core＋220 research，實際開始清單無遺漏或重複；每Windows Python profile 1002 PASS／14 skips。Server `38028085841` 全套1016項，1002 PASS／14 skips、811.530秒；native frozen history、synthetic WFO兩折22次、安裝／真0.2.1升級／中斷恢復／移除保存通過。60個source inputs與PR artifact hash／CRC已核驗，僅證明此PR artifact，不能取代postmerge Release校驗。
-- **保留main94aca467 postmerge失敗：** Quantlab `38029388781`為8/10 PASS；Win311原Paper30秒FAIL，Win312同Paper FAIL另GenericSmokeTerminal SystemExit40秒ERROR。原完整log／計數在ACCEPTANCE的main postmerge evidence保留；這不是目前PR6的兩項失敗，不能混為一個來源。
-- **main94aca467的Server已完成，但Release被正確拒絕。** Windows `38029388676` build／security PASS，1016項＝1002 PASS／14 skips、816.337秒；安裝／真0.2.1升級／中斷恢復通過。release job `114150590389`因exact-head Quantlab失敗拒絕，**沒有0.2.2 Release**；Server成功或candidate artifact不能代替發布gates。
-- **最新PR6 Quantlab `38030765302`：8/10 PASS。** Win312 core801項＝791 PASS／10 skips、360.075秒；Win311 core801項＝790 PASS／10 skips／1 failure、509.566秒，僅原Paper30秒FAIL。UI1021項＝1007 PASS／13 skips／1 failure、426.451秒，失敗為新增diagnostic的 `cleanup_verified`；兩Linux／Windows research／security通過。PR6 Server `38030765321`仍執行中，不能填PASS。
-- **窄Linux程序消失修補已局部驗證，尚未push。** 獨立真實重現：先開 `/proc/PID/stat`，程序隨後退出並reap，讀取可拋ESRCH／ProcessLookupError而非FileNotFound。修補僅讓desktop_runtime及兩個測試helper識別已消失程序，permission／未知錯誤仍fail closed；不據此斷言該次UI遺失artifact的精確根因。isolated45 PASS／53.422秒、independent10 PASS／12.138秒、root43 PASS／52.626秒（集合重疊，不相加）。最新discovery1026＝806 core＋220 research，只是發現，非完整suite PASS；最後native待驗，Paper效能未修好。
-- **變更與門檻界線：** 只有上述窄Linux程序消失修補及診斷／測試helper調整，沒有新的產品功能；沒有persistence、storage／FULL、TEMP或測試資料位置變更。原Paper30秒、smoke40秒、process-death10秒及Quantlab每job15分鐘不變。靜態／歷史掃描仍在執行，未提前填結果。
-- **WFO／PF／Sharpe／參考快照／普通繁中UI已合併但未發布。** 真實Oct8 WFO仍 `BLOCKED_NO_RUN`：完整guard與既有consumed coverage重疊170 bars，0新評估／model calls／reservation；不改windows或另建registry規避。synthetic WFO不是adaptive AI、真實未見資料或正式排名／Paper資格證明。
-- **固定驗收仍210/300＝70%，未接受90點。** 研究100、桌面70、市場40；M4保持PARTIAL／0分，postmerge失敗尚未解除，不採用先前有條件的加分建議。權重／分母／原門檻不變；分數不是工時、全需求、生產或投資認證。
-- **外部／安全界線不變：** clean Win10 22H2 x64／Win11 x64 EXTERNAL_BLOCKED、實際ChatGPT grant／inference NOT_VERIFIED、TAIEX盤中自動使用權限未核实；main protected=false／管理API403、unsigned不繞過警告、真交易DISABLED。05:02觀測為一台desktop連線但未授權task、另一台offline，無saved coding environment；不能說沒有電腦連線。
-- **歷史與分支已保留：** 06:02時合併分支已自動清理、main與全歷史bundle已核驗；之後新建PR6接續分支，不能仍把「遠端只剩main」當最新分支清單。舊CI、timeout、fixture、Qt與I/O負結果保留。
+**以下分開記錄「最後已驗證來源」與「尚未原生驗證的工作樹整合」。** 最後remote為 `0088b505f236a54323c6cfd94cd00df51ea9db25`／local `f10b6549ed4f78c28b3e557fadb3adc9ccd2e799`，tree `d88b1fd2bcfaed9286c45a51058f21069242abb6`；之後的整合不能繼承這份CI作為新來源PASS。
+
+- **公開下載仍只有0.2.1 unsigned preview。** [已核驗安裝檔與證據](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)，release main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；PR5已合併main94aca467，但候選0.2.2／PR6仍Draft、未合併／未發布。
+- **最後Quantlab38032142094為9/10 PASS、整體FAIL。** Windows3.11 core806項＝790 PASS／15 skips／1 failure、433.599秒，唯一失敗仍是原960-bar Paper30秒。Windows3.12 core806項＝791 PASS／15 skips、339.431秒；UI1026項＝1013 PASS／13 skips、366.894秒；其他Linux／research／security通過。窄Linux ESRCH與Windows nested cleanup已有此來源驗證，不能冒稱新WAL／runtime／AI整合已通過。
+- **最後Server38032142096 build／security及安裝流程PASS。** Server2022完整1026項＝1007 PASS／19 skips、808.047秒，該profile原Paper30秒／SystemExit40秒、frozen/history/WFO、真0.2.1升級／中斷恢復／移除保存通過；PR release skipped。實際候選artifact11663227244、PR merge703686e2、60個source inputs及EXE／kit／ZIP hashes已驗證，與0088b505同tree；這不是Release，也不能抵銷Windows311失敗或替代clean client。
+- **本次root combined FAIL保留，來源綁定修補focused150 PASS，remote／native CI待驗。** WAL／FULL保留每個原COMMIT邊界、帳本identity與風控；官方固定hash私有SQLite3.54.0／runtime hook、舊0.2.1 workspace guard／schema2 backup、host probe、EXE版本metadata及實際舊EXE拒絕測試程式已套用。舊版source fixture已驗證拒絕；新增舊EXE原生測試尚NOT_RUN，不能把測試程式存在寫成PASS。原960 bars／Windows30秒測試未改。
+- **新增本機證據按來源分開。** pre-AI root完整1096項＝1081 PASS／15 applicability skips、291.408秒，log `quant-audit/pre-ai-wal-integrated-full-20261010.log`與source manifest `quant-audit/pre-ai-wal-integrated-source-20261010.json`固定該次來源。其後本機AI focused153項＝152 PASS／1 skip、5.866秒；自動備份初次focused21項全PASS、0.966秒；offline-drive設定恢復修補後23項全PASS、0.962秒。focused logs見`local-ai-integrated-focused-20261010.log`、`automatic-backup-integrated-20261010.log`及`automatic-backup-integrated-final-20261010.log`。目前root venv實測為Linux Python3.12.14／SQLite3.53.1／Qt6.12.0，見`quant-audit/integrated-final-source-20261010.json`；早先手記Qt版本不作獨立量測證據。最終combined suite本次FAIL：1243項＝1225 PASS／15 skips／2 failures／1 error、300.720秒（`quant-audit/integrated-final-full-20261010.log`）。三項均為saved-candidate producer來源綁定未涵蓋provider hook變更後的source hash；現有fail-closed防線正確拒絕未匹配來源。兩個新的literal 0_2_2 transport-verifier profiles已獨立審查並root套用；原三個literal profiles與historical exact-hash測試未改，只將三個真正current-generated identity assertions移至新profile，tamper／mixed-source拒絕保留。修補後root focused150／150 PASS、0 skip、30.760秒（`quant-audit/provenance-integrated-focused-20261010.log`）；隔離54與138項PASS為重疊範圍，不相加。本次1243項FAIL保留，沒有第二次root完整重跑；下一full gate為新exact-head remote CI，native仍NOT_RUN。另`/usr/bin/python3`私有SQLite3.54.0載入probe及Paper111項＝110 PASS／1 skip、5.172秒屬獨立Linux範圍，見`/tmp/markauto-sqlite354-verified-setup.log`、`/tmp/sqlite354-paper-tests.log`。各集合不相加、不互相認證；目前root全套不是3.54或Windows證據。
+- **免費本機AI已接入普通GUI，實際新推論仍NOT_RUN。** 可選llama.cpp／Qwen2.5-1.5B路徑使用官方固定hash runtime／model／support DLL來源；無付費fallback，official API預設off。MSVC support DLL再散布授權／打包範圍仍待獨立覆核，尚未作合法性結論。實際native frozen單次呼叫驗證程式已套用並完成審查，尚未執行；mock、歷史14次呼叫或focused PASS均不能替代新路徑證據。
+- **每日自動備份與審查修補已root套用，最終驗證仍待。** 預設off，開啟後app運作且所有manager閒置才嘗試，每UTC日最多一次；7份／2 GiB上限、連結保護、不自動刪檔或還原。獨立審查指出舊共用備份可經regular-file hardlink納入外部內容；共用BackupManager的hardlink拒絕已套用並包含於21項focused PASS。移除式磁碟離線時停用／更換目的地的設定恢復亦已修補，root focused23 PASS；最終combined／native未驗，不能宣稱漏洞或整項已完整閉合。
+- **耐久與門檻不降級。** 舊來源同960 bars診斷worker35.562622秒，960次FULL cursor commits30.6026735秒，UI35.937秒；瓶頸位於耐久寫入路徑，物理原因未知。新WAL候選是待驗證設計，不是既有30秒PASS；保留原per-bar耐久／帳本identity／風控與30秒、40秒、process-death10秒、job預算，不減bar／commit、不搬TEMP。不再無變更重跑湊綠，但經審查的新實作必須原生重驗。
+- **執行責任與AI優先順序已更新。** 依使用者最新授權，assistant承擔工程、環境調查、可合法執行的設定與驗證，不預設把VM、測試或GitHub設定交給使用者。免費本機AI為主；官方API只是可選路徑、預設不呼叫，不暗中使用付費或借用其他工具帳戶。零費用、零真資金交易及原驗收門檻保持。不可代行的帳戶、license、明示條款或持久權限，只提出精確最小確認，不包裝成整套技術作業。
+- **外部證據如實保留。** 目前沒有已驗證且已授權的零費用clean Win10/11 x64路徑；GitHub nested guest僅是資源／媒體／license條件未齊的候選。SignPath僅可準備免付費申請材料，尚未獲接納。08:18只讀查核rulesets=[]、main保護仍未啟用；GitHub App無Administration scope，先前403未解除，換CLI／GraphQL／workflow token不會增加權限。實際服務、TAIEX盤中權利、clean client不以mock／Server替代。
+- **原始匯入來源已有範圍明確的證據。** 原import `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的47檔，其Git mode／type／blob全部與官方upstream `chrisli-kw/AutoTradingPlatform@a0ecf8895716bf5883184fdd27a52023f9700bf3`相同；upstream共49檔，另有`trader/APItest.py`與`trader/performance/backtest.py`未在該import。這證明47檔內容對應，不證明整棵tree／完整history相同，也不是維護者owner attestation；Apache LICENSE與Li Kuei-Wei署名保留。
+- **210/300＝70%、M4 PARTIAL不變。** 一個原Paper工程gate仍未通過，另保留本次producer provenance整合回歸FAIL，修補後僅focused150 PASS、remote全套待驗；其餘外部條件分開列示，不能把餘項全說成external。Oct8 WFO仍BLOCKED_NO_RUN，170 consumed bars、0新評估／model calls／reservation；不改window／registry。原需求、權重、失敗與歷史不重寫。
 
 ### 原需求、設計提案與未驗證項目
 
 - **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；已合併及PR階段PASS不等於postmerge／已發布交付。
 - **尚未採用的完整目標設計延伸：** 04 §9.1 提出的 Average Trade、Sortino、Calmar、延伸分解與成本壓力測試保留為提案。02 歷史原文已明示「若最終採用該完整規格」；未取得使用者直接要求這些延伸的原始證據，因此不把設計表的「必須公開的計算與例外」升格為本輪新增驗收門檻，也不刪除提案。
-- **尚未驗證的結果：** postmerge修復／發布、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
+- **尚未驗證的結果：** 原Paper效能gate／發布、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
 
 ## 現在應接續的工作
 
-1. **當前工作為Draft PR #6**：remote dbe7c655／local0ab452e／tree87f7d938；main仍94aca467，候選0.2.2未發布。PR5已合併，不能再列為待合併工作。
-2. PR6 Quantlab38030765302為8/10 PASS：Win312 core801 PASS；Win311只有Paper30秒FAIL；UI1021中新增diagnostic cleanup_verified FAIL。Server38030765321仍執行。main94 Server已PASS，但release114150590389因Quantlab失敗正確拒絕。
-3. Linux open /proc/PID/stat後exit/reap的ESRCH已獨立重現；窄修補只處理vanished process，permission／未知仍fail closed。isolated45、independent10、root43項PASS不加總；discovery1026不是全套PASS。尚未push／原生驗證，不稱精確UI根因或Paper效能已修，persistence／deadline不變。
-4. 現有公開下載仍0.2.1，210/300＝70%，M4仍PARTIAL。只有postmerge與實際Release完整核驗後才重新逐條對帳，不提前套用條件式230分提案。
+1. PR #6最後推送0088b505／localf10／tree d88b的Quantlab9/10，唯一Win311 Paper30秒FAIL；Server與候選artifact驗證已完成但不是Release。Main仍94aca467、0.2.2未發布。
+2. WAL／FULL、官方private SQLite3.54.0／hook、workspace guard、舊EXE測試程式／版本metadata、GUI免費本機AI及預設off每日備份已root套用。pre-AI1096、AI focused153與備份focused23只認證各次來源；offline-drive設定恢復已修補，native frozen單次AI驗證程式已套用、實際執行仍待，沒有新native PASS。本次combined1243項FAIL保留；新literal producer profiles已審查套用、focused150 PASS，historical profiles未改。沒有第二次root全套；下一full gate為remote CI，native仍NOT_RUN。
+3. 舊窄Linux ESRCH修補已有完整Linux／UI及Windowsnested cleanup成功；原Paper耐久路徑worker35.562622／cursor commits30.6026735秒的失敗證據保留。WAL候選尚未證明原Windows30秒達標。
+4. 固定210/300＝70%、M4 PARTIAL保持。Assistant承擔工程與環境準備，不預設要求使用者搭VM、跑測試或處理GitHub技術設定；僅對無法代行的帳戶／license／條款／persistent access精確確認。免費本機AI優先、official API可選，零費用／零實單。
 5. Oct8 WFO仍BLOCKED_NO_RUN／170 consumed bars，0新evaluation／model／reservation，不改window／registry。clean client、真grant與TAIEX盤中權限保持外部狀態。
-6. 06:02已保存完整歷史含merge bundle（1,123,457 bytes）；之後新建PR6接續分支。保留原local歷史／失敗與未提交窄修補，不把舊「只剩main」當現在分支狀態。
+6. 保留全部Git歷史、0088b505候選artifact及歷次失敗；目前文件同步只補最近可證基線與整合中計畫。後續CI終態由其新head記錄，不預填PASS，不改原權重／門檻。
+
+### 自主接續計畫與不可代行的邊界
+
+1. **固定候選來源並重驗，而非提前授分：** WAL／FULL、官方私有SQLite3.54.0／runtime hook、workspace guard、版本metadata、免費本機AI及預設off每日備份已root套用；備份offline-drive設定恢復已focused23 PASS，native frozen單次AI驗證程式已套用、實際執行仍待。producer profile修補已focused150 PASS；保留本次1243項FAIL、不宣稱第二次root完整重跑，固定最終來源／runtime／依賴／manifest後由remote CI驗證full gate、原30秒與全部必要native、frozen、安裝／真0.2.1升級／中斷恢復。pre-AI全套與各focused證據只屬各自來源；未出現新exact-head結果前保持NATIVE_CI_PENDING／NOT_VERIFIED。
+2. **保留原持久語義：** WAL候選需逐個原邊界COMMIT＋FULL、無外包整段transaction／降級NORMAL或OFF，既有mutex、cursor／pending plan／stable IDs不變；broker DELETE／FULL仍分開。SQLite版本／官方hash／native載入來源、local filesystem、舊版本workspace拒絕及DB／WAL／SHM備份恢复都須有實證；guard已用精確0.2.1 source fixture證明startup／schema2 archive拒絕；實際舊EXE拒絕測試程式已加入但尚NOT_RUN，仍需原生結果。備份hardlink修補與移除式磁碟離線設定恢復須完成最終整合回歸。這是必要待驗證清單，不是完成宣告。
+3. **驗證免費本機AI普通流程：** GUI管理的可選llama.cpp／Qwen2.5-1.5B已整合，官方runtime／model／support DLLs固定hash，loopback、有限budget與輸出驗證保持；一般使用者不需手寫JSON或自行架服務。下一證據為同來源native frozen實際單次呼叫及乾淨終止，不以153項focused、mock或歷史llama.cpp／Qwen呼叫代替；此新呼叫尚NOT_RUN。官方API可選、預設off，不設付費fallback；M6與其餘原權重／狀態本次不改。
+4. **Windows驗證由assistant持續承擔：** 已授權標準public GitHub runner可提供Server證據；先做只讀host能力／磁碟調查。Nested x64 guest在GitHub官方文件中是實驗性、無保證路徑；需實際可用加速／資源、合法精確Win10 22H2／Win11媒體及所需license／條款確認。此cloud shell目前無現成KVM／VM工具，不代表免費虛擬化普遍不可能。Windows11 ARM、Server、過期Win10 evaluation頁面與未授權Azure試用均不可冒充目標client；不繞TPM／Secure Boot／啟用限制、不預設使用者需準備VM或跑測試。
+5. **保護與簽章保持誠實：** assistant準備main protection精確所需scope／規則與可行路徑，現有連線缺Administration則只停在該操作，不反覆撞403、不換transport冒充授權，也不索取聊天中的token。SignPath可先準備真實申請草稿；47檔upstream內容對應已驗，但完整lineage／維護者權利陳述、打包界線與metadata／政策仍需分別補證；OSI授權、MFA／角色、來源到binary及每次release核准仍待確認。外部提交、帳戶／條款、GitHub App或簽章persistent access須個別具備所需授權；不買付費簽章、不保證免SmartScreen。
+6. **保留每次結果：** 舊0088b505的806core／220research、9/10與同工作量diagnostic作為固定比較；新來源完整清單與依賴另行記錄。全部PASS／FAIL／ERROR／SKIP、elapsed、source／runtime hashes、OS／volume、cursor／orders／fills與清理／恢復證據保留；不按結果追加無變更重跑，不將別台host PASS寫成失敗CI已通過。
+
+本計畫依據當日既有查核：`windows-environment-options-20261010.md`、`signpath-eligibility-20261010.md`、`github-protection-options-20261010.json`。可用方案、授權缺口與推論分開；不新增權重、不把準備材料算成外部已通過。
 
 ### 導覽與單一事實來源
 
@@ -51,7 +64,7 @@
 歷史驗證位置補註：較早981項在隔離候選執行，25檔按manifest複製；不是最後root全套。12e088f的1000項失敗／cancelled與05:32局部18／33／85項屬先前checkpoint；其後06bcc3a的完整PR1016已通過，但94aca467 postmerge又出現上列兩種timeout。所有來源、平台及計數分開，不相加或追溯改寫。
 
 
-診斷接續PR #6／`agent/windows-release-validation` 的已推送dbe7c655來自main94aca467。該head為1021＝801 core＋220 research，Quantlab8/10 PASS；未提交的窄Linux ESRCH修補後discovery為1026＝806 core＋220 research，不代表整套PASS。原Windows Job Object與未知／permission失敗關閉要求保留。產品修改限窄Linux程序消失處理；沒有persistence、SQLite模式、TEMP或deadline變更。
+最後已推送／驗證來源仍PR #6 head0088b505／localf10b654／tree d88b1fd2，1026＝806core＋220research且Win311 Paper30秒FAIL。工作樹後續WAL／runtime／guard／AI／每日備份已套用、程式delta已齊；另待最終來源固定、combined及原生驗證；各歷史checkpoint按原日期解讀。
 
 <!-- CURRENT_STATUS_END -->
 

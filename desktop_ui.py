@@ -18,7 +18,7 @@ from quantlab.reporting import (read_json, write_json, load_dataset, save_datase
                         save_selection, load_selection)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
-    'walk_forward_preview', 'walk_forward_run', 'walk_forward_read', 'walk_forward_reconcile',
+    'walk_forward_preview', 'walk_forward_run', 'walk_forward_read', 'walk_forward_reconcile', 'local_ai',
     'demo', 'import', 'refresh', 'market_refresh', 'chatgpt_auth', 'chatgpt_usage', 'chatgpt_reconcile', 'backtest', 'campaign', 'compare', 'select', 'disable',
     'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
     'backup_create', 'backup_restore'))
@@ -69,11 +69,16 @@ def research_controls(paths):
 def provider_binding_options(options):
     # Adding the optional output-mode selector must not reopen a legacy budget.
     return {key: value for key, value in options.items()
-            if key != 'network_opt_in' and not (key == 'output_mode' and value == 'json_object')}
+            if key != 'network_opt_in' and not (options.get('mode') == 'local' and key == 'owner') and not (key == 'output_mode' and value == 'json_object')}
 
 
 def campaign_generator(paths, options):
     from quantlab.research import FixtureGenerator, CompatibleProvider
+    if options.get('mode') == 'local':
+        if set(options) != {'mode', 'network_opt_in', 'owner'} or options['network_opt_in'] is not True:
+            raise ValidationError('本機模型需要本次明確同意')
+        from quantlab.local_ai import provider
+        return provider(research_controls(paths), options['owner'])
     if options.get('mode', 'fixture') == 'fixture':
         research_controls(paths)
         return FixtureGenerator()
@@ -230,6 +235,22 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
     if operation not in UI_OPERATIONS:
         raise ValidationError('未知桌面作業')
     root = _root(paths)
+    if operation == 'ui_local_ai':
+        from quantlab.local_ai import LocalAIError, setup, probe
+        try:
+            if payload.get('consent') is not True: raise LocalAIError('consent')
+            action = payload.get('action')
+            if action in ('install', 'download'): return setup(paths, payload, emit)
+            if action == 'probe':
+                if set(payload) != {'action', 'consent', 'owner'}: raise LocalAIError('request')
+                return probe(research_controls(paths), payload['owner'])
+            if set(payload) != {'action', 'consent'}: raise LocalAIError('request')
+            if action == 'serve' and emit is not None:
+                from desktop_local_ai_runtime import serve
+                return serve(paths, emit)
+            raise LocalAIError('request')
+        except LocalAIError as exc:
+            return {'status': 'blocked', 'error_code': exc.code}
     if operation.startswith('ui_walk_forward_'):
         from desktop_walk_forward import execute_walk_forward
         return execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped)
@@ -487,9 +508,10 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             data = _dataset(root, payload)
             selection = load_selection(root / 'selection.json')
             binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
+            paths.require_replay_wal()
             replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data,
                                  strategy=StrategySpec(**selection['strategy']), broker=broker,
-                                 margin_schedule=broker._margin_schedule)
+                                 margin_schedule=broker._margin_schedule, storage_profile="wal_full")
             replay.start()
             try:
                 replay.step(max_bars=payload.get('max_bars', 100))
@@ -783,7 +805,7 @@ class MainWindow(QMainWindow):
         self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
         self.campaign_config = self._text(advanced, '研究設定 JSON（空白使用明示示範切分）', '', True)
         self._remember(self.campaign_config)
-        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); layout.addWidget(self.provider_mode)
+        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); self.provider_mode.addItem('免費本機 AI（固定 Qwen；需在設定啟動）', 'local'); layout.addWidget(self.provider_mode)
         manual = QWidget(); manual_layout = QVBoxLayout(manual); layout.addWidget(manual); manual.hide()
         self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
         self.manual_path = self._text(manual_layout, '手動 AI 回應檔案（選檔或直接貼回回應；不自動連線）')
@@ -1099,6 +1121,8 @@ class MainWindow(QMainWindow):
         self.chatgpt_controller.request_ready.connect(self._chatgpt_dispatch)
         self.chatgpt_controller.cancel_requested.connect(self._chatgpt_cancel)
         self.chatgpt_controller.browser_requested.connect(self._chatgpt_open_browser)
+        from desktop_local_ai import LocalAIPanel
+        self.local_ai_panel = LocalAIPanel(self); layout.addWidget(self.local_ai_panel)
         self.ai_endpoint = self._text(layout, '模型完整 chat/completions 端點（遠端 HTTPS / 本機 loopback HTTP）')
         self.ai_model = self._text(layout, '模型名稱')
         self.output_mode = QComboBox(); self.output_mode.addItem('一般 JSON DSL（相容模式）', 'json_object'); self.output_mode.addItem('JSON Schema：內建家族參數生成（服務須支援；不支援即失敗）', 'registry_json_schema')
@@ -1122,6 +1146,8 @@ class MainWindow(QMainWindow):
         self._button(layout, '建立本機備份', 'create_backup', lambda: self.backup(False))
         self.restore_confirm = QCheckBox('我確認還原會替換目前本機狀態，並會要求重新對帳'); layout.addWidget(self.restore_confirm)
         self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True))
+        from desktop_automatic_backup import AutomaticBackupPanel
+        self.automatic_backup_panel = AutomaticBackupPanel(self); layout.addWidget(self.automatic_backup_panel)
         from quantlab import __version__
         self.version_label = QLabel(f'目前版本 {__version__} · 未簽章預覽版；尚無已驗證的最新版本資訊。')
         self.version_label.setWordWrap(True); layout.addWidget(self.version_label)
@@ -1188,6 +1214,13 @@ class MainWindow(QMainWindow):
     def run_campaign(self):
         config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
         options = {'mode':self.provider_mode.currentData()}
+        if options['mode'] == 'local':
+            if self.local_ai_panel.task.active or not self.local_ai_panel.ready or not self.local_ai_panel.server.active:
+                raise ValidationError('請先在設定啟動已驗證本機模型')
+            options['owner'] = dict(self.local_ai_panel.owner or {})
+            options['network_opt_in'] = self.local_ai_panel.consent.isChecked()
+            campaign_generator(self.paths, options)
+            self.local_ai_panel.consent.setChecked(False)
         if options['mode'] == 'chatgpt_plan':
             from dataclasses import asdict
             options = asdict(self.chatgpt_panel.build_plan_options())
@@ -1359,6 +1392,8 @@ class MainWindow(QMainWindow):
         return True
 
     def start_job(self, operation, payload):
+        if hasattr(self, 'local_ai_panel') and self.local_ai_panel.task.active:
+            raise ValidationError('請先完成或取消本機 AI 設定／推論檢查')
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
         job_id = self.jobs.start(operation, payload)
         self.last_operation = operation
@@ -1392,6 +1427,7 @@ class MainWindow(QMainWindow):
             for event in self.jobs.poll():
                 if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
                     continue  # A joined old worker can never overwrite a newer view.
+                self.automatic_backup_panel.handle_job_event(event)
                 if self._walk_forward_event(event): continue
                 kind = event.get('type', '')
                 if self._chatgpt_event(event): continue
@@ -1824,6 +1860,8 @@ class MainWindow(QMainWindow):
         value['window'] = {'x': self.x(), 'y': self.y(), 'width': self.width(), 'height': self.height()}
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
+        self.local_ai_panel.server.logging_enabled = self.persist_logs.isChecked()
+        self.local_ai_panel.task.logging_enabled = self.persist_logs.isChecked()
         self.ai_opt_in.setChecked(False)
         self.status.setText('已保存非敏感偏好；網路同意已重設，未在設定中保存金鑰。')
 
@@ -1845,6 +1883,8 @@ class MainWindow(QMainWindow):
         self.ai_opt_in.setChecked(False)
         self.persist_logs.setChecked(value.get('persist_logs', True) is True)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
+        self.local_ai_panel.server.logging_enabled = self.persist_logs.isChecked()
+        self.local_ai_panel.task.logging_enabled = self.persist_logs.isChecked()
         self.local_notifications.setChecked(value.get('local_notifications', True) is True)
         try:
             if 'market' in value: self.market.restore_preferences(value['market'])
@@ -1859,6 +1899,8 @@ class MainWindow(QMainWindow):
         self.read_logs()
 
     def configure_workspace(self):
+        if self.local_ai_panel.server.active or self.local_ai_panel.task.active:
+            raise ValidationError('切換工作區前請先停止本機模型與設定作業')
         from quantlab.desktop_runtime import WorkspaceLocator
         if self.jobs.active: raise ValidationError('請先停止背景作業')
         self.chatgpt_panel.consent.setChecked(False)
@@ -1898,6 +1940,8 @@ class MainWindow(QMainWindow):
             del secret
 
     def backup(self, restore):
+        if self.local_ai_panel.server.active or self.local_ai_panel.task.active:
+            raise ValidationError('備份或還原前請先停止本機模型與設定作業')
         if self.backups is None: raise ValidationError('備份服務不可用')
         if not self.backup_path.text().strip(): raise ValidationError('請填寫備份路徑')
         if restore and not self.restore_confirm.isChecked(): raise ValidationError('請先確認還原取代本機狀態')
@@ -1909,6 +1953,7 @@ class MainWindow(QMainWindow):
         # Never create state files until the writer has exited and pending swaps recover.
         if self.jobs.active: self.jobs.cancel()
         if self.jobs.active: raise ValidationError('背景程序尚未停止；禁止還原或寫入狀態')
+        self.local_ai_panel.close_workers(stop_timer=False)
         if self.backups is not None:
             self.backups.recover()
         else:
@@ -1933,12 +1978,13 @@ class MainWindow(QMainWindow):
         self.status.setText('紙上執行已凍結：' + str(reason) + '；每次執行需核對快照並明確對帳。')
 
     def closeEvent(self, event):
-        if self.jobs.active and QMessageBox.question(self, '背景作業尚未完成', '取消背景作業並關閉？', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+        if (self.jobs.active or self.local_ai_panel.task.active) and QMessageBox.question(self, '背景作業尚未完成', '取消背景作業並關閉？', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             event.ignore(); return
         try:
             self._closing = True
             self.chatgpt_panel.consent.setChecked(False)
             self.jobs.close()
+            self.local_ai_panel.close_workers()
             self._quiesce_and_recover()
             if (self.last_operation == 'ui_walk_forward_run' or self._wf_pending_reconcile) and self._wf_launch is not None:
                 self._wf_pending_reconcile = False

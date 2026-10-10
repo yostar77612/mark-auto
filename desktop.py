@@ -523,7 +523,17 @@ def _retain_smoke_directory(directory):
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
+    parser.add_argument('--local-ai-smoke', type=Path, help='Explicit one-call actual local AI technical validation report')
+    parser.add_argument('--local-ai-runtime-archive', type=Path)
+    parser.add_argument('--local-ai-model', type=Path)
+    parser.add_argument('--local-ai-root', type=Path)
     args = parser.parse_args(argv)
+    local_args = (args.local_ai_smoke, args.local_ai_runtime_archive, args.local_ai_model, args.local_ai_root)
+    if any(item is not None for item in local_args):
+        if args.smoke_test or any(item is None or not item.is_absolute() for item in local_args):
+            parser.error('Local AI validation requires four absolute paths and cannot combine with --smoke-test')
+        from desktop_local_ai_smoke import run
+        return run(*local_args)
     if args.smoke_test is not None and not args.smoke_test.is_absolute():
         parser.error('--smoke-test requires an absolute report path')
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer

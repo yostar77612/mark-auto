@@ -122,7 +122,7 @@ python -m quantlab refresh --cache ./quantlab-output/official --days 1 --format 
 
 ## 授權與原始來源
 
-保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。原始 upstream 精確提交版本尚未核實；以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
+保留原 Apache-2.0 LICENSE 與 Li Kuei-Wei 2023 著作權聲明。2026-10-09 起的修改包含獨立研究模組、安全封鎖、測試及文件。2026-10-10 已核對原始匯入 `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的全部 47 個受版控檔案，其 Git 模式、類型與 blob 均與 [上游 AutoTradingPlatform 固定提交 a0ecf889](https://github.com/chrisli-kw/AutoTradingPlatform/tree/a0ecf8895716bf5883184fdd27a52023f9700bf3) 逐檔相同。上游另有未匯入的 `trader/APItest.py`、`trader/performance/backtest.py`；因此這是內容來源對應，不代表完整 tree 或 Git 歷史相同，也不是維護者權利的額外聲明。以下保留原專案說明作歷史參考，其功能聲稱不代表目前功能驗證。
 
 ---
 
@@ -355,3 +355,15 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - 新行情商品不代表已支援該商品下單/回測；研究交易核心仍限定TMF，實單停用。
 - ChatGPT手動交換可匯出研究要求及匯入受限策略；來源記為manual_unverified，不冒充API實測。相容本機模型與付費API設定維持明確同意/預算/安全儲存，付費預設關閉。官方訂閱登入另行驗證，不複製Cookie或其他工具憑證。
 - 新版需通過Windows打包與全部既有安全回歸才發布；clean Win10/11仍須獨立環境。
+
+### 免費本機 AI（候選功能，Windows x64）
+
+「設定 → 免費本機 AI」提供固定的 llama.cpp b11429 CPU 與 Qwen2.5-1.5B-Instruct Q4_K_M。按「下載並設定固定免費版本」，或選取已下載的同版 Windows CPU ZIP 與 GGUF 後驗證。首次下載約 1.14 GB；請預留至少 3 GB 磁碟與足夠記憶體。程式不會在啟動、載入設定或切換頁面時下載、啟動模型或呼叫 API。端點固定為本機 127.0.0.1:18765；若已有其他服務占用，會拒絕接管。
+
+所有 51 個執行環境檔案、GGUF 與 MIT／Apache-2.0／OpenMP 授權文字皆依固定 SHA-256 驗證。Windows VC runtime 重用既有鎖定 shiboken6 應用程式依賴，由安裝包附帶，不需 Python、命令列或開發工具。模型存於 bootstrap/cache/local-ai，與研究狀態及備份分開；不能把模型或官方原始行情提交到 Git 或包進研究備份。
+
+按「啟動已驗證本機模型」後，健康狀態僅代表服務就緒。Windows listener PID、建立時間及實際已連線對端的 TCP tuple 需符合本程式啟動的程序；不靠公開健康端點認領其他程序。每次啟動另有只存記憶體環境的隨機驗證值，不寫入命令列、日誌、設定或備份；停用 Web UI、代理工具與外部網頁 CORS。研究仍需選取「免費本機 AI」及勾選本次同意。可另按「執行一次結構化推論檢查」：只送固定技術題目，不提供市場、OOS 或保留集資料，不產生回測或排名。
+
+這個固定 profile 的研究與檢查共用永久 100 次／1,000,000 個保守 tokens 上限，每次最多 1024 輸出 tokens／120 秒。失敗或中斷仍保留已預留額度；重啟、改工作區或還原不重設。耗盡後停止，不會自動加額、換 provider、fallback fixture 或呼叫付費 API。服務最長八小時；停止、取消／緊急凍結或關閉會停止並驗證所擁有的子程序。設定／推論檢查與研究不能同時進行；模型服務本身可與研究並行。備份、還原與工作區變更前须先停止本機服務與設定工作。
+
+相容 HTTP、手動交換及既有訂閱功能保留。官方 OpenAI API 是另行設定並明確核准費用的可替換來源；ChatGPT 訂閱不代表取得 API 額度。此免費路徑沒有付費 API 呼叫，但仍使用本機 CPU、記憶體與電力。技術檢查成功不代表策略獲利、獨立 holdout、原生 Windows 10/11 或整體 provider 驗收通過；固定 300 點驗收及既有未通過項目不變。
