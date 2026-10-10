@@ -222,3 +222,29 @@ main仍protected=false、rulesets空，管理級API403。Code/PR/Actions正常�
 ### 真模型改善迴路補驗
 
 另以獨立明示 synthetic 512 bars 驗證一次初始生成＋一次改善，未重用真實OOS/holdout。第二次真HTTP請求包含先前train/validation回饋、改善指令與parent/iteration；模型只將trend_0改名trend_1，fast=2/slow=4未變。正規化語意指紋忽略名稱、等價數值及default lag/quantity，成功拒絕重複而保留raw/call/父鏈，沒有重跑回測。工程feedback/去重PASS；有效不同改善候選FAILED，績效改善不成立，不能寫成外部授權阻塞。累計11次真推論已停止；研究40、provider8、真AI工具9 focused tests通過。
+
+## 新增市場/UI範圍的實作前安全界線
+
+舊trader行情工具有全域交易初始化，不能直接解除封鎖或匯入桌面；新增僅讀市場型別與TMF交易資料分開。TX/MXF/index行情展示不等於其回測或下單引擎通過。官方小台每日原碼MTX與UI MXF需明示映射；價格前收與前结算不可混用（實際10/8 TX前收差-630、官方前結算差-619）。日資料日期不代表精確成交時間，缺OHLC不得由成交量猜補，公開歷史不得冒充即時。
+
+OpenAI現在有[官方OSS/本機Sign in with ChatGPT計畫用量](https://developers.openai.com/siwc/token-sharing-open-source)途徑，並非一般API免費額度。需要本應用自己的使用者授權、PKCE/OIDC驗證與安全儲存，不能拷貝其他工具token。HTTP Responses/SSE與既有chat-completions協定不同；不支持max_output_tokens時，客戶端截流/逾時不能聲稱限制伺服器token消耗，須独立透明用量政策。實際登入/授權與帳戶可用性尚未驗證；付費API與額外credit不自動啟用。
+
+### 0.1.2 Windows實測與正式保留證據（2026-10-10 00:38 UTC）
+
+PR#2已合併28c9f902，最後head9008522完整tree6338b6ef9828892e53fbf1a543ada0ec9bd8f154與本地ccb74d2等價；Quantlab7jobs38008659312、Windowsbuild/security38008659297全PASS。Windows測到原inventory排序隨OS不同及NTFS ADS未被rglob看見，已修productioncode固定排序並列舉拒絕ADS；失敗測試沒有刪除/跳過/降門檻。341測試334PASS、7適用其他環境/選用工具skip。
+
+合併後38009150044在WindowsServer2022build20348完成真0.1.1→0.1.2、安裝程序實際kill、舊runtime恢復、新payload驗證啟用、保留927個原檔及5資料sentinels、實際schema1設定位元不變，並完成同版本重裝修復split-shortcut。這是單一程序當機點，非完整斷電耐久證明；compatible設定保留不是跨schema migration。原生命週期10checks也PASS。單次啟動1.033秒、working set77,676,544bytes，不是Win10/11SLO。
+
+[Release與驗收工具包](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1)已實際下載：EXE36,695,486bytes、SHA256 0f92f70fb17bc3f0c2c816cbb5f963ecb2de6dde40745759f415a4755e85c469；kit72,324,965bytes、SHA256317f98560ae1c29ee4d7c99e81ed2d8bab55d010114f765b756cdcd9ae076079，ZIPCRC通過。Win10/11clean、main管理權限與簽章限制未因此解除。
+
+### 0.2.0 市場模組架構 Gate 修復（2026-10-10 00:46 UTC）
+
+靜態Gate發現3個Qt檔案放在quantlab研究樹，違反既有stdlib-only邊界；沒有放寬研究規則。已將desktop_charts.py、desktop_forms.py、desktop_market.py移至既有desktop_ui.py旁，UI向quantlab資料/策略依賴，核心不依賴Qt；同時把既有desktop禁止券商/dynamic-execution掃描延伸到全部4個UI檔，新增負向回歸。證據：tools/quality_gate.py、tests/test_quality_gate.py。可選Qt測試遵循原矩陣分層，在有完整桌面依賴的Windows job必須執行；minimalstdlib job明示skip，不能算桌面PASS。
+
+最新報價卡與歷史圖表分離；只持有較新已驗證分鐘history時可以顯示卡，但不升格為即時。日期/盤別無法排序時不虛構日行情時間。證據：desktop_ui.py與tests/test_desktop_market_integration.py。官方直連DNS失敗保留BLOCKED；本地匯入標history/source-unverified，不能以URL字串證明來源真實性。
+
+CI run38010756018揭露deadline測試fixture競態：30ms計時包含SSL初始化，慢runner在fake connect前合法逾時。未放寬產品30s限制或測試0.5s關閉門檻；僅隔離handler時計，仍以真30ms threading.Timer驗證shutdown，新增已逾時不連線案例。23focused、200重複及10次故意60ms SSL初始化均通過；原失敗保留，下一head重新驗收。desktop.py另把原7步frozen smoke保留，再增加獨立synthetic market_smoke（真Qt非空圖表/週期/指標/typedforms、manual export/import worker與來源hash），任一失敗阻擋overall。這是打包工程測試，不是行情/AI實測替代。
+
+同次Windows CI另發現payload path驗收把原字串和GetFullPath結果要求完全相同，可能誤拒TEMP含8.3別名的合法路徑。改為canonical target/trusted root比對，同時明確拒絕relative/drive-relative/UNC、dot traversal、ADS；原精確layout/reparse門檻保留，動態測試增加ShortPath。來源packaging/test_update_recovery.ps1、tests/test_update_recovery.py；Windows需重驗，Linux skip不作成功。新市場/原7步整合source smoke及其完整Linux suite459項451PASS8skip（72.056s）；另最新recovery focused10PASS1Windows skip。原失敗CI不能被這些本地結果抹除。
+
+第二輪 e066693 的Quantlab七jobs全部PASS，Windows build及frozen市場/原7步、安裝生命週期通過，官方日行情實際HTTP下載診斷VERIFIED。接續歷史版本恢復驗收正確阻擋了前一輪正常關閉留下的設定：新UI會保存市場/視窗偏好，而uninstall保留資料。處置不刪設定或降低hash驗收：lifecycle明示opt-in且啟動前證明設定/工作區指標不存在，完成後寫create-only ownership receipt；recovery驗version/path/hash後將已知test-owned設定搬至唯一保留副本，未知資料仍拒絕。--smoke-test另採載入已驗證真設定後的記憶體view，僅自動化測試不回寫偏好；正常GUI持久化不變。來源desktop.py、tests/test_desktop_market_smoke.py、兩支installer/recovery harness與對應tests。失敗診斷artifacts改always保留，但release依賴必要Gate不變。最新Windows重驗前仍BLOCKED。build manifest涵蓋全部desktop*.py，包含新chart/form/dashboard來源。

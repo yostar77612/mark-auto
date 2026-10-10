@@ -1,7 +1,9 @@
-param([string]$Version = '0.1.2',
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.0',
+      [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.1.1',
       [Parameter(Mandatory=$true)][string]$BaselineInstaller,
       [Parameter(Mandatory=$true)][string]$BaselineManifest,
-      [Parameter(Mandatory=$true)][string]$CandidateManifest)
+      [Parameter(Mandatory=$true)][string]$CandidateManifest,
+      [string]$LifecycleHandoff = '')
 # DESTRUCTIVE PROCESS INTERRUPTION TEST: only run in a disposable Windows test profile.
 # Only the installer process tree started here is terminated. User data is never deleted.
 $ErrorActionPreference = 'Stop'
@@ -9,13 +11,11 @@ Set-StrictMode -Version Latest
 $root = Split-Path $PSScriptRoot -Parent
 $results = Join-Path $root 'dist\validation\update-recovery'
 New-Item $results -ItemType Directory -Force | Out-Null
-$appDir = Join-Path $env:LOCALAPPDATA 'Programs\MarkAuto'
+$appDir = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs\MarkAuto'))
 $dataDir = Join-Path $env:LOCALAPPDATA 'MarkAuto'
 $settingsPath = Join-Path $dataDir 'state-v1\settings.json'
 $settingsDigest = $null
-if ((Test-Path -LiteralPath $settingsPath) -or (Test-Path -LiteralPath (Join-Path $dataDir 'workspace-location.json'))) {
-  throw 'Unknown settings/workspace state: refusing to overwrite or relocate existing user preferences'
-}
+$lifecycleArchive = $lifecycleArchiveDigest = $null
 $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
 $desktop = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Mark Auto.lnk'
 $candidate = Join-Path $root "dist\installers\MarkAuto-$Version-windows-x64-setup.exe"
@@ -24,27 +24,122 @@ if (Test-Path "$appDir\unins000.exe") { throw 'Recovery test requires no install
 if ((Test-Path $startMenu) -or (Test-Path $desktop)) { throw 'Existing app shortcut: refusing to replace an unknown installation' }
 function Assert-Artifact([string]$file, [string]$manifestPath) {
   $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  if ($manifest.source_commit -notmatch '^[0-9a-fA-F]{40}$') { throw 'Release manifest must identify its exact source commit' }
   $property = $manifest.artifacts_sha256.PSObject.Properties[(Split-Path $file -Leaf)]
-  if (-not $property -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $property.Value) { throw 'Installer digest does not match supplied release manifest' }
+  if (-not $property -or $property.Value -notmatch '^[0-9a-fA-F]{64}$' -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $property.Value) { throw 'Installer digest does not match supplied release manifest' }
+  return $manifest
 }
-Assert-Artifact $BaselineInstaller $BaselineManifest
-Assert-Artifact $candidate $CandidateManifest
-if ((Split-Path $BaselineInstaller -Leaf) -ne 'MarkAuto-0.1.1-windows-x64-setup.exe') { throw 'Recovery baseline must be the actual released 0.1.1 artifact' }
+if ((Split-Path $BaselineInstaller -Leaf) -ne "MarkAuto-$BaselineVersion-windows-x64-setup.exe") { throw 'Recovery baseline filename must match the explicitly requested released version' }
+$baselineEvidence = Assert-Artifact $BaselineInstaller $BaselineManifest
+$candidateEvidence = Assert-Artifact $candidate $CandidateManifest
 function Run-Setup([string]$installer, [string]$stage) {
   $p = Start-Process $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\$stage.log`"") -PassThru -Wait
   if ($p.ExitCode -ne 0) { throw "$stage failed: $($p.ExitCode)" }
 }
+function Assert-NoReparsePath([string]$path) {
+  $current = [IO.Path]::GetFullPath($path)
+  while ($current) {
+    $item = Get-Item -LiteralPath $current -Force
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse path refused in recovery evidence or shortcut' }
+    $parent = Split-Path $current -Parent
+    if ($parent -eq $current) { break }
+    $current = $parent
+  }
+}
+function Get-OptionalStateItem([string]$path) {
+  try { return Get-Item -LiteralPath $path -Force -ErrorAction Stop }
+  catch [System.Management.Automation.ItemNotFoundException] { return $null }
+}
+function Preserve-OwnedLifecycleSettings {
+  if (-not $LifecycleHandoff) { return }
+  $expectedReceipt = [IO.Path]::GetFullPath((Join-Path $root 'dist\validation\lifecycle-state-handoff.json'))
+  if ([IO.Path]::GetFullPath($LifecycleHandoff) -ne $expectedReceipt) { throw 'Unexpected lifecycle ownership receipt path' }
+  Assert-NoReparsePath $LifecycleHandoff
+  $receipt = Get-Content -LiteralPath $LifecycleHandoff -Raw | ConvertFrom-Json
+  $candidateHash = (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($receipt.schema_version -ne 1 -or $receipt.owner -ne 'installer-lifecycle-test' -or
+      $receipt.initial_settings_absent -ne $true -or $receipt.initial_workspace_pointer_absent -ne $true -or
+      $receipt.lifecycle_passed -ne $true -or $receipt.candidate_version -ne $Version -or
+      $receipt.candidate_sha256 -ne $candidateHash -or $receipt.settings_relative_path -ne 'state-v1/settings.json' -or
+      [IO.Path]::GetFullPath($receipt.app_data_path) -ne [IO.Path]::GetFullPath($dataDir)) { throw 'Lifecycle state ownership not proven' }
+  if (Get-OptionalStateItem (Join-Path $dataDir 'workspace-location.json')) { throw 'Unknown workspace pointer cannot be handed off' }
+  if ($receipt.settings_created -eq $false) {
+    if (Get-OptionalStateItem $settingsPath) { throw 'Settings appeared after ownership receipt' }
+    return
+  }
+  if ($receipt.settings_created -ne $true -or $receipt.settings_sha256 -notmatch '^[0-9a-f]{64}$') { throw 'Invalid lifecycle settings evidence' }
+  Assert-NoReparsePath $settingsPath
+  if ((Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $receipt.settings_sha256) { throw 'Lifecycle settings changed after ownership receipt; original preserved' }
+  # Preserve exact bytes at an exclusive sibling path. Never reset/delete state.
+  $archive = $settingsPath + '.lifecycle-' + [guid]::NewGuid().ToString('N') + '.preserved'
+  [IO.File]::Move($settingsPath, $archive)
+  if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $receipt.settings_sha256) { throw 'Archived lifecycle settings hash mismatch' }
+  $script:lifecycleArchive = $archive
+  $script:lifecycleArchiveDigest = $receipt.settings_sha256
+  @{status='preserved'; owner='installer-lifecycle-test'; archive_path=$archive;
+    sha256=$receipt.settings_sha256; candidate_sha256=$candidateHash;
+    scope='Only settings proven absent before lifecycle and unchanged since its receipt were relocated; no deletion'} |
+    ConvertTo-Json | Set-Content (Join-Path $results 'lifecycle-state-preservation.json')
+}
+function Get-SafePayloadFiles([string]$directory) {
+  Assert-NoReparsePath $directory
+  foreach ($entry in Get-ChildItem -LiteralPath $directory -Force) {
+    if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse entry refused before payload traversal' }
+    if ($entry.PSIsContainer) { Get-SafePayloadFiles $entry.FullName } else { $entry }
+  }
+}
+function Assert-PayloadTarget([string]$exe, [string]$expectedVersion) {
+  # GetFullPath expands existing 8.3 names (for example RUNNER~1 in TEMP).
+  # Compare canonical trusted paths, not raw spelling; reject traversal explicitly.
+  if ($exe -notmatch '^[A-Za-z]:\\' -or $exe.Substring(2).Contains(':') -or $exe -match '(^|[\\/])\.\.?([\\/]|$)') { throw 'Executable path must be absolute local and contain no traversal or alternate stream' }
+  $full = [IO.Path]::GetFullPath($exe)
+  $trustedRoot = [IO.Path]::GetFullPath($appDir)
+  if ((Split-Path $full -Leaf) -ne 'MarkAuto.exe') { throw 'Unexpected executable filename' }
+  $directory = Split-Path $full -Parent
+  if ($expectedVersion -eq '0.1.1') {
+    if ($full -ne (Join-Path $trustedRoot 'MarkAuto.exe')) { throw 'Legacy baseline must use its exact root executable' }
+  } else {
+    $versionRoot = Join-Path $trustedRoot "payloads\$expectedVersion"
+    if ((Split-Path $directory -Parent) -ne $versionRoot) { throw 'Executable must be inside one owned versioned payload directory' }
+  }
+  if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw 'Payload executable missing' }
+  Assert-NoReparsePath $full
+}
+function Assert-Inventory([string]$directory) {
+  $inventoryPath = Join-Path $directory 'payload-inventory.txt'
+  Assert-NoReparsePath $inventoryPath
+  $inventory = @(Get-Content -LiteralPath $inventoryPath)
+  $seen = @{}
+  foreach ($row in $inventory) {
+    if ($row -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Malformed active inventory' }
+    $digest = $Matches[1]; $relative = $Matches[2]
+    if ([IO.Path]::IsPathRooted($relative) -or $relative.Contains(':') -or $relative -match '(^|[\\/])\.\.?([\\/]|$)' -or $seen.ContainsKey($relative)) { throw 'Unsafe or duplicate inventory path' }
+    $seen[$relative] = $true
+    $file = Join-Path $directory $relative
+    Assert-NoReparsePath $file
+    if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw 'Active payload hash mismatch' }
+  }
+  if (-not $seen.ContainsKey('MarkAuto.exe') -or @(Get-SafePayloadFiles $directory).Count -ne $inventory.Count + 1) { throw 'Incomplete or unexpected active payload file' }
+}
 function Target([string]$link) {
   if (-not (Test-Path -LiteralPath $link)) { throw "Missing shortcut: $link" }
-  return $shell.CreateShortcut($link).TargetPath
+  Assert-NoReparsePath $link
+  $target = $shell.CreateShortcut($link).TargetPath
+  Assert-NoReparsePath $target
+  return $target
 }
 function Assert-ActualSettings {
+  if ($lifecycleArchive) {
+    Assert-NoReparsePath $lifecycleArchive
+    if ((Get-FileHash -LiteralPath $lifecycleArchive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lifecycleArchiveDigest) { throw 'Preserved lifecycle preferences changed or disappeared' }
+  }
   if ($settingsDigest -and (-not (Test-Path -LiteralPath $settingsPath) -or (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash -ne $settingsDigest)) {
     throw 'Actual app settings changed or disappeared'
   }
 }
 function Smoke([string]$exe, [string]$versionExpected, [string]$stage) {
   Assert-ActualSettings
+  Assert-PayloadTarget $exe $versionExpected
   $report = Join-Path $results "$stage.json"
   $p = Start-Process $exe -ArgumentList @('--smoke-test',"`"$report`"") -WorkingDirectory $env:TEMP -PassThru
   if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'Recovery smoke timed out' }
@@ -53,10 +148,22 @@ function Smoke([string]$exe, [string]$versionExpected, [string]$stage) {
   if ($evidence.status -ne 'passed' -or $evidence.version -ne $versionExpected -or $evidence.live_status -ne 'disabled' -or [IO.Path]::GetFullPath($evidence.data_dir) -ne [IO.Path]::GetFullPath($dataDir)) { throw 'Recovery smoke evidence invalid or settings workspace not used' }
   Assert-ActualSettings
 }
+Preserve-OwnedLifecycleSettings
+if ((Get-OptionalStateItem $settingsPath) -or (Get-OptionalStateItem (Join-Path $dataDir 'workspace-location.json'))) {
+  throw 'Unknown settings/workspace state: refusing to overwrite or relocate existing user preferences'
+}
+# Refuse a redirected existing install root before even the legacy installer runs.
+Assert-NoReparsePath $env:LOCALAPPDATA
+$programsDir = Split-Path $appDir -Parent
+if (Get-Item -LiteralPath $programsDir -Force -ErrorAction SilentlyContinue) { Assert-NoReparsePath $programsDir }
+if (Get-Item -LiteralPath $appDir -Force -ErrorAction SilentlyContinue) { [void]@(Get-SafePayloadFiles $appDir) }
 Run-Setup $BaselineInstaller 'baseline-install'
 $oldExe = Target $startMenu
-if ($oldExe -ne "$appDir\MarkAuto.exe" -or (Target $desktop) -ne $oldExe) { throw 'Released baseline shortcut layout changed' }
-Smoke $oldExe '0.1.1' 'baseline-smoke'
+Assert-PayloadTarget $oldExe $BaselineVersion
+$oldDir = Split-Path $oldExe -Parent
+if ((Target $desktop) -ne $oldExe) { throw 'Released baseline shortcuts disagree' }
+if ($BaselineVersion -ne '0.1.1') { Assert-Inventory $oldDir }
+Smoke $oldExe $BaselineVersion 'baseline-smoke'
 # Released 5943b6e SettingsStore uses this exact schema at state-v1/settings.json.
 # Both released and candidate desktop startup load it; no schema migration claim.
 foreach ($directory in @($dataDir, (Split-Path $settingsPath -Parent))) {
@@ -67,15 +174,15 @@ $settingsBytes = [Text.Encoding]::UTF8.GetBytes($settingsFixture)
 $stream = [IO.File]::Open($settingsPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
 try { $stream.Write($settingsBytes, 0, $settingsBytes.Length) } finally { $stream.Dispose() }
 $settingsDigest = (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash
-Smoke $oldExe '0.1.1' 'baseline-existing-settings-smoke'
+Smoke $oldExe $BaselineVersion 'baseline-existing-settings-smoke'
 # Freeze old-payload and unknown-file expectations before invoking the candidate.
-$obsolete = Join-Path $appDir '_internal\obsolete-test.dll'
+$obsolete = Join-Path $oldDir '_internal\obsolete-test.dll'
+Assert-NoReparsePath (Split-Path $obsolete -Parent)
 if (Test-Path $obsolete) { throw 'Unexpected preexisting test marker' }
 [IO.File]::WriteAllBytes($obsolete, [Text.Encoding]::UTF8.GetBytes('never load this retired dependency'))
 $prior = @{}
-foreach ($file in Get-ChildItem -LiteralPath $appDir -Recurse -File) {
-  if ($file.DirectoryName -eq $appDir -and $file.Name -like 'unins*') { continue }
-  if ($file.FullName.StartsWith("$appDir\payloads\", [StringComparison]::OrdinalIgnoreCase)) { continue }
+foreach ($file in Get-SafePayloadFiles $appDir) {
+  if ($file.DirectoryName -eq $appDir -and $file.Name -match '^unins\d+\.(exe|dat|msg)$') { continue }
   $prior[$file.FullName] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
 }
 $sentinels = @{}
@@ -88,6 +195,7 @@ foreach ($relative in @('settings\preferences.json','history\run.json','reports\
 }
 function Assert-PriorPayload {
   foreach ($path in $prior.Keys) {
+    Assert-NoReparsePath $path
     if (-not (Test-Path -LiteralPath $path) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $prior[$path]) { throw "Prior runtime changed: $path" }
   }
 }
@@ -153,20 +261,15 @@ if (Test-Path (Join-Path $partial 'payload-inventory.txt')) { throw 'Interruptio
 if ((Target $startMenu) -ne $oldExe -or (Target $desktop) -ne $oldExe) { throw 'Incomplete payload activated' }
 Assert-PriorPayload
 Assert-Sentinels
-Smoke $oldExe '0.1.1' 'interrupted-before-activation'
+Smoke $oldExe $BaselineVersion 'interrupted-before-activation'
 # Recovery is a normal rerun of the exact candidate, with a fresh immutable directory.
 Run-Setup $candidate 'retry-install'
 $newExe = Target $startMenu
 $newDir = Split-Path $newExe -Parent
 if (-not $newDir.StartsWith("$payloadRoot\", [StringComparison]::OrdinalIgnoreCase) -or $newDir -eq $partial -or (Target $desktop) -ne $newExe) { throw 'Retry did not activate one fresh payload' }
 if (Test-Path (Join-Path $newDir '_internal\obsolete-test.dll')) { throw 'Obsolete dependency leaked into new payload' }
-$inventory = @(Get-Content -LiteralPath (Join-Path $newDir 'payload-inventory.txt'))
-foreach ($row in $inventory) {
-  if ($row -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Malformed active inventory' }
-  $digest = $Matches[1]; $relative = $Matches[2]
-  if ((Get-FileHash -LiteralPath (Join-Path $newDir $relative) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw 'Active payload hash mismatch' }
-}
-if (@(Get-ChildItem -LiteralPath $newDir -Recurse -File).Count -ne $inventory.Count + 1) { throw 'Unexpected active payload file' }
+Assert-PayloadTarget $newExe $Version
+Assert-Inventory $newDir
 Assert-PriorPayload
 Assert-Sentinels
 Smoke $newExe $Version 'recovered-smoke'
@@ -182,18 +285,23 @@ $firstTarget = $newExe
 Run-Setup $candidate 'same-version-reinstall'
 $secondTarget = Target $startMenu
 if ($secondTarget -eq $firstTarget -or (Target $desktop) -ne $secondTarget) { throw 'Same-version install reused an existing payload' }
+Assert-PayloadTarget $secondTarget $Version
+Assert-Inventory (Split-Path $firstTarget -Parent)
+Assert-Inventory (Split-Path $secondTarget -Parent)
 Smoke $firstTarget $Version 'retained-candidate-smoke'
 Smoke $secondTarget $Version 'reinstalled-smoke'
 Assert-PriorPayload
 Assert-Sentinels
-@{status='passed'; baseline='released 0.1.1'; candidate=$Version;
+@{status='passed'; baseline="released $BaselineVersion"; candidate=$Version;
+  baseline_source_commit=$baselineEvidence.source_commit; candidate_source_commit=$candidateEvidence.source_commit;
   interruption='actual setup process tree killed during extraction before inventory/shortcut activation';
   recovery='rerun exact candidate; fresh payload verified before both shortcuts activate';
   split_shortcut_recovery='constructed old/new shortcut state, repaired by actual ordinary rerun; not an additional crash checkpoint';
   preserved_prior_files=$prior.Count; preserved_data_sentinels=$sentinels.Count;
+  lifecycle_settings_archive=@{path=$lifecycleArchive; sha256=$lifecycleArchiveDigest; deleted=$false};
   actual_settings=@{relative_path='state-v1/settings.json'; schema_version=1; sha256=$settingsDigest;
     fixture='non-sensitive existing-schema preferences, created only when absent';
-    execution='released 0.1.1 and candidate startup load actual settings; bytes checked before and after every subsequent smoke';
+    execution="released $BaselineVersion and candidate startup load actual settings; bytes checked before and after every subsequent smoke";
     scope='compatible existing settings preservation, not historical schema migration'};
   partial_payload=$partial; prior_target=$oldExe; first_verified_target=$firstTarget; active_target=$secondTarget;
   limitations=@('One real process-crash extraction checkpoint, not exhaustive power-loss durability proof',

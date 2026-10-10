@@ -12,8 +12,8 @@ and uninstall. Remove that directory yourself only if you intend to erase data.
 
 Build on Windows x64 with Python 3.13.16 and PowerShell, from the repository root:
 
-    ./packaging/build.ps1 -Version 0.1.2
-    ./packaging/test_installer.ps1 -Version 0.1.2
+    ./packaging/build.ps1 -Version 0.2.0
+    ./packaging/test_installer.ps1 -Version 0.2.0
     python packaging/build_manifest.py
 
 Only developers need Python. The hash-locked Windows dependency closure and
@@ -91,7 +91,7 @@ a maintained Windows binary line, not indefinitely retaining this pin.
 - https://docs.python.org/3.13/using/windows.html
 - https://pypi.org/project/pyinstaller/6.22.3/
 
-## 0.1.2 actual-version upgrade and client kit
+## 0.2.0 actual-version upgrade and client kit
 
 New installs use a fresh `payloads/<version>/<attempt>` directory; the compiled
 inventory digest, every file digest and exact file count must match before
@@ -100,12 +100,12 @@ with new DLLs. Default per-user root and separate AppData remain unchanged.
 See [update recovery](update_recovery.md) for interruption, retry, split shortcuts
 and retained/orphan payload disk usage. No wildcard cleanup is performed.
 
-CI downloads the exact released0.1.1 installer via `fetch_baseline.py` with pinned
+CI downloads the exact released0.1.2 installer via `fetch_baseline.py` with pinned
 SHA/size/source metadata. The Windows recovery harness performs a real extraction
 process interruption and rerun, separately identifying a constructed shortcut
 interruption state. This is not exhaustive hardware-power-loss verification.
 
-The release includes `MarkAuto-0.1.2-clean-windows-acceptance.zip`: old/new EXEs,
+The release includes `MarkAuto-0.2.0-clean-windows-acceptance.zip`: old/new EXEs,
 independent manifests, shared lifecycle tests, built-in PowerShell-only clean-client
 preflight and manual acceptance runbook. See [clean-client guide](clean_windows_README.md).
 Generating the kit or passing Server CI never passes clean Windows10/11 gates.

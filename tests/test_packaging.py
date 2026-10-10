@@ -37,6 +37,13 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('[System.Management.Automation.Language.Parser]::ParseFile', validator)
         self.assertIn("-Filter '*.ps1' -File -Recurse", validator)
 
+    def test_manifest_includes_every_root_desktop_component(self):
+        source = (ROOT / 'packaging/build_manifest.py').read_text()
+        self.assertIn("'desktop*.py'", source)
+        included = {path.name for path in ROOT.glob('desktop*.py')}
+        self.assertTrue({'desktop.py', 'desktop_ui.py', 'desktop_market.py',
+                         'desktop_charts.py', 'desktop_forms.py'} <= included)
+
     def test_build_inputs_are_committed_not_silently_gitignored(self):
         required = {'desktop.py', 'desktop_ui.py', 'requirements-desktop.lock',
                     'packaging/markauto.spec', 'packaging/markauto.iss',

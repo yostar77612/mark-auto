@@ -18,7 +18,7 @@ from quantlab.reporting import (read_json, write_json, load_dataset, save_datase
                         save_selection, load_selection)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
-    'demo', 'import', 'refresh', 'backtest', 'campaign', 'compare', 'select', 'disable',
+    'demo', 'import', 'refresh', 'market_refresh', 'backtest', 'campaign', 'compare', 'select', 'disable',
     'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
     'backup_create', 'backup_restore'))
 
@@ -184,6 +184,31 @@ def execute_ui_operation(operation, payload, paths):
             manager.restore(Path(payload['path']))
             return {'restored': True, 'reconciliation_required': True}
         return {'backup': str(manager.create(Path(payload['path'])))}
+    if operation == 'ui_market_refresh':
+        from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
+        # File imports use the same fixed official schema and atomic cache path.
+        local = payload.get('local_path')
+        if not local and payload.get('network_opt_in') is not True:
+            raise ValidationError('請先明確同意本次官方行情網路更新')
+        providers = (payload.get('provider'),) if local else ('twse', 'taifex')
+        outcomes = {}
+        for provider in providers:
+            if provider not in ('twse', 'taifex'): raise ValidationError('不支援的官方來源')
+            try:
+                kwargs = {}
+                if local:
+                    path = Path(local)
+                    if path.stat().st_size > MAX_BYTES: raise ValidationError('官方資料檔案過大')
+                    with path.open('rb') as stream: raw = stream.read(MAX_BYTES + 1)
+                    if len(raw) > MAX_BYTES: raise ValidationError('官方資料檔案過大')
+                    result = import_daily(provider, root / 'market_cache', raw, format=payload.get('format', 'json'))
+                else:
+                    result = refresh_daily(provider, root / 'market_cache', network_enabled=True, **kwargs)
+                outcomes[provider] = {'stale': result.stale, 'error': result.error,
+                    'contracts': len(result.series), 'bars': sum(len(x.bars) for x in result.series)}
+            except Exception as exc:
+                outcomes[provider] = {'stale': True, 'error': str(exc), 'contracts': None, 'bars': None}
+        return {'providers': outcomes, 'mode': 'official_local_import' if local else 'official_explicit_refresh'}
     if operation == 'ui_demo':
         data = synthetic_dataset(payload.get('bars', 960))
         save_dataset(data, root / 'dataset.json')
@@ -191,10 +216,15 @@ def execute_ui_operation(operation, payload, paths):
     if operation == 'ui_import':
         from quantlab.data import SessionCalendar, import_taifex
         cal = read_json(Path(payload['calendar']))
-        data = import_taifex(Path(payload['path']), kind=payload['kind'],
-                            calendar=SessionCalendar(cal['sessions'], version=cal['version']),
-                            contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
+        if payload['kind'] == 'validated_dataset':
+            data = load_dataset(Path(payload['path']))
+            dataset_market_series(data, cal)
+        else:
+            data = import_taifex(Path(payload['path']), kind=payload['kind'],
+                                calendar=SessionCalendar(cal['sessions'], version=cal['version']),
+                                contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
         save_dataset(data, root / 'dataset.json')
+        write_json(root / 'dataset_calendar.json', cal)
         return {'dataset': str(root / 'dataset.json'), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
     if operation == 'ui_refresh':
         if payload.get('network_opt_in') is not True:
@@ -254,7 +284,20 @@ def execute_ui_operation(operation, payload, paths):
         if isinstance(config.get('backtest_config'), dict):
             config['backtest_config'] = config_from_json(config['backtest_config'])
         options = payload.get('provider', {'mode':'fixture'})
-        generator = campaign_generator(paths, options)
+        if options.get('mode') == 'manual':
+            from quantlab.manual_exchange import export_request_file, import_response, import_response_file
+            if payload.get('manual_export'):
+                request = export_request_file(data, config, Path(payload['manual_export']))
+                return {'manual_export': payload['manual_export'], 'request': request, 'mode': 'manual_unverified'}
+            if options.get('response_path'):
+                generator = import_response_file(data, config, Path(options['response_path']))
+            else:
+                generator = import_response(data, config, options.get('response_text', ''))
+            generator.preflight(data, config)
+            research_controls(paths)
+            options = {'mode': 'manual', 'package': generator.model}
+        else:
+            generator = campaign_generator(paths, options)
         name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
         return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name,
                             holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
@@ -340,12 +383,63 @@ def execute_ui_operation(operation, payload, paths):
     raise ValidationError('未實作作業')
 
 
+
+def latest_market_observations(series):
+    """Choose observed contract history, never infer a live or executable quote.
+
+    Date/session ordering is explicit. Same-session sources without event times
+    are not time-comparable: retain the first source (official daily cache).
+    """
+    chosen = {}
+    session_order = {'night': 0, 'day': 1, 'combined': 2}
+    for item in series:
+        key = item.instrument.contract_id
+        previous = chosen.get(key)
+        if previous is None:
+            chosen[key] = item
+            continue
+        latest, old = item.bars[-1], previous.bars[-1]
+        rank = (latest.trade_date, session_order[latest.session])
+        old_rank = (old.trade_date, session_order[old.session])
+        if rank > old_rank or (rank == old_rank and latest.end is not None and old.end is not None and latest.end > old.end):
+            chosen[key] = item
+    return tuple(chosen.values())
+
+
+def dataset_market_series(dataset, calendar_payload):
+    """Adapt only validated one-minute official history with hash-bound calendar."""
+    from quantlab.data import validate_dataset, SessionCalendar
+    from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance, bar_key
+    validate_dataset(dataset)
+    manifest = dataset.manifest
+    if manifest['source_type'] != 'official_local' or manifest.get('bar_granularity') != 'minute' or manifest.get('timeframe_minutes', 1) != 1:
+        raise ValidationError('只接受明確的一分鐘官方歷史；不把合成或日資料轉成分鐘')
+    calendar = SessionCalendar(calendar_payload['sessions'], version=calendar_payload['version'])
+    if calendar.hash != manifest.get('calendar_hash'): raise ValidationError('交易日曆與研究資料雜湊不符')
+    grouped = {}
+    for bar in dataset.bars:
+        instrument = InstrumentRef('TAIFEX', 'TMF', bar.contract_id, bar.contract_id.split(':')[-1])
+        session = calendar.lookup(bar.timestamp, bar.contract_id)
+        value = MarketBar(instrument, bar.trade_date, bar.session, bar.open, bar.high, bar.low, bar.close, bar.volume,
+            interval='1m', timestamp=bar.timestamp, end=bar.end, session_open=session['open'], session_end=session['end'], source_id=bar.source_id)
+        grouped.setdefault(instrument, []).append(value)
+    result = []
+    for instrument, bars in grouped.items():
+        bars.sort(key=bar_key); dates = [b.trade_date for b in bars]
+        provenance = SourceProvenance(manifest['source_url'], manifest['source_hash'],
+            'TAIFEX 官方歷史；原始研究資料雜湊 ' + manifest['data_hash'],
+            'https://www.taifex.com.tw', datetime.fromisoformat(manifest['imported_at'].replace('Z', '+00:00')),
+            max(dates), min(dates), max(dates), mode='history', timestamp_basis='hash-bound explicit session calendar; one-minute source',
+            warnings=tuple(str(x) for x in dataset.quality.get('warnings', ())))
+        result.append(MarketSeries(instrument, tuple(bars), provenance))
+    return tuple(result)
+
 from PySide6.QtCore import Qt, QTimer, QPointF, QUrl
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QListWidget, QStackedWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox,
     QSpinBox, QCheckBox, QProgressBar, QFileDialog, QFormLayout, QScrollArea,
-    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication)
+    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication, QGroupBox)
 
 
 class EquityPlot(QWidget):
@@ -362,8 +456,8 @@ class EquityPlot(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor('#f5f7fa'))
-        painter.setPen(QColor('#334155'))
+        painter.fillRect(self.rect(), QColor('#172230'))
+        painter.setPen(QColor('#dbe4ef'))
         if not self.values:
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, '尚無權益資料')
             return
@@ -375,6 +469,11 @@ class EquityPlot(QWidget):
         painter.drawPolyline(points)
 
 
+from desktop_market import MarketDashboard
+from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, PaperPolicyForm,
+    PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, paths, jobs, settings=None, backups=None, guard=None):
         super().__init__()
@@ -383,26 +482,31 @@ class MainWindow(QMainWindow):
         self.actions = []
         self.last_operation = None
         self.active_candidate = None
+        self._advanced_values = {}
+        self._market_outcomes = {}
+        self._campaign_data_hash = None
         self.setWindowTitle('TMF 量化研究桌面｜研究與紙上模擬')
-        self.resize(1180, 800)
+        self.resize(1366, 768)
         self.setStyleSheet('''
-            QMainWindow, QScrollArea, QStackedWidget { background: #f3f6fb; }
-            QWidget { font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: 14px; color: #172b4d; }
+            QMainWindow, QScrollArea, QStackedWidget { background: #101720; }
+            QWidget { background: #101720; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: 14px; color: #dbe4ef; }
             QLabel { padding: 3px 0; }
             QListWidget { background: #12243b; color: #e3edf9; border: none; border-radius: 9px; padding: 9px; }
             QListWidget::item { padding: 12px 8px; border-radius: 5px; }
             QListWidget::item:selected { background: #2865c4; color: white; }
             QPushButton { background: #2563ba; color: white; border: none; border-radius: 6px; padding: 9px 14px; min-height: 20px; }
             QPushButton:hover { background: #1b4f9b; }
-            QPushButton:disabled { background: #cbd5e1; color: #64748b; }
-            QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: white; border: 1px solid #cad5e3; border-radius: 5px; padding: 7px; selection-background-color: #2563ba; }
+            QPushButton:disabled { background: #243448; color: #9aabbc; }
+            QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: #172230; border: 1px solid #43566c; border-radius: 5px; padding: 7px; selection-background-color: #2563ba; }
             QCheckBox { padding: 7px 0; }
-            QProgressBar { border: 1px solid #d7e0ec; border-radius: 4px; background: white; text-align: center; }
+            QTableWidget { background:#172230; alternate-background-color:#1d2b3c; gridline-color:#354459; selection-background-color:#285f89; }
+            QHeaderView::section { background:#243448; color:#e0e8f3; padding:6px; border:0; }
+            QProgressBar { border: 1px solid #43566c; border-radius: 4px; background: #172230; text-align: center; }
             QProgressBar::chunk { background: #2563ba; }
         ''')
         body = QWidget(); outer = QVBoxLayout(body)
-        banner = QLabel('僅研究／紙上模擬 · 本版實單交易固定停用 · Fixture 並非真實 AI · 合成資料並非市場績效')
-        banner.setWordWrap(True); banner.setStyleSheet('background:#fff3cd;color:#664d03;padding:10px')
+        banner = QLabel('研究／模擬交易｜實盤停用')
+        banner.setWordWrap(True); banner.setStyleSheet('background:#30291d;color:#f1d38a;padding:10px')
         outer.addWidget(banner)
         horizontal = QHBoxLayout(); outer.addLayout(horizontal, 1)
         self.navigation = QListWidget(); self.navigation.setObjectName('navigation'); self.navigation.setMaximumWidth(180)
@@ -420,6 +524,7 @@ class MainWindow(QMainWindow):
         self.timer = QTimer(self); self.timer.timeout.connect(self.poll_jobs); self.timer.start(150)
         self._safe(self.refresh_views)
         self._safe(self.load_settings)
+        self._busy(False)
 
     def _page(self, label):
         self.navigation.addItem(label)
@@ -440,29 +545,63 @@ class MainWindow(QMainWindow):
         layout.addWidget(field)
         return field
 
+    def _advanced(self, layout, title='進階診斷 JSON（一般操作不需要）'):
+        toggle = QCheckBox(title); layout.addWidget(toggle)
+        box = QWidget(); inner = QVBoxLayout(box); inner.setContentsMargins(0,0,0,0)
+        layout.addWidget(box); box.hide(); toggle.toggled.connect(box.setVisible)
+        return inner
+
+    def _payload(self, editor, build):
+        text = editor.toPlainText()
+        if text != self._advanced_values.get(editor, text):
+            return json.loads(text)
+        return build()
+
+    def _remember(self, editor):
+        self._advanced_values[editor] = editor.toPlainText()
+
     def _dashboard(self):
-        layout = self._page('總覽')
-        self.overview = QLabel(); self.overview.setWordWrap(True); layout.addWidget(self.overview)
-        self._button(layout, '重新讀取本機狀態', 'refresh_views', self.refresh_views)
-        cards = QHBoxLayout()
-        for title, value in [('資料來源', '尚未載入'), ('模型驗證', 'Fixture / 未驗證'), ('執行範圍', '研究與紙上'), ('風險邊界', '實單已停用')]:
-            card = QLabel(title + '\n\n' + value); card.setMinimumHeight(100); card.setWordWrap(True)
-            card.setStyleSheet('background:white;border:1px solid #dce4ef;border-radius:9px;padding:16px;font-weight:600')
-            cards.addWidget(card)
-            if title == '資料來源': self.data_card = card
-        layout.addLayout(cards)
-        self.summary = QPlainTextEdit(); self.summary.setReadOnly(True); self.summary.setMaximumHeight(280)
-        self.summary.setPlaceholderText('從「資料匯入與更新」開始。完成的背景作業結果會顯示在這裡。\n所有績效需核對來源、費用假設與樣本外表現。')
-        layout.addWidget(self.summary)
-        layout.addStretch()
+        self.navigation.addItem('市場總覽')
+        self.market = MarketDashboard(); self.stack.addWidget(self.market)
+        self.market.refresh_requested.connect(lambda: self._safe(self.refresh_market))
+        self.market.preferences_changed.connect(lambda: self._safe(self.save_market_preferences))
+        self.market.series_rendered.connect(lambda _: self._safe(self.bind_result_layers))
+        # Compatibility diagnostics remain available on the data page, not the landing page.
+        self.overview = QLabel(); self.data_card = QLabel()
+        self.summary = QPlainTextEdit(); self.summary.setReadOnly(True)
+
+    def refresh_market(self):
+        if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
+        answer = QMessageBox.question(self, '更新官方唯讀資料',
+            '本次連線 TWSE 與 TAIFEX 免費公開端點，下載歷史／盤後資料？不含即時行情、不使用交易帳密。',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+        if answer == QMessageBox.StandardButton.Yes:
+            self.start_job('ui_market_refresh', {'network_opt_in': True})
+
+    def import_market_file(self):
+        name, _ = QFileDialog.getOpenFileName(self, '選擇官方格式原始資料（本機檔案來源仍需自行核對）', '', 'JSON / CSV (*.json *.csv)')
+        if name:
+            provider, format_name = self.market_provider.currentData()
+            self.start_job('ui_market_refresh', {'provider': provider, 'format': format_name, 'local_path': name})
+
+    def save_market_preferences(self):
+        if self.settings is None: return
+        value = self.settings.load()
+        value['market'] = self.market.preferences()
+        geometry = self.geometry()
+        value['window'] = {'x': self.x(), 'y': self.y(), 'width': geometry.width(), 'height': geometry.height()}
+        self.settings.save(value)
 
     def _data_page(self):
         layout = self._page('資料匯入與更新')
+        layout.addWidget(self.overview)
+        self.market_provider = QComboBox(); self.market_provider.addItem('TWSE 加權指數官方格式 JSON', ('twse', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 JSON', ('taifex', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 CSV', ('taifex', 'csv')); layout.addWidget(self.market_provider)
+        self._button(layout, '匯入官方唯讀行情（不變更研究資料）', 'import_market_file', self.import_market_file)
         self.import_path = self._text(layout, '本機 CSV / RPT / JSON 檔案')
         self._button(layout, '選擇資料檔案', 'browse_data', lambda: self._browse(self.import_path))
         self.calendar_path = self._text(layout, '版本化交易日曆 JSON（必填）')
         self._button(layout, '選擇交易日曆', 'browse_calendar', lambda: self._browse(self.calendar_path))
-        self.import_kind = QComboBox(); self.import_kind.addItems(['ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json', 'synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks']); layout.addWidget(self.import_kind)
+        self.import_kind = QComboBox(); self.import_kind.addItems(['validated_dataset', 'ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json', 'synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks']); layout.addWidget(self.import_kind)
         self.contract = self._text(layout, '合約（可留空）', 'TAIFEX:TMF:202601')
         self._button(layout, '匯入並驗證資料', 'import_data', self.import_data)
         self.bars = QSpinBox(); self.bars.setRange(120, 10000); self.bars.setValue(960); layout.addWidget(self.bars)
@@ -470,44 +609,68 @@ class MainWindow(QMainWindow):
         self.network_data = QCheckBox('同意本次連線至 TAIFEX 下載免費公開資料（不會自動匯入）'); layout.addWidget(self.network_data)
         self.days = QSpinBox(); self.days.setRange(1, 30); layout.addWidget(self.days)
         self._button(layout, '下載最近交易日資料', 'refresh_data', self.download_data)
-        self.data_detail = QPlainTextEdit(); self.data_detail.setReadOnly(True); layout.addWidget(self.data_detail)
+        details = self._advanced(layout)
+        self.data_detail = QPlainTextEdit(); self.data_detail.setReadOnly(True); details.addWidget(self.data_detail); details.addWidget(self.summary)
 
     def _strategy_page(self):
         from quantlab.strategies import builtin_strategies
         layout = self._page('策略與版本')
         layout.addWidget(QLabel('五種有限策略家族與受驗證參數；禁止任意 Python 策略程式。'))
-        self.family = QComboBox(); self.family.addItems([s.family for s in builtin_strategies()]); layout.addWidget(self.family)
-        self.parameters = self._text(layout, '策略參數 JSON', '{}', True)
-        self.strategy_detail = QPlainTextEdit(); self.strategy_detail.setReadOnly(True); layout.addWidget(self.strategy_detail)
+        self.strategy_form = StrategyForm(); layout.addWidget(self.strategy_form)
+        advanced = self._advanced(layout)
+        self.family = QComboBox(); self.family.addItems([s.family for s in builtin_strategies()]); advanced.addWidget(self.family)
+        self.parameters = self._text(advanced, '策略參數 JSON', '{}', True)
+        self.strategy_detail = QPlainTextEdit(); self.strategy_detail.setReadOnly(True); advanced.addWidget(self.strategy_detail)
         self.family.currentIndexChanged.connect(self._family_changed); self._family_changed()
         layout.addWidget(QLabel('離線 Fixture 生成器：固定候選與版本紀錄；不是已驗證的真實模型。'))
-        self.campaign_config = self._text(layout, '研究設定 JSON（空白使用明示示範切分）', '', True)
-        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); layout.addWidget(self.provider_mode)
+        self.strategy_form.family.currentIndexChanged.connect(lambda: self.family.setCurrentIndex(self.strategy_form.family.currentIndex()))
+        self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
+        self.campaign_config = self._text(advanced, '研究設定 JSON（空白使用明示示範切分）', '', True)
+        self._remember(self.campaign_config)
+        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); layout.addWidget(self.provider_mode)
+        manual = QWidget(); manual_layout = QVBoxLayout(manual); layout.addWidget(manual); manual.hide()
+        self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
+        self.manual_path = self._text(manual_layout, '手動 AI 回應檔案（選檔或直接貼回回應；不自動連線）')
+        self._button(manual_layout, '選取手動 AI 回應檔', 'browse_manual_response', lambda: self._browse(self.manual_path))
+        self.manual_response = self._text(manual_layout, '貼回 AI 原始回應（不需手寫結構；勿含帳密）', '', True)
+        self._button(manual_layout, '匯出手動 AI 請求與回應格式', 'export_manual_request', self.export_manual_request)
         self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign)
         self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
-        self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); layout.addWidget(self.candidate_detail)
+        self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); advanced.addWidget(self.candidate_detail)
+        self.candidate_card = SummaryCard(); layout.addWidget(self.candidate_card)
         self.use_candidate_button = self._button(layout, '使用此不可變候選版本進行研究回測', 'use_candidate', self.use_candidate)
         self._button(layout, '改用內建家族與可編輯參數', 'use_builtin', self.use_builtin)
-        self.history = QPlainTextEdit(); self.history.setReadOnly(True); layout.addWidget(self.history)
+        self.history = QPlainTextEdit(); self.history.setReadOnly(True); advanced.addWidget(self.history)
+        self.history_table = ResultTable(); layout.addWidget(self.history_table)
+        layout.addWidget(QLabel('已保存樣本外／保留集評估（不回饋模型；沒有結果即未提供）'))
+        self.evaluation_table = ResultTable(); layout.addWidget(self.evaluation_table)
 
     def _backtest_page(self):
         layout = self._page('回測與結果')
         layout.addWidget(QLabel('使用「策略與版本」目前選定家族及參數。預設費率與保證金為合成假設。'))
-        self.start_date = self._text(layout, '起始交易日 YYYY-MM-DD（空白：全部）')
-        self.end_date = self._text(layout, '結束交易日 YYYY-MM-DD（含當日）')
-        self.config = self._text(layout, '費用／資金／保證金設定 JSON', canonical_json(demo_config()), True)
+        self.backtest_form = BacktestForm(); layout.addWidget(self.backtest_form)
+        self.start_date = self.backtest_form.fields['start_date']; self.end_date = self.backtest_form.fields['end_date']
+        advanced = self._advanced(layout)
+        self.config = self._text(advanced, '費用／資金／保證金設定 JSON', canonical_json(demo_config()), True)
+        self._remember(self.config)
         self.batch = QCheckBox('批次執行五個家族的預設參數'); layout.addWidget(self.batch)
         self.run_button = self._button(layout, '執行回測', 'run_backtest', self.run_backtest)
         self.result_choice = QComboBox(); self.result_choice.currentIndexChanged.connect(self.show_result); layout.addWidget(self.result_choice)
         self.plot = EquityPlot(); layout.addWidget(self.plot)
-        self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); layout.addWidget(self.result_detail)
+        self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); advanced.addWidget(self.result_detail)
+        self.result_card = SummaryCard(); layout.addWidget(self.result_card)
+        self.fills_table = ResultTable(); layout.addWidget(self.fills_table)
+        for kind, caption in (('signal', '市場圖表：顯示已驗證回測訊號'), ('fill', '市場圖表：顯示已驗證回測成交')):
+            toggle = QCheckBox(caption); toggle.setChecked(True); layout.addWidget(toggle)
+            toggle.toggled.connect(lambda value, layer=kind: self.market.chart.set_layer_visible(layer, value))
 
     def _compare_page(self):
         layout = self._page('比較與策略選擇')
         layout.addWidget(QLabel('勾選多個已保存結果進行比較。OOS／保留集詳細結果見策略研究紀錄。'))
         self.comparison_list = QListWidget(); self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection); layout.addWidget(self.comparison_list)
         self._button(layout, '比較選取結果', 'compare_results', lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}))
-        self.comparison = QPlainTextEdit(); self.comparison.setReadOnly(True); layout.addWidget(self.comparison)
+        self.comparison = QPlainTextEdit(); self.comparison.setReadOnly(True); self._advanced(layout).addWidget(self.comparison)
+        self.comparison_table = ResultTable(); layout.addWidget(self.comparison_table)
         self.select_button = self._button(layout, '啟用目前回測策略（僅研究／紙上）', 'select_strategy', self.select_strategy)
         self._button(layout, '停用策略並停止紙上新委託', 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel(); self.selection_status.setWordWrap(True); layout.addWidget(self.selection_status)
@@ -515,22 +678,33 @@ class MainWindow(QMainWindow):
     def _paper_page(self):
         layout = self._page('紙上交易與復原')
         note = QLabel('沒有即時行情或真實券商。重新啟動後必須明確對帳。停止只禁止新委託，不會平倉。\n歷史重播採次棒成交；不支援盤中停損停利。預設示範費率與風控不代表真實條件。'); note.setWordWrap(True); layout.addWidget(note)
-        self.paper_policy = self._text(layout, '鎖定政策 JSON（合約、交易時段、保證金版本；不可猜測）', '{}', True)
+        advanced = self._advanced(layout)
+        self.policy_form = PaperPolicyForm(); layout.addWidget(self.policy_form)
+        self.paper_policy = self._text(advanced, '鎖定政策 JSON（合約、交易時段、保證金版本；不可猜測）', '{}', True)
+        self._remember(self.paper_policy)
+        self._button(layout, '載入已核對的政策檔案', 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
         self._button(layout, '填入明示合成示範政策', 'demo_policy', self.demo_paper_policy)
         self._button(layout, '讀取／建立紙上帳戶', 'paper_snapshot', lambda: self.paper_job('snapshot'))
-        self.snapshot = self._text(layout, '外部紙上參考快照 JSON（初始空帳戶可使用下列示範）', canonical_json({'account_id':'paper-demo','cash':'1000000','positions':{},'orders':{},'fills':{}}), True)
-        self._button(layout, '明確對帳紙上帳戶', 'paper_reconcile', lambda: self.paper_job('reconcile', snapshot=json.loads(self.snapshot.toPlainText())))
+        self.snapshot_form = PaperSnapshotForm(); layout.addWidget(self.snapshot_form)
+        self.snapshot = self._text(advanced, '外部紙上參考快照 JSON（初始空帳戶可使用下列示範）', canonical_json({'account_id':'paper-demo','cash':'1000000','positions':{},'orders':{},'fills':{}}), True)
+        self.snapshot_form.from_payload(json.loads(self.snapshot.toPlainText())); self._remember(self.snapshot)
+        self._button(layout, '載入外部完整參考快照', 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
+        self._button(layout, '明確對帳紙上帳戶', 'paper_reconcile', lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload)))
         self.kill_button = self._button(layout, '緊急停止：禁止紙上新委託', 'paper_kill', self.kill_paper)
         self.replay_bars = QSpinBox(); self.replay_bars.setRange(1, 1000); self.replay_bars.setValue(100); layout.addWidget(self.replay_bars)
         self.paper_confirm = QCheckBox('我已核對上方參考快照，並同意本次重播／委託前對帳'); layout.addWidget(self.paper_confirm)
         self._button(layout, '重播選定策略一批歷史資料', 'paper_replay', lambda: self.paper_job('replay', max_bars=self.replay_bars.value()))
-        self.intent = self._text(layout, '紙上委託意圖 JSON（需已啟用策略雜湊）', '{}', True)
-        self.quote = self._text(layout, '明示報價與風控條件 JSON', '{}', True)
+        self.intent_form = PaperIntentForm(); layout.addWidget(self.intent_form)
+        self.quote_form = PaperQuoteForm(); layout.addWidget(self.quote_form)
+        self.intent = self._text(advanced, '紙上委託意圖 JSON（需已啟用策略雜湊）', '{}', True)
+        self.quote = self._text(advanced, '明示報價與風控條件 JSON', '{}', True)
+        self._remember(self.intent); self._remember(self.quote)
         self.paper_time = self._text(layout, '紙上事件 UTC 時間', '2026-01-05T01:00:00Z')
-        self._button(layout, '送出紙上委託', 'paper_submit', lambda: self.paper_job('submit', intent=json.loads(self.intent.toPlainText()), quote=json.loads(self.quote.toPlainText()), now=self.paper_time.text()))
+        self._button(layout, '送出紙上委託', 'paper_submit', lambda: self.paper_job('submit', intent=self._payload(self.intent, self.intent_form.build_payload), quote=self._payload(self.quote, self.quote_form.build_payload), now=self.paper_time.text()))
         self.cancel_order = self._text(layout, '紙上委託 ID')
         self._button(layout, '取消紙上委託', 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()))
-        self.paper_detail = QPlainTextEdit(); self.paper_detail.setReadOnly(True); layout.addWidget(self.paper_detail)
+        self.paper_detail = QPlainTextEdit(); self.paper_detail.setReadOnly(True); advanced.addWidget(self.paper_detail)
+        self.paper_card = SummaryCard(); layout.addWidget(self.paper_card)
 
     def _settings_page(self):
         layout = self._page('設定與備份')
@@ -576,12 +750,23 @@ class MainWindow(QMainWindow):
         try:
             return callback()
         except Exception as exc:
-            self.status.setText('作業未完成：' + str(exc))
+            self.status.setText('作業未完成（輸入驗證失敗）：' + str(exc))
             return None
 
     def _browse(self, target):
         name, _ = QFileDialog.getOpenFileName(self, '選取本機檔案')
         if name: target.setText(name)
+
+    def load_form_file(self, form, editor):
+        name, _ = QFileDialog.getOpenFileName(self, '載入已核對的完整資料檔', '', 'JSON (*.json)')
+        if not name: return
+        path = Path(name)
+        if path.stat().st_size > 4 * 1024 * 1024: raise ValidationError('資料檔案過大')
+        value = read_json(path)
+        form.from_payload(value)
+        editor.setPlainText(canonical_json(value)); self._remember(editor)
+        self.paper_confirm.setChecked(False)
+        self.status.setText('已載入參考資料；未對帳、未送出任何委託，請先核對。')
 
     def _family_changed(self):
         self.active_candidate = None
@@ -589,7 +774,11 @@ class MainWindow(QMainWindow):
         self.parameters.setReadOnly(False)
         from quantlab.strategies import builtin_strategies
         spec = builtin_strategies()[self.family.currentIndex()]
-        self.parameters.setPlainText(canonical_json(spec.parameters))
+        self.parameters.setPlainText(canonical_json(spec.parameters)); self._remember(self.parameters)
+        self.strategy_form.family.blockSignals(True)
+        try: self.strategy_form.from_payload(to_dict(spec))
+        finally: self.strategy_form.family.blockSignals(False)
+        self.strategy_form.setEnabled(True)
         self.strategy_detail.setPlainText(canonical_json({'strategy': spec, 'sha256': content_hash(spec), 'scope': 'research_and_paper_only'}))
 
     def import_data(self):
@@ -603,13 +792,19 @@ class MainWindow(QMainWindow):
         self.network_data.setChecked(False)
 
     def run_backtest(self):
-        for field in (self.start_date, self.end_date):
-            if field.text().strip(): datetime.strptime(field.text().strip(), '%Y-%m-%d')
-        self.start_job('ui_backtest', {'family':self.family.currentText(), 'parameters':json.loads(self.parameters.toPlainText()), 'config':json.loads(self.config.toPlainText()), 'start_date':self.start_date.text().strip(), 'end_date':self.end_date.text().strip(), 'batch':self.batch.isChecked(), 'candidate':self.active_candidate})
+        typed = self.backtest_form.build_payload()
+        config = self._payload(self.config, lambda: typed['config'])
+        spec = self.strategy_form.build_payload() if self.active_candidate is None else None
+        parameters = self._payload(self.parameters, lambda: spec['parameters']) if spec else json.loads(self.parameters.toPlainText())
+        self.start_job('ui_backtest', {'family': self.family.currentText(), 'parameters': parameters,
+            'config': config, 'start_date': typed['start_date'], 'end_date': typed['end_date'],
+            'batch': self.batch.isChecked(), 'candidate': self.active_candidate})
 
     def run_campaign(self):
-        text = self.campaign_config.toPlainText().strip()
+        config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
         options = {'mode':self.provider_mode.currentData()}
+        if options['mode'] == 'manual':
+            options.update(response_path=self.manual_path.text().strip(), response_text=self.manual_response.toPlainText())
         if options['mode'] == 'compatible':
             options.update(endpoint=self.ai_endpoint.text().strip(), model=self.ai_model.text().strip(),
                 network_opt_in=self.ai_opt_in.isChecked(), use_credential=self.use_key.isChecked(), output_mode=self.output_mode.currentData(),
@@ -619,8 +814,17 @@ class MainWindow(QMainWindow):
             if options['network_opt_in'] is not True: raise ValidationError('請至設定核對供應商、費率與預算，並勾選本次網路及費用同意')
             # Construction checks only; no HTTP or credential reads in the GUI.
             campaign_generator(self.paths, options)
-        self.start_job('ui_campaign', {'config':json.loads(text) if text else None, 'provider':options})
+        self.start_job('ui_campaign', {'config':config, 'provider':options})
         self.ai_opt_in.setChecked(False)
+
+    def export_manual_request(self):
+        config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
+        if config.get('max_improvements') != 0:
+            raise ValidationError('手動 AI 交換請先將「每家族最多改良」設定為 0；不會暗中改變研究預算')
+        name, _ = QFileDialog.getSaveFileName(self, '匯出手動 AI 請求（自行決定是否分享）', 'manual-ai-request.json', 'JSON (*.json)')
+        if name:
+            if Path(name).exists(): raise ValidationError('請使用新的檔名；手動 AI 請求不覆寫既有檔案')
+            self.start_job('ui_campaign', {'config': config, 'provider': {'mode':'manual'}, 'manual_export': name})
 
     def select_strategy(self):
         path = self.result_choice.currentData()
@@ -634,13 +838,14 @@ class MainWindow(QMainWindow):
         for day in sorted({b.trade_date for b in data.bars}):
             bars = [b for b in data.bars if b.trade_date == day]
             sessions.append({'open':bars[0].timestamp.isoformat(), 'end':bars[-1].end.isoformat(), 'trade_date':day, 'session':bars[0].session, 'contract_id':bars[0].contract_id, 'source':'explicit synthetic demonstration'})
-        self.paper_policy.setPlainText(canonical_json({'contract_id':data.bars[0].contract_id,'risk_sessions':sessions,'margin_schedule':[{'effective_from':'2026-01-01','margin_per_contract':'100000','version':'synthetic-assumption-v1'}]}))
+        policy = {'contract_id':data.bars[0].contract_id,'risk_sessions':sessions,'margin_schedule':[{'effective_from':'2026-01-01','margin_per_contract':'100000','version':'synthetic-assumption-v1'}]}
+        self.paper_policy.setPlainText(canonical_json(policy)); self.policy_form.from_payload(policy); self._remember(self.paper_policy)
 
     def paper_job(self, op, **payload):
         if op in ('submit', 'replay'):
             if not self.paper_confirm.isChecked(): raise ValidationError('請核對參考快照並明確勾選本次對帳同意')
-            payload.update(snapshot=json.loads(self.snapshot.toPlainText()), reconcile_confirmed=True)
-        payload['policy'] = json.loads(self.paper_policy.toPlainText())
+            payload.update(snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload), reconcile_confirmed=True)
+        payload['policy'] = self._payload(self.paper_policy, self.policy_form.build_payload)
         self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
 
@@ -657,12 +862,14 @@ class MainWindow(QMainWindow):
 
     def _busy(self, active):
         for button in self.actions: button.setEnabled(not active)
+        self.market.set_loading(active)
         self.kill_button.setEnabled(True)
         self.cancel_button.setEnabled(active)
+        self.cancel_button.setVisible(active); self.progress.setVisible(active)
         self.progress.setRange(0, 0 if active else 100)
         if not active:
             self.progress.setValue(0)
-            self.run_button.setEnabled((self.root / 'dataset.json').exists())
+            self.run_button.setEnabled(bool(getattr(self, '_dataset_ready', False)))
             self.use_candidate_button.setEnabled(bool(getattr(self, '_candidate_valid', False)))
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
 
@@ -681,12 +888,20 @@ class MainWindow(QMainWindow):
                     result = event.get('result', {})
                     text = canonical_json(result)
                     self.summary.setPlainText(text)
-                    if self.last_operation == 'ui_compare': self.comparison.setPlainText(text)
-                    if self.last_operation and self.last_operation.startswith('ui_paper_'): self.paper_detail.setPlainText(text)
+                    if self.last_operation == 'ui_compare':
+                        self.comparison.setPlainText(text); self.comparison_table.set_rows(result.get('rows', []))
+                    if result.get('manual_export'):
+                        self.status.setText('手動 AI 請求已匯出；由您決定是否傳送，程式未連線。')
+                    if self.last_operation == 'ui_market_refresh': self._market_outcomes = result.get('providers', {})
+                    if self.last_operation and self.last_operation.startswith('ui_paper_'):
+                        self.paper_detail.setPlainText(text)
+                        if 'account' in result: self._show_account(result['account'])
                     if self.last_operation == 'ui_backup_restore': self.freeze_paper('備份已還原，請重新核對帳戶')
-                    self.status.setText('作業完成，結果已保存於本機。')
+                    self.status.setText('手動 AI 請求已匯出；程式未連線，請自行決定是否分享。' if result.get('manual_export') else '作業完成，結果已保存於本機。')
                     self.refresh_views()
-                    self.notify_local('背景作業完成。詳細來源與限制請查看結果。')
+                    if self.last_operation == 'ui_market_refresh' and any(v.get('error') for v in self._market_outcomes.values()):
+                        self.status.setText('部分或全部官方來源更新失敗；仍保留最後有效快取，請查看來源提醒。')
+                    self.notify_local('背景作業已結束。請核對來源、狀態與限制。')
                 elif kind in ('error', 'failed'):
                     if self.last_operation == 'ui_backup_restore':
                         self.freeze_paper('還原未完成，請重新核對帳戶')
@@ -705,16 +920,85 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self.status.setText('狀態讀取失敗：' + str(exc))
 
+    def load_market_cache(self):
+        from quantlab.market_providers import load_cached
+        series, errors, quotes = {}, [], []
+        self._market_data_bindings = {}
+        for provider in ('twse', 'taifex'):
+            try:
+                loaded = load_cached(provider, self.root / 'market_cache')
+                series.update({x.instrument.contract_id: x for x in loaded.series}); quotes.extend(loaded.series)
+                outcome = self._market_outcomes.get(provider)
+                if outcome and outcome.get('error'): errors.append(provider.upper() + '：更新失敗，保留最後有效快取')
+            except ValueError:
+                if (self.root / 'market_cache' / (provider + '.json')).exists(): errors.append(provider.upper() + '：快取驗證失敗，未採用該資料')
+                if self._market_outcomes.get(provider, {}).get('error'):
+                    errors.append(provider.upper() + '：更新失敗，尚無有效快取')
+        dataset_path, calendar_path = self.root / 'dataset.json', self.root / 'dataset_calendar.json'
+        if dataset_path.exists() and calendar_path.exists():
+            try:
+                dataset = load_dataset(dataset_path)
+                for item in dataset_market_series(dataset, read_json(calendar_path)):
+                    series[item.instrument.contract_id] = item
+                    quotes.append(item)
+                    self._market_data_bindings[item.instrument.contract_id] = dataset.manifest['data_hash']
+            except (ValueError, KeyError, TypeError) as exc:
+                errors.append('研究資料無法作為已驗證市場歷史：' + str(exc))
+        self.market.set_quote_series(latest_market_observations(quotes), stale=True)
+        self.market.set_market_series(tuple(series.values()), stale=True, error='；'.join(errors))
+        selection = self.root / 'selection.json'
+        strategy = '未啟用'
+        if selection.exists():
+            try: strategy = '已啟用研究／紙上版本 ' + load_selection(selection)['strategy_hash'][:16]
+            except (ValueError, KeyError): strategy = '版本驗證失敗，不可使用'
+        self.market.set_trading_status(strategy=strategy)
+        if (self.root / 'paper.sqlite3').exists() and (self.root / 'paper_policy.json').exists():
+            try: self._show_account(_paper(self.root).snapshot(), strategy=strategy)
+            except Exception:
+                self.market.set_trading_status(strategy=strategy, paper='帳戶讀取失敗，狀態未知', risk='請停止並核對紀錄')
+                self.market.set_account_tables()
+
+    def _show_account(self, account, strategy=None):
+        values = {k: account.get(k) for k in ('account_id','cash','reconciliation_required','kill_switch')}
+        if not account.get('account_id'): values['cash'] = None
+        self.paper_card.set_values(values)
+        positions = [{'contract_id': key, 'quantity': value} for key, value in account.get('positions', {}).items()]
+        orders = []
+        for key, value in account.get('orders', {}).items():
+            row = {**value.get('intent', {}), **value, 'order_id': key}
+            if 'quantity' in row and 'contract_id' in row: orders.append(row)
+        fills = []
+        for key, value in account.get('fills', {}).items():
+            intent = account.get('orders', {}).get(value.get('order_id'), {}).get('intent', {})
+            fills.append({**intent, **value, 'fill_id': key})
+        self.market.set_account_tables(positions=positions, orders=orders, fills=fills)
+        if strategy is None:
+            selection = self.root / 'selection.json'
+            strategy = ('已啟用研究／紙上版本 ' + load_selection(selection)['strategy_hash'][:16]) if selection.exists() else '未啟用'
+        self.market.set_trading_status(strategy=strategy,
+            paper=('帳戶 ' + str(account['account_id'])) if account.get('account_id') else '尚未完成初始對帳',
+            risk='已停止新委託' if account.get('kill_switch') is True else ('需要對帳' if account.get('reconciliation_required') is True else '僅依已鎖定紙上政策；非實單' if account.get('kill_switch') is False and account.get('reconciliation_required') is False else '未知；請核對帳戶'))
+
     def refresh_views(self):
         path = self.root / 'dataset.json'
+        data = None
         if path.exists():
-            data = load_dataset(path)
-            self.overview.setText(f"資料來源：{data.manifest['source_type'].upper()} · {len(data.bars)} 根\n本機資料與紙上交易；實單：DISABLED；真實模型：NOT_VERIFIED")
-            self.data_card.setText('資料來源\n\n' + data.manifest['source_type'].upper() + f' · {len(data.bars)} 根')
-            self.data_detail.setPlainText(canonical_json({'manifest':data.manifest, 'quality':data.quality}))
+            try:
+                data = load_dataset(path)
+                self.overview.setText(f"資料來源：{data.manifest['source_type'].upper()} · {len(data.bars)} 根\n本機資料與紙上交易；實單：DISABLED；真實模型：NOT_VERIFIED")
+                self.data_card.setText('資料來源\n\n' + data.manifest['source_type'].upper() + f' · {len(data.bars)} 根')
+                self.data_detail.setPlainText(canonical_json({'manifest':data.manifest, 'quality':data.quality}))
+            except (ValueError, KeyError, TypeError, OSError) as exc:
+                self.overview.setText('研究資料驗證失敗；原檔保留。' + str(exc))
         else:
             self.overview.setText('尚無資料。請先匯入本機資料或建立明示合成示範。')
-        self.run_button.setEnabled(path.exists() and not self.jobs.active)
+        self._dataset_ready = data is not None
+        self.load_market_cache()
+        if data is not None and self._campaign_data_hash != data.manifest['data_hash']:
+            from quantlab.research import demo_campaign_config
+            self.campaign_form.from_payload(to_dict(demo_campaign_config(data, demo_config())))
+            self._campaign_data_hash = data.manifest['data_hash']
+        self.run_button.setEnabled(data is not None and not self.jobs.active)
         old = self.result_choice.currentData()
         active = self.root / 'active_result.json'
         if self.last_operation == 'ui_backtest' and active.exists():
@@ -729,13 +1013,17 @@ class MainWindow(QMainWindow):
         if index >= 0: self.result_choice.setCurrentIndex(index)
         self.result_choice.blockSignals(False); self.show_result()
         selection = self.root / 'selection.json'
-        self.selection_status.setText('啟用策略：' + canonical_json(load_selection(selection)) if selection.exists() else '尚未啟用任何策略')
+        self.selection_status.setText('已啟用研究／紙上版本：' + load_selection(selection)['strategy_hash'] + '\n實單固定停用；生成候選仍須通過獨立資格檢查。' if selection.exists() else '尚未啟用任何策略')
         policy = self.root / 'paper_policy.json'
-        if policy.exists(): self.paper_policy.setPlainText(canonical_json(read_json(policy)))
+        if policy.exists():
+            policy_value = read_json(policy); self.paper_policy.setPlainText(canonical_json(policy_value))
+            self.policy_form.from_payload(policy_value); self._remember(self.paper_policy)
         history = []
         for p in sorted((self.root / 'campaigns').glob('*/*.json'))[:100]:
             history.append({'file':str(p), 'content':read_json(p)})
         self.history.setPlainText(canonical_json(history) if history else '尚無研究版本或 OOS 結果')
+        self.history_table.set_rows([{'family': a.get('family'), 'sequence': a.get('sequence'), 'status': a.get('status'), 'strategy_hash': a.get('strategy_hash')} for entry in history for a in entry['content'].get('attempts', [])])
+        self.evaluation_table.set_rows([{'評估區段': split, 'status': row.get('status'), 'strategy_hash': row.get('strategy_hash'), **row.get('metrics', {})} for entry in history for split, rows in entry['content'].get('evaluations', {}).items() for row in rows])
         selected_ref = self.candidate_choice.currentData()
         self.candidate_choice.blockSignals(True); self.candidate_choice.clear()
         for entry in history:
@@ -762,6 +1050,9 @@ class MainWindow(QMainWindow):
         try:
             result = load_result(path)
             self.plot.set_values(result.equity)
+            self.result_card.set_values(dict(result.metrics))
+            self.fills_table.set_rows([to_dict(x) for x in result.fills])
+            self.bind_result_layers(result)
             self._selection_allowed = True
             reference = result.manifest.get('dataset_manifest', {}).get('desktop_candidate_reference')
             if reference:
@@ -770,6 +1061,53 @@ class MainWindow(QMainWindow):
             self.select_button.setEnabled(self._selection_allowed and not self.jobs.active)
             self.result_detail.setPlainText(canonical_json({'metrics':result.metrics, 'warnings':result.warnings, 'manifest':result.manifest, 'fills':result.fills, 'rejects':result.rejects}))
         except Exception as exc: self.status.setText('結果驗證失敗：' + str(exc))
+
+    def bind_result_layers(self, result=None):
+        """Only exact source, strategy and chart identities may carry result layers."""
+        from desktop_charts import ChartTrace, ChartMarker
+        chart = self.market.chart
+        bars = chart.bars
+        old_overlays, old_panes, styles = dict(chart.overlays), dict(chart.panes), dict(chart.pane_styles)
+        source, status = chart.source_label, chart.status_label
+        chart.set_series(bars, source_label=source, status_label=status)
+        chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
+        path = self.result_choice.currentData() if hasattr(self, 'result_choice') else None
+        if not bars or not path or not (self.root / 'dataset.json').exists(): return
+        result = result or load_result(path)
+        data = load_dataset(self.root / 'dataset.json')
+        if data.manifest['data_hash'] != result.manifest.get('data_hash'): return
+        if content_hash(result.manifest.get('strategy')) != result.manifest.get('spec_hash'): return
+        # Require the exact adapted market source, not merely matching price/date.
+        selected = self.market.contract_combo.currentData()
+        item = self.market.selected_series()
+        if item is None or self._market_data_bindings.get(selected) != data.manifest['data_hash']: return
+        trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], '回測')
+        markers = []
+        from bisect import bisect_left, bisect_right
+        timed = [(i,b) for i,b in enumerate(bars) if b.timestamp is not None and b.end is not None]
+        starts, ends = [b.timestamp for _,b in timed], [b.end for _,b in timed]
+        def event_index(timestamp, at_close):
+            position = bisect_left(ends, timestamp) if at_close else bisect_right(starts, timestamp)-1
+            if not 0 <= position < len(timed): return None
+            i, bar = timed[position]
+            return i if (bar.timestamp < timestamp <= bar.end if at_close else bar.timestamp <= timestamp < bar.end) else None
+        for signal in result.signals:
+            if signal.contract_id != selected: continue
+            index = event_index(signal.timestamp, True)
+            if index is not None:
+                markers.append(ChartMarker(index, 'signal', '目標部位 ' + str(signal.target_position),
+                    reason=signal.reason, timestamp=signal.timestamp, target_position=signal.target_position))
+        for fill in result.fills:
+            if fill.contract_id != selected: continue
+            # Core timestamps are event availability; never infer intrabar execution time.
+            index = event_index(fill.timestamp, fill.reason in ('stop', 'target'))
+            if index is not None:
+                markers.append(ChartMarker(index, 'fill', '買進' if fill.side == 'buy' else '賣出',
+                    price=fill.price, quantity=fill.quantity, cost=fill.commission+fill.tax,
+                    reason=fill.reason, timestamp=fill.timestamp))
+        chart.set_series(bars, trace=trace, source_label=source, status_label=status + ' · 回測圖層（非市場交易紀錄）')
+        chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
+        chart.set_markers(markers, trace=trace)
 
     def inspect_candidate(self, index=None):
         self._candidate_valid = False
@@ -780,6 +1118,7 @@ class MainWindow(QMainWindow):
             try:
                 spec, provenance = candidate_record(self.root, reference)
                 self.candidate_detail.setPlainText(canonical_json({'strategy':spec, **provenance}))
+                self.candidate_card.set_values({'策略': spec.strategy_id, '紙上資格': provenance['paper_qualified'], '樣本外與保留集': provenance['evaluations']})
                 self._candidate_valid = True
             except Exception:
                 self.candidate_detail.setPlainText('此候選尚未有效評估或雜湊不符；不可套用。完整拒絕／中斷原因見研究紀錄。')
@@ -793,6 +1132,7 @@ class MainWindow(QMainWindow):
         write_json(self.root / 'active_candidate.json', reference)
         self.parameters.setPlainText(canonical_json(spec.parameters)); self.parameters.setReadOnly(True)
         self.strategy_detail.setPlainText(canonical_json({'strategy':spec, **provenance}))
+        self.strategy_form.setEnabled(False)
         self.batch.setChecked(False)
         self.status.setText('已套用不可變生成版本；研究回測不等於通過樣本外驗證。')
 
@@ -809,6 +1149,8 @@ class MainWindow(QMainWindow):
             'max_calls':self.max_calls.value(), 'max_tokens':self.max_tokens.value(), 'tokens_per_call':self.tokens_per_call.value(),
             'timeout_seconds':self.timeout_seconds.value(), 'max_spend':self.max_spend.text().strip(), 'cost_per_token':self.cost_per_token.text().strip(),
             'persist_logs':self.persist_logs.isChecked(), 'local_notifications':self.local_notifications.isChecked()})
+        value['market'] = self.market.preferences()
+        value['window'] = {'x': self.x(), 'y': self.y(), 'width': self.width(), 'height': self.height()}
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.ai_opt_in.setChecked(False)
@@ -833,6 +1175,16 @@ class MainWindow(QMainWindow):
         self.persist_logs.setChecked(value.get('persist_logs', True) is True)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.local_notifications.setChecked(value.get('local_notifications', True) is True)
+        try:
+            if 'market' in value: self.market.restore_preferences(value['market'])
+            size = value.get('window', {})
+            x, y = int(size.get('x', self.x())), int(size.get('y', self.y()))
+            available = [screen.availableGeometry() for screen in QApplication.screens()]
+            screen = next((rect for rect in available if rect.contains(x, y)), self.screen().availableGeometry())
+            self.resize(min(max(int(size.get('width', self.width())), 800), screen.width()), min(max(int(size.get('height', self.height())), 600), screen.height()))
+            self.move(max(screen.left(), min(x, screen.right()-self.width()+1)), max(screen.top(), min(y, screen.bottom()-self.height()+1)))
+        except (ValueError, TypeError, KeyError, OverflowError):
+            self.status.setText('市場偏好無效；使用安全預設，原設定保留。')
         self.read_logs()
 
     def configure_workspace(self):
@@ -849,7 +1201,7 @@ class MainWindow(QMainWindow):
 
     def notify_local(self, message):
         if self.local_notifications.isChecked():
-            self.notification.setText(message); self.notification.setStyleSheet('background:#e8f1ff;padding:10px;border-radius:6px')
+            self.notification.setText(message); self.notification.setStyleSheet('background:#213b50;color:#e8f1ff;padding:10px;border-radius:6px')
             self.notification.show(); QApplication.alert(self, 1500)
 
     def record_event(self, operation, kind):
@@ -908,6 +1260,7 @@ class MainWindow(QMainWindow):
             if self.guard is not None: self.guard.finish()
         except Exception:
             event.ignore(); self.status.setText('關閉失敗，背景作業尚未確認停止。'); return
+        self._safe(self.save_market_preferences)
         self.timer.stop(); event.accept()
 
 

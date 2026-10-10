@@ -1,15 +1,16 @@
 # mark-auto 開發接續狀態
 
-更新：2026-10-09 22:53 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
+更新：2026-10-10 00:46 UTC。唯一正式來源：https://github.com/yostar77612/mark-auto。
 
 ## 最新狀態與計分
 
-- PR #1 已合併 main `5943b6e7b4cea5b917e4d4d8f62541474a2cc54d`，0.1.1 preview 已發布並實際下載驗證；遠端舊分支由既有自動清理設定刪除。原始本地歷史及main均已保存Git bundle。
-- 本輪接續必要驗收，唯一模組分支 `agent/desktop-acceptance-v2`，候選0.1.2，不重啟專案。原研究100＋桌面70＝**170/200＝85%，剩15%** 是既有固定Gate計分，不是正式产品驗收完成。D5/D7/D8仍需clean client OS；新发现的安全缺陷會阻擋新版release，即使歷史分數不變。
-- 真AI已實跑：官方免費Qwen1.5B，3個schema受限家族參數候選，透過產品HTTP/CompatibleProvider完成回測、OOS、holdout及比較。1個虧損，2個零交易；自由JSON先前6次僅1合法候選，失敗沒有丟棄。不能當投資策略晉級或自由程式創造證明。
-- 真行情：12個連續交易日、13,680分鐘K、24盤獨立官方OHLC核對；Oct7缺1分鐘隔離，不能跨gap補bar。2025免費官方全年日行情已下載，仍非分鐘歷史驗收。
-- 已補並測試：盤首/盤尾/整盤缺漏、備份目的地覆寫內部帳本、Paper衝突/截斷回報和儲存恢復後阻新單。最終凍結來源Linux完整測試341項，334PASS、7環境/工具限定skip（58.792秒）；Windows專用Gate仍待執行。
-- Windows版本化完整payload、逐檔inventory校驗、真0.1.1→0.1.2升級/中斷恢復、standalone clean-client kit已實作；尚未跑新版Windows Gate時不得預先宣稱通过。實盤繼續固定停用。
+- PR #2 已整合 main `28c9f9020e5f44a7a986380e3a6d16bdb7235b2d`；0.1.2 unsigned preview 與 no-Python clean-client kit 已發布且實際下載 SHA256 核對。Release：https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38009150044-1 。
+- Windows Server2022 實際執行341 tests（334 PASS，7適用平台/工具skip）、0.1.1→0.1.2歷史版本升級、安裝程序中止/復原與資料保存；不能替代乾淨 Win10/11。原200點仍170 PASS＝85%；新增市場100點仍待完整Gate。合計170/300＝56.67%，剩43.33%，不是工時估計。
+- 當前唯一市場功能分支 `agent/market-desktop-v1`，候選0.2.0；市場模型/官方日行情、互動K線/指標、繁中typedforms、受限manual策略交換已實作。完整最終來源與Windows打包/安裝Gate驗證中；正式ChatGPT訂閱OAuth獨立下一模組，未混入候選。
+- 真AI：免費Qwen1.5B實際生成3個受限候選，透過產品流程完成回測/OOS/holdout/比較；1個虧損、2個零交易，不合投資晉級。額外2次改善僅改名，被語意去重拒絕；有效新改善FAILED，保留累計11次真實呼叫的所有失敗。
+- 真行情：12連續交易日13,680分鐘K、24盤獨立官方OHLC；Oct7缺分鐘拒絕。市場首屏用真官方TAIEX/TX/MTX/TMF資料，明示EOD/history/cache。雲端直連官方端點DNS失敗，線上更新標BLOCKED，Windows另收集實際連線診斷。
+- 圖表訓練區間重播已實際經桌面worker取得淨損益−143,590 TWD、1,917訊號、3,831成交；非新模型、OOS/holdout或真交易。100/125/150% Linux offscreen截圖已檢視，不宣稱Windows DPI實測。
+- main管理級保護仍403/未啟用；實盤固定停用。D5/D7/D8乾淨client OS與正式OAuth使用者授權仍需外部條件。
 
 ## 已保留的原始成果與 Git 映射
 
@@ -50,7 +51,7 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 ## 接續順序與命令
 
 1. 先 `git status`，保留所有未提交修改；閱讀固定合約與驗收清單。
-2. 凍結0.1.2來源，完整回歸後在本輪唯一分支發布PR；實際Windows編譯/安裝/中斷復原失敗就修正，不降低標準。
+2. 凍結0.2.0市場来源，完整回歸後在本輪唯一模組分支發布PR；實際Windows編譯/安裝/中斷復原失敗就修正，不降低標準。
 3. 最終 head 的研究／UI／品質／依賴／installer 全通過才可整合 main，並驗證 post-merge build 與 preview Release。
 4. 保存原始 Git 歷史與五份分析文件；清理分支前確認保存、已合併與無競態，不具安全刪除條件就保留並說明。
 5. 剩餘真 client OS、外部服務與權限阻塞誠實記錄，不降低門檻或以 mock 代替。
@@ -62,3 +63,5 @@ GitHub App 可正常讀寫 Git 物件、分支與 PR；CLI 無登入不阻礙連
 ## 新增產品範圍
 
 22:52 UTC使用者正式加入市場優先儀表板、真行情/K線/技術指標及無JSON的專業研究交易介面，詳05 Roadmap第18節。原85%只限原範圍；新增及新版整體百分比待盤點凍結權重，不沿用85%。本輪安全修復先驗收整合，再接續市場/UI模組，不以0.1.2預覽當全部完成。
+
+00:15 UTC新增市場範圍100點已實作前凍結（M1–M7），原170/200=85%，新增0/100=0%，整體170/300=56.67%、剩43.33%。採二元證據Gate非工時估计，安全否決與clean Windows門檻不變。0.1.2修復本地203b4af/遠端48a0d833完整tree982a8d2相同，PR#2必要CI正在驗證；市場新檔及其合約為下一批未提交變更，未包含於該驗證head。

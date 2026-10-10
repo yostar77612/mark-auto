@@ -49,6 +49,17 @@ class QualityGateTests(unittest.TestCase):
         for source in ("import trader", "import shioaji", "eval('1')"):
             self.assertTrue(python_findings(source, "desktop_ui.py", desktop=True))
 
+    def test_all_desktop_components_enforce_existing_execution_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("desktop_ui.py", "desktop_charts.py", "desktop_forms.py", "desktop_market.py"):
+                (root / name).write_text("import trader\n", encoding="utf-8")
+                with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
+                    self.assertTrue(scan(root), name)
+                (root / name).write_text("from PySide6.QtWidgets import QWidget\n", encoding="utf-8")
+                with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
+                    self.assertEqual(scan(root), [], name)
+
     def test_research_dependencies_are_standard_library_only(self):
         for source in ("import PySide6", "from streamlit import title", "import requests"):
             self.assertTrue(python_findings(source, "quantlab/new.py", research=True))

@@ -314,3 +314,12 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - 已完成官方免費模型與真實12日行情的有限技術整合：一個策略虧損，兩個零交易，沒有可宣稱正式晉級的策略。完整失敗/限制列於 `docs/analysis/03_CODE_QUALITY_AND_RISKS.md`。
 - Windows Release附無Python/Git需求的clean-client验收kit；詳見 `packaging/clean_windows_README.md`。無已授權乾淨Win10/11環境時依然EXTERNAL BLOCKED。
 - 最新可下載版本以GitHub Release的實際資產與SHA256為準；此原始碼分支的變更不代表新安裝檔已發布。實盤繼續停用。
+
+## 0.2.0 市場優先桌面（候選，驗收狀態見docs/agent/ACCEPTANCE.json）
+
+沿用原生Windows桌面及既有TMF研究核心，增加加權指數/TX/MXF(MTX)/TMF真實日行情、本機歷史與明確時效、自選/蠟燭/成交量/多週期/技術指標、可讀表單與交易紀錄。一般模式不必手寫JSON；來源與hash保留在進階診斷。
+
+- 官方更新需要使用者明確同意本次連線，離線可匯入官方格式檔；本機檔來源未經連線核實會標示，沒有假即時價。
+- 新行情商品不代表已支援該商品下單/回測；研究交易核心仍限定TMF，實單停用。
+- ChatGPT手動交換可匯出研究要求及匯入受限策略；來源記為manual_unverified，不冒充API實測。相容本機模型與付費API設定維持明確同意/預算/安全儲存，付費預設關閉。官方訂閱登入另行驗證，不複製Cookie或其他工具憑證。
+- 新版需通過Windows打包與全部既有安全回歸才發布；clean Win10/11仍須獨立環境。

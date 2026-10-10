@@ -1,4 +1,4 @@
-param([string]$Version = '0.1.2')
+param([string]$Version = '0.2.0')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 & (Join-Path $PSScriptRoot 'validate_powershell.ps1')
