@@ -1,30 +1,35 @@
 # mark-auto 原始功能總表與可重用性
 
 <!-- CURRENT_STATUS_START -->
-## 當前交付摘要（2026-10-10 04:24 UTC）
+## 當前交付摘要（2026-10-10 05:02 UTC）
 
 - **已發布：0.2.1 unsigned preview**，main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[正式下載與該版 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。已實際核對八項主要 assets／56 個來源輸入、EXE 與 kit SHA-256／ZIP CRC；postmerge Windows 與 Quantlab 全部 PASS。這是研究／Paper 預覽版，並非 clean-client 或投資合格證明。
-- **正在修復：PR #5／候選 0.2.2，DRAFT／FAIL_REPAIR_IN_PROGRESS**。已推送 remote `977fc948`、local 對應 `b1fe3ca`，同 tree `34714062`；未合併、未發布。該 head 三個 Windows profiles 的原 960-bar／30 秒 Paper 與 10 秒 process-death 均 PASS，Windows jobs 只因三個新隔離 fixture 的 8.3／標準路徑比較失敗。Linux 3.12／UI PASS；Linux 3.11 完成 759 項斷言後於 Python finalization 出現 `bool_dealloc`／exit 134，整個 job 仍 FAIL。
-- **修補與驗證界線：** 不載入專案的 Linux 3.11／Qt 6.12.0 `Signal.emit` 最小案例已重現 mortal-bool refcount 問題；官方 6.11.2 的最小案例 refcount delta＝0，未改動的 759 項 suite exit 0，保留 20 個既有本地適用性 skips。`requirements-qt-ci.lock` 只將 Linux 3.11 CI 固定為 6.11.2，其他矩陣維持 6.12.0，六個官方 wheel hashes 已核對；正式 Windows 3.13 lock 不變，整合 native CI 仍待。root generic terminal 9 項、隔離／路徑 16 項本地 PASS，完整路徑／no-write 斷言未放寬；最後小型資源洩漏修補後的完整 root suite 尚待完成。此前 root 759 項＝744 PASS＋15 skips／103.709 秒仍只屬當時來源證據。
-- **隔離完成、尚未交付：** 固定候選池及已保存候選 Walk-forward、普通桌面流程、PF／描述性 Sharpe／持倉成本與保護參考線已有範圍內實作及審查；saved-pool 最新獨立 157 項 PASS，仍是 staging，未發布、不先給分。真實 Oct8 WFO 為 `BLOCKED_NO_RUN`：完整 guard 與既有 consumed coverage 重疊 170 bars；0 新評估／模型呼叫／reservation，不改 window 或另建 registry 繞過。
+- **正在修復：PR #5／候選 0.2.2，DRAFT／FAIL_REPAIR_IN_PROGRESS**。版本及功能分支不變；上次推送 head `d598b39` 的 Quantlab `38024116768` 為 8 jobs 中 7 PASS，Windows 3.12 在原 960-bar／30 秒 Paper case 再次逾時。診斷 worker 36.453 秒，其中 960 次 FULL cursor commit 31.587 秒；不能沿用較早 head 的 PASS。未合併、未發布，沒有 0.2.3 Release，也沒有已發布 0.2.2 baseline。
+- **已整合但未推送：** WFO、PF／描述性 Sharpe／參考快照、普通回測繁中呈現與指南的 981 項全套，實際在 `/tmp/mark-auto-023-candidate` 執行：966 PASS＋15 個既有 native／PowerShell skips，271.745 秒。其後依 `root-integration-manifest.json` 逐檔核對，將 25 個相同 bytes 檔案複製至 root；這是該整合檢查點的來源等價候選證據，**不是最後整合 root 全套**。之後 CandidateSummary 與診斷新增不在這 981 項執行範圍內，最終全套／native CI 仍待。
+- **後續呈現／診斷：** CandidateSummary 已套用至 root 並獨立審查：79 項 focused PASS；root 97 項＝96 PASS＋1 Windows-only skip，27.561 秒。Paper 顯示未改。diagnostic-only 新增另有 root 145 項＝140 PASS＋5 skips，8.223 秒；上述集合重疊，不相加，也不替代最後全套。原普通回測／footer 的 53 項獨立、139 項 focused 屬較早檢查點。
+- **原生與診斷範圍：** 上次 head 的 Server run `38024116755` build／security PASS，773 項＝761 PASS＋12 profile skips，238.878 秒；native frozen、安裝、真 0.2.1 升級／復原 PASS，PR release job 正常 skip。完整矩陣仍因 Win312 Paper 預算失敗而未過。下一步僅做同一原生 host 的 C:／RUNNER_TEMP 與 DELETE／PERSIST fresh／held 有界比較；尚未改產品儲存、FULL 耐久或原 30 秒／10 秒 Gate。
+- **研究仍有明確限制：** saved-pool 的 157 項獨立審查屬整合前證據，目前功能已在未發布工作樹；不是 adaptive AI 或正式排名認證。真實 Oct8 WFO 仍為 `BLOCKED_NO_RUN`，完整 guard 與既有 consumed coverage 重疊 170 bars；0 新評估／模型呼叫／reservation，不改 window 或另建 registry 繞過。
 - **固定歷史驗收帳本：210/300＝70%，未接受 90 點**。原研究 100、桌面 70、市場 40；僅已取得證據的整項 PASS 計分。這不是剩餘工時、完整原需求或生產就緒百分比；後來重新確認的必要需求仍明列，分母／門檻不降低。
-- **外部與安全邊界：** clean Win10 22H2 x64／Win11 x64 為 EXTERNAL_BLOCKED；實際 ChatGPT grant／訂閱推論 NOT_VERIFIED；TAIEX 盤中自動使用權限未核實；main protection 未啟用且管理 API 403；unsigned 不繞過安全警告；真資金交易固定 DISABLED。
+- **外部與安全邊界：** clean Win10 22H2 x64／Win11 x64 為 EXTERNAL_BLOCKED；實際 ChatGPT grant／訂閱推論 NOT_VERIFIED；TAIEX 盤中自動使用權限未核實；main protection 未啟用且管理 API 403；unsigned 不繞過安全警告；真資金交易固定 DISABLED。 05:02 環境重查列出兩台桌機，一台已連線但未授權執行工作，另一台離線；沒有 saved coding environment，仍無已授權的乾淨 Windows 驗收環境，未要求更改設定。
+
+
+已推送身分對照：remote `d598b39` 對應 local `9c8708a`，tree `84978f8be8d4a2ced60e5b90a7ee746c2690acc0`。之後的未提交整合／呈現／診斷工作不包含在這個舊 remote tree。
 
 ### 原需求、設計提案與未驗證項目
 
-- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；隔離完成不等於已交付。
+- **本輪已明確必要的原需求：** Walk-forward，以及使用者原文 §5.1 的 Profit Factor／Sharpe、§3.4 的停損／停利／持倉成本參考線；工作樹整合及本地 PASS 不等於已發布交付。
 - **尚未採用的完整目標設計延伸：** 04 §9.1 提出的 Average Trade、Sortino、Calmar、延伸分解與成本壓力測試保留為提案。02 歷史原文已明示「若最終採用該完整規格」；未取得使用者直接要求這些延伸的原始證據，因此不把設計表的「必須公開的計算與例外」升格為本輪新增驗收門檻，也不刪除提案。
-- **尚未驗證的結果：** 最終整合／native、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
+- **尚未驗證的結果：** 最終 exact-head native／發布、clean client、真實授權與真實研究各依目前證據判定；未驗證不表示功能未實作，設計提案未採用也不等於本輪驗收失敗。
 
 ### 狀態怎麼讀
 
-「已發布」只指 0.2.1 的指定能力；「候選已實作」仍受 PR #5 最終 gate 約束；「隔離已審查」不是已整合；「未提供」「未驗證」「外部阻塞」分開記錄。所有 PASS 均只適用其來源、平台與測試情境，後續缺陷可否決新發布。歷史記錄中的「目前／待發布／未實作」一律按該段日期解讀。
+「已發布」只指 0.2.1 的指定能力；「候選已實作」仍受 PR #5 最終 gate 約束；「已整合未發布」指本地工作樹已接入、尚未經最後原生／發布核對；「隔離已審查」只適用仍獨立的歷史證據；「未提供」「未驗證」「外部阻塞」分開記錄。所有 PASS 均只適用其來源、平台與測試情境，後續缺陷可否決新發布。歷史記錄中的「目前／待發布／未實作」一律按該段日期解讀。
 
 ## 當前完整功能與狀態矩陣
 
 以下完整列出原生桌面、研究與交付能力；詳細公式、呼叫路徑、固定原始碼 S01–S31，以及原系統 F01–F35 盤點保留於後方歷史原文。功能列數不是計分單位。
 
-| 領域／功能 | 0.2.1 已發布能力 | 候選／隔離進度 | 必須保留的限制與相依 |
+| 領域／功能 | 0.2.1 已發布能力 | 候選整合進度 | 必須保留的限制與相依 |
 |---|---|---|---|
 | 七頁桌面與共通操作 | 總覽、資料、策略、回測、比較、Paper、設定；繁中深色、進度／取消、錯誤顯示 | PR #5 補普通操作缺口 | Server／Linux Qt 證據不等於 clean Win10／11 DPI／鍵盤驗收；無已驗證深淺切換 |
 | 市場總覽／自選／月份 | 四類商品摘要、自選增刪排序、實際到期月、來源／freshness | 現有流程保留 | 首次可為空；不預填假行情。Paper 表格不是券商帳戶 |
@@ -39,7 +44,7 @@
 | MACD | 12／26／9，histogram＝MACD−signal；真 host 圖例標 1× | M3 已完整接受 15 點 | 公式正確不等於策略獲利 |
 | Bollinger／VWAP | 母體標準差 Bollinger；session-reset OHLCV typical-price VWAP | 無本次新增 | VWAP 是近似值，不是真逐筆成交 VWAP；無量／零量保留缺值 |
 | 訊號／成交獨立圖層 | hash 綁定回測 signals／fills、獨立顯示、不同形狀 | M5 PASS | 非券商成交；未驗證 journal Paper 圖層。既有 5,748 markers 是回測證據 |
-| 持倉成本／停損停利參考 | 尚未接上必要的正常結果顯示 | 隔離實作與獨立修復審查完成 | 最多六個 final-event snapshot ticks；成本、MTM basis 與 margin 分開；不是歷史路徑或真委託；native／整合待驗 |
+| 持倉成本／停損停利參考 | 尚未接上必要的正常結果顯示 | 已整合至未推送 0.2.2 工作樹；來源等價候選檢查點 981 項通過；後續變更另測 | 最多六個 final-event snapshot ticks；成本、MTM basis 與 margin 分開；非歷史路徑／真委託；最後 native／發布待驗 |
 | 五策略／普通參數 | 趨勢、均值回歸、通道突破、動能、波動壓縮及有限 typed 參數 | 無本次改寫策略核心 | 有限家族；不同參數不必然是不同投資邏輯 |
 | DSL／執行隔離 | JSON／AST allowlist，大小／深度／欄位限制；只輸出規格／intent | 原限制保留 | 不執行模型回傳 Python，不是任意程式安全沙箱 |
 | 因果回測／帳本 | next-open 撮合、保守 stop/target 同棒、FIFO、費稅／滑價、equity／ledger | PR #5 增普通 expiry 輸入 | OHLC 假設；無 order-book／queue／市場衝擊認證 |
@@ -47,12 +52,12 @@
 | 單策略／批次回測 | 普通費用／資金等設定，五家族預設參數批次，equity／成交／結果 | PR #5 修正真實資料普通 expiry 配置 | 示範預設不是已認證市場成本；M4 尚未全滿 |
 | 固定四段研究閉環 | generate→validate→train/validation→改善→freeze→OOS/holdout | 保留原版、非 WFO | 單次四段 split 不等於 rolling；工程成功不保證模型有效、去重或經濟結果 |
 | 預算／不可變版本／holdout | 最多 15 trials、每家族 2 次改善；持久預算與所有失敗；共享 consumed guard | WFO 另有單一實驗上限，未替代原門檻 | 改名／搬工作區／還原舊備份不可重置未見資料；本地 hashes 不能抵抗完整自洽回滾 |
-| 固定池 Walk-forward | 未發布 | 隔離 rolling／expanding 2–20 folds、typed UI／journal／cancel／stop proof 已審查 | 固定五候選、每 fold validation 凍結後才 OOS；整體最高 220 evaluations；無 adaptive AI；最終整合／native 待驗 |
-| 已保存 AI 候選 WFO | 未發布 | 隔離最多 15 既存候選、受限 producer tuples／來源與 registry 連續性；最新獨立 157 項 PASS | 每 fold 不新呼叫模型；非完整 adaptive 生成式 WFO。raw/manual／不支援版本明確拒絕；真 Oct8 為 BLOCKED_NO_RUN |
+| 固定池 Walk-forward | 未發布 | rolling／expanding 2–20 folds、typed UI／journal／cancel／stop proof 已整合至候選工作樹；早期來源等價候選 981 項通過，非最後 root 全套 | 固定五候選、每 fold validation 凍結後才 OOS；最高 220 evaluations；無 adaptive AI；最後 native／發布待驗 |
+| 已保存 AI 候選 WFO | 未發布 | 最多 15 既存候選、受限 producer tuples／來源與 registry 連續性已整合；整合前獨立 157 項及 早期來源等價候選 981 項證據分列 | 每 fold 不新呼叫模型；非完整 adaptive 生成式 WFO。raw/manual／不支援版本明確拒絕；Oct8 仍 BLOCKED_NO_RUN |
 | 真實 WFO／未見性 | 無合格真實 WFO 成果 | 只讀 protocol 發現完整 guard 與 170 consumed bars 重疊 | 零新評估／reservation；不能縮 windows、換 registry 或稱 excluded holdout 全未碰；historical replay 仍 non-independent／non-rankable／non-paper |
-| 現有績效／匯出 | PnL、成本、報酬、回撤、closed lots、win rate、日報酬；JSON／CSV 與防公式注入 | PF／Sharpe 為下列隔離工作 | 開倉 PnL／無 closed lots 需保留語義；無 PDF／投組最佳化／風險比率大全 |
-| Profit Factor | 尚未提供必要欄位 | 隔離手算／獨立審查完成 | 依已平倉 FIFO net PnL，含分攤費用；無 losses／無平倉明示 null；未整合 |
-| 描述性 Sharpe | 已發布為 None 並說明缺假設 | 隔離固定 252、rf=0、ddof=1 與 Decimal context；短樣本／缺日期標示 | 觀察日期 return 可能跨日；不足 2 returns／零變異明示 null；不可當策略晉級或可靠性證明 |
+| 現有績效／匯出 | PnL、成本、報酬、回撤、closed lots、win rate、日報酬；JSON／CSV 與防公式注入 | PF／Sharpe 與普通繁中摘要、未定義／未提供原因已整合；完整 IDs／巢狀紀錄留進階 | 未推送／未發布；開倉 PnL／無 closed lots 語義保留；無 PDF／投組最佳化／風險比率大全 |
+| Profit Factor | 尚未提供必要欄位 | 手算／獨立審查後已整合至候選，含 root 全套；未發布 | 依已平倉 FIFO net PnL，含分攤費用；無 losses／無平倉明示 null；native final-head 待驗 |
+| 描述性 Sharpe | 已發布為 None 並說明缺假設 | 候選已整合固定 252、rf=0、ddof=1／Decimal context，普通繁中假設／短樣本／缺日期標示 | return 可能跨日；不足 2 returns／零變異明示 null；不可當策略晉級或可靠性證明；未發布 |
 | 比較／選擇／停用 | 既存結果並排、hash 綁定不可變選用、停用阻新單、重載 | 原行為保留 | 無相關性／portfolio weights／共變異數最佳化；選擇不是真下單 |
 | Fixture AI | 預設離線固定候選 | 原標示保留 | 不是真模型，不改標 real_model_verified |
 | 本機相容 HTTP | loopback、有限 schema／預算／明示同意 | 原流程保留 | 實際紀錄為 llama.cpp＋Qwen，非 Ollama 已驗證；應用不自動裝／啟模型 |
@@ -62,15 +67,15 @@
 | 真本機模型結果 | 累計 14 次有界免費呼叫之技術證據；3 structured 候選完成研究 | 原負結果保留 | trend OOS −33,820、holdout −49,546 TWD；另 2 無交易。distinct improvement 非獲利改善，無可宣稱贏家 |
 | Paper journal／冪等／故障 | SQLite journal、intent／order／fill identity、重放、quarantine／unknown 阻單、對帳 | PR #5 exact-byte 有界 memoization 與空 cursor 原子交易 | 模擬／事故 fixture 不等於真券商、硬體斷電／多機故障保證 |
 | Paper 固定風控／摘要 | 1 口部位、1 口單筆、日損 1,000、報價 30 秒、連虧 3、60 秒 20 筆；0.2.1 普通頁可見 | 原硬限制不降低 | 不是可任意調高的一般設定；reservation、資金／margin／session 仍檢查 |
-| Paper 普通 margin／重播 | 歷史 replay／持久 plan／cursor；舊 host 固定 margin 與合法 typed policy 可能衝突 | PR #5 改用 broker pinned effective-date schedule，120,000 及跨交易日回歸 | 舊不相容 ledger 保留／拒絕，不另造帳本；977fc948 三個 Windows profiles 原 960-bar／30 秒與 10 秒 process-death 均 PASS，後續修補整合 CI 待驗；無盤中 stop/target replay |
+| Paper 普通 margin／重播 | 歷史 replay／持久 plan／cursor；舊 host 固定 margin 與合法 typed policy 可能衝突 | 候選以 broker pinned effective-date schedule 修補，120,000／跨交易日及 早期來源等價候選 981 項證據 | d598b39 的 Win312 原 960-bar／30 秒再次 FAIL，Server 原生流程 PASS 不替代矩陣；舊 ledger 保留／拒絕，無盤中 stop/target replay |
 | 急停／睡眠／重啟 | 新單停止與對帳鎖、worker 停止／單例 | smoke 隔離和 terminal/cleanup proof 必須最終原生重驗 | 停止不等於平倉／撤全部單；整棵 worker tree 未停止不可當 terminal |
-| Smoke 驗收隔離 | 後續查核已重現先前 smoke startup 改寫 broker／safety 的缺陷 | PR #5 全 startup temporary root；root 隔離／路徑 16 項及 generic terminal 9 項本地 PASS | settings 不變不足；需整目錄 bytes/names 及失敗清理，native exact-head 尚待 |
+| Smoke 驗收隔離 | 後續已重現先前 smoke startup 改寫 broker／safety 的缺陷 | 全 startup temporary root／terminal／路徑修補已有 d598b39 Server frozen／安裝／升級／復原 PASS | 目前工作樹含 981 項檢查點之後的變更，最後完整／native 待驗；精確 no-write／全目錄／stop proof 標準不變 |
 | 工作區／偏好 | per-user state、下次切 workspace、watchlist／圖層／geometry | 原 schema 與控制分離保留 | 不自動搬移／merge，切工作區不重置 budget／holdout；一次網路同意不保存 |
 | 金鑰／日誌／通知 | Windows DPAPI、非 Windows fail closed；去敏本機事件／可選提示 | 既有 fixed dependencies／原生 preflight 持續驗證 | 不備份秘密，不保證遠端帳戶或真正 grant |
 | 備份／還原 | manifest／hash／ZIP 上限、防 unsafe paths、staging rollback；還原後重新對帳 | 既有升級／恢復證據保留 | 無雲同步／排程／加密 ZIP；不回退 bootstrap authority；可能包含 state 內 market cache，權利需遵守 |
-| 背景作業／資源界線 | allowlist、spawn、bounded IPC、mutex／Job Object、取消／關閉 | 隔離 WFO 含 owner marker／stop proof，尚待整合 | 非無人值守 daemon；memory bounds 依平台實證，不泛稱 sandbox |
+| 背景作業／資源界線 | allowlist、spawn、bounded IPC、mutex／Job Object、取消／關閉 | WFO owner marker／stop proof 已整合至未發布工作樹；早期來源等價候選 981 項，後續變更不涵蓋 | 非無人值守 daemon；memory bounds 按平台實證；新來源原生 gate 待驗 |
 | 安裝／升級／移除 | bundled x64 runtime、per-user installer／捷徑、拒 active app 更新／移除、保留資料／復原 | PR #5 以真 0.2.1 為 upgrade baseline，最後完整 lifecycle 待驗 | clean client Win10／Win11 尚 EXTERNAL_BLOCKED；unsigned preview 不繞過警告 |
-| 更新／供應鏈／main 保護 | 開官方 Releases，lock/hash／manifest／notices／scan；0.2.1 assets 已校驗 | CI 五目標 auth closure；Linux311 Qt6.11.2 CI-only lock 修補，其他 Qt6.12.0／正式 Windows313 lock 不變，native 整合待驗 | 無背景自動更新或簽章；runtime audit 不包含 bootstrap 工具；main protected=false／403 未解除 |
+| 更新／供應鏈／main 保護 | 開官方 Releases，lock/hash／manifest／notices／scan；0.2.1 assets 已校驗 | d598b39 完整 CI 7/8 PASS，Server build/security PASS；新整合工作樹尚待 exact-head；正式 Win313 lock 不變 | 無背景自動更新或簽章；runtime audit 不包含 bootstrap 工具；main protected=false／403 未解除 |
 | 真 broker／即時 feed／實盤 | 固定禁用，LiveBroker 拒絕 | 無啟用工作 | 無真帳戶／真委託／平倉／無人值守；可看行情不等於可交易 |
 | 原系統能力與延後項 | 舊 CLI／股票／期權／通知等原碼仍保留，F01–F35 詳列於歷史 | 不重寫整個 legacy | 舊 Shioaji／Telegram／LINE／選股存在不代表新桌面已整合或安全；Average Trade／Sortino／Calmar／完整成本壓力測試屬尚未採用的設計延伸，提案照留，不自行加成本輪驗收門檻 |
 
@@ -80,6 +85,9 @@
 - 候選修補完整 Linux root suite：773 項，758 PASS＋15 個既有 native Windows／PowerShell applicability skips，127.279 秒、exit 0；歷史掃描 0 findings。涵蓋 smoke 終態、canonical fixture 與 FULL 設定失敗關閉連線，SQLite mode／耐久邊界／既有門檻不變。此結果取代上文針對較早來源的「最終 root 待驗」，原生 exact-head CI 仍待。
 - Qt CI-only 相容鎖及獨立 Linux311 套件稽核已納入 workflow；官方來源、完整 SHA-256、強制重新安裝及 pip report 保留。Windows 產品依賴鎖不變；套件 advisory audit 不等於所有 native library 已安全認證。
 - 後續 WFO／報表 combined staging 完整 947 項：932 PASS＋15 既有 applicability skips，270.314 秒。再套用同一 Paper 連線小修補後 5 項 storage regression PASS；仍非已發布或 Windows／真實研究驗收。
+
+
+驗證位置補註：981 項在隔離候選工作樹執行，25 檔複製當下的 bytes 由 root-integration-manifest.json 綁定；其後已加入 CandidateSummary 與 diagnostic-only 變更，不能把早期來源等價延伸為最終 root 全套通過。較早真正 root 全套 773 項、候選 981 項、後續 root 97／145 項各自保留範圍；最終完整／原生 CI 待驗。
 
 <!-- CURRENT_STATUS_END -->
 

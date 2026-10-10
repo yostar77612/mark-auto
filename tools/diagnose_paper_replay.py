@@ -23,7 +23,7 @@ from quantlab.desktop_runtime import _job_worker as _original_worker
 
 class Timings:
     def __init__(self):
-        self.started = time.monotonic()
+        self.started = time.perf_counter()
         self.lock = threading.RLock()
         self.values = {}
         self.stack = []
@@ -31,13 +31,13 @@ class Timings:
 
     @contextmanager
     def measure(self, name):
-        started = time.monotonic()
+        started = time.perf_counter()
         with self.lock:
             self.stack.append((name, started))
         try:
             yield
         finally:
-            elapsed = time.monotonic() - started
+            elapsed = time.perf_counter() - started
             with self.lock:
                 self.stack.pop()
                 value = self.values.setdefault(name, {'calls': 0, 'seconds': 0.0})
@@ -46,7 +46,7 @@ class Timings:
 
     def snapshot(self):
         with self.lock:
-            now = time.monotonic()
+            now = time.perf_counter()
             return {'elapsed_seconds': now - self.started,
                     'timings': {key: dict(value) for key, value in self.values.items()},
                     'active': [{'phase': name, 'seconds': now - started} for name, started in self.stack],
@@ -483,6 +483,343 @@ def observe_persistence(output, *, limit=180):
     return 0 if report['complete'] else 1
 
 
+
+CONNECTION_PROFILES = ('delete-reopen', 'delete-step', 'persist-reopen', 'persist-step')
+CONNECTION_BLOCK_COMMITS = 120
+
+
+def _probe_connection(connect, path, profile):
+    if profile not in CONNECTION_PROFILES:
+        raise ValueError('Unsupported connection comparison profile')
+    db = connect(path, timeout=1)
+    try:
+        mode = profile.split('-')[0]
+        if db.execute('PRAGMA journal_mode=' + mode.upper()).fetchone() != (mode,):
+            raise RuntimeError('Diagnostic journal mode not accepted')
+        db.execute('PRAGMA synchronous=FULL')
+        if (db.execute('PRAGMA synchronous').fetchone() != (2,)
+                or db.execute('PRAGMA locking_mode').fetchone() != ('normal',)):
+            raise RuntimeError('Diagnostic FULL/normal settings not accepted')
+        return db
+    except BaseException:
+        db.close()
+        raise
+
+
+
+def _owned_connection_path(root, profile):
+    root = Path(root)
+    owner = json.loads((root / 'connection-probe-owner.json').read_text(encoding='utf-8'))
+    if (not root.name.startswith('paper-connection-probe-')
+            or owner != {'profile': profile, 'controller_pid': os.getppid()}):
+        raise ValueError('Connection probe must use its controller-owned fixture')
+    return root / 'replays' / 'probe.sqlite3'
+
+
+def _connection_observer(output, profile, root, action):
+    """Controller-owned sibling process; never spawns descendants."""
+    if action not in ('stop', 'start'):
+        raise ValueError('Unsupported diagnostic observer action')
+    path = _owned_connection_path(root, profile)
+    if not path.is_file():
+        raise ValueError('Missing owned diagnostic database')
+    expected = CONNECTION_BLOCK_COMMITS
+    before, after = (1, 0) if action == 'stop' else (0, 1)
+    db = _probe_connection(sqlite3.connect, path, profile)
+    try:
+        if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (expected, before, None):
+            raise RuntimeError('Observer did not read the committed boundary')
+        with db:
+            db.execute('UPDATE replay SET active=? WHERE id=1', (after,))
+    finally:
+        db.close()
+    db = _probe_connection(sqlite3.connect, path, profile)
+    try:
+        if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (expected, after, None):
+            raise RuntimeError('Observer control write did not survive reopen')
+    finally:
+        db.close()
+    _write_json(output, {'action': action, 'cursor': expected, 'active': after,
+                         'committed_and_reopened': True, 'pid': os.getpid()})
+    return 0
+
+
+def _connection_probe(output, profile, root):
+    """One fixed 120-commit block, using only a newly owned disposable file."""
+    output, root = Path(output), Path(root)
+    path = _owned_connection_path(root, profile)
+    path.parent.mkdir()
+    if path.exists():
+        raise ValueError('Diagnostic database must be new')
+    timings = Timings()
+    connect = _instrument_connect(sqlite3.connect, timings)
+    held = None
+    consumed = 0
+    report = {'profile': profile, 'complete': False, 'phase': 'setup',
+              'commits_expected': CONNECTION_BLOCK_COMMITS,
+              'verified_pragmas': {'journal_mode': profile.split('-')[0],
+                                   'synchronous': 2, 'locking_mode': 'normal'},
+              'sqlite': sqlite3.sqlite_version, 'pid': os.getpid(), **_filesystem(root)}
+    def record():
+        _write_json(output, {**report, 'commits_completed': consumed, **timings.snapshot()})
+    @contextmanager
+    def transaction():
+        db = held if held is not None else _probe_connection(connect, path, profile)
+        try:
+            with db:
+                yield db
+            if db.in_transaction:
+                raise RuntimeError('Diagnostic transaction remained open')
+        finally:
+            if held is None:
+                db.close()
+    def observe_control(action, active):
+        report['phase'] = 'waiting_external_' + action
+        record()
+        # Write-once readiness avoids Windows replace/read sharing races.
+        _write_json(output.with_suffix('.ready-' + action + '.json'),
+                    {'action': action, 'cursor': consumed, 'pid': os.getpid()})
+        witness = output.with_suffix('.' + action + '.json')
+        end = time.monotonic() + 10
+        while not witness.exists():
+            if time.monotonic() >= end:
+                raise TimeoutError('External diagnostic control did not arrive')
+            time.sleep(.02)
+        proof = json.loads(witness.read_text(encoding='utf-8'))
+        if (proof.get('action') != action or proof.get('cursor') != consumed
+                or proof.get('active') != active or proof.get('committed_and_reopened') is not True
+                or proof.get('pid') == os.getpid()):
+            raise RuntimeError('Invalid external diagnostic control proof')
+        with transaction() as db:
+            if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (consumed, active, None):
+                raise RuntimeError('Retained connection did not see external control')
+        report['external_' + action] = proof
+    try:
+        with transaction() as db:
+            db.execute('CREATE TABLE replay (id INTEGER PRIMARY KEY, binding TEXT, cursor INTEGER, active INTEGER, plan TEXT)')
+            db.execute('INSERT INTO replay VALUES (1, ?, 0, 1, NULL)', ('0' * 64,))
+        if profile.endswith('-step'):
+            held = _probe_connection(connect, path, profile)
+        report['phase'] = 'cursor_loop'
+        record()
+        with timings.measure('replay.cursor_loop'):
+            for index in range(CONNECTION_BLOCK_COMMITS):
+                with transaction() as db:
+                    if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (index, 1, None):
+                        raise RuntimeError('Diagnostic cursor did not persist')
+                with transaction() as db:
+                    if db.execute('SELECT plan FROM replay WHERE id=1').fetchone() != (None,):
+                        raise RuntimeError('Unexpected diagnostic plan')
+                    db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
+                consumed += 1
+                if consumed % 30 == 0:
+                    record()  # Preserve observed progress if the controller deadline expires.
+        # First connection is still open for the step profile, with no transaction.
+        # The controller, not this child, launches each external control process.
+        observe_control('stop', 0)
+        observe_control('start', 1)
+        class RollbackProbe(Exception):
+            pass
+        try:
+            with transaction() as db:
+                db.execute('UPDATE replay SET cursor=-1 WHERE id=1')
+                raise RollbackProbe()
+        except RollbackProbe:
+            pass
+        if held is not None:
+            with timings.measure('replay.final_close'):
+                held.close()
+            held = None
+        with transaction() as db:
+            if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (consumed, 1, None):
+                raise RuntimeError('Diagnostic rollback/reopen did not preserve cursor')
+            if db.execute('PRAGMA integrity_check').fetchone() != ('ok',):
+                raise RuntimeError('Diagnostic integrity check failed')
+        journal = Path(str(path) + '-journal')
+        report.update(complete=True, phase='complete', rollback_and_reopen_verified=True,
+                      external_control_verified=True,
+                      journal_after_close={'exists': journal.exists(),
+                          'bytes': journal.stat().st_size if journal.exists() else 0,
+                          'header': journal.read_bytes()[:28].hex() if journal.exists() else ''})
+    except (Exception, KeyboardInterrupt) as error:
+        report.update(complete=False, phase='failed', error_type=type(error).__name__)
+    finally:
+        if held is not None:
+            try:
+                held.close()
+            except Exception as error:
+                report.update(complete=False, phase='close_failed', error_type=type(error).__name__)
+        record()
+    return 0 if report['complete'] else 1
+
+
+def _connection_case(output, profile, base, deadline):
+    """Controller owns fixture cleanup and every direct, no-descendant child."""
+    import subprocess
+    import tempfile
+    result = {'profile': profile, 'complete': False, 'workers_stopped': True}
+    if time.monotonic() >= deadline:
+        return {**result, 'not_started': True, 'reason': 'deadline'}
+    started = time.perf_counter()
+    import shutil
+    root = tempfile.mkdtemp(prefix='paper-connection-probe-', dir=base)
+    try:
+        _write_json(Path(root) / 'connection-probe-owner.json', {'profile': profile, 'controller_pid': os.getpid()})
+        result['fixture_root'] = root
+        command = [sys.executable, str(Path(__file__).resolve()), str(output),
+                   '--connection-child', profile, '--connection-root', root]
+        child = None
+        children = []
+        observer_actions = []
+        try:
+            child = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            children.append(child)
+            result['workers_stopped'] = False
+            while child.poll() is None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, 0)
+                for action in ('stop', 'start'):
+                    ready = output.with_suffix('.ready-' + action + '.json')
+                    if ready.exists() and action not in observer_actions:
+                        observer = [sys.executable, str(Path(__file__).resolve()),
+                            str(output.with_suffix('.' + action + '.json')),
+                            '--connection-child', profile, '--connection-root', root,
+                            '--connection-observer', action]
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise subprocess.TimeoutExpired(observer, 0)
+                        helper = subprocess.Popen(observer, cwd=ROOT,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        children.append(helper)
+                        helper.wait(timeout=min(8, remaining))
+                        observer_actions.append(action)
+                        if helper.returncode != 0:
+                            raise RuntimeError('External diagnostic observer failed')
+                time.sleep(.02)
+            result['returncode'] = child.returncode
+        except subprocess.TimeoutExpired:
+            result['timed_out'] = True
+        except (Exception, KeyboardInterrupt) as error:
+            result['error_type'] = type(error).__name__
+        finally:
+            # One shared cleanup reserve for the probe and all sibling observers.
+            cleanup_end = min(deadline + 6, time.monotonic() + 6)
+            for owned in children:
+                if owned.poll() is None:
+                    try:
+                        owned.terminate()
+                    except OSError as error:
+                        result['cleanup_error_type'] = type(error).__name__
+            terminate_end = min(cleanup_end, time.monotonic() + 3)
+            for owned in children:
+                try:
+                    owned.wait(timeout=max(0, terminate_end - time.monotonic()))
+                except subprocess.TimeoutExpired:
+                    pass
+                except OSError as error:
+                    result['cleanup_error_type'] = type(error).__name__
+            for owned in children:
+                if owned.poll() is None:
+                    try:
+                        owned.kill()
+                    except OSError as error:
+                        result['cleanup_error_type'] = type(error).__name__
+            for owned in children:
+                try:
+                    owned.wait(timeout=max(0, cleanup_end - time.monotonic()))
+                except (OSError, subprocess.TimeoutExpired) as error:
+                    result['cleanup_error_type'] = type(error).__name__
+            result['workers_stopped'] = all(owned.poll() is not None for owned in children)
+            result['children'] = [{'pid': owned.pid, 'returncode': owned.returncode} for owned in children]
+            result['observer_actions_completed'] = observer_actions
+        if result['workers_stopped'] and output.exists():
+            observation = json.loads(output.read_text(encoding='utf-8'))
+            result['observation'] = observation
+            result['complete'] = (result.get('returncode') == 0 and result['workers_stopped']
+                and observer_actions == ['stop', 'start'] and observation.get('complete') is True
+                and observation.get('profile') == profile
+                and observation.get('commits_completed') == CONNECTION_BLOCK_COMMITS
+                and observation.get('verified_pragmas') == {'journal_mode': profile.split('-')[0],
+                    'synchronous': 2, 'locking_mode': 'normal'}
+                and observation.get('external_control_verified') is True
+                and observation.get('rollback_and_reopen_verified') is True
+                and observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls') == CONNECTION_BLOCK_COMMITS
+                and observation.get('timings', {}).get('replay.cursor_rollback', {}).get('calls') == 1)
+    finally:
+        # A failed process teardown is a blocker, never permission to delete live state.
+        if result['workers_stopped']:
+            try:
+                shutil.rmtree(root)
+            except OSError as error:
+                result['cleanup_error_type'] = type(error).__name__
+        result['fixture_removed'] = not Path(root).exists()
+    result['seconds'] = time.perf_counter() - started
+    result['complete'] = result['complete'] and result['fixture_removed']
+    return result
+
+
+def _connection_location(path):
+    import shutil
+    path = Path(path).resolve(strict=True)
+    if not path.is_dir():
+        raise ValueError('Diagnostic root must be an existing directory')
+    return {'canonical_path': str(path), 'device_id': path.stat().st_dev,
+            'free_bytes': shutil.disk_usage(path).free, **_filesystem(path)}
+
+
+def observe_connections(output, *, limit=180):
+    """Fixed 2x120 commits/profile; never changes TEMP or runs acceptance tests."""
+    import tempfile
+    output = Path(output).resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix='paper-connection-timing-', dir=output.parent))
+    started = time.monotonic()
+    deadline = started + limit - 6
+    report = {'observation_only': True, 'kind': 'connection_and_volume_comparison',
+              'acceptance_timeout_unchanged': 30, 'acceptance_workload_unchanged': 960,
+              'observation_limit_seconds': limit, 'blocks': 2,
+              'commits_per_block': CONNECTION_BLOCK_COMMITS,
+              'commits_per_profile': 2 * CONNECTION_BLOCK_COMMITS,
+              'python': sys.version, 'sqlite': sqlite3.sqlite_version,
+              'os': platform.platform(), 'os_build': platform.version(),
+              'status': 'observation_incomplete', 'complete': False, 'comparisons': [],
+              'environment': {key: os.environ.get(key) for key in ('TEMP', 'TMP', 'RUNNER_TEMP', 'ImageOS', 'ImageVersion')}}
+    try:
+        os_temp = _connection_location(tempfile.gettempdir())
+        report['os_temp'] = os_temp
+        runner_value = os.environ.get('RUNNER_TEMP')
+        runner_temp = _connection_location(runner_value) if runner_value else None
+        report['runner_temp'] = runner_temp
+        if runner_temp:
+            report['same_canonical_root'] = Path(os_temp['canonical_path']) == Path(runner_temp['canonical_path'])
+            report['same_volume'] = os_temp['device_id'] == runner_temp['device_id']
+        cases = [('os_temp', profile, os_temp['canonical_path']) for profile in CONNECTION_PROFILES]
+        cases.append(('runner_temp', 'delete-reopen', runner_temp['canonical_path'] if runner_temp else None))
+        for block in range(2):
+            for location, profile, base in (cases if block == 0 else list(reversed(cases))):
+                key = str(block) + '-' + location + '-' + profile
+                if base is None:
+                    entry = {'profile': profile, 'complete': False, 'not_started': True,
+                             'workers_stopped': True, 'reason': 'RUNNER_TEMP unavailable'}
+                else:
+                    entry = _connection_case(directory / (key + '.json'), profile, base, deadline)
+                report['comparisons'].append({'block': block, 'location': location, **entry})
+                _write_json(output, report)
+                if entry.get('workers_stopped') is not True:
+                    raise RuntimeError('Connection diagnostic child teardown failed')
+        if len(report['comparisons']) == 10 and all(item['complete'] for item in report['comparisons']):
+            report.update(status='measured', complete=True)
+    except (Exception, KeyboardInterrupt) as error:
+        report['error_type'] = type(error).__name__
+    finally:
+        report['elapsed_seconds'] = time.monotonic() - started
+        report['workers_stopped'] = all(item.get('workers_stopped') is True for item in report['comparisons'])
+        _write_json(output, report)
+        print(json.dumps(report, ensure_ascii=True, sort_keys=True), flush=True)
+    return 0 if report['complete'] and report['workers_stopped'] else 1
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
@@ -491,7 +828,23 @@ def main():
     parser.add_argument('--journal-child', choices=['DELETE', 'TRUNCATE', 'PERSIST'])
     parser.add_argument('--journal-root', type=Path)
     parser.add_argument('--persistence-only', action='store_true')
+    parser.add_argument('--connections-only', action='store_true')
+    parser.add_argument('--connection-child', choices=CONNECTION_PROFILES)
+    parser.add_argument('--connection-root', type=Path)
+    parser.add_argument('--connection-observer', choices=['stop', 'start'])
     args = parser.parse_args()
+    if args.connections_only or args.connection_child or args.connection_root or args.connection_observer:
+        if args.persistence_only or args.journal_child or args.journal_root or args.broker_child:
+            parser.error('Connection comparison cannot combine other diagnostic modes')
+        if args.connections_only:
+            if args.connection_child or args.connection_root or args.connection_observer:
+                parser.error('Connection controller cannot combine child arguments')
+            return observe_connections(args.output)
+        if not args.connection_child or not args.connection_root:
+            parser.error('Connection child requires its profile and owned fixture root')
+        if args.connection_observer:
+            return _connection_observer(args.output, args.connection_child, args.connection_root, args.connection_observer)
+        return _connection_probe(args.output, args.connection_child, args.connection_root)
     if args.persistence_only:
         if args.journal_child or args.journal_root or args.broker_child:
             parser.error('Persistence-only mode cannot combine child arguments')

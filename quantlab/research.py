@@ -563,7 +563,8 @@ def _dataset_identity(dataset):
     return content_hash(value)
 
 
-def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, output_dir):
+def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, output_dir,
+                     guard_dataset: Dataset | None = None, deadline: float | None = None):
     """Atomically consume a shared workspace holdout, including overlapping dates.
 
     Coverage envelopes are conservative per contract: gaps inside a prior holdout
@@ -571,31 +572,50 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
     influence identity. This protects ordinary workspace reuse, not deletion or
     copying of the entire authoritative registry by its owner.
     """
-    coverage = {}
-    for bar in dataset.bars:
-        start = bar.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        end = bar.end.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        if bar.contract_id in coverage:
-            previous = coverage[bar.contract_id]
-            coverage[bar.contract_id] = (min(previous[0], start), max(previous[1], end))
+    def envelope(source):
+        coverage = {}
+        for bar in source.bars:
+            start = bar.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            end = bar.end.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            if bar.contract_id in coverage:
+                previous = coverage[bar.contract_id]
+                coverage[bar.contract_id] = (min(previous[0], start), max(previous[1], end))
+            else:
+                coverage[bar.contract_id] = (start, end)
+        return coverage
+    coverage = envelope(dataset)
+    # Optional admission guard is checked in the SAME transaction as reservation.
+    # Existing callers still check/reserve exactly their original holdout envelope.
+    checked_coverage = envelope(guard_dataset) if guard_dataset is not None else coverage
+    for contract, (start, end) in coverage.items():
+        if contract in checked_coverage:
+            old = checked_coverage[contract]
+            checked_coverage[contract] = (min(old[0], start), max(old[1], end))
         else:
-            coverage[bar.contract_id] = (start, end)
+            checked_coverage[contract] = (start, end)
     holdout_hash = content_hash(dataset.bars)
     reservation_id = content_hash({'bars_hash': holdout_hash, 'coverage': coverage})
     registry_path = Path(registry_path)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    with closing(sqlite3.connect(registry_path, timeout=10)) as registry, registry:
+    timeout = 10 if deadline is None else max(0, min(10, deadline - time.monotonic()))
+    if deadline is not None and timeout <= 0:
+        raise ResourceTimeout('Range reservation exceeded experiment deadline')
+    with closing(sqlite3.connect(registry_path, timeout=timeout)) as registry, registry:
         registry.execute('CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, holdout_hash TEXT NOT NULL, campaign_id TEXT NOT NULL, selection_hash TEXT NOT NULL, source_directory TEXT NOT NULL)')
         registry.execute('CREATE TABLE IF NOT EXISTS coverage (reservation_id TEXT NOT NULL, contract_id TEXT NOT NULL, start TEXT NOT NULL, end TEXT NOT NULL, PRIMARY KEY(reservation_id,contract_id))')
         registry.execute('BEGIN IMMEDIATE')
+        if deadline is not None and time.monotonic() >= deadline:
+            raise ResourceTimeout('Range reservation exceeded experiment deadline')
         conflicts = set()
-        for contract, (start, end) in coverage.items():
+        for contract, (start, end) in checked_coverage.items():
             rows = registry.execute('SELECT DISTINCT reservation_id FROM coverage WHERE contract_id=? AND start < ? AND end > ?', (contract, end, start)).fetchall()
             conflicts.update(row[0] for row in rows)
         if conflicts:
             return {'status': 'previously_consumed', 'holdout_hash': holdout_hash,
                     'reservation_id': reservation_id, 'conflicts': sorted(conflicts),
                     'registry_path': str(registry_path.resolve())}
+        if deadline is not None and time.monotonic() >= deadline:
+            raise ResourceTimeout('Range reservation exceeded experiment deadline')
         registry.execute('INSERT INTO reservations VALUES (?,?,?,?,?)',
             (reservation_id, holdout_hash, campaign_id, selection_hash, str(Path(output_dir).resolve())))
         registry.executemany('INSERT INTO coverage VALUES (?,?,?,?)',

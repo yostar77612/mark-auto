@@ -18,6 +18,8 @@ analysis = Analysis(
            (str(root / 'quantlab' / 'strategies.py'), 'quantlab'),
            (str(root / 'quantlab' / 'backtest.py'), 'quantlab'),
            (str(root / 'quantlab' / 'research.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'walk_forward.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'saved_candidate_pool.py'), 'quantlab'),
            (str(root / 'quantlab' / 'provider.py'), 'quantlab'),
            (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')] + collect_data_files('tzdata')
           + [entry for name in ('PyJWT', 'cryptography', 'cffi', 'pycparser')

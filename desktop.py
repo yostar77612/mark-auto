@@ -365,6 +365,123 @@ def _history_smoke_ui(app, series):
         dashboard.close(); shiboken6.delete(dashboard)
 
 
+def _walk_forward_smoke_fixture(paths):
+    """Generated engineering bars only, in a separate disposable worker workspace."""
+    from dataclasses import replace
+    from decimal import Decimal
+    from quantlab.core import Dataset, content_hash, to_dict
+    from quantlab.reporting import demo_config, save_dataset, synthetic_dataset
+    from quantlab.walk_forward import build_walk_forward_plan
+    data = synthetic_dataset(200)
+    cycle = (-120, -80, -40, 0, 40, 80, 120, 80, 40, 0, -40, -80)
+    bars = []
+    for index, bar in enumerate(data.bars):
+        price = Decimal(20000 + cycle[index % len(cycle)])
+        bars.append(replace(bar, open=price, high=price + 2, low=price - 2,
+                            close=price, source_id='synthetic-walk-forward-smoke-v1'))
+    manifest = {**data.manifest, 'source_filename': 'generated walk-forward engineering smoke',
+                'source_hash': content_hash(bars), 'data_hash': content_hash(bars)}
+    manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items()
+                                            if k not in ('imported_at', 'manifest_hash')})
+    data = Dataset(tuple(bars), manifest, dict(data.quality))
+    # Default minimum one closed lot and 10% drawdown gate are NOT relaxed.
+    # Twenty train/validation evaluations plus two actual forward evaluations.
+    plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=60,
+        validation_bars=40, oos_bars=40, fold_count=2, final_holdout=(180, 200),
+        max_runtime_seconds=30, max_bars=200, max_evaluations=22,
+        process_start_method='spawn', max_ipc_bytes=65536)
+    paths.ensure()
+    save_dataset(data, paths.state / 'dataset.json')
+    return {'status': 'pending', 'source_type': 'synthetic', 'generator': 'fixture',
+        'scope': 'engineering synthetic packaging smoke only; never actual research PASS or Windows-client acceptance',
+        'network_used': False, 'model_calls': 0, 'paper_eligible': False,
+        'independent_oos': False, 'ranking_eligible': False, 'live_status': 'disabled',
+        'real_model_status': 'not_verified', 'real_market_status': 'not_verified',
+        'windows_client_status': 'not_verified', 'fixture_data_hash': manifest['data_hash'],
+        'steps': []}, {'plan': to_dict(plan)}
+
+
+def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
+    """Bind compact worker replies to source, frozen plan, and bounded real journal."""
+    import hashlib
+    import json
+    from decimal import Decimal
+    from quantlab.core import content_hash
+    from quantlab.reporting import load_dataset
+    from quantlab.walk_forward import read_walk_forward_state
+    from desktop_walk_forward import compact_walk_forward, preview_walk_forward
+    if type(result) is not dict or len(json.dumps(result, allow_nan=False).encode('utf-8')) > 65536:
+        raise ValueError('Walk-forward smoke result exceeds compact reply bound')
+    data = load_dataset(paths.state / 'dataset.json')
+    if data.manifest['data_hash'] != report['fixture_data_hash'] or data.manifest['source_type'] != 'synthetic':
+        raise ValueError('Walk-forward synthetic source changed')
+    expected = preview_walk_forward(data, payload['plan'], paths)
+    reference = expected['preview_identity']
+    if operation == 'ui_walk_forward_preview':
+        if (result != expected or (paths.state / 'walk_forward').exists()
+                or (paths.controls / 'holdout-registry.sqlite3').exists()):
+            raise ValueError('Walk-forward preview mismatch or unexpected mutation')
+        return {'reference': reference, 'source_identity': expected['source_identity'],
+            'engine_source_hashes': expected['source_hashes'],
+            'candidate_pool_hash': content_hash(expected['candidate_pool']),
+            'runtime_seconds': expected['runtime_seconds'], 'evaluation_limit': expected['evaluation_limit'],
+            'final_holdout_status': expected['final_holdout_status'], 'preview_verified': True}
+    if operation not in ('ui_walk_forward_run', 'ui_walk_forward_read'):
+        raise ValueError('Unknown walk-forward smoke operation')
+    if result.get('reference') != reference or report.get('reference') != reference:
+        raise ValueError('Walk-forward smoke reference mismatch')
+    folder = paths.state / 'walk_forward' / reference
+    journal = folder / 'walk_forward.sqlite3'
+    if journal.is_symlink() or not 0 < journal.stat().st_size <= 1048576:
+        raise ValueError('Walk-forward smoke journal exceeds fixture bound')
+    state = read_walk_forward_state(folder)  # Validates hashes, ledger, winner and no-winner decisions.
+    summary = state['summary']
+    if (result != compact_walk_forward(state, reference) or state['status'] != 'completed'
+            or state['binding']['plan'] != payload['plan']
+            or state['binding']['source_hashes'] != expected['source_hashes']
+            or state['source_manifest'] != dict(data.manifest)
+            or summary['planned_folds'] != 2 or summary['evaluated_oos_folds'] != 2
+            or summary['evaluations_reserved'] != 22 or summary['evaluation_limit'] != 22
+            or summary['model_calls'] != 0 or summary['final_holdout_status'] != 'excluded_not_evaluated'
+            or summary['evidence_mode'] != 'synthetic_validation'
+            or any(summary[key] is not False for key in ('independent_oos', 'ranking_eligible', 'paper_eligible'))):
+        raise ValueError('Walk-forward smoke journal or result mismatch')
+    folds = []
+    for fold in state['folds']:
+        selected = fold['selection']
+        winner = fold['candidates'][selected['pool_index']]
+        validation = winner['validation']['result']['metrics']
+        oos = fold['oos']['result']['metrics']
+        zero_trade = sum(c['validation']['result']['metrics']['trade_count'] == 0 for c in fold['candidates'])
+        if (fold['status'] != 'evaluated' or len(fold['candidates']) != 5
+                or selected['spec']['strategy_id'] != 'mean_reversion-v1'
+                or validation['trade_count'] < 1 or oos['trade_count'] < 1
+                or Decimal(validation['total_costs']) <= 0 or Decimal(oos['total_costs']) <= 0
+                or zero_trade < 1):
+            raise ValueError('Walk-forward smoke requires real closed trades and excludes zero-trade candidates')
+        folds.append({'index': fold['index'], 'winner': selected['spec']['strategy_id'],
+            'validation_closed_lots': validation['trade_count'], 'oos_closed_lots': oos['trade_count'],
+            'zero_trade_candidates_excluded': zero_trade})
+    for record in state['evaluations']:
+        start, end = payload['plan']['folds'][record['fold']][record['role']]
+        manifest = record['result']['manifest']
+        split = manifest['dataset_manifest']['walk_forward_split']
+        if (record['status'] != 'evaluated' or end > payload['plan']['final_holdout'][0]
+                or split != {'fold': record['fold'], 'role': record['role'], 'start': start, 'end': end,
+                             'warmup': 'independent_no_prior_access'}
+                or manifest['source_type'] != 'synthetic' or manifest['data_hash'] != content_hash(data.bars[start:end])):
+            raise ValueError('Walk-forward smoke evaluated unexpected source or excluded final holdout')
+    if any((paths.state / name).exists() for name in
+           ('selection.json', 'active_candidate.json', 'paper.sqlite3', 'paper_policy.json', 'campaigns')):
+        raise ValueError('Walk-forward smoke unexpectedly mutated AI or paper state')
+    digest = hashlib.sha256(journal.read_bytes()).hexdigest()
+    if operation == 'ui_walk_forward_read' and report.get('journal_sha256') != digest:
+        raise ValueError('Walk-forward smoke read mutated the completed journal')
+    return {'journal_reloaded': True, 'journal_sha256': digest, 'state_hash': state['state_hash'],
+        'summary': summary, 'folds': folds, 'compact_result_bytes': len(json.dumps(result).encode('utf-8')),
+        'journal_bytes': journal.stat().st_size, 'read_verified': operation == 'ui_walk_forward_read'}
+
+
 def _start_smoke_job(manager, operation, payload):
     # Every smoke job needs the existing bounded whole-subtree join protocol,
     # including ordinary fixture jobs which do not normally require that proof.
@@ -376,7 +493,7 @@ def _start_smoke_job(manager, operation, payload):
 
 
 def _close_smoke_worker(manager):
-    """No release/cleanup claim until the existing manager confirms quiescence."""
+    """Bounded cleanup evidence; process-local owner/join proof cannot be guessed."""
     if manager is None:
         return {'verified': True, 'error_type': None}
     error_type = None
@@ -388,12 +505,17 @@ def _close_smoke_worker(manager):
         manager.close()
     except BaseException as exc:
         error_type = type(exc).__name__
-    return {'verified': error_type is None and not manager.active, 'error_type': error_type}
+    verified = error_type is None and not manager.active
+    if manager._walk_forward_reference is not None:
+        verified = verified and manager._quiesced_walk_forward == (manager.job_id, manager._walk_forward_reference)
+    elif manager._requires_tree_quiescence:
+        verified = verified and manager._tree_quiesced
+    return {'verified': bool(verified), 'error_type': error_type}
 
 
 def _retain_smoke_directory(directory):
-    # Unverified cleanup forbids deleting evidence. TemporaryDirectory would
-    # otherwise delete it at interpreter shutdown even if cleanup is skipped.
+    # An uncertain writer/owner forbids deleting its evidence. TemporaryDirectory
+    # otherwise removes it at interpreter shutdown even when cleanup is skipped.
     if directory is not None:
         directory._finalizer.detach()
 
@@ -432,9 +554,9 @@ def main(argv=None):
     jobs = guard = installation_guard = None
     smoke_jobs = smoke_directory = None
     settings_paths = None
-    smoke_report = None
     smoke_cleanup_verified = True
     smoke_shutdown_completed = False
+    smoke_report = None
     try:
         installation_guard = WindowsAppMutex()
         paths = locator.load()
@@ -493,6 +615,8 @@ def main(argv=None):
             auth_report = _auth_smoke_dependencies()
             market_report, manual_config, manual_candidate = _market_smoke_ui(app)
             history_report, history_payload = _history_smoke_fixture(Path(smoke_directory.name))
+            walk_forward_paths = AppPaths(Path(smoke_directory.name) / 'walk-forward-fixture')
+            walk_forward_report, walk_forward_payload = _walk_forward_smoke_fixture(walk_forward_paths)
             manual_export_path = Path(smoke_directory.name) / 'manual-request.json'
             market_results = {}
             smoke_steps = _smoke_steps()
@@ -501,6 +625,9 @@ def main(argv=None):
                 ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
                 ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
                 ('ui_market_refresh', history_payload),
+                ('ui_walk_forward_preview', walk_forward_payload),
+                ('ui_walk_forward_run', {}),  # Bound only to the verified preview.
+                ('ui_walk_forward_read', {}),  # Reopen the same immutable journal.
             ])
             smoke_index = 0
             _start_smoke_job(smoke_jobs, *smoke_steps[0])
@@ -508,13 +635,24 @@ def main(argv=None):
             smoke_timer = QTimer(window)
             smoke_timer.setInterval(100)
             def complete_smoke():
-                nonlocal smoke_index, smoke_report
+                nonlocal smoke_index, smoke_jobs, smoke_report
                 operation = smoke_steps[smoke_index][0]
                 market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
                 history_phase = smoke_index == original_step_count + 2
+                walk_forward_phase = operation.startswith('ui_walk_forward_')
                 for event in smoke_jobs.poll():
                     if event['type'] == 'result':
                         result = event.get('result', {})
+                        if walk_forward_phase:
+                            try:
+                                evidence = _check_walk_forward_smoke_result(operation, result, smoke_jobs.paths,
+                                    walk_forward_payload, walk_forward_report)
+                                walk_forward_report.update(evidence)
+                                walk_forward_report['steps'].append({'operation': operation, 'passed': True})
+                            except Exception as exc:
+                                smoke_result['failed'] = True
+                                walk_forward_report['steps'].append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
+                            continue
                         if history_phase:
                             try:
                                 series, evidence = _check_history_worker_result(result, smoke_jobs.paths,
@@ -554,7 +692,7 @@ def main(argv=None):
                         smoke_result['failed'] |= not valid
                     elif event['type'] in ('error', 'cancelled'):
                         smoke_result['failed'] = True
-                        step_report = history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
+                        step_report = walk_forward_report['steps'] if walk_forward_phase else history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
                         step_report.append({'operation': 'history_import' if history_phase else market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
                 timed_out = time.monotonic() > smoke_deadline
                 if smoke_jobs.active and not timed_out:
@@ -564,14 +702,27 @@ def main(argv=None):
                     next_operation, payload = smoke_steps[smoke_index]
                     if next_operation == 'ui_select':
                         payload = {'result': smoke_result['results']['ui_backtest']['reports'][0]['result']}
-                    _start_smoke_job(smoke_jobs, next_operation, payload)
-                    return
+                    try:
+                        if next_operation == 'ui_walk_forward_preview':
+                            smoke_jobs.close()
+                            smoke_jobs = JobManager(walk_forward_paths)
+                        elif next_operation == 'ui_walk_forward_run':
+                            payload = {**walk_forward_payload, 'preview_identity': walk_forward_report['reference']}
+                        elif next_operation == 'ui_walk_forward_read':
+                            payload = {'reference': walk_forward_report['reference']}
+                        _start_smoke_job(smoke_jobs, next_operation, payload)
+                        return
+                    except Exception as exc:
+                        smoke_result['failed'] = True
+                        rows = walk_forward_report['steps'] if next_operation.startswith('ui_walk_forward_') else smoke_result['steps']
+                        rows.append({'operation': next_operation, 'passed': False, 'error_type': type(exc).__name__})
                 smoke_timer.stop()
                 smoke_jobs.close()
                 completed = len(smoke_result['results']) == original_step_count
                 market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
                 history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
-                passed = completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
+                walk_forward_report['status'] = 'passed' if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'] and all(row['passed'] for row in walk_forward_report['steps']) and walk_forward_report.get('read_verified') and not smoke_result['failed'] and not timed_out else 'failed'
+                passed = walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
                 completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
                 # data_dir remains the inspected settings location for installer
                 # compatibility; mutable execution uses smoke_data_dir. The
@@ -584,31 +735,33 @@ def main(argv=None):
                     'campaign_completed': 'ui_campaign' in completed_operations,
                     'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
                     'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
-                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report}
+                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report,
+                    'walk_forward_smoke': walk_forward_report}
                 window.close()
                 app.exit(0 if passed else 1)
             def guarded_complete_smoke():
-                nonlocal smoke_report, smoke_cleanup_verified
+                nonlocal smoke_cleanup_verified, smoke_report
                 try:
                     complete_smoke()
                 except BaseException as exc:
-                    # Qt swallows timer exceptions, so stop this callback and
-                    # preserve a redacted failure for final cleanup/reporting.
+                    # Qt swallows timer exceptions. Always emit terminal failure
+                    # and stop scheduling, without echoing exception values.
                     smoke_timer.stop()
                     cleanup = _close_smoke_worker(smoke_jobs)
                     smoke_cleanup_verified = cleanup['verified']
                     operation = smoke_steps[smoke_index][0]
-                    smoke_result['steps'].append({'operation': operation, 'passed': False,
-                                                  'error_type': type(exc).__name__})
+                    rows = walk_forward_report['steps'] if operation.startswith('ui_walk_forward_') else smoke_result['steps']
+                    rows.append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
+                    walk_forward_report['status'] = 'failed'
                     smoke_report = {'status': 'failed', 'version': __version__,
                         'data_dir': str(settings_paths.root), 'smoke_data_dir': str(paths.root),
                         'user_state_read_only': True, 'source_type': 'synthetic', 'generator': 'fixture',
                         'live_status': 'disabled', 'real_model_status': 'not_verified',
                         'native_window_visible': window.isVisible(), 'worker_completed': False,
-                        'timed_out': time.monotonic() > smoke_deadline,
-                        'error_type': type(exc).__name__, 'worker_cleanup': cleanup,
-                        'steps': smoke_result['steps'], 'auth_smoke': auth_report,
-                        'market_smoke': market_report, 'history_smoke': history_report}
+                        'timed_out': time.monotonic() > smoke_deadline, 'error_type': type(exc).__name__,
+                        'worker_cleanup': cleanup, 'steps': smoke_result['steps'],
+                        'auth_smoke': auth_report, 'market_smoke': market_report,
+                        'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report}
                     app.exit(1)
             smoke_timer.timeout.connect(guarded_complete_smoke)
             smoke_timer.start()
@@ -625,6 +778,9 @@ def main(argv=None):
                     'data_dir': str(settings_paths.root) if settings_paths else None,
                     'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
                     'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
+                    'walk_forward_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
+                        'source_type': 'synthetic', 'real_model_status': 'not_verified',
+                        'scope': 'engineering synthetic packaging smoke only; never actual research PASS or Windows-client acceptance'},
                     'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
                         'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
                     'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,

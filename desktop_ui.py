@@ -18,6 +18,7 @@ from quantlab.reporting import (read_json, write_json, load_dataset, save_datase
                         save_selection, load_selection)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
+    'walk_forward_preview', 'walk_forward_run', 'walk_forward_read', 'walk_forward_reconcile',
     'demo', 'import', 'refresh', 'market_refresh', 'chatgpt_auth', 'chatgpt_usage', 'chatgpt_reconcile', 'backtest', 'campaign', 'compare', 'select', 'disable',
     'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
     'backup_create', 'backup_restore'))
@@ -229,6 +230,9 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
     if operation not in UI_OPERATIONS:
         raise ValidationError('未知桌面作業')
     root = _root(paths)
+    if operation.startswith('ui_walk_forward_'):
+        from desktop_walk_forward import execute_walk_forward
+        return execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped)
     if operation == 'ui_chatgpt_auth':
         from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
         from dataclasses import asdict
@@ -587,8 +591,8 @@ class EquityPlot(QWidget):
 
 
 from desktop_market import MarketDashboard, MarketHistoryDialog
-from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, PaperPolicyForm,
-    PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard)
+from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, WalkForwardForm, PaperPolicyForm,
+    PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard, BacktestSummaryCard, BacktestFillsTable, CandidateSummaryCard)
 
 
 class MainWindow(QMainWindow):
@@ -598,6 +602,12 @@ class MainWindow(QMainWindow):
         self.root = _root(paths)
         self.actions = []
         self.last_operation = None
+        self._ui_job_id = None
+        self._wf_preview = None
+        self._wf_request_key = None
+        self._wf_launch = None
+        self._wf_pending_reconcile = False
+        self._wf_source_stamp = None
         self.active_candidate = None
         self._advanced_values = {}
         self._market_outcomes = {}
@@ -644,6 +654,7 @@ class MainWindow(QMainWindow):
         progress.addWidget(self.progress); progress.addWidget(self.cancel_button); outer.addLayout(progress)
         self.setCentralWidget(body)
         self._dashboard(); self._data_page(); self._strategy_page(); self._backtest_page(); self._compare_page(); self._paper_page(); self._settings_page()
+        self._connect_walk_forward_inputs()
         self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex); self.navigation.setCurrentRow(0)
         self.timer = QTimer(self); self.timer.timeout.connect(self.poll_jobs); self.timer.start(150)
         self._safe(self.refresh_views)
@@ -766,6 +777,7 @@ class MainWindow(QMainWindow):
         self.parameters = self._text(advanced, '策略參數 JSON', '{}', True)
         self.strategy_detail = QPlainTextEdit(); self.strategy_detail.setReadOnly(True); advanced.addWidget(self.strategy_detail)
         self.family.currentIndexChanged.connect(self._family_changed); self._family_changed()
+        self._walk_forward_section(layout)
         layout.addWidget(QLabel('離線 Fixture 生成器：固定候選與版本紀錄；不是已驗證的真實模型。'))
         self.strategy_form.family.currentIndexChanged.connect(lambda: self.family.setCurrentIndex(self.strategy_form.family.currentIndex()))
         self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
@@ -782,13 +794,225 @@ class MainWindow(QMainWindow):
         self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign)
         self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
         self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); advanced.addWidget(self.candidate_detail)
-        self.candidate_card = SummaryCard(); layout.addWidget(self.candidate_card)
+        self.candidate_card = CandidateSummaryCard(); layout.addWidget(self.candidate_card)
         self.use_candidate_button = self._button(layout, '使用此不可變候選版本進行研究回測', 'use_candidate', self.use_candidate)
         self._button(layout, '改用內建家族與可編輯參數', 'use_builtin', self.use_builtin)
         self.history = QPlainTextEdit(); self.history.setReadOnly(True); advanced.addWidget(self.history)
         self.history_table = ResultTable(); layout.addWidget(self.history_table)
         layout.addWidget(QLabel('已保存樣本外／保留集評估（不回饋模型；沒有結果即未提供）'))
         self.evaluation_table = ResultTable(); layout.addWidget(self.evaluation_table)
+
+    def _walk_forward_section(self, layout):
+        section = QGroupBox('固定候選池 Walk-forward（技術驗證）')
+        content = QVBoxLayout(section); layout.addWidget(section)
+        self.walk_forward_form = WalkForwardForm(); content.addWidget(self.walk_forward_form)
+        self.walk_forward_saved_controls = QWidget(); saved = QFormLayout(self.walk_forward_saved_controls)
+        self.walk_forward_campaign = QComboBox(); self.walk_forward_campaign.setObjectName('walk_forward_campaign')
+        self.walk_forward_campaign.addItem('請明確選取已保存研究（尚未核對）', None)
+        saved.addRow('唯一來源研究', self.walk_forward_campaign)
+        self.walk_forward_original = QLineEdit(); self.walk_forward_original.setReadOnly(True)
+        self.walk_forward_original.setObjectName('walk_forward_original_dataset')
+        self.walk_forward_original.setPlaceholderText('請選取該研究當時使用的完整原始資料檔')
+        saved.addRow('完整原始資料', self.walk_forward_original)
+        self._button(saved, '選取本機原始資料檔', 'pick_walk_forward_original', self.pick_walk_forward_original)
+        notice = QLabel('必須保留當時完整資料，並核對全部候選來源。檔名或宣告日期相同不足以通過；不會從研究紀錄自動載入路徑。')
+        notice.setWordWrap(True); saved.addRow(notice); content.addWidget(self.walk_forward_saved_controls)
+        self.walk_forward_saved_controls.setEnabled(False)
+        self._button(content, '預覽精確切分、風險門檻與一次性額度', 'preview_walk_forward', self.preview_walk_forward)
+        self.walk_forward_preview = QPlainTextEdit(); self.walk_forward_preview.setReadOnly(True)
+        self.walk_forward_preview.setObjectName('walk_forward_preview'); self.walk_forward_preview.setMinimumHeight(410)
+        content.addWidget(self.walk_forward_preview)
+        self.walk_forward_advanced_group = QGroupBox('進階：完整來源證據、雜湊與設定')
+        self.walk_forward_advanced_group.setCheckable(True); self.walk_forward_advanced_group.setChecked(False)
+        advanced = QVBoxLayout(self.walk_forward_advanced_group)
+        self.walk_forward_advanced = QPlainTextEdit(); self.walk_forward_advanced.setReadOnly(True)
+        self.walk_forward_advanced.setObjectName('walk_forward_advanced'); self.walk_forward_advanced.hide()
+        advanced.addWidget(self.walk_forward_advanced)
+        self.walk_forward_advanced_group.toggled.connect(self.walk_forward_advanced.setVisible)
+        content.addWidget(self.walk_forward_advanced_group)
+        self.walk_forward_consent = QCheckBox('我已核對預覽：所有前推 OOS 範圍在評分前不可逆消耗，取消仍保留消耗；最終保留集排除且不評估')
+        self.walk_forward_consent.setObjectName('walk_forward_consent'); content.addWidget(self.walk_forward_consent)
+        self.walk_forward_start = self._button(content, '執行／讀取同一計畫（不重試 OOS）', 'run_walk_forward', self.run_walk_forward)
+        self.walk_forward_choice = QComboBox(); self.walk_forward_choice.setObjectName('walk_forward_choice'); content.addWidget(self.walk_forward_choice)
+        self._button(content, '唯讀重開已保存 Walk-forward 結果', 'read_walk_forward', self.read_walk_forward)
+        self.walk_forward_status = QLabel('尚未預覽。此區與 AI 研究歷史及紙上資格完全分開。')
+        self.walk_forward_status.setWordWrap(True); content.addWidget(self.walk_forward_status)
+        self.walk_forward_results = ResultTable(); content.addWidget(self.walk_forward_results)
+
+    def _connect_walk_forward_inputs(self):
+        for form in (self.walk_forward_form, self.backtest_form):
+            for field in form.fields.values():
+                signal = field.currentIndexChanged if isinstance(field, QComboBox) else field.textChanged
+                signal.connect(self._invalidate_walk_forward_preview)
+        self.walk_forward_form.fields['pool_origin'].currentIndexChanged.connect(self._walk_forward_origin_changed)
+        self.walk_forward_campaign.currentIndexChanged.connect(self._invalidate_walk_forward_preview)
+        self.walk_forward_original.textChanged.connect(self._invalidate_walk_forward_preview)
+        self.backtest_form.expiries.table.itemChanged.connect(self._invalidate_walk_forward_preview)
+        model = self.backtest_form.expiries.table.model()
+        model.rowsInserted.connect(self._invalidate_walk_forward_preview)
+        model.rowsRemoved.connect(self._invalidate_walk_forward_preview)
+        self.config.textChanged.connect(self._invalidate_walk_forward_preview)
+
+    def _walk_forward_origin_changed(self, *args):
+        saved = self.walk_forward_form.fields['pool_origin'].currentData() == 'saved_campaign_pool'
+        self.walk_forward_saved_controls.setEnabled(saved)
+        self._invalidate_walk_forward_preview()
+
+    def pick_walk_forward_original(self):
+        name, _ = QFileDialog.getOpenFileName(self, '選取來源研究的完整原始資料（不會取代目前資料）', '', 'Quantlab 完整資料 (*.json)')
+        if not name: return
+        if '://' in name or name.startswith(('//', '\\\\')) or not Path(name).is_absolute():
+            raise ValidationError('請使用明確的本機絕對檔案路徑')
+        path = Path(name).resolve(strict=True)
+        if not path.is_file(): raise ValidationError('請選取本機完整資料檔')
+        self.walk_forward_original.setText(str(path))
+
+    def _walk_forward_saved_source(self):
+        if self.walk_forward_form.fields['pool_origin'].currentData() != 'saved_campaign_pool': return None
+        reference = self.walk_forward_campaign.currentData()
+        if not reference: raise ValidationError('請明確選取已保存的來源研究')
+        path = self.walk_forward_original.text()
+        if not path: raise ValidationError('請明確選取該研究完整的原始資料檔')
+        return {'campaign_reference': reference, 'original_dataset': {'kind': 'local_dataset_file', 'path': path}}
+
+    def _invalidate_walk_forward_preview(self, *args):
+        self._wf_preview = None
+        self.walk_forward_consent.setChecked(False)
+        self.walk_forward_start.setEnabled(False)
+        self.walk_forward_preview.setPlainText('來源或設定已變更，請重新預覽精確範圍。')
+        self.walk_forward_status.setText('預覽已失效：來源或設定已變更，請重新預覽；目前不可開始。')
+        self.walk_forward_advanced.clear()
+
+    def _walk_forward_input_key(self):
+        path = self.root / 'dataset.json'
+        stat = path.stat()
+        typed = self.backtest_form.build_payload()
+        config = self._payload(self.config, lambda: typed['config'])
+        plan = self.walk_forward_form.build_payload(config)
+        # Worker checks full data/manifest and engine hashes again before running;
+        # this cheap UI key only discards stale asynchronous preview responses.
+        source = self._walk_forward_saved_source()
+        inputs = {'plan': plan, 'source': [stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]}
+        if source is not None:
+            from quantlab.desktop_runtime import validate_walk_forward_request
+            validate_walk_forward_request(plan, source)
+            from desktop_walk_forward import source_campaign_folder
+            folder = source_campaign_folder(self.paths, source['campaign_reference'])
+            files = (folder / 'campaign.json', folder / 'campaign.sqlite3', Path(source['original_dataset']['path']))
+            inputs['saved_source'] = source
+            inputs['saved_files'] = [[p.stat().st_size, p.stat().st_mtime_ns, p.stat().st_ctime_ns] for p in files]
+        return content_hash(inputs), plan
+
+    def preview_walk_forward(self):
+        self._invalidate_walk_forward_preview()
+        self.walk_forward_results.set_rows([])
+        key, plan = self._walk_forward_input_key()
+        payload = {'plan': plan}
+        source = self._walk_forward_saved_source()
+        if source is not None: payload['saved_source'] = source
+        self.start_job('ui_walk_forward_preview', payload)
+        self._wf_request_key = key
+        self.walk_forward_preview.setPlainText('正在核對來源、切分範圍與評估額度，請稍候。')
+        self.walk_forward_status.setText('預覽核對中；尚未保留或消耗新範圍，目前不可開始。')
+
+    def run_walk_forward(self):
+        if self._wf_preview is None or not self.walk_forward_consent.isChecked():
+            raise ValidationError('請先預覽並明確確認範圍與不可逆消耗')
+        key, plan = self._walk_forward_input_key()
+        if key != self._wf_request_key:
+            self._invalidate_walk_forward_preview()
+            raise ValidationError('來源或設定已變更，請重新預覽')
+        identity = self._wf_preview['preview_identity']
+        if (self.root / 'walk_forward' / identity / 'walk_forward.sqlite3').exists():
+            self.start_job('ui_walk_forward_read', {'reference': identity})
+            self.walk_forward_consent.setChecked(False)
+            return
+        payload = {'plan': plan, 'preview_identity': identity}
+        source = self._walk_forward_saved_source()
+        if source is not None: payload['saved_source'] = source
+        job = self.start_job('ui_walk_forward_run', payload)
+        self._wf_launch = {'reference': identity, 'stopped_job_id': job}
+        self.walk_forward_consent.setChecked(False)
+
+    def read_walk_forward(self):
+        reference = self.walk_forward_choice.currentData()
+        if not reference: raise ValidationError('尚無可重開的 Walk-forward 紀錄')
+        self.start_job('ui_walk_forward_read', {'reference': reference})
+
+    def _refresh_walk_forward_references(self):
+        previous = self.walk_forward_choice.currentData()
+        self.walk_forward_choice.clear()
+        for path in sorted((self.root / 'walk_forward').glob('*/walk_forward.sqlite3')):
+            name = path.parent.name
+            if len(name) == 64 and all(c in '0123456789abcdef' for c in name):
+                self.walk_forward_choice.addItem('識別碼 ' + name[:12], name)
+        index = self.walk_forward_choice.findData(previous)
+        if index >= 0: self.walk_forward_choice.setCurrentIndex(index)
+        selected = self.walk_forward_campaign.currentData()
+        self.walk_forward_campaign.blockSignals(True)
+        self.walk_forward_campaign.clear(); self.walk_forward_campaign.addItem('請明確選取已保存研究（尚未核對）', None)
+        for path in sorted((self.root / 'campaigns').glob('*/campaign.sqlite3')):
+            name = path.parent.name
+            if len(name) == 64 and all(c in '0123456789abcdef' for c in name):
+                self.walk_forward_campaign.addItem('研究識別碼 ' + name[:12], name)
+        index = self.walk_forward_campaign.findData(selected)
+        self.walk_forward_campaign.setCurrentIndex(max(0, index))
+        self.walk_forward_campaign.blockSignals(False)
+        if selected != self.walk_forward_campaign.currentData(): self._invalidate_walk_forward_preview()
+
+    def _walk_forward_event(self, event):
+        operation = self.last_operation or ''
+        if not operation.startswith('ui_walk_forward_'): return False
+        kind = event.get('type')
+        if kind == 'progress':
+            self.status.setText('Walk-forward 背景作業進行中；無模型呼叫。')
+            return True
+        if kind not in ('result', 'error', 'cancelled'): return True
+        self.record_event(operation, kind)
+        if kind == 'result':
+            result = event['result']
+            if operation == 'ui_walk_forward_preview':
+                try: current = self._walk_forward_input_key()[0]
+                except (ValueError, OSError): current = None
+                if current != self._wf_request_key:
+                    self._invalidate_walk_forward_preview()
+                    self.status.setText('預覽期間來源或設定已變更，請重新預覽。')
+                    return True
+                from desktop_walk_forward import preview_text
+                self.walk_forward_preview.setPlainText(preview_text(result))
+                self.walk_forward_advanced.setPlainText(preview_text(result, advanced=True))
+                if result.get('admission_status') == 'rejected':
+                    self._wf_preview = None
+                    self.walk_forward_consent.setChecked(False)
+                    self.walk_forward_start.setEnabled(False)
+                    self.walk_forward_status.setText('預覽未通過：請核對上方原因；未保留或消耗新範圍，目前不可開始。')
+                    self.status.setText('來源研究未通過候選池准入；請核對明示原因，未保留或消耗新範圍。')
+                    return True
+                self._wf_preview = result
+                self.walk_forward_status.setText('預覽已就緒：請核對範圍、風險門檻與不可逆消耗，明確確認後才可開始；尚未保留或消耗新範圍。')
+                self.status.setText('Walk-forward 預覽就緒；核對範圍、門檻與不可逆消耗後才可開始。')
+            else:
+                from desktop_walk_forward import result_rows, status_label, preview_text
+                self.walk_forward_advanced.setPlainText(preview_text(result, advanced=True))
+                summary = result.get('summary', {})
+                self.walk_forward_results.set_rows(result_rows(result))
+                self.walk_forward_status.setText(
+                    '狀態：' + status_label(result.get('display_status', result['status'])) + ' · 證據：' + status_label(summary.get('evidence_mode')) +
+                    ' · 暴露：' + status_label(summary.get('exposure_status')) +
+                    f"\n全實驗預留額度 {summary.get('evaluations_reserved', 0)} / {summary.get('evaluation_limit', '未知')}；已評估前推折數 {summary.get('evaluated_oos_folds', 0)}。" +
+                    '\n模型呼叫 0；最終保留集排除／未評估；非獨立 OOS、不可正式排名、無紙上資格。' +
+                    ('\n來源模型狀態：' + status_label(result['pool_admission']['real_model_status']) if result.get('pool_admission') else '') +
+                    '\n識別碼：' + str(result.get('reference', ''))[:12])
+                self.status.setText('Walk-forward 紀錄已讀取；不會重送或重新評估已消耗 OOS。')
+                self._refresh_walk_forward_references()
+                if operation in ('ui_walk_forward_run', 'ui_walk_forward_reconcile'):
+                    self._wf_launch = None
+        else:
+            if operation == 'ui_walk_forward_preview':
+                self.walk_forward_status.setText('預覽未完成：已停止或失敗，請重新預覽；未保留或消耗新範圍，目前不可開始。')
+            self.status.setText('Walk-forward 已停止或失敗；已消耗範圍不退還，不會自動重試。' + str(event.get('message', '')))
+            if operation == 'ui_walk_forward_run': self._wf_pending_reconcile = self._wf_launch is not None
+        return True
 
     def _backtest_page(self):
         layout = self._page('回測與結果')
@@ -803,8 +1027,8 @@ class MainWindow(QMainWindow):
         self.result_choice = QComboBox(); self.result_choice.currentIndexChanged.connect(self.show_result); layout.addWidget(self.result_choice)
         self.plot = EquityPlot(); layout.addWidget(self.plot)
         self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); advanced.addWidget(self.result_detail)
-        self.result_card = SummaryCard(); layout.addWidget(self.result_card)
-        self.fills_table = ResultTable(); layout.addWidget(self.fills_table)
+        self.result_card = BacktestSummaryCard(); layout.addWidget(self.result_card)
+        self.fills_table = BacktestFillsTable(); layout.addWidget(self.fills_table)
         for kind, caption in (('signal', '市場圖表：顯示已驗證回測訊號'), ('fill', '市場圖表：顯示已驗證回測成交')):
             toggle = QCheckBox(caption); toggle.setChecked(True); layout.addWidget(toggle)
             toggle.toggled.connect(lambda value, layer=kind: self.market.chart.set_layer_visible(layer, value))
@@ -1138,6 +1362,7 @@ class MainWindow(QMainWindow):
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
         job_id = self.jobs.start(operation, payload)
         self.last_operation = operation
+        self._ui_job_id = job_id
         self.status.setText('背景作業進行中；可切換頁面或取消。')
         self._busy(True)
         return job_id
@@ -1154,6 +1379,7 @@ class MainWindow(QMainWindow):
             self.run_button.setEnabled(bool(getattr(self, '_dataset_ready', False)))
             self.use_candidate_button.setEnabled(bool(getattr(self, '_candidate_valid', False)))
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
+            self.walk_forward_start.setEnabled(self._wf_preview is not None)
 
     def cancel_job(self):
         def cancel_and_recover():
@@ -1164,6 +1390,9 @@ class MainWindow(QMainWindow):
     def poll_jobs(self):
         try:
             for event in self.jobs.poll():
+                if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
+                    continue  # A joined old worker can never overwrite a newer view.
+                if self._walk_forward_event(event): continue
                 kind = event.get('type', '')
                 if self._chatgpt_event(event): continue
                 if self._subscription_campaign and kind in ('result','error','failed','cancelled'):
@@ -1203,6 +1432,10 @@ class MainWindow(QMainWindow):
                     self.status.setText(str(event.get('message', '背景作業進行中')))
             if not self.jobs.active:
                 self._busy(False)
+                if self._wf_pending_reconcile and self._wf_launch is not None:
+                    self._wf_pending_reconcile = False
+                    self.start_job('ui_walk_forward_reconcile', self._wf_launch)
+                    return
                 if getattr(self,'_close_after_reconcile',False):
                     self._close_after_reconcile = False
                     self.close()
@@ -1292,6 +1525,7 @@ class MainWindow(QMainWindow):
             risk='已停止新委託' if account.get('kill_switch') is True else ('需要對帳' if account.get('reconciliation_required') is True else '僅依已鎖定紙上政策；非實單' if account.get('kill_switch') is False and account.get('reconciliation_required') is False else '未知；請核對帳戶'))
 
     def refresh_views(self):
+        self._refresh_walk_forward_references()
         path = self.root / 'dataset.json'
         data = None
         if path.exists():
@@ -1304,6 +1538,13 @@ class MainWindow(QMainWindow):
                 self.overview.setText('研究資料驗證失敗；原檔保留。' + str(exc))
         else:
             self.overview.setText('尚無資料。請先匯入本機資料或建立明示合成示範。')
+        stamp = content_hash(to_dict(data.manifest)) if data is not None else None
+        if stamp != self._wf_source_stamp:
+            first_source = self._wf_source_stamp is None
+            self._wf_source_stamp = stamp
+            if data is not None and first_source:
+                self.walk_forward_form.defaults_for_bars(len(data.bars))
+            self._invalidate_walk_forward_preview()
         self._dataset_ready = data is not None
         self.load_market_cache()
         if data is not None and self._campaign_data_hash != data.manifest['data_hash']:
@@ -1356,6 +1597,7 @@ class MainWindow(QMainWindow):
                 self.candidate_choice.setCurrentIndex(index); self.use_candidate()
 
     def show_result(self, index=None):
+        self.market.chart.set_reference_lines(())
         path = self.result_choice.currentData()
         self._selection_allowed = False
         if not path: self.plot.set_values([]); self.result_detail.setPlainText('尚無回測結果'); return
@@ -1387,8 +1629,12 @@ class MainWindow(QMainWindow):
         if not bars or not path or not (self.root / 'dataset.json').exists(): return
         result = result or load_result(path)
         data = load_dataset(self.root / 'dataset.json')
-        if data.manifest['data_hash'] != result.manifest.get('data_hash'): return
-        if content_hash(result.manifest.get('strategy')) != result.manifest.get('spec_hash'): return
+        from quantlab.reporting import validate_result_payload
+        try:
+            # Use the report loader's authoritative full dataset/provenance binding.
+            validate_result_payload(to_dict(result), dataset=data)
+        except (ValidationError, KeyError, TypeError, ValueError):
+            return
         # Require the exact adapted market source, not merely matching price/date.
         selected = self.market.contract_combo.currentData()
         item = self.market.selected_series()
@@ -1421,6 +1667,118 @@ class MainWindow(QMainWindow):
         chart.set_series(bars, trace=trace, source_label=source, status_label=status + ' · 回測圖層（非市場交易紀錄）')
         chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
         chart.set_markers(markers, trace=trace)
+        chart.set_reference_lines(self._result_snapshot_lines(result, bars, selected), trace=trace)
+
+    @staticmethod
+    def _result_snapshot_lines(result, bars, selected):
+        """Read the final actual open-lot snapshot, never derive a fill from a signal.
+
+        Range endpoints preserve the existing whole-position conservative policy:
+        every original-entry lot can trigger; the most adverse triggered level
+        wins (with existing gap handling). An average-price stop is not that rule.
+        No line is projected back through historical candles or beyond this event.
+        """
+        from desktop_charts import ReferenceLine
+        from decimal import Context, InvalidOperation, ROUND_HALF_EVEN, localcontext
+        if not result.equity: return ()
+        row = result.equity[-1]
+        lots = result.metrics.get('open_lots', ())
+        position = result.metrics.get('open_position')
+        if not lots or type(position) is not int or not position: return ()
+        if row.get('contract_id') != selected or row.get('position') != position: return ()
+        def timestamp(value):
+            return datetime.fromisoformat(value.replace('Z','+00:00')) if isinstance(value,str) else value
+        try:
+            as_of = timestamp(row['timestamp'])
+            indices = [i for i,bar in enumerate(bars) if bar.contract_id==selected and bar.end==as_of]
+            if len(indices)!=1: return ()  # No nearest-time or date-only guess.
+            side = 1 if position>0 else -1
+            fills = {fill.fill_id: fill for fill in result.fills}
+            if len(fills)!=len(result.fills) or any(fill.timestamp>as_of for fill in result.fills): return ()
+            opening = {fid: fill for fid,fill in fills.items() if fill.reason in ('target_open','roll_open')}
+            remaining = {fid: fill.quantity for fid,fill in opening.items()}
+            exit_quantities = {}
+            configuration = result.manifest['config']
+            configured = {content_hash(event): event for event in configuration['settlement_events']}
+            applied = {}
+            available = {(timestamp(event['timestamp']),event['contract_id']) for event in result.equity}
+            for settlement in result.metrics['settlements']:
+                event = settlement['event']
+                event_id = content_hash(event)
+                if (event_id not in configured or settlement['event_id']!=event_id or event_id in applied
+                        or settlement['kind']!=event.get('kind','daily')
+                        or timestamp(event['timestamp'])>as_of
+                        or (timestamp(event['timestamp']),event['contract_id']) not in available): return ()
+                applied[event_id] = event
+            with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
+                # Reconcile full opening quantities against every closed FIFO match.
+                # Several residual fragments may legitimately refer to one opening fill.
+                for match in result.ledger:
+                    fill = opening.get(match['entry_fill_id'])
+                    quantity = match['quantity']
+                    if (fill is None or type(quantity) is not int or quantity<=0
+                            or match['contract_id']!=fill.contract_id
+                            or match['side']!=('long' if fill.side=='buy' else 'short')
+                            or Decimal(str(match['entry_price']))!=fill.price
+                            or timestamp(match['entry_timestamp'])!=fill.timestamp
+                            or not fill.timestamp<=timestamp(match['exit_timestamp'])<=as_of): return ()
+                    exit_id = match['exit_fill_id']
+                    if exit_id is not None:
+                        exit_fill = fills.get(exit_id)
+                        if (exit_fill is None or exit_id in opening or exit_fill.contract_id!=fill.contract_id
+                                or exit_fill.side==fill.side or exit_fill.timestamp!=timestamp(match['exit_timestamp'])
+                                or exit_fill.price!=Decimal(str(match['exit_price']))): return ()
+                        exit_quantities[exit_id] = exit_quantities.get(exit_id,0)+quantity
+                    else:
+                        event = applied.get(match['exit_event_id'])
+                        if (event is None or event.get('kind')!='final' or match['exit_event_type']!='final_settlement'
+                                or event['contract_id']!=fill.contract_id
+                                or timestamp(event['timestamp'])!=timestamp(match['exit_timestamp'])
+                                or Decimal(str(event['price']))!=Decimal(str(match['exit_price']))): return ()
+                    remaining[fill.fill_id] -= quantity
+                    if remaining[fill.fill_id]<0: return ()
+                if any(exit_quantities.get(fid,0)!=fill.quantity for fid,fill in fills.items() if fid not in opening): return ()
+                expected = {fid: quantity for fid,quantity in remaining.items() if quantity}
+                entries, bases, quantities, observed = [], [], [], {}
+                for lot in lots:
+                    quantity = lot['quantity']
+                    entry, basis = Decimal(str(lot['price'])), Decimal(str(lot['basis_price']))
+                    if type(quantity) is not int or quantity<=0 or lot['side']!=side or lot['contract_id']!=selected: return ()
+                    if not entry.is_finite() or not basis.is_finite() or min(entry,basis)<=0: return ()
+                    fill = opening.get(lot['fill_id'])
+                    if (fill is None or fill.contract_id!=selected or fill.price!=entry
+                            or fill.side!=('buy' if side>0 else 'sell') or quantity>fill.quantity
+                            or timestamp(lot['timestamp'])!=fill.timestamp or fill.timestamp>as_of): return ()
+                    observed[fill.fill_id] = observed.get(fill.fill_id,0)+quantity
+                    expected_basis = entry
+                    # Settlement at the opening timestamp belongs to the prior bar,
+                    # before this next-open fill, so the boundary is strictly greater.
+                    events = sorted((event for event in configured.values()
+                                     if event['contract_id']==selected and fill.timestamp<timestamp(event['timestamp'])<=as_of),
+                                    key=lambda event: timestamp(event['timestamp']))
+                    for event in events:
+                        if (content_hash(event) not in applied or event.get('kind','daily')!='daily'
+                                or configuration['settlement_mode']!='daily_mtm'): return ()
+                        expected_basis = Decimal(str(event['price']))
+                    if basis!=expected_basis: return ()
+                    entries.append(entry); bases.append(basis); quantities.append(quantity)
+                if observed!=expected or sum(quantities)!=abs(position): return ()
+                index = indices[0]
+                lines = [ReferenceLine('成交均價（未含費用）',sum((p*q for p,q in zip(entries,quantities)),Decimal(0))/abs(position),index,as_of),
+                         ReferenceLine('MTM 基準（非保證金）',sum((p*q for p,q in zip(bases,quantities)),Decimal(0))/abs(position),index,as_of)]
+                if result.manifest.get('protective_scope')=='whole position at most adverse triggered original-entry lot level':
+                    parameters = result.manifest['strategy']['parameters']
+                    for key,label,direction in (('stop_ticks','停損門檻',-side),('target_ticks','停利門檻',side)):
+                        if key not in parameters: continue
+                        offset = parameters[key]
+                        if type(offset) is not int or offset<=0: return ()
+                        levels = [price+direction*offset for price in entries]
+                        lower, upper = min(levels),max(levels)
+                        lines.append(ReferenceLine(label+('下緣' if lower!=upper else ''),lower,index,as_of))
+                        if lower!=upper: lines.append(ReferenceLine(label+'上緣',upper,index,as_of))
+                return tuple(lines)
+        except (KeyError, ValueError, TypeError, InvalidOperation):
+            return ()  # Legacy/incomplete snapshots do not invent reference prices.
 
     def inspect_candidate(self, index=None):
         self._candidate_valid = False
@@ -1582,6 +1940,13 @@ class MainWindow(QMainWindow):
             self.chatgpt_panel.consent.setChecked(False)
             self.jobs.close()
             self._quiesce_and_recover()
+            if (self.last_operation == 'ui_walk_forward_run' or self._wf_pending_reconcile) and self._wf_launch is not None:
+                self._wf_pending_reconcile = False
+                self.jobs.poll()
+                self.start_job('ui_walk_forward_reconcile', self._wf_launch)
+                self._close_after_reconcile = True
+                event.ignore()
+                return
             if (self._subscription_campaign or self._pending_plan_reconcile) and self._plan_launch is not None:
                 self._subscription_campaign = False
                 self._pending_plan_reconcile = False
