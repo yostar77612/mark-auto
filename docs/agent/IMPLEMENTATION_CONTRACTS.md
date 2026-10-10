@@ -151,3 +151,23 @@ M1真實來源/首頁/自選20；M2多週期互動K線20；M3全部指定指標1
 資料/指標固定：每bar綁實際symbol、exchange trade_date與session；分鐘以sessionopen錨定，不跨休市。日依交易日合併已知日夜盤，週ISO交易日週，缺漏/未收盤保留partial與來源，不補造。日資料不能變分鐘。SMA n完整bars；EMA以n樣本SMA seed再alpha2/(n+1)；RSI Wilder14，以n差值seed，全平50、無跌100；MACD12/26/9與hist=MACD-signal；KD9/3/3 seed50/50，平幅RSV50；Bollinger20/2母體std；VWAP sessionreset，OHLCV typical-price估計且明示，零累積量None。每項缺值/warmup不填0，不讀未来。參數/週期改動重算。
 
 Golden cases含跨午夜/假期/到期短盤、乱序duplicate/缺bars/partial、不同contract絕不混合；prefix因果、手算/獨立公式指標、零量與平價，圖層signal/fill分開且hash一致。新模組測試與全核心回歸，Windows打包證據及實際畫面/交互後才給分。
+
+
+# 0.2.1 official ChatGPT desktop integration contract
+Frozen before host/core integration, 2026-10-10 01:00 UTC.
+
+Scope: wire reviewed root desktop_chatgpt_auth/provider/ui into existing single-worker desktop lifecycle; optional official subscription mode alongside existing fixture/local/manual modes. Preserve research stdlib boundary, existing field validation, immutable budgets/holdout, and real trading disabled. No actual authorization, credentials, inference or paid request by this engineering task. User-owned official grant and live Windows behavior are separate external gates.
+
+Required before engineering acceptance:
+1. Normal typed繁中 settings/status and strategy mode, clear plan versus paid API distinction. Network/credit-policy acknowledgement not persisted; no auto registration/login/discovery/inference/refresh at startup, no copied tokens or third-party cookie access.
+2. Auth operation explicitly allowlisted, bounded IPC and process deadline; official authorization URL transient only, never persisted/logged/result history. No token bytes outside locked DPAPI backend. Parent cancel/close/sleep/workspace switch stops/joins auth and inference before signout/change; a terminal packet alone cannot authorize next work.
+3. Strict new-provider descriptor/source/dependency provenance plus durable receipt snapshot reconciliation after success/failure/killedworker. Invalid/unknown outcome freezes before further trial/selection/OOS/holdout. No budget refund/reset from workspace, campaign, model, backup or signout. Genuine engine-source changes invalidate reruns under old immutable identity; do not forge old source hash.
+4. Source and frozen offline RS256/JWKS/parser and allowed UI flows, existing full regression, Windows DPAPI/process/native crypto tests, pinned dependency audit and complete applicable native notices. Fixture tests remain explicitly offline; no pass implies actual user grant.
+5. Release source tree and payload hash checked, genuine released baseline upgrade/crash/data preservation, clean-client Windows10/11 statuses remain honest BLOCKED until real environments pass.
+6. End-to-end real subscription generation requires user-controlled grant and explicit bounded request acknowledgement. Application cannot independently read/enforce account credit settings or server token ceilings; disclose this and never silently enable paid API fallback.
+
+No acceptance threshold or original research identity files are weakened to make tests pass. New module is not merged into0.2.0 market release. Product changes limited to root desktop auth/provider/UI and host lifecycle wiring, generic research descriptor/receipt hook, tests, four pinned desktop-only dependencies, packaging provenance/notices and existing03/05/status documents.
+
+### 0.2.1 跨授權復原反例補驗（02:02 UTC，修復前固定）
+
+同一bootstrap下兩個不同opaque registration，A先預留但未知時，B的status/models/preflight/reserve不得顯示可繼續或送網路；並行兩者只能一個取得預留。暫停不可藉登出／新增授權繞過，不推論兩個subject代表同一人；只在本安裝建立保守的全域安全屏障，各registration的身分與receipt仍分開。任一已登記ledger遺失／毀損／count回退，不能透過另一registration重建或繼續呼叫。明確解除選定的已知pause只在沒有任何active/unknown時允許，不得解除別人的pause、退還未知次數或重置預算。已完成且完整的其他ledger不能被當作未完成而永遠阻塞。這些是原不可繞過復原合約的反例，不更改驗收門檻或增加付費／真帳戶操作。

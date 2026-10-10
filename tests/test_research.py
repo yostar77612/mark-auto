@@ -58,7 +58,7 @@ class RenamedDuplicateGenerator(FixtureGenerator):
 
 def invalid_improvement_transport(endpoint, request, timeout):
     # Inert unit-test provider only; no network or real-model acceptance.
-    context = json.loads(request['messages'][-1]['content'])
+    context = json.JSONDecoder().raw_decode(request['messages'][-1]['content'])[0]
     payload = to_dict(builtin_strategies()[0]) if context['iteration'] == 0 else {'code': 'invalid DSL fixture'}
     return {'choices': [{'message': {'content': json.dumps(payload)}}]}
 
@@ -205,7 +205,7 @@ class ResearchTests(unittest.TestCase):
                 transport=transport, budget_path=Path(tmp)/'budget.db', network_opt_in=True,
                 max_calls=1, max_tokens=20000, output_mode='registry_json_schema')
             provider.improve(context)
-        sent = json.loads(requests[0]['messages'][-1]['content'])
+        sent = json.JSONDecoder().raw_decode(requests[0]['messages'][-1]['content'])[0]
         self.assertEqual(context, before)
         self.assertEqual(sent['task'], 'improve_previous_candidate')
         self.assertEqual(sent['previous'], before['previous'])

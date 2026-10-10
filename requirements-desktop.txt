@@ -1,3 +1,9 @@
 # Native desktop runtime only. Legacy web UI and broker SDK are intentionally absent.
 PySide6==6.12.0
 tzdata==2026.5
+
+# Official ChatGPT OAuth; desktop-only optional boundary.
+PyJWT[crypto]==2.15.1
+cryptography==50.0.2
+cffi==2.1.1
+pycparser==3.11

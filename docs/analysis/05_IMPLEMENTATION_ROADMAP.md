@@ -302,3 +302,24 @@ Linux fresh checkout263 tests（257 PASS、6 platform/tool skips）；Windows in
 新版使用單一功能分支agent/market-desktop-v1：獨立readonly多商品市場模型與官方daily/cache/import、session-safe多週期/Decimal指標、原生Qt行情/K線、typedforms及manual策略交換，沿用原核心；市場商品與交易支援分開（交易研究仍TMF）。正常首屏繁中、technicalsource置收合診斷，圖表顯示台北時間但底層UTC。OAuth/訂閱provider另階段驗證，不把offline單元測試說成真帳戶驗證。
 
 原始市場來源真實bytes及TMF訓練區間重播已確認；雲端直接官方HTTP因DNS解析失敗，明示BLOCKED，不放寬TLS或proxy限制。Windows建置另產生public-market-download.json，VERIFIED才可作線上來源證據；診斷工具成功寫出BLOCKED報告不代表市場Gate PASS。完整新增驗收尚未計分。
+
+## 20 官方 ChatGPT 訂閱桌面整合：0.2.1 固定交付範圍
+
+承接0.2.0市場介面，不重寫既有交易核心。01:00 UTC前已凍結合約於IMPLEMENTATION_CONTRACTS.md；M6權重及其餘既有權重不變。工程次序：官方PKCE/OIDC與Windows DPAPI→訂閱Responses協定與持久帳戶/研究次數→同一桌面worker生命週期→受限策略產生/改善與研究憑證→封裝/原生相依檢查→exact-head CI→正式版本升級與preview交付。真帳戶登入與模型呼叫需要使用者在官方流程授權，不能以fixture取代。
+
+- 啟動只讀本機狀態；首次初始化、授權、開啟官方網址、模型發現、refresh、推論均須明確操作。本應用自己的host/client/registration與DPAPI儲存，不讀其他軟體cookies/token，不提供貼上token欄位。一般API付費回退仍關閉。
+- auth/inference共用既有JobManager；取消、關閉、睡眠、工作區或帳戶切換前，確認整個子程序樹停止。Linux檢查活動程序而不把不可執行zombie誤判為正在推論；Windows保留Job handle直到active count歸零，未知則繼續阻擋。
+- run_campaign增加可選descriptor與嚴格receipt snapshot介面，研究核心保持stdlib-only。支出先預留、未知不退還；中斷後只有相同manager的已停止工作證明與不可變啟動快照可發起本機對帳，不呼叫模型、不重新選策略或使用holdout。
+- source/dependency manifest綁定真實root auth/provider來源與四個固定desktop-only套件；打包保留來源及distribution metadata。engine source變動必然產生新身分，舊研究可讀但原身分重跑會被拒絕；禁止冒用舊hash。
+- 既有真本機模型改善的v3兩次重複候選失敗保留；v4預先限一次呼叫，以最小提示補充產生fast=2/slow=6不同候選，技術去重通過。沒有新回測、OOS或holdout，因此不得稱為獲利改善或正式策略晉級；累計14次真免費本機推論，不追加無限制搜尋。
+- 版本發佈前必須通過原生RS256/JWK/nonce/audience、CFFI/parser、依賴漏洞、Windows DPAPI/鎖/程序樹及完整桌面/升級Gate。這些工程證據仍不代表真訂閱資格、額外credit設定或伺服器token上限已可控。
+
+外部仍待：使用者官方帳戶授權/明確有界呼叫、clean Win10 22H2 x64與Win11 x64、main管理權限、合規簽章。正式投資策略可信度則另取決於充分合法歷史與研究驗證，不能全部歸因外部授權。未達正式驗收前安裝檔保持preview標示。
+
+### 已合併0.2.0的固定項目計分（2026-10-10 01:33 UTC）
+
+mainfc2dfac／PR#3，head655f47df與本地e62d897完整tree853300ac一致，原本地成果保留。Quantlab38012730935七jobs及Windows38012730927全部必要Gate PASS；Windows465項456PASS9適用其他profile skip，真0.1.2升級／中斷恢復／設定保留通過，實際官方日來源HTTP VERIFIED。main後續安裝檔仍需發布並下載驗digest，不能僅以合併當交付。
+
+獨立逐項審查及exact-main UI重拍後，M1真實商品/來源20點與M5訊號/成交5點完成：新增25/100，原170/200保持，整體195/300＝65%，剩35%。此百分比因使用者增加100點必要市場/UI範圍而重算，並非把原85%已完成成果刪掉。M2保守保留PARTIAL（TX/MXF分鐘檔尚無產品匯入入口）；M3／M4缺口已於下一版修復但未完成新版Gate，M6正式選定路徑/實際帳戶證據未全滿，M7乾淨WindowsDPI仍BLOCKED。每個整項未全通過即0點，不因局部實作提高分數。
+
+0.2.0交付已完成：postmerge38013204925通過並發布[安裝檔及clean-client kit](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38013204925-1)，兩者實際下載hash與ZIPCRC核對PASS。這是可下載preview交付，不解除Win10/11乾淨實測限制。0.2.1驗收改以這份真實0.2.0為固定升級baseline，保留舊版本和原紀錄。

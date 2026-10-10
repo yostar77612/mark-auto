@@ -346,7 +346,9 @@ class MarketDashboard(QWidget):
         self.indicator_summary.setText(' / '.join(names)+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
         overlays={name:values if name=='VWAP 估計' else tuple(values[i] for i in keep) for name,values in overlays.items()}
         panes={f'{panel} {key}':tuple(values[i] for i in keep) for panel,entries in panels.items() for key,values in entries.items()}
-        self.chart.set_overlays(overlays,panes=panes,pane_styles={'MACD histogram':'histogram'} if 'MACD histogram' in panes else {})
+        if 'MACD histogram' in panes:
+            panes['MACD histogram 1×'] = panes.pop('MACD histogram')
+        self.chart.set_overlays(overlays,panes=panes,pane_styles={'MACD histogram 1×':'histogram'} if 'MACD histogram 1×' in panes else {})
 
     def preferences(self):
         return {'version':1,'watchlist':list(self._watch),'selected':self._selected,'timeframe':self._timeframe,'indicators':deepcopy(self._indicator_config),'theme':'dark'}

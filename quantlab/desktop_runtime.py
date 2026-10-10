@@ -592,7 +592,7 @@ class BackupManager:
 
 
 UI_OPERATIONS = frozenset({
-    'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_backtest', 'ui_campaign',
+    'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile', 'ui_backtest', 'ui_campaign',
     'ui_compare', 'ui_select', 'ui_disable', 'ui_paper_snapshot',
     'ui_paper_reconcile', 'ui_paper_kill', 'ui_paper_replay',
     'ui_paper_submit', 'ui_paper_cancel', 'ui_backup_create', 'ui_backup_restore',
@@ -612,7 +612,7 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id):
         paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
         if operation in UI_OPERATIONS:
             from desktop_ui import execute_ui_operation
-            result = execute_ui_operation(operation, payload, paths)
+            result = execute_ui_operation(operation, payload, paths, emit=emit, descendants_stopped=operation == 'ui_chatgpt_reconcile')
         else:
             from argparse import Namespace
             from .__main__ import execute
@@ -679,6 +679,25 @@ class _WindowsProcessTree:
             if child:
                 k.CloseHandle(child)
 
+    def stop_and_join(self):
+        """Keep the Job handle until Windows confirms all descendants exited."""
+        from ctypes import wintypes as w
+        class Accounting(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime','TotalKernelTime','ThisPeriodTotalUserTime','ThisPeriodTotalKernelTime')] + [(name,w.DWORD) for name in ('TotalPageFaultCount','TotalProcesses','ActiveProcesses','TotalTerminatedProcesses')]
+        k = self.kernel
+        k.TerminateJobObject.argtypes = [w.HANDLE,w.UINT]
+        k.QueryInformationJobObject.argtypes = [w.HANDLE,ctypes.c_int,ctypes.c_void_p,w.DWORD,ctypes.c_void_p]
+        if not self.handle or not k.TerminateJobObject(self.handle,1):
+            raise RuntimeSafetyError('Cannot stop worker process tree')
+        deadline = time.monotonic()+6
+        while True:
+            info = Accounting()
+            if not k.QueryInformationJobObject(self.handle,1,ctypes.byref(info),ctypes.sizeof(info),None):
+                raise RuntimeSafetyError('Cannot verify worker process tree')
+            if info.ActiveProcesses == 0: return
+            if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active')
+            time.sleep(.02)
+
     def close(self):
         if self.handle:
             self.kernel.CloseHandle(self.handle)
@@ -698,6 +717,11 @@ class JobManager:
         self.event_log = RedactedEventLog(paths.logs / 'desktop-events.jsonl')
         self._operation = None
         self.logging_enabled = True
+        self._deadline = None
+        self._auth_request_id = None
+        self._requires_tree_quiescence = False
+        self._subscription_job = False
+        self._quiesced_subscription_id = None
 
     def _log(self, event_type):
         if not self.logging_enabled:
@@ -724,7 +748,32 @@ class JobManager:
                 raise RuntimeSafetyError('Unsupported job parameters')
             if operation == 'demo' and (type(payload.get('bars', 240)) is not int or not 20 <= payload.get('bars', 240) <= 10000):
                 raise RuntimeSafetyError('Demo bars must be 20..10000')
+        deadline = None
+        auth_request_id = None
+        if operation == 'ui_chatgpt_auth':
+            request = payload.get('request')
+            if set(payload) != {'request'} or not isinstance(request, dict):
+                raise RuntimeSafetyError('Invalid authentication request')
+            allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
+            if set(request) != allowed or type(request['request_id']) is not int or request['request_id'] < 1 or type(request['max_runtime_seconds']) is not int or not 1 <= request['max_runtime_seconds'] <= 600:
+                raise RuntimeSafetyError('Invalid bounded authentication request')
+            auth_request_id = request['request_id']
+            deadline = time.monotonic() + request['max_runtime_seconds'] + 5
+        elif operation in ('ui_chatgpt_usage','ui_chatgpt_reconcile'):
+            if operation == 'ui_chatgpt_reconcile' and (not self._quiesced_subscription_id or payload.get('stopped_job_id') != self._quiesced_subscription_id):
+                raise RuntimeSafetyError('Subscription subtree stop proof required')
+            deadline = time.monotonic() + 60
+        elif operation == 'ui_campaign' and payload.get('provider', {}).get('mode') == 'chatgpt_plan':
+            seconds = payload.get('config', {}).get('max_runtime_seconds')
+            if type(seconds) is not int or not 1 <= seconds <= 7200:
+                raise RuntimeSafetyError('Explicit bounded subscription campaign required')
+            deadline = time.monotonic() + seconds + 10
+        self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
+        if self._subscription_job: self._quiesced_subscription_id = None
+        self._requires_tree_quiescence = operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or (operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan')
         self._operation = operation
+        self._deadline = deadline
+        self._auth_request_id = auth_request_id
         context = mp.get_context('spawn')
         receiver, sender = context.Pipe(duplex=False)
         gate = context.Event()
@@ -772,9 +821,16 @@ class JobManager:
                         return
                     raise  # Invalid handles, oversized packets, etc. fail closed.
                 event = json.loads(raw)
-                if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error'}:
+                if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error', 'auth_progress'}:
                     raise RuntimeSafetyError('Invalid worker response')
-                self._log(event['type'])
+                if event['type'] == 'auth_progress':
+                    auth_event = event.get('auth_event')
+                    allowed = {'request_id','kind','state','registrations','active_registration','authorization_url','error_code','revocation_confirmed','models'}
+                    if self._operation != 'ui_chatgpt_auth' or not isinstance(auth_event, dict) or set(auth_event) - allowed or auth_event.get('request_id') != self._auth_request_id or auth_event.get('kind') not in ('authorization', 'progress'):
+                        raise RuntimeSafetyError('Invalid private authentication event')
+                    # Transient OAuth query data must never enter persistent logs.
+                else:
+                    self._log(event['type'])
                 if event['type'] in {'result', 'error'}:
                     self._terminal = True
                     self._deferred.append(event)
@@ -784,6 +840,14 @@ class JobManager:
         try:
             drain()
             exited = not self.process.is_alive()
+            if not exited and self._deadline is not None and time.monotonic() >= self._deadline:
+                terminal = self._terminal
+                self.cancel()  # Stops/joins the whole tree before releasing the slot.
+                pending, self._pending = self._pending, []
+                events.extend(event for event in pending if event.get('type') != 'cancelled')
+                if not terminal:
+                    events.append({'job_id': self.job_id, 'type': 'error', 'message': '背景作業超過期限並已停止；遠端完成／額度可能未知，禁止自動重送或退還。', 'error_type': 'DeadlineExceeded'})
+                return events
             if exited:
                 self.process.join()
                 # The child can send and exit between initial poll and liveness
@@ -794,6 +858,7 @@ class JobManager:
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
             return events
         if exited:
+            if self._requires_tree_quiescence: self._join_descendants(self.process.pid)
             if not self._terminal:
                 self._log('error')
                 events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker stopped unexpectedly; incomplete output retained as partial'})
@@ -803,6 +868,8 @@ class JobManager:
         return events
 
     def _release(self):
+        if self._subscription_job:
+            self._quiesced_subscription_id = self.job_id
         if self.tree:
             self.tree.close()
         self.tree = None
@@ -813,15 +880,42 @@ class JobManager:
             self.process.close()
         self.process = None
         self._gate = None
+        self._deadline = None
+        self._auth_request_id = None
         if self._operation == 'ui_backup_restore':
             BackupManager(self.paths).recover()
+
+    def _join_descendants(self, pid):
+        if self.tree:
+            self.tree.stop_and_join()
+            return
+        if not pid or sys.platform == 'win32': return
+        try: os.killpg(pid, signal.SIGKILL)
+        except ProcessLookupError: return
+        deadline = time.monotonic()+6
+        while True:
+            try: os.killpg(pid,0)
+            except ProcessLookupError: return
+            # A reparented zombie cannot perform I/O. Linux may retain it until
+            # its new parent reaps it; prove every remaining group member is Z.
+            if sys.platform.startswith('linux'):
+                live = False
+                for item in Path('/proc').iterdir():
+                    if not item.name.isdigit(): continue
+                    try: fields=(item/'stat').read_text().rsplit(')',1)[1].split()
+                    except FileNotFoundError: continue
+                    if int(fields[2]) == pid and fields[0] != 'Z': live=True;break
+                if not live: return
+            if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')
+            time.sleep(.02)
 
     def cancel(self):
         if not self.active:
             return
         proc = self.process
         if self.tree:
-            self.tree.close()
+            if self._requires_tree_quiescence: self.tree.stop_and_join()
+            else: self.tree.close()
         elif proc.pid and proc.is_alive():
             if sys.platform != 'win32':
                 try:
@@ -837,6 +931,7 @@ class JobManager:
                 proc.join(3)
             if proc.is_alive():
                 raise RuntimeSafetyError('Worker did not stop; do not restore or close')
+        if self._requires_tree_quiescence: self._join_descendants(proc.pid)
         if self._terminal:
             # A terminal outcome already received is authoritative even if the
             # process still needed cleanup. Never relabel a failure as cancelled.

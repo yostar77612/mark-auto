@@ -75,7 +75,9 @@ class DashboardTests(unittest.TestCase):
     def test_all_indicator_controls_and_stale_snapshot(self):
         self.panel.set_market_series(series(),stale=True,error='來源更新失敗')
         for check,controls in self.panel._indicator_widgets.values(): check.setChecked(True)
-        self.assertIn('MACD histogram',self.panel.chart.panes)
+        self.assertIn('MACD histogram 1×',self.panel.chart.panes)
+        self.assertEqual(self.panel.chart.pane_styles['MACD histogram 1×'],'histogram')
+        self.assertNotIn('MACD histogram',self.panel.chart.panes)
         self.assertIn('VWAP 估計',self.panel.chart.overlays)
         self.assertTrue(all(value is None for value in self.panel.chart.overlays['VWAP 估計']))
         self.assertIn('過期快取',self.panel.cards['TMF'].text())

@@ -1,4 +1,4 @@
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.0',
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.1',
       [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.1.1',
       [Parameter(Mandatory=$true)][string]$BaselineInstaller,
       [Parameter(Mandatory=$true)][string]$BaselineManifest,

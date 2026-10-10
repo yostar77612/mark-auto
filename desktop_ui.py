@@ -18,7 +18,7 @@ from quantlab.reporting import (read_json, write_json, load_dataset, save_datase
                         save_selection, load_selection)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
-    'demo', 'import', 'refresh', 'market_refresh', 'backtest', 'campaign', 'compare', 'select', 'disable',
+    'demo', 'import', 'refresh', 'market_refresh', 'chatgpt_auth', 'chatgpt_usage', 'chatgpt_reconcile', 'backtest', 'campaign', 'compare', 'select', 'disable',
     'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
     'backup_create', 'backup_restore'))
 
@@ -90,6 +90,52 @@ def campaign_generator(paths, options):
         max_calls=options['max_calls'], max_tokens=options['max_tokens'], max_spend=options['max_spend'],
         tokens_per_call=options['tokens_per_call'], cost_per_token=options['cost_per_token'], timeout_seconds=options['timeout_seconds'],
         output_mode=options.get('output_mode', 'json_object'))
+
+
+def connection_event_from_payload(payload):
+    from desktop_chatgpt_ui import ConnectionEvent
+    if not isinstance(payload, dict): raise ValidationError('連線事件格式不符')
+    value = dict(payload)
+    value['registrations'] = tuple(tuple(row) for row in value.get('registrations', ()))
+    value['models'] = tuple(value.get('models', ()))
+    return ConnectionEvent(**value)
+
+
+def plan_provider(paths, data, config, options, *, for_usage=False):
+    """Fixed bootstrap/control identity, never workspace-relative or random."""
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import ChatGPTPlanProvider
+    from desktop_chatgpt_ui import SubscriptionOptions
+    from dataclasses import asdict
+    allowed = {'mode','registration','model','max_calls','timeout_seconds','network_opt_in',
+               'included_usage_policy_confirmed','paid_api_fallback','expected_binding'}
+    if not isinstance(options, dict) or set(options)-allowed: raise ValidationError('不支援的訂閱設定欄位')
+    raw = {key:value for key,value in options.items() if key != 'expected_binding'}
+    if for_usage:
+        if raw.get('network_opt_in') is not False or raw.get('included_usage_policy_confirmed') is not False:
+            raise ValidationError('紀錄核對不可授權網路或推論')
+        validation = {**raw, 'network_opt_in':True, 'included_usage_policy_confirmed':True}
+    else:
+        validation = raw
+    parsed = SubscriptionOptions(**validation)
+    public = {key:value for key,value in asdict(parsed).items() if key not in ('network_opt_in','included_usage_policy_confirmed')}
+    import hashlib
+    source_root = Path(__file__).parent
+    source_files = ('desktop_chatgpt_auth.py','desktop_chatgpt_provider.py','quantlab/core.py',
+                    'quantlab/backtest.py','quantlab/research.py','quantlab/strategies.py',
+                    'desktop_chatgpt_dependency_manifest.json')
+    sources = {name:hashlib.sha256((source_root/name).read_bytes()).hexdigest() for name in source_files}
+    identity = content_hash({'data_hash':data.manifest['data_hash'], 'config':config,
+                             'provider':public, 'implementation_sources':sources})
+    if not for_usage and options.get('expected_binding') != identity:
+        raise ValidationError('研究／模型／預算／來源已變更，請重新核對持久請求紀錄並明確同意')
+    controls = research_controls(paths)
+    reference = OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root), parsed.registration)
+    provider = ChatGPTPlanProvider(model=parsed.model, credential_reference=reference,
+        budget_path=controls/('chatgpt-plan-'+identity+'.sqlite3'), campaign_id=identity,
+        network_opt_in=not for_usage, included_usage_policy_confirmed=not for_usage,
+        max_calls=parsed.max_calls, timeout_seconds=parsed.timeout_seconds)
+    return provider, identity
 
 
 def candidate_record(root, reference):
@@ -164,19 +210,71 @@ def _dataset(root, payload):
     return data
 
 
+def paper_risk_limits():
+    """The same fixed enforced limits supply both brokers and the read-only UI."""
+    from quantlab.paper import RiskLimits
+    return RiskLimits(1, 1, Decimal('1000'), 30)
+
+
 def _paper(root):
-    from quantlab.paper import PaperBroker, RiskLimits
+    from quantlab.paper import PaperBroker
     policy = read_json(root / 'paper_policy.json')
     return PaperBroker(root / 'paper.sqlite3', instrument=Instrument(policy['contract_id']),
-                       costs=demo_config().costs, limits=RiskLimits(1, 1, Decimal('1000'), 30),
+                       costs=demo_config().costs, limits=paper_risk_limits(),
                        risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
 
 
-def execute_ui_operation(operation, payload, paths):
+def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_stopped=False):
     """Allowlisted process-worker adapter; no Qt objects are created here."""
     if operation not in UI_OPERATIONS:
         raise ValidationError('未知桌面作業')
     root = _root(paths)
+    if operation == 'ui_chatgpt_auth':
+        from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+        from dataclasses import asdict
+        if set(payload) != {'request'} or not isinstance(payload['request'], dict): raise ValidationError('連線請求格式不符')
+        request = ConnectionRequest(**payload['request'])
+        def private_event(event):
+            if emit is None: raise ValidationError('授權需要受管理程序與私人進度通道')
+            emit('auth_progress', auth_event=asdict(event))
+        if request.action == 'begin' and emit is None: raise ValidationError('授權需要受管理程序')
+        result = run_connection_request(request, bootstrap=str(getattr(paths,'bootstrap',None) or paths.root),
+            emit=private_event, cancelled=lambda:False)
+        if result.authorization_url is not None: raise ValidationError('授權網址不可進入結果紀錄')
+        return {'auth_event':asdict(result)}
+    if operation == 'ui_chatgpt_reconcile':
+        from quantlab.research import reconcile_interrupted_campaign
+        from quantlab.__main__ import config_from_json
+        if descendants_stopped is not True: raise ValidationError('背景子程序尚未確認停止，禁止核對')
+        if set(payload) != {'config','provider','binding','stopped_job_id'}: raise ValidationError('不支援的中斷核對欄位')
+        data = _dataset(root,{})
+        config = dict(payload['config']); config['backtest_config'] = config_from_json(config['backtest_config'])
+        generator, identity = plan_provider(paths,data,config,payload['provider'],for_usage=True)
+        if identity != payload['binding']: raise ValidationError('原始研究身分不符，維持未知封鎖')
+        name = content_hash({'dataset':data.manifest['data_hash'],'config':config,
+            'provider':provider_binding_options({'mode':'chatgpt_plan','binding':identity})})
+        # This operation is dispatched only after JobManager's subtree proof.
+        state = reconcile_interrupted_campaign(output_dir=root/'campaigns'/name,
+            generator=generator,descendants_stopped=True)
+        return {'binding':identity,'state':state['status']}
+    if operation == 'ui_chatgpt_usage':
+        from desktop_chatgpt_auth import OAuthCredentialReference
+        from desktop_chatgpt_provider import read_account_status
+        if set(payload)-{'registration','provider','config'}: raise ValidationError('不支援的請求紀錄核對欄位')
+        reference = OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),payload['registration'])
+        status = read_account_status(reference, research_controls(paths))
+        result = {'registration':payload['registration'], 'account_status':status}
+        if 'provider' in payload:
+            from quantlab.__main__ import config_from_json
+            data = _dataset(root, {})
+            config = dict(payload['config']);config['backtest_config'] = config_from_json(config['backtest_config'])
+            provider, identity = plan_provider(paths, data, config, payload['provider'], for_usage=True)
+            if provider.credential_reference.registration != payload['registration']: raise ValidationError('紀錄與帳戶不符')
+            receipts = provider.read_receipt_snapshot()['receipts']
+            if len(receipts)>10000: raise ValidationError('請求紀錄超過顯示上限')
+            result.update(receipts=[{'sequence':row['sequence'],'status':row['status']} for row in receipts], binding=identity,
+                          account_status=read_account_status(reference,research_controls(paths)))
+        return result
     if operation in ('ui_backup_create', 'ui_backup_restore'):
         from quantlab.desktop_runtime import BackupManager
         manager = BackupManager(paths)
@@ -284,7 +382,10 @@ def execute_ui_operation(operation, payload, paths):
         if isinstance(config.get('backtest_config'), dict):
             config['backtest_config'] = config_from_json(config['backtest_config'])
         options = payload.get('provider', {'mode':'fixture'})
-        if options.get('mode') == 'manual':
+        if options.get('mode') == 'chatgpt_plan':
+            generator, plan_identity = plan_provider(paths, data, config, options)
+            options = {'mode':'chatgpt_plan','binding':plan_identity}
+        elif options.get('mode') == 'manual':
             from quantlab.manual_exchange import export_request_file, import_response, import_response_file
             if payload.get('manual_export'):
                 request = export_request_file(data, config, Path(payload['manual_export']))
@@ -332,14 +433,14 @@ def execute_ui_operation(operation, payload, paths):
             if existing.exists() and read_json(existing) != policy:
                 raise ValidationError('紙上帳戶政策已鎖定；請使用新工作區')
             if not existing.exists():
-                from quantlab.paper import PaperBroker, RiskLimits
+                from quantlab.paper import PaperBroker
                 if not isinstance(policy, dict) or set(policy) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
                     raise ValidationError('政策必須包含 contract_id、risk_sessions、margin_schedule')
                 # Validate in a disposable journal first: invalid policy cannot poison startup.
                 import tempfile
                 with tempfile.TemporaryDirectory(prefix='policy-', dir=root) as staging:
                     PaperBroker(Path(staging) / 'validation.sqlite3', instrument=Instrument(policy['contract_id']),
-                                costs=demo_config().costs, limits=RiskLimits(1, 1, Decimal('1000'), 30),
+                                costs=demo_config().costs, limits=paper_risk_limits(),
                                 risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
                 write_json(existing, policy)
         broker = _paper(root)
@@ -485,6 +586,13 @@ class MainWindow(QMainWindow):
         self._advanced_values = {}
         self._market_outcomes = {}
         self._campaign_data_hash = None
+        self._chatgpt_job_request = None
+        self._chatgpt_job_id = None
+        self._plan_usage_binding = None
+        self._subscription_campaign = False
+        self._plan_launch = None
+        self._pending_plan_reconcile = False
+        self._pending_usage_refresh = False
         self.setWindowTitle('TMF 量化研究桌面｜研究與紙上模擬')
         self.resize(1366, 768)
         self.setStyleSheet('''
@@ -627,13 +735,14 @@ class MainWindow(QMainWindow):
         self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
         self.campaign_config = self._text(advanced, '研究設定 JSON（空白使用明示示範切分）', '', True)
         self._remember(self.campaign_config)
-        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); layout.addWidget(self.provider_mode)
+        self.provider_mode = QComboBox(); self.provider_mode.addItem('離線 Fixture（預設，非真實 AI）', 'fixture'); self.provider_mode.addItem('相容模型 HTTP（需設定、逐次同意；驗證未完成）', 'compatible'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); layout.addWidget(self.provider_mode)
         manual = QWidget(); manual_layout = QVBoxLayout(manual); layout.addWidget(manual); manual.hide()
         self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
         self.manual_path = self._text(manual_layout, '手動 AI 回應檔案（選檔或直接貼回回應；不自動連線）')
         self._button(manual_layout, '選取手動 AI 回應檔', 'browse_manual_response', lambda: self._browse(self.manual_path))
         self.manual_response = self._text(manual_layout, '貼回 AI 原始回應（不需手寫結構；勿含帳密）', '', True)
         self._button(manual_layout, '匯出手動 AI 請求與回應格式', 'export_manual_request', self.export_manual_request)
+        self._button(layout, '核對本次訂閱研究請求紀錄（不連網）', 'chatgpt_campaign_usage', self.inspect_plan_usage)
         self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign)
         self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
         self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); advanced.addWidget(self.candidate_detail)
@@ -678,6 +787,14 @@ class MainWindow(QMainWindow):
     def _paper_page(self):
         layout = self._page('紙上交易與復原')
         note = QLabel('沒有即時行情或真實券商。重新啟動後必須明確對帳。停止只禁止新委託，不會平倉。\n歷史重播採次棒成交；不支援盤中停損停利。預設示範費率與風控不代表真實條件。'); note.setWordWrap(True); layout.addWidget(note)
+        limits = paper_risk_limits()
+        self.paper_risk_summary = QLabel(
+            f'固定風控（唯讀）：部位最多 {limits.max_position} 口、單筆最多 {limits.max_order_quantity} 口、'
+            f'每日損失上限 {limits.max_daily_loss} TWD、報價最多 {limits.max_quote_age_seconds} 秒；'
+            f'連續虧損上限 {limits.max_consecutive_losses} 次、{limits.window_seconds} 秒內最多 {limits.max_orders_per_window} 筆。'
+            '停止新委託不會平倉。')
+        self.paper_risk_summary.setObjectName('paper_fixed_risk_summary')
+        self.paper_risk_summary.setWordWrap(True); layout.addWidget(self.paper_risk_summary)
         advanced = self._advanced(layout)
         self.policy_form = PaperPolicyForm(); layout.addWidget(self.policy_form)
         self.paper_policy = self._text(advanced, '鎖定政策 JSON（合約、交易時段、保證金版本；不可猜測）', '{}', True)
@@ -714,6 +831,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel('日誌：' + str(self.paths.logs)))
         self.workspace_path = self._text(layout, '下次啟動的工作區（不搬移、不覆寫現有資料）', str(self.paths.root))
         self._button(layout, '設定下次啟動工作區', 'configure_workspace', self.configure_workspace)
+        from desktop_chatgpt_ui import ChatGPTConnectionPanel, ConnectionController
+        self.chatgpt_controller = ConnectionController(self)
+        self.chatgpt_panel = ChatGPTConnectionPanel(self.chatgpt_controller); layout.addWidget(self.chatgpt_panel)
+        self.chatgpt_controller.set_host_available(True)
+        self.chatgpt_controller.quiesce_requested.connect(self._chatgpt_quiesce)
+        self.chatgpt_controller.request_ready.connect(self._chatgpt_dispatch)
+        self.chatgpt_controller.cancel_requested.connect(self._chatgpt_cancel)
+        self.chatgpt_controller.browser_requested.connect(self._chatgpt_open_browser)
         self.ai_endpoint = self._text(layout, '模型完整 chat/completions 端點（遠端 HTTPS / 本機 loopback HTTP）')
         self.ai_model = self._text(layout, '模型名稱')
         self.output_mode = QComboBox(); self.output_mode.addItem('一般 JSON DSL（相容模式）', 'json_object'); self.output_mode.addItem('JSON Schema：內建家族參數生成（服務須支援；不支援即失敗）', 'registry_json_schema')
@@ -803,6 +928,13 @@ class MainWindow(QMainWindow):
     def run_campaign(self):
         config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
         options = {'mode':self.provider_mode.currentData()}
+        if options['mode'] == 'chatgpt_plan':
+            from dataclasses import asdict
+            options = asdict(self.chatgpt_panel.build_plan_options())
+            options['expected_binding'] = self._plan_usage_binding
+            from quantlab.__main__ import config_from_json
+            checked = dict(config); checked['backtest_config'] = config_from_json(checked['backtest_config'])
+            plan_provider(self.paths, _dataset(self.root, {}), checked, options)
         if options['mode'] == 'manual':
             options.update(response_path=self.manual_path.text().strip(), response_text=self.manual_response.toPlainText())
         if options['mode'] == 'compatible':
@@ -814,7 +946,13 @@ class MainWindow(QMainWindow):
             if options['network_opt_in'] is not True: raise ValidationError('請至設定核對供應商、費率與預算，並勾選本次網路及費用同意')
             # Construction checks only; no HTTP or credential reads in the GUI.
             campaign_generator(self.paths, options)
-        self.start_job('ui_campaign', {'config':config, 'provider':options})
+        subscription_campaign = options['mode'] == 'chatgpt_plan'
+        launched_job = self.start_job('ui_campaign', {'config':config, 'provider':options})
+        self._subscription_campaign = subscription_campaign
+        if self._subscription_campaign:
+            local_options = {**options,'network_opt_in':False,'included_usage_policy_confirmed':False}
+            self._plan_launch = json.loads(canonical_json({'config':config,'provider':local_options,'binding':options['expected_binding'],'stopped_job_id':launched_job}))
+            self.chatgpt_controller.invalidate_campaign_usage()
         self.ai_opt_in.setChecked(False)
 
     def export_manual_request(self):
@@ -853,12 +991,120 @@ class MainWindow(QMainWindow):
         self.freeze_paper('使用者要求緊急停止')
         self.status.setText('背景作業已停止；紙上新委託已凍結，重新執行前需明確對帳。')
 
+    def _chatgpt_quiesce(self, request):
+        try:
+            self._quiesce_and_recover()
+            self.poll_jobs()
+            self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=not self.jobs.active)
+        except Exception:
+            self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=False)
+
+    def _chatgpt_dispatch(self, request):
+        try:
+            if self.jobs.active:
+                self._quiesce_and_recover()
+            self.poll_jobs()
+            self._chatgpt_job_request = request
+            self._chatgpt_job_id = self.start_job('ui_chatgpt_auth', {'request':request.payload()})
+        except Exception:
+            self.chatgpt_controller.worker_joined(request.request_id, joined=not self.jobs.active, terminal_received=False)
+            self._chatgpt_job_request = None
+            self.status.setText('連線背景作業無法啟動；請核對本機狀態。')
+
+    def _chatgpt_cancel(self, request_id):
+        self._pending_usage_refresh = False
+        if self.jobs.active: self.jobs.cancel()
+        if self.jobs.active: return
+        # Drain old packets before another operation may own the single manager.
+        self.poll_jobs()
+        self.chatgpt_controller.worker_joined(request_id, joined=True, terminal_received=False)
+        self._chatgpt_job_request = None
+        self._chatgpt_job_id = None
+        self.chatgpt_panel.consent.setChecked(False)
+
+    def _chatgpt_open_browser(self, url):
+        from desktop_chatgpt_ui import official_authorization_url
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+        if not QDesktopServices.openUrl(QUrl(official_authorization_url(url))):
+            self.status.setText('無法開啟官方授權頁面；請取消後再核對環境。')
+
+    def _plan_usage_request(self):
+        c = self.chatgpt_controller; panel = self.chatgpt_panel
+        if c.state != 'plan_ready' or not c.active_registration or panel.model.currentText() not in c.models:
+            raise ValidationError('請先明確核對連線與官方模型清單')
+        options = {'mode':'chatgpt_plan','registration':c.active_registration,
+            'model':panel.model.currentText(),'max_calls':panel.max_calls.value(),
+            'timeout_seconds':panel.timeout.value(),'network_opt_in':False,
+            'included_usage_policy_confirmed':False,'paid_api_fallback':False}
+        config = self._payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.backtest_form.build_payload()['config']))
+        return {'registration':c.active_registration,'provider':options,'config':config}
+
+    def _current_plan_binding(self):
+        from quantlab.__main__ import config_from_json
+        payload = self._plan_usage_request()
+        config = dict(payload['config']); config['backtest_config'] = config_from_json(config['backtest_config'])
+        return plan_provider(self.paths, _dataset(self.root, {}), config, payload['provider'], for_usage=True)[1]
+
+    def inspect_plan_usage(self):
+        if self.chatgpt_controller.busy: raise ValidationError('請先等待連線背景作業結束')
+        payload = self._plan_usage_request()
+        self.chatgpt_controller.invalidate_campaign_usage()
+        self._plan_usage_binding = None
+        self.start_job('ui_chatgpt_usage', payload)
+
+    def _chatgpt_event(self, event):
+        operation = self.last_operation
+        if operation not in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile'): return False
+        kind = event.get('type')
+        if operation == 'ui_chatgpt_reconcile':
+            if kind in ('result','completed','success','error','failed','cancelled','canceled'):
+                self.chatgpt_controller.account_status_known = False
+                self.chatgpt_controller.invalidate_campaign_usage()
+                self._pending_usage_refresh = True
+                self.status.setText('中斷研究紀錄已核對；仍需明確檢查狀態。' if kind == 'result' else '中斷研究核對失敗；維持未知封鎖，請勿重送。')
+            return True
+        if operation == 'ui_chatgpt_auth':
+            request = self._chatgpt_job_request
+            if request is None: return True
+            if self._chatgpt_job_id is not None and event.get('job_id') not in (None,self._chatgpt_job_id): return True
+            if kind == 'auth_progress':
+                self.chatgpt_controller.apply_event(connection_event_from_payload(event['auth_event']))
+            elif kind in ('result','completed','success','error','failed','cancelled','canceled'):
+                received = False
+                if kind in ('result','completed','success'):
+                    received = self.chatgpt_controller.apply_event(connection_event_from_payload(event['result']['auth_event']))
+                joined = not self.jobs.active
+                self.chatgpt_controller.worker_joined(request.request_id, joined=joined, terminal_received=received)
+                if joined:
+                    self._chatgpt_job_request = None; self._chatgpt_job_id = None
+                    self._pending_usage_refresh = bool(received and self.chatgpt_controller.active_registration)
+            return True
+        if kind in ('result','completed','success'):
+            result = event['result']; c = self.chatgpt_controller
+            if result.get('registration') != c.active_registration: return True
+            c.set_account_status(result['registration'],result['account_status'])
+            if 'receipts' in result:
+                if result.get('binding') != self._current_plan_binding():
+                    c.invalidate_campaign_usage(); self._plan_usage_binding = None
+                    self.status.setText('研究設定已變更，請重新核對請求紀錄。')
+                else:
+                    c.set_usage(result['registration'],result['receipts'],account_status=result['account_status'])
+                    self._plan_usage_binding = result['binding']
+                    self.status.setText('本次研究持久請求紀錄已核對；執行前仍需本次明確同意。')
+        elif kind in ('error','failed','cancelled','canceled'):
+            self.chatgpt_controller.account_status_known = False
+            self.chatgpt_controller.invalidate_campaign_usage()
+            self.status.setText('請求紀錄核對未完成；狀態未知，禁止自動重送。')
+        return True
+
     def start_job(self, operation, payload):
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
-        self.jobs.start(operation, payload)
+        job_id = self.jobs.start(operation, payload)
         self.last_operation = operation
         self.status.setText('背景作業進行中；可切換頁面或取消。')
         self._busy(True)
+        return job_id
 
     def _busy(self, active):
         for button in self.actions: button.setEnabled(not active)
@@ -883,6 +1129,13 @@ class MainWindow(QMainWindow):
         try:
             for event in self.jobs.poll():
                 kind = event.get('type', '')
+                if self._chatgpt_event(event): continue
+                if self._subscription_campaign and kind in ('result','error','failed','cancelled'):
+                    self.chatgpt_controller.invalidate_campaign_usage()
+                    self.chatgpt_controller.account_status_known = False
+                    self._pending_plan_reconcile = self._plan_launch is not None
+                    self._pending_usage_refresh = True
+                    self._subscription_campaign = False
                 self.record_event(self.last_operation, kind)
                 if kind in ('result', 'completed', 'success'):
                     result = event.get('result', {})
@@ -914,7 +1167,18 @@ class MainWindow(QMainWindow):
                     self.status.setText(str(event.get('message', '背景作業進行中')))
             if not self.jobs.active:
                 self._busy(False)
-                if getattr(self, '_kill_pending', False):
+                if getattr(self,'_close_after_reconcile',False):
+                    self._close_after_reconcile = False
+                    self.close()
+                    return
+                if self._pending_plan_reconcile and not self.chatgpt_controller.busy and not getattr(self,'_closing',False):
+                    self._pending_plan_reconcile = False
+                    self.start_job('ui_chatgpt_reconcile', self._plan_launch)
+                if not self.jobs.active and self._pending_usage_refresh and not self.chatgpt_controller.busy and not getattr(self, '_closing', False):
+                    self._pending_usage_refresh = False
+                    reference = self.chatgpt_controller.active_registration
+                    if reference: self.start_job('ui_chatgpt_usage', {'registration':reference})
+                if not self.jobs.active and getattr(self, '_kill_pending', False):
                     self._kill_pending = False
                     self.paper_job('kill')
         except Exception as exc:
@@ -1190,6 +1454,9 @@ class MainWindow(QMainWindow):
     def configure_workspace(self):
         from quantlab.desktop_runtime import WorkspaceLocator
         if self.jobs.active: raise ValidationError('請先停止背景作業')
+        self.chatgpt_panel.consent.setChecked(False)
+        self.chatgpt_controller.invalidate_campaign_usage()
+        self._plan_usage_binding = None
         root = WorkspaceLocator(getattr(self.paths, 'bootstrap', None) or self.paths.root).configure(Path(self.workspace_path.text().strip()))
         self.status.setText('下次啟動將使用：' + str(root) + '。請關閉後重新開啟；目前資料未搬移或覆寫。')
 
@@ -1243,6 +1510,13 @@ class MainWindow(QMainWindow):
 
     def freeze_paper(self, reason):
         self._quiesce_and_recover()
+        self.chatgpt_panel.consent.setChecked(False)
+        self._pending_usage_refresh = False
+        if self._chatgpt_job_request:
+            self.chatgpt_controller.worker_joined(self._chatgpt_job_request.request_id, joined=True, terminal_received=False)
+            self._chatgpt_job_request = None
+        self.chatgpt_controller.account_status_known = False
+        self.chatgpt_controller.invalidate_campaign_usage()
         self.paper_confirm.setChecked(False)
         if self.guard is not None: self.guard.reconciliation_required = True
         write_json(self.root / 'desktop_safety.json', {'reconciliation_required':True, 'reason':str(reason)})
@@ -1255,10 +1529,24 @@ class MainWindow(QMainWindow):
         if self.jobs.active and QMessageBox.question(self, '背景作業尚未完成', '取消背景作業並關閉？', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             event.ignore(); return
         try:
+            self._closing = True
+            self.chatgpt_panel.consent.setChecked(False)
             self.jobs.close()
             self._quiesce_and_recover()
+            if (self._subscription_campaign or self._pending_plan_reconcile) and self._plan_launch is not None:
+                self._subscription_campaign = False
+                self._pending_plan_reconcile = False
+                self.jobs.poll()  # joined old terminal packets cannot own the new worker
+                self.start_job('ui_chatgpt_reconcile', self._plan_launch)
+                self._close_after_reconcile = True
+                event.ignore()
+                return
+            if self._chatgpt_job_request:
+                self.chatgpt_controller.worker_joined(self._chatgpt_job_request.request_id, joined=True, terminal_received=False)
+                self._chatgpt_job_request = None
             if self.guard is not None: self.guard.finish()
         except Exception:
+            self._closing = False
             event.ignore(); self.status.setText('關閉失敗，背景作業尚未確認停止。'); return
         self._safe(self.save_market_preferences)
         self.timer.stop(); event.accept()

@@ -11,11 +11,11 @@ import urllib.request
 import os
 import sys
 
-BASE = 'https://github.com/yostar77612/mark-auto/releases/download/desktop-preview-38009150044-1/'
-SOURCE = '28c9f9020e5f44a7a986380e3a6d16bdb7235b2d'
+BASE = 'https://github.com/yostar77612/mark-auto/releases/download/desktop-preview-38013204925-1/'
+SOURCE = 'fc2dfacbf297004095e971ec10cf3620307417a2'
 ASSETS = {
-    'MarkAuto-0.1.2-windows-x64-setup.exe': ('0f92f70fb17bc3f0c2c816cbb5f963ecb2de6dde40745759f415a4755e85c469', 36695486),
-    'build-manifest.json': ('baaf01a01d8a830297604e1c6d9ebaf4f9b2be6f1a037c1acff09c21959daee6', 5751),
+    'MarkAuto-0.2.0-windows-x64-setup.exe': ('be1c749e9fc83ede8c9a0e18d9be99a3c7e3104b4798dda6ccb1834f29471f29', 36848324),
+    'build-manifest.json': ('7cf66be9406b842949cdf5501c2c28915a6baad532a46dcd4d911e818174e33d', 6539),
 }
 
 
@@ -47,11 +47,11 @@ def fetch(destination):
             if os.path.exists(temporary):
                 os.unlink(temporary)
     manifest = json.loads((destination / 'build-manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('source_commit') != SOURCE or manifest.get('artifacts_sha256', {}).get('MarkAuto-0.1.2-windows-x64-setup.exe') != ASSETS['MarkAuto-0.1.2-windows-x64-setup.exe'][0]:
+    if manifest.get('source_commit') != SOURCE or manifest.get('artifacts_sha256', {}).get('MarkAuto-0.2.0-windows-x64-setup.exe') != ASSETS['MarkAuto-0.2.0-windows-x64-setup.exe'][0]:
         raise ValueError('Baseline manifest provenance mismatch')
     return manifest
 
 
 if __name__ == '__main__':
     fetch(sys.argv[1])
-    print('Pinned released 0.1.2 baseline verified; not executed by this tool.')
+    print('Pinned released 0.2.0 baseline verified; not executed by this tool.')

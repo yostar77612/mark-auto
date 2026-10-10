@@ -364,6 +364,9 @@ class _Rows(QWidget):
         layout = QVBoxLayout(self)
         self.table = QTableWidget(0,len(columns)); self.table.setObjectName(name)
         self.table.setHorizontalHeaderLabels([label for _,label in columns]); layout.addWidget(self.table)
+        self.table.resizeColumnsToContents()
+        for index, (_, label) in enumerate(columns):
+            self.table.horizontalHeaderItem(index).setToolTip(label)
         buttons = QHBoxLayout(); layout.addLayout(buttons)
         add = QPushButton('新增一列'); add.setObjectName(name+'_add'); add.clicked.connect(self.add_row)
         remove = QPushButton('刪除選取列'); remove.setObjectName(name+'_remove'); remove.clicked.connect(self.remove_row)
