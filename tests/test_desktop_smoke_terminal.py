@@ -16,6 +16,8 @@ import time
 import unittest
 from unittest.mock import Mock
 
+from tests.smoke_timeout_diagnostics import run_smoke_process
+
 from desktop import _close_smoke_worker
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 
@@ -72,7 +74,7 @@ class GenericSmokeTerminalProcessTests(unittest.TestCase):
             home = Path(temporary).resolve(); report = home / 'report.json'; pidfile = home / 'worker-pids.json'
             writes = home / 'report-writes.jsonl'
             bootstrap = home / 'LocalAppData/MarkAuto' if sys.platform == 'win32' else home / '.local/share/MarkAuto'
-            code = '''import sys, os, json
+            code = '''import sys, os, json, time, faulthandler
 from pathlib import Path
 import desktop
 import quantlab.desktop_runtime as runtime
@@ -87,23 +89,43 @@ def audited_write(path, raw):
   with Path(sys.argv[3]).open('a') as stream: stream.write(json.dumps(json.loads(raw)) + '\\n')
  return original_write(path, raw)
 runtime.atomic_write = audited_write
+diagnostic_started = time.monotonic()
+def trace(stage, **values):
+ print('SMOKE_DIAGNOSTIC ' + json.dumps(dict(stage=stage, elapsed_ms=int((time.monotonic()-diagnostic_started)*1000), **values)), file=sys.stderr, flush=True)
+original_poll = JobManager.poll
+def tracked_poll(self):
+ events = original_poll(self)
+ for event in events:
+  if event['type'] in ('result', 'error', 'cancelled'): trace('terminal', operation=self._operation, event=event['type'])
+ return events
+JobManager.poll = tracked_poll
+diagnostic_original_cleanup = desktop._close_smoke_worker
+def tracked_cleanup(manager):
+ trace('cleanup_start')
+ result = diagnostic_original_cleanup(manager)
+ trace('cleanup_end', verified=result['verified'])
+ return result
+desktop._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):
+ trace('start_requested', operation=operation)
  value = original_start(self, operation, payload)
+ trace('started', operation=operation, pid=self.process.pid)
  pids.append(self.process.pid)
  Path(sys.argv[2]).write_text(json.dumps(pids))
  return value
 JobManager.start = tracked_start
 '''
-            code += injected + "\nraise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
+            code += injected + "\nfaulthandler.dump_traceback_later(35)\ntry:\n status = desktop.main(['--smoke-test', sys.argv[1]])\n trace('main_return', status=status)\nfinally: faulthandler.cancel_dump_traceback_later()\nraise SystemExit(status)\n"
             (home / 'sitecustomize.py').write_text("import socket\ndef denied(*args, **kwargs): raise AssertionError('No network')\nsocket.create_connection = socket.getaddrinfo = denied\noriginal = socket.socket.connect\ndef connect(self, address):\n if self.family in (socket.AF_INET, socket.AF_INET6): return denied()\n return original(self, address)\nsocket.socket.connect = socket.socket.connect_ex = connect\n")
             env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), LOCALAPPDATA=str(home / 'LocalAppData'),
                        APPDATA=str(home / 'AppData'), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'),
                        PYTHONPATH=str(home) + os.pathsep + str(ROOT))
             started = time.monotonic()
-            result = subprocess.run([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
-                                    env=env, capture_output=True, text=True, timeout=40)
+            result = run_smoke_process([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
+                env=env, report=report, pidfile=pidfile, writes=writes, process_can_run=process_can_run,
+                artifact_dir=ROOT / 'dist/validation', timeout=40)
             self.assertLess(time.monotonic() - started, 40)
             self.assertEqual(result.returncode, 0 if expected == 'passed' else 1, result.stderr[-3000:])
             self.assertTrue(report.exists(), result.stderr[-3000:])

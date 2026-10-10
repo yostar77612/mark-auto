@@ -553,7 +553,7 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-10T05:32:00Z",
+    "as_of_utc": "2026-10-10T06:20:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
       "version": "0.2.1",
@@ -569,49 +569,41 @@
     "candidate": {
       "version": "0.2.2",
       "pr": 5,
-      "branch": "agent/market-history-acceptance-v1",
-      "remote_head_short": "12e088f",
-      "local_equivalent_short": "2021cd7",
-      "identical_tree_short": "f1753d1",
-      "status": "DRAFT_FAIL_REPAIR_IN_PROGRESS_PUSHED_INTEGRATED_CANDIDATE",
-      "merged": false,
+      "branch": "main",
+      "remote_head_short": "94aca467",
+      "local_equivalent_short": "552a2d4",
+      "identical_tree_short": "53c2a99",
+      "status": "MERGED_POSTMERGE_FAIL_REPAIR",
+      "merged": true,
       "published": false,
-      "latest_ci_observation": "Quantlab38026398885: Linux311 total1000,982 PASS/18 skips,372.491s; Linux312982 PASS/18 skips,368.935s; UI987 PASS/13 skips,411.012s; audits/static PASS. Windows311 and312 jobs hit the unchanged15-minute job limit and were CANCELLED, not PASS; their original960-bar/30s Paper cases individually passed. Server38026398890 ran1000 tests in918.891s, FAILED with4 failures,2 errors,14 skips including Paper30. Build stopped before a new EXE.",
+      "latest_ci_observation": "Postmerge Quantlab38029388781 final8/10 PASS: both Windows research, Linux/UI/static/audits passed. Windows311 core796:785 PASS,10 skips,1 Paper30s failure,465.966s. Windows312 core796:784 PASS,10 skips,1 Paper30s failure and1 GenericSmokeTerminal SystemExit40s timeout error,472.222s. Postmerge Server38029388676 still running. No0.2.2 release; earlier PR all-native PASS does not override these failures.",
       "unpublished_local_repairs": {
-        "diagnostic_wrapper_arity": {
-          "tests": 18,
-          "status": "PASS",
-          "seconds": 2.781
-        },
-        "wfo_two_test_file_fix": {
-          "tests": 33,
-          "status": "PASS",
-          "seconds": 36.641,
-          "scope": "Real nested pause retained; reservations, cancellation, security assertions and original timeouts preserved."
-        },
-        "sqlite_teardown": "Additional Windows311/312 teardown connection issue addressed with explicit close; final native verification pending.",
-        "ui_fixture_independent_review": {
-          "status": "PASS",
-          "scope": "Test-only patch with 3 new cases; exact assertions retained.",
-          "focused_tests": 57,
-          "independent_tests": 25
-        },
-        "ci_partition_independent_review": {
-          "status": "PASS",
-          "files": 5,
-          "tests": 14
-        },
+        "status": "LOCAL_VERIFIED_NATIVE_PENDING_NOT_A_ROOT_CAUSE_FIX",
+        "planned_scope": [
+          "Smoke timeout diagnostic capture",
+          "Verified child-process subtree cleanup",
+          "Preserve partial report and artifacts after timeout"
+        ],
+        "root_cause": "NOT_ESTABLISHED",
+        "product_features_added": false,
         "product_storage_changes": "NONE",
         "temporary_storage_move": "NONE",
-        "counts_policy": "Focused sets overlap; do not add as unique tests or substitute for full final CI.",
-        "final_mixed_root_regression": {
-          "total": 85,
-          "passed": 84,
-          "skipped": 1,
-          "seconds": 11.791,
-          "scope": "One existing PowerShell skip; focused mixed regression, not full-suite execution. Sets overlap earlier focused counts."
+        "timeout_changes": "NONE",
+        "native_validation": "REQUIRED_FOR_NEXT_SOURCE_HEAD",
+        "branch": "agent/windows-release-validation",
+        "focused_root_tests": {
+          "passed": 28,
+          "skipped": 0,
+          "scope": "5 diagnostics + 9 original terminal + 9 partition + 5 release provenance; overlapping independent runs not added"
         },
-        "changes_scope": "Diagnostic tool, test fixtures, CI partition and gate helper only; no product storage, TEMP relocation, security change or acceptance-budget relaxation."
+        "static_history_findings": 0,
+        "discovery": {
+          "all": 1021,
+          "core": 801,
+          "research": 220,
+          "scope": "Discovery only, not full suite execution"
+        },
+        "independent_review": "Approved sanitized evidence and real subtree cleanup; native Windows nested Job Object execution pending"
       },
       "full_ci_details_key": "candidate_022_ci",
       "local_suite": {
@@ -641,8 +633,8 @@
         "scope": "Unchanged suite in an isolated actual Linux 3.11 environment. Existing local applicability skips retained. This is not the final combined root or native integrated suite."
       },
       "final_root_suite": {
-        "status": "FINAL_FIXES_PREPARED_NATIVE_AND_FULL_CI_PENDING",
-        "scope": "Latest pushed head Linux/UI1000 passed, Windows jobs cancelled and Server1000 failed. Local final mixed85 and independent/focused checks passed; discovery1016 is not full-suite execution. New final exact-head native and required CI results remain pending."
+        "status": "NO_NEW_FINAL_ROOT_FULL_SUITE_CLAIMED",
+        "scope": "Earlier root/candidate local counts remain historical. Current conclusion relies on exact-head PR success and separately failed postmerge native jobs; upcoming test-only diagnostic work is not yet verified."
       },
       "previous_checkpoint_evidence": [
         {
@@ -765,59 +757,194 @@
             "paper_timeout_seconds": 30,
             "process_death_timeout_seconds": 10
           }
+        },
+        {
+          "as_of_utc": "2026-10-10T05:32:00Z",
+          "scope": "Superseded 05:32 changed current fields only; unchanged earlier suites and diagnostic evidence remain at their existing paths. Retain original failed/cancelled evidence and prepared-fix results.",
+          "branch": "agent/market-history-acceptance-v1",
+          "remote_head_short": "12e088f",
+          "local_equivalent_short": "2021cd7",
+          "identical_tree_short": "f1753d1",
+          "status": "DRAFT_FAIL_REPAIR_IN_PROGRESS_PUSHED_INTEGRATED_CANDIDATE",
+          "merged": false,
+          "published": false,
+          "latest_ci_observation": "Quantlab38026398885: Linux311 total1000,982 PASS/18 skips,372.491s; Linux312982 PASS/18 skips,368.935s; UI987 PASS/13 skips,411.012s; audits/static PASS. Windows311 and312 jobs hit the unchanged15-minute job limit and were CANCELLED, not PASS; their original960-bar/30s Paper cases individually passed. Server38026398890 ran1000 tests in918.891s, FAILED with4 failures,2 errors,14 skips including Paper30. Build stopped before a new EXE.",
+          "unpublished_local_repairs": {
+            "diagnostic_wrapper_arity": {
+              "tests": 18,
+              "status": "PASS",
+              "seconds": 2.781
+            },
+            "wfo_two_test_file_fix": {
+              "tests": 33,
+              "status": "PASS",
+              "seconds": 36.641,
+              "scope": "Real nested pause retained; reservations, cancellation, security assertions and original timeouts preserved."
+            },
+            "sqlite_teardown": "Additional Windows311/312 teardown connection issue addressed with explicit close; final native verification pending.",
+            "ui_fixture_independent_review": {
+              "status": "PASS",
+              "scope": "Test-only patch with 3 new cases; exact assertions retained.",
+              "focused_tests": 57,
+              "independent_tests": 25
+            },
+            "ci_partition_independent_review": {
+              "status": "PASS",
+              "files": 5,
+              "tests": 14
+            },
+            "product_storage_changes": "NONE",
+            "temporary_storage_move": "NONE",
+            "counts_policy": "Focused sets overlap; do not add as unique tests or substitute for full final CI.",
+            "final_mixed_root_regression": {
+              "total": 85,
+              "passed": 84,
+              "skipped": 1,
+              "seconds": 11.791,
+              "scope": "One existing PowerShell skip; focused mixed regression, not full-suite execution. Sets overlap earlier focused counts."
+            },
+            "changes_scope": "Diagnostic tool, test fixtures, CI partition and gate helper only; no product storage, TEMP relocation, security change or acceptance-budget relaxation."
+          },
+          "final_root_suite": {
+            "status": "FINAL_FIXES_PREPARED_NATIVE_AND_FULL_CI_PENDING",
+            "scope": "Latest pushed head Linux/UI1000 passed, Windows jobs cancelled and Server1000 failed. Local final mixed85 and independent/focused checks passed; discovery1016 is not full-suite execution. New final exact-head native and required CI results remain pending."
+          },
+          "current_source_identity": "Pushed clean baseline remote12e088f/local2021cd7 with exact tree f1753d1de9d4949ab75f97f796f06ffb27ed565d; subsequent local repairs are separate.",
+          "latest_remote_ci": {
+            "head": "12e088f",
+            "quantlab_run": 38026398885,
+            "linux311": {
+              "total": 1000,
+              "passed": 982,
+              "skipped": 18,
+              "seconds": 372.491,
+              "status": "PASS"
+            },
+            "linux312": {
+              "total": 1000,
+              "passed": 982,
+              "skipped": 18,
+              "seconds": 368.935,
+              "status": "PASS"
+            },
+            "ui": {
+              "total": 1000,
+              "passed": 987,
+              "skipped": 13,
+              "seconds": 411.012,
+              "status": "PASS"
+            },
+            "audits_static": "PASS",
+            "windows311": {
+              "job_status": "CANCELLED_AT_15_MINUTE_JOB_LIMIT",
+              "paper960bar30s_case": "PASS",
+              "whole_job_pass": false
+            },
+            "windows312": {
+              "job_status": "CANCELLED_AT_15_MINUTE_JOB_LIMIT",
+              "paper960bar30s_case": "PASS",
+              "whole_job_pass": false
+            },
+            "windows_server_run": 38026398890,
+            "windows_server": {
+              "total": 1000,
+              "failures": 4,
+              "errors": 2,
+              "skipped": 14,
+              "seconds": 918.891,
+              "status": "FAILED",
+              "paper30s_case": "FAIL"
+            },
+            "new_exe": "NOT_BUILT_BUILD_STOPPED_BEFORE_NEW_EXE",
+            "release": "NOT_PUBLISHED"
+          },
+          "identical_tree": "f1753d1de9d4949ab75f97f796f06ffb27ed565d",
+          "mapping_scope": "These fields map the pushed integrated 0.2.2 candidate on the existing PR5. Follow-on local fixture/wrapper/partition repairs require their own final source validation.",
+          "source_failures_current": [
+            "Invalid /tmp absolute-path fixture on Windows.",
+            "Raw JSON versus escaped-path assertion.",
+            "Canonical8.3 path fixture.",
+            "Source read_text omitted explicit UTF-8 under Windows locale.",
+            "Real cancellation-test SQLite observer induced writer lock.",
+            "Original30-second Paper performance gate failed on Server."
+          ],
+          "ci_partition_status": "IMPLEMENTED_INDEPENDENT_REVIEW_PASS_FINAL_NATIVE_PENDING",
+          "ci_partition_interpretation": "Partition changes workload distribution while preserving exact full coverage and all original budgets. Discovery and focused checks are not final execution evidence.",
+          "performance_diagnostic_status": "NATIVE_DIAGNOSTIC_EVIDENCE_OBTAINED_PERFORMANCE_NOT_FIXED"
         }
       ],
-      "current_source_identity": "Pushed clean baseline remote12e088f/local2021cd7 with exact tree f1753d1de9d4949ab75f97f796f06ffb27ed565d; subsequent local repairs are separate.",
+      "current_source_identity": "Merged main94aca467, exact tree53c2a9930cf6fd05536fe2470af7d223d0535d6b. Earlier PR head06bcc3a and local552a2d4 map to this product tree; any later diagnostic/test-only changes require their own source identity and native validation.",
       "latest_remote_ci": {
-        "head": "12e088f",
-        "quantlab_run": 38026398885,
+        "head": "94aca46777bd19619c9cbc0721a888173395243e",
+        "quantlab_run": 38029388781,
+        "status": "FAIL",
+        "jobs_passed": 8,
+        "jobs_total": 10,
+        "linux_ui_static_audits": "PASS",
+        "windows_research311": "PASS",
+        "windows_research312": "PASS",
+        "windows311_core": {
+          "total": 796,
+          "passed": 785,
+          "skipped": 10,
+          "failures": 1,
+          "errors": 0,
+          "seconds": 465.966,
+          "paper960bar30s_case": "FAIL"
+        },
+        "windows312_core": {
+          "job": 114146946655,
+          "total": 796,
+          "passed": 784,
+          "skipped": 10,
+          "failures": 1,
+          "errors": 1,
+          "seconds": 472.222,
+          "paper960bar30s_case": "FAIL",
+          "generic_smoke_SystemExit40s_case": "ERROR_TIMEOUT",
+          "log": "quant-audit/ci-auth-targets/native-94aca467/windows312-core.log"
+        },
+        "windows_server_run": 38029388676,
+        "windows_server_status": "IN_PROGRESS_NO_FINAL_RESULT",
+        "release": "NOT_PUBLISHED",
         "linux311": {
-          "total": 1000,
-          "passed": 982,
+          "total": 1016,
+          "passed": 998,
           "skipped": 18,
-          "seconds": 372.491,
+          "seconds": 382.055,
           "status": "PASS"
         },
         "linux312": {
-          "total": 1000,
-          "passed": 982,
+          "total": 1016,
+          "passed": 998,
           "skipped": 18,
-          "seconds": 368.935,
+          "seconds": 305.411,
           "status": "PASS"
         },
         "ui": {
-          "total": 1000,
-          "passed": 987,
+          "total": 1016,
+          "passed": 1003,
           "skipped": 13,
-          "seconds": 411.012,
+          "seconds": 448.669,
           "status": "PASS"
         },
-        "audits_static": "PASS",
-        "windows311": {
-          "job_status": "CANCELLED_AT_15_MINUTE_JOB_LIMIT",
-          "paper960bar30s_case": "PASS",
-          "whole_job_pass": false
+        "windows311_research": {
+          "total": 220,
+          "passed": 216,
+          "skipped": 4,
+          "seconds": 611.21,
+          "status": "PASS"
         },
-        "windows312": {
-          "job_status": "CANCELLED_AT_15_MINUTE_JOB_LIMIT",
-          "paper960bar30s_case": "PASS",
-          "whole_job_pass": false
-        },
-        "windows_server_run": 38026398890,
-        "windows_server": {
-          "total": 1000,
-          "failures": 4,
-          "errors": 2,
-          "skipped": 14,
-          "seconds": 918.891,
-          "status": "FAILED",
-          "paper30s_case": "FAIL"
-        },
-        "new_exe": "NOT_BUILT_BUILD_STOPPED_BEFORE_NEW_EXE",
-        "release": "NOT_PUBLISHED"
+        "windows312_research": {
+          "total": 220,
+          "passed": 216,
+          "skipped": 4,
+          "seconds": 624.649,
+          "status": "PASS"
+        }
       },
       "performance_diagnostic_next": {
-        "status": "NATIVE_DIAGNOSTIC_EVIDENCE_OBTAINED_PERFORMANCE_NOT_FIXED",
+        "status": "POSTMERGE_TIMEOUTS_UNRESOLVED_TEST_ONLY_DIAGNOSTICS_PLANNED",
         "artifact_sha256_prefix": "54cc9098",
         "full_digest_claimed": false,
         "complete_cases": 10,
@@ -851,10 +978,11 @@
         "paper_timeout_seconds": 30,
         "process_death_timeout_seconds": 10,
         "workflow_follow_up": "The completed one-off connection-study workflow steps were removed. The tool and evidence are preserved; post-failure Paper diagnostics run on the core shard only. No product storage or TEMP move.",
-        "test_data_location": "Original tests already use C: OS-temp. TEMP and test-data locations were not moved, including no relocation to D: RUNNER_TEMP; disposable diagnostic comparisons are separate."
+        "test_data_location": "Original tests already use C: OS-temp. TEMP and test-data locations were not moved, including no relocation to D: RUNNER_TEMP; disposable diagnostic comparisons are separate.",
+        "next": "Collect failure evidence and verify child-tree cleanup; no storage/mode/TEMP changes or weakened budgets."
       },
-      "identical_tree": "f1753d1de9d4949ab75f97f796f06ffb27ed565d",
-      "mapping_scope": "These fields map the pushed integrated 0.2.2 candidate on the existing PR5. Follow-on local fixture/wrapper/partition repairs require their own final source validation.",
+      "identical_tree": "53c2a9930cf6fd05536fe2470af7d223d0535d6b",
+      "mapping_scope": "Main merge identity is current. local_equivalent_short identifies the last exact-tree tested local checkpoint, not any subsequent uncommitted working-tree modifications. Remote merged branch was deleted automatically.",
       "source_equivalent_candidate_suite": {
         "total": 981,
         "passed": 966,
@@ -873,15 +1001,11 @@
         "scope": "Earlier actual root 773-test complete suite after terminal/path/connection-cleanup repairs. Predates the 25-file WFO/reporting copy and final CandidateSummary/diagnostic additions; not the final combined run."
       },
       "source_failures_current": [
-        "Invalid /tmp absolute-path fixture on Windows.",
-        "Raw JSON versus escaped-path assertion.",
-        "Canonical8.3 path fixture.",
-        "Source read_text omitted explicit UTF-8 under Windows locale.",
-        "Real cancellation-test SQLite observer induced writer lock.",
-        "Original30-second Paper performance gate failed on Server."
+        "Postmerge Windows311 and312 typed120000 960-bar Paper replay did not complete within original30 seconds.",
+        "Postmerge Windows312 GenericSmokeTerminal SystemExit subcase exceeded original40-second subprocess timeout."
       ],
       "ci_partition_plan": {
-        "status": "IMPLEMENTED_INDEPENDENT_REVIEW_PASS_FINAL_NATIVE_PENDING",
+        "status": "PR_EXACT_NATIVE_EXECUTION_VERIFIED_POSTMERGE_CORE_FAILED",
         "files": 5,
         "independent_tests": 14,
         "shards_per_windows_python": 2,
@@ -911,13 +1035,60 @@
         "completed_one_off_study_workflow_steps": "REMOVED_AFTER_EVIDENCE_RETAINED",
         "diagnostic_tool_and_evidence": "PRESERVED",
         "post_failure_paper_diagnostic": "CORE_ONLY",
-        "interpretation": "Partition changes workload distribution while preserving exact full coverage and all original budgets. Discovery and focused checks are not final execution evidence."
+        "interpretation": "PR downloaded inventories prove1016 exact unique tests per profile and actual execution, not discovery alone. The same partition does not excuse postmerge core failures; all10 named jobs remain required."
+      },
+      "merge_commit": "94aca46777bd19619c9cbc0721a888173395243e",
+      "merged_at_utc": "2026-10-10T05:59:46Z",
+      "release_guard_review": {
+        "status": "INDEPENDENT_REVIEW_PASS",
+        "rule": "Requires successful exact-SHA push gates; PR same-tree evidence cannot substitute. Non-success is rejected before gh release. Candidate artifacts may upload without being a published release.",
+        "sources": [
+          "packaging/wait_for_gates.py:28-48",
+          ".github/workflows/windows-desktop.yml:111-136"
+        ]
+      },
+      "last_pr_complete_evidence": {
+        "head": "06bcc3a96ad144d1f4eaadf1badcf7d031198dfe",
+        "pr_merge_sha": "b4e485009c409f66d2434d6599f574bde4e30c5a",
+        "tree": "53c2a9930cf6fd05536fe2470af7d223d0535d6b",
+        "quantlab_required_jobs_passed": 10,
+        "inventory": {
+          "unique_per_profile": 1016,
+          "core": 796,
+          "research": 220,
+          "exact_disjoint_union": true,
+          "selected_equals_actual_started": true,
+          "windows_passed_per_profile": 1002,
+          "windows_skips_per_profile": 14
+        },
+        "windows_server_run": 38028085841,
+        "windows_server_tests": {
+          "total": 1016,
+          "passed": 1002,
+          "skipped": 14,
+          "seconds": 811.53
+        },
+        "native_frozen_history": "PASS",
+        "native_frozen_wfo": {
+          "status": "PASS",
+          "folds": 2,
+          "evaluations": 22,
+          "source": "synthetic",
+          "model_calls": 0,
+          "paper_eligible": false,
+          "ranking_eligible": false
+        },
+        "installer_actual021_upgrade_interrupted_recovery_uninstall_data_preservation": "PASS_WINDOWS_SERVER_ONLY",
+        "source_inputs_verified": 60,
+        "pr_asset_hash_crc": "VERIFIED_NOT_POSTMERGE_RELEASE_DIGESTS",
+        "evidence_root": "quant-audit/ci-auth-targets/native-06bcc3a",
+        "scope": "Earlier PR full-native candidate evidence; postmerge failures remain release vetoes."
       }
     },
     "priority_release_blockers": [
-      "The last pushed 12e088f Windows jobs remain CANCELLED/FAILED as recorded; no new EXE was built. Individual Paper PASS on cancelled lanes and I/O measurements do not establish a repaired performance gate.",
-      "Correctness fixes are prepared: UI test-only review 57 focused/25 independent PASS, WFO33 PASS, arity18 PASS, mixed root85 with one existing skip. These sets overlap and require final complete/native CI on the repaired source.",
-      "The two-shard-per-Windows-Python partition passed 14 independent tests and exact discovery coverage of 1016 unique tests. All 10 named release jobs, original OS/Python, per-test limits and 15-minute job limits remain required; final execution is pending."
+      "Postmerge main94aca467 Quantlab38029388781 failed two required Windows core jobs: Paper30s on both, plus GenericSmokeTerminal SystemExit40s timeout on312. Earlier PR PASS does not override this veto.",
+      "Postmerge Windows Server38029388676 is still in progress. Release verification is not complete and0.2.2 is not published.",
+      "Diagnostic/test-only timeout evidence, verified subtree cleanup and artifact preservation are being prepared; no root-cause fix or new native PASS claimed. Original30/40/10-second per-test limits and15-minute Quantlab job limits remain unchanged."
     ],
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
@@ -934,8 +1105,8 @@
         "direct_user_requirement_evidence_for_extensions": "NOT_FOUND_IN_REVIEWED_SOURCES; do not infer authorization or mandatory acceptance from the assistant-authored design table header.",
         "preservation": "Keep proposal text and implementation limits; do not delete, mark completed, or promote extensions to required acceptance without explicit adoption."
       },
-      "walk_forward": "INTEGRATED_PUSHED_PR5_NOT_RELEASED_NATIVE_GATE_FAILED: fixed/saved WFO desktop flow is in 12e088f. Linux/UI suites passed; later WFO test-only correctness fixes passed 33 focused tests with original reservation/cancel/security assertions and timeouts intact. Final native verification remains pending. No adaptive AI, formal ranking or real unseen-market certification.",
-      "extended_reports_and_reference_layers": "INTEGRATED_PUSHED_PR5_NOT_RELEASED_NATIVE_GATE_FAILED: PF/descriptive Sharpe, cost/protective snapshots and normal presentation are included in 12e088f. Linux/UI suites passed; subsequent UI fixture test-only fixes passed 57 focused and 25 independent checks, but final native execution is pending. No production-readiness claim.",
+      "walk_forward": "MERGED_MAIN94ACA467_NOT_RELEASED_POSTMERGE_GATE_FAILED: fixed/saved WFO is implemented, PR1016 and native synthetic2-fold22-evaluation frozen smoke passed; postmerge failures block release. Not adaptive AI, independent real-market research, ranking or Paper certification.",
+      "extended_reports_and_reference_layers": "MERGED_MAIN94ACA467_NOT_RELEASED_POSTMERGE_GATE_FAILED: PF/descriptive Sharpe, protective/cost snapshots and normal Traditional Chinese report/candidate presentation were covered by the passing PR suites, but postmerge native gates failed. No release or M4 PASS claim.",
       "actual_oct8_wfo": {
         "status": "BLOCKED_NO_RUN",
         "reason": "Existing authoritative consumed coverage intersects 170 bars of the full planned protected range.",
@@ -947,7 +1118,7 @@
       "saved_pool_latest_review": {
         "tests": 157,
         "result": "PASS",
-        "scope": "Earlier independent157-test saved-pool checkpoint. The module is now integrated and pushed in12e088f; Linux/UI1000 PASS does not remove failed/cancelled Windows gates, real-data restrictions or later-repair validation needs."
+        "scope": "Historical independent157-test checkpoint; module is now merged and covered by passing PR1016/native candidate evidence, while postmerge failures and actual Oct8 data restrictions remain."
       }
     },
     "fixed_historical_score": {
@@ -977,8 +1148,8 @@
       "seconds": 270.314,
       "scope": "WFO/reporting isolated combined stage only; subsequent unchanged-durability SQLite connection cleanup passed5 storage tests; not released or native/actual research acceptance"
     },
-    "release_plan": "Version0.2.2 stays on existing PR5/branch. Latest public release and actual upgrade baseline remain0.2.1. Pushed12e088f is not a release; Windows gate failures/cancellations block a new EXE and publication. No0.2.3 release or fabricated0.2.2 baseline.",
-    "integrated_suite_location_note": "981-test suite executed in isolated candidate with exact25 source/test/README hashes copied into root on9c base; no claim of another duplicate root full run. Later view/diagnostic changes require focused evidence and final exact-head CI.",
+    "release_plan": "PR5 merged to main94aca467; candidate version0.2.2 remains unpublished because postmerge failed. Latest public release and actual upgrade baseline remain verified0.2.1. Prepare bounded diagnostic/test-only follow-up, then verify its native gates and actual release; no0.2.3 or invented0.2.2 baseline.",
+    "integrated_suite_location_note": "Earlier981 ran in isolated candidate before25 exact files were copied, then final CandidateSummary/diagnostics followed. PR06bcc3a complete1016/native success and main94aca467 postmerge failure are newer, separate evidence; no duplicate root full-run claim.",
     "environment_observation": {
       "as_of_utc": "2026-10-10T05:02:00Z",
       "desktop_count": 2,
@@ -987,6 +1158,25 @@
       "saved_coding_environments": 0,
       "clean_windows_acceptance": "No authorized clean Windows execution environment established. Do not describe this as no computers connected.",
       "setup_changes_requested": false
+    },
+    "repository_history_preservation": {
+      "delete_branch_on_merge": true,
+      "remote_branches": [
+        "main"
+      ],
+      "remote_main": "94aca46777bd19619c9cbc0721a888173395243e",
+      "main_protected": false,
+      "bundle": "quant-audit/mark-auto-preserved-20261010-0602.bundle",
+      "bundle_bytes": 1123457,
+      "bundle_verified_complete_history_including_merge": true
+    },
+    "acceptance_decision_current": {
+      "score_unchanged": true,
+      "earned": 210,
+      "denominator": 300,
+      "m4_status": "PARTIAL",
+      "m4_earned": 0,
+      "conditional_reconciliation_not_applied": "Any earlier proposed M4+20 depended on successful postmerge and actual release verification; those conditions are not met."
     }
   }
 }

@@ -61,7 +61,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: test-inventory-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}
-          path: dist/validation/test-inventory.json
+          path: |
+            dist/validation/test-inventory.json
+            dist/validation/smoke-timeout-*.json
           if-no-files-found: error
           retention-days: 7
       - name: Observe native Paper timing after failure (not acceptance)
