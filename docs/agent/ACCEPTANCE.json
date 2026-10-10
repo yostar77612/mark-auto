@@ -384,8 +384,8 @@
         "id": "M4",
         "title": "一般使用者研究/交易表單",
         "weight": 20,
-        "status": "PARTIAL",
-        "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Typed workflows verified; actualPaper fixed-risk summary missing in0.2.0. Next0.2.1 reuse of enforcedRiskLimits factory tested; releaseGate pending. Subsequent ordinary real-data expiry input and typed120000 Paper-margin mismatch reproduced; fixes in0.2.2candidate, full724tests709PASS15skip plus54async-dialog and40packaging checks, nativefinalhead stillpending. Explicitrequired ProfitFactor/Sharpe assumptions and chartprotective/costreferences are separate newlyreconciled requirements, not falselycertifiedbyolderweight."
+        "status": "PASS",
+        "evidence": "Exact-main 9d35c7d760acc88720f3379b2413423a0991152f tree 79c319746fa19e19b19a8b8ed51f3b6b09806216; Quantlab38094283558 all12 jobs PASS; Windows38094283911 native1384 tests=1353 PASS/31 platform/profile skips,832.202s, frozen full smoke, TLS and installed/upgrade/recovery lifecycle PASS. Published unsigned0.2.2 preview https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38094283911-1 independently verified. Fixed Roadmap19 M4 typed research split/budgets/selection, strategies, dates/capital/cost/margin, comparison and Paper/reconciliation/risk forms validated with actual native Qt widgets and real workers; all12 typed-form cases PASS, readable PF/descriptive Sharpe assumptions and actual loaded protective/cost snapshot rendering PASS. Existing strategy hash, holdout, confirmation and ledger checks retained. This is ordinary workflow/engineering acceptance, not actual OAuth/model, clean-client/DPI, independent market research or live-trading acceptance. Detailed evidence: quant-audit/ci-9d35c7d7/job-114336856186.log (forms670-681, real backtest831, Paper847, actual reference host1445); artifact/validation/smoke-installed.json; independent-main-release-assessment.md."
       },
       {
         "id": "M5",
@@ -409,11 +409,11 @@
         "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. ActualLinuxQt100/125/150% and preference restart validated; finalWindows10/11 cleanclientDPI/usability remainsBLOCKED."
       }
     ],
-    "accepted_weight": 40,
-    "overall_accepted_weight": 210,
+    "accepted_weight": 60,
+    "overall_accepted_weight": 230,
     "overall_total_weight": 300,
-    "overall_percent": 70.0,
-    "remaining_percent": 30.0
+    "overall_percent": 76.6667,
+    "remaining_percent": 23.3333
   },
   "requirements_reconciliation": {
     "walk_forward": "IMPLEMENTATION_PENDING; fixed four-way OOS split is not walk-forward. Separate predeclared bounded module in development.",
@@ -552,7 +552,22 @@
       "windows": "Three isolation-fixture short/long Windows8.3 path identity mismatches; production correctly canonicalizes. Canonicalize fixture roots before exact full-path/no-write assertions, no weakening. Windows312 pending final log."
     }
   },
-  "current_snapshot": {
+  "gate_history": {
+    "M4": [
+      {
+        "superseded_at_utc": "2026-10-10T23:42:00Z",
+        "gate": {
+          "id": "M4",
+          "title": "一般使用者研究/交易表單",
+          "weight": 20,
+          "status": "PARTIAL",
+          "evidence": "mainfc2dfacbf297004095e971ec10cf3620307417a2 tree853300ac530a88f58790562232a3de2a31ab5467; Quantlab38012730935 all7PASS; Windows38012730927 build/security,465tests456PASS9profile-skips, frozen market/manual and real0.1.2upgrade recoveryPASS; actual official HTTP VERIFIED. Exact-main LinuxQt125% re-capture source hashes match; not cleanclient evidence. Typed workflows verified; actualPaper fixed-risk summary missing in0.2.0. Next0.2.1 reuse of enforcedRiskLimits factory tested; releaseGate pending. Subsequent ordinary real-data expiry input and typed120000 Paper-margin mismatch reproduced; fixes in0.2.2candidate, full724tests709PASS15skip plus54async-dialog and40packaging checks, nativefinalhead stillpending. Explicitrequired ProfitFactor/Sharpe assumptions and chartprotective/costreferences are separate newlyreconciled requirements, not falselycertifiedbyolderweight."
+        },
+        "prior_decision_pointer": "snapshot_history.acceptance_decision_current"
+      }
+    ]
+  },
+  "snapshot_history": {
     "as_of_utc": "2026-10-10T22:42:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
@@ -2774,5 +2789,130 @@
       "progress": "210/300 = 70%; remaining30%; original frozen weights unchanged",
       "latest_terminal_results_url": "https://github.com/yostar77612/mark-auto/pull/6"
     }
+  },
+  "current_snapshot": {
+    "as_of_utc": "2026-10-10T23:42:00Z",
+    "scope": "Documentation-only reconciliation of exact-main released product evidence. No code, tests, workflow, runtime, acceptance threshold or installer provenance changes.",
+    "product_source": {
+      "commit": "9d35c7d760acc88720f3379b2413423a0991152f",
+      "tree": "79c319746fa19e19b19a8b8ed51f3b6b09806216",
+      "pr": 6,
+      "pr_status": "MERGED",
+      "documentation_checkpoint_is_installer_source": false
+    },
+    "release": {
+      "version": "0.2.2",
+      "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38094283911-1",
+      "status": "PUBLISHED_UNSIGNED_PRERELEASE",
+      "run_id": 38094283911,
+      "release_job_id": 114340571289,
+      "installer_bytes": 39357983,
+      "installer_sha256": "9c9916a256c8fd98929045d7f34eecf6a27eee6a24a2636908b94ba945742cf8",
+      "public_installer_body": "INDEPENDENTLY_DOWNLOADED_SIZE_AND_SHA256_VERIFIED",
+      "artifact_id": 11685722949,
+      "artifact_sha256": "8d8e67f3359cca992b1d5a0f14f9963f3287bab587c3c5fed67a06998a0d317a",
+      "source_manifest": "All77 inputs match exact-main product source;70 Windows CRLF and7 raw-byte matches",
+      "evidence": "quant-audit/ci-9d35c7d7/independent-main-release-assessment.md"
+    },
+    "validation": {
+      "quantlab_run": 38094283558,
+      "quantlab_jobs_passed": 12,
+      "windows_run": 38094283911,
+      "native_suite": {
+        "total": 1384,
+        "passed": 1353,
+        "skipped": 31,
+        "seconds": 832.202
+      },
+      "windows_scope": "Windows Server runner; no clean Windows10/11 equivalence",
+      "frozen_and_lifecycle": "Full smoke, real worker cleanup, synthetic WFO, TLS, install/upgrade/recovery/uninstall/data-preservation PASS",
+      "count_policy": "Platform/profile skips retain their original scope; unit mocks are not actual OAuth/client proof. This documentation checkpoint reuses unchanged product evidence; any automatically triggered workflow has its own result and source."
+    },
+    "acceptance_decision_current": {
+      "score_unchanged": false,
+      "research": 100,
+      "desktop": 70,
+      "market": 60,
+      "earned": 230,
+      "denominator": 300,
+      "percent": 76.6667,
+      "remaining_points": 70,
+      "remaining_percent": 23.3333,
+      "m4_status": "PASS",
+      "m4_earned": 20,
+      "change": "M4 alone earns its original20 points after exact-main postmerge, native/frozen workflow and verified release evidence satisfied the prior conditional decision. All other gate statuses and all IDs/weights/thresholds unchanged.",
+      "historical_score_pointer": "snapshot_history.fixed_historical_score",
+      "historical_decision_pointer": "snapshot_history.acceptance_decision_current",
+      "interpretation": "Frozen binary-gate progress, not work hours, full production acceptance, profitability or investment certification."
+    },
+    "requirements_reconciliation_current": {
+      "requirements_source_boundary": {
+        "explicit_current_requirements": "Walk-forward; Profit Factor/Sharpe from user section5.1 and stop/target/position-cost reference lines from user section3.4, as reconciled by the integrator. At11:16 user explicitly replaced local/alternative AI routes with required official SIWC subscription; no local-model feature or paid API/credits fallback.",
+        "unadopted_design_extensions": [
+          "Average Trade",
+          "Sortino",
+          "Calmar",
+          "Extended performance breakdowns",
+          "Full cost-stress orchestration"
+        ],
+        "extension_source": "04 section9.1 design proposal; historical02 explicitly conditions the complete specification on later adoption.",
+        "extension_status": "DESIGN_PROPOSAL_NOT_ADOPTED_NOT_AN_ADDED_ACCEPTANCE_GATE",
+        "direct_user_requirement_evidence_for_extensions": "NOT_FOUND_IN_REVIEWED_SOURCES; do not infer authorization or mandatory acceptance from the assistant-authored design table header.",
+        "preservation": "Keep proposal text and implementation limits; do not delete, mark completed, or promote extensions to required acceptance without explicit adoption."
+      },
+      "walk_forward": "IMPLEMENTED_NATIVE_FROZEN_VALIDATED_AND_PREVIEW_RELEASED: fixed/saved pools and bounded genuine forward windows; frozen synthetic2-fold22-evaluation preview/run/reopen passed. No adaptive AI, real-market independent OOS, ranking or Paper-eligibility claim.",
+      "extended_reports_and_reference_layers": "IMPLEMENTED_NATIVE_HOST_VALIDATED_AND_PREVIEW_RELEASED: PF/descriptive Sharpe with explicit assumptions/undefined reasons, readable Traditional Chinese presentation, and actual loaded stop/target/position-cost reference snapshots. No new optional metrics/cost-stress requirement.",
+      "actual_oct8_wfo": {
+        "status": "BLOCKED_NO_RUN",
+        "reason": "Existing authoritative consumed coverage intersects 170 bars of the full planned protected range.",
+        "new_evaluations": 0,
+        "model_calls": 0,
+        "registry_reservations": 0,
+        "restriction": "Do not move windows or use a fresh/replaced registry to evade the original protocol. Historical replay remains exposure-unverified, non-independent, non-rankable and non-paper-eligible."
+      }
+    },
+    "remaining_auto": {
+      "status": "DOCUMENTATION_RECONCILIATION_ONLY",
+      "work": "Review and publish this documentation-only checkpoint while preserving exact installer source and all prior failures. No demonstrable further authorized code/validation gap found in M4/PF/Sharpe/reference/WFO audit; do not invent new features or rerun unchanged full suites."
+    },
+    "remaining_gates": [
+      {
+        "ids": [
+          "D5",
+          "D7",
+          "D8"
+        ],
+        "points": 30,
+        "blocker": "Licensed/authorized clean Windows10 22H2 x64 and Windows11 x64 execution and no-development-environment lifecycle acceptance."
+      },
+      {
+        "ids": [
+          "M2"
+        ],
+        "points": 20,
+        "blocker": "Complete original market-minute scope remains unresolved, including TAIEX minute-data availability and legitimate automated-use permission; do not manufacture minute bars from daily data."
+      },
+      {
+        "ids": [
+          "M6"
+        ],
+        "points": 10,
+        "blocker": "Actual owner-authorized official SIWC grant and bounded subscription request; included-only attestation is not server-credit-setting verification or guaranteed monetary cap."
+      },
+      {
+        "ids": [
+          "M7"
+        ],
+        "points": 10,
+        "blocker": "Actual clean-client DPI/usability acceptance; Server/Linux/Qt fixtures do not substitute."
+      }
+    ],
+    "additional_external_limits": {
+      "main_protection": "Administration permission unavailable; existing unprotected/ruleset findings remain until independently changed and verified.",
+      "signing": "Trusted signing not established; published artifact remains unsigned preview.",
+      "research_data": "Original Oct8 planned protocol blocked by170 consumed bars;0 new evaluations/model calls/reservations. No window or registry escape.",
+      "safety": "No local AI, paid API/credits fallback, real orders or unauthorized desktop/account access."
+    },
+    "history_policy": "snapshot_history retains the entire superseded2026-10-10T22:42:00Z snapshot once, including earlier failed runs and the210/300 decision. gate_history preserves previous M4. Top-level older evidence, requirements_reconciliation IMPLEMENTATION_PENDING and candidate_022_ci are historical checkpoints, superseded only by the expressly scoped current evidence here; they are not erased or reinterpreted as PASS."
   }
 }

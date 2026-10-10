@@ -1,6 +1,18 @@
 # mark-auto 原始功能總表與可重用性
 
 <!-- CURRENT_STATUS_START -->
+## 目前交付對帳（2026-10-10 23:42 UTC）
+
+0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
+
+詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此變更只有文件，不改產品、測試、工作流或已發布安裝檔來源。
+<!-- CURRENT_STATUS_END -->
+
+## 以下為保留的歷史契約、決策與檢查點
+
+截至本次對帳以前的210/300、M4 PARTIAL、IMPLEMENTATION_PENDING、失敗／取消／尚未發布等文字保留其原時間與來源；不代表目前終態。原需求、未解除安全底線及非本次明示更新的gate仍有效；歷史失敗不刪除、不追溯改為PASS。
+
+<!-- HISTORICAL_STATUS_START -->
 ## 當前交付摘要（2026-10-10 06:40 UTC）
 
 - **實際下載仍是 0.2.1 unsigned preview**，release main `2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8`；[已核驗的下載與 manifest](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1)。八項主要 assets／56 個來源輸入、EXE／kit SHA-256與ZIP CRC及該版postmerge均已通過。**0.2.2尚未發布**，README保持這個已驗證入口。
@@ -93,7 +105,7 @@
 
 診斷接續PR #6／`agent/windows-release-validation` 的已推送dbe7c655來自main94aca467。該head為1021＝801 core＋220 research，Quantlab8/10 PASS；未提交的窄Linux ESRCH修補後discovery為1026＝806 core＋220 research，不代表整套PASS。原Windows Job Object與未知／permission失敗關閉要求保留。產品修改限窄Linux程序消失處理；沒有persistence、SQLite模式、TEMP或deadline變更。
 
-<!-- CURRENT_STATUS_END -->
+<!-- HISTORICAL_STATUS_END -->
 
 ## 歷史原文與逐次證據（依原記錄保留）
 

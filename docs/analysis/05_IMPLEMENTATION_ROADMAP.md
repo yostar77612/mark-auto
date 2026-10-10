@@ -1,6 +1,18 @@
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->
+## 目前交付對帳（2026-10-10 23:42 UTC）
+
+0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
+
+詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此變更只有文件，不改產品、測試、工作流或已發布安裝檔來源。
+<!-- CURRENT_STATUS_END -->
+
+## 以下為保留的歷史契約、決策與檢查點
+
+截至本次對帳以前的210/300、M4 PARTIAL、IMPLEMENTATION_PENDING、失敗／取消／尚未發布等文字保留其原時間與來源；不代表目前終態。原需求、未解除安全底線及非本次明示更新的gate仍有效；歷史失敗不刪除、不追溯改為PASS。
+
+<!-- HISTORICAL_STATUS_START -->
 ## 22:42接續優先順序（不新增產品範圍或權重）
 
 完整可恢復來源與Gate結果以[PROJECT_STATE最新檢查點](../agent/PROJECT_STATE.md)為準；下方12:14及更早內容為保留歷史。
@@ -131,7 +143,7 @@ Static／security／audit jobs亦通過。全部10個required jobs中9個PASS；
 
 最後原生受測PR #6 head17db263a／local1673d676／tree27a571ae：Quantlab9 PASS／Win312 research CANCELLED，Windows AI下載FAIL；119-PE靜態排除與notice核驗PASS。其後下載／TLS／storage／KVM delta已有本機full／focused證據，依來源分列，下一native待；全部歷史負面結果及210/300不變。
 
-<!-- CURRENT_STATUS_END -->
+<!-- HISTORICAL_STATUS_END -->
 
 ## 歷史原文與逐次證據（依原記錄保留）
 

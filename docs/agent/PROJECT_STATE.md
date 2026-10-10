@@ -1,6 +1,21 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+## 目前交付與驗收對帳（2026-10-10 23:42 UTC）
+
+- **已發布0.2.2 unsigned preview：** [已核驗的 Release](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38094283911-1)。產品來源固定為 main `9d35c7d760acc88720f3379b2413423a0991152f`、tree `79c319746fa19e19b19a8b8ed51f3b6b09806216`；PR #6已合併。Quantlab `38094283558` 全12 jobs PASS；Windows `38094283911` 原生1384項＝1353 PASS／31個原平台或profile skips，frozen／TLS／安裝升級復原與資料保留 PASS，公開安裝檔本體已獨立下載核對。
+- **M4完整20點現已PASS：** 依Roadmap §19原定表單標準，普通研究split／預算／選擇、策略／回測／比較／Paper／對帳與風控均有型別表單和可讀結果；實際Windows Qt與真實worker、PF／描述性Sharpe及假設／未定義原因、正常報告接線及停損／停利／持倉成本參考快照已驗證。不是只憑mock加分；先前條件式postmerge與實際Release門檻現已滿足。
+- **現行固定分數230/300＝76.67%，剩70點／23.33%：** 研究100、桌面70、市場60；只增加原M4的20點，其他ID／權重／門檻／狀態不變。D5／D7／D8仍需clean Win10/11（30點）；M2完整市場分鐘資料／合法自動使用權限（20點）、M6真實owner授權SIWC訂閱呼叫（10點）、M7clean-client DPI／易用性（10點）仍未通過。OAuth不是M4表單Gate的額外隱藏依賴，也不因M4 PASS而取得M6證明。
+- **已交付範圍與界線：** 固定／saved候選WFO及必要PF／Sharpe／參考線已實作、原生驗證並隨preview交付；frozen WFO為合成2-fold／22次評估與重新讀取，非獨立真實市場研究或Paper資格。原Oct8 protocol仍因170 consumed bars而BLOCKED_NO_RUN，不改window／registry。main保護管理權限、可信簽章及非委託的實際帳戶／client驗收仍受限；實單停用，禁止本機AI及paid API／credits fallback。
+- **本次僅文件：** 此checkpoint不是安裝檔的新build／簽章／CI結果，不更換上述產品來源或manifest。AUTO只剩本次文件審核／發布；審查未找到可直接補做的M4／PF／Sharpe／參考線／WFO程式或授權驗證缺口，不新增功能或主動重跑未變更大套測試；自動觸發的工作流仍依其實際結果判定。完整證據見 `ACCEPTANCE.json` current_snapshot及 `quant-audit/ci-9d35c7d7/independent-main-release-assessment.md`。
+
+<!-- CURRENT_STATUS_END -->
+
+## 以下為保留的歷史契約、決策與檢查點
+
+截至本次對帳以前的210/300、M4 PARTIAL、IMPLEMENTATION_PENDING、失敗／取消／尚未發布等文字保留其原時間與來源；不代表目前終態。原需求、未解除安全底線及非本次明示更新的gate仍有效；歷史失敗不刪除、不追溯改為PASS。
+
+<!-- HISTORICAL_STATUS_START -->
 ## 最新接續檢查點（2026-10-10 22:42 UTC）
 
 - **來源保全：** 同一分支 `agent/windows-release-validation`／PR #6。遠端 `80042d00e7c7cdea3b7765550ce5c4b180ff44e1` 與本機 `e97a404` 同 tree `e1184e7f76bed0b6d94dd8dad2f9d130066f079d`，已 fetch／diff 核對；原 commits／bundles 保留、未 force push。下列後續修補正準備更新同一 PR，尚無新來源原生 PASS。
@@ -107,7 +122,7 @@ root backend **141 PASS／29.688秒**；host／runtime／packaging等 **152項�
 
 最後原生受測PR #6 head17db263a／local1673d676／tree27a571ae：Quantlab9 PASS／Win312 research CANCELLED，Windows AI下載FAIL；119-PE靜態排除與notice核驗PASS。其後下載／TLS／storage／KVM delta已有本機full／focused證據，依來源分列，下一native待；全部歷史負面結果及210/300不變。
 
-<!-- CURRENT_STATUS_END -->
+<!-- HISTORICAL_STATUS_END -->
 
 ## 歷史原文與逐次證據（依原記錄保留）
 
