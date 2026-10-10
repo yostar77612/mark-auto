@@ -23,6 +23,9 @@ import time
 NOTICE_SHA256 = '71043b02fdedfd821fb505f7fb46ee9520cdaa74e9dd2754e98647f0ebc61a2c'
 DLL_NAMES = ('libssl-3.dll', 'libcrypto-3.dll')
 VERSION = (3, 5, 9)
+# CPython decodes OpenSSL 3.x as (major, minor, 0, patch, 0), not semver.
+# Keep this distinct from the Windows DLL resource version above.
+OPENSSL_VERSION_INFO = (3, 5, 0, 9, 0)
 FIXTURE_SECONDS = 10
 BODY = b'MarkAuto frozen Python HTTPS fixture v1\n'
 BODY_SHA256 = hashlib.sha256(BODY).hexdigest()
@@ -85,7 +88,9 @@ def runtime_evidence():
         raise ValueError('Actual frozen Windows TLS runtime required')
     root = safe_path(Path(sys._MEIPASS)).resolve()
     pins = read_pins(root/'licenses'/'qt'/'manifest.json')
-    if ssl.OPENSSL_VERSION_INFO[:3] != VERSION:
+    if (type(ssl.OPENSSL_VERSION_INFO) is not tuple
+        or any(type(part) is not int for part in ssl.OPENSSL_VERSION_INFO)
+        or ssl.OPENSSL_VERSION_INFO != OPENSSL_VERSION_INFO):
         raise ValueError('Actual Python TLS version differs')
     modules = []
     for name, pin in pins.items():
@@ -97,7 +102,7 @@ def runtime_evidence():
             raise ValueError('Actual loaded Python TLS module digest differs')
         modules.append({'filename': name, 'relative_path': name, 'sha256': digest, 'bytes': pin['bytes']})
     return {'frozen': True, 'platform': 'win32', 'openssl_version': ssl.OPENSSL_VERSION,
-            'openssl_version_info': list(VERSION), 'notice_sha256': NOTICE_SHA256,
+            'openssl_version_info': list(ssl.OPENSSL_VERSION_INFO), 'notice_sha256': NOTICE_SHA256,
             'loaded_from': 'exact_frozen_bundle', 'modules': modules}
 
 
@@ -242,10 +247,12 @@ def validate_report(value, manifest_path):
         raise ValueError('Missing frozen Python TLS proof')
     runtime, proof = value.get('runtime'), value.get('https')
     if not isinstance(runtime, dict) or not isinstance(proof, dict): raise ValueError('Invalid TLS proof')
-    expected = {'frozen': True, 'platform': 'win32', 'openssl_version_info': list(VERSION),
+    expected = {'frozen': True, 'platform': 'win32', 'openssl_version_info': list(OPENSSL_VERSION_INFO),
                 'notice_sha256': NOTICE_SHA256, 'loaded_from': 'exact_frozen_bundle'}
     for key, item in expected.items():
         if type(runtime.get(key)) is not type(item) or runtime[key] != item: raise ValueError('TLS runtime mismatch')
+    if any(type(part) is not int for part in runtime['openssl_version_info']):
+        raise ValueError('TLS runtime version fields must be integers')
     version = runtime.get('openssl_version')
     if not isinstance(version, str) or len(version) > 128 or not version.startswith('OpenSSL 3.5.9 '):
         raise ValueError('TLS version text mismatch')

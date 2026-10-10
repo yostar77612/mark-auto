@@ -17,7 +17,7 @@ from unittest.mock import patch
 from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
 
 from tests.smoke_timeout_diagnostics import (WorkerTimings, diagnosed_smoke_worker,
-    instrument_walk_forward, output_summary, run_smoke_process)
+    SmokeOutputCapture, instrument_walk_forward, output_summary, run_smoke_process)
 from tests.test_desktop_smoke_terminal import process_can_run
 
 
@@ -128,6 +128,138 @@ Path(sys.argv[1]).write_text(json.dumps([child.pid]), encoding='utf-8')
                     artifact_dir=root / 'artifacts', timeout=2)
             self.assertTrue(all(not process_can_run(pid) for pid in json.loads(pids.read_text())))
 
+    def test_unrecorded_inherited_writer_cannot_turn_launcher_exit_into_pass(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marker = root / 'descendant.json'
+            code = """import json, subprocess, sys
+from pathlib import Path
+child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+Path(sys.argv[1]).write_text(json.dumps(child.pid))
+print('SMOKE_DIAGNOSTIC {"stage":"main_return","status":0}', file=sys.stderr, flush=True)
+"""
+            with self.assertRaisesRegex(AssertionError, 'unchanged deadline'):
+                run_smoke_process([sys.executable, '-c', code, str(marker)], cwd=root,
+                    env=os.environ.copy(), report=root / 'report', pidfile=root / 'missing-pids',
+                    writes=root / 'writes', process_can_run=process_can_run,
+                    artifact_dir=root / 'artifacts', timeout=1)
+            value = json.loads(next((root / 'artifacts').glob('smoke-timeout-*.json')).read_text())
+            self.assertEqual(value['worker_alive_before'], {})
+            self.assertEqual(value['stderr']['events'], [{'stage': 'main_return', 'status': 0}])
+            self.assertTrue(value['cleanup_verified'])
+            self.assertFalse(process_can_run(json.loads(marker.read_text())))
+
+    def test_cleanup_communicate_timeout_retains_flushed_sanitized_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original = SmokeOutputCapture.communicate
+            captures, calls = [], []
+            def communicate(capture, *args, **kwargs):
+                calls.append(None)
+                captures.append(capture)
+                if len(calls) == 2:
+                    raise subprocess.TimeoutExpired(capture.process.args, kwargs['timeout'])
+                return original(capture, *args, **kwargs)
+            code = """import sys, time
+print('DO_NOT_RETAIN', flush=True)
+print('SMOKE_DIAGNOSTIC {"stage":"started","operation":"ui_walk_forward_run","secret":"DO_NOT_RETAIN"}', file=sys.stderr, flush=True)
+time.sleep(60)
+"""
+            with patch.object(SmokeOutputCapture, 'communicate', communicate):
+                with self.assertRaisesRegex(AssertionError, 'unchanged deadline') as error:
+                    run_smoke_process([sys.executable, '-c', code], cwd=root,
+                        env=os.environ.copy(), report=root / 'report', pidfile=root / 'pids',
+                        writes=root / 'writes', process_can_run=process_can_run,
+                        artifact_dir=root / 'artifacts', timeout=1)
+            raw = next((root / 'artifacts').glob('smoke-timeout-*.json')).read_text()
+            value = json.loads(raw)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(value['cleanup_error_type'], 'TimeoutExpired')
+            self.assertFalse(value['cleanup_verified'])
+            self.assertGreater(value['stdout']['characters'], 0)
+            self.assertEqual(value['stderr']['events'], [
+                {'stage': 'started', 'operation': 'ui_walk_forward_run'}])
+            self.assertFalse(value['stderr_truncated'])
+            self.assertNotIn('DO_NOT_RETAIN', raw + str(error.exception))
+            for thread in captures[0].threads:
+                thread.join(1)
+                self.assertFalse(thread.is_alive())
+
+    def test_incremental_capture_bounds_memory_and_keeps_complete_tail_lines(self):
+        code = r"""import sys
+sys.stderr.write('x' * 4096 + '\n')
+sys.stderr.write('SMOKE_DIAGNOSTIC {"stage":"cleanup_start"}\n')
+sys.stderr.flush()
+"""
+        process = subprocess.Popen([sys.executable, '-c', code], stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            with patch.object(SmokeOutputCapture, 'LIMIT', 128):
+                capture = SmokeOutputCapture(process)
+                stdout, stderr = capture.communicate('x', timeout=5)
+            self.assertEqual(stdout, '')
+            self.assertTrue(capture.snapshot('stderr')[1])
+            self.assertLessEqual(len(capture.buffers['stderr']), 128)
+            self.assertEqual(output_summary(stderr)['events'], [{'stage': 'cleanup_start'}])
+            self.assertTrue(all(not thread.is_alive() for thread in capture.threads))
+        finally:
+            if process.poll() is None:
+                process.kill(); process.wait(timeout=6)
+            for stream in (process.stdin, process.stdout, process.stderr):
+                stream.close()
+
+    def test_capture_cancellation_stops_readers_but_never_counts_as_eof(self):
+        process = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            capture = SmokeOutputCapture(process)
+            capture.close()
+            self.assertTrue(all(not thread.is_alive() for thread in capture.threads))
+            self.assertFalse(any(capture.eof.values()))
+            with self.assertRaisesRegex(RuntimeError, 'before EOF'):
+                capture.communicate(timeout=1)
+            self.assertIsNone(process.poll(), 'Reader cancellation must not claim or stop the live writer')
+        finally:
+            process.kill(); process.wait(timeout=6)
+            for stream in (process.stdin, process.stdout, process.stderr):
+                stream.close()
+
+    def test_failed_tree_cleanup_stops_readers_without_claiming_cleanup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            pids = root / 'pids'
+            captures = []
+            def factory(process):
+                capture = SmokeOutputCapture(process)
+                captures.append(capture)
+                return capture
+            code = """import json, subprocess, sys, time
+from pathlib import Path
+child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=sys.platform != 'win32')
+Path(sys.argv[1]).write_text(json.dumps([child.pid]))
+print('SMOKE_DIAGNOSTIC {"stage":"cleanup_start"}', file=sys.stderr, flush=True)
+time.sleep(60)
+"""
+            try:
+                with patch('tests.smoke_timeout_diagnostics.SmokeOutputCapture', factory), \
+                        patch.object(JobManager, '_join_descendants', side_effect=RuntimeSafetyError('DO_NOT_RETAIN')), \
+                        patch('tests.smoke_timeout_diagnostics._WindowsProcessTree.stop_and_join', side_effect=RuntimeSafetyError('DO_NOT_RETAIN')):
+                    with self.assertRaisesRegex(AssertionError, 'unchanged deadline'):
+                        run_smoke_process([sys.executable, '-c', code, str(pids)], cwd=root,
+                            env=os.environ.copy(), report=root / 'report', pidfile=pids,
+                            writes=root / 'writes', process_can_run=process_can_run,
+                            artifact_dir=root / 'artifacts', timeout=1)
+                value = json.loads(next((root / 'artifacts').glob('smoke-timeout-*.json')).read_text())
+                self.assertFalse(value['cleanup_verified'])
+                self.assertEqual(value['cleanup_error_type'], 'RuntimeSafetyError')
+                self.assertTrue(all(not thread.is_alive() for thread in captures[0].threads))
+                self.assertEqual(value['stderr']['events'], [{'stage': 'cleanup_start'}])
+                self.assertNotIn('DO_NOT_RETAIN', json.dumps(value))
+            finally:
+                for pid in json.loads(pids.read_text()) if pids.exists() else []:
+                    if process_can_run(pid):
+                        os.kill(pid, signal.SIGTERM)
+
     def test_non_object_and_malformed_diagnostic_lines_are_ignored(self):
         value = output_summary('\n'.join('SMOKE_DIAGNOSTIC ' + text for text in
             ('[]', 'null', '1', '"text"', '{', '{"stage": [], "operation": {}}')))
@@ -139,13 +271,15 @@ Path(sys.argv[1]).write_text(json.dumps([child.pid]), encoding='utf-8')
             marker = root / 'application-ran'
             code = "from pathlib import Path; Path(__import__('sys').argv[1]).touch()"
             with patch('tests.smoke_timeout_diagnostics.sys.platform', 'win32'), \
-                    patch('tests.smoke_timeout_diagnostics._WindowsProcessTree', side_effect=RuntimeSafetyError('Isolation unavailable')):
+                    patch('tests.smoke_timeout_diagnostics._WindowsProcessTree', side_effect=RuntimeSafetyError('Isolation unavailable')), \
+                    patch('tests.smoke_timeout_diagnostics.SmokeOutputCapture') as capture:
                 with self.assertRaises(RuntimeSafetyError):
                     run_smoke_process([sys.executable, '-c', code, str(marker)], cwd=root,
                         env=os.environ.copy(), report=root / 'report', pidfile=root / 'pids',
                         writes=root / 'writes', process_can_run=process_can_run,
                         artifact_dir=root / 'artifacts', timeout=2)
             self.assertFalse(marker.exists())
+            capture.assert_not_called()
 
     def test_output_drops_raw_paths_messages_and_unrecognized_fields(self):
         result = output_summary('password=DO_NOT_RETAIN\n  File "/private/user/desktop.py", line 770 in main\n')

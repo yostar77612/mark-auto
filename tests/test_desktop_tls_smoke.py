@@ -24,7 +24,7 @@ def report():
     pins = tls.read_pins(NOTICE)
     return {'status':'passed','scope':tls.SCOPE,
         'runtime':{'frozen':True,'platform':'win32','openssl_version':'OpenSSL 3.5.9 INERT TEST FIXTURE',
-            'openssl_version_info':[3,5,9],'notice_sha256':tls.NOTICE_SHA256,'loaded_from':'exact_frozen_bundle',
+            'openssl_version_info':[3,5,0,9,0],'notice_sha256':tls.NOTICE_SHA256,'loaded_from':'exact_frozen_bundle',
             'modules':[{'filename':name,'relative_path':name,'sha256':pin['sha256'],'bytes':pin['bytes']}
                        for name,pin in pins.items()]},
         'https':{'status':'passed','transport':'loopback_fixture','requests':1,'certificate_verified':True,
@@ -42,10 +42,10 @@ class NativeRuntimeTests(unittest.TestCase):
             raw = ('INERT '+name).encode(); (self.root/name).write_bytes(raw)
             self.pins[name] = {'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'version':[3,5,9,0]}
 
-    def runtime(self, loaded=None):
+    def runtime(self, loaded=None, version=(3,5,0,9,0)):
         with patch.object(sys,'platform','win32'),patch.object(sys,'frozen',True,create=True), \
              patch.object(sys,'_MEIPASS',str(self.root),create=True), \
-             patch.object(ssl,'OPENSSL_VERSION_INFO',(3,5,9,0,15)), \
+             patch.object(ssl,'OPENSSL_VERSION_INFO',version), \
              patch.object(ssl,'OPENSSL_VERSION','OpenSSL 3.5.9 INERT TEST FIXTURE'), \
              patch.object(tls,'read_pins',return_value=self.pins), \
              patch.object(tls,'loaded_module',side_effect=loaded or (lambda name:self.root/name)):
@@ -53,9 +53,22 @@ class NativeRuntimeTests(unittest.TestCase):
 
     def test_loaded_private_runtime_records_actual_hashes_and_relative_paths(self):
         value = self.runtime()
-        self.assertEqual(value['openssl_version_info'],[3,5,9])
+        self.assertEqual(value['openssl_version_info'],[3,5,0,9,0])
         self.assertEqual(value['modules'],report_modules(self.pins))
         self.assertNotIn(str(self.root),json.dumps(value))
+
+    def test_only_exact_cpython_openssl_tuple_is_accepted(self):
+        # v3.13.16 Modules/_ssl.c decodes 0x30500090 into these five fields.
+        number = 0x30500090
+        decoded = ((number >> 28) & 0xff, (number >> 20) & 0xff,
+                   (number >> 12) & 0xff, (number >> 4) & 0xff, number & 0xf)
+        self.assertEqual(decoded, (3,5,0,9,0))
+        self.assertEqual(self.runtime(version=decoded)['openssl_version_info'], list(decoded))
+        for wrong in ((3,5,0,8,0), (3,5,0,10,0), (3,5,0,9,15),
+                      (3,5,9,0,15), (3,5,1,9,0), (3,5,9), (3,5,0,9,0,0),
+                      (3,5,False,9,0), (3,5,0,9.0,0), [3,5,0,9,0], None):
+            with self.subTest(version=wrong), self.assertRaises(ValueError):
+                self.runtime(version=wrong)
 
     def test_wrong_hash_size_or_outside_location_refuses(self):
         name = tls.DLL_NAMES[0]; path = self.root/name; original = path.read_bytes()
@@ -229,7 +242,13 @@ class EvidenceGateTests(unittest.TestCase):
         cases=[None,{},dict(report(),status='failed')]
         for section,key,wrong in (
             ('runtime','frozen',False),('runtime','platform','linux'),
-            ('runtime','openssl_version_info',[3,5,5]),('runtime','openssl_version','OpenSSL 3.5.5 wrong'),
+            ('runtime','openssl_version_info',[3,5,5]),
+            ('runtime','openssl_version_info',[3,5,9]),
+            ('runtime','openssl_version_info',[3,5,0,8,0]),
+            ('runtime','openssl_version_info',[3,5,0,9,15]),
+            ('runtime','openssl_version_info',[3,5,False,9,0]),
+            ('runtime','openssl_version_info',[3,5,0,9.0,0]),
+            ('runtime','openssl_version_info',[3,5,0,9,0,0]),('runtime','openssl_version','OpenSSL 3.5.5 wrong'),
             ('runtime','notice_sha256','0'*64),('runtime','loaded_from','system'),('runtime','modules',[]),
             ('https','requests',True),('https','requests',0),('https','requests',2),
             ('https','hostname_verified',False),('https','certificate_verified',False),

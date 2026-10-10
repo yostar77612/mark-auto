@@ -233,6 +233,121 @@ def output_summary(raw):
     return {'characters': len(raw), 'events': events[-100:], 'stack_frames': stacks[-30:]}
 
 
+class SmokeOutputCapture:
+    """Incremental bounded pipe capture; EOF remains part of completion proof.
+
+    Windows Popen.communicate stores fh.read() only after EOF, and supplies no
+    partial output on TimeoutExpired. Keep the same EOF requirement, but retain
+    flushed bytes as they arrive so failed cleanup cannot erase diagnostics.
+    """
+    LIMIT = 1048576
+
+    def __init__(self, process):
+        self.process = process
+        self.lock = threading.Lock()
+        self.stop = threading.Event()
+        self.buffers = {'stdout': bytearray(), 'stderr': bytearray()}
+        self.truncated = {'stdout': False, 'stderr': False}
+        self.errors = []
+        self.eof = {'stdout': False, 'stderr': False}
+        self.threads = []
+        try:
+            for name in self.buffers:
+                thread = threading.Thread(target=self._read, args=(name,), daemon=True)
+                thread.start()
+                self.threads.append(thread)
+        except BaseException:
+            self.close()
+            raise
+
+    def _read(self, name):
+        try:
+            stream = getattr(self.process, name)
+            if sys.platform == 'win32':
+                import ctypes
+                import msvcrt
+                from ctypes import wintypes as w
+                kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+                kernel.PeekNamedPipe.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD,
+                    ctypes.c_void_p, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
+                kernel.PeekNamedPipe.restype = w.BOOL
+                handle = msvcrt.get_osfhandle(stream.fileno())
+            else:
+                import select
+            while not self.stop.is_set():
+                if sys.platform == 'win32':
+                    available = w.DWORD()
+                    if not kernel.PeekNamedPipe(handle, None, 0, None, ctypes.byref(available), None):
+                        if ctypes.get_last_error() == 109:  # ERROR_BROKEN_PIPE: all writers closed.
+                            with self.lock:
+                                self.eof[name] = True
+                            return
+                        raise ctypes.WinError(ctypes.get_last_error())
+                    if not available.value:
+                        self.stop.wait(.01)
+                        continue
+                    count = min(available.value, 65536)
+                else:
+                    if not select.select([stream], [], [], .05)[0]:
+                        continue
+                    count = 65536
+                # There is exactly one reader. Read only bytes known available,
+                # so surviving writers cannot strand a thread during cleanup.
+                raw = os.read(stream.fileno(), count)
+                if not raw:
+                    with self.lock:
+                        self.eof[name] = True
+                    return
+                with self.lock:
+                    buffer = self.buffers[name]
+                    buffer.extend(raw)
+                    if len(buffer) > self.LIMIT:
+                        del buffer[:-self.LIMIT]
+                        self.truncated[name] = True
+        except (OSError, ValueError):
+            with self.lock:
+                self.errors.append(name)
+
+    def close(self):
+        self.stop.set()
+        deadline = time.monotonic() + 1
+        for thread in self.threads:
+            thread.join(max(0, deadline - time.monotonic()))
+        if any(thread.is_alive() for thread in self.threads):
+            raise RuntimeError('Smoke output reader did not stop')
+
+    def snapshot(self, name):
+        with self.lock:
+            raw = bytes(self.buffers[name])
+            truncated = self.truncated[name]
+        if truncated:
+            raw = raw.partition(b'\n')[2]  # Discard a possibly partial first line.
+        return raw.decode('utf-8', errors='replace'), truncated
+
+    def communicate(self, admission=None, *, timeout):
+        deadline = time.monotonic() + timeout
+        if admission is not None:
+            try:
+                self.process.stdin.write(admission)
+                self.process.stdin.flush()
+            except BrokenPipeError:
+                pass
+            finally:
+                try:
+                    self.process.stdin.close()
+                except BrokenPipeError:
+                    pass
+        for thread in self.threads:
+            thread.join(max(0, deadline - time.monotonic()))
+            if thread.is_alive():
+                raise subprocess.TimeoutExpired(self.process.args, timeout)
+        with self.lock:
+            if self.errors or not all(self.eof.values()):
+                raise RuntimeError('Smoke output capture failed or stopped before EOF')
+        self.process.wait(timeout=max(0, deadline - time.monotonic()))
+        return self.snapshot('stdout')[0], self.snapshot('stderr')[0]
+
+
 def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can_run,
                       artifact_dir, timeout=40):
     """Retain the original gate; kill/join owned processes before timeout evidence."""
@@ -243,11 +358,13 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         start_new_session=sys.platform != 'win32')
     tree = None
+    capture = None
     try:
         if sys.platform == 'win32':
             tree = _WindowsProcessTree(process.pid)
+        capture = SmokeOutputCapture(process)
         try:
-            stdout, stderr = process.communicate('x', timeout=timeout)
+            stdout, stderr = capture.communicate('x', timeout=timeout)
             # Check before closing the outer kill-on-close handle: containment
             # must not turn leaked workers into a false successful smoke.
             completed_pids = read_json(pidfile)
@@ -263,7 +380,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                                 JobManager._join_descendants(owner, pid)
                     raise AssertionError('Smoke exited with a live recorded worker')
             return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
-        except subprocess.TimeoutExpired as expired:
+        except subprocess.TimeoutExpired:
             if sys.platform != 'win32':
                 try: os.killpg(process.pid, signal.SIGSTOP)
                 except ProcessLookupError: pass
@@ -293,10 +410,11 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                         JobManager._join_descendants(owner, pid)
                     try: os.killpg(process.pid, signal.SIGKILL)
                     except ProcessLookupError: pass
-                stdout, stderr = process.communicate(timeout=6)
+                stdout, stderr = capture.communicate(timeout=6)
             except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                 cleanup_error = type(error).__name__
-                stdout, stderr = expired.stdout, expired.stderr
+            stdout, stdout_truncated = capture.snapshot('stdout')
+            stderr, stderr_truncated = capture.snapshot('stderr')
             after = {str(pid): liveness(pid, after_states) for pid in pids}
             audited = []
             try:
@@ -309,7 +427,8 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                 'report_writes': audited, 'worker_alive_before': before, 'worker_alive_after': after,
                 'worker_linux_state_before': before_states, 'worker_linux_state_after': after_states,
                 'cleanup_verified': cleanup_error is None and process.poll() is not None and all(value is False for value in after.values()),
-                'cleanup_error_type': cleanup_error, 'stdout': output_summary(stdout), 'stderr': output_summary(stderr)}
+                'cleanup_error_type': cleanup_error, 'stdout': output_summary(stdout), 'stderr': output_summary(stderr),
+                'stdout_truncated': stdout_truncated, 'stderr_truncated': stderr_truncated}
             artifact_dir.mkdir(parents=True, exist_ok=True)
             target = artifact_dir / ('smoke-timeout-' + uuid.uuid4().hex + '.json')
             target.write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')
@@ -320,8 +439,14 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                 process.kill()
                 process.wait(timeout=6)
         finally:
-            if tree is not None:
-                tree.close()
-            for stream in (process.stdin, process.stdout, process.stderr):
-                if stream is not None:
-                    stream.close()
+            try:
+                if tree is not None:
+                    tree.close()
+            finally:
+                try:
+                    if capture is not None:
+                        capture.close()
+                finally:
+                    for stream in (process.stdin, process.stdout, process.stderr):
+                        if stream is not None:
+                            stream.close()

@@ -19,7 +19,7 @@ from quantlab.reporting import save_dataset
 from quantlab.research import _reserve_holdout, run_campaign, FixtureGenerator, demo_campaign_config
 from quantlab.saved_candidate_pool import (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2, MAX_AUDIT_BYTES, SavedCandidatePoolError,
     admit_saved_campaign_pool, load_original_dataset, TRANSPORT_VERIFIER_PRODUCER,
-    TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2, SUPPORTED_PRODUCERS)
+    TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2, SCALAR_TRANSPORT_PROFILE_V1, SUPPORTED_PRODUCERS)
 from quantlab.walk_forward import (build_walk_forward_plan, planned_evaluations,
     read_walk_forward_state, run_walk_forward, walk_forward_plan_from_dict)
 from tests.saved_pool_fixtures import make_saved_source, make_chatgpt_source, write_source, shifted_dataset
@@ -370,7 +370,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                              output_dir=folder, holdout_registry_path=self.registry)
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(state['attempts'][0]['status'], 'evaluated')
-        self.assertEqual(state['binding']['engine_source_hashes'], TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], SCALAR_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         before = (folder / 'campaign.json').read_bytes()
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
         self.assertEqual(len(admission.candidate_pool), 1)
@@ -652,7 +652,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
         import quantlab.research as research
         actual = {name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
                   for name in TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes']}
-        self.assertEqual(actual, TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
+        self.assertEqual(actual, SCALAR_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         self.assertEqual(content_hash(research.PROMPT), TRANSPORT_VERIFIER_PRODUCER['prompt_template_hash'])
 
     def test_transport_verifier_fixture_and_compatible_profiles_are_canonical_without_rewrites(self):
@@ -774,9 +774,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
 
     def test_genuine_current_fixture_campaign_to_saved_walk_forward_no_hash_relabelling(self):
         folder, reference, state = self.produce_current()
-        self.assertEqual(state['binding']['engine_source_hashes'], TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], SCALAR_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
-        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_2_campaign_transport_verifier_v1')
+        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_2_campaign_scalar_transport_v1')
         self.assertEqual(admission.admission['source_campaign_ref'], reference)
         self.assertEqual(admission.admission['source_campaign_id'], state['campaign_id'])
         self.assertEqual(len(admission.candidate_pool), 15)

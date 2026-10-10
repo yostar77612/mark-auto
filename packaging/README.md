@@ -181,3 +181,21 @@ PyInstaller also fails if analysis selects any different SQLite DLL. Setup and
 build manifests retain the native provenance because pip-audit alone cannot
 certify a non-wheel SQLite DLL. Source pin, compiler and output digest are saved
 for Linux; locally compiled Linux binaries are not claimed bit-identical.
+
+## Frozen Python TLS version evidence
+
+The TLS report records CPython's actual five-field `ssl.OPENSSL_VERSION_INFO`,
+exactly `[3, 5, 0, 9, 0]` for the retained OpenSSL 3.5.9 runtime. This is distinct
+from the Windows DLL resource version `[3, 5, 9, 0]`. CPython 3.13.16 decodes the
+runtime numeric version `0x30500090` as major/minor/fix/patch/status, placing the
+OpenSSL 3.x patch in the fourth field. Both the runtime and report validators
+require the exact tuple and integer fields; three-field synthetic evidence is
+not accepted. DLL SHA256, size, exact loaded bundle path, notice pins, verified
+loopback HTTPS and cleanup requirements remain unchanged.
+
+Source: https://github.com/python/cpython/blob/v3.13.16/Modules/_ssl.c#L6238-L6272
+
+Correcting the tuple check is not native Windows acceptance. The previously
+failed frozen report remains failed; a rebuilt executable must pass the gate
+before installer acceptance can continue. Public trust stores, Qt Schannel,
+accounts and models are outside this fixture's proof.

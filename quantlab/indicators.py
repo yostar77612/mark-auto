@@ -24,6 +24,10 @@ MAX_OBSERVATIONS = 100_000
 MAX_WINDOW_WORK = 5_000_000
 
 
+class IndicatorResourceLimitError(ValueError):
+    """Expected observation/work bound rejection; ordinary validation is separate."""
+
+
 def _fixed_context(function):
     @wraps(function)
     def calculate(*args, **kwargs):
@@ -36,14 +40,14 @@ def _fixed_context(function):
             for values in args:
                 values = tuple(islice(iter(values), MAX_OBSERVATIONS + 1))
                 if len(values) > MAX_OBSERVATIONS:
-                    raise ValueError('indicator observation limit exceeded')
+                    raise IndicatorResourceLimitError('indicator observation limit exceeded')
                 bounded.append(values)
             # Payloads may also be supplied by keyword; bind them without changing API.
             for name in ('values', 'highs', 'lows', 'closes', 'bars'):
                 if name in kwargs:
                     values = tuple(islice(iter(kwargs[name]), MAX_OBSERVATIONS + 1))
                     if len(values) > MAX_OBSERVATIONS:
-                        raise ValueError('indicator observation limit exceeded')
+                        raise IndicatorResourceLimitError('indicator observation limit exceeded')
                     kwargs[name] = values
             return function(*bounded, **kwargs)
     return calculate
@@ -175,7 +179,7 @@ def kd(highs, lows, closes, *, period=9, k_period=3, d_period=3):
     if len(highs) != len(lows) or len(lows) != len(closes):
         raise ValueError('OHLC sequences must have matching lengths')
     if len(highs) * period > MAX_WINDOW_WORK:
-        raise ValueError('KD rolling-window work limit exceeded')
+        raise IndicatorResourceLimitError('KD rolling-window work limit exceeded')
     window, kvals, dvals = deque(), [], []
     k, d = Decimal(50), Decimal(50)
     for high, low, close in zip(highs, lows, closes):
@@ -208,7 +212,7 @@ def kd(highs, lows, closes, *, period=9, k_period=3, d_period=3):
 def bollinger(values, *, period=20, deviations=2):
     _period(period)
     if len(values) * period > MAX_WINDOW_WORK:
-        raise ValueError('Bollinger rolling-window work limit exceeded')
+        raise IndicatorResourceLimitError('Bollinger rolling-window work limit exceeded')
     deviations = _number(deviations)
     if deviations is None or deviations < 0:
         raise ValueError('deviations must be nonnegative')

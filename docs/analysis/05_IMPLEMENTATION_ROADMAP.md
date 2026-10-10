@@ -1,6 +1,16 @@
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->
+## 22:42接續優先順序（不新增產品範圍或權重）
+
+完整可恢復來源與Gate結果以[PROJECT_STATE最新檢查點](../agent/PROJECT_STATE.md)為準；下方12:14及更早內容為保留歷史。
+
+1. **AUTO／最高優先：** 同一PR整合已review的指標一致性、量測支持的scalar快路徑、frozen TLS tuple及timeout evidence修補；保留原960bars／30s、完整smoke40s、研究job15min、COMMIT／FULL及所有失敗紀錄。
+2. **AUTO：** 必要完整exact-head native CI、實際frozen TLS、install／launch／真0.2.1 upgrade／interrupted recovery／uninstall／data preservation及產物digest／source對應。新失敗先診斷與定向修復，不能以舊來源PASS、mock或盲目重跑代替。
+3. **AUTO有條件整合：** 全部適用工程Gate通過且tree／未保存工作／回歸核對後才合併；正式發布另受固定clean-client／實際AI等驗收約束，不把preview稱正式完成。
+4. **EXTERNAL BLOCKED獨立追蹤：** owner ChatGPT grant／真推論、Win10／11乾淨測試的合法權利及實際驗證、main Administration與正式簽章。KVM可執行且本repo是public標準免費runner，但Windows hosting授權尚未確立；不預設要求使用者自行建VM，也不擅自接受license／填註冊或啟用實盤。
+5. **暫緩：** 無實測收益的PERSIST模式切換、大型效能重構、新本地AI／付費fallback、額外功能／分支。進度仍210/300＝70%，剩餘30%；已實作、已驗證、未執行及外部阻塞不得互換。
+
 ## 當前整合狀態與最後已驗證基線（2026-10-10 12:14 UTC）
 
 ### 11:16 使用者更正：官方訂閱為必要 AI 路徑（取代先前選路）

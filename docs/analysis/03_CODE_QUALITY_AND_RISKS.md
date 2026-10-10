@@ -1,6 +1,16 @@
 # mark-auto 程式品質與交易風險審查
 
 <!-- CURRENT_STATUS_START -->
+## 22:42修補後風險增量
+
+最新來源／CI／本機證據與AUTO、FAILED、PASS、BLOCKED分界見[PROJECT_STATE最新檢查點](../agent/PROJECT_STATE.md)。目前正式發布仍被否決；以下只更新本輪新增證據，後文保留原歷史。
+
+1. **FAILED／待原生重驗：** Win311完整smoke原40秒超時；Windows pipe reader在EOF前不提供partial output，二次cleanup timeout令診斷消失已可重現。修補只保留bounded白名單輸出，仍要求EOF、完整worker清理與原deadline；原逾時原因未被此修補證明。
+2. **已修實作、待frozen Gate：** TLS檢查誤把OpenSSL3.5.9的CPython tuple當作前三碼semver。依[CPython v3.13.16 _ssl.c](https://github.com/python/cpython/blob/v3.13.16/Modules/_ssl.c)改驗精確五整數`(3,5,0,9,0)`，不更改DLL hash／size／位置、憑證驗證、TLS版本或cleanup。舊native failed report保留，不能推論沒有其他前置風險。
+3. **已修UI一致性：** 超限參數不再造成畫面新值／舊曲線；新資料讓既有設定超限時，保留新candles並明示無法計算。只捕捉typed resource error，普通ValueError不掩蓋；兩個指標可逐一修復。
+4. **量測支持的最小CPU改善：** canonical scalar快路徑保留所有驗證／bytes／歷史identity／COMMIT數；沒有journal mode、batch commit、同步或門檻變更。Linux單次29.66%差異不作Windows效能承諾。
+5. **外部權利仍未閉合：** [官方Win11 Evaluation](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise)所附EnterpriseEval條款SHA256 `6b5d4b32236a921bacdefe19852ec0699ca2eacd72d4e57f50a2de06ede21c8e` 的virtual-device及remote-only條款未明確解決hosted unattended CI；單純owner接受不等於取得未確立的hosting權利。KVM測試成功只移除基本執行能力疑慮。main保護在22:25仍未啟用；不改用未授權憑證繞過Administration限制。
+
 ## 當前整合狀態與最後已驗證基線（2026-10-10 12:14 UTC）
 
 ### 11:16 使用者更正：官方訂閱為必要 AI 路徑（取代先前選路）

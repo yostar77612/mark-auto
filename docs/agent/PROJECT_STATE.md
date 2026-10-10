@@ -1,6 +1,19 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+## 最新接續檢查點（2026-10-10 22:42 UTC）
+
+- **來源保全：** 同一分支 `agent/windows-release-validation`／PR #6。遠端 `80042d00e7c7cdea3b7765550ce5c4b180ff44e1` 與本機 `e97a404` 同 tree `e1184e7f76bed0b6d94dd8dad2f9d130066f079d`，已 fetch／diff 核對；原 commits／bundles 保留、未 force push。下列後續修補正準備更新同一 PR，尚無新來源原生 PASS。
+- **最後原生結果：** [Quantlab 38090502554](https://github.com/yostar77612/mark-auto/actions/runs/38090502554) 11 jobs PASS／Win311 core FAIL。Paper960根／30秒在兩個 Windows core 均 PASS；research311／312 各227項＝223 PASS／4 skips，551.047／612.548秒。Win311 core1131項＝1103 PASS／27 skips／1 FAIL、728.778秒，唯一失敗為完整 smoke 的原40秒期限，尚未證明原逾時原因。Win312 core1104 PASS／27 skips、305.666秒；Linux311／312各1340 PASS／18 skips、280.395／438.174秒；UI1345 PASS／13 skips、455.144秒。受測 PR merge `87940c7b7ce4b82a30ff50fcd292a6bf62d437d9`；不是後續修補來源的結果。
+- **安裝阻塞：** [Windows 38090502547](https://github.com/yostar77612/mark-auto/actions/runs/38090502547) 原生1358項＝1327 PASS／31 skips、1089.435秒，EXE compile PASS，frozen TLS FAIL，後續安裝／升級／移除未執行、Release skipped。artifact11684142251、77,672,343 bytes、SHA256 `7f61657d4bc00085b00b45cc9a59077810da3ce89f0cbc8aca7d182d246330dc`、CRC核對；TLS report在runtime validation前置失敗，不是外網下載失敗。
+- **AUTO修補已保存：** `a53f11f` 指標超限的controls／preferences／曲線原子一致性與逐一修復；`6c77739` 僅9行exact builtin scalar快路徑，保留574次COMMIT／export、637個歷史snapshot bytes／hash與7個歷史producer literals；`4d77e7b` 正確OpenSSL tuple `(3,5,0,9,0)`、原DLL／TLS安全pins不變，以及保留PIPE EOF條件的bounded timeout輸出擷取。舊file-backed草案因可能弱化未登錄子程序的EOF Gate而捨棄，未套入產品。
+- **本機修補驗證：** 指標21＋12 PASS；scalar首次定向命令15 PASS／1錯拼module import ERROR，原log保留，正確後續39 PASS。scalar階段受影響research227 PASS、322.035秒，來源hash核對不變；其後診斷擷取修補按下述定向驗證分列，不追溯算入此227項。最終diagnostics21 PASS／15.964秒，TLS＋完整terminal28 PASS／105.701秒。static/history0 findings。最終pinned環境discovery1384＝1157core＋227research，只是清單，不宣稱完整新來源全套PASS。Linux單次固定case無profile順序比較12.690→8.926秒，29.66%較低；Linux3.12.14／SQLite3.53.1，不當成Windows改善量測。
+- **量測排除：** WFO Windows診斷5個完整63-state rounds均核對，PERSIST commit均值73.662ms反而高於DELETE71.727ms；總round差約11.355ms，不足以支持改持久化模式。保留DELETE／FULL及既有Paper WAL／FULL。診斷在D: temp、研究default temp／不同VM，不能宣稱物理volume等價或證明原CI磁碟原因。
+- **EXTERNAL BLOCKED：** 真實ChatGPT owner grant／訂閱推論；clean Win10 22H2 x64／Win11 x64；main protection目前仍protected=false、rulesets=[]，現有App無Administration；可信簽章未成立。KVM已真正執行固定5-byte自撰payload、2次KVM_RUN／cleanup／exit0，但不是Windows驗收。官方Win11 Eval媒體實際EULA已取出，允許虛擬device與remote-only限制並存，未能確認hosted CI適用權利；不是技術上沒有VM，也不假稱全部CI皆禁止。未註冊、接受條款、啟動Windows或操作使用者電腦。
+- **進度與下一步：** 固定210/300＝70%，剩餘30%；main仍94aca467，公開版本仍0.2.1 unsigned preview。依序更新此分支 → 新exact-head完整CI／frozen TLS／安裝生命週期 → 審查產物與失敗 → 必要Gate通過才整合。不得因上述外部項目停止其餘AUTO工程，也不將Mock或Server算成實際訂閱／clean client。最新CI終態集中於[PR #6](https://github.com/yostar77612/mark-auto/pull/6)，本文件保留本次推送前來源界線，不因報告更新重跑無變更大套測試。
+
+### 較早12:14檢查點（以下保留歷史，不能取代上方最新狀態）
+
 ## 當前整合狀態與最後已驗證基線（2026-10-10 12:14 UTC）
 
 ### 11:16 使用者更正：官方訂閱為必要 AI 路徑（取代先前選路）

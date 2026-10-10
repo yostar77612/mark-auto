@@ -553,7 +553,7 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-10T12:14:00Z",
+    "as_of_utc": "2026-10-10T22:42:00Z",
     "scope": "Delivery summary only; does not change frozen gates, thresholds, weights, historical evidence or requirements. Merge only this top-level key; do not replace candidate_022_ci or any other key from a stale file.",
     "released": {
       "version": "0.2.1",
@@ -570,13 +570,13 @@
       "version": "0.2.2",
       "pr": 6,
       "branch": "agent/windows-release-validation",
-      "remote_head_short": "17db263a",
-      "local_equivalent_short": "1673d676",
-      "identical_tree_short": "27a571ae",
-      "status": "SIWC_ONLY_AND_ON_DEMAND_ANALYSIS_ROOT_APPLIED_FOCUSED_PASS_NEW_NATIVE_PENDING",
+      "remote_head_short": "80042d00",
+      "local_equivalent_short": "e97a404",
+      "identical_tree_short": "e1184e7f",
+      "status": "FOLLOW_ON_REPAIRS_LOCAL_VALIDATED_NEW_NATIVE_PENDING",
       "merged": false,
       "published": false,
-      "latest_ci_observation": "Quantlab38045449459 terminal9PASS/Win312researchCANCELLED. Windows38045449411 native1311/build/QtgatePASS; model_download/local_ai_network failure in1.031s,0calls/lifecycleNOT_RUN. Actual119PE audit verifies7 removals and retained hashes; not live TLS/IME or release.",
+      "latest_ci_observation": "80042d00: Quantlab11PASS/Win311core1smoke40sFAIL; both Paper30s and research shardsPASS. Windows native1358/buildPASS, frozenTLS runtime-validationFAIL; lifecycleNOT_RUN,ReleaseSKIPPED.",
       "unpublished_local_repairs": {
         "status": "PUSHED_NARROW_LINUX_FIX_FULL_LINUX_UI_AND_WINDOWS_NESTED_CLEANUP_PASS",
         "mechanism": "Independent real Linux reproduction: open /proc/PID/stat, then process exits and is reaped; read can raise ESRCH ProcessLookupError rather than FileNotFoundError.",
@@ -612,7 +612,7 @@
         "native_validation": "Linux/UI full suites and Windows nested cleanup passed at0088b505; original Paper performance gate still fails.",
         "field_name_scope": "Legacy field name retained for continuity; this narrow fix is now pushed, no longer uncommitted."
       },
-      "full_ci_details_key": "current_snapshot.native_ci_17db263a",
+      "full_ci_details_key": "current_snapshot.resumption_20261010_2200",
       "local_suite": {
         "total": 981,
         "passed": 966,
@@ -2712,6 +2712,67 @@
         "published": false,
         "score_change": false
       }
+    },
+    "resumption_20261010_2200": {
+      "status": "AUTO_CONTINUING_NO_MERGE_OR_RELEASE",
+      "source_remote": "80042d00e7c7cdea3b7765550ce5c4b180ff44e1",
+      "tested_merge": "87940c7b7ce4b82a30ff50fcd292a6bf62d437d9",
+      "local_follow_on_commits": [
+        "a53f11f1e53ab9e79556d73e858686b5f48c5148",
+        "6c77739bf3fb20bef82769b4719896740564066f",
+        "4d77e7b78772d0518c282b39c2d2450634b8632a"
+      ],
+      "quantlab_run": 38090502554,
+      "installer_run": 38090502547,
+      "pass": [
+        "previous-source Paper960/30 bothWindows",
+        "previous-source research311/312",
+        "previous-source Linux/UI/full installer unittest suites",
+        "root indicator21+12",
+        "root affected research227",
+        "root diagnostics21",
+        "root TLS+terminal28",
+        "static/history0findings"
+      ],
+      "failed": [
+        "previous-source Win311 success-smoke40s timeout",
+        "previous-source frozenTLS runtime validation"
+      ],
+      "auto": [
+        "push reviewed follow-on repairs",
+        "new exact-head native/full lifecycle gates",
+        "artifact review and evidence-led fixes"
+      ],
+      "external_blocked": [
+        "real owner ChatGPT grant/inference",
+        "licensed clean Win10/11 acceptance",
+        "main Administration/protection",
+        "trusted signing not established"
+      ],
+      "next_source_discovery": {
+        "all": 1384,
+        "core": 1157,
+        "research": 227,
+        "execution": false
+      },
+      "local_research": {
+        "tests": 227,
+        "pass": 227,
+        "skips": 0,
+        "seconds": 322.035,
+        "source_hashes_unchanged": true,
+        "source_commit": "6c77739bf3fb20bef82769b4719896740564066f"
+      },
+      "scalar_single_linux_pair": {
+        "baseline_wall_seconds": 12.690165,
+        "candidate_wall_seconds": 8.925709,
+        "percent_lower": 29.66,
+        "checkpoints_commits_exports_each": 574,
+        "runtime": "Linux Python3.12.14 SQLite3.53.1",
+        "native_windows_claim": false
+      },
+      "progress": "210/300 = 70%; remaining30%; original frozen weights unchanged",
+      "latest_terminal_results_url": "https://github.com/yostar77612/mark-auto/pull/6"
     }
   }
 }
