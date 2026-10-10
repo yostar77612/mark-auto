@@ -34,3 +34,37 @@ class ReleaseProvenanceTests(unittest.TestCase):
                     {'workflow_runs': [run]}, {'jobs': jobs, 'total_count': len(jobs)}]):
                     with self.assertRaisesRegex(RuntimeError, 'named jobs'):
                         gate.main()
+
+    def test_windows_research_and_linux_qt_audit_are_required(self):
+        required = {'offline research (windows-latest, 3.11)',
+                    'offline research (windows-latest, 3.12)',
+                    'Dependency audit (qt-linux311)'}
+        self.assertTrue(required <= gate.REQUIRED_JOBS)
+        run = {'head_sha': 'abc', 'event': 'push', 'run_number': 1, 'run_attempt': 1,
+               'status': 'completed', 'conclusion': 'success', 'id': 2,
+               'html_url': 'https://example.test/run'}
+        for missing in required:
+            jobs = [{'name': name, 'conclusion': 'success'}
+                    for name in sorted(gate.REQUIRED_JOBS - {missing})]
+            with self.subTest(missing=missing), patch.dict(
+                    gate.os.environ, GITHUB_REPOSITORY='owner/repo', GITHUB_SHA='abc'):
+                with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[
+                    {'workflow_runs': [run]}, {'jobs': jobs, 'total_count': len(jobs)}]):
+                    with self.assertRaisesRegex(RuntimeError, 'named jobs'):
+                        gate.main()
+
+    def test_every_job_including_unexpected_jobs_must_succeed(self):
+        run = {'head_sha': 'abc', 'event': 'push', 'run_number': 1, 'run_attempt': 1,
+               'status': 'completed', 'conclusion': 'success', 'id': 2,
+               'html_url': 'https://example.test/run'}
+        for name in (*sorted(gate.REQUIRED_JOBS), 'additional gate'):
+            for conclusion in ('failure', 'skipped', 'cancelled', None):
+                jobs = [{'name': required, 'conclusion': 'success'}
+                        for required in sorted(gate.REQUIRED_JOBS) if required != name]
+                jobs.append({'name': name, 'conclusion': conclusion})
+                with self.subTest(name=name, conclusion=conclusion), patch.dict(
+                        gate.os.environ, GITHUB_REPOSITORY='owner/repo', GITHUB_SHA='abc'):
+                    with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[
+                        {'workflow_runs': [run]}, {'jobs': jobs, 'total_count': len(jobs)}]):
+                        with self.assertRaisesRegex(RuntimeError, 'Every Quantlab job'):
+                            gate.main()

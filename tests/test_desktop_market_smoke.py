@@ -20,10 +20,12 @@ class MarketSmokeContractTests(unittest.TestCase):
         self.assertEqual([step[0] for step in _smoke_steps()], [
             'ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign',
             'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'])
-        script = (ROOT / 'desktop.py').read_text()
+        script = (ROOT / 'desktop.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', script)
         self.assertIn("market_report['status'] == 'passed'", script)
         self.assertIn("'market_smoke': market_report", script)
+        self.assertIn("history_report['status'] == 'passed'", script)
+        self.assertIn("'history_smoke': history_report", script)
 
     def test_smoke_settings_snapshot_has_no_persistent_side_effects(self):
         from desktop import _SmokeSettingsView
@@ -147,6 +149,24 @@ class MarketSmokeWidgetTests(unittest.TestCase):
             self.assertEqual(len(market['engine_source_hashes']), 5)
             self.assertEqual(market['real_model_status'], 'not_verified')
             self.assertEqual(market['source_type'], 'synthetic')
+            history = value['history_smoke']
+            self.assertEqual(history['status'], 'passed')
+            self.assertEqual(history['source_type'], 'synthetic')
+            self.assertEqual(history['generator'], 'fixture')
+            self.assertFalse(history['network_used'])
+            self.assertTrue(history['cache_reloaded'])
+            self.assertEqual(history['mode'], 'local_unverified_history')
+            self.assertEqual(history['steps'], [{'operation': 'history_import', 'passed': True}])
+            self.assertEqual(history['contracts'], ['TAIFEX:MTX:202610', 'TAIFEX:TMF:202610', 'TAIFEX:TX:202610'])
+            self.assertEqual(history['chart_render_checks'], 24)
+            self.assertEqual(history['chart_rendered_bars'], history['timeframe_bars'])
+            self.assertEqual(history['real_market_status'], 'not_verified')
+            self.assertEqual(history['windows_client_status'], 'not_verified')
+            self.assertEqual(history['real_model_status'], 'not_verified')
+            self.assertIn('not actual market or Windows-client acceptance', history['scope'])
+            for counts in history['timeframe_bars'].values():
+                self.assertEqual(counts, {'1m': 9, '3m': 6, '5m': 6, '15m': 5,
+                                          '30m': 3, '60m': 2, '1d': 1, '1w': 1})
 
 
 if __name__ == '__main__':

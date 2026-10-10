@@ -96,7 +96,7 @@ def scan(root: Path, history: bool = False) -> list[str]:
         if path.suffix == ".py":
             findings.extend(python_findings(source, name, name.startswith("quantlab/"),
                                             desktop=name in {"desktop_ui.py", "desktop_charts.py",
-                                                             "desktop_forms.py", "desktop_market.py",
+                                                             "desktop_forms.py", "desktop_market.py", "desktop_walk_forward.py",
                                                              "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py",
                                                              "desktop_chatgpt_ui.py"}))
     if history:

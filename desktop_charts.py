@@ -5,7 +5,7 @@ exactly to the supplied immutable series. Changing series clears dependent layer
 """
 from dataclasses import dataclass
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import math
 import re
@@ -24,6 +24,30 @@ def _display_time(value, date_only=''):
     if not isinstance(value,datetime) or value.tzinfo is None or value.utcoffset() is None:
         return '時間未提供／未驗證'
     return value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%Y/%m/%d %H:%M')+' 台北時間'
+
+
+def _footer_items(width, metrics, first_time, last_time, trace=None):
+    """Non-overlapping single-row paint slots; full labels stay in the tooltip."""
+    width = max(0, int(width)); gap = 8
+    first_width = metrics.horizontalAdvance(first_time)
+    last_width = metrics.horizontalAdvance(last_time)
+    trace_text = f'{trace.mode}｜資料 {trace.data_hash[:8]}｜策略 {trace.strategy_hash[:8]}' if trace else ''
+    trace_width = metrics.horizontalAdvance(trace_text)
+    if first_width + last_width + trace_width + gap * (2 if trace else 1) <= width:
+        items = [(0, first_width, first_time), (width-last_width, last_width, last_time)]
+        if trace: items.insert(1, (first_width+gap, trace_width, trace_text))
+        return tuple(items)
+    # At narrow widths retain the verified mode and elide only display labels.
+    trace_text = trace.mode if trace else ''
+    trace_width = min(metrics.horizontalAdvance(trace_text), width//3)
+    gaps = min(gap, width//4) * (2 if trace else 1)
+    side_width = max(0, (width-trace_width-gaps)//2)
+    items = [(0, side_width, metrics.elidedText(first_time, Qt.TextElideMode.ElideRight, side_width)),
+             (width-side_width, side_width, metrics.elidedText(last_time, Qt.TextElideMode.ElideRight, side_width))]
+    if trace:
+        items.insert(1, ((width-trace_width)//2, trace_width,
+                         metrics.elidedText(trace_text, Qt.TextElideMode.ElideRight, trace_width)))
+    return tuple(items)
 
 
 @dataclass(frozen=True)
@@ -75,10 +99,16 @@ class ChartMarker:
 class ReferenceLine:
     label: str
     price: Decimal
+    snapshot_index: int | None = None
+    as_of: datetime | None = None
 
     def __post_init__(self):
         if not self.label: raise ValueError('參考線須標明意義')
         _number(self.price)
+        if (self.snapshot_index is None) != (self.as_of is None): raise ValueError('快照須同時提供事件位置與可用時間')
+        if self.snapshot_index is not None:
+            if type(self.snapshot_index) is not int or self.snapshot_index < 0: raise ValueError('快照位置不合法')
+            if not isinstance(self.as_of,datetime) or self.as_of.utcoffset()!=timedelta(0): raise ValueError('快照時間須為 UTC')
 
 
 class CandlestickChart(QWidget):
@@ -178,10 +208,23 @@ class CandlestickChart(QWidget):
         if kind not in self.layer_visibility: raise ValueError('不支援圖層')
         self.layer_visibility[kind]=bool(visible); self.update()
 
-    def set_reference_lines(self,lines):
+    def set_reference_lines(self,lines,*,trace=None):
         lines=tuple(lines)
         if len(lines)>16 or any(not isinstance(x,ReferenceLine) for x in lines): raise ValueError('參考線不合法')
+        snapshots=[line for line in lines if line.snapshot_index is not None]
+        if snapshots:
+            if self.trace is None or trace!=self.trace: raise ValueError('快照合約、資料或策略版本不一致')
+            if len(snapshots)>6: raise ValueError('期末快照最多六個參考點')
+            for line in snapshots:
+                if line.snapshot_index>=len(self.bars) or self.bars[line.snapshot_index].end!=line.as_of:
+                    raise ValueError('快照須對應確切的 K 線末端可用時間')
         self.reference_lines=lines; self.update()
+
+    def visible_reference_lines(self):
+        """End-event snapshots never project backward into a historical viewport."""
+        start,end=self.visible_range
+        return tuple(line for line in self.reference_lines
+                     if line.snapshot_index is None or start<=line.snapshot_index<end)
 
     def bar_details(self,index):
         b=self.bars[index]; timestamp=getattr(b,'timestamp',None)
@@ -244,7 +287,7 @@ class CandlestickChart(QWidget):
         text(12,43,'K 線漲 + 紅／跌 − 綠   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移')
         self.last_rendered_bar_count=0
         if self.error or not self.bars:
-            p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,self.error or '尚無可用資料，請選擇真實來源'); p.end(); return
+            self.setToolTip(''); p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,self.error or '尚無可用資料，請選擇真實來源'); p.end(); return
         start,end=self.visible_range; visible=self.bars[start:end]; r=self.price_rect
         if not visible: p.end(); return
         self.last_rendered_bar_count=len(visible)
@@ -254,7 +297,8 @@ class CandlestickChart(QWidget):
         text(12,65,fm.elidedText(detail,Qt.TextElideMode.ElideRight,self.width()-24))
         low=min(float(b.low) for b in visible); high=max(float(b.high) for b in visible)
         extras=[float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
-        extras.extend(float(line.price) for line in self.reference_lines)
+        references=self.visible_reference_lines()
+        extras.extend(float(line.price) for line in references)
         marker_index=getattr(self,'_marker_index',{})
         extras.extend(float(m.price) for i in range(start,end) for m in marker_index.get(i,()) if m.kind=='fill' and self.layer_visibility['fill'])
         if extras: low=min(low,min(extras)); high=max(high,max(extras))
@@ -283,9 +327,25 @@ class CandlestickChart(QWidget):
             label=fm.elidedText(self._legend_label(label),Qt.TextElideMode.ElideRight,240)
             if legend_x+fm.horizontalAdvance(label)>r.right(): break
             text(legend_x,r.top()-5,label); legend_x+=fm.horizontalAdvance(label)+14
-        for line in self.reference_lines:
+        for line in references:
             p.setPen(QPen(QColor('#ffcc80'),1,Qt.PenStyle.DashLine)); yy=y(line.price)
-            p.drawLine(QPointF(r.left(),yy),QPointF(r.right(),yy)); text(r.left()+5,yy-4,f'{line.label} {line.price}')
+            if line.snapshot_index is None:
+                p.drawLine(QPointF(r.left(),yy),QPointF(r.right(),yy)); text(r.left()+5,yy-4,f'{line.label} {line.price}')
+            else:
+                # A short tick at the known event boundary, never a full-history line.
+                xx=x(line.snapshot_index)+step/2
+                p.drawLine(QPointF(xx-5,yy),QPointF(xx+5,yy))
+        snapshots=[line for line in references if line.snapshot_index is not None]
+        if snapshots:
+            caption='期末快照 '+_display_time(snapshots[0].as_of)+' · 非掛單／非歷史路徑'
+            policy='保護門檻：觸發批次取不利值，全倉退出；跳空依開盤'
+            labels=[caption]+[f'{line.label}：{float(line.price):,.4f}' for line in snapshots]
+            if any('門檻' in line.label for line in snapshots): labels.append(policy)
+            width=min(r.width(),max(fm.horizontalAdvance(label) for label in labels)+12)
+            panel=QRectF(r.left()+4,r.top()+4,width,(fm.height()+2)*len(labels)+8)
+            p.fillRect(panel,QColor(16,23,34,225)); p.setPen(QColor('#ffcc80'))
+            for index,label in enumerate(labels):
+                text(panel.left()+5,panel.top()+fm.ascent()+4+index*(fm.height()+2),fm.elidedText(label,Qt.TextElideMode.ElideRight,int(width-10)))
         for i in range(start,end):
             for marker in marker_index.get(i,()):
                 if not self.layer_visibility[marker.kind]: continue
@@ -316,16 +376,21 @@ class CandlestickChart(QWidget):
                     p.restore()
                 else: self._draw_lines(p,{label:seq},start,end,x,py,area)
                 p.setPen(QColor('#8290a3') if label in self._unavailable_panes else self.TEXT); text(area.left()+3,area.top()+10,self._legend_label(label,pane=True))
+        first_time=self.bar_details(start)['time']; last_time=self.bar_details(end-1)['time']
+        footer_detail=f'顯示範圍起點：{first_time}\n顯示範圍終點：{last_time}'
+        if self.trace: footer_detail+=f'\n{self.trace.mode}｜資料 {self.trace.data_hash}｜策略 {self.trace.strategy_hash}'
         if self.crosshair_index is not None and start<=self.crosshair_index<end:
             xx=x(self.crosshair_index); yy=y(self.bars[self.crosshair_index].close)
             p.setPen(QPen(QColor('#a5b6cc'),1,Qt.PenStyle.DashLine))
             p.drawLine(QPointF(xx,r.top()),QPointF(xx,volume_bottom)); p.drawLine(QPointF(r.left(),yy),QPointF(r.right(),yy))
             marker_text=' / '.join(f"{'訊號' if m.kind=='signal' else '成交'} {m.label} {m.reason}"+(f' 價{m.price} 量{m.quantity} 成本{m.cost if m.cost is not None else "未提供"}' if m.kind=='fill' else f' 目標{m.target_position if m.target_position is not None else "未提供"}')+(f' 時間{_display_time(m.timestamp)}' if m.timestamp is not None else ' 時間未提供') for m in marker_index.get(self.crosshair_index,()))
-            self.setToolTip(detail+('\n'+marker_text if marker_text else ''))
+            snapshot_text='\n'.join(labels) if snapshots else ''
+            self.setToolTip(detail+('\n'+marker_text if marker_text else '')+('\n'+snapshot_text if snapshot_text else '')+'\n'+footer_detail)
+        else: self.setToolTip(footer_detail)
         p.setPen(self.TEXT)
-        first_time=self.bar_details(start)['time']; last_time=self.bar_details(end-1)['time']
-        text(r.left(),self.height()-12,first_time); text(max(r.left(),r.right()-fm.horizontalAdvance(last_time)),self.height()-12,last_time)
-        if self.trace: text(r.left()+fm.horizontalAdvance(first_time)+20,self.height()-12,f'{self.trace.mode}｜資料 {self.trace.data_hash[:8]}｜策略 {self.trace.strategy_hash[:8]}')
+        for offset,width,label in _footer_items(r.width(),fm,first_time,last_time,self.trace):
+            p.save(); p.setClipRect(QRectF(r.left()+offset,self.height()-12-fm.ascent(),width,fm.height()))
+            text(r.left()+offset,self.height()-12,label); p.restore()
         p.end()
 
     def _draw_lines(self,p,series,start,end,x,y,clip):

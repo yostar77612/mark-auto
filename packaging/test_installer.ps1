@@ -1,4 +1,4 @@
-param([string]$Version = '0.2.1', [string]$BaselineVersion = '0.0.0',
+param([string]$Version = '0.2.2', [string]$BaselineVersion = '0.0.0',
       [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '',
       [switch]$CreateRecoveryHandoff)
 $ErrorActionPreference = 'Stop'

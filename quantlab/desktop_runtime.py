@@ -205,13 +205,15 @@ class WorkspaceLocator:
         atomic_write(self.pointer, _json_bytes({'schema_version': STATE_VERSION, 'root': str(destination)}))
         return destination
 
-    def load(self):
+    def load(self, *, probe=True):
+        # Smoke may inspect settings without creating a workspace or write probe.
+        # Ordinary startup retains its existing writable-workspace validation.
         if not self.pointer.exists():
             return AppPaths(self.bootstrap, self.bootstrap)
         value = _read_json(self.pointer)
         if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
             raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
-        root = self._validate(value['root'], probe=True)
+        root = self._validate(value['root'], probe=probe)
         return AppPaths(root, self.bootstrap)
 
 
@@ -593,14 +595,20 @@ class BackupManager:
 
 UI_OPERATIONS = frozenset({
     'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile', 'ui_backtest', 'ui_campaign',
+    'ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read', 'ui_walk_forward_reconcile',
     'ui_compare', 'ui_select', 'ui_disable', 'ui_paper_snapshot',
     'ui_paper_reconcile', 'ui_paper_kill', 'ui_paper_replay',
     'ui_paper_submit', 'ui_paper_cancel', 'ui_backup_create', 'ui_backup_restore',
 })
 OPERATIONS = UI_OPERATIONS | {'demo', 'backtest', 'campaign'}
+WALK_FORWARD_OPERATIONS = frozenset({
+    'ui_walk_forward_preview', 'ui_walk_forward_run',
+    'ui_walk_forward_read', 'ui_walk_forward_reconcile',
+})
 
 
-def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id):
+def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
+                reconciliation_admitted=False):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
@@ -612,7 +620,9 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id):
         paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
         if operation in UI_OPERATIONS:
             from desktop_ui import execute_ui_operation
-            result = execute_ui_operation(operation, payload, paths, emit=emit, descendants_stopped=operation == 'ui_chatgpt_reconcile')
+            result = execute_ui_operation(operation, payload, paths, emit=emit,
+                descendants_stopped=reconciliation_admitted is True and operation in (
+                    'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile'))
         else:
             from argparse import Namespace
             from .__main__ import execute
@@ -704,6 +714,44 @@ class _WindowsProcessTree:
             self.handle = None
 
 
+def validate_walk_forward_request(plan_payload, saved_source=None):
+    """Read-only desktop grammar; an unadmitted saved plan cannot carry DSL.
+
+    The temporary builtin plan checks only chronology, costs and resource types.
+    Its one-slot budget is never used to run an experiment or displayed as consent.
+    The worker restores the explicit saved budget after authoritative admission.
+    """
+    from .core import ValidationError
+    from .walk_forward import walk_forward_plan_from_dict
+    if not isinstance(plan_payload, dict):
+        raise ValidationError('Explicit walk-forward plan required')
+    saved = plan_payload.get('pool_origin', 'exact_builtin_pool') == 'saved_campaign_pool'
+    if not saved:
+        if saved_source is not None:
+            raise ValidationError('Built-in and saved pools cannot be mixed')
+        return walk_forward_plan_from_dict(plan_payload)
+    if 'candidate_pool' in plan_payload or 'pool_admission' in plan_payload:
+        raise ValidationError('Saved candidates must be admitted from local source records')
+    if (not isinstance(saved_source, dict) or set(saved_source) != {'campaign_reference', 'original_dataset'}
+        or type(saved_source['campaign_reference']) is not str
+        or not re.fullmatch(r'[0-9a-f]{64}', saved_source['campaign_reference'])):
+        raise ValidationError('Explicit immutable source campaign reference required')
+    original = saved_source['original_dataset']
+    if (not isinstance(original, dict) or set(original) != {'kind', 'path'}
+        or original['kind'] != 'local_dataset_file'):
+        raise ValidationError('Explicit local original dataset file reference required')
+    path = original['path']
+    if (type(path) is not str or not path or len(path) > 4096 or '\0' in path
+        or '://' in path or path.startswith(('//', '\\\\'))
+        or not Path(path).is_absolute() or '..' in Path(path).parts):
+        raise ValidationError('Original dataset must be an explicitly selected local absolute file path')
+    budget = plan_payload.get('max_evaluations')
+    if type(budget) is not int or not 1 <= budget <= 620:
+        raise ValidationError('Saved-pool evaluation budget must be explicitly set within 1..620')
+    template = {**plan_payload, 'pool_origin': 'exact_builtin_pool', 'max_evaluations': 1}
+    return walk_forward_plan_from_dict(template)
+
+
 class JobManager:
     """One spawned bounded-IPC task at a time; no arbitrary callable execution."""
     def __init__(self, paths):
@@ -722,6 +770,12 @@ class JobManager:
         self._requires_tree_quiescence = False
         self._subscription_job = False
         self._quiesced_subscription_id = None
+        # This proof is deliberately process-local. An on-disk running journal,
+        # a caller-provided flag, or a restarted manager cannot establish it.
+        self._walk_forward_reference = None
+        self._walk_forward_result_reference = None
+        self._quiesced_walk_forward = None
+        self._tree_quiesced = False
 
     def _log(self, event_type):
         if not self.logging_enabled:
@@ -735,6 +789,46 @@ class JobManager:
     def active(self):
         # A completed child still needs its IPC/result drained before another job.
         return self.process is not None
+
+    def _walk_forward_owner_path(self, reference):
+        folder = self.paths.state / 'walk_forward' / reference
+        for path in (self.paths.state, folder.parent, folder):
+            if path.exists() or path.is_symlink():
+                BackupManager._check_regular_path(path)
+                if not path.is_dir():
+                    raise RuntimeSafetyError('Invalid walk-forward state directory')
+        return folder / '.desktop-run-owner.json'
+
+    def _claim_walk_forward(self, reference, job_id):
+        """One original desktop writer, even across concurrent managers/restarts.
+
+        Keep the marker after failure or cancellation; it grants no authority
+        by itself and must never turn a failed launch into an evaluation retry.
+        """
+        owner = self._walk_forward_owner_path(reference)
+        owner.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(owner, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError as exc:
+            raise RuntimeSafetyError('Walk-forward run already claimed; use read without retry') from exc
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(_json_bytes({'kind': 'desktop_walk_forward_owner_v1',
+                'job_id': job_id, 'reference': reference}))
+            stream.flush()
+            os.fsync(stream.fileno())
+        # A pre-existing writer is never adopted as this worker's descendants.
+        if (owner.parent / 'walk_forward.sqlite3').exists():
+            raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
+
+    def _check_walk_forward_owner(self, job_id, reference):
+        owner = self._walk_forward_owner_path(reference)
+        try:
+            BackupManager._check_regular_path(owner)
+            value = _read_json(owner)
+        except (OSError, RuntimeSafetyError) as exc:
+            raise RuntimeSafetyError('Walk-forward original run ownership cannot be verified') from exc
+        if value != {'kind': 'desktop_walk_forward_owner_v1', 'job_id': job_id, 'reference': reference}:
+            raise RuntimeSafetyError('Walk-forward original run ownership mismatch')
 
     def start(self, operation, payload):
         if self.active:
@@ -750,7 +844,54 @@ class JobManager:
                 raise RuntimeSafetyError('Demo bars must be 20..10000')
         deadline = None
         auth_request_id = None
-        if operation == 'ui_chatgpt_auth':
+        reconciliation_admitted = False
+        walk_forward_reference = None
+        walk_forward_result_reference = None
+        if operation in WALK_FORWARD_OPERATIONS:
+            allowed = {
+                'ui_walk_forward_preview': {'plan'},
+                'ui_walk_forward_run': {'plan', 'preview_identity'},
+                'ui_walk_forward_read': {'reference'},
+                'ui_walk_forward_reconcile': {'reference', 'stopped_job_id'},
+            }[operation]
+            if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run') and 'saved_source' in payload:
+                if not isinstance(payload.get('plan'), dict) or payload['plan'].get('pool_origin') != 'saved_campaign_pool':
+                    raise RuntimeSafetyError('Built-in and saved pools cannot be mixed')
+                allowed = allowed | {'saved_source'}
+            if set(payload) != allowed:
+                raise RuntimeSafetyError('Unsupported walk-forward job parameters')
+            if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
+                if not isinstance(payload['plan'], dict):
+                    raise RuntimeSafetyError('Explicit walk-forward plan required')
+                from .core import ValidationError
+                try:
+                    plan = validate_walk_forward_request(payload['plan'], payload.get('saved_source'))
+                except (ValidationError, TypeError, KeyError) as exc:
+                    raise RuntimeSafetyError('Invalid bounded walk-forward plan') from exc
+                if operation == 'ui_walk_forward_run':
+                    walk_forward_reference = payload['preview_identity']
+                    walk_forward_result_reference = walk_forward_reference
+                    deadline = time.monotonic() + plan.max_runtime_seconds + 10
+            else:
+                walk_forward_result_reference = payload['reference']
+            if operation != 'ui_walk_forward_preview':
+                if not isinstance(walk_forward_result_reference, str) or not re.fullmatch(r'[0-9a-f]{64}', walk_forward_result_reference):
+                    raise RuntimeSafetyError('Invalid walk-forward reference')
+            if operation == 'ui_walk_forward_run':
+                journal = self.paths.state / 'walk_forward' / walk_forward_reference / 'walk_forward.sqlite3'
+                if journal.exists() or journal.is_symlink():
+                    # A new reader's process stop is not proof about an older
+                    # journal writer. Never mint recovery authority by reopening.
+                    raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
+            if operation == 'ui_walk_forward_reconcile':
+                if (not self._quiesced_walk_forward
+                    or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward):
+                    raise RuntimeSafetyError('Matching walk-forward subtree stop proof required')
+                self._check_walk_forward_owner(payload['stopped_job_id'], payload['reference'])
+                reconciliation_admitted = True
+            if deadline is None:
+                deadline = time.monotonic() + 60
+        elif operation == 'ui_chatgpt_auth':
             request = payload.get('request')
             if set(payload) != {'request'} or not isinstance(request, dict):
                 raise RuntimeSafetyError('Invalid authentication request')
@@ -762,15 +903,24 @@ class JobManager:
         elif operation in ('ui_chatgpt_usage','ui_chatgpt_reconcile'):
             if operation == 'ui_chatgpt_reconcile' and (not self._quiesced_subscription_id or payload.get('stopped_job_id') != self._quiesced_subscription_id):
                 raise RuntimeSafetyError('Subscription subtree stop proof required')
+            reconciliation_admitted = operation == 'ui_chatgpt_reconcile'
             deadline = time.monotonic() + 60
         elif operation == 'ui_campaign' and payload.get('provider', {}).get('mode') == 'chatgpt_plan':
             seconds = payload.get('config', {}).get('max_runtime_seconds')
             if type(seconds) is not int or not 1 <= seconds <= 7200:
                 raise RuntimeSafetyError('Explicit bounded subscription campaign required')
             deadline = time.monotonic() + seconds + 10
+        job_id = uuid.uuid4().hex
+        if walk_forward_reference is not None:
+            self._claim_walk_forward(walk_forward_reference, job_id)
         self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
         if self._subscription_job: self._quiesced_subscription_id = None
-        self._requires_tree_quiescence = operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or (operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan')
+        self._walk_forward_reference = walk_forward_reference
+        self._walk_forward_result_reference = walk_forward_result_reference
+        if walk_forward_reference is not None:
+            self._quiesced_walk_forward = None
+        self._tree_quiesced = False
+        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
         self._operation = operation
         self._deadline = deadline
         self._auth_request_id = auth_request_id
@@ -778,11 +928,11 @@ class JobManager:
         receiver, sender = context.Pipe(duplex=False)
         gate = context.Event()
         self._gate = gate
-        self.job_id = uuid.uuid4().hex
+        self.job_id = job_id
         self._terminal = False
         self._pipe_eof = False
         self._deferred = []
-        self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id))
+        self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id, reconciliation_admitted))
         self.receiver = receiver
         try:
             self.process.start()
@@ -823,6 +973,10 @@ class JobManager:
                 event = json.loads(raw)
                 if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error', 'auth_progress'}:
                     raise RuntimeSafetyError('Invalid worker response')
+                if event['type'] == 'result' and self._walk_forward_result_reference is not None:
+                    result = event.get('result')
+                    if not isinstance(result, dict) or result.get('reference') != self._walk_forward_result_reference:
+                        raise RuntimeSafetyError('Walk-forward worker reference mismatch')
                 if event['type'] == 'auth_progress':
                     auth_event = event.get('auth_event')
                     allowed = {'request_id','kind','state','registrations','active_registration','authorization_url','error_code','revocation_confirmed','models'}
@@ -858,7 +1012,9 @@ class JobManager:
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
             return events
         if exited:
-            if self._requires_tree_quiescence: self._join_descendants(self.process.pid)
+            if self._requires_tree_quiescence:
+                self._join_descendants(self.process.pid)
+                self._tree_quiesced = True
             if not self._terminal:
                 self._log('error')
                 events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker stopped unexpectedly; incomplete output retained as partial'})
@@ -868,8 +1024,14 @@ class JobManager:
         return events
 
     def _release(self):
-        if self._subscription_job:
-            self._quiesced_subscription_id = self.job_id
+        ownership_error = None
+        if self._walk_forward_reference is not None and self._tree_quiesced:
+            try:
+                self._check_walk_forward_owner(self.job_id, self._walk_forward_reference)
+            except Exception as exc:
+                # The subtree is already joined. Release its handles even when
+                # journal ownership is corrupt, but never grant recovery proof.
+                ownership_error = exc
         if self.tree:
             self.tree.close()
         self.tree = None
@@ -882,14 +1044,23 @@ class JobManager:
         self._gate = None
         self._deadline = None
         self._auth_request_id = None
+        if self._subscription_job:
+            self._quiesced_subscription_id = self.job_id
+        if self._walk_forward_reference is not None and self._tree_quiesced and ownership_error is None:
+            self._quiesced_walk_forward = (self.job_id, self._walk_forward_reference)
         if self._operation == 'ui_backup_restore':
             BackupManager(self.paths).recover()
+        if ownership_error is not None:
+            raise ownership_error
 
     def _join_descendants(self, pid):
         if self.tree:
             self.tree.stop_and_join()
             return
-        if not pid or sys.platform == 'win32': return
+        if not pid or sys.platform == 'win32':
+            if self._operation in WALK_FORWARD_OPERATIONS:
+                raise RuntimeSafetyError('Cannot prove walk-forward subtree stopped; reconciliation blocked')
+            return
         try: os.killpg(pid, signal.SIGKILL)
         except ProcessLookupError: return
         deadline = time.monotonic()+6
@@ -931,7 +1102,9 @@ class JobManager:
                 proc.join(3)
             if proc.is_alive():
                 raise RuntimeSafetyError('Worker did not stop; do not restore or close')
-        if self._requires_tree_quiescence: self._join_descendants(proc.pid)
+        if self._requires_tree_quiescence:
+            self._join_descendants(proc.pid)
+            self._tree_quiesced = True
         if self._terminal:
             # A terminal outcome already received is authoritative even if the
             # process still needed cleanup. Never relabel a failure as cancelled.

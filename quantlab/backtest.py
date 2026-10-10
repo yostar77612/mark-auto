@@ -18,6 +18,63 @@ MULTIPLIER = Decimal('10')
 ROUNDINGS = {'none': None, 'floor_twd': ROUND_FLOOR, 'half_up_twd': ROUND_HALF_UP, 'ceiling_twd': ROUND_CEILING}
 
 
+def _performance_metrics(ledger, equity, initial_cash):
+    """Descriptive report math; does not affect execution or candidate selection.
+
+    Closed FIFO matches include their allocated entry/exit costs and full-trade
+    PnL (not merely the exit cash delta after daily MTM). Sharpe uses the last
+    supplied equity per exchange trading date, including initial cash -> first
+    date. Missing dates are not imputed. Two observations is a mathematical
+    minimum, never a statistical sufficiency or strategy-qualification claim.
+    """
+    with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
+        closed = [row['net_pnl'] for row in ledger]
+        gains = sum((pnl for pnl in closed if pnl > 0), Decimal('0'))
+        losses = -sum((pnl for pnl in closed if pnl < 0), Decimal('0'))
+        factor_reason = 'no closed lots' if not closed else 'no losing closed lots' if not losses else None
+        daily = {}
+        for row in equity:
+            daily[row['trade_date']] = row.get('equity')
+        previous = initial_cash
+        returns = []
+        for day, value in daily.items():
+            valid = all(isinstance(x, Decimal) and x.is_finite() for x in (previous, value))
+            reason = ('missing or non-finite equity' if not valid else
+                      'nonpositive equity at return boundary' if min(previous, value) <= 0 else None)
+            returns.append({'trade_date': day, 'return': value / previous - 1 if reason is None else None,
+                            'reason': reason})
+            previous = value
+        values = [row['return'] for row in returns]
+        sharpe, reason = None, None
+        if any(value is None for value in values):
+            reason = 'missing or nonpositive daily equity; no observations discarded'
+        elif len(values) < 2:
+            reason = 'at least 2 daily returns required for sample standard deviation'
+        else:
+            mean = sum(values, Decimal('0')) / len(values)
+            variance = sum(((value - mean) ** 2 for value in values), Decimal('0')) / (len(values) - 1)
+            if not variance:
+                reason = 'zero daily-return sample variance'
+            else:
+                sharpe = mean / variance.sqrt() * Decimal(252).sqrt()
+        return {
+            'profit_factor': gains / losses if factor_reason is None else None,
+            'profit_factor_reason': factor_reason,
+            'profit_factor_basis': 'closed FIFO lot net PnL after allocated entry/exit costs; open lots excluded',
+            'daily_returns': returns, 'sharpe': sharpe, 'sharpe_reason': reason,
+            'sharpe_observations': len(values),
+            'sharpe_sample_count': sum(value is not None for value in values),
+            'sharpe_note': 'Descriptive only. Two returns is a mathematical minimum, not evidence of reliability; short samples do not establish strategy quality. The 252-period convention is assumed, not a validated annual trading calendar; gaps may span multiple days.',
+            'annualization': {
+                'periods_per_year': 252, 'annual_risk_free_rate': Decimal('0'),
+                'return_frequency': 'between last supplied equity per exchange trading date; gaps may span multiple days',
+                'first_return': 'initial cash to first supplied trading-date equity',
+                'missing_dates': 'supplied trading dates only; no imputation',
+                'standard_deviation': 'sample (ddof=1)', 'minimum_observations': 2,
+            },
+        }
+
+
 def calculate_costs(price, quantity, costs):
     """Per-fill tax on total quantity; versioned rounding is an explicit assumption."""
     if costs.tax_rounding not in ROUNDINGS:
@@ -304,12 +361,8 @@ def _run(dataset,spec,config):
     final_bar=previous_bar
     if position() and config.instrument_expiries.get(final_bar.contract_id)==final_bar.trade_date:
         raise ValidationError('BLOCKED: open expiry position requires explicit final cash settlement event')
-    daily={}
-    for row in equity: daily[row['trade_date']]=row['equity']
-    prev=config.initial_cash; daily_returns=[]
-    for day,value in daily.items():
-        daily_returns.append({'trade_date':day,'return':(value/prev-1) if prev>0 else None}); prev=value
-    metrics={'initial_cash':config.initial_cash,'final_equity':final,'net_pnl':final-config.initial_cash,'realized_gross_pnl':realized_gross,'unrealized_pnl':equity[-1]['unrealized_pnl'],'total_costs':total_costs,'slippage_cost':total_slippage,'return':(final/config.initial_cash-1) if config.initial_cash else None,'max_drawdown':max_dd,'max_drawdown_pct':max_dd_pct,'closed_lots':len(ledger),'trade_count':len(ledger),'fill_count':len(fills),'win_rate':Decimal(sum(x>0 for x in closed))/len(closed) if closed else None,'win_rate_reason':None if closed else 'no closed lots','open_position':position(),'open_lots':tuple(dict(l) for l in lots),'settlements':tuple(settlements),'rolls':tuple(rolls),'daily_returns':daily_returns,'sharpe':None,'sharpe_reason':'no annualization or risk-free-rate assumption configured','annualization':None}
+    metrics={'initial_cash':config.initial_cash,'final_equity':final,'net_pnl':final-config.initial_cash,'realized_gross_pnl':realized_gross,'unrealized_pnl':equity[-1]['unrealized_pnl'],'total_costs':total_costs,'slippage_cost':total_slippage,'return':(final/config.initial_cash-1) if config.initial_cash else None,'max_drawdown':max_dd,'max_drawdown_pct':max_dd_pct,'closed_lots':len(ledger),'trade_count':len(ledger),'fill_count':len(fills),'win_rate':Decimal(sum(x>0 for x in closed))/len(closed) if closed else None,'win_rate_reason':None if closed else 'no closed lots','open_position':position(),'open_lots':tuple(dict(l) for l in lots),'settlements':tuple(settlements),'rolls':tuple(rolls)}
+    metrics.update(_performance_metrics(ledger, equity, config.initial_cash))
     if not dataset.manifest.get('calendar_hash'): warnings.append('Calendar content hash unavailable; calendar version alone does not verify session provenance.')
     if config.settlement_mode=='daily_mtm' and position() and (final_bar.trade_date,final_bar.contract_id) not in settled_dates:
         warnings.append('Final available trading date has an open, not-yet-daily-settled position; marked to last close only.')

@@ -389,6 +389,82 @@ fixture.broker.apply_event(fixture.event())
         self.submit('b', order_type='limit', limit_price=D('20000'))
         self.assertEqual(self.broker.apply_event(self.event('b', price='20001'))['status'], 'quarantined')
 
+    def test_unchanged_journal_reuses_only_detached_verified_snapshot(self):
+        import quantlab.paper as paper
+        self.submit()
+        expected = self.broker.snapshot()
+        with patch('quantlab.paper._reduce', wraps=paper._reduce) as reduce:
+            snapshot = self.broker.snapshot()
+            snapshot['cash'] = '1'
+            snapshot['orders']['a']['status'] = 'mutated'
+            self.assertEqual(self.broker.snapshot(), expected)
+            reduce.assert_not_called()
+
+    def test_verified_snapshot_observes_external_restart_reconcile_and_kill(self):
+        self.submit()
+        self.broker.snapshot()
+        other = PaperBroker(self.path, **self.kw)
+        self.assertTrue(self.broker.snapshot()['reconciliation_required'])
+        other.reconcile(other.snapshot())
+        other.set_kill_switch(False)
+        self.assertFalse(self.broker.snapshot()['reconciliation_required'])
+        self.assertFalse(self.broker.snapshot()['kill_switch'])
+        other.set_kill_switch(True)
+        self.assertTrue(self.broker.snapshot()['kill_switch'])
+
+    def test_verified_snapshot_rechecks_same_length_journal_edit(self):
+        self.submit()
+        self.broker.snapshot()
+        with closing(sqlite3.connect(self.path)) as db, db:
+            # Keep row count, sequence and the last hash unchanged.
+            db.execute("UPDATE journal SET payload=replace(payload, '100000', '900000') WHERE operation='initialize'")
+        with self.assertRaisesRegex(JournalConflict, 'checksum mismatch'):
+            self.broker.snapshot()
+
+    def test_verified_snapshot_rechecks_materialization_and_truncation(self):
+        self.submit()
+        self.broker.snapshot()
+        with closing(sqlite3.connect(self.path)) as db, db:
+            saved = db.execute('SELECT state FROM materialized WHERE id=1').fetchone()[0]
+            db.execute("UPDATE materialized SET state=replace(state, '100000', '900000')")
+        with self.assertRaisesRegex(JournalConflict, 'materialized snapshot'):
+            self.broker.snapshot()
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('UPDATE materialized SET state=?', (saved,))
+        self.broker.snapshot()  # Re-warm the proof before a different disk change.
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('DELETE FROM journal WHERE seq=(SELECT MAX(seq) FROM journal)')
+        with self.assertRaisesRegex(JournalConflict, 'materialized snapshot'):
+            self.broker.snapshot()
+
+    def test_verified_snapshot_does_not_survive_transaction_rollback(self):
+        import quantlab.paper as paper
+        before = self.broker.snapshot()
+        with self.assertRaisesRegex(RuntimeError, 'rollback'):
+            with self.broker._transaction() as db:
+                self.broker._append(db, before, 'kill', {'active': True}, 'temporary-kill')
+                self.assertTrue(self.broker._restore(db)['kill_switch'])
+                raise RuntimeError('rollback')
+        with patch('quantlab.paper._reduce', wraps=paper._reduce) as reduce:
+            self.assertEqual(self.broker.snapshot(), before)
+            self.assertGreater(reduce.call_count, 0)
+
+    def test_verified_snapshot_cache_is_bounded(self):
+        import json
+        import quantlab.paper as paper
+        expected = self.broker.snapshot()
+        with closing(sqlite3.connect(self.path)) as db, db:
+            seq, payload = db.execute("SELECT seq,payload FROM journal WHERE operation='initialize'").fetchone()
+            payload = json.loads(payload)
+            payload['unused_padding'] = 'x' * (1024 * 1024)
+            db.execute('UPDATE journal SET payload=? WHERE seq=?', (json.dumps(payload), seq))
+        with patch('quantlab.paper._reduce', wraps=paper._reduce) as reduce:
+            self.assertEqual(self.broker.snapshot(), expected)
+            self.assertIsNone(self.broker._verified_restore)
+            reduce.reset_mock()
+            self.assertEqual(self.broker.snapshot(), expected)
+            self.assertGreater(reduce.call_count, 0)
+
     def test_corrupted_snapshot_detected(self):
         self.submit()
         with closing(sqlite3.connect(self.path)) as db, db:

@@ -7,14 +7,14 @@ account is required. `clean_windows_kit.py` runs only on the maintainer's machin
 
 ## Build the kit (maintainer)
 
-Obtain baseline 0.2.0 and candidate 0.2.1 installers plus their original
+Obtain baseline 0.2.1 and candidate 0.2.2 installers plus their original
 `build-manifest.json` from their verified exact-commit GitHub release/CI artifacts.
 Put each installer next to its own manifest in separate folders. Verify the
 release URL, source commit and published SHA256 independently first. Hashes
 inside a downloaded manifest alone are integrity checks, not publisher identity.
 Do not substitute the 0.0.0 same-payload installer fixture for historical upgrade.
 
-    python packaging/clean_windows_kit.py --baseline BASELINE_DIR --baseline-version 0.2.0 --candidate CANDIDATE_DIR --version 0.2.1 --output clean-client-kit
+    python packaging/clean_windows_kit.py --baseline BASELINE_DIR --baseline-version 0.2.1 --candidate CANDIDATE_DIR --version 0.2.2 --output clean-client-kit
 
 The assembler rejects mismatched installer hashes, absent source digests,
 same-version/reversed upgrades and identical commits/installers. It copies the
@@ -95,10 +95,10 @@ to full PASS. A reviewer reconciles the complete evidence and outstanding blocke
 6. Paper: reconcile a synthetic account, replay, pause, continue, kill switch,
    duplicate events and close/reopen; no external order route. After interrupted
    close/crash or sleep/resume require reconciliation; capture exact state.
-7. Persistence and historical upgrade: on baseline 0.2.0 create/export representative
+7. Persistence and historical upgrade: on baseline 0.2.1 create/export representative
    saved settings, imported dataset, backtest/report, campaign, paper journal and
    backup using UI. Record file hashes and expected semantic contents. Close app,
-   install 0.2.1, reopen each item and verify compatibility and preservation. Test
+   install 0.2.2, reopen each item and verify compatibility and preservation. Test
    backup restore to a disposable location, cancelled restore, corrupt/incompatible
    state rejection and recovery without overwriting original data. A sentinel
    alone does not pass this row. Preserve before/after manifests and reports.
