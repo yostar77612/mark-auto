@@ -252,6 +252,7 @@ class PaperBroker:
         self._validate_policy()
         self.path = Path(journal_path)
         self._storage_uncertain = False
+        self._verified_restore = None
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._config = content_hash(dict(journal_schema=4, instrument=instrument, costs=costs, limits=limits,
                                          risk_sessions=self._risk_sessions, margin_schedule=self._margin_schedule))
@@ -364,14 +365,35 @@ class PaperBroker:
         return f'{label}:{seq}'
 
     def _restore(self, db):
-        state = _initial()
-        for operation, payload, expected in db.execute('SELECT operation,payload,state_hash FROM journal ORDER BY seq'):
-            state = _reduce(state, operation, json.loads(payload))
-            if content_hash(state) != expected:
-                raise JournalConflict('journal replay checksum mismatch')
+        # Re-read every record under the transaction's lock. Only an exact match
+        # with a previously verified journal AND materialization can reuse its
+        # proof; row counts, sequence numbers or the last hash alone are unsafe.
+        # Bound serialized proof data to 1 MiB; larger journals use streaming replay.
+        records, size = [], 0
+        for record in db.execute('SELECT seq,identity,operation,payload,state_hash FROM journal ORDER BY seq'):
+            size += sum(len(value.encode('utf-8')) if isinstance(value, str) else 8 for value in record)
+            if size > 1024 * 1024:
+                records = None
+                break
+            records.append(record)
         saved = db.execute('SELECT state FROM materialized WHERE id=1').fetchone()
-        if not saved or canonical_json(state) != saved[0]:
-            raise JournalConflict('materialized snapshot disagrees with journal replay')
+        if saved:
+            size += len(saved[0].encode('utf-8'))
+        proof = (tuple(records), saved[0]) if records is not None and saved and size <= 1024 * 1024 else None
+        if proof is not None and proof == self._verified_restore:
+            state = json.loads(saved[0])  # Never expose mutable cached state.
+        else:
+            self._verified_restore = None
+            state = _initial()
+            rows = (record[2:] for record in records) if records is not None else db.execute(
+                'SELECT operation,payload,state_hash FROM journal ORDER BY seq')
+            for operation, payload, expected in rows:
+                state = _reduce(state, operation, json.loads(payload))
+                if content_hash(state) != expected:
+                    raise JournalConflict('journal replay checksum mismatch')
+            if not saved or canonical_json(state) != saved[0]:
+                raise JournalConflict('materialized snapshot disagrees with journal replay')
+            self._verified_restore = proof
         if self._storage_uncertain:
             state = self._append(db, state, 'reconcile_failure',
                                  {'reason': 'storage failure; explicit reconciliation required'},

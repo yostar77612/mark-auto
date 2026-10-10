@@ -346,3 +346,13 @@ M2、M3、M4按完整項目證據評分，不因多幾個測試先加分。M6真
 M3完整15點可驗證，新增40/100，原170/200保留，已記錄總210/300＝70%，剩30%。M2/M4仍待候選0.2.2完整Gate，TAIEX分線能力/來源權限未解，M6真授權、M7cleanDPI仍未滿。重新比對使用者原文另確認ProfitFactor/Sharpe實作與停損/停利/成本參考線接線待補，連同Walk-forward列工程工作，不能拿既有窄項分數掩蓋。不得用新權重或移除需求美化百分比。
 
 0.2.2沿用上述真正已發布0.2.1baseline，hash及測試固定fixture依實際下載更新。曾不必要修改recovery腳本舊default導致一項相容性測試失敗，已還原原default而非改門檻；工作流/kit仍明示0.2.1。後續40packaging測試36PASS4PowerShellskip，失敗log保留。另Qt對話框exec被原AST dynamic-call Gate同名拒絕，改用Qt正式非同步open/accepted/finished流程，加重複開啟／取消／关闭期间不啟動工作檢查，54相關測試PASS，原Gate不改，沒有改名或getattr隱藏呼叫。
+
+
+### 2026-10-10 02:52 UTC：當前整合順序
+
+1. 先修復 PR #5 首輪 CI 的 UTF-8、Qt 測試依賴及 Paper replay 逾時根因；同一分支繼續，必要完整 Gate 全數通過前不合併。保持原 30 秒測試工作預算、原 960-bar 測試與原驗收斷言。
+2. Paper 效能改善先依 03 報告的量測，僅局部優化。任何快取必須每個交易讀取並比較完整 journal / materialized snapshot，外部下單、kill、篡改、截斷與 rollback 不可被快取掩蓋；回傳 detached state，限制保留記憶體。空計畫優化仍要確保 durable cursor 與 restart idempotency。
+3. 此批整合完成後才整合已隔離開發的固定候選池 Walk-forward、必要 PF / Sharpe 及持倉／風控參考線。AI 候選 Walk-forward 的來源與先前資料暴露必須另外驗證，不能以 built-in 版本宣稱全部 AI 研究要求完成。
+4. TAIEX 五秒來源已找到，但自動使用權限未證实；詳見 03 的官方來源與限制。保留 EXTERNAL BLOCKED，不擅自接入、偽造分線或延用每日資料授權。
+
+當前已發布版本仍為 0.2.1，既有固定清單 210/300（70%），待修項不提前加分。乾淨 Windows 10 / 11、真實所選 AI 授權、即時行情與 main 管理權限限制仍分別保留。

@@ -258,7 +258,8 @@
     "real_money": "DISABLED",
     "clean_windows_10": "EXTERNAL_BLOCKED: no authorized licensed clean Windows10 22H2 x64 client environment",
     "clean_windows_11": "EXTERNAL_BLOCKED: no authorized licensed clean Windows11 x64 client environment",
-    "main_protection": "EXTERNAL_BLOCKED: protected=false, rulesets empty, administration API403; no protection configured"
+    "main_protection": "EXTERNAL_BLOCKED: protected=false, rulesets empty, administration API403; no protection configured",
+    "taiex_intraday": "EXTERNAL_BLOCKED: official five-second endpoint observed, but automated-use permission not verified; daily open-data license does not establish intraday permission; automatic polling disabled"
   },
   "product_scope": {
     "expanded_at": "2026-10-09T16:25:00Z",
@@ -418,5 +419,33 @@
     "walk_forward": "IMPLEMENTATION_PENDING; fixed four-way OOS split is not walk-forward. Separate predeclared bounded module in development.",
     "extended_reports_and_reference_layers": "IMPLEMENTATION_PENDING; original user text requires ProfitFactor/Sharpe and protective/cost references; do not interpret prior narrow weights as recertification of these.",
     "score_scope": "Historical fixed300-point ledger, not hours and not blanket production/all-requirements certification; newly confirmed requirements remain explicit blockers until satisfied."
+  },
+  "candidate_022_ci": {
+    "remote_head": "acd2bfee812a6f48b9d74d79dcb107ae95519332",
+    "local_equivalent": "43811fab2565a1ec1408a23ce4f6d8d3fcfdc63c",
+    "windows_run": 38017986367,
+    "quantlab_run": 38017986330,
+    "status": "FAIL_REPAIR_IN_PROGRESS",
+    "windows_tests": {
+      "total": 725,
+      "failures": 1,
+      "errors": 1,
+      "skipped": 12
+    },
+    "causes": [
+      "Explicit UTF-8 source read missing on Windows CP1252",
+      "Qt runtime missing from core/UI test environments",
+      "960-bar typed Paper replay exceeds unchanged 30-second native test budget"
+    ],
+    "release": "NOT_PUBLISHED",
+    "thresholds": "Unchanged; no deleted tests, reduced fixtures or increased timeouts",
+    "repair_evidence": "UTF-8 source read explicit; core/UI workflows install pinned Qt instead of skipping failures; bounded exact-byte restore memoization and atomic empty replay cursor; Linux unchanged workload 4.254s→0.517s, typed Qt/spawn 8.105s→3.899s. Final full suite and new native exact-head CI pending.",
+    "repair_local_suite": {
+      "total": 738,
+      "passed": 723,
+      "skipped": 15,
+      "seconds": 105.539,
+      "scope": "Full Linux suite; platform-specific Windows/PowerShell checks not run locally; exact-head native CI still pending"
+    }
   }
 }

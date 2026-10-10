@@ -153,9 +153,18 @@ class PaperReplay:
                             plan.append({'client_order_id': oid, 'strategy_hash': content_hash(self.strategy),
                                          'contract_id': bar.contract_id, 'side': 'buy' if target > current else 'sell',
                                          'quantity': 1, 'order_type': 'market', 'created_at': bar.timestamp})
-                        db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
+                        if plan:
+                            db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
                     else:
                         plan = json.loads(saved)
+                    if not plan:
+                        # The empty decision and consumed cursor are one durable
+                        # write. A restart must not reinterpret an already-satisfied
+                        # target after the account changes, nor persist [] first.
+                        db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
+                if not plan:
+                    self._fault('after_empty_cursor')
+                    continue
                 self._fault('after_plan_before_submit')
                 for intent in plan:
                     state = self.broker.snapshot()

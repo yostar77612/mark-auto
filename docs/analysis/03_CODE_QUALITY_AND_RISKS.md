@@ -308,3 +308,23 @@ mainfc2dfac，postmerge Windows38013204925 build/security/release及Quantlab3801
 M3完整15點可驗證，新增40/100，原170/200保留，已記錄總210/300＝70%，剩30%。M2/M4仍待候選0.2.2完整Gate，TAIEX分線能力/來源權限未解，M6真授權、M7cleanDPI仍未滿。重新比對使用者原文另確認ProfitFactor/Sharpe實作與停損/停利/成本參考線接線待補，連同Walk-forward列工程工作，不能拿既有窄項分數掩蓋。不得用新權重或移除需求美化百分比。
 
 0.2.2沿用上述真正已發布0.2.1baseline，hash及測試固定fixture依實際下載更新。曾不必要修改recovery腳本舊default導致一項相容性測試失敗，已還原原default而非改門檻；工作流/kit仍明示0.2.1。後續40packaging測試36PASS4PowerShellskip，失敗log保留。另Qt對話框exec被原AST dynamic-call Gate同名拒絕，改用Qt正式非同步open/accepted/finished流程，加重複開啟／取消／关闭期间不啟動工作檢查，54相關測試PASS，原Gate不改，沒有改名或getattr隱藏呼叫。
+
+
+### 2026-10-10 02:52 UTC：0.2.2 首輪 CI 與 TAIEX 分線權限
+
+PR #5 的 acd2bfee（與本地 43811fa 相同 tree）首輪未通過，未合併、未發布。
+- Windows run 38017986367 / job 114112443026：725 項，1 failure、1 error、12 skips。原生完整套件揭露 `tests/test_desktop_market_smoke.py:23` 未指定 UTF-8，在 CP1252 讀取新增中文字串時失敗；改為明示 UTF-8，原斷言不變。
+- 同一 job 的 `test_paper_replay_policy.TypedReplayWorkerTests.test_typed_120000_normal_worker_and_repeat_are_safe` 在原 30 秒工作預算內未完成。Linux 相同 960 bars 測試 8.105 秒通過，cProfile 指向每 bar 重讀重建整份 broker journal（980 snapshots、21,136 reductions）及空計畫的 1,920 次 plan/cursor 寫入。正在做局部優化與中斷／篡改回歸，不延長門檻、不刪測試、不減少 fixture。
+- Quantlab run 38017986330 的 core/UI jobs 缺少 Qt，新增 GUI 測試模組無法匯入。工作流將安裝同版 PySide6 Essentials / shiboken6 6.12.0 再跑完整套件，不把 import failure 改成跳過。Windows 正式發行仍使用原 hash-pinned 完整 runtime lock 與 native preflight。依賴、安全與完整 Git 歷史靜態 Gate 首輪通過，不代表整體 Gate 通過。
+
+TAIEX 官方五秒指數來源存在，但免費自動下載／再利用權限尚未取得可核實依據，狀態為 EXTERNAL BLOCKED，不串接自動輪詢。
+- 實際單次官方 `MI_5MINS_INDEX` 2026-10-08 回應為 3,241 rows / 39 columns，含時間與指數，無成交量；五秒取樣不是交易所原生分鐘 OHLC。09:00:00 是前日收盤 49,806.37，09:00:05 才與當日開盤 49,783.06 相符，不能把前日值算進當日最高價。
+- [證交所使用條款](https://www.twse.com.tw/zh/terms/use.html) 第 6、8 節對自動下載另有限制與例外；[政府資料集 11755](https://data.gov.tw/dataset/11755) 是每日 OHLC，不能將其授權套用到五秒來源。[官方 OpenAPI](https://openapi.twse.com.tw/v1/swagger.json) 未列該五秒 endpoint。
+- 確認限制後停止後續 payload 下載，僅查條款／目錄。未以 MIS 瀏覽頁或其他端點繞過限制，未將原始 payload 或衍生 bars 放進產品、Git 或 Release。未宣稱該來源一定違法；結論限於本次無法證實所需自動使用權限。
+
+
+Paper 局部修復已經獨立套用並进入完整回歸：`paper._restore` 每次交易仍在鎖內逐列讀取 seq / identity / operation / payload / state_hash 與 materialized snapshot；只有所有 bytes 與上次已驗證內容完全一致才复用驗證結果，回傳重新解析的 detached state。快取限制為 1 MiB serialized proof，大於限制回到原 streaming replay；儲存不確定標記在兩條路徑後皆執行。外部 kill／restart／篡改／截斷與 transaction rollback 均加入回歸。此機制沒有外部 monotonic anchor，不能識別所有自洽整庫回滾，不作 anti-rollback 新保證。
+
+空決策與 consumed cursor 合成一次 FULL-sync transaction；不能在重啟後重新解讀已滿足的 target，舊版持久化 `[]` 也按既有決策消耗。量測相同 960 bars、17 orders、5 fills、31 journal events：Linux replay 4.254 秒 → 0.517 秒，原 typed Qt/spawn-worker 案例 8.105 秒 → 3.899 秒；原 30 秒上限不改。這是 Linux 量測，Windows 仍須 exact-head CI 實測，不能先報通過。
+
+修復後完整 Linux suite：738 項，723 PASS、15 項既有 Windows／PowerShell 平台檢查未執行，105.539 秒；靜態／完整 Git 歷史 Gate 0 findings。原 960-bar／30 秒 GUI case 通過，Windows exact-head 驗證仍待新 CI，不以 Linux 結果替代。

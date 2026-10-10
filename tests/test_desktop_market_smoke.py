@@ -20,7 +20,7 @@ class MarketSmokeContractTests(unittest.TestCase):
         self.assertEqual([step[0] for step in _smoke_steps()], [
             'ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign',
             'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'])
-        script = (ROOT / 'desktop.py').read_text()
+        script = (ROOT / 'desktop.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', script)
         self.assertIn("market_report['status'] == 'passed'", script)
         self.assertIn("'market_smoke': market_report", script)

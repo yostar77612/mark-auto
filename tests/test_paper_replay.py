@@ -124,6 +124,131 @@ class ReplayTests(unittest.TestCase):
         for field in ('fills', 'orders', 'positions', 'cash', 'order_send_timestamps'):
             self.assertEqual(after[field], before[field])
 
+    def test_empty_bars_commit_cursors_without_redundant_plans(self):
+        from unittest.mock import patch
+        self.replay.targets = {}
+        self.replay.start()
+        statements = []
+        real_connect = sqlite3.connect
+        def connect(*args, **kwargs):
+            db = real_connect(*args, **kwargs)
+            if Path(args[0]) == self.replay.path:
+                db.set_trace_callback(statements.append)
+            return db
+        with patch('quantlab.paper_replay.sqlite3.connect', side_effect=connect):
+            self.assertTrue(self.replay.step(max_bars=120)['complete'])
+        self.assertEqual(sum(s.startswith('UPDATE replay SET cursor=') for s in statements), 120)
+        self.assertFalse(any(s.startswith('UPDATE replay SET plan=') for s in statements))
+        self.assertTrue(self.new_replay().snapshot()['complete'])
+        self.assertFalse(self.broker.snapshot()['orders'])
+
+    def test_empty_bar_interruption_and_cursor_failure_resume_without_orders(self):
+        self.replay.targets = {2: 1}
+        self.replay.start()
+        def crash(point):
+            if point == 'after_empty_cursor':
+                raise RuntimeError('interrupted empty bar')
+        self.replay._fault = crash
+        with self.assertRaisesRegex(RuntimeError, 'interrupted empty bar'):
+            self.replay.step(max_bars=1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 1)
+        self.assertFalse(self.replay.snapshot()['pending_plan'])
+        self.assertFalse(self.broker.snapshot()['orders'])
+        self.replay._fault = lambda point: None
+        with closing(sqlite3.connect(self.replay.path)) as db, db:
+            db.execute("CREATE TRIGGER fail_empty_cursor BEFORE UPDATE ON replay WHEN NEW.cursor != OLD.cursor BEGIN SELECT RAISE(ABORT, 'empty cursor failure'); END")
+        with self.assertRaises(sqlite3.DatabaseError):
+            self.replay.step(max_bars=1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 1)
+        with closing(sqlite3.connect(self.replay.path)) as db, db:
+            db.execute('DROP TRIGGER fail_empty_cursor')
+        self.broker = self.new_broker()
+        resumed = self.new_replay()
+        resumed.targets = {2: 1}
+        self.broker.reconcile(self.broker.snapshot())
+        resumed.start()
+        self.assertEqual(resumed.step(max_bars=1)['cursor'], 2)
+        self.assertFalse(self.broker.snapshot()['orders'])
+        self.assertEqual(resumed.step(max_bars=1)['cursor'], 3)
+        self.assertEqual(len(self.broker.snapshot()['orders']), 1)
+        self.assertEqual(len(self.broker.snapshot()['fills']), 1)
+        self.assertEqual(len(self.broker.snapshot()['order_send_timestamps']), 1)
+
+    def test_satisfied_empty_target_is_not_reinterpreted_after_restart(self):
+        self.replay.targets = {0: 0}
+        self.replay.start()
+        def crash(point):
+            if point == 'after_empty_cursor':
+                raise RuntimeError('after durable empty decision')
+        self.replay._fault = crash
+        with self.assertRaises(RuntimeError):
+            self.replay.step(max_bars=1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 1)
+        # A separately reconciled account can change before the next replay.
+        bar = self.data.bars[0]
+        self.broker.submit({'client_order_id': 'external', 'strategy_hash': 'external',
+            'contract_id': bar.contract_id, 'side': 'buy', 'quantity': 1,
+            'order_type': 'market', 'created_at': bar.timestamp},
+            quote={'account_id': 'replay', 'contract_id': bar.contract_id,
+                   'timestamp': bar.timestamp, 'price': bar.open, **self.broker.quote_policy(bar.timestamp)},
+            now=bar.timestamp)
+        self.broker.apply_event({'event_id': 'external-fill', 'fill_id': 'external-fill',
+            'order_id': 'external', 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
+            'quantity': 1, 'price': bar.open, 'commission': Decimal('0'), 'tax': Decimal('0')})
+        self.broker = self.new_broker()
+        resumed = self.new_replay()
+        resumed.targets = {0: 0}
+        self.broker.reconcile(self.broker.snapshot())
+        resumed.start()
+        self.assertEqual(resumed.step(max_bars=2)['cursor'], 3)
+        self.assertEqual(set(self.broker.snapshot()['orders']), {'external'})
+        self.assertEqual(self.broker.snapshot()['positions'][bar.contract_id], 1)
+
+    def test_saved_legacy_empty_plan_consumes_without_reinterpretation(self):
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        with closing(sqlite3.connect(self.replay.path)) as db, db:
+            db.execute("UPDATE replay SET plan='[]' WHERE id=1")
+        self.assertEqual(self.replay.step(max_bars=1)['cursor'], 1)
+        self.assertFalse(self.replay.snapshot()['pending_plan'])
+        self.assertFalse(self.broker.snapshot()['orders'])
+
+    def test_empty_bars_observe_external_kill_before_next_bar(self):
+        other = self.new_broker()
+        other.reconcile(other.snapshot())
+        self.replay.targets = {1: 1}
+        self.replay.start()
+        def kill(point):
+            if point == 'after_empty_cursor':
+                other.set_kill_switch(True)
+        self.replay._fault = kill
+        self.assertEqual(self.replay.step(max_bars=120)['cursor'], 1)
+        self.assertTrue(self.broker.snapshot()['kill_switch'])
+        self.assertFalse(self.broker.snapshot()['orders'])
+
+    def test_empty_bars_observe_external_reconciliation_barrier(self):
+        self.replay.targets = {1: 1}
+        self.replay.start()
+        def restart(point):
+            if point == 'after_empty_cursor':
+                self.new_broker()
+        self.replay._fault = restart
+        self.assertEqual(self.replay.step(max_bars=120)['cursor'], 1)
+        self.assertTrue(self.broker.snapshot()['reconciliation_required'])
+        self.assertFalse(self.broker.snapshot()['orders'])
+
+    def test_empty_bars_observe_policy_change_before_next_bar(self):
+        self.replay.targets = {1: 1}
+        self.replay.start()
+        def change_policy(point):
+            if point == 'after_empty_cursor':
+                self.broker._margin_schedule = [dict(self.broker._margin_schedule[0], version='changed')]
+        self.replay._fault = change_policy
+        with self.assertRaisesRegex(ValidationError, 'pinned broker policy changed'):
+            self.replay.step(max_bars=120)
+        self.assertEqual(self.replay.snapshot()['cursor'], 1)
+        self.assertFalse(self.broker.snapshot()['orders'])
+
     def test_binding_and_budget(self):
         with self.assertRaises(ValidationError):
             self.replay.step(max_bars=1001)
