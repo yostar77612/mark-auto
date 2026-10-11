@@ -99,6 +99,38 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
                 payload = db.execute('SELECT payload FROM state').fetchone()[0]
             self.assertEqual((root / 'walk_forward.json').read_bytes(), payload.encode('utf-8'))
 
+    def test_initial_and_close_profiles_record_wal_transition_and_full(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            observer = diagnostic.Observer({}, Path(temporary) / 'report.json')
+            with ExitStack() as stack:
+                observer.instrument(stack)
+                with closing(sqlite3.connect(Path(temporary) / 'walk_forward.sqlite3')) as db:
+                    self.assertEqual(db.execute('PRAGMA journal_mode=WAL').fetchone(), ('wal',))
+                    db.execute('PRAGMA synchronous=FULL')
+                    db.execute('CREATE TABLE state (payload TEXT)')
+                    db.execute('INSERT INTO state VALUES (?)', ('durable',)); db.commit()
+            profile = observer.report['sqlite_profiles'][0]
+            self.assertEqual(profile['profile_observed_at'], 'initial_connect_before_product_configuration')
+            self.assertEqual((profile['journal_mode'], profile['synchronous']), ('delete', 2))
+            self.assertEqual(profile['close_profile'],
+                             {'journal_mode': 'wal', 'synchronous': 2, 'locking_mode': 'normal'})
+            self.assertEqual(observer.phases['sqlite.commit']['completed'], 1)
+            self.assertEqual(observer.phases['sqlite.close']['completed'], 1)
+
+    def test_close_profile_failure_still_closes_real_retained_connection(self):
+        class RefuseProfile(dict):
+            def __setitem__(self, key, value):
+                raise OSError('profile failed')
+        with tempfile.TemporaryDirectory() as temporary:
+            observer = diagnostic.Observer({}, Path(temporary) / 'report.json')
+            with ExitStack() as stack:
+                observer.instrument(stack)
+                db = sqlite3.connect(Path(temporary) / 'walk_forward.sqlite3')
+                db.observed_profile = RefuseProfile()
+                with self.assertRaisesRegex(OSError, 'profile failed'): db.close()
+            with self.assertRaises(sqlite3.ProgrammingError): db.execute('SELECT 1')
+            self.assertEqual(observer.phases['sqlite.close']['errors'], 1)
+
     def test_instrumentation_preserves_exception_and_incomplete_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
             report = {'status': 'INCOMPLETE'}

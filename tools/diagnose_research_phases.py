@@ -126,8 +126,18 @@ class Observer:
                 return observer.call('sqlite.commit', lambda: observer.call('sqlite.' + self.phase_kind + '.commit', commit))
 
             def close(self):
-                close = super().close
-                return observer.call('sqlite.close', lambda: observer.call('sqlite.' + self.phase_kind + '.close', close))
+                def close_with_profile():
+                    try:
+                        profile = getattr(self, 'observed_profile', None)
+                        if profile is not None and 'close_profile' not in profile:
+                            profile['close_profile'] = {
+                                key: sqlite3.Connection.execute(self, 'PRAGMA ' + key).fetchone()[0]
+                                for key in ('journal_mode', 'synchronous', 'locking_mode')}
+                    finally:
+                        # Profile/report failure must never defer owned closure.
+                        sqlite3.Connection.close(self)
+                return observer.call('sqlite.close', lambda: observer.call(
+                    'sqlite.' + self.phase_kind + '.close', close_with_profile))
 
             def __exit__(self, *args):
                 # sqlite3's C context manager commits without calling commit().
@@ -160,6 +170,8 @@ class Observer:
                 db.close()
                 raise
             profile['database'] = str(args[0] if args else kwargs.get('database'))
+            profile['profile_observed_at'] = 'initial_connect_before_product_configuration'
+            db.observed_profile = profile
             self.report.setdefault('sqlite_profiles', []).append(profile)
             return db
         stack.enter_context(patch.object(sqlite3, 'connect', connect))

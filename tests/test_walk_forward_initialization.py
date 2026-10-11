@@ -80,7 +80,7 @@ class WalkForwardInitializationTests(unittest.TestCase):
         self.assertEqual(result['evaluations'], []); self.assertFalse(self.registry.exists())
         with closing(original_connect(self.database)) as db:
             self.assertEqual(db.execute('PRAGMA synchronous').fetchone(), (2,))
-            self.assertEqual(db.execute('PRAGMA journal_mode').fetchone(), ('delete',))
+            self.assertEqual(db.execute('PRAGMA journal_mode').fetchone(), ('wal',))
 
     def test_initial_snapshot_exception_rolls_back_schema_and_releases_both_connections(self):
         with patch.object(wf, '_save_state', side_effect=RuntimeError('before first commit')):
@@ -121,6 +121,9 @@ class WalkForwardInitializationTests(unittest.TestCase):
 
     def test_existing_terminal_journal_reopen_preserves_bytes_and_storage_mode(self):
         original = self.run_cancelled()
+        # Explicit historical rollback fixture: new journals now select WAL.
+        with closing(sqlite3.connect(self.database)) as db:
+            self.assertEqual(db.execute('PRAGMA journal_mode=DELETE').fetchone(), ('delete',))
         before = {path.name: path.read_bytes() for path in self.output.iterdir() if path.is_file()}
         with patch.object(wf, '_save_state', side_effect=AssertionError('terminal must stay read-only')):
             self.assertEqual(self.run_cancelled(), original)

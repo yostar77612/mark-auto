@@ -2,6 +2,14 @@
 
 <!-- CURRENT_STATUS_START -->
 
+### PR #11 原生 research 再次取消／量測支持的新 WFO WAL 候選（2026-10-11 18:41 UTC）
+
+- 前候選 `7f0fe6a8` 的 [Quantlab 38163211643](https://github.com/yostar77612/mark-auto/actions/runs/38163211643) 為 **13 SUCCESS＋Windows 3.12 research 在原 15 分鐘取消**；3.11 的 243 cases PASS，639.781 秒。3.12 不完整執行 863.062 秒，原 2 秒 deadline 案例先通過，其後 state INSERT 遭中斷，沒有完整 coverage 證據；不宣稱整體 PASS。cores／Linux／UI 均通過；[Windows 38163211577](https://github.com/yostar77612/mark-auto/actions/runs/38163211577) 安裝產物仍待 worker 核驗。舊失敗全保留。
+- **現有量測支持且 root 已批准的產品候選：** 僅新建 WFO journal 採 WAL/FULL，不迁移舊 DB；所有原 `_save_state`／commit／export 均保留。所有 WFO 入口在開啟前無條件執行 Paper-style patched SQLite ≥3.51.3 與 local-filesystem guard。明確相容性限制：舊版 SQLite 或 network filesystem 的 WFO 存取現在拒絕；支援的 bundled Windows SQLite 3.54／local 路徑與舊 DELETE DB bytes／mode 保留，不假稱所有環境仍相容。
+- Desktop workspace flags 接受 replay／WFO／兩者，WAL 前先持久化相容性 guard；guarded backup v2 與 restore rollback 使用 union。獨立來源／安全審查 PASS（36 WFO tests＋25 workspace tests），owner 125 related tests＝120 PASS／5 個既有 Windows skips。diagnostic 最終 journal mode 讀回修正仍在進行；**native Windows crash／效能尚未執行**，不得以局部測試認證。
+- 研究邏輯／producer profiles 未變，原 Gate／逐次持久化／230/300 不變；不執行個人 PC／VM／券商操作。需完成最終診斷、原生 crash／性能及全部必要 exact-head Gate 後才能整合發布。
+
+
 ### PR #11 研究 Gate 通過／三個新 fixture 失敗，僅測試修補待提交（2026-10-11 18:12 UTC）
 
 - 候選 `bbc63fab` 的 [Quantlab 38161825621](https://github.com/yostar77612/mark-auto/actions/runs/38161825621) 兩個 Windows research profiles 均 243＝237 PASS／6 skips，3.11 為 605.672 秒、3.12 為 531.453 秒；exact inventories／owned jobs 已核驗，第三階段實際原 deadline 案例 1.141 秒 PASS。這不抵銷 core 失敗：兩個 cores 各 1,362＝1,332 PASS／27 skips／3 個新 fixture caller FAIL，644.392／644.862 秒，原因為 path alias 未匹配、fake clock 未攔截而維持 0；全部實際新增 WFO crash tests PASS。Linux 各 1,579 PASS／26 skips，445.652／333.436 秒；UI 1,584 PASS／21 skips，507.094 秒。

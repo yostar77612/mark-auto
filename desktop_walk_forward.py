@@ -174,6 +174,7 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
             source = payload['saved_source']
             source_options = {'source_campaign_dir': source_campaign_folder(paths, source['campaign_reference']),
                 'original_dataset': load_original_dataset(Path(source['original_dataset']['path']))}
+        paths.require_walk_forward_wal()
         state = run_walk_forward(data, plan=walk_forward_plan_from_dict(preview['plan']),
             output_dir=output, holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3', **source_options)
         return compact_walk_forward(state, identity)

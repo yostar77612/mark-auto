@@ -226,3 +226,230 @@ class WorkspaceWALGuardTests(unittest.TestCase):
             self.assertEqual(connection.execute('PRAGMA integrity_check').fetchall(), [('ok',)])
         finally:
             connection.close()
+
+
+class WalkForwardWorkspaceGuardTests(unittest.TestCase):
+    setUp = WorkspaceWALGuardTests.setUp
+    released_module = WorkspaceWALGuardTests.released_module
+
+    def formats(self):
+        from quantlab.desktop_runtime import WALK_FORWARD_REQUIREMENT
+        wfo = {**WORKSPACE_FORMAT, 'sqlite_walk_forward': WALK_FORWARD_REQUIREMENT}
+        return WORKSPACE_FORMAT, GUARDED, wfo, {**GUARDED, **wfo}
+
+    def test_exact_composed_formats_and_both_setter_orders(self):
+        from quantlab.desktop_runtime import _workspace_format
+        base, replay, wfo, both = self.formats()
+        for value in (base, replay, wfo, both):
+            self.assertEqual(_workspace_format(value), value)
+        for order in (('require_replay_wal', 'require_walk_forward_wal'),
+                      ('require_walk_forward_wal', 'require_replay_wal')):
+            _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
+            for method in order:
+                getattr(self.paths, method)()
+            self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), both)
+        for value in ({**wfo, 'extra': True}, {**wfo, 'schema_version': True},
+                      {**wfo, 'sqlite_walk_forward': {'profile': 'wal_full'}},
+                      {**both, 'sqlite_replay': {**REPLAY_REQUIREMENT, 'minimum_runtime': '0'}}):
+            with self.assertRaises(RuntimeSafetyError):
+                _workspace_format(value)
+
+    def test_old_binary_rejects_wfo_and_both_workspaces_and_archives(self):
+        old = self.released_module()
+        for index, value in enumerate(self.formats()[2:]):
+            _write_workspace_format(self.paths.root, value)
+            with self.assertRaises(old.RuntimeSafetyError):
+                old.AppPaths(self.paths.root).ensure()
+            with self.assertRaises(old.RuntimeSafetyError):
+                old.WorkspaceLocator(self.root / 'bootstrap')._validate(self.paths.root)
+            archive = BackupManager(self.paths).create(self.root / f'guarded-{index}.zip')
+            with zipfile.ZipFile(archive) as source:
+                manifest = json.loads(source.read('manifest.json'))
+            self.assertEqual(manifest['schema_version'], 2)
+            self.assertEqual(manifest['workspace_format'], value)
+            with self.assertRaises(old.RuntimeSafetyError):
+                old.BackupManager(old.AppPaths(self.root / f'old-{index}').ensure()).restore(archive)
+
+    def test_wfo_and_both_guards_reject_unpatched_runtime_before_state_changes(self):
+        self.runtime.stop()
+        for value in self.formats()[2:]:
+            _write_workspace_format(self.paths.root, value)
+            marker = self.paths.root / 'workspace-format.json'
+            original = marker.read_bytes()
+            with patch('sqlite3.sqlite_version_info', (3, 49, 1)):
+                with self.assertRaises(RuntimeSafetyError):
+                    self.paths.ensure()
+            self.assertEqual(marker.read_bytes(), original)
+
+    def test_unpatched_restore_refuses_wfo_and_both_before_promotion(self):
+        for index, value in enumerate(self.formats()[2:]):
+            _write_workspace_format(self.paths.root, value)
+            archive = BackupManager(self.paths).create(self.root / f'runtime-{index}.zip')
+            target = AppPaths(self.root / f'unsupported-{index}').ensure()
+            (target.state / 'proof').write_bytes(b'unchanged')
+            marker = target.root / 'workspace-format.json'
+            before = marker.read_bytes()
+            self.runtime.stop()
+            try:
+                with patch('sqlite3.sqlite_version_info', (3, 49, 1)):
+                    with self.assertRaises(RuntimeSafetyError):
+                        BackupManager(target).restore(archive)
+            finally:
+                self.runtime.start()
+            self.assertEqual(marker.read_bytes(), before)
+            self.assertEqual((target.state / 'proof').read_bytes(), b'unchanged')
+            self.assertFalse((target.root / 'state-v1.rollback').exists())
+
+    def test_real_wfo_and_both_committed_wal_restore_and_reopen(self):
+        import sqlite3
+        import subprocess
+        import sys
+        if sqlite3.sqlite_version_info < (3, 51, 3):
+            self.skipTest('Real WAL restore requires the supported SQLite runtime')
+        for index, value in enumerate(self.formats()[2:]):
+            source = AppPaths(self.root / f'real-source-{index}').ensure()
+            _write_workspace_format(source.root, value)
+            database = source.state / 'walk_forward.sqlite3'
+            subprocess.run([sys.executable, '-c',
+                "import os,sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
+                "c.execute('PRAGMA journal_mode=WAL'); c.execute('PRAGMA synchronous=FULL'); "
+                "c.execute('PRAGMA wal_autocheckpoint=0'); c.execute('CREATE TABLE proof(value TEXT)'); "
+                "c.execute(\"INSERT INTO proof VALUES ('committed WFO row')\"); c.commit(); os._exit(0)",
+                str(database)], check=True, timeout=10)
+            raw_wal = Path(str(database) + '-wal').read_bytes()
+            self.assertGreater(len(raw_wal), 32)
+            archive = BackupManager(source).create(self.root / f'real-wfo-{index}.zip')
+            target = AppPaths(self.root / f'real-restored-{index}')
+            BackupManager(target).restore(archive)
+            self.assertEqual((target.state / 'walk_forward.sqlite3-wal').read_bytes(), raw_wal)
+            self.assertEqual(json.loads((target.root / 'workspace-format.json').read_text()), value)
+            self.runtime.stop()
+            try:
+                target.ensure()
+            finally:
+                self.runtime.start()
+            connection = sqlite3.connect(target.state / 'walk_forward.sqlite3')
+            try:
+                self.assertEqual(connection.execute('SELECT value FROM proof').fetchall(), [('committed WFO row',)])
+                self.assertEqual(connection.execute('PRAGMA integrity_check').fetchall(), [('ok',)])
+            finally:
+                connection.close()
+
+    def test_either_guard_restores_raw_sidecars_and_exact_format(self):
+        for index, value in enumerate(self.formats()[1:]):
+            _write_workspace_format(self.paths.root, value)
+            folder = self.paths.state / 'walk_forward'
+            folder.mkdir(exist_ok=True)
+            for name, raw in (('walk_forward.sqlite3', b'database'),
+                              ('walk_forward.sqlite3-wal', b'committed frames'),
+                              ('walk_forward.sqlite3-shm', b'shared memory')):
+                (folder / name).write_bytes(raw)
+            before = {p.relative_to(self.paths.state): p.read_bytes() for p in self.paths.state.rglob('*') if p.is_file()}
+            archive = BackupManager(self.paths).create(self.root / f'raw-{index}.zip')
+            target = AppPaths(self.root / f'fresh-{index}')
+            BackupManager(target).restore(archive)
+            self.assertEqual(json.loads((target.root / 'workspace-format.json').read_text()), value)
+            self.assertEqual(before, {p.relative_to(target.state): p.read_bytes() for p in target.state.rglob('*') if p.is_file()})
+
+    def test_restore_union_protects_both_prior_and_incoming_before_promotion(self):
+        _, replay, wfo, both = self.formats()
+        for index, (prior, incoming) in enumerate(((replay, wfo), (wfo, replay))):
+            source = AppPaths(self.root / f'source-{index}').ensure()
+            _write_workspace_format(source.root, incoming)
+            (source.state / 'proof').write_bytes(b'incoming state')
+            archive = BackupManager(source).create(self.root / f'union-{index}.zip')
+            _write_workspace_format(self.paths.root, prior)
+            (self.paths.state / 'proof').write_bytes(b'prior state')
+            def before_promotion(*args, **kwargs):
+                self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), both)
+                self.assertEqual((self.paths.state / 'proof').read_bytes(), b'prior state')
+                raise OSError('before promotion')
+            with patch('quantlab.analysis_recovery.advance_restore_epoch', side_effect=before_promotion):
+                with self.assertRaisesRegex(OSError, 'before promotion'):
+                    BackupManager(self.paths).restore(archive)
+            self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), both)
+            self.assertEqual((self.paths.state / 'proof').read_bytes(), b'prior state')
+
+    def test_composed_restore_crash_matrix_selects_exact_matching_format(self):
+        from quantlab.desktop_runtime import atomic_write
+        for prior_index, prior in enumerate(self.formats()):
+            for incoming_index, incoming in enumerate(self.formats()):
+                for committed in (False, True):
+                    with self.subTest(prior=prior_index, incoming=incoming_index, committed=committed):
+                        paths = AppPaths(self.root / f'matrix-{prior_index}-{incoming_index}-{committed}').ensure()
+                        _write_workspace_format(paths.root, {**prior, **incoming})
+                        (paths.state / 'proof').write_bytes(b'incoming')
+                        rollback = paths.root / 'state-v1.rollback'
+                        rollback.mkdir()
+                        (rollback / 'proof').write_bytes(b'prior')
+                        atomic_write(paths.state / '.restore-transaction', b'{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}')
+                        atomic_write(paths.root / 'restore-transaction.json', json.dumps({
+                            'id': 'a' * 32, 'phase': 'committed' if committed else 'prepared',
+                            'prior_format': prior, 'restored_format': incoming}).encode())
+                        BackupManager(paths).recover()
+                        self.assertEqual((paths.state / 'proof').read_bytes(), b'incoming' if committed else b'prior')
+                        self.assertEqual(json.loads((paths.root / 'workspace-format.json').read_text()), incoming if committed else prior)
+
+    def test_new_host_run_guards_before_owner_and_fsync_failure_prevents_claim(self):
+        from quantlab.desktop_runtime import JobManager
+        from tests.test_desktop_walk_forward_runtime import plan_payload
+        manager = JobManager(self.paths)
+        payload = {'plan': plan_payload(), 'preview_identity': 'a' * 64}
+        def claimed(*args):
+            self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), self.formats()[2])
+            raise RuntimeError('reached ownership')
+        with patch.object(manager, '_claim_walk_forward', side_effect=claimed):
+            with self.assertRaisesRegex(RuntimeError, 'reached ownership'):
+                manager.start('ui_walk_forward_run', payload)
+        _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
+        with patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')), \
+                patch.object(manager, '_claim_walk_forward') as claim, \
+                patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with self.assertRaisesRegex(OSError, 'flush failed'):
+                manager.start('ui_walk_forward_run', payload)
+            claim.assert_not_called()
+            spawn.assert_not_called()
+
+    def test_existing_host_journal_is_rejected_without_marker_mutation(self):
+        from quantlab.desktop_runtime import JobManager
+        from tests.test_desktop_walk_forward_runtime import plan_payload
+        folder = self.paths.state / 'walk_forward' / ('a' * 64)
+        folder.mkdir(parents=True)
+        (folder / 'walk_forward.sqlite3').write_bytes(b'original database')
+        marker = self.paths.root / 'workspace-format.json'
+        before = marker.read_bytes()
+        with patch.object(AppPaths, 'require_walk_forward_wal') as require:
+            with self.assertRaisesRegex(RuntimeSafetyError, 'read-only'):
+                JobManager(self.paths).start('ui_walk_forward_run', {'plan': plan_payload(), 'preview_identity': 'a' * 64})
+            require.assert_not_called()
+        self.assertEqual(marker.read_bytes(), before)
+        self.assertEqual((folder / 'walk_forward.sqlite3').read_bytes(), b'original database')
+
+    def test_direct_adapter_guards_only_new_journal_before_core_call(self):
+        import sys
+        import desktop_walk_forward as adapter
+        from tests.test_desktop_walk_forward_runtime import plan_payload
+        identity = 'b' * 64
+        preview = {'preview_identity': identity, 'plan': plan_payload()}
+        fake_ui = types.ModuleType('desktop_ui')
+        fake_ui._dataset = lambda *args: object()
+        fake_ui.research_controls = lambda paths: paths.controls
+        def run(*args, **kwargs):
+            self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), self.formats()[2])
+            raise RuntimeError('reached core')
+        with patch.dict(sys.modules, {'desktop_ui': fake_ui}), \
+                patch.object(adapter, 'preview_walk_forward', return_value=preview), \
+                patch.object(adapter, 'run_walk_forward', side_effect=run):
+            with self.assertRaisesRegex(RuntimeError, 'reached core'):
+                adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths)
+            folder = self.paths.state / 'walk_forward' / identity
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / 'walk_forward.sqlite3').write_bytes(b'old data')
+            _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
+            before = (self.paths.root / 'workspace-format.json').read_bytes()
+            with patch.object(AppPaths, 'require_walk_forward_wal') as require, \
+                    patch.object(adapter, 'read_walk_forward_state', return_value={'old': True}), \
+                    patch.object(adapter, 'compact_walk_forward', return_value={'old': True}):
+                self.assertEqual(adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths), {'old': True})
+                require.assert_not_called()
+            self.assertEqual((self.paths.root / 'workspace-format.json').read_bytes(), before)
