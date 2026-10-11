@@ -2791,8 +2791,8 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-11T14:50:00Z",
-    "scope": "Precommit original-job recovery candidate with failed intermediate full regression preserved and test-only adapter fix in progress; final focused/native CI pending, not released. Latest14:46 owner direction retains original Windows10 and Windows11 requirements, both externally blocked. PR9 remains verified released baseline.",
+    "as_of_utc": "2026-10-11T15:17:00Z",
+    "scope": "Draft PR10 exact candidate d7a29579 native aggregate failure; test-fixture diagnosis fixes under review. Production helper three native cases passed on both Windows cores but do not offset aggregate failure. Windows installer workflow still running. Prior released60da baseline, failed precommit evidence, original rubric and both blocked client OS requirements preserved.",
     "product_source": {
       "commit": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
       "tree": "a04dddae25781b94d4759a13c77a36e319b4730c",
@@ -2876,11 +2876,23 @@
         "model_calls": 0,
         "registry_reservations": 0,
         "restriction": "Do not move windows or use a fresh/replaced registry to evade the original protocol. Historical replay remains exposure-unverified, non-independent, non-rankable and non-paper-eligible."
+      },
+      "bounded_taifex_sample": {
+        "dataset_url": "https://data.gov.tw/dataset/20668",
+        "license_url": "https://data.gov.tw/license",
+        "license": "Government Open Data License version1; specific dataset attribution retained",
+        "official_files": 2,
+        "selected_contract_session_genuine_ticks": 684015,
+        "empty_minute_buckets_not_filled": 34,
+        "completion_status": "provisional_unverified",
+        "ranking_eligible": false,
+        "acceptance": "Not M2 PASS; zero points. No proof of feed completeness, entire history or TAIEX minute rights. Empty buckets do not prove missing feed records.",
+        "evidence": "Retained cloud diagnostic, not repository file: quant-audit/legal-minute-sources/sample-validation/RESULT.md"
       }
     },
     "remaining_auto": {
-      "status": "INTERMEDIATE_FULL_FAILED_ADAPTER_FIX_FINAL_VALIDATION_PENDING",
-      "work": "Finish test-only adapter correction without changing assertions and validate final combined ledger/UI source; then independent review and exact-head native CI. Preserve intermediate failed full regression, all original gates and both client OS requirements."
+      "status": "READY_FOR_NATIVE_REVALIDATION",
+      "work": "Run new exact-head native CI for independently reviewed fixture corrections and separate product _connect setup-exception handle-close fix. Prior full candidate aggregate remains FAILED; Windows38149301429 outcome still pending. No new points or release."
     },
     "remaining_gates": [
       {
@@ -3225,10 +3237,10 @@
       "note": "Exact previous snapshot retained, including original as-of field and subsequent pre-CI candidate failure/fix entries; no retrospective result rewriting."
     },
     "original_job_recovery_candidate": {
-      "status": "INTERMEDIATE_FULL_FAILED_ADAPTER_FIX_FINAL_VALIDATION_PENDING",
+      "status": "READY_FOR_NATIVE_REVALIDATION_PRIOR_AGGREGATE_FAILED",
       "baseline": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
       "branch_plan": "Reuse agent/windows-release-validation after previous completed branch deletion",
-      "pr_status": "NOT_CREATED",
+      "pr_status": "DRAFT",
       "release": "NOT_PUBLISHED",
       "components": [
         "quantlab/analysis_recovery.py",
@@ -3240,9 +3252,9 @@
       "scope": "Original GUI death while helper retains original Job Object, observes original job quiescence and commits matching durable stop receipt, then explicit local reconciliation. No resubmit/refund or consumed-budget reset.",
       "excluded": "Joint GUI/helper death, reboot or missing receipt remains unknown/restricted. No PID/job-absence proof, same-user-forgery authentication or full rollback protection claim.",
       "availability": "Incomplete/corrupt controls block conflicting analysis/source/backup/restore operations, not all non-AI saved-read/compare/backtest use. Cloud Qt non-AI usability checked, final current-source tests ongoing and real client unverified.",
-      "native_windows": "NOT_YET_VERIFIED",
-      "exact_head_ci": "PENDING",
-      "focused_counts": "FINAL_PENDING",
+      "native_windows": "AGGREGATE_FAILED_HELPER_CASES_SCOPED_PASS",
+      "exact_head_ci": "PRIOR_HEAD_FAILED_ADDITIVE_FIX_READY_FOR_NEW_NATIVE_CI",
+      "focused_counts": "42 focused PASS; independent40 PASS, separate runs; complete native rerun pending",
       "validation_history": [
         {
           "run": "full56372",
@@ -3257,7 +3269,115 @@
           "correction": "UI worker adapting test-only adapter without assertion changes; final focused/native validation pending",
           "source_boundary": "Exact intermediate source only; subsequent separate ledger/UI changes not covered; never convert this historical result to PASS."
         }
-      ]
+      ],
+      "pr": 10,
+      "pr_url": "https://github.com/yostar77612/mark-auto/pull/10",
+      "head": "d7a295799f27ffcb9c655d2d032296771c1510bc",
+      "tree": "6437608765ecb360e8f84c31c770b2c3d1deee02",
+      "native_iterations": [
+        {
+          "head": "d7a295799f27ffcb9c655d2d032296771c1510bc",
+          "tree": "6437608765ecb360e8f84c31c770b2c3d1deee02",
+          "quantlab_run": 38149301471,
+          "status": "FAIL",
+          "linux311": {
+            "total": 1549,
+            "passed": 1525,
+            "skipped": 24,
+            "seconds": 340.258
+          },
+          "linux312": {
+            "total": 1549,
+            "passed": 1525,
+            "skipped": 24,
+            "seconds": 482.437
+          },
+          "ui": {
+            "total": 1549,
+            "passed": 1530,
+            "skipped": 19,
+            "seconds": 497.412
+          },
+          "windows_core311": {
+            "total": 1306,
+            "passed": 1271,
+            "skipped": 27,
+            "errors": 8,
+            "seconds": 610.317
+          },
+          "windows_core312": {
+            "total": 1306,
+            "passed": 1271,
+            "skipped": 27,
+            "errors": 8,
+            "seconds": 590.896
+          },
+          "error_diagnosis": [
+            "Five ledger SQLite test connection cleanup errors",
+            "One integration SQLite cleanup error",
+            "One absent setsid test patch error",
+            "One fake Process versus real Job Object fixture error"
+          ],
+          "diagnostic_fix": "FOCUSED_AND_INDEPENDENT_PASS_NATIVE_REVALIDATION_PENDING",
+          "production_helper_native_cases": {
+            "passed_each_windows_core": 3,
+            "scope": "Actual production helper native scenarios; not aggregate CI or clean-client acceptance"
+          },
+          "windows_build": {
+            "run": 38149301429,
+            "status": "FAILED",
+            "python": "3.13.16",
+            "total": 1549,
+            "passed": 1508,
+            "skipped": 33,
+            "errors": 8,
+            "seconds": 916.171,
+            "error_scope": "Same eight test-fixture errors as core311/core312; no extra error class",
+            "production_helper_native_passed": 3,
+            "prototype_native_passed": 3,
+            "frozen_installer_tls_lifecycle": "NOT_REACHED",
+            "release": "SKIPPED",
+            "security": "PASS",
+            "installer_generated": false
+          },
+          "jobs_passed": 10,
+          "jobs_total": 12,
+          "windows_research311": {
+            "total": 243,
+            "passed": 237,
+            "skipped": 6,
+            "seconds": 687.587
+          },
+          "windows_research312": {
+            "total": 243,
+            "passed": 237,
+            "skipped": 6,
+            "seconds": 785.762
+          }
+        }
+      ],
+      "native_additive_fix": {
+        "status": "READY_FOR_NATIVE_REVALIDATION",
+        "separate_product_defect": "SQLite handle leak if product _connect setup raises; independently found beyond test-fixture errors",
+        "regression": "Real valid-header/corrupt-Btree and injected-setup regressions red-before/green-after",
+        "repair": "Minimal close plus re-raise; PRAGMAs/FULL/deadlines preserved",
+        "frozen_source_test_files": 3,
+        "native_helper_file_changed": false,
+        "root_focused": {
+          "passed": 42,
+          "ledger": 26,
+          "integration": 14,
+          "real_spawn": 2,
+          "seconds": 13.726
+        },
+        "independent": {
+          "passed": 40,
+          "seconds": 8.506
+        },
+        "windows_revalidation": "PENDING",
+        "count_policy": "Separate focused/review runs, not aggregate native acceptance; original failed iteration retained.",
+        "independent_review": "PASS"
+      }
     },
     "owner_scope_change_history": [
       {
@@ -3272,8 +3392,8 @@
       }
     ],
     "delivery_state": {
-      "implementation": "Original-job recovery candidate and additive corrections in progress; not complete production recovery",
-      "verified": "PR9/main60da0e3b published baseline verified; new-source intermediate failure remains failure",
+      "implementation": "Fixture corrections plus independent product _connect setup-exception close-and-reraise repair focused-verified; original PR10 aggregate remains FAILED",
+      "verified": "Released PR9 baseline remains verified; PR10 helper3 native cases on both cores are scoped PASS only, aggregate CI failed",
       "external_blocked": [
         "Original clean Windows10 acceptance",
         "Original clean Windows11 acceptance",
@@ -3281,7 +3401,7 @@
         "Complete authorized minute-data coverage",
         "Signing/protection limitations"
       ],
-      "release_preparation": "Final focused validation, independent review and new exact-head native CI pending; candidate not published",
+      "release_preparation": "READY_FOR_NATIVE_REVALIDATION on new exact head; Draft PR10 not merged/released; prior installer outcome pending",
       "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
     }
   },

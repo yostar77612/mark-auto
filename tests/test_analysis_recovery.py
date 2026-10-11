@@ -1,5 +1,6 @@
 """Real SQLite/tempdir protocol tests; no production helper or provider transport."""
 import copy
+from contextlib import closing
 import multiprocessing as mp
 from pathlib import Path
 import shutil
@@ -68,6 +69,93 @@ class RecoveryLedgerTests(unittest.TestCase):
 
     def publish(self, launch, value=0):
         return r._StopPublisher(self.paths, launch, lambda: value).publish()
+
+    def test_connection_setup_failure_closes_original_sqlite_handle(self):
+        self.register()
+        original_connect = sqlite3.connect
+        opened = []
+        class SetupFailure(sqlite3.Connection):
+            was_closed = False
+            def execute(connection, sql, *args):
+                if sql == 'PRAGMA busy_timeout=250':
+                    raise sqlite3.OperationalError('synthetic configuration failure')
+                return super().execute(sql, *args)
+            def close(connection):
+                connection.was_closed = True
+                return super().close()
+        def connect(*args, **kwargs):
+            connection = original_connect(*args, **kwargs, factory=SetupFailure)
+            opened.append(connection)  # Retain handles so GC cannot conceal a leak.
+            return connection
+        try:
+            with patch.object(r.sqlite3, 'connect', side_effect=connect):
+                with self.assertRaises(sqlite3.OperationalError):
+                    r._connect(self.paths.controls / r._DATABASE)
+            self.assertEqual(len(opened), 1)
+            self.assertTrue(opened[0].was_closed)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                opened[0].execute('SELECT 1')
+        finally:
+            for connection in opened:
+                connection.close()
+
+    def test_corrupt_schema_setup_closes_real_write_connection(self):
+        self.register()
+        database = self.paths.controls / r._DATABASE
+        raw = bytearray(database.read_bytes())
+        raw[100] = 255  # Corrupt first B-tree page, retaining original SQLite header.
+        database.write_bytes(raw)
+        original_connect = sqlite3.connect
+        opened = []
+        class TrackedConnection(sqlite3.Connection):
+            was_closed = False
+            def close(connection):
+                connection.was_closed = True
+                return super().close()
+        def connect(*args, **kwargs):
+            connection = original_connect(*args, **kwargs, factory=TrackedConnection)
+            opened.append(connection)
+            return connection
+        try:
+            with patch.object(r.sqlite3, 'connect', side_effect=connect):
+                with self.assertRaises(sqlite3.DatabaseError):
+                    r._connect(database, write=True)
+            self.assertEqual(len(opened), 1)
+            self.assertTrue(opened[0].was_closed)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                opened[0].execute('SELECT 1')
+        finally:
+            for connection in opened:
+                connection.close()
+
+    def test_production_ledger_connections_close_without_garbage_collection(self):
+        original_connect = sqlite3.connect
+        opened = []
+        class TrackedConnection(sqlite3.Connection):
+            was_closed = False
+            def close(connection):
+                connection.was_closed = True
+                return super().close()
+        def connect(*args, **kwargs):
+            connection = original_connect(*args, **kwargs, factory=TrackedConnection)
+            opened.append(connection)
+            return connection
+        try:
+            with patch.object(r.sqlite3, 'connect', side_effect=connect):
+                launch = self.register()
+                self.publish(launch)
+                r.inspect_recovery(self.paths)
+                r.validate_stop_receipt(self.paths, launch['job_id'])
+                with r.admission(self.paths) as token:
+                    r.advance_restore_epoch(self.paths, 'd' * 32, admission=token)
+            self.assertGreater(len(opened), 5)
+            for connection in opened:
+                self.assertTrue(connection.was_closed)
+                with self.assertRaises(sqlite3.ProgrammingError):
+                    connection.execute('SELECT 1')
+        finally:
+            for connection in opened:
+                connection.close()
 
     def test_legacy_inspection_and_restore_do_not_initialize(self):
         before = sorted(str(p.relative_to(self.bootstrap)) for p in self.bootstrap.rglob('*'))
@@ -235,7 +323,7 @@ class RecoveryLedgerTests(unittest.TestCase):
         for statement in mutations:
             with self.subTest(statement=statement):
                 database.write_bytes(original)
-                with sqlite3.connect(database) as db:
+                with closing(sqlite3.connect(database)) as db, db:
                     db.execute('DROP TRIGGER no_update')
                     db.execute(statement)
                     db.execute(r._SCHEMA['no_update'])
@@ -288,7 +376,7 @@ class RecoveryLedgerTests(unittest.TestCase):
             duplicate[key] = launch[key]
             duplicate['ledger_basename'] = 'chatgpt-analysis-' + duplicate['analysis_id'] + '.sqlite3'
             state = r._load(self.paths)
-            with sqlite3.connect(database) as db:
+            with closing(sqlite3.connect(database)) as db, db:
                 r._append(db, state, [('launch', duplicate)])
             with self.assertRaises(r.RecoveryError):
                 r.inspect_recovery(self.paths)
@@ -309,7 +397,7 @@ class RecoveryLedgerTests(unittest.TestCase):
                     r.advance_restore_epoch(original_paths, 'd' * 32, admission=token)
             self.assertEqual(r._load(self.paths)['length'], 6)
             state = r._load(self.paths)
-            with sqlite3.connect(self.paths.controls / r._DATABASE) as db:
+            with closing(sqlite3.connect(self.paths.controls / r._DATABASE)) as db, db:
                 with self.assertRaisesRegex(r.RecoveryError, 'receipt capacity'):
                     r._append(db, state, [('epoch', {'root': first['workspace']['root'],
                         'transaction_id': 'd' * 32, 'epoch': 1})])
@@ -347,7 +435,7 @@ class RecoveryLedgerTests(unittest.TestCase):
                        lambda v: v.update(helper_protocol='TEST_ONLY'),
                        lambda v: v.update(request_bytes=True)):
             database.write_bytes(original)
-            with sqlite3.connect(database) as db:
+            with closing(sqlite3.connect(database)) as db, db:
                 raw = db.execute('SELECT payload FROM events WHERE sequence=3').fetchone()[0]
                 event = json.loads(raw)
                 change(event['value'])
@@ -359,7 +447,7 @@ class RecoveryLedgerTests(unittest.TestCase):
                 r.inspect_recovery(self.paths)
         database.write_bytes(original)
         state = r._load(self.paths)
-        with r.admission(self.paths), sqlite3.connect(database) as db:
+        with r.admission(self.paths), closing(sqlite3.connect(database)) as db, db:
             r._append(db, state, [('receipt', {'protocol': 'TEST_ONLY', 'job_id': launch['job_id'],
                 'launch_hash': r._hash(launch), 'active_processes': 0})])
         with self.assertRaises(r.RecoveryError):
@@ -372,7 +460,7 @@ class RecoveryLedgerTests(unittest.TestCase):
             r.inspect_recovery(self.paths)
         self.assertEqual(before, {str(p): p.read_bytes() for p in self.bootstrap.rglob('*') if p.is_file()})
         database = self.paths.controls / r._DATABASE
-        with sqlite3.connect(database) as db:
+        with closing(sqlite3.connect(database)) as db, db:
             db.execute('PRAGMA journal_mode=WAL')
         before = {str(p): p.read_bytes() for p in self.bootstrap.rglob('*') if p.is_file()}
         with self.assertRaises(r.RecoveryError):

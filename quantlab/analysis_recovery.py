@@ -224,18 +224,21 @@ def _connect(path, *, write=False):
         _path(Path(str(path) + suffix), exists=False)
     query_deadline = time.monotonic() + 2
     db = sqlite3.connect(path.as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=LOCK_TIMEOUT)
-    db.set_progress_handler(lambda: 1 if time.monotonic() > query_deadline else 0, 1000)
-    db.execute('PRAGMA trusted_schema=OFF')
-    db.execute('PRAGMA busy_timeout=250')
-    if write:
-        if db.execute('PRAGMA journal_mode').fetchone()[0] != 'delete':
-            db.close()
-            _fail('Recovery ledger requires rollback journal')
-        db.execute('PRAGMA synchronous=FULL')
-        db.execute('PRAGMA max_page_count=%d' % (MAX_DATABASE // 4096))
-    else:
-        db.execute('PRAGMA query_only=ON')
-    return db
+    try:
+        db.set_progress_handler(lambda: 1 if time.monotonic() > query_deadline else 0, 1000)
+        db.execute('PRAGMA trusted_schema=OFF')
+        db.execute('PRAGMA busy_timeout=250')
+        if write:
+            if db.execute('PRAGMA journal_mode').fetchone()[0] != 'delete':
+                _fail('Recovery ledger requires rollback journal')
+            db.execute('PRAGMA synchronous=FULL')
+            db.execute('PRAGMA max_page_count=%d' % (MAX_DATABASE // 4096))
+        else:
+            db.execute('PRAGMA query_only=ON')
+        return db
+    except BaseException:
+        db.close()
+        raise
 
 
 def _original_marker(paths):

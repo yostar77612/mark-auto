@@ -96,11 +96,22 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         context.Event.return_value = gate
         context.Process.return_value = process
         with patch.object(r, 'supports_durable_recovery', return_value=True), \
-             patch.object(runtime.mp, 'get_context', return_value=context):
+             patch.object(runtime.mp, 'get_context', return_value=context), \
+             patch.object(runtime, '_WindowsProcessTree') as simulated_tree:
             manager.start('ui_analysis_reconcile', payload)
         self.assertEqual(context.Process.call_args.kwargs['args'][3], payload)
+        process.start.assert_called_once()
+        gate.set.assert_called_once()
         # Admission above is a simulated launch, not a claimed native process test.
         manager._release()
+        self.assertIsNone(manager._quiesced_analysis)
+        process.close.assert_called_once()
+        receiver.close.assert_called_once()
+        if runtime.sys.platform == 'win32':
+            simulated_tree.assert_called_once_with(process.pid)
+            simulated_tree.return_value.close.assert_called_once()
+        else:
+            simulated_tree.assert_not_called()
         controls, campaigns = snapshot(self.paths.controls), snapshot(self.paths.state / 'campaigns')
         with patch.object(r, 'supports_durable_recovery', return_value=True):
             result = execute_ui_operation('ui_analysis_reconcile', payload, self.paths)
@@ -193,7 +204,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.reconcile(recovery=(other, 'b' * 32))
         original = (self.analysis_folder / 'analysis.sqlite3').read_bytes()
-        with sqlite3.connect(self.analysis_folder / 'analysis.sqlite3') as db:
+        with closing(sqlite3.connect(self.analysis_folder / 'analysis.sqlite3')) as db, db:
             row = json.loads(db.execute('SELECT payload FROM state WHERE id=1').fetchone()[0])
             row['plan']['binding']['timeout_seconds'] = 31
             db.execute('UPDATE state SET payload=? WHERE id=1', (canonical_json(row),))
@@ -363,7 +374,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             entered.set()
             self.assertTrue(finish.wait(5))
             return {}
-        with patch('desktop_ui.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid'):
+        with patch('desktop_ui.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
             thread = threading.Thread(target=runtime._job_worker, args=(sender, gate, 'ui_import', {},
                 str(self.paths.root), str(self.paths.bootstrap), 'f' * 32))
             thread.start()

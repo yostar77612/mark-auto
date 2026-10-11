@@ -1,6 +1,14 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+### PR #10 保留原生失敗／修補待重新驗證（2026-10-11 15:17 UTC）
+
+[Draft PR #10](https://github.com/yostar77612/mark-auto/pull/10) head `d7a295799f27ffcb9c655d2d032296771c1510bc`／tree `6437608765ecb360e8f84c31c770b2c3d1deee02`：NATIVE_FAILED_FIX_IN_PROGRESS。[Quantlab 38149301471](https://github.com/yostar77612/mark-auto/actions/runs/38149301471) 的 Linux 3.11／3.12 各 1,549＝1,525 PASS／24 skips，340.258／482.437 秒；UI 1,549＝1,530 PASS／19 skips，497.412 秒。Windows core 3.11／3.12 各 1,306＝1,271 PASS／27 skips／8 ERROR，610.317／590.896 秒；5 項 ledger SQLite test connection cleanup、1 項 integration SQLite cleanup、1 項 absent setsid test patch、1 項 fake Process／real Job Object fixture，修補已通過下列定向與獨立審查，仍不能宣稱完整原生 CI 通過。兩個 cores 的真實 production helper 3 個 native cases 均 PASS，但不能抵銷整體 FAIL。[Windows build 38149301429](https://github.com/yostar77612/mark-auto/actions/runs/38149301429) 終態 FAIL：CPython 3.13.16 原生 1,549＝1,508 PASS／33 skips／相同 8 ERROR，916.171 秒；production helper 3 cases 與 prototype 3 cases 均 PASS。尚未進入 frozen／installer／TLS／lifecycle，release SKIPPED，security PASS，沒有新安裝檔。原發布基線與下方 precommit full 失敗均保留。Quantlab 終態 FAIL，10/12 jobs PASS；Windows research 3.11／3.12 各 243＝237 PASS／6 skips，687.587／785.762 秒。
+
+**修補 READY_FOR_NATIVE_REVALIDATION：** 獨立稽核另發現產品 `_connect` setup exception 的 SQLite handle leak，與上述 fixtures 分開；真實 valid-header／corrupt-Btree 與 injected-setup regressions 已 red-before／green-after。最小 close＋reraise 保留 PRAGMAs／FULL／deadlines；最終 3 個 source/test files 已凍結，root 42 focused PASS（26 ledger＋14 integration＋2 real-spawn），13.726 秒；獨立 40 PASS，8.506 秒，各自列示。未修改 native helper file，Windows 再驗仍待；原完整 candidate aggregate 仍 FAILED，不以 focused PASS 改寫。
+
+有界真實行情證據：TAIFEX [dataset 20668](https://data.gov.tw/dataset/20668) 的 [政府資料開放授權條款](https://data.gov.tw/license) 已有特定資料集來源對應；兩份官方檔案選定契約／時段共 684,015 genuine ticks，34 個空分鐘未填補，不推論為 feed 遺漏。結果仍 provisional_unverified／non-rankable，不能取代全歷史／TAIEX minute 權利或 M2 PASS，不增加原 230/300。完整 raw provenance 與稽核留存雲端 `quant-audit/legal-minute-sources/sample-validation/RESULT.md`（非 repository 檔案）。
+
 ## 原始 Job 停止證據復原候選（2026-10-11 14:28 UTC；提交前來源快照）
 
 - **最後已發布基線不變：** [PR #9 最終證據](https://github.com/yostar77612/mark-auto/pull/9) 已確認合併 main `60da0e3b4f5c230f529a99e8ba5794fd2b232bfb`／tree `a04dddae25781b94d4759a13c77a36e319b4730c`；[Quantlab 38141626721](https://github.com/yostar77612/mark-auto/actions/runs/38141626721) 全 12 jobs SUCCESS，[Windows 38141626727](https://github.com/yostar77612/mark-auto/actions/runs/38141626727) build/security/release SUCCESS。Server 2022 原生 1,450＝1,417 PASS／33 skips，不能替代 clean Win10。[已核驗 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1) installer 39,355,463 bytes，SHA-256 `917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e`。以下舊 PR #9 Draft／待 CI 字樣只屬保留歷史，不代表目前狀態；後續終態以對應 PR 證據為準，不為追逐文件 SHA 重建相同產品。
