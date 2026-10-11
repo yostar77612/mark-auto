@@ -13,6 +13,36 @@ from .core import (Bar, Dataset, Fill, Signal, BacktestResult, CostSpec,
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
 
+def saved_analysis_entries(root):
+    """Return (identity, journal_only) metadata, never validated analysis data.
+
+    No file content is opened and no recovery authority is established. Normal
+    entries still require the strict journal/projection reader when selected.
+    Unsafe individual candidates are excluded; root errors reach the caller.
+    """
+    from .research_analysis import _safe_path
+    root = _safe_path(root)
+    if not root.is_dir():
+        return ()
+    entries = []
+    for folder in sorted(root.iterdir()):
+        identity = folder.name
+        if len(identity) != 64 or any(char not in '0123456789abcdef' for char in identity):
+            continue
+        try:
+            if not _safe_path(folder).is_dir():
+                continue
+            projection = _safe_path(folder / 'analysis.json')
+            journal = _safe_path(folder / 'analysis.sqlite3')
+            if projection.is_file():
+                entries.append((identity, False))
+            elif not projection.exists() and journal.is_file():
+                entries.append((identity, True))
+        except (OSError, ValidationError):
+            continue
+    return tuple(entries)
+
+
 def read_json(path):
     path = Path(path)
     if path.stat().st_size > MAX_JSON_BYTES:

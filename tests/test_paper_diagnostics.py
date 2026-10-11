@@ -201,6 +201,8 @@ class ConnectionDiagnosticTests(unittest.TestCase):
             self.assertTrue(result['workers_stopped'])
             self.assertTrue(result['fixture_removed'])
             self.assertTrue(children and all(child.poll() is not None for child in children))
+            self.assertEqual(result['returncode'], children[0].returncode)
+            self.assertIsNotNone(result['returncode'])
             self.assertEqual(sentinel.read_text(), 'keep')
 
     def test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture(self):
@@ -232,10 +234,64 @@ class ConnectionDiagnosticTests(unittest.TestCase):
             with patch('tools.diagnose_paper_replay.json.loads', side_effect=wrong_count):
                 result = _connection_case(Path(directory) / 'partial.json', 'delete-reopen', directory,
                                           time.monotonic() + 10)
-            self.assertEqual(result['returncode'], 0)
-            self.assertFalse(result['complete'])
-            self.assertTrue(result['workers_stopped'])
-            self.assertTrue(result['fixture_removed'])
+            observation = result.get('observation', {})
+            diagnostics = {key: result.get(key) for key in (
+                'returncode', 'timed_out', 'error_type', 'cleanup_error_type',
+                'workers_stopped', 'fixture_removed', 'seconds')}
+            diagnostics.update(phase=observation.get('phase'),
+                commits_completed=observation.get('commits_completed'),
+                cursor_commit_calls=observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls'),
+                probe_error_type=observation.get('error_type'),
+                probe_seconds=observation.get('elapsed_seconds'))
+            self.assertEqual(result['returncode'], 0, diagnostics)
+            self.assertFalse(result.get('timed_out'), diagnostics)
+            self.assertNotIn('error_type', result, diagnostics)
+            self.assertEqual(observation.get('phase'), 'complete', diagnostics)
+            self.assertEqual(observation.get('commits_completed'), 119, diagnostics)
+            self.assertEqual(diagnostics['cursor_commit_calls'], 120, diagnostics)
+            self.assertFalse(result['complete'], diagnostics)
+            self.assertTrue(result['workers_stopped'], diagnostics)
+            self.assertTrue(result['fixture_removed'], diagnostics)
+
+    def test_late_zero_exit_cannot_certify_timeout_or_controller_error(self):
+        from tools.diagnose_paper_replay import _connection_case
+        # Synthetic process states isolate certification from disk speed. The
+        # existing real-probe tests retain all 120 FULL commits and deadlines.
+        for error in (None, subprocess.TimeoutExpired('controlled probe', 0),
+                      RuntimeError('controlled controller failure')):
+            with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'controlled.json'
+                _write_json(output, {'profile': 'delete-reopen', 'complete': True,
+                    'commits_completed': 120, 'rollback_and_reopen_verified': True,
+                    'external_control_verified': True,
+                    'verified_pragmas': {'journal_mode': 'delete', 'synchronous': 2,
+                                         'locking_mode': 'normal'},
+                    'timings': {'replay.cursor_commit': {'calls': 120},
+                                'replay.cursor_rollback': {'calls': 1}}})
+                for action in ('stop', 'start'):
+                    _write_json(output.with_suffix('.ready-' + action + '.json'), {'action': action})
+                probe = MagicMock(pid=101, returncode=None)
+                probe.poll.side_effect = lambda: probe.returncode
+                helpers = [MagicMock(pid=pid, returncode=0) for pid in (102, 103)]
+                for helper in helpers:
+                    helper.poll.return_value = 0
+                def exit_before_next_poll(_seconds):
+                    probe.returncode = 0
+                    if error is not None:
+                        raise error
+                with patch('subprocess.Popen', side_effect=[probe, *helpers]), \
+                        patch('time.sleep', side_effect=exit_before_next_poll):
+                    result = _connection_case(output, 'delete-reopen', directory, time.monotonic() + 10)
+                self.assertEqual(result['returncode'], 0)
+                self.assertEqual(result['complete'], error is None)
+                self.assertTrue(result['workers_stopped'])
+                self.assertTrue(result['fixture_removed'])
+                self.assertEqual(result['observer_actions_completed'], ['stop', 'start'])
+                self.assertTrue(all(child['returncode'] == 0 for child in result['children']))
+                if isinstance(error, subprocess.TimeoutExpired):
+                    self.assertTrue(result['timed_out'])
+                elif error is not None:
+                    self.assertEqual(result['error_type'], type(error).__name__)
 
     def test_unsupported_profile_or_unaccepted_settings_never_yield_a_connection(self):
         from tools.diagnose_paper_replay import _probe_connection
@@ -274,6 +330,7 @@ class ConnectionDiagnosticTests(unittest.TestCase):
         start.assert_not_called()
         self.assertFalse(result['complete'])
         self.assertTrue(result['not_started'])
+        self.assertIsNone(result['returncode'])
 
     def test_internal_probe_rejects_unowned_root_before_opening_sqlite(self):
         from tools.diagnose_paper_replay import _connection_probe, _connection_observer
