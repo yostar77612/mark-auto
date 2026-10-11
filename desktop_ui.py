@@ -12,7 +12,7 @@ from quantlab.core import (Dataset, StrategySpec, Instrument, ValidationError, c
                    content_hash, to_dict)
 from quantlab.reporting import (read_json, write_json, load_dataset, save_dataset, synthetic_dataset,
                         demo_config, export_report, load_result, comparison_rows,
-                        save_selection, load_selection)
+                        save_selection, load_selection, saved_analysis_entries)
 
 UI_OPERATIONS = frozenset('ui_' + op for op in (
     'analysis_preview', 'analysis_run', 'analysis_read', 'analysis_reconcile',
@@ -209,6 +209,10 @@ def analysis_provider_for(paths, plan, *, authorized=False):
 
 ANALYSIS_NOTICE='本次重新計算的訓練／驗證結果；舊結果僅作來源索引，未驗證原始產生者。'
 ANALYSIS_WARNING='未驗證的 AI 解讀／研究建議：敘述可能錯誤，風險安全性未驗證；不自動套用參數、不改選擇、不下單。'
+ANALYSIS_CHECKPOINT_STATUS='中斷檢查點／尚未完成安全復原'
+ANALYSIS_CHECKPOINT_NOTICE=(ANALYSIS_CHECKPOINT_STATUS+'\n'
+    '僅發現分析狀態紀錄，缺少可讀取的結果匯出。紀錄內容、原始請求額度與作業停止狀態尚未核對；不可視為已完成結果。'
+    '請保留原始檔案；安全復原另需原作業停止證明與原始紀錄核對。此處不復原、不重送、不重設額度。')
 ANALYSIS_METRICS={'net_pnl':'淨損益','realized_gross_pnl':'已實現毛損益','unrealized_pnl':'未實現損益',
     'total_costs':'總成本','slippage_cost':'滑價成本','return':'報酬率','max_drawdown':'最大回撤',
     'max_drawdown_pct':'最大回撤比率','trade_count':'交易數','fill_count':'成交數','win_rate':'勝率',
@@ -1142,8 +1146,12 @@ class MainWindow(QMainWindow):
         self.analysis_start=self._button(layout,'明確送出已預覽分析／比較','run_candidate_analysis',self.run_analysis)
         self.analysis_start.setEnabled(False)
         self.analysis_saved=QComboBox();self.analysis_saved.setObjectName('analysis_saved');layout.addWidget(self.analysis_saved)
+        self._analysis_checkpoint_ids=set()
+        self.analysis_checkpoint_notice=QLabel();self.analysis_checkpoint_notice.setObjectName('analysis_checkpoint_notice')
+        self.analysis_checkpoint_notice.setWordWrap(True);layout.addWidget(self.analysis_checkpoint_notice)
         self._button(layout,'唯讀重開已保存分析（不連網）','read_candidate_analysis',self.read_analysis)
         self.analysis_findings=QPlainTextEdit();self.analysis_findings.setReadOnly(True);self.analysis_findings.setObjectName('analysis_findings');layout.addWidget(self.analysis_findings)
+        self.analysis_saved.currentIndexChanged.connect(self._analysis_saved_changed)
         self.analysis_candidates.itemSelectionChanged.connect(self._invalidate_analysis_preview)
         self.analysis_original.textChanged.connect(self._invalidate_analysis_preview)
 
@@ -1202,7 +1210,20 @@ class MainWindow(QMainWindow):
         reference=self.analysis_saved.currentData()
         if not reference:raise ValidationError('請先選取已保存分析')
         self._invalidate_analysis_preview()
+        if reference in self._analysis_checkpoint_ids:
+            self._analysis_saved_changed()
+            return
         self.start_job('ui_analysis_read',{'analysis_id':reference})
+
+    def _analysis_saved_changed(self, *args):
+        self.analysis_checkpoint_notice.clear()
+        if self.analysis_saved.currentData() in self._analysis_checkpoint_ids:
+            self._invalidate_analysis_preview()
+            self.analysis_findings.clear()
+            self.analysis_checkpoint_notice.setText(ANALYSIS_CHECKPOINT_NOTICE)
+            self.status.setText(ANALYSIS_CHECKPOINT_STATUS)
+        elif self.status.text()==ANALYSIS_CHECKPOINT_STATUS:
+            self.status.setText('請以唯讀重開載入所選分析；尚未核對結果。')
 
     def _analysis_event(self, event):
         if self.last_operation not in ('ui_analysis_preview','ui_analysis_run','ui_analysis_read','ui_analysis_reconcile'):return False
@@ -1229,22 +1250,38 @@ class MainWindow(QMainWindow):
                 self.analysis_start.setEnabled(not result['receipt_snapshot']['receipts'])
                 self.status.setText('分析證據已預覽；僅本機核對，尚未送出模型請求。')
             else:
+                self._refresh_analysis_saved(preferred_reference=result['analysis_id'])
+                if result['analysis_id'] in self._analysis_checkpoint_ids:return True
+                if self.analysis_saved.currentData()!=result['analysis_id']:
+                    self.analysis_findings.clear();self.analysis_evidence.clear()
+                    self.status.setText('分析結果已回傳，但保存檔案目前無法安全列出；請保留原始紀錄，未載入結果。')
+                    return True
                 self.analysis_findings.setPlainText(analysis_record_text(result['record']))
                 self.analysis_evidence.setPlainText(canonical_json(result['record']['plan']['binding']['packet']['context']))
                 self.status.setText('已保存／唯讀載入 AI 解讀；不套用建議或改變策略。')
-                self._refresh_analysis_saved()
         else:
             self.analysis_consent.setChecked(False)
             self.status.setText('分析未完成，已保留未知／失敗紀錄，不會重送：'+str(event.get('message','已取消')))
         return True
 
-    def _refresh_analysis_saved(self):
-        old=self.analysis_saved.currentData();self.analysis_saved.clear()
-        for path in sorted((self.root/'analyses').glob('*/analysis.json')):
-            name=path.parent.name
-            if len(name)==64 and all(char in '0123456789abcdef' for char in name):self.analysis_saved.addItem(name,name)
-        index=self.analysis_saved.findData(old)
-        if index>=0:self.analysis_saved.setCurrentIndex(index)
+    def _refresh_analysis_saved(self, *, preferred_reference=None):
+        old=preferred_reference or self.analysis_saved.currentData();failed=False
+        try:entries=saved_analysis_entries(self.root/'analyses')
+        except (OSError, ValidationError):entries=();failed=True
+        self._analysis_checkpoint_ids={name for name,checkpoint in entries if checkpoint}
+        blocked=self.analysis_saved.blockSignals(True)
+        try:
+            self.analysis_saved.clear()
+            for name,checkpoint in entries:
+                label=ANALYSIS_CHECKPOINT_STATUS+' · '+name if checkpoint else name
+                self.analysis_saved.addItem(label,name)
+            index=self.analysis_saved.findData(old)
+            if index>=0:self.analysis_saved.setCurrentIndex(index)
+        finally:self.analysis_saved.blockSignals(blocked)
+        self._analysis_saved_changed()
+        if failed:
+            self._invalidate_analysis_preview();self.analysis_findings.clear()
+            self.analysis_checkpoint_notice.setText('無法安全列出已保存分析；資料夾無法讀取或路徑不安全。原始檔案未更動，未載入結果或進行復原。')
 
     def _paper_page(self):
         layout = self._page('紙上交易與復原')
