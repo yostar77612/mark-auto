@@ -1,6 +1,14 @@
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->
+### PR #9 保留原生失敗，修正 READY_FOR_NATIVE_REVALIDATION（2026-10-11 12:27 UTC）
+
+- Draft PR #9 head `2459ad62` 的 [Quantlab 38138317785](https://github.com/yostar77612/mark-auto/actions/runs/38138317785) 終態 FAIL。Linux 3.11：1,448 PASS／21 skips、425.277 秒；Linux 3.12：1,448 PASS／21 skips、447.131 秒；UI：1,448 PASS／16 skips、323.886 秒，7 個新增 Qt 測試實際 PASS。Windows research 3.11：243 PASS／6 skips、720.942 秒；3.12：243 PASS／6 skips、510.297 秒。各 job 分開列示，不相加。
+- Windows core 3.12：1,205 PASS／27 skips／1 FAIL、398.629 秒，新 prototype helper-before-GUI cleanup 回報 Errno 5。core 3.11：1,205 PASS／27 skips／同一 FAIL＋1 ERROR、550.315 秒；既有 wrong-commit-count 測試於原 10 秒期限下耗時 10.124 秒且缺 returncode。舊失敗保留，不以未變更來源重跑洗掉，不能從原 log 指定唯一慢階段。
+- test-only termination 修補已獨立審查，SHA-256 `5bb6ed2bec7ca515b7810ac318f5945b42fa90145add0b4a62a2b532bdef50ef`；要求 exact handle 在原 7 秒 cleanup 內 signal，1 個 deterministic PASS／3 Windows SKIP，真實 Windows 再驗仍待。`tools/diagnose_paper_replay.py` 狀態修補改報真正 reap 的 exit／未知 None，明確拒絕認證 timeout／error；原 120／FULL／delete-reopen／10 秒及 assertions 均保留。此為證據狀態修正，未證明效能已修復；診斷修補最終獨立審查 PASS，另有 4 個 targeted PASS（含真實 120／FULL／10 秒）；root 合併 `tests.test_paper_diagnostics`＋`tests.test_windows_recovery_feasibility` 23 項＝20 PASS／3 native Windows SKIP、5.096 秒（留存雲端 `quant-audit/ci-fix-focused.log`，非 repository 檔案）。修補 READY_FOR_NATIVE_REVALIDATION，待新 exact head CI；不宣稱效能修復。
+- [Windows installer 38138317766](https://github.com/yostar77612/mark-auto/actions/runs/38138317766) 終態 FAILED：CPython 3.13.16／Qt 6.12 原生 1,448 項＝1,414 PASS／33 skips／1 FAIL、845.457 秒，同一 helper-before-GUI cleanup Errno 5，其餘 2 個 prototype cases PASS。7 個新增 Qt cases 實際 PASS，但 frozen／installer／lifecycle 尚未執行、release skipped，未產生新 installer；log 留存雲端 `quant-audit/ci-2459ad62/build.log`（非 repository 檔案）。PR #9 維持 Draft，main `f2eb4aaf` 與最後發布版不變；以下 READY_FOR_NATIVE_CI 為本 candidate 前次提交前狀態，現為修正／再驗待完成，沒有新增驗收點數或完整重啟復原。
+
+
 ## 最新發布基線與重啟復原界線（2026-10-11 11:49 UTC）
 
 - **PR #8 已交付：** main `f2eb4aafba161ea89fd0457c20e21a06bea5918c`，tree `9566cffc6018650bd8133778f783f41e73509e2a`。[Quantlab 38134959143](https://github.com/yostar77612/mark-auto/actions/runs/38134959143) 全 12 jobs PASS；[Windows 38134959133](https://github.com/yostar77612/mark-auto/actions/runs/38134959133) build/security/release PASS，原生 1,425 項＝1,392 PASS／33 applicability skips。這是 Windows Server 2022 證據，不能替代 clean Win10。

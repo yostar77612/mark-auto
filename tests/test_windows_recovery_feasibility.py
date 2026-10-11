@@ -22,6 +22,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,12 +70,23 @@ def _state(k, handle):
     return result
 
 
-def _terminate(k, handle):
+def _terminate(k, handle, *, deadline=None):
     if _state(k, handle) == WAIT_TIMEOUT:
         if not k.TerminateProcess(handle, 91):
-            # An independent natural exit can race the termination request.
-            if _state(k, handle) != WAIT_OBJECT_0:
-                raise OSError(ctypes.get_last_error(), 'TerminateProcess failed')
+            error = ctypes.get_last_error()  # Preserve before another Win32 call.
+            if error != 5:  # ERROR_ACCESS_DENIED can race asynchronous termination.
+                raise OSError(error, 'TerminateProcess failed')
+            # Cleanup may have already requested termination through this exact
+            # retained handle. An access error is NOT proof of exit. Wait only
+            # within the existing shared cleanup budget and require signalled.
+            remaining_ms = 0 if deadline is None else max(
+                0, int((deadline - time.monotonic()) * 1000))
+            state = k.WaitForSingleObject(handle, remaining_ms)
+            if state == WAIT_OBJECT_0:
+                return
+            if state != WAIT_TIMEOUT:
+                raise OSError(ctypes.get_last_error(), 'termination confirmation wait failed')
+            raise OSError(error, 'TerminateProcess failed; original handle did not signal within cleanup budget')
 
 
 def _write(folder, name, value):
@@ -198,6 +210,53 @@ def _fixture(role, folder, observer, token, extra):
                 tree.close()
         _check(k.CloseHandle(worker_handle), 'close worker process handle')
         _check(k.CloseHandle(gui_handle), 'close GUI process handle')
+
+
+class TerminationCleanupRegressionTests(unittest.TestCase):
+    """Deterministic Win32-result protocol test; never starts a process."""
+
+    def test_async_termination_race_requires_exact_handle_signal_within_existing_budget(self):
+        class Kernel:
+            def __init__(self, states):
+                self.states = iter(states)
+                self.waits = []
+                self.terminations = []
+
+            def WaitForSingleObject(self, handle, milliseconds):
+                self.waits.append((handle, milliseconds))
+                return next(self.states)
+
+            def TerminateProcess(self, handle, code):
+                self.terminations.append((handle, code))
+                return 0
+
+        original = 123456  # Synthetic handle, never passed to the operating system.
+        for outcome, succeeds in ((WAIT_OBJECT_0, True), (WAIT_TIMEOUT, False),
+                                  (0xFFFFFFFF, False)):
+            with self.subTest(outcome=outcome):
+                kernel = Kernel([WAIT_TIMEOUT, outcome])
+                with patch.object(ctypes, 'get_last_error', return_value=5, create=True), \
+                     patch.object(time, 'monotonic', return_value=100):
+                    if succeeds:
+                        _terminate(kernel, original, deadline=101)
+                    else:
+                        with self.assertRaises(OSError):
+                            _terminate(kernel, original, deadline=101)
+                self.assertEqual(kernel.waits, [(original, 0), (original, 1000)])
+                self.assertEqual(kernel.terminations, [(original, 91)])
+        # Genuine non-access API errors fail immediately, regardless of deadline.
+        kernel = Kernel([WAIT_TIMEOUT])
+        with patch.object(ctypes, 'get_last_error', return_value=6, create=True):
+            with self.assertRaises(OSError):
+                _terminate(kernel, original, deadline=101)
+        self.assertEqual(kernel.waits, [(original, 0)])
+        # An exhausted budget cannot acquire a fresh wait allowance.
+        kernel = Kernel([WAIT_TIMEOUT, WAIT_TIMEOUT])
+        with patch.object(ctypes, 'get_last_error', return_value=5, create=True), \
+             patch.object(time, 'monotonic', return_value=101):
+            with self.assertRaises(OSError):
+                _terminate(kernel, original, deadline=100)
+        self.assertEqual(kernel.waits, [(original, 0), (original, 0)])
 
 
 @unittest.skipUnless(sys.platform == 'win32', 'Windows-only prototype; native verification deferred')
@@ -355,12 +414,12 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                     collect()
                     _write(folder, 'cleanup-request.json', {'test_only': True})
                 except (OSError, ValueError) as exc:
-                    errors.append(str(exc))
+                    errors.append('cleanup-request: ' + str(exc))
                 if 'gui' in handles:
                     try:
-                        _terminate(k, handles['gui'])
+                        _terminate(k, handles['gui'], deadline=cleanup_deadline)
                     except OSError as exc:
-                        errors.append(str(exc))
+                        errors.append('gui initial-stop: ' + str(exc))
                 if 'helper' in processes and processes['helper'].poll() is None:
                     try:
                         processes['helper'].wait(timeout=min(6.5, max(0, cleanup_deadline - time.monotonic())))
@@ -370,25 +429,25 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                 for role in ('gui', 'helper', 'worker'):
                     if role in handles:
                         try:
-                            _terminate(k, handles[role])
+                            _terminate(k, handles[role], deadline=cleanup_deadline)
                         except OSError as exc:
-                            errors.append(str(exc))
-                for proc in processes.values():
+                            errors.append(role + ' fallback-stop: ' + str(exc))
+                for role, proc in processes.items():
                     try:
                         proc.wait(timeout=max(0, cleanup_deadline - time.monotonic()))
                     except subprocess.TimeoutExpired as exc:
-                        errors.append(str(exc))
+                        errors.append(role + ' Popen wait: ' + str(exc))
                 # Uncollected source handles belong to the now-stopped worker,
                 # never to this observer. Its job contained the grandchild before
                 # publication; closing helper's sole job handle stops that tree.
                 for role, handle in list(handles.items()):
                     try:
-                        _terminate(k, handle)
+                        _terminate(k, handle, deadline=cleanup_deadline)
                         remaining_ms = max(0, int((cleanup_deadline - time.monotonic()) * 1000))
                         if k.WaitForSingleObject(handle, remaining_ms) != WAIT_OBJECT_0:
                             raise RuntimeError('cleanup did not confirm exit: ' + role)
                     except (OSError, RuntimeError) as exc:
-                        errors.append(str(exc))
+                        errors.append(role + ' final-confirmation: ' + str(exc))
                     finally:
                         with self._lock:
                             self._handles.discard(handle)

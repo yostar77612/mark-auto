@@ -2792,7 +2792,7 @@
   },
   "current_snapshot": {
     "as_of_utc": "2026-10-11T11:49:00Z",
-    "scope": "Verified PR8 released baseline; new UI metadata visibility patch and test-only Windows feasibility investigation READY_FOR_NATIVE_CI, not released. Full abrupt-GUI-restart recovery remains engineering blocked. Historical scope, weights and evidence preserved.",
+    "scope": "Verified PR8 released baseline unchanged. Draft PR9 candidate2459ad62 Quantlab and installer failures preserved. Additive termination/status fixes independently reviewed and focused-verified: READY_FOR_NATIVE_REVALIDATION on a new exact head. No performance-fix proof, new release, points or full GUI restart recovery.",
     "product_source": {
       "commit": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
       "tree": "9566cffc6018650bd8133778f783f41e73509e2a",
@@ -2880,8 +2880,8 @@
       }
     },
     "remaining_auto": {
-      "status": "READY_FOR_NATIVE_CI",
-      "work": "Run exact-head native CI, including native Qt and bounded Windows-only feasibility tests, then review actual results. Product restart-recovery implementation/admission remains blocked; no new release or points claimed."
+      "status": "READY_FOR_NATIVE_REVALIDATION",
+      "work": "Run new exact-head native CI for independently reviewed additive test termination and diagnostic status fixes; inspect all native/frozen/installer/lifecycle results. Preserve failed2459ad62 evidence and original workload/deadline gates."
     },
     "remaining_gates": [
       {
@@ -2978,7 +2978,7 @@
       "release": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1"
     },
     "ui_checkpoint_visibility_candidate": {
-      "status": "READY_FOR_NATIVE_CI",
+      "status": "READY_FOR_NATIVE_REVALIDATION",
       "baseline": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
       "release": "NOT_PUBLISHED",
       "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
@@ -3009,9 +3009,7 @@
       },
       "initial_review_diagnostic": "Root and independent review found asynchronous completed result hidden by stale checkpoint selection. Worker fixed selection of returned analysis identity before display and added native Qt regressions. Preserve issue as initial diagnostic; final independent review subsequently PASS.",
       "pending": [
-        "Native Qt regressions",
-        "Windows feasibility experiment",
-        "Exact-head CI",
+        "New exact-head full native/frozen/installer/lifecycle revalidation",
         "Publication"
       ],
       "independent_review": {
@@ -3039,6 +3037,120 @@
         "total_files": 257,
         "findings": 0,
         "local_history_scan": "NOT_RUN_AWAITS_CI"
+      },
+      "pr": 9,
+      "pr_status": "DRAFT",
+      "native_iterations": [
+        {
+          "head": "2459ad62",
+          "quantlab_run": 38138317785,
+          "status": "FAIL",
+          "jobs": {
+            "linux311": {
+              "passed": 1448,
+              "skipped": 21,
+              "seconds": 425.277
+            },
+            "linux312": {
+              "passed": 1448,
+              "skipped": 21,
+              "seconds": 447.131
+            },
+            "ui": {
+              "passed": 1448,
+              "skipped": 16,
+              "seconds": 323.886,
+              "new_native_qt_passed": 7
+            },
+            "windows_research311": {
+              "passed": 243,
+              "skipped": 6,
+              "seconds": 720.942
+            },
+            "windows_research312": {
+              "passed": 243,
+              "skipped": 6,
+              "seconds": 510.297
+            },
+            "windows_core312": {
+              "passed": 1205,
+              "skipped": 27,
+              "failed": 1,
+              "seconds": 398.629,
+              "failure": "New prototype helper_before_gui cleanup Errno5"
+            },
+            "windows_core311": {
+              "passed": 1205,
+              "skipped": 27,
+              "failed": 1,
+              "errors": 1,
+              "seconds": 550.315,
+              "failure": "Same prototype cleanup failure",
+              "error": "Existing wrong-commit-count test missing returncode after10.124s versus original10s limit"
+            }
+          },
+          "installer": {
+            "run": 38138317766,
+            "status": "FAILED",
+            "python": "3.13.16",
+            "qt": "6.12",
+            "native_total": 1448,
+            "passed": 1414,
+            "skipped": 33,
+            "failed": 1,
+            "seconds": 845.457,
+            "failure": "Same new prototype helper_before_gui cleanup Errno5",
+            "other_prototype_cases_passed": 2,
+            "new_native_qt_passed": 7,
+            "frozen_installer_lifecycle": "NOT_REACHED",
+            "release": "SKIPPED",
+            "installer_generated": false,
+            "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/ci-2459ad62/build.log"
+          },
+          "preservation": "Failed result retained; no unchanged-source rerun or retrospective PASS; original log does not establish unique slow phase."
+        }
+      ],
+      "additive_fixes": {
+        "prototype_termination": {
+          "scope": "TEST_ONLY",
+          "source_sha256": "5bb6ed2bec7ca515b7810ac318f5945b42fa90145add0b4a62a2b532bdef50ef",
+          "independent_review": "PASS",
+          "gate": "Exact owned handle must signal within original7s cleanup",
+          "deterministic_passed": 1,
+          "windows_skipped": 3,
+          "actual_windows_revalidation": "PENDING"
+        },
+        "diagnostic_status": {
+          "file": "tools/diagnose_paper_replay.py",
+          "behavior": "Report actual reaped exit or unknown None; explicitly refuse timeout/error certification",
+          "preserved": [
+            "120 workload",
+            "FULL",
+            "delete-reopen",
+            "10s deadline",
+            "original assertions"
+          ],
+          "performance_fix_proven": false,
+          "unique_slow_phase_proven": false,
+          "independent_review": "PASS",
+          "final_root_focused": "PASS_SEE_ADDITIVE_FIX_COMBINED_ROOT",
+          "independent_targeted_passed": 4,
+          "independent_scope": "Includes real120/FULL/10s workload; no performance-fix claim",
+          "source_sha256": "8909f7ed9430bedbdb377e2c0d7807f929888dd933ba26069f84feee4fdd9ffc",
+          "test_sha256": "9cb8bee0c412501df1b8574d6b9888f65dc6a348fef6c4a1d186d8a2a2fc9a65"
+        }
+      },
+      "additive_fix_combined_root": {
+        "modules": [
+          "tests.test_paper_diagnostics",
+          "tests.test_windows_recovery_feasibility"
+        ],
+        "total": 23,
+        "passed": 20,
+        "native_windows_skipped": 3,
+        "seconds": 5.096,
+        "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/ci-fix-focused.log",
+        "native_revalidation": "PENDING_NEW_EXACT_HEAD"
       }
     },
     "engineering_blockers": {
@@ -3072,7 +3184,7 @@
       }
     },
     "windows_recovery_feasibility_experiment": {
-      "status": "READY_FOR_NATIVE_CI_WINDOWS_NOT_RUN",
+      "status": "READY_FOR_NATIVE_REVALIDATION_PRIOR_FAILURE_PRESERVED",
       "file": "tests/test_windows_recovery_feasibility.py",
       "scope": "Synthetic test-only feasibility scenarios; no product supervisor or recovery implementation changes. Existing Windows Server CI may execute; no PASS or points earned.",
       "scenarios": [
@@ -3088,7 +3200,7 @@
         "normal_flow": "quick barriers"
       },
       "unverified": [
-        "Windows execution",
+        "Successful Windows revalidation after additive termination fix",
         "clean Windows10",
         "non-elevated execution",
         "copied/restored authority",
@@ -3103,7 +3215,9 @@
         "native_windows_executed": false
       },
       "review": "Final independent static review PASS for cloud Windows CI only. Initial setup-ownership, unpublished-handle and watchdog review gaps corrected; no production changes. Windows runtime behavior still unverified.",
-      "reviewed_source_sha256": "4dfdd7b7dad9fdfdf70ab0ffd9cc9b8d50319adab2d6d78a568f7dae8332e261"
+      "reviewed_source_sha256": "4dfdd7b7dad9fdfdf70ab0ffd9cc9b8d50319adab2d6d78a568f7dae8332e261",
+      "latest_native_failure_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.native_iterations[0]",
+      "additive_fix_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.additive_fixes.prototype_termination"
     }
   },
   "current_snapshot_history": [

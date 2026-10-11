@@ -673,7 +673,8 @@ def _connection_case(output, profile, base, deadline):
     """Controller owns fixture cleanup and every direct, no-descendant child."""
     import subprocess
     import tempfile
-    result = {'profile': profile, 'complete': False, 'workers_stopped': True}
+    result = {'profile': profile, 'complete': False, 'workers_stopped': True,
+              'returncode': None}
     if time.monotonic() >= deadline:
         return {**result, 'not_started': True, 'reason': 'deadline'}
     started = time.perf_counter()
@@ -713,7 +714,6 @@ def _connection_case(output, profile, base, deadline):
                         if helper.returncode != 0:
                             raise RuntimeError('External diagnostic observer failed')
                 time.sleep(.02)
-            result['returncode'] = child.returncode
         except subprocess.TimeoutExpired:
             result['timed_out'] = True
         except (Exception, KeyboardInterrupt) as error:
@@ -747,12 +747,16 @@ def _connection_case(output, profile, base, deadline):
                 except (OSError, subprocess.TimeoutExpired) as error:
                     result['cleanup_error_type'] = type(error).__name__
             result['workers_stopped'] = all(owned.poll() is not None for owned in children)
+            # Retain the actual exit status even after a timeout or controller
+            # error. A late successful exit must not certify that failed case.
+            result['returncode'] = child.returncode if child is not None else None
             result['children'] = [{'pid': owned.pid, 'returncode': owned.returncode} for owned in children]
             result['observer_actions_completed'] = observer_actions
         if result['workers_stopped'] and output.exists():
             observation = json.loads(output.read_text(encoding='utf-8'))
             result['observation'] = observation
-            result['complete'] = (result.get('returncode') == 0 and result['workers_stopped']
+            result['complete'] = (result['returncode'] == 0 and result['workers_stopped']
+                and not result.get('timed_out') and 'error_type' not in result
                 and observer_actions == ['stop', 'start'] and observation.get('complete') is True
                 and observation.get('profile') == profile
                 and observation.get('commits_completed') == CONNECTION_BLOCK_COMMITS
@@ -771,7 +775,8 @@ def _connection_case(output, profile, base, deadline):
                 result['cleanup_error_type'] = type(error).__name__
         result['fixture_removed'] = not Path(root).exists()
     result['seconds'] = time.perf_counter() - started
-    result['complete'] = result['complete'] and result['fixture_removed']
+    result['complete'] = (result['complete'] and result['fixture_removed']
+                          and 'cleanup_error_type' not in result)
     return result
 
 
