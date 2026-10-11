@@ -1,6 +1,17 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+
+### PR #10 c2 原生建置通過／必要 research 取消；新候選待 exact-head CI（2026-10-11 15:53 UTC）
+
+- **已測來源：** [Draft PR #10](https://github.com/yostar77612/mark-auto/pull/10) head `c2efd0c65d112c76f46aac4b0420d8db266509bf`／tree `c6834f0d92b828a3702c6e52857d4ba92cfd7263`。[Quantlab 38150836667](https://github.com/yostar77612/mark-auto/actions/runs/38150836667) 終態 **CANCELLED，11/12 jobs SUCCESS**；Windows 3.11 research 原 243 cases 完成 242，最後一項在原 15 分鐘 job cap 被中斷，不能稱 PASS 或未改來源重跑。3.12 research＝237 PASS／6 skips，513.134 秒；兩個 Windows cores 各 1,282 PASS／27 skips，先前 8 個 fixture errors 已修復，但舊失敗全保留。
+- **安裝候選不是發布：** [Windows 38150836751](https://github.com/yostar77612/mark-auto/actions/runs/38150836751) build/security PASS、release SKIPPED；原生 1,552＝1,519 PASS／33 skips，845.197 秒。artifact `11706932283` 已獨立核對 80 source inputs，5 個真實 frozen helper proofs 全 PASS。候選 installer SHA-256 `bd22911ac8f719e73575c53a1cf4fe352ef8186a4555f1bb850cec92a54fdb47`；尚未公開發布／合併，不抵銷必要 research 取消。主線仍為已發布 `60da0e3b`。
+- **未提交新候選：** WFO 每次呼叫預計算 pool hashes 的三行修補；局部 20 次 authoritative reads 約 0.46→0.18 秒、約 60% 改善，不是完整 CI 或 Windows 效能已復原證明。WFO 34 PASS、另外不重疊 70 PASS、獨立 6 PASS，分開列示。新增 observation-only Windows 3.11 phase 診斷，150 秒觀察上限、沿用既有工作量／TEMP；9 項 contract tests 與獨立 9 項 PASS，原生尚未執行。兩組工作已凍結且審查 PASS。
+- **最後 root 定向證據：** WFO 34＋diagnostic 9＝43/43 PASS，21.092 秒（與前述數字重疊，不重複相加）；`research-timeout-analysis/root-final-focused.log` 留存雲端。static 268 files／0 findings；local history NOT_RUN，仍需 native CI。`quantlab/core.py`、`quantlab/research_analysis.py`、`quantlab/desktop_runtime.py` 與 c2 逐位元相同。
+- **固定界線及下一步：** 原有 required jobs／workloads／15 分鐘 cap／FULL／commit boundaries／驗收 ID、權重及 300 分母不變；原 230/300 不加分。保留原 clean Win10／Win11 EXTERNAL BLOCKED 及個人 PC/admin/UAC/VM STOP。針對新 exact head 執行完整必要 CI，全部 Gate 通過才整合；不能把局部量測或額外觀察診斷當作原 Gate PASS。雲端原始證據 `quant-audit/ci-c2efd0c6`、`research-timeout-analysis` 留存，非 repository 檔案。
+
+以下日期較早的快照原文完整保留，不能用作本次候選的最新終態。
+
 ### PR #10 保留原生失敗／修補待重新驗證（2026-10-11 15:17 UTC）
 
 [Draft PR #10](https://github.com/yostar77612/mark-auto/pull/10) head `d7a295799f27ffcb9c655d2d032296771c1510bc`／tree `6437608765ecb360e8f84c31c770b2c3d1deee02`：NATIVE_FAILED_FIX_IN_PROGRESS。[Quantlab 38149301471](https://github.com/yostar77612/mark-auto/actions/runs/38149301471) 的 Linux 3.11／3.12 各 1,549＝1,525 PASS／24 skips，340.258／482.437 秒；UI 1,549＝1,530 PASS／19 skips，497.412 秒。Windows core 3.11／3.12 各 1,306＝1,271 PASS／27 skips／8 ERROR，610.317／590.896 秒；5 項 ledger SQLite test connection cleanup、1 項 integration SQLite cleanup、1 項 absent setsid test patch、1 項 fake Process／real Job Object fixture，修補已通過下列定向與獨立審查，仍不能宣稱完整原生 CI 通過。兩個 cores 的真實 production helper 3 個 native cases 均 PASS，但不能抵銷整體 FAIL。[Windows build 38149301429](https://github.com/yostar77612/mark-auto/actions/runs/38149301429) 終態 FAIL：CPython 3.13.16 原生 1,549＝1,508 PASS／33 skips／相同 8 ERROR，916.171 秒；production helper 3 cases 與 prototype 3 cases 均 PASS。尚未進入 frozen／installer／TLS／lifecycle，release SKIPPED，security PASS，沒有新安裝檔。原發布基線與下方 precommit full 失敗均保留。Quantlab 終態 FAIL，10/12 jobs PASS；Windows research 3.11／3.12 各 243＝237 PASS／6 skips，687.587／785.762 秒。

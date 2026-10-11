@@ -412,11 +412,12 @@ def _validate_state(state):
             or state['summary'] != _state_summary(state)
             or len(state['evaluations']) > plan['max_evaluations']):
             raise ValidationError('Inconsistent walk-forward evidence labels or counters')
+        pool_hashes = [content_hash(spec) for spec in pool]
         by_sequence, keys = {}, set()
         for index, record in enumerate(state['evaluations'], 1):
             key = (record['fold'], record['role'], record['strategy_hash'])
             if (record['sequence'] != index or key in keys or record['role'] not in ('train', 'validation', 'oos')
-                or record['strategy_hash'] not in [content_hash(spec) for spec in pool]
+                or record['strategy_hash'] not in pool_hashes
                 or record['status'] not in ('running', 'evaluated', 'failed', 'timed_out', 'interrupted')):
                 raise ValidationError('Inconsistent walk-forward evaluation ledger')
             keys.add(key)
@@ -428,7 +429,7 @@ def _validate_state(state):
                 raise ValidationError('Inconsistent fold plan')
             eligible = []
             for pool_index, candidate in enumerate(fold['candidates']):
-                if candidate['pool_index'] != pool_index or candidate['strategy_hash'] != content_hash(pool[pool_index]):
+                if candidate['pool_index'] != pool_index or candidate['strategy_hash'] != pool_hashes[pool_index]:
                     raise ValidationError('Inconsistent candidate pool')
                 for role in ('train', 'validation'):
                     if role in candidate:
