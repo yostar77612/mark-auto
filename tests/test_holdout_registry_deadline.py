@@ -14,7 +14,8 @@ from quantlab.reporting import synthetic_dataset
 class RegistryDeadlineTests(unittest.TestCase):
     def run_reservation(self, *, deadline=1.0, schema_delays=(0.0, 0.0),
                         connect_delay=0.0, locked=False, select_delay=0.0,
-                        busy_delay=None, as_walk_forward=False, busy_code=sqlite3.SQLITE_BUSY):
+                        busy_delay=None, as_walk_forward=False, busy_code=sqlite3.SQLITE_BUSY,
+                        registry_alias=False):
         clock = [0.0]
         events = []
 
@@ -49,7 +50,7 @@ class RegistryDeadlineTests(unittest.TestCase):
 
         real_connect = sqlite3.connect
         def connect(path, timeout):
-            if Path(path) != target_registry:
+            if Path(path).resolve() != target_registry.resolve():
                 return real_connect(path, timeout=timeout)
             events.append(('connect', timeout))
             clock[0] += connect_delay
@@ -59,6 +60,10 @@ class RegistryDeadlineTests(unittest.TestCase):
         result = error = None
         with tempfile.TemporaryDirectory() as temporary:
             target_registry = Path(temporary) / 'registry.sqlite3'
+            if registry_alias:
+                alias_parent = Path(temporary) / 'alias'
+                alias_parent.mkdir()
+                target_registry = alias_parent / '..' / 'registry.sqlite3'
             if as_walk_forward:
                 from tests.test_walk_forward import inputs
                 from quantlab.walk_forward import run_walk_forward
@@ -75,6 +80,8 @@ class RegistryDeadlineTests(unittest.TestCase):
                             selection_hash='fixture', output_dir=Path(temporary) / 'output', deadline=deadline)
                 except (research.ResourceTimeout, sqlite3.OperationalError) as exc:
                     error = exc
+            self.assertEqual(sum(e[0] == 'connect' for e in events), 1,
+                'Deadline fixture must intercept exactly one intended registry connection')
         return result, error, clock[0], events
 
     def test_schema_time_is_subtracted_before_busy_begin(self):
@@ -217,3 +224,13 @@ class RegistryDeadlineTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertIsInstance(error, sqlite3.OperationalError)
         self.assertEqual(error.sqlite_errorcode, sqlite3.SQLITE_IOERR)
+
+    def test_walk_forward_registry_alias_reaches_deadline_fixture(self):
+        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True,
+            registry_alias=True, schema_delays=(.3502, .35), locked=True)
+        self.assertIsNone(error)
+        self.assertLess(elapsed, 1)
+        self.assertLess(1 - elapsed, .001)
+        self.assertEqual(result['status'], 'budget_exhausted')
+        self.assertEqual(result['evaluations'], [])
+        self.assertIsNone(result['registry_reservation'])

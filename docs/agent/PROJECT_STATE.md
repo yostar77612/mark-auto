@@ -2,6 +2,13 @@
 
 <!-- CURRENT_STATUS_START -->
 
+### PR #11 研究 Gate 通過／三個新 fixture 失敗，僅測試修補待提交（2026-10-11 18:12 UTC）
+
+- 候選 `bbc63fab` 的 [Quantlab 38161825621](https://github.com/yostar77612/mark-auto/actions/runs/38161825621) 兩個 Windows research profiles 均 243＝237 PASS／6 skips，3.11 為 605.672 秒、3.12 為 531.453 秒；exact inventories／owned jobs 已核驗，第三階段實際原 deadline 案例 1.141 秒 PASS。這不抵銷 core 失敗：兩個 cores 各 1,362＝1,332 PASS／27 skips／3 個新 fixture caller FAIL，644.392／644.862 秒，原因為 path alias 未匹配、fake clock 未攔截而維持 0；全部實際新增 WFO crash tests PASS。Linux 各 1,579 PASS／26 skips，445.652／333.436 秒；UI 1,584 PASS／21 skips，507.094 秒。
+- **待提交修補僅 TEST_ONLY：** 兩端 registry path canonicalization、斷言恰好一次攔截及 portable alias regression 已獨立審查 PASS；15 focused PASS，1.379 秒。`tests/test_holdout_registry_deadline.py` SHA-256 `7ef52ee099f28e6e66ea9897cd622eb7f61e26a9a3ae9a450644497c038ffc07`。產品程式、producer profiles 與原 WFO test 逐位元不變，不降低 deadline 或品質門檻。
+- [Windows 38161825616](https://github.com/yostar77612/mark-auto/actions/runs/38161825616) 尚在執行；root 等待原工作終態保存證據後，才發布兩檔候選，不自動取消。Draft PR11 尚未全通過／合併；原 230/300 與全部舊失敗歷史保留。
+
+
 ### PR #11 原生 deadline 失敗保留／產品修補待驗（2026-10-11 17:52 UTC）
 
 - head `56d20fed35de5df0e763cb4e610080259dd7cd34`／tree `1163f5a89c194645634c8dbc8f263828a5d8ad73` 的 [Quantlab 38159820993](https://github.com/yostar77612/mark-auto/actions/runs/38159820993) 終態 **13 SUCCESS／1 FAIL**。Windows 3.12 原有 registry 2 秒期限案例耗時 2.375 秒而失敗；research 3.11 為 243＝237 PASS／6 skips，662.922 秒，3.12 為 243＝236 PASS／6 skips／1 FAIL，627.719 秒。兩邊 inventory 完整，Job 正確 fail closed；cores 各 1,308 PASS／27 skips，真實 nested Job tests PASS。[Windows 38159821001](https://github.com/yostar77612/mark-auto/actions/runs/38159821001) 產物核驗仍待負責 worker 回報，不推定成功或發布。
