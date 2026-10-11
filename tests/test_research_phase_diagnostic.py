@@ -21,9 +21,10 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
         identity = diagnostic.identity()
         self.assertEqual(identity['tempfile_gettempdir'], tempfile.gettempdir())
         self.assertEqual(identity['environment_temp']['RUNNER_TEMP'], os.environ.get('RUNNER_TEMP'))
-        self.assertEqual(len(diagnostic.TESTS), 2)
+        self.assertEqual(len(diagnostic.TESTS), 3)
         self.assertTrue(diagnostic.TESTS[0].endswith('test_saved_execution_evaluates_all_candidates_and_never_calls_model'))
         self.assertTrue(diagnostic.TESTS[1].endswith('test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity'))
+        self.assertEqual(diagnostic.TESTS[2], 'tests.test_walk_forward.WalkForwardTests.test_registry_lock_cannot_overrun_deadline_or_reserve_after_it')
         self.assertIn('quantlab/walk_forward.py', identity['source_sha256'])
         windows_root = PureWindowsPath('C:/work/mark-auto')
         self.assertEqual(diagnostic.source_key(windows_root / 'quantlab/walk_forward.py', windows_root),
@@ -60,6 +61,43 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
             self.assertEqual(report['sqlite_profiles'][0]['synchronous'], 2)
             observer.checkpoint()
             self.assertEqual(json.loads((root / 'report.json').read_text())['status'], 'INCOMPLETE')
+
+    def test_state_initial_terminal_and_registry_subphases_preserve_boundaries(self):
+        from quantlab import walk_forward as wf
+        from quantlab.reporting import synthetic_dataset
+        from tests.test_walk_forward_snapshot_serialization import state_with
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            observer = diagnostic.Observer({}, root / 'report.json')
+            state = state_with('phase fixture')
+            state['status'] = 'running'
+            with ExitStack() as stack:
+                observer.instrument(stack)
+                with closing(sqlite3.connect(root / 'walk_forward.sqlite3')) as db:
+                    db.execute('BEGIN')
+                    db.execute('CREATE TABLE state (id INTEGER PRIMARY KEY, payload TEXT)')
+                    wf._save_state(db, root, state)
+                    state['status'] = 'budget_exhausted'
+                    wf._save_state(db, root, state)
+                wf._reserve_holdout(synthetic_dataset(10), registry_path=root / 'holdout.sqlite3',
+                                    campaign_id='fixture', selection_hash='fixture', output_dir=root)
+            for phase, count in {'wfo.initial_save': 1, 'wfo.terminal_save': 1,
+                                 'wfo._save_state': 2, 'wfo._reserve_holdout': 1,
+                                 'sqlite.state.execute.create': 1, 'sqlite.state.execute.begin': 1,
+                                 'sqlite.state.commit': 2, 'sqlite.commit': 2,
+                                 'sqlite.state.close': 1, 'sqlite.registry.close': 1,
+                                 'sqlite.registry.execute.begin': 1,
+                                 'sqlite.registry.context_commit': 1,
+                                 'json.replace': 2}.items():
+                with self.subTest(phase=phase):
+                    self.assertEqual(observer.phases[phase]['completed'], count)
+                    self.assertEqual(observer.phases[phase]['errors'], 0)
+            self.assertNotIn('wfo.later_save', observer.phases)
+            self.assertTrue(all(p['synchronous'] == 2 and p['journal_mode'] == 'delete'
+                                for p in observer.report['sqlite_profiles']))
+            with closing(sqlite3.connect(root / 'walk_forward.sqlite3')) as db:
+                payload = db.execute('SELECT payload FROM state').fetchone()[0]
+            self.assertEqual((root / 'walk_forward.json').read_bytes(), payload.encode('utf-8'))
 
     def test_instrumentation_preserves_exception_and_incomplete_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -121,6 +159,25 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
                 with self.assertRaises(TypeError):
                     sqlite3.connect(':memory:')
             connection.close.assert_called_once_with()
+
+    def test_successful_connect_checkpoint_failure_closes_retained_connection(self):
+        original_connect = sqlite3.connect
+        retained = []
+        def connect(*args, **kwargs):
+            db = original_connect(*args, **kwargs)
+            retained.append(db)
+            return db
+        with tempfile.TemporaryDirectory() as temporary:
+            observer = diagnostic.Observer({}, Path(temporary) / 'report.json')
+            observer.last = float('-inf')
+            with patch.object(sqlite3, 'connect', side_effect=connect), ExitStack() as stack:
+                observer.instrument(stack)
+                with patch.object(observer, 'checkpoint', side_effect=OSError('report failed')):
+                    with self.assertRaisesRegex(OSError, 'report failed'):
+                        sqlite3.connect(Path(temporary) / 'opened.sqlite3')
+            self.assertEqual(len(retained), 1)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                retained[0].execute('SELECT 1')
 
     def test_unknown_cleanup_retains_partial_directory(self):
         original_stop = diagnostic.stop_owned

@@ -613,9 +613,27 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
     if deadline is not None and timeout <= 0:
         raise ResourceTimeout('Range reservation exceeded experiment deadline')
     with closing(sqlite3.connect(registry_path, timeout=timeout)) as registry, registry:
-        registry.execute('CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, holdout_hash TEXT NOT NULL, campaign_id TEXT NOT NULL, selection_hash TEXT NOT NULL, source_directory TEXT NOT NULL)')
-        registry.execute('CREATE TABLE IF NOT EXISTS coverage (reservation_id TEXT NOT NULL, contract_id TEXT NOT NULL, start TEXT NOT NULL, end TEXT NOT NULL, PRIMARY KEY(reservation_id,contract_id))')
-        registry.execute('BEGIN IMMEDIATE')
+        def begin_statement(sql):
+            if deadline is not None:
+                remaining = min(10, deadline - time.monotonic())
+                if remaining <= 0:
+                    raise ResourceTimeout('Range reservation exceeded experiment deadline')
+                # SQLite restarts its busy wait for each statement. Schema work
+                # must not leave BEGIN with the original, now-stale allowance.
+                registry.execute('PRAGMA busy_timeout=' + str(int(remaining * 1000)))
+            try:
+                registry.execute(sql)
+            except sqlite3.OperationalError as exc:
+                if (deadline is not None
+                    and getattr(exc, 'sqlite_errorcode', None) == sqlite3.SQLITE_BUSY
+                    and deadline - time.monotonic() < .001):
+                    # The floored millisecond wait can finish just before the
+                    # deadline, with no representable busy-wait budget left.
+                    raise ResourceTimeout('Range reservation exceeded experiment deadline') from None
+                raise
+        begin_statement('CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, holdout_hash TEXT NOT NULL, campaign_id TEXT NOT NULL, selection_hash TEXT NOT NULL, source_directory TEXT NOT NULL)')
+        begin_statement('CREATE TABLE IF NOT EXISTS coverage (reservation_id TEXT NOT NULL, contract_id TEXT NOT NULL, start TEXT NOT NULL, end TEXT NOT NULL, PRIMARY KEY(reservation_id,contract_id))')
+        begin_statement('BEGIN IMMEDIATE')
         if deadline is not None and time.monotonic() >= deadline:
             raise ResourceTimeout('Range reservation exceeded experiment deadline')
         conflicts = set()

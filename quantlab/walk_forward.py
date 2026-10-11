@@ -570,7 +570,14 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError as exc:
             raise ValidationError('Walk-forward experiment is already running') from exc
-        with closing(sqlite3.connect(output_dir / 'walk_forward.sqlite3', timeout=0)) as db:
+        state_path = output_dir / 'walk_forward.sqlite3'
+        new_journal = not state_path.exists()
+        with closing(sqlite3.connect(state_path, timeout=0)) as db:
+            if new_journal:
+                # Publish schema with the first original durable snapshot, not
+                # an independently committed empty table. Existing files retain
+                # their original read/recovery path and storage mode.
+                db.execute('BEGIN')
             db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
             state = _read_state(db)
             if state is not None:

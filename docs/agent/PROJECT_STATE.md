@@ -2,6 +2,13 @@
 
 <!-- CURRENT_STATUS_START -->
 
+### PR #11 原生 deadline 失敗保留／產品修補待驗（2026-10-11 17:52 UTC）
+
+- head `56d20fed35de5df0e763cb4e610080259dd7cd34`／tree `1163f5a89c194645634c8dbc8f263828a5d8ad73` 的 [Quantlab 38159820993](https://github.com/yostar77612/mark-auto/actions/runs/38159820993) 終態 **13 SUCCESS／1 FAIL**。Windows 3.12 原有 registry 2 秒期限案例耗時 2.375 秒而失敗；research 3.11 為 243＝237 PASS／6 skips，662.922 秒，3.12 為 243＝236 PASS／6 skips／1 FAIL，627.719 秒。兩邊 inventory 完整，Job 正確 fail closed；cores 各 1,308 PASS／27 skips，真實 nested Job tests PASS。[Windows 38159821001](https://github.com/yostar77612/mark-auto/actions/runs/38159821001) 產物核驗仍待負責 worker 回報，不推定成功或發布。
+- **未提交產品修補，獨立審查已通過：** 每個 pre-transaction statement 前刷新剩餘 SQLite busy budget；剩餘不足 1ms 時嚴格處理 SQLITE_BUSY、不重試，保留原 2 秒 Gate。deterministic red/green 及原 deadline 本機測試 PASS，**native timing NOT_PROVEN**。WFO 僅新檔 schema 加入既有 initial snapshot commit；不刪 `_save_state`／commit／export，既有檔案路徑不變，7 項 crash／compatibility tests PASS。
+- 追加 2 個精確 producer profiles，完整保留原 13 個；profile／diagnostic tests 仍在進行。沒有採用產品 WAL、沒有修改原 Gate／工作量／持久化要求或 230/300 分數。必須取得最終新來源測試與原生 exact-head 證據後才能認證；以下舊失敗與快照完整保留。
+
+
 ### 本輪候選：研究測試排程修補，原 Gate 不變（2026-10-11 17:23 UTC）
 
 - main `1619788a` 的 postmerge [Quantlab 38156717394](https://github.com/yostar77612/mark-auto/actions/runs/38156717394) 仍為 12 SUCCESS＋Windows 3.11 research 在原 15 分鐘取消；[Windows 38156717521](https://github.com/yostar77612/mark-auto/actions/runs/38156717521) 原生 1,528 PASS／33 skips、artifact 已核驗，但既有 release guard 正確拒絕發布。最後公開預覽版仍為 `60da0e3b`；建置成功不能抵銷必要 Gate 取消。
