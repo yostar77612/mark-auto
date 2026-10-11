@@ -1,6 +1,19 @@
 # mark-auto 程式品質與交易風險審查
 
 <!-- CURRENT_STATUS_START -->
+## 原始 Job 停止證據復原候選（2026-10-11 14:28 UTC；提交前來源快照）
+
+- **最後已發布基線不變：** [PR #9 最終證據](https://github.com/yostar77612/mark-auto/pull/9) 已確認合併 main `60da0e3b4f5c230f529a99e8ba5794fd2b232bfb`／tree `a04dddae25781b94d4759a13c77a36e319b4730c`；[Quantlab 38141626721](https://github.com/yostar77612/mark-auto/actions/runs/38141626721) 全 12 jobs SUCCESS，[Windows 38141626727](https://github.com/yostar77612/mark-auto/actions/runs/38141626727) build/security/release SUCCESS。Server 2022 原生 1,450＝1,417 PASS／33 skips，不能替代 clean Win10。[已核驗 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1) installer 39,355,463 bytes，SHA-256 `917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e`。以下舊 PR #9 Draft／待 CI 字樣只屬保留歷史，不代表目前狀態；後續終態以對應 PR 證據為準，不為追逐文件 SHA 重建相同產品。
+- **新候選 FOCUSED_TESTS_IN_PROGRESS：** `analysis_recovery.py` 原始 launch／stop ledger、`analysis_recovery_windows.py` helper、runtime／UI 衝突操作 guards 及 frozen hook 工作中；尚未新 exact-head CI、發布或取得 production／native Windows PASS。前次完成分支已刪除，預計重用 `agent/windows-release-validation` 名稱；新 PR 尚未建立。當前定向測試進行中，不列未完成的總數。
+- **狹義能力界線：** 僅針對原 GUI 死亡而 helper 仍持有原 Job Object 並確認全部原 job 停止、提交匹配 stop receipt 後的明確本機 reconciliation；不得以 PID／Job 缺席或 journal completed 推定停止。helper 與 GUI 同亡、reboot 或缺 receipt 仍未知並限制衝突操作；不重送 AI、不退還／重設 consumed budget，不聲稱任意整機重啟復原。
+- **可用性與可信界線：** incomplete／corrupt controls 對分析、來源變更、備份／還原等衝突操作 fail closed，不一律封鎖保存結果、比較與非 AI 回測；已有雲端 Qt 非 AI 可用性測試，但目前來源最終測試與實際 client 均未核驗。ledger hashes 是一致性檢查，不認證同使用者竄改或整體 rollback；ownership／registration／workspace／restore epoch／原 receipt Gate 不能省略。
+- **14:46 UTC 最新原範圍／安全指令：** 保留原 Windows 10 與 Windows 11 驗收需求，除非使用者再次明確變更；目前兩者均 EXTERNAL BLOCKED，先前 Win11 取消指令僅保留為歷史。券商 API 仍 USER_DEFERRED；個人電腦所有 admin／UAC／VM 工作停止，TestLab 保留。實際 SIWC／OAuth、完整資料權利及 signing／protection 仍未閉合。原 ID／權重／300 分母與 230/300 歷史基線不變，復原工程不因此加點。
+- **目前狀態分列（14:50 UTC）：** 實作＝原始 Job 復原候選與後續修正進行中；已驗證＝前述 PR #9 已發布基線，不能沿用為新候選 PASS；外部阻塞＝原 clean Win10／Win11、真實 OAuth 等；發布準備＝最終定向／獨立審查／新 exact-head native CI 尚待，未發布。
+- **中間來源完整回歸保留：** tree `1f804e8861201512fc957df747f7cd82bf116edb` 的 full56372 終態 exit 1，1,548 項＝1,520 PASS／26 SKIP／2 FAIL，694.999 秒；兩項失敗均為 TEST_ONLY `_busy` adapter 不接受新增 `refresh_recovery` keyword。UI worker 修正 adapter，不更改 assertions；後續來源尚有獨立修補，最終 focused／native CI 仍待。此中間來源失敗不刪除、不追溯改 PASS，不代表已通過 production recovery。
+
+
+### 以下為保留的舊來源快照與原始失敗；不得用於認證本候選
+
 ### PR #9 保留原生失敗，修正 READY_FOR_NATIVE_REVALIDATION（2026-10-11 12:27 UTC）
 
 - Draft PR #9 head `2459ad62` 的 [Quantlab 38138317785](https://github.com/yostar77612/mark-auto/actions/runs/38138317785) 終態 FAIL。Linux 3.11：1,448 PASS／21 skips、425.277 秒；Linux 3.12：1,448 PASS／21 skips、447.131 秒；UI：1,448 PASS／16 skips、323.886 秒，7 個新增 Qt 測試實際 PASS。Windows research 3.11：243 PASS／6 skips、720.942 秒；3.12：243 PASS／6 skips、510.297 秒。各 job 分開列示，不相加。

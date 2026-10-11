@@ -21,6 +21,7 @@ import time
 import uuid
 import zipfile
 from dataclasses import dataclass
+from contextlib import contextmanager
 
 from . import __version__
 
@@ -544,6 +545,16 @@ class BackupManager:
 
     def recover(self):
         self._quiescent()
+        artifacts = (self.paths.root / 'state-v1.rollback', self.paths.root / 'restore-transaction.json',
+                     self.paths.state / '.restore-transaction')
+        if not any(path.exists() or path.is_symlink() for path in artifacts):
+            return  # No mutation, including intact unresolved-analysis startup.
+        from .analysis_recovery import operation_guard
+        with operation_guard(self.paths, 'restore_recovery') as ownership:
+            return self._recover(ownership)
+
+    def _recover(self, ownership):
+        self._quiescent()
         rollback = self.paths.root / 'state-v1.rollback'
         journal = self.paths.root / 'restore-transaction.json'
         token = self.paths.state / '.restore-transaction'
@@ -555,6 +566,9 @@ class BackupManager:
                     transaction = value
             except (OSError, ValueError):
                 pass  # Unknown journal is never evidence that rollback is disposable.
+        if transaction:
+            from .analysis_recovery import advance_restore_epoch
+            advance_restore_epoch(self.paths, transaction['id'], admission=ownership)
         verified_commit = False
         if transaction and transaction['phase'] == 'committed' and token.is_file():
             try:
@@ -608,6 +622,11 @@ class BackupManager:
             raise RuntimeSafetyError('Hard-linked files cannot be backed up')
 
     def create(self, destination):
+        from .analysis_recovery import operation_guard
+        with operation_guard(self.paths, 'ui_backup_create'):
+            return self._create(destination)
+
+    def _create(self, destination):
         self._quiescent()
         destination = Path(destination).resolve()
         # Validate before recovery/ensure: even a rejected destination must not
@@ -660,6 +679,12 @@ class BackupManager:
         return destination
 
     def restore(self, source):
+        from .analysis_recovery import operation_guard
+        (self.paths.bootstrap or self.paths.root).mkdir(parents=True, exist_ok=True)
+        with operation_guard(self.paths, 'ui_backup_restore') as ownership:
+            return self._restore(source, ownership)
+
+    def _restore(self, source, ownership):
         self._quiescent()
         self.paths.root.mkdir(parents=True, exist_ok=True)
         self.recover()
@@ -712,6 +737,8 @@ class BackupManager:
             if 'sqlite_replay' in restored_format:
                 _write_workspace_format(self.paths.root, restored_format)
             transaction_id = uuid.uuid4().hex
+            from .analysis_recovery import advance_restore_epoch
+            advance_restore_epoch(self.paths, transaction_id, admission=ownership)
             formats = {'prior_format': prior_format, 'restored_format': restored_format}
             atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}), durable=True)
             atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'prepared', **formats}), durable=True)
@@ -745,8 +772,25 @@ WALK_FORWARD_OPERATIONS = frozenset({
 })
 
 
+@contextmanager
+def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
+    from .analysis_recovery import (admission, operation_guard, read_launch,
+                                    SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS)
+    if operation == 'ui_analysis_run' and helper_nonce is not None:
+        with admission(paths):
+            launch = read_launch(paths, job_id, for_admission=True)
+            if launch['helper_nonce'] != helper_nonce:
+                raise RuntimeSafetyError('Original analysis helper generation differs')
+            yield
+    elif operation in SOURCE_WRITERS | ANALYSIS_STARTS | WORKSPACE_MUTATIONS or operation == 'ui_analysis_reconcile':
+        with operation_guard(paths, operation):
+            yield
+    else:
+        yield
+
+
 def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                reconciliation_admitted=False):
+                reconciliation_admitted=False, helper_nonce=None):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
@@ -756,26 +800,27 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
     try:
         emit('progress', message='Working', progress=0)
         paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
-        if operation in UI_OPERATIONS:
-            from desktop_ui import execute_ui_operation
-            result = execute_ui_operation(operation, payload, paths, emit=emit,
-                descendants_stopped=reconciliation_admitted is True and operation in (
-                    'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'))
-        else:
-            from argparse import Namespace
-            from .__main__ import execute
-            stage = paths.state / 'runs' / (job_id + '.partial')
-            stage.mkdir(parents=True, exist_ok=False)
-            args = {'command': operation, 'output': stage, **payload}
-            if 'dataset' in args:
-                args['dataset'] = Path(args['dataset'])
-            args.setdefault('config', None)
-            args.setdefault('family', 'trend')
-            args.setdefault('bars', 240)
-            execute(Namespace(**args))
-            final = stage.with_suffix('')
-            os.replace(stage, final)
-            result = {'output': str(final)}
+        with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
+            if operation in UI_OPERATIONS:
+                from desktop_ui import execute_ui_operation
+                result = execute_ui_operation(operation, payload, paths, emit=emit,
+                    descendants_stopped=reconciliation_admitted is True and operation in (
+                        'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'))
+            else:
+                from argparse import Namespace
+                from .__main__ import execute
+                stage = paths.state / 'runs' / (job_id + '.partial')
+                stage.mkdir(parents=True, exist_ok=False)
+                args = {'command': operation, 'output': stage, **payload}
+                if 'dataset' in args:
+                    args['dataset'] = Path(args['dataset'])
+                args.setdefault('config', None)
+                args.setdefault('family', 'trend')
+                args.setdefault('bars', 240)
+                execute(Namespace(**args))
+                final = stage.with_suffix('')
+                os.replace(stage, final)
+                result = {'output': str(final)}
         from .core import to_dict
         result = to_dict(result)
         try:
@@ -1004,6 +1049,8 @@ class JobManager:
         if operation not in OPERATIONS or not isinstance(payload, dict):
             raise RuntimeSafetyError('Unsupported operation')
         _json_bytes(payload)
+        from .analysis_recovery import require_operation
+        require_operation(self.paths, operation)
         if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
             or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
             raise RuntimeSafetyError('Unsupported model provider; local models and paid API fallback are disabled')
@@ -1020,6 +1067,8 @@ class JobManager:
         analysis_result_reference = None
         walk_forward_reference = None
         walk_forward_result_reference = None
+        approved_analysis_plan = None
+        helper_nonce = None
         if operation in WALK_FORWARD_OPERATIONS:
             allowed = {
                 'ui_walk_forward_preview': {'plan'},
@@ -1069,6 +1118,10 @@ class JobManager:
                      'ui_analysis_run':{'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'},
                      'ui_analysis_read':{'analysis_id'},
                      'ui_analysis_reconcile':{'analysis_id','registration','stopped_job_id'}}[operation]
+            if operation == 'ui_analysis_run' and 'approved_plan' in payload:
+                allowed = allowed | {'approved_plan'}
+            if operation == 'ui_analysis_reconcile' and 'recovery_launch_id' in payload:
+                allowed = {'analysis_id', 'registration', 'recovery_launch_id'}
             if set(payload)!=allowed: raise RuntimeSafetyError('Invalid analysis job fields')
             if operation in ('ui_analysis_preview','ui_analysis_run'):
                 request=validate_analysis_request(payload['request'])
@@ -1085,10 +1138,29 @@ class JobManager:
                 if any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
                     raise RuntimeSafetyError('Explicit one-call analysis consent required')
                 analysis_job_identity=(reference,request['registration'])
+                if 'approved_plan' in payload or sys.platform == 'win32':
+                    from .analysis_recovery import plan_bindings
+                    from .core import content_hash
+                    approved_analysis_plan = payload.get('approved_plan')
+                    bindings = plan_bindings(approved_analysis_plan)
+                    if (bindings['analysis_id'] != reference
+                        or bindings['plan_hash'] != payload['expected_plan_hash']
+                        or any(bindings[key] != request[key] for key in ('registration','model','timeout_seconds'))):
+                        raise RuntimeSafetyError('Original approved analysis plan differs')
+                if sys.platform == 'win32':
+                    helper_nonce = uuid.uuid4().hex
             if operation=='ui_analysis_reconcile':
-                if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
-                    raise RuntimeSafetyError('Matching analysis subtree stop proof required')
-                reconciliation_admitted=True
+                if 'recovery_launch_id' in payload:
+                    from .analysis_recovery import validate_stop_receipt, supports_durable_recovery
+                    if not supports_durable_recovery():
+                        raise RuntimeSafetyError('Durable analysis recovery requires Windows')
+                    launch = validate_stop_receipt(self.paths, payload['recovery_launch_id'])
+                    if launch['analysis_id'] != reference or launch['registration'] != payload['registration']:
+                        raise RuntimeSafetyError('Original durable analysis binding differs')
+                else:
+                    if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
+                        raise RuntimeSafetyError('Matching analysis subtree stop proof required')
+                    reconciliation_admitted=True
         elif operation == 'ui_chatgpt_auth':
             request = payload.get('request')
             if set(payload) != {'request'} or not isinstance(request, dict):
@@ -1133,17 +1205,35 @@ class JobManager:
         self._terminal = False
         self._pipe_eof = False
         self._deferred = []
-        self.process = context.Process(target=_job_worker, args=(sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id, reconciliation_admitted))
+        worker_args = (sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id, reconciliation_admitted)
+        if helper_nonce is not None:
+            worker_args += (helper_nonce,)
+        self.process = context.Process(target=_job_worker, args=worker_args)
         self.receiver = receiver
         try:
             self.process.start()
             sender.close()
-            if sys.platform == 'win32':
-                self.tree = _WindowsProcessTree(self.process.pid)
-            gate.set()
+            if helper_nonce is not None:
+                from .analysis_recovery import admission, register_launch, plan_bindings
+                from .analysis_recovery_windows import WindowsAnalysisRecoveryTree
+                from .core import content_hash
+                anticipated = {'job_id': job_id, 'helper_nonce': helper_nonce,
+                    **plan_bindings(approved_analysis_plan), 'source_request_hash': content_hash(request)}
+                self.tree = WindowsAnalysisRecoveryTree(self.process, gate, self.paths,
+                    max(0.0, self._deadline - time.monotonic()), anticipated=anticipated)
+                with admission(self.paths) as ownership:
+                    launch = register_launch(self.paths, job_id=job_id, helper_nonce=helper_nonce,
+                        approved_plan=approved_analysis_plan, request=request, admission=ownership)
+                self.tree.activate(launch)
+            else:
+                if sys.platform == 'win32':
+                    self.tree = _WindowsProcessTree(self.process.pid)
+                gate.set()
             self._log('started')
-        except BaseException:
+        except BaseException as exc:
             sender.close()
+            if self.tree is None and getattr(exc, 'recovery_tree', None) is not None:
+                self.tree = exc.recovery_tree  # Retain exact ownership after incomplete helper cleanup.
             self.cancel()
             raise
         return self.job_id

@@ -392,11 +392,10 @@ def validate_analysis_plan(plan):
     return copy.deepcopy(plan)
 
 
-def _descriptor_for_plan(plan, descriptor):
-    """Pure binding checks also protect offline reads, not just live admission."""
-    descriptor = _validated_provider_descriptor(descriptor)
+def expected_provider_descriptor(plan):
+    """Pure exact provider identity; never constructs a provider or accesses credentials."""
     binding = plan['binding']
-    expected = {**binding['provider_implementation'],
+    return {**binding['provider_implementation'],
         'version': 1, 'mode': 'chatgpt_plan', 'model': binding['model'],
         'endpoint': 'https://api.openai.com/v1/responses',
         'registration': binding['registration'], 'campaign_id': 'analysis-' + plan['analysis_id'],
@@ -406,6 +405,12 @@ def _descriptor_for_plan(plan, descriptor):
         'billing_route': 'chatgpt_plan', 'paid_api_fallback': False,
         'token_upper_bound_enforced': False, 'spend_upper_bound_enforced': False,
         'account_credit_policy': 'unverified_user_setting', 'included_usage_policy_ack_required': True}
+
+
+def _descriptor_for_plan(plan, descriptor):
+    """Pure binding checks also protect offline reads, not just live admission."""
+    descriptor = _validated_provider_descriptor(descriptor)
+    expected = expected_provider_descriptor(plan)
     # Canonical serialization distinguishes booleans from integers.
     if canonical_json(descriptor) != canonical_json(expected):
         _fail('Analysis provider differs from approved preview')
@@ -580,9 +585,35 @@ def run_analysis(*, output_root, plan, provider, expected_analysis_id, user_conf
             raise
 
 
-def reconcile_analysis(*, output_root, analysis_id, provider, descendants_stopped=False):
-    """Local-only reconciliation after host-owned proof of process-tree stop."""
-    if descendants_stopped is not True: _fail('Analysis descendants must be stopped')
+def reconcile_analysis(*, output_root, analysis_id, provider, descendants_stopped=False, recovery=None):
+    # Installation admission precedes the analysis lock and spans the final
+    # write, so a concurrent restore cannot invalidate a just-checked epoch.
+    if recovery is not None:
+        if not isinstance(recovery, tuple) or len(recovery) != 2:
+            _fail('Invalid durable analysis recovery reference')
+        from .analysis_recovery import admission, supports_durable_recovery
+        if not supports_durable_recovery():
+            _fail('Durable analysis recovery requires the original Windows installation')
+        with admission(recovery[0]):
+            return _reconcile_analysis(output_root=output_root, analysis_id=analysis_id,
+                provider=provider, descendants_stopped=descendants_stopped, recovery=recovery)
+    return _reconcile_analysis(output_root=output_root, analysis_id=analysis_id,
+        provider=provider, descendants_stopped=descendants_stopped)
+
+
+def _reconcile_analysis(*, output_root, analysis_id, provider, descendants_stopped=False, recovery=None):
+    """Local-only repair using original live-host proof or exact durable stop evidence."""
+    if descendants_stopped is not True and recovery is None:
+        _fail('Analysis descendants must be stopped')
+    if recovery is not None:
+        from .analysis_recovery import supports_durable_recovery
+        if not supports_durable_recovery():
+            _fail('Durable analysis recovery requires the original Windows installation')
+        if not isinstance(recovery, tuple) or len(recovery) != 2:
+            _fail('Invalid durable analysis recovery reference')
+        paths, launch_id = recovery
+        if Path(output_root) != paths.state / 'analyses':
+            _fail('Original recovery workspace differs')
     folder = _folder(output_root, analysis_id)
     lock_path = _safe_path(folder / 'analysis.lock.sqlite3')
     if not lock_path.is_file(): _fail('Missing analysis lock evidence')
@@ -590,6 +621,11 @@ def reconcile_analysis(*, output_root, analysis_id, provider, descendants_stoppe
         try: lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError: _fail('Analysis is still running')
         record = _read_analysis_journal(output_root, analysis_id)
+        if recovery is not None:
+            from .analysis_recovery import validate_stop_receipt
+            launch = validate_stop_receipt(paths, launch_id, record=record)
+            if launch['analysis_id'] != analysis_id:
+                _fail('Original recovery analysis differs')
         descriptor = _provider(record['plan'], provider)
         if descriptor != record['provider_descriptor']: _fail('Original analysis provider required')
         snapshot = _snapshot(provider, descriptor)

@@ -520,6 +520,54 @@ def _retain_smoke_directory(directory):
         directory._finalizer.detach()
 
 
+def _prepare_startup_workspace(paths, backups):
+    """Serialize startup recovery; an unresolved analysis is not a global lockout."""
+    from quantlab.analysis_recovery import admission, inspect_recovery, recover_control_journal, RecoveryError
+    with admission(paths) as token:
+        # SQLite may roll back only its own validated original hot journal. No
+        # missing ledger or receipt is created; corrupt controls stay unknown.
+        try:
+            recover_control_journal(paths, admission=token)
+            disposition = inspect_recovery(paths)
+        except RecoveryError:
+            disposition = None
+        if disposition is None or disposition.unresolved:
+            ambiguous = (not paths.state.is_dir() or any(path.exists() or path.is_symlink() for path in (
+                paths.root / 'state-v1.rollback', paths.root / 'restore-transaction.json',
+                paths.state / '.restore-transaction')))
+            if ambiguous:
+                raise RecoveryError('Unknown original analysis stop state and ambiguous workspace restore layout')
+            # Keep intact state in place for bounded non-AI use. None means
+            # unknown initialized controls, never a clean/legacy disposition.
+        else:
+            backups.recover()
+        paths.ensure()
+        return disposition
+
+
+def _offer_workspace_after_recovery_block(locator):
+    """One bounded, user-directed choice; never repair or reset unknown controls."""
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+    box = QMessageBox(QMessageBox.Icon.Warning, '原始作業仍需核對',
+        '原始分析停止紀錄或工作區還原狀態無法安全核對。既有資料未修復、刪除或重送。'
+        '\n可選擇其他工作區供下次啟動使用；原始帳戶與不可逆紀錄會保留。',
+        QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Cancel)
+    box.button(QMessageBox.StandardButton.Open).setText('選擇其他工作區')
+    box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+    if box.exec() != QMessageBox.StandardButton.Open:
+        return
+    selected = QFileDialog.getExistingDirectory(None, '選擇其他或空白工作區')
+    if not selected:
+        return
+    try:
+        locator.configure(Path(selected))
+    except (OSError, ValueError):
+        QMessageBox.warning(None, '工作區未變更', '所選資料夾未通過安全驗證；原始設定與資料保留。')
+        return
+    QMessageBox.information(None, '下次啟動工作區已設定',
+        '請重新開啟程式。原始資料未搬移；切換工作區不會清除未知請求或修復不可逆紀錄。')
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
@@ -565,10 +613,16 @@ def main(argv=None):
     smoke_report = None
     try:
         installation_guard = WindowsAppMutex()
-        paths = locator.load()
+        paths = locator.load(probe=False)
         backups = BackupManager(paths)
-        backups.recover()  # Recover directory switch before creating the state directory.
-        paths.ensure()
+        from quantlab.analysis_recovery import RecoveryError
+        try:
+            _prepare_startup_workspace(paths, backups)
+        except RecoveryError:
+            if args.smoke_test:
+                raise
+            _offer_workspace_after_recovery_block(locator)
+            return 3
         guard = RuntimeGuard(paths)
         previous_unclean = guard.start()
         settings_paths = WorkspaceLocator(user_bootstrap).load(probe=False) if args.smoke_test else paths
@@ -593,10 +647,8 @@ def main(argv=None):
                     msg = wintypes.MSG.from_address(int(message))
                     if msg.message == 0x0218 and msg.wParam in (4, 6, 7, 18):
                         guard.reconciliation_required = True
-                        jobs.cancel()
-                        backups.recover()
                         if hasattr(window, 'freeze_paper'):
-                            window.freeze_paper('Windows power event; reconcile paper account before resuming')
+                            window._safe(lambda: window.freeze_paper('Windows power event; reconcile paper account before resuming'))
                 return False, 0
         power_events = PowerEvents()
         app.installNativeEventFilter(power_events)
@@ -604,15 +656,14 @@ def main(argv=None):
         timer.setInterval(1000)
         def clock_tick():
             if guard.check_clock():
-                jobs.cancel()
-                backups.recover()
                 if hasattr(window, 'freeze_paper'):
-                    window.freeze_paper('Sleep or clock change detected; reconcile paper account before resuming')
+                    window._safe(lambda: window.freeze_paper('Sleep or clock change detected; reconcile paper account before resuming'))
         timer.timeout.connect(clock_tick)
         timer.start()
         if args.smoke_test:
             import tempfile
             import time
+            from desktop_recovery_smoke import run_recovery_smoke
             # Exercise the real frozen multiprocessing bootstrap in disposable
             # cache state, never replacing the user's research dataset.
             smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=paths.cache)
@@ -638,10 +689,12 @@ def main(argv=None):
             smoke_index = 0
             _start_smoke_job(smoke_jobs, *smoke_steps[0])
             smoke_result = {'failed': False, 'results': {}, 'steps': []}
+            recovery_report = {'status': 'pending', 'cleanup_verified': True, 'source_type': 'synthetic',
+                'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'}
             smoke_timer = QTimer(window)
             smoke_timer.setInterval(100)
             def complete_smoke():
-                nonlocal smoke_index, smoke_jobs, smoke_report
+                nonlocal smoke_index, smoke_jobs, smoke_report, smoke_cleanup_verified, recovery_report
                 operation = smoke_steps[smoke_index][0]
                 market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
                 history_phase = smoke_index == original_step_count + 2
@@ -724,11 +777,20 @@ def main(argv=None):
                         rows.append({'operation': next_operation, 'passed': False, 'error_type': type(exc).__name__})
                 smoke_timer.stop()
                 smoke_jobs.close()
+                prior_cleanup_verified = smoke_cleanup_verified
+                smoke_cleanup_verified = False  # Unexpected hook failure must retain disposable evidence.
+                recovery_report = run_recovery_smoke(AppPaths(Path(smoke_directory.name)),
+                    smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
+                smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
+                recovery_required = sys.platform == 'win32' and bool(getattr(sys, 'frozen', False))
+                recovery_passed = ((recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
+                    if recovery_required else recovery_report['status'] == 'not_applicable')
+                timed_out = timed_out or time.monotonic() > smoke_deadline
                 completed = len(smoke_result['results']) == original_step_count
                 market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
                 history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
                 walk_forward_report['status'] = 'passed' if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'] and all(row['passed'] for row in walk_forward_report['steps']) and walk_forward_report.get('read_verified') and not smoke_result['failed'] and not timed_out else 'failed'
-                passed = walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
+                passed = recovery_passed and smoke_cleanup_verified and walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
                 completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
                 # data_dir remains the inspected settings location for installer
                 # compatibility; mutable execution uses smoke_data_dir. The
@@ -742,7 +804,7 @@ def main(argv=None):
                     'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
                     'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
                     'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report,
-                    'walk_forward_smoke': walk_forward_report}
+                    'walk_forward_smoke': walk_forward_report, 'recovery_helper_smoke': recovery_report}
                 window.close()
                 app.exit(0 if passed else 1)
             def guarded_complete_smoke():
@@ -754,7 +816,7 @@ def main(argv=None):
                     # and stop scheduling, without echoing exception values.
                     smoke_timer.stop()
                     cleanup = _close_smoke_worker(smoke_jobs)
-                    smoke_cleanup_verified = cleanup['verified']
+                    smoke_cleanup_verified = smoke_cleanup_verified and cleanup['verified']
                     operation = smoke_steps[smoke_index][0]
                     rows = walk_forward_report['steps'] if operation.startswith('ui_walk_forward_') else smoke_result['steps']
                     rows.append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
@@ -767,7 +829,8 @@ def main(argv=None):
                         'timed_out': time.monotonic() > smoke_deadline, 'error_type': type(exc).__name__,
                         'worker_cleanup': cleanup, 'steps': smoke_result['steps'],
                         'auth_smoke': auth_report, 'market_smoke': market_report,
-                        'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report}
+                        'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report,
+                        'recovery_helper_smoke': recovery_report}
                     app.exit(1)
             smoke_timer.timeout.connect(guarded_complete_smoke)
             smoke_timer.start()
@@ -792,6 +855,8 @@ def main(argv=None):
                     'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
                         'source_type': 'synthetic',
                         'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}
+            smoke_report.setdefault('recovery_helper_smoke', {'status': 'not_run', 'cleanup_verified': True,
+                'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'})
             smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
         QMessageBox.critical(None, 'MarkAuto could not start', f'{type(exc).__name__}: startup failed. Your existing data has been preserved. Restore a compatible backup or reinstall the previous version.')

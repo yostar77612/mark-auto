@@ -2791,46 +2791,45 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-11T11:49:00Z",
-    "scope": "Verified PR8 released baseline unchanged. Draft PR9 candidate2459ad62 Quantlab and installer failures preserved. Additive termination/status fixes independently reviewed and focused-verified: READY_FOR_NATIVE_REVALIDATION on a new exact head. No performance-fix proof, new release, points or full GUI restart recovery.",
+    "as_of_utc": "2026-10-11T14:50:00Z",
+    "scope": "Precommit original-job recovery candidate with failed intermediate full regression preserved and test-only adapter fix in progress; final focused/native CI pending, not released. Latest14:46 owner direction retains original Windows10 and Windows11 requirements, both externally blocked. PR9 remains verified released baseline.",
     "product_source": {
-      "commit": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
-      "tree": "9566cffc6018650bd8133778f783f41e73509e2a",
-      "pr": 8,
+      "commit": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
+      "tree": "a04dddae25781b94d4759a13c77a36e319b4730c",
+      "pr": 9,
       "pr_status": "MERGED",
       "documentation_checkpoint_is_installer_source": false
     },
     "release": {
       "version": "0.2.2",
-      "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1",
+      "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1",
       "status": "PUBLISHED_UNSIGNED_PRERELEASE",
-      "run_id": 38134959133,
-      "release_job_id": 114460612787,
-      "installer_bytes": 39355004,
-      "installer_sha256": "7aaf832869ba0d12a6f07a93acda7d9c36e1fa5fa34c6248d0942c012d391587",
+      "run_id": 38141626727,
+      "release_job_id": 114480780561,
+      "installer_bytes": 39355463,
+      "installer_sha256": "917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e",
       "public_installer_body": "INDEPENDENTLY_DOWNLOADED_SIZE_AND_SHA256_VERIFIED",
-      "artifact_id": 11700918895,
-      "artifact_sha256": "6643f8bf9c3175c139afbacae6ae758c2c3865795165ccf3274eca0066c99ec8",
+      "artifact_id": 11702674180,
+      "artifact_sha256": "74c7301931ab82a0d93b33c02cb9e328ae2ea1df2a687518dd8d93beb55b1c12",
       "source_manifest": "All77 inputs match exact-main product source;70 Windows CRLF and7 raw-byte matches",
-      "evidence": "Retained cloud diagnostic file, not a repository file: quant-audit/ci-f2eb4aaf/independent-installer-assessment.json",
-      "evidence_url": "https://github.com/yostar77612/mark-auto/pull/8",
+      "evidence": "Retained cloud diagnostic, not a repository file: quant-audit/ci-60da0e3b/independent-installer-assessment.json",
+      "evidence_url": "https://github.com/yostar77612/mark-auto/pull/9",
       "public_evidence_urls": [
-        "https://github.com/yostar77612/mark-auto/pull/8",
-        "https://github.com/yostar77612/mark-auto/actions/runs/38134959133",
-        "https://github.com/yostar77612/mark-auto/actions/runs/38134959143",
-        "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1",
-        "https://github.com/yostar77612/mark-auto/tree/f2eb4aafba161ea89fd0457c20e21a06bea5918c"
+        "https://github.com/yostar77612/mark-auto/pull/9",
+        "https://github.com/yostar77612/mark-auto/actions/runs/38141626721",
+        "https://github.com/yostar77612/mark-auto/actions/runs/38141626727",
+        "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1"
       ]
     },
     "validation": {
-      "quantlab_run": 38134959143,
+      "quantlab_run": 38141626721,
       "quantlab_jobs_passed": 12,
-      "windows_run": 38134959133,
+      "windows_run": 38141626727,
       "native_suite": {
-        "total": 1425,
-        "passed": 1392,
+        "total": 1450,
+        "passed": 1417,
         "skipped": 33,
-        "seconds": 807.99
+        "seconds": 874.287
       },
       "windows_scope": "Windows Server 2022 Datacenter build 20348; not clean Windows10 client acceptance",
       "frozen_and_lifecycle": "Full smoke, real worker cleanup, synthetic WFO, ephemeral-loopback TLS, install/upgrade/recovery/uninstall/data-preservation PASS. Installer extraction recovery is not arbitrary GUI restart recovery; no public trust-store/Qt Schannel or actual account proof.",
@@ -2848,10 +2847,10 @@
       "remaining_percent": 23.3333,
       "m4_status": "PASS",
       "m4_earned": 20,
-      "change": "No points earned by PR8 repairs, new pending UI work or owner scope cancellations. Retain 230/300 solely as original fixed-scope historical reference.",
+      "change": "No new points or revised denominator. Historical230/300 remains original fixed-scope reference; PR9 delivery and the pending original-job recovery candidate do not close external/client acceptance.",
       "historical_score_pointer": "current_snapshot_history[0].acceptance_decision_current",
       "historical_decision_pointer": "current_snapshot_history[0].acceptance_decision_current",
-      "interpretation": "Historical fixed-scope progress. Windows11 removed by owner; no denominator reduction or PASS conversion. Revised Win10-only percentage not computed."
+      "interpretation": "Original fixed-scope230/300 historical reference unchanged. Latest owner direction retains both Windows10 and Windows11; no cancellation-to-PASS conversion, denominator change or recovery-engineering points."
     },
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
@@ -2880,8 +2879,8 @@
       }
     },
     "remaining_auto": {
-      "status": "READY_FOR_NATIVE_REVALIDATION",
-      "work": "Run new exact-head native CI for independently reviewed additive test termination and diagnostic status fixes; inspect all native/frozen/installer/lifecycle results. Preserve failed2459ad62 evidence and original workload/deadline gates."
+      "status": "INTERMEDIATE_FULL_FAILED_ADAPTER_FIX_FINAL_VALIDATION_PENDING",
+      "work": "Finish test-only adapter correction without changing assertions and validate final combined ledger/UI source; then independent review and exact-head native CI. Preserve intermediate failed full regression, all original gates and both client OS requirements."
     },
     "remaining_gates": [
       {
@@ -2891,7 +2890,7 @@
           "D8"
         ],
         "points": 30,
-        "blocker": "EXTERNAL BLOCKED: authorized licensed clean Windows10 22H2 x64 lifecycle environment missing; administrator/VM operations stopped by owner. Win11 user-cancelled, not passed. Original grouped weights preserved pending explicit scope accounting."
+        "blocker": "EXTERNAL BLOCKED: original clean Windows10 22H2 x64 and Windows11 x64 requirements retained per latest14:46 owner direction. Licensed/authorized client environments and lifecycle evidence unavailable; personal administrator/UAC/VM operations remain stopped. Original IDs/grouped weights unchanged."
       },
       {
         "ids": [
@@ -2925,10 +2924,10 @@
     "history_policy": "All prior snapshots, gate IDs, weights and failed evidence preserved. current_snapshot_history retains the superseded current snapshot. Owner scope cancellation is not retrospective PASS; the original denominator is retained solely as historical comparison.",
     "owner_scope_changes": {
       "windows_11": {
-        "status": "USER_CANCELLED",
-        "at_utc": "2026-10-11T07:25:47Z",
-        "source_message": "Sentinel_e9e88f101bd48191b6cdb351ac45ee93",
-        "instruction": "那算了W11的不用測了 測W10就行了",
+        "status": "EXTERNAL_BLOCKED_REQUIREMENT_RETAINED",
+        "at_utc": "2026-10-11T14:46:00Z",
+        "source_message": "Sentinel_b124e055a0308191b49f887b0f636ab7",
+        "instruction_summary": "Retain original Windows10 and Windows11 requirements unless explicitly changed; both currently EXTERNAL BLOCKED. Prior cancellation preserved historically.",
         "earns_points": false
       },
       "broker_api": {
@@ -2978,7 +2977,7 @@
       "release": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1"
     },
     "ui_checkpoint_visibility_candidate": {
-      "status": "READY_FOR_NATIVE_REVALIDATION",
+      "status": "PR9_MERGED_NATIVE_VALIDATED_AND_PREVIEW_RELEASED",
       "baseline": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
       "release": "NOT_PUBLISHED",
       "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
@@ -3008,10 +3007,7 @@
         "scope": "Existing strict-reader/recovery tests; separate execution, not combined with root focused suite"
       },
       "initial_review_diagnostic": "Root and independent review found asynchronous completed result hidden by stale checkpoint selection. Worker fixed selection of returned analysis identity before display and added native Qt regressions. Preserve issue as initial diagnostic; final independent review subsequently PASS.",
-      "pending": [
-        "New exact-head full native/frozen/installer/lifecycle revalidation",
-        "Publication"
-      ],
+      "pending": [],
       "independent_review": {
         "status": "PASS",
         "passed": 22,
@@ -3039,7 +3035,7 @@
         "local_history_scan": "NOT_RUN_AWAITS_CI"
       },
       "pr": 9,
-      "pr_status": "DRAFT",
+      "pr_status": "MERGED",
       "native_iterations": [
         {
           "head": "2459ad62",
@@ -3151,11 +3147,12 @@
         "seconds": 5.096,
         "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/ci-fix-focused.log",
         "native_revalidation": "PENDING_NEW_EXACT_HEAD"
-      }
+      },
+      "final_evidence_url": "https://github.com/yostar77612/mark-auto/pull/9"
     },
     "engineering_blockers": {
       "abrupt_gui_restart_recovery": {
-        "status": "ENGINEERING_BLOCKED",
+        "status": "BROADER_RECOVERY_BLOCKED_NARROW_ORIGINAL_JOB_CANDIDATE_UNVERIFIED",
         "reason": "Original-host process-tree quiescence proof and exact job/analysis/registration authority are process-local. Restarted manager cannot infer safe repair from PID absence, app lock, completed journal or timeout.",
         "evidence": "Retained cloud diagnostic report and probe files, not repository files or publicly committed artifacts: quant-audit/restart-recovery-assessment/assessment.md",
         "source_evidence": [
@@ -3180,11 +3177,12 @@
           "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L749-L752",
           "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L816-L846"
         ],
-        "evidence_scope": "Linux orphan survival is an observed retained-cloud diagnostic; Windows restart limitation is a source inference. Eight existing-contract assessment tests are not end-to-end GUI restart proof. UI candidate focused tests are separately scoped; no full restart-recovery proof."
+        "evidence_scope": "Linux orphan survival is an observed retained-cloud diagnostic; Windows restart limitation is a source inference. Eight existing-contract assessment tests are not end-to-end GUI restart proof. UI candidate focused tests are separately scoped; no full restart-recovery proof.",
+        "current_candidate_pointer": "current_snapshot.original_job_recovery_candidate"
       }
     },
     "windows_recovery_feasibility_experiment": {
-      "status": "READY_FOR_NATIVE_REVALIDATION_PRIOR_FAILURE_PRESERVED",
+      "status": "PR9_TEST_ONLY_NATIVE_PASSED_NOT_PRODUCTION_RECOVERY",
       "file": "tests/test_windows_recovery_feasibility.py",
       "scope": "Synthetic test-only feasibility scenarios; no product supervisor or recovery implementation changes. Existing Windows Server CI may execute; no PASS or points earned.",
       "scenarios": [
@@ -3217,7 +3215,74 @@
       "review": "Final independent static review PASS for cloud Windows CI only. Initial setup-ownership, unpublished-handle and watchdog review gaps corrected; no production changes. Windows runtime behavior still unverified.",
       "reviewed_source_sha256": "4dfdd7b7dad9fdfdf70ab0ffd9cc9b8d50319adab2d6d78a568f7dae8332e261",
       "latest_native_failure_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.native_iterations[0]",
-      "additive_fix_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.additive_fixes.prototype_termination"
+      "additive_fix_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.additive_fixes.prototype_termination",
+      "final_evidence_url": "https://github.com/yostar77612/mark-auto/pull/9"
+    },
+    "prior_snapshot_archive": {
+      "pointer": "current_snapshot_history[2]",
+      "archived_at_utc": "2026-10-11T14:28:00Z",
+      "preserved_as_of_utc": "2026-10-11T11:49:00Z",
+      "note": "Exact previous snapshot retained, including original as-of field and subsequent pre-CI candidate failure/fix entries; no retrospective result rewriting."
+    },
+    "original_job_recovery_candidate": {
+      "status": "INTERMEDIATE_FULL_FAILED_ADAPTER_FIX_FINAL_VALIDATION_PENDING",
+      "baseline": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
+      "branch_plan": "Reuse agent/windows-release-validation after previous completed branch deletion",
+      "pr_status": "NOT_CREATED",
+      "release": "NOT_PUBLISHED",
+      "components": [
+        "quantlab/analysis_recovery.py",
+        "quantlab/analysis_recovery_windows.py",
+        "runtime service admission",
+        "UI conflicting-operation guards",
+        "frozen integration hook"
+      ],
+      "scope": "Original GUI death while helper retains original Job Object, observes original job quiescence and commits matching durable stop receipt, then explicit local reconciliation. No resubmit/refund or consumed-budget reset.",
+      "excluded": "Joint GUI/helper death, reboot or missing receipt remains unknown/restricted. No PID/job-absence proof, same-user-forgery authentication or full rollback protection claim.",
+      "availability": "Incomplete/corrupt controls block conflicting analysis/source/backup/restore operations, not all non-AI saved-read/compare/backtest use. Cloud Qt non-AI usability checked, final current-source tests ongoing and real client unverified.",
+      "native_windows": "NOT_YET_VERIFIED",
+      "exact_head_ci": "PENDING",
+      "focused_counts": "FINAL_PENDING",
+      "validation_history": [
+        {
+          "run": "full56372",
+          "source_tree": "1f804e8861201512fc957df747f7cd82bf116edb",
+          "exit_code": 1,
+          "total": 1548,
+          "passed": 1520,
+          "skipped": 26,
+          "failed": 2,
+          "seconds": 694.999,
+          "failure_cause": "Both failures: TEST_ONLY _busy adapter rejects new refresh_recovery keyword",
+          "correction": "UI worker adapting test-only adapter without assertion changes; final focused/native validation pending",
+          "source_boundary": "Exact intermediate source only; subsequent separate ledger/UI changes not covered; never convert this historical result to PASS."
+        }
+      ]
+    },
+    "owner_scope_change_history": [
+      {
+        "superseded_at_utc": "2026-10-11T14:46:00Z",
+        "windows_11": {
+          "status": "USER_CANCELLED",
+          "at_utc": "2026-10-11T07:25:47Z",
+          "source_message": "Sentinel_e9e88f101bd48191b6cdb351ac45ee93",
+          "instruction": "那算了W11的不用測了 測W10就行了",
+          "earns_points": false
+        }
+      }
+    ],
+    "delivery_state": {
+      "implementation": "Original-job recovery candidate and additive corrections in progress; not complete production recovery",
+      "verified": "PR9/main60da0e3b published baseline verified; new-source intermediate failure remains failure",
+      "external_blocked": [
+        "Original clean Windows10 acceptance",
+        "Original clean Windows11 acceptance",
+        "Actual owner SIWC/OAuth inference",
+        "Complete authorized minute-data coverage",
+        "Signing/protection limitations"
+      ],
+      "release_preparation": "Final focused validation, independent review and new exact-head native CI pending; candidate not published",
+      "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
     }
   },
   "current_snapshot_history": [
@@ -3525,6 +3590,436 @@
           "initial_diagnostic": "Earlier duplicate-discovery135-test run retained one test-authoring setup error; corrected isolated6 and deduplicated78 pass. No relaxation or source threshold change."
         },
         "release": "NOT_PUBLISHED"
+      }
+    },
+    {
+      "as_of_utc": "2026-10-11T11:49:00Z",
+      "scope": "Verified PR8 released baseline unchanged. Draft PR9 candidate2459ad62 Quantlab and installer failures preserved. Additive termination/status fixes independently reviewed and focused-verified: READY_FOR_NATIVE_REVALIDATION on a new exact head. No performance-fix proof, new release, points or full GUI restart recovery.",
+      "product_source": {
+        "commit": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
+        "tree": "9566cffc6018650bd8133778f783f41e73509e2a",
+        "pr": 8,
+        "pr_status": "MERGED",
+        "documentation_checkpoint_is_installer_source": false
+      },
+      "release": {
+        "version": "0.2.2",
+        "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1",
+        "status": "PUBLISHED_UNSIGNED_PRERELEASE",
+        "run_id": 38134959133,
+        "release_job_id": 114460612787,
+        "installer_bytes": 39355004,
+        "installer_sha256": "7aaf832869ba0d12a6f07a93acda7d9c36e1fa5fa34c6248d0942c012d391587",
+        "public_installer_body": "INDEPENDENTLY_DOWNLOADED_SIZE_AND_SHA256_VERIFIED",
+        "artifact_id": 11700918895,
+        "artifact_sha256": "6643f8bf9c3175c139afbacae6ae758c2c3865795165ccf3274eca0066c99ec8",
+        "source_manifest": "All77 inputs match exact-main product source;70 Windows CRLF and7 raw-byte matches",
+        "evidence": "Retained cloud diagnostic file, not a repository file: quant-audit/ci-f2eb4aaf/independent-installer-assessment.json",
+        "evidence_url": "https://github.com/yostar77612/mark-auto/pull/8",
+        "public_evidence_urls": [
+          "https://github.com/yostar77612/mark-auto/pull/8",
+          "https://github.com/yostar77612/mark-auto/actions/runs/38134959133",
+          "https://github.com/yostar77612/mark-auto/actions/runs/38134959143",
+          "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1",
+          "https://github.com/yostar77612/mark-auto/tree/f2eb4aafba161ea89fd0457c20e21a06bea5918c"
+        ]
+      },
+      "validation": {
+        "quantlab_run": 38134959143,
+        "quantlab_jobs_passed": 12,
+        "windows_run": 38134959133,
+        "native_suite": {
+          "total": 1425,
+          "passed": 1392,
+          "skipped": 33,
+          "seconds": 807.99
+        },
+        "windows_scope": "Windows Server 2022 Datacenter build 20348; not clean Windows10 client acceptance",
+        "frozen_and_lifecycle": "Full smoke, real worker cleanup, synthetic WFO, ephemeral-loopback TLS, install/upgrade/recovery/uninstall/data-preservation PASS. Installer extraction recovery is not arbitrary GUI restart recovery; no public trust-store/Qt Schannel or actual account proof.",
+        "count_policy": "Platform/profile skips retain their original scope; unit mocks are not actual OAuth/client proof. This documentation checkpoint reuses unchanged product evidence; any automatically triggered workflow has its own result and source."
+      },
+      "acceptance_decision_current": {
+        "score_unchanged": true,
+        "research": 100,
+        "desktop": 70,
+        "market": 60,
+        "earned": 230,
+        "denominator": 300,
+        "percent": 76.6667,
+        "remaining_points": 70,
+        "remaining_percent": 23.3333,
+        "m4_status": "PASS",
+        "m4_earned": 20,
+        "change": "No points earned by PR8 repairs, new pending UI work or owner scope cancellations. Retain 230/300 solely as original fixed-scope historical reference.",
+        "historical_score_pointer": "current_snapshot_history[0].acceptance_decision_current",
+        "historical_decision_pointer": "current_snapshot_history[0].acceptance_decision_current",
+        "interpretation": "Historical fixed-scope progress. Windows11 removed by owner; no denominator reduction or PASS conversion. Revised Win10-only percentage not computed."
+      },
+      "requirements_reconciliation_current": {
+        "requirements_source_boundary": {
+          "explicit_current_requirements": "Walk-forward; Profit Factor/Sharpe from user section5.1 and stop/target/position-cost reference lines from user section3.4, as reconciled by the integrator. At11:16 user explicitly replaced local/alternative AI routes with required official SIWC subscription; no local-model feature or paid API/credits fallback.",
+          "unadopted_design_extensions": [
+            "Average Trade",
+            "Sortino",
+            "Calmar",
+            "Extended performance breakdowns",
+            "Full cost-stress orchestration"
+          ],
+          "extension_source": "04 section9.1 design proposal; historical02 explicitly conditions the complete specification on later adoption.",
+          "extension_status": "DESIGN_PROPOSAL_NOT_ADOPTED_NOT_AN_ADDED_ACCEPTANCE_GATE",
+          "direct_user_requirement_evidence_for_extensions": "NOT_FOUND_IN_REVIEWED_SOURCES; do not infer authorization or mandatory acceptance from the assistant-authored design table header.",
+          "preservation": "Keep proposal text and implementation limits; do not delete, mark completed, or promote extensions to required acceptance without explicit adoption."
+        },
+        "walk_forward": "IMPLEMENTED_NATIVE_FROZEN_VALIDATED_AND_PREVIEW_RELEASED: fixed/saved pools and bounded genuine forward windows; frozen synthetic2-fold22-evaluation preview/run/reopen passed. No adaptive AI, real-market independent OOS, ranking or Paper-eligibility claim.",
+        "extended_reports_and_reference_layers": "IMPLEMENTED_NATIVE_HOST_VALIDATED_AND_PREVIEW_RELEASED: PF/descriptive Sharpe with explicit assumptions/undefined reasons, readable Traditional Chinese presentation, and actual loaded stop/target/position-cost reference snapshots. No new optional metrics/cost-stress requirement.",
+        "actual_oct8_wfo": {
+          "status": "BLOCKED_NO_RUN",
+          "reason": "Existing authoritative consumed coverage intersects 170 bars of the full planned protected range.",
+          "new_evaluations": 0,
+          "model_calls": 0,
+          "registry_reservations": 0,
+          "restriction": "Do not move windows or use a fresh/replaced registry to evade the original protocol. Historical replay remains exposure-unverified, non-independent, non-rankable and non-paper-eligible."
+        }
+      },
+      "remaining_auto": {
+        "status": "READY_FOR_NATIVE_REVALIDATION",
+        "work": "Run new exact-head native CI for independently reviewed additive test termination and diagnostic status fixes; inspect all native/frozen/installer/lifecycle results. Preserve failed2459ad62 evidence and original workload/deadline gates."
+      },
+      "remaining_gates": [
+        {
+          "ids": [
+            "D5",
+            "D7",
+            "D8"
+          ],
+          "points": 30,
+          "blocker": "EXTERNAL BLOCKED: authorized licensed clean Windows10 22H2 x64 lifecycle environment missing; administrator/VM operations stopped by owner. Win11 user-cancelled, not passed. Original grouped weights preserved pending explicit scope accounting."
+        },
+        {
+          "ids": [
+            "M2"
+          ],
+          "points": 20,
+          "blocker": "Complete original market-minute scope remains unresolved, including TAIEX minute-data availability and legitimate automated-use permission; do not manufacture minute bars from daily data."
+        },
+        {
+          "ids": [
+            "M6"
+          ],
+          "points": 10,
+          "blocker": "Actual owner-authorized official SIWC grant and bounded subscription request; included-only attestation is not server-credit-setting verification or guaranteed monetary cap."
+        },
+        {
+          "ids": [
+            "M7"
+          ],
+          "points": 10,
+          "blocker": "Actual clean-client DPI/usability acceptance; Server/Linux/Qt fixtures do not substitute."
+        }
+      ],
+      "additional_external_limits": {
+        "main_protection": "Administration permission unavailable; existing unprotected/ruleset findings remain until independently changed and verified.",
+        "signing": "Trusted signing not established; published artifact remains unsigned preview.",
+        "research_data": "Original Oct8 planned protocol blocked by170 consumed bars;0 new evaluations/model calls/reservations. No window or registry escape.",
+        "safety": "No local AI, paid API/credits fallback, real orders or unauthorized desktop/account access.",
+        "local_hyperv": "Originally Disabled; explicit owner enable approval at 08:44 UTC; NoRestart enable at 08:48 succeeded with exit3010. Owner reports reboot; vmms and module available. Later privileged query lacks result and process tracking; unknown outcome, no kill/retry. Not a Windows guest or client acceptance."
+      },
+      "history_policy": "All prior snapshots, gate IDs, weights and failed evidence preserved. current_snapshot_history retains the superseded current snapshot. Owner scope cancellation is not retrospective PASS; the original denominator is retained solely as historical comparison.",
+      "owner_scope_changes": {
+        "windows_11": {
+          "status": "USER_CANCELLED",
+          "at_utc": "2026-10-11T07:25:47Z",
+          "source_message": "Sentinel_e9e88f101bd48191b6cdb351ac45ee93",
+          "instruction": "那算了W11的不用測了 測W10就行了",
+          "earns_points": false
+        },
+        "broker_api": {
+          "status": "USER_DEFERRED",
+          "at_utc": "2026-10-11T03:05:26Z",
+          "source_message": "Sentinel_5a45ac51a8c88191b37fc4532a444605",
+          "instruction": "目前我的規劃是先不接卷商api",
+          "earns_points": false
+        },
+        "local_admin_vm": {
+          "status": "EXTERNAL_BLOCKED_NO_RETRY",
+          "at_utc": "2026-10-11T10:31:21Z",
+          "source_message": "Sentinel_30383242d83c819193b8105c97faf2e5",
+          "instruction": "No administrator/UAC retries, component reinstall, reboot or VM create/start/modify; preserve TestLab and continue cloud engineering."
+        }
+      },
+      "cloud_repair_candidate": {
+        "status": "MERGED_NATIVE_VALIDATED_AND_PREVIEW_RELEASED",
+        "baseline": "958df3229b1d075e3799b8856ccffb34aec5f056",
+        "changes": [
+          "Quarantined replay fill does not consume cursor/plan; duplicate requires actual matching execution",
+          "Rejected old-contract roll close halts before contract switch or new leg",
+          "Validate each supplied streaming response identity without masking contradictions"
+        ],
+        "root_focused": {
+          "total": 159,
+          "passed": 159,
+          "skipped": 0,
+          "seconds": 26.157
+        },
+        "independent_review": {
+          "status": "PASS",
+          "targeted_tests": 11,
+          "scope": "Three exact product diffs; no full CI or actual model acceptance"
+        },
+        "history_gate": "PR8 exact-main native CI successful; earlier source-snapshot limitation retained in current_snapshot_history[1].cloud_repair_candidate.",
+        "profile_work": {
+          "status": "PASS",
+          "tests": 78,
+          "seconds": 63.123,
+          "skipped": 0,
+          "released_profiles_preserved": 11,
+          "new_literal_profiles": 2,
+          "independent_profile_tests": 6,
+          "initial_diagnostic": "Earlier duplicate-discovery135-test run retained one test-authoring setup error; corrected isolated6 and deduplicated78 pass. No relaxation or source threshold change."
+        },
+        "release": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38134959133-1"
+      },
+      "ui_checkpoint_visibility_candidate": {
+        "status": "READY_FOR_NATIVE_REVALIDATION",
+        "baseline": "f2eb4aafba161ea89fd0457c20e21a06bea5918c",
+        "release": "NOT_PUBLISHED",
+        "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
+        "changed_files": [
+          "desktop_ui.py",
+          "quantlab/reporting.py",
+          "tests/test_desktop_analysis_discovery.py"
+        ],
+        "unchanged_boundaries": [
+          "quantlab/research_analysis.py",
+          "quantlab/desktop_runtime.py",
+          "producer profiles"
+        ],
+        "root_focused": {
+          "modules": [
+            "tests.test_desktop_analysis_discovery",
+            "tests.test_reporting"
+          ],
+          "total": 29,
+          "passed": 22,
+          "skipped_native_qt": 7,
+          "seconds": 0.685,
+          "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/checkpoint-discovery-focused.log"
+        },
+        "worker_separate_existing_contract_tests": {
+          "passed": 7,
+          "scope": "Existing strict-reader/recovery tests; separate execution, not combined with root focused suite"
+        },
+        "initial_review_diagnostic": "Root and independent review found asynchronous completed result hidden by stale checkpoint selection. Worker fixed selection of returned analysis identity before display and added native Qt regressions. Preserve issue as initial diagnostic; final independent review subsequently PASS.",
+        "pending": [
+          "New exact-head full native/frozen/installer/lifecycle revalidation",
+          "Publication"
+        ],
+        "independent_review": {
+          "status": "PASS",
+          "passed": 22,
+          "skipped_native_qt": 7,
+          "strict_worker_adapter": "BYTE_IDENTICAL",
+          "source_sha256": {
+            "desktop_ui.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
+            "quantlab/reporting.py": "b1b9429266851498e83f6907d8df86a53816927da47e4ca79cdd6beb27ca0420"
+          }
+        },
+        "separate_full_research_analysis": {
+          "module": "tests.test_research_analysis",
+          "passed": 31,
+          "skipped": 0,
+          "seconds": 9.902,
+          "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/checkpoint-analysis-regression.log",
+          "count_policy": "Separate suite; not added to other focused or independent counts."
+        },
+        "quality_gate": {
+          "scanner": "Unmodified quality_gate.scan",
+          "remote_manifest_files": 255,
+          "new_test_files": 2,
+          "total_files": 257,
+          "findings": 0,
+          "local_history_scan": "NOT_RUN_AWAITS_CI"
+        },
+        "pr": 9,
+        "pr_status": "DRAFT",
+        "native_iterations": [
+          {
+            "head": "2459ad62",
+            "quantlab_run": 38138317785,
+            "status": "FAIL",
+            "jobs": {
+              "linux311": {
+                "passed": 1448,
+                "skipped": 21,
+                "seconds": 425.277
+              },
+              "linux312": {
+                "passed": 1448,
+                "skipped": 21,
+                "seconds": 447.131
+              },
+              "ui": {
+                "passed": 1448,
+                "skipped": 16,
+                "seconds": 323.886,
+                "new_native_qt_passed": 7
+              },
+              "windows_research311": {
+                "passed": 243,
+                "skipped": 6,
+                "seconds": 720.942
+              },
+              "windows_research312": {
+                "passed": 243,
+                "skipped": 6,
+                "seconds": 510.297
+              },
+              "windows_core312": {
+                "passed": 1205,
+                "skipped": 27,
+                "failed": 1,
+                "seconds": 398.629,
+                "failure": "New prototype helper_before_gui cleanup Errno5"
+              },
+              "windows_core311": {
+                "passed": 1205,
+                "skipped": 27,
+                "failed": 1,
+                "errors": 1,
+                "seconds": 550.315,
+                "failure": "Same prototype cleanup failure",
+                "error": "Existing wrong-commit-count test missing returncode after10.124s versus original10s limit"
+              }
+            },
+            "installer": {
+              "run": 38138317766,
+              "status": "FAILED",
+              "python": "3.13.16",
+              "qt": "6.12",
+              "native_total": 1448,
+              "passed": 1414,
+              "skipped": 33,
+              "failed": 1,
+              "seconds": 845.457,
+              "failure": "Same new prototype helper_before_gui cleanup Errno5",
+              "other_prototype_cases_passed": 2,
+              "new_native_qt_passed": 7,
+              "frozen_installer_lifecycle": "NOT_REACHED",
+              "release": "SKIPPED",
+              "installer_generated": false,
+              "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/ci-2459ad62/build.log"
+            },
+            "preservation": "Failed result retained; no unchanged-source rerun or retrospective PASS; original log does not establish unique slow phase."
+          }
+        ],
+        "additive_fixes": {
+          "prototype_termination": {
+            "scope": "TEST_ONLY",
+            "source_sha256": "5bb6ed2bec7ca515b7810ac318f5945b42fa90145add0b4a62a2b532bdef50ef",
+            "independent_review": "PASS",
+            "gate": "Exact owned handle must signal within original7s cleanup",
+            "deterministic_passed": 1,
+            "windows_skipped": 3,
+            "actual_windows_revalidation": "PENDING"
+          },
+          "diagnostic_status": {
+            "file": "tools/diagnose_paper_replay.py",
+            "behavior": "Report actual reaped exit or unknown None; explicitly refuse timeout/error certification",
+            "preserved": [
+              "120 workload",
+              "FULL",
+              "delete-reopen",
+              "10s deadline",
+              "original assertions"
+            ],
+            "performance_fix_proven": false,
+            "unique_slow_phase_proven": false,
+            "independent_review": "PASS",
+            "final_root_focused": "PASS_SEE_ADDITIVE_FIX_COMBINED_ROOT",
+            "independent_targeted_passed": 4,
+            "independent_scope": "Includes real120/FULL/10s workload; no performance-fix claim",
+            "source_sha256": "8909f7ed9430bedbdb377e2c0d7807f929888dd933ba26069f84feee4fdd9ffc",
+            "test_sha256": "9cb8bee0c412501df1b8574d6b9888f65dc6a348fef6c4a1d186d8a2a2fc9a65"
+          }
+        },
+        "additive_fix_combined_root": {
+          "modules": [
+            "tests.test_paper_diagnostics",
+            "tests.test_windows_recovery_feasibility"
+          ],
+          "total": 23,
+          "passed": 20,
+          "native_windows_skipped": 3,
+          "seconds": 5.096,
+          "evidence": "Retained cloud diagnostic log, not a repository file: quant-audit/ci-fix-focused.log",
+          "native_revalidation": "PENDING_NEW_EXACT_HEAD"
+        }
+      },
+      "engineering_blockers": {
+        "abrupt_gui_restart_recovery": {
+          "status": "ENGINEERING_BLOCKED",
+          "reason": "Original-host process-tree quiescence proof and exact job/analysis/registration authority are process-local. Restarted manager cannot infer safe repair from PID absence, app lock, completed journal or timeout.",
+          "evidence": "Retained cloud diagnostic report and probe files, not repository files or publicly committed artifacts: quant-audit/restart-recovery-assessment/assessment.md",
+          "source_evidence": [
+            "quantlab/desktop_runtime.py:940-946,1088-1091,1252-1253: process-local proof and original-manager admission",
+            "quantlab/desktop_runtime.py:749-752: Linux setsid; real orphan observed after supervisor exit",
+            "quantlab/desktop_runtime.py:816-846: original Windows Job Object handle and observed ActiveProcesses==0"
+          ],
+          "future_fixed_gates": [
+            "Separate original and restarted supervisors; interrupt before reservation, during request and after terminal commit before export",
+            "Surviving descendants must prevent repair admission and mutation",
+            "Real Windows Job Object and Linux group tests; exact ownership and PID reuse handling",
+            "Reject missing, stale, malformed, copied/restored or wrong workspace/job/registration/provider/request authority",
+            "Kill during proof publication and reconciliation; fail closed or converge idempotently",
+            "Preserve lock, corruption, provenance, receipt, request and irreversible-budget gates",
+            "Zero recovery AI transport or resubmission; unchanged consumed budget, registration and campaign"
+          ],
+          "external_license_dependency": false,
+          "public_source_urls": [
+            "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L940-L946",
+            "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L1088-L1091",
+            "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L1252-L1253",
+            "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L749-L752",
+            "https://github.com/yostar77612/mark-auto/blob/f2eb4aafba161ea89fd0457c20e21a06bea5918c/quantlab/desktop_runtime.py#L816-L846"
+          ],
+          "evidence_scope": "Linux orphan survival is an observed retained-cloud diagnostic; Windows restart limitation is a source inference. Eight existing-contract assessment tests are not end-to-end GUI restart proof. UI candidate focused tests are separately scoped; no full restart-recovery proof."
+        }
+      },
+      "windows_recovery_feasibility_experiment": {
+        "status": "READY_FOR_NATIVE_REVALIDATION_PRIOR_FAILURE_PRESERVED",
+        "file": "tests/test_windows_recovery_feasibility.py",
+        "scope": "Synthetic test-only feasibility scenarios; no product supervisor or recovery implementation changes. Existing Windows Server CI may execute; no PASS or points earned.",
+        "scenarios": [
+          "GUI stub dies while task-bound helper retains original Job Object handle; TEST-ONLY durable receipt only after observing original job zero",
+          "Helper dies before GUI stub: no receipt",
+          "Helper dies after GUI stub but before quiescence: no receipt"
+        ],
+        "bounds": {
+          "maximum_children": 4,
+          "owned_job_objects": 1,
+          "temporary_files_only": true,
+          "hard_watchdog_seconds": 90,
+          "normal_flow": "quick barriers"
+        },
+        "unverified": [
+          "Successful Windows revalidation after additive termination fix",
+          "clean Windows10",
+          "non-elevated execution",
+          "copied/restored authority",
+          "security",
+          "production recovery admission"
+        ],
+        "earns_points": false,
+        "local_checks": {
+          "compile": "PASS",
+          "discovery": 3,
+          "windows_cases_skipped": 3,
+          "native_windows_executed": false
+        },
+        "review": "Final independent static review PASS for cloud Windows CI only. Initial setup-ownership, unpublished-handle and watchdog review gaps corrected; no production changes. Windows runtime behavior still unverified.",
+        "reviewed_source_sha256": "4dfdd7b7dad9fdfdf70ab0ffd9cc9b8d50319adab2d6d78a568f7dae8332e261",
+        "latest_native_failure_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.native_iterations[0]",
+        "additive_fix_pointer": "current_snapshot.ui_checkpoint_visibility_candidate.additive_fixes.prototype_termination"
       }
     }
   ]
