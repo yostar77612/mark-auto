@@ -2,6 +2,25 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 目前驗收範圍：Windows 10（2026-10-12 07:07:46 +08:00／2026-10-11 23:07:46 UTC）
+
+使用者最新明確指示：「我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入」。此指示取代先前保留 Win10／Win11 雙平台的要求；僅調整本輪驗收範圍，不改產品、工作流、測試或安全門檻。
+
+- **D8 延後、不計本輪：** 原 Windows 11 專屬 10 點自目前分母排除，狀態為 USER_DEFERRED_OUT_OF_CURRENT_SCOPE，未實測、非 PASS、未得分。原 ID／權重 10／BLOCKED／證據在 ACCEPTANCE.json 原表完整保留；未宣稱 Windows 11 技術上不支援。
+- **目前進度：** 230/290＝79.31%，尚餘 60/290＝20.69%；分母＝原 300−D8 10，已通過點數仍為 230。原 230/300＝76.67%、尚餘 70/300＝23.33% 是保留的歷史基線，沒有新增 PASS。
+- **剩餘原門檻：** D5 10 點（乾淨 Win10、無開發環境的安裝／啟動／升級／移除／資料保存）、D7 10 點（Win10 22H2 x64 完整流程）、M2 20 點（原完整合法分鐘行情）、M6 10 點（owner 正式 SIWC 真實授權／有界推論）、M7 10 點（乾淨 Win10 DPI／可用性／持久化）。共 60 點，原實質測試不變；M7 仍包括 1366×768／1920×1080、125／150% DPI 與原鍵盤、focus、對比、偏好重啟測試。D5／M7 共用條件中的 Win11 執行亦延後，本輪不要求，不能當已完成。
+- **已發布工程基線：** main `3ef9a740f4523d50fda3bb36ad119aedcd015895`／tree `173faea2dd6c84f84c7fbfecf45512faac24c5fa`；[Quantlab 38169393007](https://github.com/yostar77612/mark-auto/actions/runs/38169393007) 全 14 jobs SUCCESS，[Windows 38169393012](https://github.com/yostar77612/mark-auto/actions/runs/38169393012) build／security／release 全 3 jobs SUCCESS。[0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1) 已發布，installer SHA-256 `aa26ef78afdc923569c53bd7e63a4e59f850336af19d695cc8d527819e67a909`。本次重新讀取 GitHub 的來源／終態／公開 asset digest；既有發布核驗沿用原證據，不把這次文件更新當成重新執行安裝或 client 驗收。
+- **仍有效的界線：** Server／Linux／fixture 不替代 clean Win10 或真實 OAuth。main 保護仍未建立、簽章仍外部受限，preview 不等於正式驗收。個人 PC／admin／UAC／VM STOP；券商 API USER_DEFERRED；無新增 live AI 或實盤授權。
+- **本次文件後續：** 僅依上述範圍對帳，交由既有必要 exact-head CI／審查確認；產品來源、工作流、測試不變。詳細歷史來源／失敗保留在下方；其舊 Win11 必要、300 分母與待發布說法均按原日期解讀。
+
+<!-- CURRENT_STATUS_END -->
+
+## 以下為本次範圍變更前的歷史快照
+
+下方原文及失敗證據完整保留，不代表目前平台範圍、進度或發布終態。
+
+<!-- PRIOR_CURRENT_SNAPSHOT_START -->
+
 ## 已審查來源的最終工程對帳（2026-10-11 19:11 UTC；候選已核驗、尚待整合發布）
 
 本節僅認證已審查來源 `3c721f79db6c0f938b9a0a9383e81a61b32c9b86`／tree `ba8ecb2dfbcd799c9a63cef4c25a4c38503ba893`。[PR #11](https://github.com/yostar77612/mark-auto/pull/11) 保留其後整合／發布終態，文件不追逐未來 commit SHA；下方舊快照及失敗原文保留。
@@ -81,7 +100,7 @@ Paper replay 的 quarantined fill 不再消耗 pending plan/cursor，duplicate �
 0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
 
 詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此段記錄前一輪文件對帳；本輪修補與 Gate 狀態以上方新檢查點為準。
-<!-- CURRENT_STATUS_END -->
+<!-- PRIOR_CURRENT_SNAPSHOT_END -->
 
 ## 以下為保留的歷史契約、決策與檢查點
 

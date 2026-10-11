@@ -2791,69 +2791,59 @@
     }
   },
   "current_snapshot": {
-    "as_of_utc": "2026-10-11T19:11:00Z",
-    "scope": "Reviewed product source3c721f79/treeba8ecb2d passed all14 Quantlab gates and Windows installer build/security with independent frozen/lifecycle/artifact verification. PR release skipped; final docs-only exact-head CI/integration/postmerge public release still pending. Original rubric/history retained.",
+    "as_of_utc": "2026-10-11T23:07:46Z",
+    "scope": "Owner-authorized Win10-only current acceptance overlay; D8 deferred without PASS. Published product baseline is main3ef9a740 with successful postmerge CI and unsigned preview. Original 230/300 history is preserved; current 230/290 is a scope calculation, not newly completed work.",
     "product_source": {
-      "commit": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
-      "tree": "a04dddae25781b94d4759a13c77a36e319b4730c",
-      "pr": 9,
+      "commit": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+      "tree": "173faea2dd6c84f84c7fbfecf45512faac24c5fa",
+      "pr": 11,
       "pr_status": "MERGED",
       "documentation_checkpoint_is_installer_source": false,
-      "evidence_role": "LAST_PUBLICLY_RELEASED_AND_INDEPENDENTLY_DOWNLOADED_BASELINE_NOT_CURRENT_CANDIDATE"
+      "evidence_role": "PUBLISHED_PRODUCT_BASELINE_BEFORE_THIS_SCOPE_ONLY_DOCUMENTATION_CHANGE"
     },
     "release": {
       "version": "0.2.2",
-      "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1",
+      "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1",
       "status": "PUBLISHED_UNSIGNED_PRERELEASE",
-      "run_id": 38141626727,
-      "release_job_id": 114480780561,
-      "installer_bytes": 39355463,
-      "installer_sha256": "917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e",
-      "public_installer_body": "INDEPENDENTLY_DOWNLOADED_SIZE_AND_SHA256_VERIFIED",
-      "artifact_id": 11702674180,
-      "artifact_sha256": "74c7301931ab82a0d93b33c02cb9e328ae2ea1df2a687518dd8d93beb55b1c12",
-      "source_manifest": "All77 inputs match exact-main product source;70 Windows CRLF and7 raw-byte matches",
-      "evidence": "Retained cloud diagnostic, not a repository file: quant-audit/ci-60da0e3b/independent-installer-assessment.json",
-      "evidence_url": "https://github.com/yostar77612/mark-auto/pull/9",
-      "public_evidence_urls": [
-        "https://github.com/yostar77612/mark-auto/pull/9",
-        "https://github.com/yostar77612/mark-auto/actions/runs/38141626721",
-        "https://github.com/yostar77612/mark-auto/actions/runs/38141626727",
-        "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1"
-      ],
-      "evidence_role": "LAST_VERIFIED_PUBLIC_PREVIEW_60da0e3b"
+      "run_id": 38169393012,
+      "release_job_id": 114562632986,
+      "installer_bytes": 39419859,
+      "installer_sha256": "aa26ef78afdc923569c53bd7e63a4e59f850336af19d695cc8d527819e67a909",
+      "evidence": "Existing parent-verified public release, source main3ef9a740; release metadata and asset digest independently re-read through GitHub for this documentation change. No new client execution or installer-body download in this scope-only update.",
+      "evidence_role": "LATEST_PUBLISHED_PREVIEW_NOT_FORMAL_CLIENT_ACCEPTANCE"
     },
     "validation": {
-      "quantlab_run": 38141626721,
-      "quantlab_jobs_passed": 12,
-      "windows_run": 38141626727,
-      "native_suite": {
-        "total": 1450,
-        "passed": 1417,
-        "skipped": 33,
-        "seconds": 874.287
-      },
-      "windows_scope": "Windows Server 2022 Datacenter build 20348; not clean Windows10 client acceptance",
-      "frozen_and_lifecycle": "Full smoke, real worker cleanup, synthetic WFO, ephemeral-loopback TLS, install/upgrade/recovery/uninstall/data-preservation PASS. Installer extraction recovery is not arbitrary GUI restart recovery; no public trust-store/Qt Schannel or actual account proof.",
-      "count_policy": "Platform/profile skips retain their original scope; unit mocks are not actual OAuth/client proof. This documentation checkpoint reuses unchanged product evidence; any automatically triggered workflow has its own result and source.",
-      "evidence_role": "PR9_PUBLIC_BASELINE_ONLY_CURRENT_CANDIDATE_EVIDENCE_IN_REVIEWED_SOURCE_RECONCILIATION"
+      "quantlab_run": 38169393007,
+      "quantlab_jobs_passed": 14,
+      "quantlab_jobs_total": 14,
+      "windows_run": 38169393012,
+      "windows_jobs_passed": 3,
+      "windows_jobs_total": 3,
+      "status": "POSTMERGE_ALL_JOBS_SUCCESS",
+      "evidence_urls": [
+        "https://github.com/yostar77612/mark-auto/actions/runs/38169393007",
+        "https://github.com/yostar77612/mark-auto/actions/runs/38169393012"
+      ],
+      "windows_scope": "Windows Server CI/build/security/release evidence, not clean Windows 10 client acceptance; Windows 11 client execution is now deferred.",
+      "count_policy": "Postmerge job conclusions and source SHA re-read through GitHub; prior detailed source-suite measurements stay in reviewed_source_reconciliation as historical stage-specific evidence and are not assigned to this run. No new acceptance points."
     },
     "acceptance_decision_current": {
-      "score_unchanged": true,
+      "earned_points_unchanged": true,
+      "scope_changed_by_owner": true,
       "research": 100,
       "desktop": 70,
       "market": 60,
       "earned": 230,
-      "denominator": 300,
-      "percent": 76.6667,
-      "remaining_points": 70,
-      "remaining_percent": 23.3333,
+      "denominator": 290,
+      "percent": 79.3103,
+      "remaining_points": 60,
+      "remaining_percent": 20.6897,
       "m4_status": "PASS",
       "m4_earned": 20,
-      "change": "No new points or revised denominator. Fixed230/300 retained; reviewed3c721f79 engineering Gate success does not close original external/client acceptance.",
-      "historical_score_pointer": "current_snapshot_history[0].acceptance_decision_current",
-      "historical_decision_pointer": "current_snapshot_history[0].acceptance_decision_current",
-      "interpretation": "Original fixed-scope230/300 retained. Latest owner requires bothWindows10/11; no cancellation-to-PASS conversion, denominator change or recovery-engineering points."
+      "change": "Exclude only D8 original weight10 from current scope; all original IDs/weights/statuses/evidence remain historical. D5/D7/M2/M6/M7 retain10/10/20/10/10 current weights and unpassed evidence states. Shared Win11 execution is deferred, not completed.",
+      "calculation": "current_total=300-D8(10)=290; current_earned=100+70+60=230; remaining=10+10+20+10+10=60; percent=230/290*100; remaining_percent=60/290*100",
+      "historical_score_pointer": "current_scope_overlay.historical_score",
+      "interpretation": "Current owner-requested scope completion79.31%, remaining20.69%; historical full-scope230/300=76.67% unchanged. This is no claim of new PASS, formal production completion or Windows 11 incompatibility."
     },
     "requirements_reconciliation_current": {
       "requirements_source_boundary": {
@@ -2894,29 +2884,36 @@
       }
     },
     "remaining_auto": {
-      "status": "FINAL_DOCS_EXACT_HEAD_INTEGRATION_AND_POSTMERGE_PUBLIC_VERIFICATION_PENDING",
+      "status": "SCOPE_ONLY_DOCUMENTATION_RECONCILIATION_PENDING_EXACT_HEAD_CI",
       "work": [
-        "Freeze this bounded four-document reconciliation, run mandatory exact-head CI, integrate only all required gatesPASS.",
-        "Verify postmerge CI and independently download/check public installer."
+        "Review and publish this bounded documentation-only scope update; root owns required exact-head CI and any integration."
       ],
-      "new_feature_gap": "No additional evidence-backed AUTO feature defect demonstrated in this review; fix newly observed failures if any.",
-      "source": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86"
+      "product_baseline": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+      "new_feature_gap": "No additional evidence-backed AUTO product defect demonstrated by this scope change; no product/workflow/test changes authorized by it."
     },
     "remaining_gates": [
       {
         "ids": [
-          "D5",
-          "D7",
-          "D8"
+          "D5"
         ],
-        "points": 30,
-        "blocker": "EXTERNAL BLOCKED: original clean Windows10 22H2 x64 and Windows11 x64 requirements retained per latest14:46 owner direction. Licensed/authorized client environments and lifecycle evidence unavailable; personal administrator/UAC/VM operations remain stopped. Original IDs/grouped weights unchanged."
+        "points": 10,
+        "status": "BLOCKED",
+        "blocker": "EXTERNAL BLOCKED: clean Windows 10 22H2 x64 installation/launch/upgrade/uninstall/data-preservation with no development environment. Original substantive tests unchanged; Win11 execution deferred. Personal-PC/admin/UAC/VM STOP remains."
+      },
+      {
+        "ids": [
+          "D7"
+        ],
+        "points": 10,
+        "status": "BLOCKED",
+        "blocker": "EXTERNAL BLOCKED: original full clean Windows 10 22H2 x64 workflow still unverified; Server/CI/PATH-isolated runtime does not substitute."
       },
       {
         "ids": [
           "M2"
         ],
         "points": 20,
+        "status": "PARTIAL",
         "blocker": "Complete original market-minute scope remains unresolved, including TAIEX minute-data availability and legitimate automated-use permission; do not manufacture minute bars from daily data."
       },
       {
@@ -2924,6 +2921,7 @@
           "M6"
         ],
         "points": 10,
+        "status": "PARTIAL",
         "blocker": "Actual owner-authorized official SIWC grant and bounded subscription request; included-only attestation is not server-credit-setting verification or guaranteed monetary cap."
       },
       {
@@ -2931,7 +2929,8 @@
           "M7"
         ],
         "points": 10,
-        "blocker": "Actual clean-client DPI/usability acceptance; Server/Linux/Qt fixtures do not substitute."
+        "status": "PARTIAL",
+        "blocker": "Actual clean Windows 10 DPI/usability and all original visual/keyboard/persistence tests remain required, including 1366x768 and 1920x1080 at 125/150% DPI. Win11 execution deferred only; Server/Linux/Qt fixtures do not substitute."
       }
     ],
     "additional_external_limits": {
@@ -2941,14 +2940,17 @@
       "safety": "No local AI, paid API/credits fallback, real orders or unauthorized desktop/account access.",
       "local_hyperv": "Originally Disabled; explicit owner enable approval at 08:44 UTC; NoRestart enable at 08:48 succeeded with exit3010. Owner reports reboot; vmms and module available. Later privileged query lacks result and process tracking; unknown outcome, no kill/retry. Not a Windows guest or client acceptance."
     },
-    "history_policy": "Original rubric and scoring fields unchanged. Exact superseded engineering fields are explicitly historical, not active blockers; old snapshot and Git history preserve all negative evidence. Both original Windows10/11 requirements remain retained.",
+    "history_policy": "Original rubric, every original gate ID/weight/status/evidence and prior failures remain unchanged. Historical Windows10/11 requirements and230/300 are not current scope; current_scope_overlay records the latest owner-authorized Win11 deferral and290 denominator. Superseded snapshot fields are retained once as a compact scope-change delta below.",
     "owner_scope_changes": {
       "windows_11": {
-        "status": "EXTERNAL_BLOCKED_REQUIREMENT_RETAINED",
-        "at_utc": "2026-10-11T14:46:00Z",
-        "source_message": "Sentinel_b124e055a0308191b49f887b0f636ab7",
-        "instruction_summary": "Retain original Windows10 and Windows11 requirements unless explicitly changed; both currently EXTERNAL BLOCKED. Prior cancellation preserved historically.",
-        "earns_points": false
+        "status": "USER_DEFERRED_OUT_OF_CURRENT_SCOPE",
+        "at_utc": "2026-10-11T23:07:46Z",
+        "instruction": "我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入",
+        "earns_points": false,
+        "excluded_current_weight": 10,
+        "historical_gate_id": "D8",
+        "scope_overlay": "current_scope_overlay",
+        "technical_support_status": "UNVERIFIED_NOT_DECLARED_UNSUPPORTED"
       },
       "broker_api": {
         "status": "USER_DEFERRED",
@@ -2972,7 +2974,7 @@
     },
     "ui_checkpoint_visibility_candidate": {
       "status": "PR9_RELEASED_READ_ONLY_VISIBILITY_RETAINED_AND_REGRESSION_TESTED",
-      "release": "LAST_PUBLIC_BASELINE_60da0e3b",
+      "release": "Historical PR9 feature release60da0e3b; latest product release is current_snapshot.release.",
       "boundary": "Journal presence metadata conveys interrupted/unverified state, never grants provider or recovery authority.",
       "historical_details": "current_snapshot.historical_engineering_metadata.fields.ui_checkpoint_visibility_candidate",
       "pending_work": []
@@ -3006,20 +3008,21 @@
       "note": "Exact previous snapshot appended, including original failure/fix entries; no retrospective result rewriting."
     },
     "original_job_recovery_candidate": {
-      "status": "IMPLEMENTED_NATIVE_AND_FROZEN_VERIFIED_NOT_YET_PUBLICLY_RELEASED_FOR_REVIEWED_SOURCE",
+      "status": "PR11_MERGED_POSTMERGE_CI_PASSED_AND_UNSIGNED_PREVIEW_RELEASED",
       "head": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86",
       "tree": "ba8ecb2dfbcd799c9a63cef4c25a4c38503ba893",
       "pr": 11,
       "pr_url": "https://github.com/yostar77612/mark-auto/pull/11",
-      "pr_status": "DRAFT",
+      "pr_status": "MERGED",
       "branch": "agent/windows-release-validation",
       "scope": "Original GUI death with surviving original-job helper and exact durable receipt permits explicit local reconciliation without provider resubmission or budget refund.",
       "excluded": "Joint helper/GUI death, reboot or missing authority remains fail closed; no arbitrary restart, same-user-forgery or rollback authentication claim.",
       "availability": "Saved-result reading/comparison/non-AI backtests and safe Paper/normal close remain usable when unrelated analysis authority is unresolved.",
       "native_windows": "QUANTLAB_14_JOBS_PASS_INSTALLER_BUILD_SECURITY_PASS",
       "frozen_and_lifecycle": "PASS_INDEPENDENTLY_VERIFIED_WINDOWS38165405175",
-      "release": "NOT_PUBLISHED_FOR_REVIEWED_SOURCE",
-      "historical_details": "current_snapshot.historical_engineering_metadata.fields.original_job_recovery_candidate"
+      "release": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1",
+      "historical_details": "current_snapshot.historical_engineering_metadata.fields.original_job_recovery_candidate",
+      "evidence_role": "Head/tree and native/frozen measurements retain their reviewed premerge source; current published source and postmerge status are in product_source, validation and release."
     },
     "owner_scope_change_history": [
       {
@@ -3034,22 +3037,26 @@
       }
     ],
     "delivery_state": {
-      "implementation": "Reviewed3c721f79 engineering features implemented; narrow-helper and runtime/filesystem limits explicit.",
-      "verified": "All14 Quantlab gates and Windows38165405175 native1627=1594PASS33skip768.849s, build/security, frozen helper, TLS/lifecycle and source/artifact hashes independently verified.",
+      "implementation": "PR11 integrated; narrow original-helper recovery and explicit runtime/filesystem limits retained. This change is acceptance documentation only.",
+      "verified": "Published product main3ef9a740: Quantlab38169393007 all14 and Windows38169393012 all3 jobs SUCCESS; unsigned preview published.",
       "external_blocked": [
-        "Original clean Windows10 acceptance",
-        "Original clean Windows11 acceptance",
-        "Actual owner SIWC/OAuth inference",
-        "Complete authorized minute-data coverage",
+        "D5 clean Win10 installation lifecycle",
+        "D7 clean Win10 complete workflow",
+        "M2 complete authorized minute-data coverage",
+        "M6 actual owner-authorized official SIWC/OAuth inference",
+        "M7 clean Win10 DPI/usability",
         "Signing/protection limitations"
       ],
-      "release_preparation": "Reviewed-source CI installer verified but PR releaseSKIPPED. One final documentation exact-head CI, integration and postmerge public installer verification pending; latest public baseline60da unchanged.",
+      "deferred_not_passed": [
+        "D8 Windows 11 client workflow; Windows 11 execution of shared D5/M7 gates"
+      ],
+      "release_preparation": "Product baseline is published unsigned preview; this scope-only document update still requires its own review/exact-head CI. Formal product acceptance remains incomplete.",
       "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
     },
     "next_uncommitted_candidate": {
-      "status": "DOCUMENTATION_RECONCILIATION_ONLY_NOT_NEW_PRODUCT_FEATURES",
-      "reviewed_product_source": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86",
-      "required_next": "One bounded docs-only commit and mandatory exact-head CI, conditional integration, postmerge CI and independently downloaded public installer.",
+      "status": "OWNER_AUTHORIZED_WIN11_SCOPE_DOCUMENTATION_ONLY",
+      "reviewed_product_source": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+      "required_next": "Root-owned review, docs-only publication and required exact-head CI; no product, workflow or test change.",
       "historical_prior_candidate": "current_snapshot.historical_engineering_metadata.fields.next_uncommitted_candidate"
     },
     "reviewed_source_reconciliation": {
@@ -3136,7 +3143,7 @@
       "implementation": "Narrow original-job receipt recovery, exact-once bounded research scheduling and new WFO WAL/FULL implemented and source-native/frozen evidence verified within stated bounds.",
       "compatibility": "All WFO entries require patchedSQLite>=3.51.3 and local filesystem before open; obsolete runtime/network paths reject. New journals WAL/FULL only; legacyDELETE bytes/mode preserved.",
       "durability": "Every original save/commit/export retained; pre-WAL durable workspace guard, replay/WFO/both flags, guarded backupv2 and restore rollback union verified in native cases.",
-      "remaining_engineering_scope": "Bounded final documentation exact-head CI, conditional merge, postmerge CI and independently verified public installer; no additional demonstrated AUTO feature defect in current review.",
+      "remaining_engineering_scope": "Historical premerge stage completed by PR11 integration and postmerge38169393007/38169393012. Current work is only owner-authorized acceptance-scope documentation; current source/release fields supersede prior pending-publication wording.",
       "formal_product_complete": false,
       "points_earned": 0,
       "history_policy": "Prior candidate failures/metadata retained as historical; this exact-source field supersedes outdated candidate-progress labels without recertifying old sources.",
@@ -3149,7 +3156,8 @@
         "authorized_alternatives": "Official read-only research continues; do not assert all sources impossible.",
         "intraday_raw_download_performed": false,
         "points_earned": 0
-      }
+      },
+      "evidence_role": "HISTORICAL_REVIEWED_SOURCE_STAGE_WITH_ORIGINAL_MEASUREMENTS_RETAINED; current postmerge outcomes are in validation."
     },
     "historical_engineering_metadata": {
       "as_of_utc": "2026-10-11T15:53:00Z",
@@ -3673,7 +3681,159 @@
           }
         }
       }
-    }
+    },
+    "external_readiness_current": {
+      "clean_windows_10": "EXTERNAL_BLOCKED: original clean Windows 10 22H2 x64 evidence remains required; no personal-PC/admin/UAC/VM work authorized.",
+      "clean_windows_11": "USER_DEFERRED_OUT_OF_CURRENT_SCOPE: D8 and Win11 execution within shared gates are not required this iteration; no PASS or compatibility certification.",
+      "official_siwc": "EXTERNAL_BLOCKED: actual owner grant and bounded inference remain required, not authorized by this scope change.",
+      "other_current_limits_pointer": "current_snapshot.additional_external_limits"
+    },
+    "scope_change_history": [
+      {
+        "effective_at_utc": "2026-10-11T23:07:46Z",
+        "authority": "EXPLICIT_OWNER_SCOPE_CHANGE",
+        "owner_instruction": "我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入",
+        "baseline_commit": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+        "previous_snapshot_as_of_utc": "2026-10-11T19:11:00Z",
+        "policy": "JSON-pointer keyed previous values retained verbatim; old pending/released/platform statements below are historical, not active status. No original rubric item or failure record was changed.",
+        "superseded_fields": {
+          "/current_snapshot/as_of_utc": "2026-10-11T19:11:00Z",
+          "/current_snapshot/scope": "Reviewed product source3c721f79/treeba8ecb2d passed all14 Quantlab gates and Windows installer build/security with independent frozen/lifecycle/artifact verification. PR release skipped; final docs-only exact-head CI/integration/postmerge public release still pending. Original rubric/history retained.",
+          "/current_snapshot/product_source": {
+            "commit": "60da0e3b4f5c230f529a99e8ba5794fd2b232bfb",
+            "tree": "a04dddae25781b94d4759a13c77a36e319b4730c",
+            "pr": 9,
+            "pr_status": "MERGED",
+            "documentation_checkpoint_is_installer_source": false,
+            "evidence_role": "LAST_PUBLICLY_RELEASED_AND_INDEPENDENTLY_DOWNLOADED_BASELINE_NOT_CURRENT_CANDIDATE"
+          },
+          "/current_snapshot/release": {
+            "version": "0.2.2",
+            "url": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1",
+            "status": "PUBLISHED_UNSIGNED_PRERELEASE",
+            "run_id": 38141626727,
+            "release_job_id": 114480780561,
+            "installer_bytes": 39355463,
+            "installer_sha256": "917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e",
+            "public_installer_body": "INDEPENDENTLY_DOWNLOADED_SIZE_AND_SHA256_VERIFIED",
+            "artifact_id": 11702674180,
+            "artifact_sha256": "74c7301931ab82a0d93b33c02cb9e328ae2ea1df2a687518dd8d93beb55b1c12",
+            "source_manifest": "All77 inputs match exact-main product source;70 Windows CRLF and7 raw-byte matches",
+            "evidence": "Retained cloud diagnostic, not a repository file: quant-audit/ci-60da0e3b/independent-installer-assessment.json",
+            "evidence_url": "https://github.com/yostar77612/mark-auto/pull/9",
+            "public_evidence_urls": [
+              "https://github.com/yostar77612/mark-auto/pull/9",
+              "https://github.com/yostar77612/mark-auto/actions/runs/38141626721",
+              "https://github.com/yostar77612/mark-auto/actions/runs/38141626727",
+              "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1"
+            ],
+            "evidence_role": "LAST_VERIFIED_PUBLIC_PREVIEW_60da0e3b"
+          },
+          "/current_snapshot/validation": {
+            "quantlab_run": 38141626721,
+            "quantlab_jobs_passed": 12,
+            "windows_run": 38141626727,
+            "native_suite": {
+              "total": 1450,
+              "passed": 1417,
+              "skipped": 33,
+              "seconds": 874.287
+            },
+            "windows_scope": "Windows Server 2022 Datacenter build 20348; not clean Windows10 client acceptance",
+            "frozen_and_lifecycle": "Full smoke, real worker cleanup, synthetic WFO, ephemeral-loopback TLS, install/upgrade/recovery/uninstall/data-preservation PASS. Installer extraction recovery is not arbitrary GUI restart recovery; no public trust-store/Qt Schannel or actual account proof.",
+            "count_policy": "Platform/profile skips retain their original scope; unit mocks are not actual OAuth/client proof. This documentation checkpoint reuses unchanged product evidence; any automatically triggered workflow has its own result and source.",
+            "evidence_role": "PR9_PUBLIC_BASELINE_ONLY_CURRENT_CANDIDATE_EVIDENCE_IN_REVIEWED_SOURCE_RECONCILIATION"
+          },
+          "/current_snapshot/acceptance_decision_current": {
+            "score_unchanged": true,
+            "research": 100,
+            "desktop": 70,
+            "market": 60,
+            "earned": 230,
+            "denominator": 300,
+            "percent": 76.6667,
+            "remaining_points": 70,
+            "remaining_percent": 23.3333,
+            "m4_status": "PASS",
+            "m4_earned": 20,
+            "change": "No new points or revised denominator. Fixed230/300 retained; reviewed3c721f79 engineering Gate success does not close original external/client acceptance.",
+            "historical_score_pointer": "current_snapshot_history[0].acceptance_decision_current",
+            "historical_decision_pointer": "current_snapshot_history[0].acceptance_decision_current",
+            "interpretation": "Original fixed-scope230/300 retained. Latest owner requires bothWindows10/11; no cancellation-to-PASS conversion, denominator change or recovery-engineering points."
+          },
+          "/current_snapshot/remaining_auto": {
+            "status": "FINAL_DOCS_EXACT_HEAD_INTEGRATION_AND_POSTMERGE_PUBLIC_VERIFICATION_PENDING",
+            "work": [
+              "Freeze this bounded four-document reconciliation, run mandatory exact-head CI, integrate only all required gatesPASS.",
+              "Verify postmerge CI and independently download/check public installer."
+            ],
+            "new_feature_gap": "No additional evidence-backed AUTO feature defect demonstrated in this review; fix newly observed failures if any.",
+            "source": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86"
+          },
+          "/current_snapshot/remaining_gates": [
+            {
+              "ids": [
+                "D5",
+                "D7",
+                "D8"
+              ],
+              "points": 30,
+              "blocker": "EXTERNAL BLOCKED: original clean Windows10 22H2 x64 and Windows11 x64 requirements retained per latest14:46 owner direction. Licensed/authorized client environments and lifecycle evidence unavailable; personal administrator/UAC/VM operations remain stopped. Original IDs/grouped weights unchanged."
+            },
+            {
+              "ids": [
+                "M2"
+              ],
+              "points": 20,
+              "blocker": "Complete original market-minute scope remains unresolved, including TAIEX minute-data availability and legitimate automated-use permission; do not manufacture minute bars from daily data."
+            },
+            {
+              "ids": [
+                "M6"
+              ],
+              "points": 10,
+              "blocker": "Actual owner-authorized official SIWC grant and bounded subscription request; included-only attestation is not server-credit-setting verification or guaranteed monetary cap."
+            },
+            {
+              "ids": [
+                "M7"
+              ],
+              "points": 10,
+              "blocker": "Actual clean-client DPI/usability acceptance; Server/Linux/Qt fixtures do not substitute."
+            }
+          ],
+          "/current_snapshot/history_policy": "Original rubric and scoring fields unchanged. Exact superseded engineering fields are explicitly historical, not active blockers; old snapshot and Git history preserve all negative evidence. Both original Windows10/11 requirements remain retained.",
+          "/current_snapshot/owner_scope_changes/windows_11": {
+            "status": "EXTERNAL_BLOCKED_REQUIREMENT_RETAINED",
+            "at_utc": "2026-10-11T14:46:00Z",
+            "source_message": "Sentinel_b124e055a0308191b49f887b0f636ab7",
+            "instruction_summary": "Retain original Windows10 and Windows11 requirements unless explicitly changed; both currently EXTERNAL BLOCKED. Prior cancellation preserved historically.",
+            "earns_points": false
+          },
+          "/current_snapshot/original_job_recovery_candidate/status": "IMPLEMENTED_NATIVE_AND_FROZEN_VERIFIED_NOT_YET_PUBLICLY_RELEASED_FOR_REVIEWED_SOURCE",
+          "/current_snapshot/original_job_recovery_candidate/pr_status": "DRAFT",
+          "/current_snapshot/original_job_recovery_candidate/release": "NOT_PUBLISHED_FOR_REVIEWED_SOURCE",
+          "/current_snapshot/ui_checkpoint_visibility_candidate/release": "LAST_PUBLIC_BASELINE_60da0e3b",
+          "/current_snapshot/delivery_state": {
+            "implementation": "Reviewed3c721f79 engineering features implemented; narrow-helper and runtime/filesystem limits explicit.",
+            "verified": "All14 Quantlab gates and Windows38165405175 native1627=1594PASS33skip768.849s, build/security, frozen helper, TLS/lifecycle and source/artifact hashes independently verified.",
+            "external_blocked": [
+              "Original clean Windows10 acceptance",
+              "Original clean Windows11 acceptance",
+              "Actual owner SIWC/OAuth inference",
+              "Complete authorized minute-data coverage",
+              "Signing/protection limitations"
+            ],
+            "release_preparation": "Reviewed-source CI installer verified but PR releaseSKIPPED. One final documentation exact-head CI, integration and postmerge public installer verification pending; latest public baseline60da unchanged.",
+            "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
+          },
+          "/current_snapshot/next_uncommitted_candidate/status": "DOCUMENTATION_RECONCILIATION_ONLY_NOT_NEW_PRODUCT_FEATURES",
+          "/current_snapshot/next_uncommitted_candidate/reviewed_product_source": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86",
+          "/current_snapshot/next_uncommitted_candidate/required_next": "One bounded docs-only commit and mandatory exact-head CI, conditional integration, postmerge CI and independently downloaded public installer.",
+          "/current_snapshot/reviewed_source_reconciliation/remaining_engineering_scope": "Bounded final documentation exact-head CI, conditional merge, postmerge CI and independently verified public installer; no additional demonstrated AUTO feature defect in current review."
+        }
+      }
+    ]
   },
   "current_snapshot_history": [
     {
@@ -5027,5 +5187,45 @@
         "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
       }
     }
-  ]
+  ],
+  "current_scope_overlay": {
+    "effective_at_utc": "2026-10-11T23:07:46Z",
+    "effective_at_taipei": "2026-10-12T07:07:46+08:00",
+    "authority": "EXPLICIT_OWNER_SCOPE_CHANGE",
+    "owner_instruction": "我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入",
+    "current_platform": "Windows 10 22H2 x64",
+    "original_rubric_policy": "All original phases, desktop_gates, market_desktop_scope gates, IDs, weights, statuses and evidence remain unchanged as the historical 300-point rubric. Pre-existing root-level product_scope, external_readiness and scoring summaries are historical snapshots; current_scope_overlay and current_snapshot define current scope/readiness. This overlay alone defines the current 290-point scope; no new PASS or earned points.",
+    "historical_score": {
+      "earned": 230,
+      "denominator": 300,
+      "percent": 76.6667,
+      "remaining_points": 70,
+      "remaining_percent": 23.3333
+    },
+    "excluded_gates": [
+      {
+        "id": "D8",
+        "original_weight": 10,
+        "current_scope_weight": 0,
+        "status": "USER_DEFERRED_OUT_OF_CURRENT_SCOPE",
+        "historical_status": "BLOCKED",
+        "earns_points": false,
+        "reason": "Owner will not use Windows 11 and explicitly removes its real-client testing from the current calculation; not tested or PASS."
+      }
+    ],
+    "shared_gate_platform_interpretation": {
+      "D5": "All original no-development-environment install/launch/upgrade/uninstall/data-preservation tests remain mandatory on a clean Windows 10 22H2 x64 client. Windows 11 execution is deferred for this iteration; weight remains 10 and evidence status remains BLOCKED.",
+      "D7": "Original complete clean Windows 10 22H2 x64 workflow remains mandatory, weight 10, BLOCKED. Server evidence is not a client substitute.",
+      "M7": "Original visual, keyboard/focus/contrast, persistence and usability tests remain mandatory, including 1366x768 and 1920x1080 at 125/150% DPI on clean Windows 10. Windows 11 execution is deferred for this iteration; weight remains 10 and evidence status remains PARTIAL."
+    },
+    "current_score_pointer": "current_snapshot.acceptance_decision_current",
+    "current_remaining_ids": [
+      "D5",
+      "D7",
+      "M2",
+      "M6",
+      "M7"
+    ],
+    "scope_only": "No product, workflow, test or safety threshold change. Windows 11 technical compatibility is unverified, not declared unsupported. Deferral authorizes no personal-PC/admin/UAC/VM, broker or live AI action."
+  }
 }
