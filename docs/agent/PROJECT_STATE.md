@@ -2,6 +2,23 @@
 
 <!-- CURRENT_STATUS_START -->
 
+### 本輪候選：研究測試排程修補，原 Gate 不變（2026-10-11 17:23 UTC）
+
+- main `1619788a` 的 postmerge [Quantlab 38156717394](https://github.com/yostar77612/mark-auto/actions/runs/38156717394) 仍為 12 SUCCESS＋Windows 3.11 research 在原 15 分鐘取消；[Windows 38156717521](https://github.com/yostar77612/mark-auto/actions/runs/38156717521) 原生 1,528 PASS／33 skips、artifact 已核驗，但既有 release guard 正確拒絕發布。最後公開預覽版仍為 `60da0e3b`；建置成功不能抵銷必要 Gate 取消。
+- **AUTO 修補僅限測試排程：** 相同 243 個 research cases 於兩個明確歸屬的 Windows worker processes 中各執行恰好一次；原 15 分鐘 job cap、6 個 applicability skips、序列 Paper 960 bars／30 秒 Gate 與產品持久化均不變。目前實作／本機測試進行中，native 尚待，不能稱 PASS。Root 待六檔候選審查完成才發布。
+- 已完成並獨立核對的 8-round FULL storage diagnostic 只作觀察證據，不是產品 journal-mode 變更或 WAL 採用批准。230/300、原 rubric 與所有舊失敗／快照保留；clean Win10／Win11 仍待外部驗收，個人 PC/admin/UAC/VM STOP。
+
+
+### main 合併後 research 再次取消／發布阻塞（2026-10-11 17:07 UTC）
+
+- main `1619788a7ac4107f6ea84b375664bf3c384ac0ce`／tree `dbfa3b7d489cef30d36c5b3f71752beec7073141` 與 PR10 已全通過來源相同；但 [postmerge Quantlab 38156717394](https://github.com/yostar77612/mark-auto/actions/runs/38156717394) 為 **12 jobs SUCCESS＋Windows 3.11 research CANCELLED**，再次達原 15 分鐘上限，最後紀錄位於 risk/trade-gates INSERT，不能稱 PASS、也不能據此斷定唯一根因。3.12 research 237 PASS／6 skips，604.694 秒。負面原始證據留存 `quant-audit/ci-1619788a/windows311-research.log`，不未改來源重跑。
+- [Windows 38156717521](https://github.com/yostar77612/mark-auto/actions/runs/38156717521) 打包仍在執行；既有 `packaging/wait_for_gates.py` 對目前 CANCELLED 的拒絕發布已獨立驗證，尚不能宣稱 release job 已執行或新版已發布。最後完整核驗的公開預覽版仍是 main `60da0e3b`／`desktop-preview-38141626727-1`。PR10 body 已於 17:06 補上合併後阻塞，先前 PR PASS 與所有舊失敗保留。
+- **仍有 AUTO 工程調查：** 既有 WFO diagnostic 的 opt-in DELETE/FULL 與 WAL/FULL 固定 ABBA、完整 63-state stream 實驗正在準備；使用實際 C: `tempfile.gettempdir()`、180 秒上限、精確 durability counts／checkpoint／reopen。先前 D: RUNNER_TEMP 觀察不是 research 實際資料卷。這只是受控量測，**未修改產品 journal mode、FULL、commit boundaries、原 job／workload／15 分鐘 Gate**；不能把效能問題列為純外部授權阻塞。
+- 原 300 分 rubric／230 分不變；clean Win10 與 Win11 仍 EXTERNAL BLOCKED，個人 PC/admin/UAC/VM STOP。完成實驗及獨立審查後，僅以有證據的新候選進行必要 CI；全部 Gate 通過且核驗公開安裝檔之前，不宣稱正式交付。
+
+以下為依來源日期保留的舊快照，不代表本次 postmerge 終態。
+
+
 ### PR #10 c2 原生建置通過／必要 research 取消；新候選待 exact-head CI（2026-10-11 15:53 UTC）
 
 - **已測來源：** [Draft PR #10](https://github.com/yostar77612/mark-auto/pull/10) head `c2efd0c65d112c76f46aac4b0420d8db266509bf`／tree `c6834f0d92b828a3702c6e52857d4ba92cfd7263`。[Quantlab 38150836667](https://github.com/yostar77612/mark-auto/actions/runs/38150836667) 終態 **CANCELLED，11/12 jobs SUCCESS**；Windows 3.11 research 原 243 cases 完成 242，最後一項在原 15 分鐘 job cap 被中斷，不能稱 PASS 或未改來源重跑。3.12 research＝237 PASS／6 skips，513.134 秒；兩個 Windows cores 各 1,282 PASS／27 skips，先前 8 個 fixture errors 已修復，但舊失敗全保留。
