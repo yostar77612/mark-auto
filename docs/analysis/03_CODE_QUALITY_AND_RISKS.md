@@ -1,6 +1,20 @@
 # mark-auto 程式品質與交易風險審查
 
 <!-- CURRENT_STATUS_START -->
+### 10:39 UTC 新修補的定向驗證（未合併／未發布）
+
+Paper replay 的 quarantined fill 不再消耗 pending plan/cursor，duplicate 需核對真實已保存成交；backtest 的 roll_close 被拒絕即停止，不切新合約或猜測補償下單；SIWC 串流所有已提供的 response ID 各自驗證，不能用另一欄遮蔽矛盾。根目錄整合定向 159/159 PASS（26.157 秒），獨立 review 及 11 項抽驗 PASS。新版本精確來源 profiles 去重後 78 項回歸 PASS（63.123 秒、0 skip），獨立 6 項 PASS；11 個已發布 literals 字節不改，只新增兩個 exact tuples。初次測試撰寫的 setup error 與重複 discovery 保留為診斷，不冒稱通過。新 exact-head 完整 CI 仍待執行，原持久化/效能 Gate 不變；這不是正式推論、clean client 或已發布來源的驗收。
+
+## 本機停止與已發布來源邊界（2026-10-11 10:31 UTC）
+
+- PR #7 的分析 projection 復原、時段邊界及 worker cleanup 已在 main `958df322` 通過 exact-head Windows/Linux CI 並發布預覽版；後文提交前的「待 CI」是歷史快照。新缺陷與新修補另行提供來源限定的測試，不沿用舊 PASS。
+- Hyper-V 是使用者 08:44 UTC 明確批准後啟用，原狀態 Disabled；官方 NoRestart 操作 exit 3010。使用者自行重開機後已確認管理服務與模組，但最後管理員唯讀查詢追蹤失效、結果缺失，root cause 未確認。launch checkpoint 太晚與 finally 寫入無備援是證據缺口，不能據此推測程序歸屬、強殺或重試 UAC。
+- 最新指令已停止所有個人主機管理員/VM排查；既有 TestLab 保留。需要此類權限的項目一律 EXTERNAL BLOCKED。沒有 Windows 客體授權，不把 host 啟用當成 VM license；沒有 clean Win10 實測，不以 Server CI 替代。
+- 使用者已取消 Win11 驗收、暫緩券商 API；不是 PASS 或取得授權。仍禁止本機 AI、paid API/credits fallback、真實下單及未授權憑證讀取。原固定 230/300 僅為歷史分母基線，不因範圍縮減自動提升。
+- 具體新風險與驗證結果由本次工程修補段落補充；完整來源、限制與操作證據索引見 PROJECT_STATE。
+
+### 以下為保留的前次風險快照
+
 ## 雲端缺陷修復與隔離限制（2026-10-11）
 
 1. 分析匯出 crash boundary：`quantlab/research_analysis.py` 的 `_save` 先 commit SQLite 再 replace JSON；真實子程序退出可留下 completed journal／running export。修復限定 `reconcile_analysis`，校驗原始控制帳本及 request／response，普通讀取不放寬。`desktop_ui.py` 明確復原分支不再提前被嚴格 projection 讀取卡住。新測試含 process death、缺少 export、竄改、原 provider、exclusive lock、禁止重送。

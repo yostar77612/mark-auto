@@ -769,8 +769,12 @@ class ChatGPTPlanProvider:
                     kind=event.get('type')
                     if not isinstance(kind,str):_fail('invalid_event')
                     response=event.get('response',{})
-                    rid=event.get('response_id') or (response.get('id') if isinstance(response,dict) else None)
-                    if rid is not None:
+                    # Every supplied identity is evidence. Do not let a valid
+                    # top-level ID mask a contradictory or invalid nested ID.
+                    identities=[]
+                    if 'response_id' in event:identities.append(event['response_id'])
+                    if isinstance(response,dict) and 'id' in response:identities.append(response['id'])
+                    for rid in identities:
                         if not isinstance(rid,str) or not 1<=len(rid)<=256:_fail('invalid_response_id')
                         if response_id is not None and response_id!=rid:_fail('response_id_mismatch')
                         response_id=rid

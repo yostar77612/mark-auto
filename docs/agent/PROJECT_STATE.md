@@ -1,6 +1,24 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+### 10:39 UTC 新修補的定向驗證（未合併／未發布）
+
+Paper replay 的 quarantined fill 不再消耗 pending plan/cursor，duplicate 需核對真實已保存成交；backtest 的 roll_close 被拒絕即停止，不切新合約或猜測補償下單；SIWC 串流所有已提供的 response ID 各自驗證，不能用另一欄遮蔽矛盾。根目錄整合定向 159/159 PASS（26.157 秒），獨立 review 及 11 項抽驗 PASS。新版本精確來源 profiles 去重後 78 項回歸 PASS（63.123 秒、0 skip），獨立 6 項 PASS；11 個已發布 literals 字節不改，只新增兩個 exact tuples。初次測試撰寫的 setup error 與重複 discovery 保留為診斷，不冒稱通過。新 exact-head 完整 CI 仍待執行，原持久化/效能 Gate 不變；這不是正式推論、clean client 或已發布來源的驗收。
+
+## 現行雲端接續與本機限制（2026-10-11 10:31 UTC）
+
+- **已核對的發布基線：** main `958df3229b1d075e3799b8856ccffb34aec5f056`，tree `4ba142f9ad190bf5c9889a243d74af95a1ce2760`；PR #7 已合併。Quantlab [38105610595](https://github.com/yostar77612/mark-auto/actions/runs/38105610595) 全 12 jobs 成功，Windows [38105610623](https://github.com/yostar77612/mark-auto/actions/runs/38105610623) build/security/release 成功，沒有本來源尚未修復的 CI 失敗。Windows Server 2022 原生測試 1,408 項：1,375 PASS、33 applicability skips；不能替代乾淨 Win10。
+- **已核驗預覽版：** [0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38105610623-1)。公開 installer 39,367,658 bytes，SHA-256 `ad89b652662516f02d1abeb6f648fd5b6e34e4263ed416254fdb04914a6c18ea`；公開檔案獨立下載核驗，77 個 source inputs 相符。這是以下新工作之前的發布基線，新修補不得冒用此 PASS。
+- **使用者範圍修正：** 07:25 UTC 明確取消 Windows 11 驗收，只保留 Windows 10 22H2 x64。Win11 記為 USER_CANCELLED，不是 PASS。券商 API 於 03:05 UTC 由使用者暫緩，不能再要求申請券商權限作為目前工程前提；免費公開行情的完整性及合法使用、SIWC 真實授權仍各自判斷。
+- **歷史分數：** 原固定表最後核驗 230/300（76.67%）；保留其原 ID、權重與證據。這是修改範圍前的可比較基線，不是新 Win10-only 範圍重算的完成率。未自行扣分母或把取消的 Win11 項目補為 PASS；新的範圍對應尚未定案前不聲稱更高百分比。
+- **Hyper-V 變更來源：** 新主機初查為 Disabled。08:44 UTC 使用者在已告知元件、服務、開機狀態及重開機影響後批准啟用；08:48 UTC 官方 `Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All -NoRestart` 成功，結果 Enabled、RestartNeeded=true、exit 3010。不是既有已啟用狀態，也不是 10:31 接續輪新增安裝。使用者 09:53 UTC 自行回報重開機；普通查詢確認 vmms Running 及模組可載入。
+- **管理員查詢證據缺口：** 後续固定唯讀 launcher 在 RunAs 返回後才寫入啟動紀錄，工具 session 失效且無結果，不能證明該 Windows 程序已退出，也不能認定一定卡在 UAC。未核實的 boot time / HypervisorPresent 等保持未知，不盲目殺程序或重試。原本啟用成功證據與後续查詢失敗分開記錄。
+- **最新安全界線：** 10:31 UTC 使用者要求停止所有管理員命令、UAC、Hyper-V 排查及 VM 建立/啟動/修改。TestLab 既有檔案與證據保留；不重裝、不自行重開機、不關閉歸屬不明程序。凡需管理員或 VM 的後续驗收標為 EXTERNAL BLOCKED，不以此停止雲端工程。
+- **環境分界：** 新 Win10 主機曾測得可用 RAM 約 19.74 GiB，不能沿用舊筆電記憶體不足的數據，也不代表未來起測仍足夠。Win10 乾淨客體合法授權尚無，Sandbox 專屬停止/報告保存/20 分鐘期限未獲實證；不在主要使用者環境直接安裝替代。原 4 GiB guest、host 起測至少 6 GiB、20 分鐘與零實盤規則不變。
+- **本轮 AUTO：** 依實際 reproducer 修復 Paper replay、研究串流身分與換月正確性；先定向回歸及獨立審查，再對新 exact head 執行必要 CI。已通過的舊來源不無意義重跑，歷史失敗不刪除；新增工作尚未驗收或發布，完整結果以同一工作 PR/後续 checkpoint 為準。
+
+### 以下為保留的前次檢查點，不代表本輪最新終態
+
 ## 雲端接續修復／提交前檢查點（01:53快照；02:09修正見下節）
 
 - **基線核對：** main `b04545b6caacf9ee2f3f1c8016e11cfcaeab5451`，tree `eb7372d0f3004655053e79c0c0d6736518003a09`；PR #6 已合併。Quantlab `38096213220` 與 Windows `38096213180` 全部成功。最新核驗的 [0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38096213180-1) installer 為39,358,670 bytes，SHA256 `44eb59834f641342105d3511c440348c6d02fd16b95e6eee1e797cb2bbd0c15d`。此下載是修復前基線，不能代表以下新變更已發布。

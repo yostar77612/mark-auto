@@ -257,9 +257,19 @@ class PaperReplay:
                     price = bar.open + (1 if intent['side'] == 'buy' else -1) * self.broker.costs.slippage_ticks
                     commission, tax = calculate_costs(price, 1, self.broker.costs)
                     oid = intent['client_order_id']
-                    self.broker.apply_event({'event_id': oid + ':fill', 'fill_id': oid + ':fill',
-                                             'order_id': oid, 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
-                                             'quantity': 1, 'price': price, 'commission': commission, 'tax': tax})
+                    event = {'event_id': oid + ':fill', 'fill_id': oid + ':fill',
+                             'order_id': oid, 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
+                             'quantity': 1, 'price': price, 'commission': commission, 'tax': tax}
+                    result = self.broker.apply_event(event)
+                    applied = result['status'] == 'applied'
+                    if result['status'] == 'duplicate':
+                        # Duplicate receipt can also refer to a quarantined
+                        # event. Only a matching executed fill consumes a plan.
+                        fill = self.broker.snapshot()['fills'].get(event['fill_id'])
+                        applied = canonical_json(fill) == canonical_json(
+                            dict(event, multiplier=self.broker.instrument.multiplier))
+                    if not applied:
+                        raise ValidationError('Replay fill was not applied; pending plan retained for reconciliation')
                     self._fault('after_fill_before_cursor')
                 elif order['status'] not in ('rejected', 'cancelled'):
                     raise ValidationError('Replay order is unresolved; reconcile before retry')

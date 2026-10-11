@@ -317,6 +317,50 @@ class PlanTests(unittest.TestCase):
         with self.assertRaises(PlanError):p.generate({'family':'trend'})
         assert p.read_receipts()[0]['status']=='response_id_mismatch'
 
+    def test_p3_conflicting_identity_fields_cannot_mask_each_other(self):
+        for kind in ('response.created','response.completed'):
+            with self.subTest(kind=kind):
+                event=terminal() if kind=='response.completed' else {'type':kind,'response':{}}
+                event['response_id']='resp_fixture'
+                event['response']['id']='different'
+                MockTransport.events=[frame({'type':'response.created','response':{'id':'resp_fixture'}}),
+                                      frame(event),frame(terminal())]
+                p=provider(self.tmp_path/kind)
+                with self.assertRaises(PlanError) as caught:p.generate({'family':'trend'})
+                self.assertEqual(caught.exception.code,'response_id_mismatch')
+                receipts=p.read_receipts()
+                self.assertEqual(len(receipts),1)
+                self.assertEqual(receipts[0]['status'],'response_id_mismatch')
+                self.assertIsNone(receipts[0]['response_hash'])
+                with self.assertRaises(PlanError):p.generate({'family':'trend'})
+                self.assertEqual(len(p.read_receipts()),1)
+
+    def test_p3_each_present_identity_requires_valid_type_and_length(self):
+        for location in ('top','nested'):
+            for index,bad in enumerate((None,False,0,'',[],{},'x'*257)):
+                with self.subTest(location=location,bad=bad):
+                    event=terminal();event['response_id']='resp_fixture'
+                    if location=='top':event['response_id']=bad
+                    else:event['response']['id']=bad
+                    MockTransport.events=[frame(event)]
+                    p=provider(self.tmp_path/(location+str(index)))
+                    with self.assertRaises(PlanError) as caught:p.generate({'family':'trend'})
+                    self.assertEqual(caught.exception.code,'invalid_response_id')
+                    self.assertEqual(p.read_receipts()[0]['status'],'invalid_response_id')
+
+    def test_p3_matching_and_omitted_identity_fields_remain_supported(self):
+        for location in ('both','top','nested','neither'):
+            with self.subTest(location=location):
+                event=terminal({'input_tokens':1,'output_tokens':2,'total_tokens':3})
+                if location in ('both','top'):event['response_id']='resp_fixture'
+                if location in ('top','neither'):event['response'].pop('id')
+                MockTransport.events=[frame({'type':'response.output_text.delta','delta':'fixture'}),frame(event)]
+                p=provider(self.tmp_path/location)
+                self.assertEqual(p.generate({'family':'trend'}),CANDIDATE)
+                receipt=p.read_receipts()[0]
+                self.assertEqual(receipt['status'],'completed')
+                self.assertEqual(receipt['token_usage'],{'input_tokens':1,'output_tokens':2,'total_tokens':3})
+
     def test_p5_actual_worker_death(self):
         process=multiprocessing.get_context('spawn').Process(target=crash_after_reservation,args=(str(self.tmp_path),))
         process.start();process.join(10)

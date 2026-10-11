@@ -106,6 +106,88 @@ class ReplayTests(unittest.TestCase):
     def test_reattach_after_ack_before_fill(self):
         self._reattach_after_boundary('after_submit_before_fill')
 
+    def test_quarantined_fill_retains_plan_and_cursor_across_restart(self):
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        def crash(point):
+            if point == 'after_submit_before_fill':
+                raise TimeoutError('interrupted before fill')
+        self.replay._fault = crash
+        with self.assertRaises(TimeoutError):
+            self.replay.step(max_bars=1)
+        oid = next(iter(self.broker.snapshot()['orders']))
+        self.broker.apply_event({'event_id': 'transport-ack', 'order_id': oid,
+                                 'sequence': 1, 'type': 'ack', 'timestamp': self.data.bars[0].timestamp})
+        self.broker = self.new_broker()
+        replay = self.new_replay()
+        self.broker.reconcile(self.broker.snapshot())
+        replay.start()
+        with self.assertRaisesRegex(ValidationError, 'pending plan retained'):
+            replay.step(max_bars=1)
+        state = self.broker.snapshot()
+        self.assertFalse(state['fills'])
+        self.assertTrue(state['quarantined'])
+        self.assertTrue(state['reconciliation_required'])
+        self.broker = self.new_broker()
+        resumed = self.new_replay()
+        with self.assertRaisesRegex(ValidationError, 'quarantined events'):
+            self.broker.reconcile(self.broker.snapshot())
+        with self.assertRaises(ValidationError):
+            resumed.start()
+        pending = resumed.step(max_bars=1)
+        self.assertEqual(pending['cursor'], 0)
+        self.assertTrue(pending['pending_plan'])
+        after = self.broker.snapshot()
+        for field in ('orders', 'fills', 'cash', 'positions', 'order_send_timestamps'):
+            self.assertEqual(after[field], state[field])
+
+    def test_duplicate_receipt_without_executed_fill_does_not_consume_plan(self):
+        from unittest.mock import patch
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        with patch.object(self.broker, 'apply_event', return_value={'status': 'duplicate'}):
+            with self.assertRaisesRegex(ValidationError, 'pending plan retained'):
+                self.replay.step(max_bars=1)
+        state = self.broker.snapshot()
+        self.assertFalse(state['fills'])
+        self.assertEqual(len(state['orders']), 1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 0)
+        self.assertTrue(self.replay.snapshot()['pending_plan'])
+        self.broker = self.new_broker()
+        resumed = self.new_replay()
+        self.broker.reconcile(self.broker.snapshot())
+        resumed.start()
+        self.assertEqual(resumed.step(max_bars=1)['cursor'], 1)
+        after = self.broker.snapshot()
+        self.assertEqual(set(after['orders']), set(state['orders']))
+        self.assertEqual(len(after['fills']), 1)
+        self.assertEqual(after['order_send_timestamps'], state['order_send_timestamps'])
+
+    def test_duplicate_fill_requires_matching_execution_payload(self):
+        from unittest.mock import patch
+        self.replay.targets = {0: 1}
+        self.replay.start()
+        def crash(point):
+            if point == 'after_fill_before_cursor':
+                raise TimeoutError('interrupted after fill')
+        self.replay._fault = crash
+        with self.assertRaises(TimeoutError):
+            self.replay.step(max_bars=1)
+        self.replay._fault = lambda point: None
+        snapshot = self.broker.snapshot
+        def mismatched_snapshot():
+            state = snapshot()
+            fill = next(iter(state['fills'].values()))
+            fill['price'] = str(Decimal(fill['price']) + 1)
+            return state
+        with patch.object(self.broker, 'snapshot', side_effect=mismatched_snapshot):
+            with self.assertRaisesRegex(ValidationError, 'pending plan retained'):
+                self.replay.step(max_bars=1)
+        self.assertEqual(self.replay.snapshot()['cursor'], 0)
+        self.assertTrue(self.replay.snapshot()['pending_plan'])
+        self.assertEqual(self.replay.step(max_bars=1)['cursor'], 1)
+        self.assertEqual(len(self.broker.snapshot()['fills']), 1)
+
     def test_cursor_write_failure_preserves_fill_and_idempotent_plan(self):
         self.replay.targets = {0: 1}
         self.replay.start()
