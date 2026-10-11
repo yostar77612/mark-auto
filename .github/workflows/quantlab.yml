@@ -297,7 +297,6 @@ jobs:
         run: python -m unittest tests.test_research_phase_diagnostic -v
       - name: Observe unchanged synthetic cases on their actual default temp volume
         id: measurement
-        continue-on-error: true
         # No TEMP override, retry, Qt, real model call, or timing acceptance.
         # 150-second hard measurement cap plus bounded owned-child cleanup.
         run: python tools/diagnose_research_phases.py --runtime-root build/sqlite-runtime --seconds 150 --report dist/validation/research-phases.json

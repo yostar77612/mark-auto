@@ -1,7 +1,7 @@
 """Contracts for observation tooling, not product timing acceptance."""
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import sqlite3
 import shutil
 import subprocess
@@ -25,6 +25,9 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
         self.assertTrue(diagnostic.TESTS[0].endswith('test_saved_execution_evaluates_all_candidates_and_never_calls_model'))
         self.assertTrue(diagnostic.TESTS[1].endswith('test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity'))
         self.assertIn('quantlab/walk_forward.py', identity['source_sha256'])
+        windows_root = PureWindowsPath('C:/work/mark-auto')
+        self.assertEqual(diagnostic.source_key(windows_root / 'quantlab/walk_forward.py', windows_root),
+                         'quantlab/walk_forward.py')
 
     def test_real_sql_commit_json_bytes_and_profile_unchanged(self):
         with tempfile.TemporaryDirectory() as temporary:

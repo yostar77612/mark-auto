@@ -28,6 +28,11 @@ TESTS = tuple('tests.test_saved_candidate_pool.SavedCandidatePoolTests.' + name 
     'test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity'))
 
 
+def source_key(path, root):
+    """Stable report keys on Windows and POSIX; physical paths stay unchanged."""
+    return path.relative_to(root).as_posix()
+
+
 def identity():
     paths = sorted((ROOT / 'quantlab').glob('*.py')) + [
         ROOT / 'tests/test_saved_candidate_pool.py', ROOT / 'tests/test_walk_forward.py',
@@ -37,7 +42,7 @@ def identity():
             'executable': sys.executable, 'platform': platform.platform(),
             'tempfile_gettempdir': tempfile.gettempdir(),
             'environment_temp': {k: os.environ.get(k) for k in ('TEMP', 'TMP', 'RUNNER_TEMP')},
-            'source_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
+            'source_sha256': {source_key(p, ROOT): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
 
 
 class Observer:
