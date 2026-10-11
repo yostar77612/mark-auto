@@ -268,7 +268,8 @@ def _run(dataset,spec,config):
             old_bar,new_bar=group[event['from_contract']],group[event['to_contract']]
             old_position=position(); first_fill=len(fills)
             if old_position:
-                execute(old_bar,-(1 if old_position>0 else -1),abs(old_position),old_bar.open,'roll_close')
+                if not execute(old_bar,-(1 if old_position>0 else -1),abs(old_position),old_bar.open,'roll_close'):
+                    raise ValidationError('BLOCKED: roll close rejected; cannot switch active contract')
             active_contract=event['to_contract']; pending=None
             if old_position and not forced:
                 execute(new_bar,1 if old_position>0 else -1,abs(old_position),new_bar.open,'roll_open',entry=True)

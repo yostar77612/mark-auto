@@ -106,6 +106,35 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(ValidationError): run(data,[],config(roll_events=(event,)))
         event={**event,'known_at':START}
         with self.assertRaises(ValidationError): run(dataset(data.bars[:-1]),[],config(roll_events=(event,)))
+    def test_rejected_roll_close_blocks_before_new_leg(self):
+        new='TAIFEX:TMF:202611'
+        for slippage in (1,2):
+            with self.subTest(slippage=slippage):
+                data=dataset([bar(0,100),bar(1,100),bar(2,1),bar(2,200,contract=new)])
+                event={'known_at':START,'effective_at':data.bars[2].timestamp,'from_contract':C,'to_contract':new}
+                cfg=config(maintenance_margin_per_contract=None,max_position=1,roll_events=(event,),
+                           costs=CostSpec(D('0'),D('0'),slippage,'none','2020-01-01','fixture'))
+                with patch('quantlab.backtest.calculate_costs',wraps=calculate_costs) as costs:
+                    with self.assertRaisesRegex(ValidationError,'BLOCKED: roll close rejected'):
+                        run(data,[(0,1)],cfg)
+                # Only the original entry reaches fill costing; no new-contract leg.
+                self.assertEqual(costs.call_count,1)
+                self.assertEqual(costs.call_args.args[0],D(100+slippage))
+    def test_valid_roll_close_keeps_one_contract_and_reports_complete(self):
+        new='TAIFEX:TMF:202611'
+        data=dataset([bar(0,100),bar(1,100),bar(2,2),bar(2,200,contract=new)])
+        event={'known_at':START,'effective_at':data.bars[2].timestamp,'from_contract':C,'to_contract':new}
+        cfg=config(maintenance_margin_per_contract=None,max_position=1,roll_events=(event,),
+                   costs=CostSpec(D('0'),D('0'),1,'none','2020-01-01','fixture'))
+        for side,prices in ((1,[D(101),D(1),D(201)]),(-1,[D(99),D(3),D(199)])):
+            with self.subTest(side=side):
+                result=run(data,[(0,side)],cfg)
+                self.assertEqual([fill.price for fill in result.fills],prices)
+                self.assertEqual([fill.reason for fill in result.fills],['target_open','roll_close','roll_open'])
+                self.assertEqual(result.metrics['open_position'],side)
+                self.assertEqual([lot['contract_id'] for lot in result.metrics['open_lots']],[new])
+                self.assertEqual(result.metrics['rolls'][0]['status'],'complete')
+                self.assertEqual(result.metrics['rolls'][0]['position_after'],side)
     def test_roll_new_leg_margin_rejection_is_flat_recorded(self):
         new='TAIFEX:TMF:202611'
         data=dataset([bar(0,20000),bar(1,20000),bar(2,19990),bar(2,20100,contract=new)])

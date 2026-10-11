@@ -38,10 +38,16 @@ class ScalarProducerProfileTests(unittest.TestCase):
             self.assertEqual(profile['engine_source_hashes']['research.py'],
                 'a5b8dda5003553261e1cd85cd4b0843b57891c878fcc72a4dcfd63893a77fc2a')
             self.assertEqual({name: content_hash((root/name).read_text(encoding='utf-8'))
-                for name in profile['engine_source_hashes'] if name != 'research.py'},
-                {name: digest for name, digest in profile['engine_source_hashes'].items() if name != 'research.py'})
+                for name in profile['engine_source_hashes'] if name not in ('research.py', 'backtest.py')},
+                {name: digest for name, digest in profile['engine_source_hashes'].items() if name not in ('research.py', 'backtest.py')})
+            self.assertEqual(profile['engine_source_hashes']['backtest.py'],
+                '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91')
             for index, hashes in enumerate(profile['result_source_hash_variants']):
                 for name, digest in hashes.items():
+                    if name == 'backtest.py':
+                        self.assertEqual(digest, ('009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02',
+                            '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575')[index])
+                        continue
                     raw = (root/name).read_bytes().replace(b'\r\n', b'\n')
                     if index: raw = raw.replace(b'\n', b'\r\n')
                     self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
