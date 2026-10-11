@@ -1,11 +1,21 @@
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->
+## 雲端接續優先順序（2026-10-11）
+
+1. AUTO：完成分析 journal／export 中斷復原修補及真實子程序死亡回歸，保持消耗帳本與禁止重送。
+2. AUTO：補齊矛盾交易時段的聚合拒絕，回歸正常歷史匯入／chart；README 對齊已核驗0.2.2下載及功能。
+3. AUTO：完整離線＋Qt Gate、獨立 review、新 Draft PR exact-head Windows／Linux CI，全部適用工程 Gate 通過後整合並重建預覽版；不降低960根／30秒或持久化保證。
+4. BLOCKED：Win11 Sandbox（RAM／安全停止尚未具備）、乾淨Win10。EXTERNAL BLOCKED：本人SIWC與券商行情授權。暫停所有本機啟動及輪詢，不讓外部阻塞阻止上面工作。
+5. 正式驗收230/300維持不變；本批工程修復以分析匯出、K線邊界、worker cleanup三項工作單位另列驗證狀態，不新增驗收權重或聲稱正式完成。詳細 checkpoint 見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
+
+### 前一輪交付證據（保留）
+
 ## 目前交付對帳（2026-10-10 23:42 UTC）
 
 0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
 
-詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此變更只有文件，不改產品、測試、工作流或已發布安裝檔來源。
+詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此段記錄前一輪文件對帳；本輪修補與 Gate 狀態以上方新檢查點為準。
 <!-- CURRENT_STATUS_END -->
 
 ## 以下為保留的歷史契約、決策與檢查點
@@ -519,7 +529,7 @@ Windows Server 2025 / Python 3.12.10 / SQLite 3.49.1 的相同 960-bar 診斷：
 
 ### Smoke 驗收寫入使用者狀態：已重現、修復中
 
-独立反例在隔離的既有模擬帳戶副本執行原 `desktop.py --smoke-test`：exit 0/status passed，但 `state-v1/desktop_safety.json` 與 `state-v1/paper.sqlite3` bytes 改變，kill switch 變 true。原因為合成 worker 雖隔離，主視窗仍先用正式 workspace 啟動並執行 `freeze_paper`。只有 settings 檔不變的既有測試不足以涵蓋此缺陷。這是當前 release blocker；正常啟動的安全停止仍必要，不可刪除。修復須在主視窗/lock/guard 建立前隔離整個 smoke workspace，原設定只讀快照，並以成功與注入失敗測試證明正式目錄、broker、safety、settings、recovery 記錄皆不變。保留原安裝路徑檢查語意，明示 report 的被檢查位置與真正暫存執行位置；最終 exact-head 安裝／升級／復原 Gate 需重跑。
+獨立反例在隔離的既有模擬帳戶副本執行原 `desktop.py --smoke-test`：exit 0/status passed，但 `state-v1/desktop_safety.json` 與 `state-v1/paper.sqlite3` bytes 改變，kill switch 變 true。原因為合成 worker 雖隔離，主視窗仍先用正式 workspace 啟動並執行 `freeze_paper`。只有 settings 檔不變的既有測試不足以涵蓋此缺陷。這是當前 release blocker；正常啟動的安全停止仍必要，不可刪除。修復須在主視窗/lock/guard 建立前隔離整個 smoke workspace，原設定只讀快照，並以成功與注入失敗測試證明正式目錄、broker、safety、settings、recovery 記錄皆不變。保留原安裝路徑檢查語意，明示 report 的被檢查位置與真正暫存執行位置；最終 exact-head 安裝／升級／復原 Gate 需重跑。
 
 
 ### 03:53 UTC：Smoke 只讀隔離與 CI 固定依賴目標修復

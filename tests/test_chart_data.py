@@ -82,6 +82,37 @@ class ChartDataTests(unittest.TestCase):
         with self.assertRaises(ValueError): aggregate_bars([source],timeframe='3m')
         with self.assertRaises(ValueError): aggregate_bars([source],timeframe='1m')
 
+    def test_conflicting_session_bounds_fail_closed(self):
+        first = bar(0, 1)
+        for second in (
+                replace(bar(1, 2), session_end=START + timedelta(minutes=30)),
+                replace(bar(1, 2), session_open=START + timedelta(minutes=1))):
+            for timeframe in ('1m', '3m', '1d', '1w'):
+                with self.subTest(second=second, timeframe=timeframe):
+                    with self.assertRaisesRegex(ValueError, 'conflicting bounds'):
+                        aggregate_bars([first, second], timeframe=timeframe)
+
+    def test_distinct_sessions_and_dates_keep_independent_bounds(self):
+        night = [bar(i, i + 1, session_end=START + timedelta(minutes=2))
+                 for i in range(2)]
+        day = [replace(b, session='day',
+                       timestamp=b.timestamp + timedelta(hours=1),
+                       end=b.end + timedelta(hours=1),
+                       session_open=b.session_open + timedelta(hours=1),
+                       session_end=b.session_end + timedelta(hours=1)) for b in night]
+        next_date = [replace(b, trade_date='2026-10-10',
+                             timestamp=b.timestamp + timedelta(days=1),
+                             end=b.end + timedelta(days=1),
+                             session_open=b.session_open + timedelta(days=1),
+                             session_end=b.session_end + timedelta(days=1)) for b in night]
+        result = aggregate_bars(night + day + next_date, timeframe='3m')
+        self.assertEqual(len(result.bars), 3)
+        self.assertTrue(all(not b.partial and b.volume == 2 for b in result.bars))
+        self.assertTrue(all(b.end - b.timestamp == timedelta(minutes=2)
+                            for b in result.bars))
+        self.assertTrue(all(a.end <= b.timestamp
+                            for a, b in zip(result.bars, result.bars[1:])))
+
     def test_whole_empty_bucket_and_sources_preserved(self):
         bs=[bar(0,1),bar(1,2),bar(2,3),bar(6,7,session_end=START+timedelta(minutes=9))]
         bs=[replace(b,session_end=START+timedelta(minutes=9)) for b in bs]

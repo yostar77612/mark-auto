@@ -1,13 +1,38 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
+## 雲端接續修復／提交前檢查點（01:53快照；02:09修正見下節）
+
+- **基線核對：** main `b04545b6caacf9ee2f3f1c8016e11cfcaeab5451`，tree `eb7372d0f3004655053e79c0c0d6736518003a09`；PR #6 已合併。Quantlab `38096213220` 與 Windows `38096213180` 全部成功。最新核驗的 [0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38096213180-1) installer 為39,358,670 bytes，SHA256 `44eb59834f641342105d3511c440348c6d02fd16b95e6eee1e797cb2bbd0c15d`。此下載是修復前基線，不能代表以下新變更已發布。
+- **AUTO／實際缺陷修復：** 分析資料庫已提交但 JSON 匯出中斷時，原本嚴格讀取連同明確復原皆失敗；現將完整驗證的 journal 讀取與 projection 比對分離，只有明確停止子程序且持鎖、原 provider／receipt／request 一致後才可修復缺少或精確舊 running projection。普通讀取仍嚴格；不重送模型請求、不退還額度。另拒絕同一契約／交易日／時段的矛盾邊界，防止重疊聚合 candles；官方正常匯入路徑未發現已受影響。
+- **復原範圍限制：** 本修補處理原 host 仍存活、已證明 worker 子程序樹停止的復原。整個 GUI／host 重啟後，記憶體中的 stop proof 不存在，缺少 JSON 的 journal 也未列入保存選單；不得宣稱本修補已完成整機／完整應用重啟復原。既有 QLockFile 與 WFO ownership 記錄均不能重建原子程序樹停止證據；維持保守 BLOCKED，不能藉放寬 descendants-stopped Gate、持鎖即當停止或偽造 proof 解決。另開 completed-only projection 寫入屬新 admission class，未在本修補暗中啟用。
+- **本批工程狀態：** 行情／chart focused74項、分析／桌面focused61項及獨立審查通過。完整雲端回歸1392項＝1371 PASS／20原有平台或環境skips／1 FAIL，830.836秒；失敗為WFO最終holdout變動隔離測試，其中一次評估為ValueError，正在定位，失敗紀錄保留於 `quant-audit/resumed-full-tests.log`。新來源CI尚未啟動；本批修補不能計為已交付。全專案沒有另一份固定工程功能分母，不捏造工程百分比；正式驗收仍230/300＝76.67%，剩餘23.33%，原ID／權重／門檻不變。
+- **新增可重現的 cleanup 缺陷：** 原始WFO失敗在7次定向診斷（462次真實 worker 評估，含Qt parent）未重現，因此不聲稱已證明原失敗原因。但 delayed-reap 測試證明 `_run_bounded` 會對尚存活的 owned worker 呼叫 `close()`，拋 ValueError，campaign 可能繼續保留下一個評估額度。新修補僅在原 global deadline 剩餘時間內等待 owned child 終止，未證明停止即 ResourceTimeout 封鎖後續工作，不關閉 live handle、不捏造 subtree proof、不提高原 timeout。歷史 producer literals 保留，待新完整 Gate。
+- **修補後驗證：** cleanup／研究／WFO focused82項、provenance focused72項通過；分析61項、行情74項通過，範圍各自列示，不當作完整suite加總。獨立審查與static／history secret gate通過。第二次完整回歸正針對實質修補後來源執行；Draft PR與exact-head native CI接續，最終終態和發布來源記錄於該PR，不能以本提交前快照宣稱CI已通過。原失敗與資料／timeout／權重均保留。
+- **本機暫停：** 依使用者最新指令，停止 Sandbox 啟動、RAM 輪詢及本機驗收；只保留已準備檔案，不關閉其他程式。Windows 11 Sandbox 安裝驗收與乾淨 Windows 10 22H2 驗收均 BLOCKED；真實本人 ChatGPT OAuth／訂閱推論、券商行情授權均 EXTERNAL BLOCKED。雲端工作不依賴上述授權；不在主使用者環境安裝替代。
+- **隔離停止研究結論：** `.wsb`／`LogonCommand` 可設定客體與保存專屬輸出，但舊 client 未有經驗證的專屬 session 識別及20分鐘 outer teardown。客體 `shutdown.exe` 不等同已證明釋放 host Sandbox；`CloseMainWindow` 可能要求確認或拒絕。保持原20分鐘與記憶體限制，無全域 taskkill／批次 VM 停止。官方參考見品質風險文件。
+- **接續入口：** 同一雲端 checkout 保留原本歷史與未提交成果，先完成以下修復的完整測試、獨立審查、Draft PR、exact-head CI；通過適用工程 Gate 才整合及重建 preview。正式發布仍須所有原始外部驗收，不以 Server 或 fixture 冒充。
+
+### 02:09 UTC 修正後定向驗證
+
+- 恢復原cleanup allowance後，research50項與WFO34項通過，Qt parent相鄰hang checks3項通過；額外保留舊0.55秒delayed-reap workload為明確拒絕案例，全部11個cleanup tests通過。原1秒／4秒與no-child測試本體未改。新profile72項通過，九個歷史profile來源字節不變，僅更新兩個尚未發布的candidate pins。獨立review與static/history gate通過。
+- 最終來源仍待同一PR #7的新完整原生CI；未合併／未發布，不把定向PASS取代完整Gate。原candidate4167b8a4及下列失敗保留在Git／CI，不force push。
+
+### 02:07 UTC 原生回歸修正（不刪除前述失敗）
+
+- PR #7 candidate `4167b8a4`：第二次雲端完整1405項＝1384 PASS／20 skips／1 FAIL，763.944秒。Linux3.11、Linux3.12與UI原生CI均在原本 `test_hanging_generator_is_killed_and_budget_consumed` 失敗：測試開始時的舊PID在結束時消失，指出前一個timeout測試留下尚未回收的子程序。Windows3.11 core/research及Windows3.12 core當時通過，不能抵銷Linux失敗。原生日誌及第二次log SHA256 `34cbba0461ee329d8ae68e5fcc9c2e648a143e7939f743d157280685dc70f1eb` 保留。
+- 根因：candidate 把所有cleanup joins限制為 evaluation deadline 剩餘時間，期限已到時變為零，移除了原實作既有的terminate0.2秒＋kill0.2秒回收餘裕。修正恢復原有bounded cleanup allowance，evaluation admission deadline、1秒workload／4秒no-orphan測試與所有正式效能門檻不變；仍須證明停止，不以送出kill視為完成。
+- 本輪採分層驗證：先重現相鄰 hanging-backtest／generator 流程及定向 regressions，再用新exact-head完整Windows／Linux CI驗收。不把舊1405失敗改成PASS，也不為相同來源額外重跑第三套雲端完整矩陣；最終完整Gate由CI原有全部測試提供。
+
+### 前一輪已完成交付的證據（保留）
+
 ## 目前交付與驗收對帳（2026-10-10 23:42 UTC）
 
 - **已發布0.2.2 unsigned preview：** [已核驗的 Release](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38094283911-1)。產品來源固定為 main `9d35c7d760acc88720f3379b2413423a0991152f`、tree `79c319746fa19e19b19a8b8ed51f3b6b09806216`；PR #6已合併。Quantlab `38094283558` 全12 jobs PASS；Windows `38094283911` 原生1384項＝1353 PASS／31個原平台或profile skips，frozen／TLS／安裝升級復原與資料保留 PASS，公開安裝檔本體已獨立下載核對。
 - **M4完整20點現已PASS：** 依Roadmap §19原定表單標準，普通研究split／預算／選擇、策略／回測／比較／Paper／對帳與風控均有型別表單和可讀結果；實際Windows Qt與真實worker、PF／描述性Sharpe及假設／未定義原因、正常報告接線及停損／停利／持倉成本參考快照已驗證。不是只憑mock加分；先前條件式postmerge與實際Release門檻現已滿足。
 - **現行固定分數230/300＝76.67%，剩70點／23.33%：** 研究100、桌面70、市場60；只增加原M4的20點，其他ID／權重／門檻／狀態不變。D5／D7／D8仍需clean Win10/11（30點）；M2完整市場分鐘資料／合法自動使用權限（20點）、M6真實owner授權SIWC訂閱呼叫（10點）、M7clean-client DPI／易用性（10點）仍未通過。OAuth不是M4表單Gate的額外隱藏依賴，也不因M4 PASS而取得M6證明。
 - **已交付範圍與界線：** 固定／saved候選WFO及必要PF／Sharpe／參考線已實作、原生驗證並隨preview交付；frozen WFO為合成2-fold／22次評估與重新讀取，非獨立真實市場研究或Paper資格。原Oct8 protocol仍因170 consumed bars而BLOCKED_NO_RUN，不改window／registry。main保護管理權限、可信簽章及非委託的實際帳戶／client驗收仍受限；實單停用，禁止本機AI及paid API／credits fallback。
-- **本次僅文件：** 此checkpoint不是安裝檔的新build／簽章／CI結果，不更換上述產品來源或manifest。AUTO只剩本次文件審核／發布；審查未找到可直接補做的M4／PF／Sharpe／參考線／WFO程式或授權驗證缺口，不新增功能或主動重跑未變更大套測試；自動觸發的工作流仍依其實際結果判定。完整證據見 `ACCEPTANCE.json` current_snapshot及 `quant-audit/ci-9d35c7d7/independent-main-release-assessment.md`。
+- **前一輪僅文件：** 此checkpoint不是安裝檔的新build／簽章／CI結果，不更換上述產品來源或manifest。當時AUTO只剩文件審核／發布；審查未找到可直接補做的M4／PF／Sharpe／參考線／WFO程式或授權驗證缺口，不新增功能或主動重跑未變更大套測試；自動觸發的工作流仍依其實際結果判定。完整證據見 `ACCEPTANCE.json` current_snapshot及 `quant-audit/ci-9d35c7d7/independent-main-release-assessment.md`。
 
 <!-- CURRENT_STATUS_END -->
 
