@@ -1,7 +1,7 @@
 # mark-auto 開發接續狀態
 
 <!-- CURRENT_STATUS_START -->
-## 雲端接續修復／提交前檢查點（2026-10-11 01:53 UTC）
+## 雲端接續修復／提交前檢查點（01:53快照；02:09修正見下節）
 
 - **基線核對：** main `b04545b6caacf9ee2f3f1c8016e11cfcaeab5451`，tree `eb7372d0f3004655053e79c0c0d6736518003a09`；PR #6 已合併。Quantlab `38096213220` 與 Windows `38096213180` 全部成功。最新核驗的 [0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38096213180-1) installer 為39,358,670 bytes，SHA256 `44eb59834f641342105d3511c440348c6d02fd16b95e6eee1e797cb2bbd0c15d`。此下載是修復前基線，不能代表以下新變更已發布。
 - **AUTO／實際缺陷修復：** 分析資料庫已提交但 JSON 匯出中斷時，原本嚴格讀取連同明確復原皆失敗；現將完整驗證的 journal 讀取與 projection 比對分離，只有明確停止子程序且持鎖、原 provider／receipt／request 一致後才可修復缺少或精確舊 running projection。普通讀取仍嚴格；不重送模型請求、不退還額度。另拒絕同一契約／交易日／時段的矛盾邊界，防止重疊聚合 candles；官方正常匯入路徑未發現已受影響。
@@ -12,6 +12,17 @@
 - **本機暫停：** 依使用者最新指令，停止 Sandbox 啟動、RAM 輪詢及本機驗收；只保留已準備檔案，不關閉其他程式。Windows 11 Sandbox 安裝驗收與乾淨 Windows 10 22H2 驗收均 BLOCKED；真實本人 ChatGPT OAuth／訂閱推論、券商行情授權均 EXTERNAL BLOCKED。雲端工作不依賴上述授權；不在主使用者環境安裝替代。
 - **隔離停止研究結論：** `.wsb`／`LogonCommand` 可設定客體與保存專屬輸出，但舊 client 未有經驗證的專屬 session 識別及20分鐘 outer teardown。客體 `shutdown.exe` 不等同已證明釋放 host Sandbox；`CloseMainWindow` 可能要求確認或拒絕。保持原20分鐘與記憶體限制，無全域 taskkill／批次 VM 停止。官方參考見品質風險文件。
 - **接續入口：** 同一雲端 checkout 保留原本歷史與未提交成果，先完成以下修復的完整測試、獨立審查、Draft PR、exact-head CI；通過適用工程 Gate 才整合及重建 preview。正式發布仍須所有原始外部驗收，不以 Server 或 fixture 冒充。
+
+### 02:09 UTC 修正後定向驗證
+
+- 恢復原cleanup allowance後，research50項與WFO34項通過，Qt parent相鄰hang checks3項通過；額外保留舊0.55秒delayed-reap workload為明確拒絕案例，全部11個cleanup tests通過。原1秒／4秒與no-child測試本體未改。新profile72項通過，九個歷史profile來源字節不變，僅更新兩個尚未發布的candidate pins。獨立review與static/history gate通過。
+- 最終來源仍待同一PR #7的新完整原生CI；未合併／未發布，不把定向PASS取代完整Gate。原candidate4167b8a4及下列失敗保留在Git／CI，不force push。
+
+### 02:07 UTC 原生回歸修正（不刪除前述失敗）
+
+- PR #7 candidate `4167b8a4`：第二次雲端完整1405項＝1384 PASS／20 skips／1 FAIL，763.944秒。Linux3.11、Linux3.12與UI原生CI均在原本 `test_hanging_generator_is_killed_and_budget_consumed` 失敗：測試開始時的舊PID在結束時消失，指出前一個timeout測試留下尚未回收的子程序。Windows3.11 core/research及Windows3.12 core當時通過，不能抵銷Linux失敗。原生日誌及第二次log SHA256 `34cbba0461ee329d8ae68e5fcc9c2e648a143e7939f743d157280685dc70f1eb` 保留。
+- 根因：candidate 把所有cleanup joins限制為 evaluation deadline 剩餘時間，期限已到時變為零，移除了原實作既有的terminate0.2秒＋kill0.2秒回收餘裕。修正恢復原有bounded cleanup allowance，evaluation admission deadline、1秒workload／4秒no-orphan測試與所有正式效能門檻不變；仍須證明停止，不以送出kill視為完成。
+- 本輪採分層驗證：先重現相鄰 hanging-backtest／generator 流程及定向 regressions，再用新exact-head完整Windows／Linux CI驗收。不把舊1405失敗改成PASS，也不為相同來源額外重跑第三套雲端完整矩陣；最終完整Gate由CI原有全部測試提供。
 
 ### 前一輪已完成交付的證據（保留）
 

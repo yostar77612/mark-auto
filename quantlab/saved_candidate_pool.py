@@ -398,7 +398,7 @@ SCALAR_SIWC_ANALYSIS_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_
 # Exact reviewed research-worker cleanup revision. Preserve every prior literal
 # and admit only these complete engine, result, and descriptor tuples.
 CLEANUP_TRANSPORT_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_cleanup_transport_v1',
- 'engine_source_hashes': {'research.py': '81226b2b7d30aac9d5813c1216bda018a55d99da7b027e15c918b407510cb039',
+ 'engine_source_hashes': {'research.py': 'ef4d1fae956048b85a1adebc49a660424e30fa5e9bb4e14fed402a67cf5b5f95',
                           'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
                           'core.py': 'd26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a',
                           'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
@@ -419,7 +419,7 @@ CLEANUP_TRANSPORT_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_cle
  'provider_modes': ['fixture', 'openai_compatible']})
 
 CLEANUP_SIWC_ANALYSIS_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_cleanup_siwc_analysis_v1',
- 'engine_source_hashes': {'research.py': '81226b2b7d30aac9d5813c1216bda018a55d99da7b027e15c918b407510cb039',
+ 'engine_source_hashes': {'research.py': 'ef4d1fae956048b85a1adebc49a660424e30fa5e9bb4e14fed402a67cf5b5f95',
                           'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
                           'core.py': 'd26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a',
                           'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',

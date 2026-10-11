@@ -443,16 +443,19 @@ def _run_bounded(function, args, *, deadline, config):
         if process.pid is not None:
             try:
                 process.join(timeout=max(0, min(0.05, deadline - time.monotonic())))
+                # Preserve the original 0.2s terminate + 0.2s kill cleanup
+                # allowance separately from the unchanged evaluation deadline.
+                cleanup_deadline = time.monotonic() + 0.4
                 if process.is_alive():
                     process.terminate()
-                    process.join(timeout=max(0, min(0.2, deadline - time.monotonic())))
+                    process.join(timeout=max(0, min(0.2, cleanup_deadline - time.monotonic())))
                 if process.is_alive():
                     process.kill()
-                    process.join(timeout=max(0, deadline - time.monotonic()))
+                    process.join(timeout=max(0, min(0.2, cleanup_deadline - time.monotonic())))
                 if process.is_alive():
                     # Retain the owned live handle for later reaping, not as
                     # proof of stop. The host still owns descendant supervision.
-                    raise ResourceTimeout('Worker termination unverified at campaign deadline')
+                    raise ResourceTimeout('Worker termination unverified after bounded cleanup')
                 process.close()
             except ResourceTimeout:
                 raise

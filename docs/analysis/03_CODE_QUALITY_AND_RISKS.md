@@ -8,7 +8,8 @@
 3. Sandbox 維持 BLOCKED：官方 [.wsb 配置](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-configure-using-wsb-file) 支援 LogonCommand 與受限 mapping；[shutdown](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/shutdown) 未承諾 host Sandbox teardown；[CloseMainWindow](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.closemainwindow) 只保證發送關閉請求。沒有舊 client 可驗證的20分鐘專屬停止方案，不啟動本機、不以全域 kill 替代。
 4. 整個 GUI／host 重啟仍缺可重建的 analysis 子程序停止證據與 journal-only 保存項目入口；本修補只覆蓋原 host 存活的 worker 中斷，不把直接 adapter 測試冒充 full-host restart。既有 single-instance／WFO owner 機制不足以證明舊子樹已終止；保持 BLOCKED，不放寬原停止證明或以新 reader 冒充原 owner。
 5. 新增 worker cleanup 防護：`quantlab/research.py:_run_bounded` 原本在固定 cleanup joins 後無條件 close 尚存活 process；可用 delayed-reap double 重現 ValueError。新實作只花費原 deadline 剩餘時間，未確認停止即終止整個研究工作，不再繼續評估或歸還額度。此條件缺陷與第一次WFO全套失敗的因果尚未證實，不能刪除原失敗紀錄。
-6. 以上新來源仍須完整測試與 exact-head CI；舊來源 PASS 不自動繼承。進度及可恢復入口見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
+6. 第一版cleanup修補在原生Linux完整CI暴露zero-join回歸；應恢復原本terminate0.2秒＋kill0.2秒有界回收餘裕，與evaluation deadline分開，不能擴大推論／評估期限或忽略no-orphan測試。對應失敗與修正見PROJECT_STATE 02:07檢查點。
+7. 以上新來源仍須完整測試與 exact-head CI；舊來源 PASS 不自動繼承。進度及可恢復入口見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
 
 ### 前一輪交付證據（保留）
 

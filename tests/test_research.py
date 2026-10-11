@@ -718,7 +718,7 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
         self.assertNotIn(result['value'], {p.pid for p in multiprocessing.active_children()})
         self.assertEqual({p.pid for p in multiprocessing.active_children()}, before)
 
-    def exercise_cleanup(self, *, stop_after=None, error=None, terminate_error=None):
+    def exercise_cleanup(self, *, stop_after=None, error=None, terminate_error=None, response_at=0.0):
         from quantlab.research import _run_bounded
         clock = [0.0]
         process = Mock(pid=123)
@@ -726,7 +726,7 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
         joins = []
         def join(*, timeout):
             self.assertGreaterEqual(timeout, 0)
-            self.assertLessEqual(timeout, 1.0 - clock[0])
+            self.assertLessEqual(timeout, 0.2)
             joins.append(timeout)
             clock[0] = min(clock[0] + timeout, stop_after) if stop_after is not None else clock[0] + timeout
             stopped[0] = stop_after is not None and clock[0] >= stop_after
@@ -737,7 +737,10 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
             self.assertTrue(stopped[0], 'must never close a live process')
         process.close.side_effect = close
         receiver, sender = Mock(), Mock()
-        receiver.poll.return_value = True
+        def poll(timeout):
+            clock[0] = response_at
+            return True
+        receiver.poll.side_effect = poll
         message = {'status': 'error', 'error': error} if error else {'status': 'ok', 'value': 'completed'}
         receiver.recv_bytes.return_value = json.dumps(message).encode()
         context = Mock()
@@ -749,25 +752,52 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
             return _run_bounded(None, (), deadline=1.0, config={})
 
     def test_late_reap_returns_result_only_after_verified_stop(self):
-        result = self.exercise_cleanup(stop_after=0.55)
+        result = self.exercise_cleanup(stop_after=0.35)
         self.assertEqual(result['value'], 'completed')
-        self.assertEqual(self.joins, [0.05, 0.2, 0.75])
-        self.assertEqual(self.clock[0], 0.55)
+        self.assertEqual(self.joins, [0.05, 0.2, 0.2])
+        self.assertEqual(self.clock[0], 0.35)
         self.process.kill.assert_called_once_with()
         self.process.close.assert_called_once_with()
 
-    def test_still_alive_at_original_deadline_never_closes_or_returns_success(self):
+    def test_still_alive_after_original_cleanup_allowance_never_closes_or_succeeds(self):
         from quantlab.research import ResourceTimeout
         with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
             self.exercise_cleanup()
-        self.assertEqual(self.clock[0], 1.0)
+        self.assertEqual(self.clock[0], 0.45)
+        self.process.kill.assert_called_once_with()
+        self.process.close.assert_not_called()
+
+    def test_prior_055_second_reap_exceeds_original_cleanup_cap_and_rejects(self):
+        from quantlab.research import ResourceTimeout
+        with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
+            self.exercise_cleanup(stop_after=0.55)
+        self.assertEqual(self.joins, [0.05, 0.2, 0.2])
+        self.assertEqual(self.clock[0], 0.45)
         self.process.kill.assert_called_once_with()
         self.process.close.assert_not_called()
 
     def test_worker_error_is_preserved_after_verified_late_reap(self):
         with self.assertRaisesRegex(RuntimeError, 'Worker failed: ValueError'):
-            self.exercise_cleanup(stop_after=0.55, error='ValueError')
+            self.exercise_cleanup(stop_after=0.35, error='ValueError')
         self.process.close.assert_called_once_with()
+
+    def test_expired_evaluation_retains_only_original_cleanup_allowance(self):
+        from quantlab.research import ResourceTimeout
+        with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
+            self.exercise_cleanup(response_at=1.0)
+        self.assertEqual(self.joins[:2], [0, 0.2])
+        self.assertAlmostEqual(sum(self.joins), 0.4)
+        self.assertAlmostEqual(self.clock[0], 1.4)
+        self.process.close.assert_not_called()
+
+    @unittest.skipUnless('fork' in multiprocessing.get_all_start_methods(), 'Backtest patch requires fork')
+    def test_sequential_backtest_and_generator_hangs_leave_no_child_residue(self):
+        before = {p.pid for p in multiprocessing.active_children()}
+        original = ResearchTests()
+        original.test_hanging_backtest_is_killed()
+        self.assertEqual({p.pid for p in multiprocessing.active_children()}, before)
+        original.test_hanging_generator_is_killed_and_budget_consumed()
+        self.assertEqual({p.pid for p in multiprocessing.active_children()}, before)
 
     def test_unverified_reap_overrides_worker_error_to_halt_following_work(self):
         from quantlab.research import ResourceTimeout
