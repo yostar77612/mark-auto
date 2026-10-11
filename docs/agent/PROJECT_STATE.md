@@ -2,6 +2,18 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 已審查來源的最終工程對帳（2026-10-11 19:11 UTC；候選已核驗、尚待整合發布）
+
+本節僅認證已審查來源 `3c721f79db6c0f938b9a0a9383e81a61b32c9b86`／tree `ba8ecb2dfbcd799c9a63cef4c25a4c38503ba893`。[PR #11](https://github.com/yostar77612/mark-auto/pull/11) 保留其後整合／發布終態，文件不追逐未來 commit SHA；下方舊快照及失敗原文保留。
+
+- **實作範圍：** 原始 GUI 死亡且原 helper 保有 Job Object、確認全部原 job 停止並提交匹配 receipt 後，可明確執行本機 reconciliation；不重送 AI／退還 consumed budget。helper 同亡、整機重啟或無有效 receipt 仍 fail closed；已存結果、比較、非 AI 回測及安全 Paper 操作不因此一律鎖死。這不是任意重啟復原保證。
+- **已通過的來源 Gate：** [Quantlab 38165405165](https://github.com/yostar77612/mark-auto/actions/runs/38165405165) 全 14 jobs PASS。Windows research 3.11／3.12 各 237 PASS＋6 skips，195.937／234.125 秒；cores 各 1,384＝1,357 PASS＋27 skips，558.215／387.231 秒；兩個 cores 的 40 項 native WAL／初始化／workspace cases PASS。Linux 各 1,627＝1,601 PASS＋26 skips，457.198／342.191 秒；UI 1,606 PASS＋21 skips，423.982 秒。各 profile 分開列示，不累計成獨立驗收總數。
+- **持久化／相容性：** 只對新 WFO journal 使用 WAL/FULL，每次原 save／commit／export 不減；既有 DELETE DB 不遷移，舊 bytes／mode 保留。每個 WFO 入口開啟前要求 patched SQLite ≥3.51.3 與 local filesystem；舊 SQLite／network path 拒絕是明示相容性限制，bundled Windows 3.54 受測。WAL 前先持久化 workspace guard，支援 replay／WFO／兩者與 guarded backup v2／restore rollback union；實際初始化 crash 與 guards 測試通過，不推論完整硬體斷電認證。
+- **候選安裝包已核驗、公開發布仍待：** [Windows 38165405175](https://github.com/yostar77612/mark-auto/actions/runs/38165405175) build/security SUCCESS，原生 1,627＝1,594 PASS／33 skips，768.849 秒；80 source inputs（73 CRLF／7 raw）、41 outer files／8 nested kit entries、安全路徑／CRC／digest 均獨立相符。5 個 actual frozen helper proofs（1.355–1.463 秒）、TLS／安裝／升級／移除／設定保存及 released 0.2.1 中斷安裝復原 PASS。候選 installer 39,415,360 bytes，SHA-256 `1dafb15b208ebe0d157c0d555c00ec80a5c2ff8949d6cd42514c7b15fd01bdad`，artifact `11711923023`。PR release SKIPPED，不是公開發布；最後核驗公開版仍為 `60da0e3b`。native WFO crash／backup 是 real SQLite SOURCE tests；released EXE guard 為 fixture sentinel，不能稱完整 clean-client／OAuth／任意斷電證明。文件對帳後仍需最後 exact-head 必要 CI，通過才整合，再核驗 postmerge CI／公開安裝檔。
+- **固定驗收與外部條件：** 230/300＝76.67%，尚餘 70/300＝23.33%，不因工程修補加分。D5／D7／D8 共 30 點：原 clean Win10 22H2 x64／Win11 x64 安裝生命週期；M2 20 點：完整合法分鐘行情；M6 10 點：owner 官方 SIWC 真實授權／推論；M7 10 點：clean-client DPI／可用性。每個原 ID／權重／狀態保留。main 管理保護／受信任簽章是另列未閉合限制，不創造新分數。個人 PC/admin/UAC/VM STOP；券商 API USER_DEFERRED，實盤／付費 AI／本地模型皆停用。
+- **下一步有界：** 除已排定安裝驗證、文件整合及發佈查核，這次獨立複核未發現另一個有具體證據的 AUTO 功能缺口；不為增加任務而擴充功能，也不把真正外部驗收當成已通過。若新測試發現缺陷，保存失敗並修復實作，原 Gate 不降。
+
+
 ### PR #11 原生 research 再次取消／量測支持的新 WFO WAL 候選（2026-10-11 18:41 UTC）
 
 - 前候選 `7f0fe6a8` 的 [Quantlab 38163211643](https://github.com/yostar77612/mark-auto/actions/runs/38163211643) 為 **13 SUCCESS＋Windows 3.12 research 在原 15 分鐘取消**；3.11 的 243 cases PASS，639.781 秒。3.12 不完整執行 863.062 秒，原 2 秒 deadline 案例先通過，其後 state INSERT 遭中斷，沒有完整 coverage 證據；不宣稱整體 PASS。cores／Linux／UI 均通過；[Windows 38163211577](https://github.com/yostar77612/mark-auto/actions/runs/38163211577) 安裝產物仍待 worker 核驗。舊失敗全保留。
