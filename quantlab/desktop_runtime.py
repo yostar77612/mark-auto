@@ -63,6 +63,7 @@ def atomic_write(path, raw, *, durable=False):
 
 WORKSPACE_FORMAT = {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}
 REPLAY_REQUIREMENT = {'profile': 'wal_full', 'minimum_runtime': '3.51.3'}
+WALK_FORWARD_REQUIREMENT = {'profile': 'wal_full', 'minimum_runtime': '3.51.3'}
 GUARDED_BACKUP_VERSION = 2
 
 
@@ -71,15 +72,18 @@ def _workspace_format(value):
         raise RuntimeSafetyError('Unsupported workspace version; original preserved')
     if value == WORKSPACE_FORMAT:
         return value
-    if (isinstance(value, dict) and set(value) == set(WORKSPACE_FORMAT) | {'sqlite_replay'}
+    requirements = {'sqlite_replay': REPLAY_REQUIREMENT, 'sqlite_walk_forward': WALK_FORWARD_REQUIREMENT}
+    extras = set(value) - set(WORKSPACE_FORMAT)
+    if (set(WORKSPACE_FORMAT) <= set(value) and extras and extras <= set(requirements)
             and {key: value[key] for key in WORKSPACE_FORMAT} == WORKSPACE_FORMAT
-            and value['sqlite_replay'] == REPLAY_REQUIREMENT):
+            and all(value[key] == requirements[key] for key in extras)):
         return value
     raise RuntimeSafetyError('Unsupported workspace version; original preserved')
 
 
 def _verify_replay_runtime(value):
-    if 'sqlite_replay' not in value:
+    """Validate the shared WAL runtime requirement for replay and walk-forward."""
+    if not {'sqlite_replay', 'sqlite_walk_forward'} & set(value):
         return
     import sqlite3
     from contextlib import closing
@@ -218,12 +222,19 @@ class AppPaths:
             _write_workspace_format(self.root, WORKSPACE_FORMAT)
         return self
 
-    def require_replay_wal(self):
+    def _require_wal(self, key, requirement):
         self.ensure()
-        required = {**WORKSPACE_FORMAT, 'sqlite_replay': REPLAY_REQUIREMENT}
+        current = _workspace_format(_read_json(self.root / 'workspace-format.json'))
+        required = {**current, key: requirement}
         _verify_replay_runtime(required)
         _write_workspace_format(self.root, required)
         return self
+
+    def require_replay_wal(self):
+        return self._require_wal('sqlite_replay', REPLAY_REQUIREMENT)
+
+    def require_walk_forward_wal(self):
+        return self._require_wal('sqlite_walk_forward', WALK_FORWARD_REQUIREMENT)
 
 
 class WorkspaceLocator:
@@ -664,7 +675,7 @@ class BackupManager:
         try:
             workspace_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
             manifest = {'schema_version': STATE_VERSION, 'app_version': __version__, 'files': {}}
-            if 'sqlite_replay' in workspace_format:
+            if {'sqlite_replay', 'sqlite_walk_forward'} & set(workspace_format):
                 manifest.update(schema_version=GUARDED_BACKUP_VERSION, workspace_format=workspace_format)
             with zipfile.ZipFile(tmp, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
                 for name, path in files:
@@ -708,7 +719,7 @@ class BackupManager:
                 if manifest['schema_version'] == GUARDED_BACKUP_VERSION:
                     restored_format = _workspace_format(manifest.get('workspace_format'))
                     _verify_replay_runtime(restored_format)
-                    if 'sqlite_replay' not in restored_format:
+                    if not {'sqlite_replay', 'sqlite_walk_forward'} & set(restored_format):
                         raise RuntimeSafetyError('Guarded backup is missing its runtime requirement')
                 elif 'workspace_format' in manifest:
                     raise RuntimeSafetyError('Unexpected backup runtime requirement')
@@ -733,9 +744,10 @@ class BackupManager:
             journal = self.paths.root / 'restore-transaction.json'
             self.paths.ensure()
             prior_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
-            # Guard before promotion; never inspect or open SQLite during restore.
-            if 'sqlite_replay' in restored_format:
-                _write_workspace_format(self.paths.root, restored_format)
+            # Keep both data generations protected until verified promotion or
+            # rollback selects its exact format. Never open SQLite during restore.
+            if {'sqlite_replay', 'sqlite_walk_forward'} & set(restored_format):
+                _write_workspace_format(self.paths.root, {**prior_format, **restored_format})
             transaction_id = uuid.uuid4().hex
             from .analysis_recovery import advance_restore_epoch
             advance_restore_epoch(self.paths, transaction_id, admission=ownership)
@@ -1182,6 +1194,7 @@ class JobManager:
             deadline = time.monotonic() + seconds + 10
         job_id = uuid.uuid4().hex
         if walk_forward_reference is not None:
+            self.paths.require_walk_forward_wal()
             self._claim_walk_forward(walk_forward_reference, job_id)
         self._analysis_job_identity = analysis_job_identity
         self._analysis_result_reference = analysis_result_reference

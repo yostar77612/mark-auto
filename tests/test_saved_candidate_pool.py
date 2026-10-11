@@ -20,7 +20,7 @@ from quantlab.research import _reserve_holdout, run_campaign, FixtureGenerator, 
 from quantlab.saved_candidate_pool import (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2, MAX_AUDIT_BYTES, SavedCandidatePoolError,
     admit_saved_campaign_pool, load_original_dataset, TRANSPORT_VERIFIER_PRODUCER,
     TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2, SCALAR_TRANSPORT_PROFILE_V1, SCALAR_SIWC_ANALYSIS_PROFILE_V1,
-    CLEANUP_TRANSPORT_PROFILE_V1, CLEANUP_SIWC_ANALYSIS_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1, SUPPORTED_PRODUCERS)
+    CLEANUP_TRANSPORT_PROFILE_V1, CLEANUP_SIWC_ANALYSIS_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1, DEADLINE_TRANSPORT_PROFILE_V1, SUPPORTED_PRODUCERS)
 from quantlab.walk_forward import (build_walk_forward_plan, planned_evaluations,
     read_walk_forward_state, run_walk_forward, walk_forward_plan_from_dict)
 from tests.saved_pool_fixtures import make_saved_source, make_chatgpt_source, write_source, shifted_dataset
@@ -371,7 +371,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                              output_dir=folder, holdout_registry_path=self.registry)
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(state['attempts'][0]['status'], 'evaluated')
-        self.assertEqual(state['binding']['engine_source_hashes'], FAIL_CLOSED_TRANSPORT_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], DEADLINE_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         before = (folder / 'campaign.json').read_bytes()
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
         self.assertEqual(len(admission.candidate_pool), 1)
@@ -653,7 +653,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
         import quantlab.research as research
         actual = {name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
                   for name in TRANSPORT_VERIFIER_PRODUCER['engine_source_hashes']}
-        self.assertEqual(actual, FAIL_CLOSED_TRANSPORT_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(actual, DEADLINE_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         self.assertEqual(content_hash(research.PROMPT), TRANSPORT_VERIFIER_PRODUCER['prompt_template_hash'])
 
     def test_transport_verifier_fixture_and_compatible_profiles_are_canonical_without_rewrites(self):
@@ -789,7 +789,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
                          (SCALAR_SIWC_ANALYSIS_PROFILE_V1, CLEANUP_SIWC_ANALYSIS_PROFILE_V1)):
             self.assertEqual(new['engine_source_hashes']['backtest.py'],
                 '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91')
-            self.assertEqual({k: v for k, v in new['engine_source_hashes'].items() if k != 'backtest.py'},
+            expected_current = dict(new['engine_source_hashes'])
+            expected_current['research.py'] = DEADLINE_TRANSPORT_PROFILE_V1['engine_source_hashes']['research.py']
+            self.assertEqual({k: v for k, v in expected_current.items() if k != 'backtest.py'},
                              {k: v for k, v in actual.items() if k != 'backtest.py'})
             self.assertNotEqual(old['engine_source_hashes']['research.py'], actual['research.py'])
             restored = to_dict(new)
@@ -897,9 +899,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
 
     def test_genuine_current_fixture_campaign_to_saved_walk_forward_no_hash_relabelling(self):
         folder, reference, state = self.produce_current()
-        self.assertEqual(state['binding']['engine_source_hashes'], FAIL_CLOSED_TRANSPORT_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], DEADLINE_TRANSPORT_PROFILE_V1['engine_source_hashes'])
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
-        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_2_campaign_fail_closed_transport_v1')
+        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_2_2_campaign_registry_deadline_transport_v1')
         self.assertEqual(admission.admission['source_campaign_ref'], reference)
         self.assertEqual(admission.admission['source_campaign_id'], state['campaign_id'])
         self.assertEqual(len(admission.candidate_pool), 15)

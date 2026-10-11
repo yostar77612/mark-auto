@@ -1,4 +1,4 @@
-"""Bounded observation of two unchanged synthetic cases; never an acceptance gate."""
+"""Bounded observation of three unchanged synthetic cases; never an acceptance gate."""
 from __future__ import annotations
 
 import argparse
@@ -25,7 +25,8 @@ from tools.diagnose_wfo_storage import write_report
 
 TESTS = tuple('tests.test_saved_candidate_pool.SavedCandidatePoolTests.' + name for name in (
     'test_saved_execution_evaluates_all_candidates_and_never_calls_model',
-    'test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity'))
+    'test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity')) + (
+    'tests.test_walk_forward.WalkForwardTests.test_registry_lock_cannot_overrun_deadline_or_reserve_after_it',)
 
 
 def source_key(path, root):
@@ -57,6 +58,7 @@ class Observer:
         self.phases = report['phases'] = {}
         self.last = time.monotonic()
         self.publishing = False
+        self.save_calls = 0
 
     def call(self, name, function, *args, payload_bytes=0, **kwargs):
         value = self.phases.setdefault(name, {'calls': 0, 'completed': 0, 'errors': 0,
@@ -88,34 +90,78 @@ class Observer:
 
     def instrument(self, stack):
         from quantlab import walk_forward
-        for name in ('_save_state', '_read_state', '_validate_state'):
+        for name in ('_save_state', '_read_state', '_validate_state', '_reserve_holdout'):
             original = getattr(walk_forward, name)
             def wrapped(*args, _name=name, _original=original, **kwargs):
+                if _name == '_save_state':
+                    phase = ('initial_save' if self.save_calls == 0 else
+                             'terminal_save' if args[2]['status'] != 'running' else 'later_save')
+                    self.save_calls += 1
+                    return self.call('wfo.' + _name, lambda: self.call('wfo.' + phase, _original, *args, **kwargs))
                 return self.call('wfo.' + _name, _original, *args, **kwargs)
             stack.enter_context(patch.object(walk_forward, name, wrapped))
         observer = self
         original_connect = sqlite3.connect
 
         class Connection(sqlite3.Connection):
+            def __init__(self, database, *args, **kwargs):
+                super().__init__(database, *args, **kwargs)
+                name = str(database).replace('\\', '/').rsplit('/', 1)[-1].split('?', 1)[0]
+                self.phase_kind = ('state' if name == 'walk_forward.sqlite3' else
+                                   'registry' if name in ('holdout.sqlite3', 'source-registry.sqlite3') else 'other')
+
             def execute(self, sql, parameters=(), /):
                 payload = sum(len(v.encode('utf-8')) for v in parameters if isinstance(v, str)) if sql.upper().startswith(('INSERT OR REPLACE INTO STATE', 'UPDATE STATE')) else 0
-                return observer.call('sqlite.execute', super().execute, sql, parameters, payload_bytes=payload)
+                operation = sql.lstrip().split()[0].lower()
+                execute = super().execute
+                return observer.call('sqlite.execute', lambda: observer.call(
+                    'sqlite.' + self.phase_kind + '.execute.' + operation,
+                    execute, sql, parameters, payload_bytes=payload), payload_bytes=payload)
 
             def executemany(self, sql, parameters, /):
                 return observer.call('sqlite.executemany', super().executemany, sql, parameters)
 
             def commit(self):
-                return observer.call('sqlite.commit', super().commit)
+                commit = super().commit
+                return observer.call('sqlite.commit', lambda: observer.call('sqlite.' + self.phase_kind + '.commit', commit))
+
+            def close(self):
+                def close_with_profile():
+                    try:
+                        profile = getattr(self, 'observed_profile', None)
+                        if profile is not None and 'close_profile' not in profile:
+                            profile['close_profile'] = {
+                                key: sqlite3.Connection.execute(self, 'PRAGMA ' + key).fetchone()[0]
+                                for key in ('journal_mode', 'synchronous', 'locking_mode')}
+                    finally:
+                        # Profile/report failure must never defer owned closure.
+                        sqlite3.Connection.close(self)
+                return observer.call('sqlite.close', lambda: observer.call(
+                    'sqlite.' + self.phase_kind + '.close', close_with_profile))
 
             def __exit__(self, *args):
                 # sqlite3's C context manager commits without calling commit().
                 phase = 'sqlite.context_commit' if self.in_transaction and args[0] is None else 'sqlite.context_exit_other'
-                return observer.call(phase, super().__exit__, *args)
+                exit_context = super().__exit__
+                return observer.call(phase, lambda: observer.call(
+                    'sqlite.' + self.phase_kind + '.' + phase.split('.', 1)[1], exit_context, *args))
 
         def connect(*args, **kwargs):
             if len(args) > 5 or 'factory' in kwargs:
                 raise RuntimeError('Unexpected connection factory in fixed diagnostic workload')
-            db = original_connect(*args, **kwargs, factory=Connection)
+            opened = None
+            def open_connection():
+                nonlocal opened
+                opened = original_connect(*args, **kwargs, factory=Connection)
+                return opened
+            try:
+                db = observer.call('sqlite.connect', open_connection)
+            except BaseException:
+                if opened is not None:
+                    # A report checkpoint can fail after connect succeeds. Close
+                    # directly, without another failing observer checkpoint.
+                    sqlite3.Connection.close(opened)
+                raise
             # Read only; never set PRAGMAs or relocate the original test data.
             try:
                 profile = {key: sqlite3.Connection.execute(db, 'PRAGMA ' + key).fetchone()[0]
@@ -124,6 +170,8 @@ class Observer:
                 db.close()
                 raise
             profile['database'] = str(args[0] if args else kwargs.get('database'))
+            profile['profile_observed_at'] = 'initial_connect_before_product_configuration'
+            db.observed_profile = profile
             self.report.setdefault('sqlite_profiles', []).append(profile)
             return db
         stack.enter_context(patch.object(sqlite3, 'connect', connect))
@@ -146,7 +194,7 @@ class Observer:
 def run_cases(path, runtime):
     report = {'status': 'INCOMPLETE', 'observation_only': True, 'acceptance': 'NOT_ESTABLISHED',
               'identity': identity(), 'runtime': runtime, 'selected_tests': list(TESTS), 'cases': [],
-              'counter_semantics': 'inclusive; test-parent process CPU only; completed-operation checkpoint; no timing threshold'}
+              'counter_semantics': 'inclusive nested counters, never sum; initial_save is first save in case; test-parent process CPU only; completed-operation checkpoint; no timing threshold'}
     write_report(path, report)
     for test_id in TESTS:
         case = {'test_id': test_id, 'status': 'INCOMPLETE'}

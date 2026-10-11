@@ -24,6 +24,7 @@ from typing import Callable
 
 from .core import (BacktestConfig, Dataset, StrategySpec, ValidationError,
                    canonical_json, content_hash, freeze, to_dict)
+from .paper_replay import _require_wal_runtime, _require_local_wal_path
 from .strategies import builtin_strategies, _validate_bars
 from .data import validate_dataset
 from .research import (_dataset_identity, _evaluate_split, _integer,
@@ -482,9 +483,25 @@ def _interrupt(state):
     state['warnings'].append('Interrupted execution is terminal; reserved evaluations and OOS ranges remain consumed.')
 
 
+def _configure_state_storage(db, *, new_journal=False):
+    """Keep every snapshot FULL; only a genuinely new journal selects WAL."""
+    db.execute('PRAGMA synchronous=FULL')
+    if db.execute('PRAGMA synchronous').fetchone() != (2,):
+        raise ValidationError('SQLite refused FULL walk-forward durability')
+    mode = db.execute('PRAGMA journal_mode=WAL' if new_journal else 'PRAGMA journal_mode').fetchone()
+    if new_journal and mode != ('wal',):
+        raise ValidationError('SQLite refused durable WAL walk-forward storage')
+    if mode == ('wal',):
+        db.execute('PRAGMA wal_autocheckpoint=1000')
+        if db.execute('PRAGMA wal_autocheckpoint').fetchone() != (1000,):
+            raise ValidationError('SQLite refused walk-forward WAL checkpoint policy')
+
+
 def read_walk_forward_state(output_dir: Path) -> dict:
     """Read the authoritative journal without evaluation or state changes."""
     path = Path(output_dir) / 'walk_forward.sqlite3'
+    _require_wal_runtime()
+    _require_local_wal_path(path)
     with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=1)) as db:
         state = _read_state(db)
     if state is None:
@@ -499,9 +516,12 @@ def reconcile_interrupted_walk_forward(*, output_dir: Path, descendants_stopped:
     output_dir = Path(output_dir)
     lock_path = output_dir / 'walk_forward.lock.sqlite3'
     state_path = output_dir / 'walk_forward.sqlite3'
+    _require_wal_runtime()
+    _require_local_wal_path(state_path)
     with closing(sqlite3.connect(lock_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)) as lock:
         lock.execute('BEGIN EXCLUSIVE')
         with closing(sqlite3.connect(state_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)) as db:
+            _configure_state_storage(db)
             state = _read_state(db)
             if state is None:
                 raise ValidationError('Missing walk-forward state')
@@ -542,6 +562,10 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
     never enter selection. Final holdout is excluded and never scored.
     """
     started = time.monotonic()
+    # Every entrypoint may encounter WAL, including a detached historical file.
+    # Unsafe SQLite versions and network/unknown filesystems fail before access.
+    _require_wal_runtime()
+    _require_local_wal_path(Path(output_dir) / 'walk_forward.sqlite3')
     _validate_source(dataset, plan)
     if plan.pool_origin == 'saved_campaign_pool':
         from .saved_candidate_pool import admit_saved_campaign_pool
@@ -570,7 +594,15 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError as exc:
             raise ValidationError('Walk-forward experiment is already running') from exc
-        with closing(sqlite3.connect(output_dir / 'walk_forward.sqlite3', timeout=0)) as db:
+        state_path = output_dir / 'walk_forward.sqlite3'
+        new_journal = not state_path.exists()
+        with closing(sqlite3.connect(state_path, timeout=0)) as db:
+            _configure_state_storage(db, new_journal=new_journal)
+            if new_journal:
+                # Publish schema with the first original durable snapshot, not
+                # an independently committed empty table. Existing files retain
+                # their original read/recovery path and storage mode.
+                db.execute('BEGIN')
             db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
             state = _read_state(db)
             if state is not None:

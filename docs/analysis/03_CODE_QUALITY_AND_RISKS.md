@@ -1,6 +1,15 @@
 # mark-auto 程式品質與交易風險審查
 
 <!-- CURRENT_STATUS_START -->
+
+## 已審查來源風險證據更新（2026-10-11 19:11 UTC）
+
+來源 `3c721f79db6c0f938b9a0a9383e81a61b32c9b86`／tree `ba8ecb2dfbcd799c9a63cef4c25a4c38503ba893` 的 [Quantlab 38165405165](https://github.com/yostar77612/mark-auto/actions/runs/38165405165) 全 14 jobs PASS，兩個 Windows cores 的 40 項 WFO WAL／initialization／workspace tests 實際通過。[Windows installer 38165405175](https://github.com/yostar77612/mark-auto/actions/runs/38165405175) build/security 已 SUCCESS（原生 1,627＝1,594 PASS／33 skips，768.849 秒），80 source inputs、41 outer／8 nested entries、CRC／digest 及 5 個 actual frozen helper proofs／TLS／安裝生命週期已獨立核驗，PR release SKIPPED，尚非公開發布；後續整合／公開發布以 [PR #11](https://github.com/yostar77612/mark-auto/pull/11) 的 exact-source 證據為準，不能沿用舊 preview 為新候選背書。
+
+新 WFO journal 使用 WAL/FULL，逐次 save／commit／export 保留；舊 DELETE DB 不遷移。patched SQLite ≥3.51.3／local-filesystem 是所有 WFO 入口的明示需求，舊 runtime／network 路徑拒絕；bundled Windows 3.54、WAL 前 durable workspace guard、guarded backup v2／restore rollback union 與初始化 crash 邊界已有原生測試。WFO crash／backup 是 real SQLite SOURCE tests；released EXE guard 使用 fixture sentinel，不能混稱完整 clean-client、真實 OAuth 或硬體斷電認證，也不能靜默繞過 guard。來源可查 `quantlab/walk_forward.py`、`quantlab/desktop_runtime.py`、`tests/test_workspace_wal_guard.py` 與對應 WFO 原生測試。
+
+原始 helper 持有原 Job Object 並取得匹配停止 receipt 的狹義復原已實作；helper 同亡／重啟／缺證據必須 fail closed，禁止 AI 重送、預算重設或假設 PID 缺席等於停止。保存结果及非 AI 安全操作不應無條件鎖死。一般完整重啟、同使用者竄改認證與整體 rollback 不能由 ledger hash 宣稱安全。clean Win10／Win11、owner SIWC、完整行情權利／DPI、main 保護及受信任簽章仍分別待驗／受限；230/300 固定驗收與所有歷史失敗不變。個人 PC/admin/UAC/VM STOP。
+
 ## 原始 Job 停止證據復原候選（2026-10-11 14:28 UTC；提交前來源快照）
 
 - **最後已發布基線不變：** [PR #9 最終證據](https://github.com/yostar77612/mark-auto/pull/9) 已確認合併 main `60da0e3b4f5c230f529a99e8ba5794fd2b232bfb`／tree `a04dddae25781b94d4759a13c77a36e319b4730c`；[Quantlab 38141626721](https://github.com/yostar77612/mark-auto/actions/runs/38141626721) 全 12 jobs SUCCESS，[Windows 38141626727](https://github.com/yostar77612/mark-auto/actions/runs/38141626727) build/security/release SUCCESS。Server 2022 原生 1,450＝1,417 PASS／33 skips，不能替代 clean Win10。[已核驗 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38141626727-1) installer 39,355,463 bytes，SHA-256 `917d39c5d73bb70160b7e3771c5fb11d4297904119ac4e9a8fe85021b342a47e`。以下舊 PR #9 Draft／待 CI 字樣只屬保留歷史，不代表目前狀態；後續終態以對應 PR 證據為準，不為追逐文件 SHA 重建相同產品。

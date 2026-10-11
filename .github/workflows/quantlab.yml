@@ -58,7 +58,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Run exact-coverage offline test group
-        run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json
+        run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json --workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }}
       - name: Preserve exact-head discovery and selection evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -307,6 +307,35 @@ jobs:
           name: research-phases-windows311-observation
           path: |
             dist/validation/research-phases.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: error
+          retention-days: 7
+  wfo-wal-storage-observation:
+    name: WFO storage ABBA (Windows 3.11; observation only)
+    runs-on: windows-latest
+    timeout-minutes: 6
+    # Disposable synthetic storage only; never changes product journal mode.
+    # Full pinned 63-state stream, two fixed ABBA pairs, no retries or error masking.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Provision existing pinned private SQLite
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - name: Test storage observation contracts
+        run: python -m unittest discover -s tests -p 'test_wfo_storage*.py' -v
+      - name: Observe journal-mode and SQL-operation ABBA with FULL on actual Python temp
+        run: python tools/diagnose_wfo_storage.py --wal-abba --runtime-root build/sqlite-runtime --seconds 180 --report dist/validation/wfo-wal-storage.json
+      - name: Preserve complete or incomplete storage observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wfo-wal-storage-windows311-observation
+          path: |
+            dist/validation/wfo-wal-storage.json
             dist/validation/sqlite-runtime.json
           if-no-files-found: error
           retention-days: 7
