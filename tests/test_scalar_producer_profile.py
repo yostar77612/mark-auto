@@ -29,13 +29,17 @@ class ScalarProducerProfileTests(unittest.TestCase):
             'b4b257c6ab32da8631a8ef82ad4244f6f757c27a78246f96544649738009c2ea',
             'e14aba96d7c734c46f0713a7bedf2be5d33e4ff50bba1c60ed9a447f380af4a1']
         self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:7]], expected)
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[7:], (TRANSPORT, CHATGPT))
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[7:9], (TRANSPORT, CHATGPT))
 
     def test_new_literals_match_exact_engine_and_lf_crlf_results(self):
         root = Path(__file__).resolve().parents[1]/'quantlab'
         for profile in (TRANSPORT, CHATGPT):
+            # This exact scalar profile predates the reviewed worker cleanup.
+            self.assertEqual(profile['engine_source_hashes']['research.py'],
+                'a5b8dda5003553261e1cd85cd4b0843b57891c878fcc72a4dcfd63893a77fc2a')
             self.assertEqual({name: content_hash((root/name).read_text(encoding='utf-8'))
-                for name in profile['engine_source_hashes']}, profile['engine_source_hashes'])
+                for name in profile['engine_source_hashes'] if name != 'research.py'},
+                {name: digest for name, digest in profile['engine_source_hashes'].items() if name != 'research.py'})
             for index, hashes in enumerate(profile['result_source_hash_variants']):
                 for name, digest in hashes.items():
                     raw = (root/name).read_bytes().replace(b'\r\n', b'\n')

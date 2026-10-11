@@ -430,10 +430,10 @@ def _folder(root, identity):
     return _safe_path(_safe_path(root) / identity)
 
 
-def _read(folder):
-    journal, projection = _safe_path(folder / 'analysis.sqlite3'), _safe_path(folder / 'analysis.json')
-    if not journal.is_file() or not projection.is_file(): _fail('Missing saved analysis evidence')
-    if journal.stat().st_size > 2 * MAX_RECORD_BYTES or projection.stat().st_size > MAX_RECORD_BYTES:
+def _read_journal(folder):
+    journal = _safe_path(folder / 'analysis.sqlite3')
+    if not journal.is_file(): _fail('Missing saved analysis evidence')
+    if journal.stat().st_size > 2 * MAX_RECORD_BYTES:
         _fail('Analysis journal size limit')
     with closing(sqlite3.connect(journal.as_uri() + '?mode=ro', uri=True, timeout=0)) as db:
         from .saved_candidate_pool import _prepare_bounded_read
@@ -444,13 +444,32 @@ def _read(folder):
             _fail('Invalid analysis journal')
         text = db.execute('SELECT payload FROM state WHERE id=1').fetchone()[0]
     value = json.loads(text, object_pairs_hook=_unique_keys)
+    _validate_record(value)
+    if value['plan']['analysis_id'] != folder.name: _fail('Analysis directory identity mismatch')
+    return value
+
+
+def _read_projection(folder):
+    projection = _safe_path(folder / 'analysis.json')
+    if not projection.is_file(): _fail('Missing saved analysis evidence')
+    if projection.stat().st_size > MAX_RECORD_BYTES: _fail('Analysis export size limit')
     with projection.open('rb') as source:
         raw = source.read(MAX_RECORD_BYTES + 1)
     if len(raw) > MAX_RECORD_BYTES: _fail('Analysis export size limit')
-    exported = json.loads(raw, object_pairs_hook=_unique_keys)
-    if canonical_json(value) != canonical_json(exported): _fail('Analysis journal/export mismatch')
-    _validate_record(value)
+    return json.loads(raw, object_pairs_hook=_unique_keys)
+
+
+def _read(folder):
+    value = _read_journal(folder)
+    if canonical_json(value) != canonical_json(_read_projection(folder)):
+        _fail('Analysis journal/export mismatch')
     return value
+
+
+def _read_analysis_journal(output_root, analysis_id):
+    # Internal desktop provider preparation only. Not a replacement for strict
+    # saved reads; reconciliation rereads this evidence under its own lock.
+    return _read_journal(_folder(output_root, analysis_id))
 
 
 def _validate_record(record):
@@ -489,6 +508,10 @@ def _save(folder, record):
     with closing(sqlite3.connect(journal.as_uri() + '?mode=rwc', uri=True, timeout=0)) as db, db:
         db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
         db.execute('INSERT OR REPLACE INTO state VALUES (1, ?)', (text,))
+    _write_projection(folder, text)
+
+
+def _write_projection(folder, text):
     temporary = _safe_path(folder / 'analysis.json.tmp')
     temporary.write_text(text, encoding='utf-8')
     temporary.replace(_safe_path(folder / 'analysis.json'))
@@ -566,10 +589,36 @@ def reconcile_analysis(*, output_root, analysis_id, provider, descendants_stoppe
     with closing(sqlite3.connect(lock_path.as_uri() + '?mode=rw', uri=True, timeout=0)) as lock:
         try: lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError: _fail('Analysis is still running')
-        record = read_analysis(output_root, analysis_id)
+        record = _read_analysis_journal(output_root, analysis_id)
         descriptor = _provider(record['plan'], provider)
         if descriptor != record['provider_descriptor']: _fail('Original analysis provider required')
-        if record['status'] != 'running': return record
-        record.update(status='blocked', receipt_snapshot=_snapshot(provider, descriptor))
-        _save(folder, record)
+        snapshot = _snapshot(provider, descriptor)
+        # A terminal journal must match the original durable provider ledger.
+        # Never repair restored/forged evidence or reset a consumed reservation.
+        if record['status'] != 'running' and record['receipt_snapshot'] != snapshot:
+            _fail('Saved analysis/control receipt mismatch')
+        if record['status'] == 'running' and record['receipt_snapshot']['receipts']:
+            _fail('Invalid initial analysis receipts')
+        if snapshot['receipts']:
+            request = analysis_request(record['plan'])
+            if (len(snapshot['receipts']) != 1
+                or snapshot['receipts'][0]['request_hash'] != content_hash(request)
+                or snapshot['receipts'][0]['request_bytes'] != len(canonical_json(request).encode('utf-8'))):
+                _fail('Analysis recovery receipt request mismatch')
+        projection = _safe_path(folder / 'analysis.json')
+        if projection.exists():
+            exported = _read_projection(folder)
+            if canonical_json(exported) != canonical_json(record):
+                # Only the exact initial running projection can lag a terminal
+                # commit. A corrupt or altered export is not a crash checkpoint.
+                initial = copy.deepcopy(record)
+                initial.update(status='running', response=None, response_hash=None,
+                               receipt_snapshot={**record['receipt_snapshot'], 'receipts': []})
+                if canonical_json(exported) != canonical_json(initial):
+                    _fail('Analysis journal/export mismatch')
+        if record['status'] == 'running':
+            record.update(status='blocked', receipt_snapshot=snapshot)
+            _save(folder, record)
+        else:
+            _write_projection(folder, canonical_json(record))
         return record

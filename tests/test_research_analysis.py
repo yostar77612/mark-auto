@@ -102,6 +102,28 @@ class AnalysisWire:
                      'output': [{'type': 'message', 'role': 'assistant', 'content': [{'type': 'output_text', 'text': json.dumps(value)}]}]}})
 
 
+def crash_during_analysis_export(root, plan, stage, status):
+    """Actual process death after SQLite commit; synthetic transport only."""
+    import os
+    original_write, original_replace = Path.write_text, Path.replace
+    def write(path, text, *args, **kwargs):
+        if path.name == 'analysis.json.tmp' and stage == 'write' and json.loads(text)['status'] == status:
+            os._exit(47)
+        return original_write(path, text, *args, **kwargs)
+    def replace(path, target):
+        if path.name == 'analysis.json.tmp' and stage == 'replace' and json.loads(path.read_text())['status'] == status:
+            os._exit(47)
+        return original_replace(path, target)
+    with patch.object(p, 'implementation_provenance', return_value=PROVENANCE), \
+         patch.object(p, 'PlanHTTPTransport', AnalysisWire), \
+         patch('http.client.HTTPSConnection', side_effect=AssertionError('No live inference')), \
+         patch.object(Path, 'write_text', write), patch.object(Path, 'replace', replace):
+        provider = p.analysis_provider(plan, OAuthCredentialReference(str(Path(root) / 'auth'), 'a' * 32),
+            network_opt_in=True, included_usage_policy_confirmed=True)
+        a.run_analysis(output_root=Path(root) / 'analyses', plan=plan, provider=provider,
+                       expected_analysis_id=plan['analysis_id'], user_confirmed=True)
+
+
 class AnalysisTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
@@ -324,6 +346,102 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(saved['receipt_snapshot']['receipts'][0]['status'], 'reserved_unknown')
         self.assertEqual(AnalysisWire.requests, [])
         with self.assertRaises(ValidationError): self.run_analysis()
+
+    def crash_export(self, stage, status='completed'):
+        import multiprocessing
+        child = multiprocessing.get_context('spawn').Process(target=crash_during_analysis_export,
+            args=(str(self.root), self.plan, stage, status))
+        child.start()
+        try:
+            child.join(15)
+            self.assertFalse(child.is_alive(), 'Offline crash fixture timed out')
+            self.assertEqual(child.exitcode, 47)
+        finally:
+            if child.is_alive(): child.terminate(); child.join()
+            child.close()
+
+    def reconcile(self, **options):
+        arguments = dict(output_root=self.root / 'analyses', analysis_id=self.plan['analysis_id'],
+                         provider=self.make_provider(consent=False), descendants_stopped=True)
+        arguments.update(options)
+        return a.reconcile_analysis(**arguments)
+
+    def test_process_death_after_completed_commit_recovers_without_repeat_call(self):
+        for stage in ('write', 'replace'):
+            with self.subTest(stage=stage):
+                # Each stage gets independent original controls, never a reset.
+                case = AnalysisTests('test_one_call_saved_reopened_without_network_or_consent')
+                case.setUp()
+                try:
+                    case.crash_export(stage)
+                    journal = a._read_analysis_journal(case.root / 'analyses', case.plan['analysis_id'])
+                    self.assertEqual(journal['status'], 'completed')
+                    with self.assertRaisesRegex(ValidationError, 'journal/export mismatch'):
+                        a.read_analysis(case.root / 'analyses', case.plan['analysis_id'])
+                    before = case.provider.read_receipt_snapshot()
+                    with self.assertRaises(ValidationError): case.reconcile(descendants_stopped=False)
+                    self.assertEqual(case.reconcile(), journal)
+                    self.assertEqual(case.provider.read_receipt_snapshot(), before)
+                    self.assertTrue(case.run_analysis(provider=case.make_provider(consent=False), user_confirmed=False)['cache_hit'])
+                    self.assertEqual(len(case.provider.read_receipts()), 1)
+                    self.assertEqual(AnalysisWire.requests, [])
+                finally: case.doCleanups()
+
+    def test_missing_initial_projection_recovers_blocked_without_consuming_call(self):
+        self.crash_export('write', 'running')
+        with self.assertRaisesRegex(ValidationError, 'Missing saved analysis evidence'):
+            a.read_analysis(self.root / 'analyses', self.plan['analysis_id'])
+        self.assertEqual(self.reconcile()['status'], 'blocked')
+        self.assertEqual(self.provider.read_receipts(), [])
+        with self.assertRaisesRegex(ValidationError, 'no implicit retry'): self.run_analysis()
+        self.assertEqual(AnalysisWire.requests, [])
+
+    def test_recovery_rejects_tampered_export_and_changed_provider_receipts(self):
+        record = self.run_analysis()['record']
+        folder = self.root / 'analyses' / self.plan['analysis_id']
+        projection = folder / 'analysis.json'
+        forged = copy.deepcopy(record); forged['response']['findings'][0]['text'] = 'tampered'
+        projection.write_text(canonical_json(forged))
+        with self.assertRaisesRegex(ValidationError, 'journal/export mismatch'): self.reconcile()
+        self.assertEqual(json.loads(projection.read_text()), forged)
+        projection.unlink()
+        mismatched = self.provider.read_receipt_snapshot()
+        mismatched['receipts'][0]['response_hash'] = 'f' * 64
+        with patch.object(self.provider, 'read_receipt_snapshot', return_value=mismatched):
+            with self.assertRaisesRegex(ValidationError, 'receipt mismatch'): self.reconcile(provider=self.provider)
+        self.assertFalse(projection.exists())
+        self.assertEqual(self.reconcile(), record)
+        self.assertEqual(a.read_analysis(self.root / 'analyses', self.plan['analysis_id']), record)
+        self.assertEqual(len(AnalysisWire.requests), 1)
+
+    def test_recovery_rejects_invalid_journal_and_unrelated_running_receipt(self):
+        self.crash_export('write', 'running')
+        folder = self.root / 'analyses' / self.plan['analysis_id']
+        self.provider._reserve('f' * 64, 100)
+        before = (folder / 'analysis.sqlite3').read_bytes()
+        with self.assertRaisesRegex(ValidationError, 'receipt request mismatch'): self.reconcile()
+        self.assertEqual((folder / 'analysis.sqlite3').read_bytes(), before)
+        self.assertFalse((folder / 'analysis.json').exists())
+        journal = a._read_analysis_journal(self.root / 'analyses', self.plan['analysis_id'])
+        journal['provider_descriptor']['registration'] = 'b' * 32
+        with closing(sqlite3.connect(folder / 'analysis.sqlite3')) as db, db:
+            db.execute('UPDATE state SET payload=? WHERE id=1', (canonical_json(journal),))
+        with self.assertRaises(ValidationError): self.reconcile()
+        self.assertFalse((folder / 'analysis.json').exists())
+        self.assertEqual(AnalysisWire.requests, [])
+
+    def test_recovery_requires_original_provider_and_exclusive_lock(self):
+        self.crash_export('replace')
+        folder = self.root / 'analyses' / self.plan['analysis_id']
+        before = (folder / 'analysis.json').read_bytes()
+        with closing(sqlite3.connect(folder / 'analysis.lock.sqlite3')) as lock:
+            lock.execute('BEGIN EXCLUSIVE')
+            with self.assertRaisesRegex(ValidationError, 'still running'): self.reconcile()
+        altered = a.make_analysis_plan(self.packet, model='fixture-model', registration='b' * 32,
+                                      provider_implementation=PROVENANCE)
+        with self.assertRaises(ValidationError): self.reconcile(provider=self.make_provider(altered, consent=False))
+        self.assertEqual((folder / 'analysis.json').read_bytes(), before)
+        self.assertEqual(len(self.provider.read_receipts()), 1)
 
     def test_concurrent_duplicate_click_has_one_reserved_call(self):
         import threading

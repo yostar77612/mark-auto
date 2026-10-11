@@ -379,7 +379,7 @@ class CompatibleProvider:
 
 
 class ResourceTimeout(ValidationError):
-    """Worker was terminated at the campaign's hard wall-clock deadline."""
+    """Runtime exhausted or worker stop unverified; no further work is allowed."""
 
 
 def _isolated_worker(connection, function, args, memory_mb, max_bytes):
@@ -441,14 +441,23 @@ def _run_bounded(function, args, *, deadline, config):
         sender.close()
         receiver.close()
         if process.pid is not None:
-            process.join(timeout=max(0, min(0.05, deadline - time.monotonic())))
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=0.2)
-            if process.is_alive():
-                process.kill()
-                process.join(timeout=0.2)
-            process.close()
+            try:
+                process.join(timeout=max(0, min(0.05, deadline - time.monotonic())))
+                if process.is_alive():
+                    process.terminate()
+                    process.join(timeout=max(0, min(0.2, deadline - time.monotonic())))
+                if process.is_alive():
+                    process.kill()
+                    process.join(timeout=max(0, deadline - time.monotonic()))
+                if process.is_alive():
+                    # Retain the owned live handle for later reaping, not as
+                    # proof of stop. The host still owns descendant supervision.
+                    raise ResourceTimeout('Worker termination unverified at campaign deadline')
+                process.close()
+            except ResourceTimeout:
+                raise
+            except Exception as exc:
+                raise ResourceTimeout('Worker cleanup failed; stop unverified') from exc
 
 
 def _generate_candidate(generator, context, iteration):
@@ -906,7 +915,7 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                     raise ValidationError('Repeated candidate structure')
                 for split in ('train', 'validation'):
                     if prior_elapsed + time.monotonic() - started >= config['max_runtime_seconds']:
-                        raise ValidationError('Campaign runtime budget exhausted')
+                        raise ResourceTimeout('Campaign runtime budget exhausted')
                     evaluated = _run_bounded(_evaluate_split, (splits[split], spec, config['backtest_config']), deadline=deadline, config=config)
                     attempt['metrics'][split] = evaluated['value']
                 attempt['status'] = 'evaluated'
@@ -919,6 +928,10 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                 state['elapsed_seconds'] = prior_elapsed + time.monotonic() - started
                 save(state)
             if state['status'] in ('blocked_provider_outcome', 'blocked_provider_audit'):
+                return state
+            if attempt['status'] == 'timed_out':
+                state['status'] = 'budget_exhausted'
+                save(state)
                 return state
         # Freeze by validation only BEFORE OOS/holdout evaluation.
         selected = []
@@ -957,12 +970,17 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
                     save(state)
                     try:
                         if prior_elapsed + time.monotonic() - started >= config['max_runtime_seconds']:
-                            raise ValidationError('Campaign runtime budget exhausted')
+                            raise ResourceTimeout('Campaign runtime budget exhausted')
                         evaluated = _run_bounded(_evaluate_split, (splits[split], validate_dsl(candidate['spec']), config['backtest_config']), deadline=deadline, config=config)
                         record.update(evaluated['value'])
                         record['status'] = 'evaluated'
                     except Exception as exc:
                         record.update(status='failed', error=type(exc).__name__)
+                        if isinstance(exc, ResourceTimeout):
+                            state['status'] = 'budget_exhausted'
+                            state['elapsed_seconds'] = prior_elapsed + time.monotonic() - started
+                            save(state)
+                            return state
                     save(state)
         state['status'] = 'completed' if all(r['status'] == 'evaluated' for rows in state['evaluations'].values() for r in rows) else 'completed_with_errors'
         state['elapsed_seconds'] = prior_elapsed + time.monotonic() - started

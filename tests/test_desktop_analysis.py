@@ -154,6 +154,20 @@ class AnalysisWorkerTests(unittest.TestCase):
         self.call('ui_analysis_reconcile',request,descendants_stopped=True)
         self.assertEqual(len(AnalysisWire.requests),1)
 
+    def test_reconcile_routes_missing_projection_through_validated_journal(self):
+        preview=self.preview();result=self.call('ui_analysis_run',self.run_payload(preview))
+        projection=self.paths.state/'analyses'/preview['analysis_id']/'analysis.json'
+        projection.unlink()
+        with self.assertRaises(ValueError):self.call('ui_analysis_read',{'analysis_id':preview['analysis_id']})
+        request={'analysis_id':preview['analysis_id'],'registration':REF,'stopped_job_id':'owned'}
+        with self.assertRaises(ValueError):self.call('ui_analysis_reconcile',request)
+        with self.assertRaises(ValueError):self.call('ui_analysis_reconcile',{**request,'registration':'f'*32},descendants_stopped=True)
+        self.assertFalse(projection.exists())
+        recovered=self.call('ui_analysis_reconcile',request,descendants_stopped=True)
+        self.assertEqual(recovered['record'],result['record'])
+        self.assertEqual(self.call('ui_analysis_read',{'analysis_id':preview['analysis_id']})['record'],result['record'])
+        self.assertEqual(len(AnalysisWire.requests),1)
+
     def test_plain_text_findings_use_local_values_and_do_not_apply_suggestions(self):
         from desktop_ui import analysis_record_text
         preview=self.preview();result=self.call('ui_analysis_run',self.run_payload(preview))

@@ -11,7 +11,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from quantlab.core import Bar, Dataset, CostSpec, BacktestConfig, ValidationError, content_hash, to_dict
 from quantlab.research import (FixtureGenerator, CompatibleProvider, validate_dsl,
@@ -696,6 +696,121 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual([c['strategy_hash'] for c in first['selected']], [c['strategy_hash'] for c in second['selected']])
         # Split hashes must bind only the split, not an OOS-dependent parent hash.
         self.assertEqual([a['generator_context'] for a in first['attempts']], [a['generator_context'] for a in second['attempts']])
+
+
+def cleanup_lingering_worker(connection, function, args, memory_mb, max_bytes):
+    """Synthetic IPC success followed by a child requiring owned SIGKILL."""
+    import os
+    import signal
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    connection.send_bytes(json.dumps({'status': 'ok', 'value': os.getpid()}).encode())
+    time.sleep(30)
+
+
+class BoundedWorkerCleanupTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'SIGTERM/SIGKILL lifecycle requires POSIX')
+    def test_real_worker_success_waits_for_owned_kill_and_reap(self):
+        from quantlab.research import _run_bounded
+        before = {p.pid for p in multiprocessing.active_children()}
+        with patch('quantlab.research._isolated_worker', cleanup_lingering_worker):
+            result = _run_bounded(None, (), deadline=time.monotonic() + 1,
+                                  config={'process_start_method': 'fork'})
+        self.assertNotIn(result['value'], {p.pid for p in multiprocessing.active_children()})
+        self.assertEqual({p.pid for p in multiprocessing.active_children()}, before)
+
+    def exercise_cleanup(self, *, stop_after=None, error=None, terminate_error=None):
+        from quantlab.research import _run_bounded
+        clock = [0.0]
+        process = Mock(pid=123)
+        stopped = [False]
+        joins = []
+        def join(*, timeout):
+            self.assertGreaterEqual(timeout, 0)
+            self.assertLessEqual(timeout, 1.0 - clock[0])
+            joins.append(timeout)
+            clock[0] = min(clock[0] + timeout, stop_after) if stop_after is not None else clock[0] + timeout
+            stopped[0] = stop_after is not None and clock[0] >= stop_after
+        process.join.side_effect = join
+        process.is_alive.side_effect = lambda: not stopped[0]
+        process.terminate.side_effect = terminate_error
+        def close():
+            self.assertTrue(stopped[0], 'must never close a live process')
+        process.close.side_effect = close
+        receiver, sender = Mock(), Mock()
+        receiver.poll.return_value = True
+        message = {'status': 'error', 'error': error} if error else {'status': 'ok', 'value': 'completed'}
+        receiver.recv_bytes.return_value = json.dumps(message).encode()
+        context = Mock()
+        context.Pipe.return_value = receiver, sender
+        context.Process.return_value = process
+        self.process, self.clock, self.joins = process, clock, joins
+        with patch('quantlab.research.multiprocessing.get_context', return_value=context), \
+                patch('quantlab.research.time.monotonic', side_effect=lambda: clock[0]):
+            return _run_bounded(None, (), deadline=1.0, config={})
+
+    def test_late_reap_returns_result_only_after_verified_stop(self):
+        result = self.exercise_cleanup(stop_after=0.55)
+        self.assertEqual(result['value'], 'completed')
+        self.assertEqual(self.joins, [0.05, 0.2, 0.75])
+        self.assertEqual(self.clock[0], 0.55)
+        self.process.kill.assert_called_once_with()
+        self.process.close.assert_called_once_with()
+
+    def test_still_alive_at_original_deadline_never_closes_or_returns_success(self):
+        from quantlab.research import ResourceTimeout
+        with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
+            self.exercise_cleanup()
+        self.assertEqual(self.clock[0], 1.0)
+        self.process.kill.assert_called_once_with()
+        self.process.close.assert_not_called()
+
+    def test_worker_error_is_preserved_after_verified_late_reap(self):
+        with self.assertRaisesRegex(RuntimeError, 'Worker failed: ValueError'):
+            self.exercise_cleanup(stop_after=0.55, error='ValueError')
+        self.process.close.assert_called_once_with()
+
+    def test_unverified_reap_overrides_worker_error_to_halt_following_work(self):
+        from quantlab.research import ResourceTimeout
+        with self.assertRaises(ResourceTimeout):
+            self.exercise_cleanup(error='ValueError')
+        self.process.close.assert_not_called()
+
+    def test_cleanup_api_failure_halts_without_closing_live_handle(self):
+        from quantlab.research import ResourceTimeout
+        with self.assertRaisesRegex(ResourceTimeout, 'cleanup failed'):
+            self.exercise_cleanup(terminate_error=OSError('inert signal failure'))
+        self.process.close.assert_not_called()
+
+    def test_campaign_stops_on_unverified_generation_cleanup_before_deadline(self):
+        from quantlab.research import ResourceTimeout
+        data, config = inputs()
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch('quantlab.research._run_bounded', side_effect=ResourceTimeout('stop unverified')) as worker:
+            state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
+        self.assertEqual(worker.call_count, 1)
+        self.assertEqual(state['status'], 'budget_exhausted')
+        self.assertEqual(state['attempts'][0]['status'], 'timed_out')
+
+    def test_campaign_stops_after_unverified_oos_or_holdout_cleanup(self):
+        from quantlab.research import ResourceTimeout
+        for failure_split in ('oos', 'holdout'):
+            with self.subTest(failure_split=failure_split):
+                data, config = inputs()
+                config.update(max_trials=1, max_improvements=0)
+                config['ranking']['minimum'] = '-100000'
+                calls = []
+                def worker(function, args, **kwargs):
+                    role = args[0].manifest['research_split']['name'] if function.__name__ == '_evaluate_split' else 'generate'
+                    calls.append(role)
+                    if role == failure_split:
+                        raise ResourceTimeout('stop unverified')
+                    return {'status': 'ok', 'value': function(*args), 'memory_limit_enforced': False}
+                with tempfile.TemporaryDirectory() as tmp, patch('quantlab.research._run_bounded', side_effect=worker):
+                    state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
+                self.assertEqual(state['status'], 'budget_exhausted')
+                self.assertEqual(calls[-1], failure_split)
+                self.assertEqual(calls.count(failure_split), 1)
+                self.assertEqual(state['evaluations'][failure_split][-1]['error'], 'ResourceTimeout')
 
 
 if __name__ == '__main__': unittest.main()

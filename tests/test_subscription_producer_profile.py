@@ -35,7 +35,7 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
             (pools.CURRENT_CHATGPT_PROFILE_V2, 'ce3b2af865ea0338575c065b988a64ebcd4974e58617a93779e6edb684ec37de'),
             (pools.TRANSPORT_VERIFIER_PRODUCER, '346eceee2a55514c22a32ae028402c8a74c9b52ab44befa0f90608ae68e549be'),
             (pools.TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2, 'e86f5b691ea3b0c015f0354ca2d6ec0b49c6300c25b62255b4f8a9da13f2b55e'))
-        self.assertEqual(pools.SUPPORTED_PRODUCERS, tuple(item[0] for item in prior)
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[:9], tuple(item[0] for item in prior)
                          + (PROFILE, pools.SIWC_ANALYSIS_CAPABLE_PROFILE_V1,
                             pools.SCALAR_TRANSPORT_PROFILE_V1, pools.SCALAR_SIWC_ANALYSIS_PROFILE_V1))
         for profile, digest in prior:

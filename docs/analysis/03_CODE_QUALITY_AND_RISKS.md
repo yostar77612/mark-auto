@@ -1,11 +1,22 @@
 # mark-auto 程式品質與交易風險審查
 
 <!-- CURRENT_STATUS_START -->
+## 雲端缺陷修復與隔離限制（2026-10-11）
+
+1. 分析匯出 crash boundary：`quantlab/research_analysis.py` 的 `_save` 先 commit SQLite 再 replace JSON；真實子程序退出可留下 completed journal／running export。修復限定 `reconcile_analysis`，校驗原始控制帳本及 request／response，普通讀取不放寬。`desktop_ui.py` 明確復原分支不再提前被嚴格 projection 讀取卡住。新測試含 process death、缺少 export、竄改、原 provider、exclusive lock、禁止重送。
+2. K 線 defensive validation：`quantlab/chart_data.py:aggregate_bars` 拒絕同契約／交易日／時段的矛盾 resolved bounds，保留獨立時段與縮短結算時段。`tests/test_chart_data.py` 有反例與正常界線測試；未證明正常官方匯入已產生壞資料。
+3. Sandbox 維持 BLOCKED：官方 [.wsb 配置](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-configure-using-wsb-file) 支援 LogonCommand 與受限 mapping；[shutdown](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/shutdown) 未承諾 host Sandbox teardown；[CloseMainWindow](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.closemainwindow) 只保證發送關閉請求。沒有舊 client 可驗證的20分鐘專屬停止方案，不啟動本機、不以全域 kill 替代。
+4. 整個 GUI／host 重啟仍缺可重建的 analysis 子程序停止證據與 journal-only 保存項目入口；本修補只覆蓋原 host 存活的 worker 中斷，不把直接 adapter 測試冒充 full-host restart。既有 single-instance／WFO owner 機制不足以證明舊子樹已終止；保持 BLOCKED，不放寬原停止證明或以新 reader 冒充原 owner。
+5. 新增 worker cleanup 防護：`quantlab/research.py:_run_bounded` 原本在固定 cleanup joins 後無條件 close 尚存活 process；可用 delayed-reap double 重現 ValueError。新實作只花費原 deadline 剩餘時間，未確認停止即終止整個研究工作，不再繼續評估或歸還額度。此條件缺陷與第一次WFO全套失敗的因果尚未證實，不能刪除原失敗紀錄。
+6. 以上新來源仍須完整測試與 exact-head CI；舊來源 PASS 不自動繼承。進度及可恢復入口見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
+
+### 前一輪交付證據（保留）
+
 ## 目前交付對帳（2026-10-10 23:42 UTC）
 
 0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
 
-詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此變更只有文件，不改產品、測試、工作流或已發布安裝檔來源。
+詳細證據、下載、M4 判定與剩餘 D5／D7／D8／M2／M6／M7 分界統一見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與 ACCEPTANCE.json 的 current_snapshot。乾淨 Win10／Win11、真實 ChatGPT 訂閱授權／推論及完整市場分鐘資料權限仍未閉合；不以 Server／mock 冒充。此段記錄前一輪文件對帳；本輪修補與 Gate 狀態以上方新檢查點為準。
 <!-- CURRENT_STATUS_END -->
 
 ## 以下為保留的歷史契約、決策與檢查點
@@ -354,7 +365,7 @@ main仍protected=false、rulesets空，管理級API403。Code/PR/Actions正常�
 
 舊trader行情工具有全域交易初始化，不能直接解除封鎖或匯入桌面；新增僅讀市場型別與TMF交易資料分開。TX/MXF/index行情展示不等於其回測或下單引擎通過。官方小台每日原碼MTX與UI MXF需明示映射；價格前收與前结算不可混用（實際10/8 TX前收差-630、官方前結算差-619）。日資料日期不代表精確成交時間，缺OHLC不得由成交量猜補，公開歷史不得冒充即時。
 
-OpenAI現在有[官方OSS/本機Sign in with ChatGPT計畫用量](https://developers.openai.com/siwc/token-sharing-open-source)途徑，並非一般API免費額度。需要本應用自己的使用者授權、PKCE/OIDC驗證與安全儲存，不能拷貝其他工具token。HTTP Responses/SSE與既有chat-completions協定不同；不支持max_output_tokens時，客戶端截流/逾時不能聲稱限制伺服器token消耗，須独立透明用量政策。實際登入/授權與帳戶可用性尚未驗證；付費API與額外credit不自動啟用。
+OpenAI現在有[官方OSS/本機Sign in with ChatGPT計畫用量](https://developers.openai.com/siwc/token-sharing-open-source)途徑，並非一般API免費額度。需要本應用自己的使用者授權、PKCE/OIDC驗證與安全儲存，不能拷貝其他工具token。HTTP Responses/SSE與既有chat-completions協定不同；不支持max_output_tokens時，客戶端截流/逾時不能聲稱限制伺服器token消耗，須獨立透明用量政策。實際登入/授權與帳戶可用性尚未驗證；付費API與額外credit不自動啟用。
 
 ### 0.1.2 Windows實測與正式保留證據（2026-10-10 00:38 UTC）
 
@@ -478,7 +489,7 @@ Windows Server 2025 / Python 3.12.10 / SQLite 3.49.1 的相同 960-bar 診斷：
 
 ### Smoke 驗收寫入使用者狀態：已重現、修復中
 
-独立反例在隔離的既有模擬帳戶副本執行原 `desktop.py --smoke-test`：exit 0/status passed，但 `state-v1/desktop_safety.json` 與 `state-v1/paper.sqlite3` bytes 改變，kill switch 變 true。原因為合成 worker 雖隔離，主視窗仍先用正式 workspace 啟動並執行 `freeze_paper`。只有 settings 檔不變的既有測試不足以涵蓋此缺陷。這是當前 release blocker；正常啟動的安全停止仍必要，不可刪除。修復須在主視窗/lock/guard 建立前隔離整個 smoke workspace，原設定只讀快照，並以成功與注入失敗測試證明正式目錄、broker、safety、settings、recovery 記錄皆不變。保留原安裝路徑檢查語意，明示 report 的被檢查位置與真正暫存執行位置；最終 exact-head 安裝／升級／復原 Gate 需重跑。
+獨立反例在隔離的既有模擬帳戶副本執行原 `desktop.py --smoke-test`：exit 0/status passed，但 `state-v1/desktop_safety.json` 與 `state-v1/paper.sqlite3` bytes 改變，kill switch 變 true。原因為合成 worker 雖隔離，主視窗仍先用正式 workspace 啟動並執行 `freeze_paper`。只有 settings 檔不變的既有測試不足以涵蓋此缺陷。這是當前 release blocker；正常啟動的安全停止仍必要，不可刪除。修復須在主視窗/lock/guard 建立前隔離整個 smoke workspace，原設定只讀快照，並以成功與注入失敗測試證明正式目錄、broker、safety、settings、recovery 記錄皆不變。保留原安裝路徑檢查語意，明示 report 的被檢查位置與真正暫存執行位置；最終 exact-head 安裝／升級／復原 Gate 需重跑。
 
 
 ### 03:53 UTC：Smoke 只讀隔離與 CI 固定依賴目標修復

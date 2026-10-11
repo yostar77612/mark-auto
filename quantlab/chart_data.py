@@ -158,6 +158,14 @@ def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
             _fail('one contract has conflicting instrument definitions')
         if len({b.interval for b in source}) != 1:
             _fail('mixed source resolutions are ambiguous')
+        session_bounds = {}
+        if source[0].interval.endswith('m'):
+            for bar in source:
+                bounds = _bounds(bar, calendar)
+                identity = (bar.trade_date, bar.session)
+                if identity in session_bounds and session_bounds[identity] != bounds:
+                    _fail('conflicting bounds for one contract trade-date session')
+                session_bounds[identity] = bounds
         for previous, current in zip(source, source[1:]):
             if previous.timestamp is not None and current.timestamp is not None and current.timestamp < previous.end:
                 _fail('overlapping or chronologically inconsistent source bars')
@@ -174,7 +182,7 @@ def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
             if target < minutes or target % minutes:
                 _fail('target minutes must be a multiple of source minutes')
             for bar in source:
-                opening, closing = _bounds(bar, calendar)
+                opening, closing = session_bounds[(bar.trade_date, bar.session)]
                 if bar.timestamp is None:
                     _fail('minute source requires explicit timestamps')
                 delta = (bar.timestamp - opening).total_seconds()
@@ -202,8 +210,6 @@ def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
             if source[0].interval == '1w' and timeframe == '1d':
                 _fail('weekly source cannot manufacture daily bars')
             for bar in source:
-                if bar.timestamp is not None and bar.interval.endswith('m'):
-                    _bounds(bar, calendar)
                 day = date.fromisoformat(bar.trade_date)
                 key = bar.trade_date if timeframe == '1d' else day.isocalendar()[:2]
                 groups.setdefault(key, []).append(bar)

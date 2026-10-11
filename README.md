@@ -6,7 +6,7 @@
 
 原生 PySide6／Qt 桌面入口為 `desktop.py`，沿用同一個 `quantlab` 核心，不需要另啟 Web 服務。桌面安裝程式建置流程在 [packaging/README.md](packaging/README.md)。可下載安裝檔以 [GitHub Releases](https://github.com/yostar77612/mark-auto/releases) 實際發布的資產為準；沒有資產時不可把原始碼當安裝版。預覽版不代表 Windows 10／11 最終驗收已通過。
 
-**目前已核驗下載：** [0.2.1 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1) 的實際 installer／kit／manifest 已下載校驗。後續候選或原始碼版本不是已發布安裝檔，只有發布與資產核對完成後才更新此入口。乾淨 Win10／Win11 仍為 EXTERNAL_BLOCKED；main 分支保護未啟用，管理 API 403 限制未解除。未簽章不繞過 Windows 安全警告，真實 ChatGPT 授權／推論仍未驗證，實盤固定停用。
+**已核驗的修補前基線下載：** [0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38096213180-1) 的實際 installer／kit／manifest 已下載校驗。後續候選或原始碼版本不是已發布安裝檔，只有發布與資產核對完成後才更新此入口。乾淨 Win10／Win11 仍為 EXTERNAL_BLOCKED；main 分支保護未啟用，管理 API 403 限制未解除。未簽章不繞過 Windows 安全警告，真實 ChatGPT 授權／推論仍未驗證，實盤固定停用。
 
 ### 一般使用者操作
 
@@ -15,7 +15,7 @@
 3. 雙擊 MarkAuto，先看資料、模型及風控狀態。初次使用可建立明確標示的合成範例，熟悉操作，不能把其績效當真實投資結果。
 4. 在「資料匯入與更新」取得免費官方近期檔案，選擇明確契約／時段與已查核行情。下載成功不等於歷史完整或可正式排名。
 5. 在策略、回測及比較頁設定版本、日期與成本／風控，查看資金曲線及成交，匯出報告。研究候選沒過門檻時可全部淘汰。
-6. 本候選分支的 AI 主路線改為官方 ChatGPT 訂閱登入，不需 API Key 或本地模型。首次由本人在官方頁面授權；研究前確認僅使用方案內額度及本次請求上限。離線示範明確標為 Fixture，不冒充真實 AI。此修正尚不代表已發布的 0.2.1 安裝檔完成新版驗收。
+6. 0.2.2 預覽版的 AI 主路線為官方 ChatGPT 訂閱登入，不需 API Key 或本地模型。首次由本人在官方頁面授權；研究前確認僅使用方案內額度及本次請求上限。離線示範明確標為 Fixture，不冒充真實 AI。登入介面與離線測試不代表真實帳戶授權及訂閱推論已通過驗收。
 7. Paper 重啟、睡眠或異常後需明確對帳。未知狀態不會自動补單；緊急停止會凍結新工作，不假裝已成交／平倉。實盤在本版固定停用。
 8. 關閉時處理尚在執行的工作。下一次開啟保留設定與資料；更新前先備份，關閉舊程式後安裝新版本。
 
@@ -23,9 +23,9 @@
 
 安裝器尚無正式程式碼簽章；若 Windows 顯示安全警告，不應停用或繞過安全機制。乾淨 Windows10 22H2 x64／Windows11 x64實測、標準使用者權限與長時間運作仍需獨立證據；Windows Server CI 不等同 client OS 測試。所有最新狀態以 [固定驗收](docs/agent/ACCEPTANCE.json) 為準。
 
-### 後續候選模組：Walk-forward、績效與圖表參考（尚未發布）
+### 0.2.2 預覽版：Walk-forward、績效與圖表參考
 
-以下是後續候選來源的操作說明，**不表示目前 0.2.1 安裝檔已有這些功能**。實際交付仍需最後整合、原生 Windows／安裝驗證及發布品核對；沒有已驗證的 0.2.3 下載入口。一般操作不需手寫 JSON，完整來源及設定可展開「進階」查看。
+以下功能已整合至上述核驗的 0.2.2 預覽版，具備離線功能、Windows Server CI 與發布品核對證據；乾淨 Windows 10／11 與真實 ChatGPT 訂閱推論仍待驗收。一般操作不需手寫 JSON，完整來源及設定可展開「進階」查看。
 
 #### 固定候選池 Walk-forward
 
@@ -347,7 +347,7 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - Windows Release附無Python/Git需求的clean-client验收kit；詳見 `packaging/clean_windows_README.md`。無已授權乾淨Win10/11環境時依然EXTERNAL BLOCKED。
 - 最新可下載版本以GitHub Release的實際資產與SHA256為準；此原始碼分支的變更不代表新安裝檔已發布。實盤繼續停用。
 
-## 0.2.0 市場優先桌面（候選，驗收狀態見docs/agent/ACCEPTANCE.json）
+## 0.2.0 市場優先桌面（歷史紀錄，AI 選項已由下節取代）
 
 沿用原生Windows桌面及既有TMF研究核心，增加加權指數/TX/MXF(MTX)/TMF真實日行情、本機歷史與明確時效、自選/蠟燭/成交量/多週期/技術指標、可讀表單與交易紀錄。一般模式不必手寫JSON；來源與hash保留在進階診斷。
 
@@ -356,7 +356,7 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - ChatGPT手動交換可匯出研究要求及匯入受限策略；來源記為manual_unverified，不冒充API實測。相容本機模型與付費API設定維持明確同意/預算/安全儲存，付費預設關閉。官方訂閱登入另行驗證，不複製Cookie或其他工具憑證。
 - 新版需通過Windows打包與全部既有安全回歸才發布；clean Win10/11仍須獨立環境。
 
-### ChatGPT 訂閱 AI（2026-10-10 需求修正，候選驗收中）
+### ChatGPT 訂閱 AI（0.2.2 已發布介面，真實授權驗收中）
 
 本節依 2026-10-10 11:16 UTC 的正式需求修正，取代前述舊版本的相容端點、本地模型及付費 API 選項。歷史測試與版本紀錄保留，不算作 ChatGPT 真實推論證據。
 
@@ -364,6 +364,6 @@ AutoTradingPlatform has a 7-day release cycle, any updates will be committed by 
 - 身分登入與訂閱用量授權分開；必須取得所需權限及官方實際可用模型，才可開始明確核准的研究。Windows 使用系統保護儲存憑證；不把 Token 寫入一般設定、日誌、備份或安裝檔。
 - 官方帳戶可另外允許 App 使用 Credits。本程式不開啟該選項、不購買 Credits，也沒有已公開的介面可讀取或強制設定此帳戶政策。每次研究前須確認已停用 App Credits，或 MarkAuto 的 App 用量上限低於 100%；未確認即停止。這是使用者確認，不是伺服器政策驗證或金額上限保證。詳見 [官方用量設定說明](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites)。
 - 研究只傳送明示的策略及訓練／驗證資料，不讓 AI 控制下單或風控。策略需通過獨立回測；額度不足、授權失效、未知請求結果均停止，不無限重試或重設已用額度。
-- 舊模型快取、設定與歷史研究不會在升級時任意刪除。候選版不再載入或啟動本地模型；舊候選操作說明可查 Git 歷史。
+- 舊模型快取、設定與歷史研究不會在升級時任意刪除。0.2.2 不再載入或啟動本地模型；舊候選操作說明可查 Git 歷史。
 
 官方流程參考 [OpenAI SIWC quickstart](https://developers.openai.com/siwc/quickstart)。實際帳戶授權／完整訂閱回應、乾淨 Windows 10／11 安裝操作仍須各自驗證；離線 OAuth 或 parser 測試不能取代。最新驗收及尚缺的 AI 分析功能以 [Roadmap](docs/analysis/05_IMPLEMENTATION_ROADMAP.md) 與固定驗收表為準。

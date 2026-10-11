@@ -395,10 +395,79 @@ SCALAR_SIWC_ANALYSIS_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_
                                   'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}],
  'provider_modes': ['chatgpt_plan']})
 
+# Exact reviewed research-worker cleanup revision. Preserve every prior literal
+# and admit only these complete engine, result, and descriptor tuples.
+CLEANUP_TRANSPORT_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_cleanup_transport_v1',
+ 'engine_source_hashes': {'research.py': '81226b2b7d30aac9d5813c1216bda018a55d99da7b027e15c918b407510cb039',
+                          'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
+                          'core.py': 'd26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a',
+                          'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
+                          'backtest.py': '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91'},
+ 'prompt_template_hash': '31c09f395b9ca6c5ee53751fcf30131907ad513bf1708e048359421516102845',
+ 'result_source_hashes': {'core.py': '303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93',
+                          'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                          'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                          'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+ 'result_source_hash_variants': [{'core.py': '303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93',
+                                  'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                                  'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                                  'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+                                 {'core.py': '61a89a7ac7978fe16fadd0f88c528374d3dc05b562ec01059d424c6ff0ca78c4',
+                                  'data.py': '7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb',
+                                  'strategies.py': 'c35ed80ffe11787fbc93b964cbe6403d36921fbf9ca6d6f8a282301691da6132',
+                                  'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}],
+ 'provider_modes': ['fixture', 'openai_compatible']})
+
+CLEANUP_SIWC_ANALYSIS_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_cleanup_siwc_analysis_v1',
+ 'engine_source_hashes': {'research.py': '81226b2b7d30aac9d5813c1216bda018a55d99da7b027e15c918b407510cb039',
+                          'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
+                          'core.py': 'd26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a',
+                          'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
+                          'backtest.py': '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91'},
+ 'prompt_template_hash': '31c09f395b9ca6c5ee53751fcf30131907ad513bf1708e048359421516102845',
+ 'result_source_hashes': {'core.py': '303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93',
+                          'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                          'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                          'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+ 'chatgpt_plan_implementations': [{'source_sha256': {'desktop_chatgpt_auth.py': '5825067bdf14afc1ef415e239d60872823b974dd8c141d88e06d9fc211af4c8c',
+                                                     'desktop_chatgpt_provider.py': 'd20203c2398e939d0ecd24a697f890ed29276075ded3444e4050e5e55e354baf'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': '90d3663f337b563186082c8011cbf5c9b1e34fee963ec69009a16ee7cede60d4',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp311-amd64',
+                                                          'windows-cp312-amd64',
+                                                          'windows-cp313-amd64',
+                                                          'linux-cp311-x86_64',
+                                                          'linux-cp312-x86_64']},
+                                  {'source_sha256': {'desktop_chatgpt_auth.py': '1ae16a93b52736144947c985d94868989ddda06be4376d569fd17bdae870dcf9',
+                                                     'desktop_chatgpt_provider.py': 'fd8ddc12075630532127be72be24d5df1c298b6d0805c8554e76943fd41d43f9'},
+                                   'dependency_versions': {'PyJWT': '2.15.1',
+                                                           'cryptography': '50.0.2',
+                                                           'cffi': '2.1.1',
+                                                           'pycparser': '3.11'},
+                                   'dependency_manifest_sha256': 'c19a5cfe550b7b254cc6cf5a0b0a5813422d65492be82b7f9fb9d7ffdf7f54f3',
+                                   'dependency_artifact_evidence': 'hash_locked_build_manifest',
+                                   'dependency_targets': ['windows-cp311-amd64',
+                                                          'windows-cp312-amd64',
+                                                          'windows-cp313-amd64']}],
+ 'result_source_hash_variants': [{'core.py': '303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93',
+                                  'data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
+                                  'strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
+                                  'backtest.py': '009f6a9c2f1a2774ab496d20fd97899815f84380233af576e84badad0f08ee02'},
+                                 {'core.py': '61a89a7ac7978fe16fadd0f88c528374d3dc05b562ec01059d424c6ff0ca78c4',
+                                  'data.py': '7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb',
+                                  'strategies.py': 'c35ed80ffe11787fbc93b964cbe6403d36921fbf9ca6d6f8a282301691da6132',
+                                  'backtest.py': '9e9581b178afbce5d8df9d2377f535676e4c9854c6502045c7e50883643ed575'}],
+ 'provider_modes': ['chatgpt_plan']})
+
 SUPPORTED_PRODUCERS = (AUDITED_PRODUCER, CURRENT_PRODUCER, CURRENT_CHATGPT_PROFILE_V2,
                        TRANSPORT_VERIFIER_PRODUCER, TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2,
                        SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1, SIWC_ANALYSIS_CAPABLE_PROFILE_V1,
-                       SCALAR_TRANSPORT_PROFILE_V1, SCALAR_SIWC_ANALYSIS_PROFILE_V1)
+                       SCALAR_TRANSPORT_PROFILE_V1, SCALAR_SIWC_ANALYSIS_PROFILE_V1,
+                       CLEANUP_TRANSPORT_PROFILE_V1, CLEANUP_SIWC_ANALYSIS_PROFILE_V1)
 
 
 @dataclass(frozen=True)
@@ -1186,7 +1255,8 @@ def _select_producer(binding):
     else:
         matches = [known for known in matches if known['protocol'] in
                    (AUDITED_PRODUCER['protocol'], CURRENT_PRODUCER['protocol'],
-                    TRANSPORT_VERIFIER_PRODUCER['protocol'], SCALAR_TRANSPORT_PROFILE_V1['protocol'])]
+                    TRANSPORT_VERIFIER_PRODUCER['protocol'], SCALAR_TRANSPORT_PROFILE_V1['protocol'],
+                    CLEANUP_TRANSPORT_PROFILE_V1['protocol'])]
         if len(matches) != 1:
             _fail('Unsupported or ambiguous audited source producer protocol')
     return matches[0]

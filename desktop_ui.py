@@ -266,7 +266,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         raise ValidationError('不支援的模型研究來源；不提供本機模型或付費 API 備援')
     root = _root(paths)
     if operation.startswith('ui_analysis_'):
-        from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis
+        from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
         from desktop_chatgpt_auth import OAuthCredentialReference
         from desktop_chatgpt_provider import read_account_status
         output=root/'analyses'
@@ -290,11 +290,13 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         expected={'analysis_id'} if operation=='ui_analysis_read' else {'analysis_id','registration','stopped_job_id'}
         if set(payload)!=expected:raise ValidationError('保存分析請求欄位不符')
         if operation=='ui_analysis_reconcile' and descendants_stopped is not True:raise ValidationError('分析程序樹尚未停止，禁止核對')
-        record=read_analysis(output,payload['analysis_id'])
         if operation=='ui_analysis_reconcile':
+            record=_read_analysis_journal(output,payload['analysis_id'])
             if record['plan']['binding']['registration']!=payload['registration']:raise ValidationError('原始分析帳戶不符')
             record=reconcile_analysis(output_root=output,analysis_id=payload['analysis_id'],
                 provider=analysis_provider_for(paths,record['plan']),descendants_stopped=True)
+        else:
+            record=read_analysis(output,payload['analysis_id'])
         return {'analysis_id':payload['analysis_id'],'record':record,'cache_hit':True}
     if operation.startswith('ui_walk_forward_'):
         from desktop_walk_forward import execute_walk_forward
