@@ -99,6 +99,33 @@ class WalkForwardTests(unittest.TestCase):
             result = self.run_plan(plan=plan)
         self.assertEqual(result['status'], 'completed')
         self.assertEqual([f['selection']['spec']['family'] for f in result['folds']], ['trend', 'momentum', 'mean_reversion'])
+        # Pool hashes are local to each validation call, never persisted or
+        # reused across journal reads. Count by identity so selection copies do
+        # not masquerade as repeated pool normalization.
+        from quantlab import walk_forward as wf
+        pool = result['binding']['plan']['candidate_pool']
+        counts = {id(spec): 0 for spec in pool}
+        def counted_hash(value):
+            if id(value) in counts:
+                counts[id(value)] += 1
+            return content_hash(value)
+        before = copy.deepcopy(result)
+        with patch.object(wf, 'content_hash', side_effect=counted_hash):
+            for expected in (1, 2):
+                wf._validate_state(result)
+                self.assertEqual(list(counts.values()), [expected] * len(pool))
+        self.assertEqual(result, before)
+        for status in ('running', 'blocked_interrupted'):
+            empty = copy.deepcopy(result)
+            empty.update(status=status, evaluations=[], folds=[])
+            empty['summary'] = wf._state_summary(empty)
+            wf._validate_state(empty)
+        interrupted = copy.deepcopy(result)
+        interrupted['status'] = 'blocked_interrupted'
+        interrupted['evaluations'][-1]['status'] = 'interrupted'
+        interrupted['folds'][-1]['status'] = 'interrupted'
+        interrupted['summary'] = wf._state_summary(interrupted)
+        wf._validate_state(interrupted)
 
     def test_invalid_windows_and_types_reject_before_io(self):
         changes = [dict(mode='purge'), dict(folds=self.plan.folds[:1]), dict(max_evaluations=True),
@@ -512,10 +539,20 @@ class WalkForwardTests(unittest.TestCase):
             lambda s: s.update(scope='independent_verified_oos'),
             lambda s: s['summary'].update(evaluations_reserved=1),
             lambda s: s['evaluations'].__setitem__(0, {**s['evaluations'][0], 'status': 'running'}),
-            lambda s: s.update(evaluations=s['evaluations'][:1])]
+            lambda s: s.update(evaluations=s['evaluations'][:1]),
+            lambda s: s['evaluations'][0].update(strategy_hash='0' * 64),
+            lambda s: s['folds'][0]['candidates'][0].update(strategy_hash='0' * 64),
+            lambda s: s['folds'][0]['candidates'][0].update(pool_index=999),
+            lambda s: s['binding']['plan'].update(candidate_pool=[]),
+            lambda s: s['binding']['plan'].update(candidate_pool=[{'malformed': True}])]
         for index, mutate in enumerate(mutations):
             altered = copy.deepcopy(original)
             mutate(altered)
+            # Check structural validation too, rather than relying only on a
+            # changed binding being rejected by the outer identity checksum.
+            from quantlab import walk_forward as wf
+            with self.subTest(index=index, check='structure'), self.assertRaises(ValidationError):
+                wf._validate_state(altered)
             altered['state_hash'] = content_hash({k: v for k, v in altered.items() if k != 'state_hash'})
             raw = json.dumps(altered)
             with closing(sqlite3.connect(self.output / 'walk_forward.sqlite3')) as db, db:

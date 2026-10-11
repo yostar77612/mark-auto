@@ -276,6 +276,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         output=root/'analyses'
         if operation in ('ui_analysis_preview','ui_analysis_run'):
             allowed={'request'} if operation=='ui_analysis_preview' else {'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'}
+            if operation=='ui_analysis_run' and 'approved_plan' in payload:allowed=allowed|{'approved_plan'}
             if set(payload)!=allowed:raise ValidationError('分析請求欄位不符')
             if operation=='ui_analysis_run' and any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
                 raise ValidationError('請明確同意本次一個訂閱請求')
@@ -287,18 +288,29 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                 account=read_account_status(reference,research_controls(paths))
                 return {'analysis_id':plan['analysis_id'],'plan':plan,'receipt_snapshot':snapshot,'account_status':account}
             if payload['expected_analysis_id']!=plan['analysis_id'] or payload['expected_plan_hash']!=content_hash(plan):raise ValidationError('資料／來源／模型／期限已改變，請重新預覽並同意')
+            if 'approved_plan' in payload and canonical_json(payload['approved_plan'])!=canonical_json(plan):raise ValidationError('原始核准分析計畫不符')
             if emit:emit('progress',message='證據已核對；正在執行唯一訂閱分析請求，取消不退還已保留次數。')
             result=run_analysis(output_root=output,plan=plan,provider=analysis_provider_for(paths,plan,authorized=True),
                 expected_analysis_id=payload['expected_analysis_id'],user_confirmed=True)
             return {'analysis_id':plan['analysis_id'],**result}
         expected={'analysis_id'} if operation=='ui_analysis_read' else {'analysis_id','registration','stopped_job_id'}
+        durable=operation=='ui_analysis_reconcile' and 'recovery_launch_id' in payload
+        if durable:
+            from quantlab.analysis_recovery import supports_durable_recovery
+            if not supports_durable_recovery():raise ValidationError('持久化停止證據僅限原 Windows 安裝環境')
+        if durable:expected={'analysis_id','registration','recovery_launch_id'}
         if set(payload)!=expected:raise ValidationError('保存分析請求欄位不符')
-        if operation=='ui_analysis_reconcile' and descendants_stopped is not True:raise ValidationError('分析程序樹尚未停止，禁止核對')
+        if operation=='ui_analysis_reconcile' and not durable and descendants_stopped is not True:raise ValidationError('分析程序樹尚未停止，禁止核對')
         if operation=='ui_analysis_reconcile':
             record=_read_analysis_journal(output,payload['analysis_id'])
             if record['plan']['binding']['registration']!=payload['registration']:raise ValidationError('原始分析帳戶不符')
+            if durable:
+                from quantlab.analysis_recovery import validate_stop_receipt
+                launch=validate_stop_receipt(paths,payload['recovery_launch_id'],record=record)
+                if launch['analysis_id']!=payload['analysis_id'] or launch['registration']!=payload['registration']:raise ValidationError('原始停止證據不符')
             record=reconcile_analysis(output_root=output,analysis_id=payload['analysis_id'],
-                provider=analysis_provider_for(paths,record['plan']),descendants_stopped=True)
+                provider=analysis_provider_for(paths,record['plan']),descendants_stopped=descendants_stopped is True,
+                recovery=(paths,payload['recovery_launch_id']) if durable else None)
         else:
             record=read_analysis(output,payload['analysis_id'])
         return {'analysis_id':payload['analysis_id'],'record':record,'cache_hit':True}
@@ -1150,6 +1162,10 @@ class MainWindow(QMainWindow):
         self.analysis_checkpoint_notice=QLabel();self.analysis_checkpoint_notice.setObjectName('analysis_checkpoint_notice')
         self.analysis_checkpoint_notice.setWordWrap(True);layout.addWidget(self.analysis_checkpoint_notice)
         self._button(layout,'唯讀重開已保存分析（不連網）','read_candidate_analysis',self.read_analysis)
+        self.analysis_recovery_notice=QLabel();self.analysis_recovery_notice.setWordWrap(True)
+        self.analysis_recovery_notice.setObjectName('analysis_recovery_notice');layout.addWidget(self.analysis_recovery_notice)
+        self.analysis_recover=self._button(layout,'以原始停止紀錄核對本機分析（不重送）','reconcile_saved_analysis',self.reconcile_saved_analysis)
+        self.analysis_recover.setEnabled(False)
         self.analysis_findings=QPlainTextEdit();self.analysis_findings.setReadOnly(True);self.analysis_findings.setObjectName('analysis_findings');layout.addWidget(self.analysis_findings)
         self.analysis_saved.currentIndexChanged.connect(self._analysis_saved_changed)
         self.analysis_candidates.itemSelectionChanged.connect(self._invalidate_analysis_preview)
@@ -1198,7 +1214,8 @@ class MainWindow(QMainWindow):
             or p._included_usage_registration!=request['registration'] or p.account.currentData()!=request['registration']):
             raise ValidationError('請在共享連線區核對本次授權及 included-only 用量確認')
         SubscriptionOptions(request['registration'],request['model'],1,request['timeout_seconds'],network_opt_in=True,included_usage_policy_confirmed=True)
-        payload={'request':request,'expected_analysis_id':plan['analysis_id'],'expected_plan_hash':content_hash(plan),'user_confirmed':True,
+        import copy
+        payload={'request':request,'approved_plan':copy.deepcopy(plan),'expected_analysis_id':plan['analysis_id'],'expected_plan_hash':content_hash(plan),'user_confirmed':True,
             'network_opt_in':True,'included_usage_policy_confirmed':True}
         self.analysis_consent.setChecked(False);p.consent.setChecked(False);p._reset_included_usage()
         job_id=self.start_job('ui_analysis_run',payload)
@@ -1224,6 +1241,90 @@ class MainWindow(QMainWindow):
             self.status.setText(ANALYSIS_CHECKPOINT_STATUS)
         elif self.status.text()==ANALYSIS_CHECKPOINT_STATUS:
             self.status.setText('請以唯讀重開載入所選分析；尚未核對結果。')
+        self._refresh_recovery_controls(force=True)
+
+    def _selected_recovery_launch(self, disposition=None):
+        from quantlab.analysis_recovery import inspect_recovery, validate_stop_receipt, supports_durable_recovery, RecoveryError
+        if not supports_durable_recovery():return None
+        reference=self.analysis_saved.currentData()
+        if not reference:return None
+        display_only=disposition is not None
+        disposition=disposition or inspect_recovery(self.paths)
+        for launch in disposition.workspace_stopped:
+            if launch['analysis_id']!=reference:continue
+            if display_only:return launch  # Current validated snapshot; presentation only.
+            try:return validate_stop_receipt(self.paths,launch['job_id'])
+            except RecoveryError:return None
+        return None
+
+    def reconcile_saved_analysis(self):
+        if self.jobs.active:raise ValidationError('請先等待目前背景作業停止')
+        launch=self._selected_recovery_launch()
+        if launch is None:raise ValidationError('缺少此工作區與分析的原始停止紀錄；不會修復或重送')
+        self._invalidate_analysis_preview()
+        self.start_job('ui_analysis_reconcile',{'analysis_id':launch['analysis_id'],
+            'registration':launch['registration'],'recovery_launch_id':launch['job_id']})
+
+    def _recovery_display_fingerprint(self):
+        # Metadata is presentation invalidation only, never stop/admission proof.
+        # lstat does not follow a newly substituted link or open its target.
+        bootstrap=self.paths.bootstrap or self.paths.root
+        database=self.paths.controls/'analysis-recovery-v1.sqlite3'
+        result=[]
+        for path in (bootstrap,self.paths.controls,self.paths.root,
+                     bootstrap/'.analysis-recovery-v1.json',database,
+                     Path(str(database)+'-journal'),Path(str(database)+'-wal'),Path(str(database)+'-shm')):
+            try:
+                info=path.lstat()
+                result.append((info.st_dev,info.st_ino,info.st_mode,info.st_size,info.st_mtime_ns,info.st_ctime_ns))
+            except OSError as exc:result.append((type(exc).__name__,exc.errno))
+        return tuple(result)
+
+    def _refresh_recovery_controls(self, *, force=False):
+        """Cache presentation only; every dispatch and explicit repair revalidates."""
+        if not hasattr(self,'analysis_recover'):return
+        import time
+        from quantlab.analysis_recovery import inspect_recovery, RecoveryError
+        now=time.monotonic();cached=getattr(self,'_recovery_display',None)
+        refresh=force or cached is None
+        if not refresh and now-cached[0]>=2:
+            refresh=self._recovery_display_fingerprint()!=self._recovery_display_metadata
+            if not refresh:
+                cached=(now,*cached[1:]);self._recovery_display=cached
+        if refresh:
+            self._recovery_display_metadata=self._recovery_display_fingerprint()
+            failed=False;launch=None
+            try:
+                disposition=inspect_recovery(self.paths)
+                source_blocked=bool(disposition.unresolved)
+                workspace_blocked=bool(disposition.workspace_unresolved)
+                if not self.jobs.active:launch=self._selected_recovery_launch(disposition)
+            except (RecoveryError,OSError):
+                failed=True;source_blocked=workspace_blocked=True
+            if failed:
+                message='原始停止紀錄無法安全核對；分析與衝突操作維持封鎖，保存結果、比較及非 AI 回測仍可使用。'
+            elif workspace_blocked:
+                message='原始分析尚未確認全部停止；暫停分析、來源變更與備份／還原。保存結果、比較及非 AI 回測仍可使用。'
+            elif source_blocked:
+                message='另一工作區仍有未確認停止的分析；來源變更、新分析與還原暫停，非 AI 回測與保存結果仍可使用。'
+            elif launch is not None:
+                message='已找到此分析的原始停止紀錄；可明確核對本機保存狀態，不會重送或退還已用次數。'
+            else:message=''
+            cached=(now,source_blocked,workspace_blocked,launch is not None,message)
+            self._recovery_display=cached
+        _,source_blocked,workspace_blocked,eligible,message=cached
+        # Reapply cached restrictions even when _busy(False) just reset buttons.
+        if source_blocked:
+            for name in ('create_demo','import_data','refresh_data','market_refresh','import_market_file','import_market_history',
+                         'run_campaign','run_walk_forward','preview_candidate_analysis','preview_candidate_comparison',
+                         'run_candidate_analysis','restore_backup'):
+                button=self.findChild(QPushButton,name)
+                if button is not None:button.setEnabled(False)
+        if workspace_blocked:
+            button=self.findChild(QPushButton,'create_backup')
+            if button is not None:button.setEnabled(False)
+        self.analysis_recover.setEnabled(eligible and not self.jobs.active)
+        self.analysis_recovery_notice.setText(message)
 
     def _analysis_event(self, event):
         if self.last_operation not in ('ui_analysis_preview','ui_analysis_run','ui_analysis_read','ui_analysis_reconcile'):return False
@@ -1248,6 +1349,7 @@ class MainWindow(QMainWindow):
                 self.analysis_preview.setPlainText(analysis_preview_text(plan))
                 self.analysis_evidence.setPlainText(canonical_json(plan['binding']['packet']['context']))
                 self.analysis_start.setEnabled(not result['receipt_snapshot']['receipts'])
+                self._refresh_recovery_controls(force=True)
                 self.status.setText('分析證據已預覽；僅本機核對，尚未送出模型請求。')
             else:
                 self._refresh_analysis_saved(preferred_reference=result['analysis_id'])
@@ -1613,6 +1715,8 @@ class MainWindow(QMainWindow):
         return True
 
     def start_job(self, operation, payload):
+        from quantlab.analysis_recovery import require_operation
+        require_operation(self.paths,operation)
         if operation not in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile'):
             self.chatgpt_panel.abandon_primary_sign_in()
         if self.jobs.active: raise ValidationError('已有背景作業，請等待或取消')
@@ -1623,7 +1727,7 @@ class MainWindow(QMainWindow):
         self._busy(True)
         return job_id
 
-    def _busy(self, active):
+    def _busy(self, active, *, refresh_recovery=False):
         for button in self.actions: button.setEnabled(not active)
         self.market.set_loading(active)
         self.kill_button.setEnabled(True)
@@ -1637,6 +1741,7 @@ class MainWindow(QMainWindow):
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
             self.walk_forward_start.setEnabled(self._wf_preview is not None)
             self.analysis_start.setEnabled(self._analysis_preview is not None and not self._analysis_preview['receipt_snapshot']['receipts'])
+        self._refresh_recovery_controls(force=active or refresh_recovery)
 
     def cancel_job(self):
         def cancel_and_recover():
@@ -1646,9 +1751,11 @@ class MainWindow(QMainWindow):
 
     def poll_jobs(self):
         try:
+            recovery_changed=False
             for event in self.jobs.poll():
                 if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
                     continue  # A joined old worker can never overwrite a newer view.
+                recovery_changed = recovery_changed or event.get('type') in ('result','error','failed','cancelled','canceled')
                 self.automatic_backup_panel.handle_job_event(event)
                 if self._walk_forward_event(event): continue
                 if self._analysis_event(event): continue
@@ -1690,7 +1797,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.status.setText(str(event.get('message', '背景作業進行中')))
             if not self.jobs.active:
-                self._busy(False)
+                self._busy(False,refresh_recovery=recovery_changed)
                 if self._wf_pending_reconcile and self._wf_launch is not None:
                     self._wf_pending_reconcile = False
                     self.start_job('ui_walk_forward_reconcile', self._wf_launch)
@@ -1868,6 +1975,7 @@ class MainWindow(QMainWindow):
             index = self.candidate_choice.findData(reference)
             if index >= 0:
                 self.candidate_choice.setCurrentIndex(index); self.use_candidate()
+        self._refresh_recovery_controls(force=True)
 
     def show_result(self, index=None):
         self.market.chart.set_reference_lines(())
@@ -2162,11 +2270,24 @@ class MainWindow(QMainWindow):
         # Never create state files until the writer has exited and pending swaps recover.
         if self.jobs.active: self.jobs.cancel()
         if self.jobs.active: raise ValidationError('背景程序尚未停止；禁止還原或寫入狀態')
-        if self.backups is not None:
-            self.backups.recover()
-        else:
-            from quantlab.desktop_runtime import BackupManager
-            BackupManager(self.paths).recover()
+        from quantlab.analysis_recovery import admission, inspect_recovery, recover_control_journal, RecoveryError
+        with admission(self.paths) as token:
+            try:
+                recover_control_journal(self.paths,admission=token)
+                disposition=inspect_recovery(self.paths)
+            except RecoveryError:
+                disposition=None
+            if disposition is None or disposition.unresolved:
+                if (not self.paths.state.is_dir() or any(path.exists() or path.is_symlink() for path in (
+                    self.paths.root/'state-v1.rollback',self.paths.root/'restore-transaction.json',
+                    self.paths.state/'.restore-transaction'))):
+                    raise RecoveryError('原始分析停止紀錄未知且還原狀態不明；保留資料並停止本次寫入')
+                return  # Intact analysis-only state; allow independent bookkeeping/close.
+            if self.backups is not None:
+                self.backups.recover()
+            else:
+                from quantlab.desktop_runtime import BackupManager
+                BackupManager(self.paths).recover()
 
     def freeze_paper(self, reason):
         self._quiesce_and_recover()

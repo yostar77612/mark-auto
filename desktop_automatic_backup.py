@@ -53,12 +53,24 @@ class AutomaticBackupPanel(QWidget):
         if busy:
             if self.enabled.isChecked(): self.status.setText('等待研究、授權與設定作業全部停止後備份。')
             return
+        from quantlab.analysis_recovery import operation_guard, RecoveryError
         try:
-            payload = self.scheduler.claim_due(quiescent=True)
-            if payload is None: return
-            self.archive = payload['path']
-            self.job_id = w.start_job('ui_backup_create', payload)
-            self.status.setText('每日自動備份進行中；可使用下方取消背景作業。')
+            # Hold the shared admission lock through the claim and dispatch;
+            # rejection before an attempt must not consume today's watermark.
+            with operation_guard(w.paths, 'ui_backup_create'):
+                payload = self.scheduler.claim_due(quiescent=True)
+                if payload is None: return
+                self.archive = payload['path']
+                self.job_id = w.start_job('ui_backup_create', payload)
+                self.status.setText('每日自動備份進行中；可使用下方取消背景作業。')
+        except RecoveryError:
+            if self.archive is not None:
+                # A genuine attempted launch keeps the existing no-retry rule.
+                try: self.scheduler.complete(archive=self.archive, status='error')
+                except Exception: pass
+                self.archive = self.job_id = None
+                self.paused = True
+            self.status.setText('備份等待原始分析停止紀錄核對；未確認前不會開始新的備份嘗試。')
         except Exception as exc:
             # A storage/configuration failure is sticky and visible, never a
             # timer error loop. Saving corrected settings explicitly resumes.

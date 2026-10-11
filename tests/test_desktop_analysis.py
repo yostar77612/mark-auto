@@ -18,6 +18,16 @@ import desktop_chatgpt_provider as provider
 REF='a'*32
 
 
+def _offline_analysis_job_worker(*args):
+    """Spawn-safe wrapper around the real worker; no provider can be constructed."""
+    from quantlab.desktop_runtime import _job_worker
+    with patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('No analysis provider in cancellation fixture')), \
+         patch('desktop_chatgpt_provider.ChatGPTPlanProvider.__init__', side_effect=AssertionError('No provider controls')), \
+         patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')), \
+         patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')):
+        _job_worker(*args)
+
+
 def request_for(paths, data, state, folder, compare=False):
     file=paths.root/'original.json';save_dataset(data,file)
     return {'campaign_reference':folder.name,'original_dataset':{'kind':'local_dataset_file','path':str(file)},
@@ -218,17 +228,25 @@ class SpawnedAnalysisTests(unittest.TestCase):
         self.assertFalse(list(self.paths.controls.glob('chatgpt-analysis-*')))
 
     def test_cancelled_spawned_run_has_exact_process_local_stop_proof(self):
-        # The deliberately wrong preview hashes make remote submission impossible,
-        # even if this worker finishes preparation before the parent cancels it.
-        payload={'request':self.request,'expected_analysis_id':'d'*64,'expected_plan_hash':'e'*64,
+        # Windows durable admission now requires the exact approved plan, before
+        # spawning. Deny provider construction inside the real spawned worker so
+        # even delayed cancellation cannot create a request or provider ledger.
+        from desktop_ui import analysis_plan
+        import quantlab.desktop_runtime as runtime
+        plan=analysis_plan(self.paths,self.request)
+        payload={'request':self.request,'expected_analysis_id':plan['analysis_id'],
+            'expected_plan_hash':content_hash(plan),'approved_plan':plan,
             'user_confirmed':True,'network_opt_in':True,'included_usage_policy_confirmed':True}
-        job_id=self.jobs.start('ui_analysis_run',payload);self.jobs.cancel()
+        with patch.object(runtime,'_job_worker',_offline_analysis_job_worker):
+            job_id=self.jobs.start('ui_analysis_run',payload);self.jobs.cancel()
         self.assertFalse(self.jobs.active)
-        self.assertEqual(self.jobs._quiesced_analysis,(job_id,'d'*64,REF))
+        self.assertEqual(self.jobs._quiesced_analysis,(job_id,plan['analysis_id'],REF))
         other=JobManager(self.paths);self.addCleanup(other.close)
-        with self.assertRaises(RuntimeSafetyError):other.start('ui_analysis_reconcile',{'analysis_id':'d'*64,'registration':REF,'stopped_job_id':job_id})
+        with self.assertRaises(RuntimeSafetyError):other.start('ui_analysis_reconcile',{
+            'analysis_id':plan['analysis_id'],'registration':REF,'stopped_job_id':job_id})
         self.assertFalse((self.paths.state/'analyses').exists())
         self.assertFalse(list(self.paths.controls.glob('chatgpt-analysis-*')))
+
 
 
 @unittest.skipUnless(ui_support.HAS_QT,'Pinned Qt needed')
