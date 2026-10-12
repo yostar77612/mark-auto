@@ -11,7 +11,7 @@ Run with the prepared cloud Qt interpreter, QT_QPA_PLATFORM=offscreen, and a
 """
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, closing
 import importlib.util
 import json
 import os
@@ -190,8 +190,10 @@ class RestartAvailabilityContractTests(unittest.TestCase):
             request = analysis.analysis_request(pending)
             pending_provider._reserve(content_hash(request), len(canonical_json(request).encode()))
             (self.pending_folder / 'analysis.json').unlink()
-            with sqlite3.connect(self.pending_folder / 'analysis.lock.sqlite3'):
+            with closing(sqlite3.connect(self.pending_folder / 'analysis.lock.sqlite3')) as db, db:
                 pass
+            with self.assertRaises(sqlite3.ProgrammingError):
+                db.execute('SELECT 1')  # Synthetic fixture connection must be closed.
         self.assertEqual(len(AnalysisWire.requests), 1, 'Only the synthetic saved fixture was generated')
 
     def _protected(self):
