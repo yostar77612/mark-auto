@@ -32,7 +32,16 @@ class NativeDesktopTests(unittest.TestCase):
         self.addCleanup(self.cleanup_window)
 
     def cleanup_window(self):
-        self.jobs.close(); self.window.close(); self.app.processEvents()
+        self.jobs.close()
+        accepted = self.window.close()
+        self.app.processEvents()
+        # Closing hides a QWidget but does not destroy its native children or
+        # timers. Delete only this successfully closed, quiescent fixture.
+        # Refused close/reconciliation must keep the original window alive.
+        if accepted and not self.jobs.active:
+            from PySide6.QtCore import QCoreApplication, QEvent
+            self.window.deleteLater()
+            QCoreApplication.sendPostedEvents(self.window, QEvent.Type.DeferredDelete)
 
     def click(self, name):
         from PySide6.QtWidgets import QPushButton

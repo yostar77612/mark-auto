@@ -2,6 +2,15 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #13 Paper 原門檻失敗；fixture 保留修補與原次診斷待原生再驗（2026-10-12 08:57 +08:00／00:57 UTC）
+
+- **保留原次失敗：** 來源 `13ebd0f700b65b13436d4f0e2dc581db64d93d7d`／tree `817984a0c44815377f656860765c7c7fc81c4cc3` 的 [Quantlab 38187882846](https://github.com/yostar77612/mark-auto/actions/runs/38187882846) 終態 13 SUCCESS／1 FAIL：Windows 3.12 既有 typed Paper case 在原 960 bars／30 秒第一次 wait 仍見 jobs.active／Working 而失敗。research 兩 profile 均通過；後續 fresh-process observer 通過不抵銷原失敗，也未證明原生阻塞階段。[Windows 38187882886](https://github.com/yostar77612/mark-auto/actions/runs/38187882886) build／security SUCCESS，release SKIPPED；必要 Quantlab 尚未全通過，不是公開發佈或正式完成。
+- **已證明的缺陷限於測試保留：** discovery／alternate suites 的別名保留已完成 TestCase；原 NativeDesktop fixture close 未銷毀窗口／子 widgets／backup timer。八檔 test-harness／diagnostic 候選僅釋放非選中 suite，並在原 close 流程成功且 owned job 不活動時，向該 fixture 發送定向 DeferredDelete；不改產品 closeEvent、不全域刪除、拒絕關閉／仍有工作時不刪除。Linux 八-fixture、未強制 GC 的對照為 RSS 291,082,240→129,163,264 bytes，舊 case 保留 7→0、MainWindow 8→1；證明 fixture 保留修補，不能推論它造成原 Windows timeout 或 Windows 效能已修好。
+- **同一次失敗觀測，不替代驗收：** decorator 保留原 typed test body，在原 deadline、fixture cleanup 前採集有界／去敏的 UI、owned child／IPC、phase／SQLite commit／heartbeat 證據。worker 必須先成功通過原 gate.wait(15) 才啟用診斷；不重跑失敗案例、不以 fresh process 替代、不增加 gate 預算。原 30 秒／960 bars／FULL、耐久邊界、repeat／安全 assertions 均保留；診斷有額外開銷，其未來 PASS 本身不能證明原根因。
+- **候選審查／測試分開列示：** 八檔獨立審查 PASS，獨立 36 PASS／2 原 Windows-only skips。discovery 為 1,655／core 1,412／research 243，僅新增 18 core tests；全部原 ID／相對順序及六個 research skip ID／reason 不變。root 同一凍結來源六模組組合為 73 PASS／0 skips、30.487 秒，使用 owned Qt runtime／offscreen Linux CPython 3.12；與前述獨立 36 PASS／2 skips 分開且重疊，不相加。新 exact-head Windows／完整必要 CI 尚待，不預填 native 通過數。
+- **範圍／發布界線不變：** 原 230/300 rubric 與全部失敗歷史保留；目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 延後非 PASS。最後已核驗公開 preview 仍為 `3ef9a740`／`desktop-preview-38169393012-1`。本輪不改產品或降低 30 秒原 Gate，不宣稱 Win10／OAuth 驗收、Windows 性能修復或正式發佈就緒；下方依日期保留各階段紀錄。
+
+
 ## PR #13 原生測試新失敗；最小測試修補／觀測接續（2026-10-12 08:22 +08:00／00:22 UTC）
 
 - **本次必要 CI 未通過：** PR #13 來源 `d4e81e09976ce1d61000cc66190e211f8221d29f`／tree `e546f69de710ece06b4561fa327a3a8e1eea719b` 的 [Quantlab 38186610247](https://github.com/yostar77612/mark-auto/actions/runs/38186610247) 終態 12 SUCCESS／2 FAIL。Windows core 3.11：1,365 PASS／27 skips／2 ERROR、598.452 秒；3.12：1,366 PASS／27 skips／1 ERROR、552.350 秒。兩個 research profiles 各 237 PASS／6 原 skips，347.203／217.906 秒；前次 10／40 秒案例本輪通過，但未觸發其 failure diagnostics，不能據此宣稱已找到或修好先前效能根因。

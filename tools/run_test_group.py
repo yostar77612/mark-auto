@@ -364,9 +364,14 @@ def main(argv=None):
     write_manifest(args.manifest, manifest)
     if status is not None:
         return status
+    # Keep only the selected owner after inventory validation. Otherwise the
+    # discovery suite and alternate partitions retain completed TestCase objects
+    # (including native windows) after unittest removes them from this suite.
+    selected_suite = groups[args.group]
+    del suite, groups
     if args.workers == 2:
-        return run_parallel(args, manifest, groups['research'])
-    result = unittest.TextTestRunner(verbosity=2, resultclass=RecordingResult).run(groups[args.group])
+        return run_parallel(args, manifest, selected_suite)
+    result = unittest.TextTestRunner(verbosity=2, resultclass=RecordingResult).run(selected_suite)
     manifest.update({
         "run_completed": True, "started_ids": result.started_ids, "stopped_ids": result.stopped_ids,
         "tests_run": result.testsRun, "successful": result.wasSuccessful(),
