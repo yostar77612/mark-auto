@@ -33,6 +33,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tests.windows_recovery_diagnostics import FixtureDiagnostics, report_failure
+
 WAIT_OBJECT_0 = 0
 WAIT_TIMEOUT = 258
 PROCESS_TERMINATE = 0x0001
@@ -144,16 +146,20 @@ def _active_processes(tree):
     return info.ActiveProcesses
 
 
-def _fixture(role, folder, observer, token, extra):
+def _fixture(role, folder, observer, token, extra, *, diagnosis):
+    diagnosis.at('kernel')
     k = _kernel()
     deadline = time.monotonic() + CHILD_SECONDS
     if role in ('gui', 'grandchild'):
         if role == 'gui':
             # TEST_ONLY stand-in for original GUI ownership of the single-instance
             # admission boundary. This experiment does not instantiate QLockFile.
+            diagnosis.at('gui.launch.commit')
             protocol = _TestOnlyProtocol(folder, _test_binding(folder, token))
             protocol.commit_launch(original_gui_admission=True)
+            diagnosis.at('gui.launch.signal')
             _write(folder, 'gui-launch-committed.json', {'test_only': True})
+        diagnosis.at('idle')
         # A finite emergency lifetime bounds even test-observer disappearance.
         while time.monotonic() < deadline:
             time.sleep(.02)
@@ -161,61 +167,93 @@ def _fixture(role, folder, observer, token, extra):
     if role == 'worker':
         child = None
         try:
+            diagnosis.at('worker.gate.wait')
             _wait_file(folder, 'worker-go.json', deadline)
             # The real gated worker independently reopens the committed launch.
+            diagnosis.at('worker.launch.read')
             _TestOnlyProtocol(folder, _test_binding(folder, token)).read_launch()
+            diagnosis.at('worker.grandchild.start')
             child = subprocess.Popen(_command('grandchild', folder, observer, token),
                                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                      stderr=subprocess.DEVNULL, close_fds=True)
+            diagnosis.at('worker.handle.publish')
             _publish_process_handle(child, folder, 'grandchild')
+            diagnosis.at('worker.ack.wait')
             _wait_file(folder, 'grandchild-ack.json', deadline)
+            diagnosis.at('worker.ready.signal')
             _write(folder, 'worker-ready.json', {'test_only': True})
+            diagnosis.at('worker.monitor')
             while time.monotonic() < deadline:
                 if child.poll() is not None:
                     raise RuntimeError('grandchild exited before fixture stop')
                 time.sleep(.01)
             raise TimeoutError('worker emergency deadline')
+        except BaseException as error:
+            diagnosis.record_failure(error)
+            raise
         finally:
+            diagnosis.at('worker.cleanup')
             _dispose_child(child)
     if role != 'helper':
         raise ValueError('unknown fixture role')
+    diagnosis.at('helper.runtime.import')
     from quantlab.desktop_runtime import _WindowsProcessTree
+    diagnosis.at('helper.admission')
     gui_handle, worker_handle = map(int, extra)
     tree = None
     try:
+        diagnosis.at('helper.admission')
         if _state(k, gui_handle) != WAIT_TIMEOUT:
             raise RuntimeError('GUI must be alive at helper admission')
         if _state(k, worker_handle) != WAIT_TIMEOUT:
             raise RuntimeError('gated worker must be alive at helper admission')
         worker_pid = _check(k.GetProcessId(worker_handle), 'original worker identity')
+        diagnosis.at('helper.job.create')
         tree = _WindowsProcessTree(worker_pid)
+        diagnosis.at('helper.protocol.open')
         protocol = _TestOnlyProtocol(folder, _test_binding(folder, token))
+        diagnosis.at('helper.gui_commit.wait')
         _wait_file(folder, 'gui-launch-committed.json', deadline)
+        diagnosis.at('helper.gate.open')
         protocol.open_registered_gate(lambda: _write(folder, 'worker-go.json', {'test_only': True}),
                                       original_helper_owned=True)
+        diagnosis.at('helper.worker_ready.wait')
         _wait_file(folder, 'worker-ready.json', deadline)
+        diagnosis.at('helper.ready.signal')
         _write(folder, 'helper-ready.json', {'test_only': True, 'job_handle_retained': True})
+        diagnosis.at('helper.gui_death.wait')
         while _state(k, gui_handle) != WAIT_OBJECT_0:
             if (folder / 'cleanup-request.json').exists():
                 raise RuntimeError('fixture cleanup requested')
             if time.monotonic() >= deadline:
                 raise TimeoutError('GUI death wait')
             time.sleep(.01)
+        diagnosis.at('helper.gui_death.signal')
         _write(folder, 'gui-death-observed.json', {'test_only': True})
+        diagnosis.at('helper.quiescence.wait')
         _wait_file(folder, 'allow-quiescence.json', deadline)
+        diagnosis.at('helper.job.stop')
         tree.stop_and_join()
         active = _active_processes(tree)  # Query the SAME still-open job again.
         if active != 0:
             raise RuntimeError('nonzero original job after stop_and_join')
+        diagnosis.at('helper.quiescence.signal')
         _write(folder, 'quiescence-observed.json', {'active_processes': active})
         # Observer checks all retained descendant handles before publication.
+        diagnosis.at('helper.receipt.wait')
         _wait_file(folder, 'allow-receipt.json', deadline)
         if _active_processes(tree) != 0:
             raise RuntimeError('original job changed before receipt')
+        diagnosis.at('helper.receipt.publish')
         receipt = protocol.publish(lambda: _active_processes(tree))
         # Diagnostic projection is not authority; committed SQLite is reread.
+        diagnosis.at('helper.receipt.signal')
         _write(folder, 'receipt.json', receipt)
+    except BaseException as error:
+        diagnosis.record_failure(error)
+        raise
     finally:
+        diagnosis.at('helper.cleanup')
         if tree is not None:
             try:
                 tree.stop_and_join()
@@ -742,6 +780,10 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                         register(role, duplicate.value)
                         _state(k, duplicate.value)
                         _write(folder, role + '-ack.json', {'test_only': True})
+            def fail_with_diagnostic(message, barrier):
+                evidence = report_failure(folder, processes, scenario,
+                    artifact_dir=ROOT / 'dist' / 'validation', barrier=barrier)
+                self.fail(message + '; ' + evidence)
             def until(predicate, message):
                 while time.monotonic() < deadline:
                     collect()
@@ -750,9 +792,9 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                     for role in ('gui', 'helper'):
                         proc = processes.get(role)
                         if proc is not None and role not in expected_dead and proc.poll() is not None:
-                            self.fail(role + ' failed before expected barrier')
+                            fail_with_diagnostic(role + ' failed before expected barrier', message)
                     time.sleep(.01)
-                self.fail('bounded fixture timeout: ' + message)
+                fail_with_diagnostic('bounded fixture timeout: ' + message, message)
             expected_dead = set()
             try:
                 gui = subprocess.Popen(_command('gui', folder, os.getpid(), token),
@@ -900,6 +942,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '--fixture':
         if sys.platform != 'win32':
             raise SystemExit('Windows fixture only')
-        _fixture(sys.argv[2], Path(sys.argv[3]), int(sys.argv[4]), sys.argv[5], sys.argv[6:])
+        folder, role = Path(sys.argv[3]), sys.argv[2]
+        FixtureDiagnostics(folder, role).run(
+            _fixture, role, folder, int(sys.argv[4]), sys.argv[5], sys.argv[6:])
     else:
         unittest.main()

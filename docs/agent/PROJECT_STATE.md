@@ -2,6 +2,14 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #13 合併後 helper 啟動失敗；原次觀測候選待驗（2026-10-12 10:26 +08:00／02:26 UTC）
+
+- PR #13 必要 premerge Gate 全通過後合併 main `746c0d77`（同 tree `011a08e2`）；[Quantlab 38194001676](https://github.com/yostar77612/mark-auto/actions/runs/38194001676) postmerge 為 13 SUCCESS／1 FAIL。Win3.12 既有 helper-death-before-GUI case 的 helper 約 1.41 秒於 helper-ready barrier 前退出；1,415＝1,387 PASS／27 skips／1 FAIL、547.155 秒。不是原 18 秒期限或 Paper 逾時重現；stderr 原為 DEVNULL，退出原因未知。
+- 兩邊原 Paper 960 cursor commits／WAL／FULL(2)、cleanup 無 child；3.11 replay／repeat 6.188／0.766 秒，3.12 6.625／0.907 秒，均 PASS。research 各 243＝237 PASS／6 原 skips；不以這些 PASS 抵銷 helper 失敗或推定歷史 timeout 根因。
+- 三檔 TEST_ONLY 候選觀察原 child 的固定 phase／error code／return code／cleanup 前 barrier；不改程序生命週期、handle、期限、assertion、workflow 或產品，不宣稱因果修復。獨立審查無 blocker，原 assertions／watchdog／4 Popen／期限保留。同一凍結來源 Linux CPython 3.11 完整 1,669＝1,641 PASS／28 原 applicability skips，451.962 秒、exit 0；原 1,658 IDs／順序／28 skip 不變，新增 11 core、research 243 不變。各結果不相加，新 Windows native 尚未執行，helper 原因仍未知。
+- [Windows 38194001655](https://github.com/yostar77612/mark-auto/actions/runs/38194001655) build／security／lifecycle 通過，artifact 來源／CRC／frozen／TLS 獨立核驗 PASS。release guard FAIL 明確拒絕發布，預期 tag 查詢 404，僅 CI artifact。最後核驗公開版仍 `3ef9a740`；目前 230/290、D8 延後非 PASS、原 230/300 rubric／失敗原文全保留，未宣稱正式完成。
+
+
 ## PR #13 診斷 helper 原生崩潰修補待驗（2026-10-12 09:26 +08:00／01:26 UTC）
 
 - `42ad7f77` 的 [Quantlab 38190178113](https://github.com/yostar77612/mark-auto/actions/runs/38190178113) 為 13 SUCCESS／1 FAIL：Linux 3.11 exit 139。CPython 3.11.17／Qt 6.11.2 的 HistoryUI→cleanup reproducer／faulthandler 定位新 observer 的 app.allWidgets 崩潰。
