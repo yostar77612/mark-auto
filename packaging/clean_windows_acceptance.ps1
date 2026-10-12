@@ -48,7 +48,7 @@ try {
   }
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or (Get-Process -Id $PID).SessionId -eq 0) {
+  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or (Get-Process -Id $PID).get_SessionId() -eq 0) {
     throw 'Use a non-elevated interactive standard-user desktop session'
   }
   if ($env:GITHUB_ACTIONS -or $env:ImageOS -or $env:RUNNER_TOOL_CACHE) { throw 'Developer/CI images are not clean clients' }

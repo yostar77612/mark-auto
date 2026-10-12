@@ -1,8 +1,10 @@
 # Windows-only lifecycle ownership and watchdog. No compiler runs during acceptance.
 # Build this helper on CI with build_acceptance_helper.ps1 and verify the kit digest.
+# Invoke safety-critical CLR getters explicitly: PowerShell property access suppresses
+# getter exceptions to null, which can otherwise look like success or a live process.
 
 function Confirm-AcceptanceWorker([string]$JobName) {
-  if (-not $JobName -or -not [MarkAutoAcceptanceJob]::Owns($JobName, [Diagnostics.Process]::GetCurrentProcess().Handle)) {
+  if (-not $JobName -or -not [MarkAutoAcceptanceJob]::Owns($JobName, [Diagnostics.Process]::GetCurrentProcess().get_Handle())) {
     throw 'Acceptance worker is not inside its creation-owned job'
   }
 }
@@ -21,7 +23,7 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
   # EncodedCommand otherwise collapses a child script's exit 2 into exit 1.
   $command = '$ErrorActionPreference=''Stop''; $global:LASTEXITCODE=0; try { ' + $command + '; $ok=$?; $code=$global:LASTEXITCODE; if ($code -ne 0) { exit $code }; if (-not $ok) { exit 1 }; exit 0 } catch { [Console]::Error.WriteLine(''Acceptance worker failed; see saved evidence''); exit 1 }'
   $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
-  $engine = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+  $engine = [Diagnostics.Process]::GetCurrentProcess().get_MainModule().get_FileName()
   $job = $null
   $status = 'failed'; $reason = 'cancelled_or_start_failed'; $code = 1
   $workerExited = $false; $workerExitCode = $null
@@ -37,12 +39,12 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
       if ($Parameters['AcceptanceScope'] -eq 'PreparedHost' -and [MarkAutoAcceptanceJob]::FreeMemoryBytes() -lt 6GB) {
         $reason = 'host_free_memory_below_6GiB'; break
       }
-      if (-not $workerExited -and $job.Wait(200)) { $workerExited=$true; $workerExitCode=$job.ExitCode; $code=$workerExitCode }
+      if (-not $workerExited -and $job.Wait(200)) { $workerExited=$true; $workerExitCode=$job.get_ExitCode(); $code=$workerExitCode }
       if ($workerExited) {
         # Root exit alone does not finish an Inno process tree. Keep the job alive
         # until every owned descendant exits, or the unchanged deadline expires.
         if ($code -notin @(0,2)) { $status='completed'; $reason='worker_failed'; break }
-        if ($job.ActiveProcesses -eq 0) { $status='completed'; $reason='worker_and_descendants_exit'; break }
+        if ($job.get_ActiveProcesses() -eq 0) { $status='completed'; $reason='worker_and_descendants_exit'; break }
         Start-Sleep -Milliseconds 100
       }
     }
@@ -55,7 +57,7 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
     }
   } finally {
     $remainingOwned=$null
-    try { if ($job) { $remainingOwned=$job.ActiveProcesses } }
+    try { if ($job) { $remainingOwned=$job.get_ActiveProcesses() } }
     catch { $status='failed'; $reason='job_accounting_failed'; $code=1 }
     finally { if ($job) { $job.Dispose() } }
     $report = @{status=$status; reason=$reason; exit_code=$code; worker_exit_code=$workerExitCode;
@@ -83,7 +85,7 @@ function Start-OwnedAcceptanceProcess([string]$FilePath, [string[]]$ArgumentList
   $process = [Diagnostics.Process]::Start($start)
   if (-not $process) { throw 'Launch returned no creation handle; no process will be adopted' }
   try {
-    $handle = $process.Handle # Retain the creation-returned handle, never reopen by PID.
+    $handle = $process.get_Handle() # Retain the creation-returned handle, never reopen by PID.
     $created = [MarkAutoAcceptanceJob]::Created($handle)
     if ($created -lt $before -or -not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob, $handle) -or
         [IO.Path]::GetFullPath([MarkAutoAcceptanceJob]::Image($handle)) -ne [IO.Path]::GetFullPath($ExpectedImage)) {
@@ -137,7 +139,7 @@ function Assert-AcceptancePath([string]$Path, [switch]$RequireAbsent) {
       try { $item = Get-Item -LiteralPath $inspect -Force -ErrorAction Stop }
       catch [System.Management.Automation.ItemNotFoundException] { }
       $exists = $null -ne $item
-      $attributes = if ($exists) { [uint32]$item.Attributes } else { [uint32]::MaxValue }
+      $attributes = if ($exists) { [uint32]$item.get_Attributes() } else { [uint32]::MaxValue }
     }
     if ($exists -and ($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse destination or ancestor refused; original state preserved' }
     if ($RequireAbsent -and $exists -and $inspect -eq $full) { throw 'Existing MarkAuto destination refused; original state preserved' }
@@ -163,8 +165,8 @@ function Wait-OwnedAcceptanceWindow($Owned, [ValidateRange(1,30)][int]$Seconds =
     Start-Sleep -Seconds 1
     Assert-OwnedAcceptanceProcess $Owned
     $Owned.Process.Refresh()
-    if ($Owned.Process.HasExited) { throw 'Start menu process exited before showing a native window' }
-    if ($Owned.Process.MainWindowHandle -ne 0) { return }
+    if ($Owned.Process.get_HasExited()) { throw 'Start menu process exited before showing a native window' }
+    if ($Owned.Process.get_MainWindowHandle() -ne 0) { return }
   }
   throw 'Start menu launch did not create a native window'
 }

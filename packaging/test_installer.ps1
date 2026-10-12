@@ -66,7 +66,7 @@ $handoffPath = Join-Path $results 'lifecycle-state-handoff.json'
 # A separate reviewed backup/isolation operation must resolve existing state first.
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-if ($AcceptanceScope -ne 'HostedCi' -and ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or [Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0)) {
+if ($AcceptanceScope -ne 'HostedCi' -and ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or [Diagnostics.Process]::GetCurrentProcess().get_SessionId() -eq 0)) {
   throw 'Prepared host and disposable VM tests require a non-elevated interactive user session'
 }
 $destinations = @($appDir, $dataDir,
@@ -97,7 +97,7 @@ if ($CreateRecoveryHandoff) {
   $inspect = [IO.Path]::GetFullPath($handoffSettings)
   while ($inspect) {
     $item = Get-OptionalStateItem $inspect
-    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse state cannot be owned by lifecycle test' }
+    if ($item -and ($item.get_Attributes() -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse state cannot be owned by lifecycle test' }
     $inspect = Split-Path $inspect -Parent
   }
 }
@@ -122,7 +122,7 @@ function Install-Version([string]$number, [string]$manifestPath) {
   $owned = Start-OwnedAcceptanceProcess $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\install-$number.log`"")
   Wait-OwnedAcceptanceProcess $owned 180000 'Installer timed out' -DrainJob
   $p = $owned.Process
-  if ($p.ExitCode) { throw "Installer failed: $($p.ExitCode)" }
+  if ($p.get_ExitCode()) { throw "Installer failed: $($p.get_ExitCode())" }
   $startLink = Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
   if (-not (Test-Path $startLink)) { throw 'Installed Start Menu shortcut missing' }
   $shortcutShell = New-Object -ComObject WScript.Shell
@@ -153,7 +153,7 @@ function Smoke([string]$stage, [string]$expectedVersion) {
     $owned = Start-OwnedAcceptanceProcess $script:installedExe -ArgumentList @('--smoke-test',"`"$report`"")
     Wait-OwnedAcceptanceProcess $owned 180000 'Native Qt smoke timed out'
     $p = $owned.Process
-    if ($p.ExitCode -ne 0) { throw "Native Qt smoke failed: $($p.ExitCode)" }
+    if ($p.get_ExitCode() -ne 0) { throw "Native Qt smoke failed: $($p.get_ExitCode())" }
   } finally { $env:PATH = $oldPath }
   if (-not (Test-Path $report)) { throw 'Smoke report missing' }
   $json = Get-Content $report -Raw | ConvertFrom-Json
@@ -205,9 +205,9 @@ foreach ($attempt in @('upgrade', 'uninstall')) {
   $owned = Start-OwnedAcceptanceProcess $command -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\refused-$attempt.log`"")
   Wait-OwnedAcceptanceProcess $owned 30000 "Active-app $attempt did not refuse promptly"
   $refused = $owned.Process
-  if ($refused.ExitCode -eq 0) { throw "Active-app $attempt was not rejected" }
+  if ($refused.get_ExitCode() -eq 0) { throw "Active-app $attempt was not rejected" }
   $window.Refresh()
-  if ($window.HasExited) { throw "Active-app $attempt stopped the application" }
+  if ($window.get_HasExited()) { throw "Active-app $attempt stopped the application" }
   Assert-Sentinel
 }
 Assert-OwnedAcceptanceProcess $gui
@@ -216,7 +216,7 @@ Wait-OwnedAcceptanceProcess $gui 15000 'Window did not close cleanly'
 $owned = Start-OwnedAcceptanceProcess "$appDir\unins000.exe" -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\uninstall.log`"")
 Wait-OwnedAcceptanceProcess $owned 180000 'Uninstall timed out' -DrainJob
 $p = $owned.Process
-if ($p.ExitCode) { throw "Uninstall failed: $($p.ExitCode)" }
+if ($p.get_ExitCode()) { throw "Uninstall failed: $($p.get_ExitCode())" }
 Assert-AcceptancePath "$appDir\unins000.exe" -RequireAbsent
 Assert-AcceptancePath "$appDir\unins000.dat" -RequireAbsent
 [void](Assert-AbsentAcceptanceRegistration $registration)

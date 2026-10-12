@@ -50,7 +50,7 @@ class AcceptanceProcessContracts(unittest.TestCase):
             self.assertIn("'" + case + "'", self.lifecycle)
         for assertion in ("$json.steps.Count -ne 7", "$json.version -ne $expectedVersion", "$json.native_window_visible -ne $true",
                           "$json.worker_completed -ne $true", "$json.real_model_status -ne 'not_verified'",
-                          "$refused.ExitCode -eq 0", "$window.HasExited", 'Assert-Sentinel',
+                          "$refused.get_ExitCode() -eq 0", "$window.get_HasExited()", 'Assert-Sentinel',
                           'Get-FileHash $shipped', "Smoke 'installed' $BaselineAppVersion", "Smoke 'upgraded' $Version"):
             self.assertIn(assertion, self.lifecycle)
 
@@ -58,7 +58,7 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.assertIn("Wait-OwnedAcceptanceProcess $owned 180000 'Installer timed out' -DrainJob", self.lifecycle)
         self.assertIn("Wait-OwnedAcceptanceProcess $owned 180000 'Uninstall timed out' -DrainJob", self.lifecycle)
         self.assertIn('OwnedActiveProcesses($AcceptanceJob) -ne 1', self.helper)
-        self.assertIn('$job.ActiveProcesses -eq 0', self.helper)
+        self.assertIn('$job.get_ActiveProcesses() -eq 0', self.helper)
         self.assertIn('owned_descendants_deadline', self.helper)
         self.assertIn('QueryInformationJobObject(handle,1', self.native)
         self.assertIn('if(handle==IntPtr.Zero || handle==new IntPtr(-1))', self.native)
@@ -82,6 +82,20 @@ class AcceptanceProcessContracts(unittest.TestCase):
             self.assertIn(name, self.lifecycle.split('try {\n$os =', 1)[0])
         self.assertIn('[IO.FileMode]::CreateNew', self.lifecycle)
         self.assertLess(self.lifecycle.index('Assert-AbsentAcceptanceRegistration $registration'), self.lifecycle.index('New-Item $dataDir'))
+
+    def test_native_getter_failures_cannot_be_suppressed_as_null(self):
+        for source in (self.helper, self.lifecycle, self.wrapper):
+            for prop in ('ActiveProcesses', 'ExitCode', 'HasExited', 'MainWindowHandle', 'SessionId', 'Attributes'):
+                self.assertNotRegex(source, r'\.' + prop + r'\b')
+        for call in ('$job.get_ActiveProcesses()', '$job.get_ExitCode()',
+                     '$Owned.Process.get_HasExited()', '$Owned.Process.get_MainWindowHandle()'):
+            self.assertIn(call, self.helper)
+        fixture = (ROOT / 'packaging/test_acceptance_process.ps1').read_text()
+        for evidence in ('Valid empty job accounting', 'disposed-job-accounting',
+                         'native_guard_refused', 'Owned job handle is unavailable',
+                         'Unavailable disposed-worker exit code', 'window-exited-getter-failure',
+                         'window-handle-getter-failure', 'native_membership_retained'):
+            self.assertIn(evidence, fixture)
 
     def test_native_failures_are_exercised_in_existing_ci(self):
         workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()

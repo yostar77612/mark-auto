@@ -22,6 +22,7 @@ try {
   $name='Local\MarkAutoAcceptance-Test-' + [guid]::NewGuid().ToString('N')
   $first=New-Object MarkAutoAcceptanceJob($name)
   try {
+    Check ($first.get_ActiveProcesses() -eq 0) 'Valid empty job accounting did not return zero'
     $refused=$false
     try { $duplicate=New-Object MarkAutoAcceptanceJob($name); $duplicate.Dispose() } catch { $refused=$true }
     Check $refused 'Existing job name was accepted'
@@ -29,13 +30,37 @@ try {
     try { $first.Start((Join-Path $fixture 'missing.exe'), '') } catch { $refused=$true }
     Check $refused 'Missing native executable was accepted'
   } finally { $first.Dispose() }
+  # Diagnostic-only old syntax demonstrates the native CI failure without using
+  # its null/error outcome as proof of safe accounting.
+  $propertyValue=$null; $propertyError=$null
+  try { $propertyValue=$first.ActiveProcesses } catch { $propertyError=$_.Exception.GetType().FullName }
+  $refused=$false; $getterError=$null
+  try { [void]$first.get_ActiveProcesses() }
+  catch {
+    $cause=$_.Exception.GetBaseException(); $getterError=$cause.GetType().FullName
+    $refused=($cause -is [InvalidOperationException] -and $cause.Message -eq 'Owned job handle is unavailable')
+  }
+  Write-Host ((@{case='disposed-job-accounting'; property_returned_null=($null -eq $propertyValue);
+    property_error_type=$propertyError; getter_error_type=$getterError; native_guard_refused=$refused}) | ConvertTo-Json -Compress)
+  Check $refused 'Unavailable disposed-job accounting was not refused by the native guard'
   $refused=$false
-  try { [void]$first.ActiveProcesses } catch { $refused=$true }
-  Check $refused 'Disposed job accounting queried an unrelated containing job'
+  try { [void]$first.get_ExitCode() } catch { $refused=((Native-Code $_) -eq 6) }
+  Check $refused 'Unavailable disposed-worker exit code was not refused'
+
   $exe = Join-Path $fixture 'MarkAuto.exe'
   Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
+public sealed class MarkAutoThrowingProcess {
+    readonly bool failHasExited;
+    public MarkAutoThrowingProcess(bool failHasExited) { this.failHasExited=failHasExited; }
+    public void Refresh() { }
+    public bool HasExited { get {
+        if(failHasExited) throw new InvalidOperationException("fixture_has_exited_getter");
+        return false;
+    } }
+    public IntPtr MainWindowHandle { get { throw new InvalidOperationException("fixture_window_handle_getter"); } }
+}
 public static class MarkAutoFixture {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFileAttributes(string path);
     public static int AttributeError(string path) { return GetFileAttributes(path)==0xffffffff ? Marshal.GetLastWin32Error() : 0; }
@@ -63,7 +88,7 @@ public static class MarkAutoFixture {
   $info = New-Object Diagnostics.ProcessStartInfo
   $info.FileName=$exe; $info.UseShellExecute=$false
   $outsider = [Diagnostics.Process]::Start($info)
-  $outsiderHandle = $outsider.Handle
+  $outsiderHandle = $outsider.get_Handle()
   $outsiderCreated = [MarkAutoAcceptanceJob]::Created($outsiderHandle)
   $sentinel = Join-Path $fixture 'original-sentinel.txt'
   [IO.File]::WriteAllText($sentinel, 'original bytes')
@@ -149,7 +174,7 @@ try {
   if ($Case -eq 'fast-nonzero') {
     $owned=Start-OwnedAcceptanceProcess $env:ComSpec -ArgumentList @('/c','exit','7')
     Wait-OwnedAcceptanceProcess $owned 1000 'Fast exit timed out'
-    if ($owned.Process.ExitCode -ne 7) { throw 'Nonzero native exit code lost' }
+    if ($owned.Process.get_ExitCode() -ne 7) { throw 'Nonzero native exit code lost' }
     exit 0
   }
   if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {
@@ -160,7 +185,7 @@ try {
     Wait-OwnedAcceptanceProcess $owned 1000 'Fixture parent did not exit'
     $readyClock=[Diagnostics.Stopwatch]::StartNew()
     while (-not (Test-Path -LiteralPath ($marker+'.ready')) -and $readyClock.ElapsedMilliseconds -lt 1000) { Start-Sleep -Milliseconds 10 }
-    if (-not (Test-Path -LiteralPath ($marker+'.ready')) -or -not $owned.Process.HasExited -or (Test-Path -LiteralPath $marker) -or
+    if (-not (Test-Path -LiteralPath ($marker+'.ready')) -or -not $owned.Process.get_HasExited() -or (Test-Path -LiteralPath $marker) -or
         [MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -le 1) {
       throw 'Descendant fixture did not establish root-exited child-still-running precondition'
     }
@@ -174,7 +199,7 @@ try {
       try { Wait-OwnedAcceptanceProcess $owned $wait 'Owned descendant wait timed out' -DrainJob }
       catch {
         if ($hang -and $_.Exception.Message -eq 'Owned descendant wait timed out' -and
-            $drainClock.ElapsedMilliseconds -ge $wait -and $owned.Process.HasExited -and
+            $drainClock.ElapsedMilliseconds -ge $wait -and $owned.Process.get_HasExited() -and
             [MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -gt 1) {
           @{expected_failure='owned_descendant_timeout'; elapsed_ms=$drainClock.ElapsedMilliseconds;
             phase_budget_ms=$wait; root_exited=$true; child_still_pending=$true} |
@@ -188,16 +213,37 @@ try {
     exit 0
   }
   $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe')
-  if ($Case -eq 'missing-window') { Wait-OwnedAcceptanceWindow $owned -Seconds 1 }
+  if ($Case -in @('window-exited-getter-failure','window-handle-getter-failure')) {
+    [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Fixture 'MarkAuto.exe')))
+    $realProcess=$owned.Process
+    $failExited=($Case -eq 'window-exited-getter-failure')
+    $expectedFailure=if($failExited){'fixture_has_exited_getter'}else{'fixture_window_handle_getter'}
+    try {
+      # Membership still uses the genuine retained handle. Only the read-only GUI
+      # observation object is substituted, then restored before owned cleanup.
+      $owned.Process=New-Object MarkAutoThrowingProcess($failExited)
+      try { Wait-OwnedAcceptanceWindow $owned -Seconds 1 }
+      catch {
+        $cause=$_.Exception.GetBaseException()
+        if ($cause -is [InvalidOperationException] -and $cause.Message -eq $expectedFailure) {
+          @{expected_failure=$expectedFailure; native_membership_retained=$true} | ConvertTo-Json |
+            Set-Content (Join-Path $Fixture ($Case+'-proof.json'))
+        }
+        throw
+      }
+      throw 'GUI getter failure was accepted as window readiness'
+    } finally { $owned.Process=$realProcess }
+  }
+  elseif ($Case -eq 'missing-window') { Wait-OwnedAcceptanceWindow $owned -Seconds 1 }
   elseif ($Case -eq 'install-hang' -or $Case -eq 'uninstall-hang') { Wait-OwnedAcceptanceProcess $owned 500 'Injected installer/uninstaller wait timed out' }
   elseif ($Case -eq 'wrong-image') { [void](Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ExpectedImage $env:ComSpec) }
   elseif ($Case -eq 'unrelated') {
     $outside=[Diagnostics.Process]::GetProcessById([int](Get-Content (Join-Path $Fixture 'outsider-pid.txt')))
     try {
-      if ([MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$outside.Handle)) { throw 'Unrelated process adopted by job' }
+      if ([MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$outside.get_Handle())) { throw 'Unrelated process adopted by job' }
       $refused=$false
-      try { [MarkAutoAcceptanceJob]::StopOwned($AcceptanceJob,$outside.Handle) } catch { $refused=$true }
-      if (-not $refused -or $outside.HasExited) { throw 'Unrelated same-name process was stopped' }
+      try { [MarkAutoAcceptanceJob]::StopOwned($AcceptanceJob,$outside.get_Handle()) } catch { $refused=$true }
+      if (-not $refused -or $outside.get_HasExited()) { throw 'Unrelated same-name process was stopped' }
     } finally { $outside.Dispose() }
   } else {
     @{id=$owned.Process.Id; created=$owned.Created} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-process.json')
@@ -214,7 +260,7 @@ try {
 } finally { Close-AcceptanceProcesses }
 '@ | Set-Content $worker
   Set-Content (Join-Path $fixture 'outsider-pid.txt') $outsider.Id
-  foreach ($case in @('install-hang','uninstall-hang','missing-window','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
+  foreach ($case in @('install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
     $parameters = @{Helper=(Join-Path $PSScriptRoot 'acceptance_process.ps1'); Fixture=$fixture; Case=$case}
     $report = Join-Path $fixture ($case + '.json')
     $failure = Join-Path $fixture ($case + '-failure.json')
@@ -228,6 +274,13 @@ try {
       Check ((Get-Content $report -Raw | ConvertFrom-Json).owned_processes_before_cleanup -eq 0) 'Success was reported before owned-job quiescence'
     }
     if ($expected -eq 1) { Check (Test-Path $failure) ('Missing failure report: ' + $case) }
+    if ($case -in @('window-exited-getter-failure','window-handle-getter-failure')) {
+      $proofPath=Join-Path $fixture ($case+'-proof.json')
+      Check (Test-Path -LiteralPath $proofPath) 'GUI getter failure did not propagate from the window-ready gate'
+      $proof=Get-Content -LiteralPath $proofPath -Raw | ConvertFrom-Json
+      $expectedFailure=if($case -eq 'window-exited-getter-failure'){'fixture_has_exited_getter'}else{'fixture_window_handle_getter'}
+      Check ($proof.expected_failure -eq $expectedFailure -and $proof.native_membership_retained -eq $true) 'GUI getter failure proof was invalid'
+    }
     if ($case -eq 'whole-run-hang') {
       Check ((Get-Content $report -Raw | ConvertFrom-Json).reason -eq 'whole_run_deadline') 'Whole deadline not enforced'
     }
@@ -246,7 +299,7 @@ try {
       Check (Test-Path -LiteralPath (Join-Path $fixture ($case+'-child.txt'))) 'Supervisor killed an unfinished cleanup child'
     }
     $outsider.Refresh()
-    Check (-not $outsider.HasExited) ('Unrelated same-name process exited: ' + $case)
+    Check (-not $outsider.get_HasExited()) ('Unrelated same-name process exited: ' + $case)
     Check ([MarkAutoAcceptanceJob]::Created($outsiderHandle) -eq $outsiderCreated) 'Unrelated creation identity changed'
   }
   # Forced supervisor termination must also close the private job without a finally block.
@@ -260,11 +313,11 @@ $p=@{Helper=$Helper;Fixture=$Fixture;Case='cancel'}
 '@ | Set-Content $supervisor
   [IO.File]::Delete((Join-Path $fixture 'owned-process.json'))
   $start = New-Object Diagnostics.ProcessStartInfo
-  $start.FileName=[Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+  $start.FileName=[Diagnostics.Process]::GetCurrentProcess().get_MainModule().get_FileName()
   $start.UseShellExecute=$false
   $start.Arguments='-NoProfile -File "' + $supervisor + '" -Helper "' + (Join-Path $PSScriptRoot 'acceptance_process.ps1') + '" -Worker "' + $worker + '" -Fixture "' + $fixture + '"'
   $outer = [Diagnostics.Process]::Start($start)
-  [void]$outer.Handle
+  [void]$outer.get_Handle()
   $observed = $null
   try {
     $clock=[Diagnostics.Stopwatch]::StartNew()
@@ -272,21 +325,21 @@ $p=@{Helper=$Helper;Fixture=$Fixture;Case='cancel'}
     $identity=Get-Content (Join-Path $fixture 'owned-process.json') -Raw | ConvertFrom-Json
     # PID is used only to observe an identified fixture, never for termination.
     $observed=[Diagnostics.Process]::GetProcessById($identity.id)
-    Check ([MarkAutoAcceptanceJob]::Created($observed.Handle) -eq $identity.created) 'Fixture identity mismatch'
+    Check ([MarkAutoAcceptanceJob]::Created($observed.get_Handle()) -eq $identity.created) 'Fixture identity mismatch'
     $outer.Kill() # Exact creation-returned supervisor handle retained above.
     Check ($outer.WaitForExit(2000)) 'Supervisor did not exit'
     Check ($observed.WaitForExit(2000)) 'Owned child survived abrupt supervisor cancellation'
     $outsider.Refresh()
-    Check (-not $outsider.HasExited) 'Cancellation stopped unrelated same-name process'
+    Check (-not $outsider.get_HasExited()) 'Cancellation stopped unrelated same-name process'
   } finally {
-    if (-not $outer.HasExited) { $outer.Kill(); [void]$outer.WaitForExit(2000) }
+    if (-not $outer.get_HasExited()) { $outer.Kill(); [void]$outer.WaitForExit(2000) }
     $outer.Dispose()
     if ($observed) { $observed.Dispose() }
   }
   Write-Host 'Native acceptance ownership regressions passed; this is not client lifecycle acceptance'
 } finally {
   if ($outsider) {
-    if (-not $outsider.HasExited) { $outsider.Kill(); [void]$outsider.WaitForExit(2000) }
+    if (-not $outsider.get_HasExited()) { $outsider.Kill(); [void]$outsider.WaitForExit(2000) }
     $outsider.Dispose()
   }
   [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($registration, $false)

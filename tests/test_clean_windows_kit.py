@@ -94,7 +94,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         source = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
         run = source.index("& (Join-Path $PSScriptRoot 'test_installer.ps1')")
         for marker in ('ProductType -ne 1', 'Architecture -ne 9', '$build -ne 19045', '$build -lt 22000',
-                       'Is64BitProcess', 'WindowsBuiltInRole]::Administrator', 'SessionId -eq 0',
+                       'Is64BitProcess', 'WindowsBuiltInRole]::Administrator', 'get_SessionId() -eq 0',
                        'Existing MarkAuto', 'developer_tools.Count', 'Get-FileHash', 'LicenseAlreadyAccepted'):
             self.assertLess(source.index(marker), run)
         self.assertNotIn('Remove-Item', source)

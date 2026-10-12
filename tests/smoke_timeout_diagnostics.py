@@ -22,6 +22,10 @@ WORKER_PHASES = frozenset({
     'wfo.hash', 'wfo.serialize', 'sqlite.connect', 'sqlite.execute',
     'sqlite.commit', 'sqlite.transaction_exit', 'sqlite.close',
     'process.start', 'process.join', 'ipc.poll', 'ipc.receive',
+    'worker.instrumentation', 'campaign.run', 'campaign.worker', 'campaign.reserve',
+    'broker.initialize', 'broker.restore', 'broker.transaction', 'broker.reconcile',
+    'broker.kill', 'replay.initialize', 'replay.transaction', 'replay.step',
+    'export.write', 'export.replace',
 })
 
 
@@ -123,6 +127,10 @@ def instrument_walk_forward(timings):
 def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id,
                             reconciliation_admitted=False):
     """Spawnable test-only observer; no changes to the real worker or its jobs."""
+    if operation in {'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'}:
+        from tests.generic_smoke_phase_diagnostics import diagnosed_generic_worker
+        return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap,
+                                         job_id, reconciliation_admitted)
     if operation != 'ui_walk_forward_run':
         return _original_job_worker(sender, gate, operation, payload, root, bootstrap,
                                     job_id, reconciliation_admitted)
@@ -163,6 +171,8 @@ def timing_rows(value, *, active=False):
             if type(item.get('calls')) is not int or not 0 <= item['calls'] <= 1000000:
                 continue
             row['calls'] = item['calls']
+            if type(item.get('cpu_ms')) is int and 0 <= item['cpu_ms'] <= 7200000:
+                row['cpu_ms'] = item['cpu_ms']
         rows.append(row)
     return rows
 
@@ -225,6 +235,9 @@ def output_summary(raw):
             if event.get('stage') == 'worker_timing':
                 event['active'] = timing_rows(value.get('active'), active=True)
                 event['timings'] = timing_rows(value.get('timings'))
+                for name in ('instrumentation_ready', 'instrumentation_failed'):
+                    if type(value.get(name)) is bool:
+                        event[name] = value[name]
             if 'stage' in event:
                 events.append(event)
         match = re.match(r'\s*File "[^"\n]*[/\\]([A-Za-z_][A-Za-z_0-9]*\.py)", line (\d+) in ([A-Za-z_][A-Za-z_0-9]*)$', line)
