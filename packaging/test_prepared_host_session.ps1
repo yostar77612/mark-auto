@@ -63,7 +63,7 @@ function Get-PreparedFixtureFailure($Failure, [string]$Stage) {
     ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;stack=@($frames)}
 }
 function Write-PreparedFixtureReport([string]$Name, $Record) {
-  if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof)\.(json|txt)$' -and $Name -notin @('bootstrap.json','controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
+  if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof|readiness)\.(json|txt)$' -and $Name -notin @('bootstrap.json','controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
   $json=$Record | ConvertTo-Json -Depth 7 -Compress
   [Console]::Out.WriteLine($json)
   $bytes=[Text.Encoding]::UTF8.GetBytes($json)
@@ -106,9 +106,22 @@ if ($AcceptanceJob) {
     $workerStage='load_fixture_assembly'
     [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes($UiFixture))
     $workerStage='create_owned_fixture'
-    $owned=Start-OwnedAcceptanceProcess $UiFixture
+    $ownedReady=Join-Path (Split-Path $UiFixture -Parent) ($UiCase+'-owned.ready')
+    Assert-AcceptancePath $ownedReady -RequireAbsent
+    $renderClock=[Diagnostics.Stopwatch]::StartNew()
+    $owned=Start-OwnedAcceptanceProcess $UiFixture @('"'+$ownedReady+'"')
     $workerStage='wait_owned_window'
     Wait-OwnedAcceptanceWindow $owned
+    $workerStage='wait_owned_render'
+    # Readiness shares the existing 30-second supervisor cap and five-second reserve.
+    while (-not [IO.File]::Exists($ownedReady)) {
+      Assert-OwnedAcceptanceProcess $owned
+      Require (-not $owned.Process.get_HasExited()) 'Owned fixture exited before rendering'
+      Require ($renderClock.Elapsed.TotalSeconds -lt 25) 'Owned fixture rendering timed out'
+      Start-Sleep -Milliseconds 50
+    }
+    Require ([IO.File]::ReadAllText($ownedReady) -ceq 'ready-seven-rendered') 'Owned fixture render proof invalid'
+    Write-PreparedFixtureReport ($UiCase+'-readiness.json') @{status='passed';framework='WPF';stage='content_rendered';realized_items=7}
     $real=$owned.Process
     try {
       if ($UiCase -eq 'foreign') {
@@ -254,11 +267,18 @@ try {
   [Console]::Out.WriteLine('{"stage":"preparation_controls","status":"passed"}')
   $controllerStage='compile_window_fixture'
   $exe=Join-Path $fixture 'PreparedUiFixture.exe'
+  # Resolve installed strong-named .NET Framework assemblies, not a search-path guess.
+  $wpfReferences=@('PresentationFramework','PresentationCore','WindowsBase','System.Xaml') | ForEach-Object {
+    $token=if ($_ -ceq 'System.Xaml') { 'b77a5c561934e089' } else { '31bf3856ad364e35' }
+    [Reflection.Assembly]::Load(($_+', Version=4.0.0.0, Culture=neutral, PublicKeyToken='+$token)).get_Location()
+  }
   Add-Type -TypeDefinition @'
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Threading;
 public sealed class PreparedFixtureView {
     readonly Process process; readonly IntPtr window;
     public PreparedFixtureView(Process process, IntPtr window) { this.process=process; this.window=window; }
@@ -270,20 +290,34 @@ public sealed class PreparedFixtureView {
 }
 public static class PreparedUiFixture {
     [STAThread] public static void Main(string[] args) {
-        Application.EnableVisualStyles();
-        using(var form=new Form()) using(var list=new ListBox()) using(var timer=new Timer()) {
-            form.Text="Prepared-host native fixture"; form.Width=640; form.Height=480;
-            list.Dock=DockStyle.Fill; list.TabStop=false;
-            list.Items.AddRange(new object[] {"市場總覽","資料匯入與更新","AI 策略中心","回測與結果","比較與策略選擇","紙上交易與復原","設定與備份"});
-            form.Controls.Add(list); bool armed=false;
-            list.SelectedIndexChanged+=delegate { if(armed && args.Length==2) File.WriteAllText(args[1],"foreign navigation touched"); };
-            form.Shown+=delegate { list.ClearSelected(); armed=true; if(args.Length==2) File.WriteAllText(args[0],"ready"); };
-            timer.Interval=120000; timer.Tick+=delegate { form.Close(); }; timer.Start();
-            Application.Run(form);
+        if(args.Length!=1 && args.Length!=2) throw new InvalidOperationException("Fixture readiness target required");
+        var app=new Application(); app.ShutdownMode=ShutdownMode.OnMainWindowClose;
+        var form=new Window(); form.Title="Prepared-host native fixture"; form.Width=640; form.Height=480;
+        var list=new ListBox(); list.SelectionMode=SelectionMode.Single; list.IsTabStop=false;
+        // Built-in WPF peers expose actual ListItems; no custom accessibility provider.
+        VirtualizingPanel.SetIsVirtualizing(list,false);
+        foreach(string label in new string[] {"市場總覽","資料匯入與更新","AI 策略中心","回測與結果","比較與策略選擇","紙上交易與復原","設定與備份"}) {
+            list.Items.Add(new ListBoxItem { Content=label });
         }
+        form.Content=list; bool armed=false;
+        list.SelectionChanged+=delegate { if(armed && args.Length==2) File.WriteAllText(args[1],"foreign navigation touched"); };
+        form.ContentRendered+=delegate {
+            if(armed) return;
+            if(list.Items.Count!=7) throw new InvalidOperationException("Fixture item count changed");
+            for(int i=0;i<7;i++) {
+                var item=list.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
+                if(item==null || !item.IsVisible) throw new InvalidOperationException("Fixture item not realized");
+            }
+            list.SelectedIndex=-1; armed=true;
+            // Atomic publication prevents the controller observing an incomplete marker.
+            File.WriteAllText(args[0]+".tmp","ready-seven-rendered"); File.Move(args[0]+".tmp",args[0]);
+        };
+        var timer=new DispatcherTimer(); timer.Interval=TimeSpan.FromMilliseconds(120000);
+        timer.Tick+=delegate { form.Close(); }; timer.Start();
+        try { app.Run(form); } finally { timer.Stop(); }
     }
 }
-'@ -ReferencedAssemblies System.Windows.Forms,System.Drawing -OutputAssembly $exe -OutputType WindowsApplication
+'@ -ReferencedAssemblies $wpfReferences -OutputAssembly $exe -OutputType WindowsApplication
   $controllerStage='outsider_setup'
   $ready=Join-Path $fixture 'foreign.ready'; $touched=Join-Path $fixture 'foreign.selected'
   $start=New-Object Diagnostics.ProcessStartInfo
@@ -298,6 +332,7 @@ public static class PreparedUiFixture {
     Require ($readyClock.Elapsed.TotalSeconds -lt 10) 'Foreign fixture window did not become ready'
     Start-Sleep -Milliseconds 50
   } while ($true)
+  Require ([IO.File]::ReadAllText($ready) -ceq 'ready-seven-rendered') 'Foreign fixture render proof invalid'
   Require (-not [IO.File]::Exists($touched)) 'Foreign fixture navigation precondition changed'
   foreach ($case in @('owned','foreign')) {
     $controllerStage=$case+'_case'

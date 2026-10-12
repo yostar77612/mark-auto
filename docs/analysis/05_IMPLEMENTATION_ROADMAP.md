@@ -2,6 +2,17 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #15 接續順序與正式完成界線（2026-10-12 17:47 UTC）
+
+沿用原 **230/300＝76.67%，剩餘 70/300＝23.33%**；D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 及 Win11 原條件不改。沒有獨立固定的全專案工程分母，不以測試數、CI 比率或本次修補創造得分；不增加廣泛新功能。
+
+1. **先閉合 native UIA Gate。** [Draft PR #15](https://github.com/yostar77612/mark-auto/pull/15)／head `82858f9a058d814e7d805f7a49621e8bb3343275` 的 [Windows 38285371834](https://github.com/yostar77612/mark-auto/actions/runs/38285371834) 原 17 所有權控制 PASS，新增 owned fixture 為 2 elements／0 required navigation、positive FAIL；cleanup／零 owned descendants 另證 PASS，後續 foreign-window case 未到達。保留原診斷／失敗；fixture-only WPF 方案已完成來源審查、待原生 Gate，原生根因與實際 Qt 驗證尚未成立。
+2. **再核驗同來源完整 CI 與 artifact。** `099a4dae` [Quantlab 38284029532](https://github.com/yostar77612/mark-auto/actions/runs/38284029532) 已全 18 jobs PASS，1,750 IDs＝1,507 core＋243 research，原 10 秒 calibration／20 秒 WFO／30 秒 960-bar Paper／40 秒 smoke 不變；最新 [Quantlab 38285371807](https://github.com/yostar77612/mark-auto/actions/runs/38285371807) 此檢查點已全 18 jobs SUCCESS，最新 Windows build／完整 native／lifecycle／recovery NOT_RUN、release SKIPPED。舊 `70d56790` 的 1,665 PASS／33 skips、lifecycle／recovery／provenance 不得替最新來源背書，其 calibration FAIL／core job 取消仍保留。必要同來源 Gate 全通過後依授權正常合併，另核 postmerge 結果；不把合併當正式發布。
+3. **有界 host lifecycle／真 UI 分別取得實機證據。** 已使用 Win10 上已下載核驗精確 `70d56790` kit，產品 NOT_RUN；RemoteSigned／ZoneId 3 阻擋 unsigned 腳本。只對兩支精確腳本備份並解除下載標記的例外仍待明確批准，未變更 execution policy。獲准後仍須新鮮 preflight、備份、MarkAuto 專屬隔離與 owned cleanup，無關檔案／全域／security／admin 變更不在授權內。PreparedHost 結果保持 PARTIAL，不冒充 clean-client；新工具未經審查／原生 Gate 不部署到 host。
+4. **完成原正式外部條件。** clean Win10／Win11 安裝生命週期／DPI、owner 真實官方 OAuth／訂閱有界推論、完整合法分鐘行情仍各自待驗，不以 Server／fixture／來源審查替代。不新增 paid API／local AI／實盤使用；其他電腦、VM、全域或管理員變更另需授權。
+
+main `f202c47bad061967edba2e6f8a0b8be81a37ffba` 與 [公開 unsigned 0.2.2 Preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1) 不變，正式發布未達門檻。分開列示已實作／source-reviewed／native PASS／PARTIAL／BLOCKED；來源與失敗詳見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。以下 13:12 UTC 路線保留歷史，工程／host 接續以本節為準。
+
 ## 目前正式路線：恢復原 300 分與 Win11（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
 
 依使用者最新「請以原本固定的 300 分驗收標準作為正式完成依據。」恢復 D8 與原共用 Win11 條件；目前 **230/300＝76.67%，剩餘 70/300＝23.33%**。D8 10 點為 EXTERNAL BLOCKED，非 PASS。原 D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 及實質測試均不改；舊 230/290／D8 延後只保留歷史。

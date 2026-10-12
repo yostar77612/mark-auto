@@ -111,6 +111,15 @@ class PreparedHostSessionContracts(unittest.TestCase):
                       'Unexplained empty directory accepted', 'Credential-bearing directory', 'Receipt paths escaped'):
             self.assertIn(token, fixture)
         self.assertIn('Start-OwnedAcceptanceProcess $UiFixture', fixture)
+        for token in ('using System.Windows.Controls;', 'VirtualizingPanel.SetIsVirtualizing(list,false)',
+                      'form.ContentRendered+=delegate', 'ContainerFromIndex(i) as ListBoxItem',
+                      'item==null || !item.IsVisible', 'ready-seven-rendered',
+                      'File.Move(args[0]+".tmp",args[0])', '$renderClock.Elapsed.TotalSeconds -lt 25',
+                      "'31bf3856ad364e35'", "'b77a5c561934e089'", '-ReferencedAssemblies $wpfReferences'):
+            self.assertIn(token, fixture)
+        self.assertNotIn('using System.Windows.Forms;', fixture)
+        self.assertNotIn('RegisterClientSideProvider', fixture)
+        self.assertLess(fixture.index("'Owned fixture render proof invalid'"), fixture.index('$result=Test-PreparedNavigation $owned'))
         self.assertIn('PowerShell eagerly unrolled the inventory iterator', fixture)
         self.assertIn('$index -lt 4097', fixture)
         self.assertIn('Inventory entry cap was bypassed', fixture)

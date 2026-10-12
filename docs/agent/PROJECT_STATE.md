@@ -2,6 +2,18 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #15 接續：原生 UIA Gate 未通過（2026-10-12 17:47 UTC）
+
+正式驗收仍為 **230/300＝76.67%，剩餘 70/300＝23.33%**；原 47 項 ID／權重／狀態／證據及 Win11 條件不變。D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 仍未全滿。工程實作另報已實作、來源審查、native PASS、PARTIAL／BLOCKED，沒有可核驗的全專案工程完成率分母，不以測試數換算。
+
+- **本次已查核候選：** `agent/windows-release-validation`／[Draft PR #15](https://github.com/yostar77612/mark-auto/pull/15)，檢查點 head `82858f9a058d814e7d805f7a49621e8bb3343275`。本輪為安裝測試所有權／有界程序清理、PreparedHost 接續及驗證基礎設施，不增加產品功能或驗收分數。
+- **已核驗、但屬較舊來源：** `70d56790` 的 [Windows 38273327378](https://github.com/yostar77612/mark-auto/actions/runs/38273327378) 原 17 項所有權控制、1,665 PASS／33 原 skips、十項 lifecycle、recovery 及 artifact provenance 通過；同來源 [Quantlab 38273327361](https://github.com/yostar77612/mark-auto/actions/runs/38273327361) 原 10 秒 calibration 失敗，另有 Windows 3.11 core job 到限取消，兩者均保留，不能稱整體 PASS。`099a4dae` 的 [Quantlab 38284029532](https://github.com/yostar77612/mark-auto/actions/runs/38284029532) 全 18 jobs PASS；精確 1,750 IDs＝1,507 core＋243 research，分片必須完整聚合；兩個 Windows profile 的原 10 秒 calibration／20 秒 WFO／30 秒 960-bar Paper／40 秒 smoke 均 PASS，未放寬期限、工作量或耐久要求。
+- **目前阻塞：** `82858f9a` 的 [Windows 38285371834](https://github.com/yostar77612/mark-auto/actions/runs/38285371834) 原 17 控制再次 PASS，但新增 owned UIA positive fixture 只見 2 elements／0 required navigation，Gate FAIL；foreign-window case 未到達，build／native full suite／lifecycle／recovery NOT_RUN，release SKIPPED。cleanup 另證 PASS、零 owned descendants，耐久診斷已保存，不能抵銷 primary failure。原生 UIA 原因未證明；fixture-only WPF 替代方案已完成來源審查、待原生 Gate，不代表已修復或 Qt 已驗證。[同 head Quantlab 38285371807](https://github.com/yostar77612/mark-auto/actions/runs/38285371807) 此檢查點已全 18 jobs SUCCESS；舊來源 PASS 不覆蓋最新來源。
+- **Win10 host：** 精確 `70d56790` artifact `11758603485`／kit 已下載核驗，產品尚未執行。CurrentUser RemoteSigned 拒絕帶 ZoneId 3 的 unsigned 腳本；僅兩支已核驗腳本之備份及移除下載標記仍待明確批准，未改 execution policy／security 設定。既有授權只涵蓋先備份、隔離後的 MarkAuto 專屬安裝／UI／lifecycle；不可動其他程式、檔案、全域設定或 admin。已使用 Win10 僅能提供 PARTIAL host 證據，不能冒充 clean-client。
+- **接續／發布界線：** 先完成原生 UIA Gate、同來源完整 CI／artifact 審查，再依授權正常合併；合併不等於正式發布。host 安全例外需另獲批准，實機 lifecycle／真 UI 另驗。main `f202c47bad061967edba2e6f8a0b8be81a37ffba` 與 [公開 unsigned 0.2.2 Preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1) 未變。clean Win10／Win11、owner 真實官方 OAuth／訂閱推論、完整合法分鐘資料及 DPI 等原正式條件仍待；無 paid API／local AI／實盤新授權，簽章／main 保護限制不因 CI PASS 消失。
+
+本節固定記錄上述已查核來源，不預認證其後文件整合或修補 commit；後續來源另需 exact-head 證據。以下 13:12 UTC 範圍恢復紀錄完整保留；其中工程／host 進度以本節為準。
+
 ## 原 300 分正式驗收恢復／Win11 仍待外部證據（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
 
 使用者最新明示「請以原本固定的 300 分驗收標準作為正式完成依據。」並要求 Win11 獨立驗證，取代先前 D8 暫緩決定。原 47 項 ID／權重／狀態／證據不改；目前 **230/300＝76.67%，剩餘 70/300＝23.33%**。D8 恢復 10 點、EXTERNAL BLOCKED，未實測／非 PASS；D5／M7 的原 Win11 共用條件一併恢復。剩餘 D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10，沒有新增得分。先前 230/290＝79.31% 及取消時間序保留為歷史，不能繼續當目前完成率。

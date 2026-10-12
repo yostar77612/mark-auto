@@ -2,6 +2,16 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #15 目前風險：UIA positive Gate 失敗（2026-10-12 17:47 UTC）
+
+[Draft PR #15](https://github.com/yostar77612/mark-auto/pull/15)／head `82858f9a058d814e7d805f7a49621e8bb3343275` 尚不可合併或正式發布。正式驗收仍 **230/300＝76.67%，剩餘 70/300＝23.33%**，含原 Win11 條件；原 ID／權重／證據不改，工程完成率沒有獨立固定分母。
+
+- **native PASS 與未驗證分開：** `70d56790` 的所有權 17 控制、1,665 PASS／33 skips、lifecycle／recovery／provenance 僅認證該來源；其 calibration FAIL／core job 取消仍保留。`099a4dae` [Quantlab 38284029532](https://github.com/yostar77612/mark-auto/actions/runs/38284029532) 18 jobs PASS、1,750 IDs 完整 core／research 分割及原 10／20／30／40 秒 Gate 通過，不等於最新候選或 clean-client 通過。
+- **目前 UIA 失敗未歸因：** [Windows 38285371834](https://github.com/yostar77612/mark-auto/actions/runs/38285371834) 原 17 控制 PASS；owned fixture 僅 2 elements／0 required navigation，positive Gate FAIL，後續 foreign-window case 未執行。cleanup／零 owned descendants 另證 PASS，durable diagnostics 保留；build／完整 native／lifecycle／recovery 未執行，release SKIPPED。fixture-only WPF 替代方案已完成來源審查、待原生 Gate，不宣稱 root cause 修復或實際 Qt 導航已驗證。[同 head Quantlab](https://github.com/yostar77612/mark-auto/actions/runs/38285371807) 此檢查點已全 18 jobs SUCCESS。
+- **host 與外部邊界：** 已核驗舊 `70d56790` kit，但 Win10 產品 NOT_RUN；RemoteSigned／ZoneId 3 阻擋 unsigned 腳本，兩支精確腳本的備份／解除下載標記仍待批准，未變更安全設定。MarkAuto-only 備份／隔離授權不涵蓋無關檔案、全域、admin 或其他電腦。已使用 host 最多 PARTIAL，不替代 clean Win10／Win11、DPI、真 owner OAuth／訂閱推論或完整合法分鐘資料。無新增 paid API／local AI／實盤授權。
+
+main `f202c47b`／[公開 unsigned 0.2.2 Preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1) 不變；完整同來源 Gate／artifact 審查後才能依授權正常合併，正式發布條件另列。詳見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。以下 13:12 UTC 紀錄完整保留，工程／host 進度以本節為準。
+
 ## 目前範圍風險：原 300 分／Win11 恢復（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
 
 使用者明確恢復原 300 分正式標準與 Win11 驗證，取代先前暫緩。目前 230/300＝76.67%、尚餘 70/300＝23.33%；D8 10 點恢復為 EXTERNAL BLOCKED、非 PASS，D5／M7 原 Win11 條件恢復。舊 230/290 僅為歷史；原 ID／權重／狀態／失敗證據不變。
