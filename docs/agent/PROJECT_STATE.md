@@ -2,6 +2,14 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #12 合併後必要 Gate 失敗；測試觀測候選待驗（2026-10-12 08:00 +08:00／2026-10-12 00:00 UTC）
+
+- **合併與失敗分開記錄：** 範圍 PR #12 已合併 main `185513f03bb9a52bb7ad80da1a508db03c3bcd52`／tree `638f2f1b402deb11b01096ef43368e0fa0b2abab`，產品／測試／工作流未變。[Quantlab 38185218807 的 Windows 3.11 research](https://github.com/yostar77612/mark-auto/actions/runs/38185218807/job/114605969432) 終態為 13 SUCCESS／1 FAIL，失敗僅 3.11 research：原 243 cases＝235 PASS／6 原 skips／2 ERROR，parent 377.109 秒。3.12 為 237 PASS／6 skips，224.672 秒；不能替代 3.11 的必要 Gate。
+- **已知失敗與證據界線：** active-writer case 完成 reader assertions、release.set() 後，future.result 的原 10 秒等待逾時，未建立 writer 完成／後續 33-call assertion。join-failure smoke 在原 40 秒 subprocess 等待逾時，尚未到最終 report／retention／cleanup assertions；上傳證據沒有 inner smoke report。兩 worker exit 1、cleanup_confirmed=true；natural_exit_and_quiescent=false 不足以單獨證明清理前仍有活動。原生內部阻塞階段與產品根因尚未證明，不能只因來源未變就歸因環境。
+- **下一候選僅 TEST_ONLY：** 補足失敗階段觀測；中間版本 root 30 PASS／15.440 秒、7 個新增 core tests 保留為階段證據。初次獨立審查發現 artifact Path.resolve 在 guard 外可能遮蔽原 TimeoutError，以及 stack 函式名稱長度未設上限；兩個診斷缺陷已修正並加入回歸。最終候選 root 33 PASS／15.426 秒、獨立 11 focused PASS；新增 core tests 共 10 個（active-writer 7、terminal 3），原 243 research cases 不變。首次指令誤在 baseline 目錄執行，因缺新 test module 而 ImportError；保留為本機 harness 錯誤，不是產品回歸，改到候選目錄後通過。新 exact-head 原生 CI 尚待，不聲稱性能修復或 native PASS。原 10／40 秒、33 evaluations／93 FULL saves、原 243 tests／6 skips、15 分鐘 job cap 及 Paper 960／30 秒保留，不改產品或工作流、不放寬 assertions、不以未變來源重跑洗掉失敗。最終原生結果由對應 PR 依來源另列，不預填 native 通過數。
+- **範圍與發布：** 目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 延後非 PASS，原 230/300／全部 rubric／歷史失敗均不變。最後已核驗公開版仍為 `3ef9a740`／[unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1)；main `185513f0` 的必要工程驗證尚未全通過，不以舊 PASS 宣稱新發布或正式完成。main Windows native／lifecycle 已通過，recovery／artifact 核驗／release guard 終態於本檢查點仍待完成；release guard 必須拒絕必要 Gate 失敗，尚不宣稱已執行拒絕或發布。以下 07:07 範圍決策保留原時間，其「本次文件後續」以本節新工程狀態接續。
+
+
 ## 目前驗收範圍：Windows 10（2026-10-12 07:07:46 +08:00／2026-10-11 23:07:46 UTC）
 
 使用者最新明確指示：「我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入」。此指示取代先前保留 Win10／Win11 雙平台的要求；僅調整本輪驗收範圍，不改產品、工作流、測試或安全門檻。

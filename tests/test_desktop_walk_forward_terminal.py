@@ -1,48 +1,21 @@
 """Synthetic callback/cleanup failures; no Windows-client acceptance claim."""
-import ctypes
 import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
 import unittest
 
 from tests import test_desktop_walk_forward_runtime as runtime_tests
+from tests.smoke_timeout_diagnostics import run_smoke_process
+from tests.test_desktop_smoke_terminal import process_can_run
 REFERENCE = runtime_tests.REFERENCE
 from quantlab.desktop_runtime import RuntimeSafetyError
 from desktop import _close_smoke_worker
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def process_can_run(pid):
-    if sys.platform == 'win32':
-        from ctypes import wintypes as w
-        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        kernel.OpenProcess.argtypes, kernel.OpenProcess.restype = [w.DWORD, w.BOOL, w.DWORD], w.HANDLE
-        kernel.GetExitCodeProcess.argtypes = [w.HANDLE, ctypes.POINTER(w.DWORD)]
-        kernel.CloseHandle.argtypes = [w.HANDLE]
-        handle = kernel.OpenProcess(0x1000, False, pid)
-        if not handle:
-            if ctypes.get_last_error() == 87: return False
-            raise AssertionError('Cannot inspect worker PID safely')
-        try:
-            status = w.DWORD()
-            if not kernel.GetExitCodeProcess(handle, ctypes.byref(status)):
-                raise AssertionError('Cannot inspect worker exit state')
-            return status.value == 259
-        finally:
-            kernel.CloseHandle(handle)
-    try: os.kill(pid, 0)
-    except ProcessLookupError: return False
-    if sys.platform.startswith('linux'):
-        # Reaping can expose dead X (historically x) after zombie Z.
-        try: return Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()[0] not in {'Z', 'X', 'x'}
-        except (FileNotFoundError, ProcessLookupError): return False
-    return True
 
 
 class TerminalRuntimeProofTests(unittest.TestCase):
@@ -86,31 +59,76 @@ class TerminalSmokeProcessTests(unittest.TestCase):
     def smoke(self, injected, *, retained, cleanup_verified=None, timed_out=False):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary); report = home / 'report.json'; pidfile = home / 'worker-pids.json'
+            writes = home / 'report-writes.jsonl'
             bootstrap = home / 'LocalAppData/MarkAuto' if sys.platform == 'win32' else home / '.local/share/MarkAuto'
-            code = '''import sys, os, json
+            code = '''import sys, os, json, time, faulthandler
 from pathlib import Path
 import desktop
+import quantlab.desktop_runtime as runtime
+from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
+runtime._job_worker = diagnosed_smoke_worker
 from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))
 from PySide6.QtWidgets import QMessageBox
 QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).throw(AssertionError('No smoke modal'))
+diagnostic_started = time.perf_counter()
+def trace(stage, **values):
+ print('SMOKE_DIAGNOSTIC ' + json.dumps(dict(stage=stage, elapsed_ms=int((time.perf_counter()-diagnostic_started)*1000), **values)), file=sys.stderr, flush=True)
+original_write = runtime.atomic_write
+def audited_write(path, raw):
+ if Path(path) == Path(sys.argv[1]):
+  trace('report_write')
+  with Path(sys.argv[3]).open('a') as stream: stream.write(json.dumps(json.loads(raw)) + '\\n')
+ return original_write(path, raw)
+runtime.atomic_write = audited_write
+original_poll = JobManager.poll
+def tracked_poll(self):
+ try: events = original_poll(self)
+ except BaseException:
+  trace('poll_error', operation=self._operation)
+  raise
+ for event in events:
+  if event['type'] in ('result', 'error', 'cancelled'): trace('terminal', operation=self._operation, event=event['type'])
+ return events
+JobManager.poll = tracked_poll
+original_join = JobManager._join_descendants
+def tracked_join(self, pid):
+ trace('join_start', operation=self._operation, pid=pid)
+ try: result = original_join(self, pid)
+ except BaseException:
+  trace('join_error', operation=self._operation, pid=pid)
+  raise
+ trace('join_end', operation=self._operation, pid=pid)
+ return result
+JobManager._join_descendants = tracked_join
+diagnostic_original_cleanup = desktop._close_smoke_worker
+def tracked_cleanup(manager):
+ trace('cleanup_start')
+ result = diagnostic_original_cleanup(manager)
+ trace('cleanup_end', verified=result['verified'])
+ return result
+desktop._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):
+ trace('start_requested', operation=operation)
  value = original_start(self, operation, payload)
- if operation.startswith('ui_walk_forward_'):
-  pids.append(self.process.pid)
-  Path(sys.argv[2]).write_text(json.dumps(pids))
+ trace('started', operation=operation, pid=self.process.pid)
+ pids.append(self.process.pid)
+ Path(sys.argv[2]).write_text(json.dumps(pids))
  return value
 JobManager.start = tracked_start
 '''
-            code += injected + "\nraise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
+            code += injected + "\nfaulthandler.dump_traceback_later(35)\ntry:\n status = desktop.main(['--smoke-test', sys.argv[1]])\n trace('main_return', status=status)\nfinally: faulthandler.cancel_dump_traceback_later()\nraise SystemExit(status)\n"
+            (home / 'sitecustomize.py').write_text("import socket\ndef denied(*args, **kwargs): raise AssertionError('No network')\nsocket.create_connection = socket.getaddrinfo = denied\noriginal = socket.socket.connect\ndef connect(self, address):\n if self.family in (socket.AF_INET, socket.AF_INET6): return denied()\n return original(self, address)\nsocket.socket.connect = socket.socket.connect_ex = connect\n")
             env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), LOCALAPPDATA=str(home / 'LocalAppData'),
-                       APPDATA=str(home / 'AppData'), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'))
+                       APPDATA=str(home / 'AppData'), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'),
+                       PYTHONPATH=str(home) + os.pathsep + str(ROOT))
             started = time.monotonic()
-            result = subprocess.run([sys.executable, '-c', code, str(report), str(pidfile)], cwd=ROOT,
-                                    env=env, capture_output=True, text=True, timeout=40)
+            result = run_smoke_process([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
+                env=env, report=report, pidfile=pidfile, writes=writes, process_can_run=process_can_run,
+                artifact_dir=ROOT / 'dist/validation', timeout=40)
             self.assertLess(time.monotonic() - started, 40)
             self.assertEqual(result.returncode, 1, result.stderr[-3000:])
             self.assertTrue(report.exists(), result.stderr[-3000:])

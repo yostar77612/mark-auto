@@ -122,6 +122,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
 
     def test_read_active_writer_reports_uncertain_running_state_without_recovery(self):
         from concurrent.futures import ThreadPoolExecutor
+        from tests.active_writer_timeout_diagnostics import observe_writer
         import threading
         entered, release = threading.Event(), threading.Event()
         p = self.preview(); calls = []
@@ -130,8 +131,8 @@ class WalkForwardAdapterTests(unittest.TestCase):
             entered.set()
             if not release.wait(5): raise AssertionError('Test writer was not released')
             return fake_worker(*args, **kwargs)
-        with patch('quantlab.walk_forward._run_bounded', side_effect=paused_worker), ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(self.operation, 'run', {'plan': p['plan'], 'preview_identity': p['preview_identity']})
+        with patch('quantlab.walk_forward._run_bounded', side_effect=paused_worker), observe_writer() as diagnosis, ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(diagnosis.run, self.operation, 'run', {'plan': p['plan'], 'preview_identity': p['preview_identity']})
             try:
                 self.assertTrue(entered.wait(5))
                 reader = self.operation('read', {'reference': p['preview_identity']})
@@ -142,7 +143,15 @@ class WalkForwardAdapterTests(unittest.TestCase):
                 self.assertEqual(reader['summary']['evaluations_reserved'], 1)
             finally:
                 release.set()
-            self.assertEqual(future.result(timeout=10)['status'], 'completed')
+            try:
+                self.assertEqual(future.result(timeout=10)['status'], 'completed')
+            except TimeoutError:
+                try:
+                    diagnosis.report_timeout(artifact_dir=Path(__file__).resolve().parents[1] / 'dist' / 'validation',
+                        evaluations_started=len(calls), future_done=future.done())
+                except Exception:
+                    pass  # Even constructing diagnostic arguments cannot replace the gate failure.
+                raise
         self.assertEqual(len(calls), 33)
 
     def test_unknown_payloads_and_no_fabricated_stop_proof(self):

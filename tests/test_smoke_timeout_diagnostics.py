@@ -287,6 +287,78 @@ time.sleep(60)
         self.assertNotIn('DO_NOT_RETAIN', json.dumps(result))
         self.assertNotIn('/private', json.dumps(result))
 
+    def test_terminal_join_phases_retain_only_allowlisted_metadata(self):
+        stages = ('join_start', 'join_end', 'join_error', 'poll_error', 'report_write')
+        lines = [dict(stage=stage, operation='ui_walk_forward_run', pid=123,
+                      elapsed_ms=17, message='DO_NOT_RETAIN', path='/private/user/root',
+                      exception='private exception join failure') for stage in stages]
+        lines.append(dict(stage='/private/unknown-stage', message='DO_NOT_RETAIN'))
+        result = output_summary('\n'.join('SMOKE_DIAGNOSTIC ' + json.dumps(row) for row in lines))
+        self.assertEqual(result['events'], [dict(stage=stage, operation='ui_walk_forward_run',
+                         pid=123, elapsed_ms=17) for stage in stages])
+        self.assertNotIn('DO_NOT_RETAIN', json.dumps(result))
+        self.assertNotIn('/private', json.dumps(result))
+        self.assertNotIn('exception', json.dumps(result))
+
+    def test_walk_forward_terminal_uses_original_gate_and_owned_capture(self):
+        # Wiring only. Stop before launch rather than fabricate smoke success.
+        from tests.test_desktop_walk_forward_terminal import TerminalSmokeProcessTests
+        case = TerminalSmokeProcessTests(methodName='runTest')
+        with patch('tests.test_desktop_walk_forward_terminal.run_smoke_process',
+                   side_effect=RuntimeError('wiring only')) as launch:
+            with self.assertRaisesRegex(RuntimeError, 'wiring only'):
+                case.smoke('# injected fixture marker', retained=True, cleanup_verified=False)
+        args, kwargs = launch.call_args
+        self.assertEqual(kwargs['timeout'], 40)
+        self.assertEqual(kwargs['artifact_dir'], kwargs['cwd'] / 'dist/validation')
+        self.assertIs(kwargs['process_can_run'], process_can_run)
+        command = args[0]
+        self.assertEqual(command[:2], [sys.executable, '-c'])
+        self.assertEqual(command[3:], [str(kwargs[key]) for key in ('report', 'pidfile', 'writes')])
+        code = command[2]
+        compile(code, '<synthetic terminal smoke>', 'exec')
+        self.assertIn('runtime._job_worker = diagnosed_smoke_worker', code)
+        self.assertIn('faulthandler.dump_traceback_later(35)', code)
+        self.assertIn('faulthandler.cancel_dump_traceback_later()', code)
+        self.assertLess(code.index('JobManager._join_descendants = tracked_join'),
+                        code.index('# injected fixture marker'))
+        self.assertNotIn('operation.startswith', code)  # Every launched PID is recorded.
+        self.assertEqual(kwargs['env']['QT_QPA_PLATFORM'], 'offscreen')
+
+    def test_post_join_injected_failure_cannot_grant_original_owner_proof(self):
+        # Protocol test, not native Windows or smoke acceptance. Match the real
+        # terminal injection: stop succeeds, then its proof operation raises.
+        from desktop import _close_smoke_worker
+        from tests.test_desktop_walk_forward_runtime import WalkForwardRuntimeTests, REFERENCE
+        fixture = WalkForwardRuntimeTests(methodName='runTest')
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        job_id = fixture.start_fake()
+        owner = fixture.manager._walk_forward_owner_path(REFERENCE)
+        owner_bytes = owner.read_bytes()
+        fixture.frame(result={'reference': REFERENCE, 'status': 'completed'})
+        fixture.alive = False
+        original = JobManager._join_descendants
+        def unverified(manager, pid):
+            original(manager, pid)
+            raise RuntimeSafetyError('private exception join failure')
+        with patch.object(JobManager, '_join_descendants', unverified):
+            with self.assertRaises(RuntimeSafetyError):
+                fixture.manager.poll()
+            self.assertEqual(fixture.tree.stop_and_join.call_count, 1)
+            for _ in range(2):  # Callback failure cleanup, then final cleanup.
+                self.assertEqual(_close_smoke_worker(fixture.manager),
+                                 {'verified': False, 'error_type': 'RuntimeSafetyError'})
+                self.assertTrue(fixture.manager.active)
+                self.assertFalse(fixture.manager._tree_quiesced)
+                self.assertIsNone(fixture.manager._quiesced_walk_forward)
+                self.assertEqual(owner.read_bytes(), owner_bytes)
+                fixture.process.close.assert_not_called()
+                fixture.tree.close.assert_not_called()
+            self.assertEqual(fixture.tree.stop_and_join.call_count, 5)
+        self.assertEqual(_close_smoke_worker(fixture.manager), {'verified': True, 'error_type': None})
+        self.assertEqual(fixture.manager._quiesced_walk_forward, (job_id, REFERENCE))
+
 
 class WorkerTimingTests(unittest.TestCase):
     def test_active_phase_and_failed_call_are_recorded_without_exception_text(self):

@@ -211,7 +211,7 @@ def output_summary(raw):
             if not isinstance(value, dict):
                 continue
             event = {}
-            if type(value.get('stage')) is str and value['stage'] in {'start_requested', 'started', 'terminal', 'cleanup_start', 'cleanup_end', 'main_return', 'worker_timing'}:
+            if type(value.get('stage')) is str and value['stage'] in {'start_requested', 'started', 'terminal', 'cleanup_start', 'cleanup_end', 'main_return', 'worker_timing', 'join_start', 'join_end', 'join_error', 'poll_error', 'report_write'}:
                 event['stage'] = value['stage']
             for name in ('pid', 'elapsed_ms', 'status'):
                 if type(value.get(name)) is int:
