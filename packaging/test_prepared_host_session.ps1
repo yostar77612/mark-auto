@@ -38,22 +38,32 @@ function Get-PreparedFixtureFailure($Failure, [string]$Stage) {
   $message=$Failure.Exception.GetBaseException().Message
   if ($assertions.ContainsKey($message)) { $assertion=$assertions[$message] }
   $frames=New-Object System.Collections.ArrayList
-  foreach ($line in @($Failure.ScriptStackTrace -split "`n" | Select-Object -First 8)) {
-    if ($line -match '^at ([^,]+), (.+): line ([0-9]+)\s*$') {
-      $function=$Matches[1]; $file=[IO.Path]::GetFileName($Matches[2]); $number=[int]$Matches[3]
-      if ($file -notin @('test_prepared_host_session.ps1','prepared_host_session.ps1','acceptance_process.ps1')) { $file='other-script' }
+  # Stack labels are untrusted display text (including <No file>), never paths.
+  # Bound allocation and matching; malformed/oversized frames cannot mask the failure.
+  try {
+    $trace=[string]$Failure.ScriptStackTrace
+    $trace=$trace.Substring(0,[Math]::Min($trace.Length,16384))
+    foreach ($line in @($trace -split "`n" | Select-Object -First 8)) {
+      $frame=[regex]::Match($line,'^at ([^,\r\n]{1,128}), ([^\r\n]{1,2048}): line ([0-9]{1,10})\s*$')
+      if (-not $frame.Success) { continue }
+      $function=$frame.Groups[1].Value; $label=$frame.Groups[2].Value; $file='other-script'
+      foreach ($known in @('test_prepared_host_session.ps1','prepared_host_session.ps1','acceptance_process.ps1')) {
+        if ($label -ceq $known -or $label.EndsWith(('\'+$known),[StringComparison]::Ordinal) -or $label.EndsWith(('/'+$known),[StringComparison]::Ordinal)) { $file=$known; break }
+      }
+      $number=0
+      if (-not [int]::TryParse($frame.Groups[3].Value,[ref]$number)) { $number=0 }
       if ($function -notin @('<ScriptBlock>','Require','Reject','Test-PreparedNavigation','Confirm-AcceptanceWorker',
           'Start-OwnedAcceptanceProcess','Assert-OwnedAcceptanceProcess','Wait-OwnedAcceptanceWindow',
           'Wait-OwnedAcceptanceProcess','Close-AcceptanceProcesses','Read-PreparedBootstrap')) { $function='other-function' }
       [void]$frames.Add(@{script=$file;function=$function;line=$number})
     }
-  }
+  } catch { $frames.Clear() } # Diagnostic text must never prevent reports or owned cleanup.
   return @{status='failed';stage=$Stage;case=$UiCase;assertion=$assertion;exceptions=@($chain);native_code=$native;
     ui_phase=$script:preparedUiPhase;ui_elements=$script:preparedUiElements;
     ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;stack=@($frames)}
 }
 function Write-PreparedFixtureReport([string]$Name, $Record) {
-  if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof)\.(json|txt)$' -and $Name -notin @('controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
+  if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof)\.(json|txt)$' -and $Name -notin @('bootstrap.json','controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
   $json=$Record | ConvertTo-Json -Depth 7 -Compress
   [Console]::Out.WriteLine($json)
   $bytes=[Text.Encoding]::UTF8.GetBytes($json)
@@ -65,14 +75,22 @@ $nativeEvidence=Join-Path (Split-Path $PSScriptRoot -Parent) 'dist\validation\pr
 $script:preparedUiPhase='not_entered'; $script:preparedUiElements=0; $script:preparedUiFound=0; $script:preparedUiSelected=0
 $workerStage='load_ownership_helper'
 $isFixtureWorker=[bool]$AcceptanceJob
+$evidenceReady=$false
 try {
   . (Join-Path $PSScriptRoot 'acceptance_process.ps1')
+  if (-not $isFixtureWorker) {
+    Assert-AcceptancePath $nativeEvidence -RequireAbsent
+    [void][IO.Directory]::CreateDirectory($nativeEvidence)
+    $evidenceReady=$true
+    Write-PreparedFixtureReport 'bootstrap.json' @{status='started';stage='ownership_helper_loaded'}
+  }
   $workerStage='import_session_routines'
   $savedJob=$AcceptanceJob
   . (Join-Path $PSScriptRoot 'prepared_host_session.ps1')
   $AcceptanceJob=$savedJob
 } catch {
   if ($isFixtureWorker -and $UiCase -in @('owned','foreign')) { Write-PreparedFixtureReport ($UiCase+'-primary.json') (Get-PreparedFixtureFailure $_ $workerStage) }
+  elseif ($evidenceReady) { Write-PreparedFixtureReport 'controller.json' (Get-PreparedFixtureFailure $_ $workerStage) }
   throw
 }
 if ($AcceptanceJob) {
@@ -134,14 +152,13 @@ if ($AcceptanceJob) {
   if ($cleanupFailure) { throw $cleanupFailure }
   exit 0
 }
-Assert-AcceptancePath $nativeEvidence -RequireAbsent
-[void][IO.Directory]::CreateDirectory($nativeEvidence)
 $controllerStage='preparation_controls'
 $fixture=Join-Path $env:TEMP ('prepared-state-'+[guid]::NewGuid().ToString('N'))
-Assert-AcceptancePath $fixture -RequireAbsent
-[void][IO.Directory]::CreateDirectory($fixture)
-$outsider=$null
+$fixtureCreated=$false; $outsider=$null
 try {
+  Assert-AcceptancePath $fixture -RequireAbsent
+  [void][IO.Directory]::CreateDirectory($fixture)
+  $fixtureCreated=$true
   $syntheticFailure=$null
   try { throw (New-Object InvalidOperationException('synthetic-private-message C:\private-fixture\value')) }
   catch { $syntheticFailure=$_ }
@@ -150,6 +167,27 @@ try {
   Require ($safeDiagnostic.exceptions.Count -le 4 -and $safeDiagnostic.stack.Count -le 8) 'Native diagnostic bounds exceeded'
   Require (@($safeDiagnostic.exceptions | Where-Object { $_.type -eq 'System.InvalidOperationException' }).Count -eq 1) 'Native diagnostic lost original exception type'
   Require (-not $safeJson.Contains('synthetic-private-message') -and -not $safeJson.Contains('private-fixture') -and -not $safeJson.Contains($fixture)) 'Native diagnostic leaked a message or path'
+  $stackCases=@(
+    @{trace='at <ScriptBlock>, <No file>: line 1';count=1;file='other-script';number=1},
+    @{trace=('at Require, C:\private-fixture\bad'+[char]0+'<>"|.ps1: line 2');count=1;file='other-script';number=2},
+    @{trace='at Require, C:\private-fixture\test_prepared_host_session.ps1: line 7';count=1;file='test_prepared_host_session.ps1';number=7},
+    @{trace='at Require, /private-fixture/prepared_host_session.ps1: line 2147483648';count=1;file='prepared_host_session.ps1';number=0},
+    @{trace=('at Require, acceptance_process.ps1: line '+('9'*1000));count=0;file='';number=0},
+    @{trace='unstructured private-fixture text';count=0;file='';number=0},
+    @{trace=('x'*20000);count=0;file='';number=0},
+    @{trace=$null;count=0;file='';number=0},
+    @{trace=(('at Require, acceptance_process.ps1: line 3'+"`n")*9);count=8;file='acceptance_process.ps1';number=3}
+  )
+  foreach ($sample in $stackCases) {
+    $diagnostic=Get-PreparedFixtureFailure ([pscustomobject]@{Exception=$syntheticFailure.Exception;ScriptStackTrace=$sample.trace}) 'diagnostic_control'
+    Require ($diagnostic.stack.Count -eq $sample.count) 'Native diagnostic malformed-stack count changed'
+    foreach ($frame in $diagnostic.stack) {
+      Require ($frame.script -ceq $sample.file -and $frame.line -eq $sample.number) 'Native diagnostic basename or line was not sanitized'
+    }
+    $json=$diagnostic | ConvertTo-Json -Depth 7 -Compress
+    Require (-not $json.Contains('private-fixture') -and -not $json.Contains('synthetic-private-message') -and -not $json.Contains('<No file>')) 'Native diagnostic leaked untrusted stack text'
+  }
+  [Console]::Out.WriteLine('{"stage":"diagnostic_controls","status":"passed","cases":9}')
   $source=Join-Path $fixture 'source'; [void][IO.Directory]::CreateDirectory($source)
   Assert-PreparedSeparateRoots $source (Join-Path $fixture 'peer-session')
   Reject { Assert-PreparedSeparateRoots $source (Join-Path $source 'child') } 'Session nested inside kit was accepted' 'Kit and session directories must not overlap'
@@ -300,6 +338,6 @@ public static class PreparedUiFixture {
   } finally {
     # Durable sanitized reports are outside this exact owned scratch directory.
     # This exact random fixture was created above; no host app state is touched.
-    Remove-Item -LiteralPath $fixture -Recurse -Force
+    if ($fixtureCreated) { Remove-Item -LiteralPath $fixture -Recurse -Force }
   }
 }

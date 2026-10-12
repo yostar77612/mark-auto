@@ -135,10 +135,20 @@ class PreparedHostSessionContracts(unittest.TestCase):
     def test_native_failure_evidence_survives_scratch_cleanup(self):
         fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
         for token in ('Get-PreparedFixtureFailure', 'Select-Object -First 8', '$i -lt 4',
-                      '[IO.Path]::GetFileName($Matches[2])', "'other-script'", 'native_code=$native',
+                      '[int]::TryParse', "'other-script'", 'native_code=$native',
                       'ui_navigation_found=$script:preparedUiFound', "'records_and_lease_closed'",
                       'worker_exit=$jobReport.worker_exit_code', 'cleanup_verified=$jobReport.cleanup_verified'):
             self.assertIn(token, fixture)
+        sanitizer = fixture.split('function Get-PreparedFixtureFailure', 1)[1].split('function Write-PreparedFixtureReport', 1)[0]
+        self.assertNotIn('[IO.Path]', sanitizer)
+        self.assertNotIn('[int]$Matches', sanitizer)
+        for token in ('$trace.Length,16384', '[0-9]{1,10}', 'catch { $frames.Clear() }',
+                      '<No file>', '2147483648', "('9'*1000)", 'Native diagnostic leaked untrusted stack text'):
+            self.assertIn(token, fixture)
+        self.assertLess(fixture.index("Write-PreparedFixtureReport 'bootstrap.json'"),
+                        fixture.index(". (Join-Path $PSScriptRoot 'prepared_host_session.ps1')"))
+        self.assertLess(fixture.index("Write-PreparedFixtureReport 'bootstrap.json'"),
+                        fixture.index('$safeDiagnostic=Get-PreparedFixtureFailure'))
         self.assertLess(fixture.index("Write-PreparedFixtureReport ($UiCase+'-primary.json') $primary"),
                         fixture.index('try { Close-AcceptanceProcesses } catch'))
         self.assertIn("$report=Join-Path $nativeEvidence ($case+'-supervisor.json')", fixture)
