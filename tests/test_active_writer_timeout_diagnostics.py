@@ -138,7 +138,13 @@ class ActiveWriterDiagnosticTests(unittest.TestCase):
     def test_actual_adapter_handler_keeps_original_timeout_if_path_resolution_fails(self):
         # Compile only the actual handler, so this safety regression runs without Qt.
         path = Path(__file__).with_name('test_desktop_walk_forward.py')
-        module = ast.parse(path.read_text())
+        read_text = Path.read_text
+        def read_source(source, *args, **kwargs):
+            # Reject locale-dependent source reads even on UTF-8 Linux hosts.
+            self.assertEqual(kwargs.get('encoding'), 'utf-8')
+            return read_text(source, *args, **kwargs)
+        with patch.object(Path, 'read_text', read_source):
+            module = ast.parse(path.read_text(encoding='utf-8'))
         adapter = next(node for node in module.body if isinstance(node, ast.ClassDef)
                        and node.name == 'WalkForwardAdapterTests')
         method = next(node for node in adapter.body if isinstance(node, ast.FunctionDef)

@@ -209,18 +209,43 @@ class ConnectionDiagnosticTests(unittest.TestCase):
         from tools.diagnose_paper_replay import _connection_case
         import sys
         real_popen = subprocess.Popen
+        children = []
         def failed_observer(command, **kwargs):
+            role = 'probe'
             if '--connection-observer' in command:
+                role = 'observer_' + command[command.index('--connection-observer') + 1]
                 command = [sys.executable, '-c', 'raise SystemExit(1)']
-            return real_popen(command, **kwargs)
+            child = real_popen(command, **kwargs)
+            children.append((role, child))
+            return child
         with tempfile.TemporaryDirectory() as directory:
             with patch('subprocess.Popen', side_effect=failed_observer):
                 result = _connection_case(Path(directory) / 'observer.json', 'persist-step', directory,
                                           time.monotonic() + 10)
-            self.assertFalse(result['complete'])
-            self.assertTrue(result['workers_stopped'])
-            self.assertTrue(result['fixture_removed'])
-            self.assertEqual(result['error_type'], 'RuntimeError')
+            observation = result.get('observation', {})
+            diagnostics = {key: result.get(key) for key in (
+                'returncode', 'timed_out', 'error_type', 'cleanup_error_type',
+                'workers_stopped', 'fixture_removed', 'seconds', 'observer_actions_completed')}
+            diagnostics.update(phase=observation.get('phase'),
+                commits_completed=observation.get('commits_completed'),
+                cursor_commit_calls=observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls'),
+                probe_error_type=observation.get('error_type'),
+                probe_seconds=observation.get('elapsed_seconds'),
+                child_exits=[{'role': role, 'returncode': child.returncode}
+                             for role, child in children])
+            self.assertFalse(result['complete'], diagnostics)
+            self.assertTrue(result['workers_stopped'], diagnostics)
+            self.assertTrue(result['fixture_removed'], diagnostics)
+            # A deadline before observer injection is still a failure, and now
+            # reports the actual branch instead of hiding it behind KeyError.
+            self.assertFalse(result.get('timed_out'), diagnostics)
+            self.assertIn('error_type', result, diagnostics)
+            self.assertEqual(result['error_type'], 'RuntimeError', diagnostics)
+            self.assertEqual([role for role, _ in children], ['probe', 'observer_stop'], diagnostics)
+            self.assertEqual(children[-1][1].returncode, 1, diagnostics)
+            self.assertTrue(all(child.poll() is not None for _, child in children), diagnostics)
+            self.assertEqual(observation.get('commits_completed'), 120, diagnostics)
+            self.assertEqual(diagnostics['cursor_commit_calls'], 120, diagnostics)
 
     def test_wrong_commit_count_cannot_be_certified(self):
         from tools.diagnose_paper_replay import _connection_case

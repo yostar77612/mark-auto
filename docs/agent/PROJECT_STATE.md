@@ -2,6 +2,15 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #13 原生測試新失敗；最小測試修補／觀測接續（2026-10-12 08:22 +08:00／00:22 UTC）
+
+- **本次必要 CI 未通過：** PR #13 來源 `d4e81e09976ce1d61000cc66190e211f8221d29f`／tree `e546f69de710ece06b4561fa327a3a8e1eea719b` 的 [Quantlab 38186610247](https://github.com/yostar77612/mark-auto/actions/runs/38186610247) 終態 12 SUCCESS／2 FAIL。Windows core 3.11：1,365 PASS／27 skips／2 ERROR、598.452 秒；3.12：1,366 PASS／27 skips／1 ERROR、552.350 秒。兩個 research profiles 各 237 PASS／6 原 skips，347.203／217.906 秒；前次 10／40 秒案例本輪通過，但未觸發其 failure diagnostics，不能據此宣稱已找到或修好先前效能根因。
+- **編碼錯誤已定位，僅測試修補：** 新增 AST 檢查 `test_active_writer_timeout_diagnostics.py:141` 以預設 cp1252 讀 UTF-8 來源，兩個 core 與 installer native 均發生 UnicodeDecodeError。實際 bytes 已重現 red；候選改明示 UTF-8，並在同一 test ID 要求顯式 encoding，獨立審查 PASS／11 focused PASS；移除 encoding 參數的 mutation 亦 red，原 test ID／assertions 不變。新原生 CI 尚待，不把局部結果認作完整 PASS。
+- **另一原生失敗仍待定位：** 3.11 既有 observer-failure test 因 result 缺 `error_type` 而 KeyError，runtime 10.300 秒；controller timeout 分支與 observer failure 的確切原生階段尚無證據。新增有界、去敏的 phase／commit／child-start 測試診斷已通過 root diagnostics-only 審查。三個本機控制分支分別為：正常 120／FULL、RuntimeError、0.115 秒；延遲 probe 10.019 秒、未到 observer／無 error_type；停滯 observer 8.083 秒、120 全完成但無 error_type（原 min(8, remaining) cap）。所有 children 均 reap，僅 owned fixture；這些對照仍未證明本次原生失敗階段。原 120／FULL／10 秒與原 assertions 不變，不改產品、不降工作量。root 最終合併定向 52 PASS、20.989 秒（33 diagnostics＋19 Paper）；新 exact-head native 尚待，不聲稱性能修復，後續原生結果由同一 PR 按來源補記。
+- **沒有新安裝檔：** [Windows 38186610245](https://github.com/yostar77612/mark-auto/actions/runs/38186610245) 終態 FAIL，native 1,603 PASS／33 skips／1 ERROR、835.234 秒，唯一 ERROR 為上述新 AST 編碼錯誤。尚未進入 frozen／lifecycle／installer，release SKIPPED，只有 1,715-byte partial evidence artifact，不能當作 installer 交付。
+- **歷史／範圍不變：** 本節接續下方 08:00 快照，所有舊失敗及各階段結果保留。已核驗公開版仍 `3ef9a740`／`desktop-preview-38169393012-1`；目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 owner-deferred 非 PASS，原 230/300 rubric 保留。clean Win10／實際 OAuth 未因此通過，產品與原安全／驗收門檻不變。
+
+
 ## PR #12 合併後必要 Gate 失敗；測試觀測候選待驗（2026-10-12 08:00 +08:00／2026-10-12 00:00 UTC）
 
 - **合併與失敗分開記錄：** 範圍 PR #12 已合併 main `185513f03bb9a52bb7ad80da1a508db03c3bcd52`／tree `638f2f1b402deb11b01096ef43368e0fa0b2abab`，產品／測試／工作流未變。[Quantlab 38185218807 的 Windows 3.11 research](https://github.com/yostar77612/mark-auto/actions/runs/38185218807/job/114605969432) 終態為 13 SUCCESS／1 FAIL，失敗僅 3.11 research：原 243 cases＝235 PASS／6 原 skips／2 ERROR，parent 377.109 秒。3.12 為 237 PASS／6 skips，224.672 秒；不能替代 3.11 的必要 Gate。
