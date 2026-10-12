@@ -5,6 +5,15 @@ Set-StrictMode -Version Latest
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'Native regression fixtures require a GitHub-hosted ephemeral runner' }
 . (Join-Path $PSScriptRoot 'acceptance_process.ps1')
 function Check([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
+function Native-Code($ErrorRecord) {
+  $exception=$ErrorRecord.Exception
+  while ($exception) {
+    if ($exception -is [ComponentModel.Win32Exception]) { return $exception.NativeErrorCode }
+    $exception=$exception.InnerException
+  }
+  return $null
+}
+
 $fixture = Join-Path $env:TEMP ("markauto ownership's-" + [guid]::NewGuid().ToString('N'))
 New-Item $fixture -ItemType Directory | Out-Null
 $outsider = $null
@@ -20,8 +29,37 @@ try {
     try { $first.Start((Join-Path $fixture 'missing.exe'), '') } catch { $refused=$true }
     Check $refused 'Missing native executable was accepted'
   } finally { $first.Dispose() }
+  $refused=$false
+  try { [void]$first.ActiveProcesses } catch { $refused=$true }
+  Check $refused 'Disposed job accounting queried an unrelated containing job'
   $exe = Join-Path $fixture 'MarkAuto.exe'
-  Add-Type -TypeDefinition 'public static class MarkAutoFixture { public static void Main() { System.Threading.Thread.Sleep(60000); } }' -OutputAssembly $exe -OutputType ConsoleApplication
+  Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarkAutoFixture {
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFileAttributes(string path);
+    public static int AttributeError(string path) { return GetFileAttributes(path)==0xffffffff ? Marshal.GetLastWin32Error() : 0; }
+    public static void Main(string[] args) {
+        if(args.Length==4 && args[0]=="child") {
+            System.IO.File.WriteAllText(args[2]+".ready","ready");
+            var wait=System.Diagnostics.Stopwatch.StartNew();
+            while(!System.IO.File.Exists(args[3])) {
+                if(wait.ElapsedMilliseconds>=15000) Environment.Exit(3);
+                System.Threading.Thread.Sleep(10);
+            }
+            System.IO.File.WriteAllText(args[2],"child completed"); return;
+        }
+        if(args.Length==4 && args[0]=="parent") {
+            var start=new System.Diagnostics.ProcessStartInfo(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+            start.UseShellExecute=false; start.Arguments="child "+args[1]+" \""+args[2]+"\" \""+args[3]+"\"";
+            using(var child=System.Diagnostics.Process.Start(start)) { }
+            return;
+        }
+        System.Threading.Thread.Sleep(60000);
+    }
+}
+'@ -OutputAssembly $exe -OutputType ConsoleApplication
+  [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes($exe))
   $info = New-Object Diagnostics.ProcessStartInfo
   $info.FileName=$exe; $info.UseShellExecute=$false
   $outsider = [Diagnostics.Process]::Start($info)
@@ -50,6 +88,15 @@ try {
   $denied=Join-Path $fixture 'denied'
   New-Item $denied -ItemType Directory | Out-Null
   [IO.File]::WriteAllText((Join-Path $denied 'existing.txt'), 'unchanged')
+  $target=Join-Path $denied 'existing.txt'
+  Check ([MarkAutoAcceptanceJob]::PathAttributes($target) -ne [uint32]::MaxValue) 'Accessible fixture metadata was not readable before denial'
+  Assert-AcceptancePath $target
+  $absentControl=Join-Path $denied 'absent-control'
+  Check ([MarkAutoAcceptanceJob]::PathAttributes($absentControl) -eq [uint32]::MaxValue) 'Ordinary absent fixture was not classified absent'
+  Assert-AcceptancePath $absentControl -RequireAbsent
+  Check (-not (Test-Path -LiteralPath $absentControl)) 'Metadata probe created absent fixture'
+  $originalFileAcl=Get-Acl -LiteralPath $target
+  $deniedFileAcl=Get-Acl -LiteralPath $target
   $originalAcl=Get-Acl -LiteralPath $denied
   try {
     $acl=Get-Acl -LiteralPath $denied
@@ -57,10 +104,38 @@ try {
     $rule=New-Object Security.AccessControl.FileSystemAccessRule($user, 'ReadData,ReadAttributes', 'ContainerInherit,ObjectInherit', 'None', 'Deny')
     $acl.AddAccessRule($rule)
     Set-Acl -LiteralPath $denied -AclObject $acl
+    $fileRule=New-Object Security.AccessControl.FileSystemAccessRule($user, 'ReadAttributes', 'Deny')
+    $deniedFileAcl.AddAccessRule($fileRule)
+    Set-Acl -LiteralPath $target -AclObject $deniedFileAcl
+    $observation=[ordered]@{case='acl-denied-metadata'; get_item='not_run'; provider_category=$null;
+      provider_error_id=$null; attribute_query_code=[MarkAutoFixture]::AttributeError($target); native_open_code=$null; inventory_code=$null}
+    try { [void](Get-Item -LiteralPath $target -Force -ErrorAction Stop); $observation.get_item='returned_metadata' }
+    catch {
+      $observation.get_item='error'; $observation.provider_category=[string]$_.CategoryInfo.Category
+      $observation.provider_error_id=$_.FullyQualifiedErrorId
+    }
+    try { [void][MarkAutoAcceptanceJob]::PathAttributes($target); $observation.native_open_code=0 }
+    catch { $observation.native_open_code=Native-Code $_ }
     $refused=$false
-    try { Assert-AcceptancePath (Join-Path $denied 'existing.txt') } catch { $refused=$true }
-    Check $refused 'Access-denied inventory was accepted as absence'
-  } finally { Set-Acl -LiteralPath $denied -AclObject $originalAcl }
+    try { Assert-AcceptancePath $target }
+    catch { $refused=$true; $observation.inventory_code=Native-Code $_ }
+    # Only fixed field labels and error identifiers/codes, never ACLs, identities or path contents.
+    Write-Host ($observation | ConvertTo-Json -Compress)
+    Check ($observation.native_open_code -eq 5) 'ACL fixture did not deny the native metadata-read query with ERROR_ACCESS_DENIED'
+    Check ($refused -and $observation.inventory_code -eq 5) 'Access-denied inventory was accepted as absence'
+    $ancestorCode=$null; $childCode=$null
+    try { [void][MarkAutoAcceptanceJob]::PathAttributes($denied); $ancestorCode=0 } catch { $ancestorCode=Native-Code $_ }
+    try { Assert-AcceptancePath (Join-Path $denied 'absent-child'); $childCode=0 } catch { $childCode=Native-Code $_ }
+    Write-Host ((@{case='denied-ancestor-absent-child'; native_ancestor_code=$ancestorCode; inventory_code=$childCode}) | ConvertTo-Json -Compress)
+    Check ($ancestorCode -eq 5) 'ACL fixture did not deny ancestor metadata-read query'
+    Check ($childCode -eq 5) 'Absent child bypassed denied ancestor metadata'
+  } finally {
+    Set-Acl -LiteralPath $denied -AclObject $originalAcl
+    Set-Acl -LiteralPath $target -AclObject $originalFileAcl
+  }
+  Check ([MarkAutoAcceptanceJob]::PathAttributes($target) -ne [uint32]::MaxValue) 'Restored fixture metadata was not readable'
+  Assert-AcceptancePath $target
+  Check ([IO.File]::ReadAllText($target) -eq 'unchanged') 'ACL probe changed original fixture bytes'
   $worker = Join-Path $fixture 'worker.ps1'
   @'
 param([string]$AcceptanceJob, [string]$Helper, [string]$Fixture, [string]$Case)
@@ -75,6 +150,41 @@ try {
     $owned=Start-OwnedAcceptanceProcess $env:ComSpec -ArgumentList @('/c','exit','7')
     Wait-OwnedAcceptanceProcess $owned 1000 'Fast exit timed out'
     if ($owned.Process.ExitCode -ne 7) { throw 'Nonzero native exit code lost' }
+    exit 0
+  }
+  if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {
+    $hang=$Case.EndsWith('-hang')
+    $marker=Join-Path $Fixture ($Case+'-child.txt')
+    $release=$marker+'.release'
+    $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ArgumentList @('parent', 'barrier', "`"$marker`"", "`"$release`"")
+    Wait-OwnedAcceptanceProcess $owned 1000 'Fixture parent did not exit'
+    $readyClock=[Diagnostics.Stopwatch]::StartNew()
+    while (-not (Test-Path -LiteralPath ($marker+'.ready')) -and $readyClock.ElapsedMilliseconds -lt 1000) { Start-Sleep -Milliseconds 10 }
+    if (-not (Test-Path -LiteralPath ($marker+'.ready')) -or -not $owned.Process.HasExited -or (Test-Path -LiteralPath $marker) -or
+        [MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -le 1) {
+      throw 'Descendant fixture did not establish root-exited child-still-running precondition'
+    }
+    Write-Host ((@{case=$Case; root_exited=$true; child_ready=$true; completion_marker_absent=$true}) | ConvertTo-Json -Compress)
+    # Release only after the required concurrent state was actually observed.
+    # Hanging cases keep the barrier closed and must be cancelled by the owned job.
+    if (-not $hang) { [IO.File]::WriteAllText($release, 'release') }
+    if ($Case -like 'descendant-*') {
+      $wait=if($hang){500}else{3000}
+      $drainClock=[Diagnostics.Stopwatch]::StartNew()
+      try { Wait-OwnedAcceptanceProcess $owned $wait 'Owned descendant wait timed out' -DrainJob }
+      catch {
+        if ($hang -and $_.Exception.Message -eq 'Owned descendant wait timed out' -and
+            $drainClock.ElapsedMilliseconds -ge $wait -and $owned.Process.HasExited -and
+            [MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -gt 1) {
+          @{expected_failure='owned_descendant_timeout'; elapsed_ms=$drainClock.ElapsedMilliseconds;
+            phase_budget_ms=$wait; root_exited=$true; child_still_pending=$true} |
+            ConvertTo-Json | Set-Content ($marker+'.timeout-proof.json')
+        }
+        throw
+      }
+      if ($hang) { throw 'Hanging descendant returned without its required bounded timeout' }
+      if (-not (Test-Path -LiteralPath $marker)) { throw 'Descendant completion was not awaited' }
+    }
     exit 0
   }
   $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe')
@@ -93,22 +203,47 @@ try {
     @{id=$owned.Process.Id; created=$owned.Created} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-process.json')
     Start-Sleep -Seconds 60
   }
+} catch {
+  $errorType=$_.Exception.GetType().FullName; $nativeCode=$null; $exception=$_.Exception
+  while ($exception) {
+    if ($exception -is [ComponentModel.Win32Exception]) { $nativeCode=$exception.NativeErrorCode; break }
+    $exception=$exception.InnerException
+  }
+  Write-Host ((@{case=$Case; error_type=$errorType; native_code=$nativeCode}) | ConvertTo-Json -Compress)
+  throw
 } finally { Close-AcceptanceProcesses }
 '@ | Set-Content $worker
   Set-Content (Join-Path $fixture 'outsider-pid.txt') $outsider.Id
-  foreach ($case in @('install-hang','uninstall-hang','missing-window','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two')) {
+  foreach ($case in @('install-hang','uninstall-hang','missing-window','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
     $parameters = @{Helper=(Join-Path $PSScriptRoot 'acceptance_process.ps1'); Fixture=$fixture; Case=$case}
     $report = Join-Path $fixture ($case + '.json')
     $failure = Join-Path $fixture ($case + '-failure.json')
     $clock = [Diagnostics.Stopwatch]::StartNew()
     $exitCode = Invoke-AcceptanceSupervisor $worker $parameters $report $clock -LimitSeconds 10 -FailureReportPath $failure
-    $expected = if ($case -eq 'unrelated' -or $case -eq 'fast-nonzero') { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
+    $expected = if ($case -in @('unrelated','fast-nonzero','descendant-completes','worker-exits-completes')) { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
     Check ($exitCode -eq $expected) ('Unexpected exit: ' + $case)
     Check ($clock.Elapsed.TotalSeconds -lt 10) ('Unbounded wait: ' + $case)
     Check (Test-Path $report) ('Missing supervisor report: ' + $case)
+    if ($expected -in @(0,2)) {
+      Check ((Get-Content $report -Raw | ConvertFrom-Json).owned_processes_before_cleanup -eq 0) 'Success was reported before owned-job quiescence'
+    }
     if ($expected -eq 1) { Check (Test-Path $failure) ('Missing failure report: ' + $case) }
     if ($case -eq 'whole-run-hang') {
       Check ((Get-Content $report -Raw | ConvertFrom-Json).reason -eq 'whole_run_deadline') 'Whole deadline not enforced'
+    }
+    if ($case -eq 'descendant-hang') {
+      $proofPath=Join-Path $fixture ($case+'-child.txt.timeout-proof.json')
+      Check (Test-Path -LiteralPath $proofPath) 'Hanging descendant did not prove the specific bounded drain timeout'
+      $proof=Get-Content -LiteralPath $proofPath -Raw | ConvertFrom-Json
+      Check ($proof.expected_failure -eq 'owned_descendant_timeout' -and $proof.root_exited -eq $true -and
+        $proof.child_still_pending -eq $true -and $proof.elapsed_ms -ge $proof.phase_budget_ms) 'Invalid bounded drain timeout evidence'
+    }
+    if ($case -eq 'worker-exits-hang') {
+      $drainReport=Get-Content $report -Raw | ConvertFrom-Json
+      Check ($drainReport.reason -eq 'owned_descendants_deadline' -and $drainReport.worker_exit_code -eq 0) 'Successful worker exit hid a hanging descendant'
+    }
+    if ($case -in @('descendant-completes','worker-exits-completes')) {
+      Check (Test-Path -LiteralPath (Join-Path $fixture ($case+'-child.txt'))) 'Supervisor killed an unfinished cleanup child'
     }
     $outsider.Refresh()
     Check (-not $outsider.HasExited) ('Unrelated same-name process exited: ' + $case)

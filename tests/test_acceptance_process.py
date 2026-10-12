@@ -54,11 +54,29 @@ class AcceptanceProcessContracts(unittest.TestCase):
                           'Get-FileHash $shipped', "Smoke 'installed' $BaselineAppVersion", "Smoke 'upgraded' $Version"):
             self.assertIn(assertion, self.lifecycle)
 
+    def test_install_uninstall_wait_owned_descendants_before_accepting(self):
+        self.assertIn("Wait-OwnedAcceptanceProcess $owned 180000 'Installer timed out' -DrainJob", self.lifecycle)
+        self.assertIn("Wait-OwnedAcceptanceProcess $owned 180000 'Uninstall timed out' -DrainJob", self.lifecycle)
+        self.assertIn('OwnedActiveProcesses($AcceptanceJob) -ne 1', self.helper)
+        self.assertIn('$job.ActiveProcesses -eq 0', self.helper)
+        self.assertIn('owned_descendants_deadline', self.helper)
+        self.assertIn('QueryInformationJobObject(handle,1', self.native)
+        self.assertIn('if(handle==IntPtr.Zero || handle==new IntPtr(-1))', self.native)
+        for name in ('unins000.exe', 'unins000.dat'):
+            marker='Assert-AcceptancePath "$appDir\\' + name + '" -RequireAbsent'
+            self.assertIn(marker, self.lifecycle)
+            self.assertLess(self.lifecycle.index(marker), self.lifecycle.index("@{status=$(if"))
+
     def test_preflight_preserves_unknown_state_and_all_evidence(self):
         for assertion in ('Registry32', 'Registry64', 'CurrentUser', 'LocalMachine', 'ReparsePoint',
                           '-ErrorAction Stop', 'ItemNotFoundException'):
             self.assertIn(assertion, self.helper)
         self.assertNotIn('SilentlyContinue', self.helper)
+        self.assertIn('[MarkAutoAcceptanceJob]::PathAttributes($inspect)', self.helper)
+        self.assertIn('CreateFile(path,0x80,7,IntPtr.Zero,3,0x02200000', self.native)
+        self.assertIn('if(error==2 || error==3) return 0xffffffff', self.native)
+        self.assertIn('throw new Win32Exception(error)', self.native)
+
         for name in ('os-evidence.json', 'smoke-installed.json', 'smoke-upgraded.json', 'performance-observation.json',
                      'refused-upgrade.log', 'refused-uninstall.log', 'uninstall.log'):
             self.assertIn(name, self.lifecycle.split('try {\n$os =', 1)[0])
@@ -71,7 +89,8 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.assertIn('build_acceptance_helper.ps1', workflow)
         self.assertIn('test_acceptance_process.ps1', workflow)
         for case in ('install-hang', 'uninstall-hang', 'missing-window', 'wrong-image', 'unrelated', 'whole-run-hang',
-                     'fast-nonzero', 'exit-two', 'Access-denied inventory', 'Reparse ancestor', 'Existing job name'):
+                     'fast-nonzero', 'exit-two', 'descendant-completes', 'descendant-hang',
+                     'worker-exits-completes', 'worker-exits-hang', 'owned_descendant_timeout', 'Access-denied inventory', 'Reparse ancestor', 'Existing job name'):
             self.assertIn(case, fixture)
         self.assertIn('Owned child survived abrupt supervisor cancellation', fixture)
 

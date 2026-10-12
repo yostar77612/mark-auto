@@ -24,6 +24,7 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
   $engine = [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
   $job = $null
   $status = 'failed'; $reason = 'cancelled_or_start_failed'; $code = 1
+  $workerExited = $false; $workerExitCode = $null
   try {
     if ($Parameters['AcceptanceScope'] -eq 'PreparedHost' -and [MarkAutoAcceptanceJob]::FreeMemoryBytes() -lt 6GB) {
       $reason='host_free_memory_below_6GiB'; throw 'Host free memory is below the unchanged 6 GiB floor'
@@ -36,19 +37,33 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
       if ($Parameters['AcceptanceScope'] -eq 'PreparedHost' -and [MarkAutoAcceptanceJob]::FreeMemoryBytes() -lt 6GB) {
         $reason = 'host_free_memory_below_6GiB'; break
       }
-      if ($job.Wait(200)) { $code = $job.ExitCode; $status = 'completed'; $reason = 'worker_exit'; break }
+      if (-not $workerExited -and $job.Wait(200)) { $workerExited=$true; $workerExitCode=$job.ExitCode; $code=$workerExitCode }
+      if ($workerExited) {
+        # Root exit alone does not finish an Inno process tree. Keep the job alive
+        # until every owned descendant exits, or the unchanged deadline expires.
+        if ($code -notin @(0,2)) { $status='completed'; $reason='worker_failed'; break }
+        if ($job.ActiveProcesses -eq 0) { $status='completed'; $reason='worker_and_descendants_exit'; break }
+        Start-Sleep -Milliseconds 100
+      }
     }
     if ($status -ne 'completed') {
-      if ($reason -ne 'host_free_memory_below_6GiB') { $reason = 'whole_run_deadline' }
+      if ($reason -ne 'host_free_memory_below_6GiB') {
+        $reason = if ($workerExited) { 'owned_descendants_deadline' } else { 'whole_run_deadline' }
+      }
+      $code=1
       $job.Cancel(); [void]$job.Wait(1000)
     }
   } finally {
-    if ($job) { $job.Dispose() }
-    $report = @{status=$status; reason=$reason; exit_code=$code; limit_seconds=$LimitSeconds;
+    $remainingOwned=$null
+    try { if ($job) { $remainingOwned=$job.ActiveProcesses } }
+    catch { $status='failed'; $reason='job_accounting_failed'; $code=1 }
+    finally { if ($job) { $job.Dispose() } }
+    $report = @{status=$status; reason=$reason; exit_code=$code; worker_exit_code=$workerExitCode;
+      owned_processes_before_cleanup=$remainingOwned; limit_seconds=$LimitSeconds;
       elapsed_seconds=$Clock.Elapsed.TotalSeconds; cleanup='private creation-owned job closed';
       client_os_acceptance='BLOCKED'} | ConvertTo-Json
     [IO.File]::WriteAllText($ReportPath, $report)
-    if ($FailureReportPath -and ($status -ne 'completed' -or $code -eq 1)) {
+    if ($FailureReportPath -and ($status -ne 'completed' -or $code -notin @(0,2))) {
       $failed = @{status='FAILED'; lifecycle='FAILED'; reason=$reason; full_functionality='BLOCKED';
         client_os_acceptance='BLOCKED'; live_trading='DISABLED'} | ConvertTo-Json
       [IO.File]::WriteAllText($FailureReportPath, $failed)
@@ -84,11 +99,21 @@ function Assert-OwnedAcceptanceProcess($Owned) {
       [MarkAutoAcceptanceJob]::Created($Owned.Handle) -ne $Owned.Created -or
       -not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob, $Owned.Handle)) { throw 'Process creation ownership changed' }
 }
-function Wait-OwnedAcceptanceProcess($Owned, [int]$Milliseconds, [string]$Failure) {
+function Wait-OwnedAcceptanceProcess($Owned, [int]$Milliseconds, [string]$Failure, [switch]$DrainJob) {
+  $phaseClock=[Diagnostics.Stopwatch]::StartNew()
   Assert-OwnedAcceptanceProcess $Owned
   if (-not $Owned.Process.WaitForExit($Milliseconds)) {
     [MarkAutoAcceptanceJob]::StopOwned($AcceptanceJob, $Owned.Handle)
     throw $Failure
+  }
+  if ($DrainJob) {
+    Confirm-AcceptanceWorker $AcceptanceJob
+    # Only use at phases with no intentionally live GUI. Count the private job;
+    # never enumerate, adopt or signal descendant PIDs. One member is this worker.
+    while ([MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -ne 1) {
+      if ($phaseClock.Elapsed.TotalMilliseconds -ge $Milliseconds) { throw $Failure }
+      Start-Sleep -Milliseconds 50
+    }
   }
 }
 function Close-AcceptanceProcesses {
@@ -102,11 +127,20 @@ function Assert-AcceptancePath([string]$Path, [switch]$RequireAbsent) {
   if ($full -notmatch '^[A-Za-z]:\\' -or $full.Substring(2).Contains(':')) { throw 'Only ordinary local acceptance paths are supported' }
   $inspect = $full
   while ($inspect) {
-    $item = $null
-    try { $item = Get-Item -LiteralPath $inspect -Force -ErrorAction Stop }
-    catch [System.Management.Automation.ItemNotFoundException] { }
-    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse destination or ancestor refused; original state preserved' }
-    if ($RequireAbsent -and $item -and $inspect -eq $full) { throw 'Existing MarkAuto destination refused; original state preserved' }
+    if ('MarkAutoAcceptanceJob' -as [type]) {
+      $attributes = [MarkAutoAcceptanceJob]::PathAttributes($inspect)
+      $exists = $attributes -ne [uint32]::MaxValue
+    } else {
+      # Only used for read-only helper bootstrap before loading its verified DLL.
+      # Every acceptance output/profile check below uses the native metadata handle.
+      $item = $null
+      try { $item = Get-Item -LiteralPath $inspect -Force -ErrorAction Stop }
+      catch [System.Management.Automation.ItemNotFoundException] { }
+      $exists = $null -ne $item
+      $attributes = if ($exists) { [uint32]$item.Attributes } else { [uint32]::MaxValue }
+    }
+    if ($exists -and ($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Reparse destination or ancestor refused; original state preserved' }
+    if ($RequireAbsent -and $exists -and $inspect -eq $full) { throw 'Existing MarkAuto destination refused; original state preserved' }
     $parent = Split-Path $inspect -Parent
     if ($parent -eq $inspect) { break }
     $inspect = $parent

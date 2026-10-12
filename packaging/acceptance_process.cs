@@ -40,6 +40,41 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool QueryFullProcessImageName(IntPtr process, uint flags, StringBuilder path, ref int size);
     [DllImport("kernel32.dll", SetLastError=true)] static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
     [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+    [StructLayout(LayoutKind.Sequential)] struct FileInfo {
+        public uint attributes, creationLow, creationHigh, accessLow, accessHigh, writeLow, writeHigh;
+        public uint volume, sizeHigh, sizeLow, links, indexHigh, indexLow;
+    }
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr CreateFile(string path, uint access, uint sharing, IntPtr security, uint disposition, uint flags, IntPtr template);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool GetFileInformationByHandle(IntPtr file, out FileInfo info);
+    public static uint PathAttributes(string path) {
+        // Require an actual metadata-read handle. Directory enumeration alone can expose
+        // attributes even when the target's FILE_READ_ATTRIBUTES permission is denied.
+        IntPtr file=CreateFile(path,0x80,7,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+        if(file==new IntPtr(-1)) {
+            int error=Marshal.GetLastWin32Error();
+            if(error==2 || error==3) return 0xffffffff; // Only verified FILE/PATH_NOT_FOUND means absent.
+            throw new Win32Exception(error);
+        }
+        try { FileInfo info; Check(GetFileInformationByHandle(file,out info)); return info.attributes; }
+        finally { CloseHandle(file); }
+    }
+    [StructLayout(LayoutKind.Sequential)] struct Accounting {
+        public long totalUser, totalKernel, periodUser, periodKernel;
+        public uint faults, totalProcesses, activeProcesses, terminatedProcesses;
+    }
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool QueryInformationJobObject(IntPtr job, int info, out Accounting data, uint size, IntPtr returned);
+    static uint ActiveCount(IntPtr handle) {
+        // NULL would query the caller's unrelated containing job. Fail closed instead.
+        if(handle==IntPtr.Zero || handle==new IntPtr(-1)) throw new InvalidOperationException("Owned job handle is unavailable");
+        Accounting data; Check(QueryInformationJobObject(handle,1,out data,(uint)Marshal.SizeOf(typeof(Accounting)),IntPtr.Zero));
+        return data.activeProcesses;
+    }
+    public uint ActiveProcesses { get { return ActiveCount(job); } }
+    public static uint OwnedActiveProcesses(string name) {
+        IntPtr owned=OpenJobObject(4,false,name);
+        if(owned==IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+        try { return ActiveCount(owned); } finally { CloseHandle(owned); }
+    }
     static void Check(bool ok) { if (!ok) throw new Win32Exception(Marshal.GetLastWin32Error()); }
     public MarkAutoAcceptanceJob(string name) {
         job = CreateJobObject(IntPtr.Zero, name);

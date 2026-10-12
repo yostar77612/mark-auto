@@ -120,7 +120,7 @@ function Install-Version([string]$number, [string]$manifestPath) {
     if ((Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw 'Installer does not match its build manifest' }
   }
   $owned = Start-OwnedAcceptanceProcess $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\install-$number.log`"")
-  Wait-OwnedAcceptanceProcess $owned 180000 'Installer timed out'
+  Wait-OwnedAcceptanceProcess $owned 180000 'Installer timed out' -DrainJob
   $p = $owned.Process
   if ($p.ExitCode) { throw "Installer failed: $($p.ExitCode)" }
   $startLink = Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
@@ -214,9 +214,12 @@ Assert-OwnedAcceptanceProcess $gui
 [void]$window.CloseMainWindow()
 Wait-OwnedAcceptanceProcess $gui 15000 'Window did not close cleanly'
 $owned = Start-OwnedAcceptanceProcess "$appDir\unins000.exe" -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$results\uninstall.log`"")
-Wait-OwnedAcceptanceProcess $owned 180000 'Uninstall timed out'
+Wait-OwnedAcceptanceProcess $owned 180000 'Uninstall timed out' -DrainJob
 $p = $owned.Process
 if ($p.ExitCode) { throw "Uninstall failed: $($p.ExitCode)" }
+Assert-AcceptancePath "$appDir\unins000.exe" -RequireAbsent
+Assert-AcceptancePath "$appDir\unins000.dat" -RequireAbsent
+[void](Assert-AbsentAcceptanceRegistration $registration)
 if ((Test-Path $script:installedExe) -or (Test-Path "$appDir\MarkAuto.exe")) { throw 'Executable remains after uninstall' }
 if ((Test-Path $startMenu) -or (Test-Path $desktop)) { throw 'Shortcut remains after uninstall' }
 Assert-Sentinel

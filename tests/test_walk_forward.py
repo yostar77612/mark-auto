@@ -422,21 +422,30 @@ class WalkForwardTests(unittest.TestCase):
             self.run_plan(output=self.root / 'bad', registry=self.root / 'bad' / 'registry.sqlite3')
 
     def test_concurrent_same_output_does_not_duplicate_work(self):
+        from tests.active_writer_timeout_diagnostics import observe_writer
         entered, release = threading.Event(), threading.Event()
         def worker(function, args, **kwargs):
             entered.set()
             if not release.wait(5):
                 raise AssertionError('test barrier timed out')
             return fake_worker(function, args, **kwargs)
-        with patch('quantlab.walk_forward._run_bounded', side_effect=worker) as mocked, ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(self.run_plan)
+        with patch('quantlab.walk_forward._run_bounded', side_effect=worker) as mocked, observe_writer() as diagnosis, ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(diagnosis.run, self.run_plan)
             self.assertTrue(entered.wait(5))
             try:
                 with self.assertRaisesRegex(ValidationError, 'already running'):
                     self.run_plan()
             finally:
                 release.set()
-            result = future.result(timeout=20)
+            try:
+                result = future.result(timeout=20)
+            except TimeoutError:
+                try:
+                    diagnosis.report_timeout(artifact_dir=Path(__file__).resolve().parents[1] / 'dist' / 'validation',
+                        evaluations_started=mocked.call_count, future_done=future.done(), timeout_seconds=20)
+                except Exception:
+                    pass  # Preserve the original gate even if diagnostic arguments fail.
+                raise
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(mocked.call_count, 33)
 

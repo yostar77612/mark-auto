@@ -87,17 +87,20 @@ class WriterDiagnostics:
         value['writer_stack'] = frames
         return value
 
-    def report_timeout(self, *, artifact_dir, evaluations_started, future_done):
+    def report_timeout(self, *, artifact_dir, evaluations_started, future_done,
+                       timeout_seconds=10):
         """Report before executor shutdown; failures here never mask TimeoutError."""
         try:
+            if type(timeout_seconds) is not int or timeout_seconds not in (10, 20):
+                raise ValueError('Unknown original writer completion gate')
             evidence = self.snapshot()
-            evidence.update(timeout_seconds=10, expected_evaluations=33,
+            evidence.update(timeout_seconds=timeout_seconds, expected_evaluations=33,
                             evaluations_started=evaluations_started, future_done=future_done)
             encoded = json.dumps(evidence, indent=2) + '\n'
             if len(encoded.encode('utf-8')) > MAX_REPORT_BYTES:
                 raise ValueError('Writer diagnostic byte limit exceeded')
             # Emit first, so subsequent executor shutdown cannot erase the point
-            # at which the original ten-second completion gate actually failed.
+            # at which the original completion gate actually failed.
             print('ACTIVE_WRITER_TIMEOUT_DIAGNOSTIC ' + json.dumps(evidence),
                   file=sys.stderr, flush=True)
             artifact_dir.mkdir(parents=True, exist_ok=True)
