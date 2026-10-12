@@ -81,7 +81,12 @@ function Get-PreparedFixtureFailure($Failure, [string]$Stage) {
   } catch { $frames.Clear() } # Diagnostic text must never prevent reports or owned cleanup.
   return @{status='failed';stage=$Stage;case=$UiCase;assertion=$assertion;exceptions=@($chain);native_code=$native;
     ui_phase=$script:preparedUiPhase;ui_elements=$script:preparedUiElements;
-    ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;stack=@($frames)}
+    ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;
+    scaffold_phase=$script:preparedScaffoldPhase;scaffold_raw_root_length=$script:preparedScaffoldRawLength;
+    scaffold_canonical_root_length=$script:preparedScaffoldCanonicalLength;
+    scaffold_root_length_changed=($script:preparedScaffoldRawLength -ne $script:preparedScaffoldCanonicalLength);
+    scaffold_relative_depth=$script:preparedScaffoldRelativeDepth;scaffold_prefix_match=$script:preparedScaffoldPrefixMatch;
+    stack=@($frames)}
 }
 function Write-PreparedFixtureReport([string]$Name, $Record) {
   if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof|readiness)\.(json|txt)$' -and $Name -notin @('bootstrap.json','controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
@@ -93,6 +98,7 @@ function Write-PreparedFixtureReport([string]$Name, $Record) {
   try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
 }
 $nativeEvidence=Join-Path (Split-Path $PSScriptRoot -Parent) 'dist\validation\prepared-host-native'
+$script:preparedScaffoldPhase='not_entered'; $script:preparedScaffoldRawLength=0; $script:preparedScaffoldCanonicalLength=0; $script:preparedScaffoldRelativeDepth=0; $script:preparedScaffoldPrefixMatch=$false
 $script:preparedUiPhase='not_entered'; $script:preparedUiElements=0; $script:preparedUiFound=0; $script:preparedUiSelected=0
 $workerStage='load_ownership_helper'
 $isFixtureWorker=[bool]$AcceptanceJob
@@ -222,6 +228,25 @@ public static class MarkAutoPreparedStreamFixture {
             throw new InvalidOperationException("Stream fixture path escaped private root");
         return path+":"+name;
     }
+
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern uint GetShortPathNameW(string path,System.Text.StringBuilder buffer,uint length);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern uint GetLongPathNameW(string path,System.Text.StringBuilder buffer,uint length);
+    public static string ShortPath(string root,string path) {
+        Target(root,path,"synthetic-path-alias");
+        var buffer=new System.Text.StringBuilder(32768);
+        uint count=GetShortPathNameW(path,buffer,(uint)buffer.Capacity);
+        if(count==0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if(count>=buffer.Capacity) throw new InvalidOperationException("Fixture short path exceeds bound");
+        return buffer.ToString();
+    }
+    public static string LongPath(string path) {
+        var buffer=new System.Text.StringBuilder(32768);
+        uint count=GetLongPathNameW(path,buffer,(uint)buffer.Capacity);
+        if(count==0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if(count>=buffer.Capacity) throw new InvalidOperationException("Fixture long path exceeds bound");
+        return buffer.ToString();
+    }
+
     public static bool Exists(string root,string path,string name) {
         Target(root,path,name);
         StreamInfo stream; IntPtr search=FindFirstStreamW(path,0,out stream,0);
@@ -383,6 +408,62 @@ public static class MarkAutoPreparedStreamFixture {
   function Clone-CurrentFixture { return ($reviewed | ConvertTo-Json -Depth 8 | ConvertFrom-Json) }
   Confirm-CurrentFixture $reviewed
   Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
+
+
+  $controllerStage='scaffold_dot_component_controls'
+  $canonicalScaffold=[IO.Path]::GetFullPath($scaffold).TrimEnd('\')
+  $dotScaffold=(Split-Path $canonicalScaffold -Parent)+'\.\'+(Split-Path $canonicalScaffold -Leaf)
+  $dotCanonical=[IO.Path]::GetFullPath($dotScaffold).TrimEnd('\')
+  Require ($dotCanonical -ceq $canonicalScaffold) 'Dot-component root did not identify the exact scaffold'
+  Require ($dotScaffold.Length -ne $dotCanonical.Length) 'Dot-component root did not change canonical prefix length'
+  Require ($dotScaffold.Length -eq ($dotCanonical.Length+2)) 'Dot-component offset precondition was not deterministic'
+  Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext
+  $dotUnknown=Join-Path $canonicalScaffold 'unreviewed-dot-child'
+  [void][IO.Directory]::CreateDirectory($dotUnknown)
+  [IO.Directory]::SetLastWriteTimeUtc($canonicalScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  try {
+    Reject { Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext } 'Dot-component root accepted unknown scaffold child' 'Unknown installer scaffolding directory'
+  } finally {
+    [IO.Directory]::Delete($dotUnknown)
+    [IO.Directory]::SetLastWriteTimeUtc($canonicalScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  }
+  Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext
+  [Console]::Out.WriteLine((@{stage='scaffold_dot_component_controls';status='passed';
+    root_length_changed=$true;prefix_length_delta=2;canonical_target_matches=$true;
+    positive_before_after=$true;unknown_child_refused=$true} | ConvertTo-Json -Compress))
+
+  $controllerStage='scaffold_alias_controls'
+  $longScaffold=[MarkAutoPreparedStreamFixture]::LongPath($scaffold)
+  $shortScaffold=[MarkAutoPreparedStreamFixture]::ShortPath($fixture,$scaffold)
+  $distinctAlias=-not [string]::Equals($shortScaffold,$longScaffold,[StringComparison]::OrdinalIgnoreCase)
+  if (-not $distinctAlias) {
+    [Console]::Out.WriteLine((@{stage='scaffold_alias_controls';status='BLOCKED';reason='no_distinct_native_short_alias';
+      short_length=$shortScaffold.Length;long_length=$longScaffold.Length} | ConvertTo-Json -Compress))
+    throw 'Native scaffold alias control unavailable; no short/long proof'
+  }
+  foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+    Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext
+  }
+  $aliasUnknown=Join-Path $longScaffold 'unreviewed-alias-child'
+  [void][IO.Directory]::CreateDirectory($aliasUnknown)
+  [IO.Directory]::SetLastWriteTimeUtc($longScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  try {
+    foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+      Reject { Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext } 'Native short alias accepted unknown scaffold child' 'Unknown installer scaffolding directory'
+    }
+  } finally {
+    [IO.Directory]::Delete($aliasUnknown)
+    [IO.Directory]::SetLastWriteTimeUtc($longScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  }
+  foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+    Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext
+  }
+  [Console]::Out.WriteLine((@{stage='scaffold_alias_controls';status='passed';short_long_distinct=$true;
+    raw_short_root_length=$shortScaffold.Length;canonical_short_root_length=([IO.Path]::GetFullPath($shortScaffold).TrimEnd('\')).Length;
+    root_length_changed=($shortScaffold.Length -ne ([IO.Path]::GetFullPath($shortScaffold).TrimEnd('\')).Length);
+    expected_directories=5;unknown_child_refused=$true} | ConvertTo-Json -Compress))
+  $controllerStage='current_baseline_controls'
+
   Backup-PreparedState $current (Join-Path $fixture 'current-backup') $reviewed -RequireUnaliased
   Require ([IO.Directory]::Exists($scaffold)) 'Current admission deleted installer scaffolding'
   $bad=Clone-CurrentFixture; $bad.owner='prepared-host-lifecycle-handoff'

@@ -357,3 +357,27 @@ must be disjoint from both current and prior immutable kit inputs before any
 session directory creation. Same-root identity requires matching explicit pins.
 Current and historical receipt routes remain separate; native/Qt execution,
 compiled helper verification and source-egress approval remain pending.
+
+
+Review freeze v4 addresses a reproducible scaffold-root prefix defect: the queue
+used the canonical full root while child substring offsets used the raw caller
+spelling. One canonical root/prefix now drives queue, root comparison and
+relative offsets, with explicit containment checking. The exact reviewed map,
+directory-only, metadata/time, stream, reparse and access gates are unchanged.
+
+Native fixture controls use actual GetShortPathNameW/GetLongPathNameW aliases,
+require both positive spellings to pass, and require an unknown child to fail
+under both spellings. If no distinct native short alias exists, that control
+reports BLOCKED and fails rather than claiming proof. Failure evidence includes
+only fixed phases, root lengths, relative depth and prefix-match flags; no raw
+paths or unknown directory names. A string-only exact-expression probe showed
+the frozen raw-prefix defect, but the specific CI token was not captured.
+
+
+Review freeze v5 adds a deterministic dot-component native regression before
+the existing short/long alias controls. It requires the exact canonical target
+and a two-character raw/canonical prefix-length difference, calls the production
+scaffold guard before and after mutation, and requires an unknown child to be
+rejected through that dot spelling. The existing real-alias controls and all
+production predicates remain unchanged. Local source/parser checks do not
+claim native runtime validation.

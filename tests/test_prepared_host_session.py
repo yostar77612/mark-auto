@@ -251,6 +251,32 @@ class CurrentBaselineSourceContracts(unittest.TestCase):
         self.assertNotIn("[IO.File]::WriteAllText(($backupSentinel+':",fixture)
         self.assertNotIn("[IO.File]::Delete(($backupSentinel+':",fixture)
 
+    def test_scaffold_uses_one_canonical_root_and_native_alias_controls(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        scaffold=source.split('function Assert-PreparedInstallScaffolding',1)[1].split('function Read-PreparedPriorContext',1)[0]
+        self.assertIn("$rootPath=[IO.Path]::GetFullPath($Root).TrimEnd",scaffold)
+        self.assertIn("$pending.Enqueue($rootPath)",scaffold)
+        self.assertIn("$directory -ceq $rootPath",scaffold)
+        self.assertIn("$directory.Substring($rootPrefix.Length)",scaffold)
+        self.assertNotIn("$Root.TrimEnd",scaffold)
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("GetShortPathNameW","GetLongPathNameW","Native scaffold alias control unavailable",
+                      "Native short alias accepted unknown scaffold child","root_length_changed"):
+            self.assertIn(token,fixture)
+
+    def test_deterministic_dot_component_control_exercises_production_guard(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        control=fixture.split("$controllerStage='scaffold_dot_component_controls'",1)[1].split("$controllerStage='scaffold_alias_controls'",1)[0]
+        for token in ("$dotCanonical -ceq $canonicalScaffold",
+                      "$dotScaffold.Length -ne $dotCanonical.Length",
+                      "$dotScaffold.Length -eq ($dotCanonical.Length+2)",
+                      "Dot-component root accepted unknown scaffold child",
+                      "prefix_length_delta=2", "unknown_child_refused=$true"):
+            self.assertIn(token,control)
+        self.assertEqual(control.count('Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext'),3)
+        self.assertIn("'Unknown installer scaffolding directory'",control)
+        self.assertIn("Native scaffold alias control unavailable",fixture)
+
     def test_original_run_context_is_not_relabelled_as_current_build(self):
         source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
         for token in ("$Invocation.ExecutionSha -cne $Receipt.prior_candidate_commit",

@@ -132,6 +132,10 @@ function Confirm-PreparedCurrentBaseline($Receipt, $Kit, [string]$KitDigest, [st
   }
 }
 function Assert-PreparedInstallScaffolding([string]$Root, $Receipt, $Kit, $Invocation) {
+  $rootPath=[IO.Path]::GetFullPath($Root).TrimEnd('\')
+  $rootPrefix=$rootPath+'\'
+  $script:preparedScaffoldPhase='root_metadata'; $script:preparedScaffoldRawLength=$Root.Length
+  $script:preparedScaffoldCanonicalLength=$rootPath.Length; $script:preparedScaffoldRelativeDepth=0; $script:preparedScaffoldPrefixMatch=$false
   Assert-PreparedBootstrapPath $Root -AllowAbsent
   Assert-AcceptancePath $Root
   $attributes=[MarkAutoAcceptanceJob]::PathAttributes($Root)
@@ -152,13 +156,18 @@ function Assert-PreparedInstallScaffolding([string]$Root, $Receipt, $Kit, $Invoc
   Assert-PreparedReceiptKeys $Receipt.install_metadata (@('.')+$expected)
   $started=Read-PreparedUtc $Invocation.StartedAtUtc; $finished=Read-PreparedUtc $Invocation.FinishedAtUtc
   $actual=New-Object System.Collections.ArrayList; $pending=New-Object 'System.Collections.Generic.Queue[string]'
-  $pending.Enqueue([IO.Path]::GetFullPath($Root).TrimEnd('\'))
+  $pending.Enqueue($rootPath)
   while ($pending.Count) {
     $directory=$pending.Dequeue()
     Assert-PreparedBootstrapPath $directory -AllowAbsent
     Assert-AcceptancePath $directory
     Assert-PreparedDirectoryStreams $directory
-    $relative=if ($directory -ceq [IO.Path]::GetFullPath($Root).TrimEnd('\')) { '.' } else { $directory.Substring($Root.TrimEnd('\').Length+1).Replace('\','/') }
+    $script:preparedScaffoldPhase='relative_path'
+    $script:preparedScaffoldPrefixMatch=($directory -ceq $rootPath -or $directory.StartsWith($rootPrefix,[StringComparison]::OrdinalIgnoreCase))
+    if (-not $script:preparedScaffoldPrefixMatch) { throw 'Unknown installer scaffolding directory' }
+    $relative=if ($directory -ceq $rootPath) { '.' } else { $directory.Substring($rootPrefix.Length).Replace('\','/') }
+    $script:preparedScaffoldRelativeDepth=(@($relative.Split('/')).Count)
+    $script:preparedScaffoldPhase='reviewed_directory_map'
     if ($relative -cne '.' -and $expected -cnotcontains $relative) { throw 'Unknown installer scaffolding directory' }
     if ($actual.Count -ge 6) { throw 'Installer scaffolding exceeds reviewed map' }
     [void]$actual.Add($relative)
