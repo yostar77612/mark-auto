@@ -23,6 +23,23 @@ jobs:
       - name: Parse all packaging PowerShell before setup or build
         shell: pwsh
         run: ./packaging/validate_powershell.ps1
+      - name: Build ownership helper with Windows PowerShell for clean-client compatibility
+        shell: powershell
+        run: ./packaging/build_acceptance_helper.ps1
+      - name: Exercise bounded ownership and cancellation with native Windows fixtures
+        shell: powershell
+        run: ./packaging/test_acceptance_process.ps1
+      - name: Exercise prepared-host data backup without touching application state
+        shell: powershell
+        run: ./packaging/test_prepared_host_session.ps1
+      - name: Preserve native prepared-host diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: prepared-host-native-diagnostics
+          path: dist/validation/prepared-host-native/
+          if-no-files-found: error
+          retention-days: 1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.13.16'
@@ -34,6 +51,7 @@ jobs:
       - name: Fail closed on runtime vulnerabilities or audit failure
         run: python -m pip_audit --path audit-runtime --cache-dir "${{ runner.temp }}/pip-audit-cache" --progress-spinner off --strict
   build:
+    needs: quality
     runs-on: windows-2022
     timeout-minutes: 35
     steps:
@@ -43,6 +61,9 @@ jobs:
       - name: Parse all packaging PowerShell before setup or build
         shell: pwsh
         run: ./packaging/validate_powershell.ps1
+      - name: Build ownership helper with Windows PowerShell for clean-client compatibility
+        shell: powershell
+        run: ./packaging/build_acceptance_helper.ps1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.13.16'
@@ -63,7 +84,7 @@ jobs:
         run: python packaging/build_manifest.py
       - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
         shell: pwsh
-        run: ./packaging/test_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff
+        run: ./packaging/test_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff -AcceptanceScope HostedCi
       - name: Test actual released baseline and interrupted upgrade recovery
         shell: pwsh
         run: ./packaging/test_update_recovery.ps1 -Version 0.2.2 -BaselineVersion 0.2.1 -BaselineInstaller baseline/MarkAuto-0.2.1-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json -LifecycleHandoff dist/validation/lifecycle-state-handoff.json

@@ -1,0 +1,366 @@
+﻿param([string]$KitRoot, [string]$KitSha256, [string]$StateReceipt, [string]$StateReceiptSha256,
+      [string]$SessionRoot,
+      [ValidateSet('PreparedHost')][string]$AcceptanceScope = 'PreparedHost',
+      [Parameter(DontShow=$true)][string]$AcceptanceJob = '')
+# Separate, deliberately partial follow-on. Never relax test_installer.ps1's absence guard.
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+function Assert-PreparedInteractiveUser {
+  $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+  try {
+    $principal=New-Object Security.Principal.WindowsPrincipal($identity)
+    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or [Diagnostics.Process]::GetCurrentProcess().get_SessionId() -eq 0 -or -not [Environment]::Is64BitProcess) { throw 'Requires a non-elevated interactive x64 session' }
+  } finally { $identity.Dispose() }
+}
+
+function Assert-PreparedSeparateRoots([string]$Kit, [string]$Session) {
+  $kitPath=[IO.Path]::GetFullPath($Kit).TrimEnd('\')
+  $sessionPath=[IO.Path]::GetFullPath($Session).TrimEnd('\')
+  if ($kitPath -ieq $sessionPath -or $sessionPath.StartsWith(($kitPath+'\'),[StringComparison]::OrdinalIgnoreCase) -or $kitPath.StartsWith(($sessionPath+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit and session directories must not overlap' }
+}
+
+function Assert-PreparedBootstrapPath([string]$Path, [switch]$AllowAbsent) {
+  $full=[IO.Path]::GetFullPath($Path)
+  if ($full -notmatch '^[A-Za-z]:\\' -or $full.Substring(2).Contains(':')) { throw 'Ordinary local bootstrap paths required' }
+  # Inspect ancestors before descendants; never traverse a known redirect first.
+  $paths=New-Object 'System.Collections.Generic.Stack[string]'
+  $inspect=$full
+  while ($inspect) {
+    $paths.Push($inspect); $parent=Split-Path $inspect -Parent
+    if ($parent -eq $inspect) { break }; $inspect=$parent
+  }
+  while ($paths.Count) {
+    $next=$paths.Pop()
+    if ($AllowAbsent) {
+      # This mode is used only after the digest-verified native helper was loaded.
+      $attributes=[MarkAutoAcceptanceJob]::PathAttributes($next)
+      if ($attributes -eq [uint32]::MaxValue) { continue }
+    } else {
+      $item=Get-Item -LiteralPath $next -Force -ErrorAction Stop
+      $attributes=[uint32]$item.get_Attributes()
+    }
+    if (($attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Bootstrap redirect refused before content reads' }
+  }
+}
+function Read-PreparedBootstrap([string]$Path,[string]$Digest,[long]$MaxBytes,[switch]$Text,[switch]$Hold) {
+  Assert-PreparedBootstrapPath $Path
+  if ($Digest -cnotmatch '^[a-f0-9]{64}$') { throw 'Exact external bootstrap digest required' }
+  $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  $retained=$false
+  try {
+    if ($stream.get_Length() -gt $MaxBytes) { throw 'Bootstrap input exceeds bounded size' }
+    $hash=[Security.Cryptography.SHA256]::Create()
+    try { $actual=([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+    finally { $hash.Dispose() }
+    if ($actual -cne $Digest) { throw 'Pinned bootstrap digest mismatch' }
+    if ($Hold) { $retained=$true; return $stream }
+    if ($Text) {
+      $stream.Position=0; $reader=New-Object IO.StreamReader($stream,[Text.Encoding]::UTF8,$true)
+      try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
+    }
+  } finally { if (-not $retained) { $stream.Dispose() } }
+}
+
+function Get-PreparedStateInventory([string]$Root) {
+  Assert-AcceptancePath $Root
+  if (-not [IO.Directory]::Exists($Root)) { throw 'Prepared data directory missing' }
+  $rootPath=[IO.Path]::GetFullPath($Root).TrimEnd('\')
+  $pending=New-Object 'System.Collections.Generic.Queue[string]'
+  $pending.Enqueue($rootPath)
+  $directories=New-Object System.Collections.ArrayList
+  $files=@{}; [long]$total=0; $count=0
+  while ($pending.Count) {
+    $directory=$pending.Dequeue()
+    $entries=[IO.Directory]::EnumerateFileSystemEntries($directory).GetEnumerator()
+    if ($entries -isnot [Collections.IEnumerator]) { throw 'Inventory enumerator is unavailable' }
+    try { while ($entries.MoveNext()) {
+      $path=$entries.get_Current()
+      if (++$count -gt 4096) { throw 'Prepared test inventory exceeds bounded scope' }
+      Assert-AcceptancePath $path
+      $relative=$path.Substring($rootPath.Length+1).Replace('\','/')
+      $attributes=[MarkAutoAcceptanceJob]::PathAttributes($path)
+      if ($attributes -eq [uint32]::MaxValue) { throw 'Prepared data changed during inventory' }
+      if (($attributes -band [IO.FileAttributes]::Directory) -ne 0) {
+        [void]$directories.Add($relative); $pending.Enqueue($path)
+      } else {
+        # Do not open, hash, decrypt or copy credential values, even a test receipt's.
+        if ($relative -eq 'credentials' -or $relative.StartsWith('credentials/',[StringComparison]::OrdinalIgnoreCase)) { throw 'Credential-bearing state is outside this test phase' }
+        if ($files.ContainsKey($relative)) { throw 'Ambiguous prepared data name' }
+        $stream=[IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+        try {
+          $total += $stream.get_Length()
+          if ($total -gt 128MB) { throw 'Prepared test data exceeds bounded backup scope' }
+          $hash=[Security.Cryptography.SHA256]::Create()
+          try { $files[$relative]=([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+          finally { $hash.Dispose() }
+        } finally { $stream.Dispose() }
+      }
+    } } finally { $entries.Dispose() }
+  }
+  return @{directories=@($directories | Sort-Object); files_sha256=$files; total_bytes=$total}
+}
+function Confirm-PreparedStateInventory($Actual, $Expected) {
+  $expectedNames=@($Expected.files_sha256.PSObject.Properties.Name)
+  if ($Expected.files_sha256 -is [Collections.IDictionary]) { $expectedNames=@($Expected.files_sha256.Keys) }
+  if ($expectedNames.Count -ne $Actual.files_sha256.get_Count() -or
+      (@($Expected.directories | Sort-Object) -join "`n") -cne (@($Actual.directories | Sort-Object) -join "`n")) { throw 'Unexplained prepared data entries; originals preserved' }
+  foreach ($name in $expectedNames) {
+    if (-not $Actual.files_sha256.ContainsKey($name) -or $Actual.files_sha256[$name] -cne $(if ($Expected.files_sha256 -is [Collections.IDictionary]) { $Expected.files_sha256[$name] } else { $Expected.files_sha256.PSObject.Properties[$name].Value })) { throw 'Prepared data digest changed; originals preserved' }
+  }
+}
+function Backup-PreparedState([string]$Root, [string]$Destination, $Expected) {
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root) $Expected
+  Assert-AcceptancePath $Destination -RequireAbsent
+  [void][IO.Directory]::CreateDirectory($Destination)
+  # Names come only from the just-verified actual inventory, never unchecked receipt paths.
+  $actual=Get-PreparedStateInventory $Root
+  Confirm-PreparedStateInventory $actual $Expected
+  foreach ($relative in $actual.directories) { [void][IO.Directory]::CreateDirectory((Join-Path $Destination $relative)) }
+  foreach ($relative in $actual.files_sha256.Keys) {
+    $source=Join-Path $Root $relative; $target=Join-Path $Destination $relative
+    Assert-AcceptancePath $source; Assert-AcceptancePath $target -RequireAbsent
+    $inputStream=[IO.File]::Open($source,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+    try {
+      $outputStream=[IO.File]::Open($target,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+      try { $inputStream.CopyTo($outputStream); $outputStream.Flush($true) } finally { $outputStream.Dispose() }
+    } finally { $inputStream.Dispose() }
+  }
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Destination) $Expected
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root) $Expected
+}
+function Assert-PreparedNoProcess {
+  if (Get-Process -Name MarkAuto -ErrorAction SilentlyContinue -ErrorVariable inspectionErrors) { throw 'Another MarkAuto process is present; no process is adopted' }
+  foreach ($failure in $inspectionErrors) {
+    if ($failure.FullyQualifiedErrorId -notlike 'NoProcessFoundForGivenName,*') { throw 'MarkAuto process inventory failed' }
+  }
+}
+function Read-PreparedJson([string]$Path, [string]$Digest) {
+  # Hash and parse the same read-locked stream, never reopen a pinned receipt.
+  Assert-AcceptancePath $Path
+  return (Read-PreparedBootstrap $Path $Digest 1MB -Text) | ConvertFrom-Json
+}
+function Test-PreparedNavigation($Owned) {
+  # Built-in framework assemblies only. No C# compilation, desktop root or mouse injection.
+  $script:preparedUiPhase='load_client'; $script:preparedUiElements=0; $script:preparedUiFound=0; $script:preparedUiSelected=0
+  Add-Type -AssemblyName UIAutomationClient
+  $script:preparedUiPhase='load_types'
+  Add-Type -AssemblyName UIAutomationTypes
+  $script:preparedUiPhase='owned_identity'
+  Assert-OwnedAcceptanceProcess $Owned
+  $Owned.Process.Refresh()
+  if ($Owned.Process.get_HasExited()) { throw 'Owned UI exited before inspection' }
+  $managed=$Owned.Process.get_Handle()
+  if ([MarkAutoAcceptanceJob]::Created($managed) -ne $Owned.Created -or -not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$managed)) { throw 'Managed GUI handle differs from retained creation ownership' }
+  $hwnd=$Owned.Process.get_MainWindowHandle()
+  if ($hwnd -eq [IntPtr]::Zero) { throw 'Owned main window missing' }
+  $script:preparedUiPhase='root_from_handle'
+  $ui=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
+  $script:preparedUiPhase='root_ownership'
+  $pidProperty=[Windows.Automation.AutomationElement]::ProcessIdProperty
+  $ownedPid=$Owned.Process.get_Id()
+  if ($ui.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'UI root ownership not proven' }
+  $script:preparedUiPhase='visibility'
+  if ($ui.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::IsOffscreenProperty) -ne $false) { throw 'Owned application window is not visibly exposed' }
+  $navigation=@('市場總覽','資料匯入與更新','AI 策略中心','回測與結果','比較與策略選擇','紙上交易與復原','設定與備份')
+  $script:preparedUiPhase='control_metadata'
+  $found=@{}; $pending=New-Object 'System.Collections.Generic.Queue[object]'; $pending.Enqueue($ui); $count=0
+  while ($pending.Count) {
+    $element=$pending.Dequeue()
+    if (++$count -gt 512) { throw 'Application UI inventory exceeds bounded scope' }
+    $script:preparedUiElements=$count
+    $script:preparedUiPhase='descendant_ownership'
+    Assert-OwnedAcceptanceProcess $Owned
+    if ($element.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'UI descendant ownership not proven' }
+    $script:preparedUiPhase='control_metadata'
+    $control=$element.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::ControlTypeProperty)
+    if ($control -eq [Windows.Automation.ControlType]::ListItem) {
+      $name=$element.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::NameProperty)
+      if ($navigation -ccontains $name) {
+        if ($found.ContainsKey($name)) { throw 'Ambiguous application navigation' }
+        $found[$name]=$element
+        $script:preparedUiFound=$found.Count
+      }
+    }
+    $script:preparedUiPhase='enumerate_children'
+    foreach ($child in $element.FindAll([Windows.Automation.TreeScope]::Children,[Windows.Automation.Condition]::TrueCondition)) { $pending.Enqueue($child) }
+  }
+  $script:preparedUiPhase='required_navigation'
+  if ($found.Count -ne $navigation.Count) { return @{status='BLOCKED'; reason='native_provider_did_not_expose_all_navigation'; selected_pages=@()} }
+  $selected=New-Object System.Collections.ArrayList
+  foreach ($name in $navigation) {
+    Assert-OwnedAcceptanceProcess $Owned
+    $element=$found[$name]
+    if ($element.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'Navigation ownership changed' }
+    $script:preparedUiPhase='navigation_selection'
+    $pattern=$element.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)
+    $pattern.Select()
+    if ($pattern.get_Current().get_IsSelected() -ne $true) { throw 'Application navigation selection not confirmed' }
+    [void]$selected.Add($name)
+    $script:preparedUiSelected=$selected.Count
+  }
+  return @{status='observed'; selected_pages=@($selected); scope='owned application navigation only; no workflow, screenshot or visual-layout acceptance'}
+}
+# Native regression imports these narrowly scoped routines without running host operations.
+if ($MyInvocation.InvocationName -eq '.') { return }
+$acceptanceClock=[Diagnostics.Stopwatch]::StartNew()
+Assert-PreparedInteractiveUser
+foreach ($required in @($KitRoot,$KitSha256,$StateReceipt,$StateReceiptSha256,$SessionRoot)) {
+  if ([string]::IsNullOrWhiteSpace($required)) { throw 'Exact kit, pinned state receipt and fresh session directory are required' }
+}
+$KitRoot=[IO.Path]::GetFullPath($KitRoot)
+$SessionRoot=[IO.Path]::GetFullPath($SessionRoot)
+Assert-PreparedSeparateRoots $KitRoot $SessionRoot
+$lab=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto-TestLab'
+foreach ($path in @($KitRoot,$SessionRoot,[IO.Path]::GetFullPath($StateReceipt),$PSCommandPath)) {
+  if (-not $path.StartsWith(([IO.Path]::GetFullPath($lab).TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab' }
+}
+if ('MarkAutoAcceptanceJob' -as [type]) { throw 'Use a fresh PowerShell process; preloaded ownership types cannot prove this kit' }
+# Read-only, size-bounded bootstrap; the precompiled helper is the only native dependency.
+# No process is created before the private supervisor job. OS/storage must respond.
+foreach ($path in @($KitRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path }
+$kit=(Read-PreparedBootstrap (Join-Path $KitRoot 'kit.json') $KitSha256 64KB -Text) | ConvertFrom-Json
+$helperStreams=New-Object System.Collections.ArrayList
+try {
+  foreach ($name in @('packaging/acceptance_process.ps1','packaging/acceptance_process.dll')) {
+    if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
+    $digest=$kit.files_sha256.PSObject.Properties[$name].Value
+    [void]$helperStreams.Add((Read-PreparedBootstrap (Join-Path $KitRoot $name) $digest 1MB -Hold))
+  }
+  if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
+  . (Join-Path $KitRoot 'packaging/acceptance_process.ps1')
+} finally { foreach ($locked in $helperStreams) { $locked.Dispose() } }
+if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
+foreach ($path in @($KitRoot,$SessionRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path }
+if (-not $AcceptanceJob) {
+  Assert-AcceptancePath $SessionRoot -RequireAbsent
+  [void][IO.Directory]::CreateDirectory($SessionRoot)
+  $parameters=@{}; foreach ($key in $PSBoundParameters.Keys) { $parameters[$key]=$PSBoundParameters[$key] }
+  $parameters.AcceptanceScope='PreparedHost'
+  $code=Invoke-AcceptanceSupervisor -ScriptPath $PSCommandPath -Parameters $parameters -Clock $acceptanceClock -ReportPath (Join-Path $SessionRoot 'supervisor.json') -FailureReportPath (Join-Path $SessionRoot 'session-results.json')
+  exit $code
+}
+Confirm-AcceptanceWorker $AcceptanceJob
+$script:acceptanceProcesses=New-Object System.Collections.ArrayList
+$installerLease=$null
+$record=@{status='FAILED'; scope='prepared-host follow-on'; client_os_acceptance='BLOCKED'; full_functionality='BLOCKED'; real_ai='NOT RUN'; live_trading='DISABLED'; visual_layout='NOT VERIFIED'; screenshots='NOT CAPTURED'}
+try {
+  Assert-PreparedInteractiveUser
+  $os=Get-CimInstance Win32_OperatingSystem
+  if ($os.ProductType -ne 1 -or [int]$os.BuildNumber -lt 19045) { throw 'Requires the authorized Windows client' }
+  foreach ($entry in $kit.files_sha256.PSObject.Properties) {
+    $path=[IO.Path]::GetFullPath((Join-Path $KitRoot $entry.Name))
+    if (-not $path.StartsWith(($KitRoot.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit entry escapes its root' }
+    Assert-AcceptancePath $path
+    if ($entry.Value -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.Value) { throw 'Kit file digest changed' }
+  }
+  $candidate=Read-PreparedJson (Join-Path $KitRoot 'candidate-manifest.json') $kit.files_sha256.'candidate-manifest.json'
+  if ($kit.schema_version -ne 1 -or $candidate.source_commit -cne $kit.candidate_commit -or $kit.candidate_commit -cnotmatch '^[a-f0-9]{40}$' -or $kit.version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid exact candidate provenance' }
+  $candidateHelper=($candidate.inputs_sha256.PSObject.Properties | Where-Object { $_.Name.Replace('\','/') -ceq 'packaging/acceptance_process.dll' }).Value
+  if ($candidateHelper -cne $kit.files_sha256.'packaging/acceptance_process.dll') { throw 'Kit helper differs from candidate build manifest' }
+  $installer=Join-Path $KitRoot "dist/installers/MarkAuto-$($kit.version)-windows-x64-setup.exe"
+  $installerDigest=$candidate.artifacts_sha256.PSObject.Properties[(Split-Path $installer -Leaf)].Value
+  # Retain the verified installer read lease through creation/execution, not hash then reopen.
+  $installerLease=Read-PreparedBootstrap $installer $installerDigest 128MB -Hold
+  $receipt=Read-PreparedJson $StateReceipt $StateReceiptSha256
+  $data=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto'
+  if ($receipt.schema_version -ne 1 -or $receipt.owner -cne 'prepared-host-lifecycle-handoff' -or $receipt.candidate_commit -cne $kit.candidate_commit -or $receipt.kit_sha256 -cne $KitSha256 -or $receipt.app_data_path -ine $data -or $receipt.no_intervening_app_use -ne $true) { throw 'Observed lifecycle handoff required; existing data cannot be adopted' }
+  $prior=Join-Path $KitRoot 'dist\validation'
+  $lifecycle=Read-PreparedJson (Join-Path $prior 'installer-results.json') $receipt.prior_reports_sha256.'installer-results.json'
+  $scope=Read-PreparedJson (Join-Path $prior 'installer-scope-preflight.json') $receipt.prior_reports_sha256.'installer-scope-preflight.json'
+  $supervisor=Read-PreparedJson (Join-Path $prior 'installer-supervisor.json') $receipt.prior_reports_sha256.'installer-supervisor.json'
+  $cases=@('install','bundled-runtime-launch','start-menu-shortcut','desktop-shortcut','version-upgrade','reject-active-upgrade','reject-active-uninstall','native-window-close','uninstall','preserve-user-data')
+  if ($lifecycle.status -cne 'partial' -or ($lifecycle.tests -join '|') -cne ($cases -join '|') -or $scope.scope -cne 'PreparedHost' -or $scope.backup_required -ne $false -or $scope.destinations_initially_absent -inotcontains $data -or $supervisor.exit_code -ne 2 -or $supervisor.cleanup_verified -ne $true -or $supervisor.reason -cne 'worker_and_descendants_exit') { throw 'Prior complete bounded partial lifecycle proof required' }
+  if (-not $receipt.files_sha256.PSObject.Properties['installer-preservation-test.txt'] -or $receipt.files_sha256.PSObject.Properties['workspace-location.json']) { throw 'Original sentinel and absent workspace pointer are required' }
+  $app=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\MarkAuto'
+  $start=Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
+  $desktop=Join-Path ([Environment]::GetFolderPath('Desktop')) 'Mark Auto.lnk'
+  $destinations=@($app,(Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))
+  foreach ($path in $destinations) { Assert-AcceptancePath $path -RequireAbsent }
+  $registryEvidence=@(Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
+  Assert-PreparedNoProcess
+  $backup=Join-Path $SessionRoot 'prior-data-backup'
+  Backup-PreparedState $data $backup $receipt
+  $record.entrypoint_sha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $record.backup_verified=$true; $record.state_receipt_sha256=$StateReceiptSha256; $record.candidate_commit=$kit.candidate_commit; $record.kit_sha256=$KitSha256
+  $workspace=Join-Path $SessionRoot 'workspace'; $temporary=Join-Path $SessionRoot 'temp'
+  # Durable evidence must precede every new workspace/bootstrap/profile mutation.
+  $state=Get-PreparedStateInventory $data
+  Confirm-PreparedStateInventory $state $receipt
+  $pointer=Join-Path $data 'workspace-location.json'
+  Assert-AcceptancePath $pointer -RequireAbsent
+  $preflight=@{schema_version=1;scope='PreparedHost follow-on';status='prepared';
+    candidate_commit=$kit.candidate_commit;kit_sha256=$KitSha256;state_receipt_sha256=$StateReceiptSha256;
+    entrypoint_sha256=$record.entrypoint_sha256;backup_verified=$true;backup_path=$backup;
+    app_data_path=$data;workspace_path=$workspace;temp_path=$temporary;
+    file_count=$state.files_sha256.get_Count();directory_count=$state.directories.Count;total_bytes=$state.total_bytes;
+    destinations_initially_absent=$destinations;registrations_initially_absent=$registryEvidence;
+    workspace_pointer_initially_absent=$true;clean_client_acceptance='BLOCKED'}
+  $preflightPath=Join-Path $SessionRoot 'preflight.json'
+  Assert-AcceptancePath $preflightPath -RequireAbsent
+  $preflightBytes=[Text.Encoding]::UTF8.GetBytes(($preflight | ConvertTo-Json -Depth 5))
+  $preflightStream=[IO.File]::Open($preflightPath,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
+  try { $preflightStream.Write($preflightBytes,0,$preflightBytes.Length); $preflightStream.Flush($true) }
+  finally { $preflightStream.Dispose() }
+  foreach ($path in @($workspace,$temporary)) { Assert-AcceptancePath $path -RequireAbsent; [void][IO.Directory]::CreateDirectory($path) }
+  $env:TEMP=$temporary; $env:TMP=$temporary
+  Assert-PreparedNoProcess
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $data) $receipt
+  $pointer=Join-Path $data 'workspace-location.json'
+  Assert-AcceptancePath $pointer -RequireAbsent
+  $bytes=[Text.Encoding]::UTF8.GetBytes((@{schema_version=1;root=$workspace} | ConvertTo-Json))
+  $stream=[IO.File]::Open($pointer,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
+  try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+  $owned=Start-OwnedAcceptanceProcess $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$(Join-Path $SessionRoot 'install.log')`"") -WorkingDirectory $temporary
+  Wait-OwnedAcceptanceProcess $owned 180000 'Follow-on install timed out' -DrainJob
+  if ($owned.Process.get_ExitCode() -ne 0) { throw 'Follow-on install failed' }
+  $shell=New-Object -ComObject WScript.Shell
+  $shortcut=$shell.CreateShortcut($start); $exe=$shortcut.TargetPath
+  if (-not [IO.Path]::GetFullPath($exe).StartsWith(($app+'\'),[StringComparison]::OrdinalIgnoreCase) -or (Split-Path $exe -Leaf) -cne 'MarkAuto.exe') { throw 'Installed shortcut escaped the exact app tree' }
+  Assert-AcceptancePath $exe
+  foreach ($link in @($start,$desktop)) {
+    Assert-AcceptancePath $link
+    $resolved=$shell.CreateShortcut($link)
+    if ($resolved.TargetPath -ine $exe -or $resolved.Arguments -or $resolved.WorkingDirectory -ine (Split-Path $exe -Parent)) { throw 'Shortcut resolution changed' }
+  }
+  foreach ($name in @('core.py','data.py','strategies.py','backtest.py','research.py','provider.py')) {
+    $expected=($candidate.inputs_sha256.PSObject.Properties | Where-Object { $_.Name.Replace('\','/') -ceq "quantlab/$name" }).Value
+    $source=Join-Path (Split-Path $exe -Parent) "_internal\quantlab\$name"
+    Assert-AcceptancePath $source
+    if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expected) { throw 'Installed engine source differs from candidate inputs' }
+  }
+  $record.install='observed'; $record.shortcut_execution='NOT RUN: exact resolution only'
+  Assert-PreparedNoProcess
+  $smokeReport=Join-Path $SessionRoot 'synthetic-smoke.json'
+  $smoke=Start-OwnedAcceptanceProcess $exe -ArgumentList @('--smoke-test',"`"$smokeReport`"") -WorkingDirectory $temporary
+  Wait-OwnedAcceptanceProcess $smoke 180000 'Follow-on synthetic functional smoke timed out' -DrainJob
+  if ($smoke.Process.get_ExitCode() -ne 0) { throw 'Follow-on synthetic functional smoke failed' }
+  $proof=Get-Content -LiteralPath $smokeReport -Raw -Encoding UTF8 | ConvertFrom-Json
+  if ($proof.status -cne 'passed' -or $proof.version -cne $kit.version -or $proof.native_window_visible -ne $true -or $proof.worker_completed -ne $true -or [IO.Path]::GetFullPath($proof.data_dir) -ine $workspace -or $proof.steps.Count -ne 7 -or @($proof.steps | Where-Object { $_.passed -ne $true }).Count -ne 0 -or $proof.generator -cne 'fixture' -or $proof.source_type -cne 'synthetic' -or $proof.real_model_status -cne 'not_verified' -or $proof.live_status -cne 'disabled') { throw 'Synthetic functional proof incomplete or scope changed' }
+  foreach ($field in @('backtest_completed','campaign_completed','paper_completed')) {
+    if ($proof.$field -ne $true) { throw 'Synthetic functional operation missing' }
+  }
+  $record.synthetic_functional='seven original frozen fixture operations observed; not real AI, market or full UI acceptance'
+  Assert-PreparedNoProcess
+  $gui=Start-OwnedAcceptanceProcess $exe -WorkingDirectory $temporary
+  Wait-OwnedAcceptanceWindow $gui
+  $record.native_window='observed'
+  $record.navigation=Test-PreparedNavigation $gui
+  Assert-OwnedAcceptanceProcess $gui
+  if (-not $gui.Process.CloseMainWindow()) { throw 'Owned GUI close was not accepted' }
+  Wait-OwnedAcceptanceProcess $gui 15000 'Follow-on GUI did not close cleanly' -DrainJob
+  if ($gui.Process.get_ExitCode() -ne 0) { throw 'Owned GUI exit failed' }
+  Assert-PreparedNoProcess
+  $record.clean_close='observed'
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup) $receipt
+  if ((Get-FileHash -LiteralPath (Join-Path $data 'installer-preservation-test.txt') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $receipt.files_sha256.'installer-preservation-test.txt') { throw 'First-round sentinel changed' }
+  $record.status='partial'; $record.installed_app='left installed, no process left running'; $record.workspace=$workspace
+} catch { $record.reason='Prepared-host phase preflight, integrity, UI or owned-process assertion failed'; throw }
+finally {
+  try { Close-AcceptanceProcesses }
+  finally {
+    if ($installerLease) { $installerLease.Dispose() }
+    $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $SessionRoot 'session-results.json') -Encoding UTF8
+  }
+}
+exit 2

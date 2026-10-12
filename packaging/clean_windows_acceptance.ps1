@@ -2,15 +2,29 @@ param(
   [Parameter(Mandatory=$true)][ValidateSet('Windows10-22H2','Windows11')][string]$Target,
   [Parameter(Mandatory=$true)][string]$SnapshotReference,
   [switch]$DisposableVmConfirmed,
-  [switch]$LicenseAlreadyAccepted
+  [switch]$LicenseAlreadyAccepted,
+  [Parameter(DontShow=$true)][string]$AcceptanceJob = ''
 )
+$acceptanceClock = [Diagnostics.Stopwatch]::StartNew()
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path $PSScriptRoot -Parent
 $results = Join-Path $root 'dist\validation'
 # Never overwrite prior evidence, or clean up user/app state in order to pass.
-if (Test-Path $results) { throw 'Existing evidence: use a fresh kit and restore a clean VM snapshot' }
-New-Item $results -ItemType Directory | Out-Null
+if (-not $AcceptanceJob -and (Test-Path $results)) { throw 'Existing evidence: use a fresh kit and restore a clean VM snapshot' }
+$bootstrapKit = Get-Content (Join-Path $root 'kit.json') -Raw | ConvertFrom-Json
+$helperDigest = $bootstrapKit.files_sha256.PSObject.Properties['packaging/acceptance_process.dll']
+if (-not $helperDigest -or (Get-FileHash (Join-Path $PSScriptRoot 'acceptance_process.dll') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $helperDigest.Value) { throw 'Prebuilt helper digest mismatch' }
+. (Join-Path $PSScriptRoot 'acceptance_process.ps1')
+Assert-AcceptancePath $results
+if (-not $AcceptanceJob) {
+  New-Item $results -ItemType Directory | Out-Null
+}
+if (-not $AcceptanceJob) {
+  $code = Invoke-AcceptanceSupervisor -ScriptPath $PSCommandPath -Parameters $PSBoundParameters -Clock $acceptanceClock -ReportPath (Join-Path $results 'clean-client-supervisor.json') -FailureReportPath (Join-Path $results 'clean-client-results.json')
+  exit $code
+}
+Confirm-AcceptanceWorker $AcceptanceJob
 $record = [ordered]@{
   status='EXTERNAL BLOCKED'; target=$Target; started_utc=[DateTime]::UtcNow.ToString('o');
   snapshot_reference=$SnapshotReference; lifecycle='NOT RUN'; full_functionality='BLOCKED';
@@ -34,7 +48,7 @@ try {
   }
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or (Get-Process -Id $PID).SessionId -eq 0) {
+  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or (Get-Process -Id $PID).get_SessionId() -eq 0) {
     throw 'Use a non-elevated interactive standard-user desktop session'
   }
   if ($env:GITHUB_ACTIONS -or $env:ImageOS -or $env:RUNNER_TOOL_CACHE) { throw 'Developer/CI images are not clean clients' }
@@ -66,7 +80,7 @@ try {
   if ($record.developer_tools.Count) { throw 'Developer tools detected; PATH removal is not a clean-machine test' }
   $kit = Get-Content (Join-Path $root 'kit.json') -Raw | ConvertFrom-Json
   if ($kit.schema_version -ne 1 -or $kit.baseline_version -eq '0.0.0' -or [version]$kit.baseline_version -ge [version]$kit.version -or $kit.baseline_commit -eq $kit.candidate_commit) { throw 'Invalid historical upgrade kit' }
-  foreach ($required in @('packaging/test_installer.ps1', 'packaging/clean_windows_acceptance.ps1', 'packaging/clean_windows_README.md',
+  foreach ($required in @('packaging/acceptance_process.dll', 'packaging/acceptance_process.ps1', 'packaging/test_installer.ps1', 'packaging/clean_windows_acceptance.ps1', 'packaging/clean_windows_README.md',
                          'baseline-manifest.json', 'candidate-manifest.json',
                          "dist/installers/MarkAuto-$($kit.baseline_version)-windows-x64-setup.exe",
                          "dist/installers/MarkAuto-$($kit.version)-windows-x64-setup.exe")) {
@@ -85,7 +99,7 @@ try {
   $record.candidate_commit = $kit.candidate_commit
   $record.lifecycle = 'RUNNING'
   # Child scope prevents shared harness locals ($os/$results/$root) changing this record.
-  & (Join-Path $PSScriptRoot 'test_installer.ps1') -Version $kit.version -BaselineVersion $kit.baseline_version -BaselineAppVersion $kit.baseline_version -BaselineManifest (Join-Path $root 'baseline-manifest.json') -CandidateManifest (Join-Path $root 'candidate-manifest.json')
+  & (Join-Path $PSScriptRoot 'test_installer.ps1') -Version $kit.version -BaselineVersion $kit.baseline_version -BaselineAppVersion $kit.baseline_version -BaselineManifest (Join-Path $root 'baseline-manifest.json') -CandidateManifest (Join-Path $root 'candidate-manifest.json') -AcceptanceScope DisposableVm -AcceptanceJob $AcceptanceJob
   $lifecycle = Get-Content (Join-Path $results 'installer-results.json') -Raw | ConvertFrom-Json
   if ($lifecycle.status -ne 'passed') { throw 'Lifecycle evidence not passed' }
   $record.lifecycle = 'PASSED: install, fixture smoke, shortcut launch, upgrade, active-app refusal, uninstall, sentinel'

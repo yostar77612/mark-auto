@@ -35,6 +35,59 @@ RESEARCH_MODULES = frozenset({
 })
 GROUPS = ("all", "core", "research")
 
+CORE_SHARDS = ('desktop', 'remaining')
+CORE_SHARD_PLAN = 'core-modules-v1'
+
+
+def core_shard_for_module(module):
+    if module in RESEARCH_MODULES:
+        raise ValueError('Research modules cannot enter a core shard')
+    return ('desktop' if module.startswith('test_desktop_') or module in
+            {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining')
+
+
+def core_shard_assignments(suite):
+    selected = list(cases(suite))
+    expected = [case.id() for case in selected]
+    assigned = {name: [] for name in CORE_SHARDS}
+    for case in selected:
+        assigned[core_shard_for_module(type(case).__module__)].append(case.id())
+    flattened = sum(assigned.values(), [])
+    if (not all(assigned.values()) or len(expected) != len(set(expected))
+            or len(flattened) != len(set(flattened)) or set(flattened) != set(expected)):
+        raise ValueError('Core shards must cover each selected case exactly once')
+    return assigned
+
+
+def portable_source_identity(start_directory='tests'):
+    """Source bytes plus relative names; host paths remain separate evidence."""
+    # Resolve both sides: Windows temporary roots can contain 8.3 aliases.
+    root = ROOT.resolve()
+    paths = set(root.glob('*.py')) | set(root.glob('requirements*'))
+    paths |= {root / 'pyproject.toml', root / '.gitattributes'}
+    for directory in ('quantlab', 'tests', 'tools', 'packaging', '.github/workflows'):
+        paths |= {path for path in (root / directory).rglob('*') if path.is_file()
+                  and '__pycache__' not in path.parts and path.suffix in
+                  {'.py', '.ps1', '.cs', '.json', '.gz', '.csv', '.yml', '.yaml', '.txt'}}
+    paths |= set(Path(start_directory).resolve().glob('*.py'))
+    named = {}
+    for path in paths:
+        path = path.resolve()
+        if not path.is_file():
+            continue
+        try:
+            name = path.relative_to(root).as_posix()
+        except ValueError:
+            name = '__test_suite__/' + path.name
+        if name in named and named[name] != path:
+            raise ValueError('Ambiguous portable source path')
+        named[name] = path
+    digest = hashlib.sha256()
+    for name, path in sorted(named.items()):
+        raw = path.read_bytes()
+        digest.update(name.encode('utf-8') + b'\0' + str(len(raw)).encode('ascii') + b'\0' + raw)
+    return digest.hexdigest()
+
 
 
 # Two test parents, not two total processes: tests retain their bounded children.
@@ -105,7 +158,7 @@ def write_manifest(path, value):
             os.unlink(name)
 
 
-def read_worker_report(path):
+def read_worker_report(path, *, limit=None):
     def unique(pairs):
         value = {}
         for key, item in pairs:
@@ -115,8 +168,15 @@ def read_worker_report(path):
         return value
     def nonfinite(value):
         raise ValueError('Nonfinite worker report value')
-    return json.loads(path.read_text(encoding='utf-8'), object_pairs_hook=unique,
-                      parse_constant=nonfinite)
+    if limit is None:
+        raw = path.read_text(encoding='utf-8')
+    else:
+        with path.open('rb') as stream:
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            raise ValueError('Worker report exceeds bound')
+        raw = raw.decode('utf-8')
+    return json.loads(raw, object_pairs_hook=unique, parse_constant=nonfinite)
 
 
 def validate_worker_reports(parent, assignments, reports, tokens):
@@ -318,9 +378,13 @@ def main(argv=None):
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--start-directory", default="tests")
     parser.add_argument('--workers', type=int, choices=(1, 2), default=1)
+    parser.add_argument('--core-shard', choices=CORE_SHARDS)
     parser.add_argument('--worker-index', type=int, choices=(0, 1), help=argparse.SUPPRESS)
     parser.add_argument('--worker-token', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.core_shard is not None and (sys.platform != 'win32' or args.group != 'core'
+            or args.workers != 1 or args.worker_index is not None or args.worker_token is not None):
+        parser.error('Core shards are supported only for independent Windows core runners')
     if args.workers == 2 and (sys.platform != 'win32' or args.group != 'research'):
         parser.error('Two workers are supported only for Windows research')
     if args.worker_index is not None or args.worker_token is not None:
@@ -346,6 +410,19 @@ def main(argv=None):
             name: [case.id() for case in cases(groups[name])] for name in ("core", "research")
         }
         manifest["selected_ids"] = [case.id() for case in cases(groups[args.group])]
+        if args.core_shard is not None:
+            assignments = core_shard_assignments(groups['core'])
+            selected = assignments[args.core_shard]
+            groups['core'] = unittest.TestSuite(case for case in cases(groups['core'])
+                                                if case.id() in set(selected))
+            manifest.update(selected_ids=selected, core_shard=args.core_shard,
+                core_shard_plan=CORE_SHARD_PLAN, core_shard_assignments=assignments,
+                shard_context={'head_sha': os.environ.get('GITHUB_SHA'),
+                    'run_id': os.environ.get('GITHUB_RUN_ID'),
+                    'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
+                    'python_profile': str(sys.version_info.major) + '.' + str(sys.version_info.minor),
+                    'source_sha256': portable_source_identity(args.start_directory)},
+                local_identity_before=execution_identity(args.start_directory))
         if args.worker_index is not None:
             assignments = worker_assignments(groups['research'])
             selected = assignments[args.worker_index]
@@ -381,8 +458,15 @@ def main(argv=None):
         "expected_failures": [test.id() for test, _ in result.expectedFailures],
         "unexpected_successes": [test.id() for test in result.unexpectedSuccesses],
     })
+    if args.core_shard is not None:
+        manifest['local_identity_after'] = execution_identity(args.start_directory)
+        manifest['source_sha256_after'] = portable_source_identity(args.start_directory)
+        if (manifest['local_identity_after'] != manifest['local_identity_before']
+                or manifest['source_sha256_after'] != manifest['shard_context']['source_sha256']):
+            manifest['successful'] = False
+            manifest['shard_identity_error'] = 'Source or local runtime identity changed during tests'
     write_manifest(args.manifest, manifest)
-    return 0 if result.wasSuccessful() else 1
+    return 0 if manifest['successful'] else 1
 
 
 if __name__ == "__main__":

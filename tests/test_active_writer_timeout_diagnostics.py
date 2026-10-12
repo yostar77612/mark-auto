@@ -1,6 +1,6 @@
 """Test-only observer controls; no Windows/Qt or deadline acceptance claim."""
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import redirect_stderr
+from contextlib import contextmanager, redirect_stderr
 import ast
 import io
 import json
@@ -18,6 +18,105 @@ from tests.active_writer_timeout_diagnostics import (MAX_FUNCTION_LABEL, MAX_REP
 
 
 class ActiveWriterDiagnosticTests(unittest.TestCase):
+    def test_same_output_fixture_preserves_33_calls_93_full_saves_and_original_assertions(self):
+        from tests import active_writer_timeout_diagnostics as diagnostics
+        from tests.test_walk_forward import WalkForwardTests
+        observed, modes = [], []
+        configure = walk_forward._configure_state_storage
+        def checked_configuration(db, **kwargs):
+            result = configure(db, **kwargs)
+            modes.append((db.execute('PRAGMA synchronous').fetchone(),
+                          db.execute('PRAGMA journal_mode').fetchone()))
+            return result
+        @contextmanager
+        def observe():
+            with observe_writer() as diagnosis:
+                observed.append(diagnosis)
+                yield diagnosis
+        targets = [(sqlite3, 'connect'), (Path, 'write_text'), (Path, 'replace'),
+                   (walk_forward, '_save_state'), (walk_forward, 'to_dict'), (json, 'dumps')]
+        originals = [getattr(owner, name) for owner, name in targets]
+        case = WalkForwardTests('test_concurrent_same_output_does_not_duplicate_work')
+        result = unittest.TestResult()
+        with patch.object(diagnostics, 'observe_writer', observe), \
+             patch.object(walk_forward, '_configure_state_storage', checked_configuration), \
+             patch.object(WriterDiagnostics, 'report_timeout') as report:
+            case.run(result)
+        self.assertEqual(result.testsRun, 1)
+        self.assertEqual(result.errors + result.failures + result.skipped, [])
+        report.assert_not_called()
+        self.assertEqual(modes, [((2,), ('wal',))])
+        diagnosis, = observed
+        snapshot = diagnosis.snapshot()
+        counts = {row['phase']: row['calls'] for row in snapshot['timings']}
+        for phase in ('wfo.save', 'sqlite.commit', 'export.write', 'export.replace'):
+            self.assertEqual(counts[phase], 93, phase)
+        self.assertEqual(counts['wfo.evaluate'], 33)
+        self.assertEqual(snapshot['active'], [])
+        self.assertEqual([getattr(owner, name) for owner, name in targets], originals)
+
+    def test_same_output_timeout_reports_twenty_seconds_before_join(self):
+        entered, release = threading.Event(), threading.Event()
+        diagnosis = WriterDiagnostics()
+        def paused_writer():
+            with diagnosis.measure('sqlite.commit'):
+                entered.set()
+                if not release.wait(5):
+                    raise AssertionError('Writer not released')
+        with tempfile.TemporaryDirectory() as folder, ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(diagnosis.run, paused_writer)
+            try:
+                self.assertTrue(entered.wait(5))
+                with redirect_stderr(io.StringIO()):
+                    diagnosis.report_timeout(artifact_dir=Path(folder), evaluations_started=7,
+                        future_done=future.done(), timeout_seconds=20)
+                self.assertFalse(future.done())
+                target, = Path(folder).glob('smoke-timeout-active-writer-*.json')
+                evidence = json.loads(target.read_text(encoding='utf-8'))
+                self.assertEqual(evidence['timeout_seconds'], 20)
+                self.assertEqual(evidence['evaluations_started'], 7)
+                self.assertEqual(evidence['expected_evaluations'], 33)
+                self.assertFalse(evidence['future_done'])
+                self.assertEqual([row['phase'] for row in evidence['active']],
+                                 ['writer.body', 'sqlite.commit'])
+                self.assertLessEqual(target.stat().st_size, MAX_REPORT_BYTES)
+            finally:
+                release.set()
+            future.result(timeout=5)
+
+    def test_actual_same_output_handler_preserves_timeout_and_diagnostic_failures(self):
+        path = Path(__file__).with_name('test_walk_forward.py')
+        module = ast.parse(path.read_text(encoding='utf-8'))
+        fixture = next(node for node in module.body if isinstance(node, ast.ClassDef)
+                       and node.name == 'WalkForwardTests')
+        method = next(node for node in fixture.body if isinstance(node, ast.FunctionDef)
+                      and node.name == 'test_concurrent_same_output_does_not_duplicate_work')
+        handler = next(node for node in ast.walk(method) if isinstance(node, ast.Try)
+                       and any(isinstance(item.type, ast.Name) and item.type.id == 'TimeoutError'
+                               for item in node.handlers))
+        extracted = ast.parse('def check(diagnosis, mocked, future): pass')
+        extracted.body[0].body = [handler]
+        namespace = {'Path': Path, '__file__': str(path)}
+        exec(compile(ast.fix_missing_locations(extracted), '<same-output-handler>', 'exec'), namespace)
+        for failure in ('none', 'path', 'report'):
+            with self.subTest(failure=failure):
+                original = TimeoutError('Original gate')
+                future, diagnosis, mocked = Mock(), Mock(), Mock(call_count=7)
+                future.result.side_effect = original
+                future.done.return_value = False
+                diagnosis.report_timeout.side_effect = OSError('diagnostic') if failure == 'report' else None
+                with patch.object(Path, 'resolve', side_effect=OSError('path') if failure == 'path' else None,
+                                  return_value=path), self.assertRaises(TimeoutError) as raised:
+                    namespace['check'](diagnosis, mocked, future)
+                self.assertIs(raised.exception, original)
+                future.result.assert_called_once_with(timeout=20)
+                if failure == 'path':
+                    diagnosis.report_timeout.assert_not_called()
+                else:
+                    diagnosis.report_timeout.assert_called_once_with(
+                        artifact_dir=path.parents[1] / 'dist' / 'validation',
+                        evaluations_started=7, future_done=False, timeout_seconds=20)
+
     def test_core_observer_preserves_33_calls_93_full_saves_exports_and_active_read(self):
         entered, release = threading.Event(), threading.Event()
         calls = []

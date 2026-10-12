@@ -75,8 +75,17 @@ class WfoStorageWorkflowTests(unittest.TestCase):
         offline = job_text(self.workflow, 'offline')
         self.assertIn('timeout-minutes: 15', offline)
         for version in ('3.11', '3.12'):
-            for group in ('core', 'research'):
-                self.assertIn("{os: windows-latest, python: '" + version + "', group: " + group + '}', offline)
+            self.assertIn("{os: windows-latest, python: '" + version + "', group: research}", offline)
+            for shard in ('desktop', 'remaining'):
+                self.assertIn("{os: windows-latest, python: '" + version +
+                              "', group: core, shard: " + shard + '}', offline)
+        aggregate = job_text(self.workflow, 'core-coverage')
+        self.assertIn('name: offline (windows-latest, ${{ matrix.python }})', aggregate)
+        self.assertIn('needs: offline', aggregate)
+        self.assertIn('if: always()', aggregate)
+        self.assertIn('timeout-minutes: 15', aggregate)
+        self.assertIn('python tools/validate_core_shards.py', aggregate)
+        self.assertIn("os.environ.get('OFFLINE_RESULT') == 'success'", aggregate)
         self.assertIn('python tools/run_test_group.py --group ${{ matrix.group }}', offline)
         for name in ('offline', 'ui', 'quality', 'security', 'guest-execution-diagnostic'):
             job = job_text(self.workflow, name)

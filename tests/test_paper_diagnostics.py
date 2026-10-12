@@ -12,6 +12,64 @@ from tools.diagnose_paper_replay import (Timings, _instrument_connect, _write_js
                                          _rollback_connection, _journal_mode_comparison)
 
 
+def _connection_checkpoint_fields(result):
+    """Retain bounded numeric evidence, never the raw fixture report or paths."""
+    import math
+    def number(value):
+        return type(value) in (int, float) and 0 <= value <= 7200 and math.isfinite(value)
+    milestones = result.get('controller_milestones', {})
+    allowed = ('owner_file_written', 'probe_launch_requested', 'probe_launch_returned',
+               'probe_output_first_seen', 'observer_stop_returned', 'observer_start_returned',
+               'probe_exit_observed', 'timeout_observed', 'controller_error_observed',
+               'process_cleanup_started', 'process_cleanup_finished')
+    value = {'checkpoint_semantics': 'last completed progress record, not deadline state',
+        'controller_milestone_semantics': 'seconds from controller entry; first output is detection time',
+        'controller_milestones': {key: milestones[key] for key in allowed
+                                 if isinstance(milestones, dict) and number(milestones.get(key))},
+        'controller_observation_failed': result.get('controller_observation_failed') is True}
+    value['probe_clock_semantics'] = {
+        'elapsed_seconds': 'since Timings creation after ownership and path setup',
+        'pre_timing_seconds': 'probe function entry through setup before Timings creation',
+        'probe_entry_seconds': 'since probe function entry, excluding imports',
+        'process_cpu_seconds': 'cumulative process CPU, including startup and imports'}
+    report = result.get('observation', {})
+    if not isinstance(report, dict):
+        return value
+    value['probe_clocks'] = {key: report[key] for key in
+        ('elapsed_seconds', 'pre_timing_seconds', 'probe_entry_seconds', 'process_cpu_seconds')
+        if number(report.get(key))}
+    phases = {'replay.' + name for name in ('connect', 'read', 'pragma', 'begin', 'write',
+        'cursor_write', 'plan_write', 'commit', 'read_commit', 'write_commit', 'rollback',
+        'transaction_exit', 'read_exit', 'cursor_commit', 'cursor_rollback',
+        'plan_commit', 'plan_rollback', 'close', 'cursor_loop', 'final_close')}
+    timings = report.get('timings', {})
+    value['checkpoint_timings'] = {}
+    if isinstance(timings, dict):
+        for phase in sorted(phases):
+            row = timings.get(phase)
+            if (isinstance(row, dict) and type(row.get('calls')) is int
+                    and 0 <= row['calls'] <= 1000000 and number(row.get('seconds'))):
+                value['checkpoint_timings'][phase] = {key: row[key] for key in ('calls', 'seconds')}
+    active = report.get('active', [])
+    value['checkpoint_active'] = [{'phase': row['phase'], 'seconds': row['seconds']}
+        for row in active[:32] if isinstance(row, dict) and type(row.get('phase')) is str
+        and row['phase'] in phases and number(row.get('seconds'))] if isinstance(active, list) else []
+    return value
+
+
+def _preserve_connection_failure(diagnostics):
+    """Failure-only reuse of the existing atomic bounded writer/upload pattern."""
+    try:
+        import uuid
+        directory = Path(__file__).resolve().parents[1] / 'dist' / 'validation'
+        directory.mkdir(parents=True, exist_ok=True)
+        _write_json(directory / ('smoke-timeout-paper-connection-' + uuid.uuid4().hex + '.json'),
+                    {'scope': 'original connection diagnostic failure; not product acceptance',
+                     'timeout_seconds': 10, 'commits_required': 120, **diagnostics})
+    except Exception:
+        pass  # Artifact failure cannot replace the original assertion.
+
+
 class PaperDiagnosticTests(unittest.TestCase):
     def test_wrapped_sqlite_preserves_full_sync_commit_rollback_and_reads(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -268,15 +326,23 @@ class ConnectionDiagnosticTests(unittest.TestCase):
                 cursor_commit_calls=observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls'),
                 probe_error_type=observation.get('error_type'),
                 probe_seconds=observation.get('elapsed_seconds'))
-            self.assertEqual(result['returncode'], 0, diagnostics)
-            self.assertFalse(result.get('timed_out'), diagnostics)
-            self.assertNotIn('error_type', result, diagnostics)
-            self.assertEqual(observation.get('phase'), 'complete', diagnostics)
-            self.assertEqual(observation.get('commits_completed'), 119, diagnostics)
-            self.assertEqual(diagnostics['cursor_commit_calls'], 120, diagnostics)
-            self.assertFalse(result['complete'], diagnostics)
-            self.assertTrue(result['workers_stopped'], diagnostics)
-            self.assertTrue(result['fixture_removed'], diagnostics)
+            try:
+                diagnostics.update(_connection_checkpoint_fields(result))
+            except Exception:
+                diagnostics['checkpoint_observation_failed'] = True
+            try:
+                self.assertEqual(result['returncode'], 0, diagnostics)
+                self.assertFalse(result.get('timed_out'), diagnostics)
+                self.assertNotIn('error_type', result, diagnostics)
+                self.assertEqual(observation.get('phase'), 'complete', diagnostics)
+                self.assertEqual(observation.get('commits_completed'), 119, diagnostics)
+                self.assertEqual(diagnostics['cursor_commit_calls'], 120, diagnostics)
+                self.assertFalse(result['complete'], diagnostics)
+                self.assertTrue(result['workers_stopped'], diagnostics)
+                self.assertTrue(result['fixture_removed'], diagnostics)
+            except AssertionError:
+                _preserve_connection_failure(diagnostics)
+                raise
 
     def test_late_zero_exit_cannot_certify_timeout_or_controller_error(self):
         from tools.diagnose_paper_replay import _connection_case
@@ -402,6 +468,106 @@ class ConnectionDiagnosticTests(unittest.TestCase):
             self.assertEqual(len(children), 2)
             self.assertTrue(all(child.returncode is not None for child in children))
             self.assertTrue(all(child['returncode'] is not None for child in result['children']))
+
+
+class ConnectionFailureEvidenceTests(unittest.TestCase):
+    def test_milestone_failure_preserves_certification_and_owned_child_cleanup(self):
+        import sys
+        import tools.diagnose_paper_replay as diagnostic
+        original_clock, original_case = time.perf_counter, diagnostic._connection_case
+        observations = []
+        def clock():
+            if sys._getframe(1).f_code.co_name == 'mark':
+                raise OSError('controlled observation failure')
+            return original_clock()
+        def collect(*args, **kwargs):
+            result = original_case(*args, **kwargs)
+            observations.append(result)
+            return result
+        # Reuse the synthetic success/late-exit certification control, with
+        # every new milestone clock failing. No real SQL workload is repeated.
+        with patch('time.perf_counter', new=clock), \
+                patch.object(diagnostic, '_connection_case', side_effect=collect):
+            case = ConnectionDiagnosticTests('test_late_zero_exit_cannot_certify_timeout_or_controller_error')
+            case.test_late_zero_exit_cannot_certify_timeout_or_controller_error()
+        self.assertEqual([result['complete'] for result in observations], [True, False, False])
+        self.assertTrue(all(result['controller_observation_failed'] for result in observations))
+        child = MagicMock(pid=101, returncode=None)
+        child.poll.side_effect = lambda: child.returncode
+        child.terminate.side_effect = lambda: setattr(child, 'returncode', 1)
+        with tempfile.TemporaryDirectory() as directory, patch('time.perf_counter', new=clock), \
+                patch('subprocess.Popen', return_value=child), \
+                patch('time.sleep', side_effect=subprocess.TimeoutExpired('controlled probe', 0)):
+            result = original_case(Path(directory) / 'controlled.json', 'delete-reopen', directory,
+                                   time.monotonic() + 10)
+        child.terminate.assert_called_once()
+        self.assertTrue(result['timed_out'])
+        self.assertTrue(result['controller_observation_failed'])
+        self.assertTrue(result['workers_stopped'])
+        self.assertTrue(result['fixture_removed'])
+        self.assertFalse(result['complete'])
+        self.assertEqual(result['children'], [{'pid': 101, 'returncode': 1}])
+
+    def test_checkpoint_evidence_retains_only_bounded_numeric_fields_and_known_labels(self):
+        result = {'controller_milestones': {'probe_launch_returned': .2, 'timeout_observed': 10,
+                    'private_path': '/DO_NOT_RETAIN', 'process_cleanup_finished': float('inf')},
+            'observation': {'elapsed_seconds': 2.7, 'pre_timing_seconds': .01,
+                'probe_entry_seconds': 2.71, 'process_cpu_seconds': .3,
+                'fixture_root': '/DO_NOT_RETAIN', 'timings': {
+                    'replay.cursor_commit': {'calls': 90, 'seconds': 2.1, 'sql': 'DO_NOT_RETAIN'},
+                    'replay.read': {'calls': True, 'seconds': 1},
+                    'replay.close': {'calls': 90, 'seconds': 10 ** 1000},
+                    'DO_NOT_RETAIN': {'calls': 1, 'seconds': 1}},
+                'active': [{'phase': 'replay.cursor_loop', 'seconds': 2.6, 'path': '/DO_NOT_RETAIN'},
+                    {'phase': 'DO_NOT_RETAIN', 'seconds': 1}, {'phase': [], 'seconds': 1}]}}
+        evidence = _connection_checkpoint_fields(result)
+        self.assertEqual(evidence['controller_milestones'], {'probe_launch_returned': .2, 'timeout_observed': 10})
+        self.assertEqual(evidence['checkpoint_timings'], {'replay.cursor_commit': {'calls': 90, 'seconds': 2.1}})
+        self.assertEqual(evidence['checkpoint_active'], [{'phase': 'replay.cursor_loop', 'seconds': 2.6}])
+        self.assertEqual(evidence['probe_clocks']['pre_timing_seconds'], .01)
+        self.assertNotIn('DO_NOT_RETAIN', json.dumps(evidence))
+        self.assertLess(len(json.dumps(evidence)), 32768)
+        self.assertIn('not deadline state', evidence['checkpoint_semantics'])
+        self.assertIn('detection time', evidence['controller_milestone_semantics'])
+
+    def test_actual_failure_handler_preserves_original_assertion_and_original_deadline(self):
+        result = {'returncode': 1, 'timed_out': True, 'complete': False,
+            'workers_stopped': True, 'fixture_removed': True, 'seconds': 10.02,
+            'controller_milestones': {'timeout_observed': 10},
+            'observation': {'phase': 'cursor_loop', 'commits_completed': 90,
+                'elapsed_seconds': 2.7, 'timings': {'replay.cursor_commit': {'calls': 90, 'seconds': 2}}}}
+        for failed_write in (False, True):
+            with self.subTest(failed_write=failed_write):
+                case = ConnectionDiagnosticTests('test_wrong_commit_count_cannot_be_certified')
+                original = AssertionError('original gate')
+                with patch('tools.diagnose_paper_replay._connection_case', return_value=result) as run, \
+                     patch.object(case, 'assertEqual', side_effect=original), \
+                     patch('time.monotonic', return_value=100), \
+                     patch(__name__ + '._write_json', side_effect=OSError('private failure') if failed_write else None) as write, \
+                     self.assertRaises(AssertionError) as raised:
+                    case.test_wrong_commit_count_cannot_be_certified()
+                self.assertIs(raised.exception, original)
+                self.assertEqual(run.call_count, 1)
+                self.assertEqual(run.call_args.args[1], 'delete-reopen')
+                self.assertEqual(run.call_args.args[3], 110)
+                path, evidence = write.call_args.args
+                self.assertTrue(path.name.startswith('smoke-timeout-paper-connection-'))
+                self.assertEqual(evidence['timeout_seconds'], 10)
+                self.assertEqual(evidence['commits_required'], 120)
+                self.assertEqual(evidence['commits_completed'], 90)
+                self.assertEqual(evidence['checkpoint_timings']['replay.cursor_commit']['calls'], 90)
+
+    def test_evidence_construction_failure_does_not_replace_original_assertion(self):
+        case = ConnectionDiagnosticTests('test_wrong_commit_count_cannot_be_certified')
+        original = AssertionError('original gate')
+        with patch('tools.diagnose_paper_replay._connection_case', return_value={'returncode': 1}), \
+             patch.object(case, 'assertEqual', side_effect=original), \
+             patch(__name__ + '._connection_checkpoint_fields', side_effect=ValueError('private failure')), \
+             patch(__name__ + '._preserve_connection_failure') as record, \
+             self.assertRaises(AssertionError) as raised:
+            case.test_wrong_commit_count_cannot_be_certified()
+        self.assertIs(raised.exception, original)
+        self.assertTrue(record.call_args.args[0]['checkpoint_observation_failed'])
 
 
 class DiagnosticWorkerArgumentsTests(unittest.TestCase):

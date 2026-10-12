@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('clean_kit', ROOT / 'packaging/clean_windows_kit.py')
@@ -18,6 +19,11 @@ class CleanWindowsKitTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
+        helper = self.root / 'helper.dll'
+        helper.write_bytes(b'synthetic kit-integrity fixture, not executable')
+        self.helper_patch = patch.object(kit, 'HELPER_DLL', helper)
+        self.helper_patch.start()
+        self.addCleanup(self.helper_patch.stop)
         self.old = self.make_release('baseline', '0.1.1', 'a' * 40)
         self.new = self.make_release('candidate', '0.1.2', 'b' * 40)
 
@@ -28,6 +34,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         exe.write_bytes(('synthetic integrity fixture ' + version).encode())
         manifest = {'source_commit': commit, 'artifacts_sha256': {exe.name: kit.digest(exe)},
                     'inputs_sha256': {'quantlab\\' + n: 'c' * 64 for n in kit.ENGINE}}
+        manifest['inputs_sha256']['packaging/acceptance_process.dll'] = kit.digest(kit.HELPER_DLL)
         (path / 'build-manifest.json').write_text(json.dumps(manifest))
         return path
 
@@ -39,7 +46,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         dest = self.root / 'kit'
         self.assertEqual(result['full_acceptance'], 'EXTERNAL BLOCKED')
         self.assertNotEqual(result['baseline_commit'], result['candidate_commit'])
-        self.assertEqual(len(result['files_sha256']), 7)
+        self.assertEqual(len(result['files_sha256']), 9)
         for name, checksum in result['files_sha256'].items():
             self.assertEqual(kit.digest(dest / name), checksum)
         self.assertEqual((dest / 'packaging/test_installer.ps1').read_bytes(),
@@ -87,7 +94,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         source = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
         run = source.index("& (Join-Path $PSScriptRoot 'test_installer.ps1')")
         for marker in ('ProductType -ne 1', 'Architecture -ne 9', '$build -ne 19045', '$build -lt 22000',
-                       'Is64BitProcess', 'WindowsBuiltInRole]::Administrator', 'SessionId -eq 0',
+                       'Is64BitProcess', 'WindowsBuiltInRole]::Administrator', 'get_SessionId() -eq 0',
                        'Existing MarkAuto', 'developer_tools.Count', 'Get-FileHash', 'LicenseAlreadyAccepted'):
             self.assertLess(source.index(marker), run)
         self.assertNotIn('Remove-Item', source)

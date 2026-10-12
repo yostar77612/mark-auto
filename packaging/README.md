@@ -199,3 +199,65 @@ Correcting the tuple check is not native Windows acceptance. The previously
 failed frozen report remains failed; a rebuilt executable must pass the gate
 before installer acceptance can continue. Public trust stores, Qt Schannel,
 accounts and models are outside this fixture's proof.
+
+
+## Bounded lifecycle ownership and prepared-host limits
+
+The lifecycle now requires an explicit `-AcceptanceScope HostedCi`, `DisposableVm`,
+or `PreparedHost`. The CI workflow passes `HostedCi` only on GitHub-hosted runners.
+The clean-client wrapper passes `DisposableVm` after its original clean-client
+preflight. Neither switch creates a sandbox or makes a used host clean.
+
+The native ownership helper is built from committed `acceptance_process.cs` by
+`build_acceptance_helper.ps1` on the ephemeral CI builder using Windows PowerShell
+5.1. The exact DLL digest is captured in the candidate build manifest and the kit;
+the DLL is never compiled on the acceptance host. Source and compiler inputs are
+reproducible; binary identity between compilations is not promised. Use the newly
+built kit, verify its externally recorded SHA256 and exact source commit, and do
+not mix a helper DLL from another build. A missing or mismatched helper is refused.
+
+One acceptance invocation has a 1,200-second cap with five seconds reserved inside
+that cap for cancellation and reports. Install and uninstall waits are each bounded
+at 180 seconds; existing smoke/refusal/close limits are retained. The supervisor
+places its worker into a private kill-on-close Windows Job Object atomically at
+creation, before resume. Children inherit this job without breakaway. No process is
+adopted by name or PID. Direct executables are created suspended; the managed wrapper
+attaches only to the returned creation PID while the original handle is pinned,
+both handles are identity/image/job-verified before resume, and the original handle
+remains retained until cleanup. Launch handles, creation time, exact executable path and job
+membership are checked, and only owned handles/job members may be terminated.
+Forced supervisor process exit closes the job too. Failure leaves app/data artifacts
+for diagnosis; there is no global process kill, silent uninstall, or data cleanup.
+The external OS and storage must remain responsive; no userspace tool can guarantee
+report persistence if Windows or the disk itself stops responding.
+
+`PreparedHost` is a deliberately partial diagnostic mode for a separately authorized
+used Windows host. It requires a non-elevated interactive session, exact release
+manifests, and at least 6 GiB available physical RAM throughout the round. It refuses
+any existing MarkAuto data, installation, user/common shortcut, the exact Inno AppId
+registration in either registry view/hive, or same-name running process. Every target
+and report path is checked for reparse points; ambiguous/denied inventory fails closed.
+Every report/log filename is exclusively reserved before writes. Existing originals
+are never overwritten or uninstalled to make the test run. When all exact target
+state is absent, the report explains why no backup was needed; existing state requires
+a separate reviewed backup/isolation plan, not a bypass switch. The scope preflight
+records the precise paths and registration locations without collecting credentials.
+
+Shell shortcut execution can delegate to a process outside the job. Therefore a
+prepared host validates the newly installed shortcut's exact target, empty arguments
+and working directory, then launches that target directly under the job. Its result
+is `partial` and exit code 2, with real shortcut execution explicitly NOT RUN. It does
+not issue a recovery handoff or a clean-client PASS. Disposable CI/VM scopes retain
+the original actual `.lnk` launch assertion; an unproven returned handle fails rather
+than adopting or killing a process. A shell delegate outside the job is a remaining
+limitation of that disposable-only case and must never be used on a personal host.
+
+Native regressions run in the existing Windows quality job using ephemeral fixtures:
+installer/uninstaller hangs, whole-run timeout, abrupt supervisor cancellation,
+missing GUI, wrong-image and unrelated same-name process rejection, preserved
+preexisting file/registry state, reparse/ACL denial, special-character paths, and
+native launch/exit failures. Those tests do not install Mark Auto and are not clean
+Windows 10/11 evidence. The build job still runs the complete real install, both
+fixture smokes, six source hashes, shortcuts, upgrade, active-app refusals, clean
+window close, uninstall and data-preservation assertions. The clean-client wrapper
+still exits 2 for a fixture-only successful subset and 1 for lifecycle failure.
