@@ -242,8 +242,8 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
 
             def identity_with_sources(extra):
                 # Control source enumeration only; all paths and bytes are real.
-                def glob(path, pattern):
-                    found = list(original_glob(path, pattern))
+                def glob(path, pattern, **kwargs):
+                    found = list(original_glob(path, pattern, **kwargs))
                     if path == root and pattern == '*.py':
                         found.extend(extra)
                     return iter(found)
