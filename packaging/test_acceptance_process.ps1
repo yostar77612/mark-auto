@@ -4,6 +4,10 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') { throw 'Native regression fixtures require a GitHub-hosted ephemeral runner' }
 . (Join-Path $PSScriptRoot 'acceptance_process.ps1')
+# The existing ephemeral quality job enforces a 15-minute outer timeout.
+# This fixture adds checkpoints under that same bound; no case budget changes.
+$suiteClock=[Diagnostics.Stopwatch]::StartNew()
+$suiteLimitSeconds=900
 function Check([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Native-Code($ErrorRecord) {
   $exception=$ErrorRecord.Exception
@@ -17,6 +21,7 @@ function Native-Code($ErrorRecord) {
 $fixture = Join-Path $env:TEMP ("markauto ownership's-" + [guid]::NewGuid().ToString('N'))
 New-Item $fixture -ItemType Directory | Out-Null
 $outsider = $null
+$outsiderStop=Join-Path $fixture 'outsider-complete'
 $registration = 'Software\MarkAuto-TestLab\' + [guid]::NewGuid().ToString('N')
 try {
   $name='Local\MarkAutoAcceptance-Test-' + [guid]::NewGuid().ToString('N')
@@ -65,6 +70,15 @@ public static class MarkAutoFixture {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFileAttributes(string path);
     public static int AttributeError(string path) { return GetFileAttributes(path)==0xffffffff ? Marshal.GetLastWin32Error() : 0; }
     public static void Main(string[] args) {
+        if(args.Length==3 && args[0]=="outsider") {
+            var wait=System.Diagnostics.Stopwatch.StartNew();
+            int limit=int.Parse(args[2]);
+            while(!System.IO.File.Exists(args[1])) {
+                if(wait.ElapsedMilliseconds>=limit) Environment.Exit(3);
+                System.Threading.Thread.Sleep(50);
+            }
+            return;
+        }
         if(args.Length==4 && args[0]=="child") {
             System.IO.File.WriteAllText(args[2]+".ready","ready");
             var wait=System.Diagnostics.Stopwatch.StartNew();
@@ -87,6 +101,7 @@ public static class MarkAutoFixture {
   [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes($exe))
   $info = New-Object Diagnostics.ProcessStartInfo
   $info.FileName=$exe; $info.UseShellExecute=$false
+  $info.Arguments='outsider "' + $outsiderStop + '" ' + ($suiteLimitSeconds * 1000)
   $outsider = [Diagnostics.Process]::Start($info)
   $outsiderHandle = $outsider.get_Handle()
   $outsiderCreated = [MarkAutoAcceptanceJob]::Created($outsiderHandle)
@@ -110,7 +125,11 @@ public static class MarkAutoFixture {
     try { Assert-AcceptancePath (Join-Path $junction 'not-created') } catch { $refused=$true }
     Check $refused 'Reparse ancestor was accepted'
   } finally { [IO.Directory]::Delete($junction) }
-  $denied=Join-Path $fixture 'denied'
+  # Metadata access can also be granted by listing the containing directory.
+  # Keep both ACL surfaces inside a dedicated, exclusively owned fixture subtree.
+  $aclParent=Join-Path $fixture 'acl-parent'
+  New-Item $aclParent -ItemType Directory | Out-Null
+  $denied=Join-Path $aclParent 'denied'
   New-Item $denied -ItemType Directory | Out-Null
   [IO.File]::WriteAllText((Join-Path $denied 'existing.txt'), 'unchanged')
   $target=Join-Path $denied 'existing.txt'
@@ -122,7 +141,11 @@ public static class MarkAutoFixture {
   Check (-not (Test-Path -LiteralPath $absentControl)) 'Metadata probe created absent fixture'
   $originalFileAcl=Get-Acl -LiteralPath $target
   $deniedFileAcl=Get-Acl -LiteralPath $target
+  $originalParentAcl=Get-Acl -LiteralPath $aclParent
+  $deniedParentAcl=Get-Acl -LiteralPath $aclParent
   $originalAcl=Get-Acl -LiteralPath $denied
+  Check ([MarkAutoAcceptanceJob]::PathAttributes($denied) -ne [uint32]::MaxValue) 'Accessible ancestor metadata was not readable before denial'
+  Assert-AcceptancePath (Join-Path $denied 'absent-child') -RequireAbsent
   try {
     $acl=Get-Acl -LiteralPath $denied
     $user=[Security.Principal.WindowsIdentity]::GetCurrent().User
@@ -148,18 +171,43 @@ public static class MarkAutoFixture {
     Write-Host ($observation | ConvertTo-Json -Compress)
     Check ($observation.native_open_code -eq 5) 'ACL fixture did not deny the native metadata-read query with ERROR_ACCESS_DENIED'
     Check ($refused -and $observation.inventory_code -eq 5) 'Access-denied inventory was accepted as absence'
+    $ancestorBeforeParentDeny=$null
+    try { [void][MarkAutoAcceptanceJob]::PathAttributes($denied); $ancestorBeforeParentDeny=0 }
+    catch { $ancestorBeforeParentDeny=Native-Code $_ }
+    # A target deny is insufficient while its parent grants FILE_LIST_DIRECTORY.
+    # This self-only deny changes no ancestor, sibling, or inherited child ACL.
+    $parentRule=New-Object Security.AccessControl.FileSystemAccessRule($user, 'ListDirectory', 'None', 'None', 'Deny')
+    $deniedParentAcl.AddAccessRule($parentRule)
+    Set-Acl -LiteralPath $aclParent -AclObject $deniedParentAcl
+    $appliedParentAcl=Get-Acl -LiteralPath $aclParent
+    $appliedRules=@($appliedParentAcl.GetAccessRules($true,$false,[Security.Principal.SecurityIdentifier]) | Where-Object {
+      $_.get_IdentityReference() -eq $user -and $_.get_AccessControlType() -eq [Security.AccessControl.AccessControlType]::Deny
+    })
+    $parentDenyVerified=@($appliedRules | Where-Object {
+      ($_.get_FileSystemRights() -band [Security.AccessControl.FileSystemRights]::ListDirectory) -ne 0 -and
+      $_.get_InheritanceFlags() -eq [Security.AccessControl.InheritanceFlags]::None -and
+      $_.get_PropagationFlags() -eq [Security.AccessControl.PropagationFlags]::None
+    }).Count -gt 0
+    Check $parentDenyVerified 'Fixture parent-list denial was not present on ACL readback'
     $ancestorCode=$null; $childCode=$null
     try { [void][MarkAutoAcceptanceJob]::PathAttributes($denied); $ancestorCode=0 } catch { $ancestorCode=Native-Code $_ }
     try { Assert-AcceptancePath (Join-Path $denied 'absent-child'); $childCode=0 } catch { $childCode=Native-Code $_ }
-    Write-Host ((@{case='denied-ancestor-absent-child'; native_ancestor_code=$ancestorCode; inventory_code=$childCode}) | ConvertTo-Json -Compress)
+    Write-Host ((@{case='denied-ancestor-absent-child'; native_before_parent_deny=$ancestorBeforeParentDeny;
+      parent_list_deny_verified=$parentDenyVerified; parent_deny_inheritance='None'; parent_deny_propagation='None';
+      native_ancestor_code=$ancestorCode; inventory_code=$childCode}) | ConvertTo-Json -Compress)
     Check ($ancestorCode -eq 5) 'ACL fixture did not deny ancestor metadata-read query'
     Check ($childCode -eq 5) 'Absent child bypassed denied ancestor metadata'
   } finally {
+    # Restore the containing directory first so metadata access is available to cleanup.
+    Set-Acl -LiteralPath $aclParent -AclObject $originalParentAcl
     Set-Acl -LiteralPath $denied -AclObject $originalAcl
     Set-Acl -LiteralPath $target -AclObject $originalFileAcl
   }
   Check ([MarkAutoAcceptanceJob]::PathAttributes($target) -ne [uint32]::MaxValue) 'Restored fixture metadata was not readable'
   Assert-AcceptancePath $target
+  Check ([MarkAutoAcceptanceJob]::PathAttributes($denied) -ne [uint32]::MaxValue) 'Restored ancestor metadata was not readable'
+  Assert-AcceptancePath (Join-Path $denied 'absent-child') -RequireAbsent
+  Check (-not (Test-Path -LiteralPath (Join-Path $denied 'absent-child'))) 'Ancestor metadata probe created the absent child'
   Check ([IO.File]::ReadAllText($target) -eq 'unchanged') 'ACL probe changed original fixture bytes'
   $worker = Join-Path $fixture 'worker.ps1'
   @'
@@ -246,7 +294,10 @@ try {
       if (-not $refused -or $outside.get_HasExited()) { throw 'Unrelated same-name process was stopped' }
     } finally { $outside.Dispose() }
   } else {
-    @{id=$owned.Process.Id; created=$owned.Created} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-process.json')
+    $identityPath=Join-Path $Fixture 'owned-process.json'
+    $identityTemp=$identityPath+'.tmp'
+    @{id=$owned.Process.Id; created=$owned.Created} | ConvertTo-Json | Set-Content -LiteralPath $identityTemp
+    [IO.File]::Move($identityTemp,$identityPath) # Publish only complete JSON, without replacing prior evidence.
     Start-Sleep -Seconds 60
   }
 } catch {
@@ -261,6 +312,7 @@ try {
 '@ | Set-Content $worker
   Set-Content (Join-Path $fixture 'outsider-pid.txt') $outsider.Id
   foreach ($case in @('install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
+    Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
     $parameters = @{Helper=(Join-Path $PSScriptRoot 'acceptance_process.ps1'); Fixture=$fixture; Case=$case}
     $report = Join-Path $fixture ($case + '.json')
     $failure = Join-Path $fixture ($case + '-failure.json')
@@ -302,6 +354,7 @@ try {
     Check (-not $outsider.get_HasExited()) ('Unrelated same-name process exited: ' + $case)
     Check ([MarkAutoAcceptanceJob]::Created($outsiderHandle) -eq $outsiderCreated) 'Unrelated creation identity changed'
   }
+  Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
   # Forced supervisor termination must also close the private job without a finally block.
   $supervisor = Join-Path $fixture 'supervisor.ps1'
   @'
@@ -336,11 +389,22 @@ $p=@{Helper=$Helper;Fixture=$Fixture;Case='cancel'}
     $outer.Dispose()
     if ($observed) { $observed.Dispose() }
   }
+  Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
   Write-Host 'Native acceptance ownership regressions passed; this is not client lifecycle acceptance'
 } finally {
   if ($outsider) {
-    if (-not $outsider.get_HasExited()) { $outsider.Kill(); [void]$outsider.WaitForExit(2000) }
-    $outsider.Dispose()
+    $cleanupClock=[Diagnostics.Stopwatch]::StartNew()
+    try { [IO.File]::WriteAllText($outsiderStop,'complete') }
+    finally {
+      try {
+        # Signal completion first; retain the original total 2000 ms cleanup allowance.
+        if (-not $outsider.WaitForExit([int][Math]::Max(0,1000-$cleanupClock.ElapsedMilliseconds))) {
+          try { $outsider.Kill() }
+          catch { if (-not $outsider.WaitForExit(0)) { throw } } # Only ignore a proven concurrent exit.
+          Check ($outsider.WaitForExit([int][Math]::Max(0,2000-$cleanupClock.ElapsedMilliseconds))) 'Owned outsider fixture did not exit within cleanup allowance'
+        }
+      } finally { $outsider.Dispose() }
+    }
   }
   [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($registration, $false)
   Remove-Item -LiteralPath $fixture -Recurse -Force
