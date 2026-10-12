@@ -31,6 +31,9 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
     [DllImport("kernel32.dll", SetLastError=true)] static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, IntPtr attribute, IntPtr value, IntPtr size, IntPtr previous, IntPtr returned);
     [DllImport("kernel32.dll")] static extern void DeleteProcThreadAttributeList(IntPtr list);
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool CreateProcess(string app, StringBuilder command, IntPtr ps, IntPtr ts, bool inherit, uint flags, IntPtr environment, string directory, ref StartupEx startup, out ProcessInfo info);
+    [DllImport("kernel32.dll", EntryPoint="CreateProcessW", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern bool CreateProcessBasic(string app, StringBuilder command, IntPtr ps, IntPtr ts, bool inherit, uint flags, IntPtr environment, string directory, ref Startup startup, out ProcessInfo info);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern uint GetProcessId(IntPtr handle);
+    [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
     [DllImport("kernel32.dll", SetLastError=true)] static extern uint ResumeThread(IntPtr thread);
     [DllImport("kernel32.dll", SetLastError=true)] static extern bool IsProcessInJob(IntPtr process, IntPtr job, out bool result);
     [DllImport("kernel32.dll", SetLastError=true)] static extern bool TerminateJobObject(IntPtr job, uint code);
@@ -76,6 +79,9 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         try { return ActiveCount(owned); } finally { CloseHandle(owned); }
     }
     static void Check(bool ok) { if (!ok) throw new Win32Exception(Marshal.GetLastWin32Error()); }
+    static void Check(bool ok, string phase) {
+        if(!ok) { var error=new Win32Exception(Marshal.GetLastWin32Error()); error.Data["acceptance_phase"]=phase; throw error; }
+    }
     public MarkAutoAcceptanceJob(string name) {
         job = CreateJobObject(IntPtr.Zero, name);
         if (job == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -112,12 +118,75 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
             if(value!=IntPtr.Zero) Marshal.FreeHGlobal(value);
         }
     }
+    public static Tuple<System.Diagnostics.Process,Microsoft.Win32.SafeHandles.SafeProcessHandle,long,string> StartOwned(
+        string name, string executable, string arguments, string directory, string expectedImage) {
+        string phase="worker_membership";
+        ProcessInfo pi=new ProcessInfo();
+        Microsoft.Win32.SafeHandles.SafeProcessHandle original=null;
+        System.Diagnostics.Process managed=null;
+        bool completed=false, childCreated=false;
+        try {
+            if(!Owns(name,GetCurrentProcess())) throw new InvalidOperationException("Creating worker is not in the private job");
+            long before=DateTime.UtcNow.ToFileTimeUtc();
+            phase="create_suspended";
+            Startup start=new Startup(); start.cb=Marshal.SizeOf(typeof(Startup));
+            // The verified worker's private job has no breakaway flags. Membership
+            // is inherited atomically at creation; CREATE_BREAKAWAY_FROM_JOB is absent.
+            childCreated=CreateProcessBasic(executable,new StringBuilder("\""+executable+"\" "+arguments),IntPtr.Zero,IntPtr.Zero,false,4,IntPtr.Zero,directory,ref start,out pi);
+            Check(childCreated);
+            original=new Microsoft.Win32.SafeHandles.SafeProcessHandle(pi.process,true);
+            phase="creation_identity";
+            long created=Created(pi.process);
+            if(created<before) throw new InvalidOperationException("Unexpected process creation identity");
+            phase="private_job";
+            if(!Owns(name,pi.process)) throw new InvalidOperationException("Created process is outside the private job");
+            phase="image_query";
+            string image=System.IO.Path.GetFullPath(Image(pi.process));
+            phase="image_compare";
+            if(!String.Equals(image,System.IO.Path.GetFullPath(expectedImage),StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Created process image differs from expected image");
+            phase="managed_binding";
+            // This is not discovery/adoption: only this CreateProcess result's PID is
+            // bound while its original handle is pinned and its thread is suspended.
+            managed=System.Diagnostics.Process.GetProcessById(unchecked((int)pi.id));
+            IntPtr bound=managed.Handle;
+            if(GetProcessId(bound)!=pi.id || Created(bound)!=created || !Owns(name,bound) ||
+               !String.Equals(System.IO.Path.GetFullPath(Image(bound)),image,StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Managed handle does not match the creation-owned process");
+            var launched=Tuple.Create(managed,original,created,image);
+            phase="resume_verified";
+            uint previousSuspendCount=ResumeThread(pi.thread);
+            Check(previousSuspendCount!=0xffffffff);
+            if(previousSuspendCount!=1) throw new InvalidOperationException("Unexpected created-thread suspend state");
+            completed=true;
+            return launched;
+        } catch(Exception error) {
+            if(!error.Data.Contains("acceptance_phase")) error.Data["acceptance_phase"]=phase;
+            // Only the original creation-returned handle can be terminated here.
+            // Preserve the setup exception even when cancellation already exited it.
+            if(childCreated && pi.process!=IntPtr.Zero && WaitForSingleObject(pi.process,0)!=0) {
+                TerminateProcess(pi.process,1);
+                uint waited=WaitForSingleObject(pi.process,1000);
+                if(waited!=0) error.Data["acceptance_cleanup_failed"]=true;
+            }
+            throw;
+        } finally {
+            if(childCreated && pi.thread!=IntPtr.Zero) CloseHandle(pi.thread);
+            if(!completed) {
+                try { if(managed!=null) managed.Dispose(); }
+                finally {
+                    if(original!=null) original.Dispose();
+                    else if(childCreated && pi.process!=IntPtr.Zero) CloseHandle(pi.process);
+                }
+            }
+        }
+    }
     public bool Wait(uint milliseconds) {
         uint result=WaitForSingleObject(process,milliseconds);
         if(result==0xffffffff) throw new Win32Exception(Marshal.GetLastWin32Error());
         return result==0;
     }
-    public int ExitCode { get { uint code; Check(GetExitCodeProcess(process,out code)); return unchecked((int)code); } }
+    public int ExitCode { get { uint code; Check(GetExitCodeProcess(process,out code),"exit_code"); return unchecked((int)code); } }
     public void Cancel() { if(job!=IntPtr.Zero) Check(TerminateJobObject(job,1)); }
     public void Dispose() {
         GC.SuppressFinalize(this);
@@ -128,13 +197,13 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
     public static bool Owns(string name, IntPtr handle) {
         IntPtr owned=OpenJobObject(4,false,name); // QUERY only; never retain a child job handle
         if(owned==IntPtr.Zero) return false;
-        try { bool result; Check(IsProcessInJob(handle,owned,out result)); return result; }
+        try { bool result; Check(IsProcessInJob(handle,owned,out result),"job_membership"); return result; }
         finally { CloseHandle(owned); }
     }
-    public static long Created(IntPtr handle) { long c,e,k,u; Check(GetProcessTimes(handle,out c,out e,out k,out u)); return c; }
+    public static long Created(IntPtr handle) { long c,e,k,u; Check(GetProcessTimes(handle,out c,out e,out k,out u),"creation_time"); return c; }
     public static string Image(IntPtr handle) {
         StringBuilder path=new StringBuilder(32768); int size=path.Capacity;
-        Check(QueryFullProcessImageName(handle,0,path,ref size)); return path.ToString();
+        Check(QueryFullProcessImageName(handle,0,path,ref size),"image_query"); return path.ToString();
     }
     public static void StopOwned(string name, IntPtr handle) {
         if(!Owns(name,handle)) throw new InvalidOperationException("Process ownership was not proven");

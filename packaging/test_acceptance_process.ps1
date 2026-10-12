@@ -60,6 +60,8 @@ public sealed class MarkAutoThrowingProcess {
     readonly bool failHasExited;
     public MarkAutoThrowingProcess(bool failHasExited) { this.failHasExited=failHasExited; }
     public void Refresh() { }
+    public System.Diagnostics.Process DisposeTarget;
+    public void Dispose() { DisposeTarget.Dispose(); throw new InvalidOperationException("fixture_dispose_failure"); }
     public bool HasExited { get {
         if(failHasExited) throw new InvalidOperationException("fixture_has_exited_getter");
         return false;
@@ -70,6 +72,7 @@ public static class MarkAutoFixture {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFileAttributes(string path);
     public static int AttributeError(string path) { return GetFileAttributes(path)==0xffffffff ? Marshal.GetLastWin32Error() : 0; }
     public static void Main(string[] args) {
+        if(args.Length==2 && args[0]=="write-marker") { System.IO.File.WriteAllText(args[1],"executed"); return; }
         if(args.Length==3 && args[0]=="outsider") {
             var wait=System.Diagnostics.Stopwatch.StartNew();
             int limit=int.Parse(args[2]);
@@ -217,12 +220,44 @@ Set-StrictMode -Version Latest
 . $Helper
 Confirm-AcceptanceWorker $AcceptanceJob
 $script:acceptanceProcesses=New-Object System.Collections.ArrayList
+$script:acceptancePhase='case_start'
 try {
   if ($Case -eq 'exit-two') { exit 2 }
+  if ($Case -eq 'post-exit-diagnostic') {
+    $start=New-Object Diagnostics.ProcessStartInfo
+    $start.FileName=$env:ComSpec; $start.Arguments='/c exit 7'; $start.UseShellExecute=$false
+    $direct=[Diagnostics.Process]::Start($start)
+    try {
+      $handle=$direct.get_Handle()
+      if (-not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$handle)) { throw 'Diagnostic creation escaped its private job' }
+      if (-not $direct.WaitForExit(1000)) { throw 'Immediate diagnostic did not exit' }
+      if ($direct.get_ExitCode() -ne 7) { throw 'Immediate diagnostic exit code changed' }
+      foreach ($operation in @('creation_time','job_membership','image_query')) {
+        $code=0; $errorType=$null
+        try {
+          if ($operation -eq 'creation_time') { [void][MarkAutoAcceptanceJob]::Created($handle) }
+          elseif ($operation -eq 'job_membership') { if (-not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$handle)) { throw 'Diagnostic job membership was lost' } }
+          else { [void][MarkAutoAcceptanceJob]::Image($handle) }
+        } catch {
+          $code=$null; $errorType=$_.Exception.GetType().FullName; $cause=$_.Exception
+          while ($cause) { if ($cause -is [ComponentModel.Win32Exception]) { $code=$cause.NativeErrorCode }; $cause=$cause.InnerException }
+        }
+        [Console]::Out.WriteLine((@{case=$Case; phase=$operation; confirmed_exited=$true; native_code=$code; error_type=$errorType} | ConvertTo-Json -Compress))
+      }
+    } finally { $direct.Dispose() }
+    exit 0
+  }
   if ($Case -eq 'fast-nonzero') {
     $owned=Start-OwnedAcceptanceProcess $env:ComSpec -ArgumentList @('/c','exit','7')
     Wait-OwnedAcceptanceProcess $owned 1000 'Fast exit timed out'
+    $script:acceptancePhase='fast_exit_code'
     if ($owned.Process.get_ExitCode() -ne 7) { throw 'Nonzero native exit code lost' }
+    $nativeHandle=$owned.NativeHandle; $managedHandle=$owned.Process.get_SafeHandle()
+    if ($nativeHandle.IsClosed -or $nativeHandle.IsInvalid -or $managedHandle.IsClosed) { throw 'Creation handles were not retained through the exit check' }
+    Close-AcceptanceProcesses
+    $script:acceptanceProcesses.Clear()
+    if (-not $nativeHandle.IsClosed -or -not $managedHandle.IsClosed) { throw 'Creation or managed handle was not closed' }
+    @{exit_code=7; native_handle_closed=$true; managed_handle_closed=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'fast-nonzero-proof.json')
     exit 0
   }
   if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {
@@ -260,6 +295,44 @@ try {
     }
     exit 0
   }
+  if ($Case -eq 'cleanup-error-closes-all') {
+    [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Fixture 'MarkAuto.exe')))
+    $one=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe')
+    $two=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe')
+    $handles=@($one.NativeHandle,$one.Process.get_SafeHandle(),$two.NativeHandle,$two.Process.get_SafeHandle())
+    $throwing=New-Object MarkAutoThrowingProcess($false)
+    $throwing.DisposeTarget=$one.Process; $one.Process=$throwing
+    $expectedFailure=$false
+    try { Close-AcceptanceProcesses }
+    catch { $cause=$_.Exception.GetBaseException(); $expectedFailure=($cause -is [InvalidOperationException] -and $cause.Message -eq 'fixture_dispose_failure') }
+    finally { $script:acceptanceProcesses.Clear() }
+    if (-not $expectedFailure) { throw 'Cleanup did not preserve the first injected disposal error' }
+    foreach ($handle in $handles) { if (-not $handle.IsClosed) { throw 'Cleanup error left a retained creation-bound handle open' } }
+    @{expected_failure='fixture_dispose_failure'; all_four_handles_closed=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'cleanup-error-proof.json')
+    exit 0
+  }
+  if ($Case -eq 'verified-image-marker') {
+    $marker=Join-Path $Fixture 'verified-image-executed.txt'
+    $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ArgumentList @('write-marker',"`"$marker`"")
+    Wait-OwnedAcceptanceProcess $owned 1000 'Verified marker process did not exit'
+    if ($owned.Process.get_ExitCode() -ne 0 -or -not (Test-Path -LiteralPath $marker)) { throw 'Verified image did not execute its marker control' }
+    exit 0
+  }
+  if ($Case -eq 'wrong-image') {
+    $marker=Join-Path $Fixture 'rejected-image-executed.txt'
+    try { [void](Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ArgumentList @('write-marker',"`"$marker`"") -ExpectedImage $env:ComSpec) }
+    catch {
+      $cause=$_.Exception; $phase=$null
+      while ($cause) { if ($cause.Data.Contains('acceptance_phase')) { $phase=$cause.Data['acceptance_phase'] }; $cause=$cause.InnerException }
+      $rejectionClock=[Diagnostics.Stopwatch]::StartNew()
+      while ([MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -gt 1 -and $rejectionClock.ElapsedMilliseconds -lt 1000) { Start-Sleep -Milliseconds 10 }
+      if ($phase -eq 'image_compare' -and [MarkAutoAcceptanceJob]::OwnedActiveProcesses($AcceptanceJob) -eq 1 -and -not (Test-Path -LiteralPath $marker)) {
+        @{expected_failure='image_compare'; child_marker_absent=$true; owned_children_remaining=0} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'wrong-image-proof.json')
+      }
+      throw
+    }
+    throw 'Wrong image was accepted'
+  }
   $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe')
   if ($Case -in @('window-exited-getter-failure','window-handle-getter-failure')) {
     [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Fixture 'MarkAuto.exe')))
@@ -284,7 +357,6 @@ try {
   }
   elseif ($Case -eq 'missing-window') { Wait-OwnedAcceptanceWindow $owned -Seconds 1 }
   elseif ($Case -eq 'install-hang' -or $Case -eq 'uninstall-hang') { Wait-OwnedAcceptanceProcess $owned 500 'Injected installer/uninstaller wait timed out' }
-  elseif ($Case -eq 'wrong-image') { [void](Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ExpectedImage $env:ComSpec) }
   elseif ($Case -eq 'unrelated') {
     $outside=[Diagnostics.Process]::GetProcessById([int](Get-Content (Join-Path $Fixture 'outsider-pid.txt')))
     try {
@@ -301,24 +373,32 @@ try {
     Start-Sleep -Seconds 60
   }
 } catch {
-  $errorType=$_.Exception.GetType().FullName; $nativeCode=$null; $exception=$_.Exception
+  $errorType=$_.Exception.GetType().FullName; $nativeCode=$null; $exception=$_.Exception; $phase=$script:acceptancePhase
+  $cleanupFailed=$false
   while ($exception) {
-    if ($exception -is [ComponentModel.Win32Exception]) { $nativeCode=$exception.NativeErrorCode; break }
+    if ($exception -is [ComponentModel.Win32Exception]) { $nativeCode=$exception.NativeErrorCode }
+    if ($exception.Data.Contains('acceptance_phase')) { $phase=$exception.Data['acceptance_phase'] }
+    if ($exception.Data.Contains('acceptance_cleanup_failed')) { $cleanupFailed=$true }
     $exception=$exception.InnerException
   }
-  Write-Host ((@{case=$Case; error_type=$errorType; native_code=$nativeCode}) | ConvertTo-Json -Compress)
+  $failure=@{case=$Case; error_type=$errorType; native_code=$nativeCode; phase=$phase; launch_cleanup_failed=$cleanupFailed}
+  $failure | ConvertTo-Json | Set-Content (Join-Path $Fixture ($Case+'-error.json'))
+  [Console]::Out.WriteLine(($failure | ConvertTo-Json -Compress))
   throw
 } finally { Close-AcceptanceProcesses }
 '@ | Set-Content $worker
   Set-Content (Join-Path $fixture 'outsider-pid.txt') $outsider.Id
-  foreach ($case in @('install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','wrong-image','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
+  $caseResults=New-Object System.Collections.ArrayList
+  foreach ($case in @('post-exit-diagnostic','install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','verified-image-marker','wrong-image','cleanup-error-closes-all','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
     Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
     $parameters = @{Helper=(Join-Path $PSScriptRoot 'acceptance_process.ps1'); Fixture=$fixture; Case=$case}
     $report = Join-Path $fixture ($case + '.json')
     $failure = Join-Path $fixture ($case + '-failure.json')
     $clock = [Diagnostics.Stopwatch]::StartNew()
+    $caseFailure=$null; $exitCode=$null
+    try {
     $exitCode = Invoke-AcceptanceSupervisor $worker $parameters $report $clock -LimitSeconds 10 -FailureReportPath $failure
-    $expected = if ($case -in @('unrelated','fast-nonzero','descendant-completes','worker-exits-completes')) { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
+    $expected = if ($case -in @('post-exit-diagnostic','verified-image-marker','cleanup-error-closes-all','unrelated','fast-nonzero','descendant-completes','worker-exits-completes')) { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
     Check ($exitCode -eq $expected) ('Unexpected exit: ' + $case)
     Check ($clock.Elapsed.TotalSeconds -lt 10) ('Unbounded wait: ' + $case)
     Check (Test-Path $report) ('Missing supervisor report: ' + $case)
@@ -326,6 +406,19 @@ try {
       Check ((Get-Content $report -Raw | ConvertFrom-Json).owned_processes_before_cleanup -eq 0) 'Success was reported before owned-job quiescence'
     }
     if ($expected -eq 1) { Check (Test-Path $failure) ('Missing failure report: ' + $case) }
+    if ($case -eq 'cleanup-error-closes-all') {
+      $proof=Get-Content -LiteralPath (Join-Path $fixture 'cleanup-error-proof.json') -Raw | ConvertFrom-Json
+      Check ($proof.expected_failure -eq 'fixture_dispose_failure' -and $proof.all_four_handles_closed -eq $true) 'Failed cleanup did not close all original and managed handles'
+    }
+    if ($case -eq 'fast-nonzero') {
+      $proof=Get-Content -LiteralPath (Join-Path $fixture 'fast-nonzero-proof.json') -Raw | ConvertFrom-Json
+      Check ($proof.exit_code -eq 7 -and $proof.native_handle_closed -eq $true -and $proof.managed_handle_closed -eq $true) 'Fast exit did not retain and close both creation-bound handles'
+    }
+    if ($case -eq 'wrong-image') {
+      $proof=Get-Content -LiteralPath (Join-Path $fixture 'wrong-image-proof.json') -Raw | ConvertFrom-Json
+      Check ($proof.expected_failure -eq 'image_compare' -and $proof.child_marker_absent -eq $true -and $proof.owned_children_remaining -eq 0) 'Image rejection was not proved before execution'
+      Check (-not (Test-Path -LiteralPath (Join-Path $fixture 'rejected-image-executed.txt'))) 'Rejected image executed before verification'
+    }
     if ($case -in @('window-exited-getter-failure','window-handle-getter-failure')) {
       $proofPath=Join-Path $fixture ($case+'-proof.json')
       Check (Test-Path -LiteralPath $proofPath) 'GUI getter failure did not propagate from the window-ready gate'
@@ -350,9 +443,24 @@ try {
     if ($case -in @('descendant-completes','worker-exits-completes')) {
       Check (Test-Path -LiteralPath (Join-Path $fixture ($case+'-child.txt'))) 'Supervisor killed an unfinished cleanup child'
     }
+    } catch { $caseFailure=$_.Exception.GetType().FullName }
+    # Aggregation is allowed only after native cleanup and outsider isolation are proved.
+    # Missing reports, uncertain cleanup, changed identity or liveness stop immediately.
+    $caseReport=Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+    Check ($caseReport.cleanup_verified -eq $true) ('Unverified private-job cleanup: ' + $case)
+    $workerFailurePath=Join-Path $fixture ($case+'-error.json')
+    $workerFailure=$null
+    if (Test-Path -LiteralPath $workerFailurePath) {
+      $workerFailure=Get-Content -LiteralPath $workerFailurePath -Raw | ConvertFrom-Json
+      Check (-not $workerFailure.launch_cleanup_failed) ('Unverified launch cleanup: ' + $case)
+    }
     $outsider.Refresh()
     Check (-not $outsider.get_HasExited()) ('Unrelated same-name process exited: ' + $case)
     Check ([MarkAutoAcceptanceJob]::Created($outsiderHandle) -eq $outsiderCreated) 'Unrelated creation identity changed'
+    $caseResult=@{case=$case; passed=($null -eq $caseFailure); actual_exit=$exitCode; assertion_error_type=$caseFailure;
+      phase=$(if($workerFailure){$workerFailure.phase}else{$null}); native_code=$(if($workerFailure){$workerFailure.native_code}else{$null})}
+    [void]$caseResults.Add($caseResult)
+    [Console]::Out.WriteLine(($caseResult | ConvertTo-Json -Compress))
   }
   Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
   # Forced supervisor termination must also close the private job without a finally block.
@@ -390,6 +498,9 @@ $p=@{Helper=$Helper;Fixture=$Fixture;Case='cancel'}
     if ($observed) { $observed.Dispose() }
   }
   Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
+  $caseResults | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $fixture 'case-results.json')
+  $failedCases=@($caseResults | Where-Object { -not $_.passed })
+  Check ($failedCases.Count -eq 0) ('Native ownership cases failed: ' + $failedCases.Count)
   Write-Host 'Native acceptance ownership regressions passed; this is not client lifecycle acceptance'
 } finally {
   if ($outsider) {

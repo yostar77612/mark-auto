@@ -221,7 +221,10 @@ that cap for cancellation and reports. Install and uninstall waits are each boun
 at 180 seconds; existing smoke/refusal/close limits are retained. The supervisor
 places its worker into a private kill-on-close Windows Job Object atomically at
 creation, before resume. Children inherit this job without breakaway. No process is
-adopted by name or PID. Launch handles, creation time, exact executable path and job
+adopted by name or PID. Direct executables are created suspended; the managed wrapper
+attaches only to the returned creation PID while the original handle is pinned,
+both handles are identity/image/job-verified before resume, and the original handle
+remains retained until cleanup. Launch handles, creation time, exact executable path and job
 membership are checked, and only owned handles/job members may be terminated.
 Forced supervisor process exit closes the job too. Failure leaves app/data artifacts
 for diagnosis; there is no global process kill, silent uninstall, or data cleanup.

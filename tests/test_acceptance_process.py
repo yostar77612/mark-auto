@@ -20,7 +20,40 @@ class AcceptanceProcessContracts(unittest.TestCase):
         for source in (self.native, self.helper, self.lifecycle):
             self.assertNotIn('taskkill', source.lower())
             self.assertNotIn('Stop-Process', source)
+        for source in (self.helper, self.lifecycle):
             self.assertNotIn('GetProcessById', source)
+        self.assertEqual(self.native.count('GetProcessById('), 1)
+        self.assertIn('GetProcessById(unchecked((int)pi.id))', self.native)
+
+    def test_creation_bound_binding_is_verified_before_resume(self):
+        launch = self.native.split('> StartOwned(', 1)[1].split('    public bool Wait(', 1)[0]
+        for token in ('Owns(name,GetCurrentProcess())', 'false,4,IntPtr.Zero,directory',
+                      'SafeProcessHandle(pi.process,true)', 'GetProcessId(bound)!=pi.id',
+                      'Created(bound)!=created', '!Owns(name,bound)', 'Image(bound)',
+                      'TerminateProcess(pi.process,1)', 'acceptance_cleanup_failed', 'Check(childCreated)', 'previousSuspendCount!=1'):
+            self.assertIn(token, launch)
+        resume = launch.index('uint previousSuspendCount=ResumeThread(pi.thread)')
+        for token in ('SafeProcessHandle(pi.process,true)', 'Image(pi.process)',
+                      'GetProcessById(unchecked((int)pi.id))', 'GetProcessId(bound)', 'Image(bound)'):
+            self.assertLess(launch.index(token), resume)
+        self.assertIn('NativeHandle=$launch.Item2', self.helper)
+        self.assertIn('$owned.NativeHandle.Dispose()', self.helper)
+        self.assertIn('if ($firstCleanupError) { throw $firstCleanupError }', self.helper)
+        self.assertIn("if ([IO.Path]::GetExtension($FilePath) -ne '.lnk')", self.helper)
+
+    def test_fixture_continues_only_after_verified_isolation(self):
+        fixture = (ROOT / 'packaging/test_acceptance_process.ps1').read_text()
+        for token in ('post-exit-diagnostic', 'wrong-image-proof.json', 'rejected-image-executed.txt',
+                      'native_handle_closed', 'managed_handle_closed', 'acceptance_phase',
+                      'cleanup-error-closes-all', 'all_four_handles_closed',
+                      'Unverified launch cleanup', 'Native ownership cases failed'):
+            self.assertIn(token, fixture)
+        append = fixture.index('[void]$caseResults.Add($caseResult)')
+        for token in ('$caseReport.cleanup_verified -eq $true', 'Unrelated creation identity changed'):
+            self.assertLess(fixture.index(token), append)
+        self.assertIn('$failedCases.Count -eq 0', fixture)
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
+        self.assertIn('  build:\n    needs: quality\n', workflow)
 
     def test_no_host_compiler_or_unbounded_process_wait(self):
         self.assertNotIn('Add-Type -TypeDefinition', self.helper)

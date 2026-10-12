@@ -40,6 +40,7 @@ jobs:
       - name: Fail closed on runtime vulnerabilities or audit failure
         run: python -m pip_audit --path audit-runtime --cache-dir "${{ runner.temp }}/pip-audit-cache" --progress-spinner off --strict
   build:
+    needs: quality
     runs-on: windows-2022
     timeout-minutes: 35
     steps:

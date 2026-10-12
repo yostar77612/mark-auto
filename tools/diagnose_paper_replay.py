@@ -562,12 +562,14 @@ def _connection_observer(output, profile, root, action):
 
 def _connection_probe(output, profile, root):
     """One fixed 120-commit block, using only a newly owned disposable file."""
+    entered = time.perf_counter()
     output, root = Path(output), Path(root)
     path = _owned_connection_path(root, profile)
     path.parent.mkdir()
     if path.exists():
         raise ValueError('Diagnostic database must be new')
     timings = Timings()
+    pre_timing_seconds = timings.started - entered
     connect = _instrument_connect(sqlite3.connect, timings)
     held = None
     consumed = 0
@@ -577,7 +579,10 @@ def _connection_probe(output, profile, root):
                                    'synchronous': 2, 'locking_mode': 'normal'},
               'sqlite': sqlite3.sqlite_version, 'pid': os.getpid(), **_filesystem(root)}
     def record():
-        _write_json(output, {**report, 'commits_completed': consumed, **timings.snapshot()})
+        _write_json(output, {**report, 'commits_completed': consumed,
+            'pre_timing_seconds': pre_timing_seconds,
+            'probe_entry_seconds': time.perf_counter() - entered,
+            'process_cpu_seconds': time.process_time(), **timings.snapshot()})
     @contextmanager
     def transaction():
         db = held if held is not None else _probe_connection(connect, path, profile)
@@ -678,10 +683,17 @@ def _connection_case(output, profile, base, deadline):
     if time.monotonic() >= deadline:
         return {**result, 'not_started': True, 'reason': 'deadline'}
     started = time.perf_counter()
+    milestones = result['controller_milestones'] = {}
+    def mark(name):
+        try:
+            milestones[name] = time.perf_counter() - started
+        except Exception:
+            result['controller_observation_failed'] = True
     import shutil
     root = tempfile.mkdtemp(prefix='paper-connection-probe-', dir=base)
     try:
         _write_json(Path(root) / 'connection-probe-owner.json', {'profile': profile, 'controller_pid': os.getpid()})
+        mark('owner_file_written')
         result['fixture_root'] = root
         command = [sys.executable, str(Path(__file__).resolve()), str(output),
                    '--connection-child', profile, '--connection-root', root]
@@ -689,13 +701,24 @@ def _connection_case(output, profile, base, deadline):
         children = []
         observer_actions = []
         try:
+            mark('probe_launch_requested')
             child = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             children.append(child)
             result['workers_stopped'] = False
+            mark('probe_launch_returned')
             while child.poll() is None:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise subprocess.TimeoutExpired(command, 0)
+                # Presence only: do not open a live report or impede its atomic
+                # replacement. This is a sampled setup boundary, not a heartbeat.
+                if ('probe_output_first_seen' not in milestones
+                        and not result.get('controller_observation_failed')):
+                    try:
+                        if output.exists():
+                            mark('probe_output_first_seen')
+                    except OSError:
+                        result['controller_observation_failed'] = True
                 for action in ('stop', 'start'):
                     ready = output.with_suffix('.ready-' + action + '.json')
                     if ready.exists() and action not in observer_actions:
@@ -710,15 +733,20 @@ def _connection_case(output, profile, base, deadline):
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         children.append(helper)
                         helper.wait(timeout=min(8, remaining))
+                        mark('observer_' + action + '_returned')
                         observer_actions.append(action)
                         if helper.returncode != 0:
                             raise RuntimeError('External diagnostic observer failed')
                 time.sleep(.02)
+            mark('probe_exit_observed')
         except subprocess.TimeoutExpired:
+            mark('timeout_observed')
             result['timed_out'] = True
         except (Exception, KeyboardInterrupt) as error:
+            mark('controller_error_observed')
             result['error_type'] = type(error).__name__
         finally:
+            mark('process_cleanup_started')
             # One shared cleanup reserve for the probe and all sibling observers.
             cleanup_end = min(deadline + 6, time.monotonic() + 6)
             for owned in children:
@@ -752,6 +780,7 @@ def _connection_case(output, profile, base, deadline):
             result['returncode'] = child.returncode if child is not None else None
             result['children'] = [{'pid': owned.pid, 'returncode': owned.returncode} for owned in children]
             result['observer_actions_completed'] = observer_actions
+            mark('process_cleanup_finished')
         if result['workers_stopped'] and output.exists():
             observation = json.loads(output.read_text(encoding='utf-8'))
             result['observation'] = observation

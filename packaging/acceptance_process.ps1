@@ -56,12 +56,23 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
       $job.Cancel(); [void]$job.Wait(1000)
     }
   } finally {
-    $remainingOwned=$null
-    try { if ($job) { $remainingOwned=$job.get_ActiveProcesses() } }
-    catch { $status='failed'; $reason='job_accounting_failed'; $code=1 }
+    $remainingOwned=$null; $cleanupVerified=$false
+    try {
+      if ($job) {
+        $remainingOwned=$job.get_ActiveProcesses()
+        if ($remainingOwned -gt 0) {
+          $job.Cancel()
+          # Use only the existing cleanup reserve; retain one second for disposal/reports.
+          $cleanupDeadline=[Math]::Min($LimitSeconds-1,$Clock.Elapsed.TotalSeconds+4)
+          while ($job.get_ActiveProcesses() -gt 0 -and $Clock.Elapsed.TotalSeconds -lt $cleanupDeadline) { Start-Sleep -Milliseconds 50 }
+        }
+        $cleanupVerified=($job.get_ActiveProcesses() -eq 0)
+        if (-not $cleanupVerified) { $status='failed'; $reason='job_cleanup_unverified'; $code=1 }
+      }
+    } catch { $status='failed'; $reason='job_accounting_failed'; $code=1 }
     finally { if ($job) { $job.Dispose() } }
     $report = @{status=$status; reason=$reason; exit_code=$code; worker_exit_code=$workerExitCode;
-      owned_processes_before_cleanup=$remainingOwned; limit_seconds=$LimitSeconds;
+      owned_processes_before_cleanup=$remainingOwned; cleanup_verified=$cleanupVerified; limit_seconds=$LimitSeconds;
       elapsed_seconds=$Clock.Elapsed.TotalSeconds; cleanup='private creation-owned job closed';
       client_os_acceptance='BLOCKED'} | ConvertTo-Json
     [IO.File]::WriteAllText($ReportPath, $report)
@@ -76,22 +87,40 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
 function Start-OwnedAcceptanceProcess([string]$FilePath, [string[]]$ArgumentList = @(),
                                       [string]$ExpectedImage = $FilePath, [string]$WorkingDirectory = $env:TEMP) {
   Confirm-AcceptanceWorker $AcceptanceJob
+  $script:acceptancePhase='direct_launch'
+  if ([IO.Path]::GetExtension($FilePath) -ne '.lnk') {
+    $launch=[MarkAutoAcceptanceJob]::StartOwned($AcceptanceJob,$FilePath,($ArgumentList -join ' '),$WorkingDirectory,$ExpectedImage)
+    try {
+      # The original native creation handle remains authoritative for this record.
+      $owned=@{Process=$launch.Item1; NativeHandle=$launch.Item2; Handle=$launch.Item2.DangerousGetHandle(); Created=$launch.Item3; Image=$launch.Item4}
+      [void]$script:acceptanceProcesses.Add($owned)
+      return $owned
+    } catch {
+      try { [MarkAutoAcceptanceJob]::StopOwned($AcceptanceJob,$launch.Item2.DangerousGetHandle()) }
+      finally { try { $launch.Item1.Dispose() } finally { $launch.Item2.Dispose() } }
+      throw
+    }
+  }
+  # Disposable-only actual shortcut case retains ShellExecute semantics; host scope
+  # uses its already-validated direct target instead. No unrelated shell process is adopted.
   $before = [DateTime]::UtcNow.ToFileTimeUtc()
   $start = New-Object Diagnostics.ProcessStartInfo
   $start.FileName = $FilePath; $start.Arguments = $ArgumentList -join ' '
-  $start.WorkingDirectory = $WorkingDirectory
-  # Shell execution is required for the real .lnk acceptance case; executable launches never ask for elevation.
-  $start.UseShellExecute = [IO.Path]::GetExtension($FilePath) -eq '.lnk'
+  $start.WorkingDirectory = $WorkingDirectory; $start.UseShellExecute = $true
+  $script:acceptancePhase='shell_launch'
   $process = [Diagnostics.Process]::Start($start)
   if (-not $process) { throw 'Launch returned no creation handle; no process will be adopted' }
   try {
-    $handle = $process.get_Handle() # Retain the creation-returned handle, never reopen by PID.
+    $script:acceptancePhase='shell_creation_handle'
+    $handle = $process.get_Handle()
+    $script:acceptancePhase='shell_creation_identity'
     $created = [MarkAutoAcceptanceJob]::Created($handle)
-    if ($created -lt $before -or -not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob, $handle) -or
-        [IO.Path]::GetFullPath([MarkAutoAcceptanceJob]::Image($handle)) -ne [IO.Path]::GetFullPath($ExpectedImage)) {
-      throw 'Launch process identity or owned-job membership not proven'
-    }
-    $owned = @{Process=$process; Handle=$handle; Created=$created; Image=[IO.Path]::GetFullPath($ExpectedImage)}
+    if ($created -lt $before) { throw 'Launch process creation identity not proven' }
+    $script:acceptancePhase='shell_private_job'
+    if (-not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$handle)) { throw 'Launch owned-job membership not proven' }
+    $script:acceptancePhase='shell_image_identity'
+    if ([IO.Path]::GetFullPath([MarkAutoAcceptanceJob]::Image($handle)) -ne [IO.Path]::GetFullPath($ExpectedImage)) { throw 'Launch process image not proven' }
+    $owned = @{Process=$process; NativeHandle=$null; Handle=$handle; Created=$created; Image=[IO.Path]::GetFullPath($ExpectedImage)}
     [void]$script:acceptanceProcesses.Add($owned)
     return $owned
   } catch { $process.Dispose(); throw }
@@ -119,11 +148,22 @@ function Wait-OwnedAcceptanceProcess($Owned, [int]$Milliseconds, [string]$Failur
   }
 }
 function Close-AcceptanceProcesses {
+  $firstCleanupError=$null
   foreach ($owned in $script:acceptanceProcesses) {
     try { Assert-OwnedAcceptanceProcess $owned; [MarkAutoAcceptanceJob]::StopOwned($AcceptanceJob, $owned.Handle) }
-    finally { $owned.Process.Dispose() }
+    catch { if (-not $firstCleanupError) { $firstCleanupError=$_ } }
+    finally {
+      try { $owned.Process.Dispose() }
+      catch { if (-not $firstCleanupError) { $firstCleanupError=$_ } }
+      finally {
+        try { if ($owned.NativeHandle) { $owned.NativeHandle.Dispose() } }
+        catch { if (-not $firstCleanupError) { $firstCleanupError=$_ } }
+      }
+    }
   }
+  if ($firstCleanupError) { throw $firstCleanupError }
 }
+
 function Assert-AcceptancePath([string]$Path, [switch]$RequireAbsent) {
   $full = [IO.Path]::GetFullPath($Path)
   if ($full -notmatch '^[A-Za-z]:\\' -or $full.Substring(2).Contains(':')) { throw 'Only ordinary local acceptance paths are supported' }
