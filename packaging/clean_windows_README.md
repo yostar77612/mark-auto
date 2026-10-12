@@ -302,3 +302,96 @@ Windows 10/11 evidence. The build job still runs the complete real install, both
 fixture smokes, six source hashes, shortcuts, upgrade, active-app refusals, clean
 window close, uninstall and data-preservation assertions. The clean-client wrapper
 still exits 2 for a fixture-only successful subset and 1 for lifecycle failure.
+
+## Separate prepared-host follow-on session
+
+`prepared_host_session.ps1` is a separate, reviewed source entrypoint, not a switch
+that disables lifecycle preflight. Copy the exact reviewed script into TestLab and
+verify its externally recorded SHA256 before execution. It can reuse an unchanged,
+previously verified kit: it does not replace any kit file or ownership DLL. Its
+Windows native backup controls must pass before personal-host execution. Read-only
+bootstrap checks ancestors before descendants, refuses redirects before content
+reads, caps kit JSON at 64 KiB and each helper input at 1 MiB, and checks a
+30-second preparation allowance before any session write or worker creation.
+Hashing and JSON parsing use one read-locked stream; both helper input handles
+remain read-locked through dot-source and assembly load. Those checks are included
+in the same 1,200-second clock; synchronous OS/storage
+calls still require a responsive system, as the ownership helper already documents.
+
+After the original PreparedHost lifecycle has ended with all ten cases recorded,
+exit 2, verified zero owned descendants and preserved test-only data, the observing
+operator may record a handoff while no intervening MarkAuto use has occurred. Do
+not infer this provenance later from the existence of a sentinel. If that observed
+handoff is unavailable, stop; this entrypoint has no existing-state override.
+
+The UTF-8 JSON handoff has these required fields:
+
+- `schema_version`: 1; `owner`: `prepared-host-lifecycle-handoff`.
+- `candidate_commit`: the exact kit candidate commit (a PR merge SHA may differ
+  from its branch head); `kit_sha256`: SHA256 of the
+  unchanged `kit.json`, not the ZIP hash.
+- `app_data_path`: exact Windows Known Folder LocalAppData plus `MarkAuto`.
+- `no_intervening_app_use`: true only with an observed, uninterrupted handoff.
+- `prior_reports_sha256`: SHA256 values keyed by `installer-results.json`,
+  `installer-scope-preflight.json` and `installer-supervisor.json`, all under that
+  kit's `dist/validation`.
+- `directories`: complete relative directory names, including empty directories,
+  using `/`; do not include the root itself.
+- `files_sha256`: complete map of relative regular file names to lowercase SHA256.
+  Include `installer-preservation-test.txt`. A workspace pointer must be absent.
+  Credential files are refused without opening, hashing, decrypting or copying
+  their values. Preserve the receipt in TestLab and independently pin its SHA256.
+
+Example invocation, with the four actual verified hashes/paths supplied by the
+operator (placeholders are not executable evidence):
+
+```powershell
+powershell.exe -NoProfile -File "$env:LOCALAPPDATA\MarkAuto-TestLab\tools\prepared_host_session.ps1" `
+  -KitRoot "$env:LOCALAPPDATA\MarkAuto-TestLab\verified-kit" `
+  -KitSha256 '<verified-kit-json-sha256>' `
+  -StateReceipt "$env:LOCALAPPDATA\MarkAuto-TestLab\handoff.json" `
+  -StateReceiptSha256 '<verified-handoff-sha256>' `
+  -SessionRoot "$env:LOCALAPPDATA\MarkAuto-TestLab\fresh-session"
+```
+
+The session directory must be absent and must not overlap the kit directory. A complete scoped copy of the receipt-bound
+first-round data is verified before any bootstrap change or install. A new,
+flushed `preflight.json` records exact targets, backup counts and pinned provenance
+before workspace creation or pointer mutation, so cancellation cannot erase that
+pre-mutation evidence. The existing
+workspace pointer schema selects a new TestLab research/cache/log workspace;
+TEMP/TMP changes apply only to the owned worker. Windows resolves the application's
+bootstrap using SHGetFolderPathW, so environment-variable substitution is not
+profile isolation: credentials, controls, recovery identity and single-instance
+state remain in the explicitly authorized MarkAuto AppData bootstrap. Unknown
+files, directories, digests, credential-bearing state, reparse/denied inventory,
+existing installation/shortcuts/registration, or another MarkAuto process stop the
+phase. The bounded backup scope is 4,096 entries / 128 MiB; larger state is refused,
+not truncated. It is not a general backup, migration or recovery tool.
+
+The unchanged helper supervises one 1,200-second round, reserves cleanup time, and
+maintains the 6 GiB free-memory floor. The candidate manifest also binds the helper digest; its installer is verified
+before profile changes and kept read-locked through execution (128 MiB maximum).
+One exact-manifest installer runs with its
+180-second limit and full descendant drain. Both shortcuts and the six shipped
+engine-source hashes are checked. The original seven-operation synthetic frozen
+smoke runs under the same ownership containment, then a normal native window is
+created. All process actions use creation-bound handles. The application is closed
+and its owned descendants drained; the installation, backup and new test workspace
+remain for inspection. A failed round retains its artifacts and never silently
+uninstalls, deletes, restores over changed state or adopts an existing process.
+
+UIAutomation uses the owned main-window handle and checks process ownership before
+reading each element. It selects only the seven known navigation items and verifies
+their selection. Missing native accessibility support is recorded as BLOCKED;
+unknown ownership fails. It never invokes workflow/provider buttons, changes OS
+settings, scans the desktop root, captures unrelated windows, grants OAuth access,
+runs paid AI, or enables real trading. No screenshot or visual-layout PASS is
+claimed. Microsoft documents that [AutomationElement.FromHandle](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.automationelement.fromhandle)
+starts from one window; [PrintWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-printwindow)
+would require an additional precompiled native capture method and can block. That
+capture route is intentionally unimplemented until separately tested.
+
+Success of this bounded subset remains `partial` / exit 2. Original clean Windows
+10/11, real AI/market, full functionality and visual acceptance remain unverified.
+No lifecycle assertion or exit code is changed by this separate phase.

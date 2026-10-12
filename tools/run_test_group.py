@@ -61,19 +61,22 @@ def core_shard_assignments(suite):
 
 def portable_source_identity(start_directory='tests'):
     """Source bytes plus relative names; host paths remain separate evidence."""
-    paths = set(ROOT.glob('*.py')) | set(ROOT.glob('requirements*'))
-    paths |= {ROOT / 'pyproject.toml', ROOT / '.gitattributes'}
+    # Resolve both sides: Windows temporary roots can contain 8.3 aliases.
+    root = ROOT.resolve()
+    paths = set(root.glob('*.py')) | set(root.glob('requirements*'))
+    paths |= {root / 'pyproject.toml', root / '.gitattributes'}
     for directory in ('quantlab', 'tests', 'tools', 'packaging', '.github/workflows'):
-        paths |= {path for path in (ROOT / directory).rglob('*') if path.is_file()
+        paths |= {path for path in (root / directory).rglob('*') if path.is_file()
                   and '__pycache__' not in path.parts and path.suffix in
                   {'.py', '.ps1', '.cs', '.json', '.gz', '.csv', '.yml', '.yaml', '.txt'}}
     paths |= set(Path(start_directory).resolve().glob('*.py'))
     named = {}
     for path in paths:
+        path = path.resolve()
         if not path.is_file():
             continue
         try:
-            name = path.resolve().relative_to(ROOT).as_posix()
+            name = path.relative_to(root).as_posix()
         except ValueError:
             name = '__test_suite__/' + path.name
         if name in named and named[name] != path:

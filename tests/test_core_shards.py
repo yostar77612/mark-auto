@@ -216,6 +216,46 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
             (root / 'tests/test_synthetic.py').rename(root / 'tests/test_renamed.py')
             self.assertNotEqual(before, self.identity(root))
 
+    def test_real_parent_directory_alias_matches_canonical_checkout(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'checkout'
+            self.write_sources(root)
+            alias = root / '..' / 'checkout'
+            self.assertNotEqual(alias, alias.resolve())
+            self.assertEqual(alias.resolve(), root.resolve())
+            self.assertEqual(self.identity(alias), self.identity(root.resolve()))
+
+    def test_duplicate_aliases_coalesce_but_distinct_external_files_fail(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary).resolve()
+            root = parent / 'checkout'
+            self.write_sources(root)
+            first = parent / 'external-one' / 'same.py'
+            second = parent / 'external-two' / 'same.py'
+            for path in (first, second):
+                path.parent.mkdir()
+                path.write_bytes(b'VALUE = 99\n')
+            alias = first.parent / '..' / first.parent.name / first.name
+            self.assertNotEqual(first, alias)
+            self.assertEqual(first.resolve(), alias.resolve())
+            original_glob = Path.glob
+
+            def identity_with_sources(extra):
+                # Control source enumeration only; all paths and bytes are real.
+                def glob(path, pattern):
+                    found = list(original_glob(path, pattern))
+                    if path == root and pattern == '*.py':
+                        found.extend(extra)
+                    return iter(found)
+
+                with patch.object(Path, 'glob', glob):
+                    return self.identity(root)
+
+            expected = identity_with_sources([first])
+            self.assertEqual(expected, identity_with_sources([first, alias]))
+            with self.assertRaisesRegex(ValueError, 'Ambiguous portable source path'):
+                identity_with_sources([first, second])
+
 
 class IndependentCoreInventoryTests(unittest.TestCase):
     def write_suite(self, root, broken=False):
