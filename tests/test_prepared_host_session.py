@@ -64,8 +64,8 @@ class PreparedHostSessionContracts(unittest.TestCase):
         self.assertLess(backup, preflight)
         self.assertLess(preflight, pointer)
         self.assertLess(pointer, launch)
-        self.assertIn('Confirm-PreparedStateInventory (Get-PreparedStateInventory $Destination) $Expected', self.source)
-        self.assertIn('Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root) $Expected', self.source)
+        self.assertIn('Confirm-PreparedStateInventory (Get-PreparedStateInventory $Destination -RequireUnaliased:$RequireUnaliased) $Expected', self.source)
+        self.assertIn('Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root -RequireUnaliased:$RequireUnaliased) $Expected', self.source)
         self.assertIn('[IO.FileMode]::CreateNew', self.source)
         self.assertIn('Original sentinel and absent workspace pointer are required', self.source)
 
@@ -168,6 +168,134 @@ class PreparedHostSessionContracts(unittest.TestCase):
         for token in ('if: always()', 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
                       'path: dist/validation/prepared-host-native/', 'if-no-files-found: error'):
             self.assertIn(token, upload)
+
+class CurrentBaselineSourceContracts(unittest.TestCase):
+    def test_distinct_unknown_continuity_and_exact_maps(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("ValidateSet('LifecycleHandoff','CurrentBaseline')", "schema_version -ne 2",
+                      "original_lifecycle_continuity -cne 'UNPROVEN'", "Current baseline receipt schema refused",
+                      "Current baseline freshness refused", "Current baseline unknown file refused",
+                      "Current baseline unknown directory refused", "entrypoint_sha256", "lifecycle_invocation_sha256"):
+            self.assertIn(token,source)
+        self.assertNotIn("no_intervening_app_use=$true",source)
+        self.assertIn("$receipt.no_intervening_app_use -ne $true",source)
+        self.assertIn("-OwnedPointerDigest $ownedPointerDigest",source)
+        self.assertNotIn("Remove-Item",source)
+
+    def test_both_powershell_sources_have_bom_and_seven_navigation_labels(self):
+        labels=('市場總覽','資料匯入與更新','AI 策略中心','回測與結果',
+                '比較與策略選擇','紙上交易與復原','設定與備份')
+        for name in ('prepared_host_session.ps1','test_prepared_host_session.ps1'):
+            raw=(ROOT/'packaging'/name).read_bytes()
+            self.assertTrue(raw.startswith(b'\xef\xbb\xbf'),name)
+            text=raw.decode('utf-8-sig')
+            for label in labels:
+                self.assertIn(label,text,name)
+
+    def test_acl_controls_verify_native_denial_and_restore_exact_bytes(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("Confirm-PreparedSelfOnlyListDeny", "'ListDirectory','None','None','Deny'",
+                      "$nativeRootCode -eq 5", "$predicateCode -eq 5",
+                      "$scaffoldNativeCode -eq 5", "$scaffoldPredicateCode -eq 5",
+                      "ACL probe changed fixture bytes", "ACL restored file metadata control failed"):
+            self.assertIn(token,fixture)
+        self.assertNotIn("$deniedRejected=$true",fixture)
+        self.assertNotIn("$scaffoldDenied=$true",fixture)
+        self.assertLess(fixture.index("Set-Acl -LiteralPath $aclParent -AclObject $originalParentAcl"),
+                        fixture.index("Set-Acl -LiteralPath $aclRoot -AclObject $originalRootAcl"))
+
+    def test_every_backup_inventory_pass_is_strict_and_between_pass_is_exercised(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        backup=source.split('function Backup-PreparedState',1)[1].split('function Assert-',1)[0]
+        import re
+        passes=re.findall(r'Get-PreparedStateInventory \$(?:Root|Destination)[^\r\n)]*',backup)
+        self.assertEqual(len(passes),4)
+        for call in passes:
+            self.assertIn('-RequireUnaliased:$RequireUnaliased',call)
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("$script:productionInventory", "$script:inventoryPasses -eq 2",
+                      "$script:secondInventoryStrict", "-not $script:secondInventoryReturned",
+                      "Unknown-file content access trap was not verified",
+                      "Second inventory bypassed strict admission before content access",
+                      "Between-pass refusal copied content before admission"):
+            self.assertIn(token,fixture)
+
+    def test_directory_streams_and_prior_root_gate_are_fail_closed(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        native=(ROOT/'packaging/acceptance_process.cs').read_text(encoding='utf-8')
+        for token in ("Assert-PreparedDirectoryStreams $Root", "Assert-PreparedDirectoryStreams $path",
+                      "Assert-PreparedDirectoryStreams $directory", "RequireNoDirectoryDataStreams"):
+            self.assertIn(token,source)
+        method=native.split('public static void RequireNoDirectoryDataStreams',1)[1].split('struct Accounting',1)[0]
+        self.assertIn("if(error!=38) throw new Win32Exception(error)",method)
+        self.assertIn("Directory data stream refused",method)
+        self.assertIn("finally { FindClose(search); }",method)
+        entry=source.split("if ($MyInvocation.InvocationName -eq '.') { return }",1)[1]
+        self.assertLess(entry.index('$bootstrapPriorContext=Read-PreparedPriorContext'),
+                        entry.index('[IO.Directory]::CreateDirectory($SessionRoot)'))
+        gate=source.split('function Read-PreparedPriorContext',1)[1].split('function Assert-PreparedDirectoryStreams',1)[0]
+        self.assertIn('Assert-PreparedSeparateRoots $priorRoot $SessionPath',gate)
+        self.assertIn('Assert-PreparedSeparateRoots $KitRootPath $SessionPath',gate)
+
+    def test_native_directory_ads_and_prior_kit_controls_are_verified(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ('MarkAutoPreparedStreamFixture','CreateFileW','DeleteFileW','FindFirstStreamW',
+                      'Regular ADS setup was not verified','Regular ADS cleanup was not verified',
+                      'Backup ADS setup was not verified','Directory ADS setup was not independently verified',
+                      'Backup directory ADS setup was not verified','Scaffold directory ADS setup was not verified',
+                      'Session inside prior kit admitted','Prior kit reused as session admitted',
+                      'Session ancestor of prior kit admitted','Unpinned same-kit identity admitted'):
+            self.assertIn(token,fixture)
+        self.assertNotIn("[IO.File]::WriteAllText(($currentSentinel+':",fixture)
+        self.assertNotIn("[IO.File]::Delete(($currentSentinel+':",fixture)
+        self.assertNotIn("[IO.File]::WriteAllText(($backupSentinel+':",fixture)
+        self.assertNotIn("[IO.File]::Delete(($backupSentinel+':",fixture)
+
+    def test_original_run_context_is_not_relabelled_as_current_build(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("$Invocation.ExecutionSha -cne $Receipt.prior_candidate_commit",
+                      "$prior=Join-Path $priorKitRoot", "$Receipt.prior_kit_sha256",
+                      "Assert-PreparedInstallScaffolding $app $receipt $priorKit"):
+            self.assertIn(token,source)
+        self.assertIn("$candidate.source_commit -cne $kit.candidate_commit",source)
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn("ExecutionSha=('7'*40)",fixture)
+        self.assertIn("candidate_commit=('a'*40)",fixture)
+
+    def test_alias_metadata_is_native_and_bound_to_the_open_stream(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        native=(ROOT/'packaging/acceptance_process.cs').read_text(encoding='utf-8')
+        for token in ("RequireSingleLinkDefaultStream", "get_SafeFileHandle().DangerousGetHandle()", "Assert-PreparedBootstrapPath $path -AllowAbsent"):
+            self.assertIn(token,source)
+        for token in ("before.links!=1", "after.links!=1", "before.indexHigh", "FindFirstStreamW",
+                      "FindNextStreamW", "ERROR_HANDLE_EOF", '"::$DATA"', "finally { FindClose(search); }"):
+            self.assertIn(token,native)
+
+    def test_v2_native_follow_on_cases_use_runtime_gates(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("Version-one current receipt admitted", "Wrong original invocation candidate admitted",
+                      "Timed-out original invocation admitted", "Hard-linked backup admitted",
+                      "Alternate backup stream admitted", "Hard-linked owned pointer admitted",
+                      "Scaffold metadata access denial admitted",
+                      "Reviewed empty scaffolding changed after rejection controls"):
+            self.assertIn(token,fixture)
+        self.assertIn("$wrongInvocation=$invocationContext.Clone()",fixture)
+        self.assertIn("Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased",fixture)
+
+    def test_native_negative_cases_are_part_of_existing_ci_fixture(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ("Historical continuity was manufactured", "Stale current baseline accepted",
+                      "Future current baseline accepted", "Unsafe current receipt map accepted",
+                      "Wrong prior invocation context accepted", "Current unknown file read",
+                      "Current unknown directory admitted", "Current credential presence admitted",
+                      "Current changed content accepted", "Hard-linked current file admitted",
+                      "Alternate current stream admitted", "Current redirect followed",
+                      "Current metadata access denial admitted", "Non-empty installer tree admitted",
+                      "Unknown installer directory admitted", "Current backup mismatch accepted",
+                      "Existing workspace pointer admitted", "Current admission deleted installer scaffolding",
+                      "Tampered current receipt accepted", "Installer scaffold redirect admitted",
+                      "Wrong scaffold provenance accepted", "Changed owned workspace pointer admitted"):
+            self.assertIn(token,fixture)
 
 if __name__ == '__main__':
     unittest.main()

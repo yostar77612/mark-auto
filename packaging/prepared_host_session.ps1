@@ -1,5 +1,6 @@
 ﻿param([string]$KitRoot, [string]$KitSha256, [string]$StateReceipt, [string]$StateReceiptSha256,
       [string]$SessionRoot,
+      [ValidateSet('LifecycleHandoff','CurrentBaseline')][string]$ReceiptKind = 'LifecycleHandoff',
       [ValidateSet('PreparedHost')][string]$AcceptanceScope = 'PreparedHost',
       [Parameter(DontShow=$true)][string]$AcceptanceJob = '')
 # Separate, deliberately partial follow-on. Never relax test_installer.ps1's absence guard.
@@ -62,9 +63,154 @@ function Read-PreparedBootstrap([string]$Path,[string]$Digest,[long]$MaxBytes,[s
   } finally { if (-not $retained) { $stream.Dispose() } }
 }
 
-function Get-PreparedStateInventory([string]$Root) {
+
+function Assert-PreparedReceiptKeys($Object, [string[]]$Expected) {
+  $names=@($Object.PSObject.Properties.Name)
+  if ($names.Count -ne $Expected.Count -or
+      (@($names | Sort-Object) -join '|') -cne (@($Expected | Sort-Object) -join '|')) {
+    throw 'Current baseline receipt schema refused'
+  }
+}
+function Read-PreparedUtc([string]$Value) {
+  if ($Value -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$') { throw 'Current baseline timestamp refused' }
+  try { return [DateTime]::ParseExact($Value,'o',[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::RoundtripKind) }
+  catch { throw 'Current baseline timestamp refused' }
+}
+function Assert-PreparedUnaliasedFile([IO.FileStream]$Stream, [string]$Path) {
+  if (-not [MarkAutoAcceptanceJob].GetMethod('RequireSingleLinkDefaultStream')) { throw 'Verified helper lacks current-baseline alias admission' }
+  try { [MarkAutoAcceptanceJob]::RequireSingleLinkDefaultStream($Stream.get_SafeFileHandle().DangerousGetHandle(),$Path) }
+  catch { throw 'Current baseline file alias or stream refused' }
+}
+function Confirm-PreparedCurrentBaseline($Receipt, $Kit, [string]$KitDigest, [string]$InstallerDigest,
+    [string]$EntrypointDigest, [string]$KitPath, [string]$DataPath, [string]$AppPath, $Invocation, $PriorKit,
+    [DateTime]$Now = [DateTime]::UtcNow) {
+  Assert-PreparedReceiptKeys $Receipt @('schema_version','owner','original_lifecycle_continuity','captured_at_utc',
+    'kit_root','kit_sha256','candidate_commit','candidate_version','baseline_version','installer_sha256',
+    'helper_sha256','helper_script_sha256','entrypoint_sha256','app_data_path','install_path',
+    'directories','files_sha256','install_directories','install_metadata','prior_reports_sha256',
+    'lifecycle_invocation_path','lifecycle_invocation_sha256','prior_kit_root','prior_kit_sha256',
+    'prior_candidate_commit','prior_candidate_version','prior_baseline_version')
+  if ($Receipt.schema_version -ne 2 -or $Receipt.owner -cne 'prepared-host-current-baseline' -or
+      $Receipt.original_lifecycle_continuity -cne 'UNPROVEN') { throw 'Current baseline provenance refused' }
+  $capture=Read-PreparedUtc $Receipt.captured_at_utc
+  $started=Read-PreparedUtc $Invocation.StartedAtUtc
+  $finished=Read-PreparedUtc $Invocation.FinishedAtUtc
+  if ($capture -gt $Now.AddSeconds(5) -or $capture -lt $Now.AddMinutes(-30) -or
+      $finished -lt $started -or $finished -gt $capture) { throw 'Current baseline freshness refused' }
+  if ($Receipt.kit_root -cne $KitPath -or $Receipt.app_data_path -cne $DataPath -or
+      $Receipt.install_path -cne $AppPath -or $Receipt.kit_sha256 -cne $KitDigest -or
+      $Receipt.candidate_commit -cne $Kit.candidate_commit -or $Receipt.candidate_version -cne $Kit.version -or
+      $Receipt.baseline_version -cne $Kit.baseline_version -or $Receipt.installer_sha256 -cne $InstallerDigest -or
+      $Receipt.helper_sha256 -cne $Kit.files_sha256.'packaging/acceptance_process.dll' -or
+      $Receipt.helper_script_sha256 -cne $Kit.files_sha256.'packaging/acceptance_process.ps1' -or
+      $Receipt.entrypoint_sha256 -cne $EntrypointDigest -or $Receipt.prior_candidate_commit -cne $PriorKit.candidate_commit -or
+      $Receipt.prior_candidate_version -cne $PriorKit.version -or $Receipt.prior_baseline_version -cne $PriorKit.baseline_version -or
+      $PriorKit.schema_version -ne 1 -or $Invocation.ExecutionSha -cne $Receipt.prior_candidate_commit -or
+      $Invocation.ActualCallerExitCode -ne 2 -or $Invocation.TimedOut -ne $false) { throw 'Current baseline provenance refused' }
+  foreach ($digest in @($KitDigest,$InstallerDigest,$EntrypointDigest,$Receipt.helper_sha256,
+      $Receipt.helper_script_sha256,$Receipt.lifecycle_invocation_sha256,$Receipt.prior_kit_sha256)) {
+    if ($digest -cnotmatch '^[a-f0-9]{64}$') { throw 'Current baseline digest refused' }
+  }
+  $knownFiles=@('.analysis-recovery-admission.lock','installer-preservation-test.txt',
+    'state-v1/desktop_safety.json','state-v1/settings.json','workspace-format.json')
+  $knownDirectories=@('cache','control-v1','credentials','logs','state-v1','state-v1/market_cache')
+  Assert-PreparedReceiptKeys $Receipt.files_sha256 $knownFiles
+  if (($Receipt.directories -join '|') -cne ($knownDirectories -join '|')) { throw 'Current baseline reviewed directory map refused' }
+  foreach ($entry in $Receipt.files_sha256.PSObject.Properties) {
+    if ($entry.Value -cnotmatch '^[a-f0-9]{64}$') { throw 'Current baseline digest refused' }
+  }
+  Assert-PreparedReceiptKeys $Receipt.prior_reports_sha256 @('installer-results.json','installer-supervisor.json',
+    'installer-scope-preflight.json','smoke-installed.json','smoke-upgraded.json')
+  foreach ($entry in $Receipt.prior_reports_sha256.PSObject.Properties) {
+    if ($entry.Value -cnotmatch '^[a-f0-9]{64}$') { throw 'Current baseline digest refused' }
+  }
+  foreach ($name in @('installer-results.json','installer-supervisor.json','installer-scope-preflight.json')) {
+    $record=@($Invocation.NativeReports | Where-Object { $_.Name -ceq $name })
+    if ($record.Count -ne 1 -or $record[0].Sha256 -cne $Receipt.prior_reports_sha256.PSObject.Properties[$name].Value) {
+      throw 'Current baseline invocation context refused'
+    }
+  }
+}
+function Assert-PreparedInstallScaffolding([string]$Root, $Receipt, $Kit, $Invocation) {
+  Assert-PreparedBootstrapPath $Root -AllowAbsent
+  Assert-AcceptancePath $Root
+  $attributes=[MarkAutoAcceptanceJob]::PathAttributes($Root)
+  $expected=@($Receipt.install_directories)
+  if ($attributes -eq [uint32]::MaxValue) {
+    if ($expected.Count -ne 0 -or @($Receipt.install_metadata.PSObject.Properties).Count -ne 0) { throw 'Pinned installer scaffolding changed' }
+    return
+  }
+  if (($attributes -band [IO.FileAttributes]::Directory) -eq 0) { throw 'Installer scaffolding contains a file' }
+  $base=@('payloads',('payloads/'+$Kit.baseline_version),('payloads/'+$Kit.version))
+  if ($Kit.baseline_version -ceq $Kit.version -or $expected.Count -ne 5) { throw 'Reviewed installer scaffolding map refused' }
+  foreach ($name in $base) { if ($expected -cnotcontains $name) { throw 'Reviewed installer scaffolding map refused' } }
+  foreach ($version in @($Kit.baseline_version,$Kit.version)) {
+    $prefix='payloads/'+$version+'/'
+    $leaves=@($expected | Where-Object { $_.StartsWith($prefix,[StringComparison]::Ordinal) })
+    if ($leaves.Count -ne 1 -or $leaves[0].Substring($prefix.Length) -cnotmatch '^is-[A-Z0-9]{5}$') { throw 'Reviewed installer scaffolding map refused' }
+  }
+  Assert-PreparedReceiptKeys $Receipt.install_metadata (@('.')+$expected)
+  $started=Read-PreparedUtc $Invocation.StartedAtUtc; $finished=Read-PreparedUtc $Invocation.FinishedAtUtc
+  $actual=New-Object System.Collections.ArrayList; $pending=New-Object 'System.Collections.Generic.Queue[string]'
+  $pending.Enqueue([IO.Path]::GetFullPath($Root).TrimEnd('\'))
+  while ($pending.Count) {
+    $directory=$pending.Dequeue()
+    Assert-PreparedBootstrapPath $directory -AllowAbsent
+    Assert-AcceptancePath $directory
+    Assert-PreparedDirectoryStreams $directory
+    $relative=if ($directory -ceq [IO.Path]::GetFullPath($Root).TrimEnd('\')) { '.' } else { $directory.Substring($Root.TrimEnd('\').Length+1).Replace('\','/') }
+    if ($relative -cne '.' -and $expected -cnotcontains $relative) { throw 'Unknown installer scaffolding directory' }
+    if ($actual.Count -ge 6) { throw 'Installer scaffolding exceeds reviewed map' }
+    [void]$actual.Add($relative)
+    $meta=$Receipt.install_metadata.PSObject.Properties[$relative].Value
+    Assert-PreparedReceiptKeys $meta @('created_at_utc','modified_at_utc')
+    $created=Read-PreparedUtc $meta.created_at_utc; $modified=Read-PreparedUtc $meta.modified_at_utc
+    $info=New-Object IO.DirectoryInfo($directory)
+    if ($created -lt $started -or $created -gt $finished -or $modified -lt $started -or $modified -gt $finished -or
+        $info.get_CreationTimeUtc().ToString('o') -cne $meta.created_at_utc -or
+        $info.get_LastWriteTimeUtc().ToString('o') -cne $meta.modified_at_utc) { throw 'Pinned installer scaffolding metadata changed' }
+    $entries=[IO.Directory]::EnumerateFileSystemEntries($directory).GetEnumerator()
+    try { while ($entries.MoveNext()) {
+      $path=$entries.get_Current(); Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path
+      if (([MarkAutoAcceptanceJob]::PathAttributes($path) -band [IO.FileAttributes]::Directory) -eq 0) { throw 'Installer scaffolding contains a file' }
+      $pending.Enqueue($path)
+      if ($pending.Count -gt 6) { throw 'Installer scaffolding exceeds reviewed map' }
+    } } finally { $entries.Dispose() }
+  }
+  if ((@($actual | Where-Object { $_ -cne '.' } | Sort-Object) -join '|') -cne (@($expected | Sort-Object) -join '|')) { throw 'Pinned installer scaffolding changed' }
+}
+
+
+function Read-PreparedPriorContext($Receipt, $Kit, [string]$KitDigest,
+    [string]$KitRootPath, [string]$SessionPath, [string]$LabPath) {
+  if ($Receipt.schema_version -ne 2 -or $Receipt.owner -cne 'prepared-host-current-baseline' -or
+      $Receipt.original_lifecycle_continuity -cne 'UNPROVEN') { throw 'Current baseline provenance refused' }
+  $priorRoot=[IO.Path]::GetFullPath($Receipt.prior_kit_root)
+  if ($priorRoot -cne $Receipt.prior_kit_root -or
+      -not $priorRoot.StartsWith(($LabPath.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Current baseline prior kit path refused' }
+  Assert-PreparedSeparateRoots $KitRootPath $SessionPath
+  Assert-PreparedSeparateRoots $priorRoot $SessionPath
+  Assert-PreparedBootstrapPath $priorRoot -AllowAbsent
+  $priorKit=Read-PreparedJson (Join-Path $priorRoot 'kit.json') $Receipt.prior_kit_sha256
+  if ($priorKit.schema_version -ne 1 -or $priorKit.candidate_commit -cne $Receipt.prior_candidate_commit -or
+      $priorKit.version -cne $Receipt.prior_candidate_version -or
+      $priorKit.baseline_version -cne $Receipt.prior_baseline_version) { throw 'Current baseline prior kit context refused' }
+  if ($priorRoot -ieq $KitRootPath -and ($Receipt.prior_kit_sha256 -cne $KitDigest -or
+      $priorKit.candidate_commit -cne $Kit.candidate_commit -or $priorKit.version -cne $Kit.version -or
+      $priorKit.baseline_version -cne $Kit.baseline_version)) { throw 'Current/prior kit identity was not explicitly pinned' }
+  return @{root=$priorRoot;kit=$priorKit}
+}
+function Assert-PreparedDirectoryStreams([string]$Path) {
+  if (-not [MarkAutoAcceptanceJob].GetMethod('RequireNoDirectoryDataStreams')) { throw 'Verified helper lacks directory stream admission' }
+  try { [MarkAutoAcceptanceJob]::RequireNoDirectoryDataStreams($Path) }
+  catch { throw [InvalidOperationException]::new('Current baseline directory stream or metadata refused',$_.Exception) }
+}
+
+function Get-PreparedStateInventory([string]$Root, [switch]$RequireUnaliased, [string]$OwnedPointerDigest = '') {
+  if ($RequireUnaliased) { Assert-PreparedBootstrapPath $Root -AllowAbsent }
   Assert-AcceptancePath $Root
   if (-not [IO.Directory]::Exists($Root)) { throw 'Prepared data directory missing' }
+  if ($RequireUnaliased) { Assert-PreparedDirectoryStreams $Root }
   $rootPath=[IO.Path]::GetFullPath($Root).TrimEnd('\')
   $pending=New-Object 'System.Collections.Generic.Queue[string]'
   $pending.Enqueue($rootPath)
@@ -77,23 +223,34 @@ function Get-PreparedStateInventory([string]$Root) {
     try { while ($entries.MoveNext()) {
       $path=$entries.get_Current()
       if (++$count -gt 4096) { throw 'Prepared test inventory exceeds bounded scope' }
+      if ($RequireUnaliased) { Assert-PreparedBootstrapPath $path -AllowAbsent }
       Assert-AcceptancePath $path
       $relative=$path.Substring($rootPath.Length+1).Replace('\','/')
       $attributes=[MarkAutoAcceptanceJob]::PathAttributes($path)
       if ($attributes -eq [uint32]::MaxValue) { throw 'Prepared data changed during inventory' }
       if (($attributes -band [IO.FileAttributes]::Directory) -ne 0) {
+        if ($RequireUnaliased -and $relative -cnotin @('cache','control-v1','credentials','logs','state-v1','state-v1/market_cache')) { throw 'Current baseline unknown directory refused' }
+        if ($RequireUnaliased) { Assert-PreparedDirectoryStreams $path }
         [void]$directories.Add($relative); $pending.Enqueue($path)
       } else {
         # Do not open, hash, decrypt or copy credential values, even a test receipt's.
         if ($relative -eq 'credentials' -or $relative.StartsWith('credentials/',[StringComparison]::OrdinalIgnoreCase)) { throw 'Credential-bearing state is outside this test phase' }
+        $ownedPointer=($RequireUnaliased -and $relative -ceq 'workspace-location.json' -and $OwnedPointerDigest -cmatch '^[a-f0-9]{64}$')
+        if ($RequireUnaliased -and -not $ownedPointer -and $relative -cnotin @('.analysis-recovery-admission.lock','installer-preservation-test.txt','state-v1/desktop_safety.json','state-v1/settings.json','workspace-format.json')) { throw 'Current baseline unknown file refused' }
         if ($files.ContainsKey($relative)) { throw 'Ambiguous prepared data name' }
         $stream=[IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
         try {
+          if ($RequireUnaliased) { Assert-PreparedUnaliasedFile $stream $path }
           $total += $stream.get_Length()
           if ($total -gt 128MB) { throw 'Prepared test data exceeds bounded backup scope' }
           $hash=[Security.Cryptography.SHA256]::Create()
           try { $files[$relative]=([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
           finally { $hash.Dispose() }
+          if ($RequireUnaliased) { Assert-PreparedUnaliasedFile $stream $path }
+          if ($ownedPointer) {
+            if ($files[$relative] -cne $OwnedPointerDigest) { throw 'Owned workspace pointer changed' }
+            $files.Remove($relative)
+          }
         } finally { $stream.Dispose() }
       }
     } } finally { $entries.Dispose() }
@@ -109,12 +266,13 @@ function Confirm-PreparedStateInventory($Actual, $Expected) {
     if (-not $Actual.files_sha256.ContainsKey($name) -or $Actual.files_sha256[$name] -cne $(if ($Expected.files_sha256 -is [Collections.IDictionary]) { $Expected.files_sha256[$name] } else { $Expected.files_sha256.PSObject.Properties[$name].Value })) { throw 'Prepared data digest changed; originals preserved' }
   }
 }
-function Backup-PreparedState([string]$Root, [string]$Destination, $Expected) {
-  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root) $Expected
+function Backup-PreparedState([string]$Root, [string]$Destination, $Expected, [switch]$RequireUnaliased) {
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root -RequireUnaliased:$RequireUnaliased) $Expected
+  if ($RequireUnaliased) { Assert-PreparedBootstrapPath $Destination -AllowAbsent }
   Assert-AcceptancePath $Destination -RequireAbsent
   [void][IO.Directory]::CreateDirectory($Destination)
   # Names come only from the just-verified actual inventory, never unchecked receipt paths.
-  $actual=Get-PreparedStateInventory $Root
+  $actual=Get-PreparedStateInventory $Root -RequireUnaliased:$RequireUnaliased
   Confirm-PreparedStateInventory $actual $Expected
   foreach ($relative in $actual.directories) { [void][IO.Directory]::CreateDirectory((Join-Path $Destination $relative)) }
   foreach ($relative in $actual.files_sha256.Keys) {
@@ -122,12 +280,13 @@ function Backup-PreparedState([string]$Root, [string]$Destination, $Expected) {
     Assert-AcceptancePath $source; Assert-AcceptancePath $target -RequireAbsent
     $inputStream=[IO.File]::Open($source,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
     try {
+      if ($RequireUnaliased) { Assert-PreparedUnaliasedFile $inputStream $source }
       $outputStream=[IO.File]::Open($target,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
-      try { $inputStream.CopyTo($outputStream); $outputStream.Flush($true) } finally { $outputStream.Dispose() }
+      try { $inputStream.CopyTo($outputStream); $outputStream.Flush($true); if ($RequireUnaliased) { Assert-PreparedUnaliasedFile $inputStream $source } } finally { $outputStream.Dispose() }
     } finally { $inputStream.Dispose() }
   }
-  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Destination) $Expected
-  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root) $Expected
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Destination -RequireUnaliased:$RequireUnaliased) $Expected
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $Root -RequireUnaliased:$RequireUnaliased) $Expected
 }
 function Assert-PreparedNoProcess {
   if (Get-Process -Name MarkAuto -ErrorAction SilentlyContinue -ErrorVariable inspectionErrors) { throw 'Another MarkAuto process is present; no process is adopted' }
@@ -232,6 +391,11 @@ try {
 } finally { foreach ($locked in $helperStreams) { $locked.Dispose() } }
 if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
 foreach ($path in @($KitRoot,$SessionRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path }
+if ($ReceiptKind -ceq 'CurrentBaseline') {
+  $bootstrapReceipt=Read-PreparedJson $StateReceipt $StateReceiptSha256
+  $bootstrapPriorContext=Read-PreparedPriorContext $bootstrapReceipt $kit $KitSha256 $KitRoot $SessionRoot $lab
+  if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
+}
 if (-not $AcceptanceJob) {
   Assert-AcceptancePath $SessionRoot -RequireAbsent
   [void][IO.Directory]::CreateDirectory($SessionRoot)
@@ -264,28 +428,49 @@ try {
   $installerLease=Read-PreparedBootstrap $installer $installerDigest 128MB -Hold
   $receipt=Read-PreparedJson $StateReceipt $StateReceiptSha256
   $data=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto'
-  if ($receipt.schema_version -ne 1 -or $receipt.owner -cne 'prepared-host-lifecycle-handoff' -or $receipt.candidate_commit -cne $kit.candidate_commit -or $receipt.kit_sha256 -cne $KitSha256 -or $receipt.app_data_path -ine $data -or $receipt.no_intervening_app_use -ne $true) { throw 'Observed lifecycle handoff required; existing data cannot be adopted' }
-  $prior=Join-Path $KitRoot 'dist\validation'
+  $currentBaseline=($ReceiptKind -ceq 'CurrentBaseline')
+  $app=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\MarkAuto'
+  $invocation=$null; $priorKit=$kit; $priorKitRoot=$KitRoot
+  if ($currentBaseline) {
+    $invocationPath=[IO.Path]::GetFullPath($receipt.lifecycle_invocation_path)
+    if (-not $invocationPath.StartsWith(($lab.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Current baseline invocation path refused' }
+    $invocation=Read-PreparedJson $invocationPath $receipt.lifecycle_invocation_sha256
+    $priorKitRoot=$bootstrapPriorContext.root; $priorKit=$bootstrapPriorContext.kit
+    Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant() $KitRoot $data $app $invocation $priorKit
+  } elseif ($receipt.schema_version -ne 1 -or $receipt.owner -cne 'prepared-host-lifecycle-handoff' -or $receipt.candidate_commit -cne $kit.candidate_commit -or $receipt.kit_sha256 -cne $KitSha256 -or $receipt.app_data_path -ine $data -or $receipt.no_intervening_app_use -ne $true) { throw 'Observed lifecycle handoff required; existing data cannot be adopted' }
+  $prior=Join-Path $priorKitRoot 'dist\validation'
   $lifecycle=Read-PreparedJson (Join-Path $prior 'installer-results.json') $receipt.prior_reports_sha256.'installer-results.json'
   $scope=Read-PreparedJson (Join-Path $prior 'installer-scope-preflight.json') $receipt.prior_reports_sha256.'installer-scope-preflight.json'
   $supervisor=Read-PreparedJson (Join-Path $prior 'installer-supervisor.json') $receipt.prior_reports_sha256.'installer-supervisor.json'
   $cases=@('install','bundled-runtime-launch','start-menu-shortcut','desktop-shortcut','version-upgrade','reject-active-upgrade','reject-active-uninstall','native-window-close','uninstall','preserve-user-data')
   if ($lifecycle.status -cne 'partial' -or ($lifecycle.tests -join '|') -cne ($cases -join '|') -or $scope.scope -cne 'PreparedHost' -or $scope.backup_required -ne $false -or $scope.destinations_initially_absent -inotcontains $data -or $supervisor.exit_code -ne 2 -or $supervisor.cleanup_verified -ne $true -or $supervisor.reason -cne 'worker_and_descendants_exit') { throw 'Prior complete bounded partial lifecycle proof required' }
+  if ($currentBaseline) {
+    foreach ($stage in @('installed','upgraded')) {
+      $name='smoke-'+$stage+'.json'
+      $proof=Read-PreparedJson (Join-Path $prior $name) $receipt.prior_reports_sha256.PSObject.Properties[$name].Value
+      $expectedVersion=if ($stage -ceq 'installed') { $priorKit.baseline_version } else { $priorKit.version }
+      if ($proof.status -cne 'passed' -or $proof.version -cne $expectedVersion -or $proof.source_type -cne 'synthetic' -or $proof.generator -cne 'fixture' -or $proof.live_status -cne 'disabled') { throw 'Current baseline prior smoke context refused' }
+    }
+  }
   if (-not $receipt.files_sha256.PSObject.Properties['installer-preservation-test.txt'] -or $receipt.files_sha256.PSObject.Properties['workspace-location.json']) { throw 'Original sentinel and absent workspace pointer are required' }
   $app=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\MarkAuto'
   $start=Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
   $desktop=Join-Path ([Environment]::GetFolderPath('Desktop')) 'Mark Auto.lnk'
   $destinations=@($app,(Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))
-  foreach ($path in $destinations) { Assert-AcceptancePath $path -RequireAbsent }
+  foreach ($path in $destinations) {
+    if ($currentBaseline -and $path -ceq $app) { Assert-PreparedInstallScaffolding $app $receipt $priorKit $invocation }
+    else { Assert-AcceptancePath $path -RequireAbsent }
+  }
   $registryEvidence=@(Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
   Assert-PreparedNoProcess
   $backup=Join-Path $SessionRoot 'prior-data-backup'
-  Backup-PreparedState $data $backup $receipt
+  Backup-PreparedState $data $backup $receipt -RequireUnaliased:$currentBaseline
   $record.entrypoint_sha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $record.receipt_kind=$ReceiptKind; $record.original_lifecycle_continuity=$(if ($currentBaseline) { 'UNPROVEN' } else { 'externally attested lifecycle handoff' })
   $record.backup_verified=$true; $record.state_receipt_sha256=$StateReceiptSha256; $record.candidate_commit=$kit.candidate_commit; $record.kit_sha256=$KitSha256
   $workspace=Join-Path $SessionRoot 'workspace'; $temporary=Join-Path $SessionRoot 'temp'
   # Durable evidence must precede every new workspace/bootstrap/profile mutation.
-  $state=Get-PreparedStateInventory $data
+  $state=Get-PreparedStateInventory $data -RequireUnaliased:$currentBaseline
   Confirm-PreparedStateInventory $state $receipt
   $pointer=Join-Path $data 'workspace-location.json'
   Assert-AcceptancePath $pointer -RequireAbsent
@@ -294,7 +479,10 @@ try {
     entrypoint_sha256=$record.entrypoint_sha256;backup_verified=$true;backup_path=$backup;
     app_data_path=$data;workspace_path=$workspace;temp_path=$temporary;
     file_count=$state.files_sha256.get_Count();directory_count=$state.directories.Count;total_bytes=$state.total_bytes;
-    destinations_initially_absent=$destinations;registrations_initially_absent=$registryEvidence;
+    receipt_kind=$ReceiptKind;original_lifecycle_continuity=$record.original_lifecycle_continuity;
+    prior_candidate_commit=$priorKit.candidate_commit;prior_kit_root=$priorKitRoot;
+    installer_scaffolding_preserved=$currentBaseline;
+    destinations_initially_absent=@($destinations | Where-Object { -not $currentBaseline -or $_ -cne $app });registrations_initially_absent=$registryEvidence;
     workspace_pointer_initially_absent=$true;clean_client_acceptance='BLOCKED'}
   $preflightPath=Join-Path $SessionRoot 'preflight.json'
   Assert-AcceptancePath $preflightPath -RequireAbsent
@@ -305,12 +493,29 @@ try {
   foreach ($path in @($workspace,$temporary)) { Assert-AcceptancePath $path -RequireAbsent; [void][IO.Directory]::CreateDirectory($path) }
   $env:TEMP=$temporary; $env:TMP=$temporary
   Assert-PreparedNoProcess
-  Confirm-PreparedStateInventory (Get-PreparedStateInventory $data) $receipt
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $data -RequireUnaliased:$currentBaseline) $receipt
+  if ($currentBaseline) {
+    Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest $record.entrypoint_sha256 $KitRoot $data $app $invocation $priorKit
+    Assert-PreparedInstallScaffolding $app $receipt $priorKit $invocation
+  }
+  [void](Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
+  foreach ($path in @((Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))) { Assert-AcceptancePath $path -RequireAbsent }
   $pointer=Join-Path $data 'workspace-location.json'
   Assert-AcceptancePath $pointer -RequireAbsent
   $bytes=[Text.Encoding]::UTF8.GetBytes((@{schema_version=1;root=$workspace} | ConvertTo-Json))
   $stream=[IO.File]::Open($pointer,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
   try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+  if ($currentBaseline) {
+    $pointerHasher=[Security.Cryptography.SHA256]::Create()
+    try { $ownedPointerDigest=([BitConverter]::ToString($pointerHasher.ComputeHash($bytes))).Replace('-','').ToLowerInvariant() } finally { $pointerHasher.Dispose() }
+    Confirm-PreparedStateInventory (Get-PreparedStateInventory $data -RequireUnaliased -OwnedPointerDigest $ownedPointerDigest) $receipt
+    Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup -RequireUnaliased) $receipt
+    Assert-PreparedInstallScaffolding $app $receipt $priorKit $invocation
+    Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest $record.entrypoint_sha256 $KitRoot $data $app $invocation $priorKit
+    Assert-PreparedNoProcess
+    [void](Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
+    foreach ($path in @((Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))) { Assert-AcceptancePath $path -RequireAbsent }
+  }
   $owned=Start-OwnedAcceptanceProcess $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$(Join-Path $SessionRoot 'install.log')`"") -WorkingDirectory $temporary
   Wait-OwnedAcceptanceProcess $owned 180000 'Follow-on install timed out' -DrainJob
   if ($owned.Process.get_ExitCode() -ne 0) { throw 'Follow-on install failed' }
@@ -352,7 +557,7 @@ try {
   if ($gui.Process.get_ExitCode() -ne 0) { throw 'Owned GUI exit failed' }
   Assert-PreparedNoProcess
   $record.clean_close='observed'
-  Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup) $receipt
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup -RequireUnaliased:$currentBaseline) $receipt
   if ((Get-FileHash -LiteralPath (Join-Path $data 'installer-preservation-test.txt') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $receipt.files_sha256.'installer-preservation-test.txt') { throw 'First-round sentinel changed' }
   $record.status='partial'; $record.installed_app='left installed, no process left running'; $record.workspace=$workspace
 } catch { $record.reason='Prepared-host phase preflight, integrity, UI or owned-process assertion failed'; throw }
