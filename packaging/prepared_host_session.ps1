@@ -142,8 +142,11 @@ function Read-PreparedJson([string]$Path, [string]$Digest) {
 }
 function Test-PreparedNavigation($Owned) {
   # Built-in framework assemblies only. No C# compilation, desktop root or mouse injection.
+  $script:preparedUiPhase='load_client'; $script:preparedUiElements=0; $script:preparedUiFound=0; $script:preparedUiSelected=0
   Add-Type -AssemblyName UIAutomationClient
+  $script:preparedUiPhase='load_types'
   Add-Type -AssemblyName UIAutomationTypes
+  $script:preparedUiPhase='owned_identity'
   Assert-OwnedAcceptanceProcess $Owned
   $Owned.Process.Refresh()
   if ($Owned.Process.get_HasExited()) { throw 'Owned UI exited before inspection' }
@@ -151,8 +154,9 @@ function Test-PreparedNavigation($Owned) {
   if ([MarkAutoAcceptanceJob]::Created($managed) -ne $Owned.Created -or -not [MarkAutoAcceptanceJob]::Owns($AcceptanceJob,$managed)) { throw 'Managed GUI handle differs from retained creation ownership' }
   $hwnd=$Owned.Process.get_MainWindowHandle()
   if ($hwnd -eq [IntPtr]::Zero) { throw 'Owned main window missing' }
-  $script:preparedUiPhase='root_ownership'
+  $script:preparedUiPhase='root_from_handle'
   $ui=[Windows.Automation.AutomationElement]::FromHandle($hwnd)
+  $script:preparedUiPhase='root_ownership'
   $pidProperty=[Windows.Automation.AutomationElement]::ProcessIdProperty
   $ownedPid=$Owned.Process.get_Id()
   if ($ui.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'UI root ownership not proven' }
@@ -164,18 +168,24 @@ function Test-PreparedNavigation($Owned) {
   while ($pending.Count) {
     $element=$pending.Dequeue()
     if (++$count -gt 512) { throw 'Application UI inventory exceeds bounded scope' }
+    $script:preparedUiElements=$count
+    $script:preparedUiPhase='descendant_ownership'
     Assert-OwnedAcceptanceProcess $Owned
     if ($element.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'UI descendant ownership not proven' }
+    $script:preparedUiPhase='control_metadata'
     $control=$element.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::ControlTypeProperty)
     if ($control -eq [Windows.Automation.ControlType]::ListItem) {
       $name=$element.GetCurrentPropertyValue([Windows.Automation.AutomationElement]::NameProperty)
       if ($navigation -ccontains $name) {
         if ($found.ContainsKey($name)) { throw 'Ambiguous application navigation' }
         $found[$name]=$element
+        $script:preparedUiFound=$found.Count
       }
     }
+    $script:preparedUiPhase='enumerate_children'
     foreach ($child in $element.FindAll([Windows.Automation.TreeScope]::Children,[Windows.Automation.Condition]::TrueCondition)) { $pending.Enqueue($child) }
   }
+  $script:preparedUiPhase='required_navigation'
   if ($found.Count -ne $navigation.Count) { return @{status='BLOCKED'; reason='native_provider_did_not_expose_all_navigation'; selected_pages=@()} }
   $selected=New-Object System.Collections.ArrayList
   foreach ($name in $navigation) {
@@ -187,6 +197,7 @@ function Test-PreparedNavigation($Owned) {
     $pattern.Select()
     if ($pattern.get_Current().get_IsSelected() -ne $true) { throw 'Application navigation selection not confirmed' }
     [void]$selected.Add($name)
+    $script:preparedUiSelected=$selected.Count
   }
   return @{status='observed'; selected_pages=@($selected); scope='owned application navigation only; no workflow, screenshot or visual-layout acceptance'}
 }

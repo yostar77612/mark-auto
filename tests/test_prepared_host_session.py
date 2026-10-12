@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -104,7 +105,7 @@ class PreparedHostSessionContracts(unittest.TestCase):
             self.assertIn(token, self.source)
 
     def test_native_fixture_is_mandatory_and_isolated(self):
-        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text()
+        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
         self.assertIn("$env:RUNNER_ENVIRONMENT -ne 'github-hosted'", fixture)
         for token in ('Existing backup overwritten', 'Changed sentinel was accepted', 'Unexplained file was accepted',
                       'Unexplained empty directory accepted', 'Credential-bearing directory', 'Receipt paths escaped'):
@@ -118,9 +119,36 @@ class PreparedHostSessionContracts(unittest.TestCase):
                       '$jobReport.cleanup_verified -eq $true'):
             self.assertIn(token, fixture)
         self.assertNotIn('Start-OwnedAcceptanceProcess $installer', fixture)
-        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text(encoding='utf-8')
         self.assertIn('run: ./packaging/test_prepared_host_session.ps1', workflow)
         self.assertIn('  build:\n    needs: quality\n', workflow)
+
+    def test_fixture_contracts_do_not_depend_on_windows_ansi_default(self):
+        original = Path.read_text
+        def ansi_default(path, *args, **kwargs):
+            if not args:
+                kwargs.setdefault('encoding', 'cp1252')
+            return original(path, *args, **kwargs)
+        with patch.object(Path, 'read_text', ansi_default):
+            self.test_native_fixture_is_mandatory_and_isolated()
+
+    def test_native_failure_evidence_survives_scratch_cleanup(self):
+        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ('Get-PreparedFixtureFailure', 'Select-Object -First 8', '$i -lt 4',
+                      '[IO.Path]::GetFileName($Matches[2])', "'other-script'", 'native_code=$native',
+                      'ui_navigation_found=$script:preparedUiFound', "'records_and_lease_closed'",
+                      'worker_exit=$jobReport.worker_exit_code', 'cleanup_verified=$jobReport.cleanup_verified'):
+            self.assertIn(token, fixture)
+        self.assertLess(fixture.index("Write-PreparedFixtureReport ($UiCase+'-primary.json') $primary"),
+                        fixture.index('try { Close-AcceptanceProcesses } catch'))
+        self.assertIn("$report=Join-Path $nativeEvidence ($case+'-supervisor.json')", fixture)
+        self.assertIn('Remove-Item -LiteralPath $fixture -Recurse -Force', fixture)
+        self.assertNotIn('Remove-Item -LiteralPath $nativeEvidence', fixture)
+        workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text(encoding='utf-8')
+        upload = workflow.split('name: Preserve native prepared-host diagnostics even on failure', 1)[1].split('      - uses: actions/setup-python', 1)[0]
+        for token in ('if: always()', 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
+                      'path: dist/validation/prepared-host-native/', 'if-no-files-found: error'):
+            self.assertIn(token, upload)
 
 if __name__ == '__main__':
     unittest.main()
