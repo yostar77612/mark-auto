@@ -2,6 +2,22 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 目前範圍風險：原 300 分／Win11 恢復（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
+
+使用者明確恢復原 300 分正式標準與 Win11 驗證，取代先前暫緩。目前 230/300＝76.67%、尚餘 70/300＝23.33%；D8 10 點恢復為 EXTERNAL BLOCKED、非 PASS，D5／M7 原 Win11 條件恢復。舊 230/290 僅為歷史；原 ID／權重／狀態／失敗證據不變。
+
+目前 Win10 實體主機已准許 MarkAuto-only 安裝／UI／lifecycle，須先影響核對、備份、隔離及必要專屬位置；只完成環境盤點，產品未測，已使用主機不得冒充 clean Win10。其他電腦、新 VM、系統元件、管理員或全域設定仍需明確授權；無可證明合法／已授權 Win11 實測環境前 D8 保持阻塞。
+
+最新 f202c47b 的 [unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1)／CI／Server native／公開 bytes 已核驗；正式 clean-client／DPI、行情權利與真 SIWC 等仍未完成。工程實作沒有另一固定全專案分母，另報未獨立量化，不以 CI PASS 宣稱 100%。本文件未實作另行進行的安裝測試所有權修補；細節以 [PROJECT_STATE](../agent/PROJECT_STATE.md) 為準。
+
+<!-- CURRENT_STATUS_END -->
+
+## 以下為本次恢復前的歷史狀態（保留原文）
+
+舊 230/290、Win11 延後、唯讀／全面本機停止及舊來源待 CI／未發布說法按原時間解讀；目前範圍、權限及基線以上節為準。
+
+<!-- PRE_RESTORATION_CURRENT_STATUS_START -->
+
 ## 目前範圍與風險：Win11 驗收延後（2026-10-12 07:07:46 +08:00／2026-10-11 23:07:46 UTC）
 
 使用者最新指示：「我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入」。Windows 11 實測因此列為 USER_DEFERRED_OUT_OF_CURRENT_SCOPE，不是 PASS，也未判定技術上不支援。D8 原 10 點只從本輪分母排除；D5／M7 共享條件的 Win11 執行同樣延後。原 ID／權重／BLOCKED／失敗證據保留。
@@ -10,7 +26,7 @@
 
 已發布基線為 main `3ef9a740f4523d50fda3bb36ad119aedcd015895`；[Quantlab 38169393007](https://github.com/yostar77612/mark-auto/actions/runs/38169393007) 全 14 jobs SUCCESS，[Windows 38169393012](https://github.com/yostar77612/mark-auto/actions/runs/38169393012) 全 3 jobs SUCCESS，[unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1) 已發布。詳細 digest、scope overlay 與剩餘分項見 [PROJECT_STATE](../agent/PROJECT_STATE.md)／ACCEPTANCE.json。main 保護／受信任簽章仍未閉合，個人 PC／admin／UAC／VM STOP，券商 API 延後；未授權 live AI／實盤。這次只改文件，無新增實测或驗收分數。
 
-<!-- CURRENT_STATUS_END -->
+<!-- PRE_RESTORATION_CURRENT_STATUS_END -->
 
 ## 以下為本次範圍變更前的歷史快照
 

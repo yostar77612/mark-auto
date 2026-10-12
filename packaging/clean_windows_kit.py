@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import shutil
 
+HELPER_DLL = Path(__file__).resolve().with_name('acceptance_process.dll')
+
 ENGINE = ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py')
 
 
@@ -40,6 +42,9 @@ def assemble(baseline, candidate, baseline_version, version, output):
         raise ValueError('Historical baseline must be a real, strictly older release')
     if old[2]['source_commit'] == new[2]['source_commit'] or digest(old[0]) == digest(new[0]):
         raise ValueError('Historical upgrade needs distinct commits and installers')
+    inputs = {key.replace('\\', '/'): value for key, value in new[2]['inputs_sha256'].items()}
+    if digest(HELPER_DLL) != inputs.get('packaging/acceptance_process.dll'):
+        raise ValueError('Prebuilt acceptance helper differs from candidate build manifest')
     output = Path(output)
     if output.exists():
         raise FileExistsError('Refusing to overwrite an existing kit or evidence')
@@ -47,8 +52,9 @@ def assemble(baseline, candidate, baseline_version, version, output):
     (output / 'packaging').mkdir()
     (output / 'dist/installers').mkdir(parents=True)
     here = Path(__file__).resolve().parent
-    for name in ('test_installer.ps1', 'clean_windows_acceptance.ps1', 'clean_windows_README.md'):
+    for name in ('test_installer.ps1', 'clean_windows_acceptance.ps1', 'acceptance_process.ps1', 'clean_windows_README.md'):
         shutil.copyfile(here / name, output / 'packaging' / name)
+    shutil.copyfile(HELPER_DLL, output / 'packaging/acceptance_process.dll')
     for label, data in (('baseline', old), ('candidate', new)):
         shutil.copyfile(data[0], output / 'dist/installers' / data[0].name)
         shutil.copyfile(data[1], output / f'{label}-manifest.json')

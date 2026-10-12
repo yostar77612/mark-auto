@@ -2,6 +2,25 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 目前正式路線：恢復原 300 分與 Win11（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
+
+依使用者最新「請以原本固定的 300 分驗收標準作為正式完成依據。」恢復 D8 與原共用 Win11 條件；目前 **230/300＝76.67%，剩餘 70/300＝23.33%**。D8 10 點為 EXTERNAL BLOCKED，非 PASS。原 D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 及實質測試均不改；舊 230/290／D8 延後只保留歷史。
+
+1. 安裝測試所有權修補由既有獨立工程工作處理，本文件不代替其測試／審查；新來源需原 exact-head Gate。
+2. 現有實體 Win10 的 MarkAuto-only 安裝／UI／lifecycle 已授權，先核對影響、備份、隔離與必要專屬安裝位置；僅完成主機盤點，產品 NOT_RUN，不能把已使用主機當 clean-client PASS。
+3. 唯讀查核其他合法且已授權可用的 Win11 環境；D8 證據未成立即保持 EXTERNAL BLOCKED，繼續其他工作。另一台電腦、新 VM、系統元件、管理員或全域設定仍須明確授權。
+4. 工程實作百分比＝未獨立量化；無另一套固定全專案分母，不挪用分析權重、研究 100/100、CI 14/14 或正式驗收比例。分開報已實作／已驗證／待辦及正式剩餘條款。
+
+最新 f202c47b／[0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1) 已通過來源 CI、Server native 與公開 bytes 核驗；仍非正式完成。具體證據／環境／安全界線見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 及 ACCEPTANCE.json current_snapshot；以下舊狀態按原日期保留。
+
+<!-- CURRENT_STATUS_END -->
+
+## 以下為本次恢復前的歷史狀態（保留原文）
+
+舊 230/290、Win11 延後、唯讀／全面本機停止及舊來源待 CI／未發布說法按原時間解讀；目前範圍、權限及基線以上節為準。
+
+<!-- PRE_RESTORATION_CURRENT_STATUS_START -->
+
 ## 目前驗收範圍：Windows 10（2026-10-12 07:07:46 +08:00／2026-10-11 23:07:46 UTC）
 
 使用者最新明確指示：「我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入」。此指示取代先前保留 Win10／Win11 雙平台的要求；僅調整本輪驗收範圍，不改產品、工作流、測試或安全門檻。
@@ -13,7 +32,7 @@
 - **仍有效的界線：** Server／Linux／fixture 不替代 clean Win10 或真實 OAuth。main 保護仍未建立、簽章仍外部受限，preview 不等於正式驗收。個人 PC／admin／UAC／VM STOP；券商 API USER_DEFERRED；無新增 live AI 或實盤授權。
 - **本次文件後續：** 僅依上述範圍對帳，交由既有必要 exact-head CI／審查確認；產品來源、工作流、測試不變。詳細歷史來源／失敗保留在下方；其舊 Win11 必要、300 分母與待發布說法均按原日期解讀。
 
-<!-- CURRENT_STATUS_END -->
+<!-- PRE_RESTORATION_CURRENT_STATUS_END -->
 
 ## 以下為本次範圍變更前的歷史快照
 

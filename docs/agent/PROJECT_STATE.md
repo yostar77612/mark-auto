@@ -2,6 +2,23 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 原 300 分正式驗收恢復／Win11 仍待外部證據（2026-10-12 21:12:31 +08:00／13:12:31 UTC）
+
+使用者最新明示「請以原本固定的 300 分驗收標準作為正式完成依據。」並要求 Win11 獨立驗證，取代先前 D8 暫緩決定。原 47 項 ID／權重／狀態／證據不改；目前 **230/300＝76.67%，剩餘 70/300＝23.33%**。D8 恢復 10 點、EXTERNAL BLOCKED，未實測／非 PASS；D5／M7 的原 Win11 共用條件一併恢復。剩餘 D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10，沒有新增得分。先前 230/290＝79.31% 及取消時間序保留為歷史，不能繼續當目前完成率。
+
+- **工程實作另報：** 未獨立量化百分比。既有文件沒有全專案另一套固定工程分母，不能以 CI 通過率／測試數或驗收分數換算。既有窄範圍驗收為研究 100/100、桌面 70/100、市場 60/100；它們不是新增的工程完成百分比。最新 source 已有下列 CI／preview 證據；安裝測試所有權修補及實機驗證準備另行進行，未以此宣稱工程全部完成。
+- **目前 Win10 實體主機：** 原生盤點為 Win10 Pro 22H2／19045.6466、Ryzen 5600X、RAM 32 GiB／可用 20.15 GiB、C: 可用 357.05 GiB；這僅是環境證據，尚未執行產品測試。使用者已准許本機 MarkAuto 安裝／UI／lifecycle，須先核對精確影響、備份與隔離，且只用正常必要的專屬安裝位置。已使用主機不能直接算 clean Win10 PASS；其他程式／資料／系統仍受保護。
+- **權限／外部限制：** 可唯讀確認是否有其他合法且已授權的 Win11 環境；未有可驗證環境／實測前 D8 保持 EXTERNAL BLOCKED。操作另一台電腦、新 VM、系統元件、管理員權限或全域設定，仍需明確授權；無新增 broker／live AI 授權。原 clean-client、DPI、合法完整分鐘資料與正式 SIWC 證據要求不降。
+- **已核驗發布基線：** main `f202c47bad061967edba2e6f8a0b8be81a37ffba`／tree `1a40456616a811ed22181046416c72d5340aa2b3`；[Quantlab 38199994180](https://github.com/yostar77612/mark-auto/actions/runs/38199994180) 全 14 jobs、[Windows 38199994183](https://github.com/yostar77612/mark-auto/actions/runs/38199994183) build／security／release 全通過，Server native 1,636 PASS／33 skips。[0.2.2 unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38199994183-1) 公開 bytes 已核驗；installer SHA-256 `5a3e6fbecbe1f4780b4945e9fb2419aa589ebb88a173835e4c0852b391930e6c`。本次重讀來源／GitHub 終態／公開 digest；不冒稱重新執行 installer、clean-client 或 OAuth 驗收。簽章／main 保護仍另列限制，正式發佈仍未達門檻。
+
+<!-- CURRENT_STATUS_END -->
+
+## 以下為本次恢復前的歷史狀態（保留原文）
+
+舊 230/290、Win11 延後、唯讀／全面本機停止及舊來源待 CI／未發布說法按原時間解讀；目前範圍、權限及基線以上節為準。
+
+<!-- PRE_RESTORATION_CURRENT_STATUS_START -->
+
 ## PR #14 SQLite fixture 收尾待驗（2026-10-12 11:00 +08:00／03:00 UTC）
 
 `4e5043a1` premerge Quantlab 全 14 jobs、Windows 38195954546／artifact 核驗 PASS；合併前另查 16 個 SQLite ResourceWarnings。隔離 CPython 3.13 tracemalloc 證實兩個 fixture allocation：test_windows_recovery_diagnostics.py:56 記憶體 DB；test_restart_availability_contract.py:193 analysis.lock.sqlite3（RecoveryUI 共用）。未發現產品 leak，亦未逐一歸因全部 16 個 Windows 警告。
@@ -62,7 +79,7 @@
 - **仍有效的界線：** Server／Linux／fixture 不替代 clean Win10 或真實 OAuth。main 保護仍未建立、簽章仍外部受限，preview 不等於正式驗收。個人 PC／admin／UAC／VM STOP；券商 API USER_DEFERRED；無新增 live AI 或實盤授權。
 - **本次文件後續：** 僅依上述範圍對帳，交由既有必要 exact-head CI／審查確認；產品來源、工作流、測試不變。詳細歷史來源／失敗保留在下方；其舊 Win11 必要、300 分母與待發布說法均按原日期解讀。
 
-<!-- CURRENT_STATUS_END -->
+<!-- PRE_RESTORATION_CURRENT_STATUS_END -->
 
 ## 以下為本次範圍變更前的歷史快照
 
