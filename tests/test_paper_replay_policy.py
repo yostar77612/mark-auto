@@ -229,6 +229,9 @@ class TypedReplayWorkerTests(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
         cls.app = QApplication.instance() or QApplication([])
 
+    from tests.paper_replay_timeout_diagnostics import observe_original_replay
+
+    @observe_original_replay
     def test_typed_120000_normal_worker_and_repeat_are_safe(self):
         from tests.test_desktop_ui import NativeDesktopTests
         from quantlab.reporting import read_json

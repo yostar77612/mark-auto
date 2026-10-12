@@ -2,6 +2,40 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #13 診斷 helper 原生崩潰修補待驗（2026-10-12 09:26 +08:00／01:26 UTC）
+
+- `42ad7f77` 的 [Quantlab 38190178113](https://github.com/yostar77612/mark-auto/actions/runs/38190178113) 為 13 SUCCESS／1 FAIL：Linux 3.11 exit 139。CPython 3.11.17／Qt 6.11.2 的 HistoryUI→cleanup reproducer／faulthandler 定位新 observer 的 app.allWidgets 崩潰。
+- 三檔 helper／test 候選改採 owned-valid fixture 指標，避開全域 Qt registry；保留 OS process 指標，補 deleted validity guard／正確 WAL 前後 metadata。獨立 39 PASS／2 Windows-only skips；新增 3 core tests，discovery 1,658／core 1,415／research 243，原 IDs／六個 research skips 不變。
+- 本來源 Windows cores 各 1,385 PASS／27 skips，444.346／510.130 秒；原 Paper 6.281／6.234 秒、960 FULL cursor commits、cleanup 無 child。research 各 237 PASS／6 skips，239.953／309.500 秒。這些 PASS 不證明舊 Windows timeout 根因；原 960 bars／30 秒／FULL 不改。
+- [Windows 38190177996](https://github.com/yostar77612/mark-auto/actions/runs/38190177996) 已 build／static security SUCCESS、PR release SKIPPED；artifact 來源獨立核驗仍待。root 01:25:51 UTC 啟動完整 Linux Gate：CPython 3.11.17／SQLite 3.54.0／Qt 6.11.2，locked-auth proof 通過，原順序選定 1,658 tests／900 秒 outer cap；full 結果 PENDING。uv 3.53 loader 拒絕紀錄保留，未宣稱新 CI 通過／可發佈；原失敗、230/300 歷史、目前 230/290 與 D8 延後非 PASS 均保留。
+
+
+## PR #13 Paper 原門檻失敗；fixture 保留修補與原次診斷待原生再驗（2026-10-12 08:57 +08:00／00:57 UTC）
+
+- **保留原次失敗：** 來源 `13ebd0f700b65b13436d4f0e2dc581db64d93d7d`／tree `817984a0c44815377f656860765c7c7fc81c4cc3` 的 [Quantlab 38187882846](https://github.com/yostar77612/mark-auto/actions/runs/38187882846) 終態 13 SUCCESS／1 FAIL：Windows 3.12 既有 typed Paper case 在原 960 bars／30 秒第一次 wait 仍見 jobs.active／Working 而失敗。research 兩 profile 均通過；後續 fresh-process observer 通過不抵銷原失敗，也未證明原生阻塞階段。[Windows 38187882886](https://github.com/yostar77612/mark-auto/actions/runs/38187882886) build／security SUCCESS，release SKIPPED；必要 Quantlab 尚未全通過，不是公開發佈或正式完成。
+- **已證明的缺陷限於測試保留：** discovery／alternate suites 的別名保留已完成 TestCase；原 NativeDesktop fixture close 未銷毀窗口／子 widgets／backup timer。八檔 test-harness／diagnostic 候選僅釋放非選中 suite，並在原 close 流程成功且 owned job 不活動時，向該 fixture 發送定向 DeferredDelete；不改產品 closeEvent、不全域刪除、拒絕關閉／仍有工作時不刪除。Linux 八-fixture、未強制 GC 的對照為 RSS 291,082,240→129,163,264 bytes，舊 case 保留 7→0、MainWindow 8→1；證明 fixture 保留修補，不能推論它造成原 Windows timeout 或 Windows 效能已修好。
+- **同一次失敗觀測，不替代驗收：** decorator 保留原 typed test body，在原 deadline、fixture cleanup 前採集有界／去敏的 UI、owned child／IPC、phase／SQLite commit／heartbeat 證據。worker 必須先成功通過原 gate.wait(15) 才啟用診斷；不重跑失敗案例、不以 fresh process 替代、不增加 gate 預算。原 30 秒／960 bars／FULL、耐久邊界、repeat／安全 assertions 均保留；診斷有額外開銷，其未來 PASS 本身不能證明原根因。
+- **候選審查／測試分開列示：** 八檔獨立審查 PASS，獨立 36 PASS／2 原 Windows-only skips。discovery 為 1,655／core 1,412／research 243，僅新增 18 core tests；全部原 ID／相對順序及六個 research skip ID／reason 不變。root 同一凍結來源六模組組合為 73 PASS／0 skips、30.487 秒，使用 owned Qt runtime／offscreen Linux CPython 3.12；與前述獨立 36 PASS／2 skips 分開且重疊，不相加。新 exact-head Windows／完整必要 CI 尚待，不預填 native 通過數。
+- **範圍／發布界線不變：** 原 230/300 rubric 與全部失敗歷史保留；目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 延後非 PASS。最後已核驗公開 preview 仍為 `3ef9a740`／`desktop-preview-38169393012-1`。本輪不改產品或降低 30 秒原 Gate，不宣稱 Win10／OAuth 驗收、Windows 性能修復或正式發佈就緒；下方依日期保留各階段紀錄。
+
+
+## PR #13 原生測試新失敗；最小測試修補／觀測接續（2026-10-12 08:22 +08:00／00:22 UTC）
+
+- **本次必要 CI 未通過：** PR #13 來源 `d4e81e09976ce1d61000cc66190e211f8221d29f`／tree `e546f69de710ece06b4561fa327a3a8e1eea719b` 的 [Quantlab 38186610247](https://github.com/yostar77612/mark-auto/actions/runs/38186610247) 終態 12 SUCCESS／2 FAIL。Windows core 3.11：1,365 PASS／27 skips／2 ERROR、598.452 秒；3.12：1,366 PASS／27 skips／1 ERROR、552.350 秒。兩個 research profiles 各 237 PASS／6 原 skips，347.203／217.906 秒；前次 10／40 秒案例本輪通過，但未觸發其 failure diagnostics，不能據此宣稱已找到或修好先前效能根因。
+- **編碼錯誤已定位，僅測試修補：** 新增 AST 檢查 `test_active_writer_timeout_diagnostics.py:141` 以預設 cp1252 讀 UTF-8 來源，兩個 core 與 installer native 均發生 UnicodeDecodeError。實際 bytes 已重現 red；候選改明示 UTF-8，並在同一 test ID 要求顯式 encoding，獨立審查 PASS／11 focused PASS；移除 encoding 參數的 mutation 亦 red，原 test ID／assertions 不變。新原生 CI 尚待，不把局部結果認作完整 PASS。
+- **另一原生失敗仍待定位：** 3.11 既有 observer-failure test 因 result 缺 `error_type` 而 KeyError，runtime 10.300 秒；controller timeout 分支與 observer failure 的確切原生階段尚無證據。新增有界、去敏的 phase／commit／child-start 測試診斷已通過 root diagnostics-only 審查。三個本機控制分支分別為：正常 120／FULL、RuntimeError、0.115 秒；延遲 probe 10.019 秒、未到 observer／無 error_type；停滯 observer 8.083 秒、120 全完成但無 error_type（原 min(8, remaining) cap）。所有 children 均 reap，僅 owned fixture；這些對照仍未證明本次原生失敗階段。原 120／FULL／10 秒與原 assertions 不變，不改產品、不降工作量。root 最終合併定向 52 PASS、20.989 秒（33 diagnostics＋19 Paper）；新 exact-head native 尚待，不聲稱性能修復，後續原生結果由同一 PR 按來源補記。
+- **沒有新安裝檔：** [Windows 38186610245](https://github.com/yostar77612/mark-auto/actions/runs/38186610245) 終態 FAIL，native 1,603 PASS／33 skips／1 ERROR、835.234 秒，唯一 ERROR 為上述新 AST 編碼錯誤。尚未進入 frozen／lifecycle／installer，release SKIPPED，只有 1,715-byte partial evidence artifact，不能當作 installer 交付。
+- **歷史／範圍不變：** 本節接續下方 08:00 快照，所有舊失敗及各階段結果保留。已核驗公開版仍 `3ef9a740`／`desktop-preview-38169393012-1`；目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 owner-deferred 非 PASS，原 230/300 rubric 保留。clean Win10／實際 OAuth 未因此通過，產品與原安全／驗收門檻不變。
+
+
+## PR #12 合併後必要 Gate 失敗；測試觀測候選待驗（2026-10-12 08:00 +08:00／2026-10-12 00:00 UTC）
+
+- **合併與失敗分開記錄：** 範圍 PR #12 已合併 main `185513f03bb9a52bb7ad80da1a508db03c3bcd52`／tree `638f2f1b402deb11b01096ef43368e0fa0b2abab`，產品／測試／工作流未變。[Quantlab 38185218807 的 Windows 3.11 research](https://github.com/yostar77612/mark-auto/actions/runs/38185218807/job/114605969432) 終態為 13 SUCCESS／1 FAIL，失敗僅 3.11 research：原 243 cases＝235 PASS／6 原 skips／2 ERROR，parent 377.109 秒。3.12 為 237 PASS／6 skips，224.672 秒；不能替代 3.11 的必要 Gate。
+- **已知失敗與證據界線：** active-writer case 完成 reader assertions、release.set() 後，future.result 的原 10 秒等待逾時，未建立 writer 完成／後續 33-call assertion。join-failure smoke 在原 40 秒 subprocess 等待逾時，尚未到最終 report／retention／cleanup assertions；上傳證據沒有 inner smoke report。兩 worker exit 1、cleanup_confirmed=true；natural_exit_and_quiescent=false 不足以單獨證明清理前仍有活動。原生內部阻塞階段與產品根因尚未證明，不能只因來源未變就歸因環境。
+- **下一候選僅 TEST_ONLY：** 補足失敗階段觀測；中間版本 root 30 PASS／15.440 秒、7 個新增 core tests 保留為階段證據。初次獨立審查發現 artifact Path.resolve 在 guard 外可能遮蔽原 TimeoutError，以及 stack 函式名稱長度未設上限；兩個診斷缺陷已修正並加入回歸。最終候選 root 33 PASS／15.426 秒、獨立 11 focused PASS；新增 core tests 共 10 個（active-writer 7、terminal 3），原 243 research cases 不變。首次指令誤在 baseline 目錄執行，因缺新 test module 而 ImportError；保留為本機 harness 錯誤，不是產品回歸，改到候選目錄後通過。新 exact-head 原生 CI 尚待，不聲稱性能修復或 native PASS。原 10／40 秒、33 evaluations／93 FULL saves、原 243 tests／6 skips、15 分鐘 job cap 及 Paper 960／30 秒保留，不改產品或工作流、不放寬 assertions、不以未變來源重跑洗掉失敗。最終原生結果由對應 PR 依來源另列，不預填 native 通過數。
+- **範圍與發布：** 目前 230/290＝79.31%、剩餘 60/290＝20.69%，D8 延後非 PASS，原 230/300／全部 rubric／歷史失敗均不變。最後已核驗公開版仍為 `3ef9a740`／[unsigned preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1)；main `185513f0` 的必要工程驗證尚未全通過，不以舊 PASS 宣稱新發布或正式完成。main Windows native／lifecycle 已通過，recovery／artifact 核驗／release guard 終態於本檢查點仍待完成；release guard 必須拒絕必要 Gate 失敗，尚不宣稱已執行拒絕或發布。以下 07:07 範圍決策保留原時間，其「本次文件後續」以本節新工程狀態接續。
+
+
 ## 目前驗收範圍：Windows 10（2026-10-12 07:07:46 +08:00／2026-10-11 23:07:46 UTC）
 
 使用者最新明確指示：「我之後也不會在win11系統上使用 所以win11的實測可以先移調不計入」。此指示取代先前保留 Win10／Win11 雙平台的要求；僅調整本輪驗收範圍，不改產品、工作流、測試或安全門檻。

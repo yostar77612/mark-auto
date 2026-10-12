@@ -2884,12 +2884,14 @@
       }
     },
     "remaining_auto": {
-      "status": "SCOPE_ONLY_DOCUMENTATION_RECONCILIATION_PENDING_EXACT_HEAD_CI",
+      "status": "POSTMERGE_RESEARCH_GATE_FAILED_TEST_ONLY_OBSERVABILITY_CANDIDATE_PENDING",
       "work": [
-        "Review and publish this bounded documentation-only scope update; root owns required exact-head CI and any integration."
+        "Publish the reviewed TEST_ONLY failure-observability candidate and run required exact-head native CI; final root33tests PASS in15.426s and independent11focused PASS remain local evidence only.",
+        "Retain the failed postmerge evidence and original deadlines/workloads; diagnose the native blocking phase before claiming a product root cause or performance fix."
       ],
       "product_baseline": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
-      "new_feature_gap": "No additional evidence-backed AUTO product defect demonstrated by this scope change; no product/workflow/test changes authorized by it."
+      "failed_postmerge_main": "185513f03bb9a52bb7ad80da1a508db03c3bcd52",
+      "new_feature_gap": "Two required Windows3.11 research errors are established; exact native phase and product root cause remain unproven. Test instrumentation is locally verified and reviewed after corrections; native validation is pending, not a product fix or native PASS."
     },
     "remaining_gates": [
       {
@@ -2989,10 +2991,13 @@
         "additional_safe_patch_demonstrated": false
       },
       "research_performance": {
-        "status": "REVIEWED_SOURCE_ALL_NATIVE_QUANTLAB_GATES_PASS",
-        "quantlab_run": 38165405165,
-        "preserved": "Original15min job cap, exact243research inventory/six skips, serialPaper960/30s and FULL/save/commit/export boundaries.",
-        "historical_failures": "Preserved in repository history, PROJECT_STATE dated blocks and historical_engineering_metadata; old cancels not recertified."
+        "status": "POSTMERGE_REQUIRED_WINDOWS311_RESEARCH_FAILED_CAUSE_UNPROVEN",
+        "quantlab_run": 38185218807,
+        "job_id": 114605969432,
+        "main": "185513f03bb9a52bb7ad80da1a508db03c3bcd52",
+        "evidence_pointer": "current_snapshot.postmerge_engineering_state",
+        "preserved": "Original10s active-writer result deadline,40s terminal smoke deadline,33 evaluations/93 FULL saves, exact243 research cases/six original skips, original15min job cap and serialPaper960/30s remain unchanged.",
+        "historical_failures": "Original failures and earlier PASS sources remain retained; prior premerge/released PASS does not replace this postmerge FAIL."
       }
     },
     "windows_recovery_feasibility_experiment": {
@@ -3037,7 +3042,7 @@
       }
     ],
     "delivery_state": {
-      "implementation": "PR11 integrated; narrow original-helper recovery and explicit runtime/filesystem limits retained. This change is acceptance documentation only.",
+      "implementation": "PR12 owner scope update merged at185513f0 with unchanged product/tests/workflows. A new TEST_ONLY failure-observability candidate is being prepared; no product root cause or performance fix established.",
       "verified": "Published product main3ef9a740: Quantlab38169393007 all14 and Windows38169393012 all3 jobs SUCCESS; unsigned preview published.",
       "external_blocked": [
         "D5 clean Win10 installation lifecycle",
@@ -3050,13 +3055,13 @@
       "deferred_not_passed": [
         "D8 Windows 11 client workflow; Windows 11 execution of shared D5/M7 gates"
       ],
-      "release_preparation": "Product baseline is published unsigned preview; this scope-only document update still requires its own review/exact-head CI. Formal product acceptance remains incomplete.",
+      "release_preparation": "Required postmerge Windows3.11 research gate FAILED at185513f0; do not publish or claim full validation from earlier PASS. Last verified public preview remains3ef9a740/desktop-preview-38169393012-1. New test-observability candidate has final root33PASS/15.426s and independent11focused PASS after diagnostic-only fixes; exact-head native CI remains pending, with no native success or performance-fix claim; formal acceptance remains incomplete.",
       "final_evidence_policy": "Final source-bound CI/release outcomes may live in corresponding PR body; do not recursively rebuild unchanged product solely to refresh documentation SHA."
     },
     "next_uncommitted_candidate": {
-      "status": "OWNER_AUTHORIZED_WIN11_SCOPE_DOCUMENTATION_ONLY",
-      "reviewed_product_source": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
-      "required_next": "Root-owned review, docs-only publication and required exact-head CI; no product, workflow or test change.",
+      "status": "TEST_ONLY_FAILURE_OBSERVABILITY_REVIEWED_READY_FOR_NATIVE_CI",
+      "reviewed_product_source": "185513f03bb9a52bb7ad80da1a508db03c3bcd52",
+      "required_next": "Preserve failed native evidence and intermediate30PASS/15.440s; publish final reviewed candidate with root33PASS/15.426s plus independent11focused PASS, then required exact-head CI. Original deadlines, workload, persistence and acceptance scope remain unchanged; no unmodified-source rerun or performance-fix claim.",
       "historical_prior_candidate": "current_snapshot.historical_engineering_metadata.fields.next_uncommitted_candidate"
     },
     "reviewed_source_reconciliation": {
@@ -3831,6 +3836,90 @@
           "/current_snapshot/next_uncommitted_candidate/reviewed_product_source": "3c721f79db6c0f938b9a0a9383e81a61b32c9b86",
           "/current_snapshot/next_uncommitted_candidate/required_next": "One bounded docs-only commit and mandatory exact-head CI, conditional integration, postmerge CI and independently downloaded public installer.",
           "/current_snapshot/reviewed_source_reconciliation/remaining_engineering_scope": "Bounded final documentation exact-head CI, conditional merge, postmerge CI and independently verified public installer; no additional demonstrated AUTO feature defect in current review."
+        }
+      }
+    ],
+    "postmerge_engineering_state": {
+      "as_of_utc": "2026-10-12T00:00:00Z",
+      "scope_pr": 12,
+      "scope_pr_status": "MERGED",
+      "main": "185513f03bb9a52bb7ad80da1a508db03c3bcd52",
+      "tree": "638f2f1b402deb11b01096ef43368e0fa0b2abab",
+      "quantlab_run": 38185218807,
+      "evidence_url": "https://github.com/yostar77612/mark-auto/actions/runs/38185218807/job/114605969432",
+      "status": "REQUIRED_WINDOWS311_RESEARCH_FAILED",
+      "quantlab_terminal_jobs": {
+        "success": 13,
+        "failure": 1
+      },
+      "windows_installer_state": "Main Windows native/lifecycle passed; recovery, artifact verification and release-guard outcome remain pending at this checkpoint. Required Quantlab failure must block release; no new-publication claim.",
+      "windows311": {
+        "job_id": 114605969432,
+        "total": 243,
+        "passed": 235,
+        "skipped": 6,
+        "errors": 2,
+        "parent_seconds": 377.109
+      },
+      "windows312": {
+        "job_id": 114605969710,
+        "total": 243,
+        "passed": 237,
+        "skipped": 6,
+        "parent_seconds": 224.672,
+        "status": "PASS"
+      },
+      "failures": [
+        "test_read_active_writer_reports_uncertain_running_state_without_recovery: future.result(timeout=10) timed out after active-reader assertions and release.set(); writer completion and following33-call assertion were not established.",
+        "test_join_failure_is_reported_without_fake_cleanup_or_evidence_deletion: subprocess.run timed out after40s before final report/status/retention/cleanup assertions; no inner smoke report in uploaded evidence."
+      ],
+      "evidence_boundary": "Exact243-case inventory retained. Both worker exits1 and cleanup_confirmed=true; natural_exit_and_quiescent=false does not independently establish pre-cleanup activity. Native inner phase and product root cause are unproven; unchanged source does not prove environment-only causation.",
+      "candidate_scope": "TEST_ONLY failure observability; ten new core tests (seven active-writer and three terminal) leave original243 research cases unchanged. No product/workflow changes, timeout increase, workload/save reduction, native PASS or performance-fix claim. Final local review passed after diagnostic corrections; native results remain pending.",
+      "candidate_local_verification": {
+        "intermediate_root": {
+          "passed": 30,
+          "seconds": 15.44,
+          "new_core_tests": 7,
+          "role": "INTERMEDIATE_NOT_FINAL"
+        },
+        "final_root": {
+          "passed": 33,
+          "seconds": 15.426,
+          "new_core_tests": 10
+        },
+        "independent_focused_passed": 11,
+        "native_status": "NOT_RUN",
+        "initial_harness_error": "First command ran from baseline directory and could not import the new test module; retained local harness error, not a product regression. Corrected candidate-directory run passed.",
+        "review_findings_and_fix": "Initial independent review found artifact Path.resolve outside its guard could mask the original TimeoutError, and stack function-name length was unbounded. Both diagnostic-only issues were fixed with regressions; final local/independent evidence above does not prove a product performance fix."
+      },
+      "acceptance": "Current230/290 and D8 owner-deferred status unchanged; original230/300 rubric/history retained. No new client/OAuth/PASS evidence.",
+      "last_verified_public_preview": "https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38169393012-1"
+    },
+    "engineering_recheck_history": [
+      {
+        "as_of_utc": "2026-10-12T00:00:00Z",
+        "baseline_commit": "185513f03bb9a52bb7ad80da1a508db03c3bcd52",
+        "policy": "Compact exact previous field values; historical scope timestamp, original rubric and existing histories are unchanged. These prior pending/PASS descriptions are not current postmerge status.",
+        "superseded_fields": {
+          "/current_snapshot/remaining_auto": {
+            "status": "SCOPE_ONLY_DOCUMENTATION_RECONCILIATION_PENDING_EXACT_HEAD_CI",
+            "work": [
+              "Review and publish this bounded documentation-only scope update; root owns required exact-head CI and any integration."
+            ],
+            "product_baseline": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+            "new_feature_gap": "No additional evidence-backed AUTO product defect demonstrated by this scope change; no product/workflow/test changes authorized by it."
+          },
+          "/current_snapshot/engineering_blockers/research_performance": {
+            "status": "REVIEWED_SOURCE_ALL_NATIVE_QUANTLAB_GATES_PASS",
+            "quantlab_run": 38165405165,
+            "preserved": "Original15min job cap, exact243research inventory/six skips, serialPaper960/30s and FULL/save/commit/export boundaries.",
+            "historical_failures": "Preserved in repository history, PROJECT_STATE dated blocks and historical_engineering_metadata; old cancels not recertified."
+          },
+          "/current_snapshot/delivery_state/implementation": "PR11 integrated; narrow original-helper recovery and explicit runtime/filesystem limits retained. This change is acceptance documentation only.",
+          "/current_snapshot/delivery_state/release_preparation": "Product baseline is published unsigned preview; this scope-only document update still requires its own review/exact-head CI. Formal product acceptance remains incomplete.",
+          "/current_snapshot/next_uncommitted_candidate/status": "OWNER_AUTHORIZED_WIN11_SCOPE_DOCUMENTATION_ONLY",
+          "/current_snapshot/next_uncommitted_candidate/reviewed_product_source": "3ef9a740f4523d50fda3bb36ad119aedcd015895",
+          "/current_snapshot/next_uncommitted_candidate/required_next": "Root-owned review, docs-only publication and required exact-head CI; no product, workflow or test change."
         }
       }
     ]

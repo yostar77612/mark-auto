@@ -110,11 +110,7 @@ class HistoryFormTests(unittest.TestCase):
 class HistoryHostTests(unittest.TestCase):
     setUpClass = support.NativeDesktopTests.__dict__['setUpClass']
     setUp = support.NativeDesktopTests.setUp
-    def cleanup_window(self):
-        from PySide6.QtCore import QCoreApplication, QEvent
-        support.NativeDesktopTests.cleanup_window(self)
-        self.window.deleteLater()
-        QCoreApplication.sendPostedEvents(None,QEvent.Type.DeferredDelete)
+    cleanup_window = support.NativeDesktopTests.cleanup_window
 
     wait_job = support.NativeDesktopTests.wait_job
 
