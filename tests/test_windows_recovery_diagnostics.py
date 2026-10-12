@@ -1,5 +1,6 @@
 """Portable observer regressions; these do not certify native Windows recovery."""
 import ast
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
@@ -53,13 +54,15 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
 
     def test_sqlite_codes_are_retained_without_sql_or_database_paths(self):
         diagnosis = FixtureDiagnostics(self.folder, 'gui')
-        with sqlite3.connect(':memory:') as db:
+        with closing(sqlite3.connect(':memory:')) as db, db:
             try:
                 db.execute('SELECT SECRET_COLUMN FROM SECRET_TABLE')
             except sqlite3.OperationalError as error:
                 expected = error.sqlite_errorcode
                 diagnosis.at('gui.launch.commit')
                 diagnosis.record_failure(error)
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')  # The fixture owns and closes the connection.
         record = failure_snapshot(self.folder, {}, 'normal')['children']['gui']['failure']
         self.assertEqual(record['errors'][0]['sqlite_errorcode'], expected)
         self.assertNotIn('SECRET', json.dumps(record))
