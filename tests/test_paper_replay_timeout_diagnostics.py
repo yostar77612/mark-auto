@@ -230,3 +230,41 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
                              ['timings']['replay.cursor_commit']['calls'], 500)
             self.assertEqual(report['after_fixture_cleanup']['workers'][0]
                              ['timings']['replay.cursor_commit']['calls'], 501)
+
+    def test_storage_samples_distinguish_preinitialization_from_ready_wal_full(self):
+        from quantlab.paper_replay import PaperReplay
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'replays').mkdir()
+            sender = SimpleNamespace(send_bytes=lambda value: None, close=lambda: None)
+            gate = SimpleNamespace(wait=lambda seconds: True)
+            def original(observed_sender, observed_gate, *args):
+                self.assertTrue(observed_gate.wait(15))
+                replay = PaperReplay.__new__(PaperReplay)
+                replay.path = root / 'replays' / 'phase.sqlite3'
+                replay.storage_profile = 'wal_full'
+                replay._wal_ready = False
+                with replay._connection() as db:
+                    self.assertEqual(db.execute('PRAGMA synchronous').fetchone(), (2,))
+                    self.assertEqual(db.execute('PRAGMA journal_mode=WAL').fetchone(), ('wal',))
+                replay._wal_ready = True
+                with replay._connection() as db:
+                    self.assertEqual(db.execute('PRAGMA journal_mode').fetchone(), ('wal',))
+                    self.assertEqual(db.execute('PRAGMA synchronous').fetchone(), (2,))
+            prefix = str(root / 'worker')
+            with patch.dict(os.environ, {diagnostic.ENVIRONMENT: prefix}), \
+                    patch.object(diagnostic, '_original_worker', side_effect=original):
+                diagnostic._gate_worker(sender, gate, 'ui_paper_replay', {}, directory, None, 'a' * 32)
+            report = json.loads(Path(prefix + '-' + 'a' * 32 + '.json').read_text())
+            before = report['replay_storage_before_wal_initialization']
+            self.assertEqual(before['sample_phase'], 'before_wal_initialization')
+            self.assertEqual(before['journal_mode'], 'delete')
+            self.assertFalse(before['wal_ready'])
+            effective = report['replay_storage']
+            self.assertEqual(effective['sample_phase'], 'wal_ready_connection')
+            self.assertEqual(effective['journal_mode'], 'wal')
+            self.assertTrue(effective['wal_ready'])
+            for sample in (before, effective):
+                self.assertEqual(sample['requested_profile'], 'wal_full')
+                self.assertEqual(sample['synchronous'], 2)
+                self.assertEqual(sample['wal_autocheckpoint'], 1000)

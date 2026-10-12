@@ -93,7 +93,11 @@ class NativeFixtureCleanupTests(unittest.TestCase):
         result = job_state(SimpleNamespace(window=window, jobs=jobs))
         self.assertFalse(result['active'])
         self.assertTrue(result['window_status_unavailable'])
-        self.assertIsInstance(qt_resources(self.app)['widgets'], int)
+        owned = qt_resources(SimpleNamespace(app=self.app, window=window))
+        self.assertEqual(owned['scope'], 'owned fixture window only')
+        self.assertIsInstance(owned['widgets'], int)
+        self.assertEqual(owned['widgets'], 0)
+        self.assertFalse(owned['owned_window_alive'])
 
     def test_window_close_error_is_not_converted_into_deletion_or_success(self):
         from unittest.mock import Mock
@@ -106,3 +110,38 @@ class NativeFixtureCleanupTests(unittest.TestCase):
         self.assertIs(raised.exception, failure)
         window.deleteLater.assert_not_called()
         app.processEvents.assert_not_called()
+
+    def test_owned_observation_never_enumerates_unrelated_native_widgets(self):
+        from unittest.mock import patch
+        from tests.paper_replay_timeout_diagnostics import qt_resources
+        from PySide6.QtWidgets import QApplication, QLabel
+        from shiboken6 import isValid
+        window, unrelated = self.window(), self.window()
+        window.label = QLabel('owned', window)
+        unrelated.labels = [QLabel('unrelated', unrelated) for _ in range(5)]
+        with patch.object(QApplication, 'allWidgets', side_effect=AssertionError('global registry forbidden')), \
+                patch.object(QApplication, 'topLevelWidgets', side_effect=AssertionError('global registry forbidden')):
+            record = qt_resources(SimpleNamespace(app=self.app, window=window))
+            self.assertEqual(record['scope'], 'owned fixture window only')
+            self.assertEqual(record['widgets'], 2)
+            self.assertEqual(record['main_window_timers'], 1)
+            self.assertEqual(record['active_main_window_timers'], 1)
+            self.assertTrue(record['owned_window_alive'])
+            self.clean(window, SimpleNamespace(active=False, close=lambda: None))
+            deleted = qt_resources(SimpleNamespace(app=self.app, window=window))
+            self.assertFalse(deleted['owned_window_alive'])
+            self.assertEqual(deleted['widgets'], 0)
+            self.assertTrue(isValid(unrelated))
+            self.assertTrue(unrelated.isVisible())
+
+    def test_deleted_status_child_is_checked_before_native_text_access(self):
+        from tests.paper_replay_timeout_diagnostics import job_state
+        from PySide6.QtWidgets import QLabel
+        window = self.window()
+        window.status = QLabel('Working', window)
+        self.delete_if_valid(window.status)
+        jobs = SimpleNamespace(active=False, process=None, _terminal=True,
+                               _pipe_eof=False, _deferred=[], _pending=[])
+        result = job_state(SimpleNamespace(window=window, jobs=jobs))
+        self.assertTrue(result['window_status_unavailable'])
+        self.assertFalse(result['active'])

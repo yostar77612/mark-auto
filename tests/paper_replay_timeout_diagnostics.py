@@ -84,15 +84,38 @@ def main_stack(ident):
     return frames
 
 
-def qt_resources(app):
+def qt_resources(fixture):
+    """Inspect only this owned window, never the process-wide native registry.
+
+    Qt 6.11.2's allWidgets() can segfault after prior native fixture activity.
+    OS resource counters remain process-wide; these counts explicitly do not.
+    """
     from PySide6.QtCore import QTimer
-    widgets = app.allWidgets()
-    top = app.topLevelWidgets()
-    windows = [widget for widget in top if type(widget).__name__ == 'MainWindow']
-    timers = [timer for window in windows for timer in window.findChildren(QTimer)]
-    return {'widgets': len(widgets), 'top_level_widgets': len(top),
-            'main_windows': len(windows), 'visible_main_windows': sum(w.isVisible() for w in windows),
-            'main_window_timers': len(timers), 'active_main_window_timers': sum(t.isActive() for t in timers)}
+    from PySide6.QtWidgets import QWidget
+    from shiboken6 import isValid
+    result = {'scope': 'owned fixture window only', 'owned_window_alive': False,
+              'widgets': 0, 'main_windows': 0, 'visible_main_windows': 0,
+              'main_window_timers': 0, 'active_main_window_timers': 0}
+    window = getattr(fixture, 'window', None)
+    if not isinstance(window, QWidget) or not isValid(window):
+        return result
+    widgets = [window] + [widget for widget in window.findChildren(QWidget) if isValid(widget)]
+    timers = [timer for timer in window.findChildren(QTimer) if isValid(timer)]
+    main = type(window).__name__ == 'MainWindow'
+    result.update(owned_window_alive=True, widgets=len(widgets), main_windows=int(main),
+                  visible_main_windows=int(main and window.isVisible()),
+                  main_window_timers=len(timers),
+                  active_main_window_timers=sum(timer.isActive() for timer in timers))
+    return result
+
+
+def _qt_object_valid(value):
+    try:
+        from PySide6.QtCore import QObject
+        from shiboken6 import isValid
+    except ImportError:
+        return True  # Non-Qt unit-test doubles remain usable without Qt.
+    return not isinstance(value, QObject) or isValid(value)
 
 
 def job_state(fixture):
@@ -109,8 +132,15 @@ def job_state(fixture):
         value.update(child_alive=process.is_alive(), child_exitcode=process.exitcode)
     window = getattr(fixture, 'window', None)
     if window is not None:
+        if not _qt_object_valid(window):
+            value['window_status_unavailable'] = True
+            return value
         try:
-            value['status_is_working'] = window.status.text() == 'Working'
+            status = window.status
+            if not _qt_object_valid(status):
+                value['window_status_unavailable'] = True
+                return value
+            value['status_is_working'] = status.text() == 'Working'
         except RuntimeError:
             value['window_status_unavailable'] = True  # Fixture may now be deleted.
     return value
@@ -181,8 +211,14 @@ def _gate_worker(sender, gate, operation, payload, root, bootstrap, job_id,
         @contextmanager
         def connection(self):
             with original_connection(self) as db:
-                if 'replay_storage' not in metadata:
-                    metadata['replay_storage'] = {
+                ready = bool(self._wal_ready)
+                storage_key = ('replay_storage' if ready else
+                               'replay_storage_before_wal_initialization')
+                if storage_key not in metadata:
+                    metadata[storage_key] = {
+                        'sample_phase': ('wal_ready_connection' if ready else
+                                         'before_wal_initialization'),
+                        'wal_ready': ready,
                         'requested_profile': self.storage_profile,
                         'journal_mode': db.execute('PRAGMA journal_mode').fetchone()[0],
                         'synchronous': db.execute('PRAGMA synchronous').fetchone()[0],
@@ -262,7 +298,7 @@ class OriginalReplayObservation:
                          'acceptance_margin': '120000', 'original_test_rerun': False,
                          'parent_entry_resources': current_resources()}
         try:
-            self.evidence['parent_entry_qt'] = qt_resources(fixture.app)
+            self.evidence['parent_entry_qt'] = qt_resources(fixture)
         except Exception as error:
             self.evidence['qt_error_type'] = type(error).__name__
 
@@ -272,7 +308,7 @@ class OriginalReplayObservation:
             record = {'stage': stage, 'seconds': time.monotonic() - self.started,
                       'resources': current_resources(), 'job': job_state(self.fixture)}
             if failure or stage in ('body_finished', 'after_fixture_cleanup'):
-                record['qt'] = qt_resources(self.fixture.app)
+                record['qt'] = qt_resources(self.fixture)
             self.evidence[stage] = record
             workers = []
             for job_id in self.worker_ids:

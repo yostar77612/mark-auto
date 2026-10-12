@@ -2,6 +2,14 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #13 診斷 helper 原生崩潰修補待驗（2026-10-12 09:26 +08:00／01:26 UTC）
+
+- `42ad7f77` 的 [Quantlab 38190178113](https://github.com/yostar77612/mark-auto/actions/runs/38190178113) 為 13 SUCCESS／1 FAIL：Linux 3.11 exit 139。CPython 3.11.17／Qt 6.11.2 的 HistoryUI→cleanup reproducer／faulthandler 定位新 observer 的 app.allWidgets 崩潰。
+- 三檔 helper／test 候選改採 owned-valid fixture 指標，避開全域 Qt registry；保留 OS process 指標，補 deleted validity guard／正確 WAL 前後 metadata。獨立 39 PASS／2 Windows-only skips；新增 3 core tests，discovery 1,658／core 1,415／research 243，原 IDs／六個 research skips 不變。
+- 本來源 Windows cores 各 1,385 PASS／27 skips，444.346／510.130 秒；原 Paper 6.281／6.234 秒、960 FULL cursor commits、cleanup 無 child。research 各 237 PASS／6 skips，239.953／309.500 秒。這些 PASS 不證明舊 Windows timeout 根因；原 960 bars／30 秒／FULL 不改。
+- [Windows 38190177996](https://github.com/yostar77612/mark-auto/actions/runs/38190177996) 已 build／static security SUCCESS、PR release SKIPPED；artifact 來源獨立核驗仍待。root 01:25:51 UTC 啟動完整 Linux Gate：CPython 3.11.17／SQLite 3.54.0／Qt 6.11.2，locked-auth proof 通過，原順序選定 1,658 tests／900 秒 outer cap；full 結果 PENDING。uv 3.53 loader 拒絕紀錄保留，未宣稱新 CI 通過／可發佈；原失敗、230/300 歷史、目前 230/290 與 D8 延後非 PASS 均保留。
+
+
 ## PR #13 Paper 原門檻失敗；fixture 保留修補與原次診斷待原生再驗（2026-10-12 08:57 +08:00／00:57 UTC）
 
 - **保留原次失敗：** 來源 `13ebd0f700b65b13436d4f0e2dc581db64d93d7d`／tree `817984a0c44815377f656860765c7c7fc81c4cc3` 的 [Quantlab 38187882846](https://github.com/yostar77612/mark-auto/actions/runs/38187882846) 終態 13 SUCCESS／1 FAIL：Windows 3.12 既有 typed Paper case 在原 960 bars／30 秒第一次 wait 仍見 jobs.active／Working 而失敗。research 兩 profile 均通過；後續 fresh-process observer 通過不抵銷原失敗，也未證明原生阻塞階段。[Windows 38187882886](https://github.com/yostar77612/mark-auto/actions/runs/38187882886) build／security SUCCESS，release SKIPPED；必要 Quantlab 尚未全通過，不是公開發佈或正式完成。
