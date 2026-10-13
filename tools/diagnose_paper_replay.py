@@ -28,6 +28,7 @@ class Timings:
         self.values = {}
         self.stack = []
         self.boundaries = {}
+        self.last_completed = {}
 
     @contextmanager
     def measure(self, name):
@@ -37,12 +38,18 @@ class Timings:
         try:
             yield
         finally:
-            elapsed = time.perf_counter() - started
+            finished = time.perf_counter()
+            elapsed = finished - started
             with self.lock:
                 self.stack.pop()
                 value = self.values.setdefault(name, {'calls': 0, 'seconds': 0.0})
                 value['calls'] += 1
                 value['seconds'] += elapsed
+                value['max_seconds'] = max(value.get('max_seconds', 0.0), elapsed)
+                # Last completed timer at this snapshot, never deadline state
+                # or evidence of a committed/verified result.
+                self.last_completed = {'phase': name, 'calls': value['calls'],
+                    'seconds': elapsed, 'elapsed_seconds': finished - self.started}
 
     def snapshot(self):
         with self.lock:
@@ -50,7 +57,8 @@ class Timings:
             return {'elapsed_seconds': now - self.started,
                     'timings': {key: dict(value) for key, value in self.values.items()},
                     'active': [{'phase': name, 'seconds': now - started} for name, started in self.stack],
-                    'boundaries': dict(self.boundaries)}
+                    'boundaries': dict(self.boundaries),
+                    'last_completed': dict(self.last_completed)}
 
 
 def _database_role(path):
@@ -560,6 +568,11 @@ def _connection_observer(output, profile, root, action):
     return 0
 
 
+def _connection_checkpoint_due(completed_iterations, now, publication_finished):
+    # Called only after an iteration completed; a blocked call is never sampled.
+    return completed_iterations % 30 == 0 or now - publication_finished >= 1
+
+
 def _connection_probe(output, profile, root):
     """One fixed 120-commit block, using only a newly owned disposable file."""
     entered = time.perf_counter()
@@ -573,16 +586,30 @@ def _connection_probe(output, profile, root):
     connect = _instrument_connect(sqlite3.connect, timings)
     held = None
     consumed = 0
+    iteration_samples = []
+    last_completed_phase = 'setup'
+    publication_finished = timings.started
+    publication_seconds = 0.0
     report = {'profile': profile, 'complete': False, 'phase': 'setup',
               'commits_expected': CONNECTION_BLOCK_COMMITS,
               'verified_pragmas': {'journal_mode': profile.split('-')[0],
                                    'synchronous': 2, 'locking_mode': 'normal'},
               'sqlite': sqlite3.sqlite_version, 'pid': os.getpid(), **_filesystem(root)}
     def record():
+        nonlocal publication_finished, publication_seconds
+        publication_started = time.perf_counter()
         _write_json(output, {**report, 'commits_completed': consumed,
             'pre_timing_seconds': pre_timing_seconds,
-            'probe_entry_seconds': time.perf_counter() - entered,
-            'process_cpu_seconds': time.process_time(), **timings.snapshot()})
+            'probe_entry_seconds': publication_started - entered,
+            'process_cpu_seconds': time.process_time(),
+            'checkpoint_progress': {'last_completed_phase': last_completed_phase,
+                'completed_iterations': consumed,
+                'sample_elapsed_seconds': publication_started - timings.started,
+                'prior_publication_seconds': publication_seconds,
+                'iteration_samples': iteration_samples},
+            **timings.snapshot()})
+        publication_finished = time.perf_counter()
+        publication_seconds = publication_finished - publication_started
     @contextmanager
     def transaction():
         db = held if held is not None else _probe_connection(connect, path, profile)
@@ -625,6 +652,8 @@ def _connection_probe(output, profile, root):
         record()
         with timings.measure('replay.cursor_loop'):
             for index in range(CONNECTION_BLOCK_COMMITS):
+                iteration_started = time.perf_counter()
+                iteration_cpu = time.process_time()
                 with transaction() as db:
                     if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (index, 1, None):
                         raise RuntimeError('Diagnostic cursor did not persist')
@@ -633,29 +662,45 @@ def _connection_probe(output, profile, root):
                         raise RuntimeError('Unexpected diagnostic plan')
                     db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
                 consumed += 1
-                if consumed % 30 == 0:
-                    record()  # Preserve observed progress if the controller deadline expires.
+                iteration_finished = time.perf_counter()
+                iteration_samples.append({'iteration': consumed,
+                    'wall_seconds': iteration_finished - iteration_started,
+                    'cpu_seconds': time.process_time() - iteration_cpu})
+                last_completed_phase = 'cursor_iteration'
+                if _connection_checkpoint_due(consumed, iteration_finished, publication_finished):
+                    # Single writer, nondurable report, after completed work only.
+                    # A blocked native call/report can still leave stale evidence.
+                    record()
+        last_completed_phase = 'cursor_loop'
         # First connection is still open for the step profile, with no transaction.
         # The controller, not this child, launches each external control process.
-        observe_control('stop', 0)
-        observe_control('start', 1)
+        with timings.measure('replay.external_stop'):
+            observe_control('stop', 0)
+        last_completed_phase = 'external_stop'
+        with timings.measure('replay.external_start'):
+            observe_control('start', 1)
+        last_completed_phase = 'external_start'
         class RollbackProbe(Exception):
             pass
-        try:
-            with transaction() as db:
-                db.execute('UPDATE replay SET cursor=-1 WHERE id=1')
-                raise RollbackProbe()
-        except RollbackProbe:
-            pass
+        with timings.measure('replay.rollback_test'):
+            try:
+                with transaction() as db:
+                    db.execute('UPDATE replay SET cursor=-1 WHERE id=1')
+                    raise RollbackProbe()
+            except RollbackProbe:
+                pass
+        last_completed_phase = 'rollback_test'
         if held is not None:
             with timings.measure('replay.final_close'):
                 held.close()
             held = None
-        with transaction() as db:
-            if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (consumed, 1, None):
-                raise RuntimeError('Diagnostic rollback/reopen did not preserve cursor')
-            if db.execute('PRAGMA integrity_check').fetchone() != ('ok',):
-                raise RuntimeError('Diagnostic integrity check failed')
+        with timings.measure('replay.verify_reopen'):
+            with transaction() as db:
+                if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (consumed, 1, None):
+                    raise RuntimeError('Diagnostic rollback/reopen did not preserve cursor')
+                if db.execute('PRAGMA integrity_check').fetchone() != ('ok',):
+                    raise RuntimeError('Diagnostic integrity check failed')
+        last_completed_phase = 'verify_reopen'
         journal = Path(str(path) + '-journal')
         report.update(complete=True, phase='complete', rollback_and_reopen_verified=True,
                       external_control_verified=True,
@@ -729,9 +774,11 @@ def _connection_case(output, profile, base, deadline):
                         remaining = deadline - time.monotonic()
                         if remaining <= 0:
                             raise subprocess.TimeoutExpired(observer, 0)
+                        mark('observer_' + action + '_launch_requested')
                         helper = subprocess.Popen(observer, cwd=ROOT,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         children.append(helper)
+                        mark('observer_' + action + '_launch_returned')
                         helper.wait(timeout=min(8, remaining))
                         mark('observer_' + action + '_returned')
                         observer_actions.append(action)
