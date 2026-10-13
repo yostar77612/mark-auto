@@ -30,6 +30,8 @@ function Reject-PreparedHashIO([scriptblock]$Action, [int]$ExpectedCode, [string
 }
 
 function Test-PreparedKitIntegrityGuard([string]$Root, [string]$SourcePath) {
+  # The extracted loop requires the same canonical root as production admission.
+  $Root=[IO.Path]::GetFullPath($Root)
   $sourceTokens=$null; $sourceErrors=$null
   $sourceAst=[Management.Automation.Language.Parser]::ParseFile($SourcePath,[ref]$sourceTokens,[ref]$sourceErrors)
   Require ($sourceErrors.Count -eq 0) 'Real kit-integrity source parse failed'
@@ -470,7 +472,13 @@ public static class MarkAutoPreparedStreamFixture {
   # Explicit new-baseline contract controls. All paths belong to this CI scratch tree.
   $controllerStage='kit_integrity_guard_controls'
   $hashRoot=Join-Path $fixture 'kit-integrity-guard'; [void][IO.Directory]::CreateDirectory($hashRoot)
-  Test-PreparedKitIntegrityGuard $hashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')
+  $canonicalHashRoot=[IO.Path]::GetFullPath($hashRoot)
+  $hashSeparator=$canonicalHashRoot.LastIndexOf('\')
+  # Preserve the interior alias literally; Join-Path could normalize it away.
+  $dotHashRoot=$canonicalHashRoot.Substring(0,$hashSeparator+1)+'.\'+$canonicalHashRoot.Substring($hashSeparator+1)
+  Require ($dotHashRoot.Length -eq $canonicalHashRoot.Length+2) 'Kit root dot control was normalized before admission'
+  Require ([IO.Path]::GetFullPath($dotHashRoot) -ceq $canonicalHashRoot) 'Kit root dot control changed canonical target'
+  Test-PreparedKitIntegrityGuard $dotHashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')
   [Console]::Out.WriteLine('{"stage":"kit_integrity_guard_controls","status":"passed","scope":"real-production-loop-no-install"}')
 
   $controllerStage='current_baseline_controls'

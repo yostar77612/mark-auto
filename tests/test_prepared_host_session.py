@@ -131,8 +131,21 @@ class PreparedHostSessionContracts(unittest.TestCase):
                       '[IO.FileShare]::None', '$exclusive.Dispose()', '$writer.Dispose()',
                       'real-production-loop-no-install'):
             self.assertIn(token, fixture)
-        self.assertIn("Test-PreparedKitIntegrityGuard $hashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')", fixture)
+        self.assertIn("Test-PreparedKitIntegrityGuard $dotHashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')", fixture)
         self.assertNotIn('Start-OwnedAcceptanceProcess $installer', fixture)
+
+    def test_native_hash_fixture_matches_canonical_root_precondition_with_retained_dot_alias(self):
+        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        guard = fixture.split('function Test-PreparedKitIntegrityGuard', 1)[1].split('function Get-PreparedNativeCode', 1)[0]
+        self.assertLess(guard.index('$Root=[IO.Path]::GetFullPath($Root)'), guard.index("$file=Join-Path $Root"))
+        self.assertIn(r"$dotHashRoot=$canonicalHashRoot.Substring(0,$hashSeparator+1)+'.\'+$canonicalHashRoot.Substring($hashSeparator+1)", fixture)
+        self.assertIn('$dotHashRoot.Length -eq $canonicalHashRoot.Length+2', fixture)
+        self.assertIn('[IO.Path]::GetFullPath($dotHashRoot) -ceq $canonicalHashRoot', fixture)
+        self.assertIn('Kit root dot control was normalized before admission', fixture)
+        self.assertIn('Escaped kit path was admitted', guard)
+        self.assertIn('Reject-PreparedHashIO { & $Code } 2', guard)
+        self.assertIn('Reject-PreparedHashIO { & $Code } 32', guard)
+        self.assertIn('Algorithm disposal missing after hashing fault', guard)
 
     def test_original_smoke_assertions_remain_explicit(self):
         for token in ('$proof.steps.Count -ne 7', '$proof.native_window_visible -ne $true',
