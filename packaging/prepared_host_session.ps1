@@ -76,6 +76,17 @@ function Read-PreparedBootstrap([string]$Path,[string]$Digest,[long]$MaxBytes,[s
 }
 
 
+function Get-PreparedFileSha256([string]$Path) {
+  # Keep SHA256 independent of inherited cross-edition PowerShell modules.
+  # Callers retain their existing path, manifest and alias admission checks.
+  $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+    $hash=[Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+    finally { $hash.Dispose() }
+  } finally { $stream.Dispose() }
+}
+
 function Assert-PreparedReceiptKeys($Object, [string[]]$Expected) {
   $names=@($Object.PSObject.Properties.Name)
   if ($names.Count -ne $Expected.Count -or
@@ -452,7 +463,7 @@ try {
     $path=[IO.Path]::GetFullPath((Join-Path $KitRoot $entry.Name))
     if (-not $path.StartsWith(($KitRoot.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit entry escapes its root' }
     Assert-AcceptancePath $path
-    if ($entry.Value -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.Value) { throw 'Kit file digest changed' }
+    if ($entry.Value -cnotmatch '^[a-f0-9]{64}$' -or (Get-PreparedFileSha256 $path) -cne $entry.Value) { throw 'Kit file digest changed' }
   }
   $global:acceptanceDiagnosticPhase='candidate_manifest'
   $candidate=Read-PreparedJson (Join-Path $KitRoot 'candidate-manifest.json') $kit.files_sha256.'candidate-manifest.json'
@@ -475,7 +486,7 @@ try {
     Assert-PreparedLabContainment $invocationPath $lab 'Current baseline invocation path refused'
     $invocation=Read-PreparedJson $invocationPath $receipt.lifecycle_invocation_sha256
     $priorKitRoot=$bootstrapPriorContext.root; $priorKit=$bootstrapPriorContext.kit
-    Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant() $KitRoot $data $app $invocation $priorKit
+    Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest (Get-PreparedFileSha256 $PSCommandPath) $KitRoot $data $app $invocation $priorKit
   } elseif ($receipt.schema_version -ne 1 -or $receipt.owner -cne 'prepared-host-lifecycle-handoff' -or $receipt.candidate_commit -cne $kit.candidate_commit -or $receipt.kit_sha256 -cne $KitSha256 -or $receipt.app_data_path -ine $data -or $receipt.no_intervening_app_use -ne $true) { throw 'Observed lifecycle handoff required; existing data cannot be adopted' }
   $global:acceptanceDiagnosticPhase='prior_reports'
   $prior=Join-Path $priorKitRoot 'dist\validation'
@@ -508,7 +519,7 @@ try {
   $backup=Join-Path $SessionRoot 'prior-data-backup'
   $global:acceptanceDiagnosticPhase='backup'
   Backup-PreparedState $data $backup $receipt -RequireUnaliased:$currentBaseline
-  $record.entrypoint_sha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $record.entrypoint_sha256=(Get-PreparedFileSha256 $PSCommandPath)
   $record.receipt_kind=$ReceiptKind; $record.original_lifecycle_continuity=$(if ($currentBaseline) { 'UNPROVEN' } else { 'externally attested lifecycle handoff' })
   $record.backup_verified=$true; $record.state_receipt_sha256=$StateReceiptSha256; $record.candidate_commit=$kit.candidate_commit; $record.kit_sha256=$KitSha256
   $workspace=Join-Path $SessionRoot 'workspace'; $temporary=Join-Path $SessionRoot 'temp'
@@ -578,7 +589,7 @@ try {
     $expected=($candidate.inputs_sha256.PSObject.Properties | Where-Object { $_.Name.Replace('\','/') -ceq "quantlab/$name" }).Value
     $source=Join-Path (Split-Path $exe -Parent) "_internal\quantlab\$name"
     Assert-AcceptancePath $source
-    if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expected) { throw 'Installed engine source differs from candidate inputs' }
+    if ((Get-PreparedFileSha256 $source) -cne $expected) { throw 'Installed engine source differs from candidate inputs' }
   }
   $record.install='observed'; $record.shortcut_execution='NOT RUN: exact resolution only'
   Assert-PreparedNoProcess
@@ -606,7 +617,7 @@ try {
   Assert-PreparedNoProcess
   $record.clean_close='observed'
   Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup -RequireUnaliased:$currentBaseline) $receipt
-  if ((Get-FileHash -LiteralPath (Join-Path $data 'installer-preservation-test.txt') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $receipt.files_sha256.'installer-preservation-test.txt') { throw 'First-round sentinel changed' }
+  if ((Get-PreparedFileSha256 (Join-Path $data 'installer-preservation-test.txt')) -cne $receipt.files_sha256.'installer-preservation-test.txt') { throw 'First-round sentinel changed' }
   $record.status='partial'; $record.installed_app='left installed, no process left running'; $record.workspace=$workspace
 } catch {
   try { Write-AcceptanceWorkerFailure -Failure $_ -Path (Join-Path $SessionRoot 'worker-failure.json') -Source prepared_runtime -Phase $global:acceptanceDiagnosticPhase }

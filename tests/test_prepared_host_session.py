@@ -97,6 +97,56 @@ class PreparedHostSessionContracts(unittest.TestCase):
         for prop in ('HasExited', 'MainWindowHandle', 'ExitCode', 'SessionId'):
             self.assertNotRegex(self.source, r'\.' + prop + r'\b')
 
+    def test_session_hashes_are_module_independent_at_all_five_sites(self):
+        self.assertNotIn('Get-FileHash', self.source)
+        body = self.source.split('function Get-PreparedFileSha256', 1)[1].split('function Assert-PreparedReceiptKeys', 1)[0]
+        for token in ('[IO.FileMode]::Open', '[IO.FileAccess]::Read', '[IO.FileShare]::Read',
+                      '[Security.Cryptography.SHA256]::Create()', 'ComputeHash($stream)',
+                      '$hash.Dispose()', '$stream.Dispose()', 'ToLowerInvariant()'):
+            self.assertIn(token, body)
+        self.assertEqual(self.source.count('(Get-PreparedFileSha256 '), 5)
+        self.assertIn('Assert-AcceptancePath $path', self.source)
+        self.assertIn("$entry.Value -cnotmatch '^[a-f0-9]{64}$'", self.source)
+        self.assertIn('Kit entry escapes its root', self.source)
+        self.assertIn('Kit file digest changed', self.source)
+        for forbidden in ('PSModulePath', 'Import-Module', 'Set-ExecutionPolicy'):
+            self.assertNotIn(forbidden, body)
+
+    def test_native_hash_regression_executes_real_integrity_loop_without_install(self):
+        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        for token in ('function Test-PreparedKitIntegrityGuard', 'Parser]::ParseFile',
+                      "$node.Condition.Extent.Text -ceq '$kit.files_sha256.PSObject.Properties'",
+                      '$code=[scriptblock]::Create($loops[0].Extent.Text)', '& $Code',
+                      'Module-dependent hash command was invoked', 'Changed kit bytes were admitted',
+                      'Malformed kit digest was admitted', 'Escaped kit path was admitted',
+                      'Missing kit member did not fail with native error 2',
+                      'Read-denied kit member did not fail with native error 32',
+                      'function Reject-PreparedHashIO', 'GetBaseException()',
+                      '$native -ne $ExpectedCode', '[IO.FileNotFoundException]', '[IO.IOException]',
+                      'Reject-PreparedHashIO { Get-PreparedFileSha256 $File } 32',
+                      "Get-PreparedFileSha256 (Join-Path $KitRoot 'missing.bin')",
+                      'Hash factory seam not unique', '$body.Replace($factory,',
+                      'Injected post-open hash failure', '$algorithm.DisposeCalls -eq 1',
+                      '$algorithm.CapturedStream.get_CanRead()',
+                      '[IO.FileShare]::None', '$exclusive.Dispose()', '$writer.Dispose()',
+                      'real-production-loop-no-install'):
+            self.assertIn(token, fixture)
+        self.assertIn("Test-PreparedKitIntegrityGuard $dotHashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')", fixture)
+        self.assertNotIn('Start-OwnedAcceptanceProcess $installer', fixture)
+
+    def test_native_hash_fixture_matches_canonical_root_precondition_with_retained_dot_alias(self):
+        fixture = (ROOT / 'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        guard = fixture.split('function Test-PreparedKitIntegrityGuard', 1)[1].split('function Get-PreparedNativeCode', 1)[0]
+        self.assertLess(guard.index('$Root=[IO.Path]::GetFullPath($Root)'), guard.index("$file=Join-Path $Root"))
+        self.assertIn(r"$dotHashRoot=$canonicalHashRoot.Substring(0,$hashSeparator+1)+'.\'+$canonicalHashRoot.Substring($hashSeparator+1)", fixture)
+        self.assertIn('$dotHashRoot.Length -eq $canonicalHashRoot.Length+2', fixture)
+        self.assertIn('[IO.Path]::GetFullPath($dotHashRoot) -ceq $canonicalHashRoot', fixture)
+        self.assertIn('Kit root dot control was normalized before admission', fixture)
+        self.assertIn('Escaped kit path was admitted', guard)
+        self.assertIn('Reject-PreparedHashIO { & $Code } 2', guard)
+        self.assertIn('Reject-PreparedHashIO { & $Code } 32', guard)
+        self.assertIn('Algorithm disposal missing after hashing fault', guard)
+
     def test_original_smoke_assertions_remain_explicit(self):
         for token in ('$proof.steps.Count -ne 7', '$proof.native_window_visible -ne $true',
                       '$proof.worker_completed -ne $true', "'backtest_completed','campaign_completed','paper_completed'",
@@ -320,7 +370,7 @@ class CurrentBaselineSourceContracts(unittest.TestCase):
         self.assertIn('foreach ($path in @($KitRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path }',entry)
         self.assertIn('Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path',entry)
         self.assertIn('Invoke-AcceptanceSupervisor -ScriptPath $PSCommandPath',entry)
-        self.assertIn('Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256',entry)
+        self.assertIn('Get-PreparedFileSha256 $PSCommandPath',entry)
 
     def test_v7_invocation_and_shortcut_use_production_boundary_guards(self):
         self.source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
