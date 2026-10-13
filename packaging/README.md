@@ -381,3 +381,36 @@ scaffold guard before and after mutation, and requires an unknown child to be
 rejected through that dot spelling. The existing real-alias controls and all
 production predicates remain unchanged. Local source/parser checks do not
 claim native runtime validation.
+
+
+Review freeze v6 repairs a fixture identity setup error: bootstrap receipt roots
+must already have canonical spelling, whereas operational launch inputs may be
+aliases. Fixture-declared kit/data/install/prior roots and bootstrap lab/source/
+session paths are now canonical, including returned-root and absence assertions.
+Raw scaffold short/dot inputs remain intact for their dedicated controls.
+
+Production canonicalizes its trusted operational kit/data/install arguments and
+lab root before comparison/containment; exact receipt equality remains strict.
+The prior-context helper also canonicalizes trusted kit/session/lab arguments,
+so same-kit aliases cannot evade digest identity checks. Digest-pinned read-only
+context file locators still undergo canonical containment and root-to-leaf checks.
+
+Controls retain nested/equal/ancestor/disjoint and same-kit positives/wrong-digest
+negatives, and explicitly reject noncanonical declared identities, exact lab-root
+adoption and outside-root adoption with their exact predicates. Operational alias
+positives are separate and do not make receipt aliases permissive. Native runtime
+evidence remains a Windows CI gate; local checks are source/parser/string probes.
+
+
+Cloud review freeze v7 trims prior-kit roots before strict receipt identity checks,
+so a trailing separator is refused rather than treated as a descendant. A shared
+lexical lab-containment predicate canonicalizes every top-level input (including
+the script path) and the lifecycle invocation locator, and rejects the lab root
+with or without a trailing separator. Shortcut containment canonicalizes the
+operational app prefix while retaining the case-exact MarkAuto.exe leaf check.
+Original entrypoint hashing, bootstrap/reparse checks, receipt identity rules,
+shortcut resolution and owned-process launch remain in place. Synthetic controls
+exercise the production predicates with canonical and dot-component positives,
+exact-root/trailing-root/sibling/ancestor negatives, and exact refusal messages.
+Cloud Python source contracts are not native Windows execution. Native CI remains
+pending; acceptance stays PARTIAL (exit 2) with historical continuity UNPROVEN.

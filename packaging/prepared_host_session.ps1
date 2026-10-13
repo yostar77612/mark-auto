@@ -21,6 +21,18 @@ function Assert-PreparedSeparateRoots([string]$Kit, [string]$Session) {
   if ($kitPath -ieq $sessionPath -or $sessionPath.StartsWith(($kitPath+'\'),[StringComparison]::OrdinalIgnoreCase) -or $kitPath.StartsWith(($sessionPath+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit and session directories must not overlap' }
 }
 
+# Lexical containment only; callers retain their original identity and native path gates.
+function Assert-PreparedLabContainment([string]$Path, [string]$LabPath, [string]$Failure) {
+  $full=[IO.Path]::GetFullPath($Path).TrimEnd('\')
+  $labRoot=[IO.Path]::GetFullPath($LabPath).TrimEnd('\')
+  if (-not $full.StartsWith(($labRoot+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw $Failure }
+}
+
+function Assert-PreparedShortcutContainment([string]$Target, [string]$AppPath) {
+  $appRoot=[IO.Path]::GetFullPath($AppPath).TrimEnd('\')
+  if (-not [IO.Path]::GetFullPath($Target).StartsWith(($appRoot+'\'),[StringComparison]::OrdinalIgnoreCase) -or (Split-Path $Target -Leaf) -cne 'MarkAuto.exe') { throw 'Installed shortcut escaped the exact app tree' }
+}
+
 function Assert-PreparedBootstrapPath([string]$Path, [switch]$AllowAbsent) {
   $full=[IO.Path]::GetFullPath($Path)
   if ($full -notmatch '^[A-Za-z]:\\' -or $full.Substring(2).Contains(':')) { throw 'Ordinary local bootstrap paths required' }
@@ -84,6 +96,10 @@ function Assert-PreparedUnaliasedFile([IO.FileStream]$Stream, [string]$Path) {
 function Confirm-PreparedCurrentBaseline($Receipt, $Kit, [string]$KitDigest, [string]$InstallerDigest,
     [string]$EntrypointDigest, [string]$KitPath, [string]$DataPath, [string]$AppPath, $Invocation, $PriorKit,
     [DateTime]$Now = [DateTime]::UtcNow) {
+  # Operational arguments may be aliases; declared receipt identities remain exact.
+  $KitPath=[IO.Path]::GetFullPath($KitPath).TrimEnd('\')
+  $DataPath=[IO.Path]::GetFullPath($DataPath).TrimEnd('\')
+  $AppPath=[IO.Path]::GetFullPath($AppPath).TrimEnd('\')
   Assert-PreparedReceiptKeys $Receipt @('schema_version','owner','original_lifecycle_continuity','captured_at_utc',
     'kit_root','kit_sha256','candidate_commit','candidate_version','baseline_version','installer_sha256',
     'helper_sha256','helper_script_sha256','entrypoint_sha256','app_data_path','install_path',
@@ -194,17 +210,20 @@ function Read-PreparedPriorContext($Receipt, $Kit, [string]$KitDigest,
     [string]$KitRootPath, [string]$SessionPath, [string]$LabPath) {
   if ($Receipt.schema_version -ne 2 -or $Receipt.owner -cne 'prepared-host-current-baseline' -or
       $Receipt.original_lifecycle_continuity -cne 'UNPROVEN') { throw 'Current baseline provenance refused' }
-  $priorRoot=[IO.Path]::GetFullPath($Receipt.prior_kit_root)
+  $labRoot=[IO.Path]::GetFullPath($LabPath).TrimEnd('\')
+  $kitPath=[IO.Path]::GetFullPath($KitRootPath).TrimEnd('\')
+  $sessionPath=[IO.Path]::GetFullPath($SessionPath).TrimEnd('\')
+  $priorRoot=[IO.Path]::GetFullPath($Receipt.prior_kit_root).TrimEnd('\')
   if ($priorRoot -cne $Receipt.prior_kit_root -or
-      -not $priorRoot.StartsWith(($LabPath.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Current baseline prior kit path refused' }
-  Assert-PreparedSeparateRoots $KitRootPath $SessionPath
-  Assert-PreparedSeparateRoots $priorRoot $SessionPath
+      -not $priorRoot.StartsWith(($labRoot+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Current baseline prior kit path refused' }
+  Assert-PreparedSeparateRoots $kitPath $sessionPath
+  Assert-PreparedSeparateRoots $priorRoot $sessionPath
   Assert-PreparedBootstrapPath $priorRoot -AllowAbsent
   $priorKit=Read-PreparedJson (Join-Path $priorRoot 'kit.json') $Receipt.prior_kit_sha256
   if ($priorKit.schema_version -ne 1 -or $priorKit.candidate_commit -cne $Receipt.prior_candidate_commit -or
       $priorKit.version -cne $Receipt.prior_candidate_version -or
       $priorKit.baseline_version -cne $Receipt.prior_baseline_version) { throw 'Current baseline prior kit context refused' }
-  if ($priorRoot -ieq $KitRootPath -and ($Receipt.prior_kit_sha256 -cne $KitDigest -or
+  if ($priorRoot.TrimEnd('\') -ieq $kitPath -and ($Receipt.prior_kit_sha256 -cne $KitDigest -or
       $priorKit.candidate_commit -cne $Kit.candidate_commit -or $priorKit.version -cne $Kit.version -or
       $priorKit.baseline_version -cne $Kit.baseline_version)) { throw 'Current/prior kit identity was not explicitly pinned' }
   return @{root=$priorRoot;kit=$priorKit}
@@ -379,9 +398,9 @@ foreach ($required in @($KitRoot,$KitSha256,$StateReceipt,$StateReceiptSha256,$S
 $KitRoot=[IO.Path]::GetFullPath($KitRoot)
 $SessionRoot=[IO.Path]::GetFullPath($SessionRoot)
 Assert-PreparedSeparateRoots $KitRoot $SessionRoot
-$lab=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto-TestLab'
-foreach ($path in @($KitRoot,$SessionRoot,[IO.Path]::GetFullPath($StateReceipt),$PSCommandPath)) {
-  if (-not $path.StartsWith(([IO.Path]::GetFullPath($lab).TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab' }
+$lab=[IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto-TestLab')).TrimEnd('\')
+foreach ($path in @($KitRoot,$SessionRoot,$StateReceipt,$PSCommandPath)) {
+  Assert-PreparedLabContainment $path $lab 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab'
 }
 if ('MarkAutoAcceptanceJob' -as [type]) { throw 'Use a fresh PowerShell process; preloaded ownership types cannot prove this kit' }
 # Read-only, size-bounded bootstrap; the precompiled helper is the only native dependency.
@@ -441,8 +460,8 @@ try {
   $app=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\MarkAuto'
   $invocation=$null; $priorKit=$kit; $priorKitRoot=$KitRoot
   if ($currentBaseline) {
-    $invocationPath=[IO.Path]::GetFullPath($receipt.lifecycle_invocation_path)
-    if (-not $invocationPath.StartsWith(($lab.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Current baseline invocation path refused' }
+    $invocationPath=[IO.Path]::GetFullPath($receipt.lifecycle_invocation_path).TrimEnd('\')
+    Assert-PreparedLabContainment $invocationPath $lab 'Current baseline invocation path refused'
     $invocation=Read-PreparedJson $invocationPath $receipt.lifecycle_invocation_sha256
     $priorKitRoot=$bootstrapPriorContext.root; $priorKit=$bootstrapPriorContext.kit
     Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant() $KitRoot $data $app $invocation $priorKit
@@ -530,7 +549,7 @@ try {
   if ($owned.Process.get_ExitCode() -ne 0) { throw 'Follow-on install failed' }
   $shell=New-Object -ComObject WScript.Shell
   $shortcut=$shell.CreateShortcut($start); $exe=$shortcut.TargetPath
-  if (-not [IO.Path]::GetFullPath($exe).StartsWith(($app+'\'),[StringComparison]::OrdinalIgnoreCase) -or (Split-Path $exe -Leaf) -cne 'MarkAuto.exe') { throw 'Installed shortcut escaped the exact app tree' }
+  Assert-PreparedShortcutContainment $exe $app
   Assert-AcceptancePath $exe
   foreach ($link in @($start,$desktop)) {
     Assert-AcceptancePath $link

@@ -395,18 +395,34 @@ public static class MarkAutoPreparedStreamFixture {
   $priorKitContext=@{schema_version=1;version='0.2.2';baseline_version='0.2.1';candidate_commit=('7'*40)}
   $invocationContext=@{StartedAtUtc=[DateTime]::UtcNow.AddMinutes(-1).ToString('o');FinishedAtUtc=[DateTime]::UtcNow.ToString('o');ExecutionSha=('7'*40);ActualCallerExitCode=2;TimedOut=$false;
     NativeReports=@(@{Name='installer-results.json';Sha256=('d'*64)},@{Name='installer-supervisor.json';Sha256=('d'*64)},@{Name='installer-scope-preflight.json';Sha256=('d'*64)})}
+  # Canonical declared identities are separate from raw launch/alias controls.
+  $canonicalFixture=[IO.Path]::GetFullPath($fixture).TrimEnd('\')
+  $canonicalSource=[IO.Path]::GetFullPath($source).TrimEnd('\')
+  $canonicalCurrent=[IO.Path]::GetFullPath($current).TrimEnd('\')
+  $canonicalScaffold=[IO.Path]::GetFullPath($scaffold).TrimEnd('\')
   $currentInventory=Get-PreparedStateInventory $current -RequireUnaliased
   $reviewed=@{schema_version=2;owner='prepared-host-current-baseline';original_lifecycle_continuity='UNPROVEN';captured_at_utc=[DateTime]::UtcNow.ToString('o');
-    kit_root=$source;kit_sha256=('e'*64);candidate_commit=('a'*40);candidate_version='0.2.2';baseline_version='0.2.1';installer_sha256=('f'*64);
-    helper_sha256=('b'*64);helper_script_sha256=('c'*64);entrypoint_sha256=('1'*64);app_data_path=$current;install_path=$scaffold;
+    kit_root=$canonicalSource;kit_sha256=('e'*64);candidate_commit=('a'*40);candidate_version='0.2.2';baseline_version='0.2.1';installer_sha256=('f'*64);
+    helper_sha256=('b'*64);helper_script_sha256=('c'*64);entrypoint_sha256=('1'*64);app_data_path=$canonicalCurrent;install_path=$canonicalScaffold;
     directories=$currentInventory.directories;files_sha256=$currentInventory.files_sha256;install_directories=$directoryMap;install_metadata=$metadata;
     prior_reports_sha256=@{'installer-results.json'=('d'*64);'installer-supervisor.json'=('d'*64);'installer-scope-preflight.json'=('d'*64);'smoke-installed.json'=('d'*64);'smoke-upgraded.json'=('d'*64)};
-    lifecycle_invocation_path=(Join-Path $fixture 'invocation.json');lifecycle_invocation_sha256=('2'*64);
-    prior_kit_root=$source;prior_kit_sha256=('3'*64);prior_candidate_commit=('7'*40);prior_candidate_version='0.2.2';prior_baseline_version='0.2.1'}
+    lifecycle_invocation_path=(Join-Path $canonicalFixture 'invocation.json');lifecycle_invocation_sha256=('2'*64);
+    prior_kit_root=$canonicalSource;prior_kit_sha256=('3'*64);prior_candidate_commit=('7'*40);prior_candidate_version='0.2.2';prior_baseline_version='0.2.1'}
   $reviewed=$reviewed | ConvertTo-Json -Depth 8 | ConvertFrom-Json
-  function Confirm-CurrentFixture($r) { Confirm-PreparedCurrentBaseline $r $kitContext ('e'*64) ('f'*64) ('1'*64) $source $current $scaffold $invocationContext $priorKitContext }
+  function Confirm-CurrentFixture($r) { Confirm-PreparedCurrentBaseline $r $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $invocationContext $priorKitContext }
   function Clone-CurrentFixture { return ($reviewed | ConvertTo-Json -Depth 8 | ConvertFrom-Json) }
   Confirm-CurrentFixture $reviewed
+  $sourceOperationalAlias=(Split-Path $canonicalSource -Parent)+'\.\'+(Split-Path $canonicalSource -Leaf)
+  $currentOperationalAlias=(Split-Path $canonicalCurrent -Parent)+'\.\'+(Split-Path $canonicalCurrent -Leaf)
+  $scaffoldOperationalAlias=(Split-Path $canonicalScaffold -Parent)+'\.\'+(Split-Path $canonicalScaffold -Leaf)
+  Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $sourceOperationalAlias $currentOperationalAlias $scaffoldOperationalAlias $invocationContext $priorKitContext
+  # Each declared receipt path is canonical; a same-target alias is refused.
+  foreach ($field in @('kit_root','app_data_path','install_path')) {
+    $bad=Clone-CurrentFixture
+    $declared=[string]$bad.PSObject.Properties[$field].Value
+    $bad.PSObject.Properties[$field].Value=(Split-Path $declared -Parent)+'\.\'+(Split-Path $declared -Leaf)
+    Reject { Confirm-CurrentFixture $bad } ('Noncanonical declared receipt identity admitted: '+$field) 'Current baseline provenance refused'
+  }
   Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
 
 
@@ -590,9 +606,9 @@ public static class MarkAutoPreparedStreamFixture {
   $bad=Clone-CurrentFixture; $bad.schema_version=1
   Reject { Confirm-CurrentFixture $bad } 'Version-one current receipt admitted' 'Current baseline provenance refused'
   $wrongInvocation=$invocationContext.Clone(); $wrongInvocation.ExecutionSha=('8'*40)
-  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $source $current $scaffold $wrongInvocation $priorKitContext } 'Wrong original invocation candidate admitted' 'Current baseline provenance refused'
+  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $wrongInvocation $priorKitContext } 'Wrong original invocation candidate admitted' 'Current baseline provenance refused'
   $wrongInvocation=$invocationContext.Clone(); $wrongInvocation.TimedOut=$true
-  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $source $current $scaffold $wrongInvocation $priorKitContext } 'Timed-out original invocation admitted' 'Current baseline provenance refused'
+  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $wrongInvocation $priorKitContext } 'Timed-out original invocation admitted' 'Current baseline provenance refused'
   $backupSentinel=Join-Path $fixture 'current-backup/installer-preservation-test.txt'
   [IO.File]::WriteAllText($backupSentinel,'synthetic-baseline-only')
   $backupAlias=Join-Path $fixture 'backup-sentinel-alias.txt'
@@ -737,24 +753,79 @@ public static class MarkAutoPreparedStreamFixture {
     Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
   }
   # Bootstrap separation runs before any session directory creation.
-  $priorRoot=Join-Path $fixture 'prior-kit-bootstrap'; [void][IO.Directory]::CreateDirectory($priorRoot)
+  $bootstrapLab=$canonicalFixture; $bootstrapSource=$canonicalSource
+  $priorRoot=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'prior-kit-bootstrap')).TrimEnd('\'); [void][IO.Directory]::CreateDirectory($priorRoot)
   [IO.File]::WriteAllText((Join-Path $priorRoot 'kit.json'),($priorKitContext | ConvertTo-Json -Depth 5))
   $rootReceipt=Clone-CurrentFixture; $rootReceipt.prior_kit_root=$priorRoot
   $rootReceipt.prior_kit_sha256=(Get-FileHash -LiteralPath (Join-Path $priorRoot 'kit.json') -Algorithm SHA256).Hash.ToLowerInvariant()
-  $nestedSession=Join-Path $priorRoot 'forbidden-output'
-  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $source $nestedSession $fixture } 'Session inside prior kit admitted' 'Kit and session directories must not overlap'
+  $nestedSession=[IO.Path]::GetFullPath((Join-Path $priorRoot 'forbidden-output'))
+  $disjointSession=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'disjoint-output'))
+  $sameSession=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'same-kit-output'))
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $nestedSession $bootstrapLab } 'Session inside prior kit admitted' 'Kit and session directories must not overlap'
   Require (-not [IO.Directory]::Exists($nestedSession)) 'Prior-kit refusal created output'
-  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $source $priorRoot $fixture } 'Prior kit reused as session admitted' 'Kit and session directories must not overlap'
-  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $source $fixture $fixture } 'Session ancestor of prior kit admitted' 'Kit and session directories must not overlap'
-  $disjoint=Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $source (Join-Path $fixture 'disjoint-output') $fixture
-  Require ($disjoint.root -ceq $priorRoot -and -not [IO.Directory]::Exists((Join-Path $fixture 'disjoint-output'))) 'Read-only disjoint prior-kit positive control changed output'
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $priorRoot $bootstrapLab } 'Prior kit reused as session admitted' 'Kit and session directories must not overlap'
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $bootstrapLab $bootstrapLab } 'Session ancestor of prior kit admitted' 'Kit and session directories must not overlap'
+  $disjoint=Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab
+  Require ($disjoint.root -ceq $priorRoot -and -not [IO.Directory]::Exists($disjointSession)) 'Read-only disjoint prior-kit positive control changed output'
   $sameKit=@{}+$kitContext; $sameKit.schema_version=1
-  [IO.File]::WriteAllText((Join-Path $source 'kit.json'),($sameKit | ConvertTo-Json -Depth 5))
-  $sameDigest=(Get-FileHash -LiteralPath (Join-Path $source 'kit.json') -Algorithm SHA256).Hash.ToLowerInvariant()
-  $sameReceipt=Clone-CurrentFixture; $sameReceipt.prior_kit_root=$source; $sameReceipt.prior_kit_sha256=$sameDigest
+  [IO.File]::WriteAllText((Join-Path $bootstrapSource 'kit.json'),($sameKit | ConvertTo-Json -Depth 5))
+  $sameDigest=(Get-FileHash -LiteralPath (Join-Path $bootstrapSource 'kit.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  $sameReceipt=Clone-CurrentFixture; $sameReceipt.prior_kit_root=$bootstrapSource; $sameReceipt.prior_kit_sha256=$sameDigest
   $sameReceipt.prior_candidate_commit=$sameKit.candidate_commit
-  [void](Read-PreparedPriorContext $sameReceipt $sameKit $sameDigest $source (Join-Path $fixture 'same-kit-output') $fixture)
-  Reject { Read-PreparedPriorContext $sameReceipt $sameKit ('0'*64) $source (Join-Path $fixture 'same-kit-output') $fixture } 'Unpinned same-kit identity admitted' 'Current/prior kit identity was not explicitly pinned'
+  [void](Read-PreparedPriorContext $sameReceipt $sameKit $sameDigest $bootstrapSource $sameSession $bootstrapLab)
+  Reject { Read-PreparedPriorContext $sameReceipt $sameKit ('0'*64) $bootstrapSource $sameSession $bootstrapLab } 'Unpinned same-kit identity admitted' 'Current/prior kit identity was not explicitly pinned'
+
+  $noncanonical=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $noncanonical.prior_kit_root=$bootstrapLab+'\.\prior-kit-bootstrap'
+  Require ([IO.Path]::GetFullPath($noncanonical.prior_kit_root) -ceq $priorRoot -and $noncanonical.prior_kit_root -cne $priorRoot) 'Noncanonical receipt refusal control was not distinct'
+  Reject { Read-PreparedPriorContext $noncanonical $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Noncanonical prior receipt admitted' 'Current baseline prior kit path refused'
+  Require (-not [IO.Directory]::Exists($disjointSession)) 'Receipt refusal created output'
+  $exactLab=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $exactLab.prior_kit_root=$bootstrapLab
+  Reject { Read-PreparedPriorContext $exactLab $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Exact lab root adopted as prior kit' 'Current baseline prior kit path refused'
+  foreach ($trailingRoot in @(($priorRoot+'\'),($bootstrapLab+'\'))) {
+    $trailing=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+    $trailing.prior_kit_root=$trailingRoot
+    Reject { Read-PreparedPriorContext $trailing $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Trailing-separator prior receipt admitted' 'Current baseline prior kit path refused'
+    Require (-not [IO.Directory]::Exists($disjointSession)) 'Trailing-separator receipt refusal created output'
+  }
+  $outside=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $outside.prior_kit_root=[IO.Path]::GetFullPath((Join-Path (Split-Path $bootstrapLab -Parent) 'unapproved-prior-kit'))
+  Reject { Read-PreparedPriorContext $outside $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Outside lab prior kit admitted' 'Current baseline prior kit path refused'
+  $labAlias=$bootstrapLab+'\.\'
+  $sourceAlias=(Split-Path $bootstrapSource -Parent)+'\.\'+(Split-Path $bootstrapSource -Leaf)
+  $sessionAlias=(Split-Path $disjointSession -Parent)+'\.\'+(Split-Path $disjointSession -Leaf)
+  [void](Read-PreparedPriorContext $sameReceipt $sameKit $sameDigest $sourceAlias $sameSession $labAlias)
+  Reject { Read-PreparedPriorContext $sameReceipt $sameKit ('0'*64) $sourceAlias $sameSession $labAlias } 'Operational alias bypassed same-kit digest pin' 'Current/prior kit identity was not explicitly pinned'
+  $aliasContext=Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $sourceAlias $sessionAlias $labAlias
+  Require ($aliasContext.root -ceq $priorRoot -and -not [IO.Directory]::Exists($disjointSession)) 'Operational alias changed canonical receipt identity or output'
+
+  # Pure production containment predicates: no launch, receipt reads or host paths.
+  $controllerStage='canonical_boundary_controls'
+  $boundaryLab=$bootstrapLab; $boundaryAlias=$bootstrapLab+'\.\'
+  $boundaryChild=Join-Path $boundaryLab 'boundary-child'
+  $boundaryChildAlias=$boundaryAlias+'boundary-child'
+  foreach ($failure in @('Kit, script, receipt and session evidence must stay in MarkAuto-TestLab','Current baseline invocation path refused')) {
+    Assert-PreparedLabContainment $boundaryChild $boundaryLab $failure
+    Assert-PreparedLabContainment $boundaryChildAlias $boundaryAlias $failure
+    foreach ($notDescendant in @($boundaryLab,($boundaryLab+'\'),($boundaryAlias),($boundaryLab+'-sibling\file.json'),(Split-Path $boundaryLab -Parent))) {
+      Reject { Assert-PreparedLabContainment $notDescendant $boundaryAlias $failure } 'Lab containment accepted a non-descendant' $failure
+    }
+  }
+  $boundaryScript=Join-Path $boundaryLab 'packaging\prepared_host_session.ps1'
+  $boundaryScriptAlias=$boundaryAlias+'packaging\.\prepared_host_session.ps1'
+  Require ([IO.Path]::GetFullPath($boundaryScriptAlias) -ceq $boundaryScript) 'Script operational alias was not the exact canonical target'
+  Assert-PreparedLabContainment $boundaryScriptAlias $boundaryAlias 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab'
+  $boundaryApp=Join-Path $boundaryLab 'app'
+  $boundaryAppAlias=$boundaryAlias+'app\'
+  $boundaryExe=Join-Path $boundaryApp 'MarkAuto.exe'
+  Assert-PreparedShortcutContainment $boundaryExe $boundaryApp
+  Assert-PreparedShortcutContainment $boundaryExe $boundaryAppAlias
+  Assert-PreparedShortcutContainment ($boundaryAlias+'app\.\MarkAuto.exe') $boundaryAppAlias
+  foreach ($wrongTarget in @($boundaryApp,($boundaryApp+'-sibling\MarkAuto.exe'),(Join-Path $boundaryApp 'Other.exe'),(Join-Path $boundaryApp 'markauto.exe'),($boundaryApp+'\..\MarkAuto.exe'))) {
+    Reject { Assert-PreparedShortcutContainment $wrongTarget $boundaryAppAlias } 'Shortcut containment accepted an escaped or non-exact executable' 'Installed shortcut escaped the exact app tree'
+  }
+  [Console]::Out.WriteLine('{"stage":"canonical_boundary_controls","status":"passed","scope":"synthetic-native-only"}')
 
   [Console]::Out.WriteLine('{"stage":"current_baseline_follow_on_controls","status":"passed","scope":"synthetic-native-only"}')
 

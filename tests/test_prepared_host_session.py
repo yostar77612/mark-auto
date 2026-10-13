@@ -234,8 +234,8 @@ class CurrentBaselineSourceContracts(unittest.TestCase):
         self.assertLess(entry.index('$bootstrapPriorContext=Read-PreparedPriorContext'),
                         entry.index('[IO.Directory]::CreateDirectory($SessionRoot)'))
         gate=source.split('function Read-PreparedPriorContext',1)[1].split('function Assert-PreparedDirectoryStreams',1)[0]
-        self.assertIn('Assert-PreparedSeparateRoots $priorRoot $SessionPath',gate)
-        self.assertIn('Assert-PreparedSeparateRoots $KitRootPath $SessionPath',gate)
+        self.assertIn('Assert-PreparedSeparateRoots $priorRoot $sessionPath',gate)
+        self.assertIn('Assert-PreparedSeparateRoots $kitPath $sessionPath',gate)
 
     def test_native_directory_ads_and_prior_kit_controls_are_verified(self):
         fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
@@ -276,6 +276,79 @@ class CurrentBaselineSourceContracts(unittest.TestCase):
         self.assertEqual(control.count('Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext'),3)
         self.assertIn("'Unknown installer scaffolding directory'",control)
         self.assertIn("Native scaffold alias control unavailable",fixture)
+
+    def test_declared_receipts_are_canonical_and_operational_aliases_stay_separate(self):
+        source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn("$priorRoot -cne $Receipt.prior_kit_root",source)
+        self.assertIn("$labRoot=[IO.Path]::GetFullPath($LabPath)",source)
+        self.assertIn("$lab=[IO.Path]::GetFullPath((Join-Path",source)
+        for token in ("kit_root=$canonicalSource", "app_data_path=$canonicalCurrent",
+                      "install_path=$canonicalScaffold", "prior_kit_root=$canonicalSource",
+                      "Noncanonical prior receipt admitted", "Exact lab root adopted as prior kit",
+                      "Outside lab prior kit admitted", "Noncanonical declared receipt identity admitted",
+                      "Operational alias changed canonical receipt identity or output",
+                      "Operational alias bypassed same-kit digest pin",
+                      "$sourceOperationalAlias $currentOperationalAlias $scaffoldOperationalAlias"):
+            self.assertIn(token,fixture)
+        bootstrap=fixture.split('# Bootstrap separation runs before any session directory creation.',1)[1].split("[Console]::Out.WriteLine",1)[0]
+        self.assertNotIn("$source (Join-Path $fixture",bootstrap)
+        self.assertIn("$rootReceipt.prior_kit_root=$priorRoot",bootstrap)
+        self.assertIn("$sameReceipt.prior_kit_root=$bootstrapSource",bootstrap)
+        self.assertIn("$disjoint.root -ceq $priorRoot",bootstrap)
+        self.assertIn("Assert-PreparedInstallScaffolding $dotScaffold",fixture)
+        self.assertIn("Assert-PreparedInstallScaffolding $aliasRoot",fixture)
+
+    def test_v7_prior_receipt_trims_before_strict_identity(self):
+        self.source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        gate=self.source.split('function Read-PreparedPriorContext',1)[1].split('function Assert-PreparedDirectoryStreams',1)[0]
+        self.assertIn("$priorRoot=[IO.Path]::GetFullPath($Receipt.prior_kit_root).TrimEnd('\\')",gate)
+        self.assertLess(gate.index('$priorRoot=[IO.Path]'),gate.index('$priorRoot -cne $Receipt.prior_kit_root'))
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn("@(($priorRoot+'\\'),($bootstrapLab+'\\'))",fixture)
+        self.assertIn("'Trailing-separator prior receipt admitted' 'Current baseline prior kit path refused'",fixture)
+
+    def test_v7_all_entry_inputs_use_canonical_containment_without_identity_rewrite(self):
+        self.source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        gate=self.source.split('function Assert-PreparedLabContainment',1)[1].split('function Assert-PreparedShortcutContainment',1)[0]
+        self.assertIn("$full=[IO.Path]::GetFullPath($Path).TrimEnd('\\')",gate)
+        self.assertIn("$labRoot=[IO.Path]::GetFullPath($LabPath).TrimEnd('\\')",gate)
+        self.assertIn("$full.StartsWith(($labRoot+'\\'),[StringComparison]::OrdinalIgnoreCase)",gate)
+        entry=self.source.split("if ($MyInvocation.InvocationName -eq '.') { return }",1)[1]
+        self.assertIn("foreach ($path in @($KitRoot,$SessionRoot,$StateReceipt,$PSCommandPath)) {\n  Assert-PreparedLabContainment $path $lab 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab'",entry)
+        self.assertNotIn('$PSCommandPath=',entry)
+        self.assertIn('foreach ($path in @($KitRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path }',entry)
+        self.assertIn('Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path',entry)
+        self.assertIn('Invoke-AcceptanceSupervisor -ScriptPath $PSCommandPath',entry)
+        self.assertIn('Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256',entry)
+
+    def test_v7_invocation_and_shortcut_use_production_boundary_guards(self):
+        self.source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn("$invocationPath=[IO.Path]::GetFullPath($receipt.lifecycle_invocation_path).TrimEnd('\\')",self.source)
+        self.assertIn("Assert-PreparedLabContainment $invocationPath $lab 'Current baseline invocation path refused'",self.source)
+        self.assertLess(self.source.index('Assert-PreparedLabContainment $invocationPath'),self.source.index('$invocation=Read-PreparedJson $invocationPath'))
+        shortcut=self.source.split('function Assert-PreparedShortcutContainment',1)[1].split('function Assert-PreparedBootstrapPath',1)[0]
+        self.assertIn("$appRoot=[IO.Path]::GetFullPath($AppPath).TrimEnd('\\')",shortcut)
+        self.assertIn("[IO.Path]::GetFullPath($Target).StartsWith(($appRoot+'\\')",shortcut)
+        self.assertIn("(Split-Path $Target -Leaf) -cne 'MarkAuto.exe'",shortcut)
+        self.assertIn('Assert-PreparedShortcutContainment $exe $app',self.source)
+        self.assertIn('$resolved.TargetPath -ine $exe -or $resolved.Arguments',self.source)
+        self.assertIn('Start-OwnedAcceptanceProcess $exe',self.source)
+
+    def test_v7_native_boundary_controls_assert_exact_refusals_and_positives(self):
+        fixture=(ROOT/'packaging/test_prepared_host_session.ps1').read_text(encoding='utf-8-sig')
+        control=fixture.split("$controllerStage='canonical_boundary_controls'",1)[1].split("[Console]::Out.WriteLine",1)[0]
+        for token in ('Assert-PreparedLabContainment $boundaryChild $boundaryLab $failure',
+                      'Assert-PreparedLabContainment $boundaryChildAlias $boundaryAlias $failure',
+                      'Assert-PreparedLabContainment $boundaryScriptAlias $boundaryAlias',
+                      "($boundaryLab+'\\')", "($boundaryLab+'-sibling\\file.json')",
+                      "'Lab containment accepted a non-descendant' $failure",
+                      'Assert-PreparedShortcutContainment $boundaryExe $boundaryAppAlias',
+                      "(Join-Path $boundaryApp 'Other.exe')", "(Join-Path $boundaryApp 'markauto.exe')",
+                      "'Shortcut containment accepted an escaped or non-exact executable' 'Installed shortcut escaped the exact app tree'"):
+            self.assertIn(token,control)
+        reject=fixture.split('function Reject(',1)[1].split('function Get-PreparedNativeCode',1)[0]
+        self.assertIn('$_.Exception.Message -cne $ExpectedFailure',reject)
 
     def test_original_run_context_is_not_relabelled_as_current_build(self):
         source=(ROOT/'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
