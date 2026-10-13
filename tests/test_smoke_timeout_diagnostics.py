@@ -360,6 +360,194 @@ time.sleep(60)
         self.assertEqual(fixture.manager._quiesced_walk_forward, (job_id, REFERENCE))
 
 
+class WindowsSmokeWorkerWaitTests(unittest.TestCase):
+    """Owned-handle completion protocol; no PID-based termination or gate changes."""
+    def kernel(self, *, member=True, child_created=20, waits=(0,)):
+        import ctypes
+        from ctypes import wintypes as w
+        from unittest.mock import Mock
+        kernel=SimpleNamespace(OpenProcess=Mock(return_value=200),CloseHandle=Mock(),
+            IsProcessInJob=Mock(),GetProcessTimes=Mock(),WaitForSingleObject=Mock(side_effect=list(waits)))
+        def belongs(process,job,result):
+            ctypes.cast(result,ctypes.POINTER(w.BOOL)).contents.value=member
+            return True
+        def times(handle,created,exited,user,system):
+            value=ctypes.cast(created,ctypes.POINTER(w.FILETIME)).contents
+            value.dwHighDateTime=0;value.dwLowDateTime=10 if handle==100 else child_created
+            return True
+        kernel.IsProcessInJob.side_effect=belongs
+        kernel.GetProcessTimes.side_effect=times
+        return kernel
+
+    def test_retained_member_is_waited_and_closed_using_remaining_reserve(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel()
+        workers=_WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        try:
+            with patch('tests.smoke_timeout_diagnostics.time.monotonic',return_value=103):
+                workers.wait(106)
+            kernel.OpenProcess.assert_called_once_with(0x1000|0x100000,False,123)
+            kernel.IsProcessInJob.assert_called_once()
+            kernel.WaitForSingleObject.assert_called_once_with(200,3000)
+            self.assertFalse(hasattr(kernel,'TerminateProcess'))
+        finally:workers.close()
+        kernel.CloseHandle.assert_called_once_with(200)
+
+    def test_unrelated_or_older_process_identity_is_refused_without_termination(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        for member,created in ((False,20),(True,9)):
+            with self.subTest(member=member,created=created):
+                kernel=self.kernel(member=member,child_created=created)
+                with self.assertRaisesRegex(RuntimeSafetyError,'ownership is not proven'):
+                    _WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+                kernel.CloseHandle.assert_called_once_with(200)
+                kernel.WaitForSingleObject.assert_not_called()
+
+    def test_inaccessible_recorded_process_is_not_adopted_as_exited(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel();kernel.OpenProcess.return_value=None
+        with self.assertRaisesRegex(RuntimeSafetyError,'Cannot retain'):
+            _WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        kernel.IsProcessInJob.assert_not_called();kernel.WaitForSingleObject.assert_not_called()
+
+    def test_exhausted_reserve_only_polls_and_cannot_extend_cleanup(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel(waits=(0x102,))
+        workers=_WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        try:
+            with patch('tests.smoke_timeout_diagnostics.time.monotonic',return_value=107):
+                with self.assertRaisesRegex(RuntimeSafetyError,'unchanged cleanup deadline'):workers.wait(106)
+            kernel.WaitForSingleObject.assert_called_once_with(200,0)
+        finally:workers.close()
+
+    def test_failed_native_wait_never_grants_completion(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel(waits=(0xffffffff,))
+        workers=_WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        try:
+            with patch('tests.smoke_timeout_diagnostics.time.monotonic',return_value=103):
+                with self.assertRaisesRegex(RuntimeSafetyError,'Cannot verify'):workers.wait(106)
+        finally:workers.close()
+
+
+    def test_null_zero_and_invalid_job_handles_fail_before_membership(self):
+        import ctypes
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        for value in (None,0,-1,ctypes.c_void_p(-1).value):
+            with self.subTest(handle=value):
+                kernel=self.kernel()
+                with self.assertRaisesRegex(RuntimeSafetyError,'valid private'):
+                    _WindowsSmokeWorkers(SimpleNamespace(handle=value),SimpleNamespace(_handle=100),[123],kernel)
+                kernel.OpenProcess.assert_not_called()
+                kernel.IsProcessInJob.assert_not_called()
+
+    def test_close_false_attempts_all_and_reports_only_safe_counts(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel();workers=_WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        workers.handles=[200,201,202];kernel.CloseHandle.side_effect=[False,True,False]
+        with self.assertRaisesRegex(RuntimeSafetyError,'cleanup could not be verified') as failure:workers.close()
+        self.assertEqual([call.args[0] for call in kernel.CloseHandle.call_args_list],[200,201,202])
+        self.assertEqual(failure.exception.cleanup_failures,{'native_false':2,'raised_close':0})
+        self.assertEqual(workers.handles,[200,202])
+
+    def test_close_exception_attempts_remaining_handles_and_redacts_payload(self):
+        from tests.smoke_timeout_diagnostics import _WindowsSmokeWorkers
+        kernel=self.kernel();workers=_WindowsSmokeWorkers(SimpleNamespace(handle=300),SimpleNamespace(_handle=100),[123],kernel)
+        workers.handles=[200,201,202];kernel.CloseHandle.side_effect=[RuntimeError('DO_NOT_RETAIN'),False,True]
+        with self.assertRaisesRegex(RuntimeSafetyError,'cleanup could not be verified') as failure:workers.close()
+        self.assertEqual([call.args[0] for call in kernel.CloseHandle.call_args_list],[200,201,202])
+        self.assertEqual(failure.exception.cleanup_failures,{'native_false':1,'raised_close':1})
+        self.assertNotIn('DO_NOT_RETAIN',str(failure.exception))
+        self.assertEqual(workers.handles,[200,201])
+
+    def accounting_kernel(self, clock, *, metadata_step=0, terminate_step=0, query_step=0, wait_step=0):
+        from unittest.mock import Mock
+        kernel=self.kernel()
+        kernel.TerminateJobObject=Mock()
+        kernel.QueryInformationJobObject=Mock()
+        original_times=kernel.GetProcessTimes.side_effect
+        def times(*args):
+            value=original_times(*args);clock[0]+=metadata_step;return value
+        def terminate(*args):
+            clock[0]+=terminate_step;return True
+        def query(handle,kind,pointer,*args):
+            pointer._obj.ActiveProcesses=0;clock[0]+=query_step;return True
+        def wait(*args):
+            clock[0]+=wait_step;return 0
+        kernel.GetProcessTimes.side_effect=times
+        kernel.TerminateJobObject.side_effect=terminate
+        kernel.QueryInformationJobObject.side_effect=query
+        kernel.WaitForSingleObject.side_effect=wait
+        return kernel
+
+    def test_entire_retention_job_and_wait_sequence_shares_one_six_second_deadline(self):
+        from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
+        from quantlab.desktop_runtime import _WindowsProcessTree
+        clock=[100.0]
+        kernel=self.accounting_kernel(clock,metadata_step=2,terminate_step=.5,query_step=.5,wait_step=.5)
+        tree=object.__new__(_WindowsProcessTree);tree.handle=300;tree.kernel=kernel
+        with patch('tests.smoke_timeout_diagnostics.time.monotonic',side_effect=lambda:clock[0]), \
+                patch('quantlab.desktop_runtime.time.monotonic',side_effect=lambda:clock[0]):
+            _stop_windows_smoke_workers(tree,SimpleNamespace(_handle=100),[123],kernel=kernel)
+        kernel.TerminateJobObject.assert_called_once_with(300,1)
+        self.assertEqual(kernel.QueryInformationJobObject.call_count,1)
+        milliseconds=kernel.WaitForSingleObject.call_args.args[1]
+        self.assertLessEqual(milliseconds,1000)
+        self.assertGreaterEqual(milliseconds,0)
+        self.assertEqual(clock[0],105.5)
+        kernel.CloseHandle.assert_called_once_with(200)
+
+    def test_slow_retention_still_drains_job_without_resetting_reserve(self):
+        from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
+        from quantlab.desktop_runtime import _WindowsProcessTree
+        clock=[100.0]
+        kernel=self.accounting_kernel(clock,metadata_step=4)
+        tree=object.__new__(_WindowsProcessTree);tree.handle=300;tree.kernel=kernel
+        with patch('tests.smoke_timeout_diagnostics.time.monotonic',side_effect=lambda:clock[0]), \
+                patch('quantlab.desktop_runtime.time.monotonic',side_effect=lambda:clock[0]):
+            with self.assertRaisesRegex(RuntimeSafetyError,'unchanged reserve') as failure:
+                _stop_windows_smoke_workers(tree,SimpleNamespace(_handle=100),[123],kernel=kernel)
+        kernel.TerminateJobObject.assert_called_once_with(300,1)
+        self.assertEqual(kernel.QueryInformationJobObject.call_count,1)
+        kernel.WaitForSingleObject.assert_not_called()
+        self.assertIn('retention',failure.exception.cleanup_failures)
+        self.assertIn('job_drain',failure.exception.cleanup_failures)
+        kernel.CloseHandle.assert_called_once_with(200)
+
+    def test_retention_refusal_attempts_owned_job_drain_and_reports_failure(self):
+        from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
+        from quantlab.desktop_runtime import _WindowsProcessTree
+        clock=[100.0];kernel=self.accounting_kernel(clock);kernel.OpenProcess.return_value=None
+        tree=object.__new__(_WindowsProcessTree);tree.handle=300;tree.kernel=kernel
+        with patch('tests.smoke_timeout_diagnostics.time.monotonic',side_effect=lambda:clock[0]), \
+                patch('quantlab.desktop_runtime.time.monotonic',side_effect=lambda:clock[0]):
+            with self.assertRaisesRegex(RuntimeSafetyError,'unchanged reserve') as failure:
+                _stop_windows_smoke_workers(tree,SimpleNamespace(_handle=100),[123],kernel=kernel)
+        self.assertEqual(failure.exception.cleanup_failures,{'retention':1})
+        kernel.TerminateJobObject.assert_called_once_with(300,1)
+        kernel.QueryInformationJobObject.assert_called_once()
+        kernel.WaitForSingleObject.assert_not_called()
+
+    def test_coordinator_propagates_aggregate_close_failure(self):
+        from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
+        from quantlab.desktop_runtime import _WindowsProcessTree
+        clock=[100.0];kernel=self.accounting_kernel(clock);kernel.CloseHandle.return_value=False
+        tree=object.__new__(_WindowsProcessTree);tree.handle=300;tree.kernel=kernel
+        with patch('tests.smoke_timeout_diagnostics.time.monotonic',side_effect=lambda:clock[0]), \
+                patch('quantlab.desktop_runtime.time.monotonic',side_effect=lambda:clock[0]):
+            with self.assertRaisesRegex(RuntimeSafetyError,'unchanged reserve') as failure:
+                _stop_windows_smoke_workers(tree,SimpleNamespace(_handle=100),[123],kernel=kernel)
+        self.assertEqual(failure.exception.cleanup_failures,{'close_native_false':1})
+
+    def test_native_tree_cannot_extend_deadline_when_caller_passes_future_budget(self):
+        from quantlab.desktop_runtime import _WindowsProcessTree
+        clock=[100.0];kernel=self.accounting_kernel(clock,terminate_step=7)
+        tree=object.__new__(_WindowsProcessTree);tree.handle=300;tree.kernel=kernel
+        with patch('quantlab.desktop_runtime.time.monotonic',side_effect=lambda:clock[0]):
+            with self.assertRaisesRegex(RuntimeSafetyError,'unchanged deadline'):tree.stop_and_join(deadline=10000)
+        kernel.TerminateJobObject.assert_called_once_with(300,1)
+
+
 class WorkerTimingTests(unittest.TestCase):
     def test_active_phase_and_failed_call_are_recorded_without_exception_text(self):
         timings = WorkerTimings()

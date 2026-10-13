@@ -884,8 +884,16 @@ class _WindowsProcessTree:
             if child:
                 k.CloseHandle(child)
 
-    def stop_and_join(self):
-        """Keep the Job handle until Windows confirms all descendants exited."""
+    def stop_and_join(self, *, deadline=None):
+        """Keep the Job handle; an earlier caller deadline shares the six-second reserve."""
+        import math
+        now = time.monotonic()
+        if deadline is None:
+            deadline = now + 6
+        elif (type(deadline) not in (int, float) or not math.isfinite(deadline)):
+            raise RuntimeSafetyError('Invalid worker cleanup deadline')
+        else:
+            deadline = min(deadline, now + 6)
         from ctypes import wintypes as w
         class Accounting(ctypes.Structure):
             _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime','TotalKernelTime','ThisPeriodTotalUserTime','ThisPeriodTotalKernelTime')] + [(name,w.DWORD) for name in ('TotalPageFaultCount','TotalProcesses','ActiveProcesses','TotalTerminatedProcesses')]
@@ -894,11 +902,11 @@ class _WindowsProcessTree:
         k.QueryInformationJobObject.argtypes = [w.HANDLE,ctypes.c_int,ctypes.c_void_p,w.DWORD,ctypes.c_void_p]
         if not self.handle or not k.TerminateJobObject(self.handle,1):
             raise RuntimeSafetyError('Cannot stop worker process tree')
-        deadline = time.monotonic()+6
         while True:
             info = Accounting()
             if not k.QueryInformationJobObject(self.handle,1,ctypes.byref(info),ctypes.sizeof(info),None):
                 raise RuntimeSafetyError('Cannot verify worker process tree')
+            if time.monotonic() > deadline: raise RuntimeSafetyError('Worker cleanup exceeded unchanged deadline')
             if info.ActiveProcesses == 0: return
             if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active')
             time.sleep(.02)
