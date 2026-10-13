@@ -23,8 +23,10 @@ jobs:
           - {os: ubuntu-latest, python: '3.11', group: all}
           - {os: ubuntu-latest, python: '3.12', group: all}
           - {os: windows-latest, python: '3.11', group: core, shard: desktop}
+          - {os: windows-latest, python: '3.11', group: core, shard: paper}
           - {os: windows-latest, python: '3.11', group: core, shard: remaining}
           - {os: windows-latest, python: '3.12', group: core, shard: desktop}
+          - {os: windows-latest, python: '3.12', group: core, shard: paper}
           - {os: windows-latest, python: '3.12', group: core, shard: remaining}
           - {os: windows-latest, python: '3.11', group: research}
           - {os: windows-latest, python: '3.12', group: research}
