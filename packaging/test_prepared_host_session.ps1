@@ -10,6 +10,96 @@ function Reject([scriptblock]$Action,[string]$Message,[string]$ExpectedFailure) 
   Require $rejected $Message
 }
 
+function Reject-PreparedHashIO([scriptblock]$Action, [int]$ExpectedCode, [string]$Message) {
+  $rejected=$false
+  try { & $Action } catch {
+    # CLR method invocation wraps the concrete filesystem exception.
+    $exception=$_.Exception.GetBaseException()
+    $native=$null; $allowed=$false
+    if ($exception -is [ComponentModel.Win32Exception]) {
+      $native=$exception.NativeErrorCode; $allowed=$true
+    } elseif (($exception.HResult -band 0xffff0000) -eq 0x80070000) {
+      $native=$exception.HResult -band 0xffff
+      $allowed=($ExpectedCode -eq 2 -and $exception -is [IO.FileNotFoundException]) -or
+               ($ExpectedCode -eq 32 -and $exception -is [IO.IOException])
+    }
+    if (-not $allowed -or $native -ne $ExpectedCode) { throw }
+    $rejected=$true
+  }
+  Require $rejected $Message
+}
+
+function Test-PreparedKitIntegrityGuard([string]$Root, [string]$SourcePath) {
+  $sourceTokens=$null; $sourceErrors=$null
+  $sourceAst=[Management.Automation.Language.Parser]::ParseFile($SourcePath,[ref]$sourceTokens,[ref]$sourceErrors)
+  Require ($sourceErrors.Count -eq 0) 'Real kit-integrity source parse failed'
+  $loops=@($sourceAst.FindAll({param($node)
+    $node -is [Management.Automation.Language.ForEachStatementAst] -and
+    $node.Condition.Extent.Text -ceq '$kit.files_sha256.PSObject.Properties'
+  },$true))
+  Require ($loops.Count -eq 1) 'Real kit-integrity loop not unique'
+  $code=[scriptblock]::Create($loops[0].Extent.Text)
+  $file=Join-Path $Root 'native-hash-control.bin'
+  [IO.File]::WriteAllBytes($file,[byte[]](0,1,2,3,254,255))
+  $before=[IO.File]::ReadAllBytes($file)
+  # This child scope cannot leak the poison command into the remaining fixture.
+  & {
+    param($KitRoot,$Code,$File,$OriginalBytes)
+    function Get-FileHash { throw 'Module-dependent hash command was invoked' }
+    $expected='7ea646958715ed687aa9ac2f5d785feb1a93411f4f25fdd6c7fcc6ab07fdf0e3'
+    $kit=@{files_sha256=[pscustomobject]@{'native-hash-control.bin'=$expected}}
+    & $Code
+    Require ((Get-PreparedFileSha256 $File) -ceq $expected) 'Known SHA256 control mismatch'
+    # Every digest decision uses real SHA256 over real file bytes.
+    [IO.File]::WriteAllBytes($File,[byte[]](9,8,7))
+    Reject { & $Code } 'Changed kit bytes were admitted' 'Kit file digest changed'
+    [IO.File]::WriteAllBytes($File,$OriginalBytes)
+    $kit.files_sha256.'native-hash-control.bin'='INVALID'
+    Reject { & $Code } 'Malformed kit digest was admitted' 'Kit file digest changed'
+    $kit.files_sha256=[pscustomobject]@{'../outside.bin'=$expected}
+    Reject { & $Code } 'Escaped kit path was admitted' 'Kit entry escapes its root'
+    $kit.files_sha256=[pscustomobject]@{'missing.bin'=$expected}
+    Reject-PreparedHashIO { Get-PreparedFileSha256 (Join-Path $KitRoot 'missing.bin') } 2 'Missing helper input did not fail with native error 2'
+    Reject-PreparedHashIO { & $Code } 2 'Missing kit member did not fail with native error 2'
+    $kit.files_sha256=[pscustomobject]@{'native-hash-control.bin'=$expected}
+    $exclusive=[IO.File]::Open($File,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
+    try {
+      Reject-PreparedHashIO { Get-PreparedFileSha256 $File } 32 'Read-denied helper input did not fail with native error 32'
+      Reject-PreparedHashIO { & $Code } 32 'Read-denied kit member did not fail with native error 32'
+    } finally { $exclusive.Dispose() }
+    & $Code
+    # Successful return releases the actual file lease.
+    $writer=[IO.File]::Open($File,[IO.FileMode]::Open,[IO.FileAccess]::Write,[IO.FileShare]::None)
+    $writer.Dispose()
+    # Fault injection changes ONLY the factory in the real production helper
+    # body. Its real stream open, ComputeHash call and both finally blocks run.
+    $body=(Get-Command Get-PreparedFileSha256 -CommandType Function).ScriptBlock.ToString()
+    $factory='[Security.Cryptography.SHA256]::Create()'
+    Require ([regex]::Matches($body,[regex]::Escape($factory)).Count -eq 1) 'Hash factory seam not unique'
+    $algorithm=New-Object PSObject -Property @{ComputeCalls=0;DisposeCalls=0;OpenStreamSeen=$false;CapturedStream=$null}
+    $algorithm | Add-Member -MemberType ScriptMethod -Name ComputeHash -Value {
+      param($inputStream)
+      $this.ComputeCalls++; $this.OpenStreamSeen=$inputStream.get_CanRead(); $this.CapturedStream=$inputStream
+      throw [InvalidOperationException]::new('Injected post-open hash failure')
+    }
+    $algorithm | Add-Member -MemberType ScriptMethod -Name Dispose -Value { $this.DisposeCalls++ }
+    $injected=[scriptblock]::Create($body.Replace($factory,'$algorithm'))
+    $failed=$false
+    try { & $injected $File } catch {
+      $exception=$_.Exception.GetBaseException()
+      Require ($exception -is [InvalidOperationException] -and $exception.Message -ceq 'Injected post-open hash failure') 'Unexpected hashing fault accepted'
+      $failed=$true
+    }
+    Require ($failed -and $algorithm.ComputeCalls -eq 1 -and $algorithm.OpenStreamSeen) 'Hash fault did not occur after actual stream open'
+    Require ($algorithm.DisposeCalls -eq 1) 'Algorithm disposal missing after hashing fault'
+    Require (-not $algorithm.CapturedStream.get_CanRead()) 'Real stream remained open after hashing fault'
+    $writer=[IO.File]::Open($File,[IO.FileMode]::Open,[IO.FileAccess]::Write,[IO.FileShare]::None)
+    $writer.Dispose()
+    & $Code
+  } $Root $code $file $before
+  Require ([Convert]::ToBase64String([IO.File]::ReadAllBytes($file)) -ceq [Convert]::ToBase64String($before)) 'Guard controls changed original fixture bytes'
+}
+
 function Get-PreparedNativeCode($Failure) {
   $exception=$Failure.Exception
   while ($exception) {
@@ -378,6 +468,11 @@ public static class MarkAutoPreparedStreamFixture {
   [Console]::Out.WriteLine('{"stage":"preparation_controls","status":"passed"}')
 
   # Explicit new-baseline contract controls. All paths belong to this CI scratch tree.
+  $controllerStage='kit_integrity_guard_controls'
+  $hashRoot=Join-Path $fixture 'kit-integrity-guard'; [void][IO.Directory]::CreateDirectory($hashRoot)
+  Test-PreparedKitIntegrityGuard $hashRoot (Join-Path $PSScriptRoot 'prepared_host_session.ps1')
+  [Console]::Out.WriteLine('{"stage":"kit_integrity_guard_controls","status":"passed","scope":"real-production-loop-no-install"}')
+
   $controllerStage='current_baseline_controls'
   $current=Join-Path $fixture 'current-state'; [void][IO.Directory]::CreateDirectory($current)
   foreach ($name in @('cache','control-v1','credentials','logs','state-v1','state-v1/market_cache')) { [void][IO.Directory]::CreateDirectory((Join-Path $current $name)) }

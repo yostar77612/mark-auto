@@ -1,6 +1,35 @@
 from pathlib import Path
 import hashlib,re,unittest
 ROOT=Path(__file__).resolve().parents[1]
+PREPARED_HASH_HELPER = """function Get-PreparedFileSha256([string]$Path) {
+  # Keep SHA256 independent of inherited cross-edition PowerShell modules.
+  # Callers retain their existing path, manifest and alias admission checks.
+  $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+    $hash=[Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-','').ToLowerInvariant() }
+    finally { $hash.Dispose() }
+  } finally { $stream.Dispose() }
+}
+
+"""
+
+
+def reverse_prepared_hash_fix(source):
+    # Reverse only this exact reviewed insertion and the five known call sites.
+    if source.count(PREPARED_HASH_HELPER) != 1:
+        raise AssertionError("Reviewed hash helper insertion differs")
+    source = source.replace(PREPARED_HASH_HELPER, "", 1)
+    for operand, count in (
+            ("$path", 1), ("$PSCommandPath", 2), ("$source", 1),
+            ("(Join-Path $data 'installer-preservation-test.txt')", 1)):
+        fixed = "(Get-PreparedFileSha256 " + operand + ")"
+        if source.count(fixed) != count:
+            raise AssertionError("Reviewed prepared hash call count differs")
+        original = "(Get-FileHash -LiteralPath " + operand + " -Algorithm SHA256).Hash.ToLowerInvariant()"
+        source = source.replace(fixed, original)
+    return source
+
 class WorkerFailureEvidenceContracts(unittest.TestCase):
     def test_supervisor_guards_are_byte_identical_after_removing_only_diagnostics(self):
         helper=(ROOT/"packaging/acceptance_process.ps1").read_text(encoding="utf-8-sig")
@@ -19,9 +48,27 @@ class WorkerFailureEvidenceContracts(unittest.TestCase):
         begin=source.index("} catch {\n  try { Write-AcceptanceWorkerFailure")
         end=source.index("\nfinally {",begin)
         source=source[:begin]+"} catch { $record.reason='Prepared-host phase preflight, integrity, UI or owned-process assertion failed'; throw }"+source[end:]
+        source=reverse_prepared_hash_fix(source)
         original_bytes=b"\xef\xbb\xbf"+source.replace("\n","\r\n").encode()
         self.assertEqual(hashlib.sha256(original_bytes).hexdigest(),"2b338c9d43e05d38c07a5a7cc2d1d07156939119c3a0e8cd8f9d026ed2c4257f")
         self.assertTrue((ROOT/"packaging/prepared_host_session.ps1").read_bytes().startswith(b"\xef\xbb\xbf"))
+    def test_exact_reversal_still_rejects_an_unrelated_weakened_freshness_guard(self):
+        from unittest.mock import patch
+        original = Path.read_text
+        needle = "$capture -lt $Now.AddMinutes(-30)"
+        source = (ROOT / "packaging/prepared_host_session.ps1").read_text(encoding="utf-8-sig")
+        self.assertEqual(source.count(needle), 1)
+        def weakened(path, *args, **kwargs):
+            value = original(path, *args, **kwargs)
+            if path == ROOT / "packaging/prepared_host_session.ps1":
+                value = value.replace(needle, "$capture -lt $Now.AddMinutes(-300)", 1)
+            return value
+        # Invoke the real historical invariant; the new reversal cannot mask
+        # changes outside its precisely enumerated hash implementation.
+        with patch.object(Path, "read_text", new=weakened):
+            with self.assertRaises(AssertionError):
+                self.test_prepared_state_and_freshness_guards_are_unchanged()
+
     def test_writer_never_serializes_errorrecord_payload(self):
         source=(ROOT/"packaging/acceptance_process.ps1").read_text()
         writer=source.split("# Windows-only",1)[0]
