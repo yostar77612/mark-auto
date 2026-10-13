@@ -27,6 +27,7 @@ import threading
 import time
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -100,12 +101,75 @@ def _write(folder, name, value):
     atomic_write(folder / name, json.dumps(value, sort_keys=True).encode(), durable=True)
 
 
+_FIXTURE_JSON_LIMIT = 16384
+
+
+class _FixtureRecordAbsent(FileNotFoundError):
+    """Only initial open absence; read/metadata/close failures stay fatal."""
+
+
+def _read_fixture_json(path, *, kernel=None):
+    """Bounded immutable fixture snapshot; coexist with a rename's DELETE handle."""
+    path = Path(path)
+    if sys.platform != 'win32' and kernel is None:
+        try:
+            stream = path.open('rb')
+        except FileNotFoundError as error:
+            raise _FixtureRecordAbsent(*error.args) from None
+        with stream:
+            raw = stream.read(_FIXTURE_JSON_LIMIT + 1)
+        if len(raw) > _FIXTURE_JSON_LIMIT:
+            raise ValueError('fixture JSON exceeds bound')
+        return json.loads(raw.decode('utf-8'))
+    from ctypes import wintypes as w
+    class Information(ctypes.Structure):
+        _fields_ = [('attributes', w.DWORD), ('created', w.FILETIME),
+                    ('accessed', w.FILETIME), ('written', w.FILETIME),
+                    ('volume', w.DWORD), ('size_high', w.DWORD), ('size_low', w.DWORD),
+                    ('links', w.DWORD), ('index_high', w.DWORD), ('index_low', w.DWORD)]
+    k = _kernel() if kernel is None else kernel
+    k.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE]
+    k.CreateFileW.restype = w.HANDLE
+    k.GetFileInformationByHandle.argtypes = [w.HANDLE, ctypes.POINTER(Information)]
+    k.GetFileInformationByHandle.restype = w.BOOL
+    k.ReadFile.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
+    k.ReadFile.restype = w.BOOL
+    # No FILE_SHARE_WRITE: atomically published fixture records are immutable.
+    handle = k.CreateFileW(str(path), 0x80000000, 0x1 | 0x4, None, 3, 0x00200000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        error = ctypes.get_last_error()
+        if error in (2, 3):
+            raise _FixtureRecordAbsent('fixture record not yet published') from None
+        raise ctypes.WinError(error)
+    try:
+        info = Information()
+        if not k.GetFileInformationByHandle(handle, ctypes.byref(info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if info.attributes & (0x10 | 0x400):
+            raise ValueError('fixture JSON requires a regular non-reparse file')
+        if (info.size_high << 32) | info.size_low > _FIXTURE_JSON_LIMIT:
+            raise ValueError('fixture JSON exceeds bound')
+        buffer = ctypes.create_string_buffer(_FIXTURE_JSON_LIMIT + 1)
+        received = w.DWORD()
+        if not k.ReadFile(handle, buffer, len(buffer), ctypes.byref(received), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        raw = buffer.raw[:received.value]
+        if len(raw) > _FIXTURE_JSON_LIMIT:
+            raise ValueError('fixture JSON exceeds bound')
+        return json.loads(raw.decode('utf-8'))
+    finally:
+        if not k.CloseHandle(handle):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+
 def _wait_file(folder, name, deadline):
     while time.monotonic() < deadline:
         if (folder / 'cleanup-request.json').exists():
             raise RuntimeError('fixture cleanup requested')
-        if (folder / name).is_file():
-            return json.loads((folder / name).read_text())
+        try:
+            return _read_fixture_json(folder / name)
+        except _FixtureRecordAbsent:
+            pass
         time.sleep(.01)
     raise TimeoutError(name)
 
@@ -713,6 +777,104 @@ class TerminationCleanupRegressionTests(unittest.TestCase):
         self.assertEqual(kernel.waits, [(original, 0), (original, 0)])
 
 
+
+class FixtureJsonSnapshotTests(unittest.TestCase):
+    def fake_kernel(self, raw=b'{}', *, size=None):
+        from unittest.mock import Mock
+        kernel=SimpleNamespace(CreateFileW=Mock(return_value=100),GetFileInformationByHandle=Mock(),
+            ReadFile=Mock(),CloseHandle=Mock(return_value=True))
+        def info(handle,pointer):
+            pointer._obj.attributes=0x80;pointer._obj.size_high=0
+            pointer._obj.size_low=len(raw) if size is None else size
+            return True
+        def read(handle,buffer,capacity,received,overlapped):
+            ctypes.memmove(buffer,raw,len(raw));received._obj.value=len(raw);return True
+        kernel.GetFileInformationByHandle.side_effect=info
+        kernel.ReadFile.side_effect=read
+        return kernel
+
+    @staticmethod
+    def native_error(code):
+        error=PermissionError(13,'synthetic native denial') if code in (5,32) else OSError('synthetic native failure')
+        error.winerror=code
+        return error
+
+    @unittest.skipUnless(sys.platform=='win32','Native Windows DELETE-share control')
+    def test_delete_holder_blocks_ordinary_read_but_snapshot_succeeds_while_open(self):
+        from ctypes import wintypes as w
+        with tempfile.TemporaryDirectory(prefix='TEST_ONLY_delete_share_') as temporary:
+            folder=Path(temporary);value={'source_handle':123}
+            _write(folder,'grandchild.handle.json',value);path=folder/'grandchild.handle.json'
+            kernel=_kernel()
+            kernel.CreateFileW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,ctypes.c_void_p,w.DWORD,w.DWORD,w.HANDLE]
+            kernel.CreateFileW.restype=w.HANDLE
+            holder=kernel.CreateFileW(str(path),0x10000,0x7,None,3,0x80,None)
+            self.assertNotEqual(holder,ctypes.c_void_p(-1).value)
+            try:
+                with self.assertRaises(PermissionError) as ordinary:path.read_text(encoding='utf-8')
+                self.assertEqual(ordinary.exception.errno,13)
+                self.assertEqual(_read_fixture_json(path),value)
+                # Compatible read completed while the original DELETE owner remained open.
+                self.assertEqual(_read_fixture_json(path),value)
+            finally:_check(kernel.CloseHandle(holder),'close DELETE control handle')
+
+    @unittest.skipUnless(sys.platform=='win32','Native Windows exclusive-read control')
+    def test_exclusive_read_denial_is_not_swallowed(self):
+        from ctypes import wintypes as w
+        with tempfile.TemporaryDirectory(prefix='TEST_ONLY_exclusive_share_') as temporary:
+            folder=Path(temporary);_write(folder,'held.json',{});path=folder/'held.json'
+            kernel=_kernel()
+            kernel.CreateFileW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,ctypes.c_void_p,w.DWORD,w.DWORD,w.HANDLE]
+            kernel.CreateFileW.restype=w.HANDLE
+            holder=kernel.CreateFileW(str(path),0x80000000,0,None,3,0x80,None)
+            self.assertNotEqual(holder,ctypes.c_void_p(-1).value)
+            try:
+                with self.assertRaises(PermissionError) as failure:_read_fixture_json(path)
+                self.assertEqual(failure.exception.winerror,32)
+            finally:_check(kernel.CloseHandle(holder),'close exclusive control handle')
+
+    def test_native_access_denied_is_fatal_not_absence(self):
+        kernel=self.fake_kernel();kernel.CreateFileW.return_value=ctypes.c_void_p(-1).value
+        with patch.object(ctypes,'get_last_error',return_value=5,create=True), \
+                patch.object(ctypes,'WinError',side_effect=self.native_error,create=True):
+            with self.assertRaises(PermissionError) as failure:_read_fixture_json('fixture.json',kernel=kernel)
+        self.assertEqual(failure.exception.winerror,5)
+        self.assertNotIsInstance(failure.exception,_FixtureRecordAbsent)
+        kernel.CloseHandle.assert_not_called()
+
+    def test_initial_missing_record_is_distinct_from_other_failures(self):
+        kernel=self.fake_kernel();kernel.CreateFileW.return_value=ctypes.c_void_p(-1).value
+        with patch.object(ctypes,'get_last_error',return_value=2,create=True):
+            with self.assertRaises(_FixtureRecordAbsent):_read_fixture_json('fixture.json',kernel=kernel)
+        kernel.ReadFile.assert_not_called();kernel.CloseHandle.assert_not_called()
+
+    def test_invalid_json_closes_handle_and_preserves_failure(self):
+        kernel=self.fake_kernel(b'{invalid')
+        with self.assertRaises(json.JSONDecodeError):_read_fixture_json('fixture.json',kernel=kernel)
+        kernel.CloseHandle.assert_called_once_with(100)
+
+    def test_oversize_record_is_bounded_and_handle_is_closed(self):
+        kernel=self.fake_kernel(size=_FIXTURE_JSON_LIMIT+1)
+        with self.assertRaisesRegex(ValueError,'exceeds bound'):_read_fixture_json('fixture.json',kernel=kernel)
+        kernel.ReadFile.assert_not_called();kernel.CloseHandle.assert_called_once_with(100)
+
+    def test_close_failure_is_fatal_even_when_json_was_valid(self):
+        kernel=self.fake_kernel();kernel.CloseHandle.return_value=False
+        with patch.object(ctypes,'get_last_error',return_value=6,create=True), \
+                patch.object(ctypes,'WinError',side_effect=self.native_error,create=True):
+            with self.assertRaises(OSError) as failure:_read_fixture_json('fixture.json',kernel=kernel)
+        self.assertEqual(failure.exception.winerror,6)
+        kernel.CloseHandle.assert_called_once_with(100)
+
+    def test_poll_does_not_turn_acl_denial_or_late_missing_error_into_readiness(self):
+        with tempfile.TemporaryDirectory(prefix='TEST_ONLY_poll_failure_') as temporary:
+            for failure in (self.native_error(5),FileNotFoundError('late read/close error')):
+                with self.subTest(kind=type(failure).__name__),patch(
+                        __name__+'._read_fixture_json',side_effect=failure):
+                    with self.assertRaises(type(failure)):
+                        _wait_file(Path(temporary),'not-yet-published.json',time.monotonic()+1)
+
+
 @unittest.skipUnless(sys.platform == 'win32', 'Windows-only prototype; native verification deferred')
 class WindowsRecoveryFeasibilityTests(unittest.TestCase):
     @classmethod
@@ -767,8 +929,12 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
             def collect():
                 for role in ('grandchild',):
                     path = folder / (role + '.handle.json')
-                    if role not in handles and path.is_file():
-                        source = json.loads(path.read_text())['source_handle']
+                    if role not in handles:
+                        try:
+                            value = _read_fixture_json(path)
+                        except _FixtureRecordAbsent:
+                            continue
+                        source = value['source_handle']
                         if type(source) is not int or source <= 0:
                             raise ValueError('invalid source process handle')
                         duplicate = w.HANDLE()
@@ -845,7 +1011,7 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                 if scenario == 'normal':
                     _write(folder, 'allow-quiescence.json', {'test_only': True})
                     until(lambda: (folder / 'quiescence-observed.json').is_file(), 'zero active')
-                    self.assertEqual(json.loads((folder / 'quiescence-observed.json').read_text()),
+                    self.assertEqual(_read_fixture_json(folder / 'quiescence-observed.json'),
                                      {'active_processes': 0})
                     for role in ('worker', 'grandchild'):
                         self.assertEqual(_state(k, handles[role]), WAIT_OBJECT_0)
@@ -853,7 +1019,7 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                     expected_dead.add('helper')
                     _write(folder, 'allow-receipt.json', {'test_only': True})
                     until(lambda: (folder / 'receipt.json').is_file(), 'durable receipt')
-                    receipt = json.loads((folder / 'receipt.json').read_text())
+                    receipt = _read_fixture_json(folder / 'receipt.json')
                     self.assertEqual(receipt, protocol.read_receipt())
                     self.assertEqual(receipt, protocol._receipt(protocol.binding))
                     until(lambda: helper.poll() is not None, 'helper clean exit')

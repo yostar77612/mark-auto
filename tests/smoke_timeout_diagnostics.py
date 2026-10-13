@@ -12,7 +12,7 @@ import time
 import uuid
 from types import SimpleNamespace
 
-from quantlab.desktop_runtime import JobManager, _WindowsProcessTree, _job_worker as _original_job_worker
+from quantlab.desktop_runtime import JobManager, RuntimeSafetyError, _WindowsProcessTree, _job_worker as _original_job_worker
 
 PREFIX = 'SMOKE_DIAGNOSTIC '
 STATUSES = {'passed', 'failed', 'completed', 'running', 'cancelled'}
@@ -361,6 +361,129 @@ class SmokeOutputCapture:
         return self.snapshot('stdout')[0], self.snapshot('stderr')[0]
 
 
+class _WindowsSmokeWorkers:
+    """Retain only current private-job members; never terminate by recorded PID."""
+    def __init__(self, tree, launcher, pids, kernel=None, deadline=None):
+        import ctypes
+        from ctypes import wintypes as w
+        self.kernel = kernel if kernel is not None else ctypes.WinDLL('kernel32', use_last_error=True)
+        self.handles = []
+        job_handle = tree.handle
+        if (type(job_handle) is not int or job_handle <= 0
+                or job_handle == ctypes.c_void_p(-1).value):
+            raise RuntimeSafetyError('A valid private smoke Job handle is required')
+        def budget():
+            if deadline is not None and time.monotonic() >= deadline:
+                raise RuntimeSafetyError('Smoke retention exceeded unchanged cleanup deadline')
+        k = self.kernel
+        k.OpenProcess.argtypes, k.OpenProcess.restype = [w.DWORD, w.BOOL, w.DWORD], w.HANDLE
+        k.CloseHandle.argtypes = [w.HANDLE]
+        k.IsProcessInJob.argtypes, k.IsProcessInJob.restype = [w.HANDLE, w.HANDLE, ctypes.POINTER(w.BOOL)], w.BOOL
+        k.GetProcessTimes.argtypes = [w.HANDLE, *([ctypes.POINTER(w.FILETIME)] * 4)]
+        k.GetProcessTimes.restype = w.BOOL
+        k.WaitForSingleObject.argtypes, k.WaitForSingleObject.restype = [w.HANDLE, w.DWORD], w.DWORD
+        def creation(handle):
+            values = [w.FILETIME() for _ in range(4)]
+            if not k.GetProcessTimes(handle, *[ctypes.byref(value) for value in values]):
+                raise RuntimeSafetyError('Cannot verify smoke process creation identity')
+            return (values[0].dwHighDateTime << 32) | values[0].dwLowDateTime
+        # Popen retains its original creation handle even after the launcher exits.
+        budget()
+        launcher_created = creation(int(launcher._handle))
+        budget()
+        try:
+            for pid in pids:
+                if type(pid) is not int or pid <= 0:
+                    continue
+                budget()
+                handle = k.OpenProcess(0x1000 | 0x100000, False, pid)  # QUERY_LIMITED_INFORMATION | SYNCHRONIZE
+                if not handle:
+                    # Inaccessibility is not evidence of exit or ownership.
+                    raise RuntimeSafetyError('Cannot retain recorded smoke worker')
+                self.handles.append(handle)
+                budget()
+                member = w.BOOL()
+                if (not k.IsProcessInJob(handle, job_handle, ctypes.byref(member))
+                        or not member.value or creation(handle) < launcher_created):
+                    raise RuntimeSafetyError('Recorded smoke worker ownership is not proven')
+                budget()
+        except BaseException:
+            self.close()
+            raise
+
+    def wait(self, deadline):
+        # The job accounting wait and these handle waits share the original reserve.
+        for handle in self.handles:
+            milliseconds = max(0, int((deadline - time.monotonic()) * 1000))
+            result = self.kernel.WaitForSingleObject(handle, milliseconds)
+            if result == 0x102:
+                raise RuntimeSafetyError('Owned smoke worker exceeded unchanged cleanup deadline')
+            if result != 0:
+                raise RuntimeSafetyError('Cannot verify retained smoke worker completion')
+
+    def close(self):
+        remaining = []
+        failures = {'native_false': 0, 'raised_close': 0}
+        for handle in self.handles:
+            try:
+                if not self.kernel.CloseHandle(handle):
+                    failures['native_false'] += 1
+                    remaining.append(handle)
+            except BaseException:
+                failures['raised_close'] += 1
+                remaining.append(handle)
+        self.handles = remaining
+        if remaining:
+            error = RuntimeSafetyError('Retained smoke handle cleanup could not be verified')
+            error.cleanup_failures = failures
+            raise error from None
+
+
+def _stop_windows_smoke_workers(tree, launcher, pids, *, kernel=None):
+    # Retention, termination/accounting, waits and closes share this one reserve.
+    deadline = time.monotonic() + 6
+    workers = None
+    failures = {}
+    try:
+        workers = _WindowsSmokeWorkers(tree, launcher, pids, kernel=kernel, deadline=deadline)
+    except BaseException as error:
+        failures['retention'] = 1
+        details = getattr(error, 'cleanup_failures', {})
+        for key in ('native_false', 'raised_close'):
+            value = details.get(key, 0) if type(details) is dict else 0
+            if type(value) is int and 0 <= value <= 1000000 and value:
+                failures['retention_close_' + key] = value
+    # Always attempt precise owned-job termination/drain, even if retention failed.
+    try:
+        tree.stop_and_join(deadline=deadline)
+    except BaseException:
+        failures['job_drain'] = 1
+    if workers is not None:
+        if not failures:
+            try:
+                workers.wait(deadline)
+            except BaseException:
+                failures['handle_wait'] = 1
+        try:
+            workers.close()
+        except BaseException as error:
+            details = getattr(error, 'cleanup_failures', {})
+            for key in ('native_false', 'raised_close'):
+                value = details.get(key, 0) if type(details) is dict else 0
+                if type(value) is not int or not 0 <= value <= 1000000:
+                    value = 1
+                if value:
+                    failures['close_' + key] = value
+            if not any(key.startswith('close_') for key in failures):
+                failures['close_raised_close'] = 1
+    if time.monotonic() > deadline:
+        failures['deadline'] = 1
+    if failures:
+        error = RuntimeSafetyError('Owned smoke cleanup failed within the unchanged reserve')
+        error.cleanup_failures = failures
+        raise error from None
+
+
 def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can_run,
                       artifact_dir, timeout=40):
     """Retain the original gate; kill/join owned processes before timeout evidence."""
@@ -385,7 +508,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                 if any(process_can_run(pid) for pid in completed_pids
                        if type(pid) is int and pid > 0):
                     if tree is not None:
-                        tree.stop_and_join()
+                        _stop_windows_smoke_workers(tree, process, completed_pids)
                     else:
                         owner = SimpleNamespace(tree=None, _operation='ui_walk_forward_run')
                         for pid in completed_pids:

@@ -123,7 +123,7 @@ def validate_core_reports(reports, *, expected_inventory, head_sha, run_id, run_
             or python_profile not in ('3.11', '3.12')):
         raise ValueError('Invalid expected run/source/profile identity')
     if type(reports) is not list or len(reports) != len(CORE_SHARDS):
-        raise ValueError('Exactly two core reports required')
+        raise ValueError('Exactly ' + str(len(CORE_SHARDS)) + ' core reports required')
     by_shard = {}
     for report in reports:
         if type(report) is not dict or report.get('core_shard') not in CORE_SHARDS:
@@ -238,7 +238,7 @@ def main(argv=None):
         summary['independent_expected_inventory'] = expected_inventory
     write_manifest(args.manifest, summary)
     if summary['successful']:
-        print('Verified exact original core coverage: ' + str(summary['tests_run']) + ' tests across 2 runners')
+        print('Verified exact original core coverage: ' + str(summary['tests_run']) + ' tests across ' + str(len(CORE_SHARDS)) + ' runners')
         return 0
     return 1
 

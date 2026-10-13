@@ -35,13 +35,22 @@ RESEARCH_MODULES = frozenset({
 })
 GROUPS = ("all", "core", "research")
 
-CORE_SHARDS = ('desktop', 'remaining')
-CORE_SHARD_PLAN = 'core-modules-v1'
+# Seven existing paper modules account for 344.37 s of the observed 773.35 s
+# Windows 3.11 remaining run at a9bcdb2. Rebalance whole modules only.
+PAPER_MODULES = frozenset({
+    'test_paper', 'test_paper_diagnostics', 'test_paper_replay',
+    'test_paper_replay_policy', 'test_paper_replay_storage',
+    'test_paper_replay_timeout_diagnostics', 'test_paper_replay_wal',
+})
+CORE_SHARDS = ('desktop', 'paper', 'remaining')
+CORE_SHARD_PLAN = 'core-modules-v2'
 
 
 def core_shard_for_module(module):
     if module in RESEARCH_MODULES:
         raise ValueError('Research modules cannot enter a core shard')
+    if module in PAPER_MODULES:
+        return 'paper'
     return ('desktop' if module.startswith('test_desktop_') or module in
             {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining')
 
