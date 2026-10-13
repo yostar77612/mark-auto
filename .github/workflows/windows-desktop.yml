@@ -29,6 +29,16 @@ jobs:
       - name: Exercise bounded ownership and cancellation with native Windows fixtures
         shell: powershell
         run: ./packaging/test_acceptance_process.ps1
+      - name: Exercise bounded sanitized worker failure evidence
+        shell: powershell
+        run: ./packaging/test_worker_failure_evidence.ps1
+      - name: Preserve bounded worker failure evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: worker-failure-native
+          path: dist/validation/worker-failure-native
+          if-no-files-found: error
       - name: Exercise prepared-host data backup without touching application state
         shell: powershell
         run: ./packaging/test_prepared_host_session.ps1
