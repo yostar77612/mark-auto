@@ -391,7 +391,9 @@ function Test-PreparedNavigation($Owned) {
 # Native regression imports these narrowly scoped routines without running host operations.
 if ($MyInvocation.InvocationName -eq '.') { return }
 $acceptanceClock=[Diagnostics.Stopwatch]::StartNew()
+$global:acceptanceDiagnosticPhase='bootstrap_interactive'
 Assert-PreparedInteractiveUser
+$global:acceptanceDiagnosticPhase='bootstrap_roots'
 foreach ($required in @($KitRoot,$KitSha256,$StateReceipt,$StateReceiptSha256,$SessionRoot)) {
   if ([string]::IsNullOrWhiteSpace($required)) { throw 'Exact kit, pinned state receipt and fresh session directory are required' }
 }
@@ -407,6 +409,7 @@ if ('MarkAutoAcceptanceJob' -as [type]) { throw 'Use a fresh PowerShell process;
 # No process is created before the private supervisor job. OS/storage must respond.
 foreach ($path in @($KitRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path }
 $kit=(Read-PreparedBootstrap (Join-Path $KitRoot 'kit.json') $KitSha256 64KB -Text) | ConvertFrom-Json
+$global:acceptanceDiagnosticPhase='bootstrap_helper_load'
 $helperStreams=New-Object System.Collections.ArrayList
 try {
   foreach ($name in @('packaging/acceptance_process.ps1','packaging/acceptance_process.dll')) {
@@ -418,8 +421,10 @@ try {
   . (Join-Path $KitRoot 'packaging/acceptance_process.ps1')
 } finally { foreach ($locked in $helperStreams) { $locked.Dispose() } }
 if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
+$global:acceptanceDiagnosticPhase='bootstrap_paths'
 foreach ($path in @($KitRoot,$SessionRoot,$StateReceipt,$PSCommandPath)) { Assert-PreparedBootstrapPath $path -AllowAbsent; Assert-AcceptancePath $path }
 if ($ReceiptKind -ceq 'CurrentBaseline') {
+  $global:acceptanceDiagnosticPhase='bootstrap_prior_context'
   $bootstrapReceipt=Read-PreparedJson $StateReceipt $StateReceiptSha256
   $bootstrapPriorContext=Read-PreparedPriorContext $bootstrapReceipt $kit $KitSha256 $KitRoot $SessionRoot $lab
   if ($acceptanceClock.Elapsed.TotalSeconds -ge 30) { throw 'Read-only bootstrap exceeded its bounded preparation allowance' }
@@ -432,20 +437,24 @@ if (-not $AcceptanceJob) {
   $code=Invoke-AcceptanceSupervisor -ScriptPath $PSCommandPath -Parameters $parameters -Clock $acceptanceClock -ReportPath (Join-Path $SessionRoot 'supervisor.json') -FailureReportPath (Join-Path $SessionRoot 'session-results.json')
   exit $code
 }
+$global:acceptanceDiagnosticPhase='worker_membership'
 Confirm-AcceptanceWorker $AcceptanceJob
 $script:acceptanceProcesses=New-Object System.Collections.ArrayList
 $installerLease=$null
 $record=@{status='FAILED'; scope='prepared-host follow-on'; client_os_acceptance='BLOCKED'; full_functionality='BLOCKED'; real_ai='NOT RUN'; live_trading='DISABLED'; visual_layout='NOT VERIFIED'; screenshots='NOT CAPTURED'}
 try {
   Assert-PreparedInteractiveUser
+  $global:acceptanceDiagnosticPhase='client_os'
   $os=Get-CimInstance Win32_OperatingSystem
   if ($os.ProductType -ne 1 -or [int]$os.BuildNumber -lt 19045) { throw 'Requires the authorized Windows client' }
+  $global:acceptanceDiagnosticPhase='kit_integrity'
   foreach ($entry in $kit.files_sha256.PSObject.Properties) {
     $path=[IO.Path]::GetFullPath((Join-Path $KitRoot $entry.Name))
     if (-not $path.StartsWith(($KitRoot.TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Kit entry escapes its root' }
     Assert-AcceptancePath $path
     if ($entry.Value -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.Value) { throw 'Kit file digest changed' }
   }
+  $global:acceptanceDiagnosticPhase='candidate_manifest'
   $candidate=Read-PreparedJson (Join-Path $KitRoot 'candidate-manifest.json') $kit.files_sha256.'candidate-manifest.json'
   if ($kit.schema_version -ne 1 -or $candidate.source_commit -cne $kit.candidate_commit -or $kit.candidate_commit -cnotmatch '^[a-f0-9]{40}$' -or $kit.version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid exact candidate provenance' }
   $candidateHelper=($candidate.inputs_sha256.PSObject.Properties | Where-Object { $_.Name.Replace('\','/') -ceq 'packaging/acceptance_process.dll' }).Value
@@ -453,7 +462,9 @@ try {
   $installer=Join-Path $KitRoot "dist/installers/MarkAuto-$($kit.version)-windows-x64-setup.exe"
   $installerDigest=$candidate.artifacts_sha256.PSObject.Properties[(Split-Path $installer -Leaf)].Value
   # Retain the verified installer read lease through creation/execution, not hash then reopen.
+  $global:acceptanceDiagnosticPhase='installer_lease'
   $installerLease=Read-PreparedBootstrap $installer $installerDigest 128MB -Hold
+  $global:acceptanceDiagnosticPhase='current_receipt'
   $receipt=Read-PreparedJson $StateReceipt $StateReceiptSha256
   $data=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'MarkAuto'
   $currentBaseline=($ReceiptKind -ceq 'CurrentBaseline')
@@ -466,6 +477,7 @@ try {
     $priorKitRoot=$bootstrapPriorContext.root; $priorKit=$bootstrapPriorContext.kit
     Confirm-PreparedCurrentBaseline $receipt $kit $KitSha256 $installerDigest (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant() $KitRoot $data $app $invocation $priorKit
   } elseif ($receipt.schema_version -ne 1 -or $receipt.owner -cne 'prepared-host-lifecycle-handoff' -or $receipt.candidate_commit -cne $kit.candidate_commit -or $receipt.kit_sha256 -cne $KitSha256 -or $receipt.app_data_path -ine $data -or $receipt.no_intervening_app_use -ne $true) { throw 'Observed lifecycle handoff required; existing data cannot be adopted' }
+  $global:acceptanceDiagnosticPhase='prior_reports'
   $prior=Join-Path $priorKitRoot 'dist\validation'
   $lifecycle=Read-PreparedJson (Join-Path $prior 'installer-results.json') $receipt.prior_reports_sha256.'installer-results.json'
   $scope=Read-PreparedJson (Join-Path $prior 'installer-scope-preflight.json') $receipt.prior_reports_sha256.'installer-scope-preflight.json'
@@ -484,14 +496,17 @@ try {
   $app=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\MarkAuto'
   $start=Join-Path ([Environment]::GetFolderPath('Programs')) 'Mark Auto\Mark Auto.lnk'
   $desktop=Join-Path ([Environment]::GetFolderPath('Desktop')) 'Mark Auto.lnk'
+  $global:acceptanceDiagnosticPhase='destinations'
   $destinations=@($app,(Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))
   foreach ($path in $destinations) {
     if ($currentBaseline -and $path -ceq $app) { Assert-PreparedInstallScaffolding $app $receipt $priorKit $invocation }
     else { Assert-AcceptancePath $path -RequireAbsent }
   }
+  $global:acceptanceDiagnosticPhase='process_registration'
   $registryEvidence=@(Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
   Assert-PreparedNoProcess
   $backup=Join-Path $SessionRoot 'prior-data-backup'
+  $global:acceptanceDiagnosticPhase='backup'
   Backup-PreparedState $data $backup $receipt -RequireUnaliased:$currentBaseline
   $record.entrypoint_sha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
   $record.receipt_kind=$ReceiptKind; $record.original_lifecycle_continuity=$(if ($currentBaseline) { 'UNPROVEN' } else { 'externally attested lifecycle handoff' })
@@ -512,12 +527,14 @@ try {
     installer_scaffolding_preserved=$currentBaseline;
     destinations_initially_absent=@($destinations | Where-Object { -not $currentBaseline -or $_ -cne $app });registrations_initially_absent=$registryEvidence;
     workspace_pointer_initially_absent=$true;clean_client_acceptance='BLOCKED'}
+  $global:acceptanceDiagnosticPhase='preflight_persist'
   $preflightPath=Join-Path $SessionRoot 'preflight.json'
   Assert-AcceptancePath $preflightPath -RequireAbsent
   $preflightBytes=[Text.Encoding]::UTF8.GetBytes(($preflight | ConvertTo-Json -Depth 5))
   $preflightStream=[IO.File]::Open($preflightPath,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
   try { $preflightStream.Write($preflightBytes,0,$preflightBytes.Length); $preflightStream.Flush($true) }
   finally { $preflightStream.Dispose() }
+  $global:acceptanceDiagnosticPhase='mutation_admission'
   foreach ($path in @($workspace,$temporary)) { Assert-AcceptancePath $path -RequireAbsent; [void][IO.Directory]::CreateDirectory($path) }
   $env:TEMP=$temporary; $env:TMP=$temporary
   Assert-PreparedNoProcess
@@ -544,6 +561,7 @@ try {
     [void](Assert-AbsentAcceptanceRegistration 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{58788303-95B7-491B-A67A-B1EBA50DA420}_is1')
     foreach ($path in @((Split-Path $start -Parent),$desktop,(Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Mark Auto'),(Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Mark Auto.lnk'))) { Assert-AcceptancePath $path -RequireAbsent }
   }
+  $global:acceptanceDiagnosticPhase='install'
   $owned=Start-OwnedAcceptanceProcess $installer -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$(Join-Path $SessionRoot 'install.log')`"") -WorkingDirectory $temporary
   Wait-OwnedAcceptanceProcess $owned 180000 'Follow-on install timed out' -DrainJob
   if ($owned.Process.get_ExitCode() -ne 0) { throw 'Follow-on install failed' }
@@ -564,6 +582,7 @@ try {
   }
   $record.install='observed'; $record.shortcut_execution='NOT RUN: exact resolution only'
   Assert-PreparedNoProcess
+  $global:acceptanceDiagnosticPhase='synthetic_smoke'
   $smokeReport=Join-Path $SessionRoot 'synthetic-smoke.json'
   $smoke=Start-OwnedAcceptanceProcess $exe -ArgumentList @('--smoke-test',"`"$smokeReport`"") -WorkingDirectory $temporary
   Wait-OwnedAcceptanceProcess $smoke 180000 'Follow-on synthetic functional smoke timed out' -DrainJob
@@ -575,6 +594,7 @@ try {
   }
   $record.synthetic_functional='seven original frozen fixture operations observed; not real AI, market or full UI acceptance'
   Assert-PreparedNoProcess
+  $global:acceptanceDiagnosticPhase='native_navigation'
   $gui=Start-OwnedAcceptanceProcess $exe -WorkingDirectory $temporary
   Wait-OwnedAcceptanceWindow $gui
   $record.native_window='observed'
@@ -588,8 +608,13 @@ try {
   Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup -RequireUnaliased:$currentBaseline) $receipt
   if ((Get-FileHash -LiteralPath (Join-Path $data 'installer-preservation-test.txt') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $receipt.files_sha256.'installer-preservation-test.txt') { throw 'First-round sentinel changed' }
   $record.status='partial'; $record.installed_app='left installed, no process left running'; $record.workspace=$workspace
-} catch { $record.reason='Prepared-host phase preflight, integrity, UI or owned-process assertion failed'; throw }
+} catch {
+  try { Write-AcceptanceWorkerFailure -Failure $_ -Path (Join-Path $SessionRoot 'worker-failure.json') -Source prepared_runtime -Phase $global:acceptanceDiagnosticPhase }
+  catch { [Console]::Error.WriteLine('Acceptance worker diagnostic unavailable; primary failure preserved') }
+  $record.reason='Prepared-host phase preflight, integrity, UI or owned-process assertion failed'; throw
+}
 finally {
+  $global:acceptanceDiagnosticPhase='owned_cleanup'
   try { Close-AcceptanceProcesses }
   finally {
     if ($installerLease) { $installerLease.Dispose() }

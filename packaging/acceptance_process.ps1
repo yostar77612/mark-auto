@@ -1,3 +1,82 @@
+function Write-AcceptanceWorkerFailure($Failure, [string]$Path,
+    [ValidateSet('encoded_wrapper','prepared_runtime')][string]$Source, [string]$Phase='worker_startup') {
+  # Fixed labels and numeric metadata only; never serialize an ErrorRecord payload.
+  $phases=@('worker_startup','bootstrap_interactive','bootstrap_roots','bootstrap_helper_load','bootstrap_paths',
+    'bootstrap_prior_context','worker_membership','client_os','kit_integrity','candidate_manifest','installer_lease',
+    'current_receipt','prior_reports','destinations','process_registration','backup','preflight_persist',
+    'mutation_admission','install','synthetic_smoke','native_navigation','owned_cleanup')
+  if ($phases -cnotcontains $Phase) { $Phase='unknown' }
+  $types=@('System.Management.Automation.RuntimeException','System.Management.Automation.CommandNotFoundException',
+    'System.Management.Automation.MethodInvocationException','System.Management.Automation.CmdletInvocationException',
+    'System.Management.Automation.ParameterBindingException','System.Management.Automation.PSArgumentException',
+    'System.Management.Automation.ParseException','System.Management.Automation.ItemNotFoundException',
+    'System.Management.Automation.SessionStateUnauthorizedAccessException','System.IO.IOException',
+    'System.IO.FileNotFoundException','System.UnauthorizedAccessException','System.InvalidOperationException',
+    'System.ArgumentException','System.ArgumentNullException','System.FormatException','System.TypeLoadException',
+    'System.TypeInitializationException','System.Reflection.TargetInvocationException','System.ComponentModel.Win32Exception')
+  $assertions=@{
+    'Acceptance worker is not inside its creation-owned job'='worker_membership_refused';
+    'Requires a non-elevated interactive x64 session'='interactive_session_refused';
+    'Current baseline freshness refused'='current_baseline_freshness_refused';
+    'Current baseline prior kit path refused'='prior_kit_path_refused';
+    'Current baseline provenance refused'='current_baseline_provenance_refused';
+    'Current baseline invocation context refused'='invocation_context_refused';
+    'Pinned bootstrap digest mismatch'='bootstrap_digest_mismatch';
+    'Kit file digest changed'='kit_file_digest_changed';
+    'Read-only bootstrap exceeded its bounded preparation allowance'='bootstrap_deadline';
+    'Use a fresh PowerShell process; preloaded ownership types cannot prove this kit'='preloaded_ownership_type_refused';
+    'Requires the authorized Windows client'='client_os_refused';
+    'Kit and session directories must not overlap'='root_overlap_refused'
+  }
+  $assertion='unclassified'; $parts=[Collections.Generic.List[string]]::new(); $exception=$Failure.Exception
+  for ($i=0; $exception -and $i -lt 4; $i++) {
+    $type=$exception.GetType().FullName; if ($types -cnotcontains $type) { $type='other_exception' }
+    $native='null'; if ($exception -is [ComponentModel.Win32Exception]) { $native=[string][int]$exception.NativeErrorCode }
+    $parts.Add(('{"type":"'+$type+'","hresult":'+[string][int]$exception.HResult+',"native_code":'+$native+'}'))
+    foreach ($known in $assertions.Keys) { if ($exception.Message -ceq $known) { $assertion=$assertions[$known]; break } }
+    $exception=$exception.InnerException
+  }
+  $id=[string]$Failure.FullyQualifiedErrorId
+  $id=$id.Substring(0,[Math]::Min($id.Length,256)).Split(',')[0]
+  if ($id -ceq 'CouldNotAutoloadMatchingModule') { $assertion='module_autoload_failed' }
+  elseif ($id -ceq 'CommandNotFoundException') { $assertion='command_not_found' }
+  elseif ($id -ceq 'TypeNotFound') { $assertion='type_not_found' }
+  $functions=@('<ScriptBlock>','Write-AcceptanceWorkerFailure','Assert-PreparedInteractiveUser',
+    'Assert-PreparedBootstrapPath','Read-PreparedBootstrap','Read-PreparedPriorContext','Read-PreparedJson',
+    'Assert-PreparedSeparateRoots','Assert-PreparedLabContainment','Assert-AcceptancePath','Confirm-AcceptanceWorker',
+    'Confirm-PreparedCurrentBaseline','Assert-PreparedInstallScaffolding','Assert-PreparedNoProcess',
+    'Get-PreparedStateInventory','Confirm-PreparedStateInventory','Backup-PreparedState','Close-AcceptanceProcesses',
+    'Get-CimInstance','Get-FileHash','Set-Content','ConvertFrom-Json','Add-Type','New-Object','Get-Item')
+  $scripts=@('prepared_host_session.ps1','acceptance_process.ps1','test_installer.ps1','diagnostic-fixture-worker.ps1')
+  $frames=[Collections.Generic.List[string]]::new()
+  # Bound trace parsing to 16 KiB/eight frames; retain no raw trace, labels or source text.
+  $trace=[string]$Failure.ScriptStackTrace; $trace=$trace.Substring(0,[Math]::Min($trace.Length,16384))
+  foreach ($line in $trace.Split([char]10)) {
+    if ($frames.Count -ge 8) { break }
+    $match=[regex]::Match($line,'^at ([^,\r\n]{1,128}), ([^\r\n]{1,2048}): line ([0-9]{1,10})\s*$')
+    if (-not $match.Success) { continue }
+    $function=$match.Groups[1].Value; if ($functions -cnotcontains $function) { $function='other_function' }
+    $label=$match.Groups[2].Value; $script='other_script'
+    foreach ($known in $scripts) { if ($label -ceq $known -or $label.EndsWith(('\'+$known),[StringComparison]::Ordinal) -or $label.EndsWith(('/'+$known),[StringComparison]::Ordinal)) { $script=$known; break } }
+    $number=0
+    if (-not [int]::TryParse($match.Groups[3].Value,[ref]$number) -or $number -lt 0 -or $number -gt 2000000) { $number=0 }
+    $frames.Add(('{"script":"'+$script+'","function":"'+$function+'","line":'+$number+'}'))
+  }
+  $command='other_function'
+  if ($Failure.InvocationInfo -and $Failure.InvocationInfo.MyCommand) {
+    $name=$Failure.InvocationInfo.MyCommand.Name; if ($functions -ccontains $name) { $command=$name }
+  }
+  # All serialized strings come from fixed allowlists; this needs no JSON cmdlet/module.
+  $json='{"schema_version":1,"status":"worker_failed","source":"'+$Source+'","phase":"'+$Phase+
+    '","assertion":"'+$assertion+'","command":"'+$command+'","exceptions":['+
+    [string]::Join(',',$parts)+'],"stack":['+[string]::Join(',',$frames)+']}'
+  $bytes=[Text.Encoding]::UTF8.GetBytes($json)
+  if ($bytes.Length -gt 8192) { throw 'Bounded worker diagnostic exceeds size allowance' }
+  # CreateNew keeps the first failure immutable, even when later cleanup also fails.
+  $stream=[IO.File]::Open($Path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read)
+  try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
+}
+
 # Windows-only lifecycle ownership and watchdog. No compiler runs during acceptance.
 # Build this helper on CI with build_acceptance_helper.ps1 and verify the kit digest.
 # Invoke safety-critical CLR getters explicitly: PowerShell property access suppresses
@@ -21,7 +100,13 @@ function Invoke-AcceptanceSupervisor([string]$ScriptPath, [System.Collections.ID
     } else { $command += " -" + $key + " '" + ([string]$value).Replace("'", "''") + "'" }
   }
   # EncodedCommand otherwise collapses a child script's exit 2 into exit 1.
-  $command = '$ErrorActionPreference=''Stop''; $global:LASTEXITCODE=0; try { ' + $command + '; $ok=$?; $code=$global:LASTEXITCODE; if ($code -ne 0) { exit $code }; if (-not $ok) { exit 1 }; exit 0 } catch { [Console]::Error.WriteLine(''Acceptance worker failed; see saved evidence''); exit 1 }'
+  $workerFailurePath=Join-Path (Split-Path $ReportPath -Parent) 'worker-failure.json'
+  $writerDefinition=(Get-Command Write-AcceptanceWorkerFailure -CommandType Function).ScriptBlock.ToString()
+  $prefix='function Write-AcceptanceWorkerFailure {'+$writerDefinition+'}; $global:acceptanceDiagnosticPhase=''worker_startup''; '
+  $safeFailurePath=$workerFailurePath.Replace("'","''")
+  $command=$prefix+'$ErrorActionPreference=''Stop''; $global:LASTEXITCODE=0; try { '+$command+
+    '; $ok=$?; $code=$global:LASTEXITCODE; if ($code -ne 0) { exit $code }; if (-not $ok) { exit 1 }; exit 0 } catch { try { Write-AcceptanceWorkerFailure -Failure $_ -Path '''+
+    $safeFailurePath+''' -Source encoded_wrapper -Phase $global:acceptanceDiagnosticPhase } catch { [Console]::Error.WriteLine(''Acceptance worker diagnostic unavailable; primary failure preserved'') }; [Console]::Error.WriteLine(''Acceptance worker failed; see saved evidence''); exit 1 }'
   $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
   $engine = [Diagnostics.Process]::GetCurrentProcess().get_MainModule().get_FileName()
   $job = $null
