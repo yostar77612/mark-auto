@@ -21,8 +21,11 @@ def _connection_checkpoint_fields(result):
     allowed = ('owner_file_written', 'probe_launch_requested', 'probe_launch_returned',
                'probe_output_first_seen', 'observer_stop_returned', 'observer_start_returned',
                'probe_exit_observed', 'timeout_observed', 'controller_error_observed',
-               'process_cleanup_started', 'process_cleanup_finished')
-    value = {'checkpoint_semantics': 'last completed progress record, not deadline state',
+               'process_cleanup_started', 'process_cleanup_finished',
+               'observer_stop_launch_requested', 'observer_stop_launch_returned',
+               'observer_start_launch_requested', 'observer_start_launch_returned')
+    value = {'checkpoint_semantics': ('last completed progress record, not deadline state; '
+                                 'blocked native call/report write may leave it stale'),
         'controller_milestone_semantics': 'seconds from controller entry; first output is detection time',
         'controller_milestones': {key: milestones[key] for key in allowed
                                  if isinstance(milestones, dict) and number(milestones.get(key))},
@@ -41,7 +44,8 @@ def _connection_checkpoint_fields(result):
     phases = {'replay.' + name for name in ('connect', 'read', 'pragma', 'begin', 'write',
         'cursor_write', 'plan_write', 'commit', 'read_commit', 'write_commit', 'rollback',
         'transaction_exit', 'read_exit', 'cursor_commit', 'cursor_rollback',
-        'plan_commit', 'plan_rollback', 'close', 'cursor_loop', 'final_close')}
+        'plan_commit', 'plan_rollback', 'close', 'cursor_loop', 'final_close',
+        'external_stop', 'external_start', 'rollback_test', 'verify_reopen')}
     timings = report.get('timings', {})
     value['checkpoint_timings'] = {}
     if isinstance(timings, dict):
@@ -50,6 +54,36 @@ def _connection_checkpoint_fields(result):
             if (isinstance(row, dict) and type(row.get('calls')) is int
                     and 0 <= row['calls'] <= 1000000 and number(row.get('seconds'))):
                 value['checkpoint_timings'][phase] = {key: row[key] for key in ('calls', 'seconds')}
+                if number(row.get('max_seconds')) and row['max_seconds'] <= row['seconds']:
+                    value['checkpoint_timings'][phase]['max_seconds'] = row['max_seconds']
+    last = report.get('last_completed')
+    value['checkpoint_last_completed'] = {}
+    if (isinstance(last, dict) and type(last.get('phase')) is str and last['phase'] in phases
+            and type(last.get('calls')) is int and 1 <= last['calls'] <= 1000000
+            and number(last.get('seconds')) and number(last.get('elapsed_seconds'))):
+        value['checkpoint_last_completed'] = {
+            key: last[key] for key in ('phase', 'calls', 'seconds', 'elapsed_seconds')}
+    progress = report.get('checkpoint_progress')
+    value['checkpoint_progress'] = {}
+    if (isinstance(progress, dict) and progress.get('last_completed_phase') in
+            ('setup', 'cursor_iteration', 'cursor_loop', 'external_stop',
+             'external_start', 'rollback_test', 'verify_reopen')
+            and type(progress.get('completed_iterations')) is int
+            and 0 <= progress['completed_iterations'] <= 120
+            and number(progress.get('sample_elapsed_seconds'))
+            and number(progress.get('prior_publication_seconds'))):
+        value['checkpoint_progress'] = {key: progress[key] for key in
+            ('last_completed_phase', 'completed_iterations', 'sample_elapsed_seconds',
+             'prior_publication_seconds')}
+        samples = progress.get('iteration_samples')
+        value['checkpoint_progress']['iteration_samples'] = [
+            {key: row[key] for key in ('iteration', 'wall_seconds', 'cpu_seconds')}
+            for row in samples[:120] if isinstance(row, dict)
+            and type(row.get('iteration')) is int and 1 <= row['iteration'] <= 120
+            and number(row.get('wall_seconds')) and number(row.get('cpu_seconds'))
+        ] if isinstance(samples, list) else []
+    value['iteration_sample_semantics'] = (
+        'total completed iteration wall/CPU costs; excludes checkpoint publication')
     active = report.get('active', [])
     value['checkpoint_active'] = [{'phase': row['phase'], 'seconds': row['seconds']}
         for row in active[:32] if isinstance(row, dict) and type(row.get('phase')) is str
@@ -111,6 +145,83 @@ class PaperDiagnosticTests(unittest.TestCase):
         snapshot = timings.snapshot()
         self.assertNotIn('do not log me', json.dumps(snapshot))
         self.assertEqual(snapshot['timings']['fixed_phase']['calls'], 1)
+        self.assertEqual(snapshot['active'], [])
+
+    def test_elapsed_checkpoint_rule_preserves_boundary_and_uses_publication_finish(self):
+        from tools.diagnose_paper_replay import _connection_checkpoint_due
+        # A slow publication consumes no part of the NEXT observation interval.
+        self.assertTrue(_connection_checkpoint_due(30, 5, 5))
+        self.assertFalse(_connection_checkpoint_due(31, 5.99, 5))
+        self.assertTrue(_connection_checkpoint_due(31, 6, 5))
+        self.assertFalse(_connection_checkpoint_due(32, 8.99, 8))
+        self.assertTrue(_connection_checkpoint_due(32, 9, 8))
+
+    def test_probe_publishes_only_completed_iterations_and_resets_after_slow_write(self):
+        import os
+        import sys
+        import tools.diagnose_paper_replay as diagnostic
+        clock_state = {'now': 100.0, 'consumed': 0}
+        snapshots = []
+        slow_publication = []
+        def clock():
+            frame = sys._getframe(1)
+            while frame is not None and frame.f_code.co_name != '_connection_probe':
+                frame = frame.f_back
+            completed = frame.f_locals.get('consumed', 0) if frame is not None else 0
+            if completed > clock_state['consumed']:
+                clock_state['now'] += (completed - clock_state['consumed']) * .25
+                clock_state['consumed'] = completed
+            return clock_state['now']
+        real_write = diagnostic._write_json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / 'replays' / 'probe.sqlite3'
+            output = root / 'probe.json'
+            def publish(path, value):
+                real_write(path, value)
+                if path == output:
+                    progress = value['checkpoint_progress']
+                    if value['phase'] == 'cursor_loop' and progress['completed_iterations']:
+                        snapshots.append(dict(progress, iteration_samples=list(progress['iteration_samples'])))
+                        if not slow_publication:
+                            clock_state['now'] += 3  # Synthetic report cost, no blocking wait.
+                            slow_publication.append(progress['completed_iterations'])
+                for action in ('stop', 'start'):
+                    if path == output.with_suffix('.ready-' + action + '.json'):
+                        # A synthetic in-process witness drives the existing SQL
+                        # observer. Original native two-process tests stay intact.
+                        with patch.object(diagnostic.os, 'getpid', return_value=os.getpid() + 1):
+                            diagnostic._connection_observer(output.with_suffix('.' + action + '.json'),
+                                                            'delete-reopen', root, action)
+            with patch.object(diagnostic, '_owned_connection_path', return_value=database), \
+                    patch.object(diagnostic.time, 'perf_counter', side_effect=clock), \
+                    patch.object(diagnostic, '_write_json', side_effect=publish):
+                self.assertEqual(diagnostic._connection_probe(output, 'delete-reopen', root), 0)
+        self.assertEqual(slow_publication, [4])
+        self.assertEqual([row['completed_iterations'] for row in snapshots[:2]], [4, 8])
+        self.assertEqual(snapshots[1]['prior_publication_seconds'], 3)
+        self.assertIn(30, [row['completed_iterations'] for row in snapshots])
+        for row in snapshots:
+            self.assertEqual(row['last_completed_phase'], 'cursor_iteration')
+            self.assertEqual(len(row['iteration_samples']), row['completed_iterations'])
+            self.assertEqual(row['iteration_samples'][-1]['iteration'], row['completed_iterations'])
+            self.assertGreaterEqual(row['sample_elapsed_seconds'], 0)
+
+    def test_phase_cost_and_last_completion_are_numeric_observation_only(self):
+        with patch('tools.diagnose_paper_replay.time.perf_counter',
+                   side_effect=[100, 101, 103, 104, 105, 106]):
+            timings = Timings()
+            with timings.measure('replay.cursor_commit'):
+                pass
+            with timings.measure('replay.cursor_commit'):
+                pass
+            snapshot = timings.snapshot()
+        self.assertEqual(snapshot['timings']['replay.cursor_commit'],
+                         {'calls': 2, 'seconds': 3, 'max_seconds': 2})
+        self.assertEqual(snapshot['last_completed'],
+                         {'phase': 'replay.cursor_commit', 'calls': 2,
+                          'seconds': 1, 'elapsed_seconds': 5})
+        self.assertEqual(snapshot['elapsed_seconds'], 6)
         self.assertEqual(snapshot['active'], [])
 
     def test_diagnostic_output_is_atomic_and_bounded(self):
@@ -358,7 +469,12 @@ class ConnectionDiagnosticTests(unittest.TestCase):
                     'verified_pragmas': {'journal_mode': 'delete', 'synchronous': 2,
                                          'locking_mode': 'normal'},
                     'timings': {'replay.cursor_commit': {'calls': 120},
-                                'replay.cursor_rollback': {'calls': 1}}})
+                                'replay.cursor_rollback': {'calls': 1}},
+                    'last_completed': {'phase': 'replay.verify_reopen', 'calls': 1,
+                                       'seconds': .1, 'elapsed_seconds': .9},
+                    'checkpoint_progress': {'last_completed_phase': 'verify_reopen',
+                        'completed_iterations': 120, 'sample_elapsed_seconds': .9,
+                        'prior_publication_seconds': .01, 'iteration_samples': []}})
                 for action in ('stop', 'start'):
                     _write_json(output.with_suffix('.ready-' + action + '.json'), {'action': action})
                 probe = MagicMock(pid=101, returncode=None)
@@ -383,6 +499,46 @@ class ConnectionDiagnosticTests(unittest.TestCase):
                     self.assertTrue(result['timed_out'])
                 elif error is not None:
                     self.assertEqual(result['error_type'], type(error).__name__)
+
+    def test_completed_diagnostic_fields_cannot_certify_wrong_or_incomplete_counts(self):
+        from tools.diagnose_paper_replay import _connection_case
+        # No real workload is replaced: isolate the existing certification seam.
+        for complete, commits in ((False, 120), (True, 119), (True, 120)):
+            with self.subTest(complete=complete, commits=commits), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'controlled.json'
+                _write_json(output, {'profile': 'delete-reopen', 'complete': complete,
+                    'commits_completed': commits, 'rollback_and_reopen_verified': True,
+                    'external_control_verified': True,
+                    'verified_pragmas': {'journal_mode': 'delete', 'synchronous': 2,
+                                         'locking_mode': 'normal'},
+                    'timings': {'replay.cursor_commit': {'calls': 120, 'seconds': 1, 'max_seconds': .1},
+                                'replay.cursor_rollback': {'calls': 1},
+                                'replay.external_stop': {'calls': 1, 'seconds': .1, 'max_seconds': .1},
+                                'replay.external_start': {'calls': 1, 'seconds': .1, 'max_seconds': .1}},
+                    'last_completed': {'phase': 'replay.verify_reopen', 'calls': 1,
+                                       'seconds': .1, 'elapsed_seconds': 1},
+                    'completed_cursor_commits': 120,
+                    'checkpoint_progress': {'last_completed_phase': 'verify_reopen',
+                        'completed_iterations': 120, 'sample_elapsed_seconds': 1,
+                        'prior_publication_seconds': .01,
+                        'iteration_samples': [{'iteration': 120, 'wall_seconds': .01,
+                                               'cpu_seconds': .001}]}})
+                for action in ('stop', 'start'):
+                    _write_json(output.with_suffix('.ready-' + action + '.json'), {'action': action})
+                probe = MagicMock(pid=101, returncode=None)
+                probe.poll.side_effect = lambda: probe.returncode
+                helpers = [MagicMock(pid=pid, returncode=0) for pid in (102, 103)]
+                for helper in helpers:
+                    helper.poll.return_value = 0
+                def finish(_seconds):
+                    probe.returncode = 0
+                with patch('subprocess.Popen', side_effect=[probe, *helpers]), \
+                        patch('time.sleep', side_effect=finish):
+                    result = _connection_case(output, 'delete-reopen', directory, time.monotonic() + 10)
+                self.assertEqual(result['complete'], complete and commits == 120)
+                self.assertTrue(result['workers_stopped'])
+                self.assertTrue(result['fixture_removed'])
+                self.assertEqual(result['observer_actions_completed'], ['stop', 'start'])
 
     def test_unsupported_profile_or_unaccepted_settings_never_yield_a_connection(self):
         from tools.diagnose_paper_replay import _probe_connection
@@ -514,15 +670,24 @@ class ConnectionFailureEvidenceTests(unittest.TestCase):
             'observation': {'elapsed_seconds': 2.7, 'pre_timing_seconds': .01,
                 'probe_entry_seconds': 2.71, 'process_cpu_seconds': .3,
                 'fixture_root': '/DO_NOT_RETAIN', 'timings': {
-                    'replay.cursor_commit': {'calls': 90, 'seconds': 2.1, 'sql': 'DO_NOT_RETAIN'},
+                    'replay.cursor_commit': {'calls': 90, 'seconds': 2.1, 'max_seconds': .2, 'sql': 'DO_NOT_RETAIN'},
+                    'replay.external_stop': {'calls': 1, 'seconds': .3, 'max_seconds': float('nan')},
                     'replay.read': {'calls': True, 'seconds': 1},
                     'replay.close': {'calls': 90, 'seconds': 10 ** 1000},
                     'DO_NOT_RETAIN': {'calls': 1, 'seconds': 1}},
                 'active': [{'phase': 'replay.cursor_loop', 'seconds': 2.6, 'path': '/DO_NOT_RETAIN'},
-                    {'phase': 'DO_NOT_RETAIN', 'seconds': 1}, {'phase': [], 'seconds': 1}]}}
+                    {'phase': 'DO_NOT_RETAIN', 'seconds': 1}, {'phase': [], 'seconds': 1}],
+                'last_completed': {'phase': 'replay.cursor_commit', 'calls': 90,
+                                   'seconds': .1, 'elapsed_seconds': 2.6,
+                                   'sql': 'DO_NOT_RETAIN'}}}
         evidence = _connection_checkpoint_fields(result)
         self.assertEqual(evidence['controller_milestones'], {'probe_launch_returned': .2, 'timeout_observed': 10})
-        self.assertEqual(evidence['checkpoint_timings'], {'replay.cursor_commit': {'calls': 90, 'seconds': 2.1}})
+        self.assertEqual(evidence['checkpoint_timings'], {
+            'replay.cursor_commit': {'calls': 90, 'seconds': 2.1, 'max_seconds': .2},
+            'replay.external_stop': {'calls': 1, 'seconds': .3}})
+        self.assertEqual(evidence['checkpoint_last_completed'],
+                         {'phase': 'replay.cursor_commit', 'calls': 90,
+                          'seconds': .1, 'elapsed_seconds': 2.6})
         self.assertEqual(evidence['checkpoint_active'], [{'phase': 'replay.cursor_loop', 'seconds': 2.6}])
         self.assertEqual(evidence['probe_clocks']['pre_timing_seconds'], .01)
         self.assertNotIn('DO_NOT_RETAIN', json.dumps(evidence))
@@ -530,12 +695,58 @@ class ConnectionFailureEvidenceTests(unittest.TestCase):
         self.assertIn('not deadline state', evidence['checkpoint_semantics'])
         self.assertIn('detection time', evidence['controller_milestone_semantics'])
 
+    def test_malformed_last_completion_and_maximum_cannot_escape_evidence_bounds(self):
+        malformed = (
+            {'phase': 'DO_NOT_RETAIN', 'calls': 1, 'seconds': 1, 'elapsed_seconds': 1},
+            {'phase': 'replay.close', 'calls': True, 'seconds': 1, 'elapsed_seconds': 1},
+            {'phase': 'replay.close', 'calls': 1, 'seconds': float('inf'), 'elapsed_seconds': 1},
+            {'phase': 'replay.close', 'calls': 1, 'seconds': 1, 'elapsed_seconds': -1},
+            None, [],
+        )
+        for last in malformed:
+            with self.subTest(last=last):
+                evidence = _connection_checkpoint_fields({'observation': {'last_completed': last,
+                    'timings': {'replay.close': {'calls': 1, 'seconds': .1, 'max_seconds': True}}}})
+                self.assertEqual(evidence.get('checkpoint_last_completed'), {})
+                self.assertEqual(evidence['checkpoint_timings'], {'replay.close': {'calls': 1, 'seconds': .1}})
+                self.assertNotIn('DO_NOT_RETAIN', json.dumps(evidence))
+
+    def test_progress_evidence_is_bounded_and_preserves_stale_checkpoint_meaning(self):
+        progress = {'last_completed_phase': 'cursor_iteration', 'completed_iterations': 60,
+            'sample_elapsed_seconds': 4.2, 'prior_publication_seconds': .01,
+            'iteration_samples': [{'iteration': 1, 'wall_seconds': .1, 'cpu_seconds': .01,
+                                   'sql': 'DO_NOT_RETAIN'}] * 130}
+        result = {'observation': {'checkpoint_progress': progress}}
+        evidence = _connection_checkpoint_fields(result)
+        self.assertEqual(len(evidence['checkpoint_progress']['iteration_samples']), 120)
+        self.assertEqual(evidence['checkpoint_progress']['completed_iterations'], 60)
+        self.assertNotIn('DO_NOT_RETAIN', json.dumps(evidence))
+        self.assertIn('total completed iteration', evidence['iteration_sample_semantics'])
+        self.assertIn('not deadline state', evidence['checkpoint_semantics'])
+        self.assertLess(len(json.dumps(evidence)), 32768)
+        for key, bad in (('last_completed_phase', 'DO_NOT_RETAIN'),
+                         ('completed_iterations', True), ('completed_iterations', 121),
+                         ('sample_elapsed_seconds', float('nan')),
+                         ('prior_publication_seconds', -1)):
+            with self.subTest(field=key):
+                changed = dict(progress, **{key: bad})
+                value = _connection_checkpoint_fields({'observation': {'checkpoint_progress': changed}})
+                self.assertEqual(value['checkpoint_progress'], {})
+
     def test_actual_failure_handler_preserves_original_assertion_and_original_deadline(self):
         result = {'returncode': 1, 'timed_out': True, 'complete': False,
             'workers_stopped': True, 'fixture_removed': True, 'seconds': 10.02,
             'controller_milestones': {'timeout_observed': 10},
             'observation': {'phase': 'cursor_loop', 'commits_completed': 90,
-                'elapsed_seconds': 2.7, 'timings': {'replay.cursor_commit': {'calls': 90, 'seconds': 2}}}}
+                'elapsed_seconds': 2.7,
+                'timings': {'replay.cursor_commit': {'calls': 90, 'seconds': 2, 'max_seconds': .1}},
+                'last_completed': {'phase': 'replay.close', 'calls': 180,
+                                   'seconds': .01, 'elapsed_seconds': 2.6},
+                'checkpoint_progress': {'last_completed_phase': 'cursor_iteration',
+                    'completed_iterations': 90, 'sample_elapsed_seconds': 2.7,
+                    'prior_publication_seconds': .001,
+                    'iteration_samples': [{'iteration': 90, 'wall_seconds': .03,
+                                           'cpu_seconds': .001, 'sql': 'DO_NOT_RETAIN'}]}}}
         for failed_write in (False, True):
             with self.subTest(failed_write=failed_write):
                 case = ConnectionDiagnosticTests('test_wrong_commit_count_cannot_be_certified')
@@ -556,6 +767,12 @@ class ConnectionFailureEvidenceTests(unittest.TestCase):
                 self.assertEqual(evidence['commits_required'], 120)
                 self.assertEqual(evidence['commits_completed'], 90)
                 self.assertEqual(evidence['checkpoint_timings']['replay.cursor_commit']['calls'], 90)
+                self.assertEqual(evidence['checkpoint_timings']['replay.cursor_commit']['max_seconds'], .1)
+                self.assertEqual(evidence['checkpoint_progress']['last_completed_phase'], 'cursor_iteration')
+                self.assertEqual(evidence['checkpoint_progress']['completed_iterations'], 90)
+                self.assertEqual(evidence['checkpoint_progress']['prior_publication_seconds'], .001)
+                self.assertEqual(evidence['checkpoint_last_completed']['phase'], 'replay.close')
+                self.assertNotIn('DO_NOT_RETAIN', json.dumps(evidence))
 
     def test_evidence_construction_failure_does_not_replace_original_assertion(self):
         case = ConnectionDiagnosticTests('test_wrong_commit_count_cannot_be_certified')
