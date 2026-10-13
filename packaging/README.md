@@ -261,3 +261,156 @@ Windows 10/11 evidence. The build job still runs the complete real install, both
 fixture smokes, six source hashes, shortcuts, upgrade, active-app refusals, clean
 window close, uninstall and data-preservation assertions. The clean-client wrapper
 still exits 2 for a fixture-only successful subset and 1 for lifecycle failure.
+
+
+## Explicit current baseline for a partial prepared-host follow-on
+
+The default `prepared_host_session.ps1 -ReceiptKind LifecycleHandoff` retains its
+original version-1 handoff/continuity predicate and absent installation guard.
+The initial lifecycle is unchanged. PreparedHost does not produce that handoff.
+
+A separately reviewed `-ReceiptKind CurrentBaseline` accepts only a new,
+externally captured and SHA-256-pinned version-2 receipt. It is an admission of
+the current reviewed bytes, not a retrospective lifecycle certificate.
+`owner` must be `prepared-host-current-baseline` and
+`original_lifecycle_continuity` must be `UNPROVEN`. The schema rejects a
+`no_intervening_app_use` property; never relabel an observation as a handoff.
+
+The exact schema is enforced by `Confirm-PreparedCurrentBaseline`: capture UTC
+(`o` format, no more than 30 minutes old or five seconds ahead); actual
+KnownFolder data/install roots and kit root; kit/candidate/version,
+installer, helper DLL/helper script and session-entrypoint digests; the original
+five pinned lifecycle/smoke report digests; and a pinned TestLab lifecycle
+invocation receipt that binds the prior candidate, completion and report hashes.
+The prior kit has its own exact root/digest and candidate/baseline-version fields,
+read through the pinned `prior_kit_root` and `prior_kit_sha256`. Prior reports
+and scaffold versions bind to that original kit; the install and rebuilt helper
+bind independently to the newly reviewed current kit. This admits a new baseline
+without calling old evidence a run of new code. The invocation supplies context
+only, not proof of intervening non-use.
+
+The reviewed data map consists exactly of these five files:
+`.analysis-recovery-admission.lock`, `installer-preservation-test.txt`,
+`workspace-format.json`, `state-v1/desktop_safety.json` and
+`state-v1/settings.json`. The exact directory set is `cache`, `control-v1`,
+`credentials`, `logs`, `state-v1`, `state-v1/market_cache`; credentials
+must contain no files. Every data digest comes from the external reviewed
+receipt. Unknown files/directories, an existing workspace pointer, credential
+files, changed bytes, denied metadata and root-to-leaf redirects refuse admission.
+
+The native helper additionally validates every open regular data file has one
+hard link and only its default data stream, before and after hashing/copy.
+An old helper lacking that method refuses the new route. Rebuild/pin the helper
+through the existing trusted CI/kit-manifest chain; do not substitute an
+unverified DLL into an old kit or compile it on the personal test host.
+
+Only a complete pinned directory-only installation scaffold is admissible:
+`payloads`, one directory for each distinct kit baseline/candidate version,
+and exactly one pinned `is-[A-Z0-9]{5}` leaf beneath each. Its complete metadata
+map includes `.` and all five directories, each with exact creation/write UTC
+matching the captured tree and falling within the pinned invocation interval.
+An absent app root requires an empty scaffold map. Files, extra directories,
+redirects, stale metadata and access errors refuse; admitted directories remain
+in place. All shortcut, registry and process absence gates still apply.
+
+Exact source inventory is checked before backup, source and backup are checked
+after copying, and both plus the owned new pointer are rechecked before install.
+The new pointer is admitted only by its freshly generated digest. Separate
+session evidence identifies the receipt kind and UNPROVEN continuity; original
+ten-case reports are immutable. Both routes retain the creation-owned private
+job, unchanged 1,200-second whole-run cap, continuous 6 GiB RAM floor,
+verified cleanup and PARTIAL/exit-2 outcome.
+
+Native negatives live in the existing CI-only preparation fixture, covering
+provenance/freshness, tampered receipts, maps, credentials, changed content,
+hard links/alternate streams, redirects/access denial, scaffold files/unknown
+directories and backup mismatch. Python source contracts and parser checks
+cannot establish native behavior or Qt provider compatibility; Windows CI
+controls and separately authorized frozen-code desktop execution remain gates.
+
+
+Review freeze v2 adds native follow-on rejection controls for wrong schema,
+wrong/timed-out original invocation, hard-linked or alternate-stream backup,
+hard-linked owned pointer and scaffold metadata access denial. Positive post-
+rejection controls verify unchanged exact baseline bytes and preserved empty
+scaffolding. These controls call the production routines in the existing CI-
+only fixture. They have not been executed on the personal host; runtime
+verification remains pending Windows CI.
+
+
+Local review freeze v3 preserves UTF-8 BOMs on both session/fixture PS1 files
+and all seven navigation labels. Every backup inventory pass propagates strict
+admission. Between-pass controls inject a data-read-denied unknown file or an
+outside hard link and require refusal during the second inventory before it
+returns or copies content. ACL controls verify self-only parent listing denies,
+actual native error 5, exact predicate refusal and restored byte-identical state.
+
+Strict current-baseline admission checks $DATA streams on every data/backup
+directory and every scaffold directory. Only native ERROR_HANDLE_EOF (38)
+means no streams; unsupported filesystems, access errors and other ambiguous
+results refuse. Fixture-only raw Win32 ADS creation/deletion avoids .NET
+Framework extra-colon path checks, independently verifies stream presence
+before guard refusal, then verifies removal and exact baseline restoration.
+
+The pinned prior kit is validated during read-only bootstrap, and SessionRoot
+must be disjoint from both current and prior immutable kit inputs before any
+session directory creation. Same-root identity requires matching explicit pins.
+Current and historical receipt routes remain separate; native/Qt execution,
+compiled helper verification and source-egress approval remain pending.
+
+
+Review freeze v4 addresses a reproducible scaffold-root prefix defect: the queue
+used the canonical full root while child substring offsets used the raw caller
+spelling. One canonical root/prefix now drives queue, root comparison and
+relative offsets, with explicit containment checking. The exact reviewed map,
+directory-only, metadata/time, stream, reparse and access gates are unchanged.
+
+Native fixture controls use actual GetShortPathNameW/GetLongPathNameW aliases,
+require both positive spellings to pass, and require an unknown child to fail
+under both spellings. If no distinct native short alias exists, that control
+reports BLOCKED and fails rather than claiming proof. Failure evidence includes
+only fixed phases, root lengths, relative depth and prefix-match flags; no raw
+paths or unknown directory names. A string-only exact-expression probe showed
+the frozen raw-prefix defect, but the specific CI token was not captured.
+
+
+Review freeze v5 adds a deterministic dot-component native regression before
+the existing short/long alias controls. It requires the exact canonical target
+and a two-character raw/canonical prefix-length difference, calls the production
+scaffold guard before and after mutation, and requires an unknown child to be
+rejected through that dot spelling. The existing real-alias controls and all
+production predicates remain unchanged. Local source/parser checks do not
+claim native runtime validation.
+
+
+Review freeze v6 repairs a fixture identity setup error: bootstrap receipt roots
+must already have canonical spelling, whereas operational launch inputs may be
+aliases. Fixture-declared kit/data/install/prior roots and bootstrap lab/source/
+session paths are now canonical, including returned-root and absence assertions.
+Raw scaffold short/dot inputs remain intact for their dedicated controls.
+
+Production canonicalizes its trusted operational kit/data/install arguments and
+lab root before comparison/containment; exact receipt equality remains strict.
+The prior-context helper also canonicalizes trusted kit/session/lab arguments,
+so same-kit aliases cannot evade digest identity checks. Digest-pinned read-only
+context file locators still undergo canonical containment and root-to-leaf checks.
+
+Controls retain nested/equal/ancestor/disjoint and same-kit positives/wrong-digest
+negatives, and explicitly reject noncanonical declared identities, exact lab-root
+adoption and outside-root adoption with their exact predicates. Operational alias
+positives are separate and do not make receipt aliases permissive. Native runtime
+evidence remains a Windows CI gate; local checks are source/parser/string probes.
+
+
+Cloud review freeze v7 trims prior-kit roots before strict receipt identity checks,
+so a trailing separator is refused rather than treated as a descendant. A shared
+lexical lab-containment predicate canonicalizes every top-level input (including
+the script path) and the lifecycle invocation locator, and rejects the lab root
+with or without a trailing separator. Shortcut containment canonicalizes the
+operational app prefix while retaining the case-exact MarkAuto.exe leaf check.
+Original entrypoint hashing, bootstrap/reparse checks, receipt identity rules,
+shortcut resolution and owned-process launch remain in place. Synthetic controls
+exercise the production predicates with canonical and dot-component positives,
+exact-root/trailing-root/sibling/ancestor negatives, and exact refusal messages.
+Cloud Python source contracts are not native Windows execution. Native CI remains
+pending; acceptance stays PARTIAL (exit 2) with historical continuity UNPROVEN.

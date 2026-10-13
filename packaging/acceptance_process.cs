@@ -61,6 +61,60 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         try { FileInfo info; Check(GetFileInformationByHandle(file,out info)); return info.attributes; }
         finally { CloseHandle(file); }
     }
+
+    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] struct StreamInfo {
+        public long size;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst=296)] public string name;
+    }
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, EntryPoint="FindFirstStreamW", SetLastError=true)] static extern IntPtr FindFirstStream(string path, int level, out StreamInfo info, uint flags);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, EntryPoint="FindNextStreamW", SetLastError=true)] static extern bool FindNextStream(IntPtr search, out StreamInfo info);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool FindClose(IntPtr search);
+    public static void RequireSingleLinkDefaultStream(IntPtr file, string path) {
+        // Caller retains a read stream without write/delete sharing through hashing/copy.
+        // Never infer alias safety from a pathname or from a failed metadata query.
+        FileInfo before; Check(GetFileInformationByHandle(file,out before));
+        if((before.attributes & (0x10u|0x400u))!=0 || before.links!=1)
+            throw new InvalidOperationException("Regular single-link file required");
+        StreamInfo stream;
+        IntPtr search=FindFirstStream(path,0,out stream,0);
+        if(search==new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        try {
+            if(!String.Equals(stream.name,"::$DATA",StringComparison.Ordinal))
+                throw new InvalidOperationException("Only the default data stream is admitted");
+            if(FindNextStream(search,out stream))
+                throw new InvalidOperationException("Alternate data stream refused");
+            int error=Marshal.GetLastWin32Error();
+            if(error!=38) throw new Win32Exception(error); // ERROR_HANDLE_EOF only.
+        } finally { FindClose(search); }
+        FileInfo after; Check(GetFileInformationByHandle(file,out after));
+        if(after.links!=1 || after.volume!=before.volume || after.indexHigh!=before.indexHigh ||
+           after.indexLow!=before.indexLow || after.attributes!=before.attributes)
+            throw new InvalidOperationException("File alias metadata changed");
+    }
+
+
+    public static void RequireNoDirectoryDataStreams(string path) {
+        IntPtr file=CreateFile(path,0x80,1,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+        if(file==new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        try {
+            FileInfo before; Check(GetFileInformationByHandle(file,out before));
+            if((before.attributes & 0x10u)==0 || (before.attributes & 0x400u)!=0)
+                throw new InvalidOperationException("Ordinary directory required");
+            StreamInfo stream;
+            IntPtr search=FindFirstStream(path,0,out stream,0);
+            if(search!=new IntPtr(-1)) {
+                try { throw new InvalidOperationException("Directory data stream refused"); }
+                finally { FindClose(search); }
+            }
+            int error=Marshal.GetLastWin32Error();
+            if(error!=38) throw new Win32Exception(error); // Only ERROR_HANDLE_EOF proves no $DATA streams.
+            FileInfo after; Check(GetFileInformationByHandle(file,out after));
+            if(after.volume!=before.volume || after.indexHigh!=before.indexHigh ||
+               after.indexLow!=before.indexLow || after.attributes!=before.attributes)
+                throw new InvalidOperationException("Directory metadata changed");
+        } finally { CloseHandle(file); }
+    }
+
     [StructLayout(LayoutKind.Sequential)] struct Accounting {
         public long totalUser, totalKernel, periodUser, periodKernel;
         public uint faults, totalProcesses, activeProcesses, terminatedProcesses;

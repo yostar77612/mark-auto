@@ -9,6 +9,27 @@ function Reject([scriptblock]$Action,[string]$Message,[string]$ExpectedFailure) 
   try { & $Action } catch { if ($_.Exception.Message -cne $ExpectedFailure) { throw }; $rejected=$true }
   Require $rejected $Message
 }
+
+function Get-PreparedNativeCode($Failure) {
+  $exception=$Failure.Exception
+  while ($exception) {
+    if ($exception -is [ComponentModel.Win32Exception]) { return $exception.NativeErrorCode }
+    $exception=$exception.InnerException
+  }
+  return $null
+}
+function Confirm-PreparedSelfOnlyListDeny([string]$Parent, $Sid) {
+  $acl=Get-Acl -LiteralPath $Parent
+  $rules=@($acl.GetAccessRules($true,$false,[Security.Principal.SecurityIdentifier]) | Where-Object {
+    $_.get_IdentityReference() -eq $Sid -and
+    $_.get_AccessControlType() -eq [Security.AccessControl.AccessControlType]::Deny -and
+    ($_.get_FileSystemRights() -band [Security.AccessControl.FileSystemRights]::ListDirectory) -ne 0 -and
+    $_.get_InheritanceFlags() -eq [Security.AccessControl.InheritanceFlags]::None -and
+    $_.get_PropagationFlags() -eq [Security.AccessControl.PropagationFlags]::None
+  })
+  Require ($rules.Count -gt 0) 'Fixture self-only parent listing denial missing on readback'
+}
+
 # Fixed fields only: no raw messages, command lines, environment values or full paths.
 function Get-PreparedFixtureFailure($Failure, [string]$Stage) {
   $exception=$Failure.Exception; $chain=New-Object System.Collections.ArrayList; $native=$null
@@ -60,7 +81,12 @@ function Get-PreparedFixtureFailure($Failure, [string]$Stage) {
   } catch { $frames.Clear() } # Diagnostic text must never prevent reports or owned cleanup.
   return @{status='failed';stage=$Stage;case=$UiCase;assertion=$assertion;exceptions=@($chain);native_code=$native;
     ui_phase=$script:preparedUiPhase;ui_elements=$script:preparedUiElements;
-    ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;stack=@($frames)}
+    ui_navigation_found=$script:preparedUiFound;ui_selections=$script:preparedUiSelected;
+    scaffold_phase=$script:preparedScaffoldPhase;scaffold_raw_root_length=$script:preparedScaffoldRawLength;
+    scaffold_canonical_root_length=$script:preparedScaffoldCanonicalLength;
+    scaffold_root_length_changed=($script:preparedScaffoldRawLength -ne $script:preparedScaffoldCanonicalLength);
+    scaffold_relative_depth=$script:preparedScaffoldRelativeDepth;scaffold_prefix_match=$script:preparedScaffoldPrefixMatch;
+    stack=@($frames)}
 }
 function Write-PreparedFixtureReport([string]$Name, $Record) {
   if ($Name -notmatch '^(owned|foreign)-(primary|cleanup|supervisor|proof|readiness)\.(json|txt)$' -and $Name -notin @('bootstrap.json','controller.json','controller-cleanup.json')) { throw 'Unknown native evidence name' }
@@ -72,6 +98,7 @@ function Write-PreparedFixtureReport([string]$Name, $Record) {
   try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
 }
 $nativeEvidence=Join-Path (Split-Path $PSScriptRoot -Parent) 'dist\validation\prepared-host-native'
+$script:preparedScaffoldPhase='not_entered'; $script:preparedScaffoldRawLength=0; $script:preparedScaffoldCanonicalLength=0; $script:preparedScaffoldRelativeDepth=0; $script:preparedScaffoldPrefixMatch=$false
 $script:preparedUiPhase='not_entered'; $script:preparedUiElements=0; $script:preparedUiFound=0; $script:preparedUiSelected=0
 $workerStage='load_ownership_helper'
 $isFixtureWorker=[bool]$AcceptanceJob
@@ -172,6 +199,90 @@ try {
   Assert-AcceptancePath $fixture -RequireAbsent
   [void][IO.Directory]::CreateDirectory($fixture)
   $fixtureCreated=$true
+
+  # Fixture-only raw Win32 setup avoids .NET Framework colon-path validation.
+  Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+public static class MarkAutoPreparedStreamFixture {
+    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] struct StreamInfo {
+        public long size;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst=296)] public string name;
+    }
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern IntPtr CreateFileW(string path,uint access,uint sharing,IntPtr security,uint disposition,uint flags,IntPtr template);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool WriteFile(IntPtr file,byte[] bytes,uint count,out uint written,IntPtr overlapped);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool FlushFileBuffers(IntPtr file);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern bool DeleteFileW(string path);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern IntPtr FindFirstStreamW(string path,int level,out StreamInfo stream,uint flags);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern bool FindNextStreamW(IntPtr search,out StreamInfo stream);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool FindClose(IntPtr search);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool CloseHandle(IntPtr file);
+    static string Target(string root,string path,string name) {
+        root=Path.GetFullPath(root).TrimEnd((char)92)+(char)92;
+        path=Path.GetFullPath(path);
+        if(!path.StartsWith(root,StringComparison.OrdinalIgnoreCase) || path.Substring(2).Contains(":") ||
+           !Regex.IsMatch(name,"^synthetic-[a-z-]+$"))
+            throw new InvalidOperationException("Stream fixture path escaped private root");
+        return path+":"+name;
+    }
+
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern uint GetShortPathNameW(string path,System.Text.StringBuilder buffer,uint length);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)] static extern uint GetLongPathNameW(string path,System.Text.StringBuilder buffer,uint length);
+    public static string ShortPath(string root,string path) {
+        Target(root,path,"synthetic-path-alias");
+        var buffer=new System.Text.StringBuilder(32768);
+        uint count=GetShortPathNameW(path,buffer,(uint)buffer.Capacity);
+        if(count==0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if(count>=buffer.Capacity) throw new InvalidOperationException("Fixture short path exceeds bound");
+        return buffer.ToString();
+    }
+    public static string LongPath(string path) {
+        var buffer=new System.Text.StringBuilder(32768);
+        uint count=GetLongPathNameW(path,buffer,(uint)buffer.Capacity);
+        if(count==0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if(count>=buffer.Capacity) throw new InvalidOperationException("Fixture long path exceeds bound");
+        return buffer.ToString();
+    }
+
+    public static bool Exists(string root,string path,string name) {
+        Target(root,path,name);
+        StreamInfo stream; IntPtr search=FindFirstStreamW(path,0,out stream,0);
+        if(search==new IntPtr(-1)) {
+            int error=Marshal.GetLastWin32Error();
+            if(error==38) return false;
+            throw new Win32Exception(error);
+        }
+        try {
+            for(int count=0;count<8;count++) {
+                if(String.Equals(stream.name,":"+name+":$DATA",StringComparison.Ordinal)) return true;
+                if(!FindNextStreamW(search,out stream)) {
+                    int error=Marshal.GetLastWin32Error();
+                    if(error==38) return false;
+                    throw new Win32Exception(error);
+                }
+            }
+            throw new InvalidOperationException("Fixture stream enumeration exceeds bound");
+        } finally { FindClose(search); }
+    }
+    public static void Create(string root,string path,string name) {
+        string target=Target(root,path,name);
+        IntPtr file=CreateFileW(target,0x40000000,0,IntPtr.Zero,1,0x02000080,IntPtr.Zero);
+        if(file==new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        try {
+            byte[] bytes=new byte[]{102,105,120,116,117,114,101}; uint written;
+            if(!WriteFile(file,bytes,(uint)bytes.Length,out written,IntPtr.Zero) || written!=bytes.Length)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            if(!FlushFileBuffers(file)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        } finally { CloseHandle(file); }
+    }
+    public static void Delete(string root,string path,string name) {
+        if(!DeleteFileW(Target(root,path,name))) throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+}
+'@
   $syntheticFailure=$null
   try { throw (New-Object InvalidOperationException('synthetic-private-message C:\private-fixture\value')) }
   catch { $syntheticFailure=$_ }
@@ -265,6 +376,461 @@ try {
   Confirm-PreparedStateInventory (Get-PreparedStateInventory $source) $receipt
   Confirm-PreparedStateInventory (Get-PreparedStateInventory $backup) $receipt
   [Console]::Out.WriteLine('{"stage":"preparation_controls","status":"passed"}')
+
+  # Explicit new-baseline contract controls. All paths belong to this CI scratch tree.
+  $controllerStage='current_baseline_controls'
+  $current=Join-Path $fixture 'current-state'; [void][IO.Directory]::CreateDirectory($current)
+  foreach ($name in @('cache','control-v1','credentials','logs','state-v1','state-v1/market_cache')) { [void][IO.Directory]::CreateDirectory((Join-Path $current $name)) }
+  foreach ($name in @('.analysis-recovery-admission.lock','installer-preservation-test.txt','state-v1/desktop_safety.json','state-v1/settings.json','workspace-format.json')) { [IO.File]::WriteAllText((Join-Path $current $name),'synthetic-baseline-only') }
+  $scaffold=Join-Path $fixture 'install-scaffold'
+  foreach ($name in @('payloads/0.2.1/is-ABCDE','payloads/0.2.2/is-FGHIJ')) { [void][IO.Directory]::CreateDirectory((Join-Path $scaffold $name)) }
+  $directoryMap=@('payloads','payloads/0.2.1','payloads/0.2.1/is-ABCDE','payloads/0.2.2','payloads/0.2.2/is-FGHIJ')
+  $metadata=@{}
+  foreach ($name in (@('.')+$directoryMap)) {
+    $path=if($name -ceq '.'){$scaffold}else{Join-Path $scaffold $name}
+    $info=New-Object IO.DirectoryInfo($path)
+    $metadata[$name]=@{created_at_utc=$info.get_CreationTimeUtc().ToString('o');modified_at_utc=$info.get_LastWriteTimeUtc().ToString('o')}
+  }
+  $kitContext=@{version='0.2.2';baseline_version='0.2.1';candidate_commit=('a'*40);files_sha256=@{'packaging/acceptance_process.dll'=('b'*64);'packaging/acceptance_process.ps1'=('c'*64)}}
+  $priorKitContext=@{schema_version=1;version='0.2.2';baseline_version='0.2.1';candidate_commit=('7'*40)}
+  $invocationContext=@{StartedAtUtc=[DateTime]::UtcNow.AddMinutes(-1).ToString('o');FinishedAtUtc=[DateTime]::UtcNow.ToString('o');ExecutionSha=('7'*40);ActualCallerExitCode=2;TimedOut=$false;
+    NativeReports=@(@{Name='installer-results.json';Sha256=('d'*64)},@{Name='installer-supervisor.json';Sha256=('d'*64)},@{Name='installer-scope-preflight.json';Sha256=('d'*64)})}
+  # Canonical declared identities are separate from raw launch/alias controls.
+  $canonicalFixture=[IO.Path]::GetFullPath($fixture).TrimEnd('\')
+  $canonicalSource=[IO.Path]::GetFullPath($source).TrimEnd('\')
+  $canonicalCurrent=[IO.Path]::GetFullPath($current).TrimEnd('\')
+  $canonicalScaffold=[IO.Path]::GetFullPath($scaffold).TrimEnd('\')
+  $currentInventory=Get-PreparedStateInventory $current -RequireUnaliased
+  $reviewed=@{schema_version=2;owner='prepared-host-current-baseline';original_lifecycle_continuity='UNPROVEN';captured_at_utc=[DateTime]::UtcNow.ToString('o');
+    kit_root=$canonicalSource;kit_sha256=('e'*64);candidate_commit=('a'*40);candidate_version='0.2.2';baseline_version='0.2.1';installer_sha256=('f'*64);
+    helper_sha256=('b'*64);helper_script_sha256=('c'*64);entrypoint_sha256=('1'*64);app_data_path=$canonicalCurrent;install_path=$canonicalScaffold;
+    directories=$currentInventory.directories;files_sha256=$currentInventory.files_sha256;install_directories=$directoryMap;install_metadata=$metadata;
+    prior_reports_sha256=@{'installer-results.json'=('d'*64);'installer-supervisor.json'=('d'*64);'installer-scope-preflight.json'=('d'*64);'smoke-installed.json'=('d'*64);'smoke-upgraded.json'=('d'*64)};
+    lifecycle_invocation_path=(Join-Path $canonicalFixture 'invocation.json');lifecycle_invocation_sha256=('2'*64);
+    prior_kit_root=$canonicalSource;prior_kit_sha256=('3'*64);prior_candidate_commit=('7'*40);prior_candidate_version='0.2.2';prior_baseline_version='0.2.1'}
+  $reviewed=$reviewed | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  function Confirm-CurrentFixture($r) { Confirm-PreparedCurrentBaseline $r $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $invocationContext $priorKitContext }
+  function Clone-CurrentFixture { return ($reviewed | ConvertTo-Json -Depth 8 | ConvertFrom-Json) }
+  Confirm-CurrentFixture $reviewed
+  $sourceOperationalAlias=(Split-Path $canonicalSource -Parent)+'\.\'+(Split-Path $canonicalSource -Leaf)
+  $currentOperationalAlias=(Split-Path $canonicalCurrent -Parent)+'\.\'+(Split-Path $canonicalCurrent -Leaf)
+  $scaffoldOperationalAlias=(Split-Path $canonicalScaffold -Parent)+'\.\'+(Split-Path $canonicalScaffold -Leaf)
+  Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $sourceOperationalAlias $currentOperationalAlias $scaffoldOperationalAlias $invocationContext $priorKitContext
+  # Each declared receipt path is canonical; a same-target alias is refused.
+  foreach ($field in @('kit_root','app_data_path','install_path')) {
+    $bad=Clone-CurrentFixture
+    $declared=[string]$bad.PSObject.Properties[$field].Value
+    $bad.PSObject.Properties[$field].Value=(Split-Path $declared -Parent)+'\.\'+(Split-Path $declared -Leaf)
+    Reject { Confirm-CurrentFixture $bad } ('Noncanonical declared receipt identity admitted: '+$field) 'Current baseline provenance refused'
+  }
+  Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
+
+
+  $controllerStage='scaffold_dot_component_controls'
+  $canonicalScaffold=[IO.Path]::GetFullPath($scaffold).TrimEnd('\')
+  $dotScaffold=(Split-Path $canonicalScaffold -Parent)+'\.\'+(Split-Path $canonicalScaffold -Leaf)
+  $dotCanonical=[IO.Path]::GetFullPath($dotScaffold).TrimEnd('\')
+  Require ($dotCanonical -ceq $canonicalScaffold) 'Dot-component root did not identify the exact scaffold'
+  Require ($dotScaffold.Length -ne $dotCanonical.Length) 'Dot-component root did not change canonical prefix length'
+  Require ($dotScaffold.Length -eq ($dotCanonical.Length+2)) 'Dot-component offset precondition was not deterministic'
+  Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext
+  $dotUnknown=Join-Path $canonicalScaffold 'unreviewed-dot-child'
+  [void][IO.Directory]::CreateDirectory($dotUnknown)
+  [IO.Directory]::SetLastWriteTimeUtc($canonicalScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  try {
+    Reject { Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext } 'Dot-component root accepted unknown scaffold child' 'Unknown installer scaffolding directory'
+  } finally {
+    [IO.Directory]::Delete($dotUnknown)
+    [IO.Directory]::SetLastWriteTimeUtc($canonicalScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  }
+  Assert-PreparedInstallScaffolding $dotScaffold $reviewed $priorKitContext $invocationContext
+  [Console]::Out.WriteLine((@{stage='scaffold_dot_component_controls';status='passed';
+    root_length_changed=$true;prefix_length_delta=2;canonical_target_matches=$true;
+    positive_before_after=$true;unknown_child_refused=$true} | ConvertTo-Json -Compress))
+
+  $controllerStage='scaffold_alias_controls'
+  $longScaffold=[MarkAutoPreparedStreamFixture]::LongPath($scaffold)
+  $shortScaffold=[MarkAutoPreparedStreamFixture]::ShortPath($fixture,$scaffold)
+  $distinctAlias=-not [string]::Equals($shortScaffold,$longScaffold,[StringComparison]::OrdinalIgnoreCase)
+  if (-not $distinctAlias) {
+    [Console]::Out.WriteLine((@{stage='scaffold_alias_controls';status='BLOCKED';reason='no_distinct_native_short_alias';
+      short_length=$shortScaffold.Length;long_length=$longScaffold.Length} | ConvertTo-Json -Compress))
+    throw 'Native scaffold alias control unavailable; no short/long proof'
+  }
+  foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+    Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext
+  }
+  $aliasUnknown=Join-Path $longScaffold 'unreviewed-alias-child'
+  [void][IO.Directory]::CreateDirectory($aliasUnknown)
+  [IO.Directory]::SetLastWriteTimeUtc($longScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  try {
+    foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+      Reject { Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext } 'Native short alias accepted unknown scaffold child' 'Unknown installer scaffolding directory'
+    }
+  } finally {
+    [IO.Directory]::Delete($aliasUnknown)
+    [IO.Directory]::SetLastWriteTimeUtc($longScaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  }
+  foreach ($aliasRoot in @($longScaffold,$shortScaffold)) {
+    Assert-PreparedInstallScaffolding $aliasRoot $reviewed $priorKitContext $invocationContext
+  }
+  [Console]::Out.WriteLine((@{stage='scaffold_alias_controls';status='passed';short_long_distinct=$true;
+    raw_short_root_length=$shortScaffold.Length;canonical_short_root_length=([IO.Path]::GetFullPath($shortScaffold).TrimEnd('\')).Length;
+    root_length_changed=($shortScaffold.Length -ne ([IO.Path]::GetFullPath($shortScaffold).TrimEnd('\')).Length);
+    expected_directories=5;unknown_child_refused=$true} | ConvertTo-Json -Compress))
+  $controllerStage='current_baseline_controls'
+
+  Backup-PreparedState $current (Join-Path $fixture 'current-backup') $reviewed -RequireUnaliased
+  Require ([IO.Directory]::Exists($scaffold)) 'Current admission deleted installer scaffolding'
+  $bad=Clone-CurrentFixture; $bad.owner='prepared-host-lifecycle-handoff'
+  Reject { Confirm-CurrentFixture $bad } 'Current receipt relabelled as lifecycle handoff' 'Current baseline provenance refused'
+  $bad=Clone-CurrentFixture; $bad.original_lifecycle_continuity='PROVEN'
+  Reject { Confirm-CurrentFixture $bad } 'Historical continuity was manufactured' 'Current baseline provenance refused'
+  $bad=Clone-CurrentFixture; $bad | Add-Member no_intervening_app_use $true
+  Reject { Confirm-CurrentFixture $bad } 'Current schema accepted legacy continuity assertion' 'Current baseline receipt schema refused'
+  foreach ($field in @('kit_root','app_data_path','install_path','kit_sha256','candidate_commit','candidate_version','baseline_version','installer_sha256','helper_sha256','helper_script_sha256','entrypoint_sha256','prior_candidate_commit','prior_candidate_version','prior_baseline_version')) {
+    $bad=Clone-CurrentFixture; $bad.PSObject.Properties[$field].Value='wrong'
+    Reject { Confirm-CurrentFixture $bad } ('Wrong current provenance accepted: '+$field) 'Current baseline provenance refused'
+  }
+  $bad=Clone-CurrentFixture; $bad.captured_at_utc=[DateTime]::UtcNow.AddMinutes(-31).ToString('o')
+  Reject { Confirm-CurrentFixture $bad } 'Stale current baseline accepted' 'Current baseline freshness refused'
+  $bad=Clone-CurrentFixture; $bad.captured_at_utc=[DateTime]::UtcNow.AddMinutes(1).ToString('o')
+  Reject { Confirm-CurrentFixture $bad } 'Future current baseline accepted' 'Current baseline freshness refused'
+  $bad=Clone-CurrentFixture; $bad.files_sha256 | Add-Member '../escape' ('a'*64)
+  Reject { Confirm-CurrentFixture $bad } 'Unsafe current receipt map accepted' 'Current baseline receipt schema refused'
+  $bad=Clone-CurrentFixture; $bad.prior_reports_sha256.'installer-supervisor.json'=('9'*64)
+  Reject { Confirm-CurrentFixture $bad } 'Wrong prior invocation context accepted' 'Current baseline invocation context refused'
+  [IO.File]::WriteAllText((Join-Path $current 'unknown.txt'),'not-approved')
+  Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Current unknown file read' 'Current baseline unknown file refused'
+  [IO.File]::Delete((Join-Path $current 'unknown.txt'))
+  [void][IO.Directory]::CreateDirectory((Join-Path $current 'unknown'))
+  Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Current unknown directory admitted' 'Current baseline unknown directory refused'
+  [IO.Directory]::Delete((Join-Path $current 'unknown'))
+  [IO.File]::WriteAllText((Join-Path $current 'credentials/synthetic.bin'),'not-a-secret')
+  Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Current credential presence admitted' 'Credential-bearing state is outside this test phase'
+  [IO.File]::Delete((Join-Path $current 'credentials/synthetic.bin'))
+  $currentSentinel=Join-Path $current 'installer-preservation-test.txt'
+  [IO.File]::WriteAllText($currentSentinel,'changed')
+  Reject { Backup-PreparedState $current (Join-Path $fixture 'current-changed-backup') $reviewed -RequireUnaliased } 'Current changed content accepted' 'Prepared data digest changed; originals preserved'
+  [IO.File]::WriteAllText($currentSentinel,'synthetic-baseline-only')
+  $hardlink=Join-Path $fixture 'sentinel-alias.txt'
+  New-Item -ItemType HardLink -Path $hardlink -Target $currentSentinel | Out-Null
+  try { Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Hard-linked current file admitted' 'Current baseline file alias or stream refused' }
+  finally { [IO.File]::Delete($hardlink) }
+  [MarkAutoPreparedStreamFixture]::Create($fixture,$currentSentinel,'synthetic-stream')
+  Require ([MarkAutoPreparedStreamFixture]::Exists($fixture,$currentSentinel,'synthetic-stream')) 'Regular ADS setup was not verified'
+  try { Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Alternate current stream admitted' 'Current baseline file alias or stream refused' }
+  finally { [MarkAutoPreparedStreamFixture]::Delete($fixture,$currentSentinel,'synthetic-stream') }
+  Require (-not [MarkAutoPreparedStreamFixture]::Exists($fixture,$currentSentinel,'synthetic-stream')) 'Regular ADS cleanup was not verified'
+  Require ((Get-FileHash -LiteralPath $currentSentinel -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $reviewed.files_sha256.'installer-preservation-test.txt') 'Regular ADS control changed baseline bytes'
+  $redirect=Join-Path $fixture 'current-redirect'; New-Item -ItemType Junction -Path $redirect -Target $current | Out-Null
+  try { Reject { Get-PreparedStateInventory $redirect -RequireUnaliased } 'Current redirect followed' 'Bootstrap redirect refused before content reads' }
+  finally { [IO.Directory]::Delete($redirect) }
+
+  # Match the proven native ACL convention: parent listing can grant metadata
+  # despite a target ReadAttributes deny. No personal or global ACL is touched.
+  $aclParent=Join-Path $fixture 'current-acl-parent'
+  [void][IO.Directory]::CreateDirectory($aclParent)
+  $aclRoot=Join-Path $aclParent 'denied'
+  Backup-PreparedState $current $aclRoot $reviewed -RequireUnaliased
+  $denied=Join-Path $aclRoot 'state-v1/settings.json'
+  $originalParentAcl=Get-Acl -LiteralPath $aclParent
+  $originalRootAcl=Get-Acl -LiteralPath $aclRoot
+  $originalFileAcl=Get-Acl -LiteralPath $denied
+  $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+  try { $sid=$identity.User } finally { $identity.Dispose() }
+  Require ([MarkAutoAcceptanceJob]::PathAttributes($aclRoot) -ne [uint32]::MaxValue) 'ACL positive root metadata control failed'
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $aclRoot -RequireUnaliased) $reviewed
+  try {
+    $rootAcl=Get-Acl -LiteralPath $aclRoot
+    $rootRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData,ReadAttributes','ContainerInherit,ObjectInherit','None','Deny')
+    $rootAcl.AddAccessRule($rootRule); Set-Acl -LiteralPath $aclRoot -AclObject $rootAcl
+    $fileAcl=Get-Acl -LiteralPath $denied
+    $fileRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadAttributes','Deny')
+    $fileAcl.AddAccessRule($fileRule); Set-Acl -LiteralPath $denied -AclObject $fileAcl
+    $parentAcl=Get-Acl -LiteralPath $aclParent
+    $parentRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ListDirectory','None','None','Deny')
+    $parentAcl.AddAccessRule($parentRule); Set-Acl -LiteralPath $aclParent -AclObject $parentAcl
+    Confirm-PreparedSelfOnlyListDeny $aclParent $sid
+    $nativeRootCode=0; try { [void][MarkAutoAcceptanceJob]::PathAttributes($aclRoot) } catch { $nativeRootCode=Get-PreparedNativeCode $_ }
+    $predicateCode=0; try { Get-PreparedStateInventory $aclRoot -RequireUnaliased | Out-Null } catch { $predicateCode=Get-PreparedNativeCode $_ }
+    Require ($nativeRootCode -eq 5) 'Current ACL fixture did not prove native ERROR_ACCESS_DENIED'
+    Require ($predicateCode -eq 5) 'Current metadata access denial admitted'
+  } finally {
+    Set-Acl -LiteralPath $aclParent -AclObject $originalParentAcl
+    Set-Acl -LiteralPath $aclRoot -AclObject $originalRootAcl
+    Set-Acl -LiteralPath $denied -AclObject $originalFileAcl
+  }
+  Require ([MarkAutoAcceptanceJob]::PathAttributes($denied) -ne [uint32]::MaxValue) 'ACL restored file metadata control failed'
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $aclRoot -RequireUnaliased) $reviewed
+  Require ((Get-FileHash -LiteralPath $denied -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $reviewed.files_sha256.'state-v1/settings.json') 'ACL probe changed fixture bytes'
+
+  [IO.File]::WriteAllText((Join-Path $scaffold 'unexplained.exe'),'not-executable')
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  Reject { Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext } 'Non-empty installer tree admitted' 'Installer scaffolding contains a file'
+  [IO.File]::Delete((Join-Path $scaffold 'unexplained.exe'))
+  [void][IO.Directory]::CreateDirectory((Join-Path $scaffold 'unknown'))
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  Reject { Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext } 'Unknown installer directory admitted' 'Unknown installer scaffolding directory'
+  [IO.Directory]::Delete((Join-Path $scaffold 'unknown'))
+  [IO.File]::WriteAllText((Join-Path $fixture 'current-backup/installer-preservation-test.txt'),'changed-backup')
+  Reject { Confirm-PreparedStateInventory (Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased) $reviewed } 'Current backup mismatch accepted' 'Prepared data digest changed; originals preserved'
+  [IO.File]::WriteAllText((Join-Path $current 'workspace-location.json'),'existing')
+  Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Existing workspace pointer admitted' 'Current baseline unknown file refused'
+  [IO.File]::Delete((Join-Path $current 'workspace-location.json'))
+  $currentReceiptPath=Join-Path $fixture 'reviewed-current.json'
+  [IO.File]::WriteAllText($currentReceiptPath,($reviewed | ConvertTo-Json -Depth 8))
+  $currentReceiptDigest=(Get-FileHash -LiteralPath $currentReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  [void](Read-PreparedJson $currentReceiptPath $currentReceiptDigest)
+  [IO.File]::AppendAllText($currentReceiptPath,' ')
+  Reject { Read-PreparedJson $currentReceiptPath $currentReceiptDigest } 'Tampered current receipt accepted' 'Pinned bootstrap digest mismatch'
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  $scaffoldRedirect=Join-Path $scaffold 'redirect'
+  New-Item -ItemType Junction -Path $scaffoldRedirect -Target $source | Out-Null
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  try { Reject { Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext } 'Installer scaffold redirect admitted' 'Bootstrap redirect refused before content reads' }
+  finally { [IO.Directory]::Delete($scaffoldRedirect) }
+  $bad=Clone-CurrentFixture; $bad.install_metadata.'.'.modified_at_utc=[DateTime]::UtcNow.AddDays(-1).ToString('o')
+  Reject { Assert-PreparedInstallScaffolding $scaffold $bad $priorKitContext $invocationContext } 'Wrong scaffold provenance accepted' 'Pinned installer scaffolding metadata changed'
+  $pointerPath=Join-Path $current 'workspace-location.json'
+  [IO.File]::WriteAllText($pointerPath,'owned-pointer-only')
+  $pointerDigest=(Get-FileHash -LiteralPath $pointerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $current -RequireUnaliased -OwnedPointerDigest $pointerDigest) $reviewed
+  [IO.File]::WriteAllText($pointerPath,'changed-owned-pointer')
+  Reject { Get-PreparedStateInventory $current -RequireUnaliased -OwnedPointerDigest $pointerDigest } 'Changed owned workspace pointer admitted' 'Owned workspace pointer changed'
+  [IO.File]::Delete($pointerPath)
+
+
+  # v2 follow-on negatives: verify the actual runtime gates, never a copied oracle.
+  $controllerStage='current_baseline_follow_on_controls'
+  $bad=Clone-CurrentFixture; $bad.schema_version=1
+  Reject { Confirm-CurrentFixture $bad } 'Version-one current receipt admitted' 'Current baseline provenance refused'
+  $wrongInvocation=$invocationContext.Clone(); $wrongInvocation.ExecutionSha=('8'*40)
+  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $wrongInvocation $priorKitContext } 'Wrong original invocation candidate admitted' 'Current baseline provenance refused'
+  $wrongInvocation=$invocationContext.Clone(); $wrongInvocation.TimedOut=$true
+  Reject { Confirm-PreparedCurrentBaseline $reviewed $kitContext ('e'*64) ('f'*64) ('1'*64) $canonicalSource $canonicalCurrent $canonicalScaffold $wrongInvocation $priorKitContext } 'Timed-out original invocation admitted' 'Current baseline provenance refused'
+  $backupSentinel=Join-Path $fixture 'current-backup/installer-preservation-test.txt'
+  [IO.File]::WriteAllText($backupSentinel,'synthetic-baseline-only')
+  $backupAlias=Join-Path $fixture 'backup-sentinel-alias.txt'
+  New-Item -ItemType HardLink -Path $backupAlias -Target $backupSentinel | Out-Null
+  try { Reject { Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased } 'Hard-linked backup admitted' 'Current baseline file alias or stream refused' }
+  finally { [IO.File]::Delete($backupAlias) }
+  [MarkAutoPreparedStreamFixture]::Create($fixture,$backupSentinel,'synthetic-backup-stream')
+  Require ([MarkAutoPreparedStreamFixture]::Exists($fixture,$backupSentinel,'synthetic-backup-stream')) 'Backup ADS setup was not verified'
+  try { Reject { Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased } 'Alternate backup stream admitted' 'Current baseline file alias or stream refused' }
+  finally { [MarkAutoPreparedStreamFixture]::Delete($fixture,$backupSentinel,'synthetic-backup-stream') }
+  Require (-not [MarkAutoPreparedStreamFixture]::Exists($fixture,$backupSentinel,'synthetic-backup-stream')) 'Backup ADS cleanup was not verified'
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased) $reviewed
+  [IO.File]::WriteAllText($pointerPath,'owned-pointer-only')
+  $pointerDigest=(Get-FileHash -LiteralPath $pointerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $pointerAlias=Join-Path $fixture 'owned-pointer-alias.txt'
+  New-Item -ItemType HardLink -Path $pointerAlias -Target $pointerPath | Out-Null
+  try { Reject { Get-PreparedStateInventory $current -RequireUnaliased -OwnedPointerDigest $pointerDigest } 'Hard-linked owned pointer admitted' 'Current baseline file alias or stream refused' }
+  finally { [IO.File]::Delete($pointerAlias); [IO.File]::Delete($pointerPath) }
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  $scaffoldLeaf=Join-Path $scaffold 'payloads/0.2.1/is-ABCDE'
+
+  $scaffoldParent=Split-Path $scaffold -Parent
+  $savedScaffoldParentAcl=Get-Acl -LiteralPath $scaffoldParent
+  $savedScaffoldRootAcl=Get-Acl -LiteralPath $scaffold
+  Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
+  try {
+    $rootAcl=Get-Acl -LiteralPath $scaffold
+    $rootRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadAttributes','Deny')
+    $rootAcl.AddAccessRule($rootRule); Set-Acl -LiteralPath $scaffold -AclObject $rootAcl
+    $parentAcl=Get-Acl -LiteralPath $scaffoldParent
+    $parentRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ListDirectory','None','None','Deny')
+    $parentAcl.AddAccessRule($parentRule); Set-Acl -LiteralPath $scaffoldParent -AclObject $parentAcl
+    Confirm-PreparedSelfOnlyListDeny $scaffoldParent $sid
+    $scaffoldNativeCode=0; try { [void][MarkAutoAcceptanceJob]::PathAttributes($scaffold) } catch { $scaffoldNativeCode=Get-PreparedNativeCode $_ }
+    $scaffoldPredicateCode=0; try { Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext } catch { $scaffoldPredicateCode=Get-PreparedNativeCode $_ }
+    Require ($scaffoldNativeCode -eq 5) 'Scaffold ACL fixture did not prove native ERROR_ACCESS_DENIED'
+    Require ($scaffoldPredicateCode -eq 5) 'Scaffold metadata access denial admitted'
+  } finally {
+    Set-Acl -LiteralPath $scaffoldParent -AclObject $savedScaffoldParentAcl
+    Set-Acl -LiteralPath $scaffold -AclObject $savedScaffoldRootAcl
+  }
+  Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
+
+  Require ([IO.Directory]::Exists($scaffoldLeaf) -and [IO.Directory]::GetFiles($scaffold,'*',[IO.SearchOption]::AllDirectories).Length -eq 0) 'Reviewed empty scaffolding changed after rejection controls'
+  Confirm-PreparedStateInventory (Get-PreparedStateInventory $current -RequireUnaliased) $reviewed
+
+  # Inject after the first successful production inventory, before the second.
+  # A data-denied unknown file traps any content open; an outside hard link keeps
+  # the source names/hashes unchanged, so a mere eventual mismatch cannot pass.
+  $script:productionInventory=(Get-Command Get-PreparedStateInventory -CommandType Function).ScriptBlock
+  foreach ($mutation in @('unknown','alias')) {
+    $script:inventoryMutation=$mutation; $script:inventoryPasses=0
+    $script:secondInventoryReturned=$false; $script:secondInventoryStrict=$false
+    $script:betweenPassRoot=$current; $script:betweenPassFile=Join-Path $current 'unreviewed-between-pass.txt'
+    $script:betweenPassAlias=Join-Path $fixture 'between-pass-alias.txt'
+    $script:betweenPassOriginalAcl=$null; $script:contentTrapVerified=$false
+    try {
+      Set-Item -LiteralPath Function:Get-PreparedStateInventory -Value {
+        param([string]$Root,[switch]$RequireUnaliased,[string]$OwnedPointerDigest='')
+        if ($Root -ceq $script:betweenPassRoot) {
+          $script:inventoryPasses++
+          if ($script:inventoryPasses -eq 2) { $script:secondInventoryStrict=[bool]$RequireUnaliased }
+        }
+        $actual=& $script:productionInventory $Root -RequireUnaliased:$RequireUnaliased -OwnedPointerDigest $OwnedPointerDigest
+        if ($Root -ceq $script:betweenPassRoot) {
+          if ($script:inventoryPasses -eq 2) { $script:secondInventoryReturned=$true }
+          if ($script:inventoryPasses -eq 1) {
+            if ($script:inventoryMutation -ceq 'unknown') {
+              [IO.File]::WriteAllText($script:betweenPassFile,'synthetic-unreviewed-only')
+              $script:betweenPassOriginalAcl=Get-Acl -LiteralPath $script:betweenPassFile
+              $acl=Get-Acl -LiteralPath $script:betweenPassFile
+              $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadData','Deny')
+              $acl.AddAccessRule($rule); Set-Acl -LiteralPath $script:betweenPassFile -AclObject $acl
+              Require ([MarkAutoAcceptanceJob]::PathAttributes($script:betweenPassFile) -ne [uint32]::MaxValue) 'Content trap metadata was unreadable'
+              try { $probe=[IO.File]::Open($script:betweenPassFile,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read); $probe.Dispose() }
+              catch {
+                $cause=$_.Exception.GetBaseException()
+                $script:contentTrapVerified=($cause -is [UnauthorizedAccessException] -and ($cause.HResult -band 0xffff) -eq 5)
+              }
+              Require $script:contentTrapVerified 'Unknown-file content access trap was not verified'
+            } else {
+              New-Item -ItemType HardLink -Path $script:betweenPassAlias -Target (Join-Path $Root 'installer-preservation-test.txt') | Out-Null
+            }
+          }
+        }
+        return $actual
+      }
+      $output=Join-Path $fixture ('between-pass-'+$mutation+'-backup')
+      $expected=if ($mutation -ceq 'unknown') { 'Current baseline unknown file refused' } else { 'Current baseline file alias or stream refused' }
+      Reject { Backup-PreparedState $current $output $reviewed -RequireUnaliased } ('Between-pass '+$mutation+' was not refused at inventory') $expected
+      Require ($script:inventoryPasses -eq 2 -and $script:secondInventoryStrict -and -not $script:secondInventoryReturned) 'Second inventory bypassed strict admission before content access'
+      Require ([IO.Directory]::GetFileSystemEntries($output).Length -eq 0) 'Between-pass refusal copied content before admission'
+      if ($mutation -ceq 'unknown') { Require $script:contentTrapVerified 'Unknown-file content trap missing' }
+    } finally {
+      Set-Item -LiteralPath Function:Get-PreparedStateInventory -Value $script:productionInventory
+      if ($script:betweenPassOriginalAcl) {
+        Set-Acl -LiteralPath $script:betweenPassFile -AclObject $script:betweenPassOriginalAcl
+        [IO.File]::Delete($script:betweenPassFile)
+      }
+      if ([IO.File]::Exists($script:betweenPassAlias)) { [IO.File]::Delete($script:betweenPassAlias) }
+    }
+    Confirm-PreparedStateInventory (Get-PreparedStateInventory $current -RequireUnaliased) $reviewed
+  }
+
+
+  # Every directory node is covered, including roots and empty credentials.
+  foreach ($relative in @('.')+@($reviewed.directories)) {
+    $directory=if ($relative -ceq '.') { $current } else { Join-Path $current $relative }
+    Assert-PreparedBootstrapPath $directory -AllowAbsent
+    [MarkAutoPreparedStreamFixture]::Create($fixture,$directory,'synthetic-directory-stream')
+    try {
+      Require ([MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-directory-stream')) 'Directory ADS setup was not independently verified'
+      Reject { Get-PreparedStateInventory $current -RequireUnaliased } 'Directory ADS baseline admitted' 'Current baseline directory stream or metadata refused'
+    } finally { [MarkAutoPreparedStreamFixture]::Delete($fixture,$directory,'synthetic-directory-stream') }
+    Require (-not [MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-directory-stream')) 'Directory ADS cleanup was not verified'
+    Confirm-PreparedStateInventory (Get-PreparedStateInventory $current -RequireUnaliased) $reviewed
+  }
+  foreach ($relative in @('.')+@($reviewed.directories)) {
+    $directory=if ($relative -ceq '.') { Join-Path $fixture 'current-backup' } else { Join-Path (Join-Path $fixture 'current-backup') $relative }
+    [MarkAutoPreparedStreamFixture]::Create($fixture,$directory,'synthetic-directory-stream')
+    try {
+      Require ([MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-directory-stream')) 'Backup directory ADS setup was not verified'
+      Reject { Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased } 'Backup directory ADS admitted' 'Current baseline directory stream or metadata refused'
+    } finally { [MarkAutoPreparedStreamFixture]::Delete($fixture,$directory,'synthetic-directory-stream') }
+    Require (-not [MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-directory-stream')) 'Backup directory ADS cleanup was not verified'
+    Confirm-PreparedStateInventory (Get-PreparedStateInventory (Join-Path $fixture 'current-backup') -RequireUnaliased) $reviewed
+  }
+  [IO.Directory]::SetLastWriteTimeUtc($scaffold,(Read-PreparedUtc $metadata['.'].modified_at_utc))
+  foreach ($relative in @('.')+$directoryMap) {
+    $directory=if ($relative -ceq '.') { $scaffold } else { Join-Path $scaffold $relative }
+    $stamp=(New-Object IO.DirectoryInfo($directory)).get_LastWriteTimeUtc()
+    [MarkAutoPreparedStreamFixture]::Create($fixture,$directory,'synthetic-scaffold-stream')
+    [IO.Directory]::SetLastWriteTimeUtc($directory,$stamp)
+    try {
+      Require ([MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-scaffold-stream')) 'Scaffold directory ADS setup was not verified'
+      Reject { Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext } 'Scaffold directory ADS admitted' 'Current baseline directory stream or metadata refused'
+    } finally {
+      [MarkAutoPreparedStreamFixture]::Delete($fixture,$directory,'synthetic-scaffold-stream')
+      [IO.Directory]::SetLastWriteTimeUtc($directory,$stamp)
+    }
+    Require (-not [MarkAutoPreparedStreamFixture]::Exists($fixture,$directory,'synthetic-scaffold-stream')) 'Scaffold directory ADS cleanup was not verified'
+    Assert-PreparedInstallScaffolding $scaffold $reviewed $priorKitContext $invocationContext
+  }
+  # Bootstrap separation runs before any session directory creation.
+  $bootstrapLab=$canonicalFixture; $bootstrapSource=$canonicalSource
+  $priorRoot=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'prior-kit-bootstrap')).TrimEnd('\'); [void][IO.Directory]::CreateDirectory($priorRoot)
+  [IO.File]::WriteAllText((Join-Path $priorRoot 'kit.json'),($priorKitContext | ConvertTo-Json -Depth 5))
+  $rootReceipt=Clone-CurrentFixture; $rootReceipt.prior_kit_root=$priorRoot
+  $rootReceipt.prior_kit_sha256=(Get-FileHash -LiteralPath (Join-Path $priorRoot 'kit.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  $nestedSession=[IO.Path]::GetFullPath((Join-Path $priorRoot 'forbidden-output'))
+  $disjointSession=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'disjoint-output'))
+  $sameSession=[IO.Path]::GetFullPath((Join-Path $bootstrapLab 'same-kit-output'))
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $nestedSession $bootstrapLab } 'Session inside prior kit admitted' 'Kit and session directories must not overlap'
+  Require (-not [IO.Directory]::Exists($nestedSession)) 'Prior-kit refusal created output'
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $priorRoot $bootstrapLab } 'Prior kit reused as session admitted' 'Kit and session directories must not overlap'
+  Reject { Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $bootstrapLab $bootstrapLab } 'Session ancestor of prior kit admitted' 'Kit and session directories must not overlap'
+  $disjoint=Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab
+  Require ($disjoint.root -ceq $priorRoot -and -not [IO.Directory]::Exists($disjointSession)) 'Read-only disjoint prior-kit positive control changed output'
+  $sameKit=@{}+$kitContext; $sameKit.schema_version=1
+  [IO.File]::WriteAllText((Join-Path $bootstrapSource 'kit.json'),($sameKit | ConvertTo-Json -Depth 5))
+  $sameDigest=(Get-FileHash -LiteralPath (Join-Path $bootstrapSource 'kit.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  $sameReceipt=Clone-CurrentFixture; $sameReceipt.prior_kit_root=$bootstrapSource; $sameReceipt.prior_kit_sha256=$sameDigest
+  $sameReceipt.prior_candidate_commit=$sameKit.candidate_commit
+  [void](Read-PreparedPriorContext $sameReceipt $sameKit $sameDigest $bootstrapSource $sameSession $bootstrapLab)
+  Reject { Read-PreparedPriorContext $sameReceipt $sameKit ('0'*64) $bootstrapSource $sameSession $bootstrapLab } 'Unpinned same-kit identity admitted' 'Current/prior kit identity was not explicitly pinned'
+
+  $noncanonical=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $noncanonical.prior_kit_root=$bootstrapLab+'\.\prior-kit-bootstrap'
+  Require ([IO.Path]::GetFullPath($noncanonical.prior_kit_root) -ceq $priorRoot -and $noncanonical.prior_kit_root -cne $priorRoot) 'Noncanonical receipt refusal control was not distinct'
+  Reject { Read-PreparedPriorContext $noncanonical $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Noncanonical prior receipt admitted' 'Current baseline prior kit path refused'
+  Require (-not [IO.Directory]::Exists($disjointSession)) 'Receipt refusal created output'
+  $exactLab=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $exactLab.prior_kit_root=$bootstrapLab
+  Reject { Read-PreparedPriorContext $exactLab $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Exact lab root adopted as prior kit' 'Current baseline prior kit path refused'
+  foreach ($trailingRoot in @(($priorRoot+'\'),($bootstrapLab+'\'))) {
+    $trailing=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+    $trailing.prior_kit_root=$trailingRoot
+    Reject { Read-PreparedPriorContext $trailing $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Trailing-separator prior receipt admitted' 'Current baseline prior kit path refused'
+    Require (-not [IO.Directory]::Exists($disjointSession)) 'Trailing-separator receipt refusal created output'
+  }
+  $outside=$rootReceipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json
+  $outside.prior_kit_root=[IO.Path]::GetFullPath((Join-Path (Split-Path $bootstrapLab -Parent) 'unapproved-prior-kit'))
+  Reject { Read-PreparedPriorContext $outside $kitContext ('e'*64) $bootstrapSource $disjointSession $bootstrapLab } 'Outside lab prior kit admitted' 'Current baseline prior kit path refused'
+  $labAlias=$bootstrapLab+'\.\'
+  $sourceAlias=(Split-Path $bootstrapSource -Parent)+'\.\'+(Split-Path $bootstrapSource -Leaf)
+  $sessionAlias=(Split-Path $disjointSession -Parent)+'\.\'+(Split-Path $disjointSession -Leaf)
+  [void](Read-PreparedPriorContext $sameReceipt $sameKit $sameDigest $sourceAlias $sameSession $labAlias)
+  Reject { Read-PreparedPriorContext $sameReceipt $sameKit ('0'*64) $sourceAlias $sameSession $labAlias } 'Operational alias bypassed same-kit digest pin' 'Current/prior kit identity was not explicitly pinned'
+  $aliasContext=Read-PreparedPriorContext $rootReceipt $kitContext ('e'*64) $sourceAlias $sessionAlias $labAlias
+  Require ($aliasContext.root -ceq $priorRoot -and -not [IO.Directory]::Exists($disjointSession)) 'Operational alias changed canonical receipt identity or output'
+
+  # Pure production containment predicates: no launch, receipt reads or host paths.
+  $controllerStage='canonical_boundary_controls'
+  $boundaryLab=$bootstrapLab; $boundaryAlias=$bootstrapLab+'\.\'
+  $boundaryChild=Join-Path $boundaryLab 'boundary-child'
+  $boundaryChildAlias=$boundaryAlias+'boundary-child'
+  foreach ($failure in @('Kit, script, receipt and session evidence must stay in MarkAuto-TestLab','Current baseline invocation path refused')) {
+    Assert-PreparedLabContainment $boundaryChild $boundaryLab $failure
+    Assert-PreparedLabContainment $boundaryChildAlias $boundaryAlias $failure
+    foreach ($notDescendant in @($boundaryLab,($boundaryLab+'\'),($boundaryAlias),($boundaryLab+'-sibling\file.json'),(Split-Path $boundaryLab -Parent))) {
+      Reject { Assert-PreparedLabContainment $notDescendant $boundaryAlias $failure } 'Lab containment accepted a non-descendant' $failure
+    }
+  }
+  $boundaryScript=Join-Path $boundaryLab 'packaging\prepared_host_session.ps1'
+  $boundaryScriptAlias=$boundaryAlias+'packaging\.\prepared_host_session.ps1'
+  Require ([IO.Path]::GetFullPath($boundaryScriptAlias) -ceq $boundaryScript) 'Script operational alias was not the exact canonical target'
+  Assert-PreparedLabContainment $boundaryScriptAlias $boundaryAlias 'Kit, script, receipt and session evidence must stay in MarkAuto-TestLab'
+  $boundaryApp=Join-Path $boundaryLab 'app'
+  $boundaryAppAlias=$boundaryAlias+'app\'
+  $boundaryExe=Join-Path $boundaryApp 'MarkAuto.exe'
+  Assert-PreparedShortcutContainment $boundaryExe $boundaryApp
+  Assert-PreparedShortcutContainment $boundaryExe $boundaryAppAlias
+  Assert-PreparedShortcutContainment ($boundaryAlias+'app\.\MarkAuto.exe') $boundaryAppAlias
+  foreach ($wrongTarget in @($boundaryApp,($boundaryApp+'-sibling\MarkAuto.exe'),(Join-Path $boundaryApp 'Other.exe'),(Join-Path $boundaryApp 'markauto.exe'),($boundaryApp+'\..\MarkAuto.exe'))) {
+    Reject { Assert-PreparedShortcutContainment $wrongTarget $boundaryAppAlias } 'Shortcut containment accepted an escaped or non-exact executable' 'Installed shortcut escaped the exact app tree'
+  }
+  [Console]::Out.WriteLine('{"stage":"canonical_boundary_controls","status":"passed","scope":"synthetic-native-only"}')
+
+  [Console]::Out.WriteLine('{"stage":"current_baseline_follow_on_controls","status":"passed","scope":"synthetic-native-only"}')
+
+  [Console]::Out.WriteLine('{"stage":"current_baseline_controls","status":"passed","scope":"synthetic-native-only"}')
+
   $controllerStage='compile_window_fixture'
   $exe=Join-Path $fixture 'PreparedUiFixture.exe'
   # Resolve installed strong-named .NET Framework assemblies, not a search-path guess.
