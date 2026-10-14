@@ -548,6 +548,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                                 risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
                 write_json(existing, policy)
         broker = _paper(root)
+        replay_state = None
         if operation == 'ui_paper_reconcile':
             broker.reconcile(payload['snapshot'])
         elif operation == 'ui_paper_kill':
@@ -580,11 +581,13 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                 replay.step(max_bars=payload.get('max_bars', 100))
             finally:
                 replay.stop()
-            return {'replay': replay.snapshot(), 'account': broker.snapshot()}
+            replay_state = replay.snapshot()
         state = broker.snapshot()
         journal = broker.journal_events()
         write_json(root / 'paper_snapshot.json', state)
         write_json(root / 'paper_journal_export.json', journal)
+        if replay_state is not None:
+            return {'replay': replay_state, 'account': state}
         return {'account': state, 'journal_tail': journal[-20:], 'journal_file': str(root / 'paper_journal_export.json')}
     raise ValidationError('未實作作業')
 
