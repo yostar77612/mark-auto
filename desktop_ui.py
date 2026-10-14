@@ -748,11 +748,19 @@ class MainWindow(QMainWindow):
         self.chatgpt_panel.timeout.valueChanged.connect(self._invalidate_analysis_preview)
         self.chatgpt_panel.account.currentIndexChanged.connect(self._invalidate_analysis_preview)
         self._connect_walk_forward_inputs()
-        self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex); self.navigation.setCurrentRow(0)
+        self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)
+        self.navigation.itemSelectionChanged.connect(self._navigate_selected_page)
+        self.navigation.setCurrentRow(0)
         self.timer = QTimer(self); self.timer.timeout.connect(self.poll_jobs); self.timer.start(150)
         self._safe(self.refresh_views)
         self._safe(self.load_settings)
         self._busy(False)
+
+    def _navigate_selected_page(self):
+        # Accessibility selection may not update QListWidget's current item.
+        selected = self.navigation.selectedItems()
+        if len(selected) == 1:
+            self.navigation.setCurrentRow(self.navigation.row(selected[0]))
 
     def _page(self, label):
         self.navigation.addItem(label)

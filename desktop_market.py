@@ -130,7 +130,7 @@ class MarketDashboard(QWidget):
         self.timeframe_combo.setCurrentIndex(6); self.timeframe_combo.currentIndexChanged.connect(self._timeframe_changed); control.addWidget(self.timeframe_combo)
         center_layout.addLayout(control)
         self.chart=CandlestickChart(); self.chart.setObjectName('market_candles'); center_layout.addWidget(self.chart,1)
-        self.indicator_summary=_label('MA 5 / 10 / 20 / 60 · 未成熟指標不補零','market_indicator_summary'); center_layout.addWidget(self.indicator_summary)
+        self.indicator_summary=_label('','market_indicator_summary'); center_layout.addWidget(self.indicator_summary)
         self.main_splitter.addWidget(center)
         right_scroll=QScrollArea(); right_scroll.setWidgetResizable(True); right_scroll.setMinimumWidth(175)
         right=QWidget(); right_layout=QVBoxLayout(right); self.trading_labels={}
@@ -283,6 +283,7 @@ class MarketDashboard(QWidget):
         item=self._series.get(self._selected)
         if item is None:
             self.chart.set_series(()); self._display_bars=()
+            self._apply_indicators()
             self.source_status.setText('離線 · 尚未載入來源；沒有即時行情連線'+(' · '+self._error if self._error else '')); return
         provenance=item.provenance
         # This dashboard consumes historical bar snapshots, never a streaming quote entitlement.
@@ -376,7 +377,8 @@ class MarketDashboard(QWidget):
                 failures.append(key)
         rejected=tuple(key for key in failures if key in reject_failures)
         if rejected: return rejected
-        self.indicator_summary.setText(' / '.join(name+('（無法計算）' if name in failures else '') for name in names)+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
+        summary=' / '.join(name+('（無法計算）' if name in failures else '') for name in names) or '技術指標已停用'
+        self.indicator_summary.setText(summary+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
         overlays={name:values if name=='VWAP 估計' else tuple(values[i] for i in keep) for name,values in overlays.items()}
         panes={f'{panel} {key}':tuple(values[i] for i in keep) for panel,entries in panels.items() for key,values in entries.items()}
         if 'MACD histogram' in panes:
