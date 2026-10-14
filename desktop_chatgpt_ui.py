@@ -32,6 +32,7 @@ ERROR_LABELS = {'explicit_host_recovery_required':'發現先前的 ChatGPT 記�
     'first_use_check_unavailable':'無法核對是否為首次設定；不會開始登入。',
     'registration_retry_required':'授權碼已失效；已保留待驗證註冊。請讀取本機連線，選定該紀錄後明確重新授權。尚未授予身分或推論權限。',
     'host_initialization_required':'尚未初始化本機安全識別。請明確選擇首次設定／復原。',
+    'authorization_failed':'本次授權未完成；請核對官方登入與本機連線狀態。不會自動重試。',
     'authorization_busy':'已有授權作業，請先等待或停止。', 'authorization_timeout':'官方授權等待逾時。',
     'account_mismatch':'帳戶與原連線不符，原紀錄保留。', 'previous_completion_unknown':'先前請求完成狀態未知，禁止重送或退還次數。',
     'account_paused':'此帳戶已暫停；新研究或模型不會解除限制。',
@@ -524,10 +525,10 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
     """
     if not isinstance(request,ConnectionRequest):raise ValueError('typed connection request required')
     session=None;deadline=clock()+request.max_runtime_seconds
-    def snapshot(state=None,**extra):
+    def snapshot(state=None,kind='result',**extra):
         summary=session.status_summary()
         rows=tuple((row['registration'],row['state']) for row in summary['registrations'])
-        return ConnectionEvent(request.request_id,'result',state or summary['state'],rows,summary['active_registration'],
+        return ConnectionEvent(request.request_id,kind,state or summary['state'],rows,summary['active_registration'],
                                account_labels=tuple((row['registration'],row['account_label']) for row in summary['registrations'] if 'account_label' in row),**extra)
     try:
         if session_factory is None:
@@ -544,10 +545,12 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
                  else session.begin(request.registration))
             emit(ConnectionEvent(request.request_id,'authorization','authorizing',authorization_url=url))
             while session.state in ('authorizing','validating'):
-                if cancelled():session.cancel();return snapshot()
+                if cancelled():session.cancel();return snapshot(state=session.state)
                 if clock()>=deadline:session.cancel();return ConnectionEvent(request.request_id,'error','timeout',error_code='authorization_timeout')
                 session.poll(timeout=.1)
-            return snapshot(state='registration_retry_required' if session.state=='registration_retry_required' else None)
+            if session.state=='authorization_failed':
+                return snapshot(state='authorization_failed',kind='error',error_code='authorization_failed')
+            return snapshot(state=session.state)
         if request.action=='select':session.select(request.registration);return snapshot()
         if request.action=='refresh':session.refresh(request.registration);return snapshot()
         if request.action=='sign_out':return snapshot(revocation_confirmed=session.sign_out(request.registration))
