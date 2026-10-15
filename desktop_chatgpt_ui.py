@@ -7,6 +7,7 @@ one worker and remain there through begin/poll. All test transports are fixtures
 """
 from dataclasses import dataclass, field, asdict
 import re
+import sqlite3
 import time
 from urllib.parse import urlsplit, parse_qsl
 
@@ -46,6 +47,31 @@ ERROR_LABELS = {'explicit_host_recovery_required':'發現先前的 ChatGPT 記�
     'network_disabled':'尚未同意本次連線。', 'plan_scope_missing':'此連線沒有訂閱推論權限。',
     'refresh_required':'連線到期，請明確更新或重新授權。',
     'reauthorization_required':'必須重新授權；不會重用不確定的舊憑證。'}
+ERROR_LABELS.update({
+    'http_transport_failed':'連線官方模型服務時傳輸失敗（網路／TLS／連線中斷）；不會自動重試。',
+    'deadline_exceeded':'官方模型服務在期限內未完成；不會自動重試。',
+    'redirect_rejected':'官方模型服務要求轉址；依規則拒絕，不會自動重試。',
+    'invalid_content_type':'官方回應的內容類型不符；不會自動重試。',
+    'compressed_response':'官方回應使用不支援的壓縮；不會自動重試。',
+    'stream_byte_limit':'官方回應超過大小限制；不會自動重試。',
+    'invalid_catalog':'官方模型清單格式驗證未完成；不會自動重試。',
+    'duplicate_model':'官方模型清單含重複項目，已拒絕；不會自動重試。',
+    'invalid_credential':'本機存取憑證格式不符；不會自動重試。',
+    'credential_diagnosis':'官方回應 401：存取憑證未被接受；請重新授權，不會自動重試。',
+    'grant_blocked':'官方回應 403：此連線未被授予所需權限；不會自動重試。',
+    'transient_blocked':'官方服務暫時不可用（503 或使用量暫不可用）；不會自動重試。',
+    'eligibility_blocked':'官方表示此帳戶目前不符合訂閱共用資格；不會自動重試。',
+    'quota_paused':'官方表示方案用量已達上限；已暫停，不切換付費 API。',
+    'configuration_blocked':'官方表示此路由不受支援；不會自動重試。',
+    'invalid_request':'官方表示此請求能力不受支援；不會自動重試。',
+    'models_http_bad_request':'官方模型服務回應 400；不會自動重試。',
+    'models_http_not_found':'官方模型服務回應 404；不會自動重試。',
+    'models_http_rate_limited':'官方模型服務回應 429；不會自動重試。',
+    'models_http_server_error':'官方模型服務回應 5xx；不會自動重試。',
+    'models_http_other':'官方模型服務回應其他非成功狀態；不會自動重試。',
+    'operation_failed_plan':'官方模型服務作業未完成（未列入固定分類的本機檢查）；不會自動重試。',
+    'operation_failed_auth':'本機連線授權檢查未完成（未列入固定分類）；不會自動重試。',
+    'operation_failed_local':'本機檔案或儲存作業未完成；不會自動重試。'})
 RECOVERABLE_PAUSES = frozenset(('eligibility_blocked','quota_paused','transient_blocked','invalid_request','configuration_blocked','credential_diagnosis','grant_blocked'))
 REF = r'[a-f0-9]{32}'
 MODEL = r'[A-Za-z0-9._:-]{1,128}'
@@ -520,6 +546,26 @@ class ChatGPTConnectionPanel(QWidget):
         else:event.accept()
 
 
+def _safe_error_code(exc):
+    """Map an exception to a fixed allowlisted code; never expose its text."""
+    code=str(exc)
+    if code in ERROR_LABELS:return code
+    names=tuple(c.__name__ for c in type(exc).__mro__)
+    if 'PlanError' in names:
+        local=getattr(exc,'code',None)
+        if local=='remote_error':
+            status=getattr(exc,'http_status',None)
+            if status==400:return 'models_http_bad_request'
+            if status==404:return 'models_http_not_found'
+            if status==429:return 'models_http_rate_limited'
+            if type(status) is int and 500<=status<=599:return 'models_http_server_error'
+            return 'models_http_other'
+        return local if local in ERROR_LABELS else 'operation_failed_plan'
+    if 'AuthError' in names:return 'operation_failed_auth'
+    if isinstance(exc,(OSError,sqlite3.Error)):return 'operation_failed_local'
+    return 'operation_failed'
+
+
 def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=None,clock=time.monotonic):
     """Worker-only adapter. Parent MUST enforce process deadline/terminate/join.
 
@@ -575,9 +621,8 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
             clear_account_pause(reference,Path(bootstrap)/'control-v1',user_confirmed=request.user_confirmed)
             return snapshot()
     except Exception as exc:
-        code=str(exc)
         # Only known safe constants cross IPC; never exception repr, responses or tokens.
-        code=code if code in ERROR_LABELS else 'operation_failed'
+        code=_safe_error_code(exc)
         return ConnectionEvent(request.request_id,'error','unknown',error_code=code)
     finally:
         if request.action in ('begin','first_sign_in','enable_plan') and session is not None and session.state in ('authorizing','validating'):
