@@ -2,6 +2,20 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #24：先修來源相容性 Gate，再交付一次真人登入（2026-10-15T19:49+08:00）
+
+正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。
+
+1. 已保全中斷 baseline／candidate；兩者完全相同，未落盤新修正。沿用 `agent/windows-release-validation`／[PR #24](https://github.com/yostar77612/mark-auto/pull/24)，parent head `1cd0fbe7`、main `c736df27`；不重作 PR #21–23。
+2. 已追加 `TOKEN_FORMAT_SIWC_ANALYSIS_PROFILE_V1` 的 literal LF／CRLF auth pins；原 15 producer、結果、manifest、descriptor 及安全機制保持。直接 180 項：178 PASS／2 既有平台 skips，42.360 秒；兩項原來源 Gate、13 token-format tests 與新舊唯讀／混合拒絕 PASS，Static/history 0 findings。保留本機 symlink 權限錯誤，Windows CI 實測，不提權或略過。
+3. 下一步送同一 PR 的必要 exact-head 完整 CI，審查來源／artifact 後才整合；再核 postmerge CI、unsigned preview 來源與實際下載 SHA256。此檢查點完整 CI PENDING、沒有新安裝檔；最終 head／tree／CI／Release 在 PR 固定證據接續，不為純狀態更新重建。
+4. 新版安全安裝後，只請 owner 做一次官方 OAuth；依 safe stage 訊息定位真因，不要求舊 callback 重整／憑證。M6 的真推論、策略保存、獨立回測、分析改善與額度／失效處理另驗；離線 fixtures 不算通過。
+5. 仍按原條款處理 clean Win10／Win11、M2 完整合法分鐘行情及 M7 DPI／持久化，已使用主機只能部分證據。原 960-bar／30 秒及耐久 Gate 不變；真資金、付費 fallback、本地 LLM／broker API 仍停用。
+
+具體保全路徑、失敗／測試分列與接續條件見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
+
+### 以下為先前檢查點（保留原文，非目前待辦）
+
 ## PR #15 接續順序與正式完成界線（2026-10-12 17:47 UTC）
 
 沿用原 **230/300＝76.67%，剩餘 70/300＝23.33%**；D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 及 Win11 原條件不改。沒有獨立固定的全專案工程分母，不以測試數、CI 比率或本次修補創造得分；不增加廣泛新功能。

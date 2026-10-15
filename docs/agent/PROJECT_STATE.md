@@ -2,6 +2,20 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #24 來源版本相容性修復（2026-10-15T19:49+08:00）
+
+正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。
+
+- **實際 Git／保全：** main `c736df276a40082bcf33890066af4a573a357abb`；既有 Draft [PR #24](https://github.com/yostar77612/mark-auto/pull/24)，分支 `agent/windows-release-validation`、修補前 head `1cd0fbe76f711b9d6c4bce3e999d171c571bc7c0`／tree `89440cabc52a8d92c9524dbaa9f4ac86d0828704`。中斷 candidate 與 baseline 逐檔完全一致，沒有已落盤修正或候選測試結果；原 baseline 失敗證據存在。完整副本及逐檔 SHA256 已存於 `%LOCALAPPDATA%\MarkAuto-TestLab\resume-producer-profile-20261015T193802\preserved` 與同層 `preserved-sha256.json`；新 checkout 在同層 `mark-auto`，未初始化／覆寫原 candidate，沒有未推送的舊 Git checkout。
+- **產品修改：** `quantlab/saved_candidate_pool.py` 僅追加 literal immutable `TOKEN_FORMAT_SIWC_ANALYSIS_PROFILE_V1`，protocol `mark_auto_0_2_2_campaign_siwc_token_formats_v1`，profile hash `ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632`。相較 deadline SIWC 只改 protocol 與 auth LF／CRLF raw SHA256（`3c2eef9d…`／`c62dc5ba…`）；原 15 profile、engine／prompt／result／dependency tuple、manifest、artifact evidence 及選擇／驗證程式均不變。歷史測試分開驗歷史 pins 與 current checkout，不替舊結果改標籤。完整歷史 hashes、新舊唯讀 admission、混合／竄改拒絕見 5 項新回歸與既有 suites。
+- **直接驗證：** fresh baseline 的兩個原 Gate 於本機 0.149 秒重現 FAIL。修後 180 項直接 profile／token-format／subscription provider／桌面 UI 整合測試：178 PASS、2 個既有 Linux applicability skips，42.360 秒、exit 0；其中原 13 項 token formats 與兩項失敗 Gate 全 PASS。`tools/quality_gate.py --history`＝0 findings。另一次較廣 auth 探測保留 2 個 Win1314 symlink fixture errors（不提權／不略過，必要 Windows CI 仍須執行）；該次另有一個錯誤模組名稱的 invocation error，已改用實際 `test_chatgpt_plan` suite，不能把該 failed run 稱 PASS。首次 profile 測試缺 Qt 的環境錯誤亦保留；已在新 venv 安裝既有 hash lock 的 Qt Essentials 與 auth closure，無全域套件變更。沒有重播授權碼／真登入／真推論。
+- **影響／CI／發布：** GitNexus 指出 saved-campaign admission 及 Walk-forward 為高影響路徑；直接閱讀程式並保持其邏輯不變。新 exact-head 完整 Quantlab、Windows installer／security／TLS／lifecycle／recovery／manifest Gate **PENDING**，Gate 完成與來源／artifact 審查後才整合；最終精確 head／tree、CI URLs、merge／Release／實際下載 bytes 統一補入 [PR #24](https://github.com/yostar77612/mark-auto/pull/24) 證據，避免文件 SHA 追逐導致重複大型 CI。此檢查點沒有新安裝檔；舊 [c736 preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38653037711-1) 不含本 PR。
+- **實機／資源：** DESKTOP-7O0GSTN、Windows 10 Pro 22H2／Build 19045、Ryzen 5 5600X、RAM 約 32 GiB／可用約 20 GiB、C: 可用約 352 GiB。沒有 MarkAuto／Python／Git 測試程序在接管時執行，既有相關 chats idle；不終止其他工作。已使用 Win10 仍不是 clean client；真產品 UI 流程尚未新增驗收。使用既有 6 GiB 可用記憶體底線與最長 20 分鐘實機限制。
+- **官方規格與外部阻塞：** 已重讀 2026-10-15 官方 [sign-in](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)、[models/inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)、[preview limits](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)；既有 direct scope、public Responses、account catalog、`store:false`／`stream:true` 與受限 body 相符。主人的 callback 失敗真因仍未證明；來源格式修正與安全階段提示不等於 OAuth 成功。新安裝檔經 Gate、下載驗證與隔離安裝後，才請 owner 一次官方授權；M6 仍需恢復／完整推論／策略保存／獨立回測與解讀改善／失效與額度處理。clean Win10／Win11、DPI、完整合法分鐘行情、簽章及 main 保護限制仍在；實盤、付費回退與本地 LLM 皆停用。
+- **直接接續：** 沿用 PR #24 推送這個最小 delta → 等待並核對新 head 的完整必要 CI（不可沿用舊 head）→ 審查 provenance／installer → 通過才 ready／merge → 核對 postmerge CI 與公開 unsigned preview → 有界 MarkAuto-only 安裝後集中請 owner 登入一次。CLI 目前登入 sheautsay，不更動其認證；遠端寫入使用既有 yostar77612 GitHub Connector。沒有持續執行中的產品實機工作；來源與測試詳情均保存在上述專用目錄。
+
+### 以下為先前檢查點（保留原文，非目前待辦）
+
 ## PR #15 接續：原生 UIA Gate 未通過（2026-10-12 17:47 UTC）
 
 正式驗收仍為 **230/300＝76.67%，剩餘 70/300＝23.33%**；原 47 項 ID／權重／狀態／證據及 Win11 條件不變。D5／D7／D8／M2／M6／M7＝10／10／10／20／10／10 仍未全滿。工程實作另報已實作、來源審查、native PASS、PARTIAL／BLOCKED，沒有可核驗的全專案工程完成率分母，不以測試數換算。

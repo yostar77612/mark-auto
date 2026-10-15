@@ -1,5 +1,30 @@
 # Saved-campaign producer audit: optional connected-peer verifier
 
+## Token-format auth revision (2026-10-15)
+
+`TOKEN_FORMAT_SIWC_ANALYSIS_PROFILE_V1` appends protocol
+`mark_auto_0_2_2_campaign_siwc_token_formats_v1`. Its complete profile identity is
+`ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632`.
+Only the protocol and the reviewed auth source SHA256 pair differ from
+`DEADLINE_SIWC_ANALYSIS_PROFILE_V1`: LF
+`3c2eef9d3b46b9ae74369fad67d5c016dbd97ea24d4c6f38a989d8b813f52f44`, CRLF
+`c62dc5ba0f06f04997d792e81552a41faa9f983f4a1fb6ef3a59e8596dee05b5`.
+Provider, engine, prompt, result, dependency versions/targets, manifest and
+artifact-evidence values remain exact. No transport profile or selector change
+is needed because the ordinary campaign engine did not change.
+
+All fifteen historical profile literals and identities remain unchanged.
+Historical and current checkout assertions are separate: historical auth pins
+stay literal, current LF/CRLF auth/provider/manifest bytes match the new profile.
+The current-source test now checks the provider bytes too, without its older
+provider exception. New regressions pin the entire historical prefix and new
+profile, require unique exact old/new selection independent of list order,
+reject mixed/tampered descriptors and undeclared targets, and admit old/new
+manufactured campaigns read-only with auth/provider imports disabled. They
+establish compatibility only, never real OAuth, inference or market acceptance.
+
+The earlier revision rationale below remains historical evidence.
+
 ## Scope and decision
 
 Saved candidate admission compares complete, literal source-hash tuples and the

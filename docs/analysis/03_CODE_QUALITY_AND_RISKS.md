@@ -2,6 +2,18 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## PR #24：追加 auth 來源身分，真實登入仍待驗（2026-10-15T19:49+08:00）
+
+正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。
+
+修補前 head `1cd0fbe7` 的完整 CI 受兩項歷史 auth pins／current checkout 混用阻塞；兩項本機重新重現。修補在 `saved_candidate_pool.py` 只追加一個精確 LF／CRLF SIWC profile，保留原 15 profile 完整 hash、descriptor、result、manifest、dependency artifact 與選擇邏輯；新舊來源各自選回原身分，未知／混合／竄改拒絕。歷史測試不再把 current auth 誤當歷史 bytes，新增 5 項回歸固定原 15 hashes 與唯讀新舊結果。GitNexus 所示 admission／WFO 高影響由直接來源閱讀與必要完整 CI 覆蓋，不能以 graph 無變更代替測試。
+
+直接 180 tests：178 PASS／2 既有平台 skips，42.360 秒；含原 13 token-format tests、來源 Gate、provider／UI 整合。Static/history 0 findings。另保留兩項本機 Win1314 symlink errors 與初次缺 Qt／錯誤模組 invocation，沒有提升權限或跳過測試；新 exact-head Windows CI、Quantlab、installer/TLS/lifecycle/recovery/provenance 尚 PENDING。審查完整來源與 artifact 且所有必要 Gate PASS 才能整合；最終來源／CI／公開 bytes 證據接續於 [PR #24](https://github.com/yostar77612/mark-auto/pull/24)，不為純狀態更新重建產品。
+
+目前沒有可交付的新 installer；c736 舊版真登入仍失敗。官方文件已重新核對 direct scope、公用 Responses、`store:false`／`stream:true` 與參數限制；格式相容修正尚未證明為 owner 失敗真因。真 OAuth／推論、clean Win10／Win11、DPI、完整合法行情與簽章／main 保護仍未通過；只在新安裝檔 Gate 後請 owner 授權一次。完整資源限制、保全位置與下一步見 [PROJECT_STATE](../agent/PROJECT_STATE.md)。
+
+### 以下為先前檢查點（保留原文，非目前待辦）
+
 ## PR #15 目前風險：UIA positive Gate 失敗（2026-10-12 17:47 UTC）
 
 [Draft PR #15](https://github.com/yostar77612/mark-auto/pull/15)／head `82858f9a058d814e7d805f7a49621e8bb3343275` 尚不可合併或正式發布。正式驗收仍 **230/300＝76.67%，剩餘 70/300＝23.33%**，含原 Win11 條件；原 ID／權重／證據不改，工程完成率沒有獨立固定分母。
