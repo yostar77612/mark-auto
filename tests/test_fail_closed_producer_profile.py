@@ -21,7 +21,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
 
     def test_current_literal_sources_and_only_reviewed_changes(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(len(SUPPORTED_PRODUCERS), 16)
+        self.assertEqual(len(SUPPORTED_PRODUCERS), 17)
         self.assertEqual(SUPPORTED_PRODUCERS[11:13],
                          (FAIL_CLOSED_TRANSPORT_PROFILE_V1, FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in ((CLEANUP_TRANSPORT_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1),
@@ -51,6 +51,14 @@ class FailClosedProducerProfileTests(unittest.TestCase):
                         self.assertEqual(digest, (
                             '5825067bdf14afc1ef415e239d60872823b974dd8c141d88e06d9fc211af4c8c',
                             '1ae16a93b52736144947c985d94868989ddda06be4376d569fd17bdae870dcf9')[index])
+                        continue
+                    if name == 'desktop_chatgpt_provider.py':
+                        # Provider bytes changed later (TLS trust anchors); the
+                        # historical pin stays and the current bytes are checked
+                        # against the appended TLS-anchor profile.
+                        self.assertEqual(digest, (
+                            '4de519504894985359b24980d0e7e258c945af646002a3a1b9743d51c3b186e8',
+                            '7134b7c175646beae042efad1b2f9dedf377792657c2def2785b64a94573c81a')[index])
                         continue
                     raw = (root/name).read_bytes().replace(b'\r\n', b'\n')
                     if index: raw = raw.replace(b'\n', b'\r\n')

@@ -32,14 +32,15 @@ HISTORICAL_HASHES = [
     '640c63a2b09ada4d836c6e73ea6aafb5380aa53934f9246c55a0f0a48cccd542',
     '6abd264075063a536078d9d81b83daab4fa0632973991817d4142c260c06775a',
     '7277473a885a157eebd5b6cc199fdd3b8ad9501ab796317fa1bbb9e35f04de54',
+    'ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632',
 ]
 
 
 class TokenFormatProducerProfileTests(unittest.TestCase):
-    def test_all_fifteen_historical_profiles_keep_exact_identity(self):
-        self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:15]],
+    def test_all_sixteen_historical_profiles_keep_exact_identity(self):
+        self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:16]],
                          HISTORICAL_HASHES)
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[15:], (PROFILE,))
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[15], PROFILE)
         for profile in pools.SUPPORTED_PRODUCERS:
             with self.assertRaises(TypeError):
                 profile['protocol'] = 'rewritten'
@@ -54,10 +55,6 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             digest = implementation['source_sha256']['desktop_chatgpt_auth.py']
             self.assertEqual(digest, expected[index])
-            raw = (ROOT/'desktop_chatgpt_auth.py').read_bytes().replace(b'\r\n', b'\n')
-            if index:
-                raw = raw.replace(b'\n', b'\r\n')
-            self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
             restored['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'] = (
                 PREVIOUS['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'])
             with self.assertRaises(TypeError):

@@ -2,6 +2,30 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## OAuth 交換階段失敗：TLS 信任錨根因與修復（2026-10-16；取代上節「唯一真人操作」）
+
+- **證據（無需任何憑證）：** 本機以既有 `OfficialTransport` 對官方 token endpoint 送假值，TLS 握手即 `CERTIFICATE_VERIFY_FAILED: certificate has expired`，早於任何 HTTP；因此是 `transport_failure`，被歸入「授權交換階段」。官方 leaf（Let's Encrypt YE2）有效至 2026-12-18；Windows CryptoAPI 驗鏈 PASS。根因：本機 CurrentUser\CA 存有已過期（2025-09-16）的交叉簽署 `ISRG Root X2`，Python `ssl.create_default_context()` 把 CA 存放區也當信任錨，OpenSSL 選到過期憑證。只載入 ROOT 存放區的 context 對同一 endpoint 回 HTTP 200。授權碼、PKCE、client_id、redirect_uri 與請求格式與官方規格一致，非本次根因（但真 token 回應仍未見）。
+- **修復：** `desktop_chatgpt_auth.official_tls_context()`：僅信任 Windows ROOT serverAuth 憑證，保留 CERT_REQUIRED、hostname 檢查、TLS1.2+；無 ROOT 時退回預設。auth 與 provider 兩處 HTTPS 皆使用。未改系統憑證存放區。
+- **來源身分：** 保留全部16 profiles；追加第17個 `TLS_ANCHOR_SIWC_ANALYSIS_PROFILE_V1`（protocol `mark_auto_0_2_2_campaign_siwc_tls_anchor_v1`，hash `e1262b61e647d3b716ce6451c184921f4d2b3b797317af152de0a2b460ccd492`）。auth LF `4b9320c7…1cf`／CRLF `316db25c…b15f`；provider LF `f44d1bf1…ff52`／CRLF `b5b03794…f042`。
+- **測試：** 新增 `tests/test_chatgpt_tls_context.py`、`tests/test_tls_anchor_producer_profile.py`；本機 producer profile 35 項 PASS。本機另有既有環境失敗（無符號連結權限、SQLite<3.51.3 WAL、無 PySide6），stash 基準相同，非本修復造成。完整 CI、Release、安裝與真實登入：見下方狀態，未驗證前不宣稱成功。
+- **其他模組：** `quantlab/downloads.py`、`market_providers.py`、`provider.py` 仍用預設 context，同一過期憑證可能影響；不在本次範圍，列為風險。
+- **未知：** 真 token endpoint 對有效 code 的回應尚未觀測；修復僅證明 TLS 階段可通過。
+
+<!-- RESUME_DELIVERY_CHECKPOINT -->
+
+## PR #24 已整合、公開預覽已核驗及本機安全更新（2026-10-15；目前狀態）
+
+- **Git／保全：** [PR #24](https://github.com/yostar77612/mark-auto/pull/24) 在 exact head `a740e429baa39bdf4677f3625d60511b3aefea14` 全部必要 CI／來源審查／實際 artifact 核驗後合併。遠端 main `9f4bcdb777b8f511daf7cfe43e5b2d8a25237ecb`，tree `bcdf96dc0771b394c1a6b714a2a2ad8f881f2425` 與已測來源相同。local 沿用 `agent/windows-release-validation`／`a740e429`（已確認是 main ancestor）；沒有未推送產品程式碼。原中斷候選與 baseline 完整保全，原15 producer hashes及執行函式不變；追加第16個精確版本profile。
+- **必要 CI PASS：** PR [Quantlab 38732758845](https://github.com/yostar77612/mark-auto/actions/runs/38732758845) 全20 SUCCESS；PR [Windows 38732758892](https://github.com/yostar77612/mark-auto/actions/runs/38732758892) security/build PASS、1846 tests＝1813 PASS／33既有skips／784.001秒。main [Quantlab 38736087836 attempt2](https://github.com/yostar77612/mark-auto/actions/runs/38736087836/attempts/2) 全20 SUCCESS（兩個aggregate均嚴格核驗全部分組）；main [Windows 38736087801](https://github.com/yostar77612/mark-auto/actions/runs/38736087801) security/build/release全3 SUCCESS、原生1846 tests＝1813 PASS／33既有skips／832.933秒，frozen TLS、10項installer lifecycle、舊版升級／實際中斷復原及Qt obligations PASS。Win1314兩項symlink測試在原生CI實際通過，未提權／略過。
+- **失敗與一次重驗界線保留：** 最初修補run `38730470096` 有既有WFO deadline失敗；同tree PR重驗通過，不宣稱效能根因已修復。main [attempt1](https://github.com/yostar77612/mark-auto/actions/runs/38736087836/attempts/1) 17 SUCCESS／3 FAIL：Windows3.12 Paper診斷反例原10秒只完成60/120 FULL commits，兩個aggregate跟隨拒絕；60 commits累計7.111秒、最長0.666秒，啟動0.003秒。這支持磁碟延遲假說但未證明環境根因。全部artifacts、逐檔SHA256與完整job logs先保存至本session `ci-main-38736087836-attempt1`／同名 `-sha256.json`／`.log`（log SHA256 `cb6944b06a7d306d3691b604fd81bd0af1c2b4c619f23a746325d047e9997d4b`），才以既有CLI身分sheautsay觸發一次完整同main SHA attempt2。該反例及全169項Paper suite本次PASS／121.485秒；無source/test/workflow變更、無放寬120次/10秒或產品960根/30秒/FULL、無mock替代、無刪除/略過失敗。原失敗仍是失敗紀錄。
+- **公開 unsigned preview 實際核驗 PASS：** [desktop-preview-38736087801-1](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38736087801-1)，source即main `9f4bcdb7`。公開setup **39,420,084 bytes**、SHA256 **`5cf72a20a4749c32a66ae6b4988056bbfec3b597806632051226001437e240b7`**；kit SHA256 `bf187d164ed9ddf827ba17f196eb1b6448da5fba3a45bd7d14e1292d4e1901a0`。實際下載10個assets均與GitHub metadata大小／digest相符；87 tracked inputs精確raw/LF/CRLF匹配reviewed tree，9 kit files／CRC／manifest／checksums／唯一新auth tuple全PASS。生成的native helper DLL由CI製作並與kit/build manifest相符；未在個人主機編譯。報告 `release-38736087801-1/delivery-verification.json`。PR candidate先前另核驗的39,425,023 bytes／`61d812…244f6`僅為PR產物，不混同公開release bytes。
+- **已授權實機更新 PASS：** MarkAuto關閉、free RAM18.22GiB／disk358.46GiB後，使用kit既有native owned-job helper，20分鐘上限、6GiB free-memory floor。更新前逐檔備份並驗證installation2933 files、AppData9 files、設定workspace20 files、合計408,205,162 bytes，另備份兩個捷徑及精確HKCU uninstall record；舊c736 rollback setup亦已下載驗SHA256 `ecad6be91431219511d3493355fbce7b60dd6f31b9aeba31b3ed0a63e9850d2e`。更新後兩捷徑指向 `.../Programs/MarkAuto/payloads/0.2.2/is-N04OV/MarkAuto.exe`，EXE SHA256 `1d7222ee9015408b52f2f4c25493b0e5631a180ba5b301a69bf46292fce680eb`；四個來源檔與bundledSQLite均符合release，auth CRLF為 `c62dc5ba0f06f04997d792e81552a41faa9f983f4a1fb6ef3a59e8596dee05b5`。AppData及設定workspace逐檔不變。`installed-preview-9f4b/update-results.json` PASS；supervisor46.791秒、exit0、cleanup_verified=true、owned processes0。`preflight.json`是安裝前狀態快照，不是最終結果。備份保留，不清除舊payload；未改其他程式／全域設定、未UAC／提權。
+- **正式驗收仍未新增分數：** 原固定表 `docs/agent/ACCEPTANCE.json` 仍 **230/300＝76.67%，剩餘70/300＝23.33%**；D5/D7/D8/M2/M6/M7及原權重10/10/10/20/10/10保留。used Win10與Windows Server CI不冒充clean Win10/Win11；完整UI流程／DPI／合法完整分鐘行情及真OAuth／推論仍BLOCKED或NOT_RUN。main目前protected=false；無新增權限。未簽章預覽，不稱正式版本；實盤／付費fallback／local LLM／broker API停用。
+- **唯一目前必要真人操作：** 新版已準備好，可由owner開啟開始功能表Mark Auto，在「ChatGPT訂閱連線（官方授權）」進行一次官方登入；帳密／授權由owner操作，只回報程式內安全成功或錯誤階段，不提供callback URL／code／token。目前尚未登入，不重播舊code／重整callback／盲目重試。成功後仍需依原M6驗有效恢復、實際模型／完整推論、策略保存、獨立回測／分析改善及額度／失效處理；登入成功本身不增加正式分數。其他clean-client／行情條件無新證據，保留阻塞，不新增UI controller迴圈。
+- **可恢復交接：** checkout與全部保全／腳本／報告在 `%LOCALAPPDATA%/MarkAuto-TestLab/resume-producer-profile-20261015T193802`；本節、風險及roadmap三份純狀態補記留在local未提交，`documentation-checkpoint.patch`另保全，不為純文件啟動大型CI。產品/tests/workflows無未提交delta；分支因仍含此補記而保留。所有本次本機測試／安裝程序及遠端必要CI均已結束，無持續背景工作。完整來源／CI／release／安裝結果已補入同PR #24；下一步等owner一次授權結果再定向處理M6。
+
+<!-- RESUME_DELIVERY_CHECKPOINT_END -->
+
 ## PR #24 來源版本相容性修復（2026-10-15T19:49+08:00）
 
 正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。

@@ -27,7 +27,7 @@ import ssl
 import threading
 import time
 
-from desktop_chatgpt_auth import OAuthCredentialReference
+from desktop_chatgpt_auth import OAuthCredentialReference, official_tls_context
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.research import PROMPT, PARAMETER_CONTRACTS, validate_dsl, _validated_receipt_snapshot
 
@@ -247,7 +247,7 @@ class PlanHTTPTransport:
             _fail('invalid_credential')
         headers={'Authorization':'Bearer '+token,'Accept':'text/event-stream' if method=='POST' else 'application/json',
                  'Accept-Encoding':'identity','Content-Type':'application/json'}
-        connection=http.client.HTTPSConnection('api.openai.com',443,context=ssl.create_default_context(),
+        connection=http.client.HTTPSConnection('api.openai.com',443,context=official_tls_context(),
             timeout=min(limits['stall_seconds'],max(.001,deadline-time.monotonic())))
         active=[None];stop=threading.Event()
         def watchdog():
