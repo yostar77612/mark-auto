@@ -2,6 +2,14 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 第一次真研究在預留請求前失敗；推論前清單上限修復（2026-10-16；取代上節「下一步」）
+
+- **真實結果：** owner 以 gpt-6.1-sol、最多1次請求執行「生成／重開研究與 OOS」，畫面為 `b0f763dfb9 · trend · v1 · failed`。本機研究紀錄（只讀狀態欄位，不讀憑證或回應內容）：`status=blocked_provider_outcome`、嘗試 1.36 秒、警告 `RuntimeError`、`provider_receipts` 為空、`holdout_consumed=False`。
+- **根因（程式證據）：** `ChatGPTPlanProvider._execute` 在預留請求前會重新取一次官方模型清單，卻沿用推論回應上限（256 KiB）；官方清單超過此值（與 PR #29 同一原因），在 `_reserve` 前丟出 `stream_byte_limit`。隔離 worker 只回傳例外類別，`PlanError` 不是 `ValidationError` 名稱，故外層記成 `RuntimeError`。**沒有預留請求，也沒有送出推論請求**。
+- **修復：** [PR #31](https://github.com/yostar77612/mark-auto/pull/31)：推論前清單檢查改用 `MODELS_MAX_RESPONSE_BYTES`（8 MiB），推論上限不變；回歸測試 `test_p2_campaign_catalog_uses_catalog_limit`。provider 來源改變，追加第19個 `CAMPAIGN_CATALOG_SIWC_ANALYSIS_PROFILE_V1`（protocol `mark_auto_0_2_2_campaign_siwc_campaign_catalog_v1`；provider LF `9ceed8ae…f903`／CRLF `71e9e54a…045e`），前18個身分不變。
+- **已知限制（未修）：** 研究 worker 只保留例外類別名稱，PlanError 細碼在研究流程中看不到；`quantlab/research.py` 是 pinned engine 來源，修改會牽動所有歷史 profile，本次不改。
+- **下一步：** PR #31 CI 通過後整合、核驗新預覽、owner 關閉程式後備份更新；再由 owner 本人重新設定最多請求1、勾選確認框、執行一次研究。M6 未通過，230/300（76.67%）不變。
+
 ## 真實模型清單取得成功（2026-10-16；取代上節「接續」）
 
 - **觀測到的真因：** 更新到 `a758a5b4` 後，owner 取一次模型，固定階段顯示「官方回應超過大小限制」（`stream_byte_limit`）：官方 `GET /v1/models` 清單超過原 256 KiB 上限。
