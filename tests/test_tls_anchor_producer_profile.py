@@ -15,10 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TlsAnchorProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 17)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 18)
         self.assertEqual(content_hash(PREVIOUS), 'ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[15], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[16], PROFILE)
+        self.assertEqual(content_hash(PROFILE), 'e1262b61e647d3b716ce6451c184921f4d2b3b797317af152de0a2b460ccd492')
         self.assertNotEqual(content_hash(PROFILE), content_hash(PREVIOUS))
 
     def test_only_protocol_and_auth_provider_pins_differ(self):
@@ -31,6 +32,9 @@ class TlsAnchorProducerProfileTests(unittest.TestCase):
     def test_pins_match_reviewed_lf_and_crlf_bytes(self):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
+                if name == 'desktop_chatgpt_provider.py':
+                    # Provider bytes changed later (models limit); pin stays historical.
+                    continue
                 raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')

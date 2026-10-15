@@ -32,6 +32,7 @@ from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.research import PROMPT, PARAMETER_CONTRACTS, validate_dsl, _validated_receipt_snapshot
 
 MODELS_URL = 'https://api.openai.com/v1/models'
+MODELS_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 RESPONSES_URL = 'https://api.openai.com/v1/responses'
 ERROR_STATES = {
     'subscription_sharing_user_not_eligible': 'eligibility_blocked',
@@ -314,7 +315,8 @@ def discover_models(credential_reference, *, network_opt_in=False, timeout_secon
     if read_account_status(credential_reference,_controls_for(credential_reference))['state']!='ready':
         _fail('account_paused')
     limits={'deadline':time.monotonic()+timeout,'stall_seconds':min(10,timeout),
-            'max_response_bytes':262144,'max_request_bytes':65536}
+            # Official catalog rows carry long per-model fields; only slug/name/visibility are kept.
+            'max_response_bytes':MODELS_MAX_RESPONSE_BYTES,'max_request_bytes':65536}
     try:
         return parse_models(PlanHTTPTransport().models(credential_reference,limits,cancelled))
     except PlanError as exc:

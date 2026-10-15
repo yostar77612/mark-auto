@@ -42,5 +42,13 @@ class ModelErrorCodeTests(unittest.TestCase):
             self.assertNotIn('SECRET', label)
 
 
+
+class ModelCatalogLimitTests(unittest.TestCase):
+    def test_catalog_limit_is_bounded_and_larger_than_previous_cap(self):
+        from desktop_chatgpt_provider import MODELS_MAX_RESPONSE_BYTES
+        self.assertGreater(MODELS_MAX_RESPONSE_BYTES, 262144)
+        self.assertLessEqual(MODELS_MAX_RESPONSE_BYTES, 16 * 1024 * 1024)
+
+
 if __name__ == '__main__':
     unittest.main()
