@@ -2,6 +2,16 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 真實模型清單取得成功（2026-10-16；取代上節「接續」）
+
+- **觀測到的真因：** 更新到 `a758a5b4` 後，owner 取一次模型，固定階段顯示「官方回應超過大小限制」（`stream_byte_limit`）：官方 `GET /v1/models` 清單超過原 256 KiB 上限。
+- **修復：** [PR #29](https://github.com/yostar77612/mark-auto/pull/29) squash 合併為 main `266f3bd68948d161bfe8e56ebd3689b1b7d67216`／tree `02da2bff5ea74f5624196965c3d703fa3a00a523`。僅模型清單上限改為 `MODELS_MAX_RESPONSE_BYTES`＝8 MiB（仍有界，只保留 slug／display_name／visibility）；推論上限不變。provider 來源改變，追加第18個 `MODELS_LIMIT_SIWC_ANALYSIS_PROFILE_V1`（protocol `mark_auto_0_2_2_campaign_siwc_models_limit_v1`；provider LF `ee2ad6e6…44ce`／CRLF `01d3f33c…75c5`；auth 與第17個相同），前17個身分不變。
+- **CI：** PR Quantlab attempt1 Paper 診斷10秒逾時（109/120，證據 `ci-pr29-attempt1`）→同 SHA 完整重跑20/20。main Quantlab `38819191320` attempt1 desktop walk-forward smoke 40秒逾時（證據 `ci-main-266f3bd6-attempt1`）→同 SHA 完整重跑20/20；Windows `38819191295` release 因 exact-head Quantlab Gate 當時為失敗而正確拒絕，Gate 通過後只重跑該 job 成功。未改 source／test／workflow／期限；兩類逾時根因仍未修。
+- **預覽與本機：** [desktop-preview-38819191295-2](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38819191295-2)，setup **39,410,881 bytes**／SHA256 `0ed59ac5ef6bff4777b8a52b3b59b1b2cfea62e910a0b6bf097c247ff74dcdca`，核驗 PASS（`release-266f3bd6-2`）。owner 關閉程式後備份（812,285,241 bytes）並更新 PASS，EXE SHA256 `7cf03a3af127bdb916fd3f58b4cd238b2b7b040c0f46659aedb31cc87c94571e`，資料保存 PASS（`installed-preview-266f`）。
+- **真實結果（owner 截圖）：** 「取得此連線可用模型」成功，官方回傳7個模型（GPT-6.1-Sol、GPT-6-Astra、GPT-6-Sol、GPT-6-Luna、GPT-5.6-Sol、GPT-5.6-Terra、GPT-5.6-Luna）。**實際推論仍未驗證**；M6 未通過，230/300（76.67%）不變。
+- **下一步：** owner 決定「本次固定研究最多請求」次數並本人勾選兩個確認框後，做一次最小真推論；之後才驗策略保存、獨立回測、解讀改善、額度不足與授權失效。
+- **風險：** 每次更新保留舊 payload，安裝目錄累積約 812 MB／5865 files；未清理。
+
 ## 真實登入成功；模型取得失敗階段分類（2026-10-16；取代上節「唯一真人操作」）
 
 - **真實官方登入 PASS（owner 螢幕截圖）：** 新版（main `ded354bd`）登入後顯示「已驗證帳戶 ••••76da726e」、連線 ••••2bee8c81、「本機憑證具訂閱權限」。TLS 信任錨修復對真登入有效。實際推論、可用模型取得仍未驗證；M6 未通過，230/300（76.67%）不變。
