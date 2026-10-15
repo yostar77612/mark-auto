@@ -65,13 +65,9 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
     def test_exact_lf_crlf_source_manifest_pins_and_declared_targets(self):
         # These reads verify reviewed literals only. Runtime admission never reads
         # current sources or accepts a dynamically generated profile.
-        latest = pools.SIWC_ANALYSIS_CAPABLE_PROFILE_V1
+        latest = pools.TOKEN_FORMAT_SIWC_ANALYSIS_PROFILE_V1
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
-                if name == 'desktop_chatgpt_provider.py':
-                    self.assertEqual(digest, ('d20203c2398e939d0ecd24a697f890ed29276075ded3444e4050e5e55e354baf',
-                        'fd8ddc12075630532127be72be24d5df1c298b6d0805c8554e76943fd41d43f9')[index])
-                    continue
                 raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
                 if index: raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)

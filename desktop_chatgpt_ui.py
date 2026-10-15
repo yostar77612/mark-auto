@@ -33,6 +33,10 @@ ERROR_LABELS = {'explicit_host_recovery_required':'發現先前的 ChatGPT 記�
     'registration_retry_required':'授權碼已失效；已保留待驗證註冊。請讀取本機連線，選定該紀錄後明確重新授權。尚未授予身分或推論權限。',
     'host_initialization_required':'尚未初始化本機安全識別。請明確選擇首次設定／復原。',
     'authorization_failed':'本次授權未完成；請核對官方登入與本機連線狀態。不會自動重試。',
+    'authorization_exchange_failed':'授權交換階段未完成；不會自動重試。',
+    'authorization_identity_failed':'官方身分驗證階段未完成；不會自動重試。',
+    'authorization_tokens_failed':'登入回應格式驗證未完成；不會自動重試。',
+    'authorization_storage_failed':'本機連線儲存階段未完成；不會自動重試。',
     'authorization_busy':'已有授權作業，請先等待或停止。', 'authorization_timeout':'官方授權等待逾時。',
     'account_mismatch':'帳戶與原連線不符，原紀錄保留。', 'previous_completion_unknown':'先前請求完成狀態未知，禁止重送或退還次數。',
     'account_paused':'此帳戶已暫停；新研究或模型不會解除限制。',
@@ -549,7 +553,10 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
                 if clock()>=deadline:session.cancel();return ConnectionEvent(request.request_id,'error','timeout',error_code='authorization_timeout')
                 session.poll(timeout=.1)
             if session.state=='authorization_failed':
-                return snapshot(state='authorization_failed',kind='error',error_code='authorization_failed')
+                code=getattr(session,'authorization_error_code',None)
+                if code not in ('authorization_exchange_failed','authorization_identity_failed','authorization_tokens_failed','authorization_storage_failed'):
+                    code='authorization_failed'
+                return snapshot(state='authorization_failed',kind='error',error_code=code)
             return snapshot(state=session.state)
         if request.action=='select':session.select(request.registration);return snapshot()
         if request.action=='refresh':session.refresh(request.registration);return snapshot()

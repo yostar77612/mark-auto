@@ -21,7 +21,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
 
     def test_current_literal_sources_and_only_reviewed_changes(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(len(SUPPORTED_PRODUCERS), 15)
+        self.assertEqual(len(SUPPORTED_PRODUCERS), 16)
         self.assertEqual(SUPPORTED_PRODUCERS[11:13],
                          (FAIL_CLOSED_TRANSPORT_PROFILE_V1, FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in ((CLEANUP_TRANSPORT_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1),
@@ -45,6 +45,13 @@ class FailClosedProducerProfileTests(unittest.TestCase):
             self.assertEqual(new['result_source_hashes'], new['result_source_hash_variants'][0])
             for index, impl in enumerate(new.get('chatgpt_plan_implementations', ())):
                 for name, digest in impl['source_sha256'].items():
+                    if name == 'desktop_chatgpt_auth.py':
+                        # Historical auth stays pinned; current bytes are checked
+                        # against the appended profile, never relabeled as history.
+                        self.assertEqual(digest, (
+                            '5825067bdf14afc1ef415e239d60872823b974dd8c141d88e06d9fc211af4c8c',
+                            '1ae16a93b52736144947c985d94868989ddda06be4376d569fd17bdae870dcf9')[index])
+                        continue
                     raw = (root/name).read_bytes().replace(b'\r\n', b'\n')
                     if index: raw = raw.replace(b'\n', b'\r\n')
                     self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
@@ -183,7 +190,7 @@ class DeadlineProducerProfileTests(unittest.TestCase):
 
     def test_current_exact_literals_change_only_protocol_and_research(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(SUPPORTED_PRODUCERS[13:],
+        self.assertEqual(SUPPORTED_PRODUCERS[13:15],
                          (DEADLINE_TRANSPORT_PROFILE_V1, DEADLINE_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in ((FAIL_CLOSED_TRANSPORT_PROFILE_V1, DEADLINE_TRANSPORT_PROFILE_V1),
                          (FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1, DEADLINE_SIWC_ANALYSIS_PROFILE_V1)):

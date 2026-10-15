@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import hashlib
 import http.client
 import json
@@ -513,6 +514,7 @@ class AuthSession:
         self._commit_mutex=threading.Lock()
         self.state='disconnected'
         self.active_registration=None
+        self.authorization_error_code=None
         self._cancel=threading.Event()
 
     def __reduce_ex__(self,protocol):
@@ -563,7 +565,7 @@ class AuthSession:
                 'http://127.0.0.1:'+str(listener.port)+'/auth/callback',time.monotonic()+600,registration,
                 None if selected is None else selected['identity'].copy(),listener,
                 None if client==DYNAMIC_CLIENT else client)
-            self._pending=pending;self.state='authorizing'
+            self._pending=pending;self.state='authorizing';self.authorization_error_code=None
             params=dict(client_id=client,
                 ext_agent_host_id=record['host_id'],response_type='code',redirect_uri=pending.redirect,scope=SCOPES,
                 resource=RESOURCE,state=pending.state,nonce=pending.nonce,code_challenge_method='S256',
@@ -621,6 +623,7 @@ class AuthSession:
             if not _text(query.get('code'),4096):raise AuthError('invalid_code')
             # Consume before any exchange, including failures. No replay of a code.
             pending.listener.close();self._pending=None;self.state='validating'
+            failure_code='authorization_exchange_failed'
             try:
                 response=self.transport.request('POST',TOKEN,form=dict(grant_type='authorization_code',client_id=client,
                     code=query['code'],code_verifier=pending.verifier,redirect_uri=pending.redirect,resource=RESOURCE))
@@ -628,15 +631,19 @@ class AuthSession:
                     error=_json(response.body).get('error')
                     if isinstance(error,dict):error=error.get('code')
                     if error=='invalid_grant' and pending.identity is None:
+                        failure_code='authorization_storage_failed'
                         self._retain_registration_retry(pending,client)
                         self.state='registration_retry_required'
                         raise AuthError(self.state)
                     raise AuthError('code_exchange_failed')
                 data=_json(response.body)
+                failure_code='authorization_identity_failed'
                 identity=self.validator.verify(data.get('id_token'),client,pending.nonce)
                 if pending.identity is not None and identity!=pending.identity:raise AuthError('account_mismatch')
+                failure_code='authorization_tokens_failed'
                 tokens=self._tokens(data)
                 if self._cancel.is_set() or time.monotonic()>=pending.deadline:raise AuthError('authorization_cancelled')
+                failure_code='authorization_storage_failed'
                 with self.vault.lock():
                     if self._cancel.is_set() or time.monotonic()>=pending.deadline:
                         raise AuthError('authorization_cancelled')
@@ -659,6 +666,7 @@ class AuthSession:
                 return ref
             except Exception:
                 self.state='cancelled' if self._cancel.is_set() else ('registration_retry_required' if self.state=='registration_retry_required' else 'authorization_failed')
+                self.authorization_error_code=failure_code if self.state=='authorization_failed' else None
                 raise AuthError(self.state) from None
 
     def _retain_registration_retry(self,pending,client):
@@ -677,7 +685,8 @@ class AuthSession:
                 self.vault.save(_validate_record(record))
 
     def _tokens(self,data,previous=None):
-        if data.get('token_type')!='Bearer' or not _text(data.get('access_token')):
+        token_type=data.get('token_type')
+        if not isinstance(token_type,str) or token_type.lower()!='bearer' or not _text(data.get('access_token')):
             raise AuthError('invalid_token_response')
         scope=data.get('scope')
         if not isinstance(scope,str) or len(scope)>1024:
@@ -686,6 +695,16 @@ class AuthSession:
         if not scopes or any(s not in SCOPES.split() for s in scopes) or len(set(scopes))!=len(scopes) or 'openid' not in scopes:
             raise AuthError('invalid_scopes')
         expires=data.get('expires_in');earliest=data.get('earliest_refresh_at',0)
+        if isinstance(earliest,str):
+            # SDK numbers are Unix seconds; date strings use millisecond precision.
+            if not re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])',earliest):
+                raise AuthError('invalid_expiry')
+            try:
+                stamp=datetime.fromisoformat(earliest.replace('Z','+00:00'))
+                delta=stamp.astimezone(timezone.utc)-datetime(1970,1,1,tzinfo=timezone.utc)
+                earliest=delta.days*86400+delta.seconds+(delta.microseconds//1000)/1000
+            except (ValueError,OverflowError):
+                raise AuthError('invalid_expiry') from None
         if not _number(expires) or not 0<expires<=86400 or not _number(earliest):raise AuthError('invalid_expiry')
         refresh=data.get('refresh_token')
         if 'offline_access' in scopes and not _text(refresh):raise AuthError('missing_refresh_token')
