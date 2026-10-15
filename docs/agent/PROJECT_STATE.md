@@ -2,6 +2,24 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 第一次真研究在預留請求前失敗；推論前清單上限修復（2026-10-16；取代上節「下一步」）
+
+- **真實結果：** owner 以 gpt-6.1-sol、最多1次請求執行「生成／重開研究與 OOS」，畫面為 `b0f763dfb9 · trend · v1 · failed`。本機研究紀錄（只讀狀態欄位，不讀憑證或回應內容）：`status=blocked_provider_outcome`、嘗試 1.36 秒、警告 `RuntimeError`、`provider_receipts` 為空、`holdout_consumed=False`。
+- **根因（程式證據）：** `ChatGPTPlanProvider._execute` 在預留請求前會重新取一次官方模型清單，卻沿用推論回應上限（256 KiB）；官方清單超過此值（與 PR #29 同一原因），在 `_reserve` 前丟出 `stream_byte_limit`。隔離 worker 只回傳例外類別，`PlanError` 不是 `ValidationError` 名稱，故外層記成 `RuntimeError`。**沒有預留請求，也沒有送出推論請求**。
+- **修復：** [PR #31](https://github.com/yostar77612/mark-auto/pull/31)：推論前清單檢查改用 `MODELS_MAX_RESPONSE_BYTES`（8 MiB），推論上限不變；回歸測試 `test_p2_campaign_catalog_uses_catalog_limit`。provider 來源改變，追加第19個 `CAMPAIGN_CATALOG_SIWC_ANALYSIS_PROFILE_V1`（protocol `mark_auto_0_2_2_campaign_siwc_campaign_catalog_v1`；provider LF `9ceed8ae…f903`／CRLF `71e9e54a…045e`），前18個身分不變。
+- **已知限制（未修）：** 研究 worker 只保留例外類別名稱，PlanError 細碼在研究流程中看不到；`quantlab/research.py` 是 pinned engine 來源，修改會牽動所有歷史 profile，本次不改。
+- **下一步：** PR #31 CI 通過後整合、核驗新預覽、owner 關閉程式後備份更新；再由 owner 本人重新設定最多請求1、勾選確認框、執行一次研究。M6 未通過，230/300（76.67%）不變。
+
+## 真實模型清單取得成功（2026-10-16；取代上節「接續」）
+
+- **觀測到的真因：** 更新到 `a758a5b4` 後，owner 取一次模型，固定階段顯示「官方回應超過大小限制」（`stream_byte_limit`）：官方 `GET /v1/models` 清單超過原 256 KiB 上限。
+- **修復：** [PR #29](https://github.com/yostar77612/mark-auto/pull/29) squash 合併為 main `266f3bd68948d161bfe8e56ebd3689b1b7d67216`／tree `02da2bff5ea74f5624196965c3d703fa3a00a523`。僅模型清單上限改為 `MODELS_MAX_RESPONSE_BYTES`＝8 MiB（仍有界，只保留 slug／display_name／visibility）；推論上限不變。provider 來源改變，追加第18個 `MODELS_LIMIT_SIWC_ANALYSIS_PROFILE_V1`（protocol `mark_auto_0_2_2_campaign_siwc_models_limit_v1`；provider LF `ee2ad6e6…44ce`／CRLF `01d3f33c…75c5`；auth 與第17個相同），前17個身分不變。
+- **CI：** PR Quantlab attempt1 Paper 診斷10秒逾時（109/120，證據 `ci-pr29-attempt1`）→同 SHA 完整重跑20/20。main Quantlab `38819191320` attempt1 desktop walk-forward smoke 40秒逾時（證據 `ci-main-266f3bd6-attempt1`）→同 SHA 完整重跑20/20；Windows `38819191295` release 因 exact-head Quantlab Gate 當時為失敗而正確拒絕，Gate 通過後只重跑該 job 成功。未改 source／test／workflow／期限；兩類逾時根因仍未修。
+- **預覽與本機：** [desktop-preview-38819191295-2](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38819191295-2)，setup **39,410,881 bytes**／SHA256 `0ed59ac5ef6bff4777b8a52b3b59b1b2cfea62e910a0b6bf097c247ff74dcdca`，核驗 PASS（`release-266f3bd6-2`）。owner 關閉程式後備份（812,285,241 bytes）並更新 PASS，EXE SHA256 `7cf03a3af127bdb916fd3f58b4cd238b2b7b040c0f46659aedb31cc87c94571e`，資料保存 PASS（`installed-preview-266f`）。
+- **真實結果（owner 截圖）：** 「取得此連線可用模型」成功，官方回傳7個模型（GPT-6.1-Sol、GPT-6-Astra、GPT-6-Sol、GPT-6-Luna、GPT-5.6-Sol、GPT-5.6-Terra、GPT-5.6-Luna）。**實際推論仍未驗證**；M6 未通過，230/300（76.67%）不變。
+- **下一步：** owner 決定「本次固定研究最多請求」次數並本人勾選兩個確認框後，做一次最小真推論；之後才驗策略保存、獨立回測、解讀改善、額度不足與授權失效。
+- **風險：** 每次更新保留舊 payload，安裝目錄累積約 812 MB／5865 files；未清理。
+
 ## 真實登入成功；模型取得失敗階段分類（2026-10-16；取代上節「唯一真人操作」）
 
 - **真實官方登入 PASS（owner 螢幕截圖）：** 新版（main `ded354bd`）登入後顯示「已驗證帳戶 ••••76da726e」、連線 ••••2bee8c81、「本機憑證具訂閱權限」。TLS 信任錨修復對真登入有效。實際推論、可用模型取得仍未驗證；M6 未通過，230/300（76.67%）不變。
