@@ -6,6 +6,8 @@
 
 本機 CurrentUser\CA 內過期的 `ISRG Root X2` 使 Python/OpenSSL TLS 驗證失敗（瀏覽器用 Windows 驗證器不受影響），導致交換階段 `transport_failure`。已以 ROOT-only 信任錨修復並追加第17個 producer profile，歷史16個身分不變。風險：`quantlab/downloads.py`、`market_providers.py`、`provider.py` 仍用預設 context；有效 code 的真回應仍未觀測；CI／Release／實機仍待驗。原230/300（76.67%）不變。
 
+更新：PR #25 已合併為 main `ded354bd`，必要 CI 全通過（含各一次有證據保存的同SHA重跑：PR Quantlab desktop smoke 逾時、main Windows GUI fixture 未就緒，根因均未證明修復）；[預覽](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38783511431-2) 實際下載 bytes 與來源核驗 PASS，本機已備份後更新且資料保存；已安裝程式對官方 discovery／JWKS 探測 HTTP 200。真登入仍待 owner 一次操作，結果前不宣稱成功。
+
 <!-- RESUME_DELIVERY_CHECKPOINT -->
 
 ## PR #24 已合併、預覽及實機更新PASS；真OAuth仍待驗（2026-10-15）

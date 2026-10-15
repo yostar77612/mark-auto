@@ -8,6 +8,8 @@
 2. 備份後安全更新本機安裝，核對來源與資料保存；以不含憑證的 TLS 探測確認實際封裝 runtime 可連官方 endpoint。
 3. 通過後才請 owner 做一次官方登入；其他模組的相同 TLS 風險另列。分數不變：230/300（76.67%），餘70/300（23.33%）。
 
+**進度（2026-10-16）：** 步驟1、2已完成（main `ded354bd`；預覽 desktop-preview-38783511431-2；本機更新與 TLS 探測 PASS）。步驟3待 owner 做一次官方登入；若仍失敗，先加固定 allowlist 的 HTTP 狀態／OAuth error code 分類再判斷，不重播 callback。
+
 <!-- RESUME_DELIVERY_CHECKPOINT -->
 
 ## PR #24 已整合；下一步為 exact-main Gate 與一次真人授權（2026-10-15）
