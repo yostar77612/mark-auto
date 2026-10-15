@@ -108,6 +108,36 @@ class HttpResponse:
     body: bytes = field(repr=False)
 
 
+def official_tls_context():
+    """Verified TLS context anchored only on trusted Windows ROOT certificates.
+
+    ssl.create_default_context() also loads the Windows intermediate (CA) store
+    as anchors; a stale expired cross-signed intermediate there (e.g. ISRG Root
+    X2) makes OpenSSL reject a chain the server sends correctly. Verification,
+    hostname checking and TLS 1.2+ stay mandatory; only the anchor set shrinks.
+    """
+    enum = getattr(ssl, 'enum_certificates', None)
+    if enum is None:
+        return ssl.create_default_context()
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True
+    loaded = 0
+    try:
+        for der, encoding, trust in enum('ROOT'):
+            if encoding != 'x509_asn' or not (trust is True or '1.3.6.1.5.5.7.3.1' in trust):
+                continue
+            try:
+                context.load_verify_locations(cadata=ssl.DER_cert_to_PEM_cert(der))
+                loaded += 1
+            except ssl.SSLError:
+                continue
+    except OSError:
+        loaded = 0
+    return context if loaded else ssl.create_default_context()
+
+
 class OfficialTransport:
     """No redirects, proxies, cookies or retries. Bounded HTTPS, fixed origins."""
     def request(self, method, url, *, form=None):
@@ -118,7 +148,7 @@ class OfficialTransport:
         body = None if form is None else urlencode(form).encode('ascii')
         if body is not None and len(body) > MAX_RECORD:
             raise AuthError('request_size')
-        connection = http.client.HTTPSConnection('auth.openai.com', timeout=15, context=ssl.create_default_context())
+        connection = http.client.HTTPSConnection('auth.openai.com', timeout=15, context=official_tls_context())
         deadline = time.monotonic() + 20
         expired = threading.Event()
         live_socket = []

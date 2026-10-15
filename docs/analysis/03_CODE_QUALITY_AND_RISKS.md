@@ -2,6 +2,24 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## OAuth 交換失敗根因：過期交叉簽署根憑證（2026-10-16）
+
+本機 CurrentUser\CA 內過期的 `ISRG Root X2` 使 Python/OpenSSL TLS 驗證失敗（瀏覽器用 Windows 驗證器不受影響），導致交換階段 `transport_failure`。已以 ROOT-only 信任錨修復並追加第17個 producer profile，歷史16個身分不變。風險：`quantlab/downloads.py`、`market_providers.py`、`provider.py` 仍用預設 context；有效 code 的真回應仍未觀測；CI／Release／實機仍待驗。原230/300（76.67%）不變。
+
+<!-- RESUME_DELIVERY_CHECKPOINT -->
+
+## PR #24 已合併、預覽及實機更新PASS；真OAuth仍待驗（2026-10-15）
+
+PR exact head `a740e429` 的完整 Quantlab 20 jobs 及 Windows security/build/TLS/lifecycle/recovery/provenance PASS；合併 main `9f4bcdb777b8f511daf7cfe43e5b2d8a25237ecb`／tree `bcdf96dc0771b394c1a6b714a2a2ad8f881f2425` 與已測相同。原 15 profiles 與所有執行函式不變，追加第16個精確來源身分。PR artifact 的87 tracked inputs、9 kit files、CRC及實際 installer hash 已驗，尚非 main Release。
+
+整合後Quantlab `38736087836` attempt1的Windows3.12 Paper診斷原10秒只完成60/120 FULL commits後逾時，兩個aggregate嚴格拒絕。全部證據先保存，僅一次完全同main SHA attempt2重驗，全20 jobs PASS；Windows `38736087801` security/build/release全3 PASS，1846 tests＝1813 PASS／33既有skips／832.933秒。原失敗仍保留，未宣稱效能根因已修復，無source/test/workflow變更／降低期限工作量／mock替代／略過測試。
+
+公開 [preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38736087801-1) setup39,420,084 bytes／SHA256 `5cf72a20a4749c32a66ae6b4988056bbfec3b597806632051226001437e240b7`已實際驗算；10下載assets/87來源inputs/9 kit files/CRC全部PASS。本機先備份408,205,162 bytes專屬安裝與資料，再有界更新；來源/SQLite/捷徑/既有AppData與workspace逐檔保存PASS，46.791秒、cleanup_verified=true，無UAC或全域修改。
+
+原230/300（76.67%）、餘70/300（23.33%）不變；真OAuth原因及推論、clean Win10/Win11、DPI、合法完整行情、簽章與main保護仍未通過。現在只需owner一次官方登入，安全階段提示並非根因修復證據。詳細來源、CI連結、保存位置與接續條件見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 的最新交付檢查點；下方保留歷史。
+
+<!-- RESUME_DELIVERY_CHECKPOINT_END -->
+
 ## PR #24：追加 auth 來源身分，真實登入仍待驗（2026-10-15T19:49+08:00）
 
 正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。

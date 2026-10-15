@@ -2,6 +2,27 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 下一步：TLS 信任錨修復的 CI、Release 與更新（2026-10-16）
+
+1. 跑適用 Quantlab／Windows CI，核對 exact head 後整合，再核對 main CI／Release 與下載 bytes。
+2. 備份後安全更新本機安裝，核對來源與資料保存；以不含憑證的 TLS 探測確認實際封裝 runtime 可連官方 endpoint。
+3. 通過後才請 owner 做一次官方登入；其他模組的相同 TLS 風險另列。分數不變：230/300（76.67%），餘70/300（23.33%）。
+
+<!-- RESUME_DELIVERY_CHECKPOINT -->
+
+## PR #24 已整合；下一步為 exact-main Gate 與一次真人授權（2026-10-15）
+
+來源修復已在PR head `a740e429` 全部必要CI／artifact核驗後合併，main `9f4bcdb777b8f511daf7cfe43e5b2d8a25237ecb`、tree `bcdf96dc0771b394c1a6b714a2a2ad8f881f2425`。歷史15 profiles保留，新增版本身分與離線回歸已完成。
+
+1. 合併後Quantlab `38736087836` attempt1發生原10秒Paper診斷60/120 FULL commits逾時，失敗全部保存；一次同SHA attempt2全20 jobs PASS。Windows `38736087801`全3 jobs PASS、1846 native tests/安裝/復原/發布PASS。不改960根/30秒原Gate，不宣稱效能根因已修復。
+2. 公開 [preview](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38736087801-1) 實際setup SHA256 `5cf72a20a4749c32a66ae6b4988056bbfec3b597806632051226001437e240b7`及87來源/9kit/CRC核驗PASS。已備份408,205,162 bytes後有界安裝，來源/SQLite/捷徑/AppData與workspace保存PASS，46.791秒、owned cleanup PASS；非clean-client或完整UI驗收。
+3. 現在集中請owner一次官方OAuth。真推論完整回應、策略保存、獨立回測、分析改善及額度/失效處理仍待原M6實測；只依程式安全訊息接續，不重播callback或盲目重試。
+4. clean Win10/Win11、完整合法分鐘行情、DPI與原有全部條款保持；230/300（76.67%），餘70/300（23.33%），無新得分。UI工具能力阻塞保留，不新增工具迴圈。
+
+詳細Git/CI證據、保全路徑、未提交純狀態補記及可恢復下一步見 [PROJECT_STATE](../agent/PROJECT_STATE.md) 的最新交付檢查點。下方為保留的歷史檢查點。
+
+<!-- RESUME_DELIVERY_CHECKPOINT_END -->
+
 ## PR #24：先修來源相容性 Gate，再交付一次真人登入（2026-10-15T19:49+08:00）
 
 正式驗收維持 **230/300＝76.67%，剩餘 70/300＝23.33%**。D5／D7／D8／M2／M6／M7 原權重 10／10／10／20／10／10 不變；本次工程測試不增加分數，沒有獨立工程完成百分比。
