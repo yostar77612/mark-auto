@@ -751,7 +751,9 @@ class ChatGPTPlanProvider:
         # No cached catalog can silently carry account selection across calls.
         transport=PlanHTTPTransport()
         try:
-            catalog=parse_models(transport.models(self.credential_reference,limits,cancelled))
+            # The catalog check uses the catalog-sized cap, not the inference cap.
+            catalog_limits={**limits,'max_response_bytes':MODELS_MAX_RESPONSE_BYTES}
+            catalog=parse_models(transport.models(self.credential_reference,catalog_limits,cancelled))
         except PlanError as exc:
             if exc.code in set(ERROR_STATES.values()):self._pause_account(exc.code)
             raise

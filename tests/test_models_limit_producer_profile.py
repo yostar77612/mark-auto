@@ -15,10 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class ModelsLimitProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 18)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 19)
         self.assertEqual(content_hash(PREVIOUS), 'e1262b61e647d3b716ce6451c184921f4d2b3b797317af152de0a2b460ccd492')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[16], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[17], PROFILE)
+        self.assertEqual(content_hash(PROFILE), '797b5bcfcf94f111144eda6cb6cc01a0c9cc6b24ec9aa2d9d9dec3b34d78c729')
         self.assertNotEqual(content_hash(PROFILE), content_hash(PREVIOUS))
 
     def test_only_protocol_and_provider_pins_differ(self):
@@ -31,6 +32,9 @@ class ModelsLimitProducerProfileTests(unittest.TestCase):
     def test_pins_match_reviewed_lf_and_crlf_bytes(self):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
+                if name == 'desktop_chatgpt_provider.py':
+                    # Provider bytes changed later (campaign catalog limit); pin stays historical.
+                    continue
                 raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')

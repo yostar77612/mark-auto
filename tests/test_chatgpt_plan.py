@@ -123,6 +123,20 @@ class PlanTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):provider(tmp_path,**setting).generate({'family':'trend'})
                 assert not (tmp_path/'auth'/'control-v1'/'plan.sqlite').exists()
 
+# P2b: the pre-inference catalog check uses the catalog cap, never the inference cap.
+    def test_p2_campaign_catalog_uses_catalog_limit(self):
+        from desktop_chatgpt_provider import MODELS_MAX_RESPONSE_BYTES
+        seen=[]
+        class Capture(MockTransport):
+            def models(self,reference,limits,cancelled):
+                seen.append(limits['max_response_bytes'])
+                return super().models(reference,limits,cancelled)
+        with patch('desktop_chatgpt_provider.PlanHTTPTransport',Capture):
+            p=provider(self.tmp_path)
+            assert p.generate({'family':'trend'})==CANDIDATE
+        assert seen==[MODELS_MAX_RESPONSE_BYTES]
+        assert p.max_response_bytes==262144
+
 # P2: catalog shape and ordering, hidden model cannot be selected.
     def test_p2_models(self):
         tmp_path=self.tmp_path
