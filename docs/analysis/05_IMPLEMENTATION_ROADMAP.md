@@ -2,6 +2,12 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 下一步：更新到 a758a5b4 並觀測模型取得階段（2026-10-16）
+
+1. owner 關閉 Mark Auto；備份後更新本機（見 PROJECT_STATE 的接續指令）。
+2. owner 再按一次「取得此連線可用模型」，只回報固定階段說明；依該階段做最小修復。
+3. 之後才進入真推論（owner 決定最大請求次數）、策略保存、獨立回測、額度不足／授權失效。分數不變：230/300（76.67%）。
+
 ## 下一步：TLS 信任錨修復的 CI、Release 與更新（2026-10-16）
 
 1. 跑適用 Quantlab／Windows CI，核對 exact head 後整合，再核對 main CI／Release 與下載 bytes。

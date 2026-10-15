@@ -2,6 +2,16 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 真實登入成功；模型取得失敗階段分類（2026-10-16；取代上節「唯一真人操作」）
+
+- **真實官方登入 PASS（owner 螢幕截圖）：** 新版（main `ded354bd`）登入後顯示「已驗證帳戶 ••••76da726e」、連線 ••••2bee8c81、「本機憑證具訂閱權限」。TLS 信任錨修復對真登入有效。實際推論、可用模型取得仍未驗證；M6 未通過，230/300（76.67%）不變。
+- **模型取得失敗：** owner 勾選兩個確認框後按「取得此連線可用模型」，畫面顯示通用「作業未完成」。原因：`desktop_chatgpt_ui.run_connection_request` 把所有非標籤錯誤收斂為 `operation_failed`。官方文件對 `GET https://api.openai.com/v1/models`（僅 Bearer）的規格與程式一致，故離線無法判定真因；真因未知。
+- **最小修復：** [PR #27](https://github.com/yostar77612/mark-auto/pull/27) squash 合併為 main `a758a5b49623a89aa3ef6b581e7f75d30555c039`／tree `b1de8257ecad08abd68a66a5d23c5489042d15c1`。新增 `_safe_error_code` 與固定白名單中文標籤（傳輸失敗、逾時、轉址、內容類型、清單格式、401／403／503、HTTP 400／404／429／5xx 類別、plan／auth／local 粗分類）；不顯示遠端文字、body、標頭或 token。UI 不在 producer pin 內，故不新增第18個 profile。測試 `tests/test_chatgpt_model_error_codes.py`。
+- **CI：** PR 上 Quantlab attempt1 的 Windows3.11 Paper 診斷原10秒只完成112/120 commits逾時（既有效能問題，證據 `ci-pr27-attempt1`），同 SHA 完整重跑 attempt2 全20 SUCCESS，Windows 成功；main Quantlab `38797914027`、Windows `38797914196` 全成功。未改期限，根因仍未證明修復。
+- **新預覽：** [desktop-preview-38797914196-1](https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38797914196-1)，source `a758a5b4`；setup **39,419,403 bytes**／SHA256 `d5191fc44e81ca7643722f8f1dd4f92f73804df1bc76139d609f8bdb28d071a0`。87 inputs／9 kit files／CRC／第17個 tuple 核驗 PASS，檔案在 `release-a758a5b4-1`。
+- **本機尚未更新：** 更新時 owner 的 Mark Auto 正在執行，依規則不強制關閉，未安裝；目前安裝仍是 `ded354bd` 版（EXE `b38f42f5…`）。接續：owner 關閉程式後，以 `session-tools/install_mark_auto_preview.ps1`（SessionRoot 用 `installed-preview-a758`、Installer／Manifest／KitRoot 指向 `release-a758a5b4-1`、ExpectedCommit `a758a5b49623a89aa3ef6b581e7f75d30555c039`）備份後更新，再請 owner 再按一次「取得此連線可用模型」，只回報畫面頂端固定階段說明。
+- **邊界：** 兩個確認框（核對官方帳戶、確認不使用 credits）及模型／推論一律由 owner 本人操作，不代勾；「本次固定研究最多請求」目前0（停用），真推論前需 owner 決定次數。
+
 ## OAuth 交換階段失敗：TLS 信任錨根因與修復（2026-10-16；取代上節「唯一真人操作」）
 
 - **證據（無需任何憑證）：** 本機以既有 `OfficialTransport` 對官方 token endpoint 送假值，TLS 握手即 `CERTIFICATE_VERIFY_FAILED: certificate has expired`，早於任何 HTTP；因此是 `transport_failure`，被歸入「授權交換階段」。官方 leaf（Let's Encrypt YE2）有效至 2026-12-18；Windows CryptoAPI 驗鏈 PASS。根因：本機 CurrentUser\CA 存有已過期（2025-09-16）的交叉簽署 `ISRG Root X2`，Python `ssl.create_default_context()` 把 CA 存放區也當信任錨，OpenSSL 選到過期憑證。只載入 ROOT 存放區的 context 對同一 endpoint 回 HTTP 200。授權碼、PKCE、client_id、redirect_uri 與請求格式與官方規格一致，非本次根因（但真 token 回應仍未見）。
