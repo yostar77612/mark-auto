@@ -2,6 +2,10 @@
 
 <!-- CURRENT_STATUS_START -->
 
+## 登入成功；模型取得失敗階段未知（2026-10-16）
+
+真實官方登入已成功（TLS 修復有效）。模型取得失敗被通用訊息遮蔽，PR #27（main `a758a5b4`）加入固定白名單階段分類，新預覽 desktop-preview-38797914196-1 核驗 PASS，但本機因程式執行中尚未更新。真因未知，需更新後再取一次模型以觀測階段；不猜修。推論、額度不足、授權失效處理仍未驗，M6 未過，230/300（76.67%）不變。Paper 診斷10秒逾時（112/120）再次出現，根因仍未修。
+
 ## OAuth 交換失敗根因：過期交叉簽署根憑證（2026-10-16）
 
 本機 CurrentUser\CA 內過期的 `ISRG Root X2` 使 Python/OpenSSL TLS 驗證失敗（瀏覽器用 Windows 驗證器不受影響），導致交換階段 `transport_failure`。已以 ROOT-only 信任錨修復並追加第17個 producer profile，歷史16個身分不變。風險：`quantlab/downloads.py`、`market_providers.py`、`provider.py` 仍用預設 context；有效 code 的真回應仍未觀測；CI／Release／實機仍待驗。原230/300（76.67%）不變。
