@@ -2074,7 +2074,7 @@
     },
     "autonomous_execution_plan": {
       "responsibility": "Assistant owns engineering, environment investigation/preparation and authorized tests. Do not default to asking user to build VMs, run tests, or perform technical GitHub setup.",
-      "ai_priority": "Official SIWC subscription required; first-phase product source removes local-model features and closes paid API/credits fallback paths. Included-only owner attestation and Usage guidance are implemented, without server-verification or monetary-cap claims. Actual OAuth/inference requires owner authorization; no startup calls.",
+      "ai_priority": "Official SIWC subscription required; first-phase product source removes local-model features and closes paid API/credits fallback paths. Included-only owner attestation and Usage guidance are implemented, without server-verification or monetary-cap claims. Actual OAuth/inference requires owner authorization; startup makes no authorization, discovery or inference calls, only a remembered-login restore that refreshes an expired saved token once.",
       "windows_route": "Use already-authorized standard public Server runners for their actual scope; assess nested x64 guest resources read-only, then legitimate exact client media/entitlement and explicit terms where required. No confirmed zero-cost authorized cleanWin10/11x64 route exists yet.",
       "nondelegable_approvals": "Ask only the precise action/target at account-holder, license/explicit terms, credential or persistent-access boundaries. No blanket technical homework.",
       "safety": "No fees, live trading, security bypass, hidden scope expansion or weakened gates."

@@ -637,6 +637,9 @@ def main(argv=None):
         window.show()
         if hasattr(window, 'freeze_paper'):
             window.freeze_paper('Previous session ended unexpectedly; reconcile paper account' if previous_unclean else 'Startup requires paper reconciliation')
+        if not args.smoke_test and hasattr(window, 'auto_restore_chatgpt'):
+            # Remembered login: reload the saved ChatGPT credentials (smoke runs stay inert).
+            window.auto_restore_chatgpt()
         # Windows suspend/resume notifications complement wall/monotonic checks,
         # including short sleeps and platforms whose monotonic clock pauses.
         class PowerEvents(QAbstractNativeEventFilter):
