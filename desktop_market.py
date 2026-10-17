@@ -4,6 +4,7 @@ No network, timers, broker imports or embedded observations. refresh_requested i
 an intent only; host must perform its existing consent/background-job workflow.
 """
 from copy import deepcopy
+from quantlab.desktop_errors import error_message, exception_code
 from decimal import Decimal, InvalidOperation
 import re
 from PySide6.QtCore import Qt, Signal, QTime, QSignalBlocker
@@ -292,7 +293,7 @@ class MarketDashboard(QWidget):
         try:
             result=aggregate_bars(item.bars,timeframe=self._timeframe)
         except (ValueError,TypeError) as exc:
-            self.chart.set_series(()); self._display_bars=(); self.message.setText('無法顯示此週期：'+str(exc)); return
+            self.chart.set_series(()); self._display_bars=(); self.message.setText(error_message('market_data_invalid')); return
         self._display_bars=result.bars
         self.chart.set_series(result.bars,source_label=_friendly_contract(item.instrument.contract_id)+' · '+_friendly_source(item.instrument),status_label=status)
         warnings=list(provenance.warnings)+list(result.warnings)
@@ -526,38 +527,40 @@ class MarketHistoryDialog(QDialog):
     def session_payload(self):
         from datetime import date, datetime, timezone, timedelta
         from quantlab.market_history import PRODUCT_SOURCES, session_from_dict
-        if not self.confirm.isChecked(): raise ValueError('請先確認此時段的實際契約與日期歸屬')
+        if not self.confirm.isChecked(): raise ValueError('history_confirmation_required')
         month = self.month.text().strip()
-        if not re.fullmatch(r'\d{4}(?:0[1-9]|1[0-2])', month): raise ValueError('請填寫有效到期年月 YYYYMM')
+        if not re.fullmatch(r'\d{4}(?:0[1-9]|1[0-2])', month): raise ValueError('history_expiry_invalid')
         expiry = month + ('W' + str(self.week.value()) if self.expiry_type.currentData()=='weekly' else '')
         def local_time(field, clock):
             value = field.text().strip()
-            if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value): raise ValueError('請明確填寫 YYYY-MM-DD 日期')
-            day = date.fromisoformat(value)
+            if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value): raise ValueError('history_date_invalid')
+            try: day = date.fromisoformat(value)
+            except ValueError: raise ValueError('history_date_invalid') from None
             return datetime(day.year,day.month,day.day,clock.time().hour(),clock.time().minute(),tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc).isoformat()
         product = self.product.currentData()
         value = dict(contract_id=f'TAIFEX:{product}:{expiry}', trade_date=self.trade_date.text().strip(), session=self.session.currentData(),
             open=local_time(self.open_date,self.open_time), end=local_time(self.end_date,self.end_time), include_end=self.include_end.isChecked(), source=PRODUCT_SOURCES[product])
-        session_from_dict(value)
+        try: session_from_dict(value)
+        except (ValueError,TypeError,KeyError): raise ValueError('history_session_invalid') from None
         return value
 
     def add_session(self):
         try:
-            if len(self.sessions)>=128: raise ValueError('單次最多 128 個明確時段')
+            if len(self.sessions)>=128: raise ValueError('history_session_limit')
             value = self.session_payload()
-            if value in self.sessions: raise ValueError('這個時段已加入')
+            if value in self.sessions: raise ValueError('history_session_duplicate')
             # Reject overlap before starting a worker; module revalidates every request.
             from datetime import datetime
             for existing in self.sessions:
                 if existing['contract_id'] != value['contract_id']: continue
-                if (existing['trade_date'],existing['session']) == (value['trade_date'],value['session']): raise ValueError('同契約交易日的時段不可重複或重疊')
+                if (existing['trade_date'],existing['session']) == (value['trade_date'],value['session']): raise ValueError('history_session_day_overlap')
                 a,b = datetime.fromisoformat(existing['open']),datetime.fromisoformat(existing['end'])
                 c,d = datetime.fromisoformat(value['open']),datetime.fromisoformat(value['end'])
-                if max(a,c)<min(b,d) or (b==c and existing['include_end']) or (d==a and value['include_end']): raise ValueError('同契約時段不可重疊')
+                if max(a,c)<min(b,d) or (b==c and existing['include_end']) or (d==a and value['include_end']): raise ValueError('history_session_overlap')
             self.sessions.append(value)
             label = f"{value['contract_id']} | 交易日 {value['trade_date']} | {value['session']} | 台北 {self.open_date.text()} {self.open_time.text()} → {self.end_date.text()} {self.end_time.text()} | 收盤端點 {'含' if value['include_end'] else '不含'}"
             self.session_list.addItem(label); self.confirm.setChecked(False); self.error.clear()
-        except (ValueError,TypeError,KeyError) as exc: self.error.setText(str(exc))
+        except (ValueError,TypeError,KeyError) as exc: self.error.setText(error_message(exception_code(exc)))
 
     def remove_session(self):
         row = self.session_list.currentRow()
@@ -566,13 +569,13 @@ class MarketHistoryDialog(QDialog):
     def request_payload(self):
         from pathlib import Path
         path = self.path.text().strip()
-        if not path or Path(path).suffix.lower() not in ('.csv','.rpt'): raise ValueError('請選擇本機 CSV 或 RPT 檔案')
-        if not self.sessions: raise ValueError('請先加入至少一個已確認時段')
+        if not path or Path(path).suffix.lower() not in ('.csv','.rpt'): raise ValueError('history_file_required')
+        if not self.sessions: raise ValueError('history_sessions_required')
         return {'history_import':True, 'local_path':path, 'sessions':deepcopy(self.sessions), 'dated_policy_confirmed':True}
 
     def accept_import(self):
         try: self._payload = self.request_payload()
-        except ValueError as exc: self.error.setText(str(exc)); return
+        except ValueError as exc: self.error.setText(error_message(exception_code(exc))); return
         self.accept()
 
     def payload(self):

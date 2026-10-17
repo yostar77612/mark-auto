@@ -4,6 +4,8 @@ The GUI only schedules work. execute_ui_operation runs in the runtime's isolated
 worker process; its inputs are data, never executable strategy source.
 """
 from pathlib import Path
+from quantlab.desktop_errors import error_message, exception_code
+from quantlab.desktop_feedback import completion_summary, stop_presentation
 import json
 from datetime import datetime
 from decimal import Decimal
@@ -409,7 +411,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                 outcomes[provider] = {'stale': result.stale, 'error': result.error,
                     'contracts': len(result.series), 'bars': sum(len(x.bars) for x in result.series)}
             except Exception as exc:
-                outcomes[provider] = {'stale': True, 'error': str(exc), 'contracts': None, 'bars': None}
+                outcomes[provider] = {'stale': True, 'error': exception_code(exc), 'contracts': None, 'bars': None}
         return {'providers': outcomes, 'mode': 'official_local_import' if local else 'official_explicit_refresh'}
     if operation == 'ui_demo':
         data = synthetic_dataset(payload.get('bars', 960))
@@ -427,7 +429,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                                 contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
         save_dataset(data, root / 'dataset.json')
         write_json(root / 'dataset_calendar.json', cal)
-        return {'dataset': str(root / 'dataset.json'), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
+        return {'dataset': str(root / 'dataset.json'), 'bars':len(data.bars), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
     if operation == 'ui_refresh':
         if payload.get('network_opt_in') is not True:
             raise ValidationError('需明確同意連線至臺灣期交所下載公開資料')
@@ -459,8 +461,11 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             manifest['manifest_hash'] = content_hash({k:v for k,v in manifest.items() if k not in ('imported_at','manifest_hash')})
             data = Dataset(data.bars, manifest, dict(data.quality))
         reports = []
+        summary_metrics = {'net_pnl': Decimal('0'), 'trade_count': 0}
         for spec in specs:
             result = run_backtest(data, spec, config)
+            summary_metrics['net_pnl'] += Decimal(str(result.metrics['net_pnl']))
+            summary_metrics['trade_count'] += result.metrics.get('trade_count', result.metrics.get('closed_trades', 0))
             # Publish a complete immutable report folder, never a half-written result.
             import tempfile
             reports_root = root / 'reports'; reports_root.mkdir(exist_ok=True)
@@ -477,7 +482,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                 files = {key: str(destination / Path(value).name) if key != 'result_hash' else value for key, value in files.items()}
             reports.append(files)
         write_json(root / 'active_result.json', {'result_hash': reports[-1]['result_hash']})
-        return {'reports': reports, 'source_type': data.manifest['source_type'], 'scope': 'research_only'}
+        return {'reports': reports, 'metrics': to_dict(summary_metrics), 'source_type': data.manifest['source_type'], 'scope': 'research_only'}
     if operation == 'ui_campaign':
         from quantlab.research import FixtureGenerator, run_campaign, demo_campaign_config
         from quantlab.__main__ import config_from_json
@@ -577,11 +582,15 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                                  strategy=StrategySpec(**selection['strategy']), broker=broker,
                                  margin_schedule=broker._margin_schedule, storage_profile="wal_full")
             replay.start()
+            cursor_before = replay.snapshot()['cursor']
+            fills_before = len(broker.snapshot()['fills'])
             try:
                 replay.step(max_bars=payload.get('max_bars', 100))
             finally:
                 replay.stop()
             replay_state = replay.snapshot()
+            replay_state['processed_bars'] = replay_state['cursor'] - cursor_before
+            replay_state['new_fills'] = len(broker.snapshot()['fills']) - fills_before
         state = broker.snapshot()
         journal = broker.journal_events()
         write_json(root / 'paper_snapshot.json', state)
@@ -643,12 +652,13 @@ def dataset_market_series(dataset, calendar_payload):
         result.append(MarketSeries(instrument, tuple(bars), provenance))
     return tuple(result)
 
-from PySide6.QtCore import Qt, QTimer, QPointF, QUrl
+from PySide6.QtCore import Qt, QTimer, QPointF, QUrl, QPropertyAnimation
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QListWidget, QStackedWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox,
     QSpinBox, QCheckBox, QProgressBar, QFileDialog, QFormLayout, QScrollArea,
-    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication, QGroupBox)
+    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication, QGroupBox,
+    QGraphicsOpacityEffect)
 
 
 class EquityPlot(QWidget):
@@ -742,6 +752,15 @@ class MainWindow(QMainWindow):
         self.status = QLabel('就緒'); self.status.setObjectName('status'); self.status.setWordWrap(True)
         outer.addWidget(self.status)
         self.notification = QLabel(''); self.notification.setObjectName('local_notification'); self.notification.setWordWrap(True); self.notification.hide(); outer.addWidget(self.notification)
+        self.notification.setTextFormat(Qt.TextFormat.RichText)
+        self.notification.linkActivated.connect(self._notification_link)
+        self.notification_timer = QTimer(self); self.notification_timer.setSingleShot(True)
+        self.notification_opacity = QGraphicsOpacityEffect(self.notification)
+        self.notification.setGraphicsEffect(self.notification_opacity)
+        self.notification_fade = QPropertyAnimation(self.notification_opacity, b'opacity', self)
+        self.notification_fade.setDuration(300); self.notification_fade.setStartValue(1.0); self.notification_fade.setEndValue(0.0)
+        self.notification_fade.finished.connect(self.notification.hide)
+        self.notification_timer.timeout.connect(self.notification_fade.start)
         progress = QHBoxLayout(); self.progress = QProgressBar(); self.progress.setRange(0, 100)
         self.cancel_button = QPushButton('取消背景作業'); self.cancel_button.setObjectName('cancel_job')
         self.cancel_button.clicked.connect(self.cancel_job); self.cancel_button.setEnabled(False)
@@ -972,6 +991,7 @@ class MainWindow(QMainWindow):
         path = Path(name).resolve(strict=True)
         if not path.is_file(): raise ValidationError('請選取本機完整資料檔')
         self.walk_forward_original.setText(str(path))
+        self.form_feedback(self.walk_forward_original, '已填入 Walk-forward 原始資料檔；請重新核對預覽。')
 
     def _walk_forward_saved_source(self):
         if self.walk_forward_form.fields['pool_origin'].currentData() != 'saved_campaign_pool': return None
@@ -1116,7 +1136,7 @@ class MainWindow(QMainWindow):
         else:
             if operation == 'ui_walk_forward_preview':
                 self.walk_forward_status.setText('預覽未完成：已停止或失敗，請重新預覽；未保留或消耗新範圍，目前不可開始。')
-            self.status.setText('Walk-forward 已停止或失敗；已消耗範圍不退還，不會自動重試。' + str(event.get('message', '')))
+            self.status.setText(error_message('operation_failed'))
             if operation == 'ui_walk_forward_run': self._wf_pending_reconcile = self._wf_launch is not None
         return True
 
@@ -1196,6 +1216,7 @@ class MainWindow(QMainWindow):
         path=Path(name).resolve(strict=True)
         if not path.is_file():raise ValidationError('請選取原始資料檔')
         self.analysis_original.setText(str(path))
+        self.form_feedback(self.analysis_original, '已填入分析原始資料檔；請重新核對預覽。')
 
     def _analysis_request(self, task):
         from quantlab.desktop_runtime import validate_analysis_request
@@ -1375,7 +1396,7 @@ class MainWindow(QMainWindow):
                 self.status.setText('已保存／唯讀載入 AI 解讀；不套用建議或改變策略。')
         else:
             self.analysis_consent.setChecked(False)
-            self.status.setText('分析未完成，已保留未知／失敗紀錄，不會重送：'+str(event.get('message','已取消')))
+            self.status.setText(error_message('operation_failed'))
         return True
 
     def _refresh_analysis_saved(self, *, preferred_reference=None):
@@ -1434,7 +1455,7 @@ class MainWindow(QMainWindow):
         self.cancel_order = self._text(layout, '紙上委託 ID')
         self._button(layout, '取消紙上委託', 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()))
         self.paper_detail = QPlainTextEdit(); self.paper_detail.setReadOnly(True); advanced.addWidget(self.paper_detail)
-        self.paper_card = SummaryCard(); layout.addWidget(self.paper_card)
+        self.paper_card = SummaryCard(); layout.insertWidget(2, self.paper_card)
 
     def _settings_page(self):
         layout = self._page('設定與備份')
@@ -1474,12 +1495,16 @@ class MainWindow(QMainWindow):
         try:
             return callback()
         except Exception as exc:
-            self.status.setText('作業未完成（輸入驗證失敗）：' + str(exc))
+            message = error_message(exception_code(exc))
+            self.status.setText(message)
+            self.notify_local(message, error=True, completion=True)
             return None
 
     def _browse(self, target):
         name, _ = QFileDialog.getOpenFileName(self, '選取本機檔案')
-        if name: target.setText(name)
+        if name:
+            target.setText(name)
+            self.form_feedback(target, '已填入選取檔案；請核對後再執行。')
 
     def load_form_file(self, form, editor):
         name, _ = QFileDialog.getOpenFileName(self, '載入已核對的完整資料檔', '', 'JSON (*.json)')
@@ -1490,7 +1515,7 @@ class MainWindow(QMainWindow):
         form.from_payload(value)
         editor.setPlainText(canonical_json(value)); self._remember(editor)
         self.paper_confirm.setChecked(False)
-        self.status.setText('已載入參考資料；未對帳、未送出任何委託，請先核對。')
+        self.form_feedback(form, '已載入參考資料；未對帳、未送出任何委託，請先核對。')
 
     def _family_changed(self):
         self.active_candidate = None
@@ -1569,6 +1594,17 @@ class MainWindow(QMainWindow):
             sessions.append({'open':bars[0].timestamp.isoformat(), 'end':bars[-1].end.isoformat(), 'trade_date':day, 'session':bars[0].session, 'contract_id':bars[0].contract_id, 'source':'explicit synthetic demonstration'})
         policy = {'contract_id':data.bars[0].contract_id,'risk_sessions':sessions,'margin_schedule':[{'effective_from':'2026-01-01','margin_per_contract':'100000','version':'synthetic-assumption-v1'}]}
         self.paper_policy.setPlainText(canonical_json(policy)); self.policy_form.from_payload(policy); self._remember(self.paper_policy)
+        self.form_feedback(self.policy_form.sessions, f'已填入示範政策：{len(sessions)} 個交易時段、1 筆保證金設定（合成資料）')
+
+    def form_feedback(self, widget, message):
+        self.status.setText(message)
+        scroll = widget.parentWidget()
+        while scroll is not None and not isinstance(scroll, QScrollArea):
+            scroll = scroll.parentWidget()
+        if scroll is not None: scroll.ensureWidgetVisible(widget)
+        original = widget.styleSheet()
+        widget.setStyleSheet('border:2px solid #82c9ae;')
+        QTimer.singleShot(1800, widget, lambda: widget.setStyleSheet(original))
 
     def paper_job(self, op, **payload):
         if op in ('submit', 'replay'):
@@ -1685,6 +1721,13 @@ class MainWindow(QMainWindow):
         self._plan_usage_binding = None
         self.start_job('ui_chatgpt_usage', payload)
 
+    def _record_connection_error(self, code):
+        from quantlab.desktop_errors import ERROR_TABLE
+        from quantlab.desktop_runtime import RedactedEventLog
+        fixed = code if code in ERROR_TABLE else 'operation_failed'
+        RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').append(
+            'ui_chatgpt_auth', 'error', error_code=fixed)
+
     def _chatgpt_event(self, event):
         operation = self.last_operation
         if operation not in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile'): return False
@@ -1701,11 +1744,17 @@ class MainWindow(QMainWindow):
             if request is None: return True
             if self._chatgpt_job_id is not None and event.get('job_id') not in (None,self._chatgpt_job_id): return True
             if kind == 'auth_progress':
-                self.chatgpt_controller.apply_event(connection_event_from_payload(event['auth_event']))
+                connection = connection_event_from_payload(event['auth_event'])
+                if connection.kind == 'error':
+                    self._record_connection_error(connection.error_code)
+                self.chatgpt_controller.apply_event(connection)
             elif kind in ('result','completed','success','error','failed','cancelled','canceled'):
                 received = False
                 if kind in ('result','completed','success'):
-                    received = self.chatgpt_controller.apply_event(connection_event_from_payload(event['result']['auth_event']))
+                    connection = connection_event_from_payload(event['result']['auth_event'])
+                    if connection.kind == 'error':
+                        self._record_connection_error(connection.error_code)
+                    received = self.chatgpt_controller.apply_event(connection)
                 joined = not self.jobs.active
                 self.chatgpt_controller.worker_joined(request.request_id, joined=joined, terminal_received=received)
                 if joined:
@@ -1786,6 +1835,7 @@ class MainWindow(QMainWindow):
                 self.record_event(self.last_operation, kind)
                 if kind in ('result', 'completed', 'success'):
                     result = event.get('result', {})
+                    if isinstance(result, list): result = {'downloads':result}
                     text = canonical_json(result)
                     self.summary.setPlainText(text)
                     if self.last_operation == 'ui_compare':
@@ -1797,16 +1847,19 @@ class MainWindow(QMainWindow):
                         self.paper_detail.setPlainText(text)
                         if 'account' in result: self._show_account(result['account'])
                     if self.last_operation == 'ui_backup_restore': self.freeze_paper('備份已還原，請重新核對帳戶')
-                    self.status.setText('手動 AI 請求已匯出；程式未連線，請自行決定是否分享。' if result.get('manual_export') else '作業完成，結果已保存於本機。')
+                    if self.last_operation in ('ui_paper_replay', 'ui_paper_kill') and 'account' in result:
+                        self._remember_stop(result['account'], 'replay' if self.last_operation == 'ui_paper_replay' else 'user')
                     self.refresh_views()
+                    message = completion_summary(self.last_operation, result)
                     if self.last_operation == 'ui_market_refresh' and any(v.get('error') for v in self._market_outcomes.values()):
-                        self.status.setText('部分或全部官方來源更新失敗；仍保留最後有效快取，請查看來源提醒。')
-                    self.notify_local('背景作業已結束。請核對來源、狀態與限制。')
+                        message += '；仍保留最後有效快取，請查看來源提醒。'
+                    self.status.clear()
+                    self.notify_local(message, error=any(v.get('error') for v in result.get('providers', {}).values()), completion=True)
                 elif kind in ('error', 'failed'):
                     if self.last_operation == 'ui_backup_restore':
                         self.freeze_paper('還原未完成，請重新核對帳戶')
-                    self.status.setText('作業失敗：' + str(event.get('message', event.get('error', '未知錯誤'))))
-                    self.notify_local('背景作業失敗；請查看狀態並核對輸入。')
+                    self.status.clear()
+                    self.notify_local(error_message('operation_failed'), error=True, completion=True)
                 elif kind in ('cancelled', 'canceled'):
                     self.freeze_paper('背景作業已取消')
                     self.status.setText('作業已取消；已完成的檔案保留，未完成部分不代表成功。')
@@ -1840,7 +1893,7 @@ class MainWindow(QMainWindow):
                     self._kill_pending = False
                     self.paper_job('kill')
         except Exception as exc:
-            self.status.setText('狀態讀取失敗：' + str(exc))
+            self.status.setText(error_message(exception_code(exc)))
 
     def load_market_cache(self):
         from quantlab.market_providers import load_cached
@@ -1867,7 +1920,7 @@ class MainWindow(QMainWindow):
                     self._market_data_bindings[item.instrument.contract_id] = dataset.manifest['data_hash']
                     self._market_research_series[item.instrument.contract_id] = item
             except (ValueError, KeyError, TypeError) as exc:
-                errors.append('研究資料無法作為已驗證市場歷史：' + str(exc))
+                errors.append(error_message(exception_code(exc)))
         try:
             from quantlab.market_history import list_history
             histories = list_history(self.root / 'market_history')
@@ -1877,7 +1930,7 @@ class MainWindow(QMainWindow):
             for item in sorted(incoming, key=lambda item: (item.provenance.received_at, item.provenance.sha256)):
                 series[item.instrument.contract_id] = item
         except (ValueError, OSError) as exc:
-            errors.append('本機逐筆歷史快取驗證失敗：' + str(exc))
+            errors.append(error_message(exception_code(exc)))
         self.market.set_quote_series(latest_market_observations(quotes), stale=True)
         self.market.set_market_series(tuple(series.values()), stale=True, error='；'.join(errors))
         selection = self.root / 'selection.json'
@@ -1887,15 +1940,30 @@ class MainWindow(QMainWindow):
             except (ValueError, KeyError): strategy = '版本驗證失敗，不可使用'
         self.market.set_trading_status(strategy=strategy)
         if (self.root / 'paper.sqlite3').exists() and (self.root / 'paper_policy.json').exists():
-            try: self._show_account(_paper(self.root).snapshot(), strategy=strategy)
+            try:
+                from quantlab.paper import PaperBroker
+                self._show_account(PaperBroker.read_snapshot(self.root / 'paper.sqlite3'), strategy=strategy)
             except Exception:
                 self.market.set_trading_status(strategy=strategy, paper='帳戶讀取失敗，狀態未知', risk='請停止並核對紀錄')
                 self.market.set_account_tables()
 
     def _show_account(self, account, strategy=None):
-        values = {k: account.get(k) for k in ('account_id','cash','reconciliation_required','kill_switch')}
+        values = {k: account.get(k) for k in ('account_id','cash','reconciliation_required')}
         if not account.get('account_id'): values['cash'] = None
+        values.update({'帳戶部位項目':len(account.get('positions', {})),
+                       '帳戶委託筆數':len(account.get('orders', {})),
+                       '帳戶成交筆數':len(account.get('fills', {})),
+                       '帳戶部位（口）':account.get('positions', {})})
+        reason = None
+        marker = self.root / 'paper_stop_display.json'
+        try:
+            saved = read_json(marker) if marker.exists() else {}
+            if saved.get('account_hash') == content_hash(account): reason = saved.get('reason')
+        except (OSError, ValueError): pass
+        stop_text, color = stop_presentation(account, reason)
+        values['停止狀態'] = stop_text
         self.paper_card.set_values(values)
+        self.paper_card.label.setStyleSheet('color:' + color)
         positions = [{'contract_id': key, 'quantity': value} for key, value in account.get('positions', {}).items()]
         orders = []
         for key, value in account.get('orders', {}).items():
@@ -1911,7 +1979,10 @@ class MainWindow(QMainWindow):
             strategy = ('已啟用研究／紙上版本 ' + load_selection(selection)['strategy_hash'][:16]) if selection.exists() else '未啟用'
         self.market.set_trading_status(strategy=strategy,
             paper=('帳戶 ' + str(account['account_id'])) if account.get('account_id') else '尚未完成初始對帳',
-            risk='已停止新委託' if account.get('kill_switch') is True else ('需要對帳' if account.get('reconciliation_required') is True else '僅依已鎖定紙上政策；非實單' if account.get('kill_switch') is False and account.get('reconciliation_required') is False else '未知；請核對帳戶'))
+            risk=stop_text)
+
+    def _remember_stop(self, account, reason):
+        write_json(self.root / 'paper_stop_display.json', {'account_hash':content_hash(account), 'reason':reason})
 
     def refresh_views(self):
         self._refresh_walk_forward_references()
@@ -1925,7 +1996,7 @@ class MainWindow(QMainWindow):
                 self.data_card.setText('資料來源\n\n' + data.manifest['source_type'].upper() + f' · {len(data.bars)} 根')
                 self.data_detail.setPlainText(canonical_json({'manifest':data.manifest, 'quality':data.quality}))
             except (ValueError, KeyError, TypeError, OSError) as exc:
-                self.overview.setText('研究資料驗證失敗；原檔保留。' + str(exc))
+                self.overview.setText(error_message(exception_code(exc)))
         else:
             self.overview.setText('尚無資料。請先匯入本機資料或建立明示合成示範。')
         stamp = content_hash(to_dict(data.manifest)) if data is not None else None
@@ -2014,7 +2085,7 @@ class MainWindow(QMainWindow):
                 self._selection_allowed = provenance['paper_qualified']
             self.select_button.setEnabled(self._selection_allowed and not self.jobs.active)
             self.result_detail.setPlainText(canonical_json({'metrics':result.metrics, 'warnings':result.warnings, 'manifest':result.manifest, 'fills':result.fills, 'rejects':result.rejects}))
-        except Exception as exc: self.status.setText('結果驗證失敗：' + str(exc))
+        except Exception as exc: self.status.setText(error_message(exception_code(exc)))
 
     def bind_result_layers(self, result=None):
         """Only exact source, strategy and chart identities may carry result layers."""
@@ -2205,11 +2276,11 @@ class MainWindow(QMainWindow):
         self.strategy_detail.setPlainText(canonical_json({'strategy':spec, **provenance}))
         self.strategy_form.setEnabled(False)
         self.batch.setChecked(False)
-        self.status.setText('已套用不可變生成版本；研究回測不等於通過樣本外驗證。')
+        self.form_feedback(self.strategy_form, '已套用不可變生成版本；研究回測不等於通過樣本外驗證。')
 
     def use_builtin(self):
         self._family_changed()
-        self.status.setText('已切回內建家族；參數可編輯。')
+        self.form_feedback(self.strategy_form, '已切回內建家族；參數可編輯。')
 
     def save_settings(self):
         if self.settings is None: raise ValidationError('設定儲存服務不可用')
@@ -2260,10 +2331,27 @@ class MainWindow(QMainWindow):
             raise ValidationError('無法開啟瀏覽器；專案 Releases 網址：https://github.com/yostar77612/mark-auto/releases')
         self.status.setText('已要求預設瀏覽器開啟專案 Releases；未下載或執行更新。')
 
-    def notify_local(self, message):
-        if self.local_notifications.isChecked():
-            self.notification.setText(message); self.notification.setStyleSheet('background:#213b50;color:#e8f1ff;padding:10px;border-radius:6px')
-            self.notification.show(); QApplication.alert(self, 1500)
+    def notify_local(self, message, *, error=False, completion=False):
+        from html import escape
+        if not completion and not self.local_notifications.isChecked(): return
+        self.notification_timer.stop()
+        self.notification_fade.stop(); self.notification_opacity.setOpacity(1.0)
+        self._notification_operation = self.last_operation
+        color = '#502b30' if error else '#213b50'
+        self.notification.setText(escape(message) + '　<a href="result">查看結果</a>　<a href="close">關閉</a>')
+        self.notification.setStyleSheet(f'background:{color};color:#e8f1ff;padding:10px;border-radius:6px')
+        self.notification.show()
+        if not error: self.notification_timer.start(5000)
+        if self.local_notifications.isChecked(): QApplication.alert(self, 1500)
+
+    def _notification_link(self, link):
+        if link == 'close':
+            self.notification_timer.stop(); self.notification_fade.stop(); self.notification.hide(); return
+        operation = self._notification_operation or ''
+        page = 5 if operation.startswith('ui_paper_') else 3 if operation == 'ui_backtest' else 4 if operation in ('ui_compare', 'ui_select', 'ui_disable') else 2 if operation.startswith(('ui_analysis_', 'ui_walk_forward_')) or operation == 'ui_campaign' else 6 if operation.startswith(('ui_backup_', 'ui_chatgpt_')) else 1
+        self.navigation.setCurrentRow(page)
+        target = self.paper_card if page == 5 else self.result_card if page == 3 and hasattr(self, 'result_card') else self.stack.widget(page).widget()
+        self.stack.widget(page).ensureWidgetVisible(target)
 
     def record_event(self, operation, kind):
         from quantlab.desktop_runtime import RedactedEventLog
@@ -2323,6 +2411,8 @@ class MainWindow(QMainWindow):
         if (self.root / 'paper_policy.json').exists():
             broker = _paper(self.root)
             broker.set_kill_switch(True)
+            self._remember_stop(broker.snapshot(), 'user' if '緊急停止' in str(reason) else 'freeze')
+            self._show_account(broker.snapshot())
         self.status.setText('紙上執行已凍結：' + str(reason) + '；每次執行需核對快照並明確對帳。')
 
     def closeEvent(self, event):

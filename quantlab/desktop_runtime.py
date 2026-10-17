@@ -471,7 +471,10 @@ class RedactedEventLog:
     def __init__(self, path):
         self.path = Path(path)
 
-    def append(self, operation, event_type):
+    def append(self, operation, event_type, *, error_code=None):
+        from .desktop_errors import ERROR_TABLE
+        if error_code is not None and (type(error_code) is not str or error_code not in ERROR_TABLE):
+            raise RuntimeSafetyError('Only fixed error codes can be logged')
         if operation not in OPERATIONS or event_type not in self.EVENTS:
             raise RuntimeSafetyError('Only fixed operation and event codes can be logged')
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -483,6 +486,8 @@ class RedactedEventLog:
                     BackupManager._check_regular_path(previous)
                 os.replace(self.path, previous)
         record = {'time': round(time.time(), 3), 'operation': operation, 'event': event_type}
+        if error_code is not None:
+            record['error_code'] = error_code
         with self.path.open('ab') as stream:
             stream.write(_json_bytes(record) + b'\n')
 
@@ -499,7 +504,10 @@ class RedactedEventLog:
         for raw in lines[-limit:]:
             try:
                 value = json.loads(raw)
-                if not isinstance(value, dict) or set(value) != {'time', 'operation', 'event'}:
+                if not isinstance(value, dict) or set(value) not in ({'time', 'operation', 'event'}, {'time', 'operation', 'event', 'error_code'}):
+                    continue
+                from .desktop_errors import ERROR_TABLE
+                if 'error_code' in value and (type(value['error_code']) is not str or value['error_code'] not in ERROR_TABLE):
                     continue
                 if value['operation'] not in OPERATIONS or value['event'] not in self.EVENTS or type(value['time']) not in (int, float):
                     continue

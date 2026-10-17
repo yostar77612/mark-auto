@@ -1,5 +1,6 @@
 """Frozen Windows desktop entry point; no web server, browser, or Python setup."""
 from __future__ import annotations
+from quantlab.desktop_errors import error_message, startup_error_code
 
 import argparse
 import multiprocessing
@@ -601,7 +602,7 @@ def main(argv=None):
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
-        QMessageBox.information(None, 'MarkAuto is already running', 'Use the existing MarkAuto window. A second worker will not be started.')
+        QMessageBox.information(None, 'MarkAuto 無法啟動', error_message('startup_workspace_busy'))
         if smoke_startup_directory is not None:
             smoke_startup_directory.cleanup()
         return 2
@@ -862,7 +863,7 @@ def main(argv=None):
                 'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'})
             smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
-        QMessageBox.critical(None, 'MarkAuto could not start', f'{type(exc).__name__}: startup failed. Your existing data has been preserved. Restore a compatible backup or reinstall the previous version.')
+        QMessageBox.critical(None, 'MarkAuto 無法啟動', error_message(startup_error_code(exc)))
         return 1
     finally:
         if args.smoke_test:

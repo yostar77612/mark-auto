@@ -196,7 +196,7 @@ class HistoryHostTests(unittest.TestCase):
         deadline=time.monotonic()+15
         while self.jobs.active and time.monotonic()<deadline:
             self.app.processEvents(); self.window.poll_jobs(); time.sleep(.02)
-        self.window.poll_jobs(); self.assertFalse(self.jobs.active); self.assertIn('失敗',self.window.status.text())
+        self.window.poll_jobs(); self.assertFalse(self.jobs.active); self.assertIn('失敗',self.window.notification.text())  # P0-14: completion/error text lives in the single merged notification
         self.assertEqual(snapshot,{p.name:p.read_bytes() for p in (self.paths.state/'market_history').glob('*.json')})
         self.window.start_job('ui_market_refresh',payload); self.wait_job()
 

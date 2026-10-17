@@ -225,3 +225,56 @@ load_history(root,cache_id)->HistoryLoad; list_history(root)->tuple[HistoryLoad,
 Official Sign in with ChatGPT subscription integration is REQUIRED. This replaces the older optional/alternative-route wording and local-model delivery requirement above and in Roadmap §19: no local-model feature, Qwen/Ollama/Hugging Face/GGUF download or local inference, and no paid API or credits fallback. Implementation is IN_PROGRESS; no correction-source test or native PASS is claimed. Preserve all earlier evidence, M6 weight10/PARTIAL,210/300, and every unrelated locked gate.
 
 The existing official PKCE/OIDC, DPAPI, worker cleanup, source/receipt provenance, persistent budgets and holdout restrictions remain. Real OAuth grant and bounded subscription requests require owner authorization; mocks cannot certify them. Included-only usage is a user-attested prerequisite with Settings > Usage guidance, not verified server configuration or an application monetary cap. The [official Help Center](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites) states that optional credit use is global and also requires the app limit at100%; an app limit below100% prevents that app's credit use. The reviewed guidance provides no per-request subscription-only flag. Do not infer that signing in alone prevents credit charges or alter owner settings automatically.
+# T2-B P0 completion and account presentation contracts
+
+- P0-14: ordinary background completions use one `local_notification` with
+  `查看結果` navigation and `關閉`. Success waits five seconds then fades over
+  300 ms; failures and partial official-source failures remain until closed.
+  The status label is cleared on completion. Disabling local alerts suppresses
+  window attention, not the operation result. Error text uses desktop_errors.
+- P0-17: operation-specific summaries include synthetic bar counts, aggregate
+  backtest net PnL/trades/report count, selected version, paper cash and ledger
+  counts. Replay reports this batch's processed bars/new fills and saved cursor.
+  These are presentation fields; report hashes and engine inputs are unchanged.
+- P0-18: demo policy, loaded policy/snapshot and candidate/builtin fills report
+  status, scroll the changed form into view and highlight it for 1.8 seconds.
+  Demo status uses actual session count, e.g. `已填入示範政策：4 個交易時段、1 筆保證金設定（合成資料）`.
+- P0-19: normal replay completion is green, user emergency stop red, risk/safety
+  stop amber. A separate presentation marker is bound to the full account hash;
+  stale/unavailable markers never imply normal completion or execution permission.
+  Engine kill/reconciliation and risk validation are unchanged.
+- P0-20: one paper account card shows ledger cash, position items/quantities,
+  order/fill counts, reconciliation and stop state. Counts inside the snapshot
+  form explicitly begin with `參考快照`; they describe that external input only.
+- Focused offline evidence: `tests/test_desktop_feedback_p0.py`. Full-suite/native
+  controller verification remains required; no acceptance weights are changed.
+
+# T2-A P0 correctness presentation contracts
+
+- P0-01: account-card refresh uses `PaperBroker.read_snapshot`, a SQLite
+  `mode=ro` / `query_only` transaction with journal replay verification. It
+  neither creates a journal nor appends restart events. Normal PaperBroker
+  construction retains restart/reconciliation semantics.
+- P0-05: `quantlab/desktop_errors.py` owns fixed error codes, Chinese
+  explanations and next steps. Desktop exception handlers display catalogue
+  text and codes; unknown errors use a generic Chinese message. Exception
+  strings, paths and tokens are not display/log input. RedactedEventLog accepts
+  only allowlisted optional error codes, including when reading persisted logs.
+  History form checks retain specific fixed CSV/RPT, expiry/date, confirmation,
+  duplicate and overlap messages through catalogue codes; raw validation
+  exceptions still use safe catalogue text. Synchronous UI errors replace any
+  previous success notification and remain visible until closed, even when
+  attention alerts are disabled. Rejected policies never start a worker or save.
+- T2 repair: official market summaries omit the failure count when zero;
+  nonzero source failures retain their count and persistent notification.
+- P0-06: startup distinguishes an old SQLite runtime, incompatible workspace
+  format and the single-instance workspace lock, with Chinese next steps.
+  Unknown failures retain a generic message and preserve existing data.
+- P0-09: restore is a startup action that may refresh over the network, separate
+  from local-only list. The host schedules it only while idle. Restore refresh
+  and authorization cleanup failures report `restore_refresh_failed` and
+  `authorization_cleanup_failed`; the host persists only those fixed codes.
+  Failed restore exposes sign-in again after the worker has joined.
+- Regression evidence: `tests/test_desktop_ui_p0_correctness.py` exercises
+  three consecutive card refreshes, real restart, unknown exception redaction,
+  startup classification, failed restore/sign-in and fixed-code logging.
