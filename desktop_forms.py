@@ -446,7 +446,7 @@ class PaperSnapshotForm(_Form):
         self._show_records()
 
     def _show_records(self):
-        self.records.set_values({'部位項目':len(self._snapshot['positions']), '委託項目':len(self._snapshot['orders']), '成交項目':len(self._snapshot['fills'])})
+        self.records.set_values({'參考快照部位項目':len(self._snapshot['positions']), '參考快照委託筆數':len(self._snapshot['orders']), '參考快照成交筆數':len(self._snapshot['fills'])})
         for key,table in self.record_tables.items():
             table.set_rows([{'識別碼':identifier, **(value if isinstance(value,dict) else {'數量（口）':value})} for identifier,value in self._snapshot[key].items()])
 

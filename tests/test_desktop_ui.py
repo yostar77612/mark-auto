@@ -63,7 +63,7 @@ class NativeDesktopTests(unittest.TestCase):
             self.app.processEvents(); self.window.poll_jobs(); time.sleep(.02)
         self.window.poll_jobs()
         self.assertFalse(self.jobs.active, self.window.status.text())
-        self.assertNotIn('失敗', self.window.status.text(), self.window.status.text())
+        self.assertNotIn('失敗', self.window.status.text() + self.window.notification.text())
 
     def demo(self):
         self.click('create_demo'); self.wait_job()
@@ -85,7 +85,7 @@ class NativeDesktopTests(unittest.TestCase):
         deadline=time.monotonic()+10
         while self.jobs.active and time.monotonic()<deadline:
             self.app.processEvents(); self.window.poll_jobs(); time.sleep(.02)
-        self.window.poll_jobs(); self.assertIn('失敗', self.window.status.text())
+        self.window.poll_jobs(); self.assertIn('失敗', self.window.notification.text())
         root=Path(__file__).resolve().parents[1]
         self.window.import_path.setText(str(root/'examples/synthetic_bars.csv'))
         self.window.calendar_path.setText(str(root/'examples/synthetic_calendar.json'))
@@ -124,7 +124,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.demo(); self.click('run_backtest'); self.wait_job(); self.click('select_strategy'); self.wait_job()
         self.click('demo_policy'); self.click('paper_snapshot'); self.wait_job()
         self.click('paper_reconcile'); self.wait_job()
-        self.click('paper_replay'); self.assertIn('明確勾選', self.window.status.text()); self.assertFalse(self.jobs.active)
+        self.click('paper_replay'); self.assertIn('validation_failed', self.window.status.text()); self.assertFalse(self.jobs.active)
         self.window.paper_confirm.setChecked(True); self.click('paper_replay'); self.wait_job()
         result=json.loads(self.window.paper_detail.toPlainText()); self.assertGreater(result['replay']['cursor'],0)
         self.assertTrue(result['account']['kill_switch'])
@@ -162,7 +162,7 @@ class NativeDesktopTests(unittest.TestCase):
         deadline=time.monotonic()+10
         while self.jobs.active and time.monotonic()<deadline:
             self.app.processEvents(); self.window.poll_jobs(); time.sleep(.02)
-        self.window.poll_jobs(); self.assertIn('失敗',self.window.status.text())
+        self.window.poll_jobs(); self.assertIn('失敗',self.window.notification.text())
         self.assertFalse((self.paths.state/'paper_policy.json').exists())
         self.window.freeze_paper('startup safety')
         self.click('demo_policy'); self.click('paper_snapshot'); self.wait_job()
@@ -406,9 +406,9 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.timer.stop(); original=self.window.jobs; self.window.jobs=SlowErrorExit()
         self.window.last_operation='ui_import'
         try:
-            self.window.poll_jobs(); self.assertIn('失敗',self.window.status.text())
-            self.window.poll_jobs(); self.assertIn('失敗',self.window.status.text())
-            self.assertNotIn('取消',self.window.status.text())
+            self.window.poll_jobs(); self.assertIn('失敗',self.window.notification.text())
+            self.window.poll_jobs(); self.assertIn('失敗',self.window.notification.text())
+            self.assertNotIn('取消',self.window.notification.text())
         finally: self.window.jobs=original
 
     def test_service_rejects_unknown_code_and_network_without_consent(self):
