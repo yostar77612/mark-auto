@@ -541,7 +541,8 @@ class ChatGPTConnectionUITests(unittest.TestCase):
             raise RuntimeError('Bearer FIXTURE_SECRET_RAW_TOKEN')
         session.refresh=refresh
         result=self.ui.run_connection_request(self.ui.ConnectionRequest(1,'restore'),bootstrap='/fixture',emit=lambda x:None,cancelled=lambda:False,session_factory=lambda:session)
-        self.assertEqual(result.kind,'result');self.assertEqual(result.state,'reauthorization_required')
+        self.assertEqual(result.kind,'error');self.assertEqual(result.state,'reauthorization_required')
+        self.assertEqual(result.error_code,'restore_refresh_failed')
         self.assertNotIn('SECRET',repr(result))
 
     def test_worker_list_uses_public_verified_restart_summary_only(self):

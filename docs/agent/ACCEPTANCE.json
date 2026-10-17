@@ -5621,5 +5621,29 @@
       }
     ],
     "scope_only": "This document update changes scope/status only, not product/workflow/tests or safety thresholds. Other-computer operation, new VMs, system components, admin rights and global settings still need explicit owner authorization. Current-host MarkAuto installation/use is bounded separately below."
+  },
+  "t2a_p0_correctness_contracts": {
+    "items": [
+      "P0-01",
+      "P0-05",
+      "P0-06",
+      "P0-09"
+    ],
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t2-a-p0-correctness-presentation-contracts",
+    "regressions": "tests/test_desktop_ui_p0_correctness.py",
+    "scope": "Synthetic offline presentation regressions only; existing suites still require CI verification. No acceptance weights or safety thresholds changed."
+  },
+  "t2b_p0_feedback_contracts": {
+    "repair_contract": "Specific fixed history-form validation messages are preserved through catalogue codes. Synchronous rejected-policy errors replace stale success notifications, persist even with attention alerts disabled, and never save policy or start work. Official market summaries omit zero failure counts and retain nonzero counts. Original five regression assertions remain unchanged; native worker verification is controller-owned when sandbox ACLs prevent setup.",
+    "items": [
+      "P0-14",
+      "P0-17",
+      "P0-18",
+      "P0-19",
+      "P0-20"
+    ],
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t2-b-p0-completion-and-account-presentation-contracts",
+    "regressions": "tests/test_desktop_feedback_p0.py",
+    "scope": "Offline synthetic presentation only; five-second success plus 300ms fade, persistent errors, operation summaries, fill feedback and ledger account card. Full suite and native verification remain controller responsibilities. No acceptance weights or safety thresholds changed."
   }
 }

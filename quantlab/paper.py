@@ -414,6 +414,26 @@ class PaperBroker:
         db.execute('UPDATE materialized SET state=? WHERE id=1', (canonical_json(state),))
         return state
 
+    @classmethod
+    def read_snapshot(cls, journal_path):
+        """Verify a display snapshot without opening an execution session or writing.
+
+        Real construction still journals restart and requires reconciliation.
+        Missing/corrupt journals fail closed; display reads never create them.
+        """
+        reader = cls.__new__(cls)
+        reader.path = Path(journal_path)
+        reader._storage_uncertain = False
+        reader._verified_restore = None
+        with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
+            db = sqlite3.connect(reader.path.resolve().as_uri() + '?mode=ro', uri=True)
+            try:
+                db.execute('PRAGMA query_only=ON')
+                db.execute('BEGIN')
+                return reader._restore(db)
+            finally:
+                db.close()
+
     def snapshot(self):
         with self._transaction() as db:
             return self._restore(db)

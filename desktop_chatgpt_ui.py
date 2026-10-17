@@ -19,7 +19,9 @@ USAGE_SETTINGS_URL = 'https://chatgpt.com/settings/usage'
 
 ACTIONS = frozenset(('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'restore', 'select', 'sign_out', 'refresh', 'models', 'clear_pause'))
 # Local-only reads that never need the host to stop background work first.
-LOCAL_ACTIONS = frozenset(('list', 'restore'))
+LOCAL_ACTIONS = frozenset(('list',))
+# Startup-only restore may refresh over the network; host scheduling ensures idle workers.
+STARTUP_ACTIONS = frozenset(('restore',))
 # A saved, unexpired login: the sign-in button is hidden in these states.
 CONNECTED_STATES = frozenset(('plan_ready', 'identity_only'))
 STATES = frozenset(('host_initialization_required', 'disconnected', 'initialized', 'authorizing', 'validating', 'plan_ready',
@@ -33,49 +35,7 @@ STATE_LABELS = {'host_initialization_required':'尚未初始化本機識別；�
     'authorization_failed':'授權未完成', 'timeout':'授權逾時', 'cancelled':'本次授權已取消',
     'transient_blocked':'暫時無法使用；不會自動重試', 'client_configuration_required':'需檢查官方用戶端設定',
     'unknown':'狀態待核對；不能視為已登出或未扣額度'}
-ERROR_LABELS = {'explicit_host_recovery_required':'發現先前的 ChatGPT 記錄；不會重建識別或重設額度。請先檢查原登入資料，必要時使用進階明確復原。',
-    'first_use_check_unavailable':'無法核對是否為首次設定；不會開始登入。',
-    'registration_retry_required':'授權碼已失效；已保留待驗證註冊。請讀取本機連線，選定該紀錄後明確重新授權。尚未授予身分或推論權限。',
-    'host_initialization_required':'尚未初始化本機安全識別。請明確選擇首次設定／復原。',
-    'authorization_failed':'本次授權未完成；請核對官方登入與本機連線狀態。不會自動重試。',
-    'authorization_exchange_failed':'授權交換階段未完成；不會自動重試。',
-    'authorization_identity_failed':'官方身分驗證階段未完成；不會自動重試。',
-    'authorization_tokens_failed':'登入回應格式驗證未完成；不會自動重試。',
-    'authorization_storage_failed':'本機連線儲存階段未完成；不會自動重試。',
-    'authorization_busy':'已有授權作業，請先等待或停止。', 'authorization_timeout':'官方授權等待逾時。',
-    'account_mismatch':'帳戶與原連線不符，原紀錄保留。', 'previous_completion_unknown':'先前請求完成狀態未知，禁止重送或退還次數。',
-    'account_paused':'此帳戶已暫停；新研究或模型不會解除限制。',
-    'active_or_unknown_request':'仍有執行中或結果未知的請求，無法解除暫停。',
-    'unknown_outcome_requires_manual_resolution':'完成狀態未知，須另行核對；不能重設或退還次數。',
-    'local_signout_persistence_failed':'本機登出保存失敗，請勿假設已登出。',
-    'network_disabled':'尚未同意本次連線。', 'plan_scope_missing':'此連線沒有訂閱推論權限。',
-    'refresh_required':'連線到期，請明確更新或重新授權。',
-    'reauthorization_required':'必須重新授權；不會重用不確定的舊憑證。'}
-ERROR_LABELS.update({
-    'http_transport_failed':'連線官方模型服務時傳輸失敗（網路／TLS／連線中斷）；不會自動重試。',
-    'deadline_exceeded':'官方模型服務在期限內未完成；不會自動重試。',
-    'redirect_rejected':'官方模型服務要求轉址；依規則拒絕，不會自動重試。',
-    'invalid_content_type':'官方回應的內容類型不符；不會自動重試。',
-    'compressed_response':'官方回應使用不支援的壓縮；不會自動重試。',
-    'stream_byte_limit':'官方回應超過大小限制；不會自動重試。',
-    'invalid_catalog':'官方模型清單格式驗證未完成；不會自動重試。',
-    'duplicate_model':'官方模型清單含重複項目，已拒絕；不會自動重試。',
-    'invalid_credential':'本機存取憑證格式不符；不會自動重試。',
-    'credential_diagnosis':'官方回應 401：存取憑證未被接受；請重新授權，不會自動重試。',
-    'grant_blocked':'官方回應 403：此連線未被授予所需權限；不會自動重試。',
-    'transient_blocked':'官方服務暫時不可用（503 或使用量暫不可用）；不會自動重試。',
-    'eligibility_blocked':'官方表示此帳戶目前不符合訂閱共用資格；不會自動重試。',
-    'quota_paused':'官方表示方案用量已達上限；已暫停，不切換付費 API。',
-    'configuration_blocked':'官方表示此路由不受支援；不會自動重試。',
-    'invalid_request':'官方表示此請求能力不受支援；不會自動重試。',
-    'models_http_bad_request':'官方模型服務回應 400；不會自動重試。',
-    'models_http_not_found':'官方模型服務回應 404；不會自動重試。',
-    'models_http_rate_limited':'官方模型服務回應 429；不會自動重試。',
-    'models_http_server_error':'官方模型服務回應 5xx；不會自動重試。',
-    'models_http_other':'官方模型服務回應其他非成功狀態；不會自動重試。',
-    'operation_failed_plan':'官方模型服務作業未完成（未列入固定分類的本機檢查）；不會自動重試。',
-    'operation_failed_auth':'本機連線授權檢查未完成（未列入固定分類）；不會自動重試。',
-    'operation_failed_local':'本機檔案或儲存作業未完成；不會自動重試。'})
+from quantlab.desktop_errors import ERROR_LABELS, error_message, exception_code
 RECOVERABLE_PAUSES = frozenset(('eligibility_blocked','quota_paused','transient_blocked','invalid_request','configuration_blocked','credential_diagnosis','grant_blocked'))
 REF = r'[a-f0-9]{32}'
 MODEL = r'[A-Za-z0-9._:-]{1,128}'
@@ -128,7 +88,7 @@ class ConnectionRequest:
         if self.action=='first_sign_in' and self.registration is not None:raise ValueError('first sign-in cannot select an existing account')
         if self.action in ('enable_plan','select','sign_out','refresh','models','clear_pause') and self.registration is None: raise ValueError('registration required')
         if type(self.max_runtime_seconds) is not int or not 1<=self.max_runtime_seconds<=600: raise ValueError('bounded runtime required')
-        if type(self.user_confirmed) is not bool or (self.action not in LOCAL_ACTIONS and not self.user_confirmed): raise ValueError('explicit user action required')
+        if type(self.user_confirmed) is not bool or (self.action not in LOCAL_ACTIONS | STARTUP_ACTIONS and not self.user_confirmed): raise ValueError('explicit user action required')
 
     def payload(self): return asdict(self)
 
@@ -241,7 +201,7 @@ class ConnectionController(QObject):
         self._counter+=1
         request=ConnectionRequest(self._counter,action,registration,600 if action in ('begin','first_sign_in','enable_plan') else 120,confirmed)
         self.busy=True;self.stopping=False;self._request=request;self._authorization_url=None;self._terminal_received=False;self._terminal_ok=False
-        self._awaiting_join=action not in LOCAL_ACTIONS;self.message='先等待主程式停止並確認所有背景請求已結束。' if self._awaiting_join else ('正在還原已保存的登入；到期時自動更新連線。' if action=='restore' else '正在讀取本機已保存的連線狀態。')
+        self._awaiting_join=action not in LOCAL_ACTIONS | STARTUP_ACTIONS;self.message='先等待主程式停止並確認所有背景請求已結束。' if self._awaiting_join else ('正在還原已保存的登入；到期時自動更新連線。' if action=='restore' else '正在讀取本機已保存的連線狀態。')
         self.changed.emit()
         (self.quiesce_requested if self._awaiting_join else self.request_ready).emit(request)
         return request
@@ -264,7 +224,7 @@ class ConnectionController(QObject):
             action=self._request.action;self.state=event.state
             self._terminal_received=True;self._terminal_ok=event.kind=='result'
             self._authorization_url=None
-            if event.kind=='error':self.message=ERROR_LABELS.get(event.error_code,'作業未完成。請核對官方連線或本機紀錄；不會自動重試。')
+            if event.kind=='error':self.message=error_message(event.error_code)
             else:
                 if action=='models' and event.active_registration!=self._request.registration: raise ValueError('model/account mismatch')
                 if self.active_registration!=event.active_registration:
@@ -398,7 +358,7 @@ class ChatGPTConnectionPanel(QWidget):
     def start_auto_restore(self):
         """Startup: reload the saved login and refresh it once if expired.
 
-        Runs one local 'restore' job; the worker refreshes only the active
+        Runs one startup 'restore' job that may use the network; the worker refreshes only the active
         registration, only when it is refresh_required. Failures leave the
         verified vault state, which shows the sign-in button again.
         """
@@ -487,7 +447,7 @@ class ChatGPTConnectionPanel(QWidget):
 
     def _safe(self,call):
         try:return call()
-        except ValueError:self.status.setText('操作未送出。請先核對本次同意、連線與背景作業狀態。')
+        except Exception as exc:self.status.setText(error_message(exception_code(exc)))
 
     def _act(self,action):
         self._primary_flow=None
@@ -577,8 +537,8 @@ class ChatGPTConnectionPanel(QWidget):
 
 def _safe_error_code(exc):
     """Map an exception to a fixed allowlisted code; never expose its text."""
-    code=str(exc)
-    if code in ERROR_LABELS:return code
+    code=exception_code(exc)
+    if code not in ('operation_failed','validation_failed','operation_failed_local'):return code
     names=tuple(c.__name__ for c in type(exc).__mro__)
     if 'PlanError' in names:
         local=getattr(exc,'code',None)
@@ -620,10 +580,10 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
         if request.action=='restore':
             summary=session.status_summary()
             if summary['active_registration'] is not None and summary['state']=='refresh_required':
-                # Refresh failures are already persisted by AuthSession (tokens
-                # cleared or operation barrier kept); the snapshot reports them.
+                # Preserve AuthSession failure barriers and report a fixed refresh stage.
                 try:session.refresh(summary['active_registration'])
-                except Exception:pass
+                except Exception:
+                    return snapshot(state='reauthorization_required',kind='error',error_code='restore_refresh_failed')
             return snapshot()
         if request.action in ('begin','first_sign_in','enable_plan'):
             if request.action=='first_sign_in':
@@ -664,4 +624,5 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
     finally:
         if request.action in ('begin','first_sign_in','enable_plan') and session is not None and session.state in ('authorizing','validating'):
             try:session.cancel()
-            except Exception:pass
+            except Exception:
+                emit(ConnectionEvent(request.request_id,'error','unknown',error_code='authorization_cleanup_failed'))
