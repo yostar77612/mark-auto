@@ -21,6 +21,20 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertEqual([w.provider_mode.itemData(i) for i in range(w.provider_mode.count())],['chatgpt_plan','fixture','manual'])
         self.assertFalse(w.chatgpt_panel.consent.isChecked())
 
+    def test_requested_startup_restore_waits_for_idle_jobs_then_runs_once(self):
+        w=self.window;c=w.chatgpt_controller
+        with patch.object(self.jobs,'start',return_value='fixture-job') as start:
+            w.poll_jobs();start.assert_not_called()
+            w.auto_restore_chatgpt()
+            c.busy=True;w.poll_jobs();c.busy=False
+            start.assert_not_called()
+            w.poll_jobs()
+            self.assertEqual(start.call_count,1)
+            request=c._request
+            self.assertEqual(start.call_args.args,('ui_chatgpt_auth',{'request':request.payload()}))
+            self.assertEqual(request.action,'restore')
+            w.poll_jobs();self.assertEqual(start.call_count,1)
+
     def test_json_event_roundtrip_restores_model_label_tuples(self):
         import json
         from desktop_ui import connection_event_from_payload

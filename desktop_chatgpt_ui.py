@@ -17,7 +17,11 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout,
 
 USAGE_SETTINGS_URL = 'https://chatgpt.com/settings/usage'
 
-ACTIONS = frozenset(('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'select', 'sign_out', 'refresh', 'models', 'clear_pause'))
+ACTIONS = frozenset(('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'restore', 'select', 'sign_out', 'refresh', 'models', 'clear_pause'))
+# Local-only reads that never need the host to stop background work first.
+LOCAL_ACTIONS = frozenset(('list', 'restore'))
+# A saved, unexpired login: the sign-in button is hidden in these states.
+CONNECTED_STATES = frozenset(('plan_ready', 'identity_only'))
 STATES = frozenset(('host_initialization_required', 'disconnected', 'initialized', 'authorizing', 'validating', 'plan_ready',
     'identity_only', 'refresh_required', 'registration_retry_required', 'reauthorization_required', 'authorization_failed',
     'timeout', 'cancelled', 'transient_blocked', 'client_configuration_required', 'unknown'))
@@ -124,7 +128,7 @@ class ConnectionRequest:
         if self.action=='first_sign_in' and self.registration is not None:raise ValueError('first sign-in cannot select an existing account')
         if self.action in ('enable_plan','select','sign_out','refresh','models','clear_pause') and self.registration is None: raise ValueError('registration required')
         if type(self.max_runtime_seconds) is not int or not 1<=self.max_runtime_seconds<=600: raise ValueError('bounded runtime required')
-        if type(self.user_confirmed) is not bool or (self.action!='list' and not self.user_confirmed): raise ValueError('explicit user action required')
+        if type(self.user_confirmed) is not bool or (self.action not in LOCAL_ACTIONS and not self.user_confirmed): raise ValueError('explicit user action required')
 
     def payload(self): return asdict(self)
 
@@ -237,7 +241,7 @@ class ConnectionController(QObject):
         self._counter+=1
         request=ConnectionRequest(self._counter,action,registration,600 if action in ('begin','first_sign_in','enable_plan') else 120,confirmed)
         self.busy=True;self.stopping=False;self._request=request;self._authorization_url=None;self._terminal_received=False;self._terminal_ok=False
-        self._awaiting_join=action!='list';self.message='先等待主程式停止並確認所有背景請求已結束。' if self._awaiting_join else '正在讀取本機已保存的連線狀態。'
+        self._awaiting_join=action not in LOCAL_ACTIONS;self.message='先等待主程式停止並確認所有背景請求已結束。' if self._awaiting_join else ('正在還原已保存的登入；到期時自動更新連線。' if action=='restore' else '正在讀取本機已保存的連線狀態。')
         self.changed.emit()
         (self.quiesce_requested if self._awaiting_join else self.request_ready).emit(request)
         return request
@@ -266,7 +270,7 @@ class ConnectionController(QObject):
                 if self.active_registration!=event.active_registration:
                     self.usage_known=False;self.account_status_known=False
                 self.registrations=event.registrations;self.account_labels=event.account_labels;self.active_registration=event.active_registration
-                if action in ('begin','first_sign_in','enable_plan','select','sign_out','refresh'):self.models=();self.model_labels=()
+                if action in ('begin','first_sign_in','enable_plan','select','sign_out','refresh','restore'):self.models=();self.model_labels=()
                 if action=='models':
                     self.models=event.models;self.model_labels=event.model_labels
                     self.usage_known=False;self.reserved_count=None;self.unknown_count=None
@@ -332,6 +336,7 @@ class ChatGPTConnectionPanel(QWidget):
         self._rendered_active=None
         self._included_usage_registration=None
         self._primary_flow=None
+        self._restore_flow=None
         self.setObjectName('chatgpt_subscription_panel');layout=QVBoxLayout(self)
         title=QLabel('ChatGPT 訂閱連線（官方授權）');layout.addWidget(title)
         self.disclosure=QLabel('此模式只使用您明確授權的 ChatGPT 方案內用量；額度不足就停止，不切換付費 API，也不要求啟用 credits。\n開始研究前，請在官方用量設定確認：已關閉「允許應用程式使用 credits」，或此應用程式的用量上限低於 100%。自動購買 credits 是另一項設定。\n本程式無法讀取或強制執行官方 credits 設定；勾選僅記錄您本次的確認，不保證零費用。登入成功不代表實際推論已驗證，也不開啟實盤交易。')
@@ -390,7 +395,22 @@ class ChatGPTConnectionPanel(QWidget):
         try:c.request('list')
         except Exception:self._primary_flow=None;raise
 
+    def start_auto_restore(self):
+        """Startup: reload the saved login and refresh it once if expired.
+
+        Runs one local 'restore' job; the worker refreshes only the active
+        registration, only when it is refresh_required. Failures leave the
+        verified vault state, which shows the sign-in button again.
+        """
+        c=self.controller
+        if not c.host_available or c.busy or self._primary_flow is not None:return None
+        request=c.request('restore')
+        self._restore_flow=request.request_id
+        return request
+
     def _primary_finished(self,request,succeeded):
+        if self._restore_flow is not None and request.request_id==self._restore_flow:
+            self._restore_flow=None;return
         flow=self._primary_flow
         if flow is None or request.request_id!=flow['request_id']:return
         if not succeeded or flow['phase']!='list':
@@ -414,6 +434,13 @@ class ChatGPTConnectionPanel(QWidget):
             if registration is None and len(refs)==1:registration=next(iter(refs))
             if registration is None and len(refs)>1:
                 self._primary_flow=None;self.status.setText('請先選擇要登入的 ChatGPT 連線，再按登入。');return
+            if registration==c.active_registration and c.state in CONNECTED_STATES:
+                # Already signed in with the saved login: no new authorization.
+                self._primary_flow=None;return
+            if registration==c.active_registration and c.state=='refresh_required':
+                # Saved refresh token first; a failed refresh shows sign-in again.
+                self._primary_flow=None
+                c.request('refresh',registration,confirmed=True);return
         flow.update(phase='authorization',request_id=c._counter+1,browser_queued=False)
         try:c.request(action,registration,confirmed=True)
         except Exception:self._primary_flow=None;raise
@@ -432,7 +459,7 @@ class ChatGPTConnectionPanel(QWidget):
     def abandon_primary_sign_in(self):
         # The desktop host calls this before shutdown, cancel, or freeze so a
         # queued post-join step cannot start another authentication worker.
-        self._primary_flow=None
+        self._primary_flow=None;self._restore_flow=None
 
     def _cancel_primary(self):
         self.abandon_primary_sign_in();self.controller.cancel()
@@ -495,6 +522,8 @@ class ChatGPTConnectionPanel(QWidget):
         self.model.blockSignals(False)
         ready=c.host_available and not c.busy
         self.primary_sign_in.setEnabled(ready)
+        signed_in=c.active_registration is not None and c.state in CONNECTED_STATES
+        self.primary_sign_in.setVisible(not signed_in)
         self.buttons['enable_plan'].setVisible(c.state=='identity_only')
         self.buttons['select'].setVisible(len(c.registrations)>1)
         self.buttons['models'].setVisible(c.state=='plan_ready')
@@ -588,6 +617,14 @@ def run_connection_request(request,*,bootstrap,emit,cancelled,session_factory=No
         if cancelled():session.cancel();return ConnectionEvent(request.request_id,'result','cancelled')
         if request.action=='initialize':session.initialize_host();return snapshot()
         if request.action=='list':return snapshot()
+        if request.action=='restore':
+            summary=session.status_summary()
+            if summary['active_registration'] is not None and summary['state']=='refresh_required':
+                # Refresh failures are already persisted by AuthSession (tokens
+                # cleared or operation barrier kept); the snapshot reports them.
+                try:session.refresh(summary['active_registration'])
+                except Exception:pass
+            return snapshot()
         if request.action in ('begin','first_sign_in','enable_plan'):
             if request.action=='first_sign_in':
                 session.initialize_host(first_use_only=True)

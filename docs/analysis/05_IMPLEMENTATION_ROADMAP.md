@@ -636,7 +636,7 @@ Linux fresh checkout263 tests（257 PASS、6 platform/tool skips）；Windows in
 
 承接0.2.0市場介面，不重寫既有交易核心。01:00 UTC前已凍結合約於IMPLEMENTATION_CONTRACTS.md；M6權重及其餘既有權重不變。工程次序：官方PKCE/OIDC與Windows DPAPI→訂閱Responses協定與持久帳戶/研究次數→同一桌面worker生命週期→受限策略產生/改善與研究憑證→封裝/原生相依檢查→exact-head CI→正式版本升級與preview交付。真帳戶登入與模型呼叫需要使用者在官方流程授權，不能以fixture取代。
 
-- 啟動只讀本機狀態；首次初始化、授權、開啟官方網址、模型發現、refresh、推論均須明確操作。本應用自己的host/client/registration與DPAPI儲存，不讀其他軟體cookies/token，不提供貼上token欄位。一般API付費回退仍關閉。
+- 啟動自動還原已保存登入：讀本機狀態，目前連線到期時自動 refresh 一次（失敗則顯示登入按鈕）；已登入時隱藏登入按鈕。首次初始化、授權、開啟官方網址、模型發現、推論均須明確操作。本應用自己的host/client/registration與DPAPI儲存，不讀其他軟體cookies/token，不提供貼上token欄位。一般API付費回退仍關閉。
 - auth/inference共用既有JobManager；取消、關閉、睡眠、工作區或帳戶切換前，確認整個子程序樹停止。Linux檢查活動程序而不把不可執行zombie誤判為正在推論；Windows保留Job handle直到active count歸零，未知則繼續阻擋。
 - run_campaign增加可選descriptor與嚴格receipt snapshot介面，研究核心保持stdlib-only。支出先預留、未知不退還；中斷後只有相同manager的已停止工作證明與不可變啟動快照可發起本機對帳，不呼叫模型、不重新選策略或使用holdout。
 - source/dependency manifest綁定真實root auth/provider來源與四個固定desktop-only套件；打包保留來源及distribution metadata。engine source變動必然產生新身分，舊研究可讀但原身分重跑會被拒絕；禁止冒用舊hash。

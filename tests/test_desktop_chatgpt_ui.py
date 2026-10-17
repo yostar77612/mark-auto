@@ -330,7 +330,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
 
     def test_primary_returning_login_reuses_selected_account_without_initialization(self):
         c=self.ready();self.panel.primary_sign_in.click();request=self.requests[-1]
-        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','reauthorization_required',((REF,'reauthorization_required'),),REF))
         with patch.object(self.ui.QMessageBox,'question') as question:
             c.worker_joined(request.request_id,joined=True);self.app.processEvents();question.assert_not_called()
         request=self.quiesce[-1]
@@ -339,12 +339,12 @@ class ChatGPTConnectionUITests(unittest.TestCase):
 
     def test_primary_cancel_blocks_pending_next_step_and_stale_browser_event(self):
         c=self.ready();self.panel.primary_sign_in.click();request=self.requests[-1]
-        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','reauthorization_required',((REF,'reauthorization_required'),),REF))
         c.worker_joined(request.request_id,joined=True)
         self.panel._cancel_primary();self.app.processEvents()
         self.assertEqual(self.quiesce,[]);self.assertIsNone(self.panel._primary_flow)
         self.panel.primary_sign_in.click();request=self.requests[-1]
-        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','plan_ready',((REF,'plan_ready'),),REF))
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result','reauthorization_required',((REF,'reauthorization_required'),),REF))
         c.worker_joined(request.request_id,joined=True);self.app.processEvents()
         request=self.quiesce[-1];c.acknowledge_quiescence(request.request_id,joined=True)
         self.assertFalse(c.apply_event(self.ui.ConnectionEvent(request.request_id-1,'authorization','authorizing',authorization_url=authorization_url())))
@@ -483,6 +483,66 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         c=self.ready();self.panel.consent.setChecked(True);self.panel._act('reauthorize')
         self.assertEqual(self.quiesce[-1].action,'begin');self.assertEqual(self.quiesce[-1].registration,REF)
         self.assertFalse(self.panel.consent.isChecked())
+
+    def finish(self,state,rows=None,active=REF):
+        c=self.controller;request=c._request
+        c.apply_event(self.ui.ConnectionEvent(request.request_id,'result',state,rows if rows is not None else ((REF,state),),active))
+        c.worker_joined(request.request_id,joined=True);self.app.processEvents()
+        return request
+
+    def test_sign_in_button_hidden_only_while_saved_login_is_connected(self):
+        c=self.controller;c.set_host_available(True)
+        self.assertFalse(self.panel.primary_sign_in.isHidden())
+        for state,hidden in (('plan_ready',True),('identity_only',True),('refresh_required',False),('reauthorization_required',False)):
+            c.request('list');self.finish(state)
+            self.assertEqual(self.panel.primary_sign_in.isHidden(),hidden,state)
+        c.request('list');self.finish('disconnected',rows=(),active=None)
+        self.assertFalse(self.panel.primary_sign_in.isHidden())
+
+    def test_primary_sign_in_when_already_connected_does_not_reauthorize(self):
+        c=self.ready();self.panel.primary_sign_in.click()
+        self.assertEqual(self.requests[-1].action,'list');self.finish('plan_ready')
+        self.assertEqual(self.quiesce,[]);self.assertEqual(self.browser,[]);self.assertIsNone(self.panel._primary_flow)
+
+    def test_primary_sign_in_with_expired_token_refreshes_before_authorizing(self):
+        c=self.ready();self.panel.primary_sign_in.click();self.finish('refresh_required')
+        request=self.quiesce[-1]
+        self.assertEqual(request.action,'refresh');self.assertEqual(request.registration,REF);self.assertTrue(request.user_confirmed)
+        self.assertEqual(self.browser,[]);self.assertIsNone(self.panel._primary_flow)
+
+    def test_auto_restore_is_one_local_job_and_ignored_when_busy(self):
+        c=self.controller
+        self.assertIsNone(self.panel.start_auto_restore())
+        c.set_host_available(True);request=self.panel.start_auto_restore()
+        self.assertEqual(request.action,'restore');self.assertFalse(request.user_confirmed);self.assertIsNone(request.registration)
+        self.assertEqual(self.requests,[request]);self.assertEqual(self.quiesce,[])
+        self.assertIsNone(self.panel.start_auto_restore());self.assertEqual(len(self.requests),1)
+        self.finish('plan_ready')
+        self.assertIsNone(self.panel._restore_flow);self.assertTrue(self.panel.primary_sign_in.isHidden())
+        self.assertEqual(self.quiesce,[]);self.assertEqual(self.browser,[])
+
+    def test_worker_restore_refreshes_only_expired_active_registration(self):
+        for state,calls in (('plan_ready',[]),('identity_only',[]),('refresh_required',['refresh']),('reauthorization_required',[])):
+            session=FixtureSession();session.state=state;session.active_registration=REF;session.rows=[{'registration':REF,'state':state}]
+            def refresh(ref,session=session):
+                session.calls.append('refresh');session.state='plan_ready';session.rows=[{'registration':ref,'state':'plan_ready'}]
+            session.refresh=refresh
+            result=self.ui.run_connection_request(self.ui.ConnectionRequest(1,'restore'),bootstrap='/fixture',emit=lambda x:None,cancelled=lambda:False,session_factory=lambda:session)
+            self.assertEqual(session.calls,calls,state);self.assertEqual(result.kind,'result')
+            self.assertEqual(result.state,'plan_ready' if calls else state)
+        session=FixtureSession()
+        result=self.ui.run_connection_request(self.ui.ConnectionRequest(2,'restore'),bootstrap='/fixture',emit=lambda x:None,cancelled=lambda:False,session_factory=lambda:session)
+        self.assertEqual(session.calls,[]);self.assertIsNone(result.active_registration)
+
+    def test_worker_restore_failed_refresh_reports_persisted_state(self):
+        session=FixtureSession();session.state='refresh_required';session.active_registration=REF;session.rows=[{'registration':REF,'state':'refresh_required'}]
+        def refresh(ref):
+            session.state='reauthorization_required';session.rows=[{'registration':ref,'state':'reauthorization_required'}]
+            raise RuntimeError('Bearer FIXTURE_SECRET_RAW_TOKEN')
+        session.refresh=refresh
+        result=self.ui.run_connection_request(self.ui.ConnectionRequest(1,'restore'),bootstrap='/fixture',emit=lambda x:None,cancelled=lambda:False,session_factory=lambda:session)
+        self.assertEqual(result.kind,'result');self.assertEqual(result.state,'reauthorization_required')
+        self.assertNotIn('SECRET',repr(result))
 
     def test_worker_list_uses_public_verified_restart_summary_only(self):
         session=FixtureSession();session.state='plan_ready';session.active_registration=REF;session.rows=[{'registration':REF,'state':'plan_ready'}]

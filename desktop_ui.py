@@ -707,6 +707,7 @@ class MainWindow(QMainWindow):
         self._plan_launch = None
         self._pending_plan_reconcile = False
         self._pending_usage_refresh = False
+        self._pending_chatgpt_restore = False
         self._analysis_preview = None
         self._analysis_request_key = None
         self._analysis_launch = None
@@ -1581,6 +1582,10 @@ class MainWindow(QMainWindow):
         self.freeze_paper('使用者要求緊急停止')
         self.status.setText('背景作業已停止；紙上新委託已凍結，重新執行前需明確對帳。')
 
+    def auto_restore_chatgpt(self):
+        """Startup only: reload the saved ChatGPT login once background work is idle."""
+        self._pending_chatgpt_restore = True
+
     def show_chatgpt_sign_in(self):
         """One research entry to the existing official connection panel."""
         self.provider_mode.setCurrentIndex(self.provider_mode.findData('chatgpt_plan'))
@@ -1824,6 +1829,9 @@ class MainWindow(QMainWindow):
                 if self._pending_plan_reconcile and not self.chatgpt_controller.busy and not getattr(self,'_closing',False):
                     self._pending_plan_reconcile = False
                     self.start_job('ui_chatgpt_reconcile', self._plan_launch)
+                if not self.jobs.active and self._pending_chatgpt_restore and not self.chatgpt_controller.busy and not getattr(self, '_closing', False):
+                    self._pending_chatgpt_restore = False
+                    self.chatgpt_panel.start_auto_restore()
                 if not self.jobs.active and self._pending_usage_refresh and not self.chatgpt_controller.busy and not getattr(self, '_closing', False):
                     self._pending_usage_refresh = False
                     reference = self.chatgpt_controller.active_registration

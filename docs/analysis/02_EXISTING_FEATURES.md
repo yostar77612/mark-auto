@@ -363,7 +363,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 
 已發布程式證據：`quantlab.provider.HTTPTransport`、`research.CompatibleProvider`、`manual_exchange`；[S07][S21][S22]。已合併 0.2.1 程式證據是 `desktop_chatgpt_auth.py` 的 `AuthSession/IdentityValidator/DPAPIVault` [S26]、`desktop_chatgpt_provider.py` 的 `ChatGPTPlanProvider`／持久 controls [S27]、`desktop_chatgpt_ui.py` [S28]、實際 host [S29]、研究 receipt reconciliation [S30] 與 worker [S31]；皆固定至 `2ed1e3e`，不引用早期受缺陷影響 head 作最終證據。
 
-**已合併訂閱安全要求與驗證邊界**：啟動只讀本機狀態，不自動授權／發現／refresh／推論；每次網路及 included-usage policy 確認不持久化。auth／inference 共用受管理 worker；取消／關閉／睡眠／帳戶切換須確認整個子程序樹停止。未知結果消耗 reservation、不退額度、不自动重試；controls 缺失／損毀不得當新帳戶。新的 registration 也必須受同一安裝的未知／paused barrier 約束。最後 head 已含上述 barrier 修補及指定工程 gate；實際服務的授權、計費、配額及未知遠端結果仍不可由本機測試保證。
+**已合併訂閱安全要求與驗證邊界**：啟動自動還原已保存登入（讀本機 DPAPI 紀錄，到期時以保存的 refresh token 更新一次），不自動授權／發現／推論，登入後隱藏登入按鈕；每次網路及 included-usage policy 確認不持久化。auth／inference 共用受管理 worker；取消／關閉／睡眠／帳戶切換須確認整個子程序樹停止。未知結果消耗 reservation、不退額度、不自动重試；controls 缺失／損毀不得當新帳戶。新的 registration 也必須受同一安裝的未知／paused barrier 約束。最後 head 已含上述 barrier 修補及指定工程 gate；實際服務的授權、計費、配額及未知遠端結果仍不可由本機測試保證。
 
 **真實免費本機模型的技術結論**
 
