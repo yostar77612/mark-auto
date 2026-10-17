@@ -1467,7 +1467,7 @@ class MainWindow(QMainWindow):
         limits = paper_risk_limits()
         self.paper_risk_summary = QLabel(
             f'固定風控：部位最多 {limits.max_position} 口、單筆最多 {limits.max_order_quantity} 口、'
-            f'每日損失上限 {display_number(limits.max_daily_loss, 'cash')}、報價最多 {limits.max_quote_age_seconds} 秒；'
+            f'每日損失上限 {display_number(limits.max_daily_loss, "cash")}、報價最多 {limits.max_quote_age_seconds} 秒；'
             f'連續虧損上限 {limits.max_consecutive_losses} 次、{limits.window_seconds} 秒內最多 {limits.max_orders_per_window} 筆。'
             '停止新委託不會平倉。')
         self.paper_risk_summary.setObjectName('paper_fixed_risk_summary')

@@ -70,7 +70,6 @@ class PresentationTests(unittest.TestCase):
                 self.assertLessEqual(len(re.findall('實盤|實單|唯讀', text)), 1, (name, text))
                 self.assertNotRegex(text, r'\d+\.\d{5,}')
                 self.assertNotRegex(text, r'\b(?:SYNTHETIC|DISABLED|NOT_VERIFIED)\b')
-            print('T3-B heights:', {name: metrics['pages'][name]['page_height'] for name in ('AI 策略中心', '紙上交易與復原')})
 
     def test_collapsed_state_saved_and_top_explanation_expands(self):
         with disposable_directory() as root:
