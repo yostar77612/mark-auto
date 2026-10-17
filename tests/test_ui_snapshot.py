@@ -61,7 +61,7 @@ class UiSnapshotTests(unittest.TestCase):
             self.assertTrue(all(isinstance(text, str) and text.strip() for text in page['visible_text']))
             self.assertIsInstance(page['unlabeled_inputs'], list)
             self.assertTrue(all(isinstance(text, str) for text in page['unlabeled_inputs']))
-            self.assertEqual(page['primary_button_count'], 0)
+            self.assertLessEqual(page['primary_button_count'], 1)
             viewport = QImage(str(out / page['viewport_png']))
             full = QImage(str(out / page['full_png']))
             self.assertFalse(viewport.isNull())
@@ -69,7 +69,7 @@ class UiSnapshotTests(unittest.TestCase):
             self.assertEqual((viewport.width(), viewport.height()), tuple(round(n * scale) for n in size))
             self.assertEqual((full.width(), full.height()),
                              (round(page['full_width'] * scale), round(page['page_height'] * scale)))
-        self.assertGreater(metrics['pages']['AI 策略中心']['page_height'], size[1] * 3)
+        self.assertGreater(metrics['pages']['AI 策略中心']['page_height'], size[1])  # P0-08 shortened this page to <=1600px
         return metrics
 
     def test_cli_scale_size_and_schema(self):
@@ -114,7 +114,7 @@ class UiSnapshotTests(unittest.TestCase):
         metrics = page_metrics(page)
         self.assertEqual(metrics['visible_input_count'], 2)
         self.assertEqual(metrics['unlabeled_inputs'], ['missing_label'])
-        self.assertEqual(metrics['primary_button_count'], 2)
+        self.assertEqual(metrics['primary_button_count'], 1)
         self.assertEqual(metrics['button_count'], 3)
         self.assertEqual(metrics['label_char_count'], len('Quantity'))
         page.close()

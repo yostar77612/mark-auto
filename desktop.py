@@ -586,6 +586,8 @@ def main(argv=None):
     from quantlab import __version__
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
     app = QApplication(sys.argv[:1])
+    from desktop_icon import application_icon
+    app.setWindowIcon(application_icon(app))
     app.setApplicationName('MarkAuto')
     app.setOrganizationName('MarkAuto')
     app.setApplicationVersion(__version__)

@@ -12,6 +12,7 @@ analysis = Analysis(
     binaries=[],
     runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')],
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
+           (str(root / 'packaging/markauto.ico'), 'packaging'),
            (str(root / 'examples'), 'examples'),
            (str(root / 'desktop_chatgpt_auth.py'), '.'),
            (str(root / 'desktop_chatgpt_provider.py'), '.'),
@@ -54,6 +55,7 @@ analysis.datas = qt_licenses['filter_payload_toc'](analysis.datas)
 verify_binaries(analysis.binaries, root / 'packaging/sqlite-runtime.json')
 pyz = PYZ(analysis.pure)
 exe = EXE(pyz, analysis.scripts, [], exclude_binaries=True, name='MarkAuto',
+          icon=str(root / 'packaging/markauto.ico'),
           version=str(root / 'build/markauto-version.txt'),
           debug=False, strip=False, upx=False, console=False, target_arch='x86_64')
 coll = COLLECT(exe, analysis.binaries, analysis.datas, strip=False, upx=False, name='MarkAuto')

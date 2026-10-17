@@ -91,7 +91,7 @@ class MarketDashboard(QWidget):
         root=QVBoxLayout(content); root.setContentsMargins(10,8,10,8)
         header=QHBoxLayout(); title=_label('市場總覽','market_title')
         title.setStyleSheet('font-size:20px;font-weight:700;'); header.addWidget(title)
-        header.addStretch(); header.addWidget(_label('唯讀行情 · 實單停用','market_safety'))
+        header.addStretch(); header.addWidget(_label('歷史行情','market_safety'))
         self.refresh_button=_named(QPushButton('更新官方資料'),'market_refresh','更新官方資料')
         self.refresh_button.setToolTip('交由主程式確認網路同意並在背景更新；不啟動交易')
         self.refresh_button.clicked.connect(self.refresh_requested.emit); header.addWidget(self.refresh_button)
@@ -104,7 +104,7 @@ class MarketDashboard(QWidget):
         root.addLayout(cards)
         self.source_status=_label('離線 · 尚未載入來源；沒有即時行情連線','market_source_status')
         source_row=QHBoxLayout(); source_row.addWidget(self.source_status,1)
-        self.diagnostics_button=_named(QPushButton('資料來源與診斷 ▸'),'market_diagnostics_toggle','展開資料來源與診斷')
+        self.diagnostics_button=_named(QPushButton('進階・資料來源與診斷 ▸'),'market_diagnostics_toggle','展開資料來源與診斷')
         self.diagnostics_button.setCheckable(True); source_row.addWidget(self.diagnostics_button); root.addLayout(source_row)
         self.diagnostics=_named(QPlainTextEdit(),'market_diagnostics','完整資料來源與診斷'); self.diagnostics.setReadOnly(True); self.diagnostics.setMaximumHeight(160); self.diagnostics.hide()
         self.diagnostics_button.toggled.connect(self._toggle_diagnostics); root.addWidget(self.diagnostics)
@@ -138,7 +138,7 @@ class MarketDashboard(QWidget):
         state=QGroupBox('策略 / 紙上 / 風控'); state_layout=QVBoxLayout(state)
         for key,title in [('strategy','策略'),('paper','紙上交易'),('risk','風控')]:
             label=_label(title+'：未知（主程式未提供）','market_state_'+key); state_layout.addWidget(label); self.trading_labels[key]=label
-        state_layout.addWidget(_label('實單：停用','market_live_disabled')); right_layout.addWidget(state)
+        state_layout.addWidget(_label('研究與紙上模擬','market_live_disabled')); right_layout.addWidget(state)
         group=QGroupBox('技術指標 · 參數按 bar 數'); grid=QGridLayout(group)
         row=0
         for key,config in DEFAULT_INDICATORS.items():
@@ -167,7 +167,7 @@ class MarketDashboard(QWidget):
 
     def _toggle_diagnostics(self,visible):
         self.diagnostics.setVisible(visible)
-        self.diagnostics_button.setText('資料來源與診斷 ▾' if visible else '資料來源與診斷 ▸')
+        self.diagnostics_button.setText('進階・資料來源與診斷 ▾' if visible else '進階・資料來源與診斷 ▸')
 
     def _table(self,headers,name):
         table=_named(QTableWidget(0,len(headers)),name,name)
@@ -309,7 +309,7 @@ class MarketDashboard(QWidget):
                  '延遲：不適用於歷史快照；沒有即時行情連線。\n'+ '\n'.join(warnings))
         self.diagnostics.setPlainText(details); self.source_status.setToolTip(details)
         self.message.setToolTip('\n'.join(warnings))
-        message='部分區間完整性尚未確認，僅供行情查看。' if warnings else '唯讀行情；歷史資料不代表即時報價。'
+        message='部分區間完整性尚未確認，僅供行情查看。' if warnings else '歷史資料不代表即時報價。'
         if provenance.mode=='history' and '政策SHA256=' in provenance.timestamp_basis:
             message='本機歷史／自行聲明時段未驗證；每契約最新匯入快照。'+message
         if self._error: message='來源更新失敗，顯示既有資料。'+message
@@ -385,7 +385,7 @@ class MarketDashboard(QWidget):
         if 'MACD histogram' in panes:
             panes['MACD histogram 1×'] = panes.pop('MACD histogram')
         self.chart.set_overlays(overlays,panes=panes,pane_styles={'MACD histogram 1×':'histogram'} if 'MACD histogram 1×' in panes else {})
-        message=getattr(self,'_indicator_message_base','唯讀行情；歷史資料不代表即時報價。')
+        message=getattr(self,'_indicator_message_base','歷史資料不代表即時報價。')
         self.message.setText(message+(' '+self._indicator_failure_text(failures)+' 未顯示這些指標。' if failures else ''))
         return ()
 
@@ -440,7 +440,8 @@ class MarketDashboard(QWidget):
                         except InvalidOperation: raise ValueError('invalid price') from None
                         if not number.is_finite() or number<0: raise ValueError('invalid price')
                     if not isinstance(value,(str,int,float,Decimal)) or isinstance(value,bool) or len(str(value))>500: raise ValueError('invalid display value')
-                    cells.append(str(value))
+                    from desktop_presentation import display_value
+                    cells.append(display_value(value, key))
                 output.append(cells)
             prepared.append((table,output))
         for table,rows in prepared:

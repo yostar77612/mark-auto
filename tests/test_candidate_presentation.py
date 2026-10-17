@@ -24,7 +24,7 @@ class CandidatePresentationTests(unittest.TestCase):
         self.assertIn('已保存研究的紙上門檻：未通過',text)
         self.assertIn('樣本外 OOS｜狀態：已評估｜門檻檢查：通過',text)
         self.assertIn('最終保留集｜狀態：已評估｜門檻檢查：未通過',text)
-        first,last=text.split('最終保留集');self.assertIn('1.23456789',first);self.assertNotIn('1.23456789',last);self.assertIn('淨損益（TWD）：-12',last)
+        first,last=text.split('最終保留集');self.assertIn('1.23 TWD',first);self.assertNotIn('1.23456789',text);self.assertIn('淨損益（TWD）：-12 TWD',last)
         self.assertEqual(canonical_json(source),before)
     def test_nested_manifests_hashes_unknown_fields_are_never_expanded(self):
         source=view();row=source['樣本外與保留集']['oos']['evaluation'];row.update(manifest={'config_hash':'a'*64,'raw_key':{'long':'x'*10000}},result_hash='b'*64,warnings=['raw warning'],other=['raw_list'])
@@ -38,7 +38,8 @@ class CandidatePresentationTests(unittest.TestCase):
         self.assertIn('分母為零',candidate_summary_text(view(metric(('10',)))))
     def test_sharpe_values_and_assumptions_remain_honest(self):
         golden=metric();text=candidate_summary_text(view(golden,metric(values=('10000',))))
-        for expected in (str(golden['sharpe']),'夏普值觀測期數：3','假設每年期數：252','假設年無風險利率：0','數學最低觀測期數：2','至少需要 2 期','短樣本不能證明策略品質','不補值','間隔可能跨越多日','自由度修正 1'):
+        from desktop_presentation import display_number
+        for expected in (display_number(golden['sharpe']),'夏普值觀測期數：3','假設每年期數：252','假設年無風險利率：0','數學最低觀測期數：2','至少需要 2 期','短樣本不能證明策略品質','不補值','間隔可能跨越多日','自由度修正 1'):
             self.assertIn(expected,text)
     def test_missing_failed_running_status_does_not_claim_evaluation(self):
         source=view();source['樣本外與保留集']['oos']={'qualified':False,'evaluation':{}}
@@ -61,7 +62,7 @@ class CandidatePresentationTests(unittest.TestCase):
         self.assertIn('最大回撤：123.45',text);self.assertIn('已平倉交易：7',text)
     def test_generic_paper_card_remains_scalar_and_unchanged(self):
         card=SummaryCard();card.set_values({'account_id':'engineering','cash':'1000000','reconciliation_required':True,'kill_switch':False})
-        self.assertEqual(card.label.text(),'帳戶：engineering\n現金（TWD）：1000000\n需要對帳：是\n停止新委託：否');card.close()
+        self.assertEqual(card.label.text(),'帳戶：engineering\n現金（TWD）：1,000,000 TWD\n需要對帳：是\n停止新委託：否');card.close()
 
 
 class CandidatePresentationHostTests(unittest.TestCase):

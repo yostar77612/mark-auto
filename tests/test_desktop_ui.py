@@ -54,7 +54,12 @@ class NativeDesktopTests(unittest.TestCase):
             if self.window.stack.widget(index).isAncestorOf(button):
                 self.window.navigation.setCurrentRow(index); break
         self.app.processEvents()
-        QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        from PySide6.QtWidgets import QMessageBox
+        if button.property('role') == 'danger':
+            with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes):
+                QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        else:
+            QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         self.app.processEvents()
 
     def wait_job(self, timeout=30):
@@ -91,7 +96,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.calendar_path.setText(str(root/'examples/synthetic_calendar.json'))
         self.window.import_kind.setCurrentText('synthetic_bars')
         self.click('import_data'); self.wait_job()
-        self.assertIn('SYNTHETIC', self.window.overview.text())
+        self.assertIn('合成示範資料', self.window.overview.text())
 
     def test_backtest_repeat_compare_select_disable(self):
         self.demo(); self.click('run_backtest'); self.wait_job()

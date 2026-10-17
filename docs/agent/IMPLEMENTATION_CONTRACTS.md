@@ -18,7 +18,7 @@ Baseline: `main@1cacce4ee4eef4ce7e8760f8153ef64a74852d22`. Frozen 2026-10-09 bef
 
 Keep Python and Streamlit. Add sibling `quantlab/` package, not a wholesale rewrite and not a subpackage of `trader`. Core uses Python standard library only (`dataclasses`, `decimal`, `datetime`, `zoneinfo`, `csv`, `json`, `sqlite3`, `hashlib`); UI alone imports Streamlit. Python 3.11+ target; optional Windows tzdata dependency must be documented. Separate `research_app.py` entry point; never invoke existing `gui.py` or `run.py` in research tests.
 
-Evidence: `trader/config.py:6,15–16,79` imports Shioaji and constructs a non-simulation API at import; `trader/__init__.py:1–29` creates executor/shared objects/directories; `gui.py:10–13` imports that configuration/database path and `start_trader` launches `run.py`; `trader/utils/strategy.py:6–12` couples signals to mutable TradeData, database and configuration; `trader/performance/reports.py:18` imports missing backtest module. `requirements.txt` already contains Streamlit 1.45.1 and pandas 2.3.3. Preserve legacy indicators as reference, but do not import them through `trader`; reuse only after explicit extraction with regression fixtures. This avoids making unrelated stock/live infrastructure a prerequisite for safe TMF research.
+Evidence: `trader/config.py:6,15–16,79` imports Shioaji and constructs a non-simulation API at import; `trader/__init__.py:1–29` creates executor/shared objects/directories; `gui.py:10–13` imports that configuration/database path and `start_trader` launches `run.py`; `trader/utils/strategy.py:6–12` couples signals to mutable TradeData, database and configuration; `trader/performance/reports.py:18` imports missing backtest module. The historical dependency list (now `archives/legacy_autotrading/requirements.txt`) contains Streamlit 1.45.1 and pandas 2.3.3; it is not a current installation recipe. Preserve legacy indicators as reference, but do not import them through `trader`; reuse only after explicit extraction with regression fixtures. This avoids making unrelated stock/live infrastructure a prerequisite for safe TMF research.
 
 Legacy safety patch is separate: disable unsafe automatic/live entry paths, require nonempty Telegram allowlist, redact credential-bearing SQL logging. Do not modernize every legacy dependency or claim retained legacy execution is verified. Never enable a live client via environment variable alone.
 
@@ -278,3 +278,29 @@ The existing official PKCE/OIDC, DPAPI, worker cleanup, source/receipt provenanc
 - Regression evidence: `tests/test_desktop_ui_p0_correctness.py` exercises
   three consecutive card refreshes, real restart, unknown exception redaction,
   startup classification, failed restore/sign-in and fixed-code logging.
+
+
+## T3 A — P0 UI polish presentation contracts
+
+P0-02/03/04/13 preserve objectNames, payloads, eligibility checks, quotas and OOS consumption.
+`MainWindow._button(..., role='secondary')` accepts primary/secondary/danger; the existing host stylesheet owns role colors. Each page has at most one primary. Emergency stop, backup restore, order cancellation and row deletion use danger styling and explicit confirmation; existing restore consent remains required.
+All input fields have persistent visible captions; bar/day/request/timeout spin boxes show units without changing numeric values. Page captions use AI 策略中心 consistently. Paper policy tables size columns to their headers and contents.
+Every disabled action has a tooltip and adjacent prerequisite hint following Qt EnabledChange, including disabled ancestors; the helper never enables actions. Snapshot `primary_button_count` counts only `role == 'primary'`, and `disabled_buttons` records object name, text, tooltip and hint.
+Regression evidence: tests/test_desktop_ui_polish_a.py, tests/test_ui_snapshot.py, tests/test_desktop_expiries.py. Offscreen 1366x768: unlabeled inputs 10 → 0 across seven pages; primary counts 0/1/1/1/1/1/1. Before/after artifacts: .tmp-t3/before and .tmp-t3/after. Full worker suite remains controller-owned outside the sandbox.
+
+## T3 B — P0 display and disclosure contracts
+
+P0-07/08/10/11/12 change presentation only. The sole top marker `研究模式・實盤停用` expands to the full research limitations. Repeated page warnings are removed; irreversible OOS consent and enforced risk limits remain intact.
+Technical forms, Walk-forward, full candidate evaluation/history, paper policy, reference evidence and manual order parameters live in collapsed `進階` sections. `advanced_sections` stores only section booleans in non-sensitive settings, including market diagnostics and Walk-forward evidence. New profiles default to collapsed. At 1366×768, `tools/ui_snapshot.capture` measures AI 策略中心 at 956 px and 紙上交易與復原 at 1073 px (each ≤1600).
+`desktop_presentation.py` owns display number formatting and status translations: amounts use separators and TWD, ratios use percent, other metrics have at most four decimals. Original decimal strings, stored records, hashes and payloads remain exact; tooltips/advanced views retain original values. Unknown status codes show a Chinese diagnostic fallback. Default backtest fee inputs are inside advanced because their exact editable tax ratio has five decimals.
+Result selectors and compare lists use strategy family, main parameters, data interval and creation time in Taipei (legacy report file creation time), with numeric collision suffixes. UserRole paths and report IDs are unchanged; hashes remain in tooltips and advanced records. Corrupt metadata gets a readable fallback and remains subject to the original loader validation.
+Regression evidence: tests/test_desktop_ui_polish_b.py plus updated backtest/candidate presentation, market acceptance and feedback tests. Full suite/native worker verification remains controller-owned outside the sandbox.
+
+
+## T3-C ? dependency archive and application icon contracts
+
+P0-15: the legacy requirements file is archived byte-for-byte at `archives/legacy_autotrading/requirements.txt` (SHA-256 `0402de4d2eb719a30c7dd5428e9fcc9db10732fc76ce1419b959719d99f08ec0`). Root requirements.txt is absent. README directs installation to requirements-desktop.lock and packaging/build.ps1; current lock dependency audits remain unchanged. Historical commit links remain historical evidence.
+
+P0-16: tools/make_icon.py uses only the standard library, no network, to produce packaging/markauto.ico with 16/24/32/48/64/128/256 px images. desktop_icon.application_icon loads from the module-relative packaging path (also PyInstaller _internal); absent/corrupt artwork falls back to Qt's standard computer icon. QApplication startup and MainWindow explicitly set non-null window icons. PyInstaller embeds the EXE icon and ships the ICO as data; Inno Setup uses it for setup and uninstall display. Shortcut icons use the EXE resource.
+
+Packaging consistency: build_manifest.py records both artwork and generator; payload_inventory.py discovers the new asset automatically without a fixed file list. test_installer.ps1 verifies the installed candidate icon against its source manifest while preserving compatibility with historical baselines. test_packaging.py checks data/source manifest inputs; test_prepared_host_session.py pins the updated lifecycle hash without weakening guards. Regression tests: tests/test_application_icon.py. Actual frozen EXE/taskbar/installer/client Windows appearance remains controller-owned verification. Existing safety, quotas, objectNames and OOS consumption are unchanged.

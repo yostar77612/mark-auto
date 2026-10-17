@@ -258,7 +258,7 @@
 |---|---|---|---|
 | A01 市場總覽 | 四類商品摘要卡、自選新增／刪除／排序、商品及真實到期月切換；K 線、指標與持倉／委託／成交表；來源細節可展開 | `MainWindow._dashboard`、`MarketDashboard`、`load_market_cache`；[S01][S02][S03] | 首次未有來源可顯示「尚無資料」；不預載假市場行情。帳戶表是本地 Paper 狀態，不是券商帳戶 |
 | A02 資料匯入與更新 | 檔案選擇、官方 daily JSON／CSV 市場匯入；研究 CSV／RPT／validated dataset 匯入；指定版本化 calendar 檔；建立明示合成示範；逐次同意後下載近 1–30 日公開檔 | `_data_page`、`execute_ui_operation(ui_import/ui_refresh/ui_market_refresh)`、`import_taifex`；[S01][S04][S05] | 下載不自動成為研究資料；選入檔案不等於已驗證其授權或完整性。研究匯入需已有合法來源及明示 calendar，沒有長歷史一鍵補齊／官方日曆自動維護 |
-| A03 策略與版本 | 五家族與型別化參數；研究 split、次數、時間與排名條件；Fixture／相容 HTTP／手動 AI 交換；查閱候選、歷次嘗試及 OOS／holdout；選不可變候選供研究 | `_strategy_page`、`StrategyForm`、`CampaignForm`、`candidate_record`；[S01][S06][S07] | 預設 Fixture 不是真 AI。沒有任意 Python 編輯執行器。自訂 DSL 候選是唯讀版本，不會悄悄轉成可編輯內建策略 |
+| A03 AI 策略中心 | 五家族與型別化參數；研究 split、次數、時間與排名條件；Fixture／相容 HTTP／手動 AI 交換；查閱候選、歷次嘗試及 OOS／holdout；選不可變候選供研究 | `_strategy_page`、`StrategyForm`、`CampaignForm`、`candidate_record`；[S01][S06][S07] | 預設 Fixture 不是真 AI。沒有任意 Python 編輯執行器。自訂 DSL 候選是唯讀版本，不會悄悄轉成可編輯內建策略 |
 | A04 回測與結果 | 日期篩選、資金／費用／稅率／滑價／保證金／seed 表單；單策略或五家族預設參數批次；資金曲線、摘要、成交表、已保存報告；回測 signal／fill 各自開關 | `_backtest_page`、`BacktestForm`、`ui_backtest`、`EquityPlot`；[S01][S06][S08] | 預設費率及保證金是合成假設。**0.2.0 實際資料必要到期日仍無普通表單欄位**；後續 staging 已修且獨立重現通過，見 A.10；尚不能說已發布真實資料全流程已不需 JSON |
 | A05 比較與策略選擇 | 多選既存結果比較；保存具 hash 的選定策略；停用策略並禁止 Paper 新委託；結果可重載 | `_compare_page`、`comparison_rows`、`save_selection/load_selection`；[S01][S09] | 是個別結果並排，沒有自動投資組合權重、跨策略相關性／共變異數、組合風險最佳化。選擇不是送出真實委託 |
 | A06 紙上交易與復原 | 明示時段及保證金政策表；帳戶快照、完整參考快照對帳、急停、分批歷史重播；委託／報價／撤单操作；讀取帳本與狀態 | `_paper_page`、`PaperPolicyForm/IntentForm/QuoteForm/SnapshotForm`、`ui_paper_*`；[S01][S06][S10][S11] | 沒有即時 feed 或券商。重啟後需明確對帳；停止是禁止新單，不會自動平倉。固定風控值在 0.2.0 正常頁面缺少完整顯示，0.2.1 已合併修正，發布品待核對 |

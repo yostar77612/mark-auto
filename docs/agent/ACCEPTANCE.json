@@ -5645,5 +5645,55 @@
     "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t2-b-p0-completion-and-account-presentation-contracts",
     "regressions": "tests/test_desktop_feedback_p0.py",
     "scope": "Offline synthetic presentation only; five-second success plus 300ms fade, persistent errors, operation summaries, fill feedback and ledger account card. Full suite and native verification remain controller responsibilities. No acceptance weights or safety thresholds changed."
+  },
+  "t3b_p0_display_contracts": {
+    "items": ["P0-07", "P0-08", "P0-10", "P0-11", "P0-12"],
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t3-b--p0-display-and-disclosure-contracts",
+    "regressions": "tests/test_desktop_ui_polish_b.py",
+    "measurement": {"viewport": "1366x768", "ai_page_height": 956, "paper_page_height": 1073},
+    "scope": "Display only; exact records, IDs, eligibility, quotas, fail-closed validation and one-time OOS consumption unchanged. Full suite is controller-owned."
+  },
+  "t3a_p0_ui_polish_contracts": {
+    "items": [
+      "P0-02",
+      "P0-03",
+      "P0-04",
+      "P0-13"
+    ],
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t3-a--p0-ui-polish-presentation-contracts",
+    "regressions": "tests/test_desktop_ui_polish_a.py",
+    "measurement": {
+      "viewport": "1366x768",
+      "unlabeled_inputs_before": 10,
+      "unlabeled_inputs_after": 0,
+      "primary_button_counts": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "scope": "Presentation only; objectNames, eligibility and safety thresholds unchanged. Full native worker suite remains for controller verification."
+  },
+  "t3c_p0_packaging_contracts": {
+    "items": [
+      "P0-15",
+      "P0-16"
+    ],
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t3-c--dependency-archive-and-application-icon-contracts",
+    "regressions": "tests/test_application_icon.py",
+    "icon_sizes_px": [
+      16,
+      24,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "scope": "Offline archive, icon loading, packaging and manifest contracts. Full suite and actual frozen installer/taskbar/client Windows verification remain controller-owned; no safety thresholds changed."
   }
 }

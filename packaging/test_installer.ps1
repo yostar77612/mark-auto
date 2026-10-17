@@ -141,6 +141,17 @@ function Install-Version([string]$number, [string]$manifestPath) {
     if ($actual -ne $expected) { throw "Installed engine source differs from build input: $name" }
     $sourceHashes[$name] = $actual
   }
+  # Historical baselines predate the icon. Require it on the candidate payload.
+  if ($number -eq $Version) {
+    $shipped = Join-Path $activeDirectory '_internal\packaging\markauto.ico'
+    if (-not (Test-Path -LiteralPath $shipped)) { throw 'Application icon missing from installed candidate' }
+    $expected = if ($manifest) { ($manifest.inputs_sha256.PSObject.Properties | Where-Object { $_.Name.Replace('\','/') -eq 'packaging/markauto.ico' }).Value } else {
+      (Get-FileHash (Join-Path $root 'packaging\markauto.ico') -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    $actual = (Get-FileHash $shipped -Algorithm SHA256).Hash.ToLowerInvariant()
+    if (-not $expected -or $actual -ne $expected) { throw 'Installed application icon differs from build input' }
+    $sourceHashes['packaging/markauto.ico'] = $actual
+  }
   $sourceHashes | ConvertTo-Json | Set-Content "$results\installed-source-hashes-$number.json"
   Assert-Sentinel
 }

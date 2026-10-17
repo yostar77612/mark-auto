@@ -243,7 +243,7 @@ jobs:
           cache: pip
           cache-dependency-path: ${{ matrix.requirements }}
       # Keep the selected runtime closure separate from audit tooling. Legacy
-      # requirements.txt is deliberately outside this audit and is NOT certified.
+      # archives/legacy_autotrading/requirements.txt is outside this audit and is NOT certified.
       - name: Resolve complete UI runtime dependency closure
         if: matrix.profile == 'ui'
         run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}

@@ -116,8 +116,11 @@ def page_metrics(page):
         'visible_text': text,
         'unlabeled_inputs': [widget.objectName() or f'{type(widget).__name__}[{index}]'
                              for index, widget in enumerate(inputs) if not _has_label(widget, page)],
-        'primary_button_count': sum(widget.property('role') == 'primary'
-                                    or widget.property('primary') is True for widget in buttons),
+        'disabled_buttons': [{'object_name': widget.objectName(), 'text': widget.text(),
+                              'tooltip': widget.toolTip(),
+                              'hint': widget.property('disabled_hint') or ''}
+                             for widget in buttons if not widget.isEnabled()],
+        'primary_button_count': sum(widget.property('role') == 'primary' for widget in buttons),
     }
 
 

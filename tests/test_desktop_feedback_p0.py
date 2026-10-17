@@ -162,7 +162,7 @@ class FeedbackTests(unittest.TestCase):
         broker.reconcile({'account_id':'demo', 'cash':'1000000', 'positions':{}, 'orders':{}, 'fills':{}})
         before = broker.journal_events()
         w._show_account(PaperBroker.read_snapshot(broker.path))
-        self.assertIn('現金（TWD）：1000000', w.paper_card.label.text())
+        self.assertIn('現金（TWD）：1,000,000 TWD', w.paper_card.label.text())
         self.assertIn('帳戶成交筆數：0', w.paper_card.label.text())
         self.assertEqual(broker.journal_events(), before)
         from datetime import datetime, timezone
@@ -182,7 +182,7 @@ class FeedbackTests(unittest.TestCase):
         account = PaperBroker.read_snapshot(filled.path)
         w._show_account(account)
         text = w.paper_card.label.text()
-        for expected in ('現金（TWD）：999976', '帳戶部位項目：1', '帳戶委託筆數：1', '帳戶成交筆數：1', 'TAIFEX:TMF:202601：-1'):
+        for expected in ('現金（TWD）：999,976 TWD', '帳戶部位項目：1', '帳戶委託筆數：1', '帳戶成交筆數：1', 'TAIFEX:TMF:202601：-1'):
             self.assertIn(expected, text)
         self.assertIn('參考快照成交筆數：0', w.snapshot_form.records.label.text())
         self.assertEqual(w.market.positions_table.rowCount(), 1)

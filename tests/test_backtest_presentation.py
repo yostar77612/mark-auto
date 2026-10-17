@@ -22,8 +22,9 @@ class BacktestPresentationTests(unittest.TestCase):
         source = metric(('150', '-30', '50', '-20'))
         source.update(net_pnl=Decimal('150'), total_costs=Decimal('1.23456789'), open_lots=[{'fill_id':'a'*64}], settlements=[{'event_id':'b'*64}], rolls=[{'raw_key':'raw_value'}])
         before = canonical_json(source); text = backtest_summary_text(source)
-        self.assertIn('獲利因子：4', text); self.assertIn(str(source['sharpe']), text)
-        self.assertIn('總費用（TWD）：1.23456789', text)
+        from desktop_presentation import display_number
+        self.assertIn('獲利因子：4', text); self.assertIn(display_number(source['sharpe']), text)
+        self.assertIn('總費用（TWD）：1.23 TWD', text)
         self.assertEqual(canonical_json(source), before)
         for raw in ('daily_returns', 'open_lots', 'settlements', 'rolls', 'raw_key', 'a'*64, 'b'*64, '{', 'Descriptive only', 'closed FIFO'):
             self.assertNotIn(raw, text)
@@ -72,16 +73,16 @@ class BacktestPresentationTests(unittest.TestCase):
         card = SummaryCard();table=ResultTable()
         card.set_values({'key':{'value':'raw'}});table.set_rows([{'side':'buy','fill_id':'a'*64}])
         self.assertEqual(card.label.text(),'key：value：raw')
-        self.assertEqual(table.item(0,0).text(),'buy');self.assertEqual(table.item(0,1).text(),'a'*64)
+        self.assertEqual(table.item(0,0).text(),'買進');self.assertEqual(table.item(0,1).text(),'a'*64)
         card.close();table.close()
 
     def test_fill_presentation_exact_values_ids_tooltips_and_utc(self):
         rows=[{'timestamp':'2026-10-01T09:01:00.123456+08:00','contract_id':'TAIFEX:TMF:202610','side':'buy','quantity':3,'price':'20120','commission':'4.55','tax':'0.1234','reason':'target_open','fill_id':'a'*64,'order_id':'b'*64}]
         before=copy.deepcopy(rows);table=BacktestFillsTable();table.set_rows(rows)
         self.assertEqual(rows,before); self.assertEqual(table.columnCount(),8)
-        self.assertEqual(table.item(0,0).text(),'2026-10-01 01:01:00.123456')
+        self.assertEqual(table.item(0,0).text(),'2026-10-01 01:01:00')
         self.assertEqual(table.item(0,2).text(),'買進');self.assertEqual(table.item(0,7).text(),'目標部位進場')
-        for index,value in ((3,'3'),(4,'20120'),(5,'4.55'),(6,'0.1234')):self.assertEqual(table.item(0,index).text(),value)
+        for index,value in ((3,'3'),(4,'20120'),(5,'4.55 TWD'),(6,'0.12 TWD')):self.assertEqual(table.item(0,index).text(),value)
         for col in range(table.columnCount()):
             self.assertNotIn('a'*64,table.item(0,col).text());self.assertIn('a'*64,table.item(0,col).toolTip())
             self.assertIn('b'*64,table.item(0,col).toolTip())
@@ -91,7 +92,7 @@ class BacktestPresentationTests(unittest.TestCase):
 
     def test_fill_extreme_numbers_keep_bounded_columns_and_exact_tooltips(self):
         table=BacktestFillsTable();huge='9'*400
-        table.set_rows([{'price':huge}]);self.assertEqual(table.item(0,4).text(),huge);self.assertIn(huge,table.item(0,4).toolTip())
+        table.set_rows([{'price':huge}]);self.assertEqual(table.item(0,4).text(),'請查看進階診斷');self.assertIn(huge,table.item(0,4).toolTip())
         self.assertTrue(all(table.columnWidth(i)<=340 for i in range(table.columnCount())));table.close()
 
     def test_fill_empty_unknown_and_naive_time_are_honest(self):
