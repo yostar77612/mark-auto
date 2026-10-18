@@ -5875,5 +5875,87 @@
     "full_suite": "Controller-owned outside sandbox",
     "verification": "57 focused/guard tests pass, exit 0; quality gate 0 findings, exit 0; Python 3.11 utf-8-sig compile 278 files, exit 0",
     "remaining_cleanup": "Pre-existing .tmp/.tmp-t2/.tmp-t3/.tmp-t4/.t4b-work/.t6-work removal rejected by automatic approval policy; no new repository scratch created."
+  },
+  "t9_part_a": {
+    "status": "DONE",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T9 part A",
+    "evidence": "tests/test_t9_expiry_inputs.py; tests/fixtures/t9_manual_payloads.json; docs/analysis/t9_snapshot_numbers.json; docs/analysis/t9_test_edits.json",
+    "scope": "P1-08 verified expiry picker subset; P1-12 option (a) synthetic dataset summary. Remaining T9 guidance/input items are outside this run.",
+    "provenance": "Corrected user-supplied 64-hex HTML SHA-256 recorded; 12 verified rows unchanged; no network retrieval during repair.",
+    "safety": "Strict provenance validation; no inferred calendar; manual payload bytes/hashes match HEAD; covered auto-fill matches manual; out-of-coverage and TX/MTX backtest rejection retained; all G3 files unchanged.",
+    "verification": "16 focused tests plus 11 text/style/page-boundary guards pass (exit 0); quality gate 0 findings (exit 0); all 282 tracked/new Python files compile with py -3.11 and utf-8-sig (exit 0); G3 files match HEAD after Git checkout filters. See repair snapshot entry for seven-page measurements.",
+    "full_suite": "Controller-owned outside sandbox, per explicit task instruction; full existing integration modules and installer build not run here."
+  },
+  "t9_part_b": {
+    "status": "DONE",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T9 part B",
+    "scope": "P1-06 date/time input presentation only",
+    "evidence": "tests/test_t9_timeinput.py; docs/analysis/t9_snapshot_numbers.json; docs/analysis/t9_test_edits.json",
+    "behavior": "Calendar date pickers and explicit unset checkbox; fixed UTC+8 Taipei datetime pickers with grey UTC hints. History retains separate date/time objectNames. Date-only trading/expiry/effective dates are not shifted. Old raw saved values, offsets and fractional precision preserved until explicit edit.",
+    "safety": "Unchanged validators, consent invalidation, policy trade-date rules, stored payload spellings and G3 sources; walk-forward/campaign bar indices unchanged.",
+    "full_suite": "Controller-owned outside sandbox per explicit task instruction.",
+    "verification": "31 focused tests (time inputs, Part A regressions and text/style guards), exit 0; quality gate zero findings, exit 0; py -3.11 utf-8-sig compile of all 284 tracked/new Python files, exit 0; git diff --check exit 0; G3 diff empty.",
+    "graph": "GitNexus shared field impact MEDIUM, eight form callers; file impacts LOW. Index refresh attempted but sandbox child-process spawn EPERM; paper page absent from stale index and checked directly through PageHost wiring.",
+    "measurements": "Paper page label_char_count 225 -> 254; height 1304 -> 1300. Other six default pages unchanged. Fresh HEAD archive measurements recorded."
+  },
+  "t9_part_c": {
+    "plan_items": [
+      "P1-03",
+      "P1-05"
+    ],
+    "status": "PASS",
+    "evidence": "tests/test_t9_onboarding.py; tests/test_no_hardcoded_ui_text.py; tests/test_no_inline_stylesheet.py; docs/analysis/t9_snapshot_numbers.json; docs/analysis/t9_test_edits.json",
+    "scope": "Focused UI progress, navigation, dismissal persistence, plain-language capture, unchanged import-kind payload/hash paths. Existing full integration suite runs in controller outside sandbox; acceptance weights unchanged."
+  },
+  "t9_part_d": {
+    "plan_items": [
+      "P1-04"
+    ],
+    "status": "PASS",
+    "evidence": "tests/test_help_reachability.py; docs/analysis/t9_label_baseline.json; docs/analysis/t9_snapshot_numbers.json; docs/analysis/t9_test_edits.json",
+    "behavior": "Seven named page_hint labels; full original explanation tooltips with named accessible help buttons; long paths and diagnostic/status/indicator controls in uniquely keyed, persisted collapsed sections; original values, validators, payloads and G3 files unchanged. Compare remains within 768 px and AI tabs within 1100 px.",
+    "measurements": {
+      "資料匯入與更新": {
+        "label_char_count": 30,
+        "page_height": 949
+      },
+      "AI 策略中心": {
+        "label_char_count": 98,
+        "page_height": 828
+      },
+      "回測與結果": {
+        "label_char_count": 91,
+        "page_height": 1090
+      },
+      "比較與策略選擇": {
+        "label_char_count": 45,
+        "page_height": 759
+      },
+      "紙上交易與復原": {
+        "label_char_count": 201,
+        "page_height": 1377
+      },
+      "市場總覽": {
+        "label_char_count": 74,
+        "page_height": 913
+      },
+      "設定與備份": {
+        "label_char_count": 306,
+        "page_height": 1633
+      }
+    },
+    "full_suite": "Controller-owned outside sandbox by explicit run instructions.",
+    "verification": "40 focused T9/guard/boundary tests passed, exit 0; latest help/text/style/boundary rerun 13 passed, exit 0; quality gate zero findings, exit 0; Python 3.11 utf-8-sig compile 288 files, exit 0. G3 diff empty. Full unrelated suite is controller-owned."
+  },
+  "t9_repair": {
+    "status": "PASS",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T9 repair",
+    "behavior": "Direct QLineEdit keyboard entry and calendar/unset controls coexist for expiry cells; identical payloads, canonical JSON, hashes and fail-closed invalid-date rejection. Page-help lookups use constant catalog keys. History warning asserts incomplete verification in plain language.",
+    "evidence": "tests/test_t9_repair.py; tests/test_desktop_expiries.py; tests/test_desktop_strings.py; tests/test_market_history_ui.py; tests/test_ui_operations_registry.py; docs/analysis/t9_test_edits.json; docs/analysis/t9_snapshot_numbers.json",
+    "golden_diff": "Legacy-generated ui_analysis_preview and ui_analysis_run progress messages only: +2/-2 lines, replacing space plus OOS with the plain-language sample-outside term; no structural/result/hash changes. Current-handler mutation detected independently of frozen legacy dispatch.",
+    "measurements": "Fresh HEAD archive db44477ac24573c752484ed357c11689b29deddf; default page metrics unchanged from Part D; comparison height 759 px.",
+    "full_suite": "Controller-owned outside sandbox by explicit run instructions; native existing integration attempts can encounter sandbox temporary-directory ACL errors.",
+    "verification": "47 focused tests passed, exit 0; operation registry including both remembered-login scenarios plus unchanged original keyboard expiry test: 7 passed, exit 0; changed history warning integration test with existing test-only inherited-ACL/empty-vault shim: 1 passed, exit 0; quality gate zero findings, exit 0; py -3.11 utf-8-sig compile 289 tracked/new files, exit 0; git diff --check exit 0. Native broader expiry/history/page attempts encountered sandbox WinError 5 temporary-directory ACL errors; full suite remains controller-owned.",
+    "graph": "Checkout-bound GitNexus impacts LOW for input/help/onboarding/data callers. Test entry point UNKNOWN confirmed directly in unittest source. Index refresh and detect-changes attempted; sandbox spawn EPERM prevents clean graph refresh/diff claim. No commit performed."
   }
 }

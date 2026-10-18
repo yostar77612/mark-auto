@@ -93,7 +93,7 @@ class PrimarySignInHostTests(unittest.TestCase):
                  patch('PySide6.QtGui.QDesktopServices.openUrl') as browser:
                 self.queue_after_local_list(launch)
                 if action=='job':self.window.start_job('ui_demo',{})
-                else:self.window.navigation.setCurrentRow(0)
+                else:self.window.navigation.setCurrentRow(5)
                 self.app.processEvents()
                 self.assertEqual(launch.call_count,2 if action=='job' else 1)
                 if action=='job':self.assertEqual(launch.call_args.args,('ui_demo',{}))

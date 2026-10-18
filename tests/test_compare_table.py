@@ -107,7 +107,7 @@ class CompareHostTests(unittest.TestCase):
                 start.assert_called_once_with('ui_compare', {'results': [paths[1]]})
             w.refresh_views()
             self.assertEqual(table.item(1, 0).checkState(), Qt.CheckState.Checked)
-        w.show(); w.navigation.setCurrentRow(4); self.app.processEvents()
+        w.show(); w.navigation.setCurrentRow(3); self.app.processEvents()
         self.assertFalse(w.comparison.isVisible())
         self.assertFalse(w.comparison_list.isVisible())
         self.assertLessEqual(w.compare_page.sizeHint().height(), 768)
@@ -115,9 +115,9 @@ class CompareHostTests(unittest.TestCase):
     def test_snapshot_page_and_each_strategy_tab_meet_height_limit(self):
         from tools.ui_snapshot import page_metrics, tab_heights
         w = self.window; w.resize(1366, 768); w.show()
-        w.navigation.setCurrentRow(4); self.app.processEvents()
+        w.navigation.setCurrentRow(3); self.app.processEvents()
         self.assertLessEqual(page_metrics(w.compare_page)['page_height'], 768)
-        w.navigation.setCurrentRow(2); self.app.processEvents()
+        w.navigation.setCurrentRow(1); self.app.processEvents()
         heights = tab_heights(w.strategy_page, self.app)
         self.assertEqual(len(heights), 3)
         self.assertTrue(all(height <= 1100 for height in heights.values()), heights)

@@ -36,7 +36,7 @@ class MarketAcceptanceLabels(unittest.TestCase):
         from dataclasses import replace
         from decimal import Decimal
         fixture=series();fixture=replace(fixture,bars=fixture.bars[:2]+(replace(fixture.bars[2],close=Decimal(105)),))
-        w=self.window;w.navigation.setCurrentRow(0);w.market.set_market_series(fixture)
+        w=self.window;w.navigation.setCurrentRow(5);w.market.set_market_series(fixture)
         prefs=w.market.preferences();prefs['indicators']['MACD']={'enabled':True,'fast':1,'slow':2,'signal':2}
         w.market.restore_preferences(prefs)
         self.app.processEvents()

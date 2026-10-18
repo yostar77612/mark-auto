@@ -108,12 +108,20 @@ def page_metrics(page):
                         if widget.isTabVisible(index) and widget.tabText(index).strip())
         if value.strip():
             text.append(value)
+    from PySide6.QtWidgets import QTableWidget
+    combo_items = [widget.itemText(index) for widget in widgets if isinstance(widget, QComboBox)
+                   for index in range(widget.count())]
+    table_headers = [widget.horizontalHeaderItem(index).text()
+                     for widget in widgets if isinstance(widget, QTableWidget)
+                     for index in range(widget.columnCount()) if widget.horizontalHeaderItem(index)]
     return {
         'page_height': page.height(),
         'visible_input_count': len(inputs),
         'button_count': len(buttons),
         'label_char_count': sum(len(widget.text()) for widget in widgets if isinstance(widget, QLabel)),
         'visible_text': text,
+        'combo_items': combo_items,
+        'table_headers': table_headers,
         'unlabeled_inputs': [widget.objectName() or f'{type(widget).__name__}[{index}]'
                              for index, widget in enumerate(inputs) if not _has_label(widget, page)],
         'disabled_buttons': [{'object_name': widget.objectName(), 'text': widget.text(),
@@ -260,7 +268,7 @@ def capture(out, size=(1366, 768), scale=1.0):
                     metrics = page_metrics(page)
                     if subpages:
                         metrics['subpages'] = subpages
-                    wizard = window.strategy_page.wf_wizard if index == 2 else None
+                    wizard = window.strategy_page.wf_wizard if scroll.widget() is window.strategy_page else None
                     if wizard is not None:
                         # Inspect natural layouts without bypassing navigation guards
                         # or launching preview/run operations during a snapshot.

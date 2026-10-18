@@ -173,7 +173,7 @@ class HistoryHostTests(unittest.TestCase):
         self.assertEqual(len(self.window.market.selected_series().bars),2)
         self.assertEqual(self.window.market.selected_series().provenance.mode,'history')
         self.assertNotIn('來源更新失敗',self.window.market.message.text())
-        self.assertIn('未驗證',self.window.market.message.text())
+        self.assertIn('部分區間完整性尚未確認',self.window.market.message.text())
         # A fresh host reloads only the persisted bounded history cache.
         from desktop_ui import MainWindow
         from quantlab.desktop_runtime import JobManager, SettingsStore, BackupManager

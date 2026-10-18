@@ -1,4 +1,4 @@
-﻿"""P0-02/03/04/13: offline native-widget presentation contracts."""
+"""P0-02/03/04/13: offline native-widget presentation contracts."""
 import os
 from pathlib import Path
 import shutil
@@ -75,7 +75,7 @@ class DesktopPolishATests(unittest.TestCase):
 
     def test_p0_04_page_names_and_header_widths(self):
         w = self.window
-        w.navigation.setCurrentRow(5)
+        w.navigation.setCurrentRow(4)
         self.app.processEvents()
         for rows in (w.policy_form.sessions, w.policy_form.margins):
             table = rows.table

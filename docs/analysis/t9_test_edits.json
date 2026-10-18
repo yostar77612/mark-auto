@@ -1,0 +1,342 @@
+{
+  "runs": [
+    {
+      "run": "T9 part A",
+      "edits": [
+        {
+          "file": "tests/test_no_hardcoded_ui_text.py",
+          "change": "UI_MODULES includes desktop_expiry_inputs.py",
+          "reason": "Register new helper for the existing full AST scan; assertions unchanged."
+        },
+        {
+          "file": "tests/fixtures/desktop_widget_names.json",
+          "change": "Add market_research_summary objectName",
+          "reason": "New hidden-by-default research summary; widget inventory assertion unchanged. Picker objectNames still require a final refresh once valid provenance enables the picker."
+        }
+      ],
+      "note": "No existing assertions weakened. Snapshot and widget golden updates await final valid data provenance."
+    },
+    {
+      "run": "T9 part A repair/finish",
+      "edits": [
+        {
+          "file": "tests/fixtures/desktop_widget_names.json",
+          "change": "Refresh additive inventory with expiry_product, expiry_month, expiry_view_source, expiry_summary, expiry_provenance, qt_edit, and market_research_summary.",
+          "reason": "Verified production data now enables the real picker. All existing objectNames and inventory assertions remain unchanged; focused test constructs a real MainWindow and checks the complete fixture."
+        },
+        {
+          "file": "tests/test_t9_expiry_inputs.py",
+          "change": "Remove synthetic hash substitution; pin corrected official digest; add real-loader validation, HEAD golden byte/hash parity, boundary/calendar/consent tests, packaging manifest execution, synthetic/missing/real/invalid states and enabled-picker widget inventory.",
+          "reason": "Complete the previously incomplete new T9 tests using the shipped data, without changing existing tests or weakening assertions."
+        },
+        {
+          "file": "tests/fixtures/t9_manual_payloads.json",
+          "change": "Add baseline request objects, JSON UTF-8 bytes and content hashes generated from an archive of HEAD db44477ac24573c752484ed357c11689b29deddf.",
+          "reason": "Independently compare unchanged manual inputs and new picker inputs against the pre-T9 request paths for monthly boundaries, February, uncovered manual months, all history products and day/night sessions."
+        }
+      ],
+      "note": "No existing test assertions edited. The hardcoded-text helper registration from the previous run remains; the stylesheet guard automatically scans desktop*.py and needs no inventory edit. Full suite and requested existing integration modules are controller-owned per the sandbox note."
+    },
+    {
+      "run": "T9 part B",
+      "edits": [
+        {
+          "file": "tests/test_no_hardcoded_ui_text.py",
+          "change": "Register desktop_timeinput.py in UI_MODULES.",
+          "reason": "Apply the complete existing AST scan to the new adapter; no assertion changes."
+        },
+        {
+          "file": "tests/fixtures/desktop_widget_names.json",
+          "change": "Re-capture complete widget inventory from MainWindow; no additional names beyond the pre-existing Part A fixture.",
+          "reason": "Verify the native pickers preserve the existing inventory assertion and all existing objectNames; no assertion or fixture name removal."
+        }
+      ],
+      "note": "No existing test assertions changed. Stylesheet guard discovers desktop*.py automatically. New tests compare original string accessors and unchanged parsing/validation paths with picker payloads, canonical JSON and hashes. Controller runs full existing integration suite outside sandbox."
+    },
+    {
+      "run": "T9 part C",
+      "edits": [
+        {
+          "file": "tests/test_compare_table.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        w.show(); w.navigation.setCurrentRow(4); self.app.processEvents()",
+            "+        w.show(); w.navigation.setCurrentRow(3); self.app.processEvents()",
+            "-        w.navigation.setCurrentRow(4); self.app.processEvents()",
+            "+        w.navigation.setCurrentRow(3); self.app.processEvents()",
+            "-        w.navigation.setCurrentRow(2); self.app.processEvents()",
+            "+        w.navigation.setCurrentRow(1); self.app.processEvents()"
+          ]
+        },
+        {
+          "file": "tests/test_desktop_feedback_p0.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        self.assertEqual(w.navigation.currentRow(), 1)",
+            "+        self.assertEqual(w.navigation.currentRow(), 0)",
+            "-        w.navigation.setCurrentRow(5)",
+            "-        scroll = w.stack.widget(5)",
+            "+        w.navigation.setCurrentRow(4)",
+            "+        scroll = w.stack.widget(4)"
+          ]
+        },
+        {
+          "file": "tests/test_desktop_market_acceptance.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        w=self.window;w.navigation.setCurrentRow(0);w.market.set_market_series(fixture)",
+            "+        w=self.window;w.navigation.setCurrentRow(5);w.market.set_market_series(fixture)"
+          ]
+        },
+        {
+          "file": "tests/test_desktop_market_integration.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        self.assertIs(self.window.stack.widget(0), self.window.market)",
+            "+        self.assertIs(self.window.stack.widget(5), self.window.market)"
+          ]
+        },
+        {
+          "file": "tests/test_desktop_ui.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        self.window.import_kind.setCurrentText('synthetic_bars')",
+            "+        self.window.import_kind.setCurrentIndex(self.window.import_kind.findData('synthetic_bars'))",
+            "-        self.window.navigation.setCurrentRow(0); self.app.processEvents()",
+            "+        self.window.navigation.setCurrentRow(5); self.app.processEvents()"
+          ]
+        },
+        {
+          "file": "tests/test_desktop_ui_polish_a.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-﻿\"\"\"P0-02/03/04/13: offline native-widget presentation contracts.\"\"\"",
+            "+\"\"\"P0-02/03/04/13: offline native-widget presentation contracts.\"\"\"",
+            "-        w.navigation.setCurrentRow(5)",
+            "+        w.navigation.setCurrentRow(4)"
+          ]
+        },
+        {
+          "file": "tests/test_primary_sign_in_host.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-                else:self.window.navigation.setCurrentRow(0)",
+            "+                else:self.window.navigation.setCurrentRow(5)"
+          ]
+        },
+        {
+          "file": "tests/test_result_widgets.py",
+          "change": "Update fixed page indexes to workflow order; import selector locates unchanged itemData where applicable.",
+          "reason": "Moved page accessors and translated display names only; all assertions retained.",
+          "changed_lines": [
+            "-        w.navigation.setCurrentRow(3); self.app.processEvents()",
+            "+        w.navigation.setCurrentRow(2); self.app.processEvents()",
+            "-        w.navigation.setCurrentRow(5); self.app.processEvents()",
+            "+        w.navigation.setCurrentRow(4); self.app.processEvents()"
+          ]
+        },
+        {
+          "file": "tests/fixtures/desktop_widget_names.json",
+          "change": "Add onboarding and empty-state widget objectNames.",
+          "reason": "Complete inventory retains all existing names and assertions."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/01_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/01_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/02_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/02_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/03_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/03_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/04_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/04_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/05_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/05_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/06_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/06_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/07_full.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/07_viewport.png",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/metrics.json",
+          "change": "Re-capture seven page metrics and pixel fixtures after approved guidance, ordering and text changes.",
+          "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
+        }
+      ],
+      "note": "No assertions removed or weakened. Both guards auto-discover desktop_pages/onboarding.py. Full existing integration suite is controller-owned outside sandbox."
+    },
+    {
+      "run": "T9 part D final",
+      "edits": [
+        {
+          "file": "tests/fixtures/desktop_widget_names.json",
+          "change": "Add named help buttons, page hints and uniquely keyed advanced sections.",
+          "reason": "Keep full widget inventory equality; retain all pre-existing objectNames."
+        },
+        {
+          "file": "tests/test_no_hardcoded_ui_text.py",
+          "change": "Register desktop_help.py in UI_MODULES.",
+          "reason": "Keep complete desktop module AST coverage; assertions unchanged."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/01_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/01_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/02_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/02_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/03_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/03_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/04_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/04_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/05_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/05_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/06_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/06_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/07_full.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/07_viewport.png",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        },
+        {
+          "file": "tests/fixtures/desktop_pages_before/metrics.json",
+          "change": "Recapture final P1-04 metrics or pixel fixture.",
+          "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
+        }
+      ],
+      "note": "No existing assertions removed or weakened. desktop_help.py is registered in the text guard and automatically covered by the stylesheet guard. Full unrelated integration suite is controller-owned outside sandbox."
+    },
+    {
+      "run": "T9 repair",
+      "edits": [
+        {
+          "file": "tests/test_market_history_ui.py",
+          "test": "HistoryHostTests.test_worker_repeat_restart_no_network_and_no_research_write",
+          "change": "Expected displayed substring updated from old not-verified wording to the new plain-language incomplete-integrity warning.",
+          "reason": "Retain the semantic assertion that history completeness is not verified; no assertion removed or weakened."
+        },
+        {
+          "file": "tests/fixtures/ui_operations_golden.json",
+          "change": "Regenerated only observations.ui_analysis_preview.events[0][1].message and observations.ui_analysis_run.events[0][1].message by executing the frozen legacy implementation with current desktop_strings in the existing hermetic workspace.",
+          "reason": "P1-05 replaces space plus OOS with the Chinese sample-outside wording. Exact recursive comparison confirms only these two strings differ; structure, results and every hash remain identical. git diff: 2 additions, 2 deletions."
+        },
+        {
+          "file": "tests/test_t9_repair.py",
+          "change": "Add keyboard/manual/calendar payload, canonical JSON and hash parity, invalid/unset rejection, plus registry mutation detection.",
+          "reason": "Preserve unchanged original desktop expiry and strict catalog assertions and prove that legacy/current parity can detect a current-only handler mutation."
+        }
+      ],
+      "note": "tests/test_desktop_expiries.py, tests/test_desktop_strings.py and tests/test_ui_operations_registry.py remain unmodified. No new UI modules or widget objectNames introduced; existing text/style guard registration applies."
+    }
+  ]
+}

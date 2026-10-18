@@ -22,7 +22,7 @@ class MarketHostTests(unittest.TestCase):
         import_daily('twse', self.paths.state/'market_cache', TWSE, received_at=NOW)
         with patch('quantlab.market_providers.build_opener', side_effect=AssertionError('startup network')):
             self.window.refresh_views()
-        self.assertIs(self.window.stack.widget(0), self.window.market)
+        self.assertIs(self.window.stack.widget(5), self.window.market)
         self.assertEqual(self.window.market.selected_series().bars[-1].close, 101)
         self.assertIn('尚無', self.window.market.cards['TMF'].text())
         self.assertIn('未知', self.window.market.trading_labels['paper'].text())

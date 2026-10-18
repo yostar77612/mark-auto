@@ -1,3 +1,4 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QComboBox, QPlainTextEdit, QCheckBox, QSpinBox, QFileDialog
 from desktop_strings import ui_text
 from quantlab.core import ValidationError
@@ -21,8 +22,21 @@ class DataPage(QWidget):
         self.host.button(layout, ui_text('ui._data_page.text_8'), 'browse_data', lambda: self.host.browse(self.import_path))
         self.calendar_path = self.host.text(layout, ui_text('ui._data_page.text_9'))
         self.host.button(layout, ui_text('ui._data_page.text_10'), 'browse_calendar', lambda: self.host.browse(self.calendar_path))
-        self.import_kind = QComboBox(); self.import_kind.addItems(['validated_dataset', 'ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json', 'synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks']); layout.addWidget(self.import_kind)
-        self.contract = self.host.text(layout, ui_text('ui._data_page.text_11'), 'TAIFEX:TMF:202601')
+        self.import_kind = QComboBox()
+        for kind, label in (
+                ('validated_dataset', ui_text('import.kind.validated_dataset')),
+                ('ticks', ui_text('import.kind.ticks')),
+                ('ticks_rpt', ui_text('import.kind.ticks_rpt')),
+                ('daily_json', ui_text('import.kind.daily_json')),
+                ('synthetic_daily_json', ui_text('import.kind.synthetic_daily_json')),
+                ('synthetic_bars', ui_text('import.kind.synthetic_bars')),
+                ('synthetic_ticks', ui_text('import.kind.synthetic_ticks')),
+                ('proxy_bars', ui_text('import.kind.proxy_bars')),
+                ('proxy_ticks', ui_text('import.kind.proxy_ticks')),
+        ):
+            self.import_kind.addItem(label, kind)
+            self.import_kind.setItemData(self.import_kind.count() - 1, kind, Qt.ItemDataRole.ToolTipRole)
+        layout.addWidget(self.import_kind)
         self.host.button(layout, ui_text('ui._data_page.text_12'), 'import_data', self.import_data, role='primary')
         self.bars = QSpinBox(); self.bars.setRange(120, 10000); self.bars.setValue(960); layout.addWidget(self.bars)
         self.host.button(layout, ui_text('ui._data_page.text_13'), 'create_demo', lambda: self.host.start_job('ui_demo', {'bars': self.bars.value()}))
@@ -30,6 +44,7 @@ class DataPage(QWidget):
         self.days = QSpinBox(); self.days.setRange(1, 30); layout.addWidget(self.days)
         self.host.button(layout, ui_text('ui._data_page.text_15'), 'refresh_data', self.download_data)
         details = self.host.advanced(layout)
+        self.contract = self.host.text(details, ui_text('ui._data_page.text_11'), 'TAIFEX:TMF:202601')
         self.data_detail = QPlainTextEdit(); self.data_detail.setReadOnly(True); details.addWidget(self.data_detail); details.addWidget(self.summary)
 
     def import_market_file(self):
@@ -60,7 +75,7 @@ class DataPage(QWidget):
     def import_data(self):
         if not self.import_path.text().strip() or not self.calendar_path.text().strip():
             raise ValidationError(ui_text('ui.import_data.text_1'))
-        self.host.start_job('ui_import', {'path': self.import_path.text(), 'calendar': self.calendar_path.text(), 'kind': self.import_kind.currentText(), 'contract': self.contract.text()})
+        self.host.start_job('ui_import', {'path': self.import_path.text(), 'calendar': self.calendar_path.text(), 'kind': self.import_kind.currentData(), 'contract': self.contract.text()})
 
     def download_data(self):
         if not self.network_data.isChecked(): raise ValidationError(ui_text('ui.download_data.text_1'))
