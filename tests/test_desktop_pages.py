@@ -301,7 +301,7 @@ class PageSnapshotTests(unittest.TestCase):
                         got, want = actual['pages'][name][field], page[field]
                         if field == 'visible_text' and sys.platform != 'win32':
                             # The Windows archive renders workspace paths with backslashes.
-                            want = [text.replace('\', '/') for text in want]
+                            want = [text.replace(chr(92), '/') for text in want]
                         self.assertEqual(got, want)
             # The archive uses Windows fonts. Other platforms have different font
             # metrics and rasterization; keep geometry and pixel parity exact on Windows.
