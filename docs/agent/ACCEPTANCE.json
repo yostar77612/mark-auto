@@ -5695,5 +5695,21 @@
       256
     ],
     "scope": "Offline archive, icon loading, packaging and manifest contracts. Full suite and actual frozen installer/taskbar/client Windows verification remain controller-owned; no safety thresholds changed."
+  },
+  "t4_shared_desktop_ui_text": {
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t4--shared-desktop-ui-text",
+    "regressions": [
+      "tests/test_desktop_strings.py",
+      "tests/test_no_hardcoded_ui_text.py"
+    ],
+    "measurement": {
+      "viewport": "1366x768",
+      "pages_with_identical_visible_text": 7,
+      "ui_modules_scanned": 12,
+      "todo_modules": 0,
+      "literal_exemptions": 0
+    },
+    "evidence": "docs/analysis/t4_ui_text_comparison.json",
+    "scope": "Presentation-only catalog extraction; pinned auth/provider and six engine sources untouched. Full suite remains controller-owned outside the sandbox. Acceptance weights and safety thresholds unchanged."
   }
 }

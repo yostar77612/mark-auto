@@ -1,21 +1,22 @@
 """Display adapters only: never write rounded values back to research records."""
+from desktop_strings import ui_text
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, localcontext
 import re
 
 
 STATUS_LABELS = {
-    'synthetic': '合成示範資料', 'official_local': '官方格式本機資料',
-    'official': '官方資料', 'proxy': '替代資料', 'disabled': '已停用',
-    'not_verified': '尚未驗證', 'evaluated': '已評估', 'running': '評估中',
-    'failed': '評估失敗', 'cancelled': '已取消', 'timed_out': '已逾時',
-    'budget_exhausted': '額度已用盡', 'not_accessed': '尚未取用',
-    'not_evaluated': '尚未評估', 'completed': '已完成', 'pending': '等待中',
-    'accepted': '已接受', 'rejected': '已拒絕', 'filled': '已成交',
-    'partially_filled': '部分成交', 'buy': '買進', 'sell': '賣出',
-    'market': '市價', 'limit': '限價', 'day': '日盤', 'night': '夜盤',
-    'trend': '趨勢', 'mean_reversion': '均值回歸', 'breakout': '突破',
-    'momentum': '動能', 'volatility': '波動',
+    'synthetic': ui_text('presentation.labels.text_1'), 'official_local': ui_text('presentation.labels.text_2'),
+    'official': ui_text('presentation.labels.text_3'), 'proxy': ui_text('presentation.labels.text_4'), 'disabled': ui_text('presentation.labels.text_5'),
+    'not_verified': ui_text('presentation.labels.text_6'), 'evaluated': ui_text('presentation.labels.text_7'), 'running': ui_text('presentation.labels.text_8'),
+    'failed': ui_text('presentation.labels.text_9'), 'cancelled': ui_text('presentation.labels.text_10'), 'timed_out': ui_text('presentation.labels.text_11'),
+    'budget_exhausted': ui_text('presentation.labels.text_12'), 'not_accessed': ui_text('presentation.labels.text_13'),
+    'not_evaluated': ui_text('presentation.labels.text_14'), 'completed': ui_text('presentation.labels.text_15'), 'pending': ui_text('presentation.labels.text_16'),
+    'accepted': ui_text('presentation.labels.text_17'), 'rejected': ui_text('presentation.labels.text_18'), 'filled': ui_text('presentation.labels.text_19'),
+    'partially_filled': ui_text('presentation.labels.text_20'), 'buy': ui_text('presentation.labels.text_21'), 'sell': ui_text('presentation.labels.text_22'),
+    'market': ui_text('presentation.labels.text_23'), 'limit': ui_text('presentation.labels.text_24'), 'day': ui_text('presentation.labels.text_25'), 'night': ui_text('presentation.labels.text_26'),
+    'trend': ui_text('presentation.labels.text_27'), 'mean_reversion': ui_text('presentation.labels.text_28'), 'breakout': ui_text('presentation.labels.text_29'),
+    'momentum': ui_text('presentation.labels.text_30'), 'volatility': ui_text('presentation.labels.text_31'),
 }
 AMOUNTS = frozenset(('cash', 'initial_cash', 'final_equity', 'net_pnl', 'gross_pnl',
     'realized_gross_pnl', 'unrealized_pnl', 'total_costs', 'slippage_cost',
@@ -26,7 +27,7 @@ RATIOS = frozenset(('return', 'win_rate', 'max_drawdown_pct', 'annual_risk_free_
 def display_status(value):
     text = str(value)
     if re.search(r'[\u3400-\u9fff]', text): return text
-    return STATUS_LABELS.get(text.lower(), '未知狀態，請查看進階診斷')
+    return STATUS_LABELS.get(text.lower(), ui_text('presentation.display_status.text_1'))
 
 
 def display_number(value, key=''):
@@ -44,12 +45,12 @@ def display_number(value, key=''):
                 return f'{number:,.2f}'.rstrip('0').rstrip('.') + ' TWD'
             return f'{number:.4f}'.rstrip('0').rstrip('.') or '0'
     except (InvalidOperation, ValueError, TypeError):
-        return '請查看進階診斷'
+        return ui_text('presentation.display_number.text_1')
 
 
 def display_value(value, key=''):
-    if value is None: return '未提供'
-    if isinstance(value, bool): return '是' if value else '否'
+    if value is None: return ui_text('presentation.display_value.text_1')
+    if isinstance(value, bool): return ui_text('presentation.display_value.text_2') if value else ui_text('presentation.display_value.text_3')
     text = str(value)
     if key.endswith(('_id', '_hash')): return text
     if key in ('status', 'source_type', 'family', 'side', 'order_type'):
@@ -65,12 +66,12 @@ def result_name(result, created_at):
     manifest = result.manifest
     spec = manifest.get('strategy', {})
     params = spec.get('parameters', {})
-    parameters = '、'.join(f'{key}={display_number(value)}' for key, value in params.items()) or '預設參數'
-    parameters = re.sub(r'[0-9a-fA-F]{8,}', '識別碼見進階', parameters)
+    parameters = ui_text('presentation.result_name.text_1').join(f'{key}={display_number(value)}' for key, value in params.items()) or ui_text('presentation.result_name.text_2')
+    parameters = re.sub(r'[0-9a-fA-F]{8,}', ui_text('presentation.result_name.text_3'), parameters)
     coverage = manifest.get('dataset_manifest', {}).get('coverage', {})
     dates = [str(coverage[key])[:10] for key in ('start', 'end') if coverage.get(key)]
     if len(dates) != 2:
         dates = [str(row.get('timestamp', row.get('trade_date', '')))[:10] for row in result.equity]
-    interval = f'{dates[0]}～{dates[-1]}' if dates else '資料區間未提供'
+    interval = ui_text('presentation.result_name.text_4').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.text_5')
     instant = datetime.fromtimestamp(created_at, timezone.utc).astimezone(timezone(timedelta(hours=8)))
-    return f"{display_status(spec.get('family', ''))}・{parameters}・{interval}・{instant:%Y-%m-%d %H:%M:%S}（台北）"
+    return ui_text('presentation.result_name.text_6').format(display_status(spec.get('family', '')), parameters, interval, instant)

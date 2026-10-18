@@ -1,4 +1,5 @@
-﻿"""Presentation-only labels and disabled-action explanations for the desktop host."""
+"""Presentation-only labels and disabled-action explanations for the desktop host."""
+from desktop_strings import ui_text
 from PySide6.QtCore import QObject, QEvent
 from PySide6.QtWidgets import QLabel, QPushButton, QBoxLayout, QFormLayout
 
@@ -15,9 +16,9 @@ class DisabledHint(QObject):
     def update(self):
         disabled = not self.button.isEnabled()
         jobs = getattr(self.button.window(), 'jobs', None)
-        prerequisite = ('等待目前背景作業停止' if jobs is not None and jobs.active
+        prerequisite = (ui_text('ui_polish.update.text_1') if jobs is not None and jobs.active
                         and self.button.objectName() != 'cancel_job' else self.prerequisite)
-        text = '需要先完成：' + prerequisite if disabled else ''
+        text = ui_text('ui_polish.update.text_2').format(prerequisite) if disabled else ''
         self.button.setToolTip(text if disabled else self.original_tooltip)
         self.button.setProperty('disabled_hint', text)
         self.label.setText(text)
@@ -58,50 +59,50 @@ def _label_field(widget, text):
 def install_polish(window):
     """Install once after construction; never change action eligibility or payloads."""
     fields = {
-        'market_provider': '官方行情格式', 'import_kind': '研究資料匯入格式',
-        'bars': '合成示範資料長度', 'days': '最近交易日數',
-        'family': '進階策略家族', 'provider_mode': '研究生成來源',
-        'candidate_choice': '已保存候選版本', 'walk_forward_choice': '已保存 Walk-forward 紀錄',
-        'result_choice': '已保存回測結果', 'analysis_saved': '已保存分析紀錄',
-        'replay_bars': '歷史重播長度',
+        'market_provider': ui_text('ui_polish.install_polish.text_1'), 'import_kind': ui_text('ui_polish.install_polish.text_2'),
+        'bars': ui_text('ui_polish.install_polish.text_3'), 'days': ui_text('ui_polish.install_polish.text_4'),
+        'family': ui_text('ui_polish.install_polish.text_5'), 'provider_mode': ui_text('ui_polish.install_polish.text_6'),
+        'candidate_choice': ui_text('ui_polish.install_polish.text_7'), 'walk_forward_choice': ui_text('ui_polish.install_polish.text_8'),
+        'result_choice': ui_text('ui_polish.install_polish.text_9'), 'analysis_saved': ui_text('ui_polish.install_polish.text_10'),
+        'replay_bars': ui_text('ui_polish.install_polish.text_11'),
     }
     for name, text in fields.items():
         _label_field(getattr(window, name), text)
-    _label_field(window.chatgpt_panel.account, '已保存 ChatGPT 連線')
-    _label_field(window.automatic_backup_panel.directory, '自動備份資料夾')
-    for widget, suffix in ((window.bars, ' 根'), (window.days, ' 日'),
-                           (window.replay_bars, ' 根'), (window.chatgpt_panel.max_calls, ' 次'),
-                           (window.chatgpt_panel.timeout, ' 秒')):
+    _label_field(window.chatgpt_panel.account, ui_text('ui_polish.install_polish.text_12'))
+    _label_field(window.automatic_backup_panel.directory, ui_text('ui_polish.install_polish.text_13'))
+    for widget, suffix in ((window.bars, ui_text('ui_polish.install_polish.text_14')), (window.days, ui_text('ui_polish.install_polish.text_15')),
+                           (window.replay_bars, ui_text('ui_polish.install_polish.text_16')), (window.chatgpt_panel.max_calls, ui_text('ui_polish.install_polish.text_17')),
+                           (window.chatgpt_panel.timeout, ui_text('ui_polish.install_polish.text_18'))):
         widget.setSuffix(suffix)
     for _, controls in window.market._indicator_widgets.values():
         for key, widget in controls.items():
-            widget.setSuffix(' 倍' if key == 'deviations' else ' 根')
+            widget.setSuffix(ui_text('ui_polish.install_polish.text_19') if key == 'deviations' else ui_text('ui_polish.install_polish.text_20'))
     prerequisites = {
-        'run_backtest': '匯入並驗證研究資料',
-        'use_candidate': '選取並核對有效的不可變候選版本',
-        'select_strategy': '選取符合研究／紙上資格的回測結果',
-        'run_walk_forward': '預覽並核對精確切分、門檻與一次性額度',
-        'pick_walk_forward_original': '將候選池來源切換為已保存研究',
-        'run_candidate_analysis': '預覽分析／比較並核對尚未使用的請求紀錄',
-        'reconcile_saved_analysis': '選取含原始停止紀錄且可核對的本機分析，並等待背景作業停止',
-        'cancel_job': '啟動可取消的背景作業',
-        'market_add': '載入官方行情商品清單',
-        'market_refresh': '等待官方行情更新完成',
-        'chatgpt_enable_plan': '登入並選取身分已驗證的 ChatGPT 連線',
-        'chatgpt_models': '啟用方案用量並確認帳戶未暫停、無待核對請求',
-        'chatgpt_clear_pause': '核對帳戶額度、已知暫停與未確認請求',
-        'chatgpt_open_official': '開始授權並取得官方授權網址',
+        'run_backtest': ui_text('ui_polish.install_polish.text_21'),
+        'use_candidate': ui_text('ui_polish.install_polish.text_22'),
+        'select_strategy': ui_text('ui_polish.install_polish.text_23'),
+        'run_walk_forward': ui_text('ui_polish.install_polish.text_24'),
+        'pick_walk_forward_original': ui_text('ui_polish.install_polish.text_25'),
+        'run_candidate_analysis': ui_text('ui_polish.install_polish.text_26'),
+        'reconcile_saved_analysis': ui_text('ui_polish.install_polish.text_27'),
+        'cancel_job': ui_text('ui_polish.install_polish.text_28'),
+        'market_add': ui_text('ui_polish.install_polish.text_29'),
+        'market_refresh': ui_text('ui_polish.install_polish.text_30'),
+        'chatgpt_enable_plan': ui_text('ui_polish.install_polish.text_31'),
+        'chatgpt_models': ui_text('ui_polish.install_polish.text_32'),
+        'chatgpt_clear_pause': ui_text('ui_polish.install_polish.text_33'),
+        'chatgpt_open_official': ui_text('ui_polish.install_polish.text_34'),
     }
     window._disabled_hints = []
     for button in window.findChildren(QPushButton):
         if not button.property('role'):
             button.setProperty('role', 'secondary')
         name = button.objectName()
-        prerequisite = prerequisites.get(name, '等待目前背景作業或連線作業停止')
+        prerequisite = prerequisites.get(name, ui_text('ui_polish.install_polish.text_35'))
         if button in window.chatgpt_panel.buttons.values() and name not in prerequisites:
-            prerequisite = '選取已保存的 ChatGPT 連線，並等待目前連線作業停止'
+            prerequisite = ui_text('ui_polish.install_polish.text_36')
         if button is window.chatgpt_panel.cancel_button:
-            prerequisite = '開始可取消的 ChatGPT 連線作業'
+            prerequisite = ui_text('ui_polish.install_polish.text_37')
         label = QLabel(button.parentWidget())
         label.setWordWrap(True)
         label.setProperty('prerequisite', True)

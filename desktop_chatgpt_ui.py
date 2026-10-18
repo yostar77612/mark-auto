@@ -5,6 +5,7 @@ bootstrap/control paths and browser presentation. No token, vault, HTTP, browser
 or process work occurs at import/construction. AuthSession must be created inside
 one worker and remain there through begin/poll. All test transports are fixtures.
 """
+from desktop_strings import ui_text
 from dataclasses import dataclass, field, asdict
 import re
 import sqlite3
@@ -27,14 +28,14 @@ CONNECTED_STATES = frozenset(('plan_ready', 'identity_only'))
 STATES = frozenset(('host_initialization_required', 'disconnected', 'initialized', 'authorizing', 'validating', 'plan_ready',
     'identity_only', 'refresh_required', 'registration_retry_required', 'reauthorization_required', 'authorization_failed',
     'timeout', 'cancelled', 'transient_blocked', 'client_configuration_required', 'unknown'))
-STATE_LABELS = {'host_initialization_required':'尚未初始化本機識別；只能由您明確設定或復原', 'disconnected':'未連線', 'initialized':'本機識別已初始化，尚未授權',
-    'authorizing':'等待您在官方網站授權', 'validating':'正在驗證官方回應',
-    'plan_ready':'本機憑證具訂閱權限；實際推論尚未驗證', 'identity_only':'僅身分登入，沒有訂閱推論權限',
-    'refresh_required':'需要明確更新連線', 'reauthorization_required':'需要重新授權',
-    'registration_retry_required':'註冊待驗證；請明確重新授權，此紀錄沒有身分或推論權限',
-    'authorization_failed':'授權未完成', 'timeout':'授權逾時', 'cancelled':'本次授權已取消',
-    'transient_blocked':'暫時無法使用；不會自動重試', 'client_configuration_required':'需檢查官方用戶端設定',
-    'unknown':'狀態待核對；不能視為已登出或未扣額度'}
+STATE_LABELS = {'host_initialization_required':ui_text('chatgpt_ui.labels.text_1'), 'disconnected':ui_text('chatgpt_ui.labels.text_2'), 'initialized':ui_text('chatgpt_ui.labels.text_3'),
+    'authorizing':ui_text('chatgpt_ui.labels.text_4'), 'validating':ui_text('chatgpt_ui.labels.text_5'),
+    'plan_ready':ui_text('chatgpt_ui.labels.text_6'), 'identity_only':ui_text('chatgpt_ui.labels.text_7'),
+    'refresh_required':ui_text('chatgpt_ui.labels.text_8'), 'reauthorization_required':ui_text('chatgpt_ui.labels.text_9'),
+    'registration_retry_required':ui_text('chatgpt_ui.labels.text_10'),
+    'authorization_failed':ui_text('chatgpt_ui.labels.text_11'), 'timeout':ui_text('chatgpt_ui.labels.text_12'), 'cancelled':ui_text('chatgpt_ui.labels.text_13'),
+    'transient_blocked':ui_text('chatgpt_ui.labels.text_14'), 'client_configuration_required':ui_text('chatgpt_ui.labels.text_15'),
+    'unknown':ui_text('chatgpt_ui.labels.text_16')}
 from quantlab.desktop_errors import ERROR_LABELS, error_message, exception_code
 RECOVERABLE_PAUSES = frozenset(('eligibility_blocked','quota_paused','transient_blocked','invalid_request','configuration_blocked','credential_diagnosis','grant_blocked'))
 REF = r'[a-f0-9]{32}'
@@ -139,7 +140,7 @@ class ConnectionEvent:
         for row in self.account_labels:
             if (not isinstance(row,tuple) or len(row)!=2 or row[0] not in states or row[0] in label_refs
                 or states[row[0]]=='registration_retry_required' or not isinstance(row[1],str)
-                or not re.fullmatch(r'已驗證帳戶 ••••[a-f0-9]{8}（電子郵件未提供）',row[1])):
+                or not re.fullmatch(ui_text('chatgpt_ui.__post_init__.text_1'),row[1])):
                 raise ValueError('invalid verified account label')
             label_refs.add(row[0])
 
@@ -181,7 +182,7 @@ class ConnectionController(QObject):
 
     def __init__(self,parent=None):
         super().__init__(parent);self.host_available=False;self.busy=False;self.stopping=False
-        self.state='unknown';self.message='尚未核對本機連線；沒有自動登入或網路請求。'
+        self.state='unknown';self.message=ui_text('chatgpt_ui.__init__.text_1')
         self.registrations=();self.account_labels=();self.active_registration=None;self.models=();self.model_labels=();self._counter=0
         self._request=None;self._awaiting_join=False;self._authorization_url=None;self._terminal_received=False;self._terminal_ok=False
         self.usage_known=False;self.reserved_count=None;self.unknown_count=None;self.account_paused=False;self.account_pending=False;self.account_state='blocked';self.account_status_known=False
@@ -191,9 +192,9 @@ class ConnectionController(QObject):
         self.host_available=available;self.changed.emit()
 
     def request(self,action,registration=None,*,confirmed=False):
-        if not self.host_available or self.busy:raise ValueError('主程式尚未接入，或已有作業。')
-        if action=='models' and (registration!=self.active_registration or self.state!='plan_ready' or not self.account_status_known or self.account_paused or self.account_pending):raise ValueError('先核對連線與持久請求紀錄，才能連線取得模型。')
-        if action=='clear_pause' and (registration!=self.active_registration or not self.account_status_known or self.account_pending or self.unknown_count or self.account_state not in RECOVERABLE_PAUSES):raise ValueError('未知請求或未核對紀錄不能解除暫停。')
+        if not self.host_available or self.busy:raise ValueError(ui_text('chatgpt_ui.request.text_1'))
+        if action=='models' and (registration!=self.active_registration or self.state!='plan_ready' or not self.account_status_known or self.account_paused or self.account_pending):raise ValueError(ui_text('chatgpt_ui.request.text_2'))
+        if action=='clear_pause' and (registration!=self.active_registration or not self.account_status_known or self.account_pending or self.unknown_count or self.account_state not in RECOVERABLE_PAUSES):raise ValueError(ui_text('chatgpt_ui.request.text_3'))
         if action in ('select','sign_out','refresh','models','clear_pause','enable_plan') and dict(self.registrations).get(registration)=='registration_retry_required':
             raise ValueError('unverified registration permits reauthorization only')
         if action=='enable_plan' and (registration!=self.active_registration or self.state!='identity_only'):
@@ -201,7 +202,7 @@ class ConnectionController(QObject):
         self._counter+=1
         request=ConnectionRequest(self._counter,action,registration,600 if action in ('begin','first_sign_in','enable_plan') else 120,confirmed)
         self.busy=True;self.stopping=False;self._request=request;self._authorization_url=None;self._terminal_received=False;self._terminal_ok=False
-        self._awaiting_join=action not in LOCAL_ACTIONS | STARTUP_ACTIONS;self.message='先等待主程式停止並確認所有背景請求已結束。' if self._awaiting_join else ('正在還原已保存的登入；到期時自動更新連線。' if action=='restore' else '正在讀取本機已保存的連線狀態。')
+        self._awaiting_join=action not in LOCAL_ACTIONS | STARTUP_ACTIONS;self.message=ui_text('chatgpt_ui.request.text_4') if self._awaiting_join else (ui_text('chatgpt_ui.request.text_5') if action=='restore' else ui_text('chatgpt_ui.request.text_6'))
         self.changed.emit()
         (self.quiesce_requested if self._awaiting_join else self.request_ready).emit(request)
         return request
@@ -209,16 +210,16 @@ class ConnectionController(QObject):
     def acknowledge_quiescence(self,request_id,*,joined):
         if not self._request or request_id!=self._request.request_id or not self._awaiting_join:return False
         if joined is not True:
-            self.message='背景程序尚未確認結束；不會切換帳戶、登出或啟動新授權。';self.changed.emit();return False
+            self.message=ui_text('chatgpt_ui.acknowledge_quiescence.text_1');self.changed.emit();return False
         if self.stopping:return False
-        self._awaiting_join=False;self.message='背景作業進行中；授權仍由您在官方網站完成。'
+        self._awaiting_join=False;self.message=ui_text('chatgpt_ui.acknowledge_quiescence.text_2')
         self.changed.emit();self.request_ready.emit(self._request);return True
 
     def apply_event(self,event):
         if not isinstance(event,ConnectionEvent):raise ValueError('typed sanitized event required')
         if not self._request or event.request_id!=self._request.request_id or self._awaiting_join or self.stopping:return False
         if event.kind=='authorization':
-            self._authorization_url=event.authorization_url;self.state='authorizing';self.message='官方目的地：https://auth.openai.com。請按「在官方網站繼續」，自行核對並授權。'
+            self._authorization_url=event.authorization_url;self.state='authorizing';self.message=ui_text('chatgpt_ui.apply_event.text_1')
         elif event.kind=='progress':self.state=event.state;self.message=STATE_LABELS[event.state]
         else:
             action=self._request.action;self.state=event.state
@@ -235,20 +236,20 @@ class ConnectionController(QObject):
                     self.models=event.models;self.model_labels=event.model_labels
                     self.usage_known=False;self.reserved_count=None;self.unknown_count=None
                 self.message=STATE_LABELS[event.state]
-                if action=='sign_out':self.message=('本機已登出；官方撤銷已確認。' if event.revocation_confirmed is True else '本機已登出；官方撤銷未獲確認，不能保證遠端授權已撤銷。')
+                if action=='sign_out':self.message=(ui_text('chatgpt_ui.apply_event.text_2') if event.revocation_confirmed is True else ui_text('chatgpt_ui.apply_event.text_3'))
             # Terminal message is not process-exit evidence. Keep controls locked until joined.
-            self.stopping=True;self.message+=' 等待主程式確認背景程序已結束。'
+            self.stopping=True;self.message+=ui_text('chatgpt_ui.apply_event.text_4')
         self.changed.emit();return True
 
     def open_authorization(self):
-        if not self.busy or self.stopping or not self._authorization_url:raise ValueError('沒有可開啟的本次官方授權。')
+        if not self.busy or self.stopping or not self._authorization_url:raise ValueError(ui_text('chatgpt_ui.open_authorization.text_1'))
         value=official_authorization_url(self._authorization_url)
         self._authorization_url=None;self.changed.emit();self.browser_requested.emit(value)
 
     def cancel(self):
         if not self.busy:return
         self.stopping=True;self._authorization_url=None;self._terminal_received=False;self._terminal_ok=False
-        self.message='正在停止並等待背景程序結束；這不代表遠端請求已取消或額度已退還。'
+        self.message=ui_text('chatgpt_ui.cancel.text_1')
         self.changed.emit();self.cancel_requested.emit(self._request.request_id)
 
     def worker_joined(self,request_id,*,joined,terminal_received=True):
@@ -256,9 +257,9 @@ class ConnectionController(QObject):
         finished=self._request
         succeeded=terminal_received is True and self._terminal_received and self._terminal_ok
         if terminal_received is not True or not self._terminal_received:
-            self.state='unknown';self.message='背景程序已結束，結果須重新核對。遠端完成與額度不明；不自動重送或退還次數。'
+            self.state='unknown';self.message=ui_text('chatgpt_ui.worker_joined.text_1')
             self.usage_known=False;self.unknown_count=None;self.account_status_known=False
-        self.message=self.message.removesuffix(' 等待主程式確認背景程序已結束。')
+        self.message=self.message.removesuffix(ui_text('chatgpt_ui.worker_joined.text_2'))
         self.busy=False;self.stopping=False;self._awaiting_join=False;self._authorization_url=None;self._request=None
         self.changed.emit();self.request_finished.emit(finished,succeeded);return True
 
@@ -298,37 +299,37 @@ class ChatGPTConnectionPanel(QWidget):
         self._primary_flow=None
         self._restore_flow=None
         self.setObjectName('chatgpt_subscription_panel');layout=QVBoxLayout(self)
-        title=QLabel('ChatGPT 訂閱連線（官方授權）');layout.addWidget(title)
-        self.disclosure=QLabel('此模式只使用您明確授權的 ChatGPT 方案內用量；額度不足就停止，不切換付費 API，也不要求啟用 credits。\n開始研究前，請在官方用量設定確認：已關閉「允許應用程式使用 credits」，或此應用程式的用量上限低於 100%。自動購買 credits 是另一項設定。\n本程式無法讀取或強制執行官方 credits 設定；勾選僅記錄您本次的確認，不保證零費用。登入成功不代表實際推論已驗證，也不開啟實盤交易。')
+        title=QLabel(ui_text('chatgpt_ui.__init__.text_2'));layout.addWidget(title)
+        self.disclosure=QLabel(ui_text('chatgpt_ui.__init__.text_3'))
         self.disclosure.setWordWrap(True);self.disclosure.setTextFormat(Qt.TextFormat.PlainText);layout.addWidget(self.disclosure)
-        self.consent=QCheckBox('我已核對官方帳戶，並同意本次連線動作。');layout.addWidget(self.consent)
-        self.included_usage_only=QCheckBox('我已在官方用量設定確認此連線不會使用 credits\n（已停用，或此應用程式上限低於 100%）；僅同意本次研究使用方案內用量。')
+        self.consent=QCheckBox(ui_text('chatgpt_ui.__init__.text_4'));layout.addWidget(self.consent)
+        self.included_usage_only=QCheckBox(ui_text('chatgpt_ui.__init__.text_5'))
         self.included_usage_only.setObjectName('chatgpt_included_usage_only');layout.addWidget(self.included_usage_only)
         self.included_usage_only.toggled.connect(self._confirm_included_usage)
-        self.manage_usage=QPushButton('管理 ChatGPT 用量（官方設定）');layout.addWidget(self.manage_usage)
+        self.manage_usage=QPushButton(ui_text('chatgpt_ui.__init__.text_6'));layout.addWidget(self.manage_usage)
         self.manage_usage.clicked.connect(self._open_usage_settings)
-        self.active_account=QLabel('目前尚未登入 ChatGPT');self.active_account.setTextFormat(Qt.TextFormat.PlainText);self.active_account.setWordWrap(True);layout.addWidget(self.active_account)
+        self.active_account=QLabel(ui_text('chatgpt_ui.__init__.text_7'));self.active_account.setTextFormat(Qt.TextFormat.PlainText);self.active_account.setWordWrap(True);layout.addWidget(self.active_account)
         self.status=QLabel();self.status.setWordWrap(True);self.status.setTextFormat(Qt.TextFormat.PlainText);layout.addWidget(self.status)
-        self.primary_sign_in=QPushButton('使用 ChatGPT 帳戶登入（Continue with ChatGPT）')
+        self.primary_sign_in=QPushButton(ui_text('chatgpt_ui.__init__.text_8'))
         self.primary_sign_in.setObjectName('chatgpt_primary_sign_in');layout.addWidget(self.primary_sign_in)
         self.primary_sign_in.clicked.connect(lambda:self._safe(self._start_primary_sign_in))
-        self.account=QComboBox();self.account.setAccessibleName('本機已保存連線與待驗證註冊的遮罩識別');layout.addWidget(self.account)
-        self.advanced_toggle=QPushButton('進階連線管理');self.advanced_toggle.setCheckable(True);layout.addWidget(self.advanced_toggle)
+        self.account=QComboBox();self.account.setAccessibleName(ui_text('chatgpt_ui.__init__.text_9'));layout.addWidget(self.account)
+        self.advanced_toggle=QPushButton(ui_text('chatgpt_ui.__init__.text_10'));self.advanced_toggle.setCheckable(True);layout.addWidget(self.advanced_toggle)
         self.advanced=QWidget();advanced_layout=QVBoxLayout(self.advanced);layout.addWidget(self.advanced);self.advanced.hide()
         self.advanced_toggle.toggled.connect(self.advanced.setVisible)
         self.advanced_toggle.toggled.connect(self._render)
         self.buttons={}
-        for action,label in [('list','讀取本機連線（不連網）'),('initialize','首次設定／明確復原本機識別'),('begin','Continue with ChatGPT（新增連線）'),('reauthorize','重新授權選定連線（保留原紀錄）'),('enable_plan','明確啟用此連線的 ChatGPT 方案用量'),('select','切換至選定連線'),('refresh','明確更新選定連線'),('models','取得此連線可用模型'),('sign_out','停止背景請求後登出'),('clear_pause','核對額度後申請解除已知暫停')]:
+        for action,label in [('list',ui_text('chatgpt_ui.__init__.text_11')),('initialize',ui_text('chatgpt_ui.__init__.text_12')),('begin',ui_text('chatgpt_ui.__init__.text_13')),('reauthorize',ui_text('chatgpt_ui.__init__.text_14')),('enable_plan',ui_text('chatgpt_ui.__init__.text_15')),('select',ui_text('chatgpt_ui.__init__.text_16')),('refresh',ui_text('chatgpt_ui.__init__.text_17')),('models',ui_text('chatgpt_ui.__init__.text_18')),('sign_out',ui_text('chatgpt_ui.__init__.text_19')),('clear_pause',ui_text('chatgpt_ui.__init__.text_20'))]:
             button=QPushButton(label);button.setObjectName('chatgpt_'+action)
             (layout if action in ('select','models','sign_out','enable_plan') else advanced_layout).addWidget(button);self.buttons[action]=button
             button.clicked.connect(lambda checked=False,a=action:self._act(a))
-        self.open_button=QPushButton('Continue with ChatGPT（您自行授權）');self.open_button.setObjectName('chatgpt_open_official');advanced_layout.addWidget(self.open_button)
+        self.open_button=QPushButton(ui_text('chatgpt_ui.__init__.text_21'));self.open_button.setObjectName('chatgpt_open_official');advanced_layout.addWidget(self.open_button)
         self.open_button.clicked.connect(lambda:self._safe(self.controller.open_authorization))
-        self.cancel_button=QPushButton('取消並等待背景程序結束');layout.addWidget(self.cancel_button);self.cancel_button.clicked.connect(self._cancel_primary)
+        self.cancel_button=QPushButton(ui_text('chatgpt_ui.__init__.text_22'));layout.addWidget(self.cancel_button);self.cancel_button.clicked.connect(self._cancel_primary)
         form=QFormLayout();self.model_form=form;layout.addLayout(form)
-        self.model=QComboBox();form.addRow('官方回應中的可用模型',self.model)
-        self.max_calls=QSpinBox();self.max_calls.setRange(0,100);form.addRow('本次固定研究最多請求（0 = 停用）',self.max_calls)
-        self.timeout=QSpinBox();self.timeout.setRange(1,120);self.timeout.setValue(30);form.addRow('每次最長秒數（不保證遠端取消）',self.timeout)
+        self.model=QComboBox();form.addRow(ui_text('chatgpt_ui.__init__.text_23'),self.model)
+        self.max_calls=QSpinBox();self.max_calls.setRange(0,100);form.addRow(ui_text('chatgpt_ui.__init__.text_24'),self.max_calls)
+        self.timeout=QSpinBox();self.timeout.setRange(1,120);self.timeout.setValue(30);form.addRow(ui_text('chatgpt_ui.__init__.text_25'),self.timeout)
         self.usage=QLabel();self.usage.setWordWrap(True);layout.addWidget(self.usage)
         self.controller.changed.connect(self._render)
         self.controller.request_finished.connect(self._primary_finished)
@@ -382,8 +383,8 @@ class ChatGPTConnectionPanel(QWidget):
         if flow is None or flow['request_id']!=request_id or c.busy or flow['phase']!='list':return
         action='begin';registration=flow['selected']
         if c.state=='host_initialization_required':
-            answer=QMessageBox.question(self,'首次使用 ChatGPT 登入',
-                '這台安裝尚未找到 ChatGPT 登入資料。\n如果這是第一次設定，可建立本機安全識別並前往官方登入。\n如果曾經登入，可能是資料遺失；請取消並先檢查原資料，不要當作首次設定。\n這只會開啟官方登入頁面，授權仍由您決定。是否首次設定？',
+            answer=QMessageBox.question(self,ui_text('chatgpt_ui._continue_primary.text_1'),
+                ui_text('chatgpt_ui._continue_primary.text_2'),
                 QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)
             if self._primary_flow is not flow:return
             if answer!=QMessageBox.StandardButton.Yes:self._primary_flow=None;return
@@ -393,7 +394,7 @@ class ChatGPTConnectionPanel(QWidget):
             if registration not in refs:registration=c.active_registration
             if registration is None and len(refs)==1:registration=next(iter(refs))
             if registration is None and len(refs)>1:
-                self._primary_flow=None;self.status.setText('請先選擇要登入的 ChatGPT 連線，再按登入。');return
+                self._primary_flow=None;self.status.setText(ui_text('chatgpt_ui._continue_primary.text_3'));return
             if registration==c.active_registration and c.state in CONNECTED_STATES:
                 # Already signed in with the saved login: no new authorization.
                 self._primary_flow=None;return
@@ -443,7 +444,7 @@ class ChatGPTConnectionPanel(QWidget):
         from PySide6.QtCore import QUrl
         from PySide6.QtGui import QDesktopServices
         if not QDesktopServices.openUrl(QUrl(USAGE_SETTINGS_URL)):
-            self.status.setText('無法開啟官方用量設定；請先完成核對，尚未授權任何研究請求。')
+            self.status.setText(ui_text('chatgpt_ui._open_usage_settings.text_1'))
 
     def _safe(self,call):
         try:return call()
@@ -467,9 +468,9 @@ class ChatGPTConnectionPanel(QWidget):
         selected=self.account.currentData();self.account.blockSignals(True);self.account.clear()
         labels=dict(c.account_labels)
         for reference,state in c.registrations:
-            label=labels.get(reference,'待驗證註冊' if state=='registration_retry_required' else '已保存連線（帳戶識別尚未載入）')
-            self.account.addItem(label+' · 連線 ••••'+reference[-8:]+' · '+STATE_LABELS[state],reference)
-        self.active_account.setText(('目前登入：'+labels.get(c.active_registration,'已保存帳戶（識別資訊尚未載入）')) if c.active_registration is not None else '目前尚未登入 ChatGPT')
+            label=labels.get(reference,ui_text('chatgpt_ui._render.text_1') if state=='registration_retry_required' else ui_text('chatgpt_ui._render.text_2'))
+            self.account.addItem(ui_text('chatgpt_ui._render.text_3').format(label, reference[-8:], STATE_LABELS[state]),reference)
+        self.active_account.setText((ui_text('chatgpt_ui._render.text_5').format(labels.get(c.active_registration,ui_text('chatgpt_ui._render.text_4')))) if c.active_registration is not None else ui_text('chatgpt_ui._render.text_6'))
         selection=c.active_registration if c.active_registration!=self._rendered_active else selected or c.active_registration
         self._rendered_active=c.active_registration
         index=self.account.findData(selection)
@@ -506,9 +507,9 @@ class ChatGPTConnectionPanel(QWidget):
         self.open_button.setEnabled(c.busy and not c.stopping and c._authorization_url is not None)
         self.cancel_button.setEnabled(c.busy and not c.stopping)
         self.account.setEnabled(ready);self.model.setEnabled(ready)
-        self.usage.setText('本機請求紀錄尚未核對；不能視為已用 0 次。' if not c.usage_known else f'此研究本機已保留請求：{c.reserved_count} 次；未完成或待核對：{c.unknown_count} 次。\n未知結果不會退還或重設；重開程式、換模型／工作區不會解除帳戶暫停。')
+        self.usage.setText(ui_text('chatgpt_ui._render.text_7') if not c.usage_known else ui_text('chatgpt_ui._render.text_8').format(c.reserved_count, c.unknown_count))
         if c.account_status_known:
-            barrier = '存在執行中或完成未知請求；禁止重送與退還。' if c.account_pending else ('帳戶已暫停，請核對官方狀態。' if c.account_paused else '本機帳戶未暫停；不代表訂閱可用或費用已受限制。')
+            barrier = ui_text('chatgpt_ui._render.text_9') if c.account_pending else (ui_text('chatgpt_ui._render.text_10') if c.account_paused else ui_text('chatgpt_ui._render.text_11'))
             self.usage.setText(self.usage.text()+'\n'+barrier)
 
     def build_plan_options(self):

@@ -304,3 +304,25 @@ P0-15: the legacy requirements file is archived byte-for-byte at `archives/legac
 P0-16: tools/make_icon.py uses only the standard library, no network, to produce packaging/markauto.ico with 16/24/32/48/64/128/256 px images. desktop_icon.application_icon loads from the module-relative packaging path (also PyInstaller _internal); absent/corrupt artwork falls back to Qt's standard computer icon. QApplication startup and MainWindow explicitly set non-null window icons. PyInstaller embeds the EXE icon and ships the ICO as data; Inno Setup uses it for setup and uninstall display. Shortcut icons use the EXE resource.
 
 Packaging consistency: build_manifest.py records both artwork and generator; payload_inventory.py discovers the new asset automatically without a fixed file list. test_installer.ps1 verifies the installed candidate icon against its source manifest while preserving compatibility with historical baselines. test_packaging.py checks data/source manifest inputs; test_prepared_host_session.py pins the updated lifecycle hash without weakening guards. Regression tests: tests/test_application_icon.py. Actual frozen EXE/taskbar/installer/client Windows appearance remains controller-owned verification. Existing safety, quotas, objectNames and OOS consumption are unchanged.
+
+## T4 — Shared desktop UI text
+
+User-visible text authored in desktop UI modules lives in `desktop_strings.py`.
+`ui_text` resolves stable keys with a Traditional Chinese fallback; dynamic text
+uses catalog templates and preserves the original formatting. Existing domain
+error and feedback catalogs remain authoritative in `quantlab`.
+
+`tests/test_no_hardcoded_ui_text.py` inventories every top-level `desktop*.py`
+module and scans every UI module, including f-string text, with an empty TODO
+list and empty literal allowlist. Only true docstrings and logging arguments
+are exempt. Documented non-UI exclusions are the catalog, CLI TLS diagnostic,
+and SHA-256-pinned `desktop_chatgpt_auth.py`/`desktop_chatgpt_provider.py`;
+the pinned files are never migrated. Any future literal exception needs a
+specific documented reason rather than a module-wide UI exemption.
+
+Regression evidence: `tests/test_desktop_strings.py` checks all UI lookup keys,
+fallbacks, formatting, Python 3.11 syntax and live widget lookup. A fresh
+`git archive HEAD` baseline and migrated `tools/ui_snapshot.py` capture have
+identical `visible_text` on all seven pages at 1366×768; hashes and G3 source
+checks are recorded in `docs/analysis/t4_ui_text_comparison.json`.
+ObjectNames, payloads, validation, quotas and one-time OOS consumption are unchanged.

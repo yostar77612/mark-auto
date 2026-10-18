@@ -1,5 +1,6 @@
 """Frozen Windows desktop entry point; no web server, browser, or Python setup."""
 from __future__ import annotations
+from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
 
 import argparse
@@ -248,7 +249,7 @@ def _history_smoke_fixture(workspace):
     from datetime import datetime, timedelta
     import hashlib
     from quantlab.market_history import PRODUCT_SOURCES
-    header = '成交日期,商品代號,到期月份(週別),成交時間,成交價格,成交數量(B+S),近月價格,遠月價格,開盤集合競價\n'
+    header = ui_text('desktop._history_smoke_fixture.text_1')
     rows, sessions = [], []
     for product, base in (('TX', 100), ('MTX', 200), ('TMF', 300)):
         for index, minute in enumerate((0, 1, 2, 3, 5, 15, 30, 59, 60)):
@@ -549,24 +550,23 @@ def _prepare_startup_workspace(paths, backups):
 def _offer_workspace_after_recovery_block(locator):
     """One bounded, user-directed choice; never repair or reset unknown controls."""
     from PySide6.QtWidgets import QFileDialog, QMessageBox
-    box = QMessageBox(QMessageBox.Icon.Warning, '原始作業仍需核對',
-        '原始分析停止紀錄或工作區還原狀態無法安全核對。既有資料未修復、刪除或重送。'
-        '\n可選擇其他工作區供下次啟動使用；原始帳戶與不可逆紀錄會保留。',
+    box = QMessageBox(QMessageBox.Icon.Warning, ui_text('desktop._offer_workspace_after_recovery_block.text_1'),
+        ui_text('desktop._offer_workspace_after_recovery_block.text_2'),
         QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Cancel)
-    box.button(QMessageBox.StandardButton.Open).setText('選擇其他工作區')
+    box.button(QMessageBox.StandardButton.Open).setText(ui_text('desktop._offer_workspace_after_recovery_block.text_3'))
     box.setDefaultButton(QMessageBox.StandardButton.Cancel)
     if box.exec() != QMessageBox.StandardButton.Open:
         return
-    selected = QFileDialog.getExistingDirectory(None, '選擇其他或空白工作區')
+    selected = QFileDialog.getExistingDirectory(None, ui_text('desktop._offer_workspace_after_recovery_block.text_4'))
     if not selected:
         return
     try:
         locator.configure(Path(selected))
     except (OSError, ValueError):
-        QMessageBox.warning(None, '工作區未變更', '所選資料夾未通過安全驗證；原始設定與資料保留。')
+        QMessageBox.warning(None, ui_text('desktop._offer_workspace_after_recovery_block.text_5'), ui_text('desktop._offer_workspace_after_recovery_block.text_6'))
         return
-    QMessageBox.information(None, '下次啟動工作區已設定',
-        '請重新開啟程式。原始資料未搬移；切換工作區不會清除未知請求或修復不可逆紀錄。')
+    QMessageBox.information(None, ui_text('desktop._offer_workspace_after_recovery_block.text_7'),
+        ui_text('desktop._offer_workspace_after_recovery_block.text_8'))
 
 
 def main(argv=None):
@@ -604,7 +604,7 @@ def main(argv=None):
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
-        QMessageBox.information(None, 'MarkAuto 無法啟動', error_message('startup_workspace_busy'))
+        QMessageBox.information(None, ui_text('desktop.main.text_1'), error_message('startup_workspace_busy'))
         if smoke_startup_directory is not None:
             smoke_startup_directory.cleanup()
         return 2
@@ -865,7 +865,7 @@ def main(argv=None):
                 'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'})
             smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
-        QMessageBox.critical(None, 'MarkAuto 無法啟動', error_message(startup_error_code(exc)))
+        QMessageBox.critical(None, ui_text('desktop.main.text_2'), error_message(startup_error_code(exc)))
         return 1
     finally:
         if args.smoke_test:
