@@ -47,9 +47,10 @@ def core_import_findings(source: str, label: str) -> list[str]:
             modules = []
         if any(module.split('.')[0].startswith('desktop') for module in modules):
             findings.append(f'{label}:{node.lineno}: no desktop imports under quantlab/')
-        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'importlib'):
+        if isinstance(node, ast.Call) and ((
+                isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == 'importlib')
+                or (isinstance(node.func, ast.Name) and node.func.id == 'import_module')):  # also `from importlib import import_module`
             if any(isinstance(value, ast.Constant) and isinstance(value.value, str)
                    and value.value.startswith('desktop')
                    for value in (*node.args, *(kw.value for kw in node.keywords))):

@@ -57,6 +57,11 @@ class CoreBoundaryTests(unittest.TestCase):
             self.assertEqual(core_import_findings(source, 'quantlab/fixture.py'), [])
         self.assertTrue(core_import_findings(
             'import importlib\nimportlib.import_module("desktop_ui")', 'quantlab/fixture.py'))
+        # QA finding: the `from importlib import import_module` spelling must be caught as well.
+        self.assertTrue(core_import_findings(
+            'from importlib import import_module' + chr(10) + 'import_module("desktop_ui")', 'quantlab/fixture.py'))
+        self.assertEqual(core_import_findings(
+            'from importlib import import_module' + chr(10) + 'import_module(registrar)', 'quantlab/fixture.py'), [])
 
     def test_registry_is_fail_closed_and_identity_idempotent(self):
         registry = runtime._OperationExecutorRegistry()
