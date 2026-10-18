@@ -1006,6 +1006,13 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 BackupManager(self.paths).recover()
 
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not getattr(self, '_poll_rearmed', False):
+            # Re-arm once on first show so a slow construction cannot let the first poll tick fire
+            # before the user (or a test harness) has had a full interval with the window visible.
+            self._poll_rearmed = True; self.timer.start(150)
+
     def closeEvent(self, event):
         self.chatgpt_panel.abandon_primary_sign_in()
         if self.jobs.active and QMessageBox.question(self, ui_text('ui.closeEvent.text_1'), ui_text('ui.closeEvent.text_2'), QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
