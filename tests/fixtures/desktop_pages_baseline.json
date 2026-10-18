@@ -1,0 +1,11 @@
+{
+  "source_commit": "d8c373a6fc15c520142da2fbe00cc23ca20627be",
+  "source": "git archive HEAD, captured before migration",
+  "size": [
+    1366,
+    768
+  ],
+  "scale": 1.0,
+  "platform": "Windows offscreen Fusion Microsoft JhengHei UI 10",
+  "stage": "T6 part A; MainWindow limit 400 applies after part B"
+}
