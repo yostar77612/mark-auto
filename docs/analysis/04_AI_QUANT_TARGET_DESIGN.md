@@ -6,7 +6,7 @@
 
 ## 1 目標架構與執行邊界
 
-保留 Python 與 Streamlit，在 `trader/` 旁建立 `quantlab/`，不把研究放進 `trader` 子套件。核心以 Python 3.11+ 標準函式庫為主；Windows 應確認時區資料可用，必要時在可重現 UI 環境安裝 `tzdata`。UI 為選用層，無 UI 也能執行研究及測試。
+保留 Python 與 Streamlit，在 `archives/legacy_autotrading/trader/` 旁建立 `quantlab/`，不把研究放進 `trader` 子套件。核心以 Python 3.11+ 標準函式庫為主；Windows 應確認時區資料可用，必要時在可重現 UI 環境安裝 `tzdata`。UI 為選用層，無 UI 也能執行研究及測試。
 
 ```text
 本機合法資料 + 版本化 calendar + instrument/cost
@@ -44,7 +44,7 @@
 | `research.py` | 鎖定 campaign＋generator → 全部 trials／版本關係／選定候選 | 不讓生成器讀 holdout，不無限優化 |
 | `reporting.py` | 結果與版本識別 → 比較、JSON／CSV 及可追溯圖表 | 不把不可算指標變成無限大，不自動啟用策略 |
 | `paper.py` | intent＋quote＋risk limits → 持久事件、帳戶與對帳狀態 | 不包裝真 SDK、不隱藏真下單、不在 unknown 時重送 |
-| `research_app.py`／`__main__.py` | 薄 UI／CLI，呼叫相同服務層 | 不載入 `gui.py`／`run.py` 舊交易入口 |
+| `research_app.py`／`__main__.py` | 薄 UI／CLI，呼叫相同服務層 | 不載入 `archives/legacy_autotrading/gui.py`／`archives/legacy_autotrading/run.py` 舊交易入口 |
 
 ## 2 官方 TMF 規則與版本化模型
 

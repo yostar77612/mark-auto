@@ -244,7 +244,7 @@ root backend **141 PASS／29.688秒**；host／runtime／packaging等 **152項�
 - **耐久與門檻不降級。** 舊來源同960 bars診斷worker35.562622秒，960次FULL cursor commits30.6026735秒，UI35.937秒；瓶頸位於耐久寫入路徑，物理原因未知。16974db3及最新e68b3301使用實際SQLite3.54.0／WAL／FULL，原960 bars／30秒測試已在Windows311／312 PASS；host為Windows Server2025，不能當clean client PASS。仍保留原per-bar耐久／帳本identity／風控與30秒、40秒、process-death10秒、job預算，不減bar／commit、不搬TEMP。不再無變更重跑湊綠，但經審查的新實作必須原生重驗。
 - **執行責任與AI優先順序已更新。** 依使用者最新授權，assistant承擔工程、環境調查、可合法執行的設定與驗證，不預設把VM、測試或GitHub設定交給使用者。官方SIWC訂閱為必要路徑；本機模型與付費API／credits fallback禁止，不借用其他工具帳戶。零費用、零真資金交易及原驗收門檻保持。不可代行的帳戶、license、明示條款或持久權限，只提出精確最小確認，不包裝成整套技術作業。
 - **外部證據如實保留。** 目前没有已驗證且已授權的零費用clean Win10/11 x64完整路徑；Win10／Win11官方EnterpriseEval x64媒體均可達，actual bundled EULA已以bounded ranges取出並核對檔案digest；full ISO hash、hosted-use涵蓋、registration／activation及owner接受尚未闭合，沒有Windows安裝／執行。opt-in KVM API12實際query已成功且close完成，沒有create VM或改權限；固定自撰payload execution self-test只有mock PASS、尚未執行；offline CI設計是提案，不是授權。KVM query成功不等於guest execution；Windows guest仍待資源／license／執行證據。SignPath僅可準備免付費申請材料，尚未獲接納。08:18只讀查核rulesets=[]、main保護仍未啟用；GitHub App無Administration scope，先前403未解除，換CLI／GraphQL／workflow token不會增加權限。實際服務、TAIEX盤中權利、clean client不以mock／Server替代。
-- **原始匯入來源已有範圍明確的證據。** 原import `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的47檔，其Git mode／type／blob全部與官方upstream `chrisli-kw/AutoTradingPlatform@a0ecf8895716bf5883184fdd27a52023f9700bf3`相同；upstream共49檔，另有`trader/APItest.py`與`trader/performance/backtest.py`未在該import。這證明47檔內容對應，不證明整棵tree／完整history相同，也不是維護者owner attestation；Apache LICENSE與Li Kuei-Wei署名保留。
+- **原始匯入來源已有範圍明確的證據。** 原import `1cacce4ee4eef4ce7e8760f8153ef64a74852d22` 的47檔，其Git mode／type／blob全部與官方upstream `chrisli-kw/AutoTradingPlatform@a0ecf8895716bf5883184fdd27a52023f9700bf3`相同；upstream共49檔，另有`archives/legacy_autotrading/trader/APItest.py`與`archives/legacy_autotrading/trader/performance/backtest.py`未在該import。這證明47檔內容對應，不證明整棵tree／完整history相同，也不是維護者owner attestation；Apache LICENSE與Li Kuei-Wei署名保留。
 - **210/300＝70%、M4 PARTIAL不變。** 17db263a兩個Windows core／Linux／UI PASS，但Windows312 research取消、SIWC第一階段已套用且有來源限定回歸，但新native／lifecycle未驗及loaded TLS／IME等範圍仍阻交付（原model_download失敗歷史保留）；其餘外部條件分開列示，不能把餘項全說成external。Oct8 WFO仍BLOCKED_NO_RUN，170 consumed bars、0新評估／model calls／reservation；不改window／registry。除上述使用者AI選路更正外，原需求、權重、失敗與歷史不重寫。
 
 ### 原需求、設計提案與未驗證項目
@@ -487,7 +487,7 @@ Golden 覆蓋：多空／部分成交／費稅、signal lag、gap／同根衝突
 
 ## 10 操作接續與故障處理
 
-先閱讀 [IMPLEMENTATION_CONTRACTS.md](../agent/IMPLEMENTATION_CONTRACTS.md)、[ACCEPTANCE.json](../agent/ACCEPTANCE.json)及實際檔案狀態，確認最新工作是否仍在修改。以下是新離線入口的操作範例，使用已準備好的研究環境；不能換成舊 `run.py`／`gui.py`。
+先閱讀 [IMPLEMENTATION_CONTRACTS.md](../agent/IMPLEMENTATION_CONTRACTS.md)、[ACCEPTANCE.json](../agent/ACCEPTANCE.json)及實際檔案狀態，確認最新工作是否仍在修改。以下是新離線入口的操作範例，使用已準備好的研究環境；不能換成舊 `archives/legacy_autotrading/run.py`／`archives/legacy_autotrading/gui.py`。
 
 ```text
 python -m unittest discover -s tests -v

@@ -16,7 +16,7 @@
 | 層次 | 基線實際內容 | 工程意義與限制 |
 |---|---|---|
 | 語言與執行 | Python；以根目錄腳本啟動 | 未宣告完整支援 Python 版本；不得只依套件徽章判斷相容性 |
-| 操作介面 | `gui.py` 的 Streamlit 頁面、表格、表單、程序控制 | 介面直接讀寫交易設定與資料庫，不是前後端分離服務 |
+| 操作介面 | `archives/legacy_autotrading/gui.py` 的 Streamlit 頁面、表格、表單、程序控制 | 介面直接讀寫交易設定與資料庫，不是前後端分離服務 |
 | 行情及券商 | Shioaji；公開網頁抓取與 TAIFEX 檔案下載路徑 | SDK 初始化、行情、帳戶、下單與研究工具相互耦合 |
 | 數值分析 | pandas、NumPy、技術指標函式 | 有公式，不等於有驗證過的歷史撮合引擎 |
 | 持久資料 | SQLAlchemy、MySQL 路徑及 SQLite fallback；Redis；本機 CSV／pickle／JSON | 多種儲存並存，沒有統一、不可變、版本化的研究快照 |
@@ -32,23 +32,23 @@
 
 | 路徑 | 主要責任 | 相依與重用決策 |
 |---|---|---|
-| `run.py` | 解析 CLI、初始化 logging、呼叫選定 task | 舊入口；不得作研究 smoke test |
-| `gui.py` | 帳戶設定 CRUD、啟停程序、狀態／日誌／庫存顯示 | 保留 UX 概念；研究另設 `research_app.py` |
-| `trader/__init__.py` | 全域 thread pool、工具單例、目錄建立 | 匯入有副作用，不能當研究套件根 |
-| `trader/config.py` | broker、日期／時段、費率、帳戶、動態策略、儲存設定 | 跨環境設定混合，需邊界驗證和安全預設 |
-| `trader/tasker.py` | 選股、資料抓取、訂閱、交易等任務入口 | 可參考任務分類；不要直接接到研究 campaign |
-| `trader/executor.py` | 組合帳戶、行情、策略、訂單、模擬、監控與通知 | 高耦合交易協調器，保留參考並隔離 |
-| `trader/indicators/signals.py` | 移動平均、RSI、MACD、ATR 等指標 | 有潛力抽取純函式；先建獨立 reference fixture |
-| `trader/utils/kbar.py`、`subscribe.py`、`crawler.py` | 行情 callback、歷史 K 線、聚合與網頁／檔案抓取 | 參考資料格式；新匯入器須重新驗證時區、盤別與授權 |
-| `trader/utils/strategy.py`、`trader/scripts/` | 動態 Python 策略 hook 與訊號／口數對應 | 沒有隨庫提供正式策略；不是安全 DSL sandbox |
-| `trader/utils/accounts.py`、`orders.py`、`callback.py` | 登入、查詢帳戶、建單、送單、處理回報 | 可作未來 broker adapter 的領域參考，不能直接宣稱相容其他券商 |
-| `trader/utils/options.py` | 選擇權契約搜尋與組合單資料 | TMF MVP 非核心；保留，不優先擴充 |
-| `trader/utils/positions.py`、`simulation.py` | 持倉、watchlist、成本、風險量及模擬記帳 | 有局部功能；缺少持久可重放的委託狀態機證據 |
-| `trader/utils/objects/` | Action、帳戶與報價等共享物件及設定 | `TradeData` 全域可變資料不可在研究 trials 共用 |
-| `trader/utils/database/`、`file.py` | SQL／Redis 操作、表格、檔案存取 | 新研究不使用 pickle 或 import-time 連線 |
-| `trader/utils/runtime.py` | session／status／command JSON、命令 ID／有效時間、日誌解析 | 原子替換技巧可保留；不是交易事件 journal |
-| `trader/utils/bot.py`、`notify.py` | Telegram 指令與交易通知 | 安全修補後再評估，研究預設離線 |
-| `trader/performance/` | 績效轉換、圖表、報告入口 | 缺少被匯入的 backtest 模組，費用與 TMF 計算亦有缺陷 |
+| `archives/legacy_autotrading/run.py` | 解析 CLI、初始化 logging、呼叫選定 task | 舊入口；不得作研究 smoke test |
+| `archives/legacy_autotrading/gui.py` | 帳戶設定 CRUD、啟停程序、狀態／日誌／庫存顯示 | 保留 UX 概念；研究另設 `research_app.py` |
+| `archives/legacy_autotrading/trader/__init__.py` | 全域 thread pool、工具單例、目錄建立 | 匯入有副作用，不能當研究套件根 |
+| `archives/legacy_autotrading/trader/config.py` | broker、日期／時段、費率、帳戶、動態策略、儲存設定 | 跨環境設定混合，需邊界驗證和安全預設 |
+| `archives/legacy_autotrading/trader/tasker.py` | 選股、資料抓取、訂閱、交易等任務入口 | 可參考任務分類；不要直接接到研究 campaign |
+| `archives/legacy_autotrading/trader/executor.py` | 組合帳戶、行情、策略、訂單、模擬、監控與通知 | 高耦合交易協調器，保留參考並隔離 |
+| `archives/legacy_autotrading/trader/indicators/signals.py` | 移動平均、RSI、MACD、ATR 等指標 | 有潛力抽取純函式；先建獨立 reference fixture |
+| `archives/legacy_autotrading/trader/utils/kbar.py`、`subscribe.py`、`crawler.py` | 行情 callback、歷史 K 線、聚合與網頁／檔案抓取 | 參考資料格式；新匯入器須重新驗證時區、盤別與授權 |
+| `archives/legacy_autotrading/trader/utils/strategy.py`、`archives/legacy_autotrading/trader/scripts/` | 動態 Python 策略 hook 與訊號／口數對應 | 沒有隨庫提供正式策略；不是安全 DSL sandbox |
+| `archives/legacy_autotrading/trader/utils/accounts.py`、`orders.py`、`callback.py` | 登入、查詢帳戶、建單、送單、處理回報 | 可作未來 broker adapter 的領域參考，不能直接宣稱相容其他券商 |
+| `archives/legacy_autotrading/trader/utils/options.py` | 選擇權契約搜尋與組合單資料 | TMF MVP 非核心；保留，不優先擴充 |
+| `archives/legacy_autotrading/trader/utils/positions.py`、`simulation.py` | 持倉、watchlist、成本、風險量及模擬記帳 | 有局部功能；缺少持久可重放的委託狀態機證據 |
+| `archives/legacy_autotrading/trader/utils/objects/` | Action、帳戶與報價等共享物件及設定 | `TradeData` 全域可變資料不可在研究 trials 共用 |
+| `archives/legacy_autotrading/trader/utils/database/`、`file.py` | SQL／Redis 操作、表格、檔案存取 | 新研究不使用 pickle 或 import-time 連線 |
+| `archives/legacy_autotrading/trader/utils/runtime.py` | session／status／command JSON、命令 ID／有效時間、日誌解析 | 原子替換技巧可保留；不是交易事件 journal |
+| `archives/legacy_autotrading/trader/utils/bot.py`、`notify.py` | Telegram 指令與交易通知 | 安全修補後再評估，研究預設離線 |
+| `archives/legacy_autotrading/trader/performance/` | 績效轉換、圖表、報告入口 | 缺少被匯入的 backtest 模組，費用與 TMF 計算亦有缺陷 |
 | `docs/script samples/strategy_sample.py` | 策略示意 | 有建構參數錯誤及佔位資料路徑，不能當可執行範例 |
 
 完整檔案範圍可在[固定版本樹](https://github.com/yostar77612/mark-auto/tree/1cacce4ee4eef4ce7e8760f8153ef64a74852d22)核對。基線沒有 `AGENTS.md`、正式測試集、CI workflow、`pyproject.toml`、lockfile、正式策略實作目錄內容或可用市場資料 fixture。
@@ -58,10 +58,10 @@
 下圖只表示已查得的依賴與呼叫方向，並不代表執行測試通過。
 
 ```text
-run.py                         gui.py
+archives/legacy_autotrading/run.py                         archives/legacy_autotrading/gui.py
   │                              ├─ 設定／資料庫 CRUD
   │                              ├─ runtime JSON／日誌
-  │                              └─ subprocess 啟動 run.py
+  │                              └─ subprocess 啟動 archives/legacy_autotrading/run.py
   ├─ trader 套件初始化
   │    ├─ config ─ Shioaji API／當日時間／動態策略
   │    ├─ 工具單例／thread pool／資料目錄
@@ -85,13 +85,13 @@ run.py                         gui.py
 
 ### 5.1 CLI 至交易委託
 
-1. `run.py` 在參數分派前先匯入 `trader`、`config`、`tasker`。其預設任務為 `auto_trader`。見 [匯入與預設 task](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/run.py#L7-L26)、[任務派送](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/run.py#L57-L75)。
-2. `trader/__init__.py` 建立共用物件、thread pool 與目錄；設定模組建立 Shioaji API。見 [套件初始化](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/__init__.py#L1-L29)、[API 建構預設](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/config.py#L14-L16)、[API 單例](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/config.py#L79-L82)。
+1. `archives/legacy_autotrading/run.py` 在參數分派前先匯入 `trader`、`config`、`tasker`。其預設任務為 `auto_trader`。見 [匯入與預設 task](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/run.py#L7-L26)、[任務派送](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/run.py#L57-L75)。
+2. `archives/legacy_autotrading/trader/__init__.py` 建立共用物件、thread pool 與目錄；設定模組建立 Shioaji API。見 [套件初始化](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/__init__.py#L1-L29)、[API 建構預設](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/config.py#L14-L16)、[API 單例](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/config.py#L79-L82)。
 3. `runAutoTrader` 建立 `StrategyExecutor`，呼叫 `init_account` 再 `run`。見 [自動交易入口](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/tasker.py#L154-L159)。
 4. `StrategyExecutor` 組合帳戶、報價、訂單、模擬與策略工具，登入、啟用憑證並註冊 callback。見 [協調器組合](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/executor.py#L40-L65)、[帳戶及 callback 初始化](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/executor.py#L143-L203)。
 5. 交易迴圈訂閱、更新 K 線與策略、檢查持倉條件、建單；最終可到 `API.place_order`。見 [執行入口](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/executor.py#L904-L909)、[監控迴圈](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/executor.py#L958-L991)、[模擬與真實送單分支](https://github.com/yostar77612/mark-auto/blob/1cacce4ee4eef4ce7e8760f8153ef64a74852d22/trader/utils/orders.py#L843-L897)。
 
-**安全含義：** `run.py --help` 也會先走匯入鏈，不能當無副作用的離線驗證命令。原模擬旗標不等於未登入或無網路。
+**安全含義：** `archives/legacy_autotrading/run.py --help` 也會先走匯入鏈，不能當無副作用的離線驗證命令。原模擬旗標不等於未登入或無網路。
 
 ### 5.2 即時與歷史資料
 

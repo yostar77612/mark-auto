@@ -42,7 +42,7 @@ analysis = Analysis(
                    'cffi', '_cffi_backend', 'pycparser'],
     excludes=['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets',
               'PySide6.QtVirtualKeyboard', 'PySide6.QtPdf', 'PySide6.QtPdfWidgets',
-              'streamlit', 'shioaji', 'trader', 'PyQt5', 'PyQt6'],
+              'streamlit', 'shioaji', 'trader', 'archives', 'archives.legacy_autotrading', 'PyQt5', 'PyQt6'],
     noarchive=False,
 )
 # QtGui's upstream hook collects optional plugins regardless of direct imports.

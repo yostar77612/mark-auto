@@ -146,6 +146,50 @@ Build defaults target0.2.2. Upgrade and standalone client kit use the actually d
 Normal typedexpiry/date input and effective-dated Paper margins are included. Existing scalar PaperReplay callers retain their binding. Desktop schedule mode refuses an incompatible old replay at the same path without modifying its journal or generating replacement orders; retain and reconcile prior state, never erase it to bypass validation. No broker/live order capability is enabled.
 
 
+### Developer environment (Windows PowerShell 5.1+, T12 / P2-B8)
+
+From any current directory, invoke the repository's `tools/dev_setup.ps1`:
+
+```powershell
+& 'C:\path\to\Mark auto\tools\dev_setup.ps1' -DryRun
+& 'C:\path\to\Mark auto\tools\dev_setup.ps1' -Python 'C:\path\to\Python313\python.exe'
+# From the project root after setup:
+. .\.venv\Scripts\Activate.ps1
+python desktop.py
+```
+
+`-Python` defaults to `python` on PATH and resolves its base interpreter, even
+when invoked from a venv. Install the full Windows x64 CPython version pinned in
+`packaging/python-runtime.json` (currently 3.13.16) first. The desktop hash lock
+includes cp313 wheels; a Python 3.11/3.12 test profile cannot install that lock.
+No separate UI/Qt CI lock is needed for native desktop development.
+
+Setup creates `.runtime-sqlite` (a private Python copy with pinned SQLite) and
+`.venv` directly under the repository resolved from `$PSScriptRoot`. Downloads
+use unique temporary children of `build/dev-setup-downloads`, cleaned on success
+and failure. All three generated paths are gitignored. Never put these setup
+directories under `%LOCALAPPDATA%`: MSIX-packaged hosts such as Claude desktop
+can redirect those writes into a location invisible outside the host. This
+script sets up interpreters only; desktop `AppPaths` workspace discovery and
+the user's existing data remain unchanged.
+
+Downloads use the Windows .NET certificate verifier and OS trust store, with
+HTTPS, TLS 1.2, no redirects and no disabled certificate checks. Python's SSL
+certificate bundle is not used for this SQLite download. The existing installer
+accepts the local artifact through optional `--archive`: it still verifies both
+archive SHA256 and SHA3-256, then the extracted DLL content SHA256 from the
+manifest, before copying Python. A hash mismatch exits non-zero and installs
+nothing. Existing online installer/CI invocations retain their behaviour.
+
+Re-runs validate the pinned runtime's loaded DLL path, hash, SQLite version and
+source ID, check that `.venv` uses that private base, and repeat
+`pip install --require-hashes -r requirements-desktop.lock`. SQLite 3.54.0 meets
+the workspace minimum 3.51.3. Invalid existing directories are refused: move
+them aside explicitly before retrying; setup does not overwrite them. A failed
+new runtime is removed. `-DryRun` and `-WhatIf` only print the plan, without
+executing Python, downloading, or writing files. A real download/clean Windows
+account installation remains a native acceptance check, not an offline test.
+
 ### Pinned native SQLite and replay safety
 
 The tested Windows Python 3.11/3.12 profiles and packaged CPython 3.13.16 stay

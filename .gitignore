@@ -104,6 +104,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv/
+/.runtime-sqlite/
+/build/dev-setup-downloads/
 *env/
 venv/
 ENV/
@@ -140,8 +143,8 @@ dev.py
 
 dockerfile
 shell/*
-trader/scripts/*
-!trader/scripts/README.md
+archives/legacy_autotrading/trader/scripts/*
+!archives/legacy_autotrading/trader/scripts/README.md
 runtime/*
 
 # Research runtime artifacts and local inputs

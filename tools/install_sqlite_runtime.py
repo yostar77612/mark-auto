@@ -45,17 +45,25 @@ def validate_destination(source, destination):
         raise RuntimeError('Destination must be NEW and separate from the base Python installation')
 
 
-def download(pin):
-    with urllib.request.urlopen(pin['url'], timeout=90) as response:
-        if not response.url.startswith('https://www.sqlite.org/'):
-            raise RuntimeError('SQLite download redirected outside official HTTPS origin')
-        data = response.read(MAX_ARCHIVE + 1)
+def verify_archive(data, pin):
+    """Verify identical archive pins for HTTPS downloads and offline artifacts."""
     if len(data) > MAX_ARCHIVE:
         raise RuntimeError('SQLite archive exceeds size limit')
     for algorithm in ('sha256', 'sha3_256'):
         if hashlib.new(algorithm, data).hexdigest() != pin[algorithm]:
             raise RuntimeError(f'SQLite archive {algorithm} mismatch')
     return data
+
+
+def download(pin, archive_path=None):
+    if archive_path is not None:
+        with Path(archive_path).open('rb') as stream:
+            return verify_archive(stream.read(MAX_ARCHIVE + 1), pin)
+    with urllib.request.urlopen(pin['url'], timeout=90) as response:
+        if not response.url.startswith('https://www.sqlite.org/'):
+            raise RuntimeError('SQLite download redirected outside official HTTPS origin')
+        data = response.read(MAX_ARCHIVE + 1)
+    return verify_archive(data, pin)
 
 
 def member(data, name, maximum=12 * 1024 * 1024):
@@ -67,7 +75,14 @@ def member(data, name, maximum=12 * 1024 * 1024):
         return archive.read(matches[0])
 
 
-def provision(destination, report, github=False):
+def windows_dll(archive, pin):
+    dll = member(archive, 'sqlite3.dll')
+    if hashlib.sha256(dll).hexdigest() != pin['dll_sha256']:
+        raise RuntimeError('Pinned DLL content mismatch')
+    return dll
+
+
+def provision(destination, report, github=False, archive_path=None):
     if sys.platform not in ('win32', 'linux') or sys.maxsize <= 2**32:
         raise RuntimeError('Provisioning supports 64-bit Windows/Linux only')
     if sys.platform == 'win32' and platform.machine().lower() not in ('amd64', 'x86_64'):
@@ -83,10 +98,8 @@ def provision(destination, report, github=False):
     evidence = {'pin': pin, 'base_python': sys.executable, 'base_version': sys.version,
                 'platform': platform.platform()}
     if sys.platform == 'win32':
-        archive = download(pin['windows_x64'])
-        dll = member(archive, 'sqlite3.dll')
-        if hashlib.sha256(dll).hexdigest() != pin['windows_x64']['dll_sha256']:
-            raise RuntimeError('Pinned DLL content mismatch')
+        archive = download(pin['windows_x64'], archive_path)
+        dll = windows_dll(archive, pin['windows_x64'])
         source = Path(sys.base_prefix)
         original = source / 'DLLs/sqlite3.dll'
         if not original.is_file() or not (source / 'python.exe').is_file():
@@ -102,7 +115,7 @@ def provision(destination, report, github=False):
         evidence['base_sqlite_sha256_unchanged'] = original_hash
         env['PATH'] = str(destination) + os.pathsep + env.get('PATH', '')
     else:
-        archive = download(pin['amalgamation'])
+        archive = download(pin['amalgamation'], archive_path)
         source_bytes = member(archive, pin['amalgamation']['member'])
         if hashlib.sha3_256(source_bytes).hexdigest() != pin['amalgamation']['source_sha3_256']:
             raise RuntimeError('SQLite amalgamation source hash mismatch')
@@ -142,8 +155,9 @@ def main():
     parser.add_argument('--destination', type=Path, required=True)
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--github', action='store_true')
+    parser.add_argument('--archive', type=Path, help='Local archive; all pinned hashes still required')
     args = parser.parse_args()
-    provision(args.destination, args.report, args.github)
+    provision(args.destination, args.report, args.github, args.archive)
 
 
 if __name__ == '__main__':

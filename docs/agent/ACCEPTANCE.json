@@ -1,5 +1,12 @@
 {
   "schema_version": 2,
+  "developer_setup_t12": {
+    "plan_item": "P2-B8",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T12 part B: project-local developer setup (P2-B8)",
+    "evidence": "tests/test_dev_setup.py; tests/test_sqlite_runtime.py; tests/test_packaging.py",
+    "coverage": "Offline AST/preview, Windows trust/path static contracts, local artifact archive and DLL hash rejection before writes, optional CLI compatibility and git ignores. No existing tests edited. Native download and clean-account desktop launch remain controller-owned.",
+    "verification": "New module: 5 tests passed in 0.553s, exit 0, including actual Windows PowerShell AST and both previews. Focused packaging/SQLite/layout/text guard run: 39 tests in 1.673s, exit 0, one existing pwsh-only skip; execution-only inherited-ACL fixture mkdir shim for sandbox. Static gate: zero findings, exit 0, using a temporary index for unstaged Part A moves and new files. Python 3.11 utf-8-sig compile: 313 files passed. G3 and plan diffs empty. No real downloads or full suite run; controller owns native/full-suite acceptance. GitNexus impact LOW for installer download/provision/main; refresh attempted, sandbox spawn EPERM."
+  },
   "ui_operation_registry": {
     "plan_item": "P2-A4",
     "status": "PASS",
@@ -2054,8 +2061,8 @@
       "differing_paths": [],
       "import_only": [],
       "upstream_only": [
-        "trader/APItest.py",
-        "trader/performance/backtest.py"
+        "https://github.com/chrisli-kw/AutoTradingPlatform/blob/a0ecf8895716bf5883184fdd27a52023f9700bf3/trader/APItest.py",
+        "https://github.com/chrisli-kw/AutoTradingPlatform/blob/a0ecf8895716bf5883184fdd27a52023f9700bf3/trader/performance/backtest.py"
       ],
       "scope": "47-file content correspondence only; not identical entiretree/history, not maintainerownership attestation. ApacheLICENSE andLiKueiWei attribution retained.",
       "evidence": "quant-audit/upstream-origin-comparison-20261010.json"
@@ -6021,5 +6028,32 @@
     "catalog": "Repair T10 question-mark placeholders in shortcut, accessibility and collapse-toggle translations.",
     "verification": "PASS: 51 focused tests in one process, 12.137s, exit 0, including complete desktop_pages (strict Windows metrics/pixels), window position, repaired market clamp, shortcuts/accessibility/layout/settings/logs/installer/help and both guards. quality_gate exit 0, 0 findings; Python 3.11 compile of 301 tracked/new Python files exit 0; git diff --check exit 0. Full suite/T9 remain controller-owned per sandbox instruction. Extra broader market/ui_snapshot run: 19 tests, 3 known sandbox failures (campaign evaluation, CLI temp ACL, subprocess isolation temp ACL); changed clamp test passes. GitNexus refresh blocked by spawn EPERM; existing index impact used.",
     "snapshot_cleanup": "Flush prior deferred-delete Qt widgets before changing snapshot app style; all original snapshot assertions retained."
+  },
+  "t12_part_a": {
+    "plan_items": [
+      "P2-B7"
+    ],
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T12 part A: disabled legacy archive (P2-B7)",
+    "scope": "Move 39 legacy files without source changes; retain root LICENSE, archive requirements and upstream headers; preserve product and payload boundaries.",
+    "evidence": [
+      "tests/test_repo_layout.py",
+      "tests/test_legacy_security.py",
+      "docs/analysis/t12_test_edits.json",
+      "docs/analysis/t12_payload_inventory.json",
+      "docs/analysis/t12_legacy_move_notes.md"
+    ],
+    "legacy_tests": 13,
+    "legacy_assertions": 39,
+    "payload_inventory_equal": true,
+    "verification": "Focused tests and static gates; full suite controller-owned per sandbox instruction. See move notes for exact results and alternate-index handling."
+  },
+  "t12_documentation_layering": {
+    "readme_max_lines": 150,
+    "manual": "docs/user/使用手冊.md",
+    "pages": 7,
+    "history": "docs/agent/history",
+    "checks": "tests/test_docs_layering.py",
+    "runtime_and_installer_payload": "unchanged by part C",
+    "external_acceptance": "pending; no score increase"
   }
 }

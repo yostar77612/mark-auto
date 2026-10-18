@@ -9,3 +9,6 @@ packaging/qt_notices/** -text
 
 # Preserve the pinned upstream Inno translation, including BOM and CRLF.
 packaging/languages/ChineseTraditional.isl -text
+
+# Literal documentation history preserves original bytes for provenance checks.
+docs/agent/history/* -text

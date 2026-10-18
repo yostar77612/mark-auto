@@ -23,7 +23,7 @@ For each trading strategy, the script settings are located in ```/trader/scripts
 ```
 
 ### How to create a strategy script
-The script should be an class object, see the [strategy_sample.py](../../docs/script%20samples/strategy_sample.py) for more details.
+The script should be an class object, see the [strategy_sample.py](../../../../docs/script%20samples/strategy_sample.py) for more details.
 
 
 ## How to start the trading strategy
