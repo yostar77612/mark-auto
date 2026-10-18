@@ -569,7 +569,7 @@ def _offer_workspace_after_recovery_block(locator):
         ui_text('desktop._offer_workspace_after_recovery_block.text_8'))
 
 
-def main(argv=None):
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
     parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
@@ -577,72 +577,271 @@ def main(argv=None):
     if args.tls_smoke is not None:
         if args.smoke_test or not args.tls_smoke.is_absolute():
             parser.error('--tls-smoke requires an absolute report path and cannot combine with --smoke-test')
-        from desktop_tls_smoke import write_report
-        return write_report(args.tls_smoke)
     if args.smoke_test is not None and not args.smoke_test.is_absolute():
         parser.error('--smoke-test requires an absolute report path')
-    from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
-    from PySide6.QtWidgets import QApplication, QMessageBox
-    from quantlab import __version__
-    from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
-    app = QApplication(sys.argv[:1])
-    from desktop_icon import application_icon
-    app.setWindowIcon(application_icon(app))
-    app.setApplicationName('MarkAuto')
-    app.setOrganizationName('MarkAuto')
-    app.setApplicationVersion(__version__)
-    user_bootstrap = AppPaths.discover().root
-    smoke_startup_directory = None
-    if args.smoke_test:
-        import tempfile
-        # Isolate even GUI startup, recovery, guards and paper freeze. Only the
-        # validated user settings snapshot is read from the configured workspace.
-        smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-')
-    bootstrap = Path(smoke_startup_directory.name) if smoke_startup_directory else user_bootstrap
-    bootstrap.mkdir(parents=True, exist_ok=True)
-    locator = WorkspaceLocator(bootstrap)
+    return args
+
+
+def acquire_instance_lock(locator, smoke_startup_directory=None):
+    from PySide6.QtCore import QLockFile
+    from PySide6.QtWidgets import QMessageBox
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
         QMessageBox.information(None, ui_text('desktop.main.text_1'), error_message('startup_workspace_busy'))
         if smoke_startup_directory is not None:
             smoke_startup_directory.cleanup()
-        return 2
-    jobs = guard = installation_guard = None
-    smoke_jobs = smoke_directory = None
-    settings_paths = None
-    smoke_cleanup_verified = True
-    smoke_shutdown_completed = False
-    smoke_report = None
+        return None
+    return lock
+
+
+def prepare_workspace(state):
+    from quantlab.desktop_runtime import BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
+    state.installation_guard = WindowsAppMutex()
+    state.paths = state.locator.load(probe=False)
+    state.backups = BackupManager(state.paths)
+    from quantlab.analysis_recovery import RecoveryError
     try:
-        installation_guard = WindowsAppMutex()
-        paths = locator.load(probe=False)
-        backups = BackupManager(paths)
-        from quantlab.analysis_recovery import RecoveryError
+        _prepare_startup_workspace(state.paths, state.backups)
+    except RecoveryError:
+        if state.args.smoke_test:
+            raise
+        _offer_workspace_after_recovery_block(state.locator)
+        return False
+    state.guard = RuntimeGuard(state.paths)
+    state.previous_unclean = state.guard.start()
+    state.settings_paths = WorkspaceLocator(state.user_bootstrap).load(probe=False) if state.args.smoke_test else state.paths
+    state.settings = SettingsStore(state.settings_paths.state / 'settings.json')
+    state.validated_settings = state.settings.load()  # Fail closed on incompatible/corrupt state.
+    if state.args.smoke_test:
+        state.settings = _SmokeSettingsView(state.validated_settings)  # Smoke must preserve saved user bytes.
+    state.jobs = JobManager(state.paths)
+    state.backups.jobs = state.jobs
+    return True
+
+
+def run_smoke(state):
+    from PySide6.QtCore import QTimer
+    from quantlab import __version__
+    from quantlab.desktop_runtime import AppPaths, JobManager
+    import tempfile
+    import time
+    from desktop_recovery_smoke import run_recovery_smoke
+    # Exercise the real frozen multiprocessing bootstrap in disposable
+    # cache state, never replacing the user's research dataset.
+    state.smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=state.paths.cache)
+    state.smoke_jobs = JobManager(AppPaths(Path(state.smoke_directory.name)))
+    smoke_deadline = time.monotonic() + 120
+    auth_report = _auth_smoke_dependencies()
+    market_report, manual_config, manual_candidate = _market_smoke_ui(state.app)
+    history_report, history_payload = _history_smoke_fixture(Path(state.smoke_directory.name))
+    walk_forward_paths = AppPaths(Path(state.smoke_directory.name) / 'walk-forward-fixture')
+    walk_forward_report, walk_forward_payload = _walk_forward_smoke_fixture(walk_forward_paths)
+    manual_export_path = Path(state.smoke_directory.name) / 'manual-request.json'
+    market_results = {}
+    smoke_steps = _smoke_steps()
+    original_step_count = len(smoke_steps)
+    smoke_steps.extend([
+        ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
+        ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
+        ('ui_market_refresh', history_payload),
+        ('ui_walk_forward_preview', walk_forward_payload),
+        ('ui_walk_forward_run', {}),  # Bound only to the verified preview.
+        ('ui_walk_forward_read', {}),  # Reopen the same immutable journal.
+    ])
+    smoke_index = 0
+    _start_smoke_job(state.smoke_jobs, *smoke_steps[0])
+    smoke_result = {'failed': False, 'results': {}, 'steps': []}
+    recovery_report = {'status': 'pending', 'cleanup_verified': True, 'source_type': 'synthetic',
+        'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'}
+    smoke_timer = QTimer(state.window)
+    smoke_timer.setInterval(100)
+    def complete_smoke():
+        nonlocal smoke_index, recovery_report
+        operation = smoke_steps[smoke_index][0]
+        market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
+        history_phase = smoke_index == original_step_count + 2
+        walk_forward_phase = operation.startswith('ui_walk_forward_')
+        for event in state.smoke_jobs.poll():
+            if event['type'] == 'result':
+                result = event.get('result', {})
+                if walk_forward_phase:
+                    try:
+                        evidence = _check_walk_forward_smoke_result(operation, result, state.smoke_jobs.paths,
+                            walk_forward_payload, walk_forward_report)
+                        walk_forward_report.update(evidence)
+                        walk_forward_report['steps'].append({'operation': operation, 'passed': True})
+                    except Exception as exc:
+                        smoke_result['failed'] = True
+                        walk_forward_report['steps'].append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
+                    continue
+                if history_phase:
+                    try:
+                        series, evidence = _check_history_worker_result(result, state.smoke_jobs.paths,
+                            history_payload, history_report['fixture_sha256'])
+                        history_report.update(evidence)
+                        history_report.update(_history_smoke_ui(state.app, series))
+                        history_report['steps'].append({'operation': 'history_import', 'passed': True})
+                    except Exception as exc:
+                        smoke_result['failed'] = True
+                        history_report['steps'].append({'operation': 'history_import', 'passed': False, 'error_type': type(exc).__name__})
+                    continue
+                if market_phase:
+                    try:
+                        evidence = _check_market_worker_result(market_phase, result, manual_export_path)
+                        if market_phase == 'manual_export':
+                            smoke_steps[original_step_count + 1][1]['provider']['response_text'] = _market_smoke_response(result['request'], manual_candidate)
+                        market_results[market_phase] = result
+                        market_report.update(evidence)
+                        market_report['steps'].append({'operation': market_phase, 'passed': True})
+                    except Exception as exc:
+                        smoke_result['failed'] = True
+                        market_report['steps'].append({'operation': market_phase, 'passed': False, 'error_type': type(exc).__name__})
+                    continue
+                smoke_result['results'][operation] = result
+                valid = True
+                if operation == 'ui_demo':
+                    valid = result.get('source_type') == 'synthetic' and result.get('bars') == 120
+                elif operation == 'ui_backtest':
+                    valid = bool(result.get('reports')) and result.get('source_type') == 'synthetic'
+                elif operation == 'ui_campaign':
+                    valid = result.get('status') == 'completed' and bool(result.get('attempts')) and all(row.get('status') == 'evaluated' for row in result['attempts']) and result.get('real_model_status') == 'not_verified'
+                elif operation == 'ui_paper_replay':
+                    valid = result.get('replay', {}).get('cursor') == 25 and result.get('account', {}).get('kill_switch') is True
+                elif operation == 'ui_paper_kill':
+                    valid = result.get('account', {}).get('kill_switch') is True
+                smoke_result['steps'].append({'operation': operation, 'passed': valid})
+                smoke_result['failed'] |= not valid
+            elif event['type'] in ('error', 'cancelled'):
+                smoke_result['failed'] = True
+                step_report = walk_forward_report['steps'] if walk_forward_phase else history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
+                step_report.append({'operation': 'history_import' if history_phase else market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
+        timed_out = time.monotonic() > smoke_deadline
+        if state.smoke_jobs.active and not timed_out:
+            return
+        if not smoke_result['failed'] and not timed_out and smoke_index + 1 < len(smoke_steps):
+            smoke_index += 1
+            next_operation, payload = smoke_steps[smoke_index]
+            if next_operation == 'ui_select':
+                payload = {'result': smoke_result['results']['ui_backtest']['reports'][0]['result']}
+            try:
+                if next_operation == 'ui_walk_forward_preview':
+                    state.smoke_jobs.close()
+                    state.smoke_jobs = JobManager(walk_forward_paths)
+                elif next_operation == 'ui_walk_forward_run':
+                    payload = {**walk_forward_payload, 'preview_identity': walk_forward_report['reference']}
+                elif next_operation == 'ui_walk_forward_read':
+                    payload = {'reference': walk_forward_report['reference']}
+                _start_smoke_job(state.smoke_jobs, next_operation, payload)
+                return
+            except Exception as exc:
+                smoke_result['failed'] = True
+                rows = walk_forward_report['steps'] if next_operation.startswith('ui_walk_forward_') else smoke_result['steps']
+                rows.append({'operation': next_operation, 'passed': False, 'error_type': type(exc).__name__})
+        smoke_timer.stop()
+        state.smoke_jobs.close()
+        prior_cleanup_verified = state.smoke_cleanup_verified
+        state.smoke_cleanup_verified = False  # Unexpected hook failure must retain disposable evidence.
+        recovery_report = run_recovery_smoke(AppPaths(Path(state.smoke_directory.name)),
+            smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
+        state.smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
+        recovery_required = sys.platform == 'win32' and bool(getattr(sys, 'frozen', False))
+        recovery_passed = ((recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
+            if recovery_required else recovery_report['status'] == 'not_applicable')
+        timed_out = timed_out or time.monotonic() > smoke_deadline
+        completed = len(smoke_result['results']) == original_step_count
+        market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
+        history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
+        walk_forward_report['status'] = 'passed' if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'] and all(row['passed'] for row in walk_forward_report['steps']) and walk_forward_report.get('read_verified') and not smoke_result['failed'] and not timed_out else 'failed'
+        passed = recovery_passed and state.smoke_cleanup_verified and walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and state.window.isVisible()
+        completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
+        # data_dir remains the inspected settings location for installer
+        # compatibility; mutable execution uses smoke_data_dir. The
+        # explicitly requested report path is also written by the caller
+        # contract and is excluded from the user-state read-only claim.
+        state.smoke_report = {'status': 'passed' if passed else 'failed', 'data_dir': str(state.settings_paths.root),
+            'smoke_data_dir': str(state.paths.root), 'user_state_read_only': True,
+            'version': __version__, 'native_window_visible': state.window.isVisible(), 'worker_completed': completed,
+            'backtest_completed': 'ui_backtest' in completed_operations,
+            'campaign_completed': 'ui_campaign' in completed_operations,
+            'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
+            'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
+            'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report,
+            'walk_forward_smoke': walk_forward_report, 'recovery_helper_smoke': recovery_report}
+        state.window.close()
+        state.app.exit(0 if passed else 1)
+    def guarded_complete_smoke():
+        pass
         try:
-            _prepare_startup_workspace(paths, backups)
-        except RecoveryError:
-            if args.smoke_test:
-                raise
-            _offer_workspace_after_recovery_block(locator)
+            complete_smoke()
+        except BaseException as exc:
+            # Qt swallows timer exceptions. Always emit terminal failure
+            # and stop scheduling, without echoing exception values.
+            smoke_timer.stop()
+            cleanup = _close_smoke_worker(state.smoke_jobs)
+            state.smoke_cleanup_verified = state.smoke_cleanup_verified and cleanup['verified']
+            operation = smoke_steps[smoke_index][0]
+            rows = walk_forward_report['steps'] if operation.startswith('ui_walk_forward_') else smoke_result['steps']
+            rows.append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
+            walk_forward_report['status'] = 'failed'
+            state.smoke_report = {'status': 'failed', 'version': __version__,
+                'data_dir': str(state.settings_paths.root), 'smoke_data_dir': str(state.paths.root),
+                'user_state_read_only': True, 'source_type': 'synthetic', 'generator': 'fixture',
+                'live_status': 'disabled', 'real_model_status': 'not_verified',
+                'native_window_visible': state.window.isVisible(), 'worker_completed': False,
+                'timed_out': time.monotonic() > smoke_deadline, 'error_type': type(exc).__name__,
+                'worker_cleanup': cleanup, 'steps': smoke_result['steps'],
+                'auth_smoke': auth_report, 'market_smoke': market_report,
+                'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report,
+                'recovery_helper_smoke': recovery_report}
+            state.app.exit(1)
+    smoke_timer.timeout.connect(guarded_complete_smoke)
+    smoke_timer.start()
+
+
+def run_gui(args):
+    from types import SimpleNamespace
+    state = SimpleNamespace(args=args)
+    from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from quantlab import __version__
+    from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
+    state.app = QApplication(sys.argv[:1])
+    from desktop_icon import application_icon
+    state.app.setWindowIcon(application_icon(state.app))
+    state.app.setApplicationName('MarkAuto')
+    state.app.setOrganizationName('MarkAuto')
+    state.app.setApplicationVersion(__version__)
+    state.user_bootstrap = AppPaths.discover().root
+    state.smoke_startup_directory = None
+    if state.args.smoke_test:
+        import tempfile
+        # Isolate even GUI startup, recovery, guards and paper freeze. Only the
+        # validated user settings snapshot is read from the configured workspace.
+        state.smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-')
+    state.bootstrap = Path(state.smoke_startup_directory.name) if state.smoke_startup_directory else state.user_bootstrap
+    state.bootstrap.mkdir(parents=True, exist_ok=True)
+    state.locator = WorkspaceLocator(state.bootstrap)
+    state.lock = acquire_instance_lock(state.locator, state.smoke_startup_directory)
+    if state.lock is None:
+        return 2
+    state.jobs = state.guard = state.installation_guard = None
+    state.smoke_jobs = state.smoke_directory = None
+    state.settings_paths = None
+    state.smoke_cleanup_verified = True
+    state.smoke_shutdown_completed = False
+    state.smoke_report = None
+    try:
+        if not prepare_workspace(state):
             return 3
-        guard = RuntimeGuard(paths)
-        previous_unclean = guard.start()
-        settings_paths = WorkspaceLocator(user_bootstrap).load(probe=False) if args.smoke_test else paths
-        settings = SettingsStore(settings_paths.state / 'settings.json')
-        validated_settings = settings.load()  # Fail closed on incompatible/corrupt state.
-        if args.smoke_test:
-            settings = _SmokeSettingsView(validated_settings)  # Smoke must preserve saved user bytes.
-        jobs = JobManager(paths)
-        backups.jobs = jobs
         from desktop_ui import MainWindow
-        window = MainWindow(paths, jobs, settings=settings, backups=backups, guard=guard)
-        window.show()
-        if hasattr(window, 'freeze_paper'):
-            window.freeze_paper('Previous session ended unexpectedly; reconcile paper account' if previous_unclean else 'Startup requires paper reconciliation')
-        if not args.smoke_test and hasattr(window, 'auto_restore_chatgpt'):
+        state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
+        state.window.show()
+        if hasattr(state.window, 'freeze_paper'):
+            state.window.freeze_paper('Previous session ended unexpectedly; reconcile paper account' if state.previous_unclean else 'Startup requires paper reconciliation')
+        if not state.args.smoke_test and hasattr(state.window, 'auto_restore_chatgpt'):
             # Remembered login: reload the saved ChatGPT credentials (smoke runs stay inert).
-            window.auto_restore_chatgpt()
+            state.window.auto_restore_chatgpt()
         # Windows suspend/resume notifications complement wall/monotonic checks,
         # including short sleeps and platforms whose monotonic clock pauses.
         class PowerEvents(QAbstractNativeEventFilter):
@@ -652,206 +851,34 @@ def main(argv=None):
                     from ctypes import wintypes
                     msg = wintypes.MSG.from_address(int(message))
                     if msg.message == 0x0218 and msg.wParam in (4, 6, 7, 18):
-                        guard.reconciliation_required = True
-                        if hasattr(window, 'freeze_paper'):
-                            window._safe(lambda: window.freeze_paper('Windows power event; reconcile paper account before resuming'))
+                        state.guard.reconciliation_required = True
+                        if hasattr(state.window, 'freeze_paper'):
+                            state.window._safe(lambda: state.window.freeze_paper('Windows power event; reconcile paper account before resuming'))
                 return False, 0
         power_events = PowerEvents()
-        app.installNativeEventFilter(power_events)
-        timer = QTimer(window)
+        state.app.installNativeEventFilter(power_events)
+        timer = QTimer(state.window)
         timer.setInterval(1000)
         def clock_tick():
-            if guard.check_clock():
-                if hasattr(window, 'freeze_paper'):
-                    window._safe(lambda: window.freeze_paper('Sleep or clock change detected; reconcile paper account before resuming'))
+            if state.guard.check_clock():
+                if hasattr(state.window, 'freeze_paper'):
+                    state.window._safe(lambda: state.window.freeze_paper('Sleep or clock change detected; reconcile paper account before resuming'))
         timer.timeout.connect(clock_tick)
         timer.start()
-        if args.smoke_test:
-            import tempfile
-            import time
-            from desktop_recovery_smoke import run_recovery_smoke
-            # Exercise the real frozen multiprocessing bootstrap in disposable
-            # cache state, never replacing the user's research dataset.
-            smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=paths.cache)
-            smoke_jobs = JobManager(AppPaths(Path(smoke_directory.name)))
-            smoke_deadline = time.monotonic() + 120
-            auth_report = _auth_smoke_dependencies()
-            market_report, manual_config, manual_candidate = _market_smoke_ui(app)
-            history_report, history_payload = _history_smoke_fixture(Path(smoke_directory.name))
-            walk_forward_paths = AppPaths(Path(smoke_directory.name) / 'walk-forward-fixture')
-            walk_forward_report, walk_forward_payload = _walk_forward_smoke_fixture(walk_forward_paths)
-            manual_export_path = Path(smoke_directory.name) / 'manual-request.json'
-            market_results = {}
-            smoke_steps = _smoke_steps()
-            original_step_count = len(smoke_steps)
-            smoke_steps.extend([
-                ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
-                ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
-                ('ui_market_refresh', history_payload),
-                ('ui_walk_forward_preview', walk_forward_payload),
-                ('ui_walk_forward_run', {}),  # Bound only to the verified preview.
-                ('ui_walk_forward_read', {}),  # Reopen the same immutable journal.
-            ])
-            smoke_index = 0
-            _start_smoke_job(smoke_jobs, *smoke_steps[0])
-            smoke_result = {'failed': False, 'results': {}, 'steps': []}
-            recovery_report = {'status': 'pending', 'cleanup_verified': True, 'source_type': 'synthetic',
-                'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'}
-            smoke_timer = QTimer(window)
-            smoke_timer.setInterval(100)
-            def complete_smoke():
-                nonlocal smoke_index, smoke_jobs, smoke_report, smoke_cleanup_verified, recovery_report
-                operation = smoke_steps[smoke_index][0]
-                market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
-                history_phase = smoke_index == original_step_count + 2
-                walk_forward_phase = operation.startswith('ui_walk_forward_')
-                for event in smoke_jobs.poll():
-                    if event['type'] == 'result':
-                        result = event.get('result', {})
-                        if walk_forward_phase:
-                            try:
-                                evidence = _check_walk_forward_smoke_result(operation, result, smoke_jobs.paths,
-                                    walk_forward_payload, walk_forward_report)
-                                walk_forward_report.update(evidence)
-                                walk_forward_report['steps'].append({'operation': operation, 'passed': True})
-                            except Exception as exc:
-                                smoke_result['failed'] = True
-                                walk_forward_report['steps'].append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
-                            continue
-                        if history_phase:
-                            try:
-                                series, evidence = _check_history_worker_result(result, smoke_jobs.paths,
-                                    history_payload, history_report['fixture_sha256'])
-                                history_report.update(evidence)
-                                history_report.update(_history_smoke_ui(app, series))
-                                history_report['steps'].append({'operation': 'history_import', 'passed': True})
-                            except Exception as exc:
-                                smoke_result['failed'] = True
-                                history_report['steps'].append({'operation': 'history_import', 'passed': False, 'error_type': type(exc).__name__})
-                            continue
-                        if market_phase:
-                            try:
-                                evidence = _check_market_worker_result(market_phase, result, manual_export_path)
-                                if market_phase == 'manual_export':
-                                    smoke_steps[original_step_count + 1][1]['provider']['response_text'] = _market_smoke_response(result['request'], manual_candidate)
-                                market_results[market_phase] = result
-                                market_report.update(evidence)
-                                market_report['steps'].append({'operation': market_phase, 'passed': True})
-                            except Exception as exc:
-                                smoke_result['failed'] = True
-                                market_report['steps'].append({'operation': market_phase, 'passed': False, 'error_type': type(exc).__name__})
-                            continue
-                        smoke_result['results'][operation] = result
-                        valid = True
-                        if operation == 'ui_demo':
-                            valid = result.get('source_type') == 'synthetic' and result.get('bars') == 120
-                        elif operation == 'ui_backtest':
-                            valid = bool(result.get('reports')) and result.get('source_type') == 'synthetic'
-                        elif operation == 'ui_campaign':
-                            valid = result.get('status') == 'completed' and bool(result.get('attempts')) and all(row.get('status') == 'evaluated' for row in result['attempts']) and result.get('real_model_status') == 'not_verified'
-                        elif operation == 'ui_paper_replay':
-                            valid = result.get('replay', {}).get('cursor') == 25 and result.get('account', {}).get('kill_switch') is True
-                        elif operation == 'ui_paper_kill':
-                            valid = result.get('account', {}).get('kill_switch') is True
-                        smoke_result['steps'].append({'operation': operation, 'passed': valid})
-                        smoke_result['failed'] |= not valid
-                    elif event['type'] in ('error', 'cancelled'):
-                        smoke_result['failed'] = True
-                        step_report = walk_forward_report['steps'] if walk_forward_phase else history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
-                        step_report.append({'operation': 'history_import' if history_phase else market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
-                timed_out = time.monotonic() > smoke_deadline
-                if smoke_jobs.active and not timed_out:
-                    return
-                if not smoke_result['failed'] and not timed_out and smoke_index + 1 < len(smoke_steps):
-                    smoke_index += 1
-                    next_operation, payload = smoke_steps[smoke_index]
-                    if next_operation == 'ui_select':
-                        payload = {'result': smoke_result['results']['ui_backtest']['reports'][0]['result']}
-                    try:
-                        if next_operation == 'ui_walk_forward_preview':
-                            smoke_jobs.close()
-                            smoke_jobs = JobManager(walk_forward_paths)
-                        elif next_operation == 'ui_walk_forward_run':
-                            payload = {**walk_forward_payload, 'preview_identity': walk_forward_report['reference']}
-                        elif next_operation == 'ui_walk_forward_read':
-                            payload = {'reference': walk_forward_report['reference']}
-                        _start_smoke_job(smoke_jobs, next_operation, payload)
-                        return
-                    except Exception as exc:
-                        smoke_result['failed'] = True
-                        rows = walk_forward_report['steps'] if next_operation.startswith('ui_walk_forward_') else smoke_result['steps']
-                        rows.append({'operation': next_operation, 'passed': False, 'error_type': type(exc).__name__})
-                smoke_timer.stop()
-                smoke_jobs.close()
-                prior_cleanup_verified = smoke_cleanup_verified
-                smoke_cleanup_verified = False  # Unexpected hook failure must retain disposable evidence.
-                recovery_report = run_recovery_smoke(AppPaths(Path(smoke_directory.name)),
-                    smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
-                smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
-                recovery_required = sys.platform == 'win32' and bool(getattr(sys, 'frozen', False))
-                recovery_passed = ((recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
-                    if recovery_required else recovery_report['status'] == 'not_applicable')
-                timed_out = timed_out or time.monotonic() > smoke_deadline
-                completed = len(smoke_result['results']) == original_step_count
-                market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
-                history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
-                walk_forward_report['status'] = 'passed' if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'] and all(row['passed'] for row in walk_forward_report['steps']) and walk_forward_report.get('read_verified') and not smoke_result['failed'] and not timed_out else 'failed'
-                passed = recovery_passed and smoke_cleanup_verified and walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and window.isVisible()
-                completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
-                # data_dir remains the inspected settings location for installer
-                # compatibility; mutable execution uses smoke_data_dir. The
-                # explicitly requested report path is also written by the caller
-                # contract and is excluded from the user-state read-only claim.
-                smoke_report = {'status': 'passed' if passed else 'failed', 'data_dir': str(settings_paths.root),
-                    'smoke_data_dir': str(paths.root), 'user_state_read_only': True,
-                    'version': __version__, 'native_window_visible': window.isVisible(), 'worker_completed': completed,
-                    'backtest_completed': 'ui_backtest' in completed_operations,
-                    'campaign_completed': 'ui_campaign' in completed_operations,
-                    'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
-                    'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
-                    'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report,
-                    'walk_forward_smoke': walk_forward_report, 'recovery_helper_smoke': recovery_report}
-                window.close()
-                app.exit(0 if passed else 1)
-            def guarded_complete_smoke():
-                nonlocal smoke_cleanup_verified, smoke_report
-                try:
-                    complete_smoke()
-                except BaseException as exc:
-                    # Qt swallows timer exceptions. Always emit terminal failure
-                    # and stop scheduling, without echoing exception values.
-                    smoke_timer.stop()
-                    cleanup = _close_smoke_worker(smoke_jobs)
-                    smoke_cleanup_verified = smoke_cleanup_verified and cleanup['verified']
-                    operation = smoke_steps[smoke_index][0]
-                    rows = walk_forward_report['steps'] if operation.startswith('ui_walk_forward_') else smoke_result['steps']
-                    rows.append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
-                    walk_forward_report['status'] = 'failed'
-                    smoke_report = {'status': 'failed', 'version': __version__,
-                        'data_dir': str(settings_paths.root), 'smoke_data_dir': str(paths.root),
-                        'user_state_read_only': True, 'source_type': 'synthetic', 'generator': 'fixture',
-                        'live_status': 'disabled', 'real_model_status': 'not_verified',
-                        'native_window_visible': window.isVisible(), 'worker_completed': False,
-                        'timed_out': time.monotonic() > smoke_deadline, 'error_type': type(exc).__name__,
-                        'worker_cleanup': cleanup, 'steps': smoke_result['steps'],
-                        'auth_smoke': auth_report, 'market_smoke': market_report,
-                        'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report,
-                        'recovery_helper_smoke': recovery_report}
-                    app.exit(1)
-            smoke_timer.timeout.connect(guarded_complete_smoke)
-            smoke_timer.start()
-        status = app.exec()
-        jobs.close()
-        guard.finish()
-        smoke_shutdown_completed = True
+        if state.args.smoke_test:
+            run_smoke(state)
+        status = state.app.exec()
+        state.jobs.close()
+        state.guard.finish()
+        state.smoke_shutdown_completed = True
         return status
     except Exception as exc:
         # No exception values or secret-bearing tracebacks in a general GUI dialog.
-        if args.smoke_test:
-            if smoke_report is None:
-                smoke_report = {'status': 'failed', 'version': __version__,
-                    'data_dir': str(settings_paths.root) if settings_paths else None,
-                    'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
+        if state.args.smoke_test:
+            if state.smoke_report is None:
+                state.smoke_report = {'status': 'failed', 'version': __version__,
+                    'data_dir': str(state.settings_paths.root) if state.settings_paths else None,
+                    'smoke_data_dir': str(state.bootstrap), 'user_state_read_only': True,
                     'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
                     'walk_forward_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
                         'source_type': 'synthetic', 'real_model_status': 'not_verified',
@@ -861,64 +888,72 @@ def main(argv=None):
                     'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
                         'source_type': 'synthetic',
                         'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}
-            smoke_report.setdefault('recovery_helper_smoke', {'status': 'not_run', 'cleanup_verified': True,
+            state.smoke_report.setdefault('recovery_helper_smoke', {'status': 'not_run', 'cleanup_verified': True,
                 'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'})
-            smoke_report.update(status='failed', error_type=type(exc).__name__)
+            state.smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
         QMessageBox.critical(None, ui_text('desktop.main.text_2'), error_message(startup_error_code(exc)))
         return 1
     finally:
-        if args.smoke_test:
+        if state.args.smoke_test:
             # Publish exactly once, after every cleanup step, so a late failure
             # cannot leave a successful report or a precomputed zero return code.
             cleanup_errors = []
-            for manager in (smoke_jobs, jobs):
+            for manager in (state.smoke_jobs, state.jobs):
                 cleanup = _close_smoke_worker(manager)
-                smoke_cleanup_verified = smoke_cleanup_verified and cleanup['verified']
+                state.smoke_cleanup_verified = state.smoke_cleanup_verified and cleanup['verified']
                 if cleanup['error_type'] is not None:
                     cleanup_errors.append(cleanup['error_type'])
-            for close in (installation_guard.close if installation_guard is not None else None, lock.unlock):
+            for close in (state.installation_guard.close if state.installation_guard is not None else None, state.lock.unlock):
                 if close is not None:
                     try:
                         close()
                     except BaseException as exc:
-                        smoke_cleanup_verified = False
+                        state.smoke_cleanup_verified = False
                         cleanup_errors.append(type(exc).__name__)
-            directories = (smoke_directory, smoke_startup_directory)
-            if smoke_cleanup_verified:
+            directories = (state.smoke_directory, state.smoke_startup_directory)
+            if state.smoke_cleanup_verified:
                 for directory in directories:
                     if directory is not None:
                         try:
                             directory.cleanup()
                         except BaseException as exc:
-                            smoke_cleanup_verified = False
+                            state.smoke_cleanup_verified = False
                             cleanup_errors.append(type(exc).__name__)
                             break
-            if not smoke_cleanup_verified:
+            if not state.smoke_cleanup_verified:
                 for directory in directories:
                     _retain_smoke_directory(directory)
-            if smoke_report is None:
-                smoke_report = {'status': 'failed', 'version': __version__, 'steps': [],
+            if state.smoke_report is None:
+                state.smoke_report = {'status': 'failed', 'version': __version__, 'steps': [],
                     'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
-                    'data_dir': str(settings_paths.root) if settings_paths else None,
-                    'smoke_data_dir': str(bootstrap), 'user_state_read_only': True,
+                    'data_dir': str(state.settings_paths.root) if state.settings_paths else None,
+                    'smoke_data_dir': str(state.bootstrap), 'user_state_read_only': True,
                     'error_type': 'SmokeDidNotComplete'}
-            if not smoke_cleanup_verified or not smoke_shutdown_completed:
-                smoke_report['status'] = 'failed'
-            if not smoke_shutdown_completed:
-                smoke_report.setdefault('error_type', 'ShutdownIncomplete')
-            smoke_report['worker_cleanup'] = {'verified': smoke_cleanup_verified,
+            if not state.smoke_cleanup_verified or not state.smoke_shutdown_completed:
+                state.smoke_report['status'] = 'failed'
+            if not state.smoke_shutdown_completed:
+                state.smoke_report.setdefault('error_type', 'ShutdownIncomplete')
+            state.smoke_report['worker_cleanup'] = {'verified': state.smoke_cleanup_verified,
                                               'error_types': cleanup_errors}
             try:
-                atomic_write(args.smoke_test, _json_bytes(smoke_report))
+                atomic_write(state.args.smoke_test, _json_bytes(state.smoke_report))
             except BaseException:
                 return 1  # An unwritable requested report path cannot mean PASS.
-            return 0 if smoke_report['status'] == 'passed' else 1
-        if jobs is not None:
-            jobs.close()
-        if installation_guard is not None:
-            installation_guard.close()
-        lock.unlock()
+            return 0 if state.smoke_report['status'] == 'passed' else 1
+        if state.jobs is not None:
+            state.jobs.close()
+        if state.installation_guard is not None:
+            state.installation_guard.close()
+        state.lock.unlock()
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    if args.tls_smoke is not None:
+        from desktop_tls_smoke import write_report
+        return write_report(args.tls_smoke)
+    return run_gui(args)
 
 
 if __name__ == '__main__':

@@ -40,7 +40,10 @@ UTC=timezone.utc
 TAIPEI=timezone(timedelta(hours=8))
 
 
-def _fail(message):raise MarketValidationError(message)
+from .errors import fail
+
+
+def _fail(message):fail(message, MarketValidationError)
 def _canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False)
 def _hash(value):return hashlib.sha256(_canonical(value).encode('utf-8')).hexdigest()
 def _stamp(text):

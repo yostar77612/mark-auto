@@ -5667,9 +5667,9 @@
           "pending": false,
           "state": "ready"
         },
-        "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
         "plan": {
-          "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+          "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
           "binding": {
             "max_calls": 1,
             "model": "fixture-model",
@@ -6845,9 +6845,9 @@
               },
               "implementation": {
                 "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                "research_analysis.py": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c"
+                "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
               },
-              "packet_hash": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+              "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
               "provenance": {
                 "archived_result_status": "reference_only_unverified",
                 "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -6889,7 +6889,7 @@
           }
         },
         "receipt_snapshot": {
-          "provider_descriptor_hash": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+          "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
           "receipts": [],
           "version": 1
         }
@@ -6898,11 +6898,11 @@
     "ui_analysis_read": {
       "events": [],
       "result": {
-        "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
         "cache_hit": true,
         "record": {
           "plan": {
-            "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -8078,9 +8078,9 @@
                 },
                 "implementation": {
                   "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c"
+                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
                 },
-                "packet_hash": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -8124,7 +8124,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -8148,7 +8148,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -8282,11 +8282,11 @@
     "ui_analysis_reconcile": {
       "events": [],
       "result": {
-        "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
         "cache_hit": true,
         "record": {
           "plan": {
-            "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -9462,9 +9462,9 @@
                 },
                 "implementation": {
                   "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c"
+                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
                 },
-                "packet_hash": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -9508,7 +9508,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -9532,7 +9532,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -9679,11 +9679,11 @@
         ]
       ],
       "result": {
-        "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
         "cache_hit": false,
         "record": {
           "plan": {
-            "analysis_id": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -10859,9 +10859,9 @@
                 },
                 "implementation": {
                   "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c"
+                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
                 },
-                "packet_hash": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -10905,7 +10905,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -10929,7 +10929,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -12771,9 +12771,9 @@
           "core.py": "d26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a",
           "data.py": "ac589ad067c4b27fce3844d56e80b4504531b33b479285c1a6dd0de897e55103",
           "research.py": "e04798caaa69264a7f2207cf03490b34b258779ff55b2e4327302e76c1a418e5",
-          "saved_candidate_pool.py": "2b8517e99f4ad80bf3d812b14b0f61c530d7de56cf4a944dd86d4eaf759e28e6",
+          "saved_candidate_pool.py": "d864fac6bd5575cab411ee74d8ed323f9f9105b36dadb5f22badb548af3b6613",
           "strategies.py": "7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0",
-          "walk_forward.py": "05fa71f7cff458d47f7432861bc160a6ac1171f63f370ed8a3a813dfea901dea"
+          "walk_forward.py": "8deca9f555ed1a390c0e90a36a07e655bc263ac887b9c7021846c2f9b7684fe0"
         },
         "source_identity": "5e8c32efea7e3a067013c884a8e5386a1601405dc5c973bfab182569ff73505d",
         "source_type": "synthetic"

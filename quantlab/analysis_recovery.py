@@ -48,12 +48,11 @@ _locks_guard = threading.Lock()
 _local = threading.local()
 
 
-class RecoveryError(ValueError):
-    pass
+from .errors import RecoveryError, fail
 
 
 def _fail(message):
-    raise RecoveryError(message)
+    fail(message, RecoveryError)
 
 
 def _json(value):
@@ -181,10 +180,12 @@ def admission(paths, *, timeout=LOCK_TIMEOUT):
         while True:
             try:
                 if os.name == 'nt':
+                    # Load this platform-specific API only on its supported execution path.
                     import msvcrt
                     stream.seek(0)
                     msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
                 else:
+                    # Load this platform-specific API only on its supported execution path.
                     import fcntl
                     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
@@ -393,7 +394,8 @@ def _append(db, state, events):
 
 
 def _initialize(paths):
-    from .desktop_runtime import atomic_write, _sync_directory
+    # Keep operation-specific dependencies out of module startup.
+    from .runtime_support import atomic_write, _sync_directory
     bootstrap, database, sentinel = _location(paths)
     if sentinel.exists() or database.exists():
         _fail('Recovery controls already exist')
@@ -420,8 +422,10 @@ def _initialize(paths):
 
 def plan_bindings(plan):
     """Pure approved-plan binding; no provider construction or credentials."""
+    # Keep operation-specific dependencies out of module startup.
     from .core import content_hash, canonical_json
-    from .research_analysis import validate_analysis_plan, analysis_request, expected_provider_descriptor
+    # Keep operation-specific dependencies out of module startup.
+    from .analysis_contracts import validate_analysis_plan, analysis_request, expected_provider_descriptor
     plan = validate_analysis_plan(plan)
     b = plan['binding']
     descriptor = expected_provider_descriptor(plan)
@@ -515,7 +519,9 @@ def register_launch(paths, *, job_id, helper_nonce, approved_plan, request, admi
     Must commit before helper gate authorization. The helper may verify this row
     but must never register/adopt a launch itself after the GUI has disappeared.
     """
-    from .desktop_runtime import validate_analysis_request
+    # Keep operation-specific dependencies out of module startup.
+    from .runtime_support import validate_analysis_request
+    # Keep operation-specific dependencies out of module startup.
     from .core import content_hash
     _require_admission(paths, admission)
     _hex(job_id, 32)
@@ -586,6 +592,7 @@ def validate_stop_receipt(paths, launch_id, *, record=None):
         or launch['epoch'] != state['workspaces'][identity['root']]['epoch']):
         _fail('Original workspace or restore epoch differs')
     if record is not None:
+        # Keep operation-specific dependencies out of module startup.
         from .core import content_hash
         bindings = plan_bindings(record['plan'])
         if (any(launch[k] != v for k, v in bindings.items())

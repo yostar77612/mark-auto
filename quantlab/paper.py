@@ -168,50 +168,7 @@ def _reduce(state, op, payload):
             if order['status'] != 'filled':
                 order['status'] = 'cancelled' if typ == 'cancel' else 'rejected'
         elif typ == 'fill':
-            s['last_mark_price'], s['last_mark_timestamp'] = e['price'], e['timestamp']
-            intent = order['intent']
-            direction = 1 if intent['side'] == 'buy' else -1
-            remaining, realized = e['quantity'], Decimal('0')
-            price, multiplier = Decimal(e['price']), Decimal(e['multiplier'])
-            expense = Decimal(e['commission']) + Decimal(e['tax'])
-            expense_remaining = expense
-            for lot in s['lots']:
-                if remaining and lot['quantity'] and lot['direction'] != direction:
-                    matched = min(remaining, lot['quantity'])
-                    gross = (price - Decimal(lot['price'])) * lot['direction'] * matched * multiplier
-                    realized += gross
-                    lot['gross_realized'] = str(Decimal(lot['gross_realized']) + gross)
-                    allocated = expense_remaining if matched == remaining else expense * matched / e['quantity']
-                    expense_remaining -= allocated
-                    lot['exit_cost'] = str(Decimal(lot['exit_cost']) + allocated)
-                    remaining -= matched
-                    lot['quantity'] -= matched
-                    if not lot['quantity']:
-                        lot_net = Decimal(lot['gross_realized']) - Decimal(lot['entry_cost']) - Decimal(lot['exit_cost'])
-                        s['round_trips'].append(dict(entry_fill_id=lot['entry_fill_id'], exit_fill_id=e['fill_id'],
-                            quantity=lot['original_quantity'], gross_pnl=lot['gross_realized'], entry_cost=lot['entry_cost'],
-                            exit_cost=lot['exit_cost'], net_pnl=str(lot_net), timestamp=e['timestamp']))
-                        s['consecutive_losses'] = s['consecutive_losses'] + 1 if lot_net < 0 else 0
-                        s['max_consecutive_losses_observed'] = max(s['max_consecutive_losses_observed'], s['consecutive_losses'])
-            s['lots'] = [lot for lot in s['lots'] if lot['quantity']]
-            if remaining:
-                s['lots'].append(dict(quantity=remaining, original_quantity=remaining, direction=direction, price=e['price'], entry_trade_date=order['trade_date'],
-                                      entry_fill_id=e['fill_id'], entry_cost=str(expense_remaining), gross_realized='0', exit_cost='0'))
-            net = realized - Decimal(e['commission']) - Decimal(e['tax'])
-            s['cash'] = str(Decimal(s['cash']) + net)
-            day = order['trade_date']
-            s['daily_pnl'][day] = str(Decimal(s['daily_pnl'].get(day, '0')) + net)
-            position = s['positions'].get(intent['contract_id'], 0) + direction * e['quantity']
-            if position:
-                s['positions'][intent['contract_id']] = position
-            else:
-                s['positions'].pop(intent['contract_id'], None)
-            s['fills'][e['fill_id']] = e
-            order['filled_quantity'] += e['quantity']
-            if order['filled_quantity'] == intent['quantity']:
-                order['status'] = 'filled'
-            elif order['status'] not in ('cancelled', 'cancel_pending', 'unknown'):
-                order['status'] = 'partial'
+            _reduce_fill(s, order, e)
     elif op == 'quarantine':
         s['quarantined'][payload['event_id']] = payload
         s['reconciliation_required'] = True
@@ -241,6 +198,52 @@ def _reduce(state, op, payload):
         s['last_timestamp'] = stamp
     return s
 
+
+def _reduce_fill(s, order, e):
+    s['last_mark_price'], s['last_mark_timestamp'] = e['price'], e['timestamp']
+    intent = order['intent']
+    direction = 1 if intent['side'] == 'buy' else -1
+    remaining, realized = e['quantity'], Decimal('0')
+    price, multiplier = Decimal(e['price']), Decimal(e['multiplier'])
+    expense = Decimal(e['commission']) + Decimal(e['tax'])
+    expense_remaining = expense
+    for lot in s['lots']:
+        if remaining and lot['quantity'] and lot['direction'] != direction:
+            matched = min(remaining, lot['quantity'])
+            gross = (price - Decimal(lot['price'])) * lot['direction'] * matched * multiplier
+            realized += gross
+            lot['gross_realized'] = str(Decimal(lot['gross_realized']) + gross)
+            allocated = expense_remaining if matched == remaining else expense * matched / e['quantity']
+            expense_remaining -= allocated
+            lot['exit_cost'] = str(Decimal(lot['exit_cost']) + allocated)
+            remaining -= matched
+            lot['quantity'] -= matched
+            if not lot['quantity']:
+                lot_net = Decimal(lot['gross_realized']) - Decimal(lot['entry_cost']) - Decimal(lot['exit_cost'])
+                s['round_trips'].append(dict(entry_fill_id=lot['entry_fill_id'], exit_fill_id=e['fill_id'],
+                    quantity=lot['original_quantity'], gross_pnl=lot['gross_realized'], entry_cost=lot['entry_cost'],
+                    exit_cost=lot['exit_cost'], net_pnl=str(lot_net), timestamp=e['timestamp']))
+                s['consecutive_losses'] = s['consecutive_losses'] + 1 if lot_net < 0 else 0
+                s['max_consecutive_losses_observed'] = max(s['max_consecutive_losses_observed'], s['consecutive_losses'])
+    s['lots'] = [lot for lot in s['lots'] if lot['quantity']]
+    if remaining:
+        s['lots'].append(dict(quantity=remaining, original_quantity=remaining, direction=direction, price=e['price'], entry_trade_date=order['trade_date'],
+                              entry_fill_id=e['fill_id'], entry_cost=str(expense_remaining), gross_realized='0', exit_cost='0'))
+    net = realized - Decimal(e['commission']) - Decimal(e['tax'])
+    s['cash'] = str(Decimal(s['cash']) + net)
+    day = order['trade_date']
+    s['daily_pnl'][day] = str(Decimal(s['daily_pnl'].get(day, '0')) + net)
+    position = s['positions'].get(intent['contract_id'], 0) + direction * e['quantity']
+    if position:
+        s['positions'][intent['contract_id']] = position
+    else:
+        s['positions'].pop(intent['contract_id'], None)
+    s['fills'][e['fill_id']] = e
+    order['filled_quantity'] += e['quantity']
+    if order['filled_quantity'] == intent['quantity']:
+        order['status'] = 'filled'
+    elif order['status'] not in ('cancelled', 'cancel_pending', 'unknown'):
+        order['status'] = 'partial'
 
 class PaperBroker:
     def __init__(self, journal_path: Path, *, instrument: Instrument, costs: CostSpec, limits: RiskLimits,

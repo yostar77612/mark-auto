@@ -47,7 +47,9 @@ def source_campaign_folder(paths, reference):
 
 
 def _prepare_saved_plan(data, plan_payload, paths, saved_source, registry):
+    # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import validate_walk_forward_request
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.saved_candidate_pool import admit_saved_campaign_pool, load_original_dataset
     chronology = validate_walk_forward_request(plan_payload, saved_source)
     # Validate the new data before indexing its first training timestamp.
@@ -79,13 +81,16 @@ def _range(data, bounds):
 
 
 def preview_walk_forward(data, plan_payload, paths, saved_source=None):
-    from desktop_ui import research_controls
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_presentation import research_controls
+    # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import validate_walk_forward_request
     validate_walk_forward_request(plan_payload, saved_source)
     registry = research_controls(paths) / 'holdout-registry.sqlite3'
     if saved_source is None:
         plan = walk_forward_plan_from_dict(plan_payload)
     else:
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.saved_candidate_pool import SavedCandidatePoolError
         try:
             plan, rejection = _prepare_saved_plan(data, plan_payload, paths, saved_source, registry)
@@ -146,7 +151,8 @@ def compact_walk_forward(state, reference):
 
 
 def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False):
-    from desktop_ui import _dataset, research_controls
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_presentation import _dataset, research_controls
     if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
         required = {'plan'} if operation.endswith('_preview') else {'plan', 'preview_identity'}
         if 'saved_source' in payload:
@@ -171,6 +177,7 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
             return compact_walk_forward(read_walk_forward_state(output), identity)
         source_options = {}
         if payload.get('saved_source') is not None:
+            # Keep operation-specific dependencies out of module startup.
             from quantlab.saved_candidate_pool import load_original_dataset
             source = payload['saved_source']
             source_options = {'source_campaign_dir': source_campaign_folder(paths, source['campaign_reference']),
