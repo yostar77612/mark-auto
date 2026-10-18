@@ -1,6 +1,7 @@
 """Fast, offline documentation layering and provenance contracts."""
 import difflib
 import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -11,18 +12,24 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PAIRS = (
+    ('README.md', 'README_before_layering.md'),
     ('docs/agent/PROJECT_STATE.md', 'PROJECT_STATE_checkpoints.md'),
     ('docs/analysis/03_CODE_QUALITY_AND_RISKS.md',
      '03_CODE_QUALITY_AND_RISKS_checkpoints.md'),
 )
 HISTORY = ROOT / 'docs/agent/history'
+HISTORY_LINK_REASON = (
+    'relative links in the verbatim text below resolve from the original file '
+    'location and are intentionally not rewritten'
+)
+README_SHA256 = '61174a23c71a8078f319256852a6c11907d26a4d6c3913a54191af92bdfffa36'
 LINK = re.compile(r'!?\[[^\]\n]*\]\(\s*(<[^>]+>|[^\s)]+)(?:\s+"[^"]*")?\s*\)')
 REFERENCE = re.compile(r'^\s*\[[^\]]+\]:\s*(<[^>]+>|\S+)', re.MULTILINE)
 LEGACY = re.compile(r'(?<![\w/])(?:trader/|gui\.py\b|run\.py\b|requirements\.txt\b)')
 
 
 def active_markdown(text):
-    """Literal examples and archived original bodies do not create links."""
+    """Literal examples do not create links; history is excluded by document_paths."""
     lines = []
     fence = None
     for line in text.splitlines():
@@ -40,9 +47,11 @@ def active_markdown(text):
 
 
 def document_paths():
-    return sorted({ROOT / 'README.md', ROOT / 'packaging/README.md',
-                   ROOT / 'archives/legacy_autotrading/README.md',
-                   *(ROOT / 'docs').rglob('*.md')})
+    # Verbatim historical links resolve from their original location (see banners).
+    paths = {ROOT / 'README.md', ROOT / 'packaging/README.md',
+             ROOT / 'archives/legacy_autotrading/README.md',
+             *(ROOT / 'docs').rglob('*.md')}
+    return sorted(path for path in paths if not path.is_relative_to(HISTORY))
 
 
 def link_path(source, target):
@@ -105,6 +114,30 @@ class DocumentationLayeringTests(unittest.TestCase):
                         if block.strip():
                             self.assertIn(block, history)
 
+    def test_readme_original_bytes_and_nonempty_lines(self):
+        header, body = original_body(HISTORY / 'README_before_layering.md')
+        self.assertIn('Original-SHA256: ' + README_SHA256, header)
+        self.assertIn('Original-Lines: 374', header)
+        self.assertEqual(hashlib.sha256(body).hexdigest(), README_SHA256)
+        self.assertEqual(len(body.splitlines()), 374)
+        current = (ROOT / 'README.md').read_text(encoding='utf-8').splitlines()
+        preserved = set(current) | set(body.decode('utf-8').splitlines())
+        for line in body.decode('utf-8').splitlines():
+            if line.strip():
+                self.assertIn(line, preserved)
+
+    def test_history_link_exclusion_is_limited_to_history_directory(self):
+        all_paths = {ROOT / 'README.md', ROOT / 'packaging/README.md',
+                     ROOT / 'archives/legacy_autotrading/README.md',
+                     *(ROOT / 'docs').rglob('*.md')}
+        histories = set(HISTORY.rglob('*.md'))
+        self.assertTrue(histories)
+        self.assertEqual(all_paths - set(document_paths()), histories)
+        self.assertEqual(HISTORY.relative_to(ROOT).as_posix(), 'docs/agent/history')
+        for path in histories:
+            header, _ = original_body(path)
+            self.assertIn(HISTORY_LINK_REASON, header.splitlines())
+
     def test_readme_line_limit(self):
         self.assertLessEqual(len((ROOT / 'README.md').read_bytes().splitlines()), 150)
 
@@ -143,6 +176,11 @@ class DocumentationLayeringTests(unittest.TestCase):
             if HISTORY in path.parents or path.name == '06_PRODUCT_OPTIMIZATION_PLAN.md':
                 continue
             text = path.read_text(encoding='utf-8')
+            if path == ROOT / 'docs/analysis/t12_test_edits.json':
+                # Before fields are historical evidence; current/after paths still count.
+                text = json.dumps(json.loads(text, object_hook=lambda item: {
+                    key: value for key, value in item.items() if key != 'before'
+                }))
             text = re.sub(r'https?://[^\s<>`"\)]+', '', text)
             text = re.sub(r'archives/legacy_autotrading/[^\s<>`"\),]+', '', text)
             if LEGACY.search(text):

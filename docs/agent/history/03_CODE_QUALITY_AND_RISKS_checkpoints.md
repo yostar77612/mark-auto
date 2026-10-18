@@ -7,6 +7,8 @@ Original-Lines: 643
 
 Complete original text, in original order. The literal block retains historical statements and paths as evidence.
 
+relative links in the verbatim text below resolve from the original file location and are intentionally not rewritten
+
 <!-- ORIGINAL_BODY_START -->
 ~~~~~markdown
 # mark-auto 程式品質與交易風險審查

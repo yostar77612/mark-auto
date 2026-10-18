@@ -6043,12 +6043,16 @@
       "docs/analysis/t12_legacy_move_notes.md"
     ],
     "legacy_tests": 13,
-    "legacy_assertions": 39,
+    "legacy_assertions": 40,
     "payload_inventory_equal": true,
     "verification": "Focused tests and static gates; full suite controller-owned per sandbox instruction. See move notes for exact results and alternate-index handling."
   },
   "t12_documentation_layering": {
     "readme_max_lines": 150,
+    "readme_history_source_commit": "7be525fcbf8e55d8c699422252fd8dd93f4649a6",
+    "readme_history_sha256": "61174a23c71a8078f319256852a6c11907d26a4d6c3913a54191af92bdfffa36",
+    "readme_history_lines": 374,
+    "relative_link_exclusion": "docs/agent/history only; verbatim relative links resolve from original file locations",
     "manual": "docs/user/使用手冊.md",
     "pages": 7,
     "history": "docs/agent/history",

@@ -12,3 +12,6 @@ packaging/languages/ChineseTraditional.isl -text
 
 # Literal documentation history preserves original bytes for provenance checks.
 docs/agent/history/* -text
+
+# The verbatim original README retains upstream trailing whitespace.
+docs/agent/history/README_before_layering.md whitespace=-blank-at-eol

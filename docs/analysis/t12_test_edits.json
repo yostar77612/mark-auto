@@ -5,32 +5,27 @@
       "justification": "Pure path updates to archives/legacy_autotrading for all source reads and CLI argv paths; assertions and semantics unchanged.",
       "before": {
         "tests": 13,
-        "assertions": 39
+        "assertions": 40
       },
       "after": {
         "tests": 13,
-        "assertions": 39
+        "assertions": 40
       },
       "edits": [
         {
           "line": 38,
-          "before": "        for path in ('archives/legacy_autotrading/trader/__init__.py', 'archives/legacy_autotrading/gui.py'):",
+          "before": "        for path in ('trader/__init__.py', 'gui.py'):",
           "after": "        for path in ('archives/legacy_autotrading/trader/__init__.py', 'archives/legacy_autotrading/gui.py'):"
         },
         {
           "line": 41,
-          "before": "        module = tree('archives/legacy_autotrading/run.py')",
+          "before": "        module = tree('run.py')",
           "after": "        module = tree('archives/legacy_autotrading/run.py')"
         },
         {
           "line": 50,
-          "before": "        main = extract('archives/legacy_autotrading/run.py', ['main'], {'ArgumentParser': ArgumentParser})['main']",
-          "after": "        main = extract('archives/legacy_autotrading/run.py', ['main'], {'ArgumentParser': ArgumentParser})['main']"
-        },
-        {
-          "line": 51,
-          "before": "        for args, code in [(['archives/legacy_autotrading/run.py', '--help'], 0), (['archives/legacy_autotrading/run.py'], 2), (['archives/legacy_autotrading/run.py', '--task', 'auto_trader'], 2)]:",
-          "after": "        for args, code in [(['archives/legacy_autotrading/run.py', '--help'], 0), (['archives/legacy_autotrading/run.py'], 2), (['archives/legacy_autotrading/run.py', '--task', 'auto_trader'], 2)]:"
+          "before": "        main = extract('run.py', ['main'], {'ArgumentParser': ArgumentParser})['main']\n        for args, code in [(['run.py', '--help'], 0), (['run.py'], 2), (['run.py', '--task', 'auto_trader'], 2)]:",
+          "after": "        main = extract('archives/legacy_autotrading/run.py', ['main'], {'ArgumentParser': ArgumentParser})['main']\n        for args, code in [(['archives/legacy_autotrading/run.py', '--help'], 0), (['archives/legacy_autotrading/run.py'], 2), (['archives/legacy_autotrading/run.py', '--task', 'auto_trader'], 2)]:"
         },
         {
           "line": 57,
@@ -39,7 +34,7 @@
         },
         {
           "line": 66,
-          "before": "        ns = extract('archives/legacy_autotrading/trader/config.py', ['DisabledBroker', 'create_api'], {'sj': broker_sdk})",
+          "before": "        ns = extract('trader/config.py', ['DisabledBroker', 'create_api'], {'sj': broker_sdk})",
           "after": "        ns = extract('archives/legacy_autotrading/trader/config.py', ['DisabledBroker', 'create_api'], {'sj': broker_sdk})"
         },
         {
@@ -49,67 +44,67 @@
         },
         {
           "line": 86,
-          "before": "                method = extract('archives/legacy_autotrading/trader/utils/orders.py', [name], {'TradeData': data}, class_name='OrderTool')[name]",
+          "before": "                method = extract('trader/utils/orders.py', [name], {'TradeData': data}, class_name='OrderTool')[name]",
           "after": "                method = extract('archives/legacy_autotrading/trader/utils/orders.py', [name], {'TradeData': data}, class_name='OrderTool')[name]"
         },
         {
           "line": 91,
-          "before": "        method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['_check_permission'], {'WHITELIST': chats, 'USER_WHITELIST': users}, class_name='TelegramBot')['_check_permission']",
+          "before": "        method = extract('trader/utils/bot.py', ['_check_permission'], {'WHITELIST': chats, 'USER_WHITELIST': users}, class_name='TelegramBot')['_check_permission']",
           "after": "        method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['_check_permission'], {'WHITELIST': chats, 'USER_WHITELIST': users}, class_name='TelegramBot')['_check_permission']"
         },
         {
           "line": 100,
-          "before": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/bot.py').read_text(encoding='utf-8')",
+          "before": "        source = (ROOT / 'trader/utils/bot.py').read_text(encoding='utf-8')",
           "after": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/bot.py').read_text(encoding='utf-8')"
         },
         {
           "line": 105,
-          "before": "        parse = extract('archives/legacy_autotrading/trader/utils/bot.py', ['_numeric_ids'])['_numeric_ids']",
+          "before": "        parse = extract('trader/utils/bot.py', ['_numeric_ids'])['_numeric_ids']",
           "after": "        parse = extract('archives/legacy_autotrading/trader/utils/bot.py', ['_numeric_ids'])['_numeric_ids']"
         },
         {
           "line": 113,
-          "before": "        bot = next(n for n in tree('archives/legacy_autotrading/trader/utils/bot.py').body if isinstance(n, ast.ClassDef) and n.name == 'TelegramBot')",
+          "before": "        bot = next(n for n in tree('trader/utils/bot.py').body if isinstance(n, ast.ClassDef) and n.name == 'TelegramBot')",
           "after": "        bot = next(n for n in tree('archives/legacy_autotrading/trader/utils/bot.py').body if isinstance(n, ast.ClassDef) and n.name == 'TelegramBot')"
         },
         {
           "line": 123,
-          "before": "            method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['__init__'], {'WHITELIST': chats, 'USER_WHITELIST': users, 'logging': logging}, class_name='TelegramBot')['__init__']",
+          "before": "            method = extract('trader/utils/bot.py', ['__init__'], {'WHITELIST': chats, 'USER_WHITELIST': users, 'logging': logging}, class_name='TelegramBot')['__init__']",
           "after": "            method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['__init__'], {'WHITELIST': chats, 'USER_WHITELIST': users, 'logging': logging}, class_name='TelegramBot')['__init__']"
         },
         {
           "line": 131,
-          "before": "            fn = extract('archives/legacy_autotrading/trader/utils/runtime.py', ['_account_dir'], {'re': re, 'RUNTIME_ROOT': Path(directory)})['_account_dir']",
+          "before": "            fn = extract('trader/utils/runtime.py', ['_account_dir'], {'re': re, 'RUNTIME_ROOT': Path(directory)})['_account_dir']",
           "after": "            fn = extract('archives/legacy_autotrading/trader/utils/runtime.py', ['_account_dir'], {'re': re, 'RUNTIME_ROOT': Path(directory)})['_account_dir']"
         },
         {
           "line": 140,
-          "before": "            fn = extract('archives/legacy_autotrading/trader/utils/database/redis.py', [name], class_name='RedisTools')[name]",
+          "before": "            fn = extract('trader/utils/database/redis.py', [name], class_name='RedisTools')[name]",
           "after": "            fn = extract('archives/legacy_autotrading/trader/utils/database/redis.py', [name], class_name='RedisTools')[name]"
         },
         {
           "line": 143,
-          "before": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/file.py').read_text(encoding='utf-8')",
+          "before": "        source = (ROOT / 'trader/utils/file.py').read_text(encoding='utf-8')",
           "after": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/file.py').read_text(encoding='utf-8')"
         },
         {
           "line": 145,
-          "before": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/database/redis.py').read_text(encoding='utf-8')",
+          "before": "        source = (ROOT / 'trader/utils/database/redis.py').read_text(encoding='utf-8')",
           "after": "        source = (ROOT / 'archives/legacy_autotrading/trader/utils/database/redis.py').read_text(encoding='utf-8')"
         },
         {
           "line": 147,
-          "before": "        crawler_tree = tree('archives/legacy_autotrading/trader/utils/crawler.py')",
+          "before": "        crawler_tree = tree('trader/utils/crawler.py')",
           "after": "        crawler_tree = tree('archives/legacy_autotrading/trader/utils/crawler.py')"
         },
         {
           "line": 156,
-          "before": "        method = extract('archives/legacy_autotrading/trader/utils/database/sql.py', ['__init__'], {'logging': logging, 'DBConfig': SimpleNamespace(ENGINE='mysql', HAS_DB=False)}, class_name='SQLDatabase')['__init__']",
+          "before": "        method = extract('trader/utils/database/sql.py', ['__init__'], {'logging': logging, 'DBConfig': SimpleNamespace(ENGINE='mysql', HAS_DB=False)}, class_name='SQLDatabase')['__init__']",
           "after": "        method = extract('archives/legacy_autotrading/trader/utils/database/sql.py', ['__init__'], {'logging': logging, 'DBConfig': SimpleNamespace(ENGINE='mysql', HAS_DB=False)}, class_name='SQLDatabase')['__init__']"
         },
         {
           "line": 161,
-          "before": "        for node in ast.walk(tree('archives/legacy_autotrading/trader/utils/database/sql.py')):",
+          "before": "        for node in ast.walk(tree('trader/utils/database/sql.py')):",
           "after": "        for node in ast.walk(tree('archives/legacy_autotrading/trader/utils/database/sql.py')):"
         }
       ]
@@ -120,5 +115,50 @@
     "existing_test_edits": [],
     "new_test_file": "tests/test_docs_layering.py",
     "justification": "Documentation-only coverage; all existing assertions and test files unchanged in part C."
+  },
+  "repair": {
+    "existing_test_edits": [
+      {
+        "file": "tests/test_docs_layering.py",
+        "justification": "QA-requested provenance repair: add original README byte/hash/count and git-object checks; explicitly exclude only verbatim history links with banner coverage. Existing provenance assertions retained and extended to README. The stale-path scan excludes only ledger before fields because they must record original paths; after fields remain checked.",
+        "edits": [
+          {
+            "line": 4,
+            "before": "",
+            "after": "import json"
+          },
+          {
+            "line": 15,
+            "before": "",
+            "after": "    ('README.md', 'README_before_layering.md'),"
+          },
+          {
+            "line": 21,
+            "before": "",
+            "after": "HISTORY_LINK_REASON = (\n    'relative links in the verbatim text below resolve from the original file '\n    'location and are intentionally not rewritten'\n)\nREADME_SHA256 = '61174a23c71a8078f319256852a6c11907d26a4d6c3913a54191af92bdfffa36'"
+          },
+          {
+            "line": 32,
+            "before": "    \"\"\"Literal examples and archived original bodies do not create links.\"\"\"",
+            "after": "    \"\"\"Literal examples do not create links; history is excluded by document_paths.\"\"\""
+          },
+          {
+            "line": 50,
+            "before": "    return sorted({ROOT / 'README.md', ROOT / 'packaging/README.md',\n                   ROOT / 'archives/legacy_autotrading/README.md',\n                   *(ROOT / 'docs').rglob('*.md')})",
+            "after": "    # Verbatim historical links resolve from their original location (see banners).\n    paths = {ROOT / 'README.md', ROOT / 'packaging/README.md',\n             ROOT / 'archives/legacy_autotrading/README.md',\n             *(ROOT / 'docs').rglob('*.md')}\n    return sorted(path for path in paths if not path.is_relative_to(HISTORY))"
+          },
+          {
+            "line": 117,
+            "before": "",
+            "after": "    def test_readme_original_bytes_and_nonempty_lines(self):\n        header, body = original_body(HISTORY / 'README_before_layering.md')\n        self.assertIn('Original-SHA256: ' + README_SHA256, header)\n        self.assertIn('Original-Lines: 374', header)\n        self.assertEqual(hashlib.sha256(body).hexdigest(), README_SHA256)\n        self.assertEqual(len(body.splitlines()), 374)\n        current = (ROOT / 'README.md').read_text(encoding='utf-8').splitlines()\n        preserved = set(current) | set(body.decode('utf-8').splitlines())\n        for line in body.decode('utf-8').splitlines():\n            if line.strip():\n                self.assertIn(line, preserved)\n\n    def test_history_link_exclusion_is_limited_to_history_directory(self):\n        all_paths = {ROOT / 'README.md', ROOT / 'packaging/README.md',\n                     ROOT / 'archives/legacy_autotrading/README.md',\n                     *(ROOT / 'docs').rglob('*.md')}\n        histories = set(HISTORY.rglob('*.md'))\n        self.assertTrue(histories)\n        self.assertEqual(all_paths - set(document_paths()), histories)\n        self.assertEqual(HISTORY.relative_to(ROOT).as_posix(), 'docs/agent/history')\n        for path in histories:\n            header, _ = original_body(path)\n            self.assertIn(HISTORY_LINK_REASON, header.splitlines())\n"
+          },
+          {
+            "line": 179,
+            "before": "",
+            "after": "            if path == ROOT / 'docs/analysis/t12_test_edits.json':\n                # Before fields are historical evidence; current/after paths still count.\n                text = json.dumps(json.loads(text, object_hook=lambda item: {\n                    key: value for key, value in item.items() if key != 'before'\n                }))"
+          }
+        ]
+      }
+    ]
   }
 }
