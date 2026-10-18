@@ -332,15 +332,16 @@ ObjectNames, payloads, validation, quotas and one-time OOS consumption are uncha
 
 - `desktop_theme.py` owns colour tokens (`COLORS`, `STATUS_COLORS`), pixel font sizes,
   spacing and the complete application QSS. `build_app_stylesheet()` resolves these
-  tokens; `apply_theme()` installs it on the QApplication, leaving widget QSS empty.
+  tokens; `apply_theme(window)` installs it on the MainWindow (not the QApplication, so independently hosted top-level widgets render as before); widgets other than the window root and the market dashboard keep empty QSS.
 - Existing objectNames and `role=primary|secondary|danger` remain stable. Runtime
   status colours use `status=success|warning|danger|neutral`; `set_status()` validates
   the state and unpolishes/polishes the widget. Market rise/fall and notification
   colours retain their original scoped palette. Form feedback uses a temporary
   `feedback` property and restores its previous value after 1800 ms.
 - No desktop or tools module may call `setStyleSheet` outside the theme module.
-  The AST and runtime allowlists in `tests/test_no_inline_stylesheet.py` are empty:
-  QPainter chart drawing needs no QSS exception. Tests cover every button role,
+  The AST allowlist in `tests/test_no_inline_stylesheet.py` is empty; the runtime widget allowlist
+  contains only `market_dashboard`, which receives its scoped dark sheet from
+  `desktop_theme.apply_market_theme()`. QPainter chart drawing needs no QSS exception. Tests cover every button role,
   empty widget stylesheets, live status palette refresh, and existing feedback.
 - Visual parity is checked against a `git archive HEAD` copy with
   `tools/ui_snapshot.py --size 1366x768` on both trees using identical Qt settings.
