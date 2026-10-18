@@ -298,7 +298,11 @@ class PageSnapshotTests(unittest.TestCase):
                 for field in ('visible_text', 'visible_input_count', 'button_count',
                               'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
                     with self.subTest(page=name, field=field):
-                        self.assertEqual(actual['pages'][name][field], page[field])
+                        got, want = actual['pages'][name][field], page[field]
+                        if field == 'visible_text' and sys.platform != 'win32':
+                            # The Windows archive renders workspace paths with backslashes.
+                            want = [text.replace('\', '/') for text in want]
+                        self.assertEqual(got, want)
             # The archive uses Windows fonts. Other platforms have different font
             # metrics and rasterization; keep geometry and pixel parity exact on Windows.
             # ObjectName parity remains exact on every platform in PageInteractionTests.
