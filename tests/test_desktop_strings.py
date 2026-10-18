@@ -51,7 +51,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_all_migrated_lookup_keys_exist_and_syntax_is_python_311(self):
         root = Path(__file__).resolve().parents[1]
-        from test_no_hardcoded_ui_text import UI_MODULES
+        from tests.test_no_hardcoded_ui_text import UI_MODULES
         for name in ('desktop_strings.py', *UI_MODULES):
             tree = ast.parse((root / name).read_text(encoding='utf-8-sig'),
                              filename=name, feature_version=(3, 11))
