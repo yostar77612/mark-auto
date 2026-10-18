@@ -6,7 +6,9 @@ import unittest
 
 # QPainter chart drawing uses no setStyleSheet calls, so no exceptions are needed.
 STYLESHEET_ALLOWLIST = frozenset()
-WIDGET_STYLESHEET_ALLOWLIST = frozenset()
+# The market dashboard keeps a widget-scoped dark theme (applied by desktop_theme.apply_market_theme)
+# so it renders identically when hosted standalone, outside the main window's application theme.
+WIDGET_STYLESHEET_ALLOWLIST = frozenset({'market_dashboard'})
 ROOT = Path(__file__).resolve().parents[1]
 
 

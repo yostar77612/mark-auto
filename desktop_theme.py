@@ -1,5 +1,5 @@
 """Application QSS and presentation tokens; widgets select styles via properties."""
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 COLORS = {
     'background': '#101720',
@@ -42,6 +42,27 @@ FONT_SIZES = {'body': 14, 'hint': 12, 'page_title': 22, 'market_title': 20}
 SPACING = {'label': 3, 'input': 7, 'button_vertical': 9, 'button_horizontal': 14}
 STATUS_COLORS = {state: COLORS[state] for state in ('success', 'warning', 'danger', 'neutral')}
 
+_MARKET_QSS = """
+QWidget#market_dashboard { background:@background@; color:@text@; }
+QWidget#market_dashboard QWidget { background:@background@; color:@text@; }
+QWidget#market_dashboard QLabel { color:@text@; }
+QWidget#market_dashboard QGroupBox { border:1px solid @table_grid@; border-radius:6px; margin-top:10px; padding:9px; font-weight:600; color:@text@; }
+QWidget#market_dashboard QGroupBox::title { subcontrol-origin:margin; left:10px; }
+QWidget#market_dashboard QLineEdit, QWidget#market_dashboard QComboBox, QWidget#market_dashboard QSpinBox, QWidget#market_dashboard QDoubleSpinBox, QWidget#market_dashboard QListWidget, QWidget#market_dashboard QTableWidget { background:@input_background@; color:@market_input_text@; border:1px solid @input_border@; border-radius:3px; padding:4px; selection-background-color:@market_selection@; }
+QWidget#market_dashboard QPushButton { background:@market_button@; color:@market_button_text@; padding:6px 9px; border:1px solid @market_button_border@; border-radius:4px; }
+QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid @focus_border@; }
+QWidget#market_dashboard QCheckBox { color:@header_text@; }
+QWidget#market_dashboard QHeaderView::section { background:@muted_background@; color:@header_text@; padding:5px; border:0; }
+QWidget#market_dashboard QTabBar::tab { background:@muted_background@; color:@header_text@; padding:7px; }
+QWidget#market_dashboard QTabBar::tab:selected { background:@tab_selection@; }
+QWidget#market_dashboard QLabel#market_title { font-size:@font_market_title@px; font-weight:700; }
+QWidget#market_dashboard QGroupBox[themePart="marketCard"] { padding:3px; }
+QWidget#market_dashboard QLabel#market_message { color:@market_warning@; }
+QWidget#market_dashboard QLabel[status="success"] { color:@market_fall@; }
+QWidget#market_dashboard QLabel[status="danger"] { color:@market_rise@; }
+QWidget#market_dashboard QLabel[status="neutral"] { color:@text@; }
+"""
+
 _QSS = """
 QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
 QWidget { background: @background@; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: @font_body@px; color: @text@; }
@@ -62,29 +83,11 @@ QHeaderView::section { background:@muted_background@; color:@header_text@; paddi
 QProgressBar { border: 1px solid @input_border@; border-radius: 4px; background: @input_background@; text-align: center; }
 QProgressBar::chunk { background: @primary@; }
 
-QWidget#market_dashboard { background:@background@; color:@text@; }
-QWidget#market_dashboard QWidget { background:@background@; color:@text@; }
-QWidget#market_dashboard QLabel { color:@text@; }
-QWidget#market_dashboard QGroupBox { border:1px solid @table_grid@; border-radius:6px; margin-top:10px; padding:9px; font-weight:600; color:@text@; }
-QWidget#market_dashboard QGroupBox::title { subcontrol-origin:margin; left:10px; }
-QWidget#market_dashboard QLineEdit, QWidget#market_dashboard QComboBox, QWidget#market_dashboard QSpinBox, QWidget#market_dashboard QDoubleSpinBox, QWidget#market_dashboard QListWidget, QWidget#market_dashboard QTableWidget { background:@input_background@; color:@market_input_text@; border:1px solid @input_border@; border-radius:3px; padding:4px; selection-background-color:@market_selection@; }
-QWidget#market_dashboard QPushButton { background:@market_button@; color:@market_button_text@; padding:6px 9px; border:1px solid @market_button_border@; border-radius:4px; }
-QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid @focus_border@; }
-QWidget#market_dashboard QCheckBox { color:@header_text@; }
-QWidget#market_dashboard QHeaderView::section { background:@muted_background@; color:@header_text@; padding:5px; border:0; }
-QWidget#market_dashboard QTabBar::tab { background:@muted_background@; color:@header_text@; padding:7px; }
-QWidget#market_dashboard QTabBar::tab:selected { background:@tab_selection@; }
 
 QPushButton[role="secondary"] { background: transparent; color: @text@; border: 1px solid @button_border@; }
 QPushButton[role="secondary"]:hover { background: @button_hover@; }
 QPushButton[role="secondary"]:disabled { background: @muted_background@; color: @disabled_text@; }
 QLabel[themePart="pageTitle"] { font-size:@font_page_title@px; font-weight:600; }
-QWidget#market_dashboard QLabel#market_title { font-size:@font_market_title@px; font-weight:700; }
-QWidget#market_dashboard QGroupBox[themePart="marketCard"] { padding:3px; }
-QWidget#market_dashboard QLabel#market_message { color:@market_warning@; }
-QWidget#market_dashboard QLabel[status="success"] { color:@market_fall@; }
-QWidget#market_dashboard QLabel[status="danger"] { color:@market_rise@; }
-QWidget#market_dashboard QLabel[status="neutral"] { color:@text@; }
 QLabel[status="success"] { color:@success@; }
 QLabel[status="warning"] { color:@warning@; }
 QLabel[status="danger"] { color:@danger@; }
@@ -95,9 +98,8 @@ QWidget[feedback="true"] { border:2px solid @success@; }
 """
 
 
-def build_app_stylesheet():
-    """Return all application styles, including scoped market overrides."""
-    result = _QSS
+def _expand(template):
+    result = template
     for name, value in COLORS.items():
         result = result.replace('@' + name + '@', value)
     for name, value in FONT_SIZES.items():
@@ -107,12 +109,33 @@ def build_app_stylesheet():
     return result
 
 
-def apply_theme(app=None):
-    """Apply once at QApplication scope; individual widgets keep empty QSS."""
-    app = app or QApplication.instance()
+def build_app_stylesheet():
+    """Return the application styles (market dashboard styles are widget-scoped)."""
+    return _expand(_QSS)
+
+
+def build_market_stylesheet():
+    """Return the standalone-capable dark market dashboard styles."""
+    return _expand(_MARKET_QSS)
+
+
+def apply_market_theme(widget):
+    """Scope the market dashboard styles to its own widget (preserves standalone look)."""
+    widget.setStyleSheet(build_market_stylesheet())
+
+
+def apply_theme(target=None):
+    """Apply the application theme to `target` (a window: scoped like the former window QSS,
+    so independently hosted top-level widgets are unaffected) or, with no widget, to the
+    QApplication."""
+    stylesheet = build_app_stylesheet()
+    if isinstance(target, QWidget):
+        if target.styleSheet() != stylesheet:
+            target.setStyleSheet(stylesheet)
+        return
+    app = target or QApplication.instance()
     if app is None:
         raise RuntimeError('A QApplication is required')
-    stylesheet = build_app_stylesheet()
     if app.styleSheet() != stylesheet:
         app.setStyleSheet(stylesheet)
 

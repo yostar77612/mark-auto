@@ -3,7 +3,7 @@
 No network, timers, broker imports or embedded observations. refresh_requested is
 an intent only; host must perform its existing consent/background-job workflow.
 """
-from desktop_theme import apply_theme, set_status
+from desktop_theme import apply_market_theme, set_status
 from desktop_strings import ui_text
 from copy import deepcopy
 from quantlab.desktop_errors import error_message, exception_code
@@ -70,7 +70,7 @@ class MarketDashboard(QWidget):
 
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.setObjectName('market_dashboard'); apply_theme()
+        self.setObjectName('market_dashboard'); apply_market_theme(self)
         self._series={}; self._quote_series=None; self._quote_stale=False; self._watch=[]; self._watch_initialized=False; self._selected=''; self._timeframe='1d'
         self._indicator_config=deepcopy(DEFAULT_INDICATORS); self._restoring=False
         self._stale=False; self._error=''; self._indicator_widgets={}

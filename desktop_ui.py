@@ -729,7 +729,7 @@ class MainWindow(QMainWindow):
         self._pending_analysis_reconcile = False
         self.setWindowTitle(ui_text('ui.__init__.text_2'))
         self.resize(1366, 768)
-        apply_theme()
+        apply_theme(self)
         body = QWidget(); outer = QVBoxLayout(body)
         banner = QCheckBox(ui_text('ui.__init__.text_3'))
         banner.setObjectName('research_mode_status')

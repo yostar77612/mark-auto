@@ -89,7 +89,7 @@ class DesktopThemeTests(unittest.TestCase):
         window.notify_local('synthetic', error=True)
         window._show_account({'kill_switch': False})
         for widget in [window, *window.findChildren(QWidget)]:
-            if widget.objectName() not in WIDGET_STYLESHEET_ALLOWLIST:
+            if widget is not window and widget.objectName() not in WIDGET_STYLESHEET_ALLOWLIST:  # the window root carries the scoped application theme
                 self.assertEqual(widget.styleSheet(), '', widget.objectName())
 
     def test_snapshot_diff_boundaries_and_metrics_guard(self):
