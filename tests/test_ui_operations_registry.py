@@ -15,7 +15,6 @@ import locale
 import os
 from pathlib import Path
 import tempfile
-import subprocess
 import sys
 import unittest
 from unittest.mock import patch
@@ -34,7 +33,9 @@ FIXTURES = Path(__file__).parent / 'fixtures'
 @contextmanager
 def old_module():
     """Load the committed pre-refactor source under a disposable module name."""
-    raw = subprocess.check_output(['git', 'show', 'HEAD:desktop_ui.py'], cwd=FIXTURES.parents[1])
+    # The pre-refactor desktop_ui.py (main at the end of P2-A3) is committed as a fixture so the live
+    # old-vs-new comparison does not depend on git history (CI clones are shallow) or on HEAD.
+    raw = (FIXTURES / 'desktop_ui_pre_registry.py.txt').read_bytes()
     with workspace() as paths:
         source_file = paths.root / 'old_desktop_ui.py'
         source_file.write_bytes(raw)
@@ -316,9 +317,15 @@ class RegistryTests(unittest.TestCase):
                     profile_vault.parent.mkdir(parents=True)
                     profile_vault.write_bytes(sentinel)
                 with self.subTest(remembered=remembered), patch.object(Path, 'read_bytes', guarded_read):
+                    results = []
                     for execute in (old.execute_ui_operation, ui.execute_ui_operation):
-                        self.assertEqual(exercise(execute), expected)
+                        results.append(exercise(execute))
                         self.assertEqual({key: os.environ[key] for key in host_environment}, host_environment)
+                    self.assertEqual(results[1], results[0])
+                    if sys.platform == 'win32':
+                        # The golden (hashes of CRLF working-copy sources, Windows path spellings) was
+                        # recorded on Windows; other platforms rely on the live old-vs-new equality above.
+                        self.assertEqual(results[0], expected)
                 if remembered:
                     self.assertEqual(vault.path.read_bytes(), sentinel)
                     self.assertEqual(profile_vault.read_bytes(), sentinel)
@@ -362,8 +369,10 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(set(observed), set(expected['observations']))
         for operation in observed:
             with self.subTest(operation=operation):
-                self.assertEqual(legacy[operation], expected['observations'][operation])
-                self.assertEqual(observed[operation], expected['observations'][operation])
+                self.assertEqual(observed[operation], legacy[operation])
+                if sys.platform == 'win32':
+                    self.assertEqual(legacy[operation], expected['observations'][operation])
+                    self.assertEqual(observed[operation], expected['observations'][operation])
                 if operation not in expected['offline_limits']:
                     self.assertIn('result', observed[operation], 'Offline operation must succeed')
         for name in ('campaign_fixture', 'campaign_subscription_fixture'):
