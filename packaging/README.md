@@ -414,3 +414,22 @@ exercise the production predicates with canonical and dot-component positives,
 exact-root/trailing-root/sibling/ancestor negatives, and exact refusal messages.
 Cloud Python source contracts are not native Windows execution. Native CI remains
 pending; acceptance stays PARTIAL (exit 2) with historical continuity UNPROVEN.
+
+## Traditional Chinese installer language (T10 / P1-16)
+
+`packaging/languages/ChineseTraditional.isl` is the unmodified upstream build-time
+input for pinned Inno Setup **6.4.3**, tag **is-6_4_3**. Source:
+https://raw.githubusercontent.com/jrsoftware/issrc/is-6_4_3/Files/Languages/Unofficial/ChineseTraditional.isl
+
+SHA-256 (raw bytes, UTF-8 BOM and original line endings):
+`ab22b0ebf82969d1c9a7208e0e9f60e5119c0c95b9dacc00eb8e5582c7d3c604`.
+Inno Setup translations are redistributable under the Inno Setup license:
+https://github.com/jrsoftware/issrc/blob/is-6_4_3/license.txt .
+Translator credits remain in the file header (Enfeng Tsao; based on Samuel Lee).
+The language is compiled into the installer, not copied into the installed app
+payload. The build manifest records it as an input; no new download is needed.
+
+The sole `[Languages]` entry selects Traditional Chinese on every Windows locale.
+No `SourceDir` override is used: `languages\ChineseTraditional.isl` resolves
+relative to `packaging/markauto.iss` for both repository-root CI invocation and
+local ISCC invocation. Product/shortcut identity remains `Mark Auto`.

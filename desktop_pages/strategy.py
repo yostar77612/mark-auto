@@ -19,6 +19,9 @@ class StrategyPage(QWidget):
         layout = self.host.mount_page(self, ui_text('ui._strategy_page.text_1'))
         self.tabs, (layout, research, walk_forward) = strategy_tabs(layout)
         self.chatgpt_sign_in_entry = self.host.button(layout, ui_text('ui._strategy_page.text_2'), 'chatgpt_sign_in_entry', self.host.show_sign_in)
+        self.connection_status = QLabel(ui_text('settings.connection_hint'))
+        layout.addWidget(self.connection_status)
+        self.state.chatgpt_connection_status = self.connection_status
         layout.addWidget(QLabel(ui_text('ui._strategy_page.text_3')))
         self.strategy_form = StrategyForm(); layout.addWidget(self.strategy_form)
         advanced = self.host.advanced(layout)

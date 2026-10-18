@@ -189,7 +189,7 @@ class PackagingTests(unittest.TestCase):
                                  hashlib.sha256((root / name).read_bytes()).hexdigest())
 
     def test_installer_is_per_user_and_preserves_data(self):
-        source = (ROOT / 'packaging/markauto.iss').read_text()
+        source = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')
         self.assertIn('PrivilegesRequired=lowest', source)
         self.assertIn(r'DefaultDirName={localappdata}\Programs\MarkAuto', source)
         self.assertIn('MinVersion=10.0.19045', source)

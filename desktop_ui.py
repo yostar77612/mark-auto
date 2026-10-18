@@ -875,6 +875,8 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self._analysis_running = False
         self._pending_analysis_reconcile = False
         self.setWindowTitle(ui_text('ui.__init__.text_2'))
+        from desktop_theme import MINIMUM_WINDOW_SIZE
+        self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
         self.resize(1366, 768)
         apply_theme(self)
         body = QWidget(); outer = QVBoxLayout(body)
@@ -943,6 +945,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             text=lambda *a, **kw: self._text(*a, **kw),
             window_geometry=lambda *a, **kw: self.geometry(*a, **kw),
             window_position=lambda: QPoint(self.x(), self.y()),
+            window_minimum_size=lambda: (self.minimumWidth(), self.minimumHeight()),
         )
         mount_pages(self)
         from desktop_pages.onboarding import install_onboarding
@@ -960,6 +963,10 @@ class MainWindow(SharedStateBindings, QMainWindow):
         install_polish(self)
         from desktop_help import install_page_help
         install_page_help(self)
+        from desktop_pages.shortcuts import install_shortcuts
+        from desktop_accessibility import install_accessibility
+        install_shortcuts(self)
+        install_accessibility(self)
 
 
     def page_services(self):

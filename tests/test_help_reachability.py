@@ -60,7 +60,7 @@ class HelpReachabilityTests(unittest.TestCase):
                     self.assertTrue(button.toolTip())
             for name, widgets in (
                 ('data', (window.overview,)),
-                ('settings', (window.workspace_path, window.log_view)),
+                ('settings', (window.workspace_path,)),
                 ('market', (window.market.source_status, window.market.message, window.market.indicator_summary,
                             window.market.findChild(QLabel, 'market_vwap_disclosure'))),
             ):
@@ -71,6 +71,7 @@ class HelpReachabilityTests(unittest.TestCase):
                 self.assertTrue(details.isHidden())
                 toggle.setChecked(True)
                 self.assertFalse(details.isHidden())
+            self.assertTrue(window.settings_page.settings_sections[3].isAncestorOf(window.log_view))
             for key in ('market.__init__.text_42', 'market.__init__.text_53'):
                 self.assertTrue(any(label.text() == ui_text(key) for label in
                                     window.findChild(QWidget, 'market_help_details').findChildren(QLabel)), key)

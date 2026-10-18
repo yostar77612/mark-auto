@@ -150,6 +150,16 @@ class MarketDashboard(QWidget):
             check.toggled.connect(self._indicators_changed)
         right_layout.addWidget(group); right_layout.addWidget(_label(ui_text('market.__init__.text_53'),'market_vwap_disclosure')); right_layout.addStretch()
         right_scroll.setWidget(right); self.main_splitter.addWidget(right_scroll)
+        from PySide6.QtWidgets import QToolButton
+        self.right_panel = right_scroll
+        self.panel_toggle = QToolButton()
+        self.panel_toggle.setObjectName('market_panel_toggle')
+        self.panel_toggle.setText(ui_text('market.panel_toggle'))
+        self.panel_toggle.setAccessibleName(ui_text('market.panel_toggle'))
+        self.panel_toggle.setToolTip(ui_text('market.panel_toggle'))
+        self.panel_toggle.setCheckable(True); self.panel_toggle.setChecked(True)
+        self.panel_toggle.toggled.connect(right_scroll.setVisible)
+        header.insertWidget(1, self.panel_toggle)
         self.main_splitter.setSizes([190,740,230]); self.main_splitter.setCollapsible(1,False)
         self.tables=QTabWidget(); self.tables.setMaximumHeight(180); self.tables.setMinimumHeight(95)
         self.positions_table=self._table((ui_text('market.__init__.text_54'),ui_text('market.__init__.text_55'),ui_text('market.__init__.text_56')),'market_positions')

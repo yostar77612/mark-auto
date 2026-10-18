@@ -1,0 +1,850 @@
+{
+  "run": "T10 part A",
+  "ui_snapshot": {
+    "schema_version": 1,
+    "size": [
+      1366,
+      768
+    ],
+    "scale": 1.0,
+    "pages": {
+      "資料匯入與更新": {
+        "page_height": 949,
+        "visible_input_count": 8,
+        "button_count": 8,
+        "label_char_count": 30,
+        "visible_text": [
+          "資料匯入與更新",
+          "TWSE 加權指數官方格式 JSON",
+          "匯入官方行情（不變更研究資料）",
+          "匯入逐筆歷史 CSV / RPT（明確時段）",
+          "檔案",
+          "選擇資料檔案",
+          "日曆",
+          "選擇交易日曆",
+          "已驗證資料",
+          "匯入並驗證資料",
+          "960 根",
+          "建立合成示範資料",
+          "同意本次連線至 TAIFEX 下載免費公開資料（不會自動匯入）",
+          "1 日",
+          "下載最近交易日資料",
+          "進階診斷 JSON（一般操作不需要）",
+          "來源",
+          "格式",
+          "長度",
+          "天數",
+          "先匯入或建立示範資料。",
+          "進階診斷 JSON（一般操作不需要）"
+        ],
+        "combo_items": [
+          "TWSE 加權指數官方格式 JSON",
+          "TAIFEX 每日行情官方格式 JSON",
+          "TAIFEX 每日行情官方格式 CSV",
+          "已驗證資料",
+          "官方逐筆成交",
+          "官方逐筆報表",
+          "官方每日行情",
+          "離線示範每日行情",
+          "離線示範K棒",
+          "離線示範逐筆成交",
+          "代理K棒",
+          "代理逐筆成交"
+        ],
+        "table_headers": [],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 1,
+        "viewport_png": "01_viewport.png",
+        "full_png": "01_full.png",
+        "full_width": 1146
+      },
+      "AI 策略中心": {
+        "page_height": 828,
+        "visible_input_count": 7,
+        "button_count": 3,
+        "label_char_count": 119,
+        "visible_text": [
+          "AI 策略中心",
+          "使用 ChatGPT 帳戶登入",
+          "尚未核對本機連線；沒有自動登入或網路請求。",
+          "策略家族",
+          "均線趨勢",
+          "僅內建有限家族；基點為百分之一個百分點。停損／停利於同棒採保守規則。",
+          "快速均線（根）",
+          "5",
+          "慢速均線（根）",
+          "20",
+          "策略數量（口，可留白）",
+          "停損（點，可留白）",
+          "停利（點，可留白）",
+          "進階診斷 JSON（一般操作不需要）",
+          "改用內建家族與可編輯參數",
+          "?",
+          "策略設定",
+          "AI 研究",
+          "Walk-forward 驗證",
+          "設定策略後進行研究。"
+        ],
+        "combo_items": [
+          "均線趨勢",
+          "均值回歸",
+          "通道突破",
+          "動能",
+          "波動壓縮"
+        ],
+        "table_headers": [],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 0,
+        "subpages": {
+          "策略設定": 521,
+          "AI 研究": 502,
+          "Walk-forward 驗證": 867
+        },
+        "wizard_steps": {
+          "1": 168,
+          "2": 172,
+          "3": 84,
+          "4": 337,
+          "5": 123
+        },
+        "viewport_png": "02_viewport.png",
+        "full_png": "02_full.png",
+        "full_width": 1146
+      },
+      "回測與結果": {
+        "page_height": 1090,
+        "visible_input_count": 6,
+        "button_count": 4,
+        "label_char_count": 91,
+        "visible_text": [
+          "回測與結果",
+          "進階・回測費率與技術參數",
+          "進階診斷 JSON（一般操作不需要）",
+          "批次執行五個家族的預設參數",
+          "執行回測",
+          "淨損益（TWD）",
+          "未提供",
+          "獲利因子",
+          "未提供",
+          "夏普值（描述性）",
+          "未提供",
+          "最大回撤",
+          "未提供",
+          "已平倉批次",
+          "未提供",
+          "未平倉（口）",
+          "未提供",
+          "市場圖表：顯示已驗證回測訊號",
+          "市場圖表：顯示已驗證回測成交",
+          "準備回測資料與策略",
+          "已保存回測結果",
+          "需要先完成：匯入並驗證研究資料",
+          "選擇資料與策略後回測。",
+          "?"
+        ],
+        "combo_items": [],
+        "table_headers": [
+          "時間（台北）",
+          "實際合約",
+          "方向",
+          "數量（口）",
+          "價格（點）",
+          "手續費（TWD）",
+          "交易稅（TWD）",
+          "成交原因"
+        ],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [
+          {
+            "object_name": "run_backtest",
+            "text": "執行回測",
+            "tooltip": "需要先完成：匯入並驗證研究資料",
+            "hint": "需要先完成：匯入並驗證研究資料"
+          }
+        ],
+        "primary_button_count": 1,
+        "viewport_png": "03_viewport.png",
+        "full_png": "03_full.png",
+        "full_width": 1146
+      },
+      "比較與策略選擇": {
+        "page_height": 759,
+        "visible_input_count": 1,
+        "button_count": 7,
+        "label_char_count": 45,
+        "visible_text": [
+          "比較與策略選擇",
+          "比較選取結果",
+          "進階診斷 JSON（一般操作不需要）",
+          "啟用目前回測策略（僅研究／紙上）",
+          "停用策略並停止紙上新委託",
+          "尚未啟用任何策略",
+          "前往回測",
+          "需要先完成：選取符合研究／紙上資格的回測結果",
+          "選取結果後比較。",
+          "?"
+        ],
+        "combo_items": [],
+        "table_headers": [
+          "選取／結果名稱",
+          "策略家族",
+          "主要參數",
+          "資料範圍",
+          "建立時間（台北）",
+          "淨損益（TWD）",
+          "獲利因子",
+          "夏普值（描述性）",
+          "最大回撤",
+          "交易筆數"
+        ],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [
+          {
+            "object_name": "select_strategy",
+            "text": "啟用目前回測策略（僅研究／紙上）",
+            "tooltip": "需要先完成：選取符合研究／紙上資格的回測結果",
+            "hint": "需要先完成：選取符合研究／紙上資格的回測結果"
+          }
+        ],
+        "primary_button_count": 1,
+        "viewport_png": "04_viewport.png",
+        "full_png": "04_full.png",
+        "full_width": 1146
+      },
+      "紙上交易與復原": {
+        "page_height": 1377,
+        "visible_input_count": 9,
+        "button_count": 12,
+        "label_char_count": 201,
+        "visible_text": [
+          "紙上交易與復原",
+          "固定風控：部位最多 1 口、單筆最多 1 口、每日損失上限 1,000 TWD、報價最多 30 秒；連續虧損上限 3 次、60 秒內最多 20 筆。停止新委託不會平倉。",
+          "進階診斷 JSON（一般操作不需要）",
+          "進階・政策與風控技術參數",
+          "載入已核對的政策檔案",
+          "填入明示合成示範政策",
+          "讀取／建立紙上帳戶",
+          "進階・外部參考快照完整證據",
+          "載入外部完整參考快照",
+          "明確對帳紙上帳戶",
+          "緊急停止：禁止紙上新委託",
+          "100 根",
+          "我已核對上方參考快照，並同意本次重播／委託前對帳",
+          "重播選定策略一批歷史資料",
+          "進階・手動委託與報價參數",
+          "紙上操作時間（台北 UTC+8）",
+          "設定日期／時間",
+          "2026-01-05 09:00:00",
+          "UTC：2026-01-05T01:00:00Z",
+          "送出紙上委託",
+          "紙上委託 ID",
+          "取消紙上委託",
+          "現金（TWD）",
+          "未提供",
+          "持倉商品數",
+          "未提供",
+          "委託筆數",
+          "未提供",
+          "成交筆數",
+          "未提供",
+          "需要對帳",
+          "未提供",
+          "停止狀態",
+          "未提供",
+          "持倉商品數",
+          "委託筆數",
+          "成交筆數",
+          "前往資料準備",
+          "歷史重播長度",
+          "先準備資料與紙上政策。",
+          "?"
+        ],
+        "combo_items": [],
+        "table_headers": [],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 1,
+        "subpages": {
+          "持倉商品數": 192,
+          "委託筆數": 192,
+          "成交筆數": 192
+        },
+        "viewport_png": "05_viewport.png",
+        "full_png": "05_full.png",
+        "full_width": 1146
+      },
+      "市場總覽": {
+        "page_height": 913,
+        "visible_input_count": 4,
+        "button_count": 9,
+        "label_char_count": 74,
+        "visible_text": [
+          "市場總覽",
+          "歷史行情",
+          "更新官方資料",
+          "加權指數",
+          "尚無可用資料\n—",
+          "臺指期 TX",
+          "尚無可用資料\n—",
+          "小臺指 MXF / MTX",
+          "尚無可用資料\n—",
+          "微臺指 TMF",
+          "尚無可用資料\n—",
+          "進階・資料來源與診斷 ▸",
+          "日",
+          "商品搜尋 / 自選",
+          "＋ 加入自選",
+          "移除",
+          "↑",
+          "↓",
+          "需要先完成：載入官方行情商品清單",
+          "持倉（主程式資料）",
+          "委託（主程式資料）",
+          "成交（主程式資料）",
+          "前往資料匯入",
+          "從資料頁匯入行情。",
+          "進階診斷 JSON（一般操作不需要）"
+        ],
+        "combo_items": [
+          "1 分",
+          "3 分",
+          "5 分",
+          "15 分",
+          "30 分",
+          "60 分",
+          "日",
+          "週"
+        ],
+        "table_headers": [
+          "合約",
+          "口數",
+          "均價"
+        ],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [
+          {
+            "object_name": "market_add",
+            "text": "＋ 加入自選",
+            "tooltip": "需要先完成：載入官方行情商品清單",
+            "hint": "需要先完成：載入官方行情商品清單"
+          }
+        ],
+        "primary_button_count": 1,
+        "subpages": {
+          "持倉（主程式資料）": 192,
+          "委託（主程式資料）": 192,
+          "成交（主程式資料）": 192
+        },
+        "viewport_png": "06_viewport.png",
+        "full_png": "06_full.png",
+        "full_width": 1146
+      },
+      "設定與備份": {
+        "page_height": 1005,
+        "visible_input_count": 5,
+        "button_count": 8,
+        "label_char_count": 70,
+        "visible_text": [
+          "設定與備份",
+          "一般",
+          "保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）",
+          "作業完成／失敗時顯示本機提示並提醒此視窗",
+          "儲存非敏感偏好",
+          "進階：工作區與日誌路徑",
+          "ChatGPT 連線",
+          "尚未核對本機連線；沒有自動登入或網路請求。",
+          "展開 ChatGPT 完整連線管理",
+          "備份與還原",
+          "進階：備份路徑與還原操作",
+          "?",
+          "關於與更新",
+          "目前版本 0.2.2 · 未簽章預覽版；尚無已驗證的最新版本資訊。",
+          "開啟專案 Releases 頁面",
+          "讀取精簡本機日誌",
+          "只看錯誤",
+          "匯出日誌",
+          "?",
+          "管理連線、備份與偏好。"
+        ],
+        "combo_items": [],
+        "table_headers": [
+          "時間（台北）",
+          "作業（中文名稱）",
+          "結果"
+        ],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 1,
+        "viewport_png": "07_viewport.png",
+        "full_png": "07_full.png",
+        "full_width": 1146
+      }
+    }
+  },
+  "part_b": {
+    "size": [
+      1280,
+      720
+    ],
+    "images": false,
+    "pages": {
+      "資料匯入與更新": {
+        "page_height": 879,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 555
+      },
+      "AI 策略中心": {
+        "page_height": 818,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 494
+      },
+      "回測與結果": {
+        "page_height": 1039,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 715
+      },
+      "比較與策略選擇": {
+        "page_height": 737,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 413
+      },
+      "紙上交易與復原": {
+        "page_height": 1300,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 976
+      },
+      "市場總覽": {
+        "page_height": 857,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 533
+      },
+      "設定與備份": {
+        "page_height": 921,
+        "truncated_text": 0,
+        "overlapping_siblings": 0,
+        "scroll_vertical_maximum": 597
+      }
+    },
+    "font_scales": {
+      "1": {
+        "truncated_text": 0,
+        "overlapping_siblings": 0
+      },
+      "1.5": {
+        "truncated_text": 0,
+        "overlapping_siblings": 0
+      },
+      "2": {
+        "truncated_text": 0,
+        "overlapping_siblings": 0
+      }
+    },
+    "raster_scales_tested": [
+      1.5,
+      2
+    ],
+    "accessible_name_offenders": 0
+  },
+  "part_c": {
+    "scope": "Installer language only",
+    "ui_snapshot": "Not rerun: no desktop UI changes in part C; part A/B measurements retained.",
+    "new_static_test_count": 5,
+    "iscc_available": false
+  },
+  "repair": {
+    "platform": "Windows; Qt offscreen Fusion; 1366x768; scale 1",
+    "field_by_field_verified_differences": [
+      {
+        "page": "AI 策略中心",
+        "field": "label_char_count",
+        "before": 98,
+        "after": 119,
+        "verified_reason": "P1-09: visible connection status label adds 21 characters."
+      },
+      {
+        "page": "AI 策略中心",
+        "field": "subpages",
+        "before": {
+          "策略設定": 491,
+          "AI 研究": 502,
+          "Walk-forward 驗證": 867
+        },
+        "after": {
+          "策略設定": 545,
+          "AI 研究": 502,
+          "Walk-forward 驗證": 867
+        },
+        "verified_reason": "P1-09 status adds 30px; P1-10 wrapping/button policies add 24px (491 -> 521 -> 545). Other tabs unchanged."
+      },
+      {
+        "page": "AI 策略中心",
+        "field": "visible_text",
+        "before": [
+          "AI 策略中心",
+          "使用 ChatGPT 帳戶登入",
+          "策略家族",
+          "均線趨勢",
+          "僅內建有限家族；基點為百分之一個百分點。停損／停利於同棒採保守規則。",
+          "快速均線（根）",
+          "5",
+          "慢速均線（根）",
+          "20",
+          "策略數量（口，可留白）",
+          "停損（點，可留白）",
+          "停利（點，可留白）",
+          "進階診斷 JSON（一般操作不需要）",
+          "改用內建家族與可編輯參數",
+          "?",
+          "策略設定",
+          "AI 研究",
+          "Walk-forward 驗證",
+          "設定策略後進行研究。"
+        ],
+        "after": [
+          "AI 策略中心",
+          "使用 ChatGPT 帳戶登入",
+          "尚未核對本機連線；沒有自動登入或網路請求。",
+          "策略家族",
+          "均線趨勢",
+          "僅內建有限家族；基點為百分之一個百分點。停損／停利於同棒採保守規則。",
+          "快速均線（根）",
+          "5",
+          "慢速均線（根）",
+          "20",
+          "策略數量（口，可留白）",
+          "停損（點，可留白）",
+          "停利（點，可留白）",
+          "進階診斷 JSON（一般操作不需要）",
+          "改用內建家族與可編輯參數",
+          "?",
+          "策略設定",
+          "AI 研究",
+          "Walk-forward 驗證",
+          "設定策略後進行研究。"
+        ],
+        "verified_reason": "P1-09: existing local-only connection status beside the settings single-home link."
+      },
+      {
+        "page": "AI 策略中心",
+        "field": "wizard_steps",
+        "before": {
+          "1": 168,
+          "2": 172,
+          "3": 84,
+          "4": 337,
+          "5": 123
+        },
+        "after": {
+          "1": 192,
+          "2": 178,
+          "3": 102,
+          "4": 337,
+          "5": 123
+        },
+        "verified_reason": "P1-10 label wrapping and minimum button sizing. Controlled capture disabling accessibility helper exactly reproduces all five old step heights."
+      },
+      {
+        "page": "市場總覽",
+        "field": "button_count",
+        "before": 9,
+        "after": 10,
+        "verified_reason": "P1-11: exactly one new collapse toggle."
+      },
+      {
+        "page": "市場總覽",
+        "field": "visible_text",
+        "before": [
+          "市場總覽",
+          "歷史行情",
+          "更新官方資料",
+          "加權指數",
+          "尚無可用資料\n—",
+          "臺指期 TX",
+          "尚無可用資料\n—",
+          "小臺指 MXF / MTX",
+          "尚無可用資料\n—",
+          "微臺指 TMF",
+          "尚無可用資料\n—",
+          "進階・資料來源與診斷 ▸",
+          "日",
+          "商品搜尋 / 自選",
+          "＋ 加入自選",
+          "移除",
+          "↑",
+          "↓",
+          "需要先完成：載入官方行情商品清單",
+          "持倉（主程式資料）",
+          "委託（主程式資料）",
+          "成交（主程式資料）",
+          "前往資料匯入",
+          "從資料頁匯入行情。",
+          "進階診斷 JSON（一般操作不需要）"
+        ],
+        "after": [
+          "市場總覽",
+          "歷史行情",
+          "更新官方資料",
+          "加權指數",
+          "尚無可用資料\n—",
+          "臺指期 TX",
+          "尚無可用資料\n—",
+          "小臺指 MXF / MTX",
+          "尚無可用資料\n—",
+          "微臺指 TMF",
+          "尚無可用資料\n—",
+          "進階・資料來源與診斷 ▸",
+          "日",
+          "商品搜尋 / 自選",
+          "＋ 加入自選",
+          "移除",
+          "↑",
+          "↓",
+          "需要先完成：載入官方行情商品清單",
+          "顯示／收合市場指標面板",
+          "持倉（主程式資料）",
+          "委託（主程式資料）",
+          "成交（主程式資料）",
+          "前往資料匯入",
+          "從資料頁匯入行情。",
+          "進階診斷 JSON（一般操作不需要）"
+        ],
+        "verified_reason": "P1-11: localized market indicator panel collapse toggle."
+      },
+      {
+        "page": "設定與備份",
+        "field": "button_count",
+        "before": 19,
+        "after": 8,
+        "verified_reason": "P1-09/P1-15 collapsed full connection/backup controls plus new disclosures/export."
+      },
+      {
+        "page": "設定與備份",
+        "field": "label_char_count",
+        "before": 306,
+        "after": 70,
+        "verified_reason": "P1-09 collapsed diagnostics/path/backup labels; section headings and one status remain."
+      },
+      {
+        "page": "設定與備份",
+        "field": "page_height",
+        "before": 1633,
+        "after": 1005,
+        "verified_reason": "P1-09/P1-15 collapsed sections/table replace flat layout."
+      },
+      {
+        "page": "設定與備份",
+        "field": "table_headers",
+        "before": [],
+        "after": [
+          "時間（台北）",
+          "作業（中文名稱）",
+          "結果"
+        ],
+        "verified_reason": "P1-15 localized time/operation/result table replaces raw JSON text."
+      },
+      {
+        "page": "設定與備份",
+        "field": "visible_input_count",
+        "before": 7,
+        "after": 5,
+        "verified_reason": "P1-09/P1-15 collapsed settings controls and visible log filter/table."
+      },
+      {
+        "page": "設定與備份",
+        "field": "visible_text",
+        "before": [
+          "設定與備份",
+          "工作區",
+          "設定下次啟動工作區",
+          "ChatGPT 訂閱連線（官方授權）",
+          "管理 ChatGPT 用量（官方設定）",
+          "目前尚未登入 ChatGPT",
+          "尚未核對本機連線；沒有自動登入或網路請求。",
+          "使用 ChatGPT 帳戶登入（Continue with ChatGPT）",
+          "進階連線管理",
+          "本機請求紀錄尚未核對；不能視為已用 0 次。",
+          "已保存 ChatGPT 連線",
+          "需要先完成：登入並選取身分已驗證的 ChatGPT 連線",
+          "需要先完成：選取已保存的 ChatGPT 連線，並等待目前連線作業停止",
+          "需要先完成：啟用方案用量並確認帳戶未暫停、無待核對請求",
+          "需要先完成：選取已保存的 ChatGPT 連線，並等待目前連線作業停止",
+          "需要先完成：開始可取消的 ChatGPT 連線作業",
+          "?",
+          "保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）",
+          "作業完成／失敗時顯示本機提示並提醒此視窗",
+          "儲存非敏感偏好",
+          "備份位置",
+          "建立本機備份",
+          "我確認還原會替換目前本機狀態，並會要求重新對帳",
+          "驗證並還原備份",
+          "啟用每日自動備份（預設關閉）",
+          "選取自動備份資料夾",
+          "儲存自動備份設定",
+          "尚無備份",
+          "自動備份資料夾",
+          "?",
+          "目前版本 0.2.2 · 未簽章預覽版；尚無已驗證的最新版本資訊。",
+          "開啟專案 Releases 頁面",
+          "讀取精簡本機日誌",
+          "管理連線、備份與偏好。",
+          "?",
+          "?",
+          "?",
+          "?",
+          "?",
+          "進階診斷 JSON（一般操作不需要）"
+        ],
+        "after": [
+          "設定與備份",
+          "一般",
+          "保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）",
+          "作業完成／失敗時顯示本機提示並提醒此視窗",
+          "儲存非敏感偏好",
+          "進階：工作區與日誌路徑",
+          "ChatGPT 連線",
+          "尚未核對本機連線；沒有自動登入或網路請求。",
+          "展開 ChatGPT 完整連線管理",
+          "備份與還原",
+          "進階：備份路徑與還原操作",
+          "?",
+          "關於與更新",
+          "目前版本 0.2.2 · 未簽章預覽版；尚無已驗證的最新版本資訊。",
+          "開啟專案 Releases 頁面",
+          "讀取精簡本機日誌",
+          "只看錯誤",
+          "匯出日誌",
+          "?",
+          "管理連線、備份與偏好。"
+        ],
+        "verified_reason": "P1-09 four sections, collapsed paths/connection/backup controls; P1-15 error filter/export in About. Existing help follows owning section; page hint unchanged."
+      }
+    ],
+    "short_table": [
+      {
+        "page": "資料匯入與更新",
+        "before": {
+          "page_height": 949,
+          "visible_input_count": 8,
+          "button_count": 8,
+          "label_char_count": 30
+        },
+        "after": {
+          "page_height": 949,
+          "visible_input_count": 8,
+          "button_count": 8,
+          "label_char_count": 30
+        }
+      },
+      {
+        "page": "AI 策略中心",
+        "before": {
+          "page_height": 828,
+          "visible_input_count": 7,
+          "button_count": 3,
+          "label_char_count": 98
+        },
+        "after": {
+          "page_height": 828,
+          "visible_input_count": 7,
+          "button_count": 3,
+          "label_char_count": 119
+        }
+      },
+      {
+        "page": "回測與結果",
+        "before": {
+          "page_height": 1090,
+          "visible_input_count": 6,
+          "button_count": 4,
+          "label_char_count": 91
+        },
+        "after": {
+          "page_height": 1090,
+          "visible_input_count": 6,
+          "button_count": 4,
+          "label_char_count": 91
+        }
+      },
+      {
+        "page": "比較與策略選擇",
+        "before": {
+          "page_height": 759,
+          "visible_input_count": 1,
+          "button_count": 7,
+          "label_char_count": 45
+        },
+        "after": {
+          "page_height": 759,
+          "visible_input_count": 1,
+          "button_count": 7,
+          "label_char_count": 45
+        }
+      },
+      {
+        "page": "紙上交易與復原",
+        "before": {
+          "page_height": 1377,
+          "visible_input_count": 9,
+          "button_count": 12,
+          "label_char_count": 201
+        },
+        "after": {
+          "page_height": 1377,
+          "visible_input_count": 9,
+          "button_count": 12,
+          "label_char_count": 201
+        }
+      },
+      {
+        "page": "市場總覽",
+        "before": {
+          "page_height": 913,
+          "visible_input_count": 4,
+          "button_count": 9,
+          "label_char_count": 74
+        },
+        "after": {
+          "page_height": 913,
+          "visible_input_count": 4,
+          "button_count": 10,
+          "label_char_count": 74
+        }
+      },
+      {
+        "page": "設定與備份",
+        "before": {
+          "page_height": 1633,
+          "visible_input_count": 7,
+          "button_count": 19,
+          "label_char_count": 306
+        },
+        "after": {
+          "page_height": 1005,
+          "visible_input_count": 5,
+          "button_count": 8,
+          "label_char_count": 70
+        }
+      }
+    ],
+    "unchanged": "All other fields on all seven pages match exactly. Data, Backtest, Compare and Paper have no differences. Baseline metrics and 14 PNGs regenerated after checking every field. Production minimum remains 1280x720.",
+    "encoding_repair": "Replaced question-mark placeholders in T10 keyboard/accessibility and market-toggle catalog entries with Traditional Chinese before capture.",
+    "pixel_verification": "Data/Backtest/Compare/Paper have unchanged metrics but accessibility minimum button sizing changes advanced-disclosure pixels. Controlled Windows capture with install_accessibility disabled matches all eight old PNGs exactly; this attributes those pixels to P1-10. Remaining changed PNGs correspond to Strategy status, Market toggle, Settings sections/log table.",
+    "cleanup": "Flush earlier deferred-delete Qt windows before applying snapshot app style; avoids repolishing stale layout filters. Strict PageSnapshotTests structure and assertions unchanged; complete page module passes in one process.",
+    "verification": {
+      "focused_tests": 51,
+      "seconds": 12.137,
+      "exit_code": 0,
+      "quality_gate_findings": 0,
+      "python_311_compiled_files": 301,
+      "full_suite": "Controller-owned outside sandbox; not run per IMPORTANT sandbox note."
+    }
+  }
+}

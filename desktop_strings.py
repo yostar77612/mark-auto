@@ -1462,6 +1462,67 @@ ZH_TW.update({
     'help.caption.workspace': '工作區', 'help.caption.backup': '備份位置',
 })
 
+
+ZH_TW.update({
+    'settings.general': '一般', 'settings.connection': 'ChatGPT 連線',
+    'settings.backup': '備份與還原', 'settings.about': '關於與更新',
+    'settings.advanced': '進階：工作區與日誌路徑',
+    'settings.manage_connection': '展開 ChatGPT 完整連線管理',
+    'settings.connection_hint': '請展開設定頁的連線管理查看狀態。',
+    'settings.backup_advanced': '進階：備份路徑與還原操作',
+    'settings.open_workspace': '在檔案總管開啟工作區',
+    'settings.open_logs': '在檔案總管開啟日誌資料夾',
+    'settings.open_backup': '在檔案總管開啟備份資料夾',
+    'logs.time': '時間（台北）', 'logs.operation': '作業（中文名稱）',
+    'logs.result': '結果', 'logs.errors_only': '只看錯誤',
+    'logs.export': '匯出日誌', 'logs.csv': 'CSV 檔案 (*.csv)',
+    'logs.event.started': '已開始', 'logs.event.progress': '進行中',
+    'logs.event.result': '成功', 'logs.event.error': '失敗', 'logs.event.cancelled': '已取消',
+    'logs.operation.ui_demo': '建立示範資料', 'logs.operation.ui_import': '匯入資料',
+    'logs.operation.ui_refresh': '更新資料', 'logs.operation.ui_market_refresh': '更新市場行情',
+    'logs.operation.ui_chatgpt_auth': 'ChatGPT 連線管理',
+    'logs.operation.ui_chatgpt_usage': '查詢 ChatGPT 用量',
+    'logs.operation.ui_chatgpt_reconcile': 'ChatGPT 用量對帳',
+    'logs.operation.ui_backtest': '執行回測', 'logs.operation.ui_campaign': '執行 AI 研究',
+    'logs.operation.ui_walk_forward_preview': '預覽滾動驗證',
+    'logs.operation.ui_walk_forward_run': '執行滾動驗證',
+    'logs.operation.ui_walk_forward_read': '讀取滾動驗證',
+    'logs.operation.ui_walk_forward_reconcile': '滾動驗證對帳',
+    'logs.operation.ui_analysis_preview': '預覽候選分析',
+    'logs.operation.ui_analysis_run': '執行候選分析',
+    'logs.operation.ui_analysis_read': '讀取候選分析',
+    'logs.operation.ui_analysis_reconcile': '候選分析對帳',
+    'logs.operation.ui_compare': '比較結果', 'logs.operation.ui_select': '選取策略',
+    'logs.operation.ui_disable': '停用策略', 'logs.operation.ui_paper_snapshot': '讀取模擬帳戶',
+    'logs.operation.ui_paper_reconcile': '模擬帳戶對帳',
+    'logs.operation.ui_paper_kill': '模擬交易緊急停止',
+    'logs.operation.ui_paper_replay': '重播模擬交易',
+    'logs.operation.ui_paper_submit': '送出模擬委託',
+    'logs.operation.ui_paper_cancel': '取消模擬委託',
+    'logs.operation.ui_backup_create': '建立備份', 'logs.operation.ui_backup_restore': '還原備份',
+    'logs.operation.demo': '建立示範資料', 'logs.operation.backtest': '執行回測',
+    'logs.operation.campaign': '執行 AI 研究',
+})
+
+# Explicit fixed-code tables; tests compare their keys against the runtime sets.
+LOG_OPERATION_NAMES = {
+    key.removeprefix('logs.operation.'): key for key in ZH_TW if key.startswith('logs.operation.')
+}
+LOG_EVENT_NAMES = {key.removeprefix('logs.event.'): key for key in ZH_TW if key.startswith('logs.event.')}
+
+ZH_TW.update({
+    'keyboard.page': '切換至{0}（Ctrl+{1}）',
+    'keyboard.refresh': '重新整理目前頁面（F5）',
+    'keyboard.cancel': '取消進行中的工作（Esc）',
+    'keyboard.help': 'Ctrl+1～7 切換頁面；F5 重新整理；Esc 取消進行中的工作。',
+    'access.navigation': '頁面導覽',
+    'access.tabs': '分頁選擇',
+    'access.editor': '文字內容',
+    'access.table': '資料表',
+    'access.field': '輸入欄位',
+    'market.panel_toggle': '顯示／收合市場指標面板',
+})
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

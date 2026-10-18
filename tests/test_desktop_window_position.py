@@ -11,6 +11,7 @@ from desktop_pages.market import MarketPage
 from desktop_pages.settings import SettingsPage
 from desktop_pages.data import DataPage
 from desktop_pages.strategy import StrategyPage
+from tests.t10_fixture import WindowFixture
 
 
 class FramedWindow:
@@ -18,6 +19,10 @@ class FramedWindow:
         self.position = QPoint(120, 140)
         self.size = (900, 650)
         self.moves = []
+        self.minimum_size = (1280, 720)
+
+    def setMinimumSize(self, width, height):
+        self.minimum_size = (width, height)
 
     def x(self):
         return self.position.x()
@@ -47,7 +52,8 @@ class WindowPositionTests(unittest.TestCase):
         self.host = SimpleNamespace(
             window_position=lambda: QPoint(self.window.x(), self.window.y()),
             window_geometry=self.window.geometry, resize_window=self.window.resize,
-            move_window=self.window.move, window_screen=lambda: self.screen)
+            move_window=self.window.move, window_screen=lambda: self.screen,
+            window_minimum_size=lambda: self.window.minimum_size)
         self.page = SimpleNamespace(
             host=self.host, settings=self.store, _section_toggles={},
             persist_logs=Mock(), local_notifications=Mock(), jobs=SimpleNamespace(),
@@ -65,6 +71,7 @@ class WindowPositionTests(unittest.TestCase):
             SettingsPage.load_settings(self.page)
 
     def test_both_save_paths_round_trip_without_frame_drift(self):
+        self.window.setMinimumSize(0, 0)
         for save in (SettingsPage.save_settings, MarketPage.save_market_preferences):
             with self.subTest(save=save.__name__):
                 save(self.page)
@@ -78,11 +85,13 @@ class WindowPositionTests(unittest.TestCase):
                 self.assertEqual(self.value['legacy'], {'keep': True})
 
     def test_missing_position_defaults_to_frame_position(self):
+        self.window.setMinimumSize(0, 0)
         self.load()
         self.assertEqual(self.window.moves, [(120, 140)])
         self.assertEqual(self.window.size, (900, 650))
 
     def test_restore_keeps_integer_conversion_and_screen_clamping(self):
+        self.window.setMinimumSize(0, 0)
         self.value['window'] = {'x': '1900', 'y': '1050', 'width': '1000', 'height': '700'}
         self.load()
         self.assertEqual(self.window.size, (1000, 700))
@@ -137,3 +146,27 @@ class WindowPositionTests(unittest.TestCase):
         host.market_history_dialog.assert_called_once_with()
         host.market_history_dialog.return_value.open.assert_called_once_with()
         host.start_job.assert_not_called()
+
+
+class ProductionWindowMinimumTests(WindowFixture):
+    def test_save_restore_respects_production_minimum_even_on_small_screen(self):
+        w = self.window
+        self.assertEqual((w.minimumWidth(), w.minimumHeight()), (1280, 720))
+        self.assertEqual(w.page_host.window_minimum_size(), (1280, 720))
+        for screen_size in ((1920, 1080), (800, 600)):
+            screen = SimpleNamespace(availableGeometry=lambda: QRect(0, 0, *screen_size))
+            for saved_size in ((400, 300), (999999, 999999)):
+                with self.subTest(screen=screen_size, saved=saved_size):
+                    value = w.settings.load()
+                    value['window'] = {'x': 0, 'y': 0, 'width': saved_size[0], 'height': saved_size[1]}
+                    w.settings.save(value)
+                    with patch('desktop_pages.settings.QApplication.screens', return_value=[screen]), patch.object(
+                            w.page_host, 'window_screen', return_value=screen):
+                        w.load_settings()
+                        self.assertGreaterEqual(w.width(), 1280)
+                        self.assertGreaterEqual(w.height(), 720)
+                        w.save_settings()
+                        saved = w.settings.load()['window']
+                        self.assertEqual((saved['width'], saved['height']), (w.width(), w.height()))
+                        w.load_settings()
+                        self.assertEqual((w.width(), w.height()), (saved['width'], saved['height']))

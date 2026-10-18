@@ -91,6 +91,9 @@ class DesktopPolishATests(unittest.TestCase):
 
     def test_p0_13_all_disabled_actions_have_visible_prerequisite(self):
         w = self.window
+        # Visibility is irrelevant to the checked hint/tooltip/hidden flags; a hidden window avoids a full relayout per toggle
+        # (this test took ~2 minutes on software-rendering Linux CI, which has a fixed suite time cap).
+        w.hide()
         for button in w.findChildren(QPushButton):
             button.setEnabled(False)
             self.assertTrue(button.toolTip(), button.objectName())

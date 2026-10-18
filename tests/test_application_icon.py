@@ -65,7 +65,7 @@ class ApplicationIconTests(unittest.TestCase):
         spec = (ROOT / 'packaging/markauto.spec').read_text()
         self.assertIn("icon=str(root / 'packaging/markauto.ico')", spec)
         self.assertIn("(str(root / 'packaging/markauto.ico'), 'packaging')", spec)
-        installer = (ROOT / 'packaging/markauto.iss').read_text()
+        installer = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')
         self.assertIn('SetupIconFile=markauto.ico', installer)
         self.assertIn(r'UninstallDisplayIcon={code:PayloadDir}\_internal\packaging\markauto.ico', installer)
         harness = (ROOT / 'packaging/test_installer.ps1').read_text()

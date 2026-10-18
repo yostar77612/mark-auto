@@ -5957,5 +5957,69 @@
     "full_suite": "Controller-owned outside sandbox by explicit run instructions; native existing integration attempts can encounter sandbox temporary-directory ACL errors.",
     "verification": "47 focused tests passed, exit 0; operation registry including both remembered-login scenarios plus unchanged original keyboard expiry test: 7 passed, exit 0; changed history warning integration test with existing test-only inherited-ACL/empty-vault shim: 1 passed, exit 0; quality gate zero findings, exit 0; py -3.11 utf-8-sig compile 289 tracked/new files, exit 0; git diff --check exit 0. Native broader expiry/history/page attempts encountered sandbox WinError 5 temporary-directory ACL errors; full suite remains controller-owned.",
     "graph": "Checkout-bound GitNexus impacts LOW for input/help/onboarding/data callers. Test entry point UNKNOWN confirmed directly in unittest source. Index refresh and detect-changes attempted; sandbox spawn EPERM prevents clean graph refresh/diff claim. No commit performed."
+  },
+  "t10_part_a": {
+    "plan_items": [
+      "P1-09",
+      "P1-15"
+    ],
+    "status": "PASS",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T10 part A settings and readable logs",
+    "evidence": [
+      "tests/test_settings_sections.py",
+      "tests/test_log_table.py",
+      "docs/analysis/t10_snapshot_numbers.json"
+    ],
+    "scope": "Presentation only; runtime log schema, validation and pinned sources unchanged. Full regression suite remains controller-owned outside sandbox."
+  },
+  "t10_part_b": {
+    "plan_items": [
+      "P1-10",
+      "P1-11"
+    ],
+    "status": "PASS",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T10 part B: keyboard, accessibility and responsive layout",
+    "evidence": [
+      "tests/test_shortcuts.py",
+      "tests/test_accessibility_walk.py",
+      "tests/test_scaled_layouts.py",
+      "docs/analysis/t10_snapshot_numbers.json"
+    ],
+    "minimum_size": [
+      1280,
+      720
+    ],
+    "scope": "Presentation only; existing refresh/cancel guards retained, runtime log schema and pinned sources unchanged. Full existing regression suite remains controller-owned outside sandbox.",
+    "verification": "25 focused tests passed, exit 0 (5.4 s); quality gate 0 findings, exit 0; 300 tracked/new Python files compile with py -3.11 reading utf-8-sig; diff check clean. Full existing regressions and Windows pixel archive remain controller-owned and were not run or regenerated in this sandbox.",
+    "graph": "MainWindow and MarketDashboard MEDIUM impact; ui_snapshot.capture LOW. load_settings UNKNOWN, callers confirmed in desktop_ui, mount aliases and existing UI tests. Index refresh attempted, blocked by sandbox spawn EPERM; pre-edit queries used the existing index."
+  },
+  "t10_part_c": {
+    "plan_items": [
+      "P1-16"
+    ],
+    "status": "PASS",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T10 part C: Traditional Chinese installer",
+    "evidence": [
+      "tests/test_installer_language.py",
+      "docs/analysis/t10_installer_diff_notes.md"
+    ],
+    "scope": "Installer language/message-only changes; build-time language hash provenance; security and payload semantics unchanged.",
+    "verification": "Final focused run: 46 tests passed, exit 0, with 3 existing environment skips (pwsh/Windows path execution unavailable). Used an execution-only os.mkdir inherited-ACL shim for sandbox temporary directories; assertions and tested application behavior unchanged. Initial native attempt had 5 sandbox temp-directory ACL errors. New language tests and two guards independently: 13 passed, exit 0. Quality gate zero findings, exit 0. Windows PowerShell parser: 11 scripts passed, exit 0. Python 3.11 utf-8-sig compile: 301 tracked/new files passed, exit 0; diff check clean. Full suite controller-owned per explicit sandbox instructions.",
+    "unverified": "Pinned ISCC unavailable in standard or packaging temp location; no native compilation/wizard/lifecycle run.",
+    "graph": "Installer UNKNOWN, direct build/test references confirmed; build_manifest.main LOW. Index refresh attempted; sandbox spawn EPERM."
+  },
+  "t10_repair": {
+    "scope": "P1-09/10/11/15 regression repair; strict seven-page archive regenerated after 12 field-by-field checks.",
+    "evidence": [
+      "tests/test_desktop_pages.py",
+      "tests/test_desktop_window_position.py",
+      "tests/test_desktop_market_integration.py",
+      "docs/analysis/t10_snapshot_numbers.json",
+      "docs/analysis/t10_test_edits.json"
+    ],
+    "restore": "Read actual minimum through PageHost. Production remains 1280x720 even when screen is smaller; legacy geometry tests lower disposable minima and retain assertions.",
+    "catalog": "Repair T10 question-mark placeholders in shortcut, accessibility and collapse-toggle translations.",
+    "verification": "PASS: 51 focused tests in one process, 12.137s, exit 0, including complete desktop_pages (strict Windows metrics/pixels), window position, repaired market clamp, shortcuts/accessibility/layout/settings/logs/installer/help and both guards. quality_gate exit 0, 0 findings; Python 3.11 compile of 301 tracked/new Python files exit 0; git diff --check exit 0. Full suite/T9 remain controller-owned per sandbox instruction. Extra broader market/ui_snapshot run: 19 tests, 3 known sandbox failures (campaign evaluation, CLI temp ACL, subprocess isolation temp ACL); changed clamp test passes. GitNexus refresh blocked by spawn EPERM; existing index impact used.",
+    "snapshot_cleanup": "Flush prior deferred-delete Qt widgets before changing snapshot app style; all original snapshot assertions retained."
   }
 }

@@ -186,8 +186,12 @@ def tab_heights(page, app):
     return result
 
 
-def capture(out, size=(1366, 768), scale=1.0, images=True):
+def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     """Return logical metrics; all application state lives below TemporaryDirectory."""
+    if window is not None:
+        if images:
+            raise ValueError('A supplied window supports metrics only')
+        return capture_layout_metrics(window, out, size, scale)
     from PySide6.QtCore import QCoreApplication, QEvent, QLocale, QTimer
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea
@@ -196,6 +200,9 @@ def capture(out, size=(1366, 768), scale=1.0, images=True):
 
     out = Path(out)
     app = QApplication.instance() or QApplication([])
+    # Dispose closed windows from earlier callers before changing application
+    # style; their deferred children and layout filters must not be repolished.
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     # Load the Windows CJK face directly: offscreen font discovery can list a
     # system family without making its glyph data available to the rasterizer.
     font_ids = []
@@ -302,6 +309,30 @@ def capture(out, size=(1366, 768), scale=1.0, images=True):
         QLocale.setDefault(old_locale)
         for font_id in font_ids:
             QFontDatabase.removeApplicationFont(font_id)
+    return result
+
+
+def capture_layout_metrics(window, out, size, scale):
+    """Cheap viewport metrics for an existing disposable test window.
+
+    Does not change app font/style, expand content, render pixels or own the window.
+    The caller restores its font when probing larger logical font sizes.
+    """
+    from PySide6.QtWidgets import QApplication, QScrollArea
+    old_row, old_size = window.navigation.currentRow(), window.size()
+    result = {'schema_version': 1, 'size': list(size), 'scale': parse_scale(scale), 'pages': {}}
+    try:
+        window.resize(*size)
+        for index in range(window.stack.count()):
+            window.navigation.setCurrentRow(index)
+            for _ in range(3): QApplication.processEvents()
+            container = window.stack.widget(index)
+            scroll = container if isinstance(container, QScrollArea) else window.market.page_scroll
+            result['pages'][window.navigation.item(index).text()] = page_metrics(scroll.widget())
+        out = Path(out); out.mkdir(parents=True, exist_ok=True)
+        (out / 'metrics.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    finally:
+        window.navigation.setCurrentRow(old_row); window.resize(old_size)
     return result
 
 

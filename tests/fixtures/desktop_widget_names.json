@@ -223,6 +223,7 @@
   "market_orders",
   "market_page_hint",
   "market_page_scroll",
+  "market_panel_toggle",
   "market_positions",
   "market_refresh",
   "market_refresh_prerequisite",

@@ -749,3 +749,89 @@ by the registered-alias collision; no clean graph check is claimed.
   docs/analysis/t9_snapshot_numbers.json. Default metrics match Part D; comparison
   height remains 759 px. G3 locked files remain untouched. Full existing desktop
   integration suite is controller-owned outside the sandbox per run instructions.
+# T10 part A settings and readable logs
+
+P1-09: Settings has exactly four top-level titled sections, in order: 一般,
+ChatGPT 連線, 備份與還原, 關於與更新. The existing official
+ChatGPTConnectionPanel remains in Settings, collapsed initially; the AI strategy
+page shows the same controller status and the existing navigation/sign-in entry.
+Existing controls retain their objectNames and handlers, including consent resets.
+Workspace, log, manual backup and automatic backup paths are inside collapsed
+disclosures. Folder opening is mockable through settings_layout.open_folder and
+uses QDesktopServices.openUrl(QUrl.fromLocalFile(directory)). The General path
+disclosure retains settings_help_advanced/settings_help_details and its saved
+preference. Fresh default settings exposes no absolute paths and eight action
+buttons (ui_snapshot metric excludes checkbox inputs).
+
+P1-15: LogTable reads only RedactedEventLog.tail(), whose schema, allowed codes,
+privacy rules and recording behavior remain unchanged. Its columns are 時間（台北）,
+作業（中文名稱）, 結果. Epoch seconds are converted using a fixed UTC+8 offset,
+without tzdata, to yyyy-mm-dd HH:MM:SS. desktop_strings contains every approved
+operation and event label. The errors-only checkbox includes only existing error
+events. Export uses a mockable save-file function and writes UTF-8 BOM CSV with
+the same header and currently filtered rows; cancellation writes nothing. No raw
+JSON, epoch, error payload, secret or path is projected into a cell or export.
+
+Evidence: tests/test_settings_sections.py, tests/test_log_table.py;
+docs/analysis/t10_snapshot_numbers.json records ui_snapshot measurements and
+docs/analysis/t10_test_edits.json records existing test adaptations. New helpers
+under desktop_pages are automatically inventoried by both UI text and stylesheet
+guards. Full regression execution is controller-owned outside the sandbox.
+
+
+### T10 part B: keyboard, accessibility and responsive layout
+
+- Minimum supported MainWindow size is **1280?720 logical pixels**, defined by
+  `desktop_theme.MINIMUM_WINDOW_SIZE`; restored preferences read the window's actual
+  minimum through `PageHost.window_minimum_size`. Production restores keep the
+  1280x720 floor even on smaller screens. Disposable geometry-test windows may
+  lower their minimum to exercise legacy frame-position and screen-clamp cases.
+  Smaller diagnostic windows retain scroll viewport containment on all seven pages.
+- Ctrl+1 through Ctrl+7 follow the actual sidebar order: **data preparation,
+  strategy, backtest, comparison, paper trading, market overview, settings**.
+  Window-scoped QShortcuts remain active while inputs have focus. F5 uses the
+  existing refresh_views handler on the first five pages, refresh_market (including
+  its network confirmation) on market, and read_logs on settings. Esc calls the
+  existing cancel_job handler only while jobs.active is true. Tooltips and window
+  What's This help use the strings catalog; no worker or validation rules change.
+- The market_panel_toggle tool button shows/hides the existing right panel and
+  redistributes the splitter width. Its state is not persisted.
+- Interactive controls, including hidden disclosures, wizard steps and tab names,
+  receive accessible names from existing translated labels or catalog fallbacks.
+  Tab traversal follows visible enabled controls top-to-bottom, then left-to-right
+  within rows whose top coordinates differ by at most 8 logical pixels. Exceptions:
+  native combo/spin editor children and item/text view internals delegate focus to
+  their owning control; hidden or disabled controls are omitted. Navigation stays
+  a separate shell control. Traversal is recomputed after show/resize/layout events.
+- QLabel text wraps; action buttons use minimum horizontal size policies, allowing
+  scrollable content to keep its natural minimum width. Layout tests inspect
+  QLabel/QPushButton width and same-parent siblings in layouts at 1280?720 and
+  application font multipliers 1, 1.5 and 2. Theme pixel fonts are also scaled on
+  the test window only, so explicit QSS fonts cannot silently mask the font probe.
+- ui_snapshot scale remains a raster multiplier. `capture(..., images=False,
+  window=existing_disposable_window)` additionally supports cheap viewport metrics
+  without creating another window, changing app styles, expanding hidden content,
+  or rasterising images. The caller owns the window; size/navigation are restored.
+- Evidence: tests/test_shortcuts.py, tests/test_accessibility_walk.py,
+  tests/test_scaled_layouts.py and docs/analysis/t10_snapshot_numbers.json.
+  Full existing regression suite is controller-owned outside this sandbox.
+
+### T10 part C: Traditional Chinese installer
+
+The sole Inno Setup language is chinesetraditional, compiled from the unmodified
+pinned 6.4.3 ChineseTraditional.isl. packaging/README.md and THIRD_PARTY_NOTICES.md
+record URL/tag/license/translator credits and the exact SHA-256. .gitattributes
+preserves upstream bytes. All custom error/dialog messages and the launch
+description are Traditional Chinese; Mark Auto product/shortcut identity stays
+unchanged. There are no custom tasks or CustomMessages in the original script.
+
+Language files are build-manifest inputs only, not frozen payload files. The
+build script has no new download. tests/test_installer_language.py pins the
+original security lines and whole non-message script (including uninstall and
+verification) against HEAD b6777a86d2bf1167e361de3d52f61aa6f15e7e63. Privileges,
+data preservation, fresh payload directories, inventory and recovery are unchanged.
+Existing installer readers use explicit UTF-8 BOM-aware decoding; assertions stay.
+
+ISCC was absent from Program Files (x86)/Inno Setup 6 and the build script's
+TEMP/MarkAuto-Inno-6.4.3 directory. Compiler/native wizard and lifecycle execution
+remain controller-owned. Static checks do not claim Windows wizard acceptance.

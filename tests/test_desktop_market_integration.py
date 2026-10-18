@@ -167,6 +167,7 @@ class MarketHostTests(unittest.TestCase):
         finally: restored.close()
 
     def test_window_position_and_size_are_restored_with_offscreen_clamp(self):
+        self.window.setMinimumSize(0, 0)
         value=self.window.settings.load()
         value['window']={'x':999999,'y':-999999,'width':999999,'height':999999}
         self.window.settings.save(value);self.window.load_settings()

@@ -66,7 +66,7 @@ class UpdateRecoveryTests(unittest.TestCase):
             with self.assertRaises(ValueError): module.inventory(root)
 
     def test_installer_never_overlays_previous_payload(self):
-        script = (ROOT / 'packaging/markauto.iss').read_text()
+        script = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')
         self.assertNotIn('DestDir: "{app}"', script)
         self.assertIn('GenerateUniqueName', script)
         self.assertIn('AfterInstall: VerifyPayload', script)
