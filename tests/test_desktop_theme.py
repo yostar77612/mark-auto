@@ -23,9 +23,11 @@ class DesktopThemeTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        old = self.app.styleSheet()
-        self.addCleanup(self.app.setStyleSheet, old)
-        apply_theme(self.app)
+        # Never restyle the whole QApplication here: in a full-suite run earlier tests leave many live
+        # widgets, and an application-wide stylesheet change repolishes all of them (minutes on CI).
+        self.host = QWidget()
+        self.addCleanup(self.host.deleteLater)
+        apply_theme(self.host)
 
     def test_tokens_and_complete_selectors(self):
         self.assertTrue({'background', 'text', 'primary', 'success', 'warning',
@@ -42,8 +44,8 @@ class DesktopThemeTests(unittest.TestCase):
             self.assertIn(f'[status="{state}"]', qss)
 
     def test_apply_and_status_refresh_offscreen(self):
-        self.assertEqual(self.app.styleSheet(), build_app_stylesheet())
-        label = QLabel('status')
+        self.assertEqual(self.host.styleSheet(), build_app_stylesheet())
+        label = QLabel('status', self.host)
         self.addCleanup(label.deleteLater)
         label.show()
         for state, color in STATUS_COLORS.items():
