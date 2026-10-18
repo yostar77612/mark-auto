@@ -288,9 +288,15 @@ class PageSnapshotTests(unittest.TestCase):
         from tools.ui_snapshot import capture
         with tempfile.TemporaryDirectory(prefix='markauto-pages-snapshot-') as temporary:
             output = Path(temporary) / 'after'
-            capture(output, images=sys.platform == 'win32')
             baseline = ROOT / 'tests/fixtures/desktop_pages_before'
-            actual = json.loads((output / 'metrics.json').read_text(encoding='utf-8'))
+            if sys.platform == 'win32':
+                capture(output, images=True)
+                actual = json.loads((output / 'metrics.json').read_text(encoding='utf-8'))
+            else:
+                # A full capture costs ~2 minutes on software-rendering Linux CI (fixed suite time cap); reuse the
+                # shared metrics-only capture, which is identical for the platform-independent facts compared here.
+                from tests.snapshot_cache import default_metrics
+                actual = default_metrics()
             expected = json.loads((baseline / 'metrics.json').read_text(encoding='utf-8'))
             self.assertEqual(len(actual['pages']), 7)
             self.assertEqual(list(actual['pages']), list(expected['pages']))
