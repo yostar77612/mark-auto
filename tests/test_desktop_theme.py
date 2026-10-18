@@ -14,7 +14,7 @@ from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 from desktop_theme import (COLORS, FONT_SIZES, SPACING, STATUS_COLORS,
                            apply_theme, build_app_stylesheet, set_status)
-from test_no_inline_stylesheet import WIDGET_STYLESHEET_ALLOWLIST
+from tests.test_no_inline_stylesheet import WIDGET_STYLESHEET_ALLOWLIST
 
 
 class DesktopThemeTests(unittest.TestCase):

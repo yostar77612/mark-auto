@@ -11,7 +11,7 @@ UI_MODULES = (
     'desktop.py', 'desktop_automatic_backup.py', 'desktop_charts.py',
     'desktop_chatgpt_ui.py', 'desktop_forms.py', 'desktop_icon.py',
     'desktop_market.py', 'desktop_presentation.py', 'desktop_recovery_smoke.py',
-    'desktop_ui.py', 'desktop_ui_polish.py', 'desktop_walk_forward.py',
+    'desktop_theme.py', 'desktop_ui.py', 'desktop_ui_polish.py', 'desktop_walk_forward.py',
 )
 # Migration debt must stay empty; every UI module is scanned below.
 TODO_MODULES = {}
