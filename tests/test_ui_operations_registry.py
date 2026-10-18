@@ -100,7 +100,9 @@ def workspace():
     def inherited_mkdir(path, mode=0o777, *args, **kwargs):
         return mkdir(path, 0o777 if os.name == 'nt' else mode, *args, **kwargs)
 
-    with patch('os.mkdir', side_effect=inherited_mkdir):
+    # Backtest/walk-forward manifests embed platform.python_version() and hash it into result/run/
+    # reproducibility hashes; pin it so the recorded (Python 3.13.11) golden is host-independent.
+    with patch('platform.python_version', return_value='3.13.11'), patch('os.mkdir', side_effect=inherited_mkdir):
         with tempfile.TemporaryDirectory(prefix='ui-registry-') as folder:
             root = Path(folder)
             profile = root / 'profile'
