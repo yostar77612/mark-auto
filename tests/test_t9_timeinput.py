@@ -5,7 +5,7 @@ import os
 import unittest
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-from PySide6.QtCore import QDate, QDateTime, QTime
+from PySide6.QtCore import QDate, QDateTime, QTime, QTimeZone
 from PySide6.QtWidgets import QApplication, QDateEdit, QDateTimeEdit, QLineEdit
 from desktop_timeinput import DateInput, taipei_to_utc_iso, utc_iso_to_taipei
 from desktop_forms import (BacktestForm, PaperIntentForm, PaperQuoteForm,
@@ -26,7 +26,8 @@ class TaipeiInputTests(unittest.TestCase):
     def edit(self, widget, local):
         widget.enabled_value.setChecked(True)
         widget.picker.setDateTime(QDateTime(QDate(local.year, local.month, local.day),
-            QTime(local.hour, local.minute, local.second)))
+            QTime(local.hour, local.minute, local.second),
+            QTimeZone.fromSecondsAheadOfUtc(8 * 3600)))  # explicit Taipei zone: the host's local zone (CI runs in UTC) must not matter
 
     def test_clock_matrix_and_utc_hints(self):
         for local, expected in (
