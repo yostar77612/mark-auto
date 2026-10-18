@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
+import importlib
 import json
 import multiprocessing as mp
 import os
@@ -24,15 +25,73 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 from . import __version__
+from .runtime_support import (RuntimeSafetyError, atomic_write, _sync_directory,
+                              _durable_replace, validate_analysis_request)
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
 MAX_BACKUP = 512 * 1024 * 1024
 MAX_FILES = 10000
 
+# UI-owned worker protocol, retained as the default for legacy JobManager(paths)
+# callers. This is the sole desktop registrar literal in quantlab. Resolution is
+# dynamic so the runtime has no static dependency on a desktop module.
+DEFAULT_OPERATION_REGISTRAR = 'desktop_ui:execute_ui_operation'
 
-class RuntimeSafetyError(ValueError):
-    pass
+
+class _OperationExecutorRegistry:
+    def __init__(self):
+        self._executor = None
+
+    def register(self, executor):
+        if not callable(executor):
+            raise RuntimeSafetyError('Operation executor must be callable')
+        if self._executor is not None and self._executor is not executor:
+            raise RuntimeSafetyError('A different operation executor is already registered')
+        self._executor = executor
+
+    def executor(self):
+        if self._executor is None:
+            raise RuntimeSafetyError('No operation executor is registered')
+        return self._executor
+
+
+_executor_registry = _OperationExecutorRegistry()
+_executor_registrar = None
+
+
+def register_operation_executor(executor):
+    """Same callable is idempotent; replacement fails closed."""
+    _executor_registry.register(executor)
+
+
+def _operation_executor():
+    return _executor_registry.executor()
+
+
+def register_operation_executor_factory(registrar):
+    """Register a module:callable entry point resolving the worker executor.
+
+    The callable is the executor itself, rather than an eagerly built UI object.
+    A fresh worker registry is required by multiprocessing spawn. The same entry
+    point is idempotent; changing an established entry point fails closed.
+    """
+    global _executor_registrar
+    if (type(registrar) is not str or re.fullmatch(
+            r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*', registrar) is None):
+        raise RuntimeSafetyError('Invalid operation executor registrar')
+    if _executor_registrar is not None and _executor_registrar != registrar:
+        raise RuntimeSafetyError('A different operation executor registrar is already registered')
+    _executor_registrar = registrar
+
+
+def _worker_operation_executor(registrar):
+    if not registrar:
+        raise RuntimeSafetyError('No operation executor is registered')
+    module, name = registrar.split(':')
+    registry = _OperationExecutorRegistry()
+    registry.register(getattr(importlib.import_module(module), name))
+    return registry.executor()
 
 
 def _json_bytes(value):
@@ -40,25 +99,6 @@ def _json_bytes(value):
     if len(raw) > MAX_JSON:
         raise RuntimeSafetyError('JSON size limit exceeded')
     return raw
-
-
-def atomic_write(path, raw, *, durable=False):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, name = tempfile.mkstemp(prefix='.' + path.name, suffix='.tmp', dir=path.parent)
-    try:
-        with os.fdopen(fd, 'wb') as stream:
-            stream.write(raw)
-            stream.flush()
-            os.fsync(stream.fileno())
-        if durable:
-            _durable_replace(name, path)
-        else:
-            os.replace(name, path)
-    finally:
-        if os.path.exists(name):
-            os.unlink(name)
-
 
 
 WORKSPACE_FORMAT = {'kind': 'markauto_workspace', 'schema_version': STATE_VERSION}
@@ -85,7 +125,9 @@ def _verify_replay_runtime(value):
     """Validate the shared WAL runtime requirement for replay and walk-forward."""
     if not {'sqlite_replay', 'sqlite_walk_forward'} & set(value):
         return
+    # Keep operation-specific dependencies out of module startup.
     import sqlite3
+    # Keep operation-specific dependencies out of module startup.
     from contextlib import closing
     with closing(sqlite3.connect(':memory:')) as connection:
         version = connection.execute('SELECT sqlite_version()').fetchone()[0]
@@ -97,37 +139,13 @@ def _verify_replay_runtime(value):
         raise RuntimeSafetyError('This workspace requires a WAL-safe SQLite runtime (3.51.3 or newer)')
 
 
-def _sync_directory(path):
-    if sys.platform != 'win32':
-        fd = os.open(path, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
-        try:
-            os.fsync(fd)
-        finally:
-            os.close(fd)
-
-
-def _durable_replace(source, destination):
-    if sys.platform == 'win32':
-        from ctypes import wintypes
-        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        move = kernel.MoveFileExW
-        move.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD]
-        move.restype = wintypes.BOOL
-        if not move(str(source), str(destination), 0x1 | 0x8):
-            raise ctypes.WinError(ctypes.get_last_error())
-    else:
-        os.replace(source, destination)
-        _sync_directory(Path(destination).parent)
-        if Path(source).parent != Path(destination).parent:
-            _sync_directory(Path(source).parent)
-
-
 def _marker_stream(marker):
     if sys.platform != 'win32':
         return marker.open('wb')
     # WRITE_THROUGH also flushes NTFS metadata for a newly created marker.
     # FlushFileBuffers via os.fsync below remains the explicit WAL barrier.
     import msvcrt
+    # Load this platform-specific API only on its supported execution path.
     from ctypes import wintypes
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     create = kernel.CreateFileW
@@ -378,6 +396,7 @@ class CredentialVault:
 
     @staticmethod
     def _crypt(raw, decrypt=False):
+        # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes
         class Blob(ctypes.Structure):
             _fields_ = [('cbData', wintypes.DWORD), ('pbData', ctypes.POINTER(ctypes.c_byte))]
@@ -448,6 +467,7 @@ class WindowsAppMutex:
     def __init__(self):
         self.handle = None
         if sys.platform == 'win32':
+            # Load this platform-specific API only on its supported execution path.
             from ctypes import wintypes
             self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
             self.kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
@@ -472,6 +492,7 @@ class RedactedEventLog:
         self.path = Path(path)
 
     def append(self, operation, event_type, *, error_code=None):
+        # Load the optional UI adapter only when this operation is requested.
         from .desktop_errors import ERROR_TABLE
         if error_code is not None and (type(error_code) is not str or error_code not in ERROR_TABLE):
             raise RuntimeSafetyError('Only fixed error codes can be logged')
@@ -506,6 +527,7 @@ class RedactedEventLog:
                 value = json.loads(raw)
                 if not isinstance(value, dict) or set(value) not in ({'time', 'operation', 'event'}, {'time', 'operation', 'event', 'error_code'}):
                     continue
+                # Load the optional UI adapter only when this operation is requested.
                 from .desktop_errors import ERROR_TABLE
                 if 'error_code' in value and (type(value['error_code']) is not str or value['error_code'] not in ERROR_TABLE):
                     continue
@@ -568,6 +590,7 @@ class BackupManager:
                      self.paths.state / '.restore-transaction')
         if not any(path.exists() or path.is_symlink() for path in artifacts):
             return  # No mutation, including intact unresolved-analysis startup.
+        # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
         with operation_guard(self.paths, 'restore_recovery') as ownership:
             return self._recover(ownership)
@@ -586,6 +609,7 @@ class BackupManager:
             except (OSError, ValueError):
                 pass  # Unknown journal is never evidence that rollback is disposable.
         if transaction:
+            # Keep operation-specific dependencies out of module startup.
             from .analysis_recovery import advance_restore_epoch
             advance_restore_epoch(self.paths, transaction['id'], admission=ownership)
         verified_commit = False
@@ -641,6 +665,7 @@ class BackupManager:
             raise RuntimeSafetyError('Hard-linked files cannot be backed up')
 
     def create(self, destination):
+        # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
         with operation_guard(self.paths, 'ui_backup_create'):
             return self._create(destination)
@@ -698,6 +723,7 @@ class BackupManager:
         return destination
 
     def restore(self, source):
+        # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
         (self.paths.bootstrap or self.paths.root).mkdir(parents=True, exist_ok=True)
         with operation_guard(self.paths, 'ui_backup_restore') as ownership:
@@ -757,6 +783,7 @@ class BackupManager:
             if {'sqlite_replay', 'sqlite_walk_forward'} & set(restored_format):
                 _write_workspace_format(self.paths.root, {**prior_format, **restored_format})
             transaction_id = uuid.uuid4().hex
+            # Keep operation-specific dependencies out of module startup.
             from .analysis_recovery import advance_restore_epoch
             advance_restore_epoch(self.paths, transaction_id, admission=ownership)
             formats = {'prior_format': prior_format, 'restored_format': restored_format}
@@ -794,6 +821,7 @@ WALK_FORWARD_OPERATIONS = frozenset({
 
 @contextmanager
 def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
+    # Keep operation-specific dependencies out of module startup.
     from .analysis_recovery import (admission, operation_guard, read_launch,
                                     SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS)
     if operation == 'ui_analysis_run' and helper_nonce is not None:
@@ -810,7 +838,8 @@ def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
 
 
 def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                reconciliation_admitted=False, helper_nonce=None):
+                reconciliation_admitted=False, helper_nonce=None,
+                operation_registrar=DEFAULT_OPERATION_REGISTRAR):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
@@ -822,12 +851,14 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
         paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
         with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
             if operation in UI_OPERATIONS:
-                from desktop_ui import execute_ui_operation
-                result = execute_ui_operation(operation, payload, paths, emit=emit,
+                executor = _worker_operation_executor(operation_registrar)
+                result = executor(operation, payload, paths, emit=emit,
                     descendants_stopped=reconciliation_admitted is True and operation in (
                         'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'))
             else:
+                # Keep operation-specific dependencies out of module startup.
                 from argparse import Namespace
+                # Keep operation-specific dependencies out of module startup.
                 from .__main__ import execute
                 stage = paths.state / 'runs' / (job_id + '.partial')
                 stage.mkdir(parents=True, exist_ok=False)
@@ -841,6 +872,7 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
                 final = stage.with_suffix('')
                 os.replace(stage, final)
                 result = {'output': str(final)}
+        # Keep operation-specific dependencies out of module startup.
         from .core import to_dict
         result = to_dict(result)
         try:
@@ -859,6 +891,7 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
 class _WindowsProcessTree:
     """Kill-on-close job object. Child waits until assigned; grandchildren inherit."""
     def __init__(self, pid):
+        # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes as w
         class Basic(ctypes.Structure):
             _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
@@ -894,6 +927,7 @@ class _WindowsProcessTree:
 
     def stop_and_join(self, *, deadline=None):
         """Keep the Job handle; an earlier caller deadline shares the six-second reserve."""
+        # Keep operation-specific dependencies out of module startup.
         import math
         now = time.monotonic()
         if deadline is None:
@@ -902,6 +936,7 @@ class _WindowsProcessTree:
             raise RuntimeSafetyError('Invalid worker cleanup deadline')
         else:
             deadline = min(deadline, now + 6)
+        # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes as w
         class Accounting(ctypes.Structure):
             _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime','TotalKernelTime','ThisPeriodTotalUserTime','ThisPeriodTotalKernelTime')] + [(name,w.DWORD) for name in ('TotalPageFaultCount','TotalProcesses','ActiveProcesses','TotalTerminatedProcesses')]
@@ -932,7 +967,9 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
     Its one-slot budget is never used to run an experiment or displayed as consent.
     The worker restores the explicit saved budget after authoritative admission.
     """
+    # Keep operation-specific dependencies out of module startup.
     from .core import ValidationError
+    # Keep operation-specific dependencies out of module startup.
     from .walk_forward import walk_forward_plan_from_dict
     if not isinstance(plan_payload, dict):
         raise ValidationError('Explicit walk-forward plan required')
@@ -961,33 +998,6 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
         raise ValidationError('Saved-pool evaluation budget must be explicitly set within 1..620')
     template = {**plan_payload, 'pool_origin': 'exact_builtin_pool', 'max_evaluations': 1}
     return walk_forward_plan_from_dict(template)
-
-
-def validate_analysis_request(request):
-    """References only: no model context, credentials or caller-selected budgets."""
-    if (type(request) is not dict or set(request) != {'campaign_reference', 'original_dataset',
-            'attempt_ids', 'task', 'registration', 'model', 'timeout_seconds'}):
-        raise RuntimeSafetyError('Invalid analysis request fields')
-    for field, length in (('campaign_reference',64), ('registration',32)):
-        if type(request[field]) is not str or not re.fullmatch('[a-f0-9]{'+str(length)+'}',request[field]):
-            raise RuntimeSafetyError('Invalid analysis reference')
-    attempts=request['attempt_ids']; task=request['task']
-    if (task not in ('critique','compare') or type(attempts) is not list
-        or not (len(attempts)==1 if task=='critique' else 2<=len(attempts)<=5)
-        or any(type(value) is not str or not re.fullmatch('[a-f0-9]{64}',value) for value in attempts)
-        or len(set(attempts))!=len(attempts)):
-        raise RuntimeSafetyError('Select bounded distinct analysis candidates')
-    original=request['original_dataset']
-    if type(original) is not dict or set(original)!={'kind','path'} or original['kind']!='local_dataset_file':
-        raise RuntimeSafetyError('Explicit original dataset required')
-    path=original['path']
-    if (type(path) is not str or not path or len(path)>4096 or chr(0) in path
-        or '://' in path or path.startswith(('//',chr(92)*2)) or not Path(path).is_absolute() or '..' in Path(path).parts):
-        raise RuntimeSafetyError('Explicit local dataset path required')
-    if (type(request['model']) is not str or not re.fullmatch('[A-Za-z0-9._:-]{1,128}',request['model'])
-        or type(request['timeout_seconds']) is not int or not 1<=request['timeout_seconds']<=120):
-        raise RuntimeSafetyError('Invalid analysis model or timeout')
-    return request
 
 
 class JobManager:
@@ -1071,12 +1081,11 @@ class JobManager:
         if value != {'kind': 'desktop_walk_forward_owner_v1', 'job_id': job_id, 'reference': reference}:
             raise RuntimeSafetyError('Walk-forward original run ownership mismatch')
 
-    def start(self, operation, payload):
-        if self.active:
-            raise RuntimeSafetyError('A job is already running')
+    def _validate_job_request(self, operation, payload):
         if operation not in OPERATIONS or not isinstance(payload, dict):
             raise RuntimeSafetyError('Unsupported operation')
         _json_bytes(payload)
+        # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import require_operation
         require_operation(self.paths, operation)
         if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
@@ -1088,108 +1097,123 @@ class JobManager:
                 raise RuntimeSafetyError('Unsupported job parameters')
             if operation == 'demo' and (type(payload.get('bars', 240)) is not int or not 20 <= payload.get('bars', 240) <= 10000):
                 raise RuntimeSafetyError('Demo bars must be 20..10000')
+
+    def _prepare_walk_forward_job(self, operation, payload):
+        deadline = None
+        walk_forward_reference = None
+        walk_forward_result_reference = None
+        reconciliation_admitted = False
+        allowed = {
+            'ui_walk_forward_preview': {'plan'},
+            'ui_walk_forward_run': {'plan', 'preview_identity'},
+            'ui_walk_forward_read': {'reference'},
+            'ui_walk_forward_reconcile': {'reference', 'stopped_job_id'},
+        }[operation]
+        if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run') and 'saved_source' in payload:
+            if not isinstance(payload.get('plan'), dict) or payload['plan'].get('pool_origin') != 'saved_campaign_pool':
+                raise RuntimeSafetyError('Built-in and saved pools cannot be mixed')
+            allowed = allowed | {'saved_source'}
+        if set(payload) != allowed:
+            raise RuntimeSafetyError('Unsupported walk-forward job parameters')
+        if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
+            if not isinstance(payload['plan'], dict):
+                raise RuntimeSafetyError('Explicit walk-forward plan required')
+            # Keep operation-specific dependencies out of module startup.
+            from .core import ValidationError
+            try:
+                plan = validate_walk_forward_request(payload['plan'], payload.get('saved_source'))
+            except (ValidationError, TypeError, KeyError) as exc:
+                raise RuntimeSafetyError('Invalid bounded walk-forward plan') from exc
+            if operation == 'ui_walk_forward_run':
+                walk_forward_reference = payload['preview_identity']
+                walk_forward_result_reference = walk_forward_reference
+                deadline = time.monotonic() + plan.max_runtime_seconds + 10
+        else:
+            walk_forward_result_reference = payload['reference']
+        if operation != 'ui_walk_forward_preview':
+            if not isinstance(walk_forward_result_reference, str) or not re.fullmatch(r'[0-9a-f]{64}', walk_forward_result_reference):
+                raise RuntimeSafetyError('Invalid walk-forward reference')
+        if operation == 'ui_walk_forward_run':
+            journal = self.paths.state / 'walk_forward' / walk_forward_reference / 'walk_forward.sqlite3'
+            if journal.exists() or journal.is_symlink():
+                # A new reader's process stop is not proof about an older
+                # journal writer. Never mint recovery authority by reopening.
+                raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
+        if operation == 'ui_walk_forward_reconcile':
+            if (not self._quiesced_walk_forward
+                or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward):
+                raise RuntimeSafetyError('Matching walk-forward subtree stop proof required')
+            self._check_walk_forward_owner(payload['stopped_job_id'], payload['reference'])
+            reconciliation_admitted = True
+        if deadline is None:
+            deadline = time.monotonic() + 60
+        return deadline, walk_forward_reference, walk_forward_result_reference, reconciliation_admitted
+
+    def _prepare_analysis_job(self, operation, payload):
+        analysis_job_identity = None
+        analysis_result_reference = None
+        approved_analysis_plan = None
+        helper_nonce = None
+        reconciliation_admitted = False
+        request = None
+        allowed={'ui_analysis_preview':{'request'},
+                 'ui_analysis_run':{'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'},
+                 'ui_analysis_read':{'analysis_id'},
+                 'ui_analysis_reconcile':{'analysis_id','registration','stopped_job_id'}}[operation]
+        if operation == 'ui_analysis_run' and 'approved_plan' in payload:
+            allowed = allowed | {'approved_plan'}
+        if operation == 'ui_analysis_reconcile' and 'recovery_launch_id' in payload:
+            allowed = {'analysis_id', 'registration', 'recovery_launch_id'}
+        if set(payload)!=allowed: raise RuntimeSafetyError('Invalid analysis job fields')
+        if operation in ('ui_analysis_preview','ui_analysis_run'):
+            request=validate_analysis_request(payload['request'])
+            deadline=time.monotonic()+120+10+(request['timeout_seconds'] if operation=='ui_analysis_run' else 0)
+        else: deadline=time.monotonic()+60
+        if operation!='ui_analysis_preview':
+            reference=payload['expected_analysis_id'] if operation=='ui_analysis_run' else payload['analysis_id']
+            if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}',reference):
+                raise RuntimeSafetyError('Invalid analysis identity')
+            analysis_result_reference=reference
+        if operation=='ui_analysis_run':
+            if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}',payload['expected_plan_hash']):
+                raise RuntimeSafetyError('Invalid immutable analysis plan hash')
+            if any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
+                raise RuntimeSafetyError('Explicit one-call analysis consent required')
+            analysis_job_identity=(reference,request['registration'])
+            if 'approved_plan' in payload or sys.platform == 'win32':
+                # Keep operation-specific dependencies out of module startup.
+                from .analysis_recovery import plan_bindings
+                # Keep operation-specific dependencies out of module startup.
+                from .core import content_hash
+                approved_analysis_plan = payload.get('approved_plan')
+                bindings = plan_bindings(approved_analysis_plan)
+                if (bindings['analysis_id'] != reference
+                    or bindings['plan_hash'] != payload['expected_plan_hash']
+                    or any(bindings[key] != request[key] for key in ('registration','model','timeout_seconds'))):
+                    raise RuntimeSafetyError('Original approved analysis plan differs')
+            if sys.platform == 'win32':
+                helper_nonce = uuid.uuid4().hex
+        if operation=='ui_analysis_reconcile':
+            if 'recovery_launch_id' in payload:
+                # Keep operation-specific dependencies out of module startup.
+                from .analysis_recovery import validate_stop_receipt, supports_durable_recovery
+                if not supports_durable_recovery():
+                    raise RuntimeSafetyError('Durable analysis recovery requires Windows')
+                launch = validate_stop_receipt(self.paths, payload['recovery_launch_id'])
+                if launch['analysis_id'] != reference or launch['registration'] != payload['registration']:
+                    raise RuntimeSafetyError('Original durable analysis binding differs')
+            else:
+                if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
+                    raise RuntimeSafetyError('Matching analysis subtree stop proof required')
+                reconciliation_admitted=True
+        return (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan,
+                helper_nonce, reconciliation_admitted, request)
+
+    def _prepare_other_job(self, operation, payload):
         deadline = None
         auth_request_id = None
         reconciliation_admitted = False
-        analysis_job_identity = None
-        analysis_result_reference = None
-        walk_forward_reference = None
-        walk_forward_result_reference = None
-        approved_analysis_plan = None
-        helper_nonce = None
-        if operation in WALK_FORWARD_OPERATIONS:
-            allowed = {
-                'ui_walk_forward_preview': {'plan'},
-                'ui_walk_forward_run': {'plan', 'preview_identity'},
-                'ui_walk_forward_read': {'reference'},
-                'ui_walk_forward_reconcile': {'reference', 'stopped_job_id'},
-            }[operation]
-            if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run') and 'saved_source' in payload:
-                if not isinstance(payload.get('plan'), dict) or payload['plan'].get('pool_origin') != 'saved_campaign_pool':
-                    raise RuntimeSafetyError('Built-in and saved pools cannot be mixed')
-                allowed = allowed | {'saved_source'}
-            if set(payload) != allowed:
-                raise RuntimeSafetyError('Unsupported walk-forward job parameters')
-            if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
-                if not isinstance(payload['plan'], dict):
-                    raise RuntimeSafetyError('Explicit walk-forward plan required')
-                from .core import ValidationError
-                try:
-                    plan = validate_walk_forward_request(payload['plan'], payload.get('saved_source'))
-                except (ValidationError, TypeError, KeyError) as exc:
-                    raise RuntimeSafetyError('Invalid bounded walk-forward plan') from exc
-                if operation == 'ui_walk_forward_run':
-                    walk_forward_reference = payload['preview_identity']
-                    walk_forward_result_reference = walk_forward_reference
-                    deadline = time.monotonic() + plan.max_runtime_seconds + 10
-            else:
-                walk_forward_result_reference = payload['reference']
-            if operation != 'ui_walk_forward_preview':
-                if not isinstance(walk_forward_result_reference, str) or not re.fullmatch(r'[0-9a-f]{64}', walk_forward_result_reference):
-                    raise RuntimeSafetyError('Invalid walk-forward reference')
-            if operation == 'ui_walk_forward_run':
-                journal = self.paths.state / 'walk_forward' / walk_forward_reference / 'walk_forward.sqlite3'
-                if journal.exists() or journal.is_symlink():
-                    # A new reader's process stop is not proof about an older
-                    # journal writer. Never mint recovery authority by reopening.
-                    raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
-            if operation == 'ui_walk_forward_reconcile':
-                if (not self._quiesced_walk_forward
-                    or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward):
-                    raise RuntimeSafetyError('Matching walk-forward subtree stop proof required')
-                self._check_walk_forward_owner(payload['stopped_job_id'], payload['reference'])
-                reconciliation_admitted = True
-            if deadline is None:
-                deadline = time.monotonic() + 60
-        elif operation in ANALYSIS_OPERATIONS:
-            allowed={'ui_analysis_preview':{'request'},
-                     'ui_analysis_run':{'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'},
-                     'ui_analysis_read':{'analysis_id'},
-                     'ui_analysis_reconcile':{'analysis_id','registration','stopped_job_id'}}[operation]
-            if operation == 'ui_analysis_run' and 'approved_plan' in payload:
-                allowed = allowed | {'approved_plan'}
-            if operation == 'ui_analysis_reconcile' and 'recovery_launch_id' in payload:
-                allowed = {'analysis_id', 'registration', 'recovery_launch_id'}
-            if set(payload)!=allowed: raise RuntimeSafetyError('Invalid analysis job fields')
-            if operation in ('ui_analysis_preview','ui_analysis_run'):
-                request=validate_analysis_request(payload['request'])
-                deadline=time.monotonic()+120+10+(request['timeout_seconds'] if operation=='ui_analysis_run' else 0)
-            else: deadline=time.monotonic()+60
-            if operation!='ui_analysis_preview':
-                reference=payload['expected_analysis_id'] if operation=='ui_analysis_run' else payload['analysis_id']
-                if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}',reference):
-                    raise RuntimeSafetyError('Invalid analysis identity')
-                analysis_result_reference=reference
-            if operation=='ui_analysis_run':
-                if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}',payload['expected_plan_hash']):
-                    raise RuntimeSafetyError('Invalid immutable analysis plan hash')
-                if any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
-                    raise RuntimeSafetyError('Explicit one-call analysis consent required')
-                analysis_job_identity=(reference,request['registration'])
-                if 'approved_plan' in payload or sys.platform == 'win32':
-                    from .analysis_recovery import plan_bindings
-                    from .core import content_hash
-                    approved_analysis_plan = payload.get('approved_plan')
-                    bindings = plan_bindings(approved_analysis_plan)
-                    if (bindings['analysis_id'] != reference
-                        or bindings['plan_hash'] != payload['expected_plan_hash']
-                        or any(bindings[key] != request[key] for key in ('registration','model','timeout_seconds'))):
-                        raise RuntimeSafetyError('Original approved analysis plan differs')
-                if sys.platform == 'win32':
-                    helper_nonce = uuid.uuid4().hex
-            if operation=='ui_analysis_reconcile':
-                if 'recovery_launch_id' in payload:
-                    from .analysis_recovery import validate_stop_receipt, supports_durable_recovery
-                    if not supports_durable_recovery():
-                        raise RuntimeSafetyError('Durable analysis recovery requires Windows')
-                    launch = validate_stop_receipt(self.paths, payload['recovery_launch_id'])
-                    if launch['analysis_id'] != reference or launch['registration'] != payload['registration']:
-                        raise RuntimeSafetyError('Original durable analysis binding differs')
-                else:
-                    if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
-                        raise RuntimeSafetyError('Matching analysis subtree stop proof required')
-                    reconciliation_admitted=True
-        elif operation == 'ui_chatgpt_auth':
+        if operation == 'ui_chatgpt_auth':
             request = payload.get('request')
             if set(payload) != {'request'} or not isinstance(request, dict):
                 raise RuntimeSafetyError('Invalid authentication request')
@@ -1208,24 +1232,10 @@ class JobManager:
             if type(seconds) is not int or not 1 <= seconds <= 7200:
                 raise RuntimeSafetyError('Explicit bounded subscription campaign required')
             deadline = time.monotonic() + seconds + 10
-        job_id = uuid.uuid4().hex
-        if walk_forward_reference is not None:
-            self.paths.require_walk_forward_wal()
-            self._claim_walk_forward(walk_forward_reference, job_id)
-        self._analysis_job_identity = analysis_job_identity
-        self._analysis_result_reference = analysis_result_reference
-        if analysis_job_identity is not None: self._quiesced_analysis = None
-        self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
-        if self._subscription_job: self._quiesced_subscription_id = None
-        self._walk_forward_reference = walk_forward_reference
-        self._walk_forward_result_reference = walk_forward_result_reference
-        if walk_forward_reference is not None:
-            self._quiesced_walk_forward = None
-        self._tree_quiesced = False
-        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ANALYSIS_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
-        self._operation = operation
-        self._deadline = deadline
-        self._auth_request_id = auth_request_id
+        return deadline, auth_request_id, reconciliation_admitted
+
+    def _launch_job_process(self, operation, payload, job_id, reconciliation_admitted,
+                            helper_nonce, approved_analysis_plan, request):
         context = mp.get_context('spawn')
         receiver, sender = context.Pipe(duplex=False)
         gate = context.Event()
@@ -1237,14 +1247,21 @@ class JobManager:
         worker_args = (sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id, reconciliation_admitted)
         if helper_nonce is not None:
             worker_args += (helper_nonce,)
+        if _executor_registrar not in (None, DEFAULT_OPERATION_REGISTRAR):
+            if helper_nonce is None:
+                worker_args += (None,)
+            worker_args += (_executor_registrar,)
         self.process = context.Process(target=_job_worker, args=worker_args)
         self.receiver = receiver
         try:
             self.process.start()
             sender.close()
             if helper_nonce is not None:
+                # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery import admission, register_launch, plan_bindings
+                # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery_windows import WindowsAnalysisRecoveryTree
+                # Keep operation-specific dependencies out of module startup.
                 from .core import content_hash
                 anticipated = {'job_id': job_id, 'helper_nonce': helper_nonce,
                     **plan_bindings(approved_analysis_plan), 'source_request_hash': content_hash(request)}
@@ -1265,6 +1282,48 @@ class JobManager:
                 self.tree = exc.recovery_tree  # Retain exact ownership after incomplete helper cleanup.
             self.cancel()
             raise
+
+    def start(self, operation, payload):
+        if self.active:
+            raise RuntimeSafetyError('A job is already running')
+        self._validate_job_request(operation, payload)
+        deadline = None
+        auth_request_id = None
+        reconciliation_admitted = False
+        analysis_job_identity = None
+        analysis_result_reference = None
+        walk_forward_reference = None
+        walk_forward_result_reference = None
+        approved_analysis_plan = None
+        helper_nonce = None
+        request = None
+        if operation in WALK_FORWARD_OPERATIONS:
+            deadline, walk_forward_reference, walk_forward_result_reference, reconciliation_admitted = self._prepare_walk_forward_job(operation, payload)
+        elif operation in ANALYSIS_OPERATIONS:
+            (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan,
+             helper_nonce, reconciliation_admitted, request) = self._prepare_analysis_job(operation, payload)
+        else:
+            deadline, auth_request_id, reconciliation_admitted = self._prepare_other_job(operation, payload)
+        job_id = uuid.uuid4().hex
+        if walk_forward_reference is not None:
+            self.paths.require_walk_forward_wal()
+            self._claim_walk_forward(walk_forward_reference, job_id)
+        self._analysis_job_identity = analysis_job_identity
+        self._analysis_result_reference = analysis_result_reference
+        if analysis_job_identity is not None: self._quiesced_analysis = None
+        self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
+        if self._subscription_job: self._quiesced_subscription_id = None
+        self._walk_forward_reference = walk_forward_reference
+        self._walk_forward_result_reference = walk_forward_result_reference
+        if walk_forward_reference is not None:
+            self._quiesced_walk_forward = None
+        self._tree_quiesced = False
+        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ANALYSIS_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
+        self._operation = operation
+        self._deadline = deadline
+        self._auth_request_id = auth_request_id
+        self._launch_job_process(operation, payload, job_id, reconciliation_admitted,
+                                 helper_nonce, approved_analysis_plan, request)
         return self.job_id
 
     def poll(self):

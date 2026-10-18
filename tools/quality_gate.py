@@ -27,6 +27,37 @@ BANNED_IMPORTS = {"trader", "shioaji", "pickle", "subprocess"}
 BANNED_CALLS = {"eval", "exec", "compile", "__import__"}
 
 
+def core_import_findings(source: str, label: str) -> list[str]:
+    """Static UI boundary, including function-local imports and relative forms.
+
+    Importlib registrar resolution is allowed, but literal desktop module names
+    in importlib calls are forbidden. The runtime's documented registrar is data
+    passed into resolution, never a literal importlib argument.
+    """
+    tree = ast.parse(source, filename=label)
+    findings = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            modules = [] if node.level else [node.module or '']
+            if not node.module and not node.level:
+                modules.extend(alias.name for alias in node.names)
+        else:
+            modules = []
+        if any(module.split('.')[0].startswith('desktop') for module in modules):
+            findings.append(f'{label}:{node.lineno}: no desktop imports under quantlab/')
+        if isinstance(node, ast.Call) and ((
+                isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == 'importlib')
+                or (isinstance(node.func, ast.Name) and node.func.id == 'import_module')):  # also `from importlib import import_module`
+            if any(isinstance(value, ast.Constant) and isinstance(value.value, str)
+                   and value.value.startswith('desktop')
+                   for value in (*node.args, *(kw.value for kw in node.keywords))):
+                findings.append(f'{label}:{node.lineno}: literal desktop importlib target')
+    return findings
+
+
 def secret_findings(source: str, label: str) -> list[str]:
     """Only locations and rule names leave this function, never matched values."""
     return [f"{label}:{source.count(chr(10), 0, match.start()) + 1}: {name}"
@@ -95,6 +126,11 @@ def scan(root: Path, history: bool = False) -> list[str]:
             continue
         findings.extend(secret_findings(source, name))
         if path.suffix == ".py":
+            if name.startswith('quantlab/'):
+                try:
+                    findings.extend(core_import_findings(source, name))
+                except SyntaxError:
+                    pass  # python_findings below reports invalid syntax redacted.
             findings.extend(python_findings(source, name, name.startswith("quantlab/"),
                                             desktop=name in {"desktop_ui.py", "desktop_charts.py",
                                                              "desktop_forms.py", "desktop_market.py", "desktop_walk_forward.py",

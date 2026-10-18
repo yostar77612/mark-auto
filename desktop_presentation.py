@@ -75,3 +75,37 @@ def result_name(result, created_at):
     interval = ui_text('presentation.result_name.text_4').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.text_5')
     instant = datetime.fromtimestamp(created_at, timezone.utc).astimezone(timezone(timedelta(hours=8)))
     return ui_text('presentation.result_name.text_6').format(display_status(spec.get('family', '')), parameters, interval, instant)
+
+
+# Shared operation inputs have no dependency on either UI dispatcher.
+from pathlib import Path
+from quantlab.core import Dataset, ValidationError, content_hash
+from quantlab.reporting import load_dataset
+
+def research_controls(paths):
+    """Irreversible budget/holdout ledgers must never be rolled back with user state."""
+    state = Path(paths.state)
+    legacy = list((state / 'provider_budgets').glob('*'))
+    legacy.extend((state / 'campaigns').glob('.holdout_registry.sqlite3*'))
+    if any(path.exists() and (not path.is_file() or path.stat().st_size > 0) for path in legacy):
+        raise ValidationError(ui_text('ui.research_controls.text_1'))
+    controls = Path(paths.controls)
+    if controls.resolve().is_relative_to(state.resolve()):
+        raise ValidationError(ui_text('ui.research_controls.text_2'))
+    return controls
+
+
+def _dataset(root, payload):
+    data = load_dataset(Path(payload.get('dataset') or root / 'dataset.json'))
+    start, end = payload.get('start_date'), payload.get('end_date')
+    if start or end:
+        if start and end and start > end:
+            raise ValidationError(ui_text('ui._dataset.text_1'))
+        bars = tuple(b for b in data.bars if (not start or b.trade_date >= start) and (not end or b.trade_date <= end))
+        if not bars:
+            raise ValidationError(ui_text('ui._dataset.text_2'))
+        manifest = {**data.manifest, 'parent_data_hash': data.manifest['data_hash'],
+                    'data_hash': content_hash(bars), 'date_filter': {'start': start, 'end': end}}
+        manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k not in ('imported_at', 'manifest_hash')})
+        data = Dataset(bars, manifest, dict(data.quality))
+    return data

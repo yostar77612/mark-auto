@@ -24,6 +24,7 @@ from typing import Callable
 
 from .core import (BacktestConfig, Dataset, StrategySpec, ValidationError,
                    canonical_json, content_hash, freeze, to_dict)
+from .value_bounds import _bounded_number, _exact_number, _bounded_value
 from .paper_replay import _require_wal_runtime, _require_local_wal_path
 from .strategies import builtin_strategies, _validate_bars
 from .data import validate_dataset
@@ -34,67 +35,6 @@ from .research import (_dataset_identity, _evaluate_split, _integer,
 MAX_STATE_BYTES = 16 * 1024 * 1024
 SOURCE_FILES = ('walk_forward.py', 'saved_candidate_pool.py', 'research.py', 'core.py', 'data.py',
                 'strategies.py', 'backtest.py')
-
-
-def _bounded_number(value):
-    if not isinstance(value, Decimal) or not value.is_finite():
-        raise ValidationError('Finite bounded decimal required')
-    parts = value.as_tuple()
-    if abs(parts.exponent) > 32 or len(parts.digits) > 64 or value.copy_abs() > Decimal('1e15'):
-        raise ValidationError('Decimal precision, exponent or magnitude exceeds resource bounds')
-
-
-def _exact_number(value):
-    if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
-        raise ValidationError('Finite numeric value required')
-    try:
-        result = Decimal(str(value))
-    except InvalidOperation:
-        raise ValidationError('Finite numeric value required') from None
-    _bounded_number(result)
-    return result
-
-
-def _bounded_value(value, *, max_nodes=4096):
-    """Bound BEFORE canonical serialization or JSON numeric conversion."""
-    count, byte_count = 0, 0
-    def visit(item, depth=0):
-        nonlocal count, byte_count
-        count += 1
-        if count > max_nodes or depth > 16:
-            raise ValidationError('Plan/metadata structure exceeds resource bounds')
-        if isinstance(item, Decimal):
-            _bounded_number(item)
-        elif is_dataclass(item) and not isinstance(item, type):
-            for entry in fields(item):
-                visit(getattr(item, entry.name), depth + 1)
-        elif isinstance(item, dict):
-            for key, child in item.items():
-                if type(key) is not str:
-                    raise ValidationError('JSON object keys must be strings')
-                visit(key, depth + 1)
-                visit(child, depth + 1)
-        elif isinstance(item, (tuple, list)):
-            for child in item:
-                visit(child, depth + 1)
-        elif type(item) is str:
-            if len(item) > 16384:
-                raise ValidationError('Plan/metadata string exceeds resource bounds')
-            byte_count += len(item.encode('utf-8'))
-            if byte_count > 131072:
-                raise ValidationError('Plan/metadata bytes exceed resource bounds')
-            if re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?', item):
-                _exact_number(item)
-        elif type(item) is int:
-            if item.bit_length() > 64:
-                raise ValidationError('Integer exceeds resource bounds')
-        elif type(item) is float:
-            if not math.isfinite(item):
-                raise ValidationError('Nonfinite JSON value')
-            _bounded_number(Decimal(str(item)))
-        elif item is not None and type(item) is not bool and not isinstance(item, datetime):
-            raise ValidationError('Unsupported plan/metadata type')
-    visit(value)
 
 
 def _bounds(value, name):
@@ -184,6 +124,7 @@ class WalkForwardPlan:
                 or canonical_json(self.candidate_pool) != canonical_json(builtin_strategies())):
                 raise ValidationError('Only the exact five version-bound built-in candidates are supported')
         else:
+            # Keep operation-specific dependencies out of module startup.
             from .saved_candidate_pool import validate_admission_snapshot
             validate_admission_snapshot(self.pool_admission, self.candidate_pool)
             if self.max_evaluations > len(self.folds) * (2 * len(self.candidate_pool) + 1):
@@ -254,7 +195,8 @@ def walk_forward_plan_from_dict(payload: dict) -> WalkForwardPlan:
         typed.append(WalkForwardFold(**fold))
     value['folds'] = tuple(typed)
     if type(value['backtest_config']) is dict:
-        from .__main__ import config_from_json
+        # Keep operation-specific dependencies out of module startup.
+        from .configuration import config_from_json
         value['backtest_config'] = config_from_json(value['backtest_config'])
     if 'candidate_pool' in value:
         if type(value['candidate_pool']) is not list or not 1 <= len(value['candidate_pool']) <= 15:
@@ -395,6 +337,7 @@ def _validate_state(state):
                 or canonical_json(pool) != canonical_json(builtin_strategies())):
                 raise ValidationError('Invalid persisted builtin pool')
         elif origin == 'saved_campaign_pool':
+            # Keep operation-specific dependencies out of module startup.
             from .saved_candidate_pool import validate_admission_snapshot
             validate_admission_snapshot(plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool))
             if plan['max_evaluations'] > min(620, len(plan['folds']) * (2 * len(pool) + 1)):
@@ -568,6 +511,7 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
     _require_local_wal_path(Path(output_dir) / 'walk_forward.sqlite3')
     _validate_source(dataset, plan)
     if plan.pool_origin == 'saved_campaign_pool':
+        # Keep operation-specific dependencies out of module startup.
         from .saved_candidate_pool import admit_saved_campaign_pool
         if source_campaign_dir is None or original_dataset is None:
             raise ValidationError('Saved pool requires authoritative source campaign and exact original dataset at launch')
@@ -594,133 +538,161 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError as exc:
             raise ValidationError('Walk-forward experiment is already running') from exc
-        state_path = output_dir / 'walk_forward.sqlite3'
-        new_journal = not state_path.exists()
-        with closing(sqlite3.connect(state_path, timeout=0)) as db:
-            _configure_state_storage(db, new_journal=new_journal)
-            if new_journal:
-                # Publish schema with the first original durable snapshot, not
-                # an independently committed empty table. Existing files retain
-                # their original read/recovery path and storage mode.
-                db.execute('BEGIN')
-            db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
-            state = _read_state(db)
-            if state is not None:
-                if state['experiment_id'] != experiment_id:
-                    raise ValidationError('Walk-forward source/config/pool/registry is immutable; output directory conflict')
-                if state['status'] == 'running':
-                    _interrupt(state)
-                    _save_state(db, output_dir, state)
-                return state
-            state = {'experiment_id': experiment_id, 'binding': binding, 'status': 'running',
-                     'source_manifest': to_dict(dataset.manifest), 'elapsed_seconds': 0,
-                     'scope': 'historical_replay_exposure_unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_fixed_pool_technical_evaluation',
-                     'evidence_mode': plan.evidence_mode,
-                     'exposure_status': 'unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_not_market_evidence',
-                     'independent_oos': False, 'ranking_eligible': False, 'paper_eligible': False, 'model_calls': 0,
-                     'final_holdout_status': 'excluded_not_evaluated', 'registry_reservation': None,
-                     'evaluations': [], 'folds': [], 'summary': {},
-                     'warnings': [('Fixed built-in pool; no adaptive AI generation or imported AI provenance.'
-                                   if plan.pool_origin == 'exact_builtin_pool' else
-                                   'Fixed saved campaign pool; local artifact admission does not verify model inference, unseen exposure or profitability.'),
-                                  'Technical evidence only; no formal ranking, paper qualification or profitability claim.',
-                                  'historical_replay is exposure-unverified and not independent OOS; validation chooses only a scenario to replay.',
-                                  'The default 10% validation drawdown cap and minimum one closed lot are engineering guards, not financial acceptance.',
-                                  'Training scores are descriptive; a failed training engine evaluation still disqualifies an unverifiable candidate.',
-                                  'Independent split warmup and flat starts; no cross-boundary positions or feature state.',
-                                  'Later predeclared training may use earlier OOS bars after they become historical, never OOS metrics.',
-                                  'Shared registry checks only registered exposures; legacy OOS exposure is not fully registered.',
-                                  'OOS coverage envelopes are reserved once before scoring and stay consumed after cancellation.',
-                                  'The excluded final holdout is not evaluated here; this is not a claim that it is untouched.',
-                                  'Deleting/copying/restoring the authoritative registry cannot establish unseen data.',
-                                  'Worker address-space limits apply only where supported; isolation is not a filesystem/network sandbox.']}
-            deadline = started + plan.max_runtime_seconds
-            def save():
-                state['elapsed_seconds'] = time.monotonic() - started
-                _save_state(db, output_dir, state)
-            def check():
-                if cancelled is not None and cancelled():
-                    raise _StopRun('cancelled')
-                if time.monotonic() >= deadline or len(state['evaluations']) >= plan.max_evaluations:
-                    raise _StopRun('budget_exhausted')
-            def evaluate(fold_index, role, split, spec):
-                check()
-                record = {'sequence': len(state['evaluations']) + 1, 'fold': fold_index, 'role': role,
-                          'strategy_hash': content_hash(spec), 'status': 'running'}
-                state['evaluations'].append(record)
-                save()  # Durable reservation consumes the global slot BEFORE work.
-                try:
-                    result = _run_bounded(_evaluate_split, (split, spec, plan.backtest_config), deadline=deadline, config=config)
-                    record.update(result=result['value'], status='evaluated',
-                                  memory_limit_enforced=result.get('memory_limit_enforced', False))
-                except Exception as exc:
-                    record.update(status='timed_out' if isinstance(exc, ResourceTimeout) else 'failed', error=type(exc).__name__)
-                    if isinstance(exc, ResourceTimeout):
-                        raise _StopRun('budget_exhausted') from None
-                finally:
-                    save()
-                return record
+        return _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config,
+                                         output_dir, started, cancelled)
+
+
+def _initial_walk_forward_state(experiment_id, binding, dataset, plan):
+    return {'experiment_id': experiment_id, 'binding': binding, 'status': 'running',
+             'source_manifest': to_dict(dataset.manifest), 'elapsed_seconds': 0,
+             'scope': 'historical_replay_exposure_unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_fixed_pool_technical_evaluation',
+             'evidence_mode': plan.evidence_mode,
+             'exposure_status': 'unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_not_market_evidence',
+             'independent_oos': False, 'ranking_eligible': False, 'paper_eligible': False, 'model_calls': 0,
+             'final_holdout_status': 'excluded_not_evaluated', 'registry_reservation': None,
+             'evaluations': [], 'folds': [], 'summary': {},
+             'warnings': [('Fixed built-in pool; no adaptive AI generation or imported AI provenance.'
+                           if plan.pool_origin == 'exact_builtin_pool' else
+                           'Fixed saved campaign pool; local artifact admission does not verify model inference, unseen exposure or profitability.'),
+                          'Technical evidence only; no formal ranking, paper qualification or profitability claim.',
+                          'historical_replay is exposure-unverified and not independent OOS; validation chooses only a scenario to replay.',
+                          'The default 10% validation drawdown cap and minimum one closed lot are engineering guards, not financial acceptance.',
+                          'Training scores are descriptive; a failed training engine evaluation still disqualifies an unverifiable candidate.',
+                          'Independent split warmup and flat starts; no cross-boundary positions or feature state.',
+                          'Later predeclared training may use earlier OOS bars after they become historical, never OOS metrics.',
+                          'Shared registry checks only registered exposures; legacy OOS exposure is not fully registered.',
+                          'OOS coverage envelopes are reserved once before scoring and stay consumed after cancellation.',
+                          'The excluded final holdout is not evaluated here; this is not a claim that it is untouched.',
+                          'Deleting/copying/restoring the authoritative registry cannot establish unseen data.',
+                          'Worker address-space limits apply only where supported; isolation is not a filesystem/network sandbox.']}
+
+
+def _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config,
+                              output_dir, deadline, state, check, save):
+    check()
+    oos_bars = tuple(bar for fold in plan.folds for bar in dataset.bars[fold.oos[0]:fold.oos[1]])
+    protected = Dataset(oos_bars, {}, {})
+    checked = Dataset(dataset.bars[plan.folds[0].train[0]:plan.final_holdout[1]], {}, {})
+    # Reservation's selection_hash binds the predeclared pool/plan;
+    # per-fold winner hashes are distinct and frozen later, before OOS.
+    try:
+        reservation = _reserve_holdout(protected, registry_path=registry,
+            campaign_id=experiment_id, selection_hash=content_hash(config), output_dir=output_dir,
+            guard_dataset=checked, deadline=deadline)
+    except ResourceTimeout:
+        raise _StopRun('budget_exhausted') from None
+    except sqlite3.OperationalError as exc:
+        if getattr(exc, 'sqlite_errorcode', None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+            raise _StopRun('budget_exhausted' if time.monotonic() >= deadline else 'blocked_registry_busy') from None
+        raise
+    state['registry_reservation'] = reservation
+    save()
+    if reservation['status'] != 'reserved_consumed':
+        state['status'] = 'blocked_previously_consumed_range'
+        save()
+        return False
+    return True
+
+
+def _score_walk_forward_folds(dataset, plan, state, evaluate, save):
+    for fold_index, fold in enumerate(plan.folds):
+        fold_state = {'index': fold_index, 'plan': to_dict(fold), 'status': 'training',
+                      'candidates': [], 'selection': None, 'selection_hash': None, 'oos': None}
+        state['folds'].append(fold_state)
+        save()
+        train = _slice(dataset, fold.train, fold_index=fold_index, role='train')
+        validation = _slice(dataset, fold.validation, fold_index=fold_index, role='validation')
+        for pool_index, spec in enumerate(plan.candidate_pool):
+            scores = {'pool_index': pool_index, 'strategy_hash': content_hash(spec)}
+            fold_state['candidates'].append(scores)
+            for role, split in (('train', train), ('validation', validation)):
+                scores[role] = evaluate(fold_index, role, split, spec)
             save()
-            try:
-                check()
-                oos_bars = tuple(bar for fold in plan.folds for bar in dataset.bars[fold.oos[0]:fold.oos[1]])
-                protected = Dataset(oos_bars, {}, {})
-                checked = Dataset(dataset.bars[plan.folds[0].train[0]:plan.final_holdout[1]], {}, {})
-                # Reservation's selection_hash binds the predeclared pool/plan;
-                # per-fold winner hashes are distinct and frozen later, before OOS.
-                try:
-                    reservation = _reserve_holdout(protected, registry_path=registry,
-                        campaign_id=experiment_id, selection_hash=content_hash(config), output_dir=output_dir,
-                        guard_dataset=checked, deadline=deadline)
-                except ResourceTimeout:
-                    raise _StopRun('budget_exhausted') from None
-                except sqlite3.OperationalError as exc:
-                    if getattr(exc, 'sqlite_errorcode', None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
-                        raise _StopRun('budget_exhausted' if time.monotonic() >= deadline else 'blocked_registry_busy') from None
-                    raise
-                state['registry_reservation'] = reservation
-                save()
-                if reservation['status'] != 'reserved_consumed':
-                    state['status'] = 'blocked_previously_consumed_range'
-                    save()
-                    return state
-                for fold_index, fold in enumerate(plan.folds):
-                    fold_state = {'index': fold_index, 'plan': to_dict(fold), 'status': 'training',
-                                  'candidates': [], 'selection': None, 'selection_hash': None, 'oos': None}
-                    state['folds'].append(fold_state)
-                    save()
-                    train = _slice(dataset, fold.train, fold_index=fold_index, role='train')
-                    validation = _slice(dataset, fold.validation, fold_index=fold_index, role='validation')
-                    for pool_index, spec in enumerate(plan.candidate_pool):
-                        scores = {'pool_index': pool_index, 'strategy_hash': content_hash(spec)}
-                        fold_state['candidates'].append(scores)
-                        for role, split in (('train', train), ('validation', validation)):
-                            scores[role] = evaluate(fold_index, role, split, spec)
-                        save()
-                    eligible = [row for row in fold_state['candidates']
-                                if row['train']['status'] == 'evaluated' and row['validation']['status'] == 'evaluated'
-                                and _passes_validation(row['validation']['result'], plan.ranking)]
-                    if not eligible:
-                        fold_state['status'] = 'no_eligible_candidate'
-                        save()
-                        continue
-                    winner = sorted(eligible, key=lambda row: (_exact_number(row['validation']['result']['metrics']['net_pnl']).copy_negate(), row['pool_index']))[0]
-                    spec = plan.candidate_pool[winner['pool_index']]
-                    selection = {'pool_index': winner['pool_index'], 'spec': to_dict(spec),
-                                 'strategy_hash': content_hash(spec), 'train_data_hash': train.manifest['data_hash'],
-                                 'validation_data_hash': validation.manifest['data_hash'], 'ranking': to_dict(plan.ranking),
-                                 'validation_result_hash': winner['validation']['result']['result_hash']}
-                    fold_state.update(selection=selection, selection_hash=content_hash(selection), status='selection_frozen')
-                    save()  # No OOS result or data is passed to selection.
-                    oos = _slice(dataset, fold.oos, fold_index=fold_index, role='oos')
-                    fold_state['oos'] = evaluate(fold_index, 'oos', oos, spec)
-                    fold_state['status'] = 'evaluated' if fold_state['oos']['status'] == 'evaluated' else 'evaluation_failed'
-                    save()
-                state['status'] = 'completed_with_errors' if any(row['status'] != 'evaluated' for row in state['evaluations']) else 'completed'
-            except _StopRun as stop:
-                state['status'] = stop.status
-                for fold in state['folds']:
-                    if fold['status'] in ('training', 'selection_frozen'):
-                        fold['status'] = stop.status
+        eligible = [row for row in fold_state['candidates']
+                    if row['train']['status'] == 'evaluated' and row['validation']['status'] == 'evaluated'
+                    and _passes_validation(row['validation']['result'], plan.ranking)]
+        if not eligible:
+            fold_state['status'] = 'no_eligible_candidate'
             save()
+            continue
+        winner = sorted(eligible, key=lambda row: (_exact_number(row['validation']['result']['metrics']['net_pnl']).copy_negate(), row['pool_index']))[0]
+        spec = plan.candidate_pool[winner['pool_index']]
+        selection = {'pool_index': winner['pool_index'], 'spec': to_dict(spec),
+                     'strategy_hash': content_hash(spec), 'train_data_hash': train.manifest['data_hash'],
+                     'validation_data_hash': validation.manifest['data_hash'], 'ranking': to_dict(plan.ranking),
+                     'validation_result_hash': winner['validation']['result']['result_hash']}
+        fold_state.update(selection=selection, selection_hash=content_hash(selection), status='selection_frozen')
+        save()  # No OOS result or data is passed to selection.
+        oos = _slice(dataset, fold.oos, fold_index=fold_index, role='oos')
+        fold_state['oos'] = evaluate(fold_index, 'oos', oos, spec)
+        fold_state['status'] = 'evaluated' if fold_state['oos']['status'] == 'evaluated' else 'evaluation_failed'
+        save()
+
+
+def _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
+                              output_dir, db, state, started, cancelled):
+    deadline = started + plan.max_runtime_seconds
+    def save():
+        state['elapsed_seconds'] = time.monotonic() - started
+        _save_state(db, output_dir, state)
+    def check():
+        if cancelled is not None and cancelled():
+            raise _StopRun('cancelled')
+        if time.monotonic() >= deadline or len(state['evaluations']) >= plan.max_evaluations:
+            raise _StopRun('budget_exhausted')
+    def evaluate(fold_index, role, split, spec):
+        check()
+        record = {'sequence': len(state['evaluations']) + 1, 'fold': fold_index, 'role': role,
+                  'strategy_hash': content_hash(spec), 'status': 'running'}
+        state['evaluations'].append(record)
+        save()  # Durable reservation consumes the global slot BEFORE work.
+        try:
+            result = _run_bounded(_evaluate_split, (split, spec, plan.backtest_config), deadline=deadline, config=config)
+            record.update(result=result['value'], status='evaluated',
+                          memory_limit_enforced=result.get('memory_limit_enforced', False))
+        except Exception as exc:
+            record.update(status='timed_out' if isinstance(exc, ResourceTimeout) else 'failed', error=type(exc).__name__)
+            if isinstance(exc, ResourceTimeout):
+                raise _StopRun('budget_exhausted') from None
+        finally:
+            save()
+        return record
+    save()
+    try:
+        if not _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config,
+                                         output_dir, deadline, state, check, save):
             return state
+        _score_walk_forward_folds(dataset, plan, state, evaluate, save)
+        state['status'] = 'completed_with_errors' if any(row['status'] != 'evaluated' for row in state['evaluations']) else 'completed'
+    except _StopRun as stop:
+        state['status'] = stop.status
+        for fold in state['folds']:
+            if fold['status'] in ('training', 'selection_frozen'):
+                fold['status'] = stop.status
+    save()
+    return state
+
+
+def _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config,
+                              output_dir, started, cancelled):
+    state_path = output_dir / 'walk_forward.sqlite3'
+    new_journal = not state_path.exists()
+    with closing(sqlite3.connect(state_path, timeout=0)) as db:
+        _configure_state_storage(db, new_journal=new_journal)
+        if new_journal:
+            # Publish schema with the first original durable snapshot, not
+            # an independently committed empty table. Existing files retain
+            # their original read/recovery path and storage mode.
+            db.execute('BEGIN')
+        db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
+        state = _read_state(db)
+        if state is not None:
+            if state['experiment_id'] != experiment_id:
+                raise ValidationError('Walk-forward source/config/pool/registry is immutable; output directory conflict')
+            if state['status'] == 'running':
+                _interrupt(state)
+                _save_state(db, output_dir, state)
+            return state
+        state = _initial_walk_forward_state(experiment_id, binding, dataset, plan)
+        return _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
+                                         output_dir, db, state, started, cancelled)

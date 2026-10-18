@@ -20,6 +20,7 @@
   "MarketDashboard",
   "MarketHistoryDialog",
   "MarketPage",
+  "OPERATION_REGISTRAR",
   "PageHost",
   "PageState",
   "PaperIntentForm",

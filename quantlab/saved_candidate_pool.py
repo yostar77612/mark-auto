@@ -824,33 +824,10 @@ class SavedCandidatePoolError(ValidationError):
         self.reason_code = reason_code
 
 
+from .errors import fail, saved_candidate_reason
+
 def _fail(message):
-    code = 'source_invalid_evidence'
-    for fragment, reason in (
-        ('strictly before', 'source_temporal_overlap'),
-        ('Duplicate source candidate', 'source_duplicate_structure'),
-        ('terminal completed', 'source_not_completed'),
-        ('producer protocol', 'source_producer_unsupported'),
-        ('Source registry', 'source_registry_mismatch'),
-        ('Manual source', 'source_manual_exchange_missing'),
-        ('Source provider Decimal context', 'source_provider_decimal_context_unsupported'),
-        ('provider protocol implementation', 'source_provider_provenance_invalid'),
-        ('provider protocol descriptor', 'source_provider_provenance_invalid'),
-        ('Source provider receipt', 'source_provider_receipt_invalid'),
-        ('provider protocol', 'source_provider_unsupported'),
-        ('journal/export mismatch', 'source_journal_mismatch'),
-        ('original dataset identity', 'source_dataset_mismatch'),
-        ('Original dataset', 'source_dataset_mismatch'),
-        ('original Dataset', 'source_dataset_mismatch'),
-        ('No evaluated candidates', 'source_no_evaluated_candidates'),
-        ('1..15', 'source_candidate_limit'),
-        ('resource bounds', 'source_resource_limit'),
-        ('audit byte limit', 'source_resource_limit'),
-        ('Missing', 'source_missing_evidence')):
-        if fragment in message:
-            code = reason
-            break
-    raise SavedCandidatePoolError(message, code)
+    fail(message, SavedCandidatePoolError, saved_candidate_reason(message))
 
 
 def _safe_boundary(function):
@@ -866,7 +843,8 @@ def _safe_boundary(function):
 
 
 def _json_load(text):
-    from .walk_forward import _exact_number
+    # Keep operation-specific dependencies out of module startup.
+    from .value_bounds import _exact_number
     def integer(value):
         if len(value) > 20:
             _fail('Source integer exceeds resource bounds')
@@ -950,7 +928,8 @@ def _audit_tree(value):
 
 
 def _validate_original_dataset(dataset):
-    from .walk_forward import _bounded_value, _bounded_number
+    # Keep operation-specific dependencies out of module startup.
+    from .value_bounds import _bounded_value, _bounded_number
     if not isinstance(dataset, Dataset) or not 1 <= len(dataset.bars) <= MAX_SOURCE_BARS:
         _fail('Exact original Dataset within bar bounds required')
     _bounded_value(dataset.manifest)
@@ -980,7 +959,8 @@ def load_original_dataset(path: Path) -> Dataset:
 
     This does not follow any filename or URL found in a campaign manifest.
     """
-    from .walk_forward import _bounded_value, _exact_number
+    # Keep operation-specific dependencies out of module startup.
+    from .value_bounds import _bounded_value, _exact_number
     envelope = _read_file(path)
     _keys(envelope, ('kind', 'sha256', 'payload'))
     if envelope['kind'] != 'quantlab_dataset_v1' or not _hash(envelope['sha256']):
@@ -1130,157 +1110,27 @@ def admit_saved_campaign_pool(*, source_campaign_dir: Path, source_campaign_ref:
             _fail('Original real_model_status is inconsistent with the audited producer')
         provider = binding['provider']
         _validate_provider(provider, current_schema=current_schema)
-        from .__main__ import config_from_json
-        from .walk_forward import _bounded_value
+        # Keep operation-specific dependencies out of module startup.
+        from .configuration import config_from_json
+        # Keep operation-specific dependencies out of module startup.
+        from .value_bounds import _bounded_value
         _bounded_value(binding['config'])
         config = dict(binding['config'])
         config['backtest_config'] = config_from_json(config['backtest_config'])
         splits = _campaign_config(original_dataset, config)
         if binding['split_hashes'] != {name: _dataset_identity(split) for name, split in splits.items()}:
             _fail('Original dataset split identity mismatch')
-        attempts = state['attempts']
-        if type(attempts) is not list or not 1 <= len(attempts) <= min(15, config['max_trials']):
-            _fail('Source must contain 1..15 bounded attempts')
-        schedule = [(family, iteration) for iteration in range(config['max_improvements'] + 1) for family in config['families']]
-        previous, seen, pool, provenance, by_id = {}, {}, [], [], {}
-        for index, attempt in enumerate(attempts, 1):
-            _keys(attempt, ('attempt_id', 'sequence', 'parent_id', 'family', 'iteration', 'status',
-                            'provider', 'prompt_template_hash', 'split_hashes', 'output', 'output_hash',
-                            'strategy_hash', 'metrics', 'cost', 'elapsed_seconds', 'warnings'),
-                  ('spec', 'generator_context') + (('candidate_fingerprint', 'duplicate_of') if current_schema else ()))
-            family, iteration = schedule[index - 1]
-            if (type(attempt['sequence']) is not int or attempt['sequence'] != index
-                or type(attempt['iteration']) is not int or (attempt['family'], attempt['iteration']) != (family, iteration)
-                or attempt['attempt_id'] != content_hash([state['campaign_id'], index])
-                or attempt['parent_id'] != previous.get(family)
-                or attempt['provider'] != provider or attempt['prompt_template_hash'] != binding['prompt_template_hash']
-                or attempt['split_hashes'] != {k: binding['split_hashes'][k] for k in ('train', 'validation')}
-                or attempt['status'] not in ('evaluated', 'rejected', 'failed', 'timed_out')):
-                _fail('Invalid source attempt sequence, parent, status or provenance')
-            parent = by_id.get(previous.get(family))
-            expected_context = {
-                'family': family, 'iteration': iteration, 'seed': config['seed'],
-                'parameter_contract': PARAMETER_CONTRACTS[family],
-                'training': training_summary(splits['train']),
-                'validation': {'bar_count': len(splits['validation'].bars), 'hash': content_hash(splits['validation'].bars)},
-                'previous': {'output': parent['output'], 'metrics': {k: v['metrics'] for k, v in parent['metrics'].items()},
-                             'status': parent['status']} if parent else None}
-            if attempt.get('generator_context') != expected_context:
-                _fail('Source generation context disagrees with exact prior source splits/attempt')
-            previous[family] = attempt['attempt_id']
-            by_id[attempt['attempt_id']] = attempt
-            output = attempt['output']
-            if ((attempt['output_hash'] is None and output is not None)
-                or (attempt['output_hash'] is not None and attempt['output_hash'] != content_hash(output))):
-                _fail('Source attempt output hash mismatch')
-            spec = None
-            explicit_duplicate = False
-            if 'spec' in attempt or attempt['status'] == 'evaluated':
-                _bounded_value(output)
-                spec = validate_dsl(output)
-                if (to_dict(spec) != attempt.get('spec') or spec.family != family
-                    or attempt['strategy_hash'] != content_hash(spec)):
-                    _fail('Source original output/validated spec/strategy hash mismatch')
-                fingerprint = candidate_fingerprint(spec)
-                if current_schema and attempt.get('candidate_fingerprint') != fingerprint:
-                    _fail('Source candidate fingerprint disagrees with validated behavior')
-                if fingerprint in seen:
-                    explicit_duplicate = (current_schema and attempt['status'] == 'rejected'
-                        and attempt.get('duplicate_of') == seen[fingerprint]
-                        and 'duplicate_candidate_not_retested' in attempt['warnings']
-                        and attempt['metrics'] == {})
-                    if not explicit_duplicate:
-                        _fail('Duplicate source candidate behavioral structure is ambiguous')
-                elif 'duplicate_of' in attempt:
-                    _fail('Source duplicate rejection does not match an earlier candidate')
-                else:
-                    seen[fingerprint] = attempt['attempt_id']
-            elif attempt['strategy_hash'] is not None or 'candidate_fingerprint' in attempt or 'duplicate_of' in attempt:
-                _fail('Source strategy hash has no validated spec')
-            if type(attempt['metrics']) is not dict or set(attempt['metrics']) - {'train', 'validation'}:
-                _fail('Invalid source attempt split metrics')
-            if attempt['status'] == 'evaluated' and set(attempt['metrics']) != {'train', 'validation'}:
-                _fail('Evaluated source attempt is missing split results')
-            for role, summary in attempt['metrics'].items():
-                if spec is None:
-                    _fail('Source split result has no validated spec')
-                _check_result(summary, splits[role], spec, config['backtest_config'], producer)
-            admitted = attempt['status'] == 'evaluated'
-            row = {'attempt_id': attempt['attempt_id'], 'sequence': index, 'parent_id': attempt['parent_id'],
-                   'family': family, 'iteration': iteration, 'source_status': attempt['status'],
-                   'output_hash': attempt['output_hash'], 'strategy_hash': attempt['strategy_hash'],
-                   'attempt_hash': content_hash(attempt), 'admitted': admitted,
-                   'reason': ('evaluated_validated_candidate' if admitted else 'source_duplicate_rejected'
-                              if explicit_duplicate else 'excluded_source_attempt_' + attempt['status'])}
-            if explicit_duplicate:
-                row['duplicate_of'] = attempt['duplicate_of']
-            if spec is not None:
-                row['behavioral_fingerprint'] = candidate_fingerprint(spec)
-            if admitted:
-                row['pool_index'] = len(pool)
-                pool.append(spec)
-            provenance.append(row)
-        if not pool:
-            _fail('No evaluated candidates remain in the saved source')
-        if len(pool) > 15 or any(count > 3 for count in Counter(spec.family for spec in pool).values()):
-            _fail('Saved pool requires 1..15 evaluated candidates and at most 3 per family')
+        pool, provenance, by_id = _collect_source_attempts(state, config, splits, current_schema,
+                                                        provider, binding, producer, _bounded_value)
         if provider['mode'] == 'chatgpt_plan':
             _validate_chatgpt_provider(provider, state, producer)
         else:
             _validate_legacy_receipts(provider, state, current_schema=current_schema)
-        selected = state['selected']
-        if type(selected) is not list or len(selected) > len(config['families']):
-            _fail('Invalid source selection evidence')
-        selected_families = []
-        for candidate in selected:
-            _keys(candidate, ('attempt_id', 'strategy_hash', 'spec', 'validation'))
-            attempt = by_id.get(candidate['attempt_id'])
-            if (attempt is None or attempt['status'] != 'evaluated'
-                or any(candidate[key] != attempt[key] for key in ('strategy_hash', 'spec'))
-                or candidate['validation'] != attempt['metrics']['validation']):
-                _fail('Source selection does not match its evaluated attempt')
-            selected_families.append(attempt['family'])
-        if selected_families != [family for family in config['families'] if family in selected_families]:
-            _fail('Duplicate or unordered source selection')
-        _keys(state['evaluations'], ('oos', 'holdout'))
-        for role in ('oos', 'holdout'):
-            records = state['evaluations'][role]
-            if type(records) is not list or len(records) != len(selected):
-                _fail('Incomplete source forward evaluation evidence')
-            for record, candidate in zip(records, selected):
-                _keys(record, ('strategy_hash', 'status', 'metrics', 'warnings', 'result_hash', 'manifest'))
-                if record['status'] != 'evaluated' or record['strategy_hash'] != candidate['strategy_hash']:
-                    _fail('Invalid source forward evaluation identity')
-                _check_result({k: v for k, v in record.items() if k not in ('strategy_hash', 'status')},
-                              splits[role], validate_dsl(candidate['spec']), config['backtest_config'], producer)
-        if selected:
-            if (state['holdout_consumed'] is not True or state['holdout_status'] != 'reserved_consumed'
-                or state.get('holdout_selection_hash') != state['selection_hash']
-                or type(state.get('holdout_registry')) is not dict
-                or state['holdout_registry'].get('status') != 'reserved_consumed'
-                or state['holdout_registry'].get('holdout_hash') != content_hash(splits['holdout'].bars)):
-                _fail('Invalid source consumed holdout evidence')
-        elif (state['holdout_consumed'] is not False or state['holdout_status'] != 'not_accessed'
-              or 'holdout_registry' in state or 'holdout_selection_hash' in state):
-            _fail('Unexpected source holdout evidence')
+        _validate_source_selection(state, config, by_id, splits, producer)
         registry_identity = _validate_source_registry(state, splits['holdout'], authoritative_registry_path)
-        snapshot = {'schema_version': 1, 'pool_origin': 'saved_campaign_pool',
-            'source_campaign_ref': source_campaign_ref, 'source_campaign_id': state['campaign_id'],
-            'source_journal_hash': content_hash(state), 'source_selection_hash': state['selection_hash'],
-            'original_dataset_ref': original_dataset_ref, 'original_dataset_identity': binding['data_hash'],
-            'original_data_hash': original_dataset.manifest['data_hash'],
-            'original_manifest_hash': content_hash(state['source_manifest']),
-            'source_event_bounds': {'first_timestamp': first_event, 'last_end': last_event},
-            'first_training_timestamp': first_training_timestamp,
-            'source_split_hashes': binding['split_hashes'], 'source_registry_identity': registry_identity,
-            'producer': dict(producer),
-            'provider_binding_hash': content_hash(provider), 'provider_mode': provider['mode'], 'real_model_status': state['real_model_status'],
-            'attempts': provenance, 'candidate_pool_hash': content_hash(pool),
-            'candidate_count': len(pool), 'model_calls': 0,
-            'provenance_status': 'local_artifact_consistency_and_event_bounds_verified'}
-        snapshot = to_dict(snapshot)
-        snapshot['snapshot_hash'] = content_hash(snapshot)
-        return SavedCandidatePool(tuple(pool), snapshot)
+        return _saved_pool_snapshot(state, source_campaign_ref, original_dataset_ref, binding,
+                                    original_dataset, first_event, last_event, first_training_timestamp,
+                                    registry_identity, producer, provider, provenance, pool)
     except (KeyError, IndexError, TypeError, ValueError, OverflowError) as exc:
         if isinstance(exc, SavedCandidatePoolError):
             raise
@@ -1321,7 +1171,8 @@ def _validate_provider(provider, *, current_schema=False):
         if invalid:
             _fail('Unsupported source provider protocol endpoint')
         _keys(provider['limits'], ('calls', 'tokens', 'spend', 'rate', 'tokens_per_call', 'timeout'))
-        from .walk_forward import _exact_number
+        # Keep operation-specific dependencies out of module startup.
+        from .value_bounds import _exact_number
         for key, low, high in (('calls', 0, 100), ('tokens', 0, 1000000),
                                ('tokens_per_call', 1, 32768), ('timeout', 1, 120)):
             if type(provider['limits'][key]) is not int or not low <= provider['limits'][key] <= high:
@@ -1488,6 +1339,7 @@ def _validate_source_registry(state, holdout, selected_path):
 
 def _compatible_request(provider, original_context, iteration, current_schema):
     """Pure request reconstruction from the exact two audited source protocols."""
+    # Keep operation-specific dependencies out of module startup.
     from .research import PROMPT, registry_json_schema
     context = dict(original_context)
     if current_schema and iteration:
@@ -1529,7 +1381,8 @@ def _validate_legacy_receipts(provider, state, *, current_schema=False):
     limits = provider['limits']
     if type(receipts) is not list or len(receipts) != len(returned) or len(receipts) > limits['calls']:
         _fail('Source provider receipts do not match returned generations')
-    from .walk_forward import _exact_number
+    # Keep operation-specific dependencies out of module startup.
+    from .value_bounds import _exact_number
     tokens, spends = 0, []
     for receipt, attempt in zip(receipts, returned):
         try:
@@ -1598,6 +1451,7 @@ def _select_producer(binding):
 
 def _validate_chatgpt_provider(provider, state, producer):
     """Pure archived descriptor/receipt checks; no auth modules or credentials."""
+    # Keep operation-specific dependencies out of module startup.
     from .research import PROMPT, _validated_provider_descriptor, _validated_receipt_snapshot
     _keys(provider, ('mode', 'model', 'endpoint', 'descriptor'))
     if (provider['mode'] != 'chatgpt_plan'
@@ -1658,3 +1512,159 @@ def _validate_chatgpt_provider(provider, state, producer):
             or type(receipt['received_bytes']) is not int
             or not 0 < receipt['received_bytes'] <= descriptor['max_response_bytes']):
             _fail('Source provider receipt request/response evidence mismatch')
+
+
+def _admit_source_attempt(index, attempt, schedule, state, previous, by_id, provider, binding,
+                          config, splits, current_schema, seen, pool, provenance, producer, _bounded_value):
+    _keys(attempt, ('attempt_id', 'sequence', 'parent_id', 'family', 'iteration', 'status',
+                    'provider', 'prompt_template_hash', 'split_hashes', 'output', 'output_hash',
+                    'strategy_hash', 'metrics', 'cost', 'elapsed_seconds', 'warnings'),
+          ('spec', 'generator_context') + (('candidate_fingerprint', 'duplicate_of') if current_schema else ()))
+    family, iteration = schedule[index - 1]
+    if (type(attempt['sequence']) is not int or attempt['sequence'] != index
+        or type(attempt['iteration']) is not int or (attempt['family'], attempt['iteration']) != (family, iteration)
+        or attempt['attempt_id'] != content_hash([state['campaign_id'], index])
+        or attempt['parent_id'] != previous.get(family)
+        or attempt['provider'] != provider or attempt['prompt_template_hash'] != binding['prompt_template_hash']
+        or attempt['split_hashes'] != {k: binding['split_hashes'][k] for k in ('train', 'validation')}
+        or attempt['status'] not in ('evaluated', 'rejected', 'failed', 'timed_out')):
+        _fail('Invalid source attempt sequence, parent, status or provenance')
+    parent = by_id.get(previous.get(family))
+    expected_context = {
+        'family': family, 'iteration': iteration, 'seed': config['seed'],
+        'parameter_contract': PARAMETER_CONTRACTS[family],
+        'training': training_summary(splits['train']),
+        'validation': {'bar_count': len(splits['validation'].bars), 'hash': content_hash(splits['validation'].bars)},
+        'previous': {'output': parent['output'], 'metrics': {k: v['metrics'] for k, v in parent['metrics'].items()},
+                     'status': parent['status']} if parent else None}
+    if attempt.get('generator_context') != expected_context:
+        _fail('Source generation context disagrees with exact prior source splits/attempt')
+    previous[family] = attempt['attempt_id']
+    by_id[attempt['attempt_id']] = attempt
+    output = attempt['output']
+    if ((attempt['output_hash'] is None and output is not None)
+        or (attempt['output_hash'] is not None and attempt['output_hash'] != content_hash(output))):
+        _fail('Source attempt output hash mismatch')
+    spec = None
+    explicit_duplicate = False
+    if 'spec' in attempt or attempt['status'] == 'evaluated':
+        _bounded_value(output)
+        spec = validate_dsl(output)
+        if (to_dict(spec) != attempt.get('spec') or spec.family != family
+            or attempt['strategy_hash'] != content_hash(spec)):
+            _fail('Source original output/validated spec/strategy hash mismatch')
+        fingerprint = candidate_fingerprint(spec)
+        if current_schema and attempt.get('candidate_fingerprint') != fingerprint:
+            _fail('Source candidate fingerprint disagrees with validated behavior')
+        if fingerprint in seen:
+            explicit_duplicate = (current_schema and attempt['status'] == 'rejected'
+                and attempt.get('duplicate_of') == seen[fingerprint]
+                and 'duplicate_candidate_not_retested' in attempt['warnings']
+                and attempt['metrics'] == {})
+            if not explicit_duplicate:
+                _fail('Duplicate source candidate behavioral structure is ambiguous')
+        elif 'duplicate_of' in attempt:
+            _fail('Source duplicate rejection does not match an earlier candidate')
+        else:
+            seen[fingerprint] = attempt['attempt_id']
+    elif attempt['strategy_hash'] is not None or 'candidate_fingerprint' in attempt or 'duplicate_of' in attempt:
+        _fail('Source strategy hash has no validated spec')
+    if type(attempt['metrics']) is not dict or set(attempt['metrics']) - {'train', 'validation'}:
+        _fail('Invalid source attempt split metrics')
+    if attempt['status'] == 'evaluated' and set(attempt['metrics']) != {'train', 'validation'}:
+        _fail('Evaluated source attempt is missing split results')
+    for role, summary in attempt['metrics'].items():
+        if spec is None:
+            _fail('Source split result has no validated spec')
+        _check_result(summary, splits[role], spec, config['backtest_config'], producer)
+    admitted = attempt['status'] == 'evaluated'
+    row = {'attempt_id': attempt['attempt_id'], 'sequence': index, 'parent_id': attempt['parent_id'],
+           'family': family, 'iteration': iteration, 'source_status': attempt['status'],
+           'output_hash': attempt['output_hash'], 'strategy_hash': attempt['strategy_hash'],
+           'attempt_hash': content_hash(attempt), 'admitted': admitted,
+           'reason': ('evaluated_validated_candidate' if admitted else 'source_duplicate_rejected'
+                      if explicit_duplicate else 'excluded_source_attempt_' + attempt['status'])}
+    if explicit_duplicate:
+        row['duplicate_of'] = attempt['duplicate_of']
+    if spec is not None:
+        row['behavioral_fingerprint'] = candidate_fingerprint(spec)
+    if admitted:
+        row['pool_index'] = len(pool)
+        pool.append(spec)
+    provenance.append(row)
+
+
+def _collect_source_attempts(state, config, splits, current_schema, provider, binding, producer, _bounded_value):
+    attempts = state['attempts']
+    if type(attempts) is not list or not 1 <= len(attempts) <= min(15, config['max_trials']):
+        _fail('Source must contain 1..15 bounded attempts')
+    schedule = [(family, iteration) for iteration in range(config['max_improvements'] + 1) for family in config['families']]
+    previous, seen, pool, provenance, by_id = {}, {}, [], [], {}
+    for index, attempt in enumerate(attempts, 1):
+        _admit_source_attempt(index, attempt, schedule, state, previous, by_id, provider, binding,
+                              config, splits, current_schema, seen, pool, provenance, producer, _bounded_value)
+    if not pool:
+        _fail('No evaluated candidates remain in the saved source')
+    if len(pool) > 15 or any(count > 3 for count in Counter(spec.family for spec in pool).values()):
+        _fail('Saved pool requires 1..15 evaluated candidates and at most 3 per family')
+    return pool, provenance, by_id
+
+
+def _validate_source_selection(state, config, by_id, splits, producer):
+    selected = state['selected']
+    if type(selected) is not list or len(selected) > len(config['families']):
+        _fail('Invalid source selection evidence')
+    selected_families = []
+    for candidate in selected:
+        _keys(candidate, ('attempt_id', 'strategy_hash', 'spec', 'validation'))
+        attempt = by_id.get(candidate['attempt_id'])
+        if (attempt is None or attempt['status'] != 'evaluated'
+            or any(candidate[key] != attempt[key] for key in ('strategy_hash', 'spec'))
+            or candidate['validation'] != attempt['metrics']['validation']):
+            _fail('Source selection does not match its evaluated attempt')
+        selected_families.append(attempt['family'])
+    if selected_families != [family for family in config['families'] if family in selected_families]:
+        _fail('Duplicate or unordered source selection')
+    _keys(state['evaluations'], ('oos', 'holdout'))
+    for role in ('oos', 'holdout'):
+        records = state['evaluations'][role]
+        if type(records) is not list or len(records) != len(selected):
+            _fail('Incomplete source forward evaluation evidence')
+        for record, candidate in zip(records, selected):
+            _keys(record, ('strategy_hash', 'status', 'metrics', 'warnings', 'result_hash', 'manifest'))
+            if record['status'] != 'evaluated' or record['strategy_hash'] != candidate['strategy_hash']:
+                _fail('Invalid source forward evaluation identity')
+            _check_result({k: v for k, v in record.items() if k not in ('strategy_hash', 'status')},
+                          splits[role], validate_dsl(candidate['spec']), config['backtest_config'], producer)
+    if selected:
+        if (state['holdout_consumed'] is not True or state['holdout_status'] != 'reserved_consumed'
+            or state.get('holdout_selection_hash') != state['selection_hash']
+            or type(state.get('holdout_registry')) is not dict
+            or state['holdout_registry'].get('status') != 'reserved_consumed'
+            or state['holdout_registry'].get('holdout_hash') != content_hash(splits['holdout'].bars)):
+            _fail('Invalid source consumed holdout evidence')
+    elif (state['holdout_consumed'] is not False or state['holdout_status'] != 'not_accessed'
+          or 'holdout_registry' in state or 'holdout_selection_hash' in state):
+        _fail('Unexpected source holdout evidence')
+
+
+def _saved_pool_snapshot(state, source_campaign_ref, original_dataset_ref, binding,
+                         original_dataset, first_event, last_event, first_training_timestamp,
+                         registry_identity, producer, provider, provenance, pool):
+    snapshot = {'schema_version': 1, 'pool_origin': 'saved_campaign_pool',
+        'source_campaign_ref': source_campaign_ref, 'source_campaign_id': state['campaign_id'],
+        'source_journal_hash': content_hash(state), 'source_selection_hash': state['selection_hash'],
+        'original_dataset_ref': original_dataset_ref, 'original_dataset_identity': binding['data_hash'],
+        'original_data_hash': original_dataset.manifest['data_hash'],
+        'original_manifest_hash': content_hash(state['source_manifest']),
+        'source_event_bounds': {'first_timestamp': first_event, 'last_end': last_event},
+        'first_training_timestamp': first_training_timestamp,
+        'source_split_hashes': binding['split_hashes'], 'source_registry_identity': registry_identity,
+        'producer': dict(producer),
+        'provider_binding_hash': content_hash(provider), 'provider_mode': provider['mode'], 'real_model_status': state['real_model_status'],
+        'attempts': provenance, 'candidate_pool_hash': content_hash(pool),
+        'candidate_count': len(pool), 'model_calls': 0,
+        'provenance_status': 'local_artifact_consistency_and_event_bounds_verified'}
+    snapshot = to_dict(snapshot)
+    snapshot['snapshot_hash'] = content_hash(snapshot)
+    return SavedCandidatePool(tuple(pool), snapshot)

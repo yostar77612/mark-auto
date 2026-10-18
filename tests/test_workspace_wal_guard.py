@@ -438,13 +438,13 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
         from tests.test_desktop_walk_forward_runtime import plan_payload
         identity = 'b' * 64
         preview = {'preview_identity': identity, 'plan': plan_payload()}
-        fake_ui = types.ModuleType('desktop_ui')
+        fake_ui = types.ModuleType('desktop_presentation')
         fake_ui._dataset = lambda *args: object()
         fake_ui.research_controls = lambda paths: paths.controls
         def run(*args, **kwargs):
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), self.formats()[2])
             raise RuntimeError('reached core')
-        with patch.dict(sys.modules, {'desktop_ui': fake_ui}), \
+        with patch.dict(sys.modules, {'desktop_presentation': fake_ui}), \
                 patch.object(adapter, 'preview_walk_forward', return_value=preview), \
                 patch.object(adapter, 'run_walk_forward', side_effect=run):
             with self.assertRaisesRegex(RuntimeError, 'reached core'):

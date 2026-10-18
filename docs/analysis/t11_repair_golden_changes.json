@@ -1,0 +1,155 @@
+{
+  "proof": "Legacy oracle matches original golden when only three hashed source inputs use HEAD contents; actual source inputs change hash tokens only.",
+  "source_hashes": {
+    "quantlab/research_analysis.py": {
+      "head_sha256": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c",
+      "working_sha256": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+    },
+    "quantlab/walk_forward.py": {
+      "head_sha256": "40b7bb85d9056ea46ed10de207d7ae83ef2fa67ebb2f178c2514a849d13105c7",
+      "working_sha256": "7faa0c4c1ee8032b322d0d747d31c42d0f75b159ad749da251af6f34ef82fd35"
+    },
+    "quantlab/saved_candidate_pool.py": {
+      "head_sha256": "23aa7a2a12e8e3ae7cd545bfffaaff3363f0b18a531aba22637de4c9698fcbfa",
+      "working_sha256": "20885d4e7680b34eac83ad902cae0819d30f50d178ff217b7093a0a47fda3c3d"
+    }
+  },
+  "locked_files_byte_identical": [
+    "quantlab/research.py",
+    "quantlab/provider.py",
+    "quantlab/core.py",
+    "quantlab/strategies.py",
+    "quantlab/backtest.py",
+    "quantlab/data.py",
+    "desktop_chatgpt_auth.py",
+    "desktop_chatgpt_provider.py"
+  ],
+  "profile_prefix_byte_identical": true,
+  "changes": [
+    {
+      "key": "observations/ui_analysis_preview/result/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_preview/result/plan/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_preview/result/plan/binding/packet/implementation/research_analysis.py",
+      "before": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c",
+      "after": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+    },
+    {
+      "key": "observations/ui_analysis_preview/result/plan/binding/packet/packet_hash",
+      "before": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+      "after": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959"
+    },
+    {
+      "key": "observations/ui_analysis_preview/result/receipt_snapshot/provider_descriptor_hash",
+      "before": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+      "after": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/record/plan/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "before": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c",
+      "after": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/record/plan/binding/packet/packet_hash",
+      "before": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+      "after": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/record/provider_descriptor/campaign_id",
+      "before": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_read/result/record/receipt_snapshot/provider_descriptor_hash",
+      "before": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+      "after": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/record/plan/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "before": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c",
+      "after": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/record/plan/binding/packet/packet_hash",
+      "before": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+      "after": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/record/provider_descriptor/campaign_id",
+      "before": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_reconcile/result/record/receipt_snapshot/provider_descriptor_hash",
+      "before": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+      "after": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/record/plan/analysis_id",
+      "before": "8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "before": "bc03322655a1fe4094eab56390f4522eb0626c8d65b138a6dd21581115a1049c",
+      "after": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/record/plan/binding/packet/packet_hash",
+      "before": "642bf1ca689f722853fe66b183a1476800d1c4cf574a7cdd99954cb4f92f7e21",
+      "after": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/record/provider_descriptor/campaign_id",
+      "before": "analysis-8e4477d8fa7de2c0d7051a675a3571db6b91b4ea32ec76b6830e9751bba3b67d",
+      "after": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe"
+    },
+    {
+      "key": "observations/ui_analysis_run/result/record/receipt_snapshot/provider_descriptor_hash",
+      "before": "a1cf131e75383bb626c6043c9223e0a73bcd2d92d92c2ad0cd5bf9a4bb8e0673",
+      "after": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74"
+    },
+    {
+      "key": "observations/ui_walk_forward_preview/result/source_hashes/saved_candidate_pool.py",
+      "before": "2b8517e99f4ad80bf3d812b14b0f61c530d7de56cf4a944dd86d4eaf759e28e6",
+      "after": "d864fac6bd5575cab411ee74d8ed323f9f9105b36dadb5f22badb548af3b6613"
+    },
+    {
+      "key": "observations/ui_walk_forward_preview/result/source_hashes/walk_forward.py",
+      "before": "05fa71f7cff458d47f7432861bc160a6ac1171f63f370ed8a3a813dfea901dea",
+      "after": "8deca9f555ed1a390c0e90a36a07e655bc263ac887b9c7021846c2f9b7684fe0"
+    }
+  ]
+}

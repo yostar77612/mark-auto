@@ -31,8 +31,11 @@ class AggregationResult:
     source_ids: tuple[str, ...] = ()
 
 
+from .errors import fail
+
+
 def _fail(message):
-    raise MarketValidationError(message)
+    fail(message, MarketValidationError)
 
 
 def _utc(value):
@@ -154,85 +157,99 @@ def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
         contracts.setdefault(bar.contract_id, []).append(bar)
     output = []
     for contract, source in contracts.items():
-        if len({b.instrument for b in source}) != 1:
-            _fail('one contract has conflicting instrument definitions')
-        if len({b.interval for b in source}) != 1:
-            _fail('mixed source resolutions are ambiguous')
-        session_bounds = {}
-        if source[0].interval.endswith('m'):
-            for bar in source:
-                bounds = _bounds(bar, calendar)
-                identity = (bar.trade_date, bar.session)
-                if identity in session_bounds and session_bounds[identity] != bounds:
-                    _fail('conflicting bounds for one contract trade-date session')
-                session_bounds[identity] = bounds
-        for previous, current in zip(source, source[1:]):
-            if previous.timestamp is not None and current.timestamp is not None and current.timestamp < previous.end:
-                _fail('overlapping or chronologically inconsistent source bars')
-            if (previous.timestamp is not None and current.timestamp is not None
-                    and (previous.trade_date, previous.session) == (current.trade_date, current.session)
-                    and current.timestamp > previous.end):
-                warnings.append(f'{contract} {previous.end.isoformat()}: missing source interval before {current.timestamp.isoformat()}')
-        groups = {}
+        session_bounds = _validate_aggregation_source(source, calendar, contract, warnings)
         if timeframe.endswith('m'):
-            target = int(timeframe[:-1])
-            if not source[0].interval.endswith('m'):
-                _fail('daily/session/weekly source cannot manufacture intraday bars')
-            minutes = int(source[0].interval[:-1])
-            if target < minutes or target % minutes:
-                _fail('target minutes must be a multiple of source minutes')
-            for bar in source:
-                opening, closing = session_bounds[(bar.trade_date, bar.session)]
-                if bar.timestamp is None:
-                    _fail('minute source requires explicit timestamps')
-                delta = (bar.timestamp - opening).total_seconds()
-                if delta % (minutes * 60):
-                    _fail('source bar is not session anchored')
-                nominal_end = min(bar.timestamp + timedelta(minutes=minutes), closing)
-                if bar.end != nominal_end and not (bar.partial and bar.end < nominal_end):
-                    _fail('source duration disagrees with interval')
-                start = opening + timedelta(minutes=(int(delta) // (target * 60)) * target)
-                end = min(start + timedelta(minutes=target), closing)
-                if bar.end > end:
-                    _fail('source bar straddles target bucket')
-                key = (bar.trade_date, bar.session, opening, closing, start, end)
-                groups.setdefault(key, []).append(bar)
-            for key, group in groups.items():
-                _, session, opening, closing, start, end = key
-                complete = group[0].timestamp == start and group[-1].end == end
-                complete = complete and all(a.end == b.timestamp for a, b in zip(group, group[1:]))
-                partial = not complete or any(b.partial for b in group) or (as_of is not None and as_of < end)
-                if partial:
-                    warnings.append(f'{contract} {start.isoformat()}: partial/gapped {timeframe} bar')
-                output.append(_merge(group, timeframe=timeframe, timestamp=start, end=end,
-                                     session=session, opening=opening, closing=closing, partial=partial))
+            _aggregate_minutes(source, timeframe, session_bounds, as_of, contract, warnings, output)
         else:
-            if source[0].interval == '1w' and timeframe == '1d':
-                _fail('weekly source cannot manufacture daily bars')
-            for bar in source:
-                day = date.fromisoformat(bar.trade_date)
-                key = bar.trade_date if timeframe == '1d' else day.isocalendar()[:2]
-                groups.setdefault(key, []).append(bar)
-            for key, group in groups.items():
-                dates = {b.trade_date for b in group}
-                if timeframe == '1w':
-                    year, week = key
-                    monday = date.fromisocalendar(year, week, 1)
-                    dates = {(monday + timedelta(days=i)).isoformat() for i in range(7)}
-                expected = _expected(calendar, contract, dates)
-                complete = _coverage(group, expected)
-                if timeframe == '1w':
-                    week_end = datetime.combine(monday + timedelta(days=7), time(), timezone.utc)
-                    complete = complete and as_of is not None and as_of >= week_end
-                if as_of is not None and expected:
-                    complete = complete and all(e[1] <= as_of for e in expected)
-                partial = not complete or any(b.partial for b in group)
-                if partial:
-                    warnings.append(f'{contract} {key}: incomplete or unverified session coverage')
-                timed = all(b.timestamp is not None for b in group)
-                output.append(_merge(group, timeframe=timeframe,
-                                     timestamp=group[0].timestamp if timed else None,
-                                     end=group[-1].end if timed else None, session='combined',
-                                     opening=None, closing=None, partial=partial))
+            _aggregate_dates(source, timeframe, calendar, as_of, contract, warnings, output)
     return AggregationResult(tuple(sorted(output, key=_order)), tuple(warnings), duplicates,
                              tuple(sorted({b.source_id for b in ordered})))
+
+
+def _validate_aggregation_source(source, calendar, contract, warnings):
+    if len({b.instrument for b in source}) != 1:
+        _fail('one contract has conflicting instrument definitions')
+    if len({b.interval for b in source}) != 1:
+        _fail('mixed source resolutions are ambiguous')
+    session_bounds = {}
+    if source[0].interval.endswith('m'):
+        for bar in source:
+            bounds = _bounds(bar, calendar)
+            identity = (bar.trade_date, bar.session)
+            if identity in session_bounds and session_bounds[identity] != bounds:
+                _fail('conflicting bounds for one contract trade-date session')
+            session_bounds[identity] = bounds
+    for previous, current in zip(source, source[1:]):
+        if previous.timestamp is not None and current.timestamp is not None and current.timestamp < previous.end:
+            _fail('overlapping or chronologically inconsistent source bars')
+        if (previous.timestamp is not None and current.timestamp is not None
+                and (previous.trade_date, previous.session) == (current.trade_date, current.session)
+                and current.timestamp > previous.end):
+            warnings.append(f'{contract} {previous.end.isoformat()}: missing source interval before {current.timestamp.isoformat()}')
+    return session_bounds
+
+
+def _aggregate_minutes(source, timeframe, session_bounds, as_of, contract, warnings, output):
+    groups = {}
+    target = int(timeframe[:-1])
+    if not source[0].interval.endswith('m'):
+        _fail('daily/session/weekly source cannot manufacture intraday bars')
+    minutes = int(source[0].interval[:-1])
+    if target < minutes or target % minutes:
+        _fail('target minutes must be a multiple of source minutes')
+    for bar in source:
+        opening, closing = session_bounds[(bar.trade_date, bar.session)]
+        if bar.timestamp is None:
+            _fail('minute source requires explicit timestamps')
+        delta = (bar.timestamp - opening).total_seconds()
+        if delta % (minutes * 60):
+            _fail('source bar is not session anchored')
+        nominal_end = min(bar.timestamp + timedelta(minutes=minutes), closing)
+        if bar.end != nominal_end and not (bar.partial and bar.end < nominal_end):
+            _fail('source duration disagrees with interval')
+        start = opening + timedelta(minutes=(int(delta) // (target * 60)) * target)
+        end = min(start + timedelta(minutes=target), closing)
+        if bar.end > end:
+            _fail('source bar straddles target bucket')
+        key = (bar.trade_date, bar.session, opening, closing, start, end)
+        groups.setdefault(key, []).append(bar)
+    for key, group in groups.items():
+        _, session, opening, closing, start, end = key
+        complete = group[0].timestamp == start and group[-1].end == end
+        complete = complete and all(a.end == b.timestamp for a, b in zip(group, group[1:]))
+        partial = not complete or any(b.partial for b in group) or (as_of is not None and as_of < end)
+        if partial:
+            warnings.append(f'{contract} {start.isoformat()}: partial/gapped {timeframe} bar')
+        output.append(_merge(group, timeframe=timeframe, timestamp=start, end=end,
+                             session=session, opening=opening, closing=closing, partial=partial))
+
+
+def _aggregate_dates(source, timeframe, calendar, as_of, contract, warnings, output):
+    groups = {}
+    if source[0].interval == '1w' and timeframe == '1d':
+        _fail('weekly source cannot manufacture daily bars')
+    for bar in source:
+        day = date.fromisoformat(bar.trade_date)
+        key = bar.trade_date if timeframe == '1d' else day.isocalendar()[:2]
+        groups.setdefault(key, []).append(bar)
+    for key, group in groups.items():
+        dates = {b.trade_date for b in group}
+        if timeframe == '1w':
+            year, week = key
+            monday = date.fromisocalendar(year, week, 1)
+            dates = {(monday + timedelta(days=i)).isoformat() for i in range(7)}
+        expected = _expected(calendar, contract, dates)
+        complete = _coverage(group, expected)
+        if timeframe == '1w':
+            week_end = datetime.combine(monday + timedelta(days=7), time(), timezone.utc)
+            complete = complete and as_of is not None and as_of >= week_end
+        if as_of is not None and expected:
+            complete = complete and all(e[1] <= as_of for e in expected)
+        partial = not complete or any(b.partial for b in group)
+        if partial:
+            warnings.append(f'{contract} {key}: incomplete or unverified session coverage')
+        timed = all(b.timestamp is not None for b in group)
+        output.append(_merge(group, timeframe=timeframe,
+                             timestamp=group[0].timestamp if timed else None,
+                             end=group[-1].end if timed else None, session='combined',
+                             opening=None, closing=None, partial=partial))

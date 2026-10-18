@@ -5,6 +5,7 @@ worker process; its inputs are data, never executable strategy source.
 """
 from desktop_theme import apply_theme, set_status, set_theme_property, status_for_color
 from desktop_strings import ui_text
+from desktop_presentation import research_controls, _dataset
 from pathlib import Path
 from quantlab.desktop_errors import error_message, exception_code
 from quantlab.desktop_feedback import completion_summary, stop_presentation
@@ -26,19 +27,6 @@ UI_OPERATIONS = frozenset('ui_' + op for op in (
     'backup_create', 'backup_restore'))
 
 
-def research_controls(paths):
-    """Irreversible budget/holdout ledgers must never be rolled back with user state."""
-    state = Path(paths.state)
-    legacy = list((state / 'provider_budgets').glob('*'))
-    legacy.extend((state / 'campaigns').glob('.holdout_registry.sqlite3*'))
-    if any(path.exists() and (not path.is_file() or path.stat().st_size > 0) for path in legacy):
-        raise ValidationError(ui_text('ui.research_controls.text_1'))
-    controls = Path(paths.controls)
-    if controls.resolve().is_relative_to(state.resolve()):
-        raise ValidationError(ui_text('ui.research_controls.text_2'))
-    return controls
-
-
 def provider_binding_options(options):
     # Preserve historical provider identities; these options cannot enable a removed provider.
     return {key: value for key, value in options.items()
@@ -47,6 +35,7 @@ def provider_binding_options(options):
 
 def campaign_generator(paths, options):
     """Only explicit deterministic fixtures use this non-subscription adapter."""
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research import FixtureGenerator
     if not isinstance(options, dict) or options != {'mode': 'fixture'}:
         raise ValidationError(ui_text('ui.campaign_generator.text_1'))
@@ -55,6 +44,7 @@ def campaign_generator(paths, options):
 
 
 def connection_event_from_payload(payload):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import ConnectionEvent
     if not isinstance(payload, dict): raise ValidationError(ui_text('ui.connection_event_from_payload.text_1'))
     value = dict(payload)
@@ -68,9 +58,13 @@ def connection_event_from_payload(payload):
 
 def plan_provider(paths, data, config, options, *, for_usage=False):
     """Fixed bootstrap/control identity, never workspace-relative or random."""
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import ChatGPTPlanProvider
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import SubscriptionOptions
+    # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
     allowed = {'mode','registration','model','max_calls','timeout_seconds','network_opt_in',
                'included_usage_policy_confirmed','paid_api_fallback','expected_binding'}
@@ -84,6 +78,7 @@ def plan_provider(paths, data, config, options, *, for_usage=False):
         validation = raw
     parsed = SubscriptionOptions(**validation)
     public = {key:value for key,value in asdict(parsed).items() if key not in ('network_opt_in','included_usage_policy_confirmed')}
+    # Keep operation-specific dependencies out of module startup.
     import hashlib
     source_root = Path(__file__).parent
     source_files = ('desktop_chatgpt_auth.py','desktop_chatgpt_provider.py','quantlab/core.py',
@@ -105,6 +100,7 @@ def plan_provider(paths, data, config, options, *, for_usage=False):
 
 def candidate_record(root, reference):
     """Resolve a persisted, hash-bound DSL candidate and independent evaluation gate."""
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research import validate_dsl
     campaigns = (Path(root) / 'campaigns').resolve()
     folder = str(reference.get('campaign_folder', ''))
@@ -115,6 +111,7 @@ def candidate_record(root, reference):
     state = read_json(path)
     # JSON is a review export; qualify only if it equals the authoritative journal.
     import sqlite3
+    # Keep operation-specific dependencies out of module startup.
     from contextlib import closing
     journal = path.with_name('campaign.sqlite3')
     if not journal.resolve().is_relative_to(campaigns) or not journal.is_file():
@@ -159,29 +156,15 @@ def _root(paths):
     return root
 
 
-def _dataset(root, payload):
-    data = load_dataset(Path(payload.get('dataset') or root / 'dataset.json'))
-    start, end = payload.get('start_date'), payload.get('end_date')
-    if start or end:
-        if start and end and start > end:
-            raise ValidationError(ui_text('ui._dataset.text_1'))
-        bars = tuple(b for b in data.bars if (not start or b.trade_date >= start) and (not end or b.trade_date <= end))
-        if not bars:
-            raise ValidationError(ui_text('ui._dataset.text_2'))
-        manifest = {**data.manifest, 'parent_data_hash': data.manifest['data_hash'],
-                    'data_hash': content_hash(bars), 'date_filter': {'start': start, 'end': end}}
-        manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k not in ('imported_at', 'manifest_hash')})
-        data = Dataset(bars, manifest, dict(data.quality))
-    return data
-
-
 def paper_risk_limits():
     """The same fixed enforced limits supply both brokers and the read-only UI."""
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.paper import RiskLimits
     return RiskLimits(1, 1, Decimal('1000'), 30)
 
 
 def _paper(root):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.paper import PaperBroker
     policy = read_json(root / 'paper_policy.json')
     return PaperBroker(root / 'paper.sqlite3', instrument=Instrument(policy['contract_id']),
@@ -190,12 +173,16 @@ def _paper(root):
 
 
 def analysis_plan(paths, request, *, emit=None):
+    # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import validate_analysis_request
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import implementation_provenance
     validate_analysis_request(request)
     research_controls(paths)
     if emit: emit('progress',message=ui_text('ui.analysis_plan.text_1'))
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.saved_candidate_pool import load_original_dataset
     data=load_original_dataset(Path(request['original_dataset']['path']))
     packet=build_analysis_packet(source_campaign_dir=_root(paths)/'campaigns'/request['campaign_reference'],
@@ -205,7 +192,9 @@ def analysis_plan(paths, request, *, emit=None):
 
 
 def analysis_provider_for(paths, plan, *, authorized=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import analysis_provider
     reference=OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),plan['binding']['registration'])
     return analysis_provider(plan,reference,network_opt_in=authorized,included_usage_policy_confirmed=authorized)
@@ -225,6 +214,7 @@ ANALYSIS_KINDS={'market':ui_text('ui.labels.text_19'),'entry_exit':ui_text('ui.l
 
 
 def analysis_preview_text(plan):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import validate_analysis_plan
     validate_analysis_plan(plan)
     binding=plan['binding'];context=binding['packet']['context'];training=context['training']
@@ -270,9 +260,11 @@ def _prepare_paper_operation(payload, paths, root, *, emit=None, descendants_sto
         if existing.exists() and read_json(existing) != policy:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_38'))
         if not existing.exists():
+            # Keep operation-specific dependencies out of module startup.
             from quantlab.paper import PaperBroker
             if not isinstance(policy, dict) or set(policy) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
                 raise ValidationError(ui_text('ui.execute_ui_operation.text_39'))
+            # Keep operation-specific dependencies out of module startup.
             import tempfile
             with tempfile.TemporaryDirectory(prefix='policy-', dir=root) as staging:
                 PaperBroker(Path(staging) / 'validation.sqlite3', instrument=Instrument(policy['contract_id']), costs=demo_config().costs, limits=paper_risk_limits(), risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
@@ -292,8 +284,11 @@ def _finish_paper_operation(root, broker, replay_state=None):
 
 
 def _handle_ui_analysis_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
     output = root / 'analyses'
     allowed = {'request'}
@@ -308,13 +303,17 @@ def _handle_ui_analysis_preview(payload, paths, root, *, emit=None, descendants_
 
 
 def _handle_ui_analysis_read(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
     output = root / 'analyses'
     expected = {'analysis_id'}
     durable = False
     if durable:
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import supports_durable_recovery
         if not supports_durable_recovery():
             raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
@@ -327,13 +326,17 @@ def _handle_ui_analysis_read(payload, paths, root, *, emit=None, descendants_sto
 
 
 def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
     output = root / 'analyses'
     expected = {'analysis_id', 'registration', 'stopped_job_id'}
     durable = 'recovery_launch_id' in payload
     if durable:
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import supports_durable_recovery
         if not supports_durable_recovery():
             raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
@@ -347,6 +350,7 @@ def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendant
     if record['plan']['binding']['registration'] != payload['registration']:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_11'))
     if durable:
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import validate_stop_receipt
         launch = validate_stop_receipt(paths, payload['recovery_launch_id'], record=record)
         if launch['analysis_id'] != payload['analysis_id'] or launch['registration'] != payload['registration']:
@@ -356,8 +360,11 @@ def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendant
 
 
 def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
     output = root / 'analyses'
     allowed = {'request', 'expected_analysis_id', 'expected_plan_hash', 'user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'}
@@ -379,8 +386,11 @@ def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stop
 
 
 def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.strategies import builtin_strategies, validate_strategy
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.backtest import run_backtest
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
     data = _dataset(root, payload)
     config = config_from_json(payload['config'])
@@ -411,6 +421,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
         result = run_backtest(data, spec, config)
         summary_metrics['net_pnl'] += Decimal(str(result.metrics['net_pnl']))
         summary_metrics['trade_count'] += result.metrics.get('trade_count', result.metrics.get('closed_trades', 0))
+        # Keep operation-specific dependencies out of module startup.
         import tempfile
         reports_root = root / 'reports'
         reports_root.mkdir(exist_ok=True)
@@ -433,12 +444,14 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
 
 
 def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import BackupManager
     manager = BackupManager(paths)
     return {'backup': str(manager.create(Path(payload['path'])))}
 
 
 def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import BackupManager
     manager = BackupManager(paths)
     manager.restore(Path(payload['path']))
@@ -446,7 +459,9 @@ def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_st
 
 
 def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research import FixtureGenerator, run_campaign, demo_campaign_config
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
     data = _dataset(root, payload)
     config = payload.get('config') or demo_campaign_config(data, demo_config())
@@ -457,6 +472,7 @@ def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=
         generator, plan_identity = plan_provider(paths, data, config, options)
         options = {'mode': 'chatgpt_plan', 'binding': plan_identity}
     elif options.get('mode') == 'manual':
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.manual_exchange import export_request_file, import_response, import_response_file
         if payload.get('manual_export'):
             request = export_request_file(data, config, Path(payload['manual_export']))
@@ -475,7 +491,9 @@ def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=
 
 
 def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+    # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
     if set(payload) != {'request'} or not isinstance(payload['request'], dict):
         raise ValidationError(ui_text('ui.execute_ui_operation.text_13'))
@@ -494,7 +512,9 @@ def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stop
 
 
 def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research import reconcile_interrupted_campaign
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
     if descendants_stopped is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_16'))
@@ -512,7 +532,9 @@ def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants
 
 
 def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
     if set(payload) - {'registration', 'provider', 'config'}:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_19'))
@@ -520,6 +542,7 @@ def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_sto
     status = read_account_status(reference, research_controls(paths))
     result = {'registration': payload['registration'], 'account_status': status}
     if 'provider' in payload:
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.__main__ import config_from_json
         data = _dataset(root, {})
         config = dict(payload['config'])
@@ -560,6 +583,7 @@ def _handle_ui_disable(payload, paths, root, *, emit=None, descendants_stopped=F
 
 
 def _handle_ui_import(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.data import SessionCalendar, import_taifex
     cal = read_json(Path(payload['calendar']))
     if payload['kind'] == 'validated_dataset':
@@ -576,6 +600,7 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
     if 'history_import' in payload:
         if payload.get('history_import') is not True or set(payload) != {'history_import', 'local_path', 'sessions', 'dated_policy_confirmed'}:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_22'))
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.market_history import import_history, session_from_dict
         if payload.get('dated_policy_confirmed') is not True:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_23'))
@@ -586,6 +611,7 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
             emit('progress', message=ui_text('ui.execute_ui_operation.text_25'))
         result = import_history(Path(payload['local_path']), root / 'market_history', sessions=tuple((session_from_dict(row) for row in records)))
         return {'mode': 'local_unverified_history', 'cache_id': result.cache_id, 'source_hash': result.source_hash, 'policy_hash': result.policy_hash, 'counters': dict(result.counters), 'warnings': list(result.warnings), 'contracts': len(result.series), 'bars': sum((len(x.bars) for x in result.series))}
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
     local = payload.get('local_path')
     if not local and payload.get('network_opt_in') is not True:
@@ -641,6 +667,7 @@ def _handle_ui_paper_replay(payload, paths, root, *, emit=None, descendants_stop
     if payload.get('reconcile_confirmed') is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_42'))
     broker.reconcile(payload['snapshot'])
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.paper_replay import PaperReplay
     data = _dataset(root, payload)
     selection = load_selection(root / 'selection.json')
@@ -683,6 +710,7 @@ def _handle_ui_paper_submit(payload, paths, root, *, emit=None, descendants_stop
 def _handle_ui_refresh(payload, paths, root, *, emit=None, descendants_stopped=False):
     if payload.get('network_opt_in') is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_30'))
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.downloads import refresh
     return refresh(Path(paths.cache), days=payload.get('days', 1), kind=payload.get('format', 'csv'))
 
@@ -701,21 +729,25 @@ def _handle_ui_select(payload, paths, root, *, emit=None, descendants_stopped=Fa
 
 
 def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
     return execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_read(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
     return execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
     return execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
     return execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped)
 
@@ -764,6 +796,14 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                                             descendants_stopped=descendants_stopped)
 
 
+# Register after the executor definition, before GUI startup and smoke dispatch.
+from quantlab.desktop_runtime import (register_operation_executor as _register_operation_executor,
+                                     register_operation_executor_factory as _register_operation_executor_factory)
+
+OPERATION_REGISTRAR = 'desktop_ui:execute_ui_operation'
+_register_operation_executor(execute_ui_operation)
+_register_operation_executor_factory(OPERATION_REGISTRAR)
+
 
 def latest_market_observations(series):
     """Choose observed contract history, never infer a live or executable quote.
@@ -789,7 +829,9 @@ def latest_market_observations(series):
 
 def dataset_market_series(dataset, calendar_payload):
     """Adapt only validated one-minute official history with hash-bound calendar."""
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.data import validate_dataset, SessionCalendar
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance, bar_key
     validate_dataset(dataset)
     manifest = dataset.manifest
@@ -824,8 +866,6 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, Q
     QGraphicsOpacityEffect)
 
 
-
-
 from desktop_pages import PageHost, PageState, MarketPage, DataPage, StrategyPage, BacktestPage
 from desktop_pages.equity import EquityPlot
 from desktop_pages.result_layers import result_snapshot_lines
@@ -840,10 +880,26 @@ from desktop_pages.bindings import SharedStateBindings
 from desktop_pages.mount import mount_pages
 
 
+def _install_window_support(window):
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_ui_polish import install_polish
+    install_polish(window)
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_help import install_page_help
+    install_page_help(window)
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_pages.shortcuts import install_shortcuts
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_accessibility import install_accessibility
+    install_shortcuts(window)
+    install_accessibility(window)
+
+
 class MainWindow(SharedStateBindings, QMainWindow):
     def __init__(self, paths, jobs, settings=None, backups=None, guard=None):
         super().__init__()
         self.page_state = PageState()
+        # Load the optional UI adapter only when this operation is requested.
         from desktop_icon import application_icon
         self.setWindowIcon(application_icon(QApplication.instance()))
         self.paths, self.jobs, self.settings, self.backups, self.guard = paths, jobs, settings, backups, guard
@@ -875,6 +931,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self._analysis_running = False
         self._pending_analysis_reconcile = False
         self.setWindowTitle(ui_text('ui.__init__.text_2'))
+        # Load the optional UI adapter only when this operation is requested.
         from desktop_theme import MINIMUM_WINDOW_SIZE
         self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
         self.resize(1366, 768)
@@ -948,6 +1005,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             window_minimum_size=lambda: (self.minimumWidth(), self.minimumHeight()),
         )
         mount_pages(self)
+        # Load the optional UI adapter only when this operation is requested.
         from desktop_pages.onboarding import install_onboarding
         install_onboarding(self)
         self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)
@@ -959,14 +1017,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self._busy(False)
         self.onboarding.refresh()
         self.onboarding.restore_visibility()
-        from desktop_ui_polish import install_polish
-        install_polish(self)
-        from desktop_help import install_page_help
-        install_page_help(self)
-        from desktop_pages.shortcuts import install_shortcuts
-        from desktop_accessibility import install_accessibility
-        install_shortcuts(self)
-        install_accessibility(self)
+        _install_window_support(self)
 
 
     def page_services(self):
@@ -1029,6 +1080,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def start_job(self, operation, payload):
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import require_operation
         require_operation(self.paths,operation)
         if operation not in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile'):
@@ -1134,6 +1186,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def notify_local(self, message, *, error=False, completion=False):
+        # Keep operation-specific dependencies out of module startup.
         from html import escape
         if not completion and not self.local_notifications.isChecked(): return
         self.notification_timer.stop()
@@ -1162,6 +1215,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         # Never create state files until the writer has exited and pending swaps recover.
         if self.jobs.active: self.jobs.cancel()
         if self.jobs.active: raise ValidationError(ui_text('ui._quiesce_and_recover.text_1'))
+        # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import admission, inspect_recovery, recover_control_journal, RecoveryError
         with admission(self.paths) as token:
             try:
@@ -1178,6 +1232,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             if self.backups is not None:
                 self.backups.recover()
             else:
+                # Load the optional UI adapter only when this operation is requested.
                 from quantlab.desktop_runtime import BackupManager
                 BackupManager(self.paths).recover()
 
@@ -1234,8 +1289,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     _result_snapshot_lines = staticmethod(result_snapshot_lines)
-
-
 
 
 def create_window(paths, jobs, settings=None, backups=None, guard=None):

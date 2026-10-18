@@ -1,4 +1,6 @@
 """Local-only research CLI. No imports from the legacy live trading package."""
+from .configuration import config_from_json
+
 import argparse
 import sys
 from pathlib import Path
@@ -40,40 +42,13 @@ def parser():
     return p
 
 
-def config_from_json(value):
-    from decimal import Decimal
-    from .core import BacktestConfig, CostSpec
-    def costs(item):
-        return CostSpec(**{**item, 'commission_per_side': Decimal(item['commission_per_side']), 'tax_rate': Decimal(item['tax_rate'])})
-    data = dict(value)
-    data['costs'] = costs(data['costs'])
-    for key in ('initial_cash', 'initial_margin_per_contract', 'maintenance_margin_per_contract'):
-        if data.get(key) is not None:
-            data[key] = Decimal(data[key])
-    if 'cost_schedule' in data:
-        data['cost_schedule'] = tuple(costs(c) for c in data['cost_schedule'])
-    from datetime import datetime
-    for key in ('margin_schedule', 'roll_events', 'settlement_events'):
-        if key in data:
-            rows = []
-            for item in data[key]:
-                row = dict(item)
-                for name in ('initial_margin', 'maintenance_margin', 'price', 'settlement_fee_per_contract', 'settlement_tax_rate'):
-                    if name in row:
-                        row[name] = Decimal(row[name])
-                for name in ('known_at', 'effective_at', 'timestamp'):
-                    if name in row:
-                        row[name] = datetime.fromisoformat(row[name].replace('Z', '+00:00'))
-                rows.append(row)
-            data[key] = tuple(rows)
-    return BacktestConfig(**data)
-
-
 def execute(args):
     if args.command in ('refresh', 'download'):
+        # Keep operation-specific dependencies out of module startup.
         from .downloads import refresh
         return refresh(args.cache, days=args.days, kind=args.format)
     if args.command == 'import':
+        # Keep operation-specific dependencies out of module startup.
         from .data import SessionCalendar, import_taifex
         raw = read_json(args.calendar)
         calendar = SessionCalendar(raw['sessions'], version=raw['version'])
@@ -85,7 +60,9 @@ def execute(args):
         if args.output:
             write_json(args.output, result)
         return result
+    # Keep operation-specific dependencies out of module startup.
     from .strategies import builtin_strategies
+    # Keep operation-specific dependencies out of module startup.
     from .backtest import run_backtest
     if args.command == 'demo':
         dataset = synthetic_dataset(args.bars)
@@ -95,6 +72,7 @@ def execute(args):
                 'live_status': 'disabled', 'real_model_status': 'not_verified'}
     dataset = load_dataset(args.dataset)
     if args.command == 'campaign':
+        # Keep operation-specific dependencies out of module startup.
         from .research import run_campaign, FixtureGenerator, demo_campaign_config
         config = read_json(args.config) if args.config else demo_campaign_config(dataset, demo_config())
         if isinstance(config.get('backtest_config'), dict):

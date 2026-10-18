@@ -1,0 +1,55 @@
+[
+  {
+    "file": "tests/test_workspace_wal_guard.py",
+    "edit": "Stub ModuleType name: desktop_ui -> desktop_presentation",
+    "justification": "Pure import-path plumbing: the adapter imports the extracted dataset/control facade from desktop_presentation; dataset timing and all assertions are unchanged."
+  },
+  {
+    "file": "tests/test_workspace_wal_guard.py",
+    "edit": "sys.modules stub key: desktop_ui -> desktop_presentation",
+    "justification": "Route the same stub to the extracted dependency import path. Retains the real adapter, WAL marker assertions, existing-journal read-only checks and core-call sentinel."
+  },
+  {
+    "file": "tests/test_t11_part_b.py",
+    "edit": "Import SavedCandidatePoolError from quantlab.saved_candidate_pool; use that binding at four former errors.SavedCandidatePoolError references.",
+    "justification": "Pure import-path plumbing in the uncommitted T11 test: the exception retains its original module and core.ValidationError base, while quantlab.errors stays core-free. Exact type, args, vars, identity and pickle-path assertions remain."
+  },
+  {
+    "file": "tests/fixtures/desktop_ui_public_names.json",
+    "edit": "Add OPERATION_REGISTRAR only.",
+    "justification": "Explicitly authorized new P2-B1 constant. Registrar function imports made private; registry test itself unchanged."
+  },
+  {
+    "file": "tests/fixtures/ui_operations_golden.json",
+    "edit": "Replace six unique hash tokens in 25 fields only.",
+    "justification": "Explicitly authorized provenance regeneration from legacy oracle after proving that restoring only three hashed source inputs exactly restores original golden; no shape, wording or non-hash changes.",
+    "changed_keys": [
+      "observations/ui_analysis_preview/result/analysis_id",
+      "observations/ui_analysis_preview/result/plan/analysis_id",
+      "observations/ui_analysis_preview/result/plan/binding/packet/implementation/research_analysis.py",
+      "observations/ui_analysis_preview/result/plan/binding/packet/packet_hash",
+      "observations/ui_analysis_preview/result/receipt_snapshot/provider_descriptor_hash",
+      "observations/ui_analysis_read/result/analysis_id",
+      "observations/ui_analysis_read/result/record/plan/analysis_id",
+      "observations/ui_analysis_read/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "observations/ui_analysis_read/result/record/plan/binding/packet/packet_hash",
+      "observations/ui_analysis_read/result/record/provider_descriptor/campaign_id",
+      "observations/ui_analysis_read/result/record/receipt_snapshot/provider_descriptor_hash",
+      "observations/ui_analysis_reconcile/result/analysis_id",
+      "observations/ui_analysis_reconcile/result/record/plan/analysis_id",
+      "observations/ui_analysis_reconcile/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "observations/ui_analysis_reconcile/result/record/plan/binding/packet/packet_hash",
+      "observations/ui_analysis_reconcile/result/record/provider_descriptor/campaign_id",
+      "observations/ui_analysis_reconcile/result/record/receipt_snapshot/provider_descriptor_hash",
+      "observations/ui_analysis_run/result/analysis_id",
+      "observations/ui_analysis_run/result/record/plan/analysis_id",
+      "observations/ui_analysis_run/result/record/plan/binding/packet/implementation/research_analysis.py",
+      "observations/ui_analysis_run/result/record/plan/binding/packet/packet_hash",
+      "observations/ui_analysis_run/result/record/provider_descriptor/campaign_id",
+      "observations/ui_analysis_run/result/record/receipt_snapshot/provider_descriptor_hash",
+      "observations/ui_walk_forward_preview/result/source_hashes/saved_candidate_pool.py",
+      "observations/ui_walk_forward_preview/result/source_hashes/walk_forward.py"
+    ],
+    "evidence": "docs/analysis/t11_repair_golden_changes.json"
+  }
+]
