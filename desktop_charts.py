@@ -3,6 +3,7 @@
 No network, trading, indicator calculation or inferred execution. All indices refer
 exactly to the supplied immutable series. Changing series clears dependent layers.
 """
+from desktop_strings import ui_text
 from dataclasses import dataclass
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -17,13 +18,13 @@ from PySide6.QtWidgets import QWidget
 
 def _display_time(value, date_only=''):
     """Presentation only; no timezone inference for unverified naive values."""
-    if value is None: return date_only or '時間未提供／未驗證'
+    if value is None: return date_only or ui_text('charts._display_time.text_1')
     if isinstance(value,str):
         try: value=datetime.fromisoformat(value.replace('Z','+00:00'))
-        except ValueError: return '時間未提供／未驗證'
+        except ValueError: return ui_text('charts._display_time.text_2')
     if not isinstance(value,datetime) or value.tzinfo is None or value.utcoffset() is None:
-        return '時間未提供／未驗證'
-    return value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%Y/%m/%d %H:%M')+' 台北時間'
+        return ui_text('charts._display_time.text_3')
+    return ui_text('charts._display_time.text_4').format(value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%Y/%m/%d %H:%M'))
 
 
 def _footer_items(width, metrics, first_time, last_time, trace=None):
@@ -31,7 +32,7 @@ def _footer_items(width, metrics, first_time, last_time, trace=None):
     width = max(0, int(width)); gap = 8
     first_width = metrics.horizontalAdvance(first_time)
     last_width = metrics.horizontalAdvance(last_time)
-    trace_text = f'{trace.mode}｜資料 {trace.data_hash[:8]}｜策略 {trace.strategy_hash[:8]}' if trace else ''
+    trace_text = ui_text('charts._footer_items.text_1').format(trace.mode, trace.data_hash[:8], trace.strategy_hash[:8]) if trace else ''
     trace_width = metrics.horizontalAdvance(trace_text)
     if first_width + last_width + trace_width + gap * (2 if trace else 1) <= width:
         items = [(0, first_width, first_time), (width-last_width, last_width, last_time)]
@@ -58,15 +59,15 @@ class ChartTrace:
     mode: str
 
     def __post_init__(self):
-        if not self.contract_id or self.mode not in ('回測','紙上'):
-            raise ValueError('圖層須指定合約與回測／紙上模式')
+        if not self.contract_id or self.mode not in (ui_text('charts.__post_init__.text_1'),ui_text('charts.__post_init__.text_2')):
+            raise ValueError(ui_text('charts.__post_init__.text_3'))
         if any(not re.fullmatch('[0-9a-f]{64}',x) for x in (self.data_hash,self.strategy_hash)):
-            raise ValueError('圖層須指定資料與策略 SHA-256')
+            raise ValueError(ui_text('charts.__post_init__.text_4'))
 
 
 def _number(value):
     if isinstance(value,bool) or not isinstance(value,(int,float,Decimal)) or not math.isfinite(float(value)):
-        raise ValueError('價格與指標必須為有限數值')
+        raise ValueError(ui_text('charts._number.text_1'))
     return float(value)
 
 
@@ -84,15 +85,15 @@ class ChartMarker:
 
     def __post_init__(self):
         if type(self.index) is not int or self.index<0 or self.kind not in ('signal','fill'):
-            raise ValueError('無效圖層位置或種類')
-        if not self.label: raise ValueError('圖層須有方向／動作文字')
-        if self.target_position is not None and type(self.target_position) is not int: raise ValueError('訊號目標須為整數')
-        if self.kind=='signal' and self.price is not None: raise ValueError('訊號不可帶有偽造成交價')
+            raise ValueError(ui_text('charts.__post_init__.text_5'))
+        if not self.label: raise ValueError(ui_text('charts.__post_init__.text_6'))
+        if self.target_position is not None and type(self.target_position) is not int: raise ValueError(ui_text('charts.__post_init__.text_7'))
+        if self.kind=='signal' and self.price is not None: raise ValueError(ui_text('charts.__post_init__.text_8'))
         if self.kind=='fill' and (self.price is None or type(self.quantity) is not int or self.quantity<=0):
-            raise ValueError('成交必須有實際價與量')
+            raise ValueError(ui_text('charts.__post_init__.text_9'))
         for value in (self.price,self.cost):
             if value is not None: _number(value)
-        if self.cost is not None and self.cost<0: raise ValueError('成本不可負值')
+        if self.cost is not None and self.cost<0: raise ValueError(ui_text('charts.__post_init__.text_10'))
 
 
 @dataclass(frozen=True)
@@ -103,12 +104,12 @@ class ReferenceLine:
     as_of: datetime | None = None
 
     def __post_init__(self):
-        if not self.label: raise ValueError('參考線須標明意義')
+        if not self.label: raise ValueError(ui_text('charts.__post_init__.text_11'))
         _number(self.price)
-        if (self.snapshot_index is None) != (self.as_of is None): raise ValueError('快照須同時提供事件位置與可用時間')
+        if (self.snapshot_index is None) != (self.as_of is None): raise ValueError(ui_text('charts.__post_init__.text_12'))
         if self.snapshot_index is not None:
-            if type(self.snapshot_index) is not int or self.snapshot_index < 0: raise ValueError('快照位置不合法')
-            if not isinstance(self.as_of,datetime) or self.as_of.utcoffset()!=timedelta(0): raise ValueError('快照時間須為 UTC')
+            if type(self.snapshot_index) is not int or self.snapshot_index < 0: raise ValueError(ui_text('charts.__post_init__.text_13'))
+            if not isinstance(self.as_of,datetime) or self.as_of.utcoffset()!=timedelta(0): raise ValueError(ui_text('charts.__post_init__.text_14'))
 
 
 class CandlestickChart(QWidget):
@@ -130,10 +131,10 @@ class CandlestickChart(QWidget):
         super().__init__(parent)
         self.setMouseTracking(True); self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumSize(360,280)
-        self.setAccessibleName('唯讀 K 線、成交量與指標圖')
+        self.setAccessibleName(ui_text('charts.__init__.text_1'))
         self.bars=(); self.trace=None; self.overlays=MappingProxyType({}); self.panes=MappingProxyType({})
         self._unavailable_overlays=set(); self._unavailable_panes=set(); self.pane_styles={}; self.markers=(); self.reference_lines=(); self.layer_visibility={'signal':True,'fill':True}
-        self.source_label='尚無可用資料'; self.status_label=''; self.error=''
+        self.source_label=ui_text('charts.__init__.text_2'); self.status_label=''; self.error=''
         self.timeframe='1d'; self.crosshair_index=None; self._count=100; self._start=0; self._drag=None
         self.last_rendered_bar_count=0
 
@@ -147,18 +148,18 @@ class CandlestickChart(QWidget):
 
     def set_series(self,series,*,trace=None,source_label='',status_label=''):
         bars=tuple(getattr(series,'bars',series))
-        if len(bars)>100000: raise ValueError('最多 100,000 根資料')
+        if len(bars)>100000: raise ValueError(ui_text('charts.set_series.text_1'))
         contracts={b.contract_id for b in bars}
-        if len(contracts)>1 or (trace and contracts and contracts!={trace.contract_id}): raise ValueError('資料合約錯配')
-        if len({getattr(b,'interval',None) for b in bars})>1: raise ValueError('不可混用 K 線週期')
+        if len(contracts)>1 or (trace and contracts and contracts!={trace.contract_id}): raise ValueError(ui_text('charts.set_series.text_2'))
+        if len({getattr(b,'interval',None) for b in bars})>1: raise ValueError(ui_text('charts.set_series.text_3'))
         for b in bars:
             o,h,l,c=map(_number,(b.open,b.high,b.low,b.close))
-            if not l<=min(o,c)<=max(o,c)<=h: raise ValueError('OHLC 不合法')
-            if b.volume is not None and (type(b.volume) is not int or b.volume<0): raise ValueError('成交量不合法')
+            if not l<=min(o,c)<=max(o,c)<=h: raise ValueError(ui_text('charts.set_series.text_4'))
+            if b.volume is not None and (type(b.volume) is not int or b.volume<0): raise ValueError(ui_text('charts.set_series.text_5'))
         self.bars=bars; self.trace=trace
         provenance=getattr(series,'provenance',None)
-        self.source_label=source_label or (f'{provenance.attribution}｜{provenance.as_of}' if provenance else '來源由主程式提供')
-        self.status_label=status_label or (provenance.mode if provenance else '狀態未提供')
+        self.source_label=source_label or (ui_text('charts.set_series.text_6').format(provenance.attribution, provenance.as_of) if provenance else ui_text('charts.set_series.text_7'))
+        self.status_label=status_label or (provenance.mode if provenance else ui_text('charts.set_series.text_8'))
         self.overlays=MappingProxyType({}); self.panes=MappingProxyType({}); self.markers=(); self.reference_lines=()
         self._unavailable_overlays=set(); self._unavailable_panes=set(); self.pane_styles={}; self._marker_index={}; self.crosshair_index=None; self.error=''; self.reset_view()
 
@@ -168,7 +169,7 @@ class CandlestickChart(QWidget):
     def set_error(self,message): self.error=str(message); self.update()
 
     def set_timeframe(self,timeframe):
-        if timeframe not in self.timeframes: raise ValueError('不支援週期')
+        if timeframe not in self.timeframes: raise ValueError(ui_text('charts.set_timeframe.text_1'))
         if timeframe!=self.timeframe:
             self.timeframe=timeframe; self.timeframe_changed.emit(timeframe)
 
@@ -177,15 +178,15 @@ class CandlestickChart(QWidget):
             result={}
             for label,sequence in mapping.items():
                 sequence=tuple(sequence)
-                if not label or len(sequence)!=len(self.bars): raise ValueError('指標須具名稱且與資料等長')
+                if not label or len(sequence)!=len(self.bars): raise ValueError(ui_text('charts.checked.text_1'))
                 for v in sequence:
                     if v is not None: _number(v)
                 result[str(label)]=sequence
             return MappingProxyType(result)
         overlays=checked(values); extra=checked(panes or {})
-        if len(overlays)>16 or len(extra)>8: raise ValueError('指標數量超過繪圖上限')
+        if len(overlays)>16 or len(extra)>8: raise ValueError(ui_text('charts.set_overlays.text_1'))
         styles=dict(pane_styles or {})
-        if any(label not in extra or style not in ('line','histogram') for label,style in styles.items()): raise ValueError('副圖樣式不合法')
+        if any(label not in extra or style not in ('line','histogram') for label,style in styles.items()): raise ValueError(ui_text('charts.set_overlays.text_2'))
         self.overlays=overlays; self.panes=extra; self.pane_styles=styles
         self._unavailable_overlays={label for label,seq in overlays.items() if all(v is None for v in seq)}
         self._unavailable_panes={label for label,seq in extra.items() if all(v is None for v in seq)}
@@ -193,31 +194,31 @@ class CandlestickChart(QWidget):
 
     def _legend_label(self,label,*,pane=False):
         unavailable=self._unavailable_panes if pane else self._unavailable_overlays
-        return label+' · 資料不足' if label in unavailable else label
+        return ui_text('charts._legend_label.text_1').format(label) if label in unavailable else label
 
     def set_markers(self,markers,*,trace):
-        if self.trace is None or trace!=self.trace: raise ValueError('訊號／成交合約、資料或策略版本不一致')
+        if self.trace is None or trace!=self.trace: raise ValueError(ui_text('charts.set_markers.text_1'))
         markers=tuple(markers)
-        if len(markers)>100000 or any(not isinstance(m,ChartMarker) or m.index>=len(self.bars) for m in markers): raise ValueError('圖層超出資料範圍')
+        if len(markers)>100000 or any(not isinstance(m,ChartMarker) or m.index>=len(self.bars) for m in markers): raise ValueError(ui_text('charts.set_markers.text_2'))
         self.markers=markers
         indexed={}
         for m in markers: indexed.setdefault(m.index,[]).append(m)
         self._marker_index=indexed; self.update()
 
     def set_layer_visible(self,kind,visible):
-        if kind not in self.layer_visibility: raise ValueError('不支援圖層')
+        if kind not in self.layer_visibility: raise ValueError(ui_text('charts.set_layer_visible.text_1'))
         self.layer_visibility[kind]=bool(visible); self.update()
 
     def set_reference_lines(self,lines,*,trace=None):
         lines=tuple(lines)
-        if len(lines)>16 or any(not isinstance(x,ReferenceLine) for x in lines): raise ValueError('參考線不合法')
+        if len(lines)>16 or any(not isinstance(x,ReferenceLine) for x in lines): raise ValueError(ui_text('charts.set_reference_lines.text_1'))
         snapshots=[line for line in lines if line.snapshot_index is not None]
         if snapshots:
-            if self.trace is None or trace!=self.trace: raise ValueError('快照合約、資料或策略版本不一致')
-            if len(snapshots)>6: raise ValueError('期末快照最多六個參考點')
+            if self.trace is None or trace!=self.trace: raise ValueError(ui_text('charts.set_reference_lines.text_2'))
+            if len(snapshots)>6: raise ValueError(ui_text('charts.set_reference_lines.text_3'))
             for line in snapshots:
                 if line.snapshot_index>=len(self.bars) or self.bars[line.snapshot_index].end!=line.as_of:
-                    raise ValueError('快照須對應確切的 K 線末端可用時間')
+                    raise ValueError(ui_text('charts.set_reference_lines.text_4'))
         self.reference_lines=lines; self.update()
 
     def visible_reference_lines(self):
@@ -283,17 +284,17 @@ class CandlestickChart(QWidget):
         p.fillRect(self.rect(),QColor('#101722')); p.setPen(self.TEXT)
         def text(x,y,s): p.drawText(QPointF(x,y),str(s))
         fm=p.fontMetrics()
-        text(12,22,fm.elidedText(self.source_label+'  ｜  '+self.status_label,Qt.TextElideMode.ElideRight,self.width()-24))
-        text(12,43,'K 線漲 + 紅／跌 − 綠   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移')
+        text(12,22,fm.elidedText(ui_text('charts.paintEvent.text_1').format(self.source_label, self.status_label),Qt.TextElideMode.ElideRight,self.width()-24))
+        text(12,43,ui_text('charts.paintEvent.text_2'))
         self.last_rendered_bar_count=0
         if self.error or not self.bars:
-            self.setToolTip(''); p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,self.error or '尚無可用資料，請選擇真實來源'); p.end(); return
+            self.setToolTip(''); p.drawText(self.rect(),Qt.AlignmentFlag.AlignCenter,self.error or ui_text('charts.paintEvent.text_3')); p.end(); return
         start,end=self.visible_range; visible=self.bars[start:end]; r=self.price_rect
         if not visible: p.end(); return
         self.last_rendered_bar_count=len(visible)
         idx=self.crosshair_index if self.crosshair_index is not None else end-1
         d=self.bar_details(idx)
-        detail=f"{d['time']}  開 {d['open']} 高 {d['high']} 低 {d['low']} 收 {d['close']}  Δ{d['change_text']}  量 {d['volume'] if d['volume'] is not None else '未知'}"+('  未完整' if d['partial'] else '')
+        detail=ui_text('charts.paintEvent.text_5').format(d['time'], d['open'], d['high'], d['low'], d['close'], d['change_text'], d['volume'] if d['volume'] is not None else ui_text('charts.paintEvent.text_4'))+(ui_text('charts.paintEvent.text_6') if d['partial'] else '')
         text(12,65,fm.elidedText(detail,Qt.TextElideMode.ElideRight,self.width()-24))
         low=min(float(b.low) for b in visible); high=max(float(b.high) for b in visible)
         extras=[float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
@@ -319,7 +320,7 @@ class CandlestickChart(QWidget):
             if b.volume is not None:
                 vh=(volume_bottom-volume_top)*b.volume/volume_max
                 p.fillRect(QRectF(x(i)-step*.3,volume_bottom-vh,max(1,step*.6),vh),color)
-        p.setPen(self.TEXT); text(12,volume_top-5,'成交量（口／股，依來源）')
+        p.setPen(self.TEXT); text(12,volume_top-5,ui_text('charts.paintEvent.text_7'))
         self._draw_lines(p,self.overlays,start,end,x,y,r)
         legend_x=r.left()
         for j,label in enumerate(self.overlays):
@@ -337,10 +338,10 @@ class CandlestickChart(QWidget):
                 p.drawLine(QPointF(xx-5,yy),QPointF(xx+5,yy))
         snapshots=[line for line in references if line.snapshot_index is not None]
         if snapshots:
-            caption='期末快照 '+_display_time(snapshots[0].as_of)+' · 非掛單／非歷史路徑'
-            policy='保護門檻：觸發批次取不利值，全倉退出；跳空依開盤'
-            labels=[caption]+[f'{line.label}：{float(line.price):,.4f}' for line in snapshots]
-            if any('門檻' in line.label for line in snapshots): labels.append(policy)
+            caption=ui_text('charts.paintEvent.text_8').format(_display_time(snapshots[0].as_of))
+            policy=ui_text('charts.paintEvent.text_9')
+            labels=[caption]+[ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)) for line in snapshots]
+            if any(ui_text('charts.paintEvent.text_11') in line.label for line in snapshots): labels.append(policy)
             width=min(r.width(),max(fm.horizontalAdvance(label) for label in labels)+12)
             panel=QRectF(r.left()+4,r.top()+4,width,(fm.height()+2)*len(labels)+8)
             p.fillRect(panel,QColor(16,23,34,225)); p.setPen(QColor('#ffcc80'))
@@ -377,13 +378,13 @@ class CandlestickChart(QWidget):
                 else: self._draw_lines(p,{label:seq},start,end,x,py,area)
                 p.setPen(QColor('#8290a3') if label in self._unavailable_panes else self.TEXT); text(area.left()+3,area.top()+10,self._legend_label(label,pane=True))
         first_time=self.bar_details(start)['time']; last_time=self.bar_details(end-1)['time']
-        footer_detail=f'顯示範圍起點：{first_time}\n顯示範圍終點：{last_time}'
-        if self.trace: footer_detail+=f'\n{self.trace.mode}｜資料 {self.trace.data_hash}｜策略 {self.trace.strategy_hash}'
+        footer_detail=ui_text('charts.paintEvent.text_12').format(first_time, last_time)
+        if self.trace: footer_detail+=ui_text('charts.paintEvent.text_13').format(self.trace.mode, self.trace.data_hash, self.trace.strategy_hash)
         if self.crosshair_index is not None and start<=self.crosshair_index<end:
             xx=x(self.crosshair_index); yy=y(self.bars[self.crosshair_index].close)
             p.setPen(QPen(QColor('#a5b6cc'),1,Qt.PenStyle.DashLine))
             p.drawLine(QPointF(xx,r.top()),QPointF(xx,volume_bottom)); p.drawLine(QPointF(r.left(),yy),QPointF(r.right(),yy))
-            marker_text=' / '.join(f"{'訊號' if m.kind=='signal' else '成交'} {m.label} {m.reason}"+(f' 價{m.price} 量{m.quantity} 成本{m.cost if m.cost is not None else "未提供"}' if m.kind=='fill' else f' 目標{m.target_position if m.target_position is not None else "未提供"}')+(f' 時間{_display_time(m.timestamp)}' if m.timestamp is not None else ' 時間未提供') for m in marker_index.get(self.crosshair_index,()))
+            marker_text=' / '.join(ui_text('charts.paintEvent.text_16').format(ui_text('charts.paintEvent.text_14') if m.kind=='signal' else ui_text('charts.paintEvent.text_15'), m.label, m.reason)+(ui_text('charts.paintEvent.text_18').format(m.price, m.quantity, m.cost if m.cost is not None else ui_text('charts.paintEvent.text_17')) if m.kind=='fill' else ui_text('charts.paintEvent.text_20').format(m.target_position if m.target_position is not None else ui_text('charts.paintEvent.text_19')))+(ui_text('charts.paintEvent.text_21').format(_display_time(m.timestamp)) if m.timestamp is not None else ui_text('charts.paintEvent.text_22')) for m in marker_index.get(self.crosshair_index,()))
             snapshot_text='\n'.join(labels) if snapshots else ''
             self.setToolTip(detail+('\n'+marker_text if marker_text else '')+('\n'+snapshot_text if snapshot_text else '')+'\n'+footer_detail)
         else: self.setToolTip(footer_detail)

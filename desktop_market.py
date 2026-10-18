@@ -3,6 +3,7 @@
 No network, timers, broker imports or embedded observations. refresh_requested is
 an intent only; host must perform its existing consent/background-job workflow.
 """
+from desktop_strings import ui_text
 from copy import deepcopy
 from quantlab.desktop_errors import error_message, exception_code
 from decimal import Decimal, InvalidOperation
@@ -48,17 +49,17 @@ def _identity(value):
 
 
 def _friendly_contract(key):
-    if key=='TWSE:TAIEX': return '加權指數'
+    if key=='TWSE:TAIEX': return ui_text('market._friendly_contract.text_1')
     parts=key.split(':')
     if len(parts)!=3: return key
-    product={'TX':'臺指期','MTX':'小臺指','TMF':'微臺指'}.get(parts[1],parts[1])
+    product={'TX':ui_text('market._friendly_contract.text_2'),'MTX':ui_text('market._friendly_contract.text_3'),'TMF':ui_text('market._friendly_contract.text_4')}.get(parts[1],parts[1])
     expiry=parts[2]; month=expiry[:4]+'/'+expiry[4:6]
-    if len(expiry)>6: month+=' 第'+expiry[-1]+'週'
+    if len(expiry)>6: month+=ui_text('market._friendly_contract.text_5').format(expiry[-1])
     return product+' '+month
 
 
 def _friendly_source(instrument):
-    return '臺灣證券交易所' if instrument.exchange=='TWSE' else '臺灣期貨交易所'
+    return ui_text('market._friendly_source.text_1') if instrument.exchange=='TWSE' else ui_text('market._friendly_source.text_2')
 
 
 def _label(text, name):
@@ -89,45 +90,45 @@ class MarketDashboard(QWidget):
         self.page_scroll=QScrollArea(); self.page_scroll.setWidgetResizable(True); self.page_scroll.setObjectName('market_page_scroll')
         content=QWidget(); self.page_scroll.setWidget(content); outer.addWidget(self.page_scroll)
         root=QVBoxLayout(content); root.setContentsMargins(10,8,10,8)
-        header=QHBoxLayout(); title=_label('市場總覽','market_title')
+        header=QHBoxLayout(); title=_label(ui_text('market.__init__.text_1'),'market_title')
         title.setStyleSheet('font-size:20px;font-weight:700;'); header.addWidget(title)
-        header.addStretch(); header.addWidget(_label('歷史行情','market_safety'))
-        self.refresh_button=_named(QPushButton('更新官方資料'),'market_refresh','更新官方資料')
-        self.refresh_button.setToolTip('交由主程式確認網路同意並在背景更新；不啟動交易')
+        header.addStretch(); header.addWidget(_label(ui_text('market.__init__.text_2'),'market_safety'))
+        self.refresh_button=_named(QPushButton(ui_text('market.__init__.text_3')),'market_refresh',ui_text('market.__init__.text_4'))
+        self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
         self.refresh_button.clicked.connect(self.refresh_requested.emit); header.addWidget(self.refresh_button)
         root.addLayout(header)
         cards=QHBoxLayout(); self.cards={}
-        for key,title in [('TAIEX','加權指數'),('TX','臺指期 TX'),('MXF','小臺指 MXF / MTX'),('TMF','微臺指 TMF')]:
+        for key,title in [('TAIEX',ui_text('market.__init__.text_6')),('TX',ui_text('market.__init__.text_7')),('MXF',ui_text('market.__init__.text_8')),('TMF',ui_text('market.__init__.text_9'))]:
             group=QGroupBox(title); group.setStyleSheet('QGroupBox { padding:3px; }'); layout=QVBoxLayout(group); layout.setContentsMargins(8,8,8,6)
-            value=_label('尚無可用資料\n—','market_card_'+key); layout.addWidget(value)
+            value=_label(ui_text('market.__init__.text_10'),'market_card_'+key); layout.addWidget(value)
             cards.addWidget(group); self.cards[key]=value
         root.addLayout(cards)
-        self.source_status=_label('離線 · 尚未載入來源；沒有即時行情連線','market_source_status')
+        self.source_status=_label(ui_text('market.__init__.text_11'),'market_source_status')
         source_row=QHBoxLayout(); source_row.addWidget(self.source_status,1)
-        self.diagnostics_button=_named(QPushButton('進階・資料來源與診斷 ▸'),'market_diagnostics_toggle','展開資料來源與診斷')
+        self.diagnostics_button=_named(QPushButton(ui_text('market.__init__.text_12')),'market_diagnostics_toggle',ui_text('market.__init__.text_13'))
         self.diagnostics_button.setCheckable(True); source_row.addWidget(self.diagnostics_button); root.addLayout(source_row)
-        self.diagnostics=_named(QPlainTextEdit(),'market_diagnostics','完整資料來源與診斷'); self.diagnostics.setReadOnly(True); self.diagnostics.setMaximumHeight(160); self.diagnostics.hide()
+        self.diagnostics=_named(QPlainTextEdit(),'market_diagnostics',ui_text('market.__init__.text_14')); self.diagnostics.setReadOnly(True); self.diagnostics.setMaximumHeight(160); self.diagnostics.hide()
         self.diagnostics_button.toggled.connect(self._toggle_diagnostics); root.addWidget(self.diagnostics)
-        self.message=_label('選擇實際合約後查看資料。TX／MXF 僅為市場展示，交易研究仍限已驗證 TMF。','market_message')
+        self.message=_label(ui_text('market.__init__.text_15'),'market_message')
         self.message.setStyleSheet('color:#e8c37a;'); root.addWidget(self.message)
         self.main_splitter=QSplitter(Qt.Orientation.Horizontal); root.addWidget(self.main_splitter,1)
         left=QWidget(); left_layout=QVBoxLayout(left); left_layout.setContentsMargins(0,0,4,0)
-        left_layout.addWidget(_label('商品搜尋 / 自選','market_watch_title'))
-        self.search=_named(QLineEdit(),'market_search','搜尋商品或合約月份'); self.search.setPlaceholderText('代碼 / 月份，例如 TMF 202610')
+        left_layout.addWidget(_label(ui_text('market.__init__.text_16'),'market_watch_title'))
+        self.search=_named(QLineEdit(),'market_search',ui_text('market.__init__.text_17')); self.search.setPlaceholderText(ui_text('market.__init__.text_18'))
         self.search.textChanged.connect(self._filter_catalog); left_layout.addWidget(self.search)
-        self.catalog_combo=_named(QComboBox(),'market_catalog','可用實際合約'); left_layout.addWidget(self.catalog_combo)
-        self.add_button=_named(QPushButton('＋ 加入自選'),'market_add','加入自選'); self.add_button.clicked.connect(self._add_watch); left_layout.addWidget(self.add_button)
-        self.watchlist=_named(QListWidget(),'market_watchlist','自選商品'); self.watchlist.currentItemChanged.connect(self._watch_selected); left_layout.addWidget(self.watchlist,1)
+        self.catalog_combo=_named(QComboBox(),'market_catalog',ui_text('market.__init__.text_19')); left_layout.addWidget(self.catalog_combo)
+        self.add_button=_named(QPushButton(ui_text('market.__init__.text_20')),'market_add',ui_text('market.__init__.text_21')); self.add_button.clicked.connect(self._add_watch); left_layout.addWidget(self.add_button)
+        self.watchlist=_named(QListWidget(),'market_watchlist',ui_text('market.__init__.text_22')); self.watchlist.currentItemChanged.connect(self._watch_selected); left_layout.addWidget(self.watchlist,1)
         row=QHBoxLayout()
-        self.remove_button=_named(QPushButton('移除'),'market_remove','移除自選'); self.remove_button.clicked.connect(self._remove_watch); row.addWidget(self.remove_button)
+        self.remove_button=_named(QPushButton(ui_text('market.__init__.text_23')),'market_remove',ui_text('market.__init__.text_24')); self.remove_button.clicked.connect(self._remove_watch); row.addWidget(self.remove_button)
         for text,delta,name in [('↑',-1,'up'),('↓',1,'down')]:
-            button=_named(QPushButton(text),'market_watch_'+name,'自選往上移' if delta<0 else '自選往下移'); button.clicked.connect(lambda checked=False,d=delta:self._move_watch(d)); row.addWidget(button)
+            button=_named(QPushButton(text),'market_watch_'+name,ui_text('market.__init__.text_25') if delta<0 else ui_text('market.__init__.text_26')); button.clicked.connect(lambda checked=False,d=delta:self._move_watch(d)); row.addWidget(button)
         left_layout.addLayout(row); self.main_splitter.addWidget(left)
         center=QWidget(); center_layout=QVBoxLayout(center); center_layout.setContentsMargins(4,0,4,0)
         control=QHBoxLayout()
-        self.contract_combo=_named(QComboBox(),'market_contract','圖表實際商品合約'); self.contract_combo.currentIndexChanged.connect(self._contract_changed); control.addWidget(self.contract_combo,1)
-        self.timeframe_combo=_named(QComboBox(),'market_timeframe','K線週期')
-        for text,value in zip(('1 分','3 分','5 分','15 分','30 分','60 分','日','週'),TIMEFRAMES): self.timeframe_combo.addItem(text,value)
+        self.contract_combo=_named(QComboBox(),'market_contract',ui_text('market.__init__.text_27')); self.contract_combo.currentIndexChanged.connect(self._contract_changed); control.addWidget(self.contract_combo,1)
+        self.timeframe_combo=_named(QComboBox(),'market_timeframe',ui_text('market.__init__.text_28'))
+        for text,value in zip((ui_text('market.__init__.text_29'),ui_text('market.__init__.text_30'),ui_text('market.__init__.text_31'),ui_text('market.__init__.text_32'),ui_text('market.__init__.text_33'),ui_text('market.__init__.text_34'),ui_text('market.__init__.text_35'),ui_text('market.__init__.text_36')),TIMEFRAMES): self.timeframe_combo.addItem(text,value)
         self.timeframe_combo.setCurrentIndex(6); self.timeframe_combo.currentIndexChanged.connect(self._timeframe_changed); control.addWidget(self.timeframe_combo)
         center_layout.addLayout(control)
         self.chart=CandlestickChart(); self.chart.setObjectName('market_candles'); center_layout.addWidget(self.chart,1)
@@ -135,14 +136,14 @@ class MarketDashboard(QWidget):
         self.main_splitter.addWidget(center)
         right_scroll=QScrollArea(); right_scroll.setWidgetResizable(True); right_scroll.setMinimumWidth(175)
         right=QWidget(); right_layout=QVBoxLayout(right); self.trading_labels={}
-        state=QGroupBox('策略 / 紙上 / 風控'); state_layout=QVBoxLayout(state)
-        for key,title in [('strategy','策略'),('paper','紙上交易'),('risk','風控')]:
-            label=_label(title+'：未知（主程式未提供）','market_state_'+key); state_layout.addWidget(label); self.trading_labels[key]=label
-        state_layout.addWidget(_label('研究與紙上模擬','market_live_disabled')); right_layout.addWidget(state)
-        group=QGroupBox('技術指標 · 參數按 bar 數'); grid=QGridLayout(group)
+        state=QGroupBox(ui_text('market.__init__.text_37')); state_layout=QVBoxLayout(state)
+        for key,title in [('strategy',ui_text('market.__init__.text_38')),('paper',ui_text('market.__init__.text_39')),('risk',ui_text('market.__init__.text_40'))]:
+            label=_label(ui_text('market.__init__.text_41').format(title),'market_state_'+key); state_layout.addWidget(label); self.trading_labels[key]=label
+        state_layout.addWidget(_label(ui_text('market.__init__.text_42'),'market_live_disabled')); right_layout.addWidget(state)
+        group=QGroupBox(ui_text('market.__init__.text_43')); grid=QGridLayout(group)
         row=0
         for key,config in DEFAULT_INDICATORS.items():
-            check=_named(QCheckBox(key),'market_indicator_'+key,key+' 指標'); check.setChecked(config['enabled']); grid.addWidget(check,row,0,1,2); row+=1
+            check=_named(QCheckBox(key),'market_indicator_'+key,ui_text('market.__init__.text_44').format(key)); check.setChecked(config['enabled']); grid.addWidget(check,row,0,1,2); row+=1
             controls={}; self._indicator_widgets[key]=(check,controls)
             for param,value in config.items():
                 if param=='enabled': continue
@@ -152,22 +153,22 @@ class MarketDashboard(QWidget):
                     spin.setRange(.1 if param=='deviations' else 1,1000); spin.setValue(number)
                     field=f'{param}_{index}' if isinstance(value,list) else param
                     _named(spin,f'market_{key}_{field}',f'{key} {field}')
-                    grid.addWidget(_label(('均線 '+str(index+1)) if param=='periods' else {'period':'期數','fast':'快線','slow':'慢線','signal':'訊號','k_period':'K 平滑','d_period':'D 平滑','deviations':'標準差倍數'}[param],'label_'+key+field),row,0); grid.addWidget(spin,row,1); row+=1
+                    grid.addWidget(_label((ui_text('market.__init__.text_45').format(str(index+1))) if param=='periods' else {'period':ui_text('market.__init__.text_46'),'fast':ui_text('market.__init__.text_47'),'slow':ui_text('market.__init__.text_48'),'signal':ui_text('market.__init__.text_49'),'k_period':ui_text('market.__init__.text_50'),'d_period':ui_text('market.__init__.text_51'),'deviations':ui_text('market.__init__.text_52')}[param],'label_'+key+field),row,0); grid.addWidget(spin,row,1); row+=1
                     controls[field]=spin; spin.valueChanged.connect(self._indicators_changed)
             check.toggled.connect(self._indicators_changed)
-        right_layout.addWidget(group); right_layout.addWidget(_label('VWAP 為 OHLCV 典型價加權估計；每個交易時段重設。','market_vwap_disclosure')); right_layout.addStretch()
+        right_layout.addWidget(group); right_layout.addWidget(_label(ui_text('market.__init__.text_53'),'market_vwap_disclosure')); right_layout.addStretch()
         right_scroll.setWidget(right); self.main_splitter.addWidget(right_scroll)
         self.main_splitter.setSizes([190,740,230]); self.main_splitter.setCollapsible(1,False)
         self.tables=QTabWidget(); self.tables.setMaximumHeight(180); self.tables.setMinimumHeight(95)
-        self.positions_table=self._table(('合約','口數','均價'),'market_positions')
-        self.orders_table=self._table(('委託編號','合約','方向','口數','狀態'),'market_orders')
-        self.fills_table=self._table(('成交編號','合約','方向','口數','成交價'),'market_fills')
-        for title,table in [('持倉（主程式資料）',self.positions_table),('委託（主程式資料）',self.orders_table),('成交（主程式資料）',self.fills_table)]: self.tables.addTab(table,title)
+        self.positions_table=self._table((ui_text('market.__init__.text_54'),ui_text('market.__init__.text_55'),ui_text('market.__init__.text_56')),'market_positions')
+        self.orders_table=self._table((ui_text('market.__init__.text_57'),ui_text('market.__init__.text_58'),ui_text('market.__init__.text_59'),ui_text('market.__init__.text_60'),ui_text('market.__init__.text_61')),'market_orders')
+        self.fills_table=self._table((ui_text('market.__init__.text_62'),ui_text('market.__init__.text_63'),ui_text('market.__init__.text_64'),ui_text('market.__init__.text_65'),ui_text('market.__init__.text_66')),'market_fills')
+        for title,table in [(ui_text('market.__init__.text_67'),self.positions_table),(ui_text('market.__init__.text_68'),self.orders_table),(ui_text('market.__init__.text_69'),self.fills_table)]: self.tables.addTab(table,title)
         root.addWidget(self.tables)
 
     def _toggle_diagnostics(self,visible):
         self.diagnostics.setVisible(visible)
-        self.diagnostics_button.setText('進階・資料來源與診斷 ▾' if visible else '進階・資料來源與診斷 ▸')
+        self.diagnostics_button.setText(ui_text('market._toggle_diagnostics.text_1') if visible else ui_text('market._toggle_diagnostics.text_2'))
 
     def _table(self,headers,name):
         table=_named(QTableWidget(0,len(headers)),name,name)
@@ -209,7 +210,7 @@ class MarketDashboard(QWidget):
     def set_loading(self,loading):
         if type(loading) is not bool: raise ValueError('loading must be boolean')
         self.refresh_button.setEnabled(not loading)
-        self.refresh_button.setText('背景更新中…' if loading else '更新官方資料')
+        self.refresh_button.setText(ui_text('market.set_loading.text_1') if loading else ui_text('market.set_loading.text_2'))
 
     def _fill_contracts(self):
         self.contract_combo.blockSignals(True); self.contract_combo.clear()
@@ -227,7 +228,7 @@ class MarketDashboard(QWidget):
     def _render_watch(self):
         self.watchlist.blockSignals(True); self.watchlist.clear()
         for key in self._watch:
-            text=_friendly_contract(key)+(' · 無資料' if key not in self._series else '')
+            text=_friendly_contract(key)+(ui_text('market._render_watch.text_1') if key not in self._series else '')
             item=QListWidgetItem(text); item.setToolTip(key); item.setData(Qt.ItemDataRole.UserRole,key); self.watchlist.addItem(item)
             if key==self._selected: self.watchlist.setCurrentItem(item)
         self.watchlist.blockSignals(False)
@@ -251,7 +252,7 @@ class MarketDashboard(QWidget):
         if item:
             key=item.data(Qt.ItemDataRole.UserRole)
             if key in self._series: self.contract_combo.setCurrentIndex(self.contract_combo.findData(key))
-            else: self.message.setText('此自選合約目前沒有資料；保留原有自選，不替換為其他月份。')
+            else: self.message.setText(ui_text('market._watch_selected.text_1'))
 
     def _contract_changed(self,index):
         key=self.contract_combo.itemData(index)
@@ -263,7 +264,7 @@ class MarketDashboard(QWidget):
         current=self._series.get(self._selected)
         if current and value.endswith('m') and any(not bar.interval.endswith('m') for bar in current.bars):
             self.timeframe_combo.blockSignals(True); self.timeframe_combo.setCurrentIndex(self.timeframe_combo.findData(self._timeframe)); self.timeframe_combo.blockSignals(False)
-            self.message.setText('日／時段資料不能轉成分鐘 K 線；需匯入具有明示時段的真實分鐘資料。'); return
+            self.message.setText(ui_text('market._timeframe_changed.text_1')); return
         self._timeframe=value; self._render_chart(); self.preferences_changed.emit()
 
     def _render_cards(self):
@@ -273,11 +274,11 @@ class MarketDashboard(QWidget):
             choices=[x for x in sources.values() if x.instrument.symbol==symbol]
             item=next((x for x in choices if x.instrument.contract_id==self._selected),choices[0] if choices else None)
             if not item:
-                label.setText('尚無可用資料\n—'); label.setStyleSheet('color:#dbe4ef;'); label.setToolTip(''); continue
+                label.setText(ui_text('market._render_cards.text_1')); label.setStyleSheet('color:#dbe4ef;'); label.setToolTip(''); continue
             quote=QuoteSnapshot.from_series(item,stale=stale)
-            change=quote.change; delta='前收不足' if change is None else f'{change:+f}'
-            label.setText(f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '+('過期快取' if stale else '歷史／盤後資料'))
-            label.setToolTip(f'實際合約：{item.instrument.contract_id}；顯示代碼 {item.instrument.symbol}\n漲跌參照：前一筆日盤收盤；不是結算價差\n來源：{item.provenance.attribution}\n{item.provenance.source_url}\n交易所時間：{item.provenance.timestamp_basis}\n接收時間（UTC）：{quote.received_at.isoformat()}\n延遲：不適用於歷史快照；並非即時連線')
+            change=quote.change; delta=ui_text('market._render_cards.text_2') if change is None else f'{change:+f}'
+            label.setText(f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '+(ui_text('market._render_cards.text_3') if stale else ui_text('market._render_cards.text_4')))
+            label.setToolTip(ui_text('market._render_cards.text_5').format(item.instrument.contract_id, item.instrument.symbol, item.provenance.attribution, item.provenance.source_url, item.provenance.timestamp_basis, quote.received_at.isoformat()))
             label.setStyleSheet('color:'+('#f58b8b' if change is not None and change>0 else '#76d6b0' if change is not None and change<0 else '#dbe4ef')+';')
 
     def _render_chart(self):
@@ -285,11 +286,11 @@ class MarketDashboard(QWidget):
         if item is None:
             self.chart.set_series(()); self._display_bars=()
             self._apply_indicators()
-            self.source_status.setText('離線 · 尚未載入來源；沒有即時行情連線'+(' · '+self._error if self._error else '')); return
+            self.source_status.setText(ui_text('market._render_chart.text_1').format(' · '+self._error if self._error else '')); return
         provenance=item.provenance
         # This dashboard consumes historical bar snapshots, never a streaming quote entitlement.
-        status='過期快取' if self._stale else '歷史資料' if provenance.mode=='history' else '盤後資料' if provenance.mode=='eod' else '歷史快照（非即時連線）'
-        self.source_status.setText(f'圖表：{_friendly_source(item.instrument)}｜{status}｜資料日 {provenance.as_of}｜本機接收 {provenance.received_at:%m/%d %H:%M} UTC')
+        status=ui_text('market._render_chart.text_2') if self._stale else ui_text('market._render_chart.text_3') if provenance.mode=='history' else ui_text('market._render_chart.text_4') if provenance.mode=='eod' else ui_text('market._render_chart.text_5')
+        self.source_status.setText(ui_text('market._render_chart.text_6').format(_friendly_source(item.instrument), status, provenance.as_of, provenance.received_at))
         try:
             result=aggregate_bars(item.bars,timeframe=self._timeframe)
         except (ValueError,TypeError) as exc:
@@ -297,22 +298,15 @@ class MarketDashboard(QWidget):
         self._display_bars=result.bars
         self.chart.set_series(result.bars,source_label=_friendly_contract(item.instrument.contract_id)+' · '+_friendly_source(item.instrument),status_label=status)
         warnings=list(provenance.warnings)+list(result.warnings)
-        if any(bar.partial for bar in result.bars): warnings.insert(0,'含未完成或完整性未知 K 線')
+        if any(bar.partial for bar in result.bars): warnings.insert(0,ui_text('market._render_chart.text_7'))
         if self._error: warnings.insert(0,self._error)
-        details=(f'實際合約：{item.instrument.contract_id}；顯示代碼：{item.instrument.symbol}\n'
-                 f'資料來源：{provenance.attribution}\n來源網址：{provenance.source_url}\n'
-                 f'授權網址：{provenance.license_url}\n來源 SHA-256：{provenance.sha256}\n'
-                 f'交易所時間基準：{provenance.timestamp_basis}\n'
-                 f'接收時間（UTC）：{provenance.received_at.isoformat()}\n'
-                 f'省略來源列數：{provenance.omitted_rows}\n'
-                 '漲跌參照：前一筆日盤收盤，並非結算價差。\n'
-                 '延遲：不適用於歷史快照；沒有即時行情連線。\n'+ '\n'.join(warnings))
+        details=(ui_text('market._render_chart.text_8').format(item.instrument.contract_id, item.instrument.symbol, provenance.attribution, provenance.source_url, provenance.license_url, provenance.sha256, provenance.timestamp_basis, provenance.received_at.isoformat(), provenance.omitted_rows)+ '\n'.join(warnings))
         self.diagnostics.setPlainText(details); self.source_status.setToolTip(details)
         self.message.setToolTip('\n'.join(warnings))
-        message='部分區間完整性尚未確認，僅供行情查看。' if warnings else '歷史資料不代表即時報價。'
-        if provenance.mode=='history' and '政策SHA256=' in provenance.timestamp_basis:
-            message='本機歷史／自行聲明時段未驗證；每契約最新匯入快照。'+message
-        if self._error: message='來源更新失敗，顯示既有資料。'+message
+        message=ui_text('market._render_chart.text_9') if warnings else ui_text('market._render_chart.text_10')
+        if provenance.mode=='history' and ui_text('market._render_chart.text_11') in provenance.timestamp_basis:
+            message=ui_text('market._render_chart.text_12').format(message)
+        if self._error: message=ui_text('market._render_chart.text_13').format(message)
         self.message.setText(message)
         self._indicator_message_base=message
         self._apply_indicators()
@@ -328,12 +322,12 @@ class MarketDashboard(QWidget):
             config[key]=value
         if config['MACD']['fast']>=config['MACD']['slow']:
             self._restore_indicator_controls()
-            self.message.setText('MACD 快線期數必須小於慢線；保留上一組有效參數。'); return
+            self.message.setText(ui_text('market._indicators_changed.text_1')); return
         changed={key for key in config if config[key]!=self._indicator_config[key]}
         failures=self._apply_indicators(config,reject_failures=changed)
         if failures:
             self._restore_indicator_controls()
-            self.message.setText(self._indicator_failure_text(failures)+' 已還原上一組參數與圖線。')
+            self.message.setText(ui_text('market._indicators_changed.text_2').format(self._indicator_failure_text(failures)))
             return
         self._indicator_config=config; self.preferences_changed.emit()
 
@@ -352,7 +346,7 @@ class MarketDashboard(QWidget):
 
     @staticmethod
     def _indicator_failure_text(failures):
-        return '、'.join(failures)+' 無法計算：資料量或參數超出指標計算限制，請縮短期數或切換較大 K 線週期。'
+        return ui_text('market._indicator_failure_text.text_2').format(ui_text('market._indicator_failure_text.text_1').join(failures))
 
     def _apply_indicators(self,config=None,*,reject_failures=()):
         bars=getattr(self,'_display_bars',()); closes=[]; highs=[]; lows=[]; keep=[]
@@ -373,20 +367,20 @@ class MarketDashboard(QWidget):
                 elif key=='MACD': panels['MACD']=indicators.macd(closes,**kwargs)
                 elif key=='KD': panels['KD']=indicators.kd(highs,lows,closes,**kwargs)
                 elif key=='Bollinger': overlays.update({'BB '+k:v for k,v in indicators.bollinger(closes,**kwargs).items()})
-                elif key=='VWAP': overlays['VWAP 估計']=indicators.session_vwap(bars)
+                elif key=='VWAP': overlays[ui_text('market._apply_indicators.text_1')]=indicators.session_vwap(bars)
             except indicators.IndicatorResourceLimitError:
                 failures.append(key)
         rejected=tuple(key for key in failures if key in reject_failures)
         if rejected: return rejected
-        summary=' / '.join(name+('（無法計算）' if name in failures else '') for name in names) or '技術指標已停用'
-        self.indicator_summary.setText(summary+' · 未成熟指標顯示資料不足；未完成 K 線為暫定值')
-        overlays={name:values if name=='VWAP 估計' else tuple(values[i] for i in keep) for name,values in overlays.items()}
+        summary=' / '.join(name+(ui_text('market._apply_indicators.text_2') if name in failures else '') for name in names) or ui_text('market._apply_indicators.text_3')
+        self.indicator_summary.setText(ui_text('market._apply_indicators.text_4').format(summary))
+        overlays={name:values if name==ui_text('market._apply_indicators.text_5') else tuple(values[i] for i in keep) for name,values in overlays.items()}
         panes={f'{panel} {key}':tuple(values[i] for i in keep) for panel,entries in panels.items() for key,values in entries.items()}
         if 'MACD histogram' in panes:
             panes['MACD histogram 1×'] = panes.pop('MACD histogram')
         self.chart.set_overlays(overlays,panes=panes,pane_styles={'MACD histogram 1×':'histogram'} if 'MACD histogram 1×' in panes else {})
-        message=getattr(self,'_indicator_message_base','歷史資料不代表即時報價。')
-        self.message.setText(message+(' '+self._indicator_failure_text(failures)+' 未顯示這些指標。' if failures else ''))
+        message=getattr(self,'_indicator_message_base',ui_text('market._apply_indicators.text_6'))
+        self.message.setText(message+(ui_text('market._apply_indicators.text_7').format(self._indicator_failure_text(failures)) if failures else ''))
         return ()
 
     def preferences(self):
@@ -420,7 +414,7 @@ class MarketDashboard(QWidget):
     def set_trading_status(self, *, strategy=None,paper=None,risk=None):
         values={'strategy':strategy,'paper':paper,'risk':risk}
         if any(value is not None and (not isinstance(value,str) or len(value)>500) for value in values.values()): raise ValueError('invalid host status')
-        for key,title in [('strategy','策略'),('paper','紙上交易'),('risk','風控')]: self.trading_labels[key].setText(title+'：'+(values[key] if values[key] is not None else '未知（主程式未提供）'))
+        for key,title in [('strategy',ui_text('market.set_trading_status.text_1')),('paper',ui_text('market.set_trading_status.text_2')),('risk',ui_text('market.set_trading_status.text_3'))]: self.trading_labels[key].setText(ui_text('market.set_trading_status.text_5').format(title, values[key] if values[key] is not None else ui_text('market.set_trading_status.text_4')))
 
     def set_account_tables(self, *, positions=(),orders=(),fills=()):
         """Validated display-only snapshots. Never produces an order or fills blanks."""
@@ -454,50 +448,50 @@ class MarketHistoryDialog(QDialog):
     """Typed, local-only import request. Dates are never inferred from a clock/calendar."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle('匯入本機 TAIFEX 逐筆歷史'); self.resize(800, 720)
+        self.setWindowTitle(ui_text('market.__init__.text_70')); self.resize(800, 720)
         self.sessions = []; self._payload = None
         layout = QVBoxLayout(self)
-        layout.addWidget(_label('唯讀歷史／本機來源未驗證。只接受九欄 CSV／逗號分隔 RPT；不下載、不交易、不變更研究資料。請自行核對來源及授權。', 'history_disclosure'))
-        self.path = _named(QLineEdit(), 'history_path', '本機 CSV 或 RPT 路徑'); self.path.setPlaceholderText('選擇本機 CSV／RPT 檔案')
+        layout.addWidget(_label(ui_text('market.__init__.text_71'), 'history_disclosure'))
+        self.path = _named(QLineEdit(), 'history_path', ui_text('market.__init__.text_72')); self.path.setPlaceholderText(ui_text('market.__init__.text_73'))
         file_row = QHBoxLayout(); file_row.addWidget(self.path)
-        self.browse = _named(QPushButton('選擇檔案'), 'history_browse', '選擇本機逐筆檔案')
+        self.browse = _named(QPushButton(ui_text('market.__init__.text_74')), 'history_browse', ui_text('market.__init__.text_75'))
         self.browse.clicked.connect(self.choose_file); file_row.addWidget(self.browse); layout.addLayout(file_row)
         form = QFormLayout(); layout.addLayout(form)
-        self.product = _named(QComboBox(), 'history_product', '實際商品')
-        for label, value in [('臺指期 TX', 'TX'), ('小臺指 MXF / MTX', 'MTX'), ('微臺指 TMF', 'TMF')]: self.product.addItem(label, value)
-        form.addRow('商品', self.product)
-        self.month = _named(QLineEdit(), 'history_month', '實際到期年月 YYYYMM'); self.month.setPlaceholderText('YYYYMM，例如 202610')
-        form.addRow('到期年月（必填）', self.month)
-        self.expiry_type = _named(QComboBox(), 'history_expiry_type', '月或週契約')
-        self.expiry_type.addItem('月契約', 'monthly'); self.expiry_type.addItem('週契約', 'weekly')
-        self.week = _named(QSpinBox(), 'history_week', '到期週次'); self.week.setRange(1,5); self.week.setEnabled(False)
-        expiry_row = QHBoxLayout(); expiry_row.addWidget(self.expiry_type); expiry_row.addWidget(self.week); form.addRow('契約類別', expiry_row)
-        self.trade_date = _named(QLineEdit(), 'history_trade_date', '明確指定交易日'); self.trade_date.setPlaceholderText('YYYY-MM-DD；夜盤歸屬日請自行核對')
-        form.addRow('交易所交易日（必填）', self.trade_date)
-        self.session = _named(QComboBox(), 'history_session', '日盤或夜盤'); self.session.addItem('日盤', 'day'); self.session.addItem('夜盤', 'night')
-        form.addRow('時段', self.session)
-        self.open_date = _named(QLineEdit(), 'history_open_date', '台北開盤日期'); self.open_date.setPlaceholderText('YYYY-MM-DD')
-        self.end_date = _named(QLineEdit(), 'history_end_date', '台北收盤日期'); self.end_date.setPlaceholderText('YYYY-MM-DD；跨午夜須自行填寫')
-        self.open_time = _named(QTimeEdit(QTime(8,45)), 'history_open_time', '台北開盤時間')
-        self.end_time = _named(QTimeEdit(QTime(13,45)), 'history_end_time', '台北收盤時間')
+        self.product = _named(QComboBox(), 'history_product', ui_text('market.__init__.text_76'))
+        for label, value in [(ui_text('market.__init__.text_77'), 'TX'), (ui_text('market.__init__.text_78'), 'MTX'), (ui_text('market.__init__.text_79'), 'TMF')]: self.product.addItem(label, value)
+        form.addRow(ui_text('market.__init__.text_80'), self.product)
+        self.month = _named(QLineEdit(), 'history_month', ui_text('market.__init__.text_81')); self.month.setPlaceholderText(ui_text('market.__init__.text_82'))
+        form.addRow(ui_text('market.__init__.text_83'), self.month)
+        self.expiry_type = _named(QComboBox(), 'history_expiry_type', ui_text('market.__init__.text_84'))
+        self.expiry_type.addItem(ui_text('market.__init__.text_85'), 'monthly'); self.expiry_type.addItem(ui_text('market.__init__.text_86'), 'weekly')
+        self.week = _named(QSpinBox(), 'history_week', ui_text('market.__init__.text_87')); self.week.setRange(1,5); self.week.setEnabled(False)
+        expiry_row = QHBoxLayout(); expiry_row.addWidget(self.expiry_type); expiry_row.addWidget(self.week); form.addRow(ui_text('market.__init__.text_88'), expiry_row)
+        self.trade_date = _named(QLineEdit(), 'history_trade_date', ui_text('market.__init__.text_89')); self.trade_date.setPlaceholderText(ui_text('market.__init__.text_90'))
+        form.addRow(ui_text('market.__init__.text_91'), self.trade_date)
+        self.session = _named(QComboBox(), 'history_session', ui_text('market.__init__.text_92')); self.session.addItem(ui_text('market.__init__.text_93'), 'day'); self.session.addItem(ui_text('market.__init__.text_94'), 'night')
+        form.addRow(ui_text('market.__init__.text_95'), self.session)
+        self.open_date = _named(QLineEdit(), 'history_open_date', ui_text('market.__init__.text_96')); self.open_date.setPlaceholderText('YYYY-MM-DD')
+        self.end_date = _named(QLineEdit(), 'history_end_date', ui_text('market.__init__.text_97')); self.end_date.setPlaceholderText(ui_text('market.__init__.text_98'))
+        self.open_time = _named(QTimeEdit(QTime(8,45)), 'history_open_time', ui_text('market.__init__.text_99'))
+        self.end_time = _named(QTimeEdit(QTime(13,45)), 'history_end_time', ui_text('market.__init__.text_100'))
         for widget in (self.open_time,self.end_time): widget.setDisplayFormat('HH:mm')
-        for title, date_widget, time_widget in [('開盤（台北 UTC+8）', self.open_date, self.open_time), ('收盤（台北 UTC+8）', self.end_date, self.end_time)]:
+        for title, date_widget, time_widget in [(ui_text('market.__init__.text_101'), self.open_date, self.open_time), (ui_text('market.__init__.text_102'), self.end_date, self.end_time)]:
             row = QHBoxLayout(); row.addWidget(date_widget); row.addWidget(time_widget); form.addRow(title,row)
-        self.include_end = _named(QCheckBox('包含收盤整點成交（放入最後一根）'), 'history_include_end', '包含收盤端點')
+        self.include_end = _named(QCheckBox(ui_text('market.__init__.text_103')), 'history_include_end', ui_text('market.__init__.text_104'))
         form.addRow(self.include_end)
         self.source = _label('', 'history_product_source'); layout.addWidget(self.source)
-        layout.addWidget(_label('預設時間僅供填寫：日盤 08:45–13:45，到期日收盤 13:30；夜盤 15:00–翌日 05:00。日期、假日及夜盤交易日歸屬均不推定，這不是官方完整交易日曆。', 'history_policy_disclosure'))
-        self.confirm = _named(QCheckBox('我已核對此實際契約、交易日、開收盤日期／時間與端點；這是我自行聲明的未驗證時段'), 'history_confirm', '確認自行聲明的日期時段')
+        layout.addWidget(_label(ui_text('market.__init__.text_105'), 'history_policy_disclosure'))
+        self.confirm = _named(QCheckBox(ui_text('market.__init__.text_106')), 'history_confirm', ui_text('market.__init__.text_107'))
         layout.addWidget(self.confirm)
         row = QHBoxLayout()
-        self.add = _named(QPushButton('加入已確認時段'), 'history_add_session', '加入時段'); self.add.clicked.connect(self.add_session); row.addWidget(self.add)
-        self.remove = _named(QPushButton('移除選取時段'), 'history_remove_session', '移除時段'); self.remove.clicked.connect(self.remove_session); row.addWidget(self.remove)
+        self.add = _named(QPushButton(ui_text('market.__init__.text_108')), 'history_add_session', ui_text('market.__init__.text_109')); self.add.clicked.connect(self.add_session); row.addWidget(self.add)
+        self.remove = _named(QPushButton(ui_text('market.__init__.text_110')), 'history_remove_session', ui_text('market.__init__.text_111')); self.remove.clicked.connect(self.remove_session); row.addWidget(self.remove)
         layout.addLayout(row)
-        self.session_list = _named(QListWidget(), 'history_sessions', '已確認時段列表'); layout.addWidget(self.session_list)
+        self.session_list = _named(QListWidget(), 'history_sessions', ui_text('market.__init__.text_112')); layout.addWidget(self.session_list)
         self.error = _label('', 'history_error'); layout.addWidget(self.error)
         self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText('背景匯入已確認時段')
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消')
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(ui_text('market.__init__.text_113'))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(ui_text('market.__init__.text_114'))
         self.buttons.accepted.connect(self.accept_import); self.buttons.rejected.connect(self.reject); layout.addWidget(self.buttons)
         for widget in (self.month,self.trade_date,self.open_date,self.end_date): widget.textChanged.connect(self._unconfirm)
         for widget in (self.product,self.expiry_type): widget.currentIndexChanged.connect(self._unconfirm)
@@ -513,7 +507,7 @@ class MarketHistoryDialog(QDialog):
 
     def _source_label(self, *args):
         from quantlab.market_history import PRODUCT_SOURCES
-        self.source.setText('商品時間規則參考（不是日期歸屬證明）：' + PRODUCT_SOURCES[self.product.currentData()])
+        self.source.setText(ui_text('market._source_label.text_1').format(PRODUCT_SOURCES[self.product.currentData()]))
 
     def _session_defaults(self, *args):
         night = self.session.currentData() == 'night'
@@ -522,7 +516,7 @@ class MarketHistoryDialog(QDialog):
         self._unconfirm()
 
     def choose_file(self):
-        name, _ = QFileDialog.getOpenFileName(self, '選擇本機 TAIFEX 九欄逐筆資料', '', 'TAIFEX CSV / RPT (*.csv *.rpt *.CSV *.RPT)')
+        name, _ = QFileDialog.getOpenFileName(self, ui_text('market.choose_file.text_1'), '', 'TAIFEX CSV / RPT (*.csv *.rpt *.CSV *.RPT)')
         if name: self.path.setText(name)
 
     def session_payload(self):
@@ -559,7 +553,7 @@ class MarketHistoryDialog(QDialog):
                 c,d = datetime.fromisoformat(value['open']),datetime.fromisoformat(value['end'])
                 if max(a,c)<min(b,d) or (b==c and existing['include_end']) or (d==a and value['include_end']): raise ValueError('history_session_overlap')
             self.sessions.append(value)
-            label = f"{value['contract_id']} | 交易日 {value['trade_date']} | {value['session']} | 台北 {self.open_date.text()} {self.open_time.text()} → {self.end_date.text()} {self.end_time.text()} | 收盤端點 {'含' if value['include_end'] else '不含'}"
+            label = ui_text('market.add_session.text_3').format(value['contract_id'], value['trade_date'], value['session'], self.open_date.text(), self.open_time.text(), self.end_date.text(), self.end_time.text(), ui_text('market.add_session.text_1') if value['include_end'] else ui_text('market.add_session.text_2'))
             self.session_list.addItem(label); self.confirm.setChecked(False); self.error.clear()
         except (ValueError,TypeError,KeyError) as exc: self.error.setText(error_message(exception_code(exc)))
 
@@ -580,5 +574,5 @@ class MarketHistoryDialog(QDialog):
         self.accept()
 
     def payload(self):
-        if self._payload is None: raise ValueError('匯入尚未確認')
+        if self._payload is None: raise ValueError(ui_text('market.payload.text_1'))
         return deepcopy(self._payload)

@@ -5,6 +5,7 @@ copy; ``build_payload`` validates without changing external state. Embed these
 widgets in the desktop page's QScrollArea. Exact decimal strings avoid float or
 QDoubleSpinBox rounding. Backend validation remains authoritative.
 """
+from desktop_strings import ui_text
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import re
@@ -17,11 +18,11 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QLabel, QLineE
 from quantlab.core import ValidationError, StrategySpec, validate_date, validate_contract, to_dict
 from quantlab.strategies import DEFAULTS, FAMILIES, validate_strategy
 
-FAMILY_LABELS = dict(zip(FAMILIES, ('均線趨勢', '均值回歸', '通道突破', '動能', '波動壓縮')))
-PARAM_LABELS = {'fast':'快速均線（根）', 'slow':'慢速均線（根）', 'lookback':'回看期間（根）',
-    'entry_bps':'進場偏離（基點，1 bp = 0.01%）', 'threshold_bps':'動能門檻（基點）',
-    'max_holding_bars':'最長持有（根）', 'max_range_bps':'最大區間（基點）',
-    'quantity':'策略數量（口，可留白）', 'stop_ticks':'停損（點，可留白）', 'target_ticks':'停利（點，可留白）'}
+FAMILY_LABELS = dict(zip(FAMILIES, (ui_text('forms.labels.text_1'), ui_text('forms.labels.text_2'), ui_text('forms.labels.text_3'), ui_text('forms.labels.text_4'), ui_text('forms.labels.text_5'))))
+PARAM_LABELS = {'fast':ui_text('forms.labels.text_6'), 'slow':ui_text('forms.labels.text_7'), 'lookback':ui_text('forms.labels.text_8'),
+    'entry_bps':ui_text('forms.labels.text_9'), 'threshold_bps':ui_text('forms.labels.text_10'),
+    'max_holding_bars':ui_text('forms.labels.text_11'), 'max_range_bps':ui_text('forms.labels.text_12'),
+    'quantity':ui_text('forms.labels.text_13'), 'stop_ticks':ui_text('forms.labels.text_14'), 'target_ticks':ui_text('forms.labels.text_15')}
 
 
 def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=False):
@@ -29,7 +30,7 @@ def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=Fa
     text = str(text).strip()
     if not text and optional: return None
     if len(text) > 128 or not text:
-        raise ValidationError(f'{label}：請輸入有效數字')
+        raise ValidationError(ui_text('forms.number.text_1').format(label))
     try:
         value = Decimal(text)
         if not value.is_finite() or value < Decimal(str(minimum)) or value > Decimal(str(maximum)):
@@ -39,13 +40,13 @@ def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=Fa
         if integer and (not re.fullmatch(r'[+-]?\d+', text) or value != value.to_integral_value()):
             raise ValueError()
     except (InvalidOperation, ValueError, OverflowError):
-        raise ValidationError(f'{label}：須為 {minimum} 至 {maximum} 的' + ('整數' if integer else '有限數值')) from None
+        raise ValidationError(ui_text('forms.number.text_2').format(label, minimum, maximum) + (ui_text('forms.number.text_3') if integer else ui_text('forms.number.text_4'))) from None
     return int(value) if integer else format(value, 'f')
 
 
 def required(text, label):
     text = text.strip()
-    if not text or len(text) > 256: raise ValidationError(f'{label}：請填寫 1 至 256 字元')
+    if not text or len(text) > 256: raise ValidationError(ui_text('forms.required.text_1').format(label))
     return text
 
 
@@ -53,7 +54,7 @@ def utc(text, label):
     from quantlab.paper import _time
     value = required(text, label)
     try: _time(value, label)
-    except ValidationError: raise ValidationError(f'{label}：須含 UTC 時區，例如 2026-01-05T01:00:00Z') from None
+    except ValidationError: raise ValidationError(ui_text('forms.utc.text_1').format(label)) from None
     return value
 
 
@@ -94,7 +95,7 @@ class _Form(QWidget):
             field = self.fields[key]
             if isinstance(field, QComboBox):
                 index = field.findData(value)
-                if index < 0: raise ValidationError(f'{field.accessibleName()}：不支援的選項')
+                if index < 0: raise ValidationError(ui_text('forms.load.text_1').format(field.accessibleName()))
                 field.setCurrentIndex(index)
             else: field.setText('' if value is None else str(value))
         return self
@@ -103,12 +104,12 @@ class _Form(QWidget):
 class StrategyForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.family = self.field('family', '策略家族', choices=[(FAMILY_LABELS[f], f) for f in FAMILIES])
+        self.family = self.field('family', ui_text('forms.__init__.text_1'), choices=[(FAMILY_LABELS[f], f) for f in FAMILIES])
         self.parameter_form = QFormLayout(); self.outer.addLayout(self.parameter_form)
         self._spec = None
         self.family.currentIndexChanged.connect(self._family_changed)
         self._family_changed()
-        self.note('僅內建有限家族；基點為百分之一個百分點。停損／停利於同棒採保守規則。')
+        self.note(ui_text('forms.__init__.text_2'))
 
     def _family_changed(self):
         while self.parameter_form.rowCount(): self.parameter_form.removeRow(0)
@@ -122,7 +123,7 @@ class StrategyForm(_Form):
 
     def from_payload(self, payload):
         spec = StrategySpec(**deepcopy(payload)); validate_strategy(spec)
-        if spec.rules: raise ValidationError('自訂 DSL 候選須使用唯讀版本檢視，不可改成內建表單')
+        if spec.rules: raise ValidationError(ui_text('forms.from_payload.text_1'))
         self.family.setCurrentIndex(self.family.findData(spec.family)); self._family_changed()
         self._spec = to_dict(spec); self.load(spec.parameters)
         return self
@@ -143,29 +144,27 @@ class BacktestForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         for key, label in (
-            ('initial_cash','初始資金（TWD）'), ('max_position','最大部位（口）'),
-            ('commission_per_side','單邊手續費（TWD／口）'), ('tax_rate','交易稅率（比例，0.00002 = 0.002%）'),
-            ('slippage_ticks','單邊滑價（點）'), ('effective_from','費率生效日（YYYY-MM-DD）'),
-            ('version','費率版本／來源'), ('initial_margin_per_contract','原始保證金（TWD／口，可留白）'),
-            ('maintenance_margin_per_contract','維持保證金（TWD／口，可留白）'), ('margin_version','保證金版本／來源'),
-            ('seed','固定種子（整數）'), ('start_date','起始交易日（YYYY-MM-DD，空白全部）'),
-            ('end_date','結束交易日（YYYY-MM-DD，含當日）')):
+            ('initial_cash',ui_text('forms.__init__.text_3')), ('max_position',ui_text('forms.__init__.text_4')),
+            ('commission_per_side',ui_text('forms.__init__.text_5')), ('tax_rate',ui_text('forms.__init__.text_6')),
+            ('slippage_ticks',ui_text('forms.__init__.text_7')), ('effective_from',ui_text('forms.__init__.text_8')),
+            ('version',ui_text('forms.__init__.text_9')), ('initial_margin_per_contract',ui_text('forms.__init__.text_10')),
+            ('maintenance_margin_per_contract',ui_text('forms.__init__.text_11')), ('margin_version',ui_text('forms.__init__.text_12')),
+            ('seed',ui_text('forms.__init__.text_13')), ('start_date',ui_text('forms.__init__.text_14')),
+            ('end_date',ui_text('forms.__init__.text_15'))):
             self.field(key, label)
-        self.field('tax_rounding','稅額取整方式', choices=[('四捨五入至新台幣元','half_up_twd'), ('向下取整至新台幣元','floor_twd'), ('向上取整至新台幣元','ceiling_twd'), ('不取整','none')])
-        self.note('初始值為明示合成假設，並非現行市場費率或保證金。已載入的進階時序政策會完整保留。')
+        self.field('tax_rounding',ui_text('forms.__init__.text_16'), choices=[(ui_text('forms.__init__.text_17'),'half_up_twd'), (ui_text('forms.__init__.text_18'),'floor_twd'), (ui_text('forms.__init__.text_19'),'ceiling_twd'), (ui_text('forms.__init__.text_20'),'none')])
+        self.note(ui_text('forms.__init__.text_21'))
         self.expiry_note = self.note(
-            '真實／代理資料須逐一填寫明確合約（TAIFEX:TMF:YYYYMM）及到期日（最後交易日，YYYY-MM-DD）。請先自行核對期交所微臺指期貨契約規格 '
-            'https://www.taifex.com.tw/cht/2/tMF、該年度交易行事曆及異動公告，再輸入日期；已載入的日期也須核對。'
-            '本表僅檢查格式，不會驗證來源或推算第三個星期三，也不代表已取得結算價格。回測與研究 Campaign 共用此設定。')
+            ui_text('forms.__init__.text_22'))
         self.expiry_note.setObjectName('instrument_expiries_note')
         self.expiry_note.setTextFormat(Qt.TextFormat.PlainText)
         self.expiry_note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
         self.expiries = _Rows('instrument_expiries', [
-            ('contract_id','合約代碼'), ('expiry_date','到期日（YYYY-MM-DD）')])
-        self.expiries.table.horizontalHeaderItem(0).setToolTip('明確合約（TAIFEX:TMF:YYYYMM）')
-        self.expiries.table.horizontalHeaderItem(1).setToolTip('到期日／最後交易日（YYYY-MM-DD）')
+            ('contract_id',ui_text('forms.__init__.text_23')), ('expiry_date',ui_text('forms.__init__.text_24'))])
+        self.expiries.table.horizontalHeaderItem(0).setToolTip(ui_text('forms.__init__.text_25'))
+        self.expiries.table.horizontalHeaderItem(1).setToolTip(ui_text('forms.__init__.text_26'))
         self.expiries.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.expiries.table.setAccessibleName('合約到期日（須自行核對官方來源）')
+        self.expiries.table.setAccessibleName(ui_text('forms.__init__.text_27'))
         self.outer.addWidget(self.expiries)
         from quantlab.reporting import demo_config
         self.from_payload({'config':to_dict(demo_config()), 'start_date':'', 'end_date':''})
@@ -190,8 +189,8 @@ class BacktestForm(_Form):
             try:
                 validate_contract(contract); validate_date(expiry)
             except ValidationError:
-                raise ValidationError(f'合約到期日第 {index} 列：須為 TAIFEX:TMF:YYYYMM 有效合約及 YYYY-MM-DD 有效日期') from None
-            if contract in expiries: raise ValidationError(f'合約到期日第 {index} 列：合約重複 {contract}')
+                raise ValidationError(ui_text('forms.build_payload.text_1').format(index)) from None
+            if contract in expiries: raise ValidationError(ui_text('forms.build_payload.text_2').format(index, contract))
             expiries[contract] = expiry
         config['instrument_expiries'] = expiries
         config['initial_cash'] = self.num('initial_cash')
@@ -203,15 +202,15 @@ class BacktestForm(_Form):
         costs = deepcopy(config['costs'])
         costs.update(commission_per_side=self.num('commission_per_side'), tax_rate=self.num('tax_rate', 0, 1),
             slippage_ticks=self.num('slippage_ticks', 0, 100000, integer=True),
-            effective_from=self.text('effective_from'), version=required(self.text('version'),'費率版本'),
+            effective_from=self.text('effective_from'), version=required(self.text('version'),ui_text('forms.build_payload.text_3')),
             tax_rounding=self.fields['tax_rounding'].currentData())
         config['costs'] = costs
         from quantlab.__main__ import config_from_json
         config_from_json(config)
         start, end = self.text('start_date'), self.text('end_date')
         for value in (start,end):
-            if value: validate_date(value, '交易日')
-        if start and end and start > end: raise ValidationError('起始交易日不得晚於結束交易日')
+            if value: validate_date(value, ui_text('forms.build_payload.text_4'))
+        if start and end and start > end: raise ValidationError(ui_text('forms.build_payload.text_5'))
         return dict(config=config, start_date=start, end_date=end)
 
 
@@ -219,25 +218,25 @@ class CampaignForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._config = None
-        self.note('依資料列索引切分，起點含、終點不含；OOS／保留集不可回饋生成器。執行前仍需另外確認保留集的一次性使用。')
-        for split, label in (('train','訓練'),('validation','驗證'),('oos','樣本外 OOS'),('holdout','最終保留集')):
-            self.field(split+'_start',label+'起點（第幾根，自 0 起）')
-            self.field(split+'_end',label+'終點（不含）')
+        self.note(ui_text('forms.__init__.text_28'))
+        for split, label in (('train',ui_text('forms.__init__.text_29')),('validation',ui_text('forms.__init__.text_30')),('oos',ui_text('forms.__init__.text_31')),('holdout',ui_text('forms.__init__.text_32'))):
+            self.field(split+'_start',ui_text('forms.__init__.text_33').format(label))
+            self.field(split+'_end',ui_text('forms.__init__.text_34').format(label))
         for key,label,value in (
-            ('max_trials','最多候選嘗試（1–15 次）',15),('max_improvements','每家族最多改良（0–2 次）',2),
-            ('seed','固定種子',0),('max_runtime_seconds','總執行上限（秒，1–7200）',300),
-            ('max_bars','資料根數上限（1–100000）',100000),('purge_bars','各切分尾端排除（根）',0),
-            ('minimum','最低淨損益門檻（TWD）',0),('min_trades','最少成交筆數',0)):
+            ('max_trials',ui_text('forms.__init__.text_35'),15),('max_improvements',ui_text('forms.__init__.text_36'),2),
+            ('seed',ui_text('forms.__init__.text_37'),0),('max_runtime_seconds',ui_text('forms.__init__.text_38'),300),
+            ('max_bars',ui_text('forms.__init__.text_39'),100000),('purge_bars',ui_text('forms.__init__.text_40'),0),
+            ('minimum',ui_text('forms.__init__.text_41'),0),('min_trades',ui_text('forms.__init__.text_42'),0)):
             self.field(key,label,value)
         self.families = {}
         for family in FAMILIES:
             box = QCheckBox(FAMILY_LABELS[family]); box.setObjectName('campaign_'+family); box.setChecked(True)
-            box.setAccessibleName('研究家族 '+FAMILY_LABELS[family]); self.outer.addWidget(box); self.families[family] = box
+            box.setAccessibleName(ui_text('forms.__init__.text_43').format(FAMILY_LABELS[family])); self.outer.addWidget(box); self.families[family] = box
 
     def from_payload(self, payload):
         families = payload.get('families')
         if not isinstance(families,list) or not families or len(set(families)) != len(families) or any(f not in FAMILIES for f in families):
-            raise ValidationError('研究家族缺漏、重複或不支援')
+            raise ValidationError(ui_text('forms.from_payload.text_2'))
         self._config = deepcopy(payload)
         self.load(payload); self.load(payload['ranking'])
         for split,bounds in payload['splits'].items(): self.load({split+'_start':bounds[0],split+'_end':bounds[1]})
@@ -245,7 +244,7 @@ class CampaignForm(_Form):
         return self
 
     def build_payload(self, backtest_config=None):
-        if self._config is None and backtest_config is None: raise ValidationError('請先載入資料切分與回測費率')
+        if self._config is None and backtest_config is None: raise ValidationError(ui_text('forms.build_payload.text_6'))
         config = deepcopy(self._config or {})
         if backtest_config is not None: config['backtest_config'] = deepcopy(backtest_config)
         bounds = {'max_trials':(1,15),'max_improvements':(0,2),'seed':(0,2147483647),
@@ -255,10 +254,10 @@ class CampaignForm(_Form):
         for split in ('train','validation','oos','holdout'):
             start = self.num(split+'_start',0,config['max_bars'],integer=True)
             end = self.num(split+'_end',0,config['max_bars'],integer=True)
-            if start < previous or end <= start + config['purge_bars']: raise ValidationError('切分不可重疊、倒序或在排除後為空')
+            if start < previous or end <= start + config['purge_bars']: raise ValidationError(ui_text('forms.build_payload.text_7'))
             config['splits'][split] = [start,end]; previous = end
         config['families'] = [f for f,b in self.families.items() if b.isChecked()]
-        if not config['families']: raise ValidationError('請至少選擇一種研究家族')
+        if not config['families']: raise ValidationError(ui_text('forms.build_payload.text_8'))
         config['ranking'] = dict(metric='net_pnl', minimum=self.num('minimum','-1e12'), min_trades=self.num('min_trades',0,1000000,integer=True))
         from quantlab.__main__ import config_from_json
         config_from_json(config['backtest_config'])
@@ -269,42 +268,42 @@ class WalkForwardForm(_Form):
     """Typed chronology editor; saved pools are admitted only by the worker."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.field('pool_origin', '固定候選池來源（只能擇一）', choices=[
-            ('五個精確內建規格（預設）', 'exact_builtin_pool'),
-            ('已保存 AI 研究的固定候選池', 'saved_campaign_pool')])
-        self.field('mode', '訓練窗口', choices=[('固定寬度', 'rolling'), ('固定起點', 'expanding')])
-        self.field('evidence_mode', '證據模式（歷史重播必須自行選取）', choices=[
-            ('僅合成驗證（預設）', 'synthetic_validation'),
-            ('歷史重播，資料暴露未驗證', 'historical_replay')])
+        self.field('pool_origin', ui_text('forms.__init__.text_44'), choices=[
+            (ui_text('forms.__init__.text_45'), 'exact_builtin_pool'),
+            (ui_text('forms.__init__.text_46'), 'saved_campaign_pool')])
+        self.field('mode', ui_text('forms.__init__.text_47'), choices=[(ui_text('forms.__init__.text_48'), 'rolling'), (ui_text('forms.__init__.text_49'), 'expanding')])
+        self.field('evidence_mode', ui_text('forms.__init__.text_50'), choices=[
+            (ui_text('forms.__init__.text_51'), 'synthetic_validation'),
+            (ui_text('forms.__init__.text_52'), 'historical_replay')])
         for key, label, value in (
-            ('start', '首折起點（自 0 起，含）', 0),
-            ('train_bars', '首折訓練寬度（根）', 240),
-            ('validation_bars', '驗證寬度（根）', 120), ('oos_bars', '前推 OOS 寬度（根）', 120),
-            ('fold_count', '折數（2–20）', 3), ('step_bars', '每折步進（根，至少 OOS 寬度）', 120),
-            ('gap_bars', '切分間隙（根）', 0),
-            ('final_holdout_start', '排除最終保留集起點（含）', 720),
-            ('final_holdout_end', '排除最終保留集終點（不含，等於來源總根數）', 960),
-            ('max_evaluations', '全實驗評估額度（1–220，包含失敗／中斷）', 33),
-            ('max_runtime_seconds', '全實驗總秒數（1–7200）', 300),
-            ('minimum', '驗證最低淨損益（TWD）', '0'),
-            ('min_trades', '驗證最少已平倉 lot（至少 1）', 1),
-            ('max_drawdown_percent', '驗證最大回撤上限（%，10 表示核心比例 0.10）', '10.00')):
+            ('start', ui_text('forms.__init__.text_53'), 0),
+            ('train_bars', ui_text('forms.__init__.text_54'), 240),
+            ('validation_bars', ui_text('forms.__init__.text_55'), 120), ('oos_bars', ui_text('forms.__init__.text_56'), 120),
+            ('fold_count', ui_text('forms.__init__.text_57'), 3), ('step_bars', ui_text('forms.__init__.text_58'), 120),
+            ('gap_bars', ui_text('forms.__init__.text_59'), 0),
+            ('final_holdout_start', ui_text('forms.__init__.text_60'), 720),
+            ('final_holdout_end', ui_text('forms.__init__.text_61'), 960),
+            ('max_evaluations', ui_text('forms.__init__.text_62'), 33),
+            ('max_runtime_seconds', ui_text('forms.__init__.text_63'), 300),
+            ('minimum', ui_text('forms.__init__.text_64'), '0'),
+            ('min_trades', ui_text('forms.__init__.text_65'), 1),
+            ('max_drawdown_percent', ui_text('forms.__init__.text_66'), '10.00')):
             self.field(key, label, value)
         self._plan = None
         self.fields['pool_origin'].currentIndexChanged.connect(self._pool_origin_changed)
         self._pool_origin_changed()
-        self.note('內建池或已保存研究池只能擇一；訓練僅描述，驗證須通過三項門檻，再依淨損益選單一贏家。預覽後門檻鎖定。這是工程護欄，並非投資適合度或獲利證明。')
-        self.note('共用「回測與結果」的明示費用／資金／保證金與合約到期日；此處依完整來源列索引切分，不套用回測頁的日期篩選。無新模型呼叫、正式排名或紙上資格。已保存池須另選研究及完整原始資料；原有模型狀態不會升級。最終保留集僅排除，不評估。')
+        self.note(ui_text('forms.__init__.text_67'))
+        self.note(ui_text('forms.__init__.text_68'))
 
     def _pool_origin_changed(self):
         saved = self.fields['pool_origin'].currentData() == 'saved_campaign_pool'
         cap = 620 if saved else 220
-        label = f'全實驗評估額度（1–{cap}，包含失敗／中斷；不自動增加）'
+        label = ui_text('forms._pool_origin_changed.text_1').format(cap)
         self.form.labelForField(self.fields['max_evaluations']).setText(label)
         self.fields['max_evaluations'].setAccessibleName(label)
 
     def defaults_for_bars(self, count):
-        if type(count) is not int or count < 8: raise ValidationError('Walk-forward 需要至少 8 根資料')
+        if type(count) is not int or count < 8: raise ValidationError(ui_text('forms.defaults_for_bars.text_1'))
         train, width = max(1, count // 4), max(1, count // 8)
         values = dict(start=0, train_bars=train, validation_bars=width, oos_bars=width,
             fold_count=3, step_bars=width, gap_bars=0, final_holdout_start=train + 4 * width,
@@ -318,7 +317,7 @@ class WalkForwardForm(_Form):
         from decimal import localcontext
         plan = walk_forward_plan_from_dict(deepcopy(payload))
         if plan.pool_origin != 'exact_builtin_pool':
-            raise ValidationError('已保存研究池須使用來源選單與原始資料選取器，不接受原始候選 JSON')
+            raise ValidationError(ui_text('forms.from_payload.text_3'))
         self._plan = to_dict(plan)
         first, second = plan.folds[:2]
         values = dict(pool_origin=plan.pool_origin, mode=plan.mode, evidence_mode=plan.evidence_mode,
@@ -335,7 +334,7 @@ class WalkForwardForm(_Form):
         # This editor promises a uniform step. Reject arbitrary variable-step
         # imported plans rather than silently changing their declared chronology.
         if to_dict(walk_forward_plan_from_dict(self.build_payload())) != self._plan:
-            raise ValidationError('表單僅支援固定步進計畫；不會暗中改變匯入範圍')
+            raise ValidationError(ui_text('forms.from_payload.text_4'))
         return self
 
     def build_payload(self, backtest_config=None):
@@ -344,7 +343,7 @@ class WalkForwardForm(_Form):
         from decimal import localcontext
         stored = deepcopy(self._plan or {})
         config = backtest_config if backtest_config is not None else stored.get('backtest_config')
-        if config is None: raise ValidationError('請先核對共用回測費用設定')
+        if config is None: raise ValidationError(ui_text('forms.build_payload.text_9'))
         values = {}
         for key in ('start', 'train_bars', 'validation_bars', 'oos_bars', 'step_bars'):
             values[key] = self.num(key, 0 if key == 'start' else 1, 100000, integer=True)
@@ -376,16 +375,16 @@ class WalkForwardForm(_Form):
 class PaperIntentForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
-        for key,label in (('client_order_id','紙上委託識別碼（不可重複）'),('strategy_hash','已啟用策略 SHA-256'),
-            ('contract_id','明確合約（TAIFEX:TMF:YYYYMM）'),('quantity','委託數量（口）'),
-            ('created_at','建立時間（UTC）'),('limit_price','限價（整數點；市價單留白）')): self.field(key,label)
-        self.field('side','方向',choices=[('買進','buy'),('賣出','sell')])
-        self.field('order_type','委託類型',choices=[('市價','market'),('限價','limit')])
-        self.note('僅建立紙上意圖。未連接即時行情或券商；不會自動送單或模擬成交。')
+        for key,label in (('client_order_id',ui_text('forms.__init__.text_69')),('strategy_hash',ui_text('forms.__init__.text_70')),
+            ('contract_id',ui_text('forms.__init__.text_71')),('quantity',ui_text('forms.__init__.text_72')),
+            ('created_at',ui_text('forms.__init__.text_73')),('limit_price',ui_text('forms.__init__.text_74'))): self.field(key,label)
+        self.field('side',ui_text('forms.__init__.text_75'),choices=[(ui_text('forms.__init__.text_76'),'buy'),(ui_text('forms.__init__.text_77'),'sell')])
+        self.field('order_type',ui_text('forms.__init__.text_78'),choices=[(ui_text('forms.__init__.text_79'),'market'),(ui_text('forms.__init__.text_80'),'limit')])
+        self.note(ui_text('forms.__init__.text_81'))
 
     def from_payload(self, payload):
         allowed = {'client_order_id','strategy_hash','contract_id','quantity','created_at','limit_price','side','order_type'}
-        if set(payload)-allowed: raise ValidationError('不支援的紙上意圖欄位')
+        if set(payload)-allowed: raise ValidationError(ui_text('forms.from_payload.text_5'))
         for field in self.fields.values():
             if isinstance(field,QLineEdit): field.clear()
         return self.load(deepcopy(payload))
@@ -393,33 +392,33 @@ class PaperIntentForm(_Form):
     def build_payload(self):
         p = {key:required(self.text(key),self.fields[key].accessibleName()) for key in ('client_order_id','strategy_hash','contract_id')}
         validate_contract(p['contract_id'])
-        if not re.fullmatch('[0-9a-f]{64}',p['strategy_hash']): raise ValidationError('策略 SHA-256 須為 64 位小寫十六進位')
-        p.update(quantity=self.num('quantity',1,1000000,integer=True), created_at=utc(self.text('created_at'),'建立時間'),
+        if not re.fullmatch('[0-9a-f]{64}',p['strategy_hash']): raise ValidationError(ui_text('forms.build_payload.text_10'))
+        p.update(quantity=self.num('quantity',1,1000000,integer=True), created_at=utc(self.text('created_at'),ui_text('forms.build_payload.text_11')),
             side=self.fields['side'].currentData(),order_type=self.fields['order_type'].currentData())
         if p['order_type'] == 'limit': p['limit_price'] = str(self.num('limit_price',1,1000000000,integer=True))
-        elif self.text('limit_price'): raise ValidationError('市價單不得包含限價；請清空限價欄位')
+        elif self.text('limit_price'): raise ValidationError(ui_text('forms.build_payload.text_12'))
         return p
 
 
 class PaperQuoteForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
-        for key,label in (('account_id','紙上帳戶識別碼'),('contract_id','明確合約（TAIFEX:TMF:YYYYMM）'),
-            ('price','參考報價（整數點，需自行核對來源）'),('timestamp','報價時間（UTC）'),
-            ('trade_date','交易日（YYYY-MM-DD）'),('session_open','時段開始（UTC）'),
-            ('session_end','時段結束（UTC，不含）'),('margin_per_contract','原始保證金（TWD／口，須符合鎖定政策）')): self.field(key,label)
-        self.note('報價預設空白。請提供已核對來源；手動輸入不代表即時或已驗證行情。')
+        for key,label in (('account_id',ui_text('forms.__init__.text_82')),('contract_id',ui_text('forms.__init__.text_83')),
+            ('price',ui_text('forms.__init__.text_84')),('timestamp',ui_text('forms.__init__.text_85')),
+            ('trade_date',ui_text('forms.__init__.text_86')),('session_open',ui_text('forms.__init__.text_87')),
+            ('session_end',ui_text('forms.__init__.text_88')),('margin_per_contract',ui_text('forms.__init__.text_89'))): self.field(key,label)
+        self.note(ui_text('forms.__init__.text_90'))
 
     def from_payload(self,payload):
-        if set(payload) != set(self.fields): raise ValidationError('報價欄位缺漏或不支援')
+        if set(payload) != set(self.fields): raise ValidationError(ui_text('forms.from_payload.text_6'))
         return self.load(deepcopy(payload))
 
     def build_payload(self):
         p = {key:required(self.text(key), self.fields[key].accessibleName()) for key in ('account_id','contract_id','trade_date')}
-        validate_contract(p['contract_id']); validate_date(p['trade_date'],'交易日')
+        validate_contract(p['contract_id']); validate_date(p['trade_date'],ui_text('forms.build_payload.text_13'))
         for key in ('timestamp','session_open','session_end'): p[key] = utc(self.text(key),self.fields[key].accessibleName())
         from quantlab.paper import _time
-        if not _time(p['session_open']) <= _time(p['timestamp']) < _time(p['session_end']): raise ValidationError('報價時間必須在指定交易時段內')
+        if not _time(p['session_open']) <= _time(p['timestamp']) < _time(p['session_end']): raise ValidationError(ui_text('forms.build_payload.text_14'))
         p['price'] = str(self.num('price',1,1000000000,integer=True))
         p['margin_per_contract'] = self.num('margin_per_contract','0.000000000001')
         return p
@@ -433,32 +432,32 @@ class PaperSnapshotForm(_Form):
     """
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.field('account_id','外部紙上參考帳戶識別碼')
-        self.field('cash','已核對現金（TWD）')
+        self.field('account_id',ui_text('forms.__init__.text_91'))
+        self.field('cash',ui_text('forms.__init__.text_92'))
         self._snapshot = {'positions':{},'orders':{},'fills':{}}
         self.records = SummaryCard(); self.outer.addWidget(self.records)
         self.record_tables = {}
-        for key,label in (('positions','完整參考部位'),('orders','完整參考委託'),('fills','完整參考成交')):
-            self.note(label+'（唯讀）')
+        for key,label in (('positions',ui_text('forms.__init__.text_93')),('orders',ui_text('forms.__init__.text_94')),('fills',ui_text('forms.__init__.text_95'))):
+            self.note(ui_text('forms.__init__.text_96').format(label))
             table = ResultTable(); table.setObjectName('snapshot_'+key); table.setMaximumHeight(160)
             self.record_tables[key] = table; self.outer.addWidget(table)
-        self.note('初次空帳戶請填明確帳號與資金。既有部位、委託與成交需載入完整參考快照；不會自動覆寫帳戶或宣告對帳成功。')
+        self.note(ui_text('forms.__init__.text_97'))
         self._show_records()
 
     def _show_records(self):
-        self.records.set_values({'參考快照部位項目':len(self._snapshot['positions']), '參考快照委託筆數':len(self._snapshot['orders']), '參考快照成交筆數':len(self._snapshot['fills'])})
+        self.records.set_values({ui_text('forms._show_records.text_1'):len(self._snapshot['positions']), ui_text('forms._show_records.text_2'):len(self._snapshot['orders']), ui_text('forms._show_records.text_3'):len(self._snapshot['fills'])})
         for key,table in self.record_tables.items():
-            table.set_rows([{'識別碼':identifier, **(value if isinstance(value,dict) else {'數量（口）':value})} for identifier,value in self._snapshot[key].items()])
+            table.set_rows([{ui_text('forms._show_records.text_4'):identifier, **(value if isinstance(value,dict) else {ui_text('forms._show_records.text_5'):value})} for identifier,value in self._snapshot[key].items()])
 
     def from_payload(self,payload):
         for key in ('positions','orders','fills'):
-            if not isinstance(payload.get(key),dict): raise ValidationError('快照必須包含完整部位、委託與成交紀錄')
+            if not isinstance(payload.get(key),dict): raise ValidationError(ui_text('forms.from_payload.text_7'))
         self._snapshot = deepcopy(payload); self.load(payload); self._show_records()
         return self
 
     def build_payload(self):
         p = deepcopy(self._snapshot)
-        p.update(account_id=required(self.text('account_id'),'帳戶識別碼'),cash=self.num('cash'))
+        p.update(account_id=required(self.text('account_id'),ui_text('forms.build_payload.text_15')),cash=self.num('cash'))
         return p
 
 
@@ -466,12 +465,12 @@ class PaperActionForm(_Form):
     """Per-action controls; restored input never restores consent."""
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.field('now','本次紙上事件時間（UTC）')
-        self.field('order_id','欲取消的紙上委託 ID')
-        self.field('max_bars','本批歷史重播上限（根）','100')
-        self.confirm = QCheckBox('我已核對參考快照，明確同意本次對帳／重播／紙上委託')
+        self.field('now',ui_text('forms.__init__.text_98'))
+        self.field('order_id',ui_text('forms.__init__.text_99'))
+        self.field('max_bars',ui_text('forms.__init__.text_100'),'100')
+        self.confirm = QCheckBox(ui_text('forms.__init__.text_101'))
         self.confirm.setObjectName('paper_action_confirm'); self.outer.addWidget(self.confirm)
-        self.note('固定風控：部位最多 1 口、單筆最多 1 口、每日損失 1000 TWD、報價最多 30 秒；連續虧損上限 3 次、60 秒內最多 20 筆。停止新委託不會平倉。')
+        self.note(ui_text('forms.__init__.text_102'))
 
     def from_payload(self,payload):
         self.load(payload); self.clear_confirmation(); return self
@@ -479,13 +478,13 @@ class PaperActionForm(_Form):
     def clear_confirmation(self): self.confirm.setChecked(False)
 
     def build_payload(self,action):
-        if action not in ('snapshot','reconcile','submit','replay','cancel','kill'): raise ValidationError('未知紙上操作')
+        if action not in ('snapshot','reconcile','submit','replay','cancel','kill'): raise ValidationError(ui_text('forms.build_payload.text_16'))
         if action in ('snapshot','kill'): return {}
         if action == 'cancel':
-            return {'now':utc(self.text('now'),'取消時間'), 'order_id':required(self.text('order_id'),'委託 ID')}
-        if not self.confirm.isChecked(): raise ValidationError('請明確確認本次參考快照；取消確認不會送出操作')
+            return {'now':utc(self.text('now'),ui_text('forms.build_payload.text_17')), 'order_id':required(self.text('order_id'),ui_text('forms.build_payload.text_18'))}
+        if not self.confirm.isChecked(): raise ValidationError(ui_text('forms.build_payload.text_19'))
         p = {'reconcile_confirmed':True}
-        if action == 'submit': p['now'] = utc(self.text('now'),'本次事件時間')
+        if action == 'submit': p['now'] = utc(self.text('now'),ui_text('forms.build_payload.text_20'))
         if action == 'replay': p['max_bars'] = self.num('max_bars',1,1000,integer=True)
         return p
 
@@ -503,8 +502,8 @@ class _Rows(QWidget):
         for index, (_, label) in enumerate(columns):
             self.table.horizontalHeaderItem(index).setToolTip(label)
         buttons = QHBoxLayout(); layout.addLayout(buttons)
-        add = QPushButton('新增一列'); add.setObjectName(name+'_add'); add.clicked.connect(self.add_row)
-        remove = QPushButton('刪除選取列'); remove.setObjectName(name+'_remove'); remove.setProperty('role', 'danger'); remove.clicked.connect(self.remove_row)
+        add = QPushButton(ui_text('forms.__init__.text_103')); add.setObjectName(name+'_add'); add.clicked.connect(self.add_row)
+        remove = QPushButton(ui_text('forms.__init__.text_104')); remove.setObjectName(name+'_remove'); remove.setProperty('role', 'danger'); remove.clicked.connect(self.remove_row)
         buttons.addWidget(add); buttons.addWidget(remove); buttons.addStretch()
 
     def add_row(self):
@@ -512,7 +511,7 @@ class _Rows(QWidget):
 
     def remove_row(self):
         row = self.table.currentRow()
-        if row >= 0 and QMessageBox.question(self, '確認刪除', '刪除選取列？',
+        if row >= 0 and QMessageBox.question(self, ui_text('forms.remove_row.text_1'), ui_text('forms.remove_row.text_2'),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             self.table.removeRow(row); self._original.pop(row)
@@ -534,24 +533,24 @@ class _Rows(QWidget):
 class PaperPolicyForm(_Form):
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.field('contract_id','鎖定合約（TAIFEX:TMF:YYYYMM）')
-        self.note('政策須來自明確來源。建立帳戶後不可修改；沒有自動行情或官方日曆推測。所有時間為 UTC。')
-        self.sessions = _Rows('risk_sessions',[('open','開始 UTC'),('end','結束 UTC'),('trade_date','交易日'),('source','來源'),('session','day 日盤／night 夜盤')]); self.outer.addWidget(self.sessions)
-        self.margins = _Rows('margin_schedule',[('effective_from','生效交易日'),('margin_per_contract','保證金 TWD／口'),('version','版本／來源')]); self.outer.addWidget(self.margins)
+        self.field('contract_id',ui_text('forms.__init__.text_105'))
+        self.note(ui_text('forms.__init__.text_106'))
+        self.sessions = _Rows('risk_sessions',[('open',ui_text('forms.__init__.text_107')),('end',ui_text('forms.__init__.text_108')),('trade_date',ui_text('forms.__init__.text_109')),('source',ui_text('forms.__init__.text_110')),('session',ui_text('forms.__init__.text_111'))]); self.outer.addWidget(self.sessions)
+        self.margins = _Rows('margin_schedule',[('effective_from',ui_text('forms.__init__.text_112')),('margin_per_contract',ui_text('forms.__init__.text_113')),('version',ui_text('forms.__init__.text_114'))]); self.outer.addWidget(self.margins)
 
     def from_payload(self,payload):
-        if set(payload) != {'contract_id','risk_sessions','margin_schedule'}: raise ValidationError('政策欄位缺漏或不支援')
+        if set(payload) != {'contract_id','risk_sessions','margin_schedule'}: raise ValidationError(ui_text('forms.from_payload.text_8'))
         self.load(payload); self.sessions.load(payload['risk_sessions']); self.margins.load(payload['margin_schedule'])
         return self
 
     def build_payload(self):
         contract = self.text('contract_id'); validate_contract(contract)
         sessions, margins = self.sessions.values(),self.margins.values()
-        if not sessions or not margins: raise ValidationError('請明確填入交易時段與保證金版本')
+        if not sessions or not margins: raise ValidationError(ui_text('forms.build_payload.text_21'))
         for row in sessions:
-            utc(row['open'],'時段開始'); utc(row['end'],'時段結束'); validate_date(row['trade_date'],'交易日')
+            utc(row['open'],ui_text('forms.build_payload.text_22')); utc(row['end'],ui_text('forms.build_payload.text_23')); validate_date(row['trade_date'],ui_text('forms.build_payload.text_24'))
         for row in margins:
-            row['margin_per_contract'] = number(row['margin_per_contract'],'保證金','0.000000000001')
+            row['margin_per_contract'] = number(row['margin_per_contract'],ui_text('forms.build_payload.text_25'),'0.000000000001')
         # Invoke the existing pure policy validator without opening a journal.
         from quantlab.paper import PaperBroker
         from quantlab.core import Instrument
@@ -564,38 +563,38 @@ class PaperPolicyForm(_Form):
 from desktop_presentation import display_value, display_number, STATUS_LABELS
 
 
-RESULT_LABELS = {'net_pnl':'淨損益（TWD）','gross_pnl':'毛損益（TWD）','trade_count':'交易筆數',
-    'closed_trades':'已平倉交易','fill_count':'成交筆數','max_drawdown':'最大回撤', 'max_drawdown_pct':'最大回撤（%）',
-    'win_rate':'勝率（%）','profit_factor':'獲利因子','source_type':'資料來源','strategy_hash':'策略版本 SHA-256',
-    'result_hash':'結果 SHA-256','warnings':'注意事項','equity_samples':'權益資料點', 'status':'狀態',
-    'family':'策略家族','sequence':'候選版本','strategy_id':'策略識別碼','account_id':'帳戶', 'cash':'現金（TWD）',
-    'reconciliation_required':'需要對帳','kill_switch':'停止新委託',
-    'initial_cash':'初始資金（TWD）','final_equity':'期末權益（TWD）','realized_gross_pnl':'已實現毛損益（TWD）',
-    'unrealized_pnl':'未實現損益（TWD）','total_costs':'總費用（TWD）','slippage_cost':'滑價成本（TWD）',
-    'return':'報酬率（%）','closed_lots':'已平倉批次','open_position':'未平倉（口）',
-    'sharpe':'夏普值（描述性）','sharpe_reason':'夏普值未定義原因','win_rate_reason':'勝率說明','annualization':'年化假設',
-    'profit_factor_reason':'獲利因子未定義原因','profit_factor_basis':'獲利因子計算基礎',
-    'sharpe_observations':'夏普值觀測期數','sharpe_note':'夏普值限制',
-    'sharpe_sample_count':'有效報酬期數（缺值不略過）',
-    'periods_per_year':'假設每年期數','annual_risk_free_rate':'假設年無風險利率',
-    'return_frequency':'報酬觀測頻率','first_return':'首期報酬基準','missing_dates':'缺日期處理',
-    'standard_deviation':'標準差定義','minimum_observations':'數學最低觀測期數',
-    'created_at':'建立時間','side':'方向','quantity':'數量（口）','price':'價格（點）','order_type':'類型',
-    'filled_quantity':'已成交（口）','commission':'手續費（TWD）','tax':'交易稅（TWD）'}
+RESULT_LABELS = {'net_pnl':ui_text('forms.labels.text_16'),'gross_pnl':ui_text('forms.labels.text_17'),'trade_count':ui_text('forms.labels.text_18'),
+    'closed_trades':ui_text('forms.labels.text_19'),'fill_count':ui_text('forms.labels.text_20'),'max_drawdown':ui_text('forms.labels.text_21'), 'max_drawdown_pct':ui_text('forms.labels.text_22'),
+    'win_rate':ui_text('forms.labels.text_23'),'profit_factor':ui_text('forms.labels.text_24'),'source_type':ui_text('forms.labels.text_25'),'strategy_hash':ui_text('forms.labels.text_26'),
+    'result_hash':ui_text('forms.labels.text_27'),'warnings':ui_text('forms.labels.text_28'),'equity_samples':ui_text('forms.labels.text_29'), 'status':ui_text('forms.labels.text_30'),
+    'family':ui_text('forms.labels.text_31'),'sequence':ui_text('forms.labels.text_32'),'strategy_id':ui_text('forms.labels.text_33'),'account_id':ui_text('forms.labels.text_34'), 'cash':ui_text('forms.labels.text_35'),
+    'reconciliation_required':ui_text('forms.labels.text_36'),'kill_switch':ui_text('forms.labels.text_37'),
+    'initial_cash':ui_text('forms.labels.text_38'),'final_equity':ui_text('forms.labels.text_39'),'realized_gross_pnl':ui_text('forms.labels.text_40'),
+    'unrealized_pnl':ui_text('forms.labels.text_41'),'total_costs':ui_text('forms.labels.text_42'),'slippage_cost':ui_text('forms.labels.text_43'),
+    'return':ui_text('forms.labels.text_44'),'closed_lots':ui_text('forms.labels.text_45'),'open_position':ui_text('forms.labels.text_46'),
+    'sharpe':ui_text('forms.labels.text_47'),'sharpe_reason':ui_text('forms.labels.text_48'),'win_rate_reason':ui_text('forms.labels.text_49'),'annualization':ui_text('forms.labels.text_50'),
+    'profit_factor_reason':ui_text('forms.labels.text_51'),'profit_factor_basis':ui_text('forms.labels.text_52'),
+    'sharpe_observations':ui_text('forms.labels.text_53'),'sharpe_note':ui_text('forms.labels.text_54'),
+    'sharpe_sample_count':ui_text('forms.labels.text_55'),
+    'periods_per_year':ui_text('forms.labels.text_56'),'annual_risk_free_rate':ui_text('forms.labels.text_57'),
+    'return_frequency':ui_text('forms.labels.text_58'),'first_return':ui_text('forms.labels.text_59'),'missing_dates':ui_text('forms.labels.text_60'),
+    'standard_deviation':ui_text('forms.labels.text_61'),'minimum_observations':ui_text('forms.labels.text_62'),
+    'created_at':ui_text('forms.labels.text_63'),'side':ui_text('forms.labels.text_64'),'quantity':ui_text('forms.labels.text_65'),'price':ui_text('forms.labels.text_66'),'order_type':ui_text('forms.labels.text_67'),
+    'filled_quantity':ui_text('forms.labels.text_68'),'commission':ui_text('forms.labels.text_69'),'tax':ui_text('forms.labels.text_70')}
 
 
 def readable(value, key=""):
-    if value is None: return '未提供'
-    if isinstance(value,bool): return '是' if value else '否'
-    if isinstance(value,dict): return '；'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v, k)}' for k,v in value.items())
-    if isinstance(value,(list,tuple)): return '；'.join(readable(v) for v in value) or '無'
+    if value is None: return ui_text('forms.readable.text_1')
+    if isinstance(value,bool): return ui_text('forms.readable.text_2') if value else ui_text('forms.readable.text_3')
+    if isinstance(value,dict): return ui_text('forms.readable.text_4').join(ui_text('forms.readable.text_5').format(RESULT_LABELS.get(k,k), readable(v, k)) for k,v in value.items())
+    if isinstance(value,(list,tuple)): return ui_text('forms.readable.text_6').join(readable(v) for v in value) or ui_text('forms.readable.text_7')
     return display_value(value, key)
 
 
 class ResultTable(QTableWidget):
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.setObjectName('result_table'); self.setAccessibleName('研究與比較結果表')
+        self.setObjectName('result_table'); self.setAccessibleName(ui_text('forms.__init__.text_115'))
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setAlternatingRowColors(True)
@@ -621,45 +620,45 @@ class SummaryCard(QWidget):
         self.label.setObjectName('summary_card'); layout.addWidget(self.label)
 
     def set_values(self,values):
-        self.label.setText('\n'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v, k)}' for k,v in values.items()))
+        self.label.setText('\n'.join(ui_text('forms.set_values.text_1').format(RESULT_LABELS.get(k,k), readable(v, k)) for k,v in values.items()))
 
 
 # These adapters only present verified report fields. Raw records remain in the
 # host's existing advanced result_detail; no metric or report identity is changed.
 _REPORT_TEXT = {
-    'no closed lots': '尚無已平倉批次',
-    'no losing closed lots': '沒有虧損的已平倉批次，分母為零；不顯示無限大',
+    'no closed lots': ui_text('forms.labels.text_71'),
+    'no losing closed lots': ui_text('forms.labels.text_72'),
     'closed FIFO lot net PnL after allocated entry/exit costs; open lots excluded':
-        '採先進先出已平倉批次的完整淨損益，已分攤進出場費用；不含未平倉部位',
+        ui_text('forms.labels.text_73'),
     'missing or nonpositive daily equity; no observations discarded':
-        '每日權益缺漏、非有限值或不大於零；未略過任何觀測值',
+        ui_text('forms.labels.text_74'),
     'at least 2 daily returns required for sample standard deviation':
-        '至少需要 2 期有效報酬才能計算樣本標準差',
-    'zero daily-return sample variance': '報酬的樣本變異數為零',
+        ui_text('forms.labels.text_75'),
+    'zero daily-return sample variance': ui_text('forms.labels.text_76'),
     'between last supplied equity per exchange trading date; gaps may span multiple days':
-        '依各已提供交易日最後權益計算；間隔可能跨越多日',
-    'initial cash to first supplied trading-date equity': '初始資金至首個已提供交易日權益',
-    'supplied trading dates only; no imputation': '僅使用已提供交易日，不補值',
-    'sample (ddof=1)': '樣本標準差（自由度修正 1）',
+        ui_text('forms.labels.text_77'),
+    'initial cash to first supplied trading-date equity': ui_text('forms.labels.text_78'),
+    'supplied trading dates only; no imputation': ui_text('forms.labels.text_79'),
+    'sample (ddof=1)': ui_text('forms.labels.text_80'),
     'Descriptive only. Two returns is a mathematical minimum, not evidence of reliability; short samples do not establish strategy quality. The 252-period convention is assumed, not a validated annual trading calendar; gaps may span multiple days.':
-        '僅描述本次樣本。2 期只是數學最低需求，不能證明可靠性；短樣本不能證明策略品質。每年 252 期是假設，未驗證全年交易日曆；間隔可能跨越多日。',
+        ui_text('forms.labels.text_81'),
 }
 
 
 def _report_text(value):
-    if value is None: return '未提供'
-    return _REPORT_TEXT.get(value, '未辨識的說明，請查看進階診斷') if isinstance(value, str) else '未辨識的說明，請查看進階診斷'
+    if value is None: return ui_text('forms._report_text.text_1')
+    return _REPORT_TEXT.get(value, ui_text('forms._report_text.text_2')) if isinstance(value, str) else ui_text('forms._report_text.text_3')
 
 
 def _report_number(value, key=""):
-    if value is None: return '未提供'
+    if value is None: return ui_text('forms._report_number.text_1')
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
-        return '請查看進階診斷'
-    if len(str(value)) > 128: return '請查看進階診斷'
+        return ui_text('forms._report_number.text_2')
+    if len(str(value)) > 128: return ui_text('forms._report_number.text_3')
     try:
-        if not Decimal(str(value)).is_finite(): return '請查看進階診斷'
+        if not Decimal(str(value)).is_finite(): return ui_text('forms._report_number.text_4')
     except (InvalidOperation, ValueError):
-        return '請查看進階診斷'
+        return ui_text('forms._report_number.text_5')
     return display_number(value, key)
 
 
@@ -668,18 +667,18 @@ def backtest_summary_text(values):
     def metric(key):
         value = values.get(key)
         if value is None:
-            return '未定義' if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else '未提供'
+            return ui_text('forms.metric.text_1') if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else ui_text('forms.metric.text_2')
         return _report_number(value, key)
     def fields(*keys):
-        return '　｜　'.join(f'{RESULT_LABELS[key]}：{metric(key)}' for key in keys)
+        return ui_text('forms.fields.text_1').join(ui_text('forms.fields.text_2').format(RESULT_LABELS[key], metric(key)) for key in keys)
     def reason(key, metric_key):
         value = values.get(key)
         metric_value = values.get(metric_key)
-        if metric_value is not None and _report_number(metric_value) == '請查看進階診斷':
-            text = '指標值無法辨識，請查看進階診斷'
+        if metric_value is not None and _report_number(metric_value) == ui_text('forms.reason.text_1'):
+            text = ui_text('forms.reason.text_2')
         else:
-            text = '不適用（已定義）' if value is None and metric_value is not None else _report_text(value)
-        return f'{RESULT_LABELS[key]}：{text}'
+            text = ui_text('forms.reason.text_3') if value is None and metric_value is not None else _report_text(value)
+        return ui_text('forms.reason.text_4').format(RESULT_LABELS[key], text)
     lines = [
         fields('net_pnl', 'return'), fields('initial_cash', 'final_equity'),
         fields('max_drawdown', 'max_drawdown_pct'), fields('total_costs', 'slippage_cost'),
@@ -687,7 +686,7 @@ def backtest_summary_text(values):
         fields('fill_count', 'closed_lots', 'open_position'),
         fields('trade_count', 'win_rate'), reason('win_rate_reason', 'win_rate'),
         '', fields('profit_factor'), reason('profit_factor_reason', 'profit_factor'),
-        '獲利因子計算基礎：' + _report_text(values.get('profit_factor_basis')),
+        ui_text('forms.backtest_summary_text.text_1').format(_report_text(values.get('profit_factor_basis'))),
         '', fields('sharpe'), reason('sharpe_reason', 'sharpe'),
         fields('sharpe_observations', 'sharpe_sample_count'),
     ]
@@ -695,13 +694,12 @@ def backtest_summary_text(values):
     if isinstance(assumptions, dict):
         for keys in (('periods_per_year', 'annual_risk_free_rate', 'minimum_observations'),
                      ('return_frequency',), ('first_return',), ('missing_dates', 'standard_deviation')):
-            lines.append('　｜　'.join(RESULT_LABELS[key] + '：' +
-                (_report_number(assumptions.get(key), key) if key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
+            lines.append(ui_text('forms.backtest_summary_text.text_2').join(ui_text('forms.backtest_summary_text.text_3').format(RESULT_LABELS[key], _report_number(assumptions.get(key), key) if key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
                  else _report_text(assumptions.get(key))) for key in keys))
     else:
-        lines.append('年化假設：未提供，請查看進階診斷')
-    lines.extend(('夏普值限制：' + _report_text(values.get('sharpe_note')),
-                  '逐日報酬、未平倉批次、結算／轉倉紀錄及完整識別碼，請展開本頁進階診斷。'))
+        lines.append(ui_text('forms.backtest_summary_text.text_4'))
+    lines.extend((ui_text('forms.backtest_summary_text.text_5').format(_report_text(values.get('sharpe_note'))),
+                  ui_text('forms.backtest_summary_text.text_6')))
     return '\n'.join(lines)
 
 
@@ -712,19 +710,19 @@ class BacktestSummaryCard(SummaryCard):
 
 
 _FILL_REASONS = {
-    'target_open': '目標部位進場', 'target_close': '目標部位平倉',
-    'gap_stop': '跳空觸及停損', 'gap_target': '跳空觸及停利',
-    'stop': '觸及停損', 'target': '觸及停利',
-    'maintenance_liquidation': '維持保證金不足平倉',
-    'roll_close': '轉倉平舊約', 'roll_open': '轉倉開新約',
-    'final_settlement': '到期結算',
+    'target_open': ui_text('forms.labels.text_82'), 'target_close': ui_text('forms.labels.text_83'),
+    'gap_stop': ui_text('forms.labels.text_84'), 'gap_target': ui_text('forms.labels.text_85'),
+    'stop': ui_text('forms.labels.text_86'), 'target': ui_text('forms.labels.text_87'),
+    'maintenance_liquidation': ui_text('forms.labels.text_88'),
+    'roll_close': ui_text('forms.labels.text_89'), 'roll_open': ui_text('forms.labels.text_90'),
+    'final_settlement': ui_text('forms.labels.text_91'),
 }
 
 
 class BacktestFillsTable(ResultTable):
     """Readable fills first; exact IDs remain in cell tooltips and diagnostics."""
     _columns = ('timestamp', 'contract_id', 'side', 'quantity', 'price', 'commission', 'tax', 'reason')
-    _labels = ('成交時間（UTC）', '實際合約', '方向', '數量（口）', '價格（點）', '手續費（TWD）', '交易稅（TWD）', '成交原因')
+    _labels = (ui_text('forms.labels.text_92'), ui_text('forms.labels.text_93'), ui_text('forms.labels.text_94'), ui_text('forms.labels.text_95'), ui_text('forms.labels.text_96'), ui_text('forms.labels.text_97'), ui_text('forms.labels.text_98'), ui_text('forms.labels.text_99'))
 
     def set_rows(self, rows, columns=None):
         from datetime import datetime, timezone
@@ -732,24 +730,24 @@ class BacktestFillsTable(ResultTable):
         for row in rows:
             shown = {key: row.get(key) for key in self._columns}
             side, reason = row.get('side'), row.get('reason')
-            shown['side'] = display_value(side, 'side') if side in ('buy', 'sell') else '未知，請核對進階診斷'
-            shown['reason'] = (_FILL_REASONS.get(reason, '其他，請核對進階診斷') if isinstance(reason, str) and reason
-                               else '未提供' if reason is None or reason == '' else '其他，請核對進階診斷')
+            shown['side'] = display_value(side, 'side') if side in ('buy', 'sell') else ui_text('forms.set_rows.text_1')
+            shown['reason'] = (_FILL_REASONS.get(reason, ui_text('forms.set_rows.text_2')) if isinstance(reason, str) and reason
+                               else ui_text('forms.set_rows.text_3') if reason is None or reason == '' else ui_text('forms.set_rows.text_4'))
             timestamp = row.get('timestamp')
             try:
                 parsed = timestamp if isinstance(timestamp, datetime) else datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                 if parsed.tzinfo is None: raise ValueError('timezone required')
                 shown['timestamp'] = parsed.astimezone(timezone.utc).isoformat(sep=' ', timespec='seconds').removesuffix('+00:00')
             except (ValueError, TypeError, AttributeError):
-                shown['timestamp'] = '時間未提供，請核對進階診斷'
+                shown['timestamp'] = ui_text('forms.set_rows.text_5')
             display.append(shown)
         super().set_rows(display, self._columns)
         self.setHorizontalHeaderLabels(self._labels)
         for index, row in enumerate(rows):
-            detail = '成交識別碼：' + str(row.get('fill_id', '未提供')) + '\n委託識別碼：' + str(row.get('order_id', '未提供'))
+            detail = ui_text('forms.set_rows.text_8').format(str(row.get('fill_id', ui_text('forms.set_rows.text_6'))), str(row.get('order_id', ui_text('forms.set_rows.text_7'))))
             for column in range(self.columnCount()):
                 item = self.item(index, column)
-                item.setToolTip(str(row.get(self._columns[column], '未提供')) + '\n' + detail)
+                item.setToolTip(str(row.get(self._columns[column], ui_text('forms.set_rows.text_9'))) + '\n' + detail)
         self.resizeColumnsToContents()
         for column in range(self.columnCount()): self.setColumnWidth(column, min(self.columnWidth(column), 340))
 
@@ -760,56 +758,56 @@ _CANDIDATE_EVALUATION_LABELS = STATUS_LABELS
 def candidate_summary_text(values):
     """Bounded view of saved split records; never recalculate qualification."""
     def eligibility(value):
-        return '通過' if value is True else '未通過' if value is False else '未提供'
+        return ui_text('forms.eligibility.text_1') if value is True else ui_text('forms.eligibility.text_2') if value is False else ui_text('forms.eligibility.text_3')
     def metric(metrics, key):
         value = metrics.get(key)
         if value is None:
-            return '未定義' if key in metrics and key in ('profit_factor', 'sharpe') else '未提供'
+            return ui_text('forms.metric.text_3') if key in metrics and key in ('profit_factor', 'sharpe') else ui_text('forms.metric.text_4')
         return _report_number(value, key)
     def reason(metrics, key):
         value, explanation = metrics.get(key), metrics.get(key+'_reason')
-        if value is not None and _report_number(value) == '請查看進階診斷':
-            return '指標值無法辨識，請查看進階診斷'
-        return '不適用（已定義）' if explanation is None and value is not None else _report_text(explanation)
-    name = values.get('策略')
-    if not isinstance(name, str): name = '未提供'
-    elif re.fullmatch('[0-9a-fA-F]{64}', name): name = '識別碼 ' + name[:12] + '（完整名稱見進階診斷）'
-    else: name = ' '.join(name.split())[:80] + ('…（完整名稱見進階診斷）' if len(name) > 80 else '')
-    lines = ['候選策略：' + name,
-             '已保存研究的紙上門檻：' + eligibility(values.get('紙上資格')),
-             '資格僅供研究／紙上；合成資料與固定生成器結果不代表投資或真實模型績效驗證。']
-    evaluations = values.get('樣本外與保留集')
+        if value is not None and _report_number(value) == ui_text('forms.reason.text_5'):
+            return ui_text('forms.reason.text_6')
+        return ui_text('forms.reason.text_7') if explanation is None and value is not None else _report_text(explanation)
+    name = values.get(ui_text('forms.candidate_summary_text.text_1'))
+    if not isinstance(name, str): name = ui_text('forms.candidate_summary_text.text_2')
+    elif re.fullmatch('[0-9a-fA-F]{64}', name): name = ui_text('forms.candidate_summary_text.text_3').format(name[:12])
+    else: name = ' '.join(name.split())[:80] + (ui_text('forms.candidate_summary_text.text_4') if len(name) > 80 else '')
+    lines = [ui_text('forms.candidate_summary_text.text_5').format(name),
+             ui_text('forms.candidate_summary_text.text_7').format(eligibility(values.get(ui_text('forms.candidate_summary_text.text_6')))),
+             ui_text('forms.candidate_summary_text.text_8')]
+    evaluations = values.get(ui_text('forms.candidate_summary_text.text_9'))
     evaluations = evaluations if isinstance(evaluations, dict) else {}
-    for split, title in (('oos', '樣本外 OOS'), ('holdout', '最終保留集')):
+    for split, title in (('oos', ui_text('forms.candidate_summary_text.text_10')), ('holdout', ui_text('forms.candidate_summary_text.text_11'))):
         saved = evaluations.get(split); saved = saved if isinstance(saved, dict) else {}
         row = saved.get('evaluation'); row = row if isinstance(row, dict) else {}
         state = row.get('status')
-        status = ('尚無已保存評估' if not row else '未提供' if state is None else
-                  _CANDIDATE_EVALUATION_LABELS.get(state, '未知狀態，請查看進階診斷') if isinstance(state, str) else
-                  '未知狀態，請查看進階診斷')
+        status = (ui_text('forms.candidate_summary_text.text_12') if not row else ui_text('forms.candidate_summary_text.text_13') if state is None else
+                  _CANDIDATE_EVALUATION_LABELS.get(state, ui_text('forms.candidate_summary_text.text_14')) if isinstance(state, str) else
+                  ui_text('forms.candidate_summary_text.text_15'))
         metrics = row.get('metrics'); metrics = metrics if isinstance(metrics, dict) else {}
         headline = ['net_pnl'] + (['max_drawdown'] if 'max_drawdown' in metrics else []) + ['max_drawdown_pct']
         headline.append('closed_trades' if 'trade_count' not in metrics and 'closed_trades' in metrics else 'trade_count')
-        lines.extend(('', f'{title}｜狀態：{status}｜門檻檢查：{eligibility(saved.get("qualified"))}',
-                      '　｜　'.join(RESULT_LABELS[key]+'：'+metric(metrics,key) for key in headline)))
+        lines.extend(('', ui_text('forms.candidate_summary_text.text_16').format(title, status, eligibility(saved.get("qualified"))),
+                      ui_text('forms.candidate_summary_text.text_17').join(ui_text('forms.candidate_summary_text.text_18').format(RESULT_LABELS[key], metric(metrics,key)) for key in headline)))
         for key in ('profit_factor', 'sharpe'):
-            lines.append(RESULT_LABELS[key]+'：'+metric(metrics,key))
+            lines.append(ui_text('forms.candidate_summary_text.text_19').format(RESULT_LABELS[key], metric(metrics,key)))
             if key in metrics or key+'_reason' in metrics:
-                lines.append(RESULT_LABELS[key+'_reason']+'：'+reason(metrics,key))
+                lines.append(ui_text('forms.candidate_summary_text.text_20').format(RESULT_LABELS[key+'_reason'], reason(metrics,key)))
             if key == 'profit_factor' and key in metrics:
-                lines.append('獲利因子計算基礎：'+_report_text(metrics.get('profit_factor_basis')))
+                lines.append(ui_text('forms.candidate_summary_text.text_21').format(_report_text(metrics.get('profit_factor_basis'))))
         if 'sharpe' in metrics:
-            lines.append('　｜　'.join(RESULT_LABELS[key]+'：'+_report_number(metrics.get(key))
+            lines.append(ui_text('forms.candidate_summary_text.text_22').join(ui_text('forms.candidate_summary_text.text_23').format(RESULT_LABELS[key], _report_number(metrics.get(key)))
                                     for key in ('sharpe_observations','sharpe_sample_count')))
             assumptions = metrics.get('annualization')
             if isinstance(assumptions, dict):
-                lines.append('　｜　'.join(RESULT_LABELS[key]+'：'+_report_number(assumptions.get(key), key)
+                lines.append(ui_text('forms.candidate_summary_text.text_24').join(ui_text('forms.candidate_summary_text.text_25').format(RESULT_LABELS[key], _report_number(assumptions.get(key), key))
                                         for key in ('periods_per_year','annual_risk_free_rate','minimum_observations')))
-                lines.append('；'.join(RESULT_LABELS[key]+'：'+_report_text(assumptions.get(key))
+                lines.append(ui_text('forms.candidate_summary_text.text_26').join(ui_text('forms.candidate_summary_text.text_27').format(RESULT_LABELS[key], _report_text(assumptions.get(key)))
                                       for key in ('return_frequency','first_return','missing_dates','standard_deviation')))
-            else: lines.append('年化假設：未提供，請查看進階診斷')
-            lines.append('夏普值限制：'+_report_text(metrics.get('sharpe_note')))
-    lines.append('\n完整評估、來源、設定、警告與識別碼，請展開本頁進階診斷；此處不補算缺少的指標。')
+            else: lines.append(ui_text('forms.candidate_summary_text.text_28'))
+            lines.append(ui_text('forms.candidate_summary_text.text_29').format(_report_text(metrics.get('sharpe_note'))))
+    lines.append(ui_text('forms.candidate_summary_text.text_30'))
     return '\n'.join(lines)
 
 

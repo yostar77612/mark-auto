@@ -3,6 +3,7 @@
 No provider calls, paper qualification/selection or final-holdout evaluation.
 Preview is read-only; a run revalidates every source/config binding before scoring.
 """
+from desktop_strings import ui_text
 from pathlib import Path
 import json
 import re
@@ -196,126 +197,123 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
     raise ValidationError('Unsupported walk-forward operation')
 
 
-FAMILY_NAMES = {'trend': '均線趨勢', 'mean_reversion': '均值回歸', 'channel_breakout': '通道突破',
-                'momentum': '動能', 'volatility_compression': '波動壓縮'}
-PARAMETER_NAMES = {'fast': '快速均線根數', 'slow': '慢速均線根數', 'lookback': '回看根數',
-    'entry_bps': '進場偏離基點', 'threshold_bps': '動能門檻基點', 'max_holding_bars': '最長持有根數',
-    'max_range_bps': '最大區間基點', 'quantity': '口數', 'stop_ticks': '停損點數', 'target_ticks': '停利點數'}
+FAMILY_NAMES = {'trend': ui_text('walk_forward.labels.text_1'), 'mean_reversion': ui_text('walk_forward.labels.text_2'), 'channel_breakout': ui_text('walk_forward.labels.text_3'),
+                'momentum': ui_text('walk_forward.labels.text_4'), 'volatility_compression': ui_text('walk_forward.labels.text_5')}
+PARAMETER_NAMES = {'fast': ui_text('walk_forward.labels.text_6'), 'slow': ui_text('walk_forward.labels.text_7'), 'lookback': ui_text('walk_forward.labels.text_8'),
+    'entry_bps': ui_text('walk_forward.labels.text_9'), 'threshold_bps': ui_text('walk_forward.labels.text_10'), 'max_holding_bars': ui_text('walk_forward.labels.text_11'),
+    'max_range_bps': ui_text('walk_forward.labels.text_12'), 'quantity': ui_text('walk_forward.labels.text_13'), 'stop_ticks': ui_text('walk_forward.labels.text_14'), 'target_ticks': ui_text('walk_forward.labels.text_15')}
 
 
 ADMISSION_REASONS = {
-    'source_duplicate_structure': '來源候選包含重複策略結構；整個候選池拒絕，不會靜默刪除或替換',
-    'source_not_completed': '來源研究尚未正常完成（執行中或已中斷）',
-    'source_producer_unsupported': '來源產生程式版本或必要來源雜湊尚未獲支援',
-    'source_dataset_mismatch': '所選資料與原始研究的完整資料身分或切分不一致',
-    'source_temporal_overlap': '原始資料的最晚事件結束時間未嚴格早於本次首折訓練',
-    'source_journal_mismatch': '來源交易紀錄與匯出內容不一致',
-    'source_invalid_evidence': '來源檔案、雜湊、結構或評估證據無法核對',
-    'source_candidate_limit': '來源候選數量超過 15 個或單一家族超過 3 個',
-    'source_no_evaluated_candidates': '來源研究沒有已完成有效評估的候選，不能建立固定池',
-    'source_missing_evidence': '找不到或無法讀取明確選取的來源檔案',
-    'source_provider_unsupported': '來源研究的模型供應商紀錄格式尚未獲支援',
-    'source_manual_exchange_missing': '手動 AI 研究缺少已封存的交換套件與程式來源證據，無法安全核對',
-    'source_provider_receipt_invalid': '來源模型的請求或回應憑證與已用嘗試不一致，拒絕載入',
-    'source_provider_provenance_invalid': '來源模型程式版本、相依元件或描述紀錄無法通過核對',
-    'source_provider_decimal_context_unsupported': '來源設定非零單價，但未保存可重現費用的小數計算環境；無法精確核對舊費用，拒絕載入',
-    'source_resource_limit': '來源檔案、資料數量或數字超過核對上限',
-    'source_registry_mismatch': '來源研究的不可逆登錄位置與目前共用登錄不一致，或缺少可核對的已消耗紀錄；拒絕開始，不會切換或重建登錄',
+    'source_duplicate_structure': ui_text('walk_forward.labels.text_16'),
+    'source_not_completed': ui_text('walk_forward.labels.text_17'),
+    'source_producer_unsupported': ui_text('walk_forward.labels.text_18'),
+    'source_dataset_mismatch': ui_text('walk_forward.labels.text_19'),
+    'source_temporal_overlap': ui_text('walk_forward.labels.text_20'),
+    'source_journal_mismatch': ui_text('walk_forward.labels.text_21'),
+    'source_invalid_evidence': ui_text('walk_forward.labels.text_22'),
+    'source_candidate_limit': ui_text('walk_forward.labels.text_23'),
+    'source_no_evaluated_candidates': ui_text('walk_forward.labels.text_24'),
+    'source_missing_evidence': ui_text('walk_forward.labels.text_25'),
+    'source_provider_unsupported': ui_text('walk_forward.labels.text_26'),
+    'source_manual_exchange_missing': ui_text('walk_forward.labels.text_27'),
+    'source_provider_receipt_invalid': ui_text('walk_forward.labels.text_28'),
+    'source_provider_provenance_invalid': ui_text('walk_forward.labels.text_29'),
+    'source_provider_decimal_context_unsupported': ui_text('walk_forward.labels.text_30'),
+    'source_resource_limit': ui_text('walk_forward.labels.text_31'),
+    'source_registry_mismatch': ui_text('walk_forward.labels.text_32'),
 }
 
 
 STATUS_LABELS = {
-    'running': '執行中', 'training': '訓練中', 'selection_frozen': '贏家已鎖定',
-    'running_or_interrupted_no_stop_proof': '執行中或已中斷，尚未確認停止',
-    'completed': '已完成', 'completed_with_errors': '已完成，部分評估失敗',
-    'evaluated': '已評估', 'not_evaluated': '未評估', 'failed': '評估失敗',
-    'evaluation_failed': '評估失敗', 'timed_out': '已逾時', 'interrupted': '已中斷',
-    'cancelled': '已取消', 'budget_exhausted': '評估額度或時間已用盡',
-    'blocked_interrupted': '已中斷並封鎖重試', 'blocked_registry_busy': '共用登錄忙碌，已停止',
-    'blocked_previously_consumed_range': '資料範圍先前已消耗，禁止評估',
-    'no_eligible_candidate': '沒有通過全部門檻的候選', 'stopped_before_journal': '已在建立紀錄前停止',
-    'not_verified': '尚未驗證', 'unverified': '尚未驗證',
-    'synthetic_not_market_evidence': '合成資料，非市場證據',
-    'synthetic_validation': '僅合成驗證', 'historical_replay': '歷史重播，資料暴露未驗證',
+    'running': ui_text('walk_forward.labels.text_33'), 'training': ui_text('walk_forward.labels.text_34'), 'selection_frozen': ui_text('walk_forward.labels.text_35'),
+    'running_or_interrupted_no_stop_proof': ui_text('walk_forward.labels.text_36'),
+    'completed': ui_text('walk_forward.labels.text_37'), 'completed_with_errors': ui_text('walk_forward.labels.text_38'),
+    'evaluated': ui_text('walk_forward.labels.text_39'), 'not_evaluated': ui_text('walk_forward.labels.text_40'), 'failed': ui_text('walk_forward.labels.text_41'),
+    'evaluation_failed': ui_text('walk_forward.labels.text_42'), 'timed_out': ui_text('walk_forward.labels.text_43'), 'interrupted': ui_text('walk_forward.labels.text_44'),
+    'cancelled': ui_text('walk_forward.labels.text_45'), 'budget_exhausted': ui_text('walk_forward.labels.text_46'),
+    'blocked_interrupted': ui_text('walk_forward.labels.text_47'), 'blocked_registry_busy': ui_text('walk_forward.labels.text_48'),
+    'blocked_previously_consumed_range': ui_text('walk_forward.labels.text_49'),
+    'no_eligible_candidate': ui_text('walk_forward.labels.text_50'), 'stopped_before_journal': ui_text('walk_forward.labels.text_51'),
+    'not_verified': ui_text('walk_forward.labels.text_52'), 'unverified': ui_text('walk_forward.labels.text_53'),
+    'synthetic_not_market_evidence': ui_text('walk_forward.labels.text_54'),
+    'synthetic_validation': ui_text('walk_forward.labels.text_55'), 'historical_replay': ui_text('walk_forward.labels.text_56'),
 }
 
 
 def status_label(value):
     """Display translation only; exact machine values stay in saved evidence."""
-    return STATUS_LABELS.get(value, '尚無可確認紀錄，詳見進階')
+    return STATUS_LABELS.get(value, ui_text('walk_forward.status_label.text_1'))
 
 
 def preview_text(preview, *, advanced=False):
     """Plain-language review by default; exact raw bindings are opt-in details."""
     p = preview
     if advanced:
-        return '完整來源證據與設定（唯讀；原始模型狀態不會升級）\n' + json.dumps(json.loads(canonical_json(p)), ensure_ascii=False, indent=2)
+        return ui_text('walk_forward.preview_text.text_1').format(json.dumps(json.loads(canonical_json(p)), ensure_ascii=False, indent=2))
     if p.get('admission_status') == 'rejected':
         if p.get('reason_code') == 'evaluation_budget_exceeds_pool_bound':
-            return ('候選池已核對，評估額度需要您調整後重新預覽。\n'
-                f"{p['fold_count']} 折 ×（2 × {p['candidate_count']} 個候選 + 1）= 最多 {p['planned_evaluations_upper_bound']} 次。\n"
-                f"您填入 {p['evaluation_limit']} 次；請自行改為 1–{p['planned_evaluations_upper_bound']} 次，不會自動調整。\n"
-                '沒有模型呼叫，沒有保留或消耗新範圍。')
-        reason = ADMISSION_REASONS.get(p.get('reason_code'), '來源資料、結構或評估證據無法通過核對')
-        return '來源研究未通過候選池准入：' + reason + '。\n沒有模型呼叫，沒有保留或消耗新範圍。'
+            return (ui_text('walk_forward.preview_text.text_2').format(p['fold_count'], p['candidate_count'], p['planned_evaluations_upper_bound'], p['evaluation_limit'], p['planned_evaluations_upper_bound']))
+        reason = ADMISSION_REASONS.get(p.get('reason_code'), ui_text('walk_forward.preview_text.text_3'))
+        return ui_text('walk_forward.preview_text.text_4').format(reason)
     saved = p.get('pool_origin', 'exact_builtin_pool') == 'saved_campaign_pool'
     evidence = status_label(p['evidence_mode'])
-    mode = '固定寬度' if p['plan']['mode'] == 'rolling' else '固定起點'
-    lines = [f"{mode}訓練窗口 · {evidence} · {p['bar_count']} 根資料",
-        ('已保存研究固定候選池' if saved else '五個精確內建規格') + f"：{len(p['candidate_pool'])} 個候選。",
-        '重要：開始前即一次不可逆消耗全部計畫前推範圍；取消不退還，失敗／中斷不重試。',
-        '最終保留集排除，未評估。非獨立 OOS、不可正式排名、無紙上資格；模型呼叫 0。',
-        f"評估額度：您設定 {p['evaluation_limit']} 次；{len(p['folds'])} 折 ×（2 × {len(p['candidate_pool'])} 個候選 + 1）= 完整計畫至多 {p['planned_evaluations_upper_bound']} 次。",
-        f"全實驗總秒數 {p['runtime_seconds']}；失敗／逾時／中斷也消耗額度。",
+    mode = ui_text('walk_forward.preview_text.text_5') if p['plan']['mode'] == 'rolling' else ui_text('walk_forward.preview_text.text_6')
+    lines = [ui_text('walk_forward.preview_text.text_7').format(mode, evidence, p['bar_count']),
+        (ui_text('walk_forward.preview_text.text_8') if saved else ui_text('walk_forward.preview_text.text_9')) + ui_text('walk_forward.preview_text.text_10').format(len(p['candidate_pool'])),
+        ui_text('walk_forward.preview_text.text_11'),
+        ui_text('walk_forward.preview_text.text_12'),
+        ui_text('walk_forward.preview_text.text_13').format(p['evaluation_limit'], len(p['folds']), len(p['candidate_pool']), p['planned_evaluations_upper_bound']),
+        ui_text('walk_forward.preview_text.text_14').format(p['runtime_seconds']),
     ]
     if saved:
         provider = p['pool_admission'].get('provider_mode')
-        label = {'fixture': '固定示範產生器', 'openai_compatible': '相容模型供應商', 'chatgpt_plan': 'ChatGPT 訂閱來源'}.get(provider, '已保存來源')
-        lines.insert(2, '來源生成方式：' + label + '；來源模型狀態：' + status_label(p['pool_admission']['real_model_status']))
-    lines.append('\n精確時序範圍：[起點, 終點)，UTC／明示時區')
+        label = {'fixture': ui_text('walk_forward.preview_text.text_15'), 'openai_compatible': ui_text('walk_forward.preview_text.text_16'), 'chatgpt_plan': ui_text('walk_forward.preview_text.text_17')}.get(provider, ui_text('walk_forward.preview_text.text_18'))
+        lines.insert(2, ui_text('walk_forward.preview_text.text_19').format(label, status_label(p['pool_admission']['real_model_status'])))
+    lines.append(ui_text('walk_forward.preview_text.text_20'))
     for fold in p['folds']:
-        lines.append('第 ' + str(fold['index'] + 1) + ' 折')
-        for role, label in (('train', '訓練'), ('validation', '驗證'), ('oos', '前推 OOS')):
+        lines.append(ui_text('walk_forward.preview_text.text_21').format(str(fold['index'] + 1)))
+        for role, label in (('train', ui_text('walk_forward.preview_text.text_22')), ('validation', ui_text('walk_forward.preview_text.text_23')), ('oos', ui_text('walk_forward.preview_text.text_24'))):
             bounds = fold[role]
             lines.append(f"  {label}: [{bounds['start']}, {bounds['end']}) · {bounds['start_time']} → {bounds['end_time']}")
     b = p['final_holdout']
-    lines.append(f"最終保留集 [{b['start']}, {b['end']}) · {b['start_time']} → {b['end_time']}：排除，未評估。")
+    lines.append(ui_text('walk_forward.preview_text.text_25').format(b['start'], b['end'], b['start_time'], b['end_time']))
     lines.extend([
-        '歷史資料可能曾被模型或人接觸；時間早於本次訓練不代表未見資料。',
-        '驗證門檻：淨損益 ≥ ' + str(p['ranking']['minimum']) + ' TWD；已平倉 lot ≥ ' + str(p['ranking']['min_trades']) + '；最大回撤比例 ≤ ' + str(p['ranking']['max_drawdown_pct']) + '（0.10 = 10%）。',
-        '訓練僅描述；驗證通過全部門檻後，依淨損益選一個贏家；同分按固定池順序。',
-        '每個切分獨立暖機、空倉起始。既有已消耗範圍仍封鎖；開始時由共用登錄原子核對。'
+        ui_text('walk_forward.preview_text.text_26'),
+        ui_text('walk_forward.preview_text.text_27').format(str(p['ranking']['minimum']), str(p['ranking']['min_trades']), str(p['ranking']['max_drawdown_pct'])),
+        ui_text('walk_forward.preview_text.text_28'),
+        ui_text('walk_forward.preview_text.text_29')
     ])
     if saved:
         admission = p['pool_admission']
-        lines.extend(['來源模型狀態：' + status_label(admission['real_model_status']),
-            '核對只證明本機來源紀錄一致，不代表真實模型推論或獲利已驗證。來源舊分數不參與本次排名。'])
-        lines.append('\n全部來源嘗試（保留原順序）')
+        lines.extend([ui_text('walk_forward.preview_text.text_30').format(status_label(admission['real_model_status'])),
+            ui_text('walk_forward.preview_text.text_31')])
+        lines.append(ui_text('walk_forward.preview_text.text_32'))
         for attempt in admission['attempts']:
             status = attempt['source_status']
-            reason = '已評估並通過結構核對，納入固定池' if attempt['admitted'] else ({
-                'rejected': '原研究未通過結構驗證，不納入',
-                'generated': '原研究尚未評估，不納入',
-                'validated': '原研究尚未完成評估，不納入',
-                'failed': '原研究評估失敗，不納入',
-                'error': '原研究評估失敗，不納入',
-                'timed_out': '原研究評估逾時，不納入'}.get(status, '原研究未完成有效評估，不納入'))
+            reason = ui_text('walk_forward.preview_text.text_33') if attempt['admitted'] else ({
+                'rejected': ui_text('walk_forward.preview_text.text_34'),
+                'generated': ui_text('walk_forward.preview_text.text_35'),
+                'validated': ui_text('walk_forward.preview_text.text_36'),
+                'failed': ui_text('walk_forward.preview_text.text_37'),
+                'error': ui_text('walk_forward.preview_text.text_38'),
+                'timed_out': ui_text('walk_forward.preview_text.text_39')}.get(status, ui_text('walk_forward.preview_text.text_40')))
             if attempt['reason'] == 'source_duplicate_rejected':
-                reason = '與先前候選結構重複，原研究已拒絕且未重測；保留已用嘗試，不納入'
-            lines.append(f"  第 {attempt['sequence']} 次 · {FAMILY_NAMES.get(attempt['family'], attempt['family'])}：{reason}")
-    lines.append('\n固定候選（依來源順序）')
+                reason = ui_text('walk_forward.preview_text.text_41')
+            lines.append(ui_text('walk_forward.preview_text.text_42').format(attempt['sequence'], FAMILY_NAMES.get(attempt['family'], attempt['family']), reason))
+    lines.append(ui_text('walk_forward.preview_text.text_43'))
     for index, spec in enumerate(p['candidate_pool'], 1):
-        params = '；'.join(PARAMETER_NAMES.get(k, k) + ' ' + str(v) for k, v in spec['parameters'].items())
+        params = ui_text('walk_forward.preview_text.text_44').join(PARAMETER_NAMES.get(k, k) + ' ' + str(v) for k, v in spec['parameters'].items())
         lines.append(f"{index}. {FAMILY_NAMES.get(spec['family'], spec['family'])} · {params}")
     config = p['plan']['backtest_config']; costs = config['costs']
-    labels = {'commission_per_side': '單邊手續費', 'slippage_ticks': '滑價跳數', 'tax_rate': '交易稅率'}
-    lines.append('\n明示費用：' + '；'.join(labels[k] + ' ' + str(costs[k]) for k in labels))
-    lines.append('初始資金 ' + str(config['initial_cash']) + ' TWD；最大部位 ' + str(config['max_position']) + ' 口。')
-    margins = [('原始保證金', config['initial_margin_per_contract']), ('維持保證金', config['maintenance_margin_per_contract'])]
-    lines.append('每口' + '；'.join(label + '：' + (str(value) + ' TWD' if value is not None else '未設定') for label, value in margins) + '。')
+    labels = {'commission_per_side': ui_text('walk_forward.preview_text.text_45'), 'slippage_ticks': ui_text('walk_forward.preview_text.text_46'), 'tax_rate': ui_text('walk_forward.preview_text.text_47')}
+    lines.append(ui_text('walk_forward.preview_text.text_49').format(ui_text('walk_forward.preview_text.text_48').join(labels[k] + ' ' + str(costs[k]) for k in labels)))
+    lines.append(ui_text('walk_forward.preview_text.text_50').format(str(config['initial_cash']), str(config['max_position'])))
+    margins = [(ui_text('walk_forward.preview_text.text_51'), config['initial_margin_per_contract']), (ui_text('walk_forward.preview_text.text_52'), config['maintenance_margin_per_contract'])]
+    lines.append(ui_text('walk_forward.preview_text.text_56').format(ui_text('walk_forward.preview_text.text_53').join(ui_text('walk_forward.preview_text.text_55').format(label, str(value) + ' TWD' if value is not None else ui_text('walk_forward.preview_text.text_54')) for label, value in margins)))
     if config['cost_schedule'] or config['margin_schedule']:
-        lines.append(f"另有 {len(config['cost_schedule'])} 筆費率及 {len(config['margin_schedule'])} 筆保證金異動，請展開進階核對各生效日期。")
-    lines.append('完整來源證據、雜湊、登錄路徑及其餘政策設定可展開「進階」核對。')
+        lines.append(ui_text('walk_forward.preview_text.text_57').format(len(config['cost_schedule']), len(config['margin_schedule'])))
+    lines.append(ui_text('walk_forward.preview_text.text_58'))
     return '\n'.join(lines)
 
 
@@ -323,20 +321,20 @@ def result_rows(result):
     rows = []
     for fold in result.get('folds', []):
         for candidate in fold['candidates']:
-            winner = ('第 ' + str(fold['winner_pool_index'] + 1) + ' 個') if fold.get('winner_pool_index') is not None else ('已選定，詳見進階' if fold['winner'] else '無')
-            row = {'折次': fold['index'] + 1, '狀態': status_label(fold['status']), '贏家': winner,
-                   '候選序號': candidate['pool_index'] + 1, '候選': FAMILY_NAMES.get(candidate.get('family'), '已保存候選')}
-            for role, label in (('train', '訓練'), ('validation', '驗證')):
-                score = candidate[role]; row[label + '狀態'] = status_label(score['status'])
-                for key, caption in (('net_pnl', '淨損益 TWD'), ('trade_count', '已平倉 lot'), ('max_drawdown_pct', '最大回撤比例')):
+            winner = (ui_text('walk_forward.result_rows.text_1').format(str(fold['winner_pool_index'] + 1))) if fold.get('winner_pool_index') is not None else (ui_text('walk_forward.result_rows.text_2') if fold['winner'] else ui_text('walk_forward.result_rows.text_3'))
+            row = {ui_text('walk_forward.result_rows.text_4'): fold['index'] + 1, ui_text('walk_forward.result_rows.text_5'): status_label(fold['status']), ui_text('walk_forward.result_rows.text_6'): winner,
+                   ui_text('walk_forward.result_rows.text_7'): candidate['pool_index'] + 1, ui_text('walk_forward.result_rows.text_8'): FAMILY_NAMES.get(candidate.get('family'), ui_text('walk_forward.result_rows.text_9'))}
+            for role, label in (('train', ui_text('walk_forward.result_rows.text_10')), ('validation', ui_text('walk_forward.result_rows.text_11'))):
+                score = candidate[role]; row[ui_text('walk_forward.result_rows.text_12').format(label)] = status_label(score['status'])
+                for key, caption in (('net_pnl', ui_text('walk_forward.result_rows.text_13')), ('trade_count', ui_text('walk_forward.result_rows.text_14')), ('max_drawdown_pct', ui_text('walk_forward.result_rows.text_15'))):
                     row[label + caption] = score['metrics'].get(key)
             if candidate.get('strategy_hash') is not None and candidate['strategy_hash'] == fold.get('winner_hash'):
-                row['前推狀態'] = status_label(fold['oos']['status'])
-                names = {'net_pnl': '淨損益 TWD', 'trade_count': '已平倉 lot', 'max_drawdown_pct': '最大回撤比例',
-                    'max_drawdown': '最大回撤 TWD', 'total_costs': '總費用 TWD', 'realized_gross_pnl': '已實現毛損益 TWD',
-                    'unrealized_pnl': '未實現損益 TWD', 'return': '報酬率（比例）', 'open_position': '未平倉口數'}
-                for key, value in fold['oos']['metrics'].items(): row['前推 ' + names[key]] = value
+                row[ui_text('walk_forward.result_rows.text_16')] = status_label(fold['oos']['status'])
+                names = {'net_pnl': ui_text('walk_forward.result_rows.text_17'), 'trade_count': ui_text('walk_forward.result_rows.text_18'), 'max_drawdown_pct': ui_text('walk_forward.result_rows.text_19'),
+                    'max_drawdown': ui_text('walk_forward.result_rows.text_20'), 'total_costs': ui_text('walk_forward.result_rows.text_21'), 'realized_gross_pnl': ui_text('walk_forward.result_rows.text_22'),
+                    'unrealized_pnl': ui_text('walk_forward.result_rows.text_23'), 'return': ui_text('walk_forward.result_rows.text_24'), 'open_position': ui_text('walk_forward.result_rows.text_25')}
+                for key, value in fold['oos']['metrics'].items(): row[ui_text('walk_forward.result_rows.text_26').format(names[key])] = value
             rows.append(row)
         if not fold['candidates']:
-            rows.append({'折次': fold['index'] + 1, '狀態': status_label(fold['status']), '贏家': '無'})
+            rows.append({ui_text('walk_forward.result_rows.text_27'): fold['index'] + 1, ui_text('walk_forward.result_rows.text_28'): status_label(fold['status']), ui_text('walk_forward.result_rows.text_29'): ui_text('walk_forward.result_rows.text_30')})
     return rows
