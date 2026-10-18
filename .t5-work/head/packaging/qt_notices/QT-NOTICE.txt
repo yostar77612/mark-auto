@@ -1,0 +1,54 @@
+Qt, PySide6 and Shiboken6 notices
+
+This Windows package uses Qt 6.12.0 and PySide6/Shiboken6 6.12.0.
+Qt and the bindings are copyright The Qt Company Ltd. and other contributors.
+Their upstream copyright notices and license files are retained separately.
+
+The included Qt modules use the LGPL version 3 option: Core, Gui, Network,
+OpenGL, Qml (including its internal Meta, Models and WorkerScript libraries),
+Quick, Svg and Widgets, and the reviewed QtBase, QtSvg and QtImageFormats
+plugins listed in manifest.json. Qt Virtual Keyboard and the optional Qt PDF
+image-format plugin/runtime are excluded from this application's package.
+The module list is checked against the actual frozen Windows payload.
+
+These libraries and their use are covered by GNU LGPL version 3. Copies of
+both license documents accompany this notice in GPL-3.0-only.txt and
+LGPL-3.0-only.txt. Their inclusion does not change MarkAuto's Apache-2.0
+license, grant Apache rights over Qt, or apply these licenses to Microsoft's
+separately identified runtime files. Other third-party components retain
+their own licenses and copyright notices.
+
+Qt libraries remain dynamically linked and replaceable in _internal/PySide6.
+You may use compatible modified libraries and reverse-engineer the application
+for debugging those modifications as LGPL permits. Keep the x64 ABI, matching
+dependencies and plugin interfaces. No application signature check prevents
+replacement. The Windows qwindows platform plugin remains included for native
+windowing and input-method integration. Library replacement may affect support
+or application behavior but does not remove the rights granted by LGPL.
+
+The exact source archive names, versions, official URLs and SHA-256 values are
+in manifest.json. The release workflow provides those archives alongside the
+installer, with source-manifest.json. Use the installer release's source assets;
+upstream URLs are also listed for convenience. When redistributing the binary,
+retain access to the corresponding source and clear directions alongside the
+binary download. This notice is not a separate three-year written source offer.
+
+Official versioned references:
+https://doc.qt.io/qt-6.12/licensing.html
+https://doc.qt.io/qt-6.12/lgpl.html
+https://doc.qt.io/qtforpython-6.12/licenses.html
+https://github.com/qtproject/pyside-pyside-setup/tree/v6.12.0
+
+The optional Qt OpenSSL TLS backend and its affected OpenSSL 3.5.5 -x64 DLL
+pair are excluded. Native Windows Schannel and certificate-only Qt backends
+remain. Python HTTPS retains its separately named OpenSSL 3.5.9 DLL pair.
+
+QT-NATIVE-NOTICES.zip contains full native third-party license texts, preserved
+copyrights, exact source-version URLs and a component-to-text manifest. Identical
+texts are deduplicated by SHA-256. Its README explains conservative coverage of
+Windows-capable optional features; the manifest is not a build SBOM.
+
+This product includes software developed by the FreeType Project
+(https://www.freetype.org/), supplied under its FreeType Project License option.
+The Public Suffix List's MPL-2.0 source is included in the pinned Qt source
+archive and linked directly from that component's native-notice entry.

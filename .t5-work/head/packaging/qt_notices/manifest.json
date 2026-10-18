@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "qt_version": "6.12.0",
+  "pyside_shiboken_version": "6.12.0",
+  "files": {
+    "GPL-3.0-only.txt": {
+      "source": "https://raw.githubusercontent.com/qt/qtbase/v6.12.0/LICENSES/GPL-3.0-only.txt",
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    "LGPL-3.0-only.txt": {
+      "source": "https://raw.githubusercontent.com/qt/qtbase/v6.12.0/LICENSES/LGPL-3.0-only.txt",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    "QT-NOTICE.txt": {
+      "bytes": 3181,
+      "sha256": "ff156545f6a7a8862980f485c7fd0529d450c9f9faa7d26d37e0debe3dd65a74",
+      "source": "Project component notice; upstream copyright and full license texts remain unchanged."
+    },
+    "QT-NATIVE-NOTICES.zip": {
+      "source": "Official Qt v6.12.0 source attribution/notice files, exact LLVM 3.6.2 source release, and exact retained OpenSSL 3.5.9 license; per-component source URLs and hashes inside archive.",
+      "bytes": 132012,
+      "sha256": "ce4f4377410ad17fd6a0c3716e610fd643bd25c91f80791f0f3256f4f1ef0550"
+    }
+  },
+  "qt_modules": [
+    "Core",
+    "Gui",
+    "Network",
+    "OpenGL",
+    "Qml",
+    "QmlMeta",
+    "QmlModels",
+    "QmlWorkerScript",
+    "Quick",
+    "Svg",
+    "Widgets"
+  ],
+  "qt_plugins": [
+    "generic/qtuiotouchplugin.dll",
+    "iconengines/qsvgicon.dll",
+    "imageformats/qgif.dll",
+    "imageformats/qicns.dll",
+    "imageformats/qico.dll",
+    "imageformats/qjpeg.dll",
+    "imageformats/qsvg.dll",
+    "imageformats/qtga.dll",
+    "imageformats/qtiff.dll",
+    "imageformats/qwbmp.dll",
+    "imageformats/qwebp.dll",
+    "networkinformation/qnetworklistmanager.dll",
+    "platforms/qdirect2d.dll",
+    "platforms/qminimal.dll",
+    "platforms/qoffscreen.dll",
+    "platforms/qwindows.dll",
+    "styles/qmodernwindowsstyle.dll",
+    "tls/qcertonlybackend.dll",
+    "tls/qschannelbackend.dll"
+  ],
+  "excluded_unused_components": [
+    "Qt Virtual Keyboard (all associated module/plugin/QML/resource/translation payloads)",
+    "Qt PDF module and qpdf image-format plugin",
+    "Optional Qt OpenSSL backend plus affected OpenSSL 3.5.5 libssl-3-x64.dll/libcrypto-3-x64.dll; Python 3.5.9 and Qt Schannel preserved"
+  ],
+  "module_license_basis": "LGPL-3.0 option; native third-party works keep their separate licenses and copyrights in QT-NATIVE-NOTICES.zip. Fixed archive and module scope do not substitute for actual release-source availability or a Microsoft entitlement record.",
+  "source_archives": [
+    {
+      "component": "PySide6/Shiboken6",
+      "version": "6.12.0",
+      "file": "pyside-setup-everywhere-src-6.12.0.tar.xz",
+      "url": "https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/pyside-setup-everywhere-src-6.12.0.tar.xz",
+      "sha256": "099c1a597cf33c1b000e11cf68a0b82d216fb802bf81726efc720394f10c7751"
+    },
+    {
+      "component": "QtBase, QtDeclarative, QtSvg, QtImageFormats, QtTranslations",
+      "version": "6.12.0",
+      "file": "qt-everywhere-src-6.12.0.tar.xz",
+      "url": "https://download.qt.io/official_releases/qt/6.12/6.12.0/single/qt-everywhere-src-6.12.0.tar.xz",
+      "sha256": "98ff4f44bac6ec3e1e62ee2a4316ae0e3d15badb015d753cc0268a20db52f165"
+    }
+  ],
+  "source_access": "Release assets beside the installer, with source-manifest.json; no separate three-year written offer.",
+  "native_binaries": {
+    "libcrypto-3.dll": {
+      "sha256": "75495fe0e079ab00d49be740d3c710a0b94e3f74f9648cb7cc9f768fc7f52319",
+      "bytes": 6021880,
+      "version": [
+        3,
+        5,
+        9,
+        0
+      ],
+      "version_evidence": {
+        "CompanyName": "The OpenSSL Project, https://www.openssl.org/",
+        "FileDescription": "OpenSSL library",
+        "FileVersion": "3.5.9",
+        "InternalName": "libcrypto",
+        "OriginalFilename": "libcrypto",
+        "ProductName": "The OpenSSL Toolkit",
+        "ProductVersion": "3.5.9",
+        "LegalCopyright": "Copyright 1998-2026 The OpenSSL Authors. All rights reserved."
+      }
+    },
+    "libssl-3.dll": {
+      "sha256": "8957182a9c385bfd9f3f790921de2ddc614cf91f99edbed4e9e5446a46504e32",
+      "bytes": 1308920,
+      "version": [
+        3,
+        5,
+        9,
+        0
+      ],
+      "version_evidence": {
+        "CompanyName": "The OpenSSL Project, https://www.openssl.org/",
+        "FileDescription": "OpenSSL library",
+        "FileVersion": "3.5.9",
+        "InternalName": "libssl",
+        "OriginalFilename": "libssl",
+        "ProductName": "The OpenSSL Toolkit",
+        "ProductVersion": "3.5.9",
+        "LegalCopyright": "Copyright 1998-2026 The OpenSSL Authors. All rights reserved."
+      }
+    },
+    "pyside6/opengl32sw.dll": {
+      "sha256": "18aedc7a4b610f53bcc7b7a5c5ed9293c7e86f030e3273ad54ed3bb1ebd36702",
+      "bytes": 20639544,
+      "version": null,
+      "version_evidence": "Static embedded strings: Mesa 11.2.2 and LLVM 3.6.2; no DLL execution."
+    }
+  }
+}

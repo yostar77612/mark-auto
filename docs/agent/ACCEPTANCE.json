@@ -5711,5 +5711,15 @@
     },
     "evidence": "docs/analysis/t4_ui_text_comparison.json",
     "scope": "Presentation-only catalog extraction; pinned auth/provider and six engine sources untouched. Full suite remains controller-owned outside the sandbox. Acceptance weights and safety thresholds unchanged."
+  },
+  "t5_desktop_theme": {
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t5--desktop-theme-and-style-module",
+    "regressions": [
+      "tests/test_desktop_theme.py",
+      "tests/test_no_inline_stylesheet.py",
+      "tests/test_desktop_feedback_p0.py"
+    ],
+    "visual_evidence": "docs/analysis/baseline/t5_theme_1366x768.json",
+    "scope": "Presentation-only centralized QSS; existing widget names, text and business logic preserved. Full suite is run by the controller outside the sandbox."
   }
 }

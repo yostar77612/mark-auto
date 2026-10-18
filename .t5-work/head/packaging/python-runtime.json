@@ -1,0 +1,12 @@
+{
+  "version": "3.13.16",
+  "architecture": "x64",
+  "implementation": "CPython (GIL enabled)",
+  "official_release": "https://www.python.org/downloads/release/python-31316/",
+  "official_reference_installer": "https://www.python.org/ftp/python/3.13.16/python-3.13.16-amd64.exe",
+  "official_reference_sha256": "fb4f9f5d438b2396da0086dc70b935c530cb578e37adc6d354f7ad2037fee83b",
+  "reference_installer_hash_verified_on": "2026-10-09",
+  "ci_distribution": "actions/setup-python, exact 3.13.16, backed by actions/python-versions",
+  "ci_manifest": "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json",
+  "maintenance_note": "3.13.16 is the final full maintenance release; monitor subsequent security releases and move to a maintained Windows binary line before future releases."
+}

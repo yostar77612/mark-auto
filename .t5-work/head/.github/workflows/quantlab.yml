@@ -1,0 +1,399 @@
+name: Quantlab offline gates
+on:
+  push:
+    branches: [main]
+    tags: ['desktop-v*']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: quantlab-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline:
+    name: ${{ matrix.shard && format('offline core {0}', matrix.shard) || (matrix.group == 'research' && 'offline research' || 'offline') }} (${{ matrix.os }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, python: '3.11', group: all}
+          - {os: ubuntu-latest, python: '3.12', group: all}
+          - {os: windows-latest, python: '3.11', group: core, shard: desktop}
+          - {os: windows-latest, python: '3.11', group: core, shard: paper}
+          - {os: windows-latest, python: '3.11', group: core, shard: remaining}
+          - {os: windows-latest, python: '3.12', group: core, shard: desktop}
+          - {os: windows-latest, python: '3.12', group: core, shard: paper}
+          - {os: windows-latest, python: '3.12', group: core, shard: remaining}
+          - {os: windows-latest, python: '3.11', group: research}
+          - {os: windows-latest, python: '3.12', group: research}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Provision pinned private SQLite without changing the Python profile
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - run: python -m pip install tzdata==2026.5
+      - name: Install Linux Qt system runtime
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
+      # The complete suite includes native desktop integration. Install its
+      # pinned Qt runtime rather than skipping tests when Qt is absent.
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
+      - name: Install pinned offline auth smoke runtime
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
+      - name: Verify complete desktop smoke runtime before tests
+        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Preserve hash-locked authentication runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: desktop-auth-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
+          path: |
+            dist/validation/desktop-auth-install.json
+            qt-install-report.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Run exact-coverage offline test group
+        run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json --workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }} ${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}
+      - name: Preserve exact-head discovery and selection evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: test-inventory-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}${{ matrix.shard && format('-{0}-attempt-{1}', matrix.shard, github.run_attempt) || '' }}
+          path: |
+            dist/validation/test-inventory.json
+            dist/validation/smoke-timeout-*.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Observe native Paper timing after failure (not acceptance)
+        if: failure() && runner.os == 'Windows' && matrix.group == 'core'
+        run: python tools/diagnose_paper_replay.py dist/validation/paper-replay-timing.json
+      - name: Preserve failed native timing evidence
+        if: failure() && runner.os == 'Windows' && matrix.group == 'core'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: paper-timing-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
+          path: dist/validation/paper-replay-timing*.json
+          if-no-files-found: warn
+          retention-days: 7
+  core-coverage:
+    # Existing mandatory publication check names belong to complete coverage,
+    # never to one subset. A failed/cancelled dependency cannot yield success.
+    name: offline (windows-latest, ${{ matrix.python }})
+    needs: offline
+    if: always()
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python }}
+      # Genuine independent discovery needs the same complete runtime as the
+      # tested shards. This imports the suite; it does not execute tests again.
+      - name: Provision matching pinned private SQLite for independent discovery
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - run: python -m pip install tzdata==2026.5
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
+      - name: Install matching pinned offline auth discovery runtime
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
+      - name: Verify complete desktop runtime before independent discovery
+        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Download only this run attempt's original core shard evidence
+        if: always()
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: test-inventory-windows-latest-${{ matrix.python }}-core-*-attempt-${{ github.run_attempt }}
+          path: dist/validation/core-shards
+          merge-multiple: false
+      - name: Require exact complete original core coverage
+        if: always()
+        run: python tools/validate_core_shards.py --reports dist/validation/core-shards --python-profile ${{ matrix.python }} --manifest dist/validation/core-coverage.json
+      - name: Require every offline runner including research to have succeeded
+        if: always()
+        env:
+          OFFLINE_RESULT: ${{ needs.offline.result }}
+        run: python -c "import os, sys; sys.exit(0 if os.environ.get('OFFLINE_RESULT') == 'success' else 1)"
+      - name: Preserve complete or failed aggregate coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: test-inventory-windows-latest-${{ matrix.python }}-core-aggregate-attempt-${{ github.run_attempt }}
+          path: dist/validation/core-coverage.json
+          if-no-files-found: error
+          retention-days: 7
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Provision pinned private SQLite without changing the Python profile
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - run: python -m pip install -r requirements-ui.lock
+      - name: Install Linux Qt system runtime
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
+      - name: Install pinned offline auth smoke runtime
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
+      - name: Verify complete desktop smoke runtime before tests
+        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Preserve hash-locked authentication runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: desktop-auth-ui-linux312
+          path: |
+            dist/validation/desktop-auth-install.json
+            qt-install-report.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: warn
+          retention-days: 7
+      - run: python -m unittest discover -s tests -v
+  quality:
+    name: Static quality and credential gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python tools/quality_gate.py --history
+      - run: python -m unittest discover -s tests -p test_quality_gate.py -v
+      - name: Observe potential Windows x64 guest host resources (not acceptance)
+        run: python tools/probe_windows_guest_host.py --output dist/validation/windows-guest-host.json
+      - name: Query existing KVM API without creating a guest (not acceptance)
+        shell: bash
+        run: |
+          mkdir -p dist/validation
+          # Hosted Ubuntu supports passwordless sudo. Keep the privileged
+          # invocation fixed and isolated; only the unprivileged shell writes.
+          if timeout --kill-after=2s 10s sudo -n /usr/bin/python3 -I -B -S tools/probe_windows_guest_host.py --query-kvm-api > dist/validation/windows-guest-kvm-api.json 2>/dev/null; then
+            :
+          else
+            status=$?
+            outcome=command_failed
+            case "$status" in
+              124) outcome=command_timed_out ;;
+              137) outcome=command_killed ;;
+            esac
+            printf '{"schema_version":1,"observation_only":true,"windows_client_acceptance":"NOT_RUN","guest_started":false,"kvm_api":{"status":"%s","command_exit_code":%s}}\n' "$outcome" "$status" > dist/validation/windows-guest-kvm-api.json
+          fi
+      - name: Test read-only host capability report
+        run: python -m unittest discover -s tests -p test_windows_guest_host.py -v
+      - name: Preserve host availability evidence without starting a guest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-guest-host-availability
+          path: |
+            dist/validation/windows-guest-host.json
+            dist/validation/windows-guest-kvm-api.json
+          if-no-files-found: warn
+          retention-days: 7
+  security:
+    name: Dependency audit (${{ matrix.profile }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: ui
+            os: ubuntu-latest
+            requirements: requirements-ui.lock
+            python: '3.12'
+          - profile: qt-linux311
+            os: ubuntu-latest
+            requirements: requirements-qt-ci.lock
+            python: '3.11'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ${{ matrix.requirements }}
+      # Keep the selected runtime closure separate from audit tooling. Legacy
+      # archives/legacy_autotrading/requirements.txt is outside this audit and is NOT certified.
+      - name: Resolve complete UI runtime dependency closure
+        if: matrix.profile == 'ui'
+        run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}
+      - name: Resolve hash-locked Linux CP311 Qt compatibility closure
+        if: matrix.profile == 'qt-linux311'
+        run: 'python -m pip --isolated install --index-url https://pypi.org/simple --ignore-installed --target audit-runtime --require-hashes --only-binary=:all: --no-cache-dir -r requirements-qt-ci.lock'
+      - name: Install verified PyPA audit release
+        run: python -m pip install pip-audit==2.10.1
+      - name: Fail on known runtime vulnerabilities or audit errors
+        run: python -m pip_audit --path audit-runtime --cache-dir "${{ runner.temp }}/pip-audit-cache" --progress-spinner off --strict
+  guest-execution-diagnostic:
+    name: KVM execution diagnostic (infrastructure only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # Technical infrastructure testing of fixed self-authored instructions only.
+    # No Windows media or terms are used or accepted; client acceptance is NOT_RUN.
+    # Availability/execution observations never replace or relax product gates.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Test KVM diagnostic with mocked device interfaces only
+        run: /usr/bin/python3 -m unittest discover -s tests -p test_kvm_x86_execution.py -v
+      - name: Compile fixed KVM diagnostic without privilege
+        shell: bash
+        run: |
+          mkdir -p build dist/validation
+          /usr/bin/cc -std=c11 -O2 -Wall -Wextra -Werror -Wpedantic tools/selftest_kvm_x86_execution.c -o build/selftest-kvm-x86
+      - name: Execute fixed five-byte KVM diagnostic (not Windows acceptance)
+        shell: bash
+        run: |
+          # The outer timeout bounds a blocked ioctl. Only this fixed binary is
+          # elevated; the unprivileged shell owns both report files.
+          if timeout --kill-after=2s 10s sudo -n ./build/selftest-kvm-x86 --run-kvm-self-test > dist/validation/kvm-execution-self-test.json 2>/dev/null; then
+            command_status=0
+          else
+            command_status=$?
+          fi
+          outcome=command_failed
+          case "$command_status" in
+            0) outcome=command_completed ;;
+            124) outcome=command_timed_out ;;
+            137) outcome=command_killed ;;
+          esac
+          # Preserve the diagnostic stdout even if partial or empty. An exit
+          # code alone cannot establish whether a guest began executing.
+          printf '{"schema_version":1,"diagnostic_only":true,"windows_client_acceptance":"NOT_RUN","status":"%s","command_exit_code":%s,"guest_execution_state":"UNKNOWN","diagnostic_report":"kvm-execution-self-test.json"}\n' "$outcome" "$command_status" > dist/validation/kvm-execution-command.json
+      - name: Preserve KVM execution and command evidence separately
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: kvm-execution-infrastructure-diagnostic
+          path: |
+            dist/validation/kvm-execution-self-test.json
+            dist/validation/kvm-execution-command.json
+          if-no-files-found: warn
+          retention-days: 7
+  wfo-storage-diagnostic:
+    name: WFO storage diagnostic (Windows 3.12; observation only)
+    runs-on: windows-latest
+    timeout-minutes: 6
+    # This separate observation never substitutes for a product test or gate.
+    # The full 63-state synthetic stream is fixed before the run; no retries or
+    # deadline extension. INCOMPLETE remains nonzero and retains its evidence.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Provision the existing pinned private SQLite runtime
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - name: Test offline storage diagnostic contracts
+        run: python -m unittest discover -s tests -p 'test_wfo_storage*.py' -v
+      - name: Measure fixed synthetic WFO stream on the research temporary volume
+        shell: pwsh
+        run: |
+          # The tool supervises its own child: 180s measurement + at most 10s
+          # termination grace. RUNNER_TEMP is the actual Windows temp volume.
+          python tools/diagnose_wfo_storage.py --runtime-root build/sqlite-runtime --storage-root "$env:RUNNER_TEMP" --seconds 180 --fixture smoke --report dist/validation/wfo-storage.json
+          exit $LASTEXITCODE
+      - name: Preserve complete or incomplete storage observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wfo-storage-windows312-diagnostic
+          path: |
+            dist/validation/wfo-storage.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: error
+          retention-days: 7
+  research-phase-diagnostic:
+    name: Research phases (Windows 3.11; observation only)
+    runs-on: windows-latest
+    timeout-minutes: 6
+    # Additional evidence only. All original test groups and caps are unchanged.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Provision existing pinned private SQLite
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - run: python -m pip install tzdata==2026.5
+      - name: Check diagnostic contracts (fail normally)
+        run: python -m unittest tests.test_research_phase_diagnostic -v
+      - name: Observe unchanged synthetic cases on their actual default temp volume
+        id: measurement
+        # No TEMP override, retry, Qt, real model call, or timing acceptance.
+        # 150-second hard measurement cap plus bounded owned-child cleanup.
+        run: python tools/diagnose_research_phases.py --runtime-root build/sqlite-runtime --seconds 150 --report dist/validation/research-phases.json
+      - name: Preserve complete or incomplete observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: research-phases-windows311-observation
+          path: |
+            dist/validation/research-phases.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: error
+          retention-days: 7
+  wfo-wal-storage-observation:
+    name: WFO storage ABBA (Windows 3.11; observation only)
+    runs-on: windows-latest
+    timeout-minutes: 6
+    # Disposable synthetic storage only; never changes product journal mode.
+    # Full pinned 63-state stream, two fixed ABBA pairs, no retries or error masking.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Provision existing pinned private SQLite
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - name: Test storage observation contracts
+        run: python -m unittest discover -s tests -p 'test_wfo_storage*.py' -v
+      - name: Observe journal-mode and SQL-operation ABBA with FULL on actual Python temp
+        run: python tools/diagnose_wfo_storage.py --wal-abba --runtime-root build/sqlite-runtime --seconds 180 --report dist/validation/wfo-wal-storage.json
+      - name: Preserve complete or incomplete storage observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wfo-wal-storage-windows311-observation
+          path: |
+            dist/validation/wfo-wal-storage.json
+            dist/validation/sqlite-runtime.json
+          if-no-files-found: error
+          retention-days: 7

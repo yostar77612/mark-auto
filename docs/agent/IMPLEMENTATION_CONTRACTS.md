@@ -326,3 +326,26 @@ fallbacks, formatting, Python 3.11 syntax and live widget lookup. A fresh
 identical `visible_text` on all seven pages at 1366×768; hashes and G3 source
 checks are recorded in `docs/analysis/t4_ui_text_comparison.json`.
 ObjectNames, payloads, validation, quotas and one-time OOS consumption are unchanged.
+
+
+## T5 — Desktop theme and style module
+
+- `desktop_theme.py` owns colour tokens (`COLORS`, `STATUS_COLORS`), pixel font sizes,
+  spacing and the complete application QSS. `build_app_stylesheet()` resolves these
+  tokens; `apply_theme()` installs it on the QApplication, leaving widget QSS empty.
+- Existing objectNames and `role=primary|secondary|danger` remain stable. Runtime
+  status colours use `status=success|warning|danger|neutral`; `set_status()` validates
+  the state and unpolishes/polishes the widget. Market rise/fall and notification
+  colours retain their original scoped palette. Form feedback uses a temporary
+  `feedback` property and restores its previous value after 1800 ms.
+- No desktop or tools module may call `setStyleSheet` outside the theme module.
+  The AST and runtime allowlists in `tests/test_no_inline_stylesheet.py` are empty:
+  QPainter chart drawing needs no QSS exception. Tests cover every button role,
+  empty widget stylesheets, live status palette refresh, and existing feedback.
+- Visual parity is checked against a `git archive HEAD` copy with
+  `tools/ui_snapshot.py --size 1366x768` on both trees using identical Qt settings.
+  `tools/ui_theme_diff.py BEFORE AFTER` requires identical metrics, PNG sets and
+  dimensions, with at most 0.1% of pixels having any RGB channel delta above 8.
+  T5 evidence: `docs/analysis/baseline/t5_theme_1366x768.json` (all 14 PNGs: 0%).
+- Presentation only: desktop strings, account decisions, safety validation, quotas,
+  OOS consumption and pinned producer sources are unchanged.

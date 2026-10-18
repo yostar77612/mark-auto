@@ -1,0 +1,8 @@
+# The TAIFEX-format fixture deliberately preserves padded source columns.
+tests/fixtures/data_synthetic_taifex.csv whitespace=-blank-at-eol
+
+# These artifacts are SHA-256-pinned as raw bytes, including their line endings.
+tests/fixtures/desktop_runtime_0_2_1.py.txt -text
+
+# Qt notice inputs are independently SHA-256-pinned as original upstream bytes.
+packaging/qt_notices/** -text
