@@ -263,6 +263,495 @@ def analysis_record_text(record):
     return '\n'.join(lines)
 
 
+def _prepare_paper_operation(payload, paths, root, *, emit=None, descendants_stopped=False):
+    if 'policy' in payload:
+        policy = payload['policy']
+        existing = root / 'paper_policy.json'
+        if existing.exists() and read_json(existing) != policy:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_38'))
+        if not existing.exists():
+            from quantlab.paper import PaperBroker
+            if not isinstance(policy, dict) or set(policy) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
+                raise ValidationError(ui_text('ui.execute_ui_operation.text_39'))
+            import tempfile
+            with tempfile.TemporaryDirectory(prefix='policy-', dir=root) as staging:
+                PaperBroker(Path(staging) / 'validation.sqlite3', instrument=Instrument(policy['contract_id']), costs=demo_config().costs, limits=paper_risk_limits(), risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
+            write_json(existing, policy)
+    broker = _paper(root)
+    return broker
+
+
+def _finish_paper_operation(root, broker, replay_state=None):
+    state = broker.snapshot()
+    journal = broker.journal_events()
+    write_json(root / 'paper_snapshot.json', state)
+    write_json(root / 'paper_journal_export.json', journal)
+    if replay_state is not None:
+        return {'replay': replay_state, 'account': state}
+    return {'account': state, 'journal_tail': journal[-20:], 'journal_file': str(root / 'paper_journal_export.json')}
+
+
+def _handle_ui_analysis_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    output = root / 'analyses'
+    allowed = {'request'}
+    if set(payload) != allowed:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_3'))
+    plan = analysis_plan(paths, payload['request'], emit=emit)
+    provider = analysis_provider_for(paths, plan)
+    reference = OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), plan['binding']['registration'])
+    snapshot = provider.read_receipt_snapshot()
+    account = read_account_status(reference, research_controls(paths))
+    return {'analysis_id': plan['analysis_id'], 'plan': plan, 'receipt_snapshot': snapshot, 'account_status': account}
+
+
+def _handle_ui_analysis_read(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    output = root / 'analyses'
+    expected = {'analysis_id'}
+    durable = False
+    if durable:
+        from quantlab.analysis_recovery import supports_durable_recovery
+        if not supports_durable_recovery():
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
+    if durable:
+        expected = {'analysis_id', 'registration', 'recovery_launch_id'}
+    if set(payload) != expected:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_9'))
+    record = read_analysis(output, payload['analysis_id'])
+    return {'analysis_id': payload['analysis_id'], 'record': record, 'cache_hit': True}
+
+
+def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    output = root / 'analyses'
+    expected = {'analysis_id', 'registration', 'stopped_job_id'}
+    durable = 'recovery_launch_id' in payload
+    if durable:
+        from quantlab.analysis_recovery import supports_durable_recovery
+        if not supports_durable_recovery():
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
+    if durable:
+        expected = {'analysis_id', 'registration', 'recovery_launch_id'}
+    if set(payload) != expected:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_9'))
+    if not durable and descendants_stopped is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_10'))
+    record = _read_analysis_journal(output, payload['analysis_id'])
+    if record['plan']['binding']['registration'] != payload['registration']:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_11'))
+    if durable:
+        from quantlab.analysis_recovery import validate_stop_receipt
+        launch = validate_stop_receipt(paths, payload['recovery_launch_id'], record=record)
+        if launch['analysis_id'] != payload['analysis_id'] or launch['registration'] != payload['registration']:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_12'))
+    record = reconcile_analysis(output_root=output, analysis_id=payload['analysis_id'], provider=analysis_provider_for(paths, record['plan']), descendants_stopped=descendants_stopped is True, recovery=(paths, payload['recovery_launch_id']) if durable else None)
+    return {'analysis_id': payload['analysis_id'], 'record': record, 'cache_hit': True}
+
+
+def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    output = root / 'analyses'
+    allowed = {'request', 'expected_analysis_id', 'expected_plan_hash', 'user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'}
+    if 'approved_plan' in payload:
+        allowed = allowed | {'approved_plan'}
+    if set(payload) != allowed:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_3'))
+    if any((payload[key] is not True for key in ('user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'))):
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_4'))
+    plan = analysis_plan(paths, payload['request'], emit=emit)
+    if payload['expected_analysis_id'] != plan['analysis_id'] or payload['expected_plan_hash'] != content_hash(plan):
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_5'))
+    if 'approved_plan' in payload and canonical_json(payload['approved_plan']) != canonical_json(plan):
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_6'))
+    if emit:
+        emit('progress', message=ui_text('ui.execute_ui_operation.text_7'))
+    result = run_analysis(output_root=output, plan=plan, provider=analysis_provider_for(paths, plan, authorized=True), expected_analysis_id=payload['expected_analysis_id'], user_confirmed=True)
+    return {'analysis_id': plan['analysis_id'], **result}
+
+
+def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.strategies import builtin_strategies, validate_strategy
+    from quantlab.backtest import run_backtest
+    from quantlab.__main__ import config_from_json
+    data = _dataset(root, payload)
+    config = config_from_json(payload['config'])
+    specs = list(builtin_strategies())
+    provenance = None
+    if payload.get('candidate'):
+        if payload.get('batch'):
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_31'))
+        spec, provenance = candidate_record(root, payload['candidate'])
+        source_hash = data.manifest.get('parent_data_hash', data.manifest['data_hash'])
+        if provenance['source_data_hash'] != source_hash:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_32'))
+        specs = [spec]
+    elif not payload.get('batch'):
+        spec = next((s for s in specs if s.family == payload['family']), None)
+        if spec is None:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_33'))
+        spec = StrategySpec(spec.strategy_id, spec.family, payload.get('parameters', dict(spec.parameters)), dict(spec.rules))
+        validate_strategy(spec)
+        specs = [spec]
+    if provenance:
+        manifest = {**data.manifest, 'desktop_candidate_reference': provenance['reference']}
+        manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k not in ('imported_at', 'manifest_hash')})
+        data = Dataset(data.bars, manifest, dict(data.quality))
+    reports = []
+    summary_metrics = {'net_pnl': Decimal('0'), 'trade_count': 0}
+    for spec in specs:
+        result = run_backtest(data, spec, config)
+        summary_metrics['net_pnl'] += Decimal(str(result.metrics['net_pnl']))
+        summary_metrics['trade_count'] += result.metrics.get('trade_count', result.metrics.get('closed_trades', 0))
+        import tempfile
+        reports_root = root / 'reports'
+        reports_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='.partial-', dir=reports_root) as staging:
+            files = export_report(result, Path(staging))
+            folder = Path(files['result']).parent
+            write_json(folder / 'strategy.json', spec)
+            if provenance:
+                write_json(folder / 'candidate_provenance.json', provenance)
+            destination = reports_root / files['result_hash']
+            if destination.exists():
+                if content_hash(load_result(destination / 'result.json')) != files['result_hash'] or read_json(destination / 'strategy.json') != to_dict(spec):
+                    raise ValidationError(ui_text('ui.execute_ui_operation.text_34'))
+            else:
+                folder.rename(destination)
+            files = {key: str(destination / Path(value).name) if key != 'result_hash' else value for key, value in files.items()}
+        reports.append(files)
+    write_json(root / 'active_result.json', {'result_hash': reports[-1]['result_hash']})
+    return {'reports': reports, 'metrics': to_dict(summary_metrics), 'source_type': data.manifest['source_type'], 'scope': 'research_only'}
+
+
+def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.desktop_runtime import BackupManager
+    manager = BackupManager(paths)
+    return {'backup': str(manager.create(Path(payload['path'])))}
+
+
+def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.desktop_runtime import BackupManager
+    manager = BackupManager(paths)
+    manager.restore(Path(payload['path']))
+    return {'restored': True, 'reconciliation_required': True}
+
+
+def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research import FixtureGenerator, run_campaign, demo_campaign_config
+    from quantlab.__main__ import config_from_json
+    data = _dataset(root, payload)
+    config = payload.get('config') or demo_campaign_config(data, demo_config())
+    if isinstance(config.get('backtest_config'), dict):
+        config['backtest_config'] = config_from_json(config['backtest_config'])
+    options = payload['provider']
+    if options.get('mode') == 'chatgpt_plan':
+        generator, plan_identity = plan_provider(paths, data, config, options)
+        options = {'mode': 'chatgpt_plan', 'binding': plan_identity}
+    elif options.get('mode') == 'manual':
+        from quantlab.manual_exchange import export_request_file, import_response, import_response_file
+        if payload.get('manual_export'):
+            request = export_request_file(data, config, Path(payload['manual_export']))
+            return {'manual_export': payload['manual_export'], 'request': request, 'mode': 'manual_unverified'}
+        if options.get('response_path'):
+            generator = import_response_file(data, config, Path(options['response_path']))
+        else:
+            generator = import_response(data, config, options.get('response_text', ''))
+        generator.preflight(data, config)
+        research_controls(paths)
+        options = {'mode': 'manual', 'package': generator.model}
+    else:
+        generator = campaign_generator(paths, options)
+    name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
+    return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name, holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
+
+
+def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+    from dataclasses import asdict
+    if set(payload) != {'request'} or not isinstance(payload['request'], dict):
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_13'))
+    request = ConnectionRequest(**payload['request'])
+
+    def private_event(event):
+        if emit is None:
+            raise ValidationError(ui_text('ui.private_event.text_1'))
+        emit('auth_progress', auth_event=asdict(event))
+    if request.action in ('begin', 'first_sign_in', 'enable_plan') and emit is None:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_14'))
+    result = run_connection_request(request, bootstrap=str(getattr(paths, 'bootstrap', None) or paths.root), emit=private_event, cancelled=lambda: False)
+    if result.authorization_url is not None:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_15'))
+    return {'auth_event': asdict(result)}
+
+
+def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.research import reconcile_interrupted_campaign
+    from quantlab.__main__ import config_from_json
+    if descendants_stopped is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_16'))
+    if set(payload) != {'config', 'provider', 'binding', 'stopped_job_id'}:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_17'))
+    data = _dataset(root, {})
+    config = dict(payload['config'])
+    config['backtest_config'] = config_from_json(config['backtest_config'])
+    generator, identity = plan_provider(paths, data, config, payload['provider'], for_usage=True)
+    if identity != payload['binding']:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_18'))
+    name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options({'mode': 'chatgpt_plan', 'binding': identity})})
+    state = reconcile_interrupted_campaign(output_dir=root / 'campaigns' / name, generator=generator, descendants_stopped=True)
+    return {'binding': identity, 'state': state['status']}
+
+
+def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_chatgpt_auth import OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    if set(payload) - {'registration', 'provider', 'config'}:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_19'))
+    reference = OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), payload['registration'])
+    status = read_account_status(reference, research_controls(paths))
+    result = {'registration': payload['registration'], 'account_status': status}
+    if 'provider' in payload:
+        from quantlab.__main__ import config_from_json
+        data = _dataset(root, {})
+        config = dict(payload['config'])
+        config['backtest_config'] = config_from_json(config['backtest_config'])
+        provider, identity = plan_provider(paths, data, config, payload['provider'], for_usage=True)
+        if provider.credential_reference.registration != payload['registration']:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_20'))
+        receipts = provider.read_receipt_snapshot()['receipts']
+        if len(receipts) > 10000:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_21'))
+        result.update(receipts=[{'sequence': row['sequence'], 'status': row['status']} for row in receipts], binding=identity, account_status=read_account_status(reference, research_controls(paths)))
+    return result
+
+
+def _handle_ui_compare(payload, paths, root, *, emit=None, descendants_stopped=False):
+    if not payload.get('results'):
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_35'))
+    return {'rows': comparison_rows([load_result(p) for p in payload['results']])}
+
+
+def _handle_ui_demo(payload, paths, root, *, emit=None, descendants_stopped=False):
+    data = synthetic_dataset(payload.get('bars', 960))
+    save_dataset(data, root / 'dataset.json')
+    return {'dataset': str(root / 'dataset.json'), 'source_type': 'synthetic', 'bars': len(data.bars)}
+
+
+def _handle_ui_disable(payload, paths, root, *, emit=None, descendants_stopped=False):
+    selection = root / 'selection.json'
+    if selection.exists():
+        archive = root / 'disabled_selections'
+        archive.mkdir(exist_ok=True)
+        value = read_json(selection)
+        write_json(archive / (content_hash(value) + '.json'), value)
+        selection.unlink()
+    if (root / 'paper_policy.json').exists():
+        _paper(root).set_kill_switch(True)
+    return {'selection': 'disabled', 'scope': 'research_and_paper_only'}
+
+
+def _handle_ui_import(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from quantlab.data import SessionCalendar, import_taifex
+    cal = read_json(Path(payload['calendar']))
+    if payload['kind'] == 'validated_dataset':
+        data = load_dataset(Path(payload['path']))
+        dataset_market_series(data, cal)
+    else:
+        data = import_taifex(Path(payload['path']), kind=payload['kind'], calendar=SessionCalendar(cal['sessions'], version=cal['version']), contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
+    save_dataset(data, root / 'dataset.json')
+    write_json(root / 'dataset_calendar.json', cal)
+    return {'dataset': str(root / 'dataset.json'), 'bars': len(data.bars), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
+
+
+def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_stopped=False):
+    if 'history_import' in payload:
+        if payload.get('history_import') is not True or set(payload) != {'history_import', 'local_path', 'sessions', 'dated_policy_confirmed'}:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_22'))
+        from quantlab.market_history import import_history, session_from_dict
+        if payload.get('dated_policy_confirmed') is not True:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_23'))
+        records = payload.get('sessions')
+        if not isinstance(records, list) or not 1 <= len(records) <= 128:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_24'))
+        if emit is not None:
+            emit('progress', message=ui_text('ui.execute_ui_operation.text_25'))
+        result = import_history(Path(payload['local_path']), root / 'market_history', sessions=tuple((session_from_dict(row) for row in records)))
+        return {'mode': 'local_unverified_history', 'cache_id': result.cache_id, 'source_hash': result.source_hash, 'policy_hash': result.policy_hash, 'counters': dict(result.counters), 'warnings': list(result.warnings), 'contracts': len(result.series), 'bars': sum((len(x.bars) for x in result.series))}
+    from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
+    local = payload.get('local_path')
+    if not local and payload.get('network_opt_in') is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_26'))
+    providers = (payload.get('provider'),) if local else ('twse', 'taifex')
+    outcomes = {}
+    for provider in providers:
+        if provider not in ('twse', 'taifex'):
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_27'))
+        try:
+            kwargs = {}
+            if local:
+                path = Path(local)
+                if path.stat().st_size > MAX_BYTES:
+                    raise ValidationError(ui_text('ui.execute_ui_operation.text_28'))
+                with path.open('rb') as stream:
+                    raw = stream.read(MAX_BYTES + 1)
+                if len(raw) > MAX_BYTES:
+                    raise ValidationError(ui_text('ui.execute_ui_operation.text_29'))
+                result = import_daily(provider, root / 'market_cache', raw, format=payload.get('format', 'json'))
+            else:
+                result = refresh_daily(provider, root / 'market_cache', network_enabled=True, **kwargs)
+            outcomes[provider] = {'stale': result.stale, 'error': result.error, 'contracts': len(result.series), 'bars': sum((len(x.bars) for x in result.series))}
+        except Exception as exc:
+            outcomes[provider] = {'stale': True, 'error': exception_code(exc), 'contracts': None, 'bars': None}
+    return {'providers': outcomes, 'mode': 'official_local_import' if local else 'official_explicit_refresh'}
+
+
+def _handle_ui_paper_cancel(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    broker.cancel(payload['order_id'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_paper_kill(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    broker.set_kill_switch(True)
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_paper_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    broker.reconcile(payload['snapshot'])
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_paper_replay(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    if payload.get('reconcile_confirmed') is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_42'))
+    broker.reconcile(payload['snapshot'])
+    from quantlab.paper_replay import PaperReplay
+    data = _dataset(root, payload)
+    selection = load_selection(root / 'selection.json')
+    binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
+    paths.require_replay_wal()
+    replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data, strategy=StrategySpec(**selection['strategy']), broker=broker, margin_schedule=broker._margin_schedule, storage_profile='wal_full')
+    replay.start()
+    cursor_before = replay.snapshot()['cursor']
+    fills_before = len(broker.snapshot()['fills'])
+    try:
+        replay.step(max_bars=payload.get('max_bars', 100))
+    finally:
+        replay.stop()
+    replay_state = replay.snapshot()
+    replay_state['processed_bars'] = replay_state['cursor'] - cursor_before
+    replay_state['new_fills'] = len(broker.snapshot()['fills']) - fills_before
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_paper_snapshot(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_paper_submit(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    replay_state = None
+    if payload.get('reconcile_confirmed') is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_40'))
+    broker.reconcile(payload['snapshot'])
+    selection = load_selection(root / 'selection.json')
+    if payload['intent'].get('strategy_hash') != selection['strategy_hash']:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_41'))
+    broker.set_kill_switch(False)
+    broker.submit(payload['intent'], quote=payload['quote'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))
+    return _finish_paper_operation(root, broker, replay_state)
+
+
+def _handle_ui_refresh(payload, paths, root, *, emit=None, descendants_stopped=False):
+    if payload.get('network_opt_in') is not True:
+        raise ValidationError(ui_text('ui.execute_ui_operation.text_30'))
+    from quantlab.downloads import refresh
+    return refresh(Path(paths.cache), days=payload.get('days', 1), kind=payload.get('format', 'csv'))
+
+
+def _handle_ui_select(payload, paths, root, *, emit=None, descendants_stopped=False):
+    folder = Path(payload['result']).parent
+    result = load_result(folder / 'result.json')
+    reference = result.manifest.get('dataset_manifest', {}).get('desktop_candidate_reference')
+    if reference:
+        spec, provenance = candidate_record(root, reference)
+        if not provenance['paper_qualified']:
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_36'))
+        if content_hash(spec) != result.manifest.get('spec_hash'):
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_37'))
+    return save_selection(read_json(folder / 'strategy.json'), result, root / 'selection.json')
+
+
+def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_walk_forward import execute_walk_forward
+    return execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped)
+
+
+def _handle_ui_walk_forward_read(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_walk_forward import execute_walk_forward
+    return execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped)
+
+
+def _handle_ui_walk_forward_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_walk_forward import execute_walk_forward
+    return execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped)
+
+
+def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_stopped=False):
+    from desktop_walk_forward import execute_walk_forward
+    return execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped)
+
+
+_UI_OPERATION_HANDLERS = {
+    'ui_analysis_preview': _handle_ui_analysis_preview,
+    'ui_analysis_read': _handle_ui_analysis_read,
+    'ui_analysis_reconcile': _handle_ui_analysis_reconcile,
+    'ui_analysis_run': _handle_ui_analysis_run,
+    'ui_backtest': _handle_ui_backtest,
+    'ui_backup_create': _handle_ui_backup_create,
+    'ui_backup_restore': _handle_ui_backup_restore,
+    'ui_campaign': _handle_ui_campaign,
+    'ui_chatgpt_auth': _handle_ui_chatgpt_auth,
+    'ui_chatgpt_reconcile': _handle_ui_chatgpt_reconcile,
+    'ui_chatgpt_usage': _handle_ui_chatgpt_usage,
+    'ui_compare': _handle_ui_compare,
+    'ui_demo': _handle_ui_demo,
+    'ui_disable': _handle_ui_disable,
+    'ui_import': _handle_ui_import,
+    'ui_market_refresh': _handle_ui_market_refresh,
+    'ui_paper_cancel': _handle_ui_paper_cancel,
+    'ui_paper_kill': _handle_ui_paper_kill,
+    'ui_paper_reconcile': _handle_ui_paper_reconcile,
+    'ui_paper_replay': _handle_ui_paper_replay,
+    'ui_paper_snapshot': _handle_ui_paper_snapshot,
+    'ui_paper_submit': _handle_ui_paper_submit,
+    'ui_refresh': _handle_ui_refresh,
+    'ui_select': _handle_ui_select,
+    'ui_walk_forward_preview': _handle_ui_walk_forward_preview,
+    'ui_walk_forward_read': _handle_ui_walk_forward_read,
+    'ui_walk_forward_reconcile': _handle_ui_walk_forward_reconcile,
+    'ui_walk_forward_run': _handle_ui_walk_forward_run,
+}
+
+
 def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_stopped=False):
     """Allowlisted process-worker adapter; no Qt objects are created here."""
     if operation not in UI_OPERATIONS:
@@ -271,334 +760,8 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
         or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
         raise ValidationError(ui_text('ui.execute_ui_operation.text_2'))
     root = _root(paths)
-    if operation.startswith('ui_analysis_'):
-        from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
-        from desktop_chatgpt_auth import OAuthCredentialReference
-        from desktop_chatgpt_provider import read_account_status
-        output=root/'analyses'
-        if operation in ('ui_analysis_preview','ui_analysis_run'):
-            allowed={'request'} if operation=='ui_analysis_preview' else {'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'}
-            if operation=='ui_analysis_run' and 'approved_plan' in payload:allowed=allowed|{'approved_plan'}
-            if set(payload)!=allowed:raise ValidationError(ui_text('ui.execute_ui_operation.text_3'))
-            if operation=='ui_analysis_run' and any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_4'))
-            plan=analysis_plan(paths,payload['request'],emit=emit)
-            if operation=='ui_analysis_preview':
-                provider=analysis_provider_for(paths,plan)
-                reference=OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),plan['binding']['registration'])
-                snapshot=provider.read_receipt_snapshot()
-                account=read_account_status(reference,research_controls(paths))
-                return {'analysis_id':plan['analysis_id'],'plan':plan,'receipt_snapshot':snapshot,'account_status':account}
-            if payload['expected_analysis_id']!=plan['analysis_id'] or payload['expected_plan_hash']!=content_hash(plan):raise ValidationError(ui_text('ui.execute_ui_operation.text_5'))
-            if 'approved_plan' in payload and canonical_json(payload['approved_plan'])!=canonical_json(plan):raise ValidationError(ui_text('ui.execute_ui_operation.text_6'))
-            if emit:emit('progress',message=ui_text('ui.execute_ui_operation.text_7'))
-            result=run_analysis(output_root=output,plan=plan,provider=analysis_provider_for(paths,plan,authorized=True),
-                expected_analysis_id=payload['expected_analysis_id'],user_confirmed=True)
-            return {'analysis_id':plan['analysis_id'],**result}
-        expected={'analysis_id'} if operation=='ui_analysis_read' else {'analysis_id','registration','stopped_job_id'}
-        durable=operation=='ui_analysis_reconcile' and 'recovery_launch_id' in payload
-        if durable:
-            from quantlab.analysis_recovery import supports_durable_recovery
-            if not supports_durable_recovery():raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
-        if durable:expected={'analysis_id','registration','recovery_launch_id'}
-        if set(payload)!=expected:raise ValidationError(ui_text('ui.execute_ui_operation.text_9'))
-        if operation=='ui_analysis_reconcile' and not durable and descendants_stopped is not True:raise ValidationError(ui_text('ui.execute_ui_operation.text_10'))
-        if operation=='ui_analysis_reconcile':
-            record=_read_analysis_journal(output,payload['analysis_id'])
-            if record['plan']['binding']['registration']!=payload['registration']:raise ValidationError(ui_text('ui.execute_ui_operation.text_11'))
-            if durable:
-                from quantlab.analysis_recovery import validate_stop_receipt
-                launch=validate_stop_receipt(paths,payload['recovery_launch_id'],record=record)
-                if launch['analysis_id']!=payload['analysis_id'] or launch['registration']!=payload['registration']:raise ValidationError(ui_text('ui.execute_ui_operation.text_12'))
-            record=reconcile_analysis(output_root=output,analysis_id=payload['analysis_id'],
-                provider=analysis_provider_for(paths,record['plan']),descendants_stopped=descendants_stopped is True,
-                recovery=(paths,payload['recovery_launch_id']) if durable else None)
-        else:
-            record=read_analysis(output,payload['analysis_id'])
-        return {'analysis_id':payload['analysis_id'],'record':record,'cache_hit':True}
-    if operation.startswith('ui_walk_forward_'):
-        from desktop_walk_forward import execute_walk_forward
-        return execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped)
-    if operation == 'ui_chatgpt_auth':
-        from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
-        from dataclasses import asdict
-        if set(payload) != {'request'} or not isinstance(payload['request'], dict): raise ValidationError(ui_text('ui.execute_ui_operation.text_13'))
-        request = ConnectionRequest(**payload['request'])
-        def private_event(event):
-            if emit is None: raise ValidationError(ui_text('ui.private_event.text_1'))
-            emit('auth_progress', auth_event=asdict(event))
-        if request.action in ('begin', 'first_sign_in', 'enable_plan') and emit is None: raise ValidationError(ui_text('ui.execute_ui_operation.text_14'))
-        result = run_connection_request(request, bootstrap=str(getattr(paths,'bootstrap',None) or paths.root),
-            emit=private_event, cancelled=lambda:False)
-        if result.authorization_url is not None: raise ValidationError(ui_text('ui.execute_ui_operation.text_15'))
-        return {'auth_event':asdict(result)}
-    if operation == 'ui_chatgpt_reconcile':
-        from quantlab.research import reconcile_interrupted_campaign
-        from quantlab.__main__ import config_from_json
-        if descendants_stopped is not True: raise ValidationError(ui_text('ui.execute_ui_operation.text_16'))
-        if set(payload) != {'config','provider','binding','stopped_job_id'}: raise ValidationError(ui_text('ui.execute_ui_operation.text_17'))
-        data = _dataset(root,{})
-        config = dict(payload['config']); config['backtest_config'] = config_from_json(config['backtest_config'])
-        generator, identity = plan_provider(paths,data,config,payload['provider'],for_usage=True)
-        if identity != payload['binding']: raise ValidationError(ui_text('ui.execute_ui_operation.text_18'))
-        name = content_hash({'dataset':data.manifest['data_hash'],'config':config,
-            'provider':provider_binding_options({'mode':'chatgpt_plan','binding':identity})})
-        # This operation is dispatched only after JobManager's subtree proof.
-        state = reconcile_interrupted_campaign(output_dir=root/'campaigns'/name,
-            generator=generator,descendants_stopped=True)
-        return {'binding':identity,'state':state['status']}
-    if operation == 'ui_chatgpt_usage':
-        from desktop_chatgpt_auth import OAuthCredentialReference
-        from desktop_chatgpt_provider import read_account_status
-        if set(payload)-{'registration','provider','config'}: raise ValidationError(ui_text('ui.execute_ui_operation.text_19'))
-        reference = OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),payload['registration'])
-        status = read_account_status(reference, research_controls(paths))
-        result = {'registration':payload['registration'], 'account_status':status}
-        if 'provider' in payload:
-            from quantlab.__main__ import config_from_json
-            data = _dataset(root, {})
-            config = dict(payload['config']);config['backtest_config'] = config_from_json(config['backtest_config'])
-            provider, identity = plan_provider(paths, data, config, payload['provider'], for_usage=True)
-            if provider.credential_reference.registration != payload['registration']: raise ValidationError(ui_text('ui.execute_ui_operation.text_20'))
-            receipts = provider.read_receipt_snapshot()['receipts']
-            if len(receipts)>10000: raise ValidationError(ui_text('ui.execute_ui_operation.text_21'))
-            result.update(receipts=[{'sequence':row['sequence'],'status':row['status']} for row in receipts], binding=identity,
-                          account_status=read_account_status(reference,research_controls(paths)))
-        return result
-    if operation in ('ui_backup_create', 'ui_backup_restore'):
-        from quantlab.desktop_runtime import BackupManager
-        manager = BackupManager(paths)
-        if operation == 'ui_backup_restore':
-            manager.restore(Path(payload['path']))
-            return {'restored': True, 'reconciliation_required': True}
-        return {'backup': str(manager.create(Path(payload['path'])))}
-    if operation == 'ui_market_refresh' and 'history_import' in payload:
-        if payload.get('history_import') is not True or set(payload) != {'history_import','local_path','sessions','dated_policy_confirmed'}:
-            raise ValidationError(ui_text('ui.execute_ui_operation.text_22'))
-        from quantlab.market_history import import_history, session_from_dict
-        if payload.get('dated_policy_confirmed') is not True:
-            raise ValidationError(ui_text('ui.execute_ui_operation.text_23'))
-        records = payload.get('sessions')
-        if not isinstance(records, list) or not 1 <= len(records) <= 128:
-            raise ValidationError(ui_text('ui.execute_ui_operation.text_24'))
-        if emit is not None: emit('progress', message=ui_text('ui.execute_ui_operation.text_25'))
-        result = import_history(Path(payload['local_path']), root / 'market_history',
-                                sessions=tuple(session_from_dict(row) for row in records))
-        return {'mode': 'local_unverified_history', 'cache_id': result.cache_id,
-                'source_hash': result.source_hash, 'policy_hash': result.policy_hash,
-                'counters': dict(result.counters), 'warnings': list(result.warnings),
-                'contracts': len(result.series), 'bars': sum(len(x.bars) for x in result.series)}
-    if operation == 'ui_market_refresh':
-        from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
-        # File imports use the same fixed official schema and atomic cache path.
-        local = payload.get('local_path')
-        if not local and payload.get('network_opt_in') is not True:
-            raise ValidationError(ui_text('ui.execute_ui_operation.text_26'))
-        providers = (payload.get('provider'),) if local else ('twse', 'taifex')
-        outcomes = {}
-        for provider in providers:
-            if provider not in ('twse', 'taifex'): raise ValidationError(ui_text('ui.execute_ui_operation.text_27'))
-            try:
-                kwargs = {}
-                if local:
-                    path = Path(local)
-                    if path.stat().st_size > MAX_BYTES: raise ValidationError(ui_text('ui.execute_ui_operation.text_28'))
-                    with path.open('rb') as stream: raw = stream.read(MAX_BYTES + 1)
-                    if len(raw) > MAX_BYTES: raise ValidationError(ui_text('ui.execute_ui_operation.text_29'))
-                    result = import_daily(provider, root / 'market_cache', raw, format=payload.get('format', 'json'))
-                else:
-                    result = refresh_daily(provider, root / 'market_cache', network_enabled=True, **kwargs)
-                outcomes[provider] = {'stale': result.stale, 'error': result.error,
-                    'contracts': len(result.series), 'bars': sum(len(x.bars) for x in result.series)}
-            except Exception as exc:
-                outcomes[provider] = {'stale': True, 'error': exception_code(exc), 'contracts': None, 'bars': None}
-        return {'providers': outcomes, 'mode': 'official_local_import' if local else 'official_explicit_refresh'}
-    if operation == 'ui_demo':
-        data = synthetic_dataset(payload.get('bars', 960))
-        save_dataset(data, root / 'dataset.json')
-        return {'dataset': str(root / 'dataset.json'), 'source_type': 'synthetic', 'bars': len(data.bars)}
-    if operation == 'ui_import':
-        from quantlab.data import SessionCalendar, import_taifex
-        cal = read_json(Path(payload['calendar']))
-        if payload['kind'] == 'validated_dataset':
-            data = load_dataset(Path(payload['path']))
-            dataset_market_series(data, cal)
-        else:
-            data = import_taifex(Path(payload['path']), kind=payload['kind'],
-                                calendar=SessionCalendar(cal['sessions'], version=cal['version']),
-                                contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
-        save_dataset(data, root / 'dataset.json')
-        write_json(root / 'dataset_calendar.json', cal)
-        return {'dataset': str(root / 'dataset.json'), 'bars':len(data.bars), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
-    if operation == 'ui_refresh':
-        if payload.get('network_opt_in') is not True:
-            raise ValidationError(ui_text('ui.execute_ui_operation.text_30'))
-        from quantlab.downloads import refresh
-        return refresh(Path(paths.cache), days=payload.get('days', 1), kind=payload.get('format', 'csv'))
-    if operation == 'ui_backtest':
-        from quantlab.strategies import builtin_strategies, validate_strategy
-        from quantlab.backtest import run_backtest
-        from quantlab.__main__ import config_from_json
-        data = _dataset(root, payload)
-        config = config_from_json(payload['config'])
-        specs = list(builtin_strategies())
-        provenance = None
-        if payload.get('candidate'):
-            if payload.get('batch'): raise ValidationError(ui_text('ui.execute_ui_operation.text_31'))
-            spec, provenance = candidate_record(root, payload['candidate'])
-            source_hash = data.manifest.get('parent_data_hash', data.manifest['data_hash'])
-            if provenance['source_data_hash'] != source_hash: raise ValidationError(ui_text('ui.execute_ui_operation.text_32'))
-            specs = [spec]
-        elif not payload.get('batch'):
-            spec = next((s for s in specs if s.family == payload['family']), None)
-            if spec is None:
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_33'))
-            spec = StrategySpec(spec.strategy_id, spec.family, payload.get('parameters', dict(spec.parameters)), dict(spec.rules))
-            validate_strategy(spec)
-            specs = [spec]
-        if provenance:
-            manifest = {**data.manifest, 'desktop_candidate_reference': provenance['reference']}
-            manifest['manifest_hash'] = content_hash({k:v for k,v in manifest.items() if k not in ('imported_at','manifest_hash')})
-            data = Dataset(data.bars, manifest, dict(data.quality))
-        reports = []
-        summary_metrics = {'net_pnl': Decimal('0'), 'trade_count': 0}
-        for spec in specs:
-            result = run_backtest(data, spec, config)
-            summary_metrics['net_pnl'] += Decimal(str(result.metrics['net_pnl']))
-            summary_metrics['trade_count'] += result.metrics.get('trade_count', result.metrics.get('closed_trades', 0))
-            # Publish a complete immutable report folder, never a half-written result.
-            import tempfile
-            reports_root = root / 'reports'; reports_root.mkdir(exist_ok=True)
-            with tempfile.TemporaryDirectory(prefix='.partial-', dir=reports_root) as staging:
-                files = export_report(result, Path(staging))
-                folder = Path(files['result']).parent
-                write_json(folder / 'strategy.json', spec)
-                if provenance: write_json(folder / 'candidate_provenance.json', provenance)
-                destination = reports_root / files['result_hash']
-                if destination.exists():
-                    if content_hash(load_result(destination / 'result.json')) != files['result_hash'] or read_json(destination / 'strategy.json') != to_dict(spec):
-                        raise ValidationError(ui_text('ui.execute_ui_operation.text_34'))
-                else: folder.rename(destination)
-                files = {key: str(destination / Path(value).name) if key != 'result_hash' else value for key, value in files.items()}
-            reports.append(files)
-        write_json(root / 'active_result.json', {'result_hash': reports[-1]['result_hash']})
-        return {'reports': reports, 'metrics': to_dict(summary_metrics), 'source_type': data.manifest['source_type'], 'scope': 'research_only'}
-    if operation == 'ui_campaign':
-        from quantlab.research import FixtureGenerator, run_campaign, demo_campaign_config
-        from quantlab.__main__ import config_from_json
-        data = _dataset(root, payload)
-        config = payload.get('config') or demo_campaign_config(data, demo_config())
-        if isinstance(config.get('backtest_config'), dict):
-            config['backtest_config'] = config_from_json(config['backtest_config'])
-        options = payload['provider']
-        if options.get('mode') == 'chatgpt_plan':
-            generator, plan_identity = plan_provider(paths, data, config, options)
-            options = {'mode':'chatgpt_plan','binding':plan_identity}
-        elif options.get('mode') == 'manual':
-            from quantlab.manual_exchange import export_request_file, import_response, import_response_file
-            if payload.get('manual_export'):
-                request = export_request_file(data, config, Path(payload['manual_export']))
-                return {'manual_export': payload['manual_export'], 'request': request, 'mode': 'manual_unverified'}
-            if options.get('response_path'):
-                generator = import_response_file(data, config, Path(options['response_path']))
-            else:
-                generator = import_response(data, config, options.get('response_text', ''))
-            generator.preflight(data, config)
-            research_controls(paths)
-            options = {'mode': 'manual', 'package': generator.model}
-        else:
-            generator = campaign_generator(paths, options)
-        name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
-        return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name,
-                            holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
-    if operation == 'ui_compare':
-        if not payload.get('results'): raise ValidationError(ui_text('ui.execute_ui_operation.text_35'))
-        return {'rows': comparison_rows([load_result(p) for p in payload['results']])}
-    if operation == 'ui_select':
-        folder = Path(payload['result']).parent
-        result = load_result(folder / 'result.json')
-        reference = result.manifest.get('dataset_manifest', {}).get('desktop_candidate_reference')
-        if reference:
-            spec, provenance = candidate_record(root, reference)
-            if not provenance['paper_qualified']: raise ValidationError(ui_text('ui.execute_ui_operation.text_36'))
-            if content_hash(spec) != result.manifest.get('spec_hash'): raise ValidationError(ui_text('ui.execute_ui_operation.text_37'))
-        return save_selection(read_json(folder / 'strategy.json'), result, root / 'selection.json')
-    if operation == 'ui_disable':
-        selection = root / 'selection.json'
-        if selection.exists():
-            archive = root / 'disabled_selections'
-            archive.mkdir(exist_ok=True)
-            value = read_json(selection)
-            write_json(archive / (content_hash(value) + '.json'), value)
-            selection.unlink()
-        if (root / 'paper_policy.json').exists():
-            _paper(root).set_kill_switch(True)
-        return {'selection': 'disabled', 'scope': 'research_and_paper_only'}
-    if operation.startswith('ui_paper_'):
-        # Explicit policy is required; never infer an official calendar from prices.
-        if 'policy' in payload:
-            policy = payload['policy']
-            existing = root / 'paper_policy.json'
-            if existing.exists() and read_json(existing) != policy:
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_38'))
-            if not existing.exists():
-                from quantlab.paper import PaperBroker
-                if not isinstance(policy, dict) or set(policy) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
-                    raise ValidationError(ui_text('ui.execute_ui_operation.text_39'))
-                # Validate in a disposable journal first: invalid policy cannot poison startup.
-                import tempfile
-                with tempfile.TemporaryDirectory(prefix='policy-', dir=root) as staging:
-                    PaperBroker(Path(staging) / 'validation.sqlite3', instrument=Instrument(policy['contract_id']),
-                                costs=demo_config().costs, limits=paper_risk_limits(),
-                                risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
-                write_json(existing, policy)
-        broker = _paper(root)
-        replay_state = None
-        if operation == 'ui_paper_reconcile':
-            broker.reconcile(payload['snapshot'])
-        elif operation == 'ui_paper_kill':
-            broker.set_kill_switch(True)
-        elif operation == 'ui_paper_submit':
-            if payload.get('reconcile_confirmed') is not True:
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_40'))
-            broker.reconcile(payload['snapshot'])
-            selection = load_selection(root / 'selection.json')
-            if payload['intent'].get('strategy_hash') != selection['strategy_hash']:
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_41'))
-            broker.set_kill_switch(False)
-            broker.submit(payload['intent'], quote=payload['quote'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))
-        elif operation == 'ui_paper_cancel':
-            broker.cancel(payload['order_id'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))
-        elif operation == 'ui_paper_replay':
-            if payload.get('reconcile_confirmed') is not True:
-                raise ValidationError(ui_text('ui.execute_ui_operation.text_42'))
-            broker.reconcile(payload['snapshot'])
-            from quantlab.paper_replay import PaperReplay
-            data = _dataset(root, payload)
-            selection = load_selection(root / 'selection.json')
-            binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
-            paths.require_replay_wal()
-            replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data,
-                                 strategy=StrategySpec(**selection['strategy']), broker=broker,
-                                 margin_schedule=broker._margin_schedule, storage_profile="wal_full")
-            replay.start()
-            cursor_before = replay.snapshot()['cursor']
-            fills_before = len(broker.snapshot()['fills'])
-            try:
-                replay.step(max_bars=payload.get('max_bars', 100))
-            finally:
-                replay.stop()
-            replay_state = replay.snapshot()
-            replay_state['processed_bars'] = replay_state['cursor'] - cursor_before
-            replay_state['new_fills'] = len(broker.snapshot()['fills']) - fills_before
-        state = broker.snapshot()
-        journal = broker.journal_events()
-        write_json(root / 'paper_snapshot.json', state)
-        write_json(root / 'paper_journal_export.json', journal)
-        if replay_state is not None:
-            return {'replay': replay_state, 'account': state}
-        return {'account': state, 'journal_tail': journal[-20:], 'journal_file': str(root / 'paper_journal_export.json')}
-    raise ValidationError(ui_text('ui.execute_ui_operation.text_43'))
+    return _UI_OPERATION_HANDLERS[operation](payload, paths, root, emit=emit,
+                                            descendants_stopped=descendants_stopped)
 
 
 

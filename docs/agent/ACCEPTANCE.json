@@ -1,5 +1,12 @@
 {
   "schema_version": 2,
+  "ui_operation_registry": {
+    "plan_item": "P2-A4",
+    "status": "PASS",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: UI operation registry (P2-A4)",
+    "evidence": "tests/test_ui_operations_registry.py; tests/fixtures/ui_operations_golden.json; tests/fixtures/desktop_ui_public_names.json",
+    "coverage": "All 28 operations compared against isolated HEAD source and recorded goldens; 27 succeed offline, official TAIFEX refresh records consent rejection. Each legacy/new exercise patches fresh process profile/app-data paths and C locale; only host SID/DACL preparation is replaced by confined temp-directory creation, with credential cryptography and auth HTTP forbidden. All scenarios replay under clean and synthetic remembered-login host profiles. Auth golden regenerated from old HEAD in this setup; all other observations unchanged. Host fonts, locale/timezone, clock, CPU budgets, SQLite and profile-file dependence audited in the contract. Additional history import, fixture campaign and mock-wire subscription campaign scenarios. Legacy AST replay WAL barrier assertion covers dispatcher, all handlers and paper helpers. Acceptance weights unchanged; full suite controller-owned outside sandbox."
+  },
   "frozen_at": "2026-10-09T15:45:00Z",
   "baseline_commit": "1cacce4ee4eef4ce7e8760f8153ef64a74852d22",
   "rule": "Only evidence-backed PASS earns weight; failed/blocked/not_run earns zero. Safety failures veto release. Do not lower acceptance targets.",

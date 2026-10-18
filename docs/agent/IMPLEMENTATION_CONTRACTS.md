@@ -22,6 +22,56 @@ Evidence: `trader/config.py:6,15–16,79` imports Shioaji and constructs a non-s
 
 Legacy safety patch is separate: disable unsafe automatic/live entry paths, require nonempty Telegram allowlist, redact credential-bearing SQL logging. Do not modernize every legacy dependency or claim retained legacy execution is verified. Never enable a live client via environment variable alone.
 
+## UI operation registry (P2-A4)
+
+`desktop_ui.execute_ui_operation` retains its worker signature and public import
+surface. Its private `_UI_OPERATION_HANDLERS` dictionary has exactly one distinct
+module-level callable per `UI_OPERATIONS` entry. The dispatcher rejects operations
+outside that immutable allowlist before workspace setup or handler invocation;
+campaign provider-mode validation also precedes setup. Each handler and the
+dispatcher are limited to 60 source lines. Paper policy setup and journal export
+are shared helpers; replay still calls `require_replay_wal` before constructing
+`PaperReplay`. The function-local import in `quantlab.desktop_runtime` is retained.
+
+`tests/fixtures/ui_operations_golden.json` records results, events and rejection
+messages from the HEAD dispatcher captured before extraction. Its metadata lists
+offline limitations and the exact temporary-path, path-derived identity and
+elapsed-time normalisations. `desktop_ui_public_names.json` freezes the public
+import surface. Each test loads `git show HEAD:desktop_ui.py` under an isolated
+module name and exercises old and new implementations in separate fresh temporary
+workspaces against the recorded baseline. Successful coverage includes synthetic
+analysis preview/run/read/reconcile, fixture and mock-wire subscription campaigns,
+subscription reconciliation, accepted paper orders/cancel requests and replay fills,
+local daily/history imports, and walk-forward preview/run/read/reconcile. Only
+official TAIFEX download requires external network; its consent rejection and
+precise offline limitation are recorded. Real transport is barred by a socket
+guard. Bounded computation uses existing offline worker fixtures; safety and
+receipt validation run normally. Stopwatch durations, import wall time, temporary
+paths and formula-derived replay identities are the documented normalisations.
+Every exercise patches the process environment with fresh USERPROFILE/HOME,
+LOCALAPPDATA/APPDATA and home/XDG paths, restoring it afterwards. The locale is
+temporarily C. Auth uses the real empty-file lookup, lock and AuthSession; only
+DPAPIVault's host SID/DACL preparation is replaced by directory creation confined
+to the temporary root. Encryption/decryption and official auth HTTP requests are
+forbidden. Thus empty-vault restore records `host_initialization_required`, not a
+sandbox-specific ACL error. The auth golden was regenerated from HEAD's old
+dispatcher with this same setup; every other observation remained exact.
+All scenarios also replay under clean and synthetic remembered-login outer
+profiles, checking that sentinel credentials remain untouched and env is restored.
+Host-state audit: these handlers do not construct widgets or query installed
+fonts. Inputs specify numeric values, UTC-aware synthetic timestamps, calendars,
+seeds and worker budgets; no default CPU-count sizing is used. C locale fixes
+formatting and TZ=UTC is set, but Windows timezone is not assumed to follow TZ:
+the fixtures use explicit UTC dates instead. Current time only appears in the
+documented import metadata and stopwatch fields above. SQLite's actual supported
+runtime is retained (including WAL/version guards), with no version spoofing or
+version-dependent output masked. Files and durable controls live exclusively in
+fresh temporary roots; no existing profile data is an input. Socket guards and
+offline transport/worker fixtures cover the network and process boundaries.
+The legacy AST-isolation replay test compiles the dispatcher, every registered
+handler, registry and shared paper helpers together. Its original assertion still
+requires the durable WAL barrier before the actual replay constructor is reached.
+
 ## Ownership and dependency order
 
 - A owns `quantlab/core.py`, `data.py`, associated `tests/test_data.py`; publish core first. Package `__init__.py` remains side-effect free.

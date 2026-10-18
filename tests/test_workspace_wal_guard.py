@@ -166,14 +166,21 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         import ast
         source = Path(__file__).resolve().parents[1] / 'desktop_ui.py'
         tree = ast.parse(source.read_text(encoding='utf-8'))
-        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'execute_ui_operation')
+        # Compile the entire replacement body, including every registered handler
+        # and shared paper helper, so the constructor-order assertion stays real.
+        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+                     and (node.name == 'execute_ui_operation' or node.name.startswith('_handle_ui_')
+                          or node.name in ('_prepare_paper_operation', '_finish_paper_operation'))]
+        registry = next(node for node in tree.body if isinstance(node, ast.Assign)
+                        and any(isinstance(target, ast.Name) and target.id == '_UI_OPERATION_HANDLERS'
+                                for target in node.targets))
         broker = types.SimpleNamespace(reconcile=lambda snapshot: None, _margin_schedule=())
         namespace = {'UI_OPERATIONS': {'ui_paper_replay'}, '_root': lambda paths: paths.state,
                      '_paper': lambda root: broker,
                      '_dataset': lambda root, payload: types.SimpleNamespace(manifest={'data_hash': 'data'}),
                      'load_selection': lambda path: {'strategy_hash': 'strategy', 'strategy': {}},
                      'content_hash': lambda value: 'binding', 'StrategySpec': lambda **value: value}
-        exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), 'exec'), namespace)
+        exec(compile(ast.Module(body=[*functions, registry], type_ignores=[]), str(source), 'exec'), namespace)
         class ReachedConstructor(Exception):
             pass
         def constructor(*args, **kwargs):
