@@ -153,3 +153,7 @@ quantlab-output/
 
 # Version the reproducible native desktop build recipe.
 !packaging/markauto.spec
+
+# Local task scratch and runtime captures are never review artifacts.
+/.t*-work/
+/.tmp*/

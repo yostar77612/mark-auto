@@ -350,3 +350,53 @@ ObjectNames, payloads, validation, quotas and one-time OOS consumption are uncha
   T5 evidence: `docs/analysis/baseline/t5_theme_1366x768.json` (all 14 PNGs: 0%).
 - Presentation only: desktop strings, account decisions, safety validation, quotas,
   OOS consumption and pinned producer sources are unchanged.
+
+
+## T6 part A ? Desktop page boundaries
+
+`desktop_pages` owns MarketPage (including cache and result chart binding), DataPage,
+StrategyPage (including walk-forward controls/callbacks and campaign/candidate actions),
+and BacktestPage. Pages use the explicit `PageHost` callbacks and `PageState` object;
+they never import desktop_ui or discover a shell through QWidget parents. Existing
+MainWindow widget and handler names remain explicit aliases. EquityPlot and the actual
+open-lot reference-line helper also live in desktop_pages; their desktop_ui import and
+static-method access paths remain available.
+
+Compare, Paper and Settings construction/handlers remain in MainWindow for part B.
+The staged MainWindow AST ceiling is 1500 lines; part B must replace it with 400.
+Every migrated page class is limited to 500 lines. No business rules or UI text changed.
+
+`tests/test_desktop_pages.py` verifies the boundaries, objectName set, explicit aliases,
+host job dispatch, consent resets, shared preview invalidation, and actual result chart
+binding (including mismatched-source rejection). Its visual test compares all seven
+pages against `tests/fixtures/desktop_pages_before`, captured from an archive of the
+pre-change HEAD. Metrics JSON and all 14 PNG pixel buffers are identical at 1366x768,
+scale 1, using the snapshot tool's Windows offscreen font/style settings. Baseline
+provenance is in `tests/fixtures/desktop_pages_baseline.json`. Both text and stylesheet
+AST guards recursively cover desktop_pages and include injected-violation tests.
+
+## T6 part B - Complete desktop page boundaries
+
+ComparePage owns comparison/selection and candidate analysis construction, preview,
+consent and recovery presentation. PaperPage owns paper construction, account rendering,
+policy/snapshot loading and paper actions. SettingsPage owns settings, backup/log handlers
+and ChatGPT connection construction, signals and callbacks. WidgetTools and ViewCoordinator
+own shared widget construction and result/view rendering. Page composition, compatibility
+aliases and cross-page signal wiring live in desktop_pages.mount. Part A page bodies and
+the pre-change visual archive are preserved.
+
+MainWindow owns navigation, global status/notifications, background-job scheduling and
+callback dispatch, and shutdown/recovery coordination. Its enforced AST ceiling is 400
+lines (measured 371); every page class remains at most 500 lines (largest: StrategyPage,
+326). SharedStateBindings contains data descriptors; PageContext exposes explicit host
+callbacks without importing or discovering the shell. Public desktop_ui module names,
+widget aliases and handler aliases remain available, including late dispatch of patched
+public analysis/rendering helpers.
+
+tests/test_desktop_pages.py enforces all seven page boundaries and the final ceilings.
+Focused interactions cover comparison dispatch, fail-closed paper and restore consent,
+ChatGPT signals, shared analysis state, settings geometry, and result dispatch. All seven
+metrics JSON entries and 14 PNG pixel buffers still match the pre-change archive exactly.
+No validation, quota, OOS policy, rendered text, objectName or pinned producer source changed.
+The full suite is controller-owned outside the sandbox. Part B evidence and the ignored
+.t6-work deletion inventory are in docs/analysis/t6_page_split_part_b.json.

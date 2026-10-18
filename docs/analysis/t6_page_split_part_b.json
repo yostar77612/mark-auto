@@ -1,0 +1,60 @@
+{
+  "stage": "T6 part B",
+  "preserved": "Part A page bodies and pre-change fixture archive",
+  "files": [
+    "desktop_ui.py",
+    "desktop_pages/__init__.py",
+    "desktop_pages/host.py",
+    "desktop_pages/bindings.py",
+    "desktop_pages/mount.py",
+    "desktop_pages/compare.py",
+    "desktop_pages/paper.py",
+    "desktop_pages/settings.py",
+    "desktop_pages/widgets.py",
+    "desktop_pages/views.py",
+    "tests/test_desktop_pages.py",
+    "docs/agent/IMPLEMENTATION_CONTRACTS.md",
+    "docs/agent/ACCEPTANCE.json",
+    ".gitignore"
+  ],
+  "measurements": {
+    "mainwindow_class_lines": 371,
+    "page_class_lines": {
+      "MarketPage": 134,
+      "DataPage": 61,
+      "StrategyPage": 326,
+      "BacktestPage": 52,
+      "ComparePage": 281,
+      "PaperPage": 138,
+      "SettingsPage": 288
+    },
+    "identical_metric_pages": 7,
+    "identical_pngs": 14,
+    "png_changed_pixels_percent": 0,
+    "objectname_parity": true
+  },
+  "verification": {
+    "focused_tests": "22 passed; tests.test_desktop_pages, tests.test_no_hardcoded_ui_text, tests.test_no_inline_stylesheet",
+    "sandbox_runner": "Offscreen Qt; process-local os.mkdir mode 0700 -> 0777 workaround for sandbox temporary-directory ACL artifacts; tests and product filesystem validation remain unchanged",
+    "quality_gate": "exit 0; zero findings",
+    "python_311": "py -3.11 compiled all 267 tracked and non-ignored new Python sources using utf-8-sig",
+    "full_suite": "Not run, per task-specific sandbox instruction; controller-owned",
+    "gitnexus": "Existing-index impact MEDIUM; refresh failed with sandbox spawn EPERM; detect_changes(all) reports CRITICAL across the combined Part A/B extraction and 36 affected flows. Index remains stale; not treated as proof of safety.",
+    "git": "No branch switch, commit, push or PR"
+  },
+  "scratch": {
+    "status": "Recursive removal rejected by sandbox policy; ignored by /.t*-work/ and verified using git check-ignore",
+    "delete_when_outside_sandbox": [
+      ".t6-work/after-snapshot/",
+      ".t6-work/before/",
+      ".t6-work/before-snapshot/",
+      ".t6-work/after-names.json",
+      ".t6-work/capture.py",
+      ".t6-work/focused.py",
+      ".t6-work/head.zip",
+      ".t6-work/migrate.py",
+      ".t6-work/run.py"
+    ],
+    "part_b_migration_scripts": "Deleted"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "stage": "T6 part A",
+  "constructors": {
+    "MarketPage": "_dashboard",
+    "DataPage": "_data_page",
+    "StrategyPage": "_strategy_page",
+    "BacktestPage": "_backtest_page"
+  },
+  "moved_handlers": {
+    "market": [
+      "refresh_market",
+      "save_market_preferences",
+      "load_market_cache",
+      "bind_result_layers"
+    ],
+    "data": [
+      "import_market_file",
+      "import_market_history",
+      "import_data",
+      "download_data"
+    ],
+    "strategy": [
+      "_walk_forward_section",
+      "_connect_walk_forward_inputs",
+      "_walk_forward_origin_changed",
+      "pick_walk_forward_original",
+      "_walk_forward_saved_source",
+      "_invalidate_walk_forward_preview",
+      "_walk_forward_input_key",
+      "preview_walk_forward",
+      "run_walk_forward",
+      "read_walk_forward",
+      "_refresh_walk_forward_references",
+      "_walk_forward_event",
+      "_family_changed",
+      "run_campaign",
+      "export_manual_request",
+      "inspect_candidate",
+      "use_candidate",
+      "use_builtin"
+    ],
+    "backtest": [
+      "run_backtest",
+      "show_result"
+    ]
+  },
+  "additional_helpers": [
+    "EquityPlot -> desktop_pages/equity.py (re-exported from desktop_ui)",
+    "MainWindow._result_snapshot_lines -> desktop_pages/result_layers.py:result_snapshot_lines (static alias preserved)"
+  ],
+  "measurements": {
+    "mainwindow_class_lines": 1480,
+    "page_class_lines": {
+      "MarketPage": 134,
+      "DataPage": 61,
+      "StrategyPage": 326,
+      "BacktestPage": 52
+    },
+    "identical_metric_pages": 7,
+    "identical_pngs": 14,
+    "png_changed_pixels_percent": 0
+  },
+  "baseline": {
+    "source_commit": "d8c373a6fc15c520142da2fbe00cc23ca20627be",
+    "source": "git archive HEAD, captured before migration",
+    "size": [
+      1366,
+      768
+    ],
+    "scale": 1.0,
+    "platform": "Windows offscreen Fusion Microsoft JhengHei UI 10",
+    "stage": "T6 part A; MainWindow limit 400 applies after part B"
+  },
+  "verification": "16 focused tests pass; full suite is controller-owned; GitNexus index refresh blocked by sandbox spawn EPERM, existing-index impact MEDIUM and detect_changes CRITICAL; no commit made."
+}

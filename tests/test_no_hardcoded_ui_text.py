@@ -13,6 +13,8 @@ UI_MODULES = (
     'desktop_market.py', 'desktop_presentation.py', 'desktop_recovery_smoke.py',
     'desktop_theme.py', 'desktop_ui.py', 'desktop_ui_polish.py', 'desktop_walk_forward.py',
 )
+UI_PACKAGE_MODULES = tuple(path.relative_to(ROOT).as_posix()
+                           for path in sorted((ROOT / 'desktop_pages').rglob('*.py')))
 # Migration debt must stay empty; every UI module is scanned below.
 TODO_MODULES = {}
 # These are not desktop UI modules. Keep the catalog and pinned non-UI sources
@@ -57,7 +59,7 @@ class HardcodedUITextTests(unittest.TestCase):
 
     def test_ui_modules_have_no_hardcoded_text(self):
         findings = []
-        for name in UI_MODULES:
+        for name in (*UI_MODULES, *UI_PACKAGE_MODULES):
             current = hardcoded_ui_text((ROOT / name).read_text(encoding='utf-8-sig'), name)
             findings.extend((name, line, text) for line, text in current)
         self.assertEqual(findings, [])
@@ -70,6 +72,13 @@ class HardcodedUITextTests(unittest.TestCase):
                     self.assertTrue(hardcoded_ui_text(source))
         original = (ROOT / 'desktop_ui.py').read_text(encoding='utf-8-sig')
         self.assertTrue(hardcoded_ui_text(original + '\nlabel = "\u6e2c\u8a66"\n'))
+
+    def test_package_injection_is_detected(self):
+        self.assertTrue(UI_PACKAGE_MODULES)
+        for name in UI_PACKAGE_MODULES:
+            source = (ROOT / name).read_text(encoding='utf-8-sig')
+            with self.subTest(module=name):
+                self.assertTrue(hardcoded_ui_text(source + '\nlabel = "\u6e2c\u8a66"\n', name))
 
     def test_only_docstrings_and_logging_are_exempt(self):
         self.assertEqual(hardcoded_ui_text('"\u8aaa\u660e"\nlogger.info("\u65e5\u8a8c")'), [])

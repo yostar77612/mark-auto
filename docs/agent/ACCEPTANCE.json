@@ -5721,5 +5721,57 @@
     ],
     "visual_evidence": "docs/analysis/baseline/t5_theme_1366x768.json",
     "scope": "Presentation-only centralized QSS; existing widget names, text and business logic preserved. Full suite is run by the controller outside the sandbox."
+  },
+  "t6_desktop_pages_part_a": {
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t6-part-a--desktop-page-boundaries",
+    "regressions": [
+      "tests/test_desktop_pages.py",
+      "tests/test_no_hardcoded_ui_text.py",
+      "tests/test_no_inline_stylesheet.py"
+    ],
+    "baseline": "tests/fixtures/desktop_pages_baseline.json",
+    "measurements": {
+      "mainwindow_class_lines": 1480,
+      "page_class_lines": {
+        "MarketPage": 134,
+        "DataPage": 61,
+        "StrategyPage": 326,
+        "BacktestPage": 52
+      },
+      "identical_metric_pages": 7,
+      "identical_pngs": 14,
+      "png_changed_pixels_percent": 0
+    },
+    "scope": "Part A only; Compare/Paper/Settings and shell <=400 limit remain for part B. Full suite is controller-owned outside sandbox. No acceptance weights, validation, quotas or OOS policies changed."
+  },
+  "t6_desktop_pages_part_b": {
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t6-part-b---complete-desktop-page-boundaries",
+    "regressions": [
+      "tests/test_desktop_pages.py",
+      "tests/test_no_hardcoded_ui_text.py",
+      "tests/test_no_inline_stylesheet.py"
+    ],
+    "evidence": "docs/analysis/t6_page_split_part_b.json",
+    "limits": {
+      "mainwindow_class_lines": 400,
+      "page_class_lines": 500
+    },
+    "measurements": {
+      "mainwindow_class_lines": 371,
+      "page_class_lines": {
+        "MarketPage": 134,
+        "DataPage": 61,
+        "StrategyPage": 326,
+        "BacktestPage": 52,
+        "ComparePage": 281,
+        "PaperPage": 138,
+        "SettingsPage": 288
+      },
+      "identical_metric_pages": 7,
+      "identical_pngs": 14,
+      "png_changed_pixels_percent": 0,
+      "objectname_parity": true
+    },
+    "scope": "All seven page classes extracted; original Part A page bodies and visual archive preserved. No safety validation, quotas, OOS policy or pinned producer changes. Full suite controller-owned outside sandbox."
   }
 }
