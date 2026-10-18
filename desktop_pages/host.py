@@ -17,6 +17,8 @@ class PageHost:
     move_window: Callable
     question: Callable
     open_file: Callable
+    save_file: Callable
+    market_history_dialog: Callable
     state: PageState
     mount_market: Callable
     mount_page: Callable
@@ -42,3 +44,5 @@ class PageHost:
     start_job: Callable
     text: Callable
     window_geometry: Callable
+    # QWidget x()/y() are frame coordinates; geometry().x()/y() are client coordinates.
+    window_position: Callable

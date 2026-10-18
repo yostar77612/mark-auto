@@ -33,7 +33,7 @@ class DataPage(QWidget):
         self.data_detail = QPlainTextEdit(); self.data_detail.setReadOnly(True); details.addWidget(self.data_detail); details.addWidget(self.summary)
 
     def import_market_file(self):
-        name, _ = QFileDialog.getOpenFileName(self, ui_text('ui.import_market_file.text_1'), '', 'JSON / CSV (*.json *.csv)')
+        name, _ = self.host.open_file(ui_text('ui.import_market_file.text_1'), '', 'JSON / CSV (*.json *.csv)')
         if name:
             provider, format_name = self.market_provider.currentData()
             self.host.start_job('ui_market_refresh', {'provider': provider, 'format': format_name, 'local_path': name})
@@ -45,7 +45,7 @@ class DataPage(QWidget):
         existing = getattr(self.state, '_history_dialog', None)
         if existing is not None:
             existing.raise_(); existing.activateWindow(); return
-        dialog = MarketHistoryDialog(self)
+        dialog = self.host.market_history_dialog()
         self.state._history_dialog = dialog
         def accepted():
             if not getattr(self.state, '_closing', False):

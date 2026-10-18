@@ -23,7 +23,7 @@ class MarketPage(MarketDashboard):
 
     def refresh_market(self):
         if self.state.jobs.active: raise ValidationError(ui_text('ui.refresh_market.text_1'))
-        answer = QMessageBox.question(self, ui_text('ui.refresh_market.text_2'),
+        answer = self.host.question(ui_text('ui.refresh_market.text_2'),
             ui_text('ui.refresh_market.text_3'),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         if answer == QMessageBox.StandardButton.Yes:
@@ -34,7 +34,8 @@ class MarketPage(MarketDashboard):
         value = self.state.settings.load()
         value['market'] = self.market.preferences()
         geometry = self.host.window_geometry()
-        value['window'] = {'x': geometry.x(), 'y': geometry.y(), 'width': geometry.width(), 'height': geometry.height()}
+        position = self.host.window_position()
+        value['window'] = {'x': position.x(), 'y': position.y(), 'width': geometry.width(), 'height': geometry.height()}
         self.state.settings.save(value)
 
     def load_market_cache(self):

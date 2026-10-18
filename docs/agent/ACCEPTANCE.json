@@ -5773,5 +5773,15 @@
       "objectname_parity": true
     },
     "scope": "All seven page classes extracted; original Part A page bodies and visual archive preserved. No safety validation, quotas, OOS policy or pinned producer changes. Full suite controller-owned outside sandbox."
+  },
+  "t6_semantic_repair": {
+    "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t6-repair---frame-position-and-semantic-parity",
+    "evidence": "docs/analysis/t6_semantic_audit.json",
+    "regressions": ["tests/test_desktop_window_position.py", "tests/test_desktop_pages.py"],
+    "snapshot_assertions": "All platforms: exact seven page names/order, visible_text, visible_input_count, button_count, label_char_count, unlabeled_inputs, primary_button_count, objectName set and AST class line limits. Windows only (sys.platform == 'win32'): original byte-for-byte metrics JSON including page_height/full_width and all 14 PNG pixel buffers. Windows font geometry is not required on Linux; window-position doubles require no Windows native APIs.",
+    "behavior": "Save and restore frame x/y through explicit host QPoint callback; preserve client width/height, integer conversion and screen clamping. Restore original MainWindow parent for five dialog entry points.",
+    "audit": {"named_methods": 77, "page_constructors": 7, "other_helpers": ["EquityPlot", "result_snapshot_lines", "mount aliases", "state descriptors", "host callbacks"]},
+    "measurements": {"focused_tests_passed": 20, "identical_metric_pages": 7, "identical_pngs": 14, "png_changed_pixels_percent": 0},
+    "scope": "No objectName, UI text, validation, quotas, OOS policy or pinned source changes. Native decorated-window smoke and full suite remain controller-owned. GitNexus index refresh/detect-changes blocked by sandbox spawn EPERM; no clean graph claim."
   }
 }

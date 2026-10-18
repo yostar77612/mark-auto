@@ -652,7 +652,7 @@ def dataset_market_series(dataset, calendar_payload):
         result.append(MarketSeries(instrument, tuple(bars), provenance))
     return tuple(result)
 
-from PySide6.QtCore import Qt, QTimer, QPointF, QUrl, QPropertyAnimation
+from PySide6.QtCore import Qt, QTimer, QPoint, QPointF, QUrl, QPropertyAnimation
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QListWidget, QStackedWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox,
@@ -754,6 +754,8 @@ class MainWindow(SharedStateBindings, QMainWindow):
             resize_window=self.resize, move_window=self.move,
             question=lambda *a: QMessageBox.question(self, *a),
             open_file=lambda *a: QFileDialog.getOpenFileName(self, *a),
+            save_file=lambda *a: QFileDialog.getSaveFileName(self, *a),
+            market_history_dialog=lambda: MarketHistoryDialog(self),
             mount_market=lambda *a, **kw: self._mount_market(*a, **kw), mount_page=lambda *a, **kw: self._mount_page(*a, **kw),
             advanced=lambda *a, **kw: self._advanced(*a, **kw),
             bind_result_layers=lambda *a, **kw: self.market_page.bind_result_layers(*a, **kw),
@@ -777,6 +779,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             start_job=lambda *a, **kw: self.start_job(*a, **kw),
             text=lambda *a, **kw: self._text(*a, **kw),
             window_geometry=lambda *a, **kw: self.geometry(*a, **kw),
+            window_position=lambda: QPoint(self.x(), self.y()),
         )
         mount_pages(self)
         self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)

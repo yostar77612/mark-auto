@@ -400,3 +400,36 @@ metrics JSON entries and 14 PNG pixel buffers still match the pre-change archive
 No validation, quota, OOS policy, rendered text, objectName or pinned producer source changed.
 The full suite is controller-owned outside the sandbox. Part B evidence and the ignored
 .t6-work deletion inventory are in docs/analysis/t6_page_split_part_b.json.
+
+### T6 repair - Frame position and semantic parity
+
+Window persistence uses `PageHost.window_position()` bound to
+`QPoint(MainWindow.x(), MainWindow.y())`: x/y are frame coordinates, including
+restore defaults. `window_geometry()` supplies only client width/height, equal
+to QWidget.width()/height(); integer conversion and screen clamping retain the
+original behavior. Both settings and market saves must round-trip without frame
+drift. `tests/test_desktop_window_position.py` models a client offset of +8/+31
+without relying on offscreen window decorations.
+
+Native file/confirmation dialogs and the modeless market-history dialog retain
+MainWindow parenting through explicit host callbacks. Pages never discover the
+shell through parent/window lookup. The focused audit lists every examined
+method and notable substitution in `docs/analysis/t6_semantic_audit.json`:
+77 named methods, seven page construction methods, shared-state/callback bindings,
+EquityPlot and result snapshot helpers. The frame-position regression and five
+dialog-parent substitutions were repaired; other examined routing, defaults,
+conversions, references, signal targets and timer lifetimes retain behavior.
+Fresh origin/main and repaired snapshots have identical metrics for all seven
+pages and identical pixel buffers for all 14 PNGs at 1366x768, scale 1.
+
+### T6 CI repair - Platform-independent snapshot assertions
+
+On every platform, the snapshot regression compares the seven page names and order,
+visible text, visible input/button counts, label character counts, unlabeled inputs
+and primary button counts exactly against the pre-change archive. The widget
+objectName set and AST class line limits remain exact on every platform. The
+archive was captured with Windows fonts: byte-for-byte metrics JSON (including
+page_height and full_width) and all 14 PNG pixel buffers remain required on
+sys.platform == 'win32'; other platforms compare the behavioral facts without
+Windows geometry or rasterization expectations. Window-position tests use explicit
+frame/client offsets and screen doubles; no Windows native APIs are required.

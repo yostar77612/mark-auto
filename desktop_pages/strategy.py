@@ -110,7 +110,7 @@ class StrategyPage(QWidget):
         self._invalidate_walk_forward_preview()
 
     def pick_walk_forward_original(self):
-        name, _ = QFileDialog.getOpenFileName(self, ui_text('ui.pick_walk_forward_original.text_1'), '', ui_text('ui.pick_walk_forward_original.text_2'))
+        name, _ = self.host.open_file(ui_text('ui.pick_walk_forward_original.text_1'), '', ui_text('ui.pick_walk_forward_original.text_2'))
         if not name: return
         if '://' in name or name.startswith(('//', '\\\\')) or not Path(name).is_absolute():
             raise ValidationError(ui_text('ui.pick_walk_forward_original.text_3'))
@@ -300,7 +300,7 @@ class StrategyPage(QWidget):
         config = self.host.payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.state.backtest_form.build_payload()['config']))
         if config.get('max_improvements') != 0:
             raise ValidationError(ui_text('ui.export_manual_request.text_1'))
-        name, _ = QFileDialog.getSaveFileName(self, ui_text('ui.export_manual_request.text_2'), 'manual-ai-request.json', 'JSON (*.json)')
+        name, _ = self.host.save_file(ui_text('ui.export_manual_request.text_2'), 'manual-ai-request.json', 'JSON (*.json)')
         if name:
             if Path(name).exists(): raise ValidationError(ui_text('ui.export_manual_request.text_3'))
             self.host.start_job('ui_campaign', {'config': config, 'provider': {'mode':'manual'}, 'manual_export': name})

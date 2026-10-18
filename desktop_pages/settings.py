@@ -226,7 +226,8 @@ class SettingsPage(PageContext, QWidget):
         value.update({'persist_logs':self.persist_logs.isChecked(),
                       'local_notifications':self.local_notifications.isChecked()})
         value['market'] = self.market.preferences()
-        value['window'] = {'x': self.host.window_geometry().x(), 'y': self.host.window_geometry().y(), 'width': self.host.window_geometry().width(), 'height': self.host.window_geometry().height()}
+        position = self.host.window_position()
+        value['window'] = {'x': position.x(), 'y': position.y(), 'width': self.host.window_geometry().width(), 'height': self.host.window_geometry().height()}
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.chatgpt_panel.consent.setChecked(False)
@@ -248,7 +249,8 @@ class SettingsPage(PageContext, QWidget):
         try:
             if 'market' in value: self.market.restore_preferences(value['market'])
             size = value.get('window', {})
-            x, y = int(size.get('x', self.host.window_geometry().x())), int(size.get('y', self.host.window_geometry().y()))
+            position = self.host.window_position()
+            x, y = int(size.get('x', position.x())), int(size.get('y', position.y()))
             available = [screen.availableGeometry() for screen in QApplication.screens()]
             screen = next((rect for rect in available if rect.contains(x, y)), self.host.window_screen().availableGeometry())
             self.host.resize_window(min(max(int(size.get('width', self.host.window_geometry().width())), 800), screen.width()), min(max(int(size.get('height', self.host.window_geometry().height())), 600), screen.height()))
