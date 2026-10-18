@@ -1,6 +1,7 @@
 """Paper account presentation and consent-preserving paper actions."""
 from desktop_theme import set_status, status_for_color
 from desktop_strings import ui_text
+from desktop_timeinput import DateInput
 from pathlib import Path
 from quantlab.desktop_feedback import stop_presentation
 import json
@@ -48,7 +49,10 @@ class PaperPage(PageContext, QWidget):
         self.intent = self._text(advanced, ui_text('ui._paper_page.text_17'), '{}', True)
         self.quote = self._text(advanced, ui_text('ui._paper_page.text_18'), '{}', True)
         self._remember(self.intent); self._remember(self.quote)
-        self.paper_time = self._text(layout, ui_text('ui._paper_page.text_19'), '2026-01-05T01:00:00Z')
+        layout.addWidget(QLabel(ui_text('timeinput.paper_clock')))
+        self.paper_time = DateInput('2026-01-05T01:00:00Z', timestamp=True)
+        self.paper_time.setAccessibleName(ui_text('timeinput.paper_clock'))
+        layout.addWidget(self.paper_time)
         self._button(layout, ui_text('ui._paper_page.text_20'), 'paper_submit', lambda: self.paper_job('submit', intent=self._payload(self.intent, self.intent_form.build_payload), quote=self._payload(self.quote, self.quote_form.build_payload), now=self.paper_time.text()), role='primary')
         self.cancel_order = self._text(layout, ui_text('ui._paper_page.text_21'))
         self._button(layout, ui_text('ui._paper_page.text_22'), 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()), role='danger')

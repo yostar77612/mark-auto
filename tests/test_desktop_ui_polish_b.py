@@ -18,7 +18,7 @@ from desktop_presentation import display_number, display_status, result_name
 from desktop_forms import SummaryCard, ResultTable, backtest_summary_text
 from desktop_ui import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-from tools.ui_snapshot import capture
+from tests.snapshot_cache import default_metrics
 
 
 class disposable_directory:
@@ -62,7 +62,7 @@ class PresentationTests(unittest.TestCase):
 
     def test_snapshot_height_and_default_disclosures(self):
         with disposable_directory() as root, patch('tempfile.TemporaryDirectory', disposable_directory):
-            metrics = capture(Path(root) / 'snapshots')
+            metrics = default_metrics()
             for name in ('AI 策略中心', '紙上交易與復原'):
                 self.assertLessEqual(metrics['pages'][name]['page_height'], 1600, name)
             for name, page in metrics['pages'].items():

@@ -14,6 +14,7 @@ analysis = Analysis(
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
            (str(root / 'packaging/markauto.ico'), 'packaging'),
            (str(root / 'examples'), 'examples'),
+           (str(root / 'quantlab/data_files/taifex_expiries.json'), 'quantlab/data_files'),
            (str(root / 'desktop_chatgpt_auth.py'), '.'),
            (str(root / 'desktop_chatgpt_provider.py'), '.'),
            (str(root / 'desktop_chatgpt_dependency_manifest.json'), '.'),

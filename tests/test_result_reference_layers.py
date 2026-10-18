@@ -42,6 +42,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         save_dataset(data,self.paths.state/'dataset.json')
         exported=export_report(result,self.paths.state/'reports')
         w=self.window
+        w.navigation.setCurrentRow(5)  # T9: the market overview moved from row 0 to row 5 of the workflow-ordered sidebar
         w.market.set_market_series(series)
         w._market_data_bindings={C:data.manifest['data_hash']}
         w._market_research_series={C:series}

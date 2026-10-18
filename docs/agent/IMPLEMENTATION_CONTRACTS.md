@@ -547,3 +547,205 @@ The hidden `comparison_list` QListWidget remains a bidirectional compatibility a
 Final 1366x768 snapshot heights (HEAD archive / final): strategy center 956 / 798, compare 1948 / 684, backtest 822 / 995, paper 1073 / 1304 px. Strategy settings/research/Walk-forward tab heights are 490 / 438 / 867 px, each <=1100. Compare is <=768 px. These values supersede intermediate heights above. Snapshot tooling continues measuring every tab and wizard step.
 
 Evidence: `tests/test_compare_table.py` and part D in `docs/analysis/t8_snapshot_numbers.json`. The helper is automatically registered in both recursive AST guards. No existing control objectName is removed; aliases/additions are in `docs/analysis/t8_objectname_changes.json`. Existing assertions remain unchanged: only Compare PNG/metrics and the new widget-name fixture entry are refreshed. Python 3.11 compilation, class boundaries, catalog/style guards, focused T8 tests and static quality gate are required. Full-suite testing is controller-owned outside the sandbox. GitNexus refresh/diff checks fail with spawn EPERM; impact and direct source checks are recorded without a clean graph claim.
+# T9 part A — verified expiry inputs and demo overview
+
+`quantlab/data_files/taifex_expiries.json` records exactly 12 monthly final
+settlement dates, 202510–202609 inclusive, shared by TX, MTX and TMF. It does not
+extrapolate. February 2026 remains **2026-02-23**. The official source is
+https://www.taifex.com.tw/cht/5/futIndxFSP; supplied retrieval and verification
+dates are 2026-10-18. Only monthly rows with a numeric TX/MTX/TMF settlement
+price qualify. The PyInstaller payload and source build manifest include this
+file. `tools/update_taifex_expiries.py --data-version VERSION` is a manual online
+maintenance command; its parser is tested using saved synthetic HTML offline.
+
+The corrected, user-supplied raw HTML SHA-256 is
+`e9869a6cc927ec094201d04eee866ea0d3bc7f55fab7a7ea71c09900daa87656`.
+It is recorded verbatim, with strict lowercase 64-hex validation retained.
+The repair run made no network request and did not retrieve or re-verify the
+original HTML; provenance is the supplied digest and the 12 previously verified
+rows. Invalid/missing provenance retains the existing manual input fallback.
+
+The **trading calendar is not bundled**: the official 2026 calendar is a
+colour-coded PDF that cannot be machine-verified. Existing explicit calendar
+and session requirements remain unchanged. The picker fills the original
+expiry table or history contract fields; it never changes request builders,
+validation rules, stored values or hashes, and never overwrites a manual date.
+Out-of-coverage months and weekly contracts require explicit manual metadata.
+The source control exposes URL, data version, verification and retrieval dates.
+The locked research contract validator continues to accept TMF only: choosing
+TX/MTX in the backtest table retains the identical prior rejection. History
+imports continue to accept all three products. UI parity tests now load the
+shipped data directly, with no synthetic digest substitution. For 202510,
+202602 and 202609, picker-filled TMF backtest requests equal manually entered
+requests, including JSON UTF-8 bytes and content hashes. Manual 202509 and
+202610 requests still match HEAD; these months and weekly contracts never
+trigger auto-fill, show the manual metadata explanation, and retain missing
+expiry/calendar rejection. History requests match HEAD for TX/MTX/TMF, both
+coverage boundaries and day/night sessions. Selection still clears prior session
+confirmation; no calendar, trade date, consent or expiry is inferred.
+
+P1-12 uses option (a): a visible research dataset summary shows instrument,
+formatted bar count and trade-date range with the exact warning
+「合成示範資料，非真實行情」. It requires a current synthetic dataset, independently
+of an official trading calendar, and clears on real, missing or invalid data.
+Official read-only quote snapshots and their cards remain unchanged.
+
+Repair evidence: `tests/test_t9_expiry_inputs.py` (16 tests),
+`tests/fixtures/t9_manual_payloads.json` generated from a fresh archive of HEAD
+`db44477ac24573c752484ed357c11689b29deddf`, and the appended repair entry in
+`docs/analysis/t9_snapshot_numbers.json`. Default page label counts and heights
+are unchanged; no P1-04 reduction claim is made for this expiry/demo subset.
+The PyInstaller spec and executed build manifest both include the exact JSON
+file. Empty/real/missing/invalid datasets hide and clear the synthetic summary;
+synthetic data shows it even without an official calendar. Existing quote series
+remain unchanged. New helper is covered by both UI AST guards; all G3 sources
+remain byte-identical to HEAD with Git checkout filters applied. Full-suite testing remains controller-owned per
+the sandbox instruction. GitNexus impact on BacktestForm reports LOW with two
+direct importers (desktop.py, desktop_ui.py); unindexed new helpers report UNKNOWN,
+resolved by direct caller reads. Index refresh fails with sandbox spawn EPERM;
+no clean refreshed-graph claim is made. No commit, push or PR is performed.
+
+Final local verification: 27 focused/guard tests pass, quality gate reports 0 findings,
+and all 282 tracked/new Python files compile under Python 3.11 using utf-8-sig;
+each command exits 0. GitNexus detect_changes on this worktree reports 10 changed
+indexed symbols and low risk, but the stale index omits new helpers, so this is
+not a complete refreshed impact result. All scratch archives and PNGs are outside
+the repository; no new repository scratch directory was created.
+
+
+### T9 part B: P1-06 Taipei date/time inputs
+
+- `desktop_timeinput.py` supplies presentation-only `DateInput`, native QDateEdit/QDateTimeEdit calendar controls, table delegates and UTC hints. Taipei uses `datetime.timezone(timedelta(hours=8))`; Qt controls use an explicit fixed UTC+8 zone. No zoneinfo/tzdata dependency.
+- Coverage: backtest start/end/cost effective dates; manual instrument expiry rows; history trade/open/end dates and existing time controls; paper intent creation, quote/session timestamps and trading date; paper policy session open/end/trading dates and margin effective dates; paper action clock and the paper page clock. Campaign and walk-forward ranges are K-bar indices and remain numeric. Snapshot nested records remain read-only and retain original timestamps. Advanced JSON evidence/import remains unchanged.
+- Checkbox off means unset (`text() == ""`), including when the disabled picker clock changes. Enabling is an explicit user action. Restored strings, including invalid values, UTC offset spelling and fractional precision, are passed unchanged to existing validators; no loading-time coercion can turn a rejected input into an accepted default. Explicit native datetime edits emit UTC `YYYY-MM-DDTHH:MM:SSZ`.
+- Date-only values retain exact exchange/trading/effective date meaning, without shifting to UTC. History session payloads retain their previous UTC `+00:00` spelling; the adjacent hint uses Z. History edits still invalidate dated-policy confirmation.
+- Night example: Taipei Jan 2 15:00 to Jan 3 05:00 is UTC Jan 2 07:00 to 21:00. Trading date is the independently supplied policy date; backend `quote_policy` still chooses margin by that date. Taipei Jan 2 07:30 maps to UTC Jan 1 23:30.
+- Original field/table objectNames and `.text()` / `.setText()` / `.clear()` accessors remain. Table items retain canonical raw strings; persistent native editors update them through delegates. User text uses `desktop_strings.ui_text`; grey small hints reuse the central theme prerequisite style.
+- Evidence: `tests/test_t9_timeinput.py` compares old QLineEdit paths using unchanged parsing/validation functions against picker payloads, canonical JSON and hashes; includes unset/invalid/legacy restoration, both midnight cases, policy margin trade dates, history confirmation and expiry rows. Existing assertions are unchanged; registrations and additive Qt widget inventory are logged in `t9_test_edits.json`.
+- Measurements: appended in `t9_snapshot_numbers.json`, before captured from a fresh archive of HEAD and after from this working tree, with isolated profiles. Full existing integration suite is controller-owned outside the sandbox.
+
+
+### T9 part C — P1-03 onboarding and P1-05 plain language
+
+The sidebar follows data, strategy, backtest, comparison, paper trading, market,
+settings. All seven pages stay accessible; prerequisite hints are tooltips.
+`desktop_pages/onboarding.py` owns guidance and completion: validated loaded data,
+a persisted active candidate or strategy selection, loaded saved backtest results,
+comparison selection (or persisted selection), and a read-only, journal-verified initialized paper account (an empty or corrupt journal is pending).
+The checklist opens for a fresh workspace, can be dismissed, and reopens from
+`onboarding_help`. Only the non-sensitive `onboarding_dismissed` preference is added.
+No onboarding action creates trading state or bypasses validation. Five empty panels
+have one primary navigation action; existing execution buttons remain usable with
+secondary presentation while empty. All existing objectNames remain present.
+
+`desktop_strings.GLOSSARY`, `FORBIDDEN_DEFAULT_TERMS` and
+`DEFAULT_TERM_ALLOWLIST` document the plain wording. Proper names Walk-forward,
+TMF, AI, ChatGPT and UTC are allowed; there are no forbidden-term exemptions.
+Technical catalog spelling is available in the help tooltip, import-kind item
+tooltips, and unchanged advanced raw configuration/evidence. Import-kind labels
+are Chinese; itemData and worker request values remain the original identifiers.
+Tests compare every old logical import-kind request with the new path, including
+canonical JSON and content hashes. No validator, quota or one-time consumption
+rule is changed; all eight G3 source files remain unchanged in the working tree (clean Git diff; checkout line endings are preserved).
+
+`tools.ui_snapshot.page_metrics` additionally captures all displayed combo options
+and table headers. The new focused tests scan all seven default pages and all
+three strategy tabs. HEAD archive measurements and current measurements are
+appended as T9 part C in `docs/analysis/t9_snapshot_numbers.json`. Exact existing
+snapshot assertions are retained with reviewed replacement UI fixtures; all
+existing test accessor/fixture edits and reasons are listed in
+`docs/analysis/t9_test_edits.json`. Both UI guards discover the new package module
+automatically. Existing integration/full-suite execution is controller-owned
+outside this sandbox; focused tests and quality_gate are run locally.
+
+GitNexus impact was consulted for MainWindow, ui_text, refresh_views, DataPage,
+import_data and snapshot capture. The registered index was stale and some dynamic
+page symbols were UNKNOWN; direct source and text references were checked.
+A local index rebuild parsed the current tree but registry registration failed
+because mark-auto names another test-lab repository. This is not a clean graph
+verification; no commit was made.
+
+Final GitNexus detect_changes(scope=all): HIGH aggregate risk across the existing A/B/C working tree, 38 changed files, 56 symbols and six affected processes (paper policy form loading, render-result refresh, and UI theme setup). This analysis is navigation evidence, not a substitute for controller integration tests.
+
+### T9 part D final: P1-04 help and integration
+
+`desktop_help.py` installs progressive disclosure after the existing polish pass.
+Every page has one named `*_page_hint` (at most 30 characters). Short field
+captions retain the complete original caption in their tooltip; named `?`
+QToolButtons next to explanations carry the complete original wording and an
+accessible name. Empty-state action buttons retain their original explanation
+in their tooltip. The original catalog entries remain intact.
+
+Full workspace/log paths, diagnostic editors, market source/message/indicator
+status, VWAP disclosure, trading status and indicator controls remain reachable
+in collapsed sections with unique persisted keys (`data:help`, `settings:help`,
+`market:help`). Consent disclosure, backup limitations and the irreversible
+budget notice remain available in help. Research-mode marker expansion and the
+OOS one-time-consumption consent dialog are unchanged. Inputs, worker payloads,
+hashes, rejection rules and all eight G3 files are unchanged in part D.
+
+Measured with tools.ui_snapshot.capture at 1366x768, scale 1, isolated empty
+profiles; before rebuilt from a fresh git archive of HEAD db44477ac24573c752484ed357c11689b29deddf.
+
+| Page | Section-2 labels | HEAD labels | Final labels | Final height |
+|---|---:|---:|---:|---:|
+| Data | 75 | 103 | 30 | 949 |
+| AI strategy center | 940 | 120 | 98 | 828 |
+| Backtest | 460 | 115 | 91 | 1090 |
+| Compare | 216 | 70 | 45 | 759 |
+| Paper | 636 | 225 | 201 | 1377 |
+| Market overview | 233 | 239 | 74 | 913 |
+| Settings | 747 | 819 | 306 | 1633 |
+
+All pages are below half the section-2 label baseline and below HEAD label
+counts. Compare is <=768 px; every AI-center tab is <=1100 px. Full before/after
+metrics are appended to t9_snapshot_numbers.json, budgets are committed in
+t9_label_baseline.json, and all existing fixture/test inventory edits are listed
+in t9_test_edits.json. Exact fixture assertions were preserved.
+
+Verification: 40 focused T9/guard/boundary tests passed (exit 0); latest help,
+text/style and page-boundary rerun: 13 tests passed (exit 0). Quality gate: zero
+findings (exit 0). Python 3.11 utf-8-sig compile: all 288 tracked/new Python files
+passed (exit 0). No G3 diff, debug prints, or repository scratch artifacts added.
+Broad unrelated suites remain controller-owned outside sandbox as instructed.
+
+GitNexus: pre-edit MainWindow MEDIUM, SettingsPage/DataPage LOW, MarketDashboard
+MEDIUM; direct callers include mount_pages/MainWindow and snapshot tools. The
+registered MCP mark-auto alias collides with another test-lab checkout. Initial
+rebuild attempts hit child-process EPERM; with GITNEXUS_MEMORY=off the local graph
+rebuilt, but registration failed on that collision. CLI impacts were repeated
+with --repo . to bind this workspace explicitly. Aggregate A-D detect_changes
+reported CRITICAL (57 symbols, 38 tracked files, 43 affected flows), including
+shared ui_text, form inputs, policy loading and result refresh; it is not a
+clean all-clear or full test substitute. No commit was made.
+
+Final local `detect-changes --scope all --repo .` exited 1 because sandbox
+spawnSync git returned EPERM. The MCP aggregate result above remains limited
+by the registered-alias collision; no clean graph check is claimed.
+
+
+### T9 repair - keyboard expiry entry and glossary compatibility
+
+- The expiry-date table editor retains its calendar and explicit unset control,
+  and additionally exposes a focusable QLineEdit for direct keyboard entry.
+  Contract entry remains the existing QLineEdit. Typing, calendar selection and
+  restored table items use the same raw-string payload and fail-closed validators;
+  invalid or incomplete manually typed dates remain invalid rather than being
+  normalized. No objectNames, rejection rules, stored values or hashes change.
+- T9 help, onboarding and import-choice catalog lookups use literal keys, retaining strict catalog/syntax
+  scanning and the existing reachable explanations. No new UI modules or strings.
+- History completeness remains explicitly unconfirmed in the plain-language
+  warning. Its existing test retains the displayed-text semantic assertion.
+- Only the two analysis progress-message golden strings were regenerated through
+  the frozen legacy implementation in the existing hermetic workspace. A recursive
+  comparison (using the existing portable path normalization) verified no other
+  observation, result, structure or hash changes; fixture diff is +2/-2 lines.
+  The live legacy/current parity assertions remain unchanged. A new mutation test
+  changes only the current preview handler and proves the legacy oracle differs.
+- Evidence: tests/test_t9_repair.py, unchanged desktop expiry typing and strict
+  catalog assertions, tests/test_market_history_ui.py, unchanged operation registry
+  tests; all test edits listed in docs/analysis/t9_test_edits.json. Fresh HEAD
+  archive and working-tree measurements appended as T9 repair in
+  docs/analysis/t9_snapshot_numbers.json. Default metrics match Part D; comparison
+  height remains 759 px. G3 locked files remain untouched. Full existing desktop
+  integration suite is controller-owned outside the sandbox per run instructions.

@@ -1,0 +1,417 @@
+{
+  "head_archive": "db44477ac24573c752484ed357c11689b29deddf",
+  "backtest": {
+    "202509": {
+      "payload": {
+        "config": {
+          "initial_cash": "1000000",
+          "costs": {
+            "commission_per_side": "20",
+            "tax_rate": "0.00002",
+            "slippage_ticks": 1,
+            "tax_rounding": "half_up_twd",
+            "effective_from": "2026-01-01",
+            "version": "synthetic-assumption-v1"
+          },
+          "max_position": 1,
+          "same_bar_policy": "conservative",
+          "seed": 0,
+          "initial_margin_per_contract": "100000",
+          "margin_version": "synthetic-assumption-v1",
+          "maintenance_margin_per_contract": "80000",
+          "cost_schedule": [],
+          "margin_schedule": [],
+          "instrument_expiries": {
+            "TAIFEX:TMF:202509": "2025-09-17"
+          },
+          "roll_events": [],
+          "settlement_mode": "unsettled_pnl",
+          "settlement_events": [],
+          "source_commit": "unrecorded"
+        },
+        "start_date": "",
+        "end_date": ""
+      },
+      "json_utf8": "{\"config\": {\"initial_cash\": \"1000000\", \"costs\": {\"commission_per_side\": \"20\", \"tax_rate\": \"0.00002\", \"slippage_ticks\": 1, \"tax_rounding\": \"half_up_twd\", \"effective_from\": \"2026-01-01\", \"version\": \"synthetic-assumption-v1\"}, \"max_position\": 1, \"same_bar_policy\": \"conservative\", \"seed\": 0, \"initial_margin_per_contract\": \"100000\", \"margin_version\": \"synthetic-assumption-v1\", \"maintenance_margin_per_contract\": \"80000\", \"cost_schedule\": [], \"margin_schedule\": [], \"instrument_expiries\": {\"TAIFEX:TMF:202509\": \"2025-09-17\"}, \"roll_events\": [], \"settlement_mode\": \"unsettled_pnl\", \"settlement_events\": [], \"source_commit\": \"unrecorded\"}, \"start_date\": \"\", \"end_date\": \"\"}",
+      "content_hash": "b044bc96faf8df1c3be9aa6eac268296caa672975df9499a7b92bf9c844a266c"
+    },
+    "202510": {
+      "payload": {
+        "config": {
+          "initial_cash": "1000000",
+          "costs": {
+            "commission_per_side": "20",
+            "tax_rate": "0.00002",
+            "slippage_ticks": 1,
+            "tax_rounding": "half_up_twd",
+            "effective_from": "2026-01-01",
+            "version": "synthetic-assumption-v1"
+          },
+          "max_position": 1,
+          "same_bar_policy": "conservative",
+          "seed": 0,
+          "initial_margin_per_contract": "100000",
+          "margin_version": "synthetic-assumption-v1",
+          "maintenance_margin_per_contract": "80000",
+          "cost_schedule": [],
+          "margin_schedule": [],
+          "instrument_expiries": {
+            "TAIFEX:TMF:202510": "2025-10-15"
+          },
+          "roll_events": [],
+          "settlement_mode": "unsettled_pnl",
+          "settlement_events": [],
+          "source_commit": "unrecorded"
+        },
+        "start_date": "",
+        "end_date": ""
+      },
+      "json_utf8": "{\"config\": {\"initial_cash\": \"1000000\", \"costs\": {\"commission_per_side\": \"20\", \"tax_rate\": \"0.00002\", \"slippage_ticks\": 1, \"tax_rounding\": \"half_up_twd\", \"effective_from\": \"2026-01-01\", \"version\": \"synthetic-assumption-v1\"}, \"max_position\": 1, \"same_bar_policy\": \"conservative\", \"seed\": 0, \"initial_margin_per_contract\": \"100000\", \"margin_version\": \"synthetic-assumption-v1\", \"maintenance_margin_per_contract\": \"80000\", \"cost_schedule\": [], \"margin_schedule\": [], \"instrument_expiries\": {\"TAIFEX:TMF:202510\": \"2025-10-15\"}, \"roll_events\": [], \"settlement_mode\": \"unsettled_pnl\", \"settlement_events\": [], \"source_commit\": \"unrecorded\"}, \"start_date\": \"\", \"end_date\": \"\"}",
+      "content_hash": "fdcd310c40f531ca7e77efde265a92474ecd69c4935cb635e1922bf4366744fb"
+    },
+    "202602": {
+      "payload": {
+        "config": {
+          "initial_cash": "1000000",
+          "costs": {
+            "commission_per_side": "20",
+            "tax_rate": "0.00002",
+            "slippage_ticks": 1,
+            "tax_rounding": "half_up_twd",
+            "effective_from": "2026-01-01",
+            "version": "synthetic-assumption-v1"
+          },
+          "max_position": 1,
+          "same_bar_policy": "conservative",
+          "seed": 0,
+          "initial_margin_per_contract": "100000",
+          "margin_version": "synthetic-assumption-v1",
+          "maintenance_margin_per_contract": "80000",
+          "cost_schedule": [],
+          "margin_schedule": [],
+          "instrument_expiries": {
+            "TAIFEX:TMF:202602": "2026-02-23"
+          },
+          "roll_events": [],
+          "settlement_mode": "unsettled_pnl",
+          "settlement_events": [],
+          "source_commit": "unrecorded"
+        },
+        "start_date": "",
+        "end_date": ""
+      },
+      "json_utf8": "{\"config\": {\"initial_cash\": \"1000000\", \"costs\": {\"commission_per_side\": \"20\", \"tax_rate\": \"0.00002\", \"slippage_ticks\": 1, \"tax_rounding\": \"half_up_twd\", \"effective_from\": \"2026-01-01\", \"version\": \"synthetic-assumption-v1\"}, \"max_position\": 1, \"same_bar_policy\": \"conservative\", \"seed\": 0, \"initial_margin_per_contract\": \"100000\", \"margin_version\": \"synthetic-assumption-v1\", \"maintenance_margin_per_contract\": \"80000\", \"cost_schedule\": [], \"margin_schedule\": [], \"instrument_expiries\": {\"TAIFEX:TMF:202602\": \"2026-02-23\"}, \"roll_events\": [], \"settlement_mode\": \"unsettled_pnl\", \"settlement_events\": [], \"source_commit\": \"unrecorded\"}, \"start_date\": \"\", \"end_date\": \"\"}",
+      "content_hash": "85ca57a6a4e823abe883d24fbdb010ab2fb3b87e1c7ac9e2d27ed250c57142fd"
+    },
+    "202609": {
+      "payload": {
+        "config": {
+          "initial_cash": "1000000",
+          "costs": {
+            "commission_per_side": "20",
+            "tax_rate": "0.00002",
+            "slippage_ticks": 1,
+            "tax_rounding": "half_up_twd",
+            "effective_from": "2026-01-01",
+            "version": "synthetic-assumption-v1"
+          },
+          "max_position": 1,
+          "same_bar_policy": "conservative",
+          "seed": 0,
+          "initial_margin_per_contract": "100000",
+          "margin_version": "synthetic-assumption-v1",
+          "maintenance_margin_per_contract": "80000",
+          "cost_schedule": [],
+          "margin_schedule": [],
+          "instrument_expiries": {
+            "TAIFEX:TMF:202609": "2026-09-16"
+          },
+          "roll_events": [],
+          "settlement_mode": "unsettled_pnl",
+          "settlement_events": [],
+          "source_commit": "unrecorded"
+        },
+        "start_date": "",
+        "end_date": ""
+      },
+      "json_utf8": "{\"config\": {\"initial_cash\": \"1000000\", \"costs\": {\"commission_per_side\": \"20\", \"tax_rate\": \"0.00002\", \"slippage_ticks\": 1, \"tax_rounding\": \"half_up_twd\", \"effective_from\": \"2026-01-01\", \"version\": \"synthetic-assumption-v1\"}, \"max_position\": 1, \"same_bar_policy\": \"conservative\", \"seed\": 0, \"initial_margin_per_contract\": \"100000\", \"margin_version\": \"synthetic-assumption-v1\", \"maintenance_margin_per_contract\": \"80000\", \"cost_schedule\": [], \"margin_schedule\": [], \"instrument_expiries\": {\"TAIFEX:TMF:202609\": \"2026-09-16\"}, \"roll_events\": [], \"settlement_mode\": \"unsettled_pnl\", \"settlement_events\": [], \"source_commit\": \"unrecorded\"}, \"start_date\": \"\", \"end_date\": \"\"}",
+      "content_hash": "782ce25fce1bce12a6b0a88b69e823b7b85d9e20a7c0ede69cad6a56223c48a2"
+    },
+    "202610": {
+      "payload": {
+        "config": {
+          "initial_cash": "1000000",
+          "costs": {
+            "commission_per_side": "20",
+            "tax_rate": "0.00002",
+            "slippage_ticks": 1,
+            "tax_rounding": "half_up_twd",
+            "effective_from": "2026-01-01",
+            "version": "synthetic-assumption-v1"
+          },
+          "max_position": 1,
+          "same_bar_policy": "conservative",
+          "seed": 0,
+          "initial_margin_per_contract": "100000",
+          "margin_version": "synthetic-assumption-v1",
+          "maintenance_margin_per_contract": "80000",
+          "cost_schedule": [],
+          "margin_schedule": [],
+          "instrument_expiries": {
+            "TAIFEX:TMF:202610": "2026-10-21"
+          },
+          "roll_events": [],
+          "settlement_mode": "unsettled_pnl",
+          "settlement_events": [],
+          "source_commit": "unrecorded"
+        },
+        "start_date": "",
+        "end_date": ""
+      },
+      "json_utf8": "{\"config\": {\"initial_cash\": \"1000000\", \"costs\": {\"commission_per_side\": \"20\", \"tax_rate\": \"0.00002\", \"slippage_ticks\": 1, \"tax_rounding\": \"half_up_twd\", \"effective_from\": \"2026-01-01\", \"version\": \"synthetic-assumption-v1\"}, \"max_position\": 1, \"same_bar_policy\": \"conservative\", \"seed\": 0, \"initial_margin_per_contract\": \"100000\", \"margin_version\": \"synthetic-assumption-v1\", \"maintenance_margin_per_contract\": \"80000\", \"cost_schedule\": [], \"margin_schedule\": [], \"instrument_expiries\": {\"TAIFEX:TMF:202610\": \"2026-10-21\"}, \"roll_events\": [], \"settlement_mode\": \"unsettled_pnl\", \"settlement_events\": [], \"source_commit\": \"unrecorded\"}, \"start_date\": \"\", \"end_date\": \"\"}",
+      "content_hash": "59695ee61f5ac99f1a20c781fdc19617b26a185692ea46b4c7388207f222406a"
+    }
+  },
+  "history": {
+    "TX-202510-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TX:202510",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TX:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "dc7669383d4c7fdce7adaa2eaf67ee7e7f3e05e54f2ffdee09062e021e0b917e"
+    },
+    "TX-202510-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TX:202510",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TX:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "20774c304c185be6d436378ee1110cbc68935db88f2f3c89c96c8086d852b59f"
+    },
+    "TX-202609-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TX:202609",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TX:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "59921a0824ff3fcbeca544a6527cb0e7b86495f990d33f7098e61cce64dbef7c"
+    },
+    "TX-202609-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TX:202609",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TX:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "4a1fbae22a0f26ca1ff3362767aef27dca5e13a2b2f21b90b72acfd88e326cd3"
+    },
+    "MTX-202510-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:MTX:202510",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/mTX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:MTX:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/mTX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "d9c6c0077870868273eaa161de75ea0b4f079174b99fe97ddf1a2b46d5215e8d"
+    },
+    "MTX-202510-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:MTX:202510",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/mTX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:MTX:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/mTX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "c0239ddd87a6d7eae02566949e88e43301c49a3a473db6a925a20cc87113bc8b"
+    },
+    "MTX-202609-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:MTX:202609",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/mTX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:MTX:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/mTX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "ee0d013947667f5dfea8df4e51ea1d7d067cefad4c51d6beb99f4915fca34b20"
+    },
+    "MTX-202609-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:MTX:202609",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/mTX"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:MTX:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/mTX\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "e164ea626964b0b695bae60be6fbaaf97a958f900c689da4734a0d2d2b369302"
+    },
+    "TMF-202510-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TMF:202510",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tMF"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TMF:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tMF\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "79ae836695707787442c48a10f1d33163ed289600d3c76c0691af86448268c7d"
+    },
+    "TMF-202510-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TMF:202510",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tMF"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TMF:202510\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tMF\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "7197fe58df98811bad6bfdf6558cb1fb20f0d9c8d1ea9706d06dcd59fc632e22"
+    },
+    "TMF-202609-day": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TMF:202609",
+            "trade_date": "2026-10-08",
+            "session": "day",
+            "open": "2026-10-08T00:45:00+00:00",
+            "end": "2026-10-08T05:45:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tMF"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TMF:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"day\", \"open\": \"2026-10-08T00:45:00+00:00\", \"end\": \"2026-10-08T05:45:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tMF\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "873f36ea58e08368861c8e0f44316c3babc6087bb3023aff1cf596b3fde329b0"
+    },
+    "TMF-202609-night": {
+      "payload": {
+        "history_import": true,
+        "local_path": "synthetic-fixture.csv",
+        "sessions": [
+          {
+            "contract_id": "TAIFEX:TMF:202609",
+            "trade_date": "2026-10-08",
+            "session": "night",
+            "open": "2026-10-07T07:00:00+00:00",
+            "end": "2026-10-07T21:00:00+00:00",
+            "include_end": false,
+            "source": "https://www.taifex.com.tw/cht/2/tMF"
+          }
+        ],
+        "dated_policy_confirmed": true
+      },
+      "json_utf8": "{\"history_import\": true, \"local_path\": \"synthetic-fixture.csv\", \"sessions\": [{\"contract_id\": \"TAIFEX:TMF:202609\", \"trade_date\": \"2026-10-08\", \"session\": \"night\", \"open\": \"2026-10-07T07:00:00+00:00\", \"end\": \"2026-10-07T21:00:00+00:00\", \"include_end\": false, \"source\": \"https://www.taifex.com.tw/cht/2/tMF\"}], \"dated_policy_confirmed\": true}",
+      "content_hash": "585eac8af35323fc10d03fc331b80d2528724f5c48acaedaaa48be8985cfb040"
+    }
+  }
+}

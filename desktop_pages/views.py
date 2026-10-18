@@ -114,6 +114,8 @@ class ViewCoordinator(PageContext):
             if index >= 0:
                 self.candidate_choice.setCurrentIndex(index); self.use_candidate()
         self._refresh_recovery_controls(force=True)
+        if hasattr(self.state, 'onboarding'):
+            self.state.onboarding.refresh()
 
 
     def render_result(self, event):

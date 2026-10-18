@@ -945,6 +945,8 @@ class MainWindow(SharedStateBindings, QMainWindow):
             window_position=lambda: QPoint(self.x(), self.y()),
         )
         mount_pages(self)
+        from desktop_pages.onboarding import install_onboarding
+        install_onboarding(self)
         self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.navigation.itemSelectionChanged.connect(self._navigate_selected_page)
         self.navigation.setCurrentRow(0)
@@ -952,8 +954,12 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self._safe(self.refresh_views)
         self._safe(self.load_settings)
         self._busy(False)
+        self.onboarding.refresh()
+        self.onboarding.restore_visibility()
         from desktop_ui_polish import install_polish
         install_polish(self)
+        from desktop_help import install_page_help
+        install_page_help(self)
 
 
     def page_services(self):
@@ -1137,9 +1143,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
         if link == 'close':
             self.notification_timer.stop(); self.notification_fade.stop(); self.notification.hide(); return
         operation = self._notification_operation or ''
-        page = 5 if operation.startswith('ui_paper_') else 3 if operation == 'ui_backtest' else 4 if operation in ('ui_compare', 'ui_select', 'ui_disable') else 2 if operation.startswith(('ui_analysis_', 'ui_walk_forward_')) or operation == 'ui_campaign' else 6 if operation.startswith(('ui_backup_', 'ui_chatgpt_')) else 1
+        page = 4 if operation.startswith('ui_paper_') else 2 if operation == 'ui_backtest' else 3 if operation in ('ui_compare', 'ui_select', 'ui_disable') else 1 if operation.startswith(('ui_analysis_', 'ui_walk_forward_')) or operation == 'ui_campaign' else 6 if operation.startswith(('ui_backup_', 'ui_chatgpt_')) else 0
         self.navigation.setCurrentRow(page)
-        target = self.paper_card if page == 5 else self.result_card if page == 3 and hasattr(self, 'result_card') else self.stack.widget(page).widget()
+        target = self.paper_card if page == 4 else self.result_card if page == 2 and hasattr(self, 'result_card') else self.stack.widget(page).widget()
         self.stack.widget(page).ensureWidgetVisible(target)
 
 

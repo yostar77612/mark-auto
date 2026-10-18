@@ -6,6 +6,7 @@ widgets in the desktop page's QScrollArea. Exact decimal strings avoid float or
 QDoubleSpinBox rounding. Backend validation remains authoritative.
 """
 from desktop_strings import ui_text
+from desktop_timeinput import (DateInput, DATE_KEYS, TIME_KEYS, install_date_columns, open_date_editors)
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import re
@@ -75,7 +76,8 @@ class _Form(QWidget):
 
     def field(self, key, label, value='', choices=None):
         if choices is None:
-            widget = QLineEdit(str(value))
+            widget = (DateInput(str(value), timestamp=key in TIME_KEYS)
+                      if key in DATE_KEYS | TIME_KEYS else QLineEdit(str(value)))
         else:
             widget = QComboBox()
             for caption, data in choices: widget.addItem(caption, data)
@@ -166,6 +168,8 @@ class BacktestForm(_Form):
         self.expiries.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.expiries.table.setAccessibleName(ui_text('forms.__init__.text_27'))
         self.outer.addWidget(self.expiries)
+        from desktop_expiry_inputs import attach_expiry_table
+        attach_expiry_table(self)
         from quantlab.reporting import demo_config
         self.from_payload({'config':to_dict(demo_config()), 'start_date':'', 'end_date':''})
 
@@ -386,7 +390,7 @@ class PaperIntentForm(_Form):
         allowed = {'client_order_id','strategy_hash','contract_id','quantity','created_at','limit_price','side','order_type'}
         if set(payload)-allowed: raise ValidationError(ui_text('forms.from_payload.text_5'))
         for field in self.fields.values():
-            if isinstance(field,QLineEdit): field.clear()
+            if isinstance(field,(QLineEdit, DateInput)): field.clear()
         return self.load(deepcopy(payload))
 
     def build_payload(self):
@@ -497,6 +501,7 @@ class _Rows(QWidget):
         layout = QVBoxLayout(self)
         self.table = QTableWidget(0,len(columns)); self.table.setObjectName(name)
         self.table.setHorizontalHeaderLabels([label for _,label in columns]); layout.addWidget(self.table)
+        install_date_columns(self.table, columns)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.resizeColumnsToContents()
         for index, (_, label) in enumerate(columns):
@@ -508,6 +513,7 @@ class _Rows(QWidget):
 
     def add_row(self):
         self.table.insertRow(self.table.rowCount()); self._original.append({})
+        open_date_editors(self.table, self.columns, self.table.rowCount() - 1)
 
     def remove_row(self):
         row = self.table.currentRow()
@@ -520,6 +526,7 @@ class _Rows(QWidget):
         self.table.setRowCount(len(rows)); self._original = deepcopy(rows)
         for i,row in enumerate(rows):
             for j,(key,_) in enumerate(self.columns): self.table.setItem(i,j,QTableWidgetItem(str(row.get(key,''))))
+            open_date_editors(self.table, self.columns, i)
 
     def values(self):
         rows = deepcopy(self._original)

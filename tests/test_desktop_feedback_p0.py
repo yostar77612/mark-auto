@@ -48,7 +48,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertIn('查看結果', w.notification.text())
         self.assertEqual(w.notification_timer.interval(), 5000)
         w.notification.linkActivated.emit('result')
-        self.assertEqual(w.navigation.currentRow(), 1)
+        self.assertEqual(w.navigation.currentRow(), 0)
         w.notification_timer.start(1)
         # The fade is a 300 ms animation after the timer fires; poll (bounded) instead of a fixed 450 ms wait,
         # which raced on loaded machines. The assertion itself is unchanged.
@@ -109,8 +109,8 @@ class FeedbackTests(unittest.TestCase):
         from desktop_ui import execute_ui_operation
         w = self.window()
         execute_ui_operation('ui_demo', {'bars':960}, w.paths)
-        w.navigation.setCurrentRow(5)
-        scroll = w.stack.widget(5)
+        w.navigation.setCurrentRow(4)
+        scroll = w.stack.widget(4)
         with patch.object(scroll, 'ensureWidgetVisible', wraps=scroll.ensureWidgetVisible) as ensure:
             w.demo_paper_policy()
             ensure.assert_called_with(w.policy_form.sessions)

@@ -94,7 +94,7 @@ class NativeDesktopTests(unittest.TestCase):
         root=Path(__file__).resolve().parents[1]
         self.window.import_path.setText(str(root/'examples/synthetic_bars.csv'))
         self.window.calendar_path.setText(str(root/'examples/synthetic_calendar.json'))
-        self.window.import_kind.setCurrentText('synthetic_bars')
+        self.window.import_kind.setCurrentIndex(self.window.import_kind.findData('synthetic_bars'))
         self.click('import_data'); self.wait_job()
         self.assertIn('合成示範資料', self.window.overview.text())
 
@@ -119,7 +119,7 @@ class NativeDesktopTests(unittest.TestCase):
 
     def test_cancel_running_process_and_repeat(self):
         self.demo(); self.click('run_campaign'); self.assertTrue(self.jobs.active)
-        self.window.navigation.setCurrentRow(0); self.app.processEvents()
+        self.window.navigation.setCurrentRow(5); self.app.processEvents()
         self.window.cancel_job(); self.window.poll_jobs()
         self.assertFalse(self.jobs.active); self.assertIn('取消', self.window.status.text())
         self.assertTrue((self.paths.state/'desktop_safety.json').exists())

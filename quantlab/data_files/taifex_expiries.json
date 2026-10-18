@@ -1,0 +1,96 @@
+{
+  "data_version": "taifex-expiries-2026-10-18-v1",
+  "verified_date": "2026-10-18",
+  "status": "verified",
+  "sources": [
+    {
+      "url": "https://www.taifex.com.tw/cht/5/futIndxFSP",
+      "retrieval_date": "2026-10-18",
+      "retrieval_method": "raw HTML table parsed; rows where the TX/MTX/TMF final-settlement-price column is numeric",
+      "sha256": "e9869a6cc927ec094201d04eee866ea0d3bc7f55fab7a7ea71c09900daa87656"
+    }
+  ],
+  "products": [
+    "TX",
+    "MTX",
+    "TMF"
+  ],
+  "expiries": [
+    {
+      "contract_month": "202510",
+      "expiry_date": "2025-10-15",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202511",
+      "expiry_date": "2025-11-19",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202512",
+      "expiry_date": "2025-12-17",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202601",
+      "expiry_date": "2026-01-21",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202602",
+      "expiry_date": "2026-02-23",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202603",
+      "expiry_date": "2026-03-18",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202604",
+      "expiry_date": "2026-04-15",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202605",
+      "expiry_date": "2026-05-20",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202606",
+      "expiry_date": "2026-06-17",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202607",
+      "expiry_date": "2026-07-15",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202608",
+      "expiry_date": "2026-08-19",
+      "status": "verified",
+      "source_index": 0
+    },
+    {
+      "contract_month": "202609",
+      "expiry_date": "2026-09-16",
+      "status": "verified",
+      "source_index": 0
+    }
+  ],
+  "trading_calendar": {
+    "status": "not_bundled",
+    "reason": "Official 2026 calendar is a colour-coded PDF that cannot be machine-verified; supply the existing manual calendar."
+  }
+}

@@ -40,6 +40,14 @@ class MarketPage(MarketDashboard):
 
     def load_market_cache(self):
         from quantlab.market_providers import load_cached
+        from desktop_expiry_inputs import show_research_dataset
+        show_research_dataset(self.research_summary, None)
+        research_path = self.state.root / 'dataset.json'
+        if research_path.exists():
+            try:
+                show_research_dataset(self.research_summary, load_dataset(research_path))
+            except (ValueError, KeyError, TypeError, OSError):
+                pass
         series, errors, quotes = {}, [], []
         self.state._market_data_bindings = {}
         self.state._market_research_series = {}

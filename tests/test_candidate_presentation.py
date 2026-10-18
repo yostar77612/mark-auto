@@ -22,7 +22,7 @@ class CandidatePresentationTests(unittest.TestCase):
         source=view({'net_pnl':'1.23456789','max_drawdown_pct':'0.01','trade_count':5},{'net_pnl':'-12','max_drawdown_pct':'0.20','trade_count':2})
         before=canonical_json(source);text=candidate_summary_text(source)
         self.assertIn('已保存研究的紙上門檻：未通過',text)
-        self.assertIn('樣本外 OOS｜狀態：已評估｜門檻檢查：通過',text)
+        self.assertIn('樣本外｜狀態：已評估｜門檻檢查：通過',text)
         self.assertIn('最終保留集｜狀態：已評估｜門檻檢查：未通過',text)
         first,last=text.split('最終保留集');self.assertIn('1.23 TWD',first);self.assertNotIn('1.23456789',text);self.assertIn('淨損益（TWD）：-12 TWD',last)
         self.assertEqual(canonical_json(source),before)
@@ -45,7 +45,7 @@ class CandidatePresentationTests(unittest.TestCase):
         source=view();source['樣本外與保留集']['oos']={'qualified':False,'evaluation':{}}
         for state,label in (('failed','評估失敗'),('running','評估中'),('timed_out','已逾時'),('new_internal_status','未知狀態')):
             source['樣本外與保留集']['holdout']['evaluation']={'status':state,'error':'raw_exception'}
-            text=candidate_summary_text(source);self.assertIn('樣本外 OOS｜狀態：尚無已保存評估',text);self.assertIn('最終保留集｜狀態：'+label,text);self.assertNotIn('raw_exception',text);self.assertNotIn('new_internal_status',text)
+            text=candidate_summary_text(source);self.assertIn('樣本外｜狀態：尚無已保存評估',text);self.assertIn('最終保留集｜狀態：'+label,text);self.assertNotIn('raw_exception',text);self.assertNotIn('new_internal_status',text)
     def test_invalid_shapes_and_unbounded_values_fail_to_advanced(self):
         for value in ({'raw_key':'raw_value'},['raw_list'],True,'raw_code','9'*10000,Decimal('NaN')):
             source=view({'profit_factor':value,'sharpe':value,'net_pnl':value,'annualization':{'periods_per_year':value}})

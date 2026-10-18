@@ -1,4 +1,4 @@
-﻿"""P0-02/03/04/13: offline native-widget presentation contracts."""
+"""P0-02/03/04/13: offline native-widget presentation contracts."""
 import os
 from pathlib import Path
 import shutil
@@ -12,7 +12,8 @@ from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
 from desktop_ui import MainWindow
-from tools.ui_snapshot import page_metrics, capture
+from tools.ui_snapshot import page_metrics
+from tests.snapshot_cache import default_metrics
 
 
 class DesktopPolishATests(unittest.TestCase):
@@ -75,7 +76,7 @@ class DesktopPolishATests(unittest.TestCase):
 
     def test_p0_04_page_names_and_header_widths(self):
         w = self.window
-        w.navigation.setCurrentRow(5)
+        w.navigation.setCurrentRow(4)
         self.app.processEvents()
         for rows in (w.policy_form.sessions, w.policy_form.margins):
             table = rows.table
@@ -107,7 +108,7 @@ class DesktopPolishATests(unittest.TestCase):
                 self.assertFalse(hints[0].label.isHidden())
 
     def test_snapshot_acceptance_1366x768(self):
-        metrics = capture(self.root/'snapshots')
+        metrics = default_metrics()
         for name, page in metrics['pages'].items():
             self.assertEqual(page['unlabeled_inputs'], [], name)
             self.assertLessEqual(page['primary_button_count'], 1, name)

@@ -117,10 +117,10 @@ class ResultsHostTests(unittest.TestCase):
 
     def test_advanced_dumps_collapsed_and_paper_tables_project_account(self):
         w = self.window; w.show(); self.app.processEvents()
-        w.navigation.setCurrentRow(3); self.app.processEvents()
+        w.navigation.setCurrentRow(2); self.app.processEvents()
         self.assertFalse(w.result_detail.isVisible()); self.assertFalse(w.paper_detail.isVisible())
         self.assertFalse(w.result_card.isVisible()); self.assertFalse(w.paper_card.isVisible())
-        w.navigation.setCurrentRow(5); self.app.processEvents()
+        w.navigation.setCurrentRow(4); self.app.processEvents()
         self.assertFalse(w.paper_detail.isVisible()); self.assertFalse(w.paper_card.isVisible())
         self.assertTrue(w.walk_forward_results.isHidden())
         account = {'account_id': 'demo', 'cash': '1000000', 'positions': {'TAIFEX:TMF:202601': -2}, 'orders': {}, 'fills': {}, 'reconciliation_required': False, 'kill_switch': False}

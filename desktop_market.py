@@ -5,6 +5,7 @@ an intent only; host must perform its existing consent/background-job workflow.
 """
 from desktop_theme import apply_market_theme, set_status
 from desktop_strings import ui_text
+from desktop_timeinput import DateInput, history_utc_hint
 from copy import deepcopy
 from quantlab.desktop_errors import error_message, exception_code
 from decimal import Decimal, InvalidOperation
@@ -85,6 +86,9 @@ class MarketDashboard(QWidget):
         self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
         self.refresh_button.clicked.connect(self.refresh_requested.emit); header.addWidget(self.refresh_button)
         root.addLayout(header)
+        self.research_summary = _label('', 'market_research_summary')
+        self.research_summary.hide()
+        root.addWidget(self.research_summary)
         cards=QHBoxLayout(); self.cards={}
         for key,title in [('TAIEX',ui_text('market.__init__.text_6')),('TX',ui_text('market.__init__.text_7')),('MXF',ui_text('market.__init__.text_8')),('TMF',ui_text('market.__init__.text_9'))]:
             group=QGroupBox(title); group.setProperty('themePart', 'marketCard'); layout=QVBoxLayout(group); layout.setContentsMargins(8,8,8,6)
@@ -454,17 +458,18 @@ class MarketHistoryDialog(QDialog):
         self.expiry_type.addItem(ui_text('market.__init__.text_85'), 'monthly'); self.expiry_type.addItem(ui_text('market.__init__.text_86'), 'weekly')
         self.week = _named(QSpinBox(), 'history_week', ui_text('market.__init__.text_87')); self.week.setRange(1,5); self.week.setEnabled(False)
         expiry_row = QHBoxLayout(); expiry_row.addWidget(self.expiry_type); expiry_row.addWidget(self.week); form.addRow(ui_text('market.__init__.text_88'), expiry_row)
-        self.trade_date = _named(QLineEdit(), 'history_trade_date', ui_text('market.__init__.text_89')); self.trade_date.setPlaceholderText(ui_text('market.__init__.text_90'))
+        self.trade_date = _named(DateInput(), 'history_trade_date', ui_text('market.__init__.text_89')); self.trade_date.setPlaceholderText(ui_text('market.__init__.text_90'))
         form.addRow(ui_text('market.__init__.text_91'), self.trade_date)
         self.session = _named(QComboBox(), 'history_session', ui_text('market.__init__.text_92')); self.session.addItem(ui_text('market.__init__.text_93'), 'day'); self.session.addItem(ui_text('market.__init__.text_94'), 'night')
         form.addRow(ui_text('market.__init__.text_95'), self.session)
-        self.open_date = _named(QLineEdit(), 'history_open_date', ui_text('market.__init__.text_96')); self.open_date.setPlaceholderText('YYYY-MM-DD')
-        self.end_date = _named(QLineEdit(), 'history_end_date', ui_text('market.__init__.text_97')); self.end_date.setPlaceholderText(ui_text('market.__init__.text_98'))
+        self.open_date = _named(DateInput(), 'history_open_date', ui_text('market.__init__.text_96')); self.open_date.setPlaceholderText('YYYY-MM-DD')
+        self.end_date = _named(DateInput(), 'history_end_date', ui_text('market.__init__.text_97')); self.end_date.setPlaceholderText(ui_text('market.__init__.text_98'))
         self.open_time = _named(QTimeEdit(QTime(8,45)), 'history_open_time', ui_text('market.__init__.text_99'))
         self.end_time = _named(QTimeEdit(QTime(13,45)), 'history_end_time', ui_text('market.__init__.text_100'))
         for widget in (self.open_time,self.end_time): widget.setDisplayFormat('HH:mm')
         for title, date_widget, time_widget in [(ui_text('market.__init__.text_101'), self.open_date, self.open_time), (ui_text('market.__init__.text_102'), self.end_date, self.end_time)]:
-            row = QHBoxLayout(); row.addWidget(date_widget); row.addWidget(time_widget); form.addRow(title,row)
+            row = QHBoxLayout(); row.addWidget(date_widget); row.addWidget(time_widget)
+            row.addWidget(history_utc_hint(date_widget, time_widget, self)); form.addRow(title,row)
         self.include_end = _named(QCheckBox(ui_text('market.__init__.text_103')), 'history_include_end', ui_text('market.__init__.text_104'))
         form.addRow(self.include_end)
         self.source = _label('', 'history_product_source'); layout.addWidget(self.source)
@@ -489,6 +494,8 @@ class MarketHistoryDialog(QDialog):
         self.session.currentIndexChanged.connect(self._session_defaults)
         self.expiry_type.currentIndexChanged.connect(lambda: self.week.setEnabled(self.expiry_type.currentData()=='weekly'))
         self.product.currentIndexChanged.connect(self._source_label); self._source_label()
+        from desktop_expiry_inputs import attach_history_picker
+        attach_history_picker(self, form)
 
     def _unconfirm(self, *args):
         self.confirm.setChecked(False)

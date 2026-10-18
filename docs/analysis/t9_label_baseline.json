@@ -1,0 +1,41 @@
+{
+  "source": "06_PRODUCT_OPTIMIZATION_PLAN.md section 2; merged T8 independently measured from git archive HEAD",
+  "head": "db44477ac24573c752484ed357c11689b29deddf",
+  "pages": {
+    "市場總覽": {
+      "section_2": 233,
+      "merged_t8": 239,
+      "half_required": true
+    },
+    "資料匯入與更新": {
+      "section_2": 75,
+      "merged_t8": 103,
+      "half_required": true
+    },
+    "AI 策略中心": {
+      "section_2": 940,
+      "merged_t8": 120,
+      "half_required": false
+    },
+    "回測與結果": {
+      "section_2": 460,
+      "merged_t8": 115,
+      "half_required": false
+    },
+    "比較與策略選擇": {
+      "section_2": 216,
+      "merged_t8": 70,
+      "half_required": false
+    },
+    "紙上交易與復原": {
+      "section_2": 636,
+      "merged_t8": 225,
+      "half_required": false
+    },
+    "設定與備份": {
+      "section_2": 747,
+      "merged_t8": 819,
+      "half_required": true
+    }
+  }
+}
