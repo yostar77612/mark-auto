@@ -50,7 +50,11 @@ class FeedbackTests(unittest.TestCase):
         w.notification.linkActivated.emit('result')
         self.assertEqual(w.navigation.currentRow(), 1)
         w.notification_timer.start(1)
-        QTest.qWait(450)
+        # The fade is a 300 ms animation after the timer fires; poll (bounded) instead of a fixed 450 ms wait,
+        # which raced on loaded machines. The assertion itself is unchanged.
+        for _ in range(150):
+            if w.notification.isHidden(): break
+            QTest.qWait(20)
         self.assertTrue(w.notification.isHidden())
         w.notify_local(error_message('operation_failed'), error=True)
         self.assertFalse(w.notification_timer.isActive())
