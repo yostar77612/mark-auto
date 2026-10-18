@@ -121,14 +121,15 @@ def install_page_help(shell):
     details = advanced_section(shell, data, 'data')
     details.addWidget(data.overview)
     settings = shell.settings_page
-    advanced = advanced_section(shell, settings, 'settings')
-    # Keep full paths and diagnostics together, with all functional controls.
-    for widget in (settings.workspace_path, settings.log_view):
-        advanced.addWidget(widget)
-    for label in settings.findChildren(QLabel):
+    # Settings now owns its path disclosure inside the General section.
+    shell._section_toggles['settings:help'] = settings.paths_toggle
+    settings.paths_toggle.toggled.connect(lambda checked: shell._safe(shell._save_section_preferences))
+    value = shell.settings.load() if shell.settings else {}
+    settings.paths_toggle.setChecked(value.get('advanced_sections', {}).get('settings:help') is True)
+    for label in settings.paths_advanced.findChildren(QLabel):
         if any(label.text().startswith(texts[key].split('{')[0]) for key in (
                 'ui._settings_page.text_2', 'ui._settings_page.text_3', 'ui._settings_page.text_5')):
-            advanced.addWidget(label); label.show()
+            label.show()
     market = shell.market
     market_details = advanced_section(shell, pages['market'], 'market')
     for widget in (market.source_status, market.message, market.indicator_summary,

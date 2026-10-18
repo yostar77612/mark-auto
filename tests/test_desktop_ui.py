@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import time
 import unittest
+from desktop_strings import ui_text
 from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -53,6 +54,10 @@ class NativeDesktopTests(unittest.TestCase):
         for index in range(self.window.stack.count()):
             if self.window.stack.widget(index).isAncestorOf(button):
                 self.window.navigation.setCurrentRow(index); break
+        if name == 'configure_workspace':
+            self.window.settings_page.paths_toggle.setChecked(True)
+        if name in ('create_backup', 'restore_backup'):
+            self.window.settings_page.backup_toggle.setChecked(True)
         self.app.processEvents()
         from PySide6.QtWidgets import QMessageBox
         if button.property('role') == 'danger':
@@ -273,7 +278,7 @@ class NativeDesktopTests(unittest.TestCase):
             self.assertEqual(opened.call_args[0][0].toString(),'https://github.com/yostar77612/mark-auto/releases')
         self.assertIn('未下載',self.window.status.text())
         self.demo(); self.assertFalse(self.window.notification.isHidden())
-        self.click('read_logs'); self.assertIn('ui_demo',self.window.log_view.toPlainText())
+        self.click('read_logs'); self.assertIn(ui_text('logs.operation.ui_demo'), [self.window.log_view.item(row, 1).text() for row in range(self.window.log_view.rowCount())])
         self.window.local_notifications.setChecked(False); self.window.persist_logs.setChecked(False)
         self.click('save_settings')
         self.window.local_notifications.setChecked(True); self.window.persist_logs.setChecked(True)

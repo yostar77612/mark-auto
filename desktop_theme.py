@@ -1,6 +1,8 @@
 """Application QSS and presentation tokens; widgets select styles via properties."""
 from PySide6.QtWidgets import QApplication, QWidget
 
+MINIMUM_WINDOW_SIZE = (1280, 720)
+
 COLORS = {
     'background': '#101720',
     'navigation_background': '#12243b',
@@ -124,6 +126,19 @@ def build_market_stylesheet():
 def apply_market_theme(widget):
     """Scope the market dashboard styles to its own widget (preserves standalone look)."""
     widget.setStyleSheet(build_market_stylesheet())
+
+
+def scale_window_fonts(window, factor):
+    """Emulate a larger logical UI font, including the theme's explicit pixel fonts.
+
+    Scoped to one window; never restyle the QApplication or change raster DPI.
+    """
+    import re
+    def scaled(stylesheet):
+        return re.sub(r'font-size:\s*(\d+)px',
+                      lambda match: 'font-size:' + str(round(int(match[1]) * factor)) + 'px', stylesheet)
+    window.setStyleSheet(scaled(build_app_stylesheet()))
+    window.market.setStyleSheet(scaled(build_market_stylesheet()))
 
 
 def apply_theme(target=None):

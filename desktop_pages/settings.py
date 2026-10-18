@@ -4,7 +4,7 @@ from pathlib import Path
 from quantlab.core import ValidationError
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QCheckBox, QApplication
+from PySide6.QtWidgets import QWidget, QApplication
 from .bindings import PageContext
 
 
@@ -13,37 +13,13 @@ class SettingsPage(PageContext, QWidget):
         super().__init__()
         self.setup_context(host)
         layout = self.host.mount_page(self, ui_text('ui._settings_page.text_1'))
-        layout.addWidget(QLabel(ui_text('ui._settings_page.text_2').format(str(self.paths.root))))
-        layout.addWidget(QLabel(ui_text('ui._settings_page.text_3').format(str(self.root))))
-        layout.addWidget(QLabel(ui_text('ui._settings_page.text_4')))
-        layout.addWidget(QLabel(ui_text('ui._settings_page.text_5').format(str(self.paths.logs))))
-        self.workspace_path = self._text(layout, ui_text('ui._settings_page.text_6'), str(self.paths.root))
-        self._button(layout, ui_text('ui._settings_page.text_7'), 'configure_workspace', self.configure_workspace)
-        from desktop_chatgpt_ui import ChatGPTConnectionPanel, ConnectionController
-        self.chatgpt_controller = ConnectionController(self)
-        self.chatgpt_panel = ChatGPTConnectionPanel(self.chatgpt_controller); layout.addWidget(self.chatgpt_panel)
+        from .settings_layout import build_settings
+        build_settings(self, layout)
         self.chatgpt_controller.set_host_available(True)
         self.chatgpt_controller.quiesce_requested.connect(self._chatgpt_quiesce)
         self.chatgpt_controller.request_ready.connect(self._chatgpt_dispatch)
         self.chatgpt_controller.cancel_requested.connect(self._chatgpt_cancel)
         self.chatgpt_controller.browser_requested.connect(self._chatgpt_open_browser)
-        self.persist_logs = QCheckBox(ui_text('ui._settings_page.text_8')); self.persist_logs.setChecked(True); layout.addWidget(self.persist_logs)
-        self.local_notifications = QCheckBox(ui_text('ui._settings_page.text_9')); self.local_notifications.setChecked(True); layout.addWidget(self.local_notifications)
-        self._button(layout, ui_text('ui._settings_page.text_10'), 'save_settings', self.save_settings, role='primary')
-        self.backup_path = self._text(layout, ui_text('ui._settings_page.text_11'))
-        self._button(layout, ui_text('ui._settings_page.text_12'), 'create_backup', lambda: self.backup(False))
-        self.restore_confirm = QCheckBox(ui_text('ui._settings_page.text_13')); layout.addWidget(self.restore_confirm)
-        self._button(layout, ui_text('ui._settings_page.text_14'), 'restore_backup', lambda: self.backup(True), role='danger')
-        from desktop_automatic_backup import AutomaticBackupPanel
-        self.automatic_backup_panel = AutomaticBackupPanel(self); layout.addWidget(self.automatic_backup_panel)
-        from quantlab import __version__
-        self.version_label = QLabel(ui_text('ui._settings_page.text_15').format(__version__))
-        self.version_label.setWordWrap(True); layout.addWidget(self.version_label)
-        layout.addWidget(QLabel(ui_text('ui._settings_page.text_16')))
-        self._button(layout, ui_text('ui._settings_page.text_17'), 'open_releases', self.open_releases)
-        self._button(layout, ui_text('ui._settings_page.text_18'), 'read_logs', self.read_logs)
-        self.log_view = QPlainTextEdit(); self.log_view.setReadOnly(True); self.log_view.setPlaceholderText(ui_text('ui._settings_page.text_19')); layout.addWidget(self.log_view)
-        layout.addStretch()
 
 
     def auto_restore_chatgpt(self):
@@ -53,6 +29,7 @@ class SettingsPage(PageContext, QWidget):
 
     def show_chatgpt_sign_in(self):
         """One research entry to the existing official connection panel."""
+        self.connection_toggle.setChecked(True)
         self.provider_mode.setCurrentIndex(self.provider_mode.findData('chatgpt_plan'))
         for index in range(self.stack.count()):
             page = self.stack.widget(index)
@@ -253,7 +230,10 @@ class SettingsPage(PageContext, QWidget):
             x, y = int(size.get('x', position.x())), int(size.get('y', position.y()))
             available = [screen.availableGeometry() for screen in QApplication.screens()]
             screen = next((rect for rect in available if rect.contains(x, y)), self.host.window_screen().availableGeometry())
-            self.host.resize_window(min(max(int(size.get('width', self.host.window_geometry().width())), 800), screen.width()), min(max(int(size.get('height', self.host.window_geometry().height())), 600), screen.height()))
+            minimum_width, minimum_height = self.host.window_minimum_size()
+            width = max(minimum_width, min(int(size.get('width', self.host.window_geometry().width())), screen.width()))
+            height = max(minimum_height, min(int(size.get('height', self.host.window_geometry().height())), screen.height()))
+            self.host.resize_window(width, height)
             self.host.move_window(max(screen.left(), min(x, screen.right()-self.host.window_geometry().width()+1)), max(screen.top(), min(y, screen.bottom()-self.host.window_geometry().height()+1)))
         except (ValueError, TypeError, KeyError, OverflowError):
             self.status.setText(ui_text('ui.load_settings.text_1'))
@@ -280,14 +260,13 @@ class SettingsPage(PageContext, QWidget):
 
 
     def record_event(self, operation, kind):
-        from quantlab.desktop_runtime import RedactedEventLog
-        # Runtime owns redacted persistence; UI never appends the same event twice.
-        self.log_view.appendPlainText((operation if operation in self.host.callbacks['ui_operations'] else 'background') + ' · ' + (kind if kind in ('progress','result','error','cancelled') else 'status'))
+        # Runtime owns persistence. Re-read its redacted API, never event payloads.
+        self.read_logs()
 
 
     def read_logs(self):
         from quantlab.desktop_runtime import RedactedEventLog
-        self.log_view.setPlainText('\n'.join(RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').tail()))
+        self.log_view.load(RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').tail())
 
 
     def backup(self, restore):

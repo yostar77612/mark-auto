@@ -19,7 +19,7 @@ def sha256(path):
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    inputs = [p for pattern in ('.gitattributes', 'packaging/*', 'packaging/qt_notices/*', 'requirements-desktop.*', 'desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*', 'tools/quality_gate.py',
+    inputs = [p for pattern in ('.gitattributes', 'packaging/*', 'packaging/languages/*', 'packaging/qt_notices/*', 'requirements-desktop.*', 'desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*', 'tools/quality_gate.py',
                                'tools/install_sqlite_runtime.py', 'tools/make_icon.py', 'quantlab/*.py', 'quantlab/data_files/*.json', 'examples/*', '.github/workflows/windows-desktop.yml')
               for p in root.glob(pattern) if p.is_file()]
     artifacts = list((root / 'dist/installers').glob('*.exe')) + list((root / 'dist').glob('MarkAuto-*-clean-windows-acceptance.zip'))

@@ -1,0 +1,67 @@
+[
+  {
+    "file": "tests/test_desktop_ui.py",
+    "edit": "NativeDesktopTests.click expands the existing settings paths or backup disclosure before mouse interaction.",
+    "reason": "The same controls and objectNames now live in collapsed areas; all existing handler assertions remain."
+  },
+  {
+    "file": "tests/test_desktop_ui.py",
+    "edit": "test_update_notifications_logs_and_persistent_preferences reads the operation column and asserts the catalog Chinese name instead of QPlainTextEdit JSON text.",
+    "reason": "P1-15 replaces raw code/JSON text with a localized table; presence of the demo operation is still asserted."
+  },
+  {
+    "file": "tests/test_help_reachability.py",
+    "edit": "Settings path ancestry remains in settings_help_details; log_view ancestry is asserted in the About section instead.",
+    "reason": "P1-09/P1-15 place readable logs in About; the path disclosure and all other help assertions remain."
+  },
+  {
+    "file": "tests/test_no_hardcoded_ui_text.py",
+    "edit": "Register desktop_accessibility.py in UI_MODULES.",
+    "reason": "Add the new presentation helper to the existing exhaustive CJK AST guard; all assertions remain unchanged."
+  },
+  {
+    "file": "tests/fixtures/desktop_widget_names.json",
+    "edit": "Add market_panel_toggle to the exhaustive objectName fixture.",
+    "reason": "P1-11 introduces one named interactive control; existing names and exact equality assertions are retained."
+  },
+  {
+    "file": "tests/test_packaging.py",
+    "edit": "Read markauto.iss with explicit utf-8-sig encoding.",
+    "reason": "Traditional Chinese installer messages require locale-independent decoding (including Windows cp950); every assertion is retained."
+  },
+  {
+    "file": "tests/test_application_icon.py",
+    "edit": "Read markauto.iss with explicit utf-8-sig encoding.",
+    "reason": "Traditional Chinese installer messages require locale-independent decoding (including Windows cp950); every assertion is retained."
+  },
+  {
+    "file": "tests/test_update_recovery.py",
+    "edit": "Read markauto.iss with explicit utf-8-sig encoding.",
+    "reason": "Traditional Chinese installer messages require locale-independent decoding (including Windows cp950); every assertion is retained."
+  },
+  {
+    "file": "tests/test_desktop_window_position.py",
+    "edit": "Add minimum-size support to FramedWindow/host; lower minimum to zero at start of the three legacy geometry tests. Add one real-window class testing production minimum, tiny/oversized restore on large/small screens, saved sizes and round trips.",
+    "reason": "P1-11 floor must come from actual window minimum; preserve every legacy assertion and explicitly test production 1280x720 floor."
+  },
+  {
+    "file": "tests/test_desktop_market_integration.py",
+    "edit": "Lower disposable window minimum to zero at start of offscreen clamp test.",
+    "reason": "Preserve exact screen-bound assertions while independently covering the production floor."
+  },
+  {
+    "file": "tests/fixtures/desktop_pages_before/metrics.json and 14 PNGs",
+    "edit": "Regenerate from current Windows code after verifying all 12 changed metric fields; exact diff and rationale in t10_snapshot_numbers.json.",
+    "reason": "P1-09 single-home connection/settings sections, P1-10 wrapping/button sizing, P1-11 collapse toggle, P1-15 localized log table. Snapshot test structure and strictness unchanged."
+  },
+  {
+    "file": "tests/test_scaled_layouts.py",
+    "edit": "Apply/restore scaled font on the disposable window instead of QApplication.",
+    "reason": "Keep every layout assertion and prevent app-global font contamination as required by the CI performance rules."
+  },
+  {
+    "file": "tools/ui_snapshot.py",
+    "edit": "Flush prior DeferredDelete events before applying snapshot app style.",
+    "reason": "A complete page-module run stalled restoring style with earlier closed windows still pending deletion. Flush cleanup without changing snapshot metrics, image comparison, test structure or assertions."
+  }
+]

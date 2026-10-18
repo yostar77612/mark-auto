@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CJK = re.compile(r'[\u3400-\u9fff\uff00-\uffef\u3000-\u303f]')
 UI_MODULES = (
-    'desktop.py', 'desktop_automatic_backup.py', 'desktop_charts.py',
+    'desktop_accessibility.py', 'desktop.py', 'desktop_automatic_backup.py', 'desktop_charts.py',
     'desktop_chatgpt_ui.py', 'desktop_forms.py', 'desktop_help.py', 'desktop_icon.py',
     'desktop_market.py', 'desktop_timeinput.py', 'desktop_expiry_inputs.py', 'desktop_presentation.py', 'desktop_recovery_smoke.py',
     'desktop_theme.py', 'desktop_ui.py', 'desktop_ui_polish.py', 'desktop_walk_forward.py',

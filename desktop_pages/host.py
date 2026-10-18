@@ -46,3 +46,4 @@ class PageHost:
     window_geometry: Callable
     # QWidget x()/y() are frame coordinates; geometry().x()/y() are client coordinates.
     window_position: Callable
+    window_minimum_size: Callable
