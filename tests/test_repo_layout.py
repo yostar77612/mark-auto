@@ -1,5 +1,6 @@
 """Cheap, offline layout and archived-code boundary regressions."""
 import ast
+import subprocess
 from fnmatch import fnmatchcase
 from pathlib import Path
 import unittest
@@ -38,12 +39,14 @@ IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info')
 
 class RepoLayoutTests(unittest.TestCase):
     def test_exact_root_layout(self):
-        entries = {p.name: p for p in ROOT.iterdir()
-                   if p.name not in IGNORED_LOCAL_NAMES
-                   and not any(fnmatchcase(p.name, pattern)
-                               for pattern in IGNORED_LOCAL_PATTERNS)}
-        self.assertEqual({n for n, p in entries.items() if p.is_file()}, ALLOWED_FILES)
-        self.assertEqual({n for n, p in entries.items() if p.is_dir()}, ALLOWED_DIRECTORIES)
+        # Judge the TRACKED layout: other tests and tools legitimately leave untracked artifacts
+        # (e.g. qt-install-report.json) in the working directory of a CI job.
+        listing = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+        tracked = [name for name in listing.split(chr(0)) if name]
+        files = {name for name in tracked if '/' not in name}
+        directories = {name.split('/', 1)[0] for name in tracked if '/' in name}
+        self.assertEqual(files, ALLOWED_FILES)
+        self.assertEqual(directories, ALLOWED_DIRECTORIES)
 
     def test_legacy_archive_and_license(self):
         for name in ('trader', 'gui.py', 'run.py', 'TelegramBot.md'):
