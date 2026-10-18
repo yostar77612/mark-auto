@@ -7,6 +7,25 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'results.copy': '複製表格（含標題）',
+    'results.flat': '空手（無持倉）',
+    'results.short': '空單 {} 口',
+    'results.long': '多單 {} 口',
+    'results.evaluations_reserved': '已保留評估次數',
+    'results.evaluation_limit': '評估上限',
+    'results.folds': '驗證摺數',
+    'results.evaluated_oos_folds': '已評估 OOS 摺數',
+    'results.positions': '持倉商品數',
+    'results.orders': '委託筆數',
+    'results.fills': '成交筆數',
+    'results.stop': '停止狀態',
+    'results.equity': '權益（TWD）',
+    'results.drawdown': '回撤',
+    'results.taipei': '時間（台北）',
+
+    'strategy.tabs.settings': '策略設定',
+    'strategy.tabs.research': 'AI 研究',
+    'strategy.tabs.walk_forward': 'Walk-forward 驗證',
     'ui.advanced.default_title': '進階診斷 JSON（一般操作不需要）',
     'ui.research_controls.text_1': '發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。',
     'ui.research_controls.text_2': '不可逆研究紀錄不得放在可還原狀態資料夾內',
@@ -1332,6 +1351,34 @@ ZH_TW = {
     'automatic_backup.handle_job_event.text_3': '每日自動備份已取消；今天不會自動重試。',
     'automatic_backup.handle_job_event.text_4': '備份結果未能確認；已暫停：{0}',
 }
+
+ZH_TW.update({
+    'wf.step.0': '選擇候選池', 'wf.step.1': '選擇資料', 'wf.step.2': '設定窗口',
+    'wf.step.3': '預覽切分', 'wf.step.4': '確認並執行',
+    'wf.header': '步驟 {0} / 5：{1}', 'wf.back': '上一步', 'wf.next': '下一步',
+    'wf.pool_error': '請先選擇候選池。',
+    'wf.data_error': '請先在資料頁匯入或建立資料；已存候選池另須選擇原始資料。',
+    'wf.windows_error': '窗口設定無效：{0}',
+    'wf.preview_error': '請先完成有效預覽，再確認一次性消耗。',
+    'wf.skip_error': '請依序完成目前步驟，不能跳過驗證。',
+    'wf.preset': '窗口組合', 'wf.quick': '快速', 'wf.standard': '標準',
+    'wf.strict': '嚴格', 'wf.custom': '自訂',
+    'wf.data': '使用目前已匯入的資料（更換資料請至資料頁）',
+    'wf.train': '訓練', 'wf.validation': '驗證', 'wf.oos': '前推', 'wf.holdout': '保留集',
+    'wf.fold': '輪次', 'wf.role': '用途', 'wf.start': '起始 K 棒',
+    'wf.end': '結束 K 棒（不含）', 'wf.length': 'K 棒數',
+    'wf.summary': '共 {0} 輪；候選 {1} 個；預計最多評估 {2} 次。最終保留集不參與評估。',
+    'wf.preset_note': '依資料長度填入現有窗口欄位；所有預覽驗證仍適用。自訂可調整完整設定。',
+    'wf.candidate': '候選 {0}',
+})
+
+ZH_TW.update({
+    'compare.saved': '已儲存結果：勾選後比較，點欄名排序',
+    'compare.name': '選取／結果名稱', 'compare.family': '策略家族',
+    'compare.parameters': '主要參數', 'compare.range': '資料範圍',
+    'compare.created': '建立時間（台北）', 'compare.metric': '指標',
+    'compare.result': '結果 {0}',
+})
 
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 

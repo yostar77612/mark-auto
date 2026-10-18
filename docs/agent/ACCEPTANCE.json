@@ -5654,10 +5654,20 @@
     "scope": "Offline synthetic presentation only; five-second success plus 300ms fade, persistent errors, operation summaries, fill feedback and ledger account card. Full suite and native verification remain controller responsibilities. No acceptance weights or safety thresholds changed."
   },
   "t3b_p0_display_contracts": {
-    "items": ["P0-07", "P0-08", "P0-10", "P0-11", "P0-12"],
+    "items": [
+      "P0-07",
+      "P0-08",
+      "P0-10",
+      "P0-11",
+      "P0-12"
+    ],
     "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t3-b--p0-display-and-disclosure-contracts",
     "regressions": "tests/test_desktop_ui_polish_b.py",
-    "measurement": {"viewport": "1366x768", "ai_page_height": 956, "paper_page_height": 1073},
+    "measurement": {
+      "viewport": "1366x768",
+      "ai_page_height": 956,
+      "paper_page_height": 1073
+    },
     "scope": "Display only; exact records, IDs, eligibility, quotas, fail-closed validation and one-time OOS consumption unchanged. Full suite is controller-owned."
   },
   "t3a_p0_ui_polish_contracts": {
@@ -5784,11 +5794,86 @@
   "t6_semantic_repair": {
     "contract": "docs/agent/IMPLEMENTATION_CONTRACTS.md#t6-repair---frame-position-and-semantic-parity",
     "evidence": "docs/analysis/t6_semantic_audit.json",
-    "regressions": ["tests/test_desktop_window_position.py", "tests/test_desktop_pages.py"],
+    "regressions": [
+      "tests/test_desktop_window_position.py",
+      "tests/test_desktop_pages.py"
+    ],
     "snapshot_assertions": "All platforms: exact seven page names/order, visible_text, visible_input_count, button_count, label_char_count, unlabeled_inputs, primary_button_count, objectName set and AST class line limits. Windows only (sys.platform == 'win32'): original byte-for-byte metrics JSON including page_height/full_width and all 14 PNG pixel buffers. Windows font geometry is not required on Linux; window-position doubles require no Windows native APIs.",
     "behavior": "Save and restore frame x/y through explicit host QPoint callback; preserve client width/height, integer conversion and screen clamping. Restore original MainWindow parent for five dialog entry points.",
-    "audit": {"named_methods": 77, "page_constructors": 7, "other_helpers": ["EquityPlot", "result_snapshot_lines", "mount aliases", "state descriptors", "host callbacks"]},
-    "measurements": {"focused_tests_passed": 20, "identical_metric_pages": 7, "identical_pngs": 14, "png_changed_pixels_percent": 0},
+    "audit": {
+      "named_methods": 77,
+      "page_constructors": 7,
+      "other_helpers": [
+        "EquityPlot",
+        "result_snapshot_lines",
+        "mount aliases",
+        "state descriptors",
+        "host callbacks"
+      ]
+    },
+    "measurements": {
+      "focused_tests_passed": 20,
+      "identical_metric_pages": 7,
+      "identical_pngs": 14,
+      "png_changed_pixels_percent": 0
+    },
     "scope": "No objectName, UI text, validation, quotas, OOS policy or pinned source changes. Native decorated-window smoke and full suite remain controller-owned. GitNexus index refresh/detect-changes blocked by sandbox spawn EPERM; no clean graph claim."
+  },
+  "t8_strategy_tabs": {
+    "plan_items": [
+      "P1-01",
+      "P1-14 (candidate analysis move only)"
+    ],
+    "status": "PASS",
+    "evidence": "tests/test_strategy_tabs.py; tests/test_ui_snapshot.py; docs/analysis/t8_snapshot_numbers.json",
+    "default_tab_content_heights": [
+      490,
+      438,
+      748
+    ],
+    "object_names": "All pre-existing names preserved; nine intentional additions",
+    "safety": "UI wiring only; existing G2 validation/consent/OOS logic unchanged",
+    "full_suite": "Controller-owned outside sandbox"
+  },
+  "t8_walk_forward_wizard": {
+    "plan_items": [
+      "P1-02",
+      "P3-13 (Walk-forward presentation)"
+    ],
+    "evidence": "tests/test_wf_wizard.py; docs/analysis/t8_snapshot_numbers.json",
+    "controls_to_preview": 3,
+    "backend": "desktop_walk_forward.py byte-for-byte unchanged",
+    "presets": "Documented length-derived field values; same typed grammar, source validation, preview and run operations",
+    "object_names": "All existing names preserved; new wizard names recorded in snapshot evidence",
+    "full_suite": "Controller-owned outside sandbox per task instructions"
+  },
+  "t8_results": {
+    "plan_items": [
+      "P1-07",
+      "P1-13"
+    ],
+    "evidence": "tests/test_result_widgets.py; docs/analysis/t8_snapshot_numbers.json",
+    "behavior": "Reusable numeric-sort/copy tables and KPI cards; missing/None/zero distinct; Taipei fills; time/value axes, hover and shared-time drawdown; collapsed raw evidence",
+    "compatibility": "Legacy card types/text retained hidden for evidence consumers; all existing objectNames retained",
+    "safety": "No backend validation, consent, OOS or pinned source changes",
+    "full_suite": "Controller-owned outside sandbox"
+  },
+  "t8_compare_table": {
+    "plan_items": [
+      "P1-14",
+      "P1-07 (comparison)"
+    ],
+    "evidence": "tests/test_compare_table.py; docs/analysis/t8_snapshot_numbers.json",
+    "behavior": "One saved report per checkbox row; readable P0-12 names, family, parameters, range, Taipei creation time, net P&L, PF, descriptive Sharpe, drawdown and trade count. Numeric header sorting. ui_compare receives original selected paths and displays metric rows with result columns. None/missing/zero remain distinct. Hashes only in tooltips/advanced.",
+    "compatibility": "comparison_list remains a hidden QListWidget; all old objectNames and select/disable consent and validation preserved; compare raw JSON collapsed",
+    "default_height_px": 684,
+    "strategy_tab_heights_px": [
+      490,
+      438,
+      867
+    ],
+    "full_suite": "Controller-owned outside sandbox",
+    "verification": "57 focused/guard tests pass, exit 0; quality gate 0 findings, exit 0; Python 3.11 utf-8-sig compile 278 files, exit 0",
+    "remaining_cleanup": "Pre-existing .tmp/.tmp-t2/.tmp-t3/.tmp-t4/.t4b-work/.t6-work removal rejected by automatic approval policy; no new repository scratch created."
   }
 }

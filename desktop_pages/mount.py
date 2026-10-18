@@ -252,7 +252,7 @@ def mount_pages(shell):
     host.state.start_date = shell.start_date
     host.state.run_backtest = shell.run_backtest
     host.state.show_result = shell.show_result
-    shell.compare_page = ComparePage(host)
+    shell.compare_page = ComparePage(host, shell.strategy_page.analysis_layout)
     shell._analysis_section = shell.compare_page._analysis_section
     shell._invalidate_analysis_preview = shell.compare_page._invalidate_analysis_preview
     shell.pick_analysis_original = shell.compare_page.pick_analysis_original

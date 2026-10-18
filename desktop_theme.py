@@ -67,6 +67,8 @@ _QSS = """
 QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
 QWidget { background: @background@; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: @font_body@px; color: @text@; }
 QLabel { padding: @space_label@px 0; }
+QWidget[resultCard="true"] { background: @input_background@; border: 1px solid @input_border@; border-radius: 6px; }
+QLabel[kpiValue="true"] { font-size: 18px; font-weight: bold; }
 QListWidget { background: @navigation_background@; color: @navigation_text@; border: none; border-radius: 9px; padding: 9px; }
 QListWidget::item { padding: 12px 8px; border-radius: 5px; }
 QListWidget::item:selected { background: @navigation_selection@; color: white; }

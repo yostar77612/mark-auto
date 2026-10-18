@@ -1041,7 +1041,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             self.run_button.setEnabled(bool(getattr(self, '_dataset_ready', False)))
             self.use_candidate_button.setEnabled(bool(getattr(self, '_candidate_valid', False)))
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
-            self.walk_forward_start.setEnabled(self._wf_preview is not None)
+            self.walk_forward_start.setEnabled(self._wf_preview is not None and self.walk_forward_consent.isChecked())
             self.analysis_start.setEnabled(self._analysis_preview is not None and not self._analysis_preview['receipt_snapshot']['receipts'])
         self._refresh_recovery_controls(force=active or refresh_recovery)
 

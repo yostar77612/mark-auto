@@ -119,6 +119,31 @@ class UiSnapshotTests(unittest.TestCase):
         self.assertEqual(metrics['label_char_count'], len('Quantity'))
         page.close()
 
+    def test_tab_heights_measure_content_and_restore_selection(self):
+        from PySide6.QtWidgets import QScrollArea, QTabWidget, QVBoxLayout, QWidget
+        from tools.ui_snapshot import tab_heights
+        page = QWidget()
+        self.addCleanup(page.deleteLater)
+        layout = QVBoxLayout(page)
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
+        for label, height in (('Short', 120), ('Tall', 900)):
+            scroll = QScrollArea()
+            content = QWidget()
+            content.setMinimumHeight(height)
+            scroll.setWidget(content)
+            scroll.setWidgetResizable(True)
+            tabs.addTab(scroll, label)
+        page.resize(600, 400)
+        page.show()
+        self.app.processEvents()
+        tabs.setCurrentIndex(0)
+        heights = tab_heights(page, self.app)
+        self.assertGreaterEqual(heights['Tall'], 900)
+        self.assertLess(heights['Short'], heights['Tall'])
+        self.assertEqual(tabs.currentIndex(), 0)
+        page.close()
+
     def test_workspace_isolation_cleanup_and_default_fallback_tripwire(self):
         # QApplication is process-global. Exercise the production CLI lifecycle
         # in a fresh process rather than dispatching timers left by other tests.

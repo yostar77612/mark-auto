@@ -7,6 +7,7 @@ from quantlab.reporting import write_json
 from quantlab.desktop_errors import error_message
 from desktop_forms import StrategyForm, CampaignForm, WalkForwardForm, ResultTable, CandidateSummaryCard
 from .host import PageHost
+from .strategy_tabs import strategy_tabs, candidate_analysis_layout
 
 
 class StrategyPage(QWidget):
@@ -16,6 +17,7 @@ class StrategyPage(QWidget):
         self.state = host.state
         from quantlab.strategies import builtin_strategies
         layout = self.host.mount_page(self, ui_text('ui._strategy_page.text_1'))
+        self.tabs, (layout, research, walk_forward) = strategy_tabs(layout)
         self.chatgpt_sign_in_entry = self.host.button(layout, ui_text('ui._strategy_page.text_2'), 'chatgpt_sign_in_entry', self.host.show_sign_in)
         layout.addWidget(QLabel(ui_text('ui._strategy_page.text_3')))
         self.strategy_form = StrategyForm(); layout.addWidget(self.strategy_form)
@@ -24,32 +26,37 @@ class StrategyPage(QWidget):
         self.parameters = self.host.text(advanced, ui_text('ui._strategy_page.text_4'), '{}', True)
         self.strategy_detail = QPlainTextEdit(); self.strategy_detail.setReadOnly(True); advanced.addWidget(self.strategy_detail)
         self.family.currentIndexChanged.connect(self._family_changed); self._family_changed()
-        self._walk_forward_section(self.host.advanced(layout, ui_text('ui._strategy_page.text_5')))
-        layout.addWidget(QLabel(ui_text('ui._strategy_page.text_6')))
+        # Keep the legacy section toggle identity and preference key. The wizard
+        # is always available; expanding an outer section is no longer required.
+        self.host.advanced(walk_forward, ui_text('ui._strategy_page.text_5'))
+        list(self.state._section_toggles.values())[-1].hide()
+        self._walk_forward_section(walk_forward)
+        research.addWidget(QLabel(ui_text('ui._strategy_page.text_6')))
         self.strategy_form.family.currentIndexChanged.connect(lambda: self.family.setCurrentIndex(self.strategy_form.family.currentIndex()))
-        research_parameters = self.host.advanced(layout, ui_text('ui._strategy_page.text_7'))
+        research_parameters = self.host.advanced(research, ui_text('ui._strategy_page.text_7'))
         self.campaign_form = CampaignForm(); research_parameters.addWidget(self.campaign_form)
-        self.campaign_config = self.host.text(advanced, ui_text('ui._strategy_page.text_8'), '', True)
+        self.campaign_config = self.host.text(research_parameters, ui_text('ui._strategy_page.text_8'), '', True)
         self.host.remember(self.campaign_config)
-        self.provider_mode = QComboBox(); self.provider_mode.addItem(ui_text('ui._strategy_page.text_9'), 'chatgpt_plan'); self.provider_mode.addItem(ui_text('ui._strategy_page.text_10'), 'fixture'); self.provider_mode.addItem(ui_text('ui._strategy_page.text_11'), 'manual'); layout.addWidget(self.provider_mode)
-        manual = QWidget(); manual_layout = QVBoxLayout(manual); layout.addWidget(manual); manual.hide()
+        self.provider_mode = QComboBox(); self.provider_mode.addItem(ui_text('ui._strategy_page.text_9'), 'chatgpt_plan'); self.provider_mode.addItem(ui_text('ui._strategy_page.text_10'), 'fixture'); self.provider_mode.addItem(ui_text('ui._strategy_page.text_11'), 'manual'); research.addWidget(self.provider_mode)
+        manual = QWidget(); manual_layout = QVBoxLayout(manual); research.addWidget(manual); manual.hide()
         self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
         self.manual_path = self.host.text(manual_layout, ui_text('ui._strategy_page.text_12'))
         self.host.button(manual_layout, ui_text('ui._strategy_page.text_13'), 'browse_manual_response', lambda: self.host.browse(self.manual_path))
         self.manual_response = self.host.text(manual_layout, ui_text('ui._strategy_page.text_14'), '', True)
         self.host.button(manual_layout, ui_text('ui._strategy_page.text_15'), 'export_manual_request', self.export_manual_request)
-        self.host.button(layout, ui_text('ui._strategy_page.text_16'), 'chatgpt_campaign_usage', self.host.inspect_plan_usage)
-        self.host.button(layout, ui_text('ui._strategy_page.text_17'), 'run_campaign', self.run_campaign, role='primary')
-        self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
-        self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); advanced.addWidget(self.candidate_detail)
-        evidence = self.host.advanced(layout, ui_text('ui._strategy_page.text_18'))
+        self.host.button(research, ui_text('ui._strategy_page.text_16'), 'chatgpt_campaign_usage', self.host.inspect_plan_usage)
+        self.host.button(research, ui_text('ui._strategy_page.text_17'), 'run_campaign', self.run_campaign, role='primary')
+        self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); research.addWidget(self.candidate_choice)
+        self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); research_parameters.addWidget(self.candidate_detail)
+        evidence = self.host.advanced(research, ui_text('ui._strategy_page.text_18'))
         self.candidate_card = CandidateSummaryCard(); evidence.addWidget(self.candidate_card)
-        self.use_candidate_button = self.host.button(layout, ui_text('ui._strategy_page.text_19'), 'use_candidate', self.use_candidate)
+        self.use_candidate_button = self.host.button(research, ui_text('ui._strategy_page.text_19'), 'use_candidate', self.use_candidate)
         self.host.button(layout, ui_text('ui._strategy_page.text_20'), 'use_builtin', self.use_builtin)
-        self.history = QPlainTextEdit(); self.history.setReadOnly(True); advanced.addWidget(self.history)
+        self.history = QPlainTextEdit(); self.history.setReadOnly(True); research_parameters.addWidget(self.history)
         self.history_table = ResultTable(); evidence.addWidget(self.history_table)
         evidence.addWidget(QLabel(ui_text('ui._strategy_page.text_21')))
         self.evaluation_table = ResultTable(); evidence.addWidget(self.evaluation_table)
+        self.analysis_layout = candidate_analysis_layout(research)
 
     def _walk_forward_section(self, layout):
         section = QGroupBox(ui_text('ui._walk_forward_section.text_1'))
@@ -88,7 +95,12 @@ class StrategyPage(QWidget):
         self.host.button(content, ui_text('ui._walk_forward_section.text_12'), 'read_walk_forward', self.read_walk_forward)
         self.walk_forward_status = QLabel(ui_text('ui._walk_forward_section.text_13'))
         self.walk_forward_status.setWordWrap(True); content.addWidget(self.walk_forward_status)
-        self.walk_forward_results = ResultTable(); content.addWidget(self.walk_forward_results)
+        from .result_widgets import ResultTable as SortableResultTable
+        from .result_panels import WalkForwardResults
+        self.walk_forward_results = SortableResultTable(); content.addWidget(self.walk_forward_results)
+        self.result_panel = WalkForwardResults()
+        from .wf_wizard import WalkForwardWizard
+        self.wf_wizard = WalkForwardWizard(self, content)
 
     def _connect_walk_forward_inputs(self):
         for form in (self.walk_forward_form, self.state.backtest_form):
@@ -134,6 +146,9 @@ class StrategyPage(QWidget):
         self.walk_forward_preview.setPlainText(ui_text('ui._invalidate_walk_forward_preview.text_1'))
         self.walk_forward_status.setText(ui_text('ui._invalidate_walk_forward_preview.text_2'))
         self.walk_forward_advanced.clear()
+        self.wf_wizard.summary.set_rows([])
+        self.wf_wizard.timeline.setVisible(False)
+        self.wf_wizard.preview_summary.clear()
 
     def _walk_forward_input_key(self):
         path = self.state.root / 'dataset.json'
@@ -241,13 +256,16 @@ class StrategyPage(QWidget):
                     self.state.status.setText(ui_text('ui._walk_forward_event.text_4'))
                     return True
                 self.state._wf_preview = result
+                self.wf_wizard.show_preview(result)
                 self.walk_forward_status.setText(ui_text('ui._walk_forward_event.text_5'))
                 self.state.status.setText(ui_text('ui._walk_forward_event.text_6'))
             else:
                 from desktop_walk_forward import result_rows, status_label, preview_text
                 self.walk_forward_advanced.setPlainText(preview_text(result, advanced=True))
                 summary = result.get('summary', {})
-                self.walk_forward_results.set_rows(result_rows(result))
+                from .wf_wizard import display_result_rows
+                self.walk_forward_results.set_rows(display_result_rows(result))
+                self.result_panel.set_result(result)
                 self.walk_forward_status.setText(
                     ui_text('ui._walk_forward_event.text_10').format(status_label(result.get('display_status', result['status'])), status_label(summary.get('evidence_mode')), status_label(summary.get('exposure_status')), ui_text('ui._walk_forward_event.text_8').format(summary.get('evaluations_reserved', 0), summary.get('evaluation_limit', ui_text('ui._walk_forward_event.text_7')), summary.get('evaluated_oos_folds', 0)), ui_text('ui._walk_forward_event.text_9').format(status_label(result['pool_admission']['real_model_status'])) if result.get('pool_admission') else '', str(result.get('reference', ''))[:12]))
                 self.state.status.setText(ui_text('ui._walk_forward_event.text_11'))

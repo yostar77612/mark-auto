@@ -1,5 +1,40 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### T8 part B: Walk-forward wizard
+
+This supersedes part A's pending/collapsed Walk-forward description below.
+Current tab heights are 490 / 438 / 748 px at 1366x768; the original part A
+measurements remain historical evidence in the per-run snapshot log.
+
+The Walk-forward tab presents five sequential steps: pool, data, windows,
+preview, and consent/run. It reparents existing controls without changing their
+objectNames or the preview/run/read/reconcile operations. The legacy outer
+section toggle retains its identity/preference key but is hidden; the wizard is
+always available. Next refuses invalid steps with catalog text, and the stack
+guards direct/programmatic jumps. Standard preview takes three Next actions
+when a valid dataset is already loaded. Data selection uses the current imported
+dataset; saved pools also require the existing original-data picker.
+
+For N=8..100000 bars, presets fill only the existing typed fields: start=0,
+train=max(1,N//4), gap=0, validation=oos=step=max(1,N//8) for Quick/Standard
+and max(1,N//16) for Strict. Fold counts are 2/3/4; holdout starts at
+train+(folds+1)*width and ends at N; evaluation limits are 22/33/44.
+Mode, evidence, ranking, runtime and costs retain their existing values.
+Saved pools retain authoritative admission and budget rejection; presets never
+increase an admitted pool's quota or bypass the preview worker. Custom alone
+shows/enables the raw editor. The same request grammar and source validator
+check window steps, and the existing preview operation remains authoritative.
+
+Preview displays four proportional train/validation/walk-forward/holdout segments
+(first fold plus final holdout), a Chinese summary table, safety notices and
+P0-10 formatted numbers. Raw evidence remains in the existing advanced control.
+Invalidation clears the summary and hides the timeline. Run requires a current
+preview and explicit one-time consent, including after busy-state reset.
+desktop_walk_forward.py and all pinned G3 sources remain unchanged. Snapshot
+metrics include all tab heights plus each wizard step's natural content height
+without bypassing navigation guards or starting jobs. Evidence:
+tests/test_wf_wizard.py and docs/analysis/t8_snapshot_numbers.json.
+
 <!-- CURRENT_STATUS_START -->
 ## 目前交付對帳（2026-10-10 23:42 UTC）
 
@@ -483,3 +518,32 @@ page_height and full_width) and all 14 PNG pixel buffers remain required on
 sys.platform == 'win32'; other platforms compare the behavioral facts without
 Windows geometry or rasterization expectations. Window-position tests use explicit
 frame/client offsets and screen doubles; no Windows native APIs are required.
+
+
+## T8 part A - Strategy center work areas
+
+StrategyPage contains exactly three catalog-labelled tabs (strategy settings, AI research, Walk-forward validation), initially selecting settings. Each tab has its own scroll content. Strategy selection controls stay in settings; campaign generation, candidate history/evidence and the expandable candidate analysis block live in research. Existing Walk-forward controls remain collapsed by default in validation pending the next run. ComparePage keeps its shared-state analysis handlers and signal bindings for compatibility, while every analysis widget is a descendant of the research tab. No backend validation, preview, consent, quota, OOS consumption or retry logic changes.
+
+The tab widget reserves a stable 740 px work area for previews/results. At 1366x768 the default natural tab content heights are 490 / 438 / 50 px (all <=1100); the strategy shell is 798 px versus 956 before, and ComparePage is 684 px versus 1948 before. `tools/ui_snapshot.py` adds optional `subpages: {tab label: natural content height}` for visible tab containers, visits every tab at its viewport width, and restores selection. Existing top-level fields continue to measure the selected tab. Existing market tabs are measured too.
+
+Evidence: `tests/test_strategy_tabs.py`, the added tab-measurement test in `tests/test_ui_snapshot.py`, and `docs/analysis/t8_snapshot_numbers.json` from a fresh HEAD archive. The existing desktop page parity assertions remain unchanged; only Strategy/Compare image baselines, affected metrics and nine intentional objectName fixture additions change. No existing objectName is removed or renamed. The new helper is automatically registered by the recursive UI-text and inline-style guards. Snapshot artifacts live outside the repository in the disposable T8 capture directory recorded in the numbers file. Full-suite execution remains controller-owned outside this sandbox.
+
+## T8 part C - Result presentation
+
+`desktop_pages/result_widgets.py` supplies KPI cards and read-only tables with numeric sort keys, header-click sorting and a copy action/Ctrl+C exporting all displayed rows with TSV headers in their current order. Missing fields show the catalog's not-provided text, explicit None shows undefined, and a real zero stays numeric. Numeric display delegates rounding/units to the P0-10 formatter, with grouping for other numeric columns. Source reports are never rewritten.
+
+Backtest uses net P&L, PF, descriptive Sharpe, drawdown, closed-lot and position cards plus sortable/copyable fills. PF/Sharpe reason labels are visible only for explicit undefined values. The legacy summary adapter remains hidden for compatibility consumers; raw reports remain in the existing collapsed advanced section. Fill times in the new UI adapter are Asia/Taipei (UTC+08:00); legacy desktop_forms adapters and their existing semantics tests are unchanged. Position presentation distinguishes long, short and flat.
+
+Walk-forward uses the same cards/table in its wizard results area, with one row per fold and no invented portfolio aggregation. Cards show supplied evaluation counts; candidate-level evidence stays in advanced. Paper uses cash, position/order/fill counts, reconcile and stop cards, and three detail tabs; the legacy SummaryCard remains in advanced for compatibility. Paper's new fills widget has its own attribute so it cannot overwrite the shared backtest fills binding. All consent, preview, stop, validation, quota, OOS consumption and no-retry operations are unchanged.
+
+EquityPlot paints date/value ticks, a nearest-sample cursor tooltip and a drawdown sub-chart using the exact same time-to-pixel mapping. `value_at(x_position)` accepts widget-local pixels and returns the nearest supplied (time, equity), or None for empty input. Single points render safely; nonpositive running peaks have undefined relative drawdown instead of fabricated zero. Existing objectNames are preserved; four new names and all snapshot changes are listed in `docs/analysis/t8_snapshot_numbers.json`. Both helper modules are automatically scanned by the recursive UI-text/style guards. No existing test assertion or accessor was changed; only visual/name fixtures were refreshed. Full-suite verification remains controller-owned under the task's sandbox instruction.
+
+## T8 part D - Comparison and final integration
+
+ComparePage presents one saved report per checkbox row using the part C ResultTable. Columns are the P0-12 readable name, family, main parameters, data range, filesystem creation time in Taipei, net P&L, PF, descriptive Sharpe, maximum drawdown and trade count. Headers sort numerically where applicable. Undefined, missing and zero remain distinct through the P0-10 formatter. Hashes/paths remain in tooltips and the collapsed raw report. Unreadable reports retain a named row with missing metrics and remain subject to backend validation.
+
+The hidden `comparison_list` QListWidget remains a bidirectional compatibility adapter. Checking rows selects original saved paths; legacy selection updates checkboxes. Refresh preserves selected paths and sorting keeps checks attached to results. The existing button dispatches unchanged `ui_compare` payloads. Returned metrics display side by side, one column per result, with undefined reasons in tooltips. Existing action objectNames, select/disable callbacks, prerequisite hints, consent and fail-closed validation remain intact. No backend/OOS/retry behavior changes.
+
+Final 1366x768 snapshot heights (HEAD archive / final): strategy center 956 / 798, compare 1948 / 684, backtest 822 / 995, paper 1073 / 1304 px. Strategy settings/research/Walk-forward tab heights are 490 / 438 / 867 px, each <=1100. Compare is <=768 px. These values supersede intermediate heights above. Snapshot tooling continues measuring every tab and wizard step.
+
+Evidence: `tests/test_compare_table.py` and part D in `docs/analysis/t8_snapshot_numbers.json`. The helper is automatically registered in both recursive AST guards. No existing control objectName is removed; aliases/additions are in `docs/analysis/t8_objectname_changes.json`. Existing assertions remain unchanged: only Compare PNG/metrics and the new widget-name fixture entry are refreshed. Python 3.11 compilation, class boundaries, catalog/style guards, focused T8 tests and static quality gate are required. Full-suite testing is controller-owned outside the sandbox. GitNexus refresh/diff checks fail with spawn EPERM; impact and direct source checks are recorded without a clean graph claim.

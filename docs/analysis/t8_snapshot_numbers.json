@@ -1,0 +1,510 @@
+{
+  "runs": [
+    {
+      "run": "T8 part A",
+      "baseline_commit": "9e99ab7715898adcd1b8e1e1274d7485e055234f",
+      "baseline_source": "git archive HEAD",
+      "size": [
+        1366,
+        768
+      ],
+      "scale": 1,
+      "pages": {
+        "市場總覽": {
+          "before_height": 1631,
+          "after_height": 1631,
+          "subpages": {
+            "持倉（主程式資料）": 192,
+            "委託（主程式資料）": 192,
+            "成交（主程式資料）": 192
+          }
+        },
+        "資料匯入與更新": {
+          "before_height": 990,
+          "after_height": 990
+        },
+        "AI 策略中心": {
+          "before_height": 956,
+          "after_height": 798,
+          "subpages": {
+            "策略設定": 490,
+            "AI 研究": 438,
+            "Walk-forward 驗證": 50
+          }
+        },
+        "回測與結果": {
+          "before_height": 822,
+          "after_height": 822
+        },
+        "比較與策略選擇": {
+          "before_height": 1948,
+          "after_height": 684
+        },
+        "紙上交易與復原": {
+          "before_height": 1073,
+          "after_height": 1073
+        },
+        "設定與備份": {
+          "before_height": 1883,
+          "after_height": 1883
+        }
+      },
+      "preserved_object_names": true,
+      "renamed_or_removed_object_names": {},
+      "added_object_names": [
+        "candidate_analysis_section",
+        "candidate_analysis_toggle",
+        "strategy_tabs",
+        "strategy_settings_scroll",
+        "strategy_settings_tab",
+        "strategy_research_scroll",
+        "strategy_research_tab",
+        "strategy_walk_forward_scroll",
+        "strategy_walk_forward_tab"
+      ],
+      "test_edits": [
+        "tests/test_ui_snapshot.py: add tab content height and selection restoration test; existing assertions unchanged",
+        "tests/fixtures/desktop_widget_names.json: nine intentional additions; zero removals",
+        "tests/fixtures/desktop_pages_before: refresh Strategy/Compare images and metrics for the tab move; add market subpages metrics; all existing test_desktop_pages.py assertions unchanged"
+      ],
+      "sandbox_capture": "Invocation-only sitecustomize changes mkdir mode 0700 to inherited mode 0777 to avoid temp ACL artifacts; product and tests are not patched",
+      "artifacts": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8-5497445bf6794b8993317ff5956a27b6",
+      "verification": {
+        "focused_tests": {
+          "count": 37,
+          "exit_code": 0,
+          "seconds": 95.727,
+          "modules": [
+            "tests.test_strategy_tabs",
+            "tests.test_ui_snapshot",
+            "tests.test_desktop_pages",
+            "tests.test_no_hardcoded_ui_text",
+            "tests.test_no_inline_stylesheet",
+            "tests.test_desktop_strings"
+          ]
+        },
+        "quality_gate": {
+          "exit_code": 0,
+          "findings": 0
+        },
+        "python_311_compile": {
+          "scope": "all git tracked and new Python files, utf-8-sig",
+          "exit_code": 0
+        },
+        "full_suite": "Not run per sandbox instructions; controller-owned",
+        "gitnexus": "Stale index impact queried; refresh attempted twice, blocked by spawn EPERM. No clean graph claim."
+      }
+    },
+    {
+      "run": "T8 part B",
+      "baseline_commit": "9e99ab7715898adcd1b8e1e1274d7485e055234f",
+      "baseline_source": "git archive HEAD",
+      "size": [
+        1366,
+        768
+      ],
+      "scale": 1.0,
+      "pages": {
+        "市場總覽": {
+          "before_height": 1631,
+          "after_height": 1631,
+          "subpages": {
+            "持倉（主程式資料）": 192,
+            "委託（主程式資料）": 192,
+            "成交（主程式資料）": 192
+          },
+          "wizard_steps": {}
+        },
+        "資料匯入與更新": {
+          "before_height": 990,
+          "after_height": 990,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "AI 策略中心": {
+          "before_height": 956,
+          "after_height": 798,
+          "subpages": {
+            "策略設定": 490,
+            "AI 研究": 438,
+            "Walk-forward 驗證": 748
+          },
+          "wizard_steps": {
+            "1": 168,
+            "2": 172,
+            "3": 84,
+            "4": 337,
+            "5": 123
+          }
+        },
+        "回測與結果": {
+          "before_height": 822,
+          "after_height": 822,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "比較與策略選擇": {
+          "before_height": 1948,
+          "after_height": 684,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "紙上交易與復原": {
+          "before_height": 1073,
+          "after_height": 1073,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "設定與備份": {
+          "before_height": 1883,
+          "after_height": 1883,
+          "subpages": {},
+          "wizard_steps": {}
+        }
+      },
+      "added_object_names": [
+        "wf_back",
+        "wf_back_prerequisite",
+        "wf_next",
+        "wf_next_prerequisite",
+        "wf_preset",
+        "wf_preview_summary",
+        "wf_preview_table",
+        "wf_step_0",
+        "wf_step_1",
+        "wf_step_2",
+        "wf_step_3",
+        "wf_step_4",
+        "wf_step_header",
+        "wf_step_message",
+        "wf_steps",
+        "wf_timeline",
+        "wf_wizard"
+      ],
+      "renamed_or_removed_object_names": {},
+      "artifacts": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8b-20261018",
+      "test_edits": [
+        "tests/fixtures/desktop_widget_names.json: wizard additions only; zero removals",
+        "tests/fixtures/desktop_pages_before/metrics.json: new wizard_steps and Walk-forward subpage height; assertions unchanged",
+        "tests/fixtures/desktop_pages_before/03_{full,viewport}.png: refresh unchanged default-tab renders; assertions unchanged"
+      ],
+      "sandbox_capture": "Invocation-only existing temp sitecustomize uses inherited mkdir ACL; no product/test ACL changes",
+      "controls_to_preview": 3,
+      "gitnexus": "Impact performed against stale graph; analyze --index-only failed spawn EPERM. No clean graph claim.",
+      "verification": {
+        "wizard_tests": {
+          "exit_code": 0,
+          "count": 11
+        },
+        "page_guards_and_interactions": {
+          "exit_code": 0,
+          "count": 13
+        },
+        "snapshot_parity": {
+          "exit_code": 0,
+          "count": 1
+        },
+        "catalog_and_style_focused": {
+          "exit_code": 0,
+          "count": 26,
+          "includes_wizard": true
+        },
+        "quality_gate": {
+          "exit_code": 0,
+          "findings": 0
+        },
+        "python_311_compile": {
+          "exit_code": 0,
+          "count": 273,
+          "encoding": "utf-8-sig"
+        },
+        "full_suite": "Not run per sandbox instruction; controller-owned",
+        "existing_walk_forward_ui_modules": "Not run per ONLY new/changed focused modules instruction; existing assertions unchanged, new focused tests cover original preview/run/read and no OOS retry",
+        "gitnexus_detect_changes": "Returned 14 changed symbols/55 affected, risk critical; stale graph mapping, no clean-current-index claim",
+        "final_focused_bundle": {
+          "count": 48,
+          "exit_code": 0,
+          "seconds": 93.58,
+          "modules": [
+            "tests.test_wf_wizard",
+            "tests.test_strategy_tabs",
+            "tests.test_ui_snapshot",
+            "tests.test_desktop_pages",
+            "tests.test_no_hardcoded_ui_text",
+            "tests.test_no_inline_stylesheet",
+            "tests.test_desktop_strings"
+          ]
+        }
+      },
+      "preview_artifact": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8b-20261018\\wizard-preview.png",
+      "ui_module_registration": "New desktop_pages module is included automatically by both recursive AST scan inventories"
+    },
+    {
+      "run": "T8 part C",
+      "baseline_commit": "9e99ab7715898adcd1b8e1e1274d7485e055234f",
+      "baseline_source": "git archive HEAD (existing detached archive, freshly recaptured this run)",
+      "size": [
+        1366,
+        768
+      ],
+      "scale": 1.0,
+      "pages": {
+        "市場總覽": {
+          "before_height": 1631,
+          "after_height": 1631,
+          "subpages": {
+            "持倉（主程式資料）": 192,
+            "委託（主程式資料）": 192,
+            "成交（主程式資料）": 192
+          },
+          "wizard_steps": {}
+        },
+        "資料匯入與更新": {
+          "before_height": 990,
+          "after_height": 990,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "AI 策略中心": {
+          "before_height": 956,
+          "after_height": 798,
+          "subpages": {
+            "策略設定": 490,
+            "AI 研究": 438,
+            "Walk-forward 驗證": 867
+          },
+          "wizard_steps": {
+            "1": 168,
+            "2": 172,
+            "3": 84,
+            "4": 337,
+            "5": 123
+          }
+        },
+        "回測與結果": {
+          "before_height": 822,
+          "after_height": 995,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "比較與策略選擇": {
+          "before_height": 1948,
+          "after_height": 684,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "紙上交易與復原": {
+          "before_height": 1073,
+          "after_height": 1304,
+          "subpages": {
+            "持倉商品數": 192,
+            "委託筆數": 192,
+            "成交筆數": 192
+          },
+          "wizard_steps": {}
+        },
+        "設定與備份": {
+          "before_height": 1883,
+          "after_height": 1883,
+          "subpages": {},
+          "wizard_steps": {}
+        }
+      },
+      "added_object_names": [
+        "paper_positions_results",
+        "paper_orders_results",
+        "paper_fills_results",
+        "wf_result_panel"
+      ],
+      "renamed_or_removed_object_names": {},
+      "test_edits": [
+        "tests/test_result_widgets.py: new focused component and host integration tests",
+        "tests/fixtures/desktop_widget_names.json: four additions only",
+        "tests/fixtures/desktop_pages_before/metrics.json: result presentation metrics",
+        "tests/fixtures/desktop_pages_before/03,04,06 full/viewport PNG: result presentation baselines; no existing assertion edits"
+      ],
+      "ui_module_registration": "Both new desktop_pages modules are automatically included by the recursive text/style AST inventories",
+      "artifacts": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8c-20261018",
+      "gitnexus": "Impact performed: account CRITICAL, chart MEDIUM, walk-forward LOW; BacktestPage and wizard UNKNOWN checked by text/source. Index refresh failed spawn EPERM. No clean graph claim.",
+      "sandbox_capture": "Existing invocation-only temp sitecustomize inherits mkdir ACL; product and tests unchanged",
+      "full_suite": "Not run per sandbox ONLY focused modules instruction; controller-owned",
+      "gitnexus_detect_changes": "Failed: Git diff failed spawnSync git EPERM; no clean graph claim",
+      "verification": {
+        "focused_bundle": {
+          "exit_code": 0,
+          "count": 38,
+          "modules": [
+            "tests.test_result_widgets",
+            "tests.test_wf_wizard",
+            "tests.test_no_hardcoded_ui_text",
+            "tests.test_no_inline_stylesheet",
+            "tests.test_desktop_strings"
+          ]
+        },
+        "final_result_widgets": {
+          "exit_code": 0,
+          "count": 11
+        },
+        "quality_gate": {
+          "exit_code": 0,
+          "findings": 0
+        },
+        "python_311_compile": {
+          "exit_code": 0,
+          "count": 276,
+          "encoding": "utf-8-sig"
+        },
+        "full_suite": "Not run per sandbox instruction; existing backtest/candidate/desktop_ui modules controller-owned",
+        "intermediate_bundle": "58-test run had three stale snapshot assertions during concurrent code/fixture updates. A later optional combined existing-page run was stopped after prolonged execution; fresh isolated page boundary/name/snapshot checks passed (5 tests). Existing assertions remain unchanged.",
+        "page_guards_names_snapshot": {
+          "exit_code": 0,
+          "count": 5,
+          "modules": [
+            "tests.test_desktop_pages.PageBoundaryTests",
+            "tests.test_desktop_pages.PageInteractionTests.test_widget_walk_matches_pre_change_fixture",
+            "tests.test_desktop_pages.PageSnapshotTests"
+          ]
+        },
+        "independent_final_capture": {
+          "exit_code": 0,
+          "metrics_identical": true,
+          "identical_pngs": 14
+        },
+        "git_diff_check": {
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "run": "T8 part D final",
+      "baseline_commit": "9e99ab7715898adcd1b8e1e1274d7485e055234f",
+      "baseline_source": "git archive HEAD from part A, freshly recaptured this run",
+      "size": [
+        1366,
+        768
+      ],
+      "scale": 1.0,
+      "pages": {
+        "市場總覽": {
+          "before_height": 1631,
+          "after_height": 1631,
+          "subpages": {
+            "持倉（主程式資料）": 192,
+            "委託（主程式資料）": 192,
+            "成交（主程式資料）": 192
+          },
+          "wizard_steps": {}
+        },
+        "資料匯入與更新": {
+          "before_height": 990,
+          "after_height": 990,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "AI 策略中心": {
+          "before_height": 956,
+          "after_height": 798,
+          "subpages": {
+            "策略設定": 490,
+            "AI 研究": 438,
+            "Walk-forward 驗證": 867
+          },
+          "wizard_steps": {
+            "1": 168,
+            "2": 172,
+            "3": 84,
+            "4": 337,
+            "5": 123
+          }
+        },
+        "回測與結果": {
+          "before_height": 822,
+          "after_height": 995,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "比較與策略選擇": {
+          "before_height": 1948,
+          "after_height": 684,
+          "subpages": {},
+          "wizard_steps": {}
+        },
+        "紙上交易與復原": {
+          "before_height": 1073,
+          "after_height": 1304,
+          "subpages": {
+            "持倉商品數": 192,
+            "委託筆數": 192,
+            "成交筆數": 192
+          },
+          "wizard_steps": {}
+        },
+        "設定與備份": {
+          "before_height": 1883,
+          "after_height": 1883,
+          "subpages": {},
+          "wizard_steps": {}
+        }
+      },
+      "artifacts": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8d-20261018",
+      "added_object_names": [
+        "saved_results_table"
+      ],
+      "renamed_or_removed_object_names": {},
+      "test_edits": [
+        "tests/test_compare_table.py: new focused tests",
+        "tests/fixtures/desktop_widget_names.json: saved_results_table addition only",
+        "tests/fixtures/desktop_pages_before/05_full.png and 05_viewport.png plus metrics.json: compare presentation baseline; no existing test assertion changes"
+      ],
+      "ui_module_registration": "compare_table.py automatically included by recursive UI-text and style AST inventories",
+      "gitnexus": "Old _compare_page impact LOW, one direct constructor caller and one process. ComparePage/render_result UNKNOWN in stale index; direct source and callers checked. Refresh failed spawn EPERM; detect-changes failed spawnSync git EPERM. No clean graph claim.",
+      "sandbox_capture": "Existing invocation-only temp sitecustomize inherits mkdir ACL; no product/test ACL changes",
+      "full_suite": "Not run per explicit sandbox ONLY focused modules instruction; controller-owned",
+      "verification": {
+        "focused_bundle": {
+          "exit_code": 0,
+          "count": 54,
+          "seconds": 34.244,
+          "modules": [
+            "tests.test_compare_table",
+            "tests.test_result_widgets",
+            "tests.test_wf_wizard",
+            "tests.test_strategy_tabs",
+            "tests.test_no_hardcoded_ui_text",
+            "tests.test_no_inline_stylesheet",
+            "tests.test_desktop_strings",
+            "tests.test_desktop_pages.PageBoundaryTests",
+            "tests.test_ui_snapshot"
+          ]
+        },
+        "snapshot_names_and_compatibility": {
+          "exit_code": 0,
+          "count": 3,
+          "seconds": 3.576
+        },
+        "quality_gate": {
+          "exit_code": 0,
+          "findings": 0
+        },
+        "python_311_compile": {
+          "exit_code": 0,
+          "count": 278,
+          "encoding": "utf-8-sig"
+        },
+        "git_diff_check": {
+          "exit_code": 0
+        },
+        "full_suite": "Not run: explicit ONLY focused modules sandbox instruction; controller-owned",
+        "final_focused_bundle": {
+          "exit_code": 0,
+          "count": 57,
+          "seconds": 43.021,
+          "includes": "All focused_bundle modules plus PageSnapshotTests, exact widget-name parity and original compare/backup payload/consent test"
+        },
+        "protected_source_check": "No git diff for eight G3 files or desktop_walk_forward.py; content matches HEAD after Git CRLF normalization. Initial raw-byte comparison differed because checkout line endings are CRLF."
+      },
+      "scratch_cleanup": "This run created no repository scratch. Pre-existing .tmp, .tmp-t2, .tmp-t3, .tmp-t4, .t4b-work, .t6-work remain: automatic approval review rejected recursive removal (including explicit verified literal paths) as blocked by policy; no detailed reason supplied.",
+      "completion": "UI implementation and all requested focused/guard checks pass; required pre-existing scratch cleanup remains blocked by automatic approval policy."
+    }
+  ]
+}

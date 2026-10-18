@@ -6,10 +6,11 @@ from quantlab.desktop_feedback import stop_presentation
 import json
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json, write_json, load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog, QTabWidget
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
+from .result_widgets import KpiCards, ResultTable
 
 
 class PaperPage(PageContext, QWidget):
@@ -52,7 +53,12 @@ class PaperPage(PageContext, QWidget):
         self.cancel_order = self._text(layout, ui_text('ui._paper_page.text_21'))
         self._button(layout, ui_text('ui._paper_page.text_22'), 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()), role='danger')
         self.paper_detail = QPlainTextEdit(); self.paper_detail.setReadOnly(True); advanced.addWidget(self.paper_detail)
-        self.paper_card = SummaryCard(); layout.insertWidget(2, self.paper_card)
+        self.paper_card = SummaryCard(); advanced.addWidget(self.paper_card)
+        self.kpis = KpiCards(('cash', 'positions', 'orders', 'fills', 'reconciliation_required', 'stop')); layout.insertWidget(2, self.kpis)
+        tables = QTabWidget(); layout.addWidget(tables)
+        self.positions_table = ResultTable(); self.positions_table.setObjectName('paper_positions_results'); tables.addTab(self.positions_table, ui_text('results.positions'))
+        self.orders_table = ResultTable(); self.orders_table.setObjectName('paper_orders_results'); tables.addTab(self.orders_table, ui_text('results.orders'))
+        self.account_fills_table = ResultTable(); self.account_fills_table.setObjectName('paper_fills_results'); tables.addTab(self.account_fills_table, ui_text('results.fills'))
 
 
     def load_form_file(self, form, editor):
@@ -120,6 +126,13 @@ class PaperPage(PageContext, QWidget):
             intent = account.get('orders', {}).get(value.get('order_id'), {}).get('intent', {})
             fills.append({**intent, **value, 'fill_id': key})
         self.market.set_account_tables(positions=positions, orders=orders, fills=fills)
+        self.kpis.set_values({'cash': values['cash'], 'positions': len(positions) if 'positions' in account else None,
+            'orders': len(account['orders']) if 'orders' in account else None,
+            'fills': len(fills) if 'fills' in account else None,
+            'reconciliation_required': account.get('reconciliation_required'), 'stop': stop_text})
+        self.positions_table.set_rows([{'contract_id': row['contract_id'], 'position': row['quantity']} for row in positions], ('contract_id', 'position'))
+        self.orders_table.set_rows(orders, ('order_id', 'contract_id', 'side', 'quantity', 'status'))
+        self.account_fills_table.set_rows(fills, ('timestamp', 'contract_id', 'side', 'quantity', 'price', 'commission', 'tax'))
         if strategy is None:
             selection = self.root / 'selection.json'
             strategy = (ui_text('ui._show_account.text_6').format(load_selection(selection)['strategy_hash'][:16])) if selection.exists() else ui_text('ui._show_account.text_7')
