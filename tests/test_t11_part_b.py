@@ -31,9 +31,26 @@ class _NormalizeState(ast.NodeTransformer):
         return None
 
 
+def _canonical(node):
+    """Python-version-independent AST fingerprint."""
+    # ast.dump() differs between 3.11/3.12/3.13 (3.13 omits empty/None fields, 3.12 added type_params), so
+    # the digest is built from node types and non-empty field values only.
+    if isinstance(node, ast.AST):
+        fields = []
+        for name in node._fields:
+            value = getattr(node, name, None)
+            if value is None or value == []:
+                continue
+            fields.append(name + '=' + _canonical(value))
+        return type(node).__name__ + '(' + ','.join(fields) + ')'
+    if isinstance(node, list):
+        return '[' + ','.join(_canonical(item) for item in node) + ']'
+    return repr(node)
+
+
 def _digest(nodes):
     tree = _NormalizeState().visit(copy.deepcopy(ast.Module(body=nodes, type_ignores=[])))
-    return hashlib.sha256(ast.dump(tree, include_attributes=False).encode()).hexdigest()
+    return hashlib.sha256(_canonical(tree).encode()).hexdigest()
 
 
 class StartupTests(unittest.TestCase):
@@ -195,6 +212,6 @@ class SharedErrorTests(unittest.TestCase):
         self.assertEqual(error_message('unknown'), error_message('operation_failed'))
 
 
-SMOKE_DIGEST = 'ea3addd5560ca852b4f94431bcf5e6a2d3508160c4430a6eb223f5dd1c658328'
-HANDLERS_DIGEST = '3012cb81474d8a111dcf8fbebca0fb0b60e37d3d4f25cec9937eb6db4b03886e'
-FINALLY_DIGEST = 'fc3f008a9244346d02007c36c39e7c32a31395194dc95d4aba76a2a30ff07764'
+SMOKE_DIGEST = '7ceffca1b8b4cb9e77bf345bbe0161df84098cdacf8a4355f648ca06d67ba8ed'
+HANDLERS_DIGEST = '538ec585bef484789b7e1bc9a05b942234dee1b82f84bacc2c849cf28ead39de'
+FINALLY_DIGEST = '4ce33993e38dae10a54cda3424e0d354b09a4b8c460af84f4bd4883b6ae9a851'
