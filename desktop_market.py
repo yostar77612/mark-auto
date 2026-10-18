@@ -3,6 +3,7 @@
 No network, timers, broker imports or embedded observations. refresh_requested is
 an intent only; host must perform its existing consent/background-job workflow.
 """
+from desktop_theme import apply_market_theme, set_status
 from desktop_strings import ui_text
 from copy import deepcopy
 from quantlab.desktop_errors import error_message, exception_code
@@ -28,20 +29,7 @@ DEFAULT_INDICATORS = {
     'Bollinger': {'enabled':False, 'period':20, 'deviations':2},
     'VWAP': {'enabled':False},
 }
-DARK_STYLE = '''
-QWidget#market_dashboard { background:#101720; color:#dbe4ef; }
-QWidget#market_dashboard QWidget { background:#101720; color:#dbe4ef; }
-QWidget#market_dashboard QLabel { color:#dbe4ef; }
-QWidget#market_dashboard QGroupBox { border:1px solid #354459; border-radius:6px; margin-top:10px; padding:9px; font-weight:600; color:#dbe4ef; }
-QWidget#market_dashboard QGroupBox::title { subcontrol-origin:margin; left:10px; }
-QWidget#market_dashboard QLineEdit, QWidget#market_dashboard QComboBox, QWidget#market_dashboard QSpinBox, QWidget#market_dashboard QDoubleSpinBox, QWidget#market_dashboard QListWidget, QWidget#market_dashboard QTableWidget { background:#172230; color:#e8edf4; border:1px solid #43566c; border-radius:3px; padding:4px; selection-background-color:#285f89; }
-QWidget#market_dashboard QPushButton { background:#24384c; color:#eaf0f7; padding:6px 9px; border:1px solid #506a82; border-radius:4px; }
-QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid #7cb9ed; }
-QWidget#market_dashboard QCheckBox { color:#e0e8f3; }
-QWidget#market_dashboard QHeaderView::section { background:#243448; color:#e0e8f3; padding:5px; border:0; }
-QWidget#market_dashboard QTabBar::tab { background:#243448; color:#e0e8f3; padding:7px; }
-QWidget#market_dashboard QTabBar::tab:selected { background:#366487; }
-'''
+
 
 
 def _identity(value):
@@ -82,7 +70,7 @@ class MarketDashboard(QWidget):
 
     def __init__(self,parent=None):
         super().__init__(parent)
-        self.setObjectName('market_dashboard'); self.setStyleSheet(DARK_STYLE)
+        self.setObjectName('market_dashboard'); apply_market_theme(self)
         self._series={}; self._quote_series=None; self._quote_stale=False; self._watch=[]; self._watch_initialized=False; self._selected=''; self._timeframe='1d'
         self._indicator_config=deepcopy(DEFAULT_INDICATORS); self._restoring=False
         self._stale=False; self._error=''; self._indicator_widgets={}
@@ -91,7 +79,7 @@ class MarketDashboard(QWidget):
         content=QWidget(); self.page_scroll.setWidget(content); outer.addWidget(self.page_scroll)
         root=QVBoxLayout(content); root.setContentsMargins(10,8,10,8)
         header=QHBoxLayout(); title=_label(ui_text('market.__init__.text_1'),'market_title')
-        title.setStyleSheet('font-size:20px;font-weight:700;'); header.addWidget(title)
+        header.addWidget(title)
         header.addStretch(); header.addWidget(_label(ui_text('market.__init__.text_2'),'market_safety'))
         self.refresh_button=_named(QPushButton(ui_text('market.__init__.text_3')),'market_refresh',ui_text('market.__init__.text_4'))
         self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
@@ -99,7 +87,7 @@ class MarketDashboard(QWidget):
         root.addLayout(header)
         cards=QHBoxLayout(); self.cards={}
         for key,title in [('TAIEX',ui_text('market.__init__.text_6')),('TX',ui_text('market.__init__.text_7')),('MXF',ui_text('market.__init__.text_8')),('TMF',ui_text('market.__init__.text_9'))]:
-            group=QGroupBox(title); group.setStyleSheet('QGroupBox { padding:3px; }'); layout=QVBoxLayout(group); layout.setContentsMargins(8,8,8,6)
+            group=QGroupBox(title); group.setProperty('themePart', 'marketCard'); layout=QVBoxLayout(group); layout.setContentsMargins(8,8,8,6)
             value=_label(ui_text('market.__init__.text_10'),'market_card_'+key); layout.addWidget(value)
             cards.addWidget(group); self.cards[key]=value
         root.addLayout(cards)
@@ -110,7 +98,7 @@ class MarketDashboard(QWidget):
         self.diagnostics=_named(QPlainTextEdit(),'market_diagnostics',ui_text('market.__init__.text_14')); self.diagnostics.setReadOnly(True); self.diagnostics.setMaximumHeight(160); self.diagnostics.hide()
         self.diagnostics_button.toggled.connect(self._toggle_diagnostics); root.addWidget(self.diagnostics)
         self.message=_label(ui_text('market.__init__.text_15'),'market_message')
-        self.message.setStyleSheet('color:#e8c37a;'); root.addWidget(self.message)
+        set_status(self.message, 'warning'); root.addWidget(self.message)
         self.main_splitter=QSplitter(Qt.Orientation.Horizontal); root.addWidget(self.main_splitter,1)
         left=QWidget(); left_layout=QVBoxLayout(left); left_layout.setContentsMargins(0,0,4,0)
         left_layout.addWidget(_label(ui_text('market.__init__.text_16'),'market_watch_title'))
@@ -274,12 +262,12 @@ class MarketDashboard(QWidget):
             choices=[x for x in sources.values() if x.instrument.symbol==symbol]
             item=next((x for x in choices if x.instrument.contract_id==self._selected),choices[0] if choices else None)
             if not item:
-                label.setText(ui_text('market._render_cards.text_1')); label.setStyleSheet('color:#dbe4ef;'); label.setToolTip(''); continue
+                label.setText(ui_text('market._render_cards.text_1')); set_status(label, 'neutral'); label.setToolTip(''); continue
             quote=QuoteSnapshot.from_series(item,stale=stale)
             change=quote.change; delta=ui_text('market._render_cards.text_2') if change is None else f'{change:+f}'
             label.setText(f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '+(ui_text('market._render_cards.text_3') if stale else ui_text('market._render_cards.text_4')))
             label.setToolTip(ui_text('market._render_cards.text_5').format(item.instrument.contract_id, item.instrument.symbol, item.provenance.attribution, item.provenance.source_url, item.provenance.timestamp_basis, quote.received_at.isoformat()))
-            label.setStyleSheet('color:'+('#f58b8b' if change is not None and change>0 else '#76d6b0' if change is not None and change<0 else '#dbe4ef')+';')
+            set_status(label, 'danger' if change is not None and change>0 else 'success' if change is not None and change<0 else 'neutral')
 
     def _render_chart(self):
         item=self._series.get(self._selected)

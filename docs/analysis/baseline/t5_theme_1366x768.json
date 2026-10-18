@@ -1,0 +1,119 @@
+{
+  "metrics_identical": true,
+  "channel_delta_threshold": 8,
+  "maximum_changed_fraction": 0.001,
+  "images": {
+    "01_full.png": {
+      "size": [
+        1146,
+        1631
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "01_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "02_full.png": {
+      "size": [
+        1146,
+        990
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "02_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "03_full.png": {
+      "size": [
+        1146,
+        956
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "03_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "04_full.png": {
+      "size": [
+        1146,
+        822
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "04_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "05_full.png": {
+      "size": [
+        1146,
+        1948
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "05_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "06_full.png": {
+      "size": [
+        1146,
+        1073
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "06_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "07_full.png": {
+      "size": [
+        1146,
+        1883
+      ],
+      "changed_pixel_fraction": 0.0
+    },
+    "07_viewport.png": {
+      "size": [
+        1366,
+        768
+      ],
+      "changed_pixel_fraction": 0.0
+    }
+  },
+  "passed": true,
+  "reference": {
+    "git_archive_HEAD": "17167a2b91666389c955d4683263c1885ec7f587",
+    "viewport": [
+      1366,
+      768
+    ],
+    "platform": "offscreen",
+    "style": "Fusion",
+    "scale": 1.0,
+    "before_metrics_sha256": "22a49de923f6717ff63ca4cfaae5c4826baa5c28b766512f182baa9a94b46159",
+    "after_metrics_sha256": "22a49de923f6717ff63ca4cfaae5c4826baa5c28b766512f182baa9a94b46159",
+    "isolation": "Identical disposable-directory wrapper used for both captures to bypass sandbox tempfile ACL artifact."
+  }
+}

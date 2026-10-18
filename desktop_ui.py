@@ -3,6 +3,7 @@
 The GUI only schedules work. execute_ui_operation runs in the runtime's isolated
 worker process; its inputs are data, never executable strategy source.
 """
+from desktop_theme import apply_theme, set_status, set_theme_property, status_for_color
 from desktop_strings import ui_text
 from pathlib import Path
 from quantlab.desktop_errors import error_message, exception_code
@@ -728,26 +729,7 @@ class MainWindow(QMainWindow):
         self._pending_analysis_reconcile = False
         self.setWindowTitle(ui_text('ui.__init__.text_2'))
         self.resize(1366, 768)
-        self.setStyleSheet('''
-            QMainWindow, QScrollArea, QStackedWidget { background: #101720; }
-            QWidget { background: #101720; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: 14px; color: #dbe4ef; }
-            QLabel { padding: 3px 0; }
-            QListWidget { background: #12243b; color: #e3edf9; border: none; border-radius: 9px; padding: 9px; }
-            QListWidget::item { padding: 12px 8px; border-radius: 5px; }
-            QListWidget::item:selected { background: #2865c4; color: white; }
-            QPushButton { background: transparent; color: #dbe4ef; border: 1px solid #526b87; border-radius: 6px; padding: 9px 14px; min-height: 20px; }
-            QPushButton[role="primary"] { background: #2563ba; color: white; border: 1px solid #2563ba; }
-            QPushButton[role="danger"] { background: #842e38; color: white; border: 1px solid #e06670; }
-            QLabel[prerequisite="true"] { color: #aebed0; font-size: 12px; }
-            QPushButton:hover { background: #1b4f9b; }
-            QPushButton:disabled { background: #243448; color: #9aabbc; }
-            QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: #172230; border: 1px solid #43566c; border-radius: 5px; padding: 7px; selection-background-color: #2563ba; }
-            QCheckBox { padding: 7px 0; }
-            QTableWidget { background:#172230; alternate-background-color:#1d2b3c; gridline-color:#354459; selection-background-color:#285f89; }
-            QHeaderView::section { background:#243448; color:#e0e8f3; padding:6px; border:0; }
-            QProgressBar { border: 1px solid #43566c; border-radius: 4px; background: #172230; text-align: center; }
-            QProgressBar::chunk { background: #2563ba; }
-        ''')
+        apply_theme(self)
         body = QWidget(); outer = QVBoxLayout(body)
         banner = QCheckBox(ui_text('ui.__init__.text_3'))
         banner.setObjectName('research_mode_status')
@@ -799,7 +781,7 @@ class MainWindow(QMainWindow):
     def _page(self, label):
         self.navigation.addItem(label)
         page = QWidget(); layout = QVBoxLayout(page)
-        title = QLabel(label); title.setStyleSheet('font-size:22px;font-weight:600'); layout.addWidget(title)
+        title = QLabel(label); title.setProperty('themePart', 'pageTitle'); layout.addWidget(title)
         scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setWidget(page); self.stack.addWidget(scroll)
         return layout
 
@@ -1639,9 +1621,9 @@ class MainWindow(QMainWindow):
         while scroll is not None and not isinstance(scroll, QScrollArea):
             scroll = scroll.parentWidget()
         if scroll is not None: scroll.ensureWidgetVisible(widget)
-        original = widget.styleSheet()
-        widget.setStyleSheet('border:2px solid #82c9ae;')
-        QTimer.singleShot(1800, widget, lambda: widget.setStyleSheet(original))
+        original = widget.property('feedback')
+        set_theme_property(widget, 'feedback', True)
+        QTimer.singleShot(1800, widget, lambda: set_theme_property(widget, 'feedback', original))
 
     def paper_job(self, op, **payload):
         if op in ('submit', 'replay'):
@@ -2000,7 +1982,7 @@ class MainWindow(QMainWindow):
         stop_text, color = stop_presentation(account, reason)
         values[ui_text('ui._show_account.text_5')] = stop_text
         self.paper_card.set_values(values)
-        self.paper_card.label.setStyleSheet('color:' + color)
+        set_status(self.paper_card.label, status_for_color(color))
         positions = [{'contract_id': key, 'quantity': value} for key, value in account.get('positions', {}).items()]
         orders = []
         for key, value in account.get('orders', {}).items():
@@ -2389,9 +2371,8 @@ class MainWindow(QMainWindow):
         self.notification_timer.stop()
         self.notification_fade.stop(); self.notification_opacity.setOpacity(1.0)
         self._notification_operation = self.last_operation
-        color = '#502b30' if error else '#213b50'
         self.notification.setText(ui_text('ui.notify_local.text_1').format(escape(message)))
-        self.notification.setStyleSheet(f'background:{color};color:#e8f1ff;padding:10px;border-radius:6px')
+        set_status(self.notification, 'danger' if error else 'neutral')
         self.notification.show()
         if not error: self.notification_timer.start(5000)
         if self.local_notifications.isChecked(): QApplication.alert(self, 1500)
