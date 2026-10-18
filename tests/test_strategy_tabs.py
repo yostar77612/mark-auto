@@ -49,9 +49,9 @@ class StrategyTabsTests(unittest.TestCase):
 
 class StrategyTabSnapshotTests(unittest.TestCase):
     def test_default_tab_heights_from_real_capture(self):
-        from tools.ui_snapshot import capture
+        from tests.snapshot_cache import default_metrics
         with tempfile.TemporaryDirectory(prefix='markauto-strategy-tabs-') as temporary:
-            result = capture(Path(temporary) / 'capture', size=(1366, 768))
+            result = default_metrics()
             page = result['pages']['AI 策略中心']
             self.assertEqual(set(page['subpages']),
                              {'策略設定', 'AI 研究', 'Walk-forward 驗證'})

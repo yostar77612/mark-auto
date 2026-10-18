@@ -288,7 +288,7 @@ class PageSnapshotTests(unittest.TestCase):
         from tools.ui_snapshot import capture
         with tempfile.TemporaryDirectory(prefix='markauto-pages-snapshot-') as temporary:
             output = Path(temporary) / 'after'
-            capture(output)
+            capture(output, images=sys.platform == 'win32')
             baseline = ROOT / 'tests/fixtures/desktop_pages_before'
             actual = json.loads((output / 'metrics.json').read_text(encoding='utf-8'))
             expected = json.loads((baseline / 'metrics.json').read_text(encoding='utf-8'))

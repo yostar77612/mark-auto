@@ -7,7 +7,7 @@ import unittest
 from PySide6.QtWidgets import QLabel, QToolButton, QWidget
 from desktop_strings import ui_text
 from tests import test_t9_onboarding as onboarding
-from tools.ui_snapshot import capture
+from tests.snapshot_cache import default_metrics
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,7 +16,7 @@ class HelpReachabilityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with onboarding.sandbox_ui(), tempfile.TemporaryDirectory(prefix='t9-help-snapshot-') as folder:
-            cls.metrics = capture(Path(folder) / 'snapshot')
+            cls.metrics = default_metrics()
 
     def test_live_label_budgets_and_t8_heights(self):
         baseline = json.loads((ROOT / 'docs/analysis/t9_label_baseline.json').read_text(encoding='utf-8'))

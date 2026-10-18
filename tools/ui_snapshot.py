@@ -186,7 +186,7 @@ def tab_heights(page, app):
     return result
 
 
-def capture(out, size=(1366, 768), scale=1.0):
+def capture(out, size=(1366, 768), scale=1.0, images=True):
     """Return logical metrics; all application state lives below TemporaryDirectory."""
     from PySide6.QtCore import QCoreApplication, QEvent, QLocale, QTimer
     from PySide6.QtGui import QFont, QFontDatabase
@@ -238,7 +238,8 @@ def capture(out, size=(1366, 768), scale=1.0):
                     page = scroll.widget()
                     subpages = tab_heights(page, app)
                     stem = f'{index + 1:02d}'
-                    _save_png(window, out / f'{stem}_viewport.png', scale)
+                    if images:
+                        _save_png(window, out / f'{stem}_viewport.png', scale)
                     # Render the actual scroll content at its natural height, even
                     # when it extends well beyond the screen. Never grab viewport().
                     width = scroll.viewport().width()
@@ -264,7 +265,8 @@ def capture(out, size=(1366, 768), scale=1.0):
                     page.resize(width, height)
                     page.layout().activate()
                     app.processEvents()
-                    _save_png(page, out / f'{stem}_full.png', scale)
+                    if images:
+                        _save_png(page, out / f'{stem}_full.png', scale)
                     metrics = page_metrics(page)
                     if subpages:
                         metrics['subpages'] = subpages
