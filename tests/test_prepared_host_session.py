@@ -12,7 +12,8 @@ class PreparedHostSessionContracts(unittest.TestCase):
         cls.source = (ROOT / 'packaging/prepared_host_session.ps1').read_text(encoding='utf-8-sig')
 
     def test_existing_lifecycle_is_unchanged(self):
-        expected = '5a75b4b9c58534267e61643f25b841f1cb228837fe76310e04d7eb675d5861fb'
+        # P0-16 adds candidate-only icon integrity verification; retain all lifecycle guards.
+        expected = '010025ba604d8b9d36e2902d10ff34c3dbb6dc0e34809bfe2f4c715001c6081f'
         # Git's Windows checkout converts this text file to CRLF; compare the
         # original source bytes with that checkout-only transformation reversed.
         actual = (ROOT / 'packaging/test_installer.ps1').read_bytes()

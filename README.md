@@ -30,7 +30,7 @@
 #### 固定候選池 Walk-forward
 
 1. 在「資料匯入與更新」建立合成示範，或匯入已驗證的研究資料。唯讀市場快取不等於研究 dataset。先到「回測與結果」核對費用、資金、保證金及實際合約到期日；WFO 共用這些設定，但**以完整來源列索引切分，不套用回測頁的日期篩選**。
-2. 在「策略與版本」的「固定候選池 Walk-forward（技術驗證）」選一種候選池：
+2. 在「AI 策略中心」的「固定候選池 Walk-forward（技術驗證）」選一種候選池：
    - 「五個精確內建規格（預設）」：固定五份內建規格，不採用上方任意編輯的策略參數。
    - 「已保存 AI 研究的固定候選池」：明確選取「唯一來源研究」，再用「選取本機原始資料檔」提供該研究當時的**完整原始資料**。來源紀錄、版本、候選與既有控制帳本必須一致；原來源所有事件須嚴格早於本次首折訓練。不接受任意候選 JSON；不支援的手動來源／版本會拒絕，不另造帳本繞過。來源模型的「尚未驗證」狀態不會升級。
 3. 選「固定寬度」或「固定起點」窗口，填入 2–20 折、訓練／驗證／前推寬度、步進、間隙與排除的最終保留集。索引自 0 起、起點含而終點不含；保留集終點須等於完整資料根數。預設「僅合成驗證」拒絕真實／代理來源；使用合格歷史來源時須自行選「歷史重播，資料暴露未驗證」。
@@ -192,10 +192,15 @@ The order layer supports stock, futures, single-option, and option-combo order w
 AutoTradingPlatform can synchronize broker-side positions into local monitoring records. This helps recover monitoring state after manual orders, restarts, fills from outside the strategy loop, or changes made while the bot is running.
 
 ## Required packages
-Install Shioaji 1.5+ and other packages at a time. The current requirements pin Shioaji to `1.5.3`.
-```ini
-pip install -r requirements.txt
-```
+For the current MarkAuto desktop application, use the hashed
+[`requirements-desktop.lock`](requirements-desktop.lock) and the pinned Python/SQLite
+installation and build procedure in [`packaging/build.ps1`](packaging/build.ps1).
+See also the [desktop installation guide](packaging/README.md) and
+[`packaging/clean_windows_README.md`](packaging/clean_windows_README.md).
+
+The historical AutoTradingPlatform dependency list is preserved unchanged at
+[`archives/legacy_autotrading/requirements.txt`](archives/legacy_autotrading/requirements.txt)
+for reference only. It is unaudited and must not be used to install MarkAuto.
 
 ## Project Structure
 ```lua

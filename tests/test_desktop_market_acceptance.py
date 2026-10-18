@@ -22,9 +22,9 @@ class MarketAcceptanceLabels(unittest.TestCase):
         self.assertTrue(w.stack.currentWidget().isAncestorOf(label))
         limits=paper_risk_limits()
         for text in (f'部位最多 {limits.max_position} 口',f'單筆最多 {limits.max_order_quantity} 口',
-            f'每日損失上限 {limits.max_daily_loss} TWD',f'報價最多 {limits.max_quote_age_seconds} 秒',
+            f'每日損失上限 {limits.max_daily_loss:,} TWD',f'報價最多 {limits.max_quote_age_seconds} 秒',
             f'連續虧損上限 {limits.max_consecutive_losses} 次',f'{limits.window_seconds} 秒內最多 {limits.max_orders_per_window} 筆',
-            '唯讀','停止新委託不會平倉'):
+            '固定風控','停止新委託不會平倉'):
             self.assertIn(text,label.text())
         write_json(self.paths.state/'paper_policy.json',{'contract_id':'TAIFEX:TMF:202601','risk_sessions':[],'margin_schedule':[]})
         with patch('quantlab.paper.PaperBroker') as broker:_paper(self.paths.state)

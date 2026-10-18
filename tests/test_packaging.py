@@ -102,6 +102,7 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
         for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
             self.assertIn((str(ROOT / name), '.'), datas)
+        self.assertIn((str(ROOT / 'packaging/markauto.ico'), 'packaging'), datas)
         for name in ('jwt', 'cryptography.hazmat.bindings._rust', '_cffi_backend', 'pycparser'):
             self.assertIn(name, captured['hiddenimports'])
         for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'):
@@ -160,7 +161,7 @@ class PackagingTests(unittest.TestCase):
             self.assertIn(name, (ROOT / 'requirements-desktop.txt').read_text())
             self.assertIn(name, (ROOT / 'requirements-desktop.lock').read_text())
         for name in ('PyJWT[crypto]==2.15.1', 'cryptography==50.0.2', 'cffi==2.1.1', 'pycparser==3.11'):
-            self.assertNotIn(name, (ROOT / 'requirements.txt').read_text())
+            self.assertNotIn(name, (ROOT / 'archives/legacy_autotrading/requirements.txt').read_text())
 
     def test_source_manifest_hashes_auth_and_notice_inputs(self):
         import hashlib
@@ -173,9 +174,11 @@ class PackagingTests(unittest.TestCase):
             shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
             names = ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
                      'desktop_chatgpt_ui.py', 'desktop_chatgpt_dependency_manifest.json',
+                     'desktop_icon.py', 'packaging/markauto.ico', 'tools/make_icon.py',
                      'packaging/third_party/chatgpt-auth-native-notices.zip',
                      'packaging/third_party/README.md', 'requirements-desktop.lock')
             for name in names:
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_bytes(('fixture:' + name).encode())
             with patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'), \
                     patch('importlib.metadata.distributions', return_value=[]):

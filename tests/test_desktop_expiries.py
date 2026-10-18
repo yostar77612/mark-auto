@@ -88,7 +88,10 @@ class DesktopExpiryTests(unittest.TestCase):
         form = self.form(); original = form.build_payload()
         self.add(form); self.add(form, 'TAIFEX:TMF:202611', '2026-11-18')
         table = form.expiries.table; table.setCurrentCell(0, 0)
-        form.expiries.findChild(QPushButton, 'instrument_expiries_remove').click()
+        from unittest.mock import patch
+        from PySide6.QtWidgets import QMessageBox
+        with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes):
+            form.expiries.findChild(QPushButton, 'instrument_expiries_remove').click()
         self.assertEqual(form.build_payload()['config']['instrument_expiries'], {'TAIFEX:TMF:202611':'2026-11-18'})
         for _ in range(2):
             form.from_payload(original)

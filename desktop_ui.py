@@ -688,6 +688,7 @@ class EquityPlot(QWidget):
         painter.drawPolyline(points)
 
 
+from desktop_presentation import display_number, display_status, result_name
 from desktop_market import MarketDashboard, MarketHistoryDialog
 from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, WalkForwardForm, PaperPolicyForm,
     PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard, BacktestSummaryCard, BacktestFillsTable, CandidateSummaryCard)
@@ -696,6 +697,8 @@ from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, WalkForward
 class MainWindow(QMainWindow):
     def __init__(self, paths, jobs, settings=None, backups=None, guard=None):
         super().__init__()
+        from desktop_icon import application_icon
+        self.setWindowIcon(application_icon(QApplication.instance()))
         self.paths, self.jobs, self.settings, self.backups, self.guard = paths, jobs, settings, backups, guard
         self.root = _root(paths)
         self.actions = []
@@ -708,6 +711,7 @@ class MainWindow(QMainWindow):
         self._wf_source_stamp = None
         self.active_candidate = None
         self._advanced_values = {}
+        self._section_toggles = {}
         self._market_outcomes = {}
         self._campaign_data_hash = None
         self._chatgpt_job_request = None
@@ -732,7 +736,10 @@ class MainWindow(QMainWindow):
             QListWidget { background: #12243b; color: #e3edf9; border: none; border-radius: 9px; padding: 9px; }
             QListWidget::item { padding: 12px 8px; border-radius: 5px; }
             QListWidget::item:selected { background: #2865c4; color: white; }
-            QPushButton { background: #2563ba; color: white; border: none; border-radius: 6px; padding: 9px 14px; min-height: 20px; }
+            QPushButton { background: transparent; color: #dbe4ef; border: 1px solid #526b87; border-radius: 6px; padding: 9px 14px; min-height: 20px; }
+            QPushButton[role="primary"] { background: #2563ba; color: white; border: 1px solid #2563ba; }
+            QPushButton[role="danger"] { background: #842e38; color: white; border: 1px solid #e06670; }
+            QLabel[prerequisite="true"] { color: #aebed0; font-size: 12px; }
             QPushButton:hover { background: #1b4f9b; }
             QPushButton:disabled { background: #243448; color: #9aabbc; }
             QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: #172230; border: 1px solid #43566c; border-radius: 5px; padding: 7px; selection-background-color: #2563ba; }
@@ -743,9 +750,12 @@ class MainWindow(QMainWindow):
             QProgressBar::chunk { background: #2563ba; }
         ''')
         body = QWidget(); outer = QVBoxLayout(body)
-        banner = QLabel('研究／模擬交易｜實盤停用')
-        banner.setWordWrap(True); banner.setStyleSheet('background:#30291d;color:#f1d38a;padding:10px')
+        banner = QCheckBox('研究模式・實盤停用')
+        banner.setObjectName('research_mode_status')
         outer.addWidget(banner)
+        explanation = QLabel('僅提供研究、歷史行情與紙上模擬，沒有真實券商下單或即時行情。合成資料與研究結果不代表投資績效；驗證、風控及一次性樣本外額度仍適用。')
+        explanation.setObjectName('research_mode_explanation'); explanation.setWordWrap(True)
+        outer.addWidget(explanation); explanation.hide(); banner.toggled.connect(explanation.setVisible)
         horizontal = QHBoxLayout(); outer.addLayout(horizontal, 1)
         self.navigation = QListWidget(); self.navigation.setObjectName('navigation'); self.navigation.setMaximumWidth(180)
         self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
@@ -778,6 +788,8 @@ class MainWindow(QMainWindow):
         self._safe(self.refresh_views)
         self._safe(self.load_settings)
         self._busy(False)
+        from desktop_ui_polish import install_polish
+        install_polish(self)
 
     def _navigate_selected_page(self):
         # Accessibility selection may not update QListWidget's current item.
@@ -792,10 +804,23 @@ class MainWindow(QMainWindow):
         scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setWidget(page); self.stack.addWidget(scroll)
         return layout
 
-    def _button(self, layout, text, name, callback):
-        button = QPushButton(text); button.setObjectName(name); button.clicked.connect(lambda checked=False: self._safe(callback))
-        layout.addWidget(button); self.actions.append(button)
+    def _button(self, layout, text, name, callback, role='secondary'):
+        button = QPushButton(text); button.setObjectName(name); button.clicked.connect(lambda checked=False: self._safe(lambda: self._confirm_button(button, callback)))
+        if role not in ('primary', 'secondary', 'danger'):
+            raise ValueError('Unknown button role')
+        button.setProperty('role', role)
+        row = QHBoxLayout(); row.addWidget(button); row.addStretch()
+        layout.addRow(row) if isinstance(layout, QFormLayout) else layout.addLayout(row)
+        self.actions.append(button)
         return button
+
+    def _confirm_button(self, button, callback):
+        if button.property('role') == 'danger':
+            answer = QMessageBox.question(self, '確認危險動作', button.text() + '？',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        return callback()
 
     def _text(self, layout, label, value='', multiline=False):
         layout.addWidget(QLabel(label))
@@ -805,10 +830,21 @@ class MainWindow(QMainWindow):
         return field
 
     def _advanced(self, layout, title='進階診斷 JSON（一般操作不需要）'):
-        toggle = QCheckBox(title); layout.addWidget(toggle)
+        title = title if title.startswith('進階') else '進階・' + title
+        key = str(self.stack.count()) + ':' + title
+        toggle = QCheckBox(title); toggle.setObjectName('advanced_' + str(len(self._section_toggles)))
+        self._section_toggles[key] = toggle
+        layout.addWidget(toggle)
         box = QWidget(); inner = QVBoxLayout(box); inner.setContentsMargins(0,0,0,0)
         layout.addWidget(box); box.hide(); toggle.toggled.connect(box.setVisible)
+        toggle.toggled.connect(lambda checked: self._safe(self._save_section_preferences))
         return inner
+
+    def _save_section_preferences(self):
+        if self.settings is None or getattr(self, '_restoring_sections', False): return
+        value = self.settings.load()
+        value['advanced_sections'] = {key: toggle.isChecked() for key, toggle in self._section_toggles.items()}
+        self.settings.save(value)
 
     def _payload(self, editor, build):
         text = editor.toPlainText()
@@ -822,6 +858,8 @@ class MainWindow(QMainWindow):
     def _dashboard(self):
         self.navigation.addItem('市場總覽')
         self.market = MarketDashboard(); self.stack.addWidget(self.market)
+        self._section_toggles['market:diagnostics'] = self.market.diagnostics_button
+        self.market.diagnostics_button.toggled.connect(lambda checked: self._safe(self._save_section_preferences))
         self.market.refresh_requested.connect(lambda: self._safe(self.refresh_market))
         self.market.preferences_changed.connect(lambda: self._safe(self.save_market_preferences))
         self.market.series_rendered.connect(lambda _: self._safe(self.bind_result_layers))
@@ -874,15 +912,15 @@ class MainWindow(QMainWindow):
         layout = self._page('資料匯入與更新')
         layout.addWidget(self.overview)
         self.market_provider = QComboBox(); self.market_provider.addItem('TWSE 加權指數官方格式 JSON', ('twse', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 JSON', ('taifex', 'json')); self.market_provider.addItem('TAIFEX 每日行情官方格式 CSV', ('taifex', 'csv')); layout.addWidget(self.market_provider)
-        self._button(layout, '匯入官方唯讀行情（不變更研究資料）', 'import_market_file', self.import_market_file)
-        self._button(layout, '匯入逐筆歷史 CSV / RPT（明確時段，唯讀）', 'import_market_history', self.import_market_history)
+        self._button(layout, '匯入官方行情（不變更研究資料）', 'import_market_file', self.import_market_file)
+        self._button(layout, '匯入逐筆歷史 CSV / RPT（明確時段）', 'import_market_history', self.import_market_history)
         self.import_path = self._text(layout, '本機 CSV / RPT / JSON 檔案')
         self._button(layout, '選擇資料檔案', 'browse_data', lambda: self._browse(self.import_path))
         self.calendar_path = self._text(layout, '版本化交易日曆 JSON（必填）')
         self._button(layout, '選擇交易日曆', 'browse_calendar', lambda: self._browse(self.calendar_path))
         self.import_kind = QComboBox(); self.import_kind.addItems(['validated_dataset', 'ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json', 'synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks']); layout.addWidget(self.import_kind)
         self.contract = self._text(layout, '合約（可留空）', 'TAIFEX:TMF:202601')
-        self._button(layout, '匯入並驗證資料', 'import_data', self.import_data)
+        self._button(layout, '匯入並驗證資料', 'import_data', self.import_data, role='primary')
         self.bars = QSpinBox(); self.bars.setRange(120, 10000); self.bars.setValue(960); layout.addWidget(self.bars)
         self._button(layout, '建立合成示範資料', 'create_demo', lambda: self.start_job('ui_demo', {'bars': self.bars.value()}))
         self.network_data = QCheckBox('同意本次連線至 TAIFEX 下載免費公開資料（不會自動匯入）'); layout.addWidget(self.network_data)
@@ -902,10 +940,11 @@ class MainWindow(QMainWindow):
         self.parameters = self._text(advanced, '策略參數 JSON', '{}', True)
         self.strategy_detail = QPlainTextEdit(); self.strategy_detail.setReadOnly(True); advanced.addWidget(self.strategy_detail)
         self.family.currentIndexChanged.connect(self._family_changed); self._family_changed()
-        self._walk_forward_section(layout)
+        self._walk_forward_section(self._advanced(layout, '進階・Walk-forward 技術驗證'))
         layout.addWidget(QLabel('離線 Fixture 生成器：固定候選與版本紀錄；不是已驗證的真實模型。'))
         self.strategy_form.family.currentIndexChanged.connect(lambda: self.family.setCurrentIndex(self.strategy_form.family.currentIndex()))
-        self.campaign_form = CampaignForm(); layout.addWidget(self.campaign_form)
+        research_parameters = self._advanced(layout, '進階・研究技術參數')
+        self.campaign_form = CampaignForm(); research_parameters.addWidget(self.campaign_form)
         self.campaign_config = self._text(advanced, '研究設定 JSON（空白使用明示示範切分）', '', True)
         self._remember(self.campaign_config)
         self.provider_mode = QComboBox(); self.provider_mode.addItem('官方 ChatGPT 訂閱（需自行授權；實際推論未驗證）', 'chatgpt_plan'); self.provider_mode.addItem('離線 Fixture（非真實 AI，需明確選取）', 'fixture'); self.provider_mode.addItem('手動 AI 交換（使用者自行傳送／貼回，未驗證）', 'manual'); layout.addWidget(self.provider_mode)
@@ -916,16 +955,17 @@ class MainWindow(QMainWindow):
         self.manual_response = self._text(manual_layout, '貼回 AI 原始回應（不需手寫結構；勿含帳密）', '', True)
         self._button(manual_layout, '匯出手動 AI 請求與回應格式', 'export_manual_request', self.export_manual_request)
         self._button(layout, '核對本次訂閱研究請求紀錄（不連網）', 'chatgpt_campaign_usage', self.inspect_plan_usage)
-        self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign)
+        self._button(layout, '生成／重開研究與 OOS', 'run_campaign', self.run_campaign, role='primary')
         self.candidate_choice = QComboBox(); self.candidate_choice.setObjectName('candidate_choice'); self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate); layout.addWidget(self.candidate_choice)
         self.candidate_detail = QPlainTextEdit(); self.candidate_detail.setReadOnly(True); advanced.addWidget(self.candidate_detail)
-        self.candidate_card = CandidateSummaryCard(); layout.addWidget(self.candidate_card)
+        evidence = self._advanced(layout, '進階・候選完整評估與研究歷史')
+        self.candidate_card = CandidateSummaryCard(); evidence.addWidget(self.candidate_card)
         self.use_candidate_button = self._button(layout, '使用此不可變候選版本進行研究回測', 'use_candidate', self.use_candidate)
         self._button(layout, '改用內建家族與可編輯參數', 'use_builtin', self.use_builtin)
         self.history = QPlainTextEdit(); self.history.setReadOnly(True); advanced.addWidget(self.history)
-        self.history_table = ResultTable(); layout.addWidget(self.history_table)
-        layout.addWidget(QLabel('已保存樣本外／保留集評估（不回饋模型；沒有結果即未提供）'))
-        self.evaluation_table = ResultTable(); layout.addWidget(self.evaluation_table)
+        self.history_table = ResultTable(); evidence.addWidget(self.history_table)
+        evidence.addWidget(QLabel('已保存樣本外／保留集評估（不回饋模型；沒有結果即未提供）'))
+        self.evaluation_table = ResultTable(); evidence.addWidget(self.evaluation_table)
 
     def _walk_forward_section(self, layout):
         section = QGroupBox('固定候選池 Walk-forward（技術驗證）')
@@ -949,6 +989,8 @@ class MainWindow(QMainWindow):
         content.addWidget(self.walk_forward_preview)
         self.walk_forward_advanced_group = QGroupBox('進階：完整來源證據、雜湊與設定')
         self.walk_forward_advanced_group.setCheckable(True); self.walk_forward_advanced_group.setChecked(False)
+        self._section_toggles['strategy:walk_forward_evidence'] = self.walk_forward_advanced_group
+        self.walk_forward_advanced_group.toggled.connect(lambda checked: self._safe(self._save_section_preferences))
         advanced = QVBoxLayout(self.walk_forward_advanced_group)
         self.walk_forward_advanced = QPlainTextEdit(); self.walk_forward_advanced.setReadOnly(True)
         self.walk_forward_advanced.setObjectName('walk_forward_advanced'); self.walk_forward_advanced.hide()
@@ -959,7 +1001,7 @@ class MainWindow(QMainWindow):
         self.walk_forward_consent.setObjectName('walk_forward_consent'); content.addWidget(self.walk_forward_consent)
         self.walk_forward_start = self._button(content, '執行／讀取同一計畫（不重試 OOS）', 'run_walk_forward', self.run_walk_forward)
         self.walk_forward_choice = QComboBox(); self.walk_forward_choice.setObjectName('walk_forward_choice'); content.addWidget(self.walk_forward_choice)
-        self._button(content, '唯讀重開已保存 Walk-forward 結果', 'read_walk_forward', self.read_walk_forward)
+        self._button(content, '重開已保存 Walk-forward 結果', 'read_walk_forward', self.read_walk_forward)
         self.walk_forward_status = QLabel('尚未預覽。此區與 AI 研究歷史及紙上資格完全分開。')
         self.walk_forward_status.setWordWrap(True); content.addWidget(self.walk_forward_status)
         self.walk_forward_results = ResultTable(); content.addWidget(self.walk_forward_results)
@@ -1142,14 +1184,15 @@ class MainWindow(QMainWindow):
 
     def _backtest_page(self):
         layout = self._page('回測與結果')
-        layout.addWidget(QLabel('使用「策略與版本」目前選定家族及參數。預設費率與保證金為合成假設。'))
-        self.backtest_form = BacktestForm(); layout.addWidget(self.backtest_form)
+        layout.addWidget(QLabel('使用「AI 策略中心」目前選定家族及參數。預設費率與保證金為合成假設。'))
+        parameters = self._advanced(layout, '進階・回測費率與技術參數')
+        self.backtest_form = BacktestForm(); parameters.addWidget(self.backtest_form)
         self.start_date = self.backtest_form.fields['start_date']; self.end_date = self.backtest_form.fields['end_date']
         advanced = self._advanced(layout)
         self.config = self._text(advanced, '費用／資金／保證金設定 JSON', canonical_json(demo_config()), True)
         self._remember(self.config)
         self.batch = QCheckBox('批次執行五個家族的預設參數'); layout.addWidget(self.batch)
-        self.run_button = self._button(layout, '執行回測', 'run_backtest', self.run_backtest)
+        self.run_button = self._button(layout, '執行回測', 'run_backtest', self.run_backtest, role='primary')
         self.result_choice = QComboBox(); self.result_choice.currentIndexChanged.connect(self.show_result); layout.addWidget(self.result_choice)
         self.plot = EquityPlot(); layout.addWidget(self.plot)
         self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); advanced.addWidget(self.result_detail)
@@ -1163,7 +1206,7 @@ class MainWindow(QMainWindow):
         layout = self._page('比較與策略選擇')
         layout.addWidget(QLabel('勾選多個已保存結果進行比較。OOS／保留集詳細結果見策略研究紀錄。'))
         self.comparison_list = QListWidget(); self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection); layout.addWidget(self.comparison_list)
-        self._button(layout, '比較選取結果', 'compare_results', lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}))
+        self._button(layout, '比較選取結果', 'compare_results', lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}), role='primary')
         self.comparison = QPlainTextEdit(); self.comparison.setReadOnly(True); self._advanced(layout).addWidget(self.comparison)
         self.comparison_table = ResultTable(); layout.addWidget(self.comparison_table)
         self.select_button = self._button(layout, '啟用目前回測策略（僅研究／紙上）', 'select_strategy', self.select_strategy)
@@ -1193,7 +1236,7 @@ class MainWindow(QMainWindow):
         self._analysis_checkpoint_ids=set()
         self.analysis_checkpoint_notice=QLabel();self.analysis_checkpoint_notice.setObjectName('analysis_checkpoint_notice')
         self.analysis_checkpoint_notice.setWordWrap(True);layout.addWidget(self.analysis_checkpoint_notice)
-        self._button(layout,'唯讀重開已保存分析（不連網）','read_candidate_analysis',self.read_analysis)
+        self._button(layout,'重開已保存分析（不連網）','read_candidate_analysis',self.read_analysis)
         self.analysis_recovery_notice=QLabel();self.analysis_recovery_notice.setWordWrap(True)
         self.analysis_recovery_notice.setObjectName('analysis_recovery_notice');layout.addWidget(self.analysis_recovery_notice)
         self.analysis_recover=self._button(layout,'以原始停止紀錄核對本機分析（不重送）','reconcile_saved_analysis',self.reconcile_saved_analysis)
@@ -1420,40 +1463,43 @@ class MainWindow(QMainWindow):
 
     def _paper_page(self):
         layout = self._page('紙上交易與復原')
-        note = QLabel('沒有即時行情或真實券商。重新啟動後必須明確對帳。停止只禁止新委託，不會平倉。\n歷史重播採次棒成交；不支援盤中停損停利。預設示範費率與風控不代表真實條件。'); note.setWordWrap(True); layout.addWidget(note)
+        note = QLabel('重新啟動後必須明確對帳。停止只禁止新委託，不會平倉。\n歷史重播採次棒成交；不支援盤中停損停利。預設示範費率與風控不代表真實條件。'); note.setWordWrap(True); layout.addWidget(note)
         limits = paper_risk_limits()
         self.paper_risk_summary = QLabel(
-            f'固定風控（唯讀）：部位最多 {limits.max_position} 口、單筆最多 {limits.max_order_quantity} 口、'
-            f'每日損失上限 {limits.max_daily_loss} TWD、報價最多 {limits.max_quote_age_seconds} 秒；'
+            f'固定風控：部位最多 {limits.max_position} 口、單筆最多 {limits.max_order_quantity} 口、'
+            f'每日損失上限 {display_number(limits.max_daily_loss, "cash")}、報價最多 {limits.max_quote_age_seconds} 秒；'
             f'連續虧損上限 {limits.max_consecutive_losses} 次、{limits.window_seconds} 秒內最多 {limits.max_orders_per_window} 筆。'
             '停止新委託不會平倉。')
         self.paper_risk_summary.setObjectName('paper_fixed_risk_summary')
         self.paper_risk_summary.setWordWrap(True); layout.addWidget(self.paper_risk_summary)
         advanced = self._advanced(layout)
-        self.policy_form = PaperPolicyForm(); layout.addWidget(self.policy_form)
+        policy_layout = self._advanced(layout, '進階・政策與風控技術參數')
+        self.policy_form = PaperPolicyForm(); policy_layout.addWidget(self.policy_form)
         self.paper_policy = self._text(advanced, '鎖定政策 JSON（合約、交易時段、保證金版本；不可猜測）', '{}', True)
         self._remember(self.paper_policy)
         self._button(layout, '載入已核對的政策檔案', 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
         self._button(layout, '填入明示合成示範政策', 'demo_policy', self.demo_paper_policy)
         self._button(layout, '讀取／建立紙上帳戶', 'paper_snapshot', lambda: self.paper_job('snapshot'))
-        self.snapshot_form = PaperSnapshotForm(); layout.addWidget(self.snapshot_form)
+        snapshot_layout = self._advanced(layout, '進階・外部參考快照完整證據')
+        self.snapshot_form = PaperSnapshotForm(); snapshot_layout.addWidget(self.snapshot_form)
         self.snapshot = self._text(advanced, '外部紙上參考快照 JSON（初始空帳戶可使用下列示範）', canonical_json({'account_id':'paper-demo','cash':'1000000','positions':{},'orders':{},'fills':{}}), True)
         self.snapshot_form.from_payload(json.loads(self.snapshot.toPlainText())); self._remember(self.snapshot)
         self._button(layout, '載入外部完整參考快照', 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
         self._button(layout, '明確對帳紙上帳戶', 'paper_reconcile', lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload)))
-        self.kill_button = self._button(layout, '緊急停止：禁止紙上新委託', 'paper_kill', self.kill_paper)
+        self.kill_button = self._button(layout, '緊急停止：禁止紙上新委託', 'paper_kill', self.kill_paper, role='danger')
         self.replay_bars = QSpinBox(); self.replay_bars.setRange(1, 1000); self.replay_bars.setValue(100); layout.addWidget(self.replay_bars)
         self.paper_confirm = QCheckBox('我已核對上方參考快照，並同意本次重播／委託前對帳'); layout.addWidget(self.paper_confirm)
         self._button(layout, '重播選定策略一批歷史資料', 'paper_replay', lambda: self.paper_job('replay', max_bars=self.replay_bars.value()))
-        self.intent_form = PaperIntentForm(); layout.addWidget(self.intent_form)
-        self.quote_form = PaperQuoteForm(); layout.addWidget(self.quote_form)
+        order_layout = self._advanced(layout, '進階・手動委託與報價參數')
+        self.intent_form = PaperIntentForm(); order_layout.addWidget(self.intent_form)
+        self.quote_form = PaperQuoteForm(); order_layout.addWidget(self.quote_form)
         self.intent = self._text(advanced, '紙上委託意圖 JSON（需已啟用策略雜湊）', '{}', True)
         self.quote = self._text(advanced, '明示報價與風控條件 JSON', '{}', True)
         self._remember(self.intent); self._remember(self.quote)
         self.paper_time = self._text(layout, '紙上事件 UTC 時間', '2026-01-05T01:00:00Z')
-        self._button(layout, '送出紙上委託', 'paper_submit', lambda: self.paper_job('submit', intent=self._payload(self.intent, self.intent_form.build_payload), quote=self._payload(self.quote, self.quote_form.build_payload), now=self.paper_time.text()))
+        self._button(layout, '送出紙上委託', 'paper_submit', lambda: self.paper_job('submit', intent=self._payload(self.intent, self.intent_form.build_payload), quote=self._payload(self.quote, self.quote_form.build_payload), now=self.paper_time.text()), role='primary')
         self.cancel_order = self._text(layout, '紙上委託 ID')
-        self._button(layout, '取消紙上委託', 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()))
+        self._button(layout, '取消紙上委託', 'paper_cancel', lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()), role='danger')
         self.paper_detail = QPlainTextEdit(); self.paper_detail.setReadOnly(True); advanced.addWidget(self.paper_detail)
         self.paper_card = SummaryCard(); layout.insertWidget(2, self.paper_card)
 
@@ -1475,11 +1521,11 @@ class MainWindow(QMainWindow):
         self.chatgpt_controller.browser_requested.connect(self._chatgpt_open_browser)
         self.persist_logs = QCheckBox('保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）'); self.persist_logs.setChecked(True); layout.addWidget(self.persist_logs)
         self.local_notifications = QCheckBox('作業完成／失敗時顯示本機提示並提醒此視窗'); self.local_notifications.setChecked(True); layout.addWidget(self.local_notifications)
-        self._button(layout, '儲存非敏感偏好', 'save_settings', self.save_settings)
+        self._button(layout, '儲存非敏感偏好', 'save_settings', self.save_settings, role='primary')
         self.backup_path = self._text(layout, '備份封存檔案路徑（請選工作區與應用資料夾以外的位置）')
         self._button(layout, '建立本機備份', 'create_backup', lambda: self.backup(False))
         self.restore_confirm = QCheckBox('我確認還原會替換目前本機狀態，並會要求重新對帳'); layout.addWidget(self.restore_confirm)
-        self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True))
+        self._button(layout, '驗證並還原備份', 'restore_backup', lambda: self.backup(True), role='danger')
         from desktop_automatic_backup import AutomaticBackupPanel
         self.automatic_backup_panel = AutomaticBackupPanel(self); layout.addWidget(self.automatic_backup_panel)
         from quantlab import __version__
@@ -1992,8 +2038,8 @@ class MainWindow(QMainWindow):
         if path.exists():
             try:
                 data = load_dataset(path)
-                self.overview.setText(f"資料來源：{data.manifest['source_type'].upper()} · {len(data.bars)} 根\n本機資料與紙上交易；實單：DISABLED；真實模型：NOT_VERIFIED")
-                self.data_card.setText('資料來源\n\n' + data.manifest['source_type'].upper() + f' · {len(data.bars)} 根')
+                self.overview.setText(f"資料來源：{display_status(data.manifest['source_type'])} · {len(data.bars)} 根；模型尚未驗證")
+                self.data_card.setText('資料來源\n\n' + display_status(data.manifest['source_type']) + f' · {len(data.bars)} 根')
                 self.data_detail.setPlainText(canonical_json({'manifest':data.manifest, 'quality':data.quality}))
             except (ValueError, KeyError, TypeError, OSError) as exc:
                 self.overview.setText(error_message(exception_code(exc)))
@@ -2019,15 +2065,24 @@ class MainWindow(QMainWindow):
             digest = read_json(active).get('result_hash', '')
             if len(digest) == 64 and all(c in '0123456789abcdef' for c in digest): old = str(self.root / 'reports' / digest / 'result.json')
         self.result_choice.blockSignals(True); self.result_choice.clear(); self.comparison_list.clear()
+        names = {}
         for result_path in sorted((self.root / 'reports').glob('*/result.json')):
-            label = result_path.parent.name
+            try:
+                label = result_name(load_result(result_path), result_path.stat().st_ctime)
+            except (ValueError, KeyError, TypeError, OSError):
+                label = '無法讀取的結果・請核對進階診斷'
+            names[label] = names.get(label, 0) + 1
+            if names[label] > 1: label += f'（{names[label]}）'
             self.result_choice.addItem(label, str(result_path))
+            self.result_choice.setItemData(self.result_choice.count()-1, result_path.parent.name, Qt.ItemDataRole.ToolTipRole)
             self.comparison_list.addItem(label); self.comparison_list.item(self.comparison_list.count()-1).setData(Qt.ItemDataRole.UserRole, str(result_path))
+            self.comparison_list.item(self.comparison_list.count()-1).setToolTip(result_path.parent.name)
         index = self.result_choice.findData(old)
         if index >= 0: self.result_choice.setCurrentIndex(index)
         self.result_choice.blockSignals(False); self.show_result()
         selection = self.root / 'selection.json'
-        self.selection_status.setText('已啟用研究／紙上版本：' + load_selection(selection)['strategy_hash'] + '\n實單固定停用；生成候選仍須通過獨立資格檢查。' if selection.exists() else '尚未啟用任何策略')
+        self.selection_status.setText('已啟用研究／紙上版本；生成候選仍須通過獨立資格檢查。' if selection.exists() else '尚未啟用任何策略')
+        self.selection_status.setToolTip(load_selection(selection)['strategy_hash'] if selection.exists() else '')
         policy = self.root / 'paper_policy.json'
         if policy.exists():
             policy_value = read_json(policy); self.paper_policy.setPlainText(canonical_json(policy_value))
@@ -2047,7 +2102,7 @@ class MainWindow(QMainWindow):
             if not isinstance(state, dict): continue
             for attempt in state.get('attempts', []):
                 ref = {'campaign_folder':Path(entry['file']).parent.name, 'attempt_id':attempt.get('attempt_id'), 'strategy_hash':attempt.get('strategy_hash')}
-                label = f"{state.get('campaign_id','')[:10]} · {attempt.get('family','?')} · v{attempt.get('sequence','?')} · {attempt.get('status','?')}"
+                label = f"{state.get('campaign_id','')[:10]} · {display_status(attempt.get('family','?'))} · v{attempt.get('sequence','?')} · {display_status(attempt.get('status','?'))}"
                 self.candidate_choice.addItem(label, ref)
                 if attempt.get('status')=='evaluated' and Path(entry['file']).name=='campaign.json':
                     family=attempt.get('spec',{}).get('family',attempt.get('family','候選'))
@@ -2299,6 +2354,12 @@ class MainWindow(QMainWindow):
     def load_settings(self):
         if self.settings is None: return
         value = self.settings.load()
+        self._restoring_sections = True
+        for key, toggle in self._section_toggles.items():
+            toggle.blockSignals(True); toggle.setChecked(value.get('advanced_sections', {}).get(key) is True); toggle.blockSignals(False)
+            # Visibility must follow restored state even while signals are blocked.
+            toggle.toggled.emit(toggle.isChecked())
+        self._restoring_sections = False
         self.persist_logs.setChecked(value.get('persist_logs', True) is True)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.local_notifications.setChecked(value.get('local_notifications', True) is True)

@@ -12,7 +12,7 @@ import re
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QLabel, QLineEdit,
     QComboBox, QCheckBox, QTableWidget, QTableWidgetItem, QAbstractItemView,
-    QPushButton, QHBoxLayout, QHeaderView)
+    QPushButton, QHBoxLayout, QHeaderView, QMessageBox)
 
 from quantlab.core import ValidationError, StrategySpec, validate_date, validate_contract, to_dict
 from quantlab.strategies import DEFAULTS, FAMILIES, validate_strategy
@@ -498,20 +498,24 @@ class _Rows(QWidget):
         layout = QVBoxLayout(self)
         self.table = QTableWidget(0,len(columns)); self.table.setObjectName(name)
         self.table.setHorizontalHeaderLabels([label for _,label in columns]); layout.addWidget(self.table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.resizeColumnsToContents()
         for index, (_, label) in enumerate(columns):
             self.table.horizontalHeaderItem(index).setToolTip(label)
         buttons = QHBoxLayout(); layout.addLayout(buttons)
         add = QPushButton('新增一列'); add.setObjectName(name+'_add'); add.clicked.connect(self.add_row)
-        remove = QPushButton('刪除選取列'); remove.setObjectName(name+'_remove'); remove.clicked.connect(self.remove_row)
-        buttons.addWidget(add); buttons.addWidget(remove)
+        remove = QPushButton('刪除選取列'); remove.setObjectName(name+'_remove'); remove.setProperty('role', 'danger'); remove.clicked.connect(self.remove_row)
+        buttons.addWidget(add); buttons.addWidget(remove); buttons.addStretch()
 
     def add_row(self):
         self.table.insertRow(self.table.rowCount()); self._original.append({})
 
     def remove_row(self):
         row = self.table.currentRow()
-        if row >= 0: self.table.removeRow(row); self._original.pop(row)
+        if row >= 0 and QMessageBox.question(self, '確認刪除', '刪除選取列？',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+            self.table.removeRow(row); self._original.pop(row)
 
     def load(self,rows):
         self.table.setRowCount(len(rows)); self._original = deepcopy(rows)
@@ -557,15 +561,18 @@ class PaperPolicyForm(_Form):
         return dict(contract_id=contract,risk_sessions=sessions,margin_schedule=margins)
 
 
+from desktop_presentation import display_value, display_number, STATUS_LABELS
+
+
 RESULT_LABELS = {'net_pnl':'淨損益（TWD）','gross_pnl':'毛損益（TWD）','trade_count':'交易筆數',
-    'closed_trades':'已平倉交易','fill_count':'成交筆數','max_drawdown':'最大回撤', 'max_drawdown_pct':'最大回撤（比例）',
-    'win_rate':'勝率（比例）','profit_factor':'獲利因子','source_type':'資料來源','strategy_hash':'策略版本 SHA-256',
+    'closed_trades':'已平倉交易','fill_count':'成交筆數','max_drawdown':'最大回撤', 'max_drawdown_pct':'最大回撤（%）',
+    'win_rate':'勝率（%）','profit_factor':'獲利因子','source_type':'資料來源','strategy_hash':'策略版本 SHA-256',
     'result_hash':'結果 SHA-256','warnings':'注意事項','equity_samples':'權益資料點', 'status':'狀態',
     'family':'策略家族','sequence':'候選版本','strategy_id':'策略識別碼','account_id':'帳戶', 'cash':'現金（TWD）',
     'reconciliation_required':'需要對帳','kill_switch':'停止新委託',
     'initial_cash':'初始資金（TWD）','final_equity':'期末權益（TWD）','realized_gross_pnl':'已實現毛損益（TWD）',
     'unrealized_pnl':'未實現損益（TWD）','total_costs':'總費用（TWD）','slippage_cost':'滑價成本（TWD）',
-    'return':'報酬率（比例）','closed_lots':'已平倉批次','open_position':'未平倉（口）',
+    'return':'報酬率（%）','closed_lots':'已平倉批次','open_position':'未平倉（口）',
     'sharpe':'夏普值（描述性）','sharpe_reason':'夏普值未定義原因','win_rate_reason':'勝率說明','annualization':'年化假設',
     'profit_factor_reason':'獲利因子未定義原因','profit_factor_basis':'獲利因子計算基礎',
     'sharpe_observations':'夏普值觀測期數','sharpe_note':'夏普值限制',
@@ -577,12 +584,12 @@ RESULT_LABELS = {'net_pnl':'淨損益（TWD）','gross_pnl':'毛損益（TWD）'
     'filled_quantity':'已成交（口）','commission':'手續費（TWD）','tax':'交易稅（TWD）'}
 
 
-def readable(value):
+def readable(value, key=""):
     if value is None: return '未提供'
     if isinstance(value,bool): return '是' if value else '否'
-    if isinstance(value,dict): return '；'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v)}' for k,v in value.items())
+    if isinstance(value,dict): return '；'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v, k)}' for k,v in value.items())
     if isinstance(value,(list,tuple)): return '；'.join(readable(v) for v in value) or '無'
-    return str(value)
+    return display_value(value, key)
 
 
 class ResultTable(QTableWidget):
@@ -599,7 +606,7 @@ class ResultTable(QTableWidget):
         self.setHorizontalHeaderLabels([RESULT_LABELS.get(key,key) for key in columns])
         for i,row in enumerate(rows):
             for j,key in enumerate(columns):
-                text = readable(row.get(key)); item = QTableWidgetItem(text); item.setToolTip(text); self.setItem(i,j,item)
+                text = readable(row.get(key), key); item = QTableWidgetItem(text); item.setToolTip(str(row.get(key))); self.setItem(i,j,item)
         self.resizeColumnsToContents()
         for j in range(len(columns)): self.setColumnWidth(j,min(self.columnWidth(j),340))
         # Stringified decimal metrics deliberately remain in backend-provided order.
@@ -614,7 +621,7 @@ class SummaryCard(QWidget):
         self.label.setObjectName('summary_card'); layout.addWidget(self.label)
 
     def set_values(self,values):
-        self.label.setText('\n'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v)}' for k,v in values.items()))
+        self.label.setText('\n'.join(f'{RESULT_LABELS.get(k,k)}：{readable(v, k)}' for k,v in values.items()))
 
 
 # These adapters only present verified report fields. Raw records remain in the
@@ -644,7 +651,7 @@ def _report_text(value):
     return _REPORT_TEXT.get(value, '未辨識的說明，請查看進階診斷') if isinstance(value, str) else '未辨識的說明，請查看進階診斷'
 
 
-def _report_number(value):
+def _report_number(value, key=""):
     if value is None: return '未提供'
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
         return '請查看進階診斷'
@@ -653,7 +660,7 @@ def _report_number(value):
         if not Decimal(str(value)).is_finite(): return '請查看進階診斷'
     except (InvalidOperation, ValueError):
         return '請查看進階診斷'
-    return str(value)
+    return display_number(value, key)
 
 
 def backtest_summary_text(values):
@@ -662,7 +669,7 @@ def backtest_summary_text(values):
         value = values.get(key)
         if value is None:
             return '未定義' if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else '未提供'
-        return _report_number(value)
+        return _report_number(value, key)
     def fields(*keys):
         return '　｜　'.join(f'{RESULT_LABELS[key]}：{metric(key)}' for key in keys)
     def reason(key, metric_key):
@@ -689,7 +696,7 @@ def backtest_summary_text(values):
         for keys in (('periods_per_year', 'annual_risk_free_rate', 'minimum_observations'),
                      ('return_frequency',), ('first_return',), ('missing_dates', 'standard_deviation')):
             lines.append('　｜　'.join(RESULT_LABELS[key] + '：' +
-                (_report_number(assumptions.get(key)) if key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
+                (_report_number(assumptions.get(key), key) if key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
                  else _report_text(assumptions.get(key))) for key in keys))
     else:
         lines.append('年化假設：未提供，請查看進階診斷')
@@ -725,14 +732,14 @@ class BacktestFillsTable(ResultTable):
         for row in rows:
             shown = {key: row.get(key) for key in self._columns}
             side, reason = row.get('side'), row.get('reason')
-            shown['side'] = {'buy': '買進', 'sell': '賣出'}.get(side, '未知，請核對進階診斷') if isinstance(side, str) else '未知，請核對進階診斷'
+            shown['side'] = display_value(side, 'side') if side in ('buy', 'sell') else '未知，請核對進階診斷'
             shown['reason'] = (_FILL_REASONS.get(reason, '其他，請核對進階診斷') if isinstance(reason, str) and reason
                                else '未提供' if reason is None or reason == '' else '其他，請核對進階診斷')
             timestamp = row.get('timestamp')
             try:
                 parsed = timestamp if isinstance(timestamp, datetime) else datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                 if parsed.tzinfo is None: raise ValueError('timezone required')
-                shown['timestamp'] = parsed.astimezone(timezone.utc).isoformat(sep=' ').removesuffix('+00:00')
+                shown['timestamp'] = parsed.astimezone(timezone.utc).isoformat(sep=' ', timespec='seconds').removesuffix('+00:00')
             except (ValueError, TypeError, AttributeError):
                 shown['timestamp'] = '時間未提供，請核對進階診斷'
             display.append(shown)
@@ -742,16 +749,12 @@ class BacktestFillsTable(ResultTable):
             detail = '成交識別碼：' + str(row.get('fill_id', '未提供')) + '\n委託識別碼：' + str(row.get('order_id', '未提供'))
             for column in range(self.columnCount()):
                 item = self.item(index, column)
-                item.setToolTip(item.text() + '\n' + detail)
+                item.setToolTip(str(row.get(self._columns[column], '未提供')) + '\n' + detail)
         self.resizeColumnsToContents()
         for column in range(self.columnCount()): self.setColumnWidth(column, min(self.columnWidth(column), 340))
 
 
-_CANDIDATE_EVALUATION_LABELS = {
-    'evaluated': '已評估', 'running': '評估中', 'failed': '評估失敗',
-    'cancelled': '已取消', 'timed_out': '已逾時', 'budget_exhausted': '額度已用盡',
-    'not_accessed': '尚未取用', 'not_evaluated': '尚未評估',
-}
+_CANDIDATE_EVALUATION_LABELS = STATUS_LABELS
 
 
 def candidate_summary_text(values):
@@ -762,7 +765,7 @@ def candidate_summary_text(values):
         value = metrics.get(key)
         if value is None:
             return '未定義' if key in metrics and key in ('profit_factor', 'sharpe') else '未提供'
-        return _report_number(value)
+        return _report_number(value, key)
     def reason(metrics, key):
         value, explanation = metrics.get(key), metrics.get(key+'_reason')
         if value is not None and _report_number(value) == '請查看進階診斷':
@@ -800,7 +803,7 @@ def candidate_summary_text(values):
                                     for key in ('sharpe_observations','sharpe_sample_count')))
             assumptions = metrics.get('annualization')
             if isinstance(assumptions, dict):
-                lines.append('　｜　'.join(RESULT_LABELS[key]+'：'+_report_number(assumptions.get(key))
+                lines.append('　｜　'.join(RESULT_LABELS[key]+'：'+_report_number(assumptions.get(key), key)
                                         for key in ('periods_per_year','annual_risk_free_rate','minimum_observations')))
                 lines.append('；'.join(RESULT_LABELS[key]+'：'+_report_text(assumptions.get(key))
                                       for key in ('return_frequency','first_return','missing_dates','standard_deviation')))
