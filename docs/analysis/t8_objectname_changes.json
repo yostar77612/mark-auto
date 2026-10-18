@@ -1,0 +1,10 @@
+{
+  "renamed_or_removed": {},
+  "compatibility_aliases": {
+    "comparison_list": "Hidden QListWidget retained; bidirectionally synchronized with saved_results_table checkboxes"
+  },
+  "added": [
+    "saved_results_table"
+  ],
+  "existing_test_assertion_edits": []
+}

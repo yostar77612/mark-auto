@@ -7,6 +7,7 @@ from quantlab.desktop_errors import error_message, exception_code
 from desktop_forms import BacktestForm, BacktestSummaryCard, BacktestFillsTable
 from .host import PageHost
 from .equity import EquityPlot
+from .result_widgets import KpiCards, TaipeiFillsTable
 
 
 class BacktestPage(QWidget):
@@ -27,8 +28,9 @@ class BacktestPage(QWidget):
         self.result_choice = QComboBox(); self.result_choice.currentIndexChanged.connect(self.show_result); layout.addWidget(self.result_choice)
         self.plot = EquityPlot(); layout.addWidget(self.plot)
         self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); advanced.addWidget(self.result_detail)
-        self.result_card = BacktestSummaryCard(); layout.addWidget(self.result_card)
-        self.fills_table = BacktestFillsTable(); layout.addWidget(self.fills_table)
+        self.result_card = BacktestSummaryCard(); advanced.addWidget(self.result_card); self.result_card.hide()
+        self.kpis = KpiCards(('net_pnl', 'profit_factor', 'sharpe', 'max_drawdown', 'closed_lots', 'open_position')); layout.addWidget(self.kpis)
+        self.fills_table = TaipeiFillsTable(); layout.addWidget(self.fills_table)
         for kind, caption in (('signal', ui_text('ui._backtest_page.text_7')), ('fill', ui_text('ui._backtest_page.text_8'))):
             toggle = QCheckBox(caption); toggle.setChecked(True); layout.addWidget(toggle)
             toggle.toggled.connect(lambda value, layer=kind: self.state.market.chart.set_layer_visible(layer, value))
@@ -46,11 +48,14 @@ class BacktestPage(QWidget):
         self.state.market.chart.set_reference_lines(())
         path = self.result_choice.currentData()
         self.state._selection_allowed = False
-        if not path: self.plot.set_values([]); self.result_detail.setPlainText(ui_text('ui.show_result.text_1')); return
+        if not path:
+            self.plot.set_values([]); self.kpis.set_values({}); self.fills_table.set_rows([])
+            self.result_detail.setPlainText(ui_text('ui.show_result.text_1')); return
         try:
             result = load_result(path)
             self.plot.set_values(result.equity)
             self.result_card.set_values(dict(result.metrics))
+            self.kpis.set_values(dict(result.metrics))
             self.fills_table.set_rows([to_dict(x) for x in result.fills])
             self.host.bind_result_layers(result)
             self.state._selection_allowed = True

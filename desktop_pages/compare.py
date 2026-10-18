@@ -6,7 +6,7 @@ from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import saved_analysis_entries
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QListWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox, QCheckBox, QFileDialog, QAbstractItemView
-from desktop_forms import ResultTable
+from .compare_table import SavedResultsTable, SideBySideTable
 from .bindings import PageContext
 
 ANALYSIS_NOTICE=ui_text('ui.labels.text_1')
@@ -17,19 +17,20 @@ ANALYSIS_CHECKPOINT_NOTICE=(ui_text('ui.labels.text_4').format(ANALYSIS_CHECKPOI
 
 
 class ComparePage(PageContext, QWidget):
-    def __init__(self, host):
+    def __init__(self, host, analysis_layout):
         super().__init__()
         self.setup_context(host)
         layout = self.host.mount_page(self, ui_text('ui._compare_page.text_1'))
         layout.addWidget(QLabel(ui_text('ui._compare_page.text_2')))
-        self.comparison_list = QListWidget(); self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection); layout.addWidget(self.comparison_list)
+        self.comparison_list = QListWidget(self); self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection); self.comparison_list.hide()
+        self.saved_results_table = SavedResultsTable(self.comparison_list); layout.addWidget(self.saved_results_table)
         self._button(layout, ui_text('ui._compare_page.text_3'), 'compare_results', lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}), role='primary')
         self.comparison = QPlainTextEdit(); self.comparison.setReadOnly(True); self._advanced(layout).addWidget(self.comparison)
-        self.comparison_table = ResultTable(); layout.addWidget(self.comparison_table)
+        self.comparison_table = SideBySideTable(self.saved_results_table); layout.addWidget(self.comparison_table)
         self.select_button = self._button(layout, ui_text('ui._compare_page.text_4'), 'select_strategy', self.select_strategy)
         self._button(layout, ui_text('ui._compare_page.text_5'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel(); self.selection_status.setWordWrap(True); layout.addWidget(self.selection_status)
-        self._analysis_section(layout)
+        self._analysis_section(analysis_layout)
 
 
     def _analysis_section(self, layout):

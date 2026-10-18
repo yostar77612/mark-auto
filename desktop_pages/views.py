@@ -7,6 +7,7 @@ from quantlab.reporting import read_json, load_dataset, demo_config, load_result
 from PySide6.QtCore import Qt
 from desktop_presentation import display_status, result_name
 from .bindings import PageContext
+from .compare_table import saved_row
 
 
 class ViewCoordinator(PageContext):
@@ -48,19 +49,27 @@ class ViewCoordinator(PageContext):
         if self.last_operation == 'ui_backtest' and active.exists():
             digest = self.host.callbacks['read_json'](active).get('result_hash', '')
             if len(digest) == 64 and all(c in '0123456789abcdef' for c in digest): old = str(self.root / 'reports' / digest / 'result.json')
+        selected_results = {item.data(Qt.ItemDataRole.UserRole) for item in self.comparison_list.selectedItems()}
         self.result_choice.blockSignals(True); self.result_choice.clear(); self.comparison_list.clear()
-        names = {}
+        names = {}; comparison_records = []
         for result_path in sorted((self.root / 'reports').glob('*/result.json')):
             try:
-                label = self.host.callbacks['result_name'](self.host.callbacks['load_result'](result_path), result_path.stat().st_ctime)
+                loaded = self.host.callbacks['load_result'](result_path)
+                created = result_path.stat().st_ctime
+                label = self.host.callbacks['result_name'](loaded, created)
+                comparison_records.append((str(result_path), saved_row(loaded, created)))
             except (ValueError, KeyError, TypeError, OSError):
                 label = ui_text('ui.refresh_views.text_5')
+                comparison_records.append((str(result_path), {'name': label}))
             names[label] = names.get(label, 0) + 1
             if names[label] > 1: label += ui_text('ui.refresh_views.text_6').format(names[label])
+            comparison_records[-1][1]['name'] = label
             self.result_choice.addItem(label, str(result_path))
             self.result_choice.setItemData(self.result_choice.count()-1, result_path.parent.name, Qt.ItemDataRole.ToolTipRole)
             self.comparison_list.addItem(label); self.comparison_list.item(self.comparison_list.count()-1).setData(Qt.ItemDataRole.UserRole, str(result_path))
             self.comparison_list.item(self.comparison_list.count()-1).setToolTip(result_path.parent.name)
+            self.comparison_list.item(self.comparison_list.count()-1).setSelected(str(result_path) in selected_results)
+        self.comparison_list.table.set_saved(comparison_records)
         index = self.result_choice.findData(old)
         if index >= 0: self.result_choice.setCurrentIndex(index)
         self.result_choice.blockSignals(False); self.show_result()

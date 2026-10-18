@@ -140,6 +140,44 @@ def _save_png(widget, path, scale):
         raise OSError(f'Could not save snapshot: {path}')
 
 
+def tab_heights(page, app):
+    """Measure every tab at its real viewport width, restoring selection afterward.
+
+    Scroll tabs report natural content height, not the clipped viewport height.
+    Existing top-level metrics continue to describe the selected/default tab.
+    """
+    from PySide6.QtWidgets import QScrollArea, QTabWidget
+    result = {}
+    for tabs in page.findChildren(QTabWidget):
+        if not tabs.isVisibleTo(page):
+            continue
+        selected = tabs.currentIndex()
+        try:
+            for index in range(tabs.count()):
+                tabs.setCurrentIndex(index)
+                app.processEvents()
+                widget = tabs.widget(index)
+                if isinstance(widget, QScrollArea):
+                    width = widget.viewport().width()
+                    content = widget.widget()
+                else:
+                    width, content = widget.width(), widget
+                if content is None:
+                    continue
+                layout = content.layout()
+                if layout:
+                    layout.activate()
+                height = max(content.minimumHeight(), content.sizeHint().height(),
+                             content.minimumSizeHint().height())
+                if layout and layout.hasHeightForWidth():
+                    height = max(height, layout.heightForWidth(width))
+                result[tabs.tabText(index)] = height
+        finally:
+            tabs.setCurrentIndex(selected)
+            app.processEvents()
+    return result
+
+
 def capture(out, size=(1366, 768), scale=1.0):
     """Return logical metrics; all application state lives below TemporaryDirectory."""
     from PySide6.QtCore import QCoreApplication, QEvent, QLocale, QTimer
@@ -190,6 +228,7 @@ def capture(out, size=(1366, 768), scale=1.0):
                     scroll.verticalScrollBar().setValue(0)
                     scroll.horizontalScrollBar().setValue(0)
                     page = scroll.widget()
+                    subpages = tab_heights(page, app)
                     stem = f'{index + 1:02d}'
                     _save_png(window, out / f'{stem}_viewport.png', scale)
                     # Render the actual scroll content at its natural height, even
@@ -219,6 +258,17 @@ def capture(out, size=(1366, 768), scale=1.0):
                     app.processEvents()
                     _save_png(page, out / f'{stem}_full.png', scale)
                     metrics = page_metrics(page)
+                    if subpages:
+                        metrics['subpages'] = subpages
+                    wizard = window.strategy_page.wf_wizard if index == 2 else None
+                    if wizard is not None:
+                        # Inspect natural layouts without bypassing navigation guards
+                        # or launching preview/run operations during a snapshot.
+                        metrics['wizard_steps'] = {
+                            str(step + 1): max(wizard.stack.widget(step).sizeHint().height(),
+                                               wizard.stack.widget(step).minimumSizeHint().height())
+                            for step in range(wizard.stack.count())
+                        }
                     metrics.update(viewport_png=f'{stem}_viewport.png', full_png=f'{stem}_full.png',
                                    full_width=page.width())
                     result['pages'][window.navigation.item(index).text()] = metrics
