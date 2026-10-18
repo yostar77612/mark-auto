@@ -30,6 +30,9 @@ class OnboardingTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
+        import faulthandler  # a hang prints every thread's stack to the CI log instead of silently timing out
+        faulthandler.dump_traceback_later(240)
+        self.addCleanup(faulthandler.cancel_dump_traceback_later)
         self.context = sandbox_ui(); self.context.__enter__()
         self.addCleanup(self.context.__exit__, None, None, None)
         self.temp = tempfile.TemporaryDirectory(prefix='t9-onboarding-')
@@ -103,16 +106,24 @@ class OnboardingTests(unittest.TestCase):
         self.assertTrue(self.window.onboarding.isHidden())
 
     def test_glossary_and_default_snapshot_all_pages(self):
-        from tools.ui_snapshot import capture
+        from PySide6.QtWidgets import QScrollArea
+        from tools.ui_snapshot import page_metrics
         self.assertEqual(GLOSSARY['bar'], 'K棒')
         self.assertEqual(GLOSSARY['OOS'], '樣本外')
         self.assertEqual(GLOSSARY['fixture'], '離線示範')
         self.assertEqual(GLOSSARY['validated_dataset'], '已驗證資料')
-        with tempfile.TemporaryDirectory(prefix='t9-wording-') as out:
-            metrics = capture(out)
-        self.assertEqual(len(metrics['pages']), 7)
-        from tools.ui_snapshot import page_metrics
+        # Measure the already-open window: re-running the full PNG snapshot capture here created a second
+        # MainWindow and hung on Linux CI; tests.test_desktop_pages already covers capture() end to end.
         w = self.window
+        w.show()
+        metrics = {'pages': {}}
+        for index in range(w.stack.count()):
+            w.navigation.setCurrentRow(index)
+            self.app.processEvents()
+            container = w.stack.widget(index)
+            scroll = container if isinstance(container, QScrollArea) else w.market.page_scroll
+            metrics['pages']['page ' + str(index)] = page_metrics(scroll.widget())
+        self.assertEqual(len(metrics['pages']), 7)
         for index in range(w.strategy_page.tabs.count()):
             w.strategy_page.tabs.setCurrentIndex(index)
             self.app.processEvents()
