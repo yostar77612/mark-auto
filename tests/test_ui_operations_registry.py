@@ -73,6 +73,21 @@ def normalise_observations(observations):
         result = value[name].get('result', {})
         if 'elapsed_seconds' in result:
             result['elapsed_seconds'] = '<ELAPSED>'
+    # The interpreter version is host metadata, and reproducibility_hash is derived from it (plus the
+    # deterministic inputs that are compared exactly elsewhere); both vary between Python 3.11/3.12/3.13.
+    def host_versions(node):
+        if isinstance(node, dict):
+            for key, item in node.items():
+                if key == 'python_version':
+                    node[key] = '<PYTHON_VERSION>'
+                elif key == 'reproducibility_hash':
+                    node[key] = '<REPRODUCIBILITY_HASH>'
+                else:
+                    host_versions(item)
+        elif isinstance(node, list):
+            for item in node:
+                host_versions(item)
+    host_versions(value)
     # Import wall time is metadata, excluded by production from manifest_hash.
     value['ui_import']['result']['manifest']['imported_at'] = '<IMPORTED_AT>'
     # Campaign/receipt elapsed_seconds are actual stopwatch measurements. No
