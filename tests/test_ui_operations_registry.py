@@ -52,6 +52,17 @@ def old_module():
             sys.modules.pop(name, None)
 
 
+def portable_paths(node):
+    """Golden paths were recorded on Windows; CI also runs POSIX. Compare path separators neutrally."""
+    if isinstance(node, dict):
+        return {key: portable_paths(item) for key, item in node.items()}
+    if isinstance(node, list):
+        return [portable_paths(item) for item in node]
+    if isinstance(node, str) and '<TEMP>' in node:
+        return node.replace(chr(92), '/')
+    return node
+
+
 def normalise_observations(observations):
     """Only path-bound identities and measured wall-clock durations vary."""
     raw = json.dumps(observations, ensure_ascii=False, sort_keys=True)
@@ -89,7 +100,7 @@ def normalise_observations(observations):
                 durations(item)
     for name in ('campaign_fixture', 'campaign_subscription_fixture', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile'):
         durations(value[name])
-    return value
+    return portable_paths(value)
 
 
 @contextmanager
@@ -268,13 +279,19 @@ def exercise(execute):
         call('ui_backup_restore', {'path': str(backup)})
         # The prefix includes both workspace and bootstrap, in native and JSON paths.
         raw = json.dumps(observations, ensure_ascii=False, sort_keys=True)
-        raw = raw.replace(json.dumps(str(paths.root.parent))[1:-1], '<TEMP>')
+        # CI runners expose the same temp directory as a short (8.3) name and as the resolved long name;
+        # replace every spelling of the temp prefix (native, resolved, forward-slash), longest first.
+        prefix = paths.root.parent
+        spellings = {str(prefix), str(prefix.resolve()), os.path.realpath(prefix)}
+        spellings |= {value.replace(chr(92), '/') for value in spellings}
+        for value in sorted(spellings, key=len, reverse=True):
+            raw = raw.replace(json.dumps(value)[1:-1], '<TEMP>')
         return normalise_observations(json.loads(raw))
 
 
 class RegistryTests(unittest.TestCase):
     def test_all_scenarios_ignore_host_profile_and_remembered_login(self):
-        expected = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
+        expected = portable_paths(json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations'])
         original_environment = dict(os.environ)
         with old_module() as old, workspace() as host:
             from desktop_chatgpt_auth import DPAPIVault
@@ -338,6 +355,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(set(coverage), ui.UI_OPERATIONS)
         self.assertTrue(all(callable(test) for test in coverage.values()))
         expected = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))
+        expected['observations'] = portable_paths(expected['observations'])
         self.assertEqual(set(expected['offline_limits']), {'ui_refresh'})
         with old_module() as old:
             legacy = exercise(old.execute_ui_operation)
