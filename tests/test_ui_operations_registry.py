@@ -6,6 +6,7 @@ type/message too, so offline consent/proof failures are covered.
 The inherited-permission mkdir shim avoids Windows sandbox's mode=0700 ACL
 artifact; it changes no application logic or file contents.
 """
+
 import ast
 from contextlib import contextmanager
 import importlib.util
@@ -87,6 +88,7 @@ def normalise_observations(observations):
             result['elapsed_seconds'] = '<ELAPSED>'
     # Import wall time is metadata, excluded by production from manifest_hash.
     value['ui_import']['result']['manifest']['imported_at'] = '<IMPORTED_AT>'
+
     # Campaign/receipt elapsed_seconds are actual stopwatch measurements. No
     # other numeric field, deterministic bar timestamp, identity or hash is masked.
     def durations(node):
@@ -99,6 +101,7 @@ def normalise_observations(observations):
         elif isinstance(node, list):
             for item in node:
                 durations(item)
+
     for name in ('campaign_fixture', 'campaign_subscription_fixture', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile'):
         durations(value[name])
     return portable_paths(value)
@@ -122,11 +125,19 @@ def workspace():
             roaming = profile / 'AppData' / 'Roaming'
             for directory in (local, roaming):
                 directory.mkdir(parents=True)
-            environment = dict(USERPROFILE=str(profile), HOME=str(profile),
-                               LOCALAPPDATA=str(local), APPDATA=str(roaming),
-                               HOMEDRIVE=profile.drive, HOMEPATH=str(profile)[len(profile.drive):],
-                               XDG_CONFIG_HOME=str(roaming), XDG_DATA_HOME=str(local),
-                               TZ='UTC', LANG='C', LC_ALL='C')
+            environment = dict(
+                USERPROFILE=str(profile),
+                HOME=str(profile),
+                LOCALAPPDATA=str(local),
+                APPDATA=str(roaming),
+                HOMEDRIVE=profile.drive,
+                HOMEPATH=str(profile)[len(profile.drive) :],
+                XDG_CONFIG_HOME=str(roaming),
+                XDG_DATA_HOME=str(local),
+                TZ='UTC',
+                LANG='C',
+                LC_ALL='C',
+            )
 
             def prepare_empty_vault(vault):
                 # Exercise real file lookup/locking/session logic, without the
@@ -137,12 +148,12 @@ def workspace():
             previous_locale = locale.setlocale(locale.LC_ALL)
             try:
                 locale.setlocale(locale.LC_ALL, 'C')
-                with patch.dict(os.environ, environment), \
-                     patch('desktop_chatgpt_auth.DPAPIVault._prepare', prepare_empty_vault), \
-                     patch('quantlab.desktop_runtime.CredentialVault._crypt',
-                           side_effect=AssertionError('credential access forbidden')), \
-                     patch('desktop_chatgpt_auth.OfficialTransport.request',
-                           side_effect=AssertionError('offline fixtures only')):
+                with (
+                    patch.dict(os.environ, environment),
+                    patch('desktop_chatgpt_auth.DPAPIVault._prepare', prepare_empty_vault),
+                    patch('quantlab.desktop_runtime.CredentialVault._crypt', side_effect=AssertionError('credential access forbidden')),
+                    patch('desktop_chatgpt_auth.OfficialTransport.request', side_effect=AssertionError('offline fixtures only')),
+                ):
                     yield AppPaths(root / 'workspace', root / 'bootstrap').ensure()
             finally:
                 locale.setlocale(locale.LC_ALL, previous_locale)
@@ -157,8 +168,7 @@ def exercise(execute):
             events = []
             operation = kwargs.pop('operation', name)
             try:
-                result = execute(operation, payload, paths,
-                                 emit=lambda kind, **data: events.append([kind, data]), **kwargs)
+                result = execute(operation, payload, paths, emit=lambda kind, **data: events.append([kind, data]), **kwargs)
                 value = {'result': to_dict(result), 'events': events}
             except Exception as exc:
                 value = {'exception': type(exc).__name__, 'message': str(exc), 'events': events}
@@ -174,10 +184,10 @@ def exercise(execute):
             call('ui_select', {'result': result})
         policy = {
             'contract_id': 'TAIFEX:TMF:202601',
-            'risk_sessions': [{'open': '2026-01-05T00:45:00Z', 'end': '2026-01-05T04:45:00Z',
-                               'trade_date': '2026-01-05', 'session': 'day', 'source': 'synthetic fixture'}],
-            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000',
-                                 'version': 'synthetic-v1'}],
+            'risk_sessions': [
+                {'open': '2026-01-05T00:45:00Z', 'end': '2026-01-05T04:45:00Z', 'trade_date': '2026-01-05', 'session': 'day', 'source': 'synthetic fixture'}
+            ],
+            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000', 'version': 'synthetic-v1'}],
         }
         snapshot = {'account_id': 'fixture', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}
         call('ui_paper_snapshot', {'policy': policy})
@@ -185,48 +195,74 @@ def exercise(execute):
         call('ui_paper_kill', {})
         selection = ui.read_json(paths.state / 'selection.json')
         now = '2026-01-05T00:46:00Z'
-        call('ui_paper_submit', {'reconcile_confirmed': True, 'snapshot': snapshot,
-             'intent': {'client_order_id': 'offline-order', 'strategy_hash': selection['strategy_hash'],
-                        'contract_id': policy['contract_id'], 'side': 'buy', 'quantity': 1,
-                        'order_type': 'market', 'created_at': now},
-             'quote': {'account_id': 'fixture', 'contract_id': policy['contract_id'],
-                       'timestamp': now, 'price': '20000', 'trade_date': '2026-01-05',
-                       'session_open': policy['risk_sessions'][0]['open'],
-                       'session_end': policy['risk_sessions'][0]['end'], 'margin_per_contract': '100000'},
-             'now': now})
+        call(
+            'ui_paper_submit',
+            {
+                'reconcile_confirmed': True,
+                'snapshot': snapshot,
+                'intent': {
+                    'client_order_id': 'offline-order',
+                    'strategy_hash': selection['strategy_hash'],
+                    'contract_id': policy['contract_id'],
+                    'side': 'buy',
+                    'quantity': 1,
+                    'order_type': 'market',
+                    'created_at': now,
+                },
+                'quote': {
+                    'account_id': 'fixture',
+                    'contract_id': policy['contract_id'],
+                    'timestamp': now,
+                    'price': '20000',
+                    'trade_date': '2026-01-05',
+                    'session_open': policy['risk_sessions'][0]['open'],
+                    'session_end': policy['risk_sessions'][0]['end'],
+                    'margin_per_contract': '100000',
+                },
+                'now': now,
+            },
+        )
         call('ui_paper_cancel', {'order_id': 'offline-order', 'now': now})
-        call('ui_paper_replay', {'reconcile_confirmed': True,
-             'snapshot': ui.read_json(paths.state / 'paper_snapshot.json'), 'max_bars': 100})
+        call('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': ui.read_json(paths.state / 'paper_snapshot.json'), 'max_bars': 100})
         call('ui_disable', {})
         local = paths.root / 'official.json'
         local.write_bytes(TWSE)
         call('ui_market_refresh', {'local_path': str(local), 'provider': 'twse', 'format': 'json'})
         from desktop import _history_smoke_fixture
+
         _, history_payload = _history_smoke_fixture(paths.root)
         call('history_import', history_payload, operation='ui_market_refresh')
         calendar = paths.root / 'calendar.json'
         from tests.test_data import cal
+
         write_json(calendar, {'sessions': cal().sessions, 'version': 'synthetic-v1'})
         imported = paths.root / 'ticks.csv'
         imported.write_bytes((FIXTURES / 'data_synthetic_taifex.csv').read_bytes())
-        call('ui_import', {'calendar': str(calendar), 'kind': 'synthetic_taifex_ticks',
-                           'path': str(imported), 'encoding': 'utf-8'})
+        call('ui_import', {'calendar': str(calendar), 'kind': 'synthetic_taifex_ticks', 'path': str(imported), 'encoding': 'utf-8'})
         call('ui_refresh', {'network_opt_in': False})
         from quantlab.research import demo_campaign_config
+
         config = demo_campaign_config(synthetic_dataset(240), demo_config())
         config['max_improvements'] = 0
         save_dataset(synthetic_dataset(240), paths.state / 'dataset.json')
-        call('ui_campaign', {'config': config, 'provider': {'mode': 'manual'},
-                             'manual_export': str(paths.root / 'request.json')})
+        call('ui_campaign', {'config': config, 'provider': {'mode': 'manual'}, 'manual_export': str(paths.root / 'request.json')})
         with patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}):
             call('campaign_fixture', {'config': config, 'provider': {'mode': 'fixture'}}, operation='ui_campaign')
         call('ui_chatgpt_auth', {'request': {'request_id': 1, 'action': 'restore'}})
         call('ui_chatgpt_usage', {'registration': 'a' * 32})
         call('ui_chatgpt_reconcile', {})
         from tests.test_chatgpt_plan import MockTransport, SYNTHETIC_PROVENANCE
-        options = dict(mode='chatgpt_plan', registration='b' * 32, model='fixture-model',
-                       max_calls=1, timeout_seconds=30, network_opt_in=False,
-                       included_usage_policy_confirmed=False, paid_api_fallback=False)
+
+        options = dict(
+            mode='chatgpt_plan',
+            registration='b' * 32,
+            model='fixture-model',
+            max_calls=1,
+            timeout_seconds=30,
+            network_opt_in=False,
+            included_usage_policy_confirmed=False,
+            paid_api_fallback=False,
+        )
         # Separate workspace and durable controls: the preceding campaign has
         # consumed its holdout once. Never reset or bypass that ledger.
         original_paths = paths
@@ -237,33 +273,57 @@ def exercise(execute):
         subscription_config.update(families=['trend'], max_trials=1, max_improvements=0)
         MockTransport.requests = []
         MockTransport.events = None
-        with patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE), \
-             patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport), \
-             patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}):
+        with (
+            patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+            patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport),
+            patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}),
+        ):
             _, binding = ui.plan_provider(paths, subscription_data, subscription_config, options, for_usage=True)
-            call('campaign_subscription_fixture', {'config': to_dict(subscription_config),
-                 'provider': {**options, 'network_opt_in': True, 'included_usage_policy_confirmed': True,
-                              'expected_binding': binding}}, operation='ui_campaign')
-            call('ui_chatgpt_reconcile', {'config': to_dict(subscription_config), 'provider': options,
-                 'binding': binding, 'stopped_job_id': 'offline'}, descendants_stopped=True)
+            call(
+                'campaign_subscription_fixture',
+                {
+                    'config': to_dict(subscription_config),
+                    'provider': {**options, 'network_opt_in': True, 'included_usage_policy_confirmed': True, 'expected_binding': binding},
+                },
+                operation='ui_campaign',
+            )
+            call(
+                'ui_chatgpt_reconcile',
+                {'config': to_dict(subscription_config), 'provider': options, 'binding': binding, 'stopped_job_id': 'offline'},
+                descendants_stopped=True,
+            )
         paths = original_paths
         from tests.test_research_analysis import source, PROVENANCE, AnalysisWire
         from tests.test_desktop_analysis import request_for
+
         data, state, folder = source(paths.state / 'campaigns')
         request = request_for(paths, data, state, folder)
         AnalysisWire.requests = []
         AnalysisWire.failure = AnalysisWire.mutate = None
-        with patch('quantlab.research_analysis._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args)}), \
-             patch('desktop_chatgpt_provider.implementation_provenance', return_value=PROVENANCE), \
-             patch('desktop_chatgpt_provider.PlanHTTPTransport', AnalysisWire):
+        with (
+            patch('quantlab.research_analysis._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args)}),
+            patch('desktop_chatgpt_provider.implementation_provenance', return_value=PROVENANCE),
+            patch('desktop_chatgpt_provider.PlanHTTPTransport', AnalysisWire),
+        ):
             preview = call('ui_analysis_preview', {'request': request})
             if preview:
-                call('ui_analysis_run', {'request': request, 'expected_analysis_id': preview['analysis_id'],
-                     'expected_plan_hash': content_hash(preview['plan']), 'user_confirmed': True,
-                     'network_opt_in': True, 'included_usage_policy_confirmed': True})
+                call(
+                    'ui_analysis_run',
+                    {
+                        'request': request,
+                        'expected_analysis_id': preview['analysis_id'],
+                        'expected_plan_hash': content_hash(preview['plan']),
+                        'user_confirmed': True,
+                        'network_opt_in': True,
+                        'included_usage_policy_confirmed': True,
+                    },
+                )
                 call('ui_analysis_read', {'analysis_id': preview['analysis_id']})
-                call('ui_analysis_reconcile', {'analysis_id': preview['analysis_id'], 'registration': 'a' * 32,
-                     'stopped_job_id': 'offline'}, descendants_stopped=True)
+                call(
+                    'ui_analysis_reconcile',
+                    {'analysis_id': preview['analysis_id'], 'registration': 'a' * 32, 'stopped_job_id': 'offline'},
+                    descendants_stopped=True,
+                )
         data, plan = inputs(process_start_method='spawn')
         original_paths = paths
         paths = AppPaths(paths.root / 'walk-workspace', paths.root / 'walk-bootstrap').ensure()
@@ -296,16 +356,15 @@ class RegistryTests(unittest.TestCase):
         original_environment = dict(os.environ)
         with old_module() as old, workspace() as host:
             from desktop_chatgpt_auth import DPAPIVault
+
             vault = DPAPIVault(str(host.bootstrap))
             vault.directory.mkdir(parents=True)
             sentinel = b'synthetic remembered login; never decrypt'
-            host_environment = {key: os.environ[key] for key in
-                                ('USERPROFILE', 'HOME', 'LOCALAPPDATA', 'APPDATA')}
+            host_environment = {key: os.environ[key] for key in ('USERPROFILE', 'HOME', 'LOCALAPPDATA', 'APPDATA')}
             original_read = Path.read_bytes
 
             def guarded_read(path):
-                self.assertFalse(path.is_relative_to(host.root.parent),
-                                 'read simulated host profile or bootstrap')
+                self.assertFalse(path.is_relative_to(host.root.parent), 'read simulated host profile or bootstrap')
                 return original_read(path)
 
             for remembered in (False, True):

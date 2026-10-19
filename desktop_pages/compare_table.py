@@ -1,4 +1,5 @@
 """Saved-result selection and side-by-side presentation; no research operations."""
+
 from datetime import datetime, timezone
 import re
 
@@ -9,8 +10,7 @@ from desktop_strings import ui_text
 from .result_widgets import ResultTable, MISSING, shown, taipei_time, column_label
 
 
-FIELDS = ('name', 'family', 'parameters', 'range', 'created', 'net_pnl',
-          'profit_factor', 'sharpe', 'max_drawdown', 'trade_count')
+FIELDS = ('name', 'family', 'parameters', 'range', 'created', 'net_pnl', 'profit_factor', 'sharpe', 'max_drawdown', 'trade_count')
 PATH_ROLE = int(Qt.ItemDataRole.UserRole) + 1
 
 
@@ -29,18 +29,20 @@ def saved_row(result, created):
     row = {key: metrics[key] for key in FIELDS if key in metrics}
     if 'trade_count' not in row and 'closed_trades' in metrics:
         row['trade_count'] = metrics['closed_trades']
-    row.update(name=result_name(result, created), family=display_status(spec.get('family', '')),
-               parameters=' / '.join(PARAM_LABELS.get(key, key) + '=' + display_number(value)
-                                     for key, value in spec.get('parameters', {}).items())
-                          or ui_text('presentation.result_name.text_2'),
-               range=ui_text('presentation.result_name.text_4').format(dates[0], dates[-1])
-                     if dates else ui_text('presentation.result_name.text_5'),
-               created=taipei_time(datetime.fromtimestamp(created, timezone.utc)))
+    row.update(
+        name=result_name(result, created),
+        family=display_status(spec.get('family', '')),
+        parameters=' / '.join(PARAM_LABELS.get(key, key) + '=' + display_number(value) for key, value in spec.get('parameters', {}).items())
+        or ui_text('presentation.result_name.text_2'),
+        range=ui_text('presentation.result_name.text_4').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.text_5'),
+        created=taipei_time(datetime.fromtimestamp(created, timezone.utc)),
+    )
     return row
 
 
 class SavedResultsTable(ResultTable):
     """Keep the legacy QListWidget as a hidden, bidirectional selection adapter."""
+
     def __init__(self, legacy):
         super().__init__()
         self.legacy = legacy
@@ -59,8 +61,7 @@ class SavedResultsTable(ResultTable):
         try:
             self.set_rows([row for path, row in records], FIELDS)
             self.setSortingEnabled(False)
-            self.setHorizontalHeaderLabels([ui_text('compare.' + key) if key in FIELDS[:5]
-                                            else column_label(key) for key in FIELDS])
+            self.setHorizontalHeaderLabels([ui_text('compare.' + key) if key in FIELDS[:5] else column_label(key) for key in FIELDS])
             for r, (path, row) in enumerate(records):
                 for c in range(self.columnCount()):
                     item = self.item(r, c)
@@ -108,12 +109,18 @@ class SideBySideTable(ResultTable):
         names = []
         for index, row in enumerate(rows):
             digest = str(row.get('result_hash', ''))
-            label = next((self.saved.item(r, 0).text() for r in range(self.saved.rowCount())
-                          if digest and digest in str(self.saved.item(r, 0).data(PATH_ROLE))),
-                         ui_text('compare.result').format(index + 1))
+            label = next(
+                (self.saved.item(r, 0).text() for r in range(self.saved.rowCount()) if digest and digest in str(self.saved.item(r, 0).data(PATH_ROLE))),
+                ui_text('compare.result').format(index + 1),
+            )
             names.append(safe_text(label))
-        display = [{'metric': column_label(key), **{str(i): shown(row.get(key, row.get('closed_trades', MISSING)
-                    if key == 'trade_count' else MISSING), key) for i, row in enumerate(rows)}} for key in keys]
+        display = [
+            {
+                'metric': column_label(key),
+                **{str(i): shown(row.get(key, row.get('closed_trades', MISSING) if key == 'trade_count' else MISSING), key) for i, row in enumerate(rows)},
+            }
+            for key in keys
+        ]
         super().set_rows(display, ['metric'] + [str(i) for i in range(len(rows))])
         self.setHorizontalHeaderLabels([ui_text('compare.metric')] + names)
         for c, row in enumerate(rows, 1):

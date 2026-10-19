@@ -4,6 +4,7 @@ No new process, retry, pipe, wait, durable write or success-path file is added.
 Only fixed labels, integer error codes and allowlisted source locations leave
 this observer. Exception text, locals, paths, command lines and tokens do not.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,36 +13,83 @@ import uuid
 
 ROLES = ('gui', 'helper', 'worker', 'grandchild')
 SCENARIOS = frozenset({'normal', 'helper_before_gui', 'helper_after_gui'})
-PHASES = frozenset({
-    'entry', 'kernel', 'gui.launch.commit', 'gui.launch.signal', 'idle',
-    'worker.gate.wait', 'worker.launch.read', 'worker.grandchild.start',
-    'worker.handle.publish', 'worker.ack.wait', 'worker.ready.signal',
-    'worker.monitor', 'worker.cleanup', 'helper.runtime.import',
-    'helper.admission', 'helper.job.create', 'helper.protocol.open', 'helper.gui_commit.wait',
-    'helper.gate.open', 'helper.worker_ready.wait', 'helper.ready.signal',
-    'helper.gui_death.wait', 'helper.gui_death.signal', 'helper.quiescence.wait',
-    'helper.job.stop', 'helper.quiescence.signal', 'helper.receipt.wait',
-    'helper.receipt.publish', 'helper.receipt.signal', 'helper.cleanup',
-})
-WAIT_LABELS = frozenset({'helper readiness', 'GUI death', 'zero active',
-    'durable receipt', 'helper clean exit', 'kill-on-close cleanup'})
+PHASES = frozenset(
+    {
+        'entry',
+        'kernel',
+        'gui.launch.commit',
+        'gui.launch.signal',
+        'idle',
+        'worker.gate.wait',
+        'worker.launch.read',
+        'worker.grandchild.start',
+        'worker.handle.publish',
+        'worker.ack.wait',
+        'worker.ready.signal',
+        'worker.monitor',
+        'worker.cleanup',
+        'helper.runtime.import',
+        'helper.admission',
+        'helper.job.create',
+        'helper.protocol.open',
+        'helper.gui_commit.wait',
+        'helper.gate.open',
+        'helper.worker_ready.wait',
+        'helper.ready.signal',
+        'helper.gui_death.wait',
+        'helper.gui_death.signal',
+        'helper.quiescence.wait',
+        'helper.job.stop',
+        'helper.quiescence.signal',
+        'helper.receipt.wait',
+        'helper.receipt.publish',
+        'helper.receipt.signal',
+        'helper.cleanup',
+    }
+)
+WAIT_LABELS = frozenset({'helper readiness', 'GUI death', 'zero active', 'durable receipt', 'helper clean exit', 'kill-on-close cleanup'})
 BARRIERS = (
-    'gui-launch-committed.json', 'worker-go.json', 'grandchild.handle.json',
-    'grandchild-ack.json', 'worker-ready.json', 'helper-ready.json',
-    'gui-death-observed.json', 'allow-quiescence.json', 'quiescence-observed.json',
-    'allow-receipt.json', 'receipt.json', 'cleanup-request.json',
+    'gui-launch-committed.json',
+    'worker-go.json',
+    'grandchild.handle.json',
+    'grandchild-ack.json',
+    'worker-ready.json',
+    'helper-ready.json',
+    'gui-death-observed.json',
+    'allow-quiescence.json',
+    'quiescence-observed.json',
+    'allow-receipt.json',
+    'receipt.json',
+    'cleanup-request.json',
     'cleanup-quiescence.json',
 )
-MODULES = frozenset({'test_windows_recovery_feasibility.py',
-                    'windows_recovery_diagnostics.py', 'desktop_runtime.py',
-                    'subprocess.py', 'pathlib.py', 'contextlib.py'})
-ERROR_TYPES = frozenset({
-    'OSError', 'PermissionError', 'FileNotFoundError', 'FileExistsError',
-    'TimeoutError', 'RuntimeError', 'RuntimeSafetyError', 'ValueError',
-    'TypeError', 'AttributeError', 'ImportError', 'ModuleNotFoundError',
-    'OperationalError', 'DatabaseError', 'IntegrityError', 'ProgrammingError',
-    'JSONDecodeError', 'AssertionError', 'SystemExit', 'KeyboardInterrupt',
-})
+MODULES = frozenset(
+    {'test_windows_recovery_feasibility.py', 'windows_recovery_diagnostics.py', 'desktop_runtime.py', 'subprocess.py', 'pathlib.py', 'contextlib.py'}
+)
+ERROR_TYPES = frozenset(
+    {
+        'OSError',
+        'PermissionError',
+        'FileNotFoundError',
+        'FileExistsError',
+        'TimeoutError',
+        'RuntimeError',
+        'RuntimeSafetyError',
+        'ValueError',
+        'TypeError',
+        'AttributeError',
+        'ImportError',
+        'ModuleNotFoundError',
+        'OperationalError',
+        'DatabaseError',
+        'IntegrityError',
+        'ProgrammingError',
+        'JSONDecodeError',
+        'AssertionError',
+        'SystemExit',
+        'KeyboardInterrupt',
+    }
+)
 MAX_RECORD_BYTES = 8192
 MAX_REPORT_BYTES = 32768
 MAX_ERRORS = 3
@@ -49,7 +97,7 @@ MAX_FRAMES = 12
 
 
 def _number(value):
-    return value if type(value) is int and -(2 ** 31) <= value < 2 ** 32 else None
+    return value if type(value) is int and -(2**31) <= value < 2**32 else None
 
 
 def _error_record(error):
@@ -64,11 +112,13 @@ def _error_record(error):
             frames.append({'module': module, 'line': trace.tb_lineno})
         trace = trace.tb_next
     name = type(error).__name__
-    return {'type': name if name in ERROR_TYPES else 'other',
-            'errno': _number(getattr(error, 'errno', None)),
-            'winerror': _number(getattr(error, 'winerror', None)),
-            'sqlite_errorcode': _number(getattr(error, 'sqlite_errorcode', None)),
-            'frames': frames[-MAX_FRAMES:]}
+    return {
+        'type': name if name in ERROR_TYPES else 'other',
+        'errno': _number(getattr(error, 'errno', None)),
+        'winerror': _number(getattr(error, 'winerror', None)),
+        'sqlite_errorcode': _number(getattr(error, 'sqlite_errorcode', None)),
+        'frames': frames[-MAX_FRAMES:],
+    }
 
 
 class FixtureDiagnostics:
@@ -118,23 +168,33 @@ def _read_failure(folder, role):
         if len(raw) > MAX_RECORD_BYTES:
             raise ValueError('oversized')
         value = json.loads(raw)
-        if (type(value) is not dict or set(value) != {'role', 'phase', 'errors'}
-                or value['role'] != role or value['phase'] not in PHASES
-                or type(value['errors']) is not list
-                or not 1 <= len(value['errors']) <= MAX_ERRORS):
+        if (
+            type(value) is not dict
+            or set(value) != {'role', 'phase', 'errors'}
+            or value['role'] != role
+            or value['phase'] not in PHASES
+            or type(value['errors']) is not list
+            or not 1 <= len(value['errors']) <= MAX_ERRORS
+        ):
             raise ValueError('invalid')
         for error in value['errors']:
-            if (type(error) is not dict or set(error) != {
-                    'type', 'errno', 'winerror', 'sqlite_errorcode', 'frames'}
-                    or error['type'] not in ERROR_TYPES | {'other'}
-                    or any(error[key] is not None and _number(error[key]) is None
-                           for key in ('errno', 'winerror', 'sqlite_errorcode'))
-                    or type(error['frames']) is not list or len(error['frames']) > MAX_FRAMES):
+            if (
+                type(error) is not dict
+                or set(error) != {'type', 'errno', 'winerror', 'sqlite_errorcode', 'frames'}
+                or error['type'] not in ERROR_TYPES | {'other'}
+                or any(error[key] is not None and _number(error[key]) is None for key in ('errno', 'winerror', 'sqlite_errorcode'))
+                or type(error['frames']) is not list
+                or len(error['frames']) > MAX_FRAMES
+            ):
                 raise ValueError('invalid')
             for frame in error['frames']:
-                if (type(frame) is not dict or set(frame) != {'module', 'line'}
-                        or frame['module'] not in MODULES
-                        or type(frame['line']) is not int or not 1 <= frame['line'] <= 1000000):
+                if (
+                    type(frame) is not dict
+                    or set(frame) != {'module', 'line'}
+                    or frame['module'] not in MODULES
+                    or type(frame['line']) is not int
+                    or not 1 <= frame['line'] <= 1000000
+                ):
                     raise ValueError('invalid')
         return {'status': 'recorded', **value}
     except FileNotFoundError:
@@ -154,12 +214,14 @@ def failure_snapshot(folder, processes, scenario, *, barrier=None):
             'returncode': _number(code),
             'failure': _read_failure(folder, role),
         }
-    return {'kind': 'TEST_ONLY_ORIGINAL_WINDOWS_RECOVERY_FAILURE',
-            'acceptance': False,
-            'scenario': scenario if scenario in SCENARIOS else 'unknown',
-            'awaited_barrier': barrier if barrier in WAIT_LABELS else 'unknown',
-            'barriers': {name: (folder / name).is_file() for name in BARRIERS},
-            'children': children}
+    return {
+        'kind': 'TEST_ONLY_ORIGINAL_WINDOWS_RECOVERY_FAILURE',
+        'acceptance': False,
+        'scenario': scenario if scenario in SCENARIOS else 'unknown',
+        'awaited_barrier': barrier if barrier in WAIT_LABELS else 'unknown',
+        'barriers': {name: (folder / name).is_file() for name in BARRIERS},
+        'children': children,
+    }
 
 
 def report_failure(folder, processes, scenario, *, artifact_dir, barrier=None):
@@ -178,8 +240,7 @@ def report_failure(folder, processes, scenario, *, artifact_dir, barrier=None):
     try:
         artifact_dir = Path(artifact_dir)
         artifact_dir.mkdir(parents=True, exist_ok=True)
-        (artifact_dir / ('smoke-timeout-windows-recovery-' + uuid.uuid4().hex + '.json')).write_text(
-            raw + '\n', encoding='utf-8')
+        (artifact_dir / ('smoke-timeout-windows-recovery-' + uuid.uuid4().hex + '.json')).write_text(raw + '\n', encoding='utf-8')
     except Exception:
         # Still include evidence in unittest's original failure output.
         return 'WINDOWS_RECOVERY_DIAGNOSTIC artifact_unavailable ' + raw

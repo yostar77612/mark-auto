@@ -4,6 +4,7 @@ Windows timings from the 12e088f full-suite run put saved-pool/research and
 walk-forward integration in a separate job. New modules default to core; no
 case is excluded. Module boundaries preserve unittest module/class fixtures.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,21 +28,34 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-RESEARCH_MODULES = frozenset({
-    "test_saved_candidate_pool", "test_desktop_saved_candidate_pool",
-    "test_research", "test_walk_forward", "test_desktop_walk_forward",
-    "test_desktop_walk_forward_runtime", "test_desktop_walk_forward_smoke",
-    "test_desktop_walk_forward_terminal", "test_result_reference_layers",
-})
+RESEARCH_MODULES = frozenset(
+    {
+        "test_saved_candidate_pool",
+        "test_desktop_saved_candidate_pool",
+        "test_research",
+        "test_walk_forward",
+        "test_desktop_walk_forward",
+        "test_desktop_walk_forward_runtime",
+        "test_desktop_walk_forward_smoke",
+        "test_desktop_walk_forward_terminal",
+        "test_result_reference_layers",
+    }
+)
 GROUPS = ("all", "core", "research")
 
 # Seven existing paper modules account for 344.37 s of the observed 773.35 s
 # Windows 3.11 remaining run at a9bcdb2. Rebalance whole modules only.
-PAPER_MODULES = frozenset({
-    'test_paper', 'test_paper_diagnostics', 'test_paper_replay',
-    'test_paper_replay_policy', 'test_paper_replay_storage',
-    'test_paper_replay_timeout_diagnostics', 'test_paper_replay_wal',
-})
+PAPER_MODULES = frozenset(
+    {
+        'test_paper',
+        'test_paper_diagnostics',
+        'test_paper_replay',
+        'test_paper_replay_policy',
+        'test_paper_replay_storage',
+        'test_paper_replay_timeout_diagnostics',
+        'test_paper_replay_wal',
+    }
+)
 CORE_SHARDS = ('desktop', 'paper', 'remaining')
 CORE_SHARD_PLAN = 'core-modules-v2'
 
@@ -51,8 +65,7 @@ def core_shard_for_module(module):
         raise ValueError('Research modules cannot enter a core shard')
     if module in PAPER_MODULES:
         return 'paper'
-    return ('desktop' if module.startswith('test_desktop_') or module in
-            {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining')
+    return 'desktop' if module.startswith('test_desktop_') or module in {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining'
 
 
 def core_shard_assignments(suite):
@@ -62,8 +75,7 @@ def core_shard_assignments(suite):
     for case in selected:
         assigned[core_shard_for_module(type(case).__module__)].append(case.id())
     flattened = sum(assigned.values(), [])
-    if (not all(assigned.values()) or len(expected) != len(set(expected))
-            or len(flattened) != len(set(flattened)) or set(flattened) != set(expected)):
+    if not all(assigned.values()) or len(expected) != len(set(expected)) or len(flattened) != len(set(flattened)) or set(flattened) != set(expected):
         raise ValueError('Core shards must cover each selected case exactly once')
     return assigned
 
@@ -75,9 +87,11 @@ def portable_source_identity(start_directory='tests'):
     paths = set(root.glob('*.py')) | set(root.glob('requirements*'))
     paths |= {root / 'pyproject.toml', root / '.gitattributes'}
     for directory in ('quantlab', 'tests', 'tools', 'packaging', '.github/workflows'):
-        paths |= {path for path in (root / directory).rglob('*') if path.is_file()
-                  and '__pycache__' not in path.parts and path.suffix in
-                  {'.py', '.ps1', '.cs', '.json', '.gz', '.csv', '.yml', '.yaml', '.txt'}}
+        paths |= {
+            path
+            for path in (root / directory).rglob('*')
+            if path.is_file() and '__pycache__' not in path.parts and path.suffix in {'.py', '.ps1', '.cs', '.json', '.gz', '.csv', '.yml', '.yaml', '.txt'}
+        }
     paths |= set(Path(start_directory).resolve().glob('*.py'))
     named = {}
     for path in paths:
@@ -98,41 +112,39 @@ def portable_source_identity(start_directory='tests'):
     return digest.hexdigest()
 
 
-
 # Two test parents, not two total processes: tests retain their bounded children.
 # Whole modules preserve every module/class fixture and intra-module order.
 RESEARCH_WORKERS = (
-    frozenset({'test_walk_forward', 'test_desktop_saved_candidate_pool',
-               'test_desktop_walk_forward', 'test_desktop_walk_forward_runtime',
-               'test_desktop_walk_forward_smoke', 'test_result_reference_layers'}),
+    frozenset(
+        {
+            'test_walk_forward',
+            'test_desktop_saved_candidate_pool',
+            'test_desktop_walk_forward',
+            'test_desktop_walk_forward_runtime',
+            'test_desktop_walk_forward_smoke',
+            'test_result_reference_layers',
+        }
+    ),
     frozenset({'test_saved_candidate_pool', 'test_research', 'test_desktop_walk_forward_terminal'}),
 )
 WINDOWS_RESEARCH_SKIPS = {
-    'test_desktop_walk_forward_smoke.WalkForwardSmokeProcessTests.test_full_smoke_preserves_all_gates_settings_and_120_second_budget':
-        'Frozen installer harness owns isolated Windows profile smoke',
-    'test_desktop_walk_forward_smoke.WalkForwardSmokeProcessTests.test_omitted_module_malformed_result_reference_and_worker_failure_fail_overall':
-        'Frozen installer harness owns isolated Windows profile smoke',
-    'test_research.BoundedWorkerCleanupTests.test_real_worker_success_waits_for_owned_kill_and_reap':
-        'SIGTERM/SIGKILL lifecycle requires POSIX',
-    'test_research.BoundedWorkerCleanupTests.test_sequential_backtest_and_generator_hangs_leave_no_child_residue':
-        'Backtest patch requires fork',
-    'test_research.ResearchTests.test_hanging_backtest_is_killed':
-        'Patch inheritance uses POSIX fork; production default is spawn',
-    'test_research.ResearchTests.test_worker_memory_limit_rejects_large_allocation':
-        'RLIMIT_AS verification requires Linux',
+    'test_desktop_walk_forward_smoke.WalkForwardSmokeProcessTests.test_full_smoke_preserves_all_gates_settings_and_120_second_budget': 'Frozen installer harness owns isolated Windows profile smoke',
+    'test_desktop_walk_forward_smoke.WalkForwardSmokeProcessTests.test_omitted_module_malformed_result_reference_and_worker_failure_fail_overall': 'Frozen installer harness owns isolated Windows profile smoke',
+    'test_research.BoundedWorkerCleanupTests.test_real_worker_success_waits_for_owned_kill_and_reap': 'SIGTERM/SIGKILL lifecycle requires POSIX',
+    'test_research.BoundedWorkerCleanupTests.test_sequential_backtest_and_generator_hangs_leave_no_child_residue': 'Backtest patch requires fork',
+    'test_research.ResearchTests.test_hanging_backtest_is_killed': 'Patch inheritance uses POSIX fork; production default is spawn',
+    'test_research.ResearchTests.test_worker_memory_limit_rejects_large_allocation': 'RLIMIT_AS verification requires Linux',
 }
 
 
 def worker_assignments(suite):
-    if (len(RESEARCH_WORKERS) != 2 or RESEARCH_WORKERS[0] & RESEARCH_WORKERS[1]
-            or set().union(*RESEARCH_WORKERS) != RESEARCH_MODULES):
+    if len(RESEARCH_WORKERS) != 2 or RESEARCH_WORKERS[0] & RESEARCH_WORKERS[1] or set().union(*RESEARCH_WORKERS) != RESEARCH_MODULES:
         raise ValueError('Worker modules must cover the original research group exactly')
     selected = list(cases(suite))
-    assigned = [[case.id() for case in selected if type(case).__module__ in modules]
-                for modules in RESEARCH_WORKERS]
+    assigned = [[case.id() for case in selected if type(case).__module__ in modules] for modules in RESEARCH_WORKERS]
     expected = [case.id() for case in selected]
     union = assigned[0] + assigned[1]
-    if (not all(assigned) or len(union) != len(set(union)) or set(union) != set(expected)):
+    if not all(assigned) or len(union) != len(set(union)) or set(union) != set(expected):
         raise ValueError('Workers must cover each selected case exactly once')
     return assigned
 
@@ -145,12 +157,15 @@ def execution_identity(start_directory):
     digest = hashlib.sha256()
     for path in sorted(paths):
         digest.update(str(path).encode('utf-8') + b'\0' + path.read_bytes() + b'\0')
-    return {'source_sha256': digest.hexdigest(), 'head_sha': os.environ.get('GITHUB_SHA'),
-            'executable': sys.executable, 'python': sys.version,
-            'sqlite_version': sqlite3.sqlite_version,
-            'environment': {name: os.environ.get(name) for name in
-                            ('TEMP', 'TMP', 'RUNNER_TEMP', 'QT_QPA_PLATFORM')},
-            'tempfile_gettempdir': tempfile.gettempdir()}
+    return {
+        'source_sha256': digest.hexdigest(),
+        'head_sha': os.environ.get('GITHUB_SHA'),
+        'executable': sys.executable,
+        'python': sys.version,
+        'sqlite_version': sqlite3.sqlite_version,
+        'environment': {name: os.environ.get(name) for name in ('TEMP', 'TMP', 'RUNNER_TEMP', 'QT_QPA_PLATFORM')},
+        'tempfile_gettempdir': tempfile.gettempdir(),
+    }
 
 
 def write_manifest(path, value):
@@ -175,8 +190,10 @@ def read_worker_report(path, *, limit=None):
                 raise ValueError('Duplicate worker report key')
             value[key] = item
         return value
+
     def nonfinite(value):
         raise ValueError('Nonfinite worker report value')
+
     if limit is None:
         raw = path.read_text(encoding='utf-8')
     else:
@@ -192,42 +209,52 @@ def validate_worker_reports(parent, assignments, reports, tokens):
     if len(reports) != 2 or len(tokens) != 2 or len(assignments) != 2:
         raise ValueError('Exactly two worker reports required')
     selected = assignments[0] + assignments[1]
-    if (not all(assignments) or len(selected) != len(set(selected))
-            or len(parent['selected_ids']) != len(selected)
-            or set(selected) != set(parent['selected_ids'])):
+    if (
+        not all(assignments)
+        or len(selected) != len(set(selected))
+        or len(parent['selected_ids']) != len(selected)
+        or set(selected) != set(parent['selected_ids'])
+    ):
         raise ValueError('Worker assignments do not cover the original selection exactly once')
     for index, (expected, report, token) in enumerate(zip(assignments, reports, tokens)):
-        if (type(report) is not dict or type(report.get('worker_index')) is not int
-                or report.get('worker_index') != index
-                or report.get('worker_token') != token or report.get('identity') != parent['identity']
-                or report.get('group') != 'research'
-                or report.get('discovered_ids') != parent['discovered_ids']
-                or report.get('partitions') != parent['partitions']
-                or report.get('selected_ids') != expected or report.get('discovery_errors') != []
-                or report.get('run_completed') is not True or report.get('successful') is not True
-                or type(report.get('tests_run')) is not int or report['tests_run'] != len(expected)
-                or report.get('started_ids') != expected or report.get('stopped_ids') != expected
-                or any(report.get(key) != [] for key in
-                       ('failures', 'errors', 'expected_failures', 'unexpected_successes'))):
+        if (
+            type(report) is not dict
+            or type(report.get('worker_index')) is not int
+            or report.get('worker_index') != index
+            or report.get('worker_token') != token
+            or report.get('identity') != parent['identity']
+            or report.get('group') != 'research'
+            or report.get('discovered_ids') != parent['discovered_ids']
+            or report.get('partitions') != parent['partitions']
+            or report.get('selected_ids') != expected
+            or report.get('discovery_errors') != []
+            or report.get('run_completed') is not True
+            or report.get('successful') is not True
+            or type(report.get('tests_run')) is not int
+            or report['tests_run'] != len(expected)
+            or report.get('started_ids') != expected
+            or report.get('stopped_ids') != expected
+            or any(report.get(key) != [] for key in ('failures', 'errors', 'expected_failures', 'unexpected_successes'))
+        ):
             raise ValueError('Incomplete, failed or inconsistent worker report: ' + str(index))
-        expected_skips = [{'id': test_id, 'reason': WINDOWS_RESEARCH_SKIPS[test_id]}
-                          for test_id in expected if test_id in WINDOWS_RESEARCH_SKIPS]
+        expected_skips = [{'id': test_id, 'reason': WINDOWS_RESEARCH_SKIPS[test_id]} for test_id in expected if test_id in WINDOWS_RESEARCH_SKIPS]
         if report.get('skipped') != expected_skips:
             raise ValueError('Unexpected or missing original applicability skips: ' + str(index))
 
 
 def new_owned_tree(pid):
     from quantlab.desktop_runtime import _WindowsProcessTree
+
     return _WindowsProcessTree(pid)
 
 
 def tree_empty(tree):
     from ctypes import wintypes as w
+
     class Accounting(ctypes.Structure):
-        _fields_ = [(name, ctypes.c_int64) for name in
-                    ('TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')]
-        _fields_ += [(name, w.DWORD) for name in
-                     ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')]
+        _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')]
+        _fields_ += [(name, w.DWORD) for name in ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')]
+
     kernel = tree.kernel
     kernel.QueryInformationJobObject.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p]
     info = Accounting()
@@ -239,9 +266,15 @@ def tree_empty(tree):
 def run_parallel(args, manifest, research):
     started = time.monotonic()
     assignments = worker_assignments(research)
-    manifest.update(workers=2, identity=execution_identity(args.start_directory),
-                    worker_assignments=assignments, worker_results=[], owned_workers=[], successful=False,
-                    aggregate_id_order='worker index, then original intra-worker discovery order; not wall-clock chronology')
+    manifest.update(
+        workers=2,
+        identity=execution_identity(args.start_directory),
+        worker_assignments=assignments,
+        worker_results=[],
+        owned_workers=[],
+        successful=False,
+        aggregate_id_order='worker index, then original intra-worker discovery order; not wall-clock chronology',
+    )
     tokens = [uuid.uuid4().hex for _ in assignments]
     work = Path(tempfile.mkdtemp(prefix='research-workers-', dir=args.manifest.parent))
     manifest['worker_evidence_directory'] = str(work)
@@ -252,9 +285,20 @@ def run_parallel(args, manifest, research):
         for index in range(2):
             output = work / ('worker-' + str(index) + '.json')
             log = work / ('worker-' + str(index) + '.log')
-            command = [sys.executable, str(Path(__file__).resolve()), '--group', 'research',
-                       '--manifest', str(output), '--start-directory', args.start_directory,
-                       '--worker-index', str(index), '--worker-token', tokens[index]]
+            command = [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                '--group',
+                'research',
+                '--manifest',
+                str(output),
+                '--start-directory',
+                args.start_directory,
+                '--worker-index',
+                str(index),
+                '--worker-token',
+                tokens[index],
+            ]
             with log.open('wb') as stream:
                 process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stream, stderr=stream)
             item = {'process': process, 'tree': None, 'output': output, 'log': log}
@@ -267,13 +311,12 @@ def run_parallel(args, manifest, research):
         # The existing workflow's original 15-minute JOB cap remains authoritative;
         # no independent/restarted 15-minute allowance or per-case limit is added.
         while any(item['process'].poll() is None for item in owned):
-            time.sleep(.05)
+            time.sleep(0.05)
         reports = manifest['worker_results']
         natural_exits = True
         for item in owned:
             natural = item['process'].returncode == 0 and tree_empty(item['tree'])
-            manifest['owned_workers'].append({'exit_code': item['process'].returncode,
-                                              'natural_exit_and_quiescent': natural})
+            manifest['owned_workers'].append({'exit_code': item['process'].returncode, 'natural_exit_and_quiescent': natural})
             natural_exits = natural_exits and natural
             if not item['output'].exists():
                 reports.append({'report_error': 'missing worker report'})
@@ -289,10 +332,8 @@ def run_parallel(args, manifest, research):
         validate_worker_reports(manifest, assignments, reports, tokens)
         if execution_identity(args.start_directory) != manifest['identity']:
             raise ValueError('Sources or runtime identity changed during execution')
-        manifest.update(run_completed=True, successful=True,
-                        tests_run=sum(report['tests_run'] for report in reports))
-        for key in ('started_ids', 'stopped_ids', 'failures', 'errors', 'skipped',
-                    'expected_failures', 'unexpected_successes'):
+        manifest.update(run_completed=True, successful=True, tests_run=sum(report['tests_run'] for report in reports))
+        for key in ('started_ids', 'stopped_ids', 'failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes'):
             manifest[key] = [value for report in reports for value in report[key]]
     except BaseException as error:
         problem = type(error).__name__ + ': ' + str(error)
@@ -367,6 +408,7 @@ def partition(suite):
 
 class RecordingResult(unittest.TextTestResult):
     """Record actual starts separately: failed fixtures can prevent starts."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.started_ids = []
@@ -391,14 +433,14 @@ def main(argv=None):
     parser.add_argument('--worker-index', type=int, choices=(0, 1), help=argparse.SUPPRESS)
     parser.add_argument('--worker-token', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    if args.core_shard is not None and (sys.platform != 'win32' or args.group != 'core'
-            or args.workers != 1 or args.worker_index is not None or args.worker_token is not None):
+    if args.core_shard is not None and (
+        sys.platform != 'win32' or args.group != 'core' or args.workers != 1 or args.worker_index is not None or args.worker_token is not None
+    ):
         parser.error('Core shards are supported only for independent Windows core runners')
     if args.workers == 2 and (sys.platform != 'win32' or args.group != 'research'):
         parser.error('Two workers are supported only for Windows research')
     if args.worker_index is not None or args.worker_token is not None:
-        if (args.worker_index is None or not args.worker_token or len(args.worker_token) != 32
-                or args.workers != 1 or args.group != 'research'):
+        if args.worker_index is None or not args.worker_token or len(args.worker_token) != 32 or args.workers != 1 or args.group != 'research':
             parser.error('Invalid owned-worker arguments')
         if sys.stdin.buffer.readline(34) != (args.worker_token + '\n').encode('ascii'):
             parser.error('Owned-worker startup gate was not released')
@@ -406,39 +448,47 @@ def main(argv=None):
     suite = loader.discover(args.start_directory)
     manifest = {
         "head_sha": os.environ.get("GITHUB_SHA"),
-        "python": platform.python_version(), "platform": sys.platform,
-        "group": args.group, "discovered_ids": [case.id() for case in cases(suite)],
-        "selected_ids": [], "partitions": {}, "discovery_errors": list(loader.errors),
-        "run_completed": False, "started_ids": [],
+        "python": platform.python_version(),
+        "platform": sys.platform,
+        "group": args.group,
+        "discovered_ids": [case.id() for case in cases(suite)],
+        "selected_ids": [],
+        "partitions": {},
+        "discovery_errors": list(loader.errors),
+        "run_completed": False,
+        "started_ids": [],
     }
     try:
         if loader.errors:
             raise ValueError("Discovery failed:\n" + "\n".join(loader.errors))
         groups = partition(suite)
-        manifest["partitions"] = {
-            name: [case.id() for case in cases(groups[name])] for name in ("core", "research")
-        }
+        manifest["partitions"] = {name: [case.id() for case in cases(groups[name])] for name in ("core", "research")}
         manifest["selected_ids"] = [case.id() for case in cases(groups[args.group])]
         if args.core_shard is not None:
             assignments = core_shard_assignments(groups['core'])
             selected = assignments[args.core_shard]
-            groups['core'] = unittest.TestSuite(case for case in cases(groups['core'])
-                                                if case.id() in set(selected))
-            manifest.update(selected_ids=selected, core_shard=args.core_shard,
-                core_shard_plan=CORE_SHARD_PLAN, core_shard_assignments=assignments,
-                shard_context={'head_sha': os.environ.get('GITHUB_SHA'),
+            groups['core'] = unittest.TestSuite(case for case in cases(groups['core']) if case.id() in set(selected))
+            manifest.update(
+                selected_ids=selected,
+                core_shard=args.core_shard,
+                core_shard_plan=CORE_SHARD_PLAN,
+                core_shard_assignments=assignments,
+                shard_context={
+                    'head_sha': os.environ.get('GITHUB_SHA'),
                     'run_id': os.environ.get('GITHUB_RUN_ID'),
                     'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
                     'python_profile': str(sys.version_info.major) + '.' + str(sys.version_info.minor),
-                    'source_sha256': portable_source_identity(args.start_directory)},
-                local_identity_before=execution_identity(args.start_directory))
+                    'source_sha256': portable_source_identity(args.start_directory),
+                },
+                local_identity_before=execution_identity(args.start_directory),
+            )
         if args.worker_index is not None:
             assignments = worker_assignments(groups['research'])
             selected = assignments[args.worker_index]
-            groups['research'] = unittest.TestSuite(case for case in cases(groups['research'])
-                                                    if case.id() in set(selected))
-            manifest.update(selected_ids=selected, worker_index=args.worker_index,
-                            worker_token=args.worker_token, identity=execution_identity(args.start_directory))
+            groups['research'] = unittest.TestSuite(case for case in cases(groups['research']) if case.id() in set(selected))
+            manifest.update(
+                selected_ids=selected, worker_index=args.worker_index, worker_token=args.worker_token, identity=execution_identity(args.start_directory)
+            )
     except ValueError as error:
         manifest["selection_error"] = str(error)
         print(error, file=sys.stderr)
@@ -458,20 +508,27 @@ def main(argv=None):
     if args.workers == 2:
         return run_parallel(args, manifest, selected_suite)
     result = unittest.TextTestRunner(verbosity=2, resultclass=RecordingResult).run(selected_suite)
-    manifest.update({
-        "run_completed": True, "started_ids": result.started_ids, "stopped_ids": result.stopped_ids,
-        "tests_run": result.testsRun, "successful": result.wasSuccessful(),
-        "failures": [test.id() for test, _ in result.failures],
-        "errors": [test.id() for test, _ in result.errors],
-        "skipped": [{"id": test.id(), "reason": reason} for test, reason in result.skipped],
-        "expected_failures": [test.id() for test, _ in result.expectedFailures],
-        "unexpected_successes": [test.id() for test in result.unexpectedSuccesses],
-    })
+    manifest.update(
+        {
+            "run_completed": True,
+            "started_ids": result.started_ids,
+            "stopped_ids": result.stopped_ids,
+            "tests_run": result.testsRun,
+            "successful": result.wasSuccessful(),
+            "failures": [test.id() for test, _ in result.failures],
+            "errors": [test.id() for test, _ in result.errors],
+            "skipped": [{"id": test.id(), "reason": reason} for test, reason in result.skipped],
+            "expected_failures": [test.id() for test, _ in result.expectedFailures],
+            "unexpected_successes": [test.id() for test in result.unexpectedSuccesses],
+        }
+    )
     if args.core_shard is not None:
         manifest['local_identity_after'] = execution_identity(args.start_directory)
         manifest['source_sha256_after'] = portable_source_identity(args.start_directory)
-        if (manifest['local_identity_after'] != manifest['local_identity_before']
-                or manifest['source_sha256_after'] != manifest['shard_context']['source_sha256']):
+        if (
+            manifest['local_identity_after'] != manifest['local_identity_before']
+            or manifest['source_sha256_after'] != manifest['shard_context']['source_sha256']
+        ):
             manifest['successful'] = False
             manifest['shard_identity_error'] = 'Source or local runtime identity changed during tests'
     write_manifest(args.manifest, manifest)

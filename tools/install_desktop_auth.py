@@ -4,6 +4,7 @@ Uses pip's resolver (including PyJWT's crypto extra), permits wheels only, and
 forces reinstall so even preinstalled packages produce verified artifact evidence.
 No account, credential, endpoint, or application smoke operations are performed.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,8 +36,10 @@ def requirements_text(manifest, target):
 
 def validate_install_report(report, dependencies):
     """Require the exact closure and downloaded hashes; versions alone cannot pass."""
+
     def canonical(name):
         return re.sub(r'[-_.]+', '-', name).lower()
+
     expected = {canonical(item['distribution']): item for item in dependencies}
     installed = report.get('install')
     if not isinstance(installed, list) or len(installed) != len(expected):
@@ -48,8 +51,7 @@ def validate_install_report(report, dependencies):
         if name not in expected or name in seen or metadata['version'] != expected[name]['version']:
             raise ValueError('auth_install_report_dependency_mismatch')
         download = entry['download_info']
-        if (not urlsplit(download['url']).path.endswith('.whl')
-                or download['archive_info']['hashes'].get('sha256') != expected[name]['wheel_sha256']):
+        if not urlsplit(download['url']).path.endswith('.whl') or download['archive_info']['hashes'].get('sha256') != expected[name]['wheel_sha256']:
             raise ValueError('auth_install_report_artifact_mismatch')
         seen.add(name)
 
@@ -61,9 +63,22 @@ def install(report_path, wheelhouse=None):
         lock = Path(directory) / 'requirements.lock'
         pip_report = Path(directory) / 'pip-report.json'
         lock.write_text(requirements_text(manifest, target), encoding='utf-8')
-        command = [sys.executable, '-m', 'pip', '--isolated', '--disable-pip-version-check',
-                   'install', '--require-hashes', '--only-binary=:all:', '--force-reinstall',
-                   '--no-cache-dir', '--report', str(pip_report), '-r', str(lock)]
+        command = [
+            sys.executable,
+            '-m',
+            'pip',
+            '--isolated',
+            '--disable-pip-version-check',
+            'install',
+            '--require-hashes',
+            '--only-binary=:all:',
+            '--force-reinstall',
+            '--no-cache-dir',
+            '--report',
+            str(pip_report),
+            '-r',
+            str(lock),
+        ]
         if wheelhouse is None:
             command.extend(['--index-url', 'https://pypi.org/simple'])
         else:
@@ -75,8 +90,12 @@ def install(report_path, wheelhouse=None):
     digest = hashlib.sha256(raw).hexdigest()
     if provenance['dependency_target'] != target or provenance['dependency_manifest_sha256'] != digest:
         raise ValueError('auth_install_manifest_changed')
-    report['markauto_auth'] = {'dependency_target': target, 'dependency_manifest_sha256': digest,
-                              'hash_locked_install_verified': True, 'provenance': provenance}
+    report['markauto_auth'] = {
+        'dependency_target': target,
+        'dependency_manifest_sha256': digest,
+        'hash_locked_install_verified': True,
+        'provenance': provenance,
+    }
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps(report['markauto_auth'], sort_keys=True))

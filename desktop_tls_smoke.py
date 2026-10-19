@@ -3,6 +3,7 @@
 Never contacts a public service, changes global trust, or loads a named TLS DLL.
 This does not validate public trust stores, Qt Schannel, accounts or models.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -87,23 +88,31 @@ def runtime_evidence():
     if sys.platform != 'win32' or getattr(sys, 'frozen', False) is not True:
         raise ValueError('Actual frozen Windows TLS runtime required')
     root = safe_path(Path(sys._MEIPASS)).resolve()
-    pins = read_pins(root/'licenses'/'qt'/'manifest.json')
-    if (type(ssl.OPENSSL_VERSION_INFO) is not tuple
+    pins = read_pins(root / 'licenses' / 'qt' / 'manifest.json')
+    if (
+        type(ssl.OPENSSL_VERSION_INFO) is not tuple
         or any(type(part) is not int for part in ssl.OPENSSL_VERSION_INFO)
-        or ssl.OPENSSL_VERSION_INFO != OPENSSL_VERSION_INFO):
+        or ssl.OPENSSL_VERSION_INFO != OPENSSL_VERSION_INFO
+    ):
         raise ValueError('Actual Python TLS version differs')
     modules = []
     for name, pin in pins.items():
         path = safe_path(loaded_module(name), file=True)
-        if path.resolve() != root/name or path.stat().st_size != pin['bytes']:
+        if path.resolve() != root / name or path.stat().st_size != pin['bytes']:
             raise ValueError('Python TLS module is outside the exact frozen location')
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         if digest != pin['sha256']:
             raise ValueError('Actual loaded Python TLS module digest differs')
         modules.append({'filename': name, 'relative_path': name, 'sha256': digest, 'bytes': pin['bytes']})
-    return {'frozen': True, 'platform': 'win32', 'openssl_version': ssl.OPENSSL_VERSION,
-            'openssl_version_info': list(ssl.OPENSSL_VERSION_INFO), 'notice_sha256': NOTICE_SHA256,
-            'loaded_from': 'exact_frozen_bundle', 'modules': modules}
+    return {
+        'frozen': True,
+        'platform': 'win32',
+        'openssl_version': ssl.OPENSSL_VERSION,
+        'openssl_version_info': list(ssl.OPENSSL_VERSION_INFO),
+        'notice_sha256': NOTICE_SHA256,
+        'loaded_from': 'exact_frozen_bundle',
+        'modules': modules,
+    }
 
 
 def fixture_certificates(directory, address='127.0.0.1'):
@@ -112,42 +121,59 @@ def fixture_certificates(directory, address='127.0.0.1'):
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.x509.oid import NameOID
+
     now = datetime.now(timezone.utc)
     ca_key = ec.generate_private_key(ec.SECP256R1())
     ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'MarkAuto ephemeral fixture CA')])
-    ca = (x509.CertificateBuilder().subject_name(ca_name).issuer_name(ca_name)
-          .public_key(ca_key.public_key()).serial_number(x509.random_serial_number())
-          .not_valid_before(now-timedelta(minutes=1)).not_valid_after(now+timedelta(minutes=5))
-          .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
-          .add_extension(x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()), critical=False)
-          .add_extension(x509.KeyUsage(False, False, False, False, False, True, True, False, False), critical=True)
-          .sign(ca_key, hashes.SHA256()))
+    ca = (
+        x509.CertificateBuilder()
+        .subject_name(ca_name)
+        .issuer_name(ca_name)
+        .public_key(ca_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=1))
+        .not_valid_after(now + timedelta(minutes=5))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+        .add_extension(x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()), critical=False)
+        .add_extension(x509.KeyUsage(False, False, False, False, False, True, True, False, False), critical=True)
+        .sign(ca_key, hashes.SHA256())
+    )
     leaf_key = ec.generate_private_key(ec.SECP256R1())
-    leaf = (x509.CertificateBuilder()
-            .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'MarkAuto local fixture')]))
-            .issuer_name(ca_name).public_key(leaf_key.public_key()).serial_number(x509.random_serial_number())
-            .not_valid_before(now-timedelta(minutes=1)).not_valid_after(now+timedelta(minutes=5))
-            .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
-            .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)
-            .add_extension(x509.KeyUsage(True, False, False, False, False, False, False, False, False), critical=True)
-            .add_extension(x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address(address))]), critical=False)
-            .add_extension(x509.ExtendedKeyUsage([x509.oid.ExtendedKeyUsageOID.SERVER_AUTH]), critical=False)
-            .sign(ca_key, hashes.SHA256()))
-    cert, key = Path(directory)/'leaf.pem', Path(directory)/'leaf-key.pem'
+    leaf = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'MarkAuto local fixture')]))
+        .issuer_name(ca_name)
+        .public_key(leaf_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=1))
+        .not_valid_after(now + timedelta(minutes=5))
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)
+        .add_extension(x509.KeyUsage(True, False, False, False, False, False, False, False, False), critical=True)
+        .add_extension(x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address(address))]), critical=False)
+        .add_extension(x509.ExtendedKeyUsage([x509.oid.ExtendedKeyUsageOID.SERVER_AUTH]), critical=False)
+        .sign(ca_key, hashes.SHA256())
+    )
+    cert, key = Path(directory) / 'leaf.pem', Path(directory) / 'leaf-key.pem'
     cert.write_bytes(leaf.public_bytes(serialization.Encoding.PEM))
-    key.write_bytes(leaf_key.private_bytes(serialization.Encoding.PEM,
-                    serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    key.write_bytes(leaf_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
     return ca.public_bytes(serialization.Encoding.PEM).decode('ascii'), cert, key
 
 
 def https_fixture(root):
-    start = time.monotonic(); deadline = start+FIXTURE_SECONDS
+    start = time.monotonic()
+    deadline = start + FIXTURE_SECONDS
+
     def remaining():
-        value = deadline-time.monotonic()
-        if value <= 0: raise TimeoutError('Local TLS fixture deadline expired')
+        value = deadline - time.monotonic()
+        if value <= 0:
+            raise TimeoutError('Local TLS fixture deadline expired')
         return value
+
     listener = client = worker = None
-    active = []; lock = threading.Lock(); state = {'requests': 0, 'error': False}
+    active = []
+    lock = threading.Lock()
+    state = {'requests': 0, 'error': False}
     cleanup = False
     with tempfile.TemporaryDirectory(prefix='tls-fixture-', dir=root) as directory:
         try:
@@ -164,66 +190,97 @@ def https_fixture(root):
             timeout = min(2, remaining())
             listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             listener.settimeout(timeout)
-            listener.bind(('127.0.0.1', 0)); listener.listen(1)
+            listener.bind(('127.0.0.1', 0))
+            listener.listen(1)
+
             def serve():
                 connection = None
                 try:
                     connection, peer = listener.accept()
-                    if peer[0] != '127.0.0.1': raise ValueError('Nonlocal fixture client refused')
+                    if peer[0] != '127.0.0.1':
+                        raise ValueError('Nonlocal fixture client refused')
                     connection.settimeout(min(2, remaining()))
-                    with lock: active.append(connection)
+                    with lock:
+                        active.append(connection)
                     secure = server_context.wrap_socket(connection, server_side=True, do_handshake_on_connect=False)
-                    with lock: active.append(secure)
-                    connection = secure; secure.do_handshake()
+                    with lock:
+                        active.append(secure)
+                    connection = secure
+                    secure.do_handshake()
                     request = b''
                     while b'\r\n\r\n' not in request:
                         secure.settimeout(min(2, remaining()))
-                        part = secure.recv(4097-len(request))
-                        if not part: raise ValueError('Incomplete fixture request')
+                        part = secure.recv(4097 - len(request))
+                        if not part:
+                            raise ValueError('Incomplete fixture request')
                         request += part
-                        if len(request) > 4096: raise ValueError('Fixture request exceeds bound')
-                    if (not request.startswith(b'GET /markauto-tls-fixture HTTP/1.1\r\n')
-                        or b'authorization:' in request.lower() or b'cookie:' in request.lower()):
+                        if len(request) > 4096:
+                            raise ValueError('Fixture request exceeds bound')
+                    if (
+                        not request.startswith(b'GET /markauto-tls-fixture HTTP/1.1\r\n')
+                        or b'authorization:' in request.lower()
+                        or b'cookie:' in request.lower()
+                    ):
                         raise ValueError('Unexpected fixture request')
                     state['requests'] += 1
                     secure.settimeout(min(2, remaining()))
-                    secure.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(BODY)).encode()+
-                                   b'\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n'+BODY)
-                except BaseException: state['error'] = True
+                    secure.sendall(
+                        b'HTTP/1.1 200 OK\r\nContent-Length: ' + str(len(BODY)).encode() + b'\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n' + BODY
+                    )
+                except BaseException:
+                    state['error'] = True
                 finally:
-                    if connection is not None: connection.close()
+                    if connection is not None:
+                        connection.close()
+
             worker = threading.Thread(target=serve, name='markauto-owned-tls-fixture')
             worker.start()
-            client = http.client.HTTPSConnection('127.0.0.1', listener.getsockname()[1],
-                                                context=context, timeout=min(2, remaining()))
+            client = http.client.HTTPSConnection('127.0.0.1', listener.getsockname()[1], context=context, timeout=min(2, remaining()))
             client.connect()
             protocol, cipher = client.sock.version(), client.sock.cipher()[0]
             client.sock.settimeout(min(2, remaining()))
             client.request('GET', '/markauto-tls-fixture')
             response = client.getresponse()
-            body = response.read(len(BODY)+1)
+            body = response.read(len(BODY) + 1)
             if response.status != 200 or body != BODY:
                 raise ValueError('Local HTTPS response differs')
         finally:
-            if client is not None: client.close()
-            if listener is not None: listener.close()
+            if client is not None:
+                client.close()
+            if listener is not None:
+                listener.close()
             with lock:
                 for connection in active:
-                    try: connection.shutdown(socket.SHUT_RDWR)
-                    except OSError: pass
+                    try:
+                        connection.shutdown(socket.SHUT_RDWR)
+                    except OSError:
+                        pass
                     connection.close()
             if worker is not None:
-                worker.join(timeout=max(0, deadline-time.monotonic()))
-                if worker.is_alive(): raise RuntimeError('Owned TLS fixture did not stop')
+                worker.join(timeout=max(0, deadline - time.monotonic()))
+                if worker.is_alive():
+                    raise RuntimeError('Owned TLS fixture did not stop')
             cleanup = True
         if state['error'] or state['requests'] != 1 or time.monotonic() > deadline:
             raise ValueError('Local TLS fixture failed')
-    if time.monotonic() > deadline: raise TimeoutError('TLS fixture cleanup exceeded deadline')
-    return {'status': 'passed', 'transport': 'loopback_fixture', 'requests': state['requests'],
-            'certificate_verified': True, 'hostname_verified': True, 'trust_scope': 'ephemeral_fixture_ca',
-            'protocol': protocol, 'cipher': cipher, 'status_code': 200, 'response_sha256': BODY_SHA256,
-            'cleanup_verified': cleanup, 'external_network_used': False,
-            'seconds': round(time.monotonic()-start, 3), 'cap_seconds': FIXTURE_SECONDS}
+    if time.monotonic() > deadline:
+        raise TimeoutError('TLS fixture cleanup exceeded deadline')
+    return {
+        'status': 'passed',
+        'transport': 'loopback_fixture',
+        'requests': state['requests'],
+        'certificate_verified': True,
+        'hostname_verified': True,
+        'trust_scope': 'ephemeral_fixture_ca',
+        'protocol': protocol,
+        'cipher': cipher,
+        'status_code': 200,
+        'response_sha256': BODY_SHA256,
+        'cleanup_verified': cleanup,
+        'external_network_used': False,
+        'seconds': round(time.monotonic() - start, 3),
+        'cap_seconds': FIXTURE_SECONDS,
+    }
 
 
 def run(root):
@@ -236,9 +293,15 @@ def run(root):
             raise ValueError('Python TLS runtime changed during fixture')
         result['status'] = 'passed'
     except Exception as exc:
-        result['error_category'] = ('certificate_verification' if isinstance(exc, ssl.SSLCertVerificationError)
-                                    else 'timeout' if isinstance(exc, TimeoutError)
-                                    else 'io' if isinstance(exc, OSError) else 'validation')
+        result['error_category'] = (
+            'certificate_verification'
+            if isinstance(exc, ssl.SSLCertVerificationError)
+            else 'timeout'
+            if isinstance(exc, TimeoutError)
+            else 'io'
+            if isinstance(exc, OSError)
+            else 'validation'
+        )
     return result
 
 
@@ -246,27 +309,45 @@ def validate_report(value, manifest_path):
     if not isinstance(value, dict) or value.get('status') != 'passed' or value.get('scope') != SCOPE:
         raise ValueError('Missing frozen Python TLS proof')
     runtime, proof = value.get('runtime'), value.get('https')
-    if not isinstance(runtime, dict) or not isinstance(proof, dict): raise ValueError('Invalid TLS proof')
-    expected = {'frozen': True, 'platform': 'win32', 'openssl_version_info': list(OPENSSL_VERSION_INFO),
-                'notice_sha256': NOTICE_SHA256, 'loaded_from': 'exact_frozen_bundle'}
+    if not isinstance(runtime, dict) or not isinstance(proof, dict):
+        raise ValueError('Invalid TLS proof')
+    expected = {
+        'frozen': True,
+        'platform': 'win32',
+        'openssl_version_info': list(OPENSSL_VERSION_INFO),
+        'notice_sha256': NOTICE_SHA256,
+        'loaded_from': 'exact_frozen_bundle',
+    }
     for key, item in expected.items():
-        if type(runtime.get(key)) is not type(item) or runtime[key] != item: raise ValueError('TLS runtime mismatch')
+        if type(runtime.get(key)) is not type(item) or runtime[key] != item:
+            raise ValueError('TLS runtime mismatch')
     if any(type(part) is not int for part in runtime['openssl_version_info']):
         raise ValueError('TLS runtime version fields must be integers')
     version = runtime.get('openssl_version')
     if not isinstance(version, str) or len(version) > 128 or not version.startswith('OpenSSL 3.5.9 '):
         raise ValueError('TLS version text mismatch')
     pins = read_pins(manifest_path)
-    modules = [{'filename': name, 'relative_path': name, 'sha256': pin['sha256'], 'bytes': pin['bytes']}
-               for name, pin in pins.items()]
-    if runtime.get('modules') != modules: raise ValueError('TLS loaded module evidence mismatch')
-    expected = {'status':'passed', 'transport':'loopback_fixture', 'requests':1, 'certificate_verified':True,
-                'hostname_verified':True, 'trust_scope':'ephemeral_fixture_ca', 'status_code':200,
-                'response_sha256':BODY_SHA256, 'cleanup_verified':True, 'external_network_used':False,
-                'cap_seconds':FIXTURE_SECONDS}
+    modules = [{'filename': name, 'relative_path': name, 'sha256': pin['sha256'], 'bytes': pin['bytes']} for name, pin in pins.items()]
+    if runtime.get('modules') != modules:
+        raise ValueError('TLS loaded module evidence mismatch')
+    expected = {
+        'status': 'passed',
+        'transport': 'loopback_fixture',
+        'requests': 1,
+        'certificate_verified': True,
+        'hostname_verified': True,
+        'trust_scope': 'ephemeral_fixture_ca',
+        'status_code': 200,
+        'response_sha256': BODY_SHA256,
+        'cleanup_verified': True,
+        'external_network_used': False,
+        'cap_seconds': FIXTURE_SECONDS,
+    }
     for key, item in expected.items():
-        if type(proof.get(key)) is not type(item) or proof[key] != item: raise ValueError('TLS HTTPS proof mismatch')
-    if proof.get('protocol') not in ('TLSv1.2', 'TLSv1.3'): raise ValueError('TLS protocol mismatch')
+        if type(proof.get(key)) is not type(item) or proof[key] != item:
+            raise ValueError('TLS HTTPS proof mismatch')
+    if proof.get('protocol') not in ('TLSv1.2', 'TLSv1.3'):
+        raise ValueError('TLS protocol mismatch')
     if not isinstance(proof.get('cipher'), str) or not 1 <= len(proof['cipher']) <= 128:
         raise ValueError('Missing negotiated TLS cipher')
     if type(proof.get('seconds')) not in (int, float) or not 0 <= proof['seconds'] <= FIXTURE_SECONDS:

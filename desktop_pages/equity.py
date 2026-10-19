@@ -1,4 +1,5 @@
-﻿"""Native equity and drawdown plots sharing time coordinates."""
+"""Native equity and drawdown plots sharing time coordinates."""
+
 import math
 from datetime import datetime
 from PySide6.QtCore import Qt, QPointF, QRectF
@@ -29,7 +30,8 @@ class EquityPlot(QWidget):
             except (KeyError, ValueError, TypeError):
                 continue
             instant = row.get('timestamp', row.get('trade_date'))
-            self.values.append(value); self.times.append(instant)
+            self.values.append(value)
+            self.times.append(instant)
             try:
                 self.coordinates.append(datetime.fromisoformat(str(instant).replace('Z', '+00:00')).timestamp())
             except (ValueError, TypeError, OverflowError, OSError):
@@ -51,8 +53,7 @@ class EquityPlot(QWidget):
         if not self.coordinates:
             return []
         low, high = self.coordinates[0], self.coordinates[-1]
-        return [left + (right - left) * (value - low) / (high - low) if high > low else (left + right) / 2
-                for value in self.coordinates]
+        return [left + (right - left) * (value - low) / (high - low) if high > low else (left + right) / 2 for value in self.coordinates]
 
     def plot_left(self):
         labels = self.axis_labels()['value']
@@ -69,12 +70,14 @@ class EquityPlot(QWidget):
     def axis_labels(self):
         if not self.values:
             return {'time': [], 'value': [], 'drawdown': []}
-        dates = [taipei_time(value) if 'T' in str(value) else str(value or ui_text('forms.metric.text_2'))
-                 for value in (self.times[0], self.times[-1])]
+        dates = [taipei_time(value) if 'T' in str(value) else str(value or ui_text('forms.metric.text_2')) for value in (self.times[0], self.times[-1])]
         lo, hi = min(self.values), max(self.values)
         dd = [value for value in self.drawdowns if value is not None]
-        return {'time': dates, 'value': [display_number(v, 'cash') for v in (lo, (lo + hi) / 2, hi)],
-                'drawdown': [display_number(min(dd), 'max_drawdown_pct'), display_number(0, 'max_drawdown_pct')] if dd else [ui_text('forms.metric.text_1')]}
+        return {
+            'time': dates,
+            'value': [display_number(v, 'cash') for v in (lo, (lo + hi) / 2, hi)],
+            'drawdown': [display_number(min(dd), 'max_drawdown_pct'), display_number(0, 'max_drawdown_pct')] if dd else [ui_text('forms.metric.text_1')],
+        }
 
     def mouseMoveEvent(self, event):
         self.cursor_x = event.position().x()
@@ -84,7 +87,9 @@ class EquityPlot(QWidget):
         self.update()
 
     def leaveEvent(self, event):
-        self.cursor_x = None; QToolTip.hideText(); self.update()
+        self.cursor_x = None
+        QToolTip.hideText()
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -96,8 +101,8 @@ class EquityPlot(QWidget):
         labels = self.axis_labels()
         xs = self.x_positions()
         left = self.plot_left()
-        top, bottom = 32, self.height() * .57
-        dd_top, dd_bottom = self.height() * .69, self.height() - 42
+        top, bottom = 32, self.height() * 0.57
+        dd_top, dd_bottom = self.height() * 0.69, self.height() - 42
         lo, hi = min(self.values), max(self.values)
         painter.drawText(8, 18, ui_text('results.equity'))
         painter.drawText(8, int(dd_top - 10), ui_text('results.drawdown'))
@@ -108,8 +113,11 @@ class EquityPlot(QWidget):
         for y, text in zip((dd_bottom, dd_top), labels['drawdown']):
             painter.drawText(QRectF(0, y - 10, left - 6, 20), Qt.AlignmentFlag.AlignRight, text)
         for index, text in enumerate(labels['time']):
-            painter.drawText(QRectF(left, self.height() - 34, max(1, self.width() - left - 24), 30),
-                             Qt.AlignmentFlag.AlignLeft if index == 0 else Qt.AlignmentFlag.AlignRight, text)
+            painter.drawText(
+                QRectF(left, self.height() - 34, max(1, self.width() - left - 24), 30),
+                Qt.AlignmentFlag.AlignLeft if index == 0 else Qt.AlignmentFlag.AlignRight,
+                text,
+            )
         painter.drawLine(QPointF(left, dd_bottom), QPointF(self.width() - 24, dd_bottom))
         painter.drawLine(QPointF(left, top), QPointF(left, bottom))
         painter.drawLine(QPointF(left, dd_top), QPointF(left, dd_bottom))
@@ -124,10 +132,12 @@ class EquityPlot(QWidget):
         segment = QPolygonF()
         for x, value in zip(xs, self.drawdowns):
             if value is None:
-                painter.drawPolyline(segment); segment = QPolygonF()
+                painter.drawPolyline(segment)
+                segment = QPolygonF()
             else:
                 point = QPointF(x, dd_top + value / floor * (dd_bottom - dd_top) if floor < 0 else dd_top)
-                segment.append(point); painter.drawEllipse(point, 2, 2)
+                segment.append(point)
+                painter.drawEllipse(point, 2, 2)
         painter.drawPolyline(segment)
         if self.cursor_x is not None:
             painter.setPen(QPen(QColor(COLORS['text']), 1, Qt.PenStyle.DashLine))

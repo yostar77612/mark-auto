@@ -1,7 +1,8 @@
 """Cheap, offline layout and archived-code boundary regressions."""
+
 import ast
 import subprocess
-from fnmatch import fnmatchcase
+from fnmatch import fnmatchcase  # noqa: F401 -- preserve pre-format import
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -12,27 +13,68 @@ ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'archives/legacy_autotrading'
 # Derived from the post-move git ls-files top level; additions need review.
 ALLOWED_FILES = {
-    '.gitattributes', '.gitignore', 'LICENSE', 'README.md', 'pyproject.toml',
-    'requirements-desktop.lock', 'requirements-desktop.txt',
-    'requirements-qt-ci.lock', 'requirements-ui.lock', 'requirements-ui.txt', 'requirements-ruff.lock',
-    'research_app.py', 'desktop.py', 'desktop_accessibility.py',
-    'desktop_automatic_backup.py', 'desktop_charts.py', 'desktop_chatgpt_auth.py',
-    'desktop_chatgpt_dependency_manifest.json', 'desktop_chatgpt_provider.py',
-    'desktop_chatgpt_ui.py', 'desktop_expiry_inputs.py', 'desktop_forms.py',
-    'desktop_help.py', 'desktop_icon.py', 'desktop_market.py',
-    'desktop_presentation.py', 'desktop_recovery_smoke.py', 'desktop_strings.py',
-    'desktop_theme.py', 'desktop_timeinput.py', 'desktop_tls_smoke.py',
-    'desktop_ui.py', 'desktop_ui_polish.py', 'desktop_walk_forward.py',
+    '.gitattributes',
+    '.gitignore',
+    'LICENSE',
+    'README.md',
+    'pyproject.toml',
+    'requirements-desktop.lock',
+    'requirements-desktop.txt',
+    'requirements-qt-ci.lock',
+    'requirements-ui.lock',
+    'requirements-ui.txt',
+    'requirements-ruff.lock',
+    'research_app.py',
+    'desktop.py',
+    'desktop_accessibility.py',
+    'desktop_automatic_backup.py',
+    'desktop_charts.py',
+    'desktop_chatgpt_auth.py',
+    'desktop_chatgpt_dependency_manifest.json',
+    'desktop_chatgpt_provider.py',
+    'desktop_chatgpt_ui.py',
+    'desktop_expiry_inputs.py',
+    'desktop_forms.py',
+    'desktop_help.py',
+    'desktop_icon.py',
+    'desktop_market.py',
+    'desktop_presentation.py',
+    'desktop_recovery_smoke.py',
+    'desktop_strings.py',
+    'desktop_theme.py',
+    'desktop_timeinput.py',
+    'desktop_tls_smoke.py',
+    'desktop_ui.py',
+    'desktop_ui_polish.py',
+    'desktop_walk_forward.py',
 }
 ALLOWED_DIRECTORIES = {
-    '.github', '.streamlit', 'archives', 'desktop_pages', 'docs', 'examples',
-    'packaging', 'quantlab', 'tests', 'tools',
+    '.github',
+    '.streamlit',
+    'archives',
+    'desktop_pages',
+    'docs',
+    'examples',
+    'packaging',
+    'quantlab',
+    'tests',
+    'tools',
 }
 # User-local files and normal ignored development/build output are not project
 # layout. Never inspect their contents or require their presence in CI.
 IGNORED_LOCAL_NAMES = {
-    '.claude', 'AGENTS.md', 'CLAUDE.md', '.git', '.gitnexus', '.venv',
-    '.runtime-sqlite', '__pycache__', 'build', 'dist', '.pytest_cache', '.ruff_cache',
+    '.claude',
+    'AGENTS.md',
+    'CLAUDE.md',
+    '.git',
+    '.gitnexus',
+    '.venv',
+    '.runtime-sqlite',
+    '__pycache__',
+    'build',
+    'dist',
+    '.pytest_cache',
+    '.ruff_cache',
 }
 IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info')
 
@@ -54,14 +96,10 @@ class RepoLayoutTests(unittest.TestCase):
             self.assertTrue((ARCHIVE / name).exists(), name)
         self.assertTrue((ARCHIVE / 'requirements.txt').is_file())
         self.assertTrue((ROOT / 'LICENSE').is_file())
-        self.assertIn('](archives/legacy_autotrading/)',
-                      (ROOT / 'README.md').read_text(encoding='utf-8'))
+        self.assertIn('](archives/legacy_autotrading/)', (ROOT / 'README.md').read_text(encoding='utf-8'))
         spec = ast.parse((ROOT / 'packaging/markauto.spec').read_text(encoding='utf-8'))
-        analysis = next(n for n in ast.walk(spec)
-                        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
-                        and n.func.id == 'Analysis')
-        excluded = ast.literal_eval(next(k.value for k in analysis.keywords
-                                        if k.arg == 'excludes'))
+        analysis = next(n for n in ast.walk(spec) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'Analysis')
+        excluded = ast.literal_eval(next(k.value for k in analysis.keywords if k.arg == 'excludes'))
         self.assertTrue({'trader', 'archives', 'archives.legacy_autotrading'} <= set(excluded))
 
     def test_product_never_imports_archived_modules(self):
@@ -77,14 +115,12 @@ class RepoLayoutTests(unittest.TestCase):
                     modules = [node.module or '']
                 else:
                     continue
-                self.assertFalse({'trader', 'gui', 'run', 'archives'}.intersection(
-                    name.split('.')[0] for name in modules), str(path))
+                self.assertFalse({'trader', 'gui', 'run', 'archives'}.intersection(name.split('.')[0] for name in modules), str(path))
 
     def test_gate_scans_archive_and_rejects_reenabled_startup_or_orders(self):
         name = 'archives/legacy_autotrading/trader/__init__.py'
         root = Path('/synthetic-repository')
-        with patch('tools.quality_gate.git', return_value=(name + '\0').encode()), \
-                patch.object(Path, 'is_file', return_value=True):
+        with patch('tools.quality_gate.git', return_value=(name + '\0').encode()), patch.object(Path, 'is_file', return_value=True):
             for source in ('import shioaji', 'raise RuntimeError()\nAPI.place_order()'):
                 with patch.object(Path, 'read_bytes', return_value=source.encode()):
                     self.assertTrue(scan(root))
@@ -92,8 +128,7 @@ class RepoLayoutTests(unittest.TestCase):
                 self.assertEqual(scan(root), [])
 
     def test_archive_import_cannot_bypass_product_boundary(self):
-        for source in ('import archives.legacy_autotrading.trader',
-                       'from archives.legacy_autotrading import gui'):
+        for source in ('import archives.legacy_autotrading.trader', 'from archives.legacy_autotrading import gui'):
             self.assertTrue(python_findings(source, 'desktop_ui.py', desktop=True))
             self.assertTrue(python_findings(source, 'quantlab/new.py', research=True))
 

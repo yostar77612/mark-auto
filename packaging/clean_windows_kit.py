@@ -1,4 +1,5 @@
 """Maintainer-only kit assembly. The resulting Windows kit needs no Python/Git."""
+
 from __future__ import annotations
 import argparse
 import hashlib
@@ -59,9 +60,15 @@ def assemble(baseline, candidate, baseline_version, version, output):
         shutil.copyfile(data[0], output / 'dist/installers' / data[0].name)
         shutil.copyfile(data[1], output / f'{label}-manifest.json')
     files = {p.relative_to(output).as_posix(): digest(p) for p in sorted(output.rglob('*')) if p.is_file()}
-    descriptor = {'schema_version': 1, 'baseline_version': baseline_version, 'version': version,
-                  'baseline_commit': old[2]['source_commit'], 'candidate_commit': new[2]['source_commit'],
-                  'files_sha256': files, 'full_acceptance': 'EXTERNAL BLOCKED'}
+    descriptor = {
+        'schema_version': 1,
+        'baseline_version': baseline_version,
+        'version': version,
+        'baseline_commit': old[2]['source_commit'],
+        'candidate_commit': new[2]['source_commit'],
+        'files_sha256': files,
+        'full_acceptance': 'EXTERNAL BLOCKED',
+    }
     (output / 'kit.json').write_text(json.dumps(descriptor, indent=2) + '\n', encoding='utf-8')
     return descriptor
 

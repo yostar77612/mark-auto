@@ -1,4 +1,5 @@
 """Fail closed until the exact release SHA passes every quantlab workflow job."""
+
 import json
 import os
 import subprocess
@@ -9,13 +10,22 @@ def api(path):
     return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
 
 
-REQUIRED_JOBS = frozenset({
-    "Static quality and credential gate", "Dependency audit (ui)", "ui",
-    "offline (ubuntu-latest, 3.11)", "offline (ubuntu-latest, 3.12)",
-    "offline (windows-latest, 3.11)", "offline (windows-latest, 3.12)",
-    "offline research (windows-latest, 3.11)", "offline research (windows-latest, 3.12)",
-    "Dependency audit (qt-linux311)", "Dependency audit (ruff)", "Ruff lint and format",
-})
+REQUIRED_JOBS = frozenset(
+    {
+        "Static quality and credential gate",
+        "Dependency audit (ui)",
+        "ui",
+        "offline (ubuntu-latest, 3.11)",
+        "offline (ubuntu-latest, 3.12)",
+        "offline (windows-latest, 3.11)",
+        "offline (windows-latest, 3.12)",
+        "offline research (windows-latest, 3.11)",
+        "offline research (windows-latest, 3.12)",
+        "Dependency audit (qt-linux311)",
+        "Dependency audit (ruff)",
+        "Ruff lint and format",
+    }
+)
 
 
 def require_main_ancestry(repository, sha):
@@ -30,8 +40,7 @@ def main():
     deadline = time.monotonic() + 20 * 60
     while time.monotonic() < deadline:
         result = api(f'repos/{repository}/actions/workflows/quantlab.yml/runs?head_sha={sha}&per_page=100')
-        runs = [run for run in result['workflow_runs'] if run['head_sha'] == sha
-                and run['event'] in ('push', 'workflow_dispatch')]
+        runs = [run for run in result['workflow_runs'] if run['head_sha'] == sha and run['event'] in ('push', 'workflow_dispatch')]
         if runs:
             run = max(runs, key=lambda item: (item['run_number'], item['run_attempt']))
             if run['status'] == 'completed':

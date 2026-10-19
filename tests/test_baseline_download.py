@@ -1,4 +1,5 @@
 """Pinned baseline bytes are required before executing historical installers."""
+
 import hashlib
 import importlib.util
 import io
@@ -26,6 +27,7 @@ class BaselineDownloadTests(unittest.TestCase):
     def test_changed_or_oversized_download_never_promotes_partial(self):
         class Response(io.BytesIO):
             url = 'https://example.test/verified-pinned-source'
+
         for content in (b'bad', b'too-many-bytes'):
             with tempfile.TemporaryDirectory() as folder:
                 with patch.dict(baseline.ASSETS, {'one': (hashlib.sha256(b'abc').hexdigest(), 3)}, clear=True):
@@ -36,8 +38,8 @@ class BaselineDownloadTests(unittest.TestCase):
 
     def test_pins_match_actual_delivered_baseline(self):
         self.assertEqual(baseline.SOURCE, '2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8')
-        self.assertEqual(baseline.ASSETS['MarkAuto-0.2.1-windows-x64-setup.exe'],
-                         ('cce3f6242068affa91ab5c242f6ac655bbb59c677e4abda8b85065b97e48e0b1', 41583381))
-        self.assertEqual(baseline.ASSETS['build-manifest.json'],
-                         ('4c6c6b0a0ddff170c5394b7b04f03f3575c29b54087c9e042a60c3fb38bc5639', 7247))
+        self.assertEqual(
+            baseline.ASSETS['MarkAuto-0.2.1-windows-x64-setup.exe'], ('cce3f6242068affa91ab5c242f6ac655bbb59c677e4abda8b85065b97e48e0b1', 41583381)
+        )
+        self.assertEqual(baseline.ASSETS['build-manifest.json'], ('4c6c6b0a0ddff170c5394b7b04f03f3575c29b54087c9e042a60c3fb38bc5639', 7247))
         self.assertTrue(baseline.BASE.startswith('https://github.com/yostar77612/mark-auto/releases/download/'))

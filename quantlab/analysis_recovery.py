@@ -5,6 +5,7 @@ are consistency checks, not authentication against same-user control-store forge
 or complete rollback. No PID, boot identifier, elapsed time or absent process is
 stop evidence. This module never executes a provider or repairs analysis journals.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager, closing
@@ -25,7 +26,7 @@ VERSION = 1
 MAX_DATABASE = 16 * 1024 * 1024
 MAX_ROWS = 4096
 MAX_RECORD = 16384
-LOCK_TIMEOUT = .25
+LOCK_TIMEOUT = 0.25
 _SENTINEL = '.analysis-recovery-v1.json'
 _DATABASE = 'analysis-recovery-v1.sqlite3'
 _LOCK = '.analysis-recovery-admission.lock'
@@ -36,13 +37,39 @@ _SCHEMA = {
     'no_delete': "CREATE TRIGGER no_delete BEFORE DELETE ON events BEGIN SELECT RAISE(ABORT, 'immutable'); END",
 }
 # Fixed families, deliberately not a generic filesystem permission engine.
-SOURCE_WRITERS = frozenset({'demo', 'campaign', 'ui_demo', 'ui_import', 'ui_refresh',
-    'ui_market_refresh', 'ui_campaign', 'ui_walk_forward_run', 'ui_backup_restore', 'restore_recovery'})
+SOURCE_WRITERS = frozenset(
+    {
+        'demo',
+        'campaign',
+        'ui_demo',
+        'ui_import',
+        'ui_refresh',
+        'ui_market_refresh',
+        'ui_campaign',
+        'ui_walk_forward_run',
+        'ui_backup_restore',
+        'restore_recovery',
+    }
+)
 ANALYSIS_STARTS = frozenset({'ui_analysis_preview', 'ui_analysis_run'})
 WORKSPACE_MUTATIONS = frozenset({'ui_backup_create', 'ui_backup_restore', 'restore_recovery'})
-SAFE_OPERATIONS = frozenset({'backtest', 'ui_backtest', 'ui_compare', 'ui_analysis_read', 'ui_walk_forward_read',
-    'ui_select', 'ui_disable', 'ui_paper_snapshot', 'ui_paper_reconcile', 'ui_paper_kill',
-    'ui_paper_submit', 'ui_paper_cancel', 'ui_paper_replay'})
+SAFE_OPERATIONS = frozenset(
+    {
+        'backtest',
+        'ui_backtest',
+        'ui_compare',
+        'ui_analysis_read',
+        'ui_walk_forward_read',
+        'ui_select',
+        'ui_disable',
+        'ui_paper_snapshot',
+        'ui_paper_reconcile',
+        'ui_paper_kill',
+        'ui_paper_submit',
+        'ui_paper_cancel',
+        'ui_paper_replay',
+    }
+)
 _locks = {}
 _locks_guard = threading.Lock()
 _local = threading.local()
@@ -112,15 +139,19 @@ def _location(paths):
 
 def _identity(value):
     _keys(value, ('root', 'device', 'inode'))
-    if (type(value['root']) is not str or not 1 <= len(value['root']) <= 4096
+    if (
+        type(value['root']) is not str
+        or not 1 <= len(value['root']) <= 4096
         or not Path(value['root']).is_absolute()
-        or any(type(value[k]) is not int or value[k] < 0 for k in ('device', 'inode'))):
+        or any(type(value[k]) is not int or value[k] < 0 for k in ('device', 'inode'))
+    ):
         _fail('Invalid directory identity')
 
 
 def _decode(raw):
     if type(raw) is not str or len(raw.encode('utf-8')) > MAX_RECORD:
         _fail('Oversized recovery record')
+
     def unique(pairs):
         value = {}
         for key, item in pairs:
@@ -128,6 +159,7 @@ def _decode(raw):
                 _fail('Duplicate recovery field')
             value[key] = item
         return value
+
     try:
         value = json.loads(raw, object_pairs_hook=unique)
     except (ValueError, TypeError, RecursionError) as exc:
@@ -182,17 +214,19 @@ def admission(paths, *, timeout=LOCK_TIMEOUT):
                 if os.name == 'nt':
                     # Load this platform-specific API only on its supported execution path.
                     import msvcrt
+
                     stream.seek(0)
                     msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
                 else:
                     # Load this platform-specific API only on its supported execution path.
                     import fcntl
+
                     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except OSError:
                 if time.monotonic() >= deadline:
                     _fail('Recovery admission busy')
-                time.sleep(.01)
+                time.sleep(0.01)
         token = _Admission(root, os.getpid(), threading.get_ident())
         _local.held = {**held, root: token}
         yield token
@@ -207,9 +241,14 @@ def admission(paths, *, timeout=LOCK_TIMEOUT):
 
 def _require_admission(paths, token):
     bootstrap, _, _ = _location(paths)
-    if (not isinstance(token, _Admission) or not token.active or token.pid != os.getpid()
-        or token.thread != threading.get_ident() or token.root != _directory(bootstrap)['root']
-        or getattr(_local, 'held', {}).get(token.root) is not token):
+    if (
+        not isinstance(token, _Admission)
+        or not token.active
+        or token.pid != os.getpid()
+        or token.thread != threading.get_ident()
+        or token.root != _directory(bootstrap)['root']
+        or getattr(_local, 'held', {}).get(token.root) is not token
+    ):
         _fail('Original active admission context required')
 
 
@@ -302,8 +341,7 @@ def _load(paths):
             _fail('Recovery sequence mismatch')
         item = _decode(raw)
         _keys(item, ('version', 'previous', 'kind', 'value'))
-        if (type(item['version']) is not int or item['version'] != VERSION
-            or item['previous'] != previous or _hex(digest) != _hash(item)):
+        if type(item['version']) is not int or item['version'] != VERSION or item['previous'] != previous or _hex(digest) != _hash(item):
             _fail('Recovery chain mismatch')
         kind, value = item['kind'], item['value']
         if number == 1:
@@ -319,55 +357,98 @@ def _load(paths):
         elif kind == 'epoch':
             _keys(value, ('root', 'transaction_id', 'epoch'))
             _hex(value['transaction_id'], 32)
-            if (type(value['root']) is not str or value['root'] not in workspaces
+            if (
+                type(value['root']) is not str
+                or value['root'] not in workspaces
                 or (value['root'], value['transaction_id']) in transactions
                 or type(value['epoch']) is not int
-                or value['epoch'] != workspaces[value['root']]['epoch'] + 1):
+                or value['epoch'] != workspaces[value['root']]['epoch'] + 1
+            ):
                 _fail('Invalid restore epoch')
             transactions.add((value['root'], value['transaction_id']))
             workspaces[value['root']] = {**workspaces[value['root']], 'epoch': value['epoch']}
         elif kind == 'launch':
             _validate_launch(value)
             root = value['workspace']['root']
-            if (value['installation'] != marker['installation'] or root not in workspaces
+            if (
+                value['installation'] != marker['installation']
+                or root not in workspaces
                 or value['workspace'] != workspaces[root]['identity']
-                or value['epoch'] != workspaces[root]['epoch'] or value['job_id'] in launches
-                or value['analysis_id'] in seen_analysis or value['helper_nonce'] in seen_helper):
+                or value['epoch'] != workspaces[root]['epoch']
+                or value['job_id'] in launches
+                or value['analysis_id'] in seen_analysis
+                or value['helper_nonce'] in seen_helper
+            ):
                 _fail('Duplicate or mismatched original analysis launch')
             launches[value['job_id']] = value
             seen_analysis.add(value['analysis_id'])
             seen_helper.add(value['helper_nonce'])
         elif kind == 'receipt':
             _keys(value, ('protocol', 'job_id', 'launch_hash', 'active_processes'))
-            if (value['protocol'] != _PROTOCOL or value['job_id'] not in launches
-                or value['job_id'] in receipts or value['launch_hash'] != _hash(launches[value['job_id']])
-                or type(value['active_processes']) is not int or value['active_processes'] != 0
-                or launches[value['job_id']]['epoch'] != workspaces[launches[value['job_id']]['workspace']['root']]['epoch']):
+            if (
+                value['protocol'] != _PROTOCOL
+                or value['job_id'] not in launches
+                or value['job_id'] in receipts
+                or value['launch_hash'] != _hash(launches[value['job_id']])
+                or type(value['active_processes']) is not int
+                or value['active_processes'] != 0
+                or launches[value['job_id']]['epoch'] != workspaces[launches[value['job_id']]['workspace']['root']]['epoch']
+            ):
                 _fail('Invalid original-job stop receipt')
             receipts[value['job_id']] = value
         else:
             _fail('Unknown recovery event')
         previous = digest
-    return {'marker': marker, 'launches': launches, 'receipts': receipts,
-            'workspaces': workspaces, 'transactions': transactions,
-            'length': len(rows), 'head': previous}
+    return {
+        'marker': marker,
+        'launches': launches,
+        'receipts': receipts,
+        'workspaces': workspaces,
+        'transactions': transactions,
+        'length': len(rows),
+        'head': previous,
+    }
 
 
 def _validate_launch(value):
-    _keys(value, ('installation', 'workspace', 'epoch', 'job_id', 'analysis_id', 'registration',
-        'plan_hash', 'provider_hash', 'request_hash', 'request_bytes', 'model', 'timeout_seconds',
-        'ledger_basename', 'source_request_hash', 'helper_protocol', 'helper_nonce'))
+    _keys(
+        value,
+        (
+            'installation',
+            'workspace',
+            'epoch',
+            'job_id',
+            'analysis_id',
+            'registration',
+            'plan_hash',
+            'provider_hash',
+            'request_hash',
+            'request_bytes',
+            'model',
+            'timeout_seconds',
+            'ledger_basename',
+            'source_request_hash',
+            'helper_protocol',
+            'helper_nonce',
+        ),
+    )
     for key in ('installation', 'job_id', 'registration', 'helper_nonce'):
         _hex(value[key], 32)
     for key in ('analysis_id', 'plan_hash', 'provider_hash', 'request_hash', 'source_request_hash'):
         _hex(value[key])
     _identity(value['workspace'])
-    if (type(value['epoch']) is not int or value['epoch'] < 0
-        or type(value['request_bytes']) is not int or not 1 <= value['request_bytes'] <= 65536
-        or type(value['timeout_seconds']) is not int or not 1 <= value['timeout_seconds'] <= 120
-        or type(value['model']) is not str or re.fullmatch('[A-Za-z0-9._:-]{1,128}', value['model']) is None
+    if (
+        type(value['epoch']) is not int
+        or value['epoch'] < 0
+        or type(value['request_bytes']) is not int
+        or not 1 <= value['request_bytes'] <= 65536
+        or type(value['timeout_seconds']) is not int
+        or not 1 <= value['timeout_seconds'] <= 120
+        or type(value['model']) is not str
+        or re.fullmatch('[A-Za-z0-9._:-]{1,128}', value['model']) is None
         or value['ledger_basename'] != 'chatgpt-analysis-' + value['analysis_id'] + '.sqlite3'
-        or value['helper_protocol'] != _PROTOCOL):
+        or value['helper_protocol'] != _PROTOCOL
+    ):
         _fail('Invalid immutable launch binding')
 
 
@@ -396,6 +477,7 @@ def _append(db, state, events):
 def _initialize(paths):
     # Keep operation-specific dependencies out of module startup.
     from .runtime_support import atomic_write, _sync_directory
+
     bootstrap, database, sentinel = _location(paths)
     if sentinel.exists() or database.exists():
         _fail('Recovery controls already exist')
@@ -424,17 +506,25 @@ def plan_bindings(plan):
     """Pure approved-plan binding; no provider construction or credentials."""
     # Keep operation-specific dependencies out of module startup.
     from .core import content_hash, canonical_json
+
     # Keep operation-specific dependencies out of module startup.
     from .analysis_contracts import validate_analysis_plan, analysis_request, expected_provider_descriptor
+
     plan = validate_analysis_plan(plan)
     b = plan['binding']
     descriptor = expected_provider_descriptor(plan)
     request = analysis_request(plan)
-    return {'analysis_id': plan['analysis_id'], 'registration': b['registration'],
-        'plan_hash': content_hash(plan), 'provider_hash': content_hash(descriptor),
-        'request_hash': content_hash(request), 'request_bytes': len(canonical_json(request).encode('utf-8')),
-        'model': b['model'], 'timeout_seconds': b['timeout_seconds'],
-        'ledger_basename': 'chatgpt-analysis-' + plan['analysis_id'] + '.sqlite3'}
+    return {
+        'analysis_id': plan['analysis_id'],
+        'registration': b['registration'],
+        'plan_hash': content_hash(plan),
+        'provider_hash': content_hash(descriptor),
+        'request_hash': content_hash(request),
+        'request_bytes': len(canonical_json(request).encode('utf-8')),
+        'model': b['model'],
+        'timeout_seconds': b['timeout_seconds'],
+        'ledger_basename': 'chatgpt-analysis-' + plan['analysis_id'] + '.sqlite3',
+    }
 
 
 @dataclass(frozen=True)
@@ -460,10 +550,10 @@ def inspect_recovery(paths):
         _fail('Original workspace directory identity changed')
     launches = tuple(state['launches'].values())
     unresolved = tuple(v for v in launches if v['job_id'] not in state['receipts'])
-    stopped = tuple(v for v in launches if v['job_id'] in state['receipts']
-        and v['workspace']['root'] == root and v['epoch'] == state['workspaces'][root]['epoch'])
-    return RecoveryDisposition(False, launches, unresolved,
-        tuple(v for v in unresolved if v['workspace']['root'] == root), stopped)
+    stopped = tuple(
+        v for v in launches if v['job_id'] in state['receipts'] and v['workspace']['root'] == root and v['epoch'] == state['workspaces'][root]['epoch']
+    )
+    return RecoveryDisposition(False, launches, unresolved, tuple(v for v in unresolved if v['workspace']['root'] == root), stopped)
 
 
 def require_operation(paths, operation):
@@ -472,8 +562,7 @@ def require_operation(paths, operation):
     if operation in SAFE_OPERATIONS:
         return None
     disposition = inspect_recovery(paths)
-    if ((operation in SOURCE_WRITERS | ANALYSIS_STARTS and disposition.unresolved)
-        or (operation in WORKSPACE_MUTATIONS and disposition.workspace_unresolved)):
+    if (operation in SOURCE_WRITERS | ANALYSIS_STARTS and disposition.unresolved) or (operation in WORKSPACE_MUTATIONS and disposition.workspace_unresolved):
         _fail('Original analysis stop receipt required for this operation')
     return disposition
 
@@ -521,8 +610,10 @@ def register_launch(paths, *, job_id, helper_nonce, approved_plan, request, admi
     """
     # Keep operation-specific dependencies out of module startup.
     from .runtime_support import validate_analysis_request
+
     # Keep operation-specific dependencies out of module startup.
     from .core import content_hash
+
     _require_admission(paths, admission)
     _hex(job_id, 32)
     _hex(helper_nonce, 32)
@@ -533,9 +624,11 @@ def register_launch(paths, *, job_id, helper_nonce, approved_plan, request, admi
     if any(request[key] != binding[key] for key in ('model', 'registration', 'timeout_seconds')):
         _fail('Approved request/provider binding differs')
     packet = approved_plan['binding']['packet']
-    if (request['campaign_reference'] != packet['provenance']['campaign_ref']
+    if (
+        request['campaign_reference'] != packet['provenance']['campaign_ref']
         or request['task'] != packet['context']['task']
-        or sorted(request['attempt_ids']) != sorted({v['attempt_id'] for v in packet['provenance']['result_links']})):
+        or sorted(request['attempt_ids']) != sorted({v['attempt_id'] for v in packet['provenance']['result_links']})
+    ):
         _fail('Approved source request differs')
     recover_control_journal(paths, admission=admission)
     require_operation(paths, 'ui_analysis_run')
@@ -550,9 +643,16 @@ def register_launch(paths, *, job_id, helper_nonce, approved_plan, request, admi
     if job_id in state['launches'] or any(v['analysis_id'] == binding['analysis_id'] or v['helper_nonce'] == helper_nonce for v in state['launches'].values()):
         _fail('Original analysis launch cannot be recycled')
     workspace = workspace or {'identity': identity, 'epoch': 0}
-    launch = {**binding, 'installation': state['marker']['installation'], 'workspace': identity,
-        'epoch': workspace['epoch'], 'job_id': job_id, 'source_request_hash': content_hash(request),
-        'helper_protocol': _PROTOCOL, 'helper_nonce': helper_nonce}
+    launch = {
+        **binding,
+        'installation': state['marker']['installation'],
+        'workspace': identity,
+        'epoch': workspace['epoch'],
+        'job_id': job_id,
+        'source_request_hash': content_hash(request),
+        'helper_protocol': _PROTOCOL,
+        'helper_nonce': helper_nonce,
+    }
     _validate_launch(launch)
     events = ([] if root in state['workspaces'] else [('workspace', workspace)]) + [('launch', launch)]
     _, database, _ = _location(paths)
@@ -570,8 +670,7 @@ def read_launch(paths, launch_id, *, expected=None, for_admission=False):
         _fail('Missing original analysis launch')
     launch = state['launches'][launch_id]
     identity = _directory(paths.root)
-    if (launch['workspace'] != identity
-        or launch['epoch'] != state['workspaces'][identity['root']]['epoch']):
+    if launch['workspace'] != identity or launch['epoch'] != state['workspaces'][identity['root']]['epoch']:
         _fail('Original workspace or restore epoch differs')
     if expected is not None and _json(launch) != _json(expected):
         _fail('Original launch binding differs')
@@ -588,15 +687,14 @@ def validate_stop_receipt(paths, launch_id, *, record=None):
         _fail('Missing original analysis stop receipt')
     launch = state['launches'][launch_id]
     identity = _directory(paths.root)
-    if (launch['workspace'] != identity
-        or launch['epoch'] != state['workspaces'][identity['root']]['epoch']):
+    if launch['workspace'] != identity or launch['epoch'] != state['workspaces'][identity['root']]['epoch']:
         _fail('Original workspace or restore epoch differs')
     if record is not None:
         # Keep operation-specific dependencies out of module startup.
         from .core import content_hash
+
         bindings = plan_bindings(record['plan'])
-        if (any(launch[k] != v for k, v in bindings.items())
-            or content_hash(record['provider_descriptor']) != launch['provider_hash']):
+        if any(launch[k] != v for k, v in bindings.items()) or content_hash(record['provider_descriptor']) != launch['provider_hash']:
             _fail('Original journal/plan/provider binding differs')
     return dict(launch)
 
@@ -609,6 +707,7 @@ class _StopPublisher:
     absence or test receipt is never accepted. Python visibility is not a security
     boundary against same-user code; no on-disk token substitutes for the handle.
     """
+
     def __init__(self, paths, launch, query_original_job):
         _validate_launch(launch)
         if not callable(query_original_job):
@@ -626,11 +725,9 @@ class _StopPublisher:
             state = _load(paths)
             if state is None or state['launches'].get(launch['job_id']) != launch:
                 _fail('Original launch registration differs')
-            if (launch['workspace'] != _directory(paths.root)
-                or launch['epoch'] != state['workspaces'][launch['workspace']['root']]['epoch']):
+            if launch['workspace'] != _directory(paths.root) or launch['epoch'] != state['workspaces'][launch['workspace']['root']]['epoch']:
                 _fail('Original workspace or epoch differs')
-            receipt = {'protocol': _PROTOCOL, 'job_id': launch['job_id'],
-                'launch_hash': _hash(launch), 'active_processes': 0}
+            receipt = {'protocol': _PROTOCOL, 'job_id': launch['job_id'], 'launch_hash': _hash(launch), 'active_processes': 0}
             if launch['job_id'] in state['receipts']:
                 if state['receipts'][launch['job_id']] != receipt:
                     _fail('Conflicting original stop receipt')
@@ -658,8 +755,7 @@ def advance_restore_epoch(paths, transaction_id, *, admission):
         _fail('Original workspace identity differs')
     if (root, transaction_id) in state['transactions']:
         return state['workspaces'][root]['epoch']
-    value = {'root': root, 'transaction_id': transaction_id,
-        'epoch': state['workspaces'][root]['epoch'] + 1}
+    value = {'root': root, 'transaction_id': transaction_id, 'epoch': state['workspaces'][root]['epoch'] + 1}
     _, database, _ = _location(paths)
     with closing(_connect(database, write=True)) as db, db:
         db.execute('BEGIN IMMEDIATE')

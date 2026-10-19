@@ -1,4 +1,5 @@
 """Replay JSON exports from the real UI worker; disposable synthetic accounts."""
+
 from pathlib import Path
 import tempfile
 import unittest
@@ -24,32 +25,47 @@ class PaperReplayExportTests(unittest.TestCase):
             self.addCleanup(guard.stop)
         self.policy = {
             'contract_id': 'TAIFEX:TMF:202601',
-            'risk_sessions': [{'open': '2026-01-05T00:45:00Z', 'end': '2026-01-05T04:45:00Z',
-                               'trade_date': '2026-01-05', 'session': 'day', 'source': 'synthetic export fixture'}],
-            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000',
-                                 'version': 'synthetic-export-v1'}],
+            'risk_sessions': [
+                {
+                    'open': '2026-01-05T00:45:00Z',
+                    'end': '2026-01-05T04:45:00Z',
+                    'trade_date': '2026-01-05',
+                    'session': 'day',
+                    'source': 'synthetic export fixture',
+                }
+            ],
+            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000', 'version': 'synthetic-export-v1'}],
         }
         self.data = synthetic_dataset(120)
         self.spec = builtin_strategies()[0]
         save_dataset(self.data, self.root / 'dataset.json')
-        write_json(self.root / 'selection.json', {
-            'strategy': to_dict(self.spec), 'strategy_hash': content_hash(self.spec),
-            'result_hash': 'f' * 64, 'scope': 'research_and_paper_only',
-        })
+        write_json(
+            self.root / 'selection.json',
+            {
+                'strategy': to_dict(self.spec),
+                'strategy_hash': content_hash(self.spec),
+                'result_hash': 'f' * 64,
+                'scope': 'research_and_paper_only',
+            },
+        )
         execute_ui_operation('ui_paper_snapshot', {'policy': self.policy}, self.paths)
         self.old_snapshot = read_json(self.root / 'paper_snapshot.json')
         self.old_journal = read_json(self.root / 'paper_journal_export.json')
         self.payload = {
-            'reconcile_confirmed': True, 'max_bars': 100,
-            'snapshot': {'account_id': 'synthetic-export', 'cash': '1000000',
-                         'positions': {}, 'orders': {}, 'fills': {}},
+            'reconcile_confirmed': True,
+            'max_bars': 100,
+            'snapshot': {'account_id': 'synthetic-export', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}},
         }
 
     def broker(self):
-        return PaperBroker(self.root / 'paper.sqlite3', instrument=Instrument(self.policy['contract_id']),
-                           costs=demo_config().costs, limits=paper_risk_limits(),
-                           risk_sessions=tuple(self.policy['risk_sessions']),
-                           margin_schedule=tuple(self.policy['margin_schedule']))
+        return PaperBroker(
+            self.root / 'paper.sqlite3',
+            instrument=Instrument(self.policy['contract_id']),
+            costs=demo_config().costs,
+            limits=paper_risk_limits(),
+            risk_sessions=tuple(self.policy['risk_sessions']),
+            margin_schedule=tuple(self.policy['margin_schedule']),
+        )
 
     def test_successful_replay_refreshes_snapshot_and_complete_journal_exports(self):
         result = execute_ui_operation('ui_paper_replay', self.payload, self.paths)
@@ -62,7 +78,7 @@ class PaperReplayExportTests(unittest.TestCase):
         snapshot = read_json(self.root / 'paper_snapshot.json')
         self.assertEqual(snapshot, result['account'], 'JSON snapshot must contain the completed replay account')
         exported = read_json(self.root / 'paper_journal_export.json')
-        self.assertEqual(exported[:len(self.old_journal)], self.old_journal)
+        self.assertEqual(exported[: len(self.old_journal)], self.old_journal)
         self.assertGreater(len(exported), len(self.old_journal))
         self.assertEqual(exported[-1]['operation'], 'kill')
         self.assertEqual(exported[-1]['payload'], {'active': True})
@@ -70,14 +86,13 @@ class PaperReplayExportTests(unittest.TestCase):
         broker = self.broker()  # A later UI refresh may append restart/kill bookkeeping.
         broker.set_kill_switch(True)
         current = broker.journal_events()
-        self.assertEqual(current[:len(exported)], exported)
-        self.assertEqual([(row['operation'], row['payload']) for row in current[len(exported):]],
-                         [('restart', {}), ('kill', {'active': True})])
+        self.assertEqual(current[: len(exported)], exported)
+        self.assertEqual([(row['operation'], row['payload']) for row in current[len(exported) :]], [('restart', {}), ('kill', {'active': True})])
         self.assertEqual(broker.snapshot()['fills'], snapshot['fills'])
-
 
     def _export_failure(self, filename):
         from quantlab.paper_replay import PaperReplay
+
         original_start, original_step, original_stop = PaperReplay.start, PaperReplay.step, PaperReplay.stop
         observed, writes = {}, []
 
@@ -95,10 +110,12 @@ class PaperReplayExportTests(unittest.TestCase):
                 raise OSError('synthetic post-commit export failure')
             return write_json(path, value)
 
-        with patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start, \
-             patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance, \
-             patch.object(PaperReplay, 'stop', autospec=True, side_effect=original_stop) as stop, \
-             patch('desktop_ui.write_json', side_effect=export):
+        with (
+            patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start,
+            patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance,
+            patch.object(PaperReplay, 'stop', autospec=True, side_effect=original_stop) as stop,
+            patch('desktop_ui.write_json', side_effect=export),
+        ):
             with self.assertRaisesRegex(OSError, 'synthetic post-commit export failure'):
                 execute_ui_operation('ui_paper_replay', self.payload, self.paths)
         self.assertEqual((start.call_count, advance.call_count, stop.call_count), (1, 1, 1))
@@ -126,6 +143,7 @@ class PaperReplayExportTests(unittest.TestCase):
 
     def _replay_failure(self, failing_method):
         from quantlab.paper_replay import PaperReplay
+
         original_start, original_step, original_stop = PaperReplay.start, PaperReplay.step, PaperReplay.stop
         observed = {}
 
@@ -142,10 +160,12 @@ class PaperReplayExportTests(unittest.TestCase):
                 raise RuntimeError('synthetic stop failure')
             return value
 
-        with patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start, \
-             patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance, \
-             patch.object(PaperReplay, 'stop', autospec=True, side_effect=stop) as halt, \
-             patch('desktop_ui.write_json', wraps=write_json) as export:
+        with (
+            patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start,
+            patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance,
+            patch.object(PaperReplay, 'stop', autospec=True, side_effect=stop) as halt,
+            patch('desktop_ui.write_json', wraps=write_json) as export,
+        ):
             with self.assertRaisesRegex(RuntimeError, 'synthetic ' + failing_method + ' failure'):
                 execute_ui_operation('ui_paper_replay', self.payload, self.paths)
         self.assertEqual((start.call_count, advance.call_count, halt.call_count), (1, 1, 1))
@@ -164,14 +184,14 @@ class PaperReplayExportTests(unittest.TestCase):
         self._replay_failure('stop')
 
     def test_non_replay_paper_return_shape_and_exports_are_preserved(self):
-        for operation, payload in [('ui_paper_reconcile', {'snapshot': self.payload['snapshot']}),
-                                   ('ui_paper_kill', {})]:
+        for operation, payload in [('ui_paper_reconcile', {'snapshot': self.payload['snapshot']}), ('ui_paper_kill', {})]:
             with self.subTest(operation=operation):
                 result = execute_ui_operation(operation, payload, self.paths)
                 self.assertEqual(set(result), {'account', 'journal_tail', 'journal_file'})
                 self.assertEqual(result['account'], read_json(self.root / 'paper_snapshot.json'))
                 self.assertEqual(result['journal_tail'], read_json(self.root / 'paper_journal_export.json')[-20:])
                 self.assertEqual(result['journal_file'], str(self.root / 'paper_journal_export.json'))
+
 
 if __name__ == '__main__':
     unittest.main()

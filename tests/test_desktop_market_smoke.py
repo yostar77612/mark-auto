@@ -1,4 +1,5 @@
 """Packaging smoke contracts; synthetic fixtures are not market-data acceptance."""
+
 import importlib.util
 import json
 import os
@@ -17,9 +18,11 @@ ROOT = Path(__file__).resolve().parents[1]
 class MarketSmokeContractTests(unittest.TestCase):
     def test_original_seven_operations_remain_unchanged(self):
         from desktop import _smoke_steps
-        self.assertEqual([step[0] for step in _smoke_steps()], [
-            'ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign',
-            'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'])
+
+        self.assertEqual(
+            [step[0] for step in _smoke_steps()],
+            ['ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'],
+        )
         script = (ROOT / 'desktop.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', script)
         self.assertIn("market_report['status'] == 'passed'", script)
@@ -29,20 +32,23 @@ class MarketSmokeContractTests(unittest.TestCase):
 
     def test_smoke_settings_snapshot_has_no_persistent_side_effects(self):
         from desktop import _SmokeSettingsView
+
         source = {'market': {'version': 1}, 'sentinel': 'keep'}
         view = _SmokeSettingsView(source)
         source['market']['version'] = 2
-        loaded = view.load(); loaded['market']['version'] = 3
+        loaded = view.load()
+        loaded['market']['version'] = 3
         self.assertEqual(view.load()['market']['version'], 1)
         view.save({'window': {'width': 800}})
         self.assertEqual(view.load(), {'window': {'width': 800}})
         self.assertEqual(source['sentinel'], 'keep')
-        with self.assertRaises(ValueError): view.save([])
+        with self.assertRaises(ValueError):
+            view.save([])
 
     def test_manual_result_without_provenance_cannot_pass(self):
         from desktop import _check_market_worker_result
-        for phase, value in [('manual_export', {}), ('manual_import', {'status': 'completed'}),
-                             ('unknown', {})]:
+
+        for phase, value in [('manual_export', {}), ('manual_import', {'status': 'completed'}), ('unknown', {})]:
             with self.subTest(phase=phase), self.assertRaises((ValueError, KeyError)):
                 _check_market_worker_result(phase, value, Path('does-not-exist.json'))
 
@@ -53,6 +59,7 @@ class MarketSmokeContractTests(unittest.TestCase):
         from quantlab.__main__ import config_from_json
         from quantlab.core import to_dict
         from quantlab.strategies import builtin_strategies
+
         config = _smoke_steps()[3][1]['config']
         config['backtest_config'] = config_from_json(config['backtest_config'])
         with tempfile.TemporaryDirectory() as temporary:
@@ -61,8 +68,7 @@ class MarketSmokeContractTests(unittest.TestCase):
             result = {'mode': 'manual_unverified', 'request': request}
             evidence = _check_market_worker_result('manual_export', result, path)
             self.assertEqual(evidence['module_source_hash'], request['module_source_hash'])
-            generator = import_response(synthetic_dataset(120), config,
-                _market_smoke_response(request, to_dict(builtin_strategies()[0])))
+            generator = import_response(synthetic_dataset(120), config, _market_smoke_response(request, to_dict(builtin_strategies()[0])))
             self.assertEqual(generator.mode, 'manual_unverified')
             with patch('desktop.Path.read_text', side_effect=FileNotFoundError('missing bundled source')):
                 with self.assertRaises(FileNotFoundError):
@@ -78,10 +84,12 @@ class MarketSmokeWidgetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
+
         cls.app = QApplication.instance() or QApplication([])
 
     def test_render_indicators_timeframes_and_typed_payload_are_honest_fixtures(self):
         from desktop import _market_smoke_ui
+
         report, config, candidate = _market_smoke_ui(self.app)
         self.assertEqual(report['source_type'], 'synthetic')
         self.assertEqual(report['generator'], 'fixture')
@@ -90,12 +98,13 @@ class MarketSmokeWidgetTests(unittest.TestCase):
         self.assertEqual(report['live_status'], 'disabled')
         self.assertGreater(report['chart_rendered_bars'], 0)
         self.assertGreaterEqual(report['indicator_series'], 7)
-        self.assertEqual(report['timeframe_bars'], {'1m':120, '5m':24, '1d':1, '1w':1})
+        self.assertEqual(report['timeframe_bars'], {'1m': 120, '5m': 24, '1d': 1, '1w': 1})
         self.assertEqual(config['max_trials'], 1)
         self.assertEqual(candidate['parameters']['fast'], 5)
 
     def test_missing_root_modules_fail_instead_of_reporting_market_success(self):
         from desktop import _market_smoke_ui
+
         for name in ('desktop_market', 'desktop_charts', 'desktop_forms'):
             with self.subTest(module=name), patch.dict(sys.modules, {name: None}):
                 with self.assertRaises(ImportError):
@@ -103,6 +112,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
 
     def test_invalid_typed_module_contract_fails(self):
         from desktop import _market_smoke_ui
+
         with patch('desktop_forms.StrategyForm.build_payload', return_value={}):
             with self.assertRaises((ValueError, KeyError)):
                 _market_smoke_ui(self.app)
@@ -113,8 +123,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
             report = Path(temporary, 'report.json')
             env = dict(os.environ, HOME=temporary, QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(Path(temporary, 'cache')))
             code = "import sys; import desktop; sys.modules['desktop_forms'] = None; raise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))"
-            result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env,
-                                    capture_output=True, text=True, timeout=20)
+            result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 1, result.stderr[-1000:])
             value = json.loads(report.read_text())
             self.assertEqual(value['status'], 'failed')
@@ -128,11 +137,12 @@ class MarketSmokeWidgetTests(unittest.TestCase):
             report = home / 'report.json'
             settings = home / '.local/share/MarkAuto/state-v1/settings.json'
             settings.parent.mkdir(parents=True)
-            original = b'{\n \"schema_version\": 1, \"settings\": {\"sentinel\": \"preserve exact bytes\", \"persist_logs\": false}\n}\n'
+            original = b'{\n "schema_version": 1, "settings": {"sentinel": "preserve exact bytes", "persist_logs": false}\n}\n'
             settings.write_bytes(original)
             env = dict(os.environ, HOME=str(home), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'cache'))
-            result = subprocess.run([sys.executable, str(ROOT / 'desktop.py'), '--smoke-test', str(report)],
-                                    cwd=ROOT, env=env, capture_output=True, text=True, timeout=150)
+            result = subprocess.run(
+                [sys.executable, str(ROOT / 'desktop.py'), '--smoke-test', str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=150
+            )
             self.assertEqual(result.returncode, 0, result.stdout[-1000:] + result.stderr[-2000:])
             value = json.loads(report.read_text())
             self.assertEqual(value['status'], 'passed')
@@ -165,8 +175,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
             self.assertEqual(history['real_model_status'], 'not_verified')
             self.assertIn('not actual market or Windows-client acceptance', history['scope'])
             for counts in history['timeframe_bars'].values():
-                self.assertEqual(counts, {'1m': 9, '3m': 6, '5m': 6, '15m': 5,
-                                          '30m': 3, '60m': 2, '1d': 1, '1w': 1})
+                self.assertEqual(counts, {'1m': 9, '3m': 6, '5m': 6, '15m': 5, '30m': 3, '60m': 2, '1d': 1, '1w': 1})
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 """Fixed allowlisted model-fetch failure stages; invented errors, no network."""
+
 import os
 import sqlite3
 import unittest
@@ -12,16 +13,28 @@ from desktop_chatgpt_provider import PlanError
 
 class ModelErrorCodeTests(unittest.TestCase):
     def test_plan_error_codes_with_fixed_labels_pass_through(self):
-        for code in ('http_transport_failed', 'invalid_catalog', 'credential_diagnosis',
-                     'grant_blocked', 'redirect_rejected', 'deadline_exceeded', 'quota_paused'):
+        for code in (
+            'http_transport_failed',
+            'invalid_catalog',
+            'credential_diagnosis',
+            'grant_blocked',
+            'redirect_rejected',
+            'deadline_exceeded',
+            'quota_paused',
+        ):
             with self.subTest(code=code):
                 self.assertEqual(ui._safe_error_code(PlanError(code)), code)
                 self.assertIn(code, ui.ERROR_LABELS)
 
     def test_remote_error_maps_status_to_fixed_codes_without_remote_text(self):
-        for status, expected in ((400, 'models_http_bad_request'), (404, 'models_http_not_found'),
-                                 (429, 'models_http_rate_limited'), (502, 'models_http_server_error'),
-                                 (418, 'models_http_other'), (None, 'models_http_other')):
+        for status, expected in (
+            (400, 'models_http_bad_request'),
+            (404, 'models_http_not_found'),
+            (429, 'models_http_rate_limited'),
+            (502, 'models_http_server_error'),
+            (418, 'models_http_other'),
+            (None, 'models_http_other'),
+        ):
             with self.subTest(status=status):
                 exc = PlanError('remote_error', http_status=status, remote_code='SECRET_REMOTE_TEXT')
                 self.assertEqual(ui._safe_error_code(exc), expected)
@@ -42,10 +55,10 @@ class ModelErrorCodeTests(unittest.TestCase):
             self.assertNotIn('SECRET', label)
 
 
-
 class ModelCatalogLimitTests(unittest.TestCase):
     def test_catalog_limit_is_bounded_and_larger_than_previous_cap(self):
         from desktop_chatgpt_provider import MODELS_MAX_RESPONSE_BYTES
+
         self.assertGreater(MODELS_MAX_RESPONSE_BYTES, 262144)
         self.assertLessEqual(MODELS_MAX_RESPONSE_BYTES, 16 * 1024 * 1024)
 

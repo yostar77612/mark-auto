@@ -1,4 +1,5 @@
 """T9 A: offline provenance, unchanged payload/hash gates and synthetic summary."""
+
 from copy import deepcopy
 from dataclasses import replace
 import json
@@ -19,15 +20,24 @@ GOLDEN = json.loads((ROOT / 'tests/fixtures/t9_manual_payloads.json').read_text(
 class ExpiryDataTests(unittest.TestCase):
     def test_exact_coverage_and_provenance(self):
         data = load_expiries()
-        expected = [('202510', '2025-10-15'), ('202511', '2025-11-19'), ('202512', '2025-12-17'),
-            ('202601', '2026-01-21'), ('202602', '2026-02-23'), ('202603', '2026-03-18'),
-            ('202604', '2026-04-15'), ('202605', '2026-05-20'), ('202606', '2026-06-17'),
-            ('202607', '2026-07-15'), ('202608', '2026-08-19'), ('202609', '2026-09-16')]
+        expected = [
+            ('202510', '2025-10-15'),
+            ('202511', '2025-11-19'),
+            ('202512', '2025-12-17'),
+            ('202601', '2026-01-21'),
+            ('202602', '2026-02-23'),
+            ('202603', '2026-03-18'),
+            ('202604', '2026-04-15'),
+            ('202605', '2026-05-20'),
+            ('202606', '2026-06-17'),
+            ('202607', '2026-07-15'),
+            ('202608', '2026-08-19'),
+            ('202609', '2026-09-16'),
+        ]
         self.assertEqual([(r['contract_month'], r['expiry_date']) for r in data['expiries']], expected)
         self.assertEqual(data['verified_date'], '2026-10-18')
         self.assertRegex(data['sources'][0]['sha256'], r'^[a-f0-9]{64}$')
-        self.assertEqual(data['sources'][0]['sha256'],
-            'e9869a6cc927ec094201d04eee866ea0d3bc7f55fab7a7ea71c09900daa87656')
+        self.assertEqual(data['sources'][0]['sha256'], 'e9869a6cc927ec094201d04eee866ea0d3bc7f55fab7a7ea71c09900daa87656')
         self.assertEqual(data['sources'][0]['retrieval_date'], '2026-10-18')
         self.assertEqual(data['trading_calendar']['status'], 'not_bundled')
         for product in ('TX', 'MTX', 'TMF'):
@@ -41,11 +51,15 @@ class ExpiryDataTests(unittest.TestCase):
 
     def test_invalid_data_fails_closed(self):
         original = load_expiries()
-        mutations = [lambda d: d.pop('sources'), lambda d: d.pop('data_version'),
-            lambda d: d.update(status='unverified'), lambda d: d['expiries'][0].update(status='unverified'),
+        mutations = [
+            lambda d: d.pop('sources'),
+            lambda d: d.pop('data_version'),
+            lambda d: d.update(status='unverified'),
+            lambda d: d['expiries'][0].update(status='unverified'),
             lambda d: d['sources'][0].update(url='https://taifex.com.tw.evil.test/a'),
             lambda d: d['sources'][0].update(url='http://www.taifex.com.tw/a'),
-            lambda d: d['sources'][0].pop('sha256'), lambda d: d['sources'][0].pop('retrieval_method'),
+            lambda d: d['sources'][0].pop('sha256'),
+            lambda d: d['sources'][0].pop('retrieval_method'),
             lambda d: d['sources'][0].update(sha256='a' * 63),
             lambda d: d['sources'][0].update(sha256='a' * 65),
             lambda d: d['sources'][0].update(sha256='A' * 64),
@@ -63,7 +77,8 @@ class ExpiryDataTests(unittest.TestCase):
             lambda d: d['expiries'].append(deepcopy(d['expiries'][0])),
             lambda d: d['expiries'][0].update(expiry_date='2026-02-30'),
             lambda d: d['expiries'][0].update(contract_month='202613'),
-            lambda d: d['expiries'][0].update(source_index=True)]
+            lambda d: d['expiries'][0].update(source_index=True),
+        ]
         for mutate in mutations:
             data = deepcopy(original)
             mutate(data)
@@ -72,10 +87,10 @@ class ExpiryDataTests(unittest.TestCase):
 
     def test_raw_html_parser_filters_numeric_product_column(self):
         from tools.update_taifex_expiries import parse_expiries
+
         html = (ROOT / 'tests/fixtures/taifex_expiries_sample.html').read_text(encoding='utf-8')
         rows = parse_expiries(html)
-        self.assertEqual([(r['contract_month'], r['expiry_date']) for r in rows],
-                         [('202602', '2026-02-23'), ('202609', '2026-09-16')])
+        self.assertEqual([(r['contract_month'], r['expiry_date']) for r in rows], [('202602', '2026-02-23'), ('202609', '2026-09-16')])
         with self.assertRaises(ValueError):
             parse_expiries('<table><tr><td>2026/10/21</td><td>202610</td><td>100</td></tr></table>')
         with self.assertRaises(ValueError):
@@ -101,45 +116,65 @@ class ExpiryDataTests(unittest.TestCase):
         import runpy
         import sys
         import types
+
         captured = {}
         hooks = types.ModuleType('PyInstaller.utils.hooks')
         hooks.collect_data_files = lambda name: []
         hooks.copy_metadata = lambda name: []
+
         def analysis(*args, **kwargs):
             captured.update(kwargs)
             return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=[])
-        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}), \
-                patch('quantlab.sqlite_runtime.verify'), patch('quantlab.sqlite_runtime.verify_binaries'):
-            runpy.run_path(str(ROOT / 'packaging/markauto.spec'), init_globals={
-                'SPECPATH': str(ROOT / 'packaging'), 'Analysis': analysis,
-                'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
-                'COLLECT': lambda *a, **kw: None})
+
+        with (
+            patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}),
+            patch('quantlab.sqlite_runtime.verify'),
+            patch('quantlab.sqlite_runtime.verify_binaries'),
+        ):
+            runpy.run_path(
+                str(ROOT / 'packaging/markauto.spec'),
+                init_globals={
+                    'SPECPATH': str(ROOT / 'packaging'),
+                    'Analysis': analysis,
+                    'PYZ': lambda *a, **kw: None,
+                    'EXE': lambda *a, **kw: None,
+                    'COLLECT': lambda *a, **kw: None,
+                },
+            )
         self.assertIn((str(ROOT / 'quantlab/data_files/taifex_expiries.json'), 'quantlab/data_files'), captured['datas'])
         manifest = runpy.run_path(str(ROOT / 'packaging/build_manifest.py'))
         outputs = {}
         read_text = Path.read_text
+
         def read(path, *args, **kwargs):
             if path == ROOT / 'dist/validation/sqlite-runtime.json':
                 return '{}'
             return read_text(path, *args, **kwargs)
+
         def write(path, text, *args, **kwargs):
             outputs[path.name] = text
             return len(text)
-        with patch.object(Path, 'read_text', autospec=True, side_effect=read), \
-                patch.object(Path, 'write_text', autospec=True, side_effect=write), \
-                patch.dict(manifest['main'].__globals__, distributions=lambda: []), \
-                patch('subprocess.check_output', return_value=GOLDEN['head_archive']):
+
+        with (
+            patch.object(Path, 'read_text', autospec=True, side_effect=read),
+            patch.object(Path, 'write_text', autospec=True, side_effect=write),
+            patch.dict(manifest['main'].__globals__, distributions=lambda: []),
+            patch('subprocess.check_output', return_value=GOLDEN['head_archive']),
+        ):
             manifest['main']()
         inputs = json.loads(outputs['build-manifest.json'])['inputs_sha256']
         import hashlib
-        self.assertEqual(inputs['quantlab/data_files/taifex_expiries.json'],
-                         hashlib.sha256((ROOT / 'quantlab/data_files/taifex_expiries.json').read_bytes()).hexdigest())
+
+        self.assertEqual(
+            inputs['quantlab/data_files/taifex_expiries.json'], hashlib.sha256((ROOT / 'quantlab/data_files/taifex_expiries.json').read_bytes()).hexdigest()
+        )
 
 
 class ExpiryInputTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
+
         cls.app = QApplication.instance() or QApplication([])
 
     def assert_same_request(self, old, new):
@@ -149,13 +184,13 @@ class ExpiryInputTests(unittest.TestCase):
 
     def assert_golden_request(self, expected, actual):
         self.assert_same_request(expected['payload'], actual)
-        self.assertEqual(expected['json_utf8'].encode('utf-8'),
-                         json.dumps(actual, ensure_ascii=False).encode('utf-8'))
+        self.assertEqual(expected['json_utf8'].encode('utf-8'), json.dumps(actual, ensure_ascii=False).encode('utf-8'))
         self.assertEqual(expected['content_hash'], content_hash(actual))
 
     def test_manual_payload_bytes_and_hash_match_head_archive(self):
         from desktop_forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
+
         self.assertEqual(GOLDEN['head_archive'], 'db44477ac24573c752484ed357c11689b29deddf')
         for month, expected in GOLDEN['backtest'].items():
             with self.subTest(month=month):
@@ -171,6 +206,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_run_payload_identical_to_manual_for_every_product_and_boundaries(self):
         from desktop_forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
+
         for product in ('TX', 'MTX', 'TMF'):
             for month in ('202510', '202602', '202609'):
                 with self.subTest(product=product, month=month):
@@ -191,6 +227,7 @@ class ExpiryInputTests(unittest.TestCase):
                         # The locked research engine admits TMF only. Selection
                         # must preserve the same rejection for TX/MTX.
                         from quantlab.core import ValidationError
+
                         with self.assertRaises(ValidationError) as old_error:
                             manual.build_payload()
                         with self.assertRaises(ValidationError) as new_error:
@@ -212,6 +249,7 @@ class ExpiryInputTests(unittest.TestCase):
         from quantlab.__main__ import config_from_json
         from quantlab.strategies import builtin_strategies
         from quantlab.core import ValidationError
+
         form = BacktestForm()
         self.addCleanup(form.close)
         for month in ('202509', '202610'):
@@ -219,8 +257,9 @@ class ExpiryInputTests(unittest.TestCase):
             self.assertEqual(form.build_payload()['config']['instrument_expiries'], {})
             self.assertIn('手動提供', form.expiry_picker.summary.text())
             data = synthetic_dataset(160)
-            data = replace(data, bars=tuple(replace(b, contract_id='TAIFEX:TMF:' + month) for b in data.bars),
-                           manifest={**data.manifest, 'source_type': 'proxy'})
+            data = replace(
+                data, bars=tuple(replace(b, contract_id='TAIFEX:TMF:' + month) for b in data.bars), manifest={**data.manifest, 'source_type': 'proxy'}
+            )
             data = replace(data, manifest={**data.manifest, 'data_hash': content_hash(data.bars)})
             with self.assertRaisesRegex(ValidationError, 'explicit instrument expiry required'):
                 run_backtest(data, builtin_strategies()[0], config_from_json(form.build_payload()['config']))
@@ -228,6 +267,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_picker_uncovered_selection_preserves_manual_history_and_requires_calendar(self):
         from desktop_market import MarketHistoryDialog
         from tests.test_market_history_ui import fill
+
         for month in ('202509', '202610', '202609W2'):
             with self.subTest(month=month):
                 dialog = MarketHistoryDialog()
@@ -246,6 +286,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_picker_selection_invalidates_history_confirmation(self):
         from desktop_market import MarketHistoryDialog
         from tests.test_market_history_ui import fill
+
         dialog = MarketHistoryDialog()
         self.addCleanup(dialog.close)
         fill(dialog, 'TMF')
@@ -258,6 +299,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_invalid_provenance_preserves_manual_expiry_payload(self):
         from desktop_forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
+
         with patch('desktop_expiry_inputs.load_expiries', side_effect=ValueError('invalid source digest')):
             form = BacktestForm()
         self.addCleanup(form.close)
@@ -270,6 +312,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_import_request_identical_and_calendar_still_explicit(self):
         from desktop_market import MarketHistoryDialog
         from tests.test_market_history_ui import fill
+
         for product in ('TX', 'MTX', 'TMF'):
             manual, selected = MarketHistoryDialog(), MarketHistoryDialog()
             self.addCleanup(manual.close)
@@ -292,6 +335,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_history_manual_and_picker_requests_match_head_bytes_for_day_and_night(self):
         from desktop_market import MarketHistoryDialog
         from tests.test_market_history_ui import fill
+
         for key, expected in GOLDEN['history'].items():
             product, month, session = key.split('-')
             for automatic in (False, True):
@@ -313,9 +357,12 @@ class ExpiryInputTests(unittest.TestCase):
         from desktop_pages.market import MarketPage
         from desktop_pages.host import PageState
         from quantlab.reporting import synthetic_dataset, save_dataset
+
         mkdir = os.mkdir
+
         def inherited(path, mode=0o777, *args, **kwargs):
             return mkdir(path, 0o777 if os.name == 'nt' else mode, *args, **kwargs)
+
         with patch('os.mkdir', side_effect=inherited), tempfile.TemporaryDirectory(prefix='t9-market-') as folder:
             host = Mock()
             host.state = PageState(root=Path(folder), _market_outcomes={}, _section_toggles={})
@@ -356,11 +403,17 @@ class ExpiryInputTests(unittest.TestCase):
         from PySide6.QtWidgets import QWidget
         from desktop_ui import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager
+
         mkdir = os.mkdir
+
         def inherited(path, mode=0o777, *args, **kwargs):
             return mkdir(path, 0o777 if os.name == 'nt' else mode, *args, **kwargs)
-        with patch('os.mkdir', side_effect=inherited), patch('desktop_chatgpt_auth.DPAPIVault._prepare'), \
-                tempfile.TemporaryDirectory(prefix='t9-widgets-') as folder:
+
+        with (
+            patch('os.mkdir', side_effect=inherited),
+            patch('desktop_chatgpt_auth.DPAPIVault._prepare'),
+            tempfile.TemporaryDirectory(prefix='t9-widgets-') as folder,
+        ):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
             window = MainWindow(paths, jobs)

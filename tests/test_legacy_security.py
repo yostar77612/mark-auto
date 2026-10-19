@@ -3,6 +3,7 @@
 Only audited AST-selected definitions execute with inert injected dependencies.
 These are boundary tests, not legacy integration verification.
 """
+
 import ast
 import contextlib
 import io
@@ -47,9 +48,19 @@ class LegacySecurityTests(unittest.TestCase):
     def test_cli_help_and_execution_gate_without_services(self):
         from argparse import ArgumentParser
         from unittest.mock import patch
+
         main = extract('archives/legacy_autotrading/run.py', ['main'], {'ArgumentParser': ArgumentParser})['main']
-        for args, code in [(['archives/legacy_autotrading/run.py', '--help'], 0), (['archives/legacy_autotrading/run.py'], 2), (['archives/legacy_autotrading/run.py', '--task', 'auto_trader'], 2)]:
-            with patch('sys.argv', args), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+        for args, code in [
+            (['archives/legacy_autotrading/run.py', '--help'], 0),
+            (['archives/legacy_autotrading/run.py'], 2),
+            (['archives/legacy_autotrading/run.py', '--task', 'auto_trader'], 2),
+        ]:
+            with (
+                patch('sys.argv', args),
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+                self.assertRaises(SystemExit) as error,
+            ):
                 main()
             self.assertEqual(error.exception.code, code)
 
@@ -88,7 +99,9 @@ class LegacySecurityTests(unittest.TestCase):
                     method(None, None)
 
     def permission(self, chats, users, chat_id=-123, user_id=456):
-        method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['_check_permission'], {'WHITELIST': chats, 'USER_WHITELIST': users}, class_name='TelegramBot')['_check_permission']
+        method = extract(
+            'archives/legacy_autotrading/trader/utils/bot.py', ['_check_permission'], {'WHITELIST': chats, 'USER_WHITELIST': users}, class_name='TelegramBot'
+        )['_check_permission']
         return method(None, SimpleNamespace(effective_chat=SimpleNamespace(id=chat_id), effective_user=SimpleNamespace(id=user_id), effective_message=Mock()))
 
     def test_telegram_requires_both_numeric_identities(self):
@@ -120,7 +133,12 @@ class LegacySecurityTests(unittest.TestCase):
 
     def test_telegram_invalid_configuration_prevents_startup(self):
         for chats, users in ((set(), {456}), ({-123}, set()), (set(), set())):
-            method = extract('archives/legacy_autotrading/trader/utils/bot.py', ['__init__'], {'WHITELIST': chats, 'USER_WHITELIST': users, 'logging': logging}, class_name='TelegramBot')['__init__']
+            method = extract(
+                'archives/legacy_autotrading/trader/utils/bot.py',
+                ['__init__'],
+                {'WHITELIST': chats, 'USER_WHITELIST': users, 'logging': logging},
+                class_name='TelegramBot',
+            )['__init__']
             fake = SimpleNamespace()
             with self.assertLogs(level='WARNING'):
                 method(fake, 'account')
@@ -130,7 +148,7 @@ class LegacySecurityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             fn = extract('archives/legacy_autotrading/trader/utils/runtime.py', ['_account_dir'], {'re': re, 'RUNTIME_ROOT': Path(directory)})['_account_dir']
             self.assertEqual(fn('account_1'), Path(directory) / 'account_1')
-            for value in (None, '', '.', '..', '../escape', '/tmp/escape', 'a/b', 'a\\b', 'a..b', 'a.b', 'a'*65):
+            for value in (None, '', '.', '..', '../escape', '/tmp/escape', 'a/b', 'a\\b', 'a..b', 'a.b', 'a' * 65):
                 with self.assertRaises(ValueError):
                     fn(value)
             self.assertEqual([p.name for p in Path(directory).iterdir()], ['account_1'])
@@ -153,13 +171,24 @@ class LegacySecurityTests(unittest.TestCase):
         class SecretError(Exception):
             def __str__(self):
                 raise AssertionError('Exception payload must never be rendered')
-        method = extract('archives/legacy_autotrading/trader/utils/database/sql.py', ['__init__'], {'logging': logging, 'DBConfig': SimpleNamespace(ENGINE='mysql', HAS_DB=False)}, class_name='SQLDatabase')['__init__']
+
+        method = extract(
+            'archives/legacy_autotrading/trader/utils/database/sql.py',
+            ['__init__'],
+            {'logging': logging, 'DBConfig': SimpleNamespace(ENGINE='mysql', HAS_DB=False)},
+            class_name='SQLDatabase',
+        )['__init__']
         fake = SimpleNamespace(connect=Mock(side_effect=SecretError('mysql://user:synthetic-secret@host/db')))
         with self.assertLogs(level='WARNING') as logs:
             method(fake)
         self.assertNotIn('synthetic-secret', '\n'.join(logs.output))
         for node in ast.walk(tree('archives/legacy_autotrading/trader/utils/database/sql.py')):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == 'logging':
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == 'logging'
+            ):
                 self.assertNotIn('sql_connect', ast.unparse(node))
                 self.assertNotEqual(node.func.attr, 'exception')
 

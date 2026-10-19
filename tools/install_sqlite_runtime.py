@@ -4,6 +4,7 @@ Windows: copy CPython into destination, update only that copy's DLL.
 Linux: compile pinned source into destination and scope LD_LIBRARY_PATH to children.
 Network is only used during setup, never in application/tests.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,9 +24,16 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'packaging/sqlite-runtime.json'
 MAX_ARCHIVE = 16 * 1024 * 1024
-LINUX_FLAGS = ['-O2', '-fPIC', '-shared', '-DSQLITE_THREADSAFE=1',
-               '-DSQLITE_ENABLE_COLUMN_METADATA', '-DSQLITE_ENABLE_FTS5',
-               '-DSQLITE_ENABLE_RTREE', '-Wl,-soname,libsqlite3.so.0']
+LINUX_FLAGS = [
+    '-O2',
+    '-fPIC',
+    '-shared',
+    '-DSQLITE_THREADSAFE=1',
+    '-DSQLITE_ENABLE_COLUMN_METADATA',
+    '-DSQLITE_ENABLE_FTS5',
+    '-DSQLITE_ENABLE_RTREE',
+    '-Wl,-soname,libsqlite3.so.0',
+]
 
 
 def reject_links(path):
@@ -95,8 +103,7 @@ def provision(destination, report, github=False, archive_path=None):
     env = os.environ.copy()
     for name in ('PYTHONHOME', 'PYTHONPATH'):
         env.pop(name, None)
-    evidence = {'pin': pin, 'base_python': sys.executable, 'base_version': sys.version,
-                'platform': platform.platform()}
+    evidence = {'pin': pin, 'base_python': sys.executable, 'base_version': sys.version, 'platform': platform.platform()}
     if sys.platform == 'win32':
         archive = download(pin['windows_x64'], archive_path)
         dll = windows_dll(archive, pin['windows_x64'])
@@ -130,8 +137,7 @@ def provision(destination, report, github=False, archive_path=None):
         env['LD_LIBRARY_PATH'] = str(destination) + os.pathsep + env.get('LD_LIBRARY_PATH', '')
         env['LD_LIBRARY_PATH'] = env['LD_LIBRARY_PATH'].rstrip(os.pathsep)
     library_hash = hashlib.sha256(target.read_bytes()).hexdigest()
-    probe = [str(executable), '-I', str(ROOT / 'quantlab/sqlite_runtime.py'),
-             '--manifest', str(MANIFEST), '--root', str(destination), '--sha256', library_hash]
+    probe = [str(executable), '-I', str(ROOT / 'quantlab/sqlite_runtime.py'), '--manifest', str(MANIFEST), '--root', str(destination), '--sha256', library_hash]
     evidence['runtime'] = json.loads(subprocess.check_output(probe, env=env, text=True, timeout=30))
     if evidence['runtime']['python'] != sys.version:
         raise RuntimeError('Private runtime changed Python version')

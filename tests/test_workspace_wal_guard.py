@@ -1,4 +1,5 @@
 """The workspace barrier is durable before WAL and survives byte-copy recovery."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -9,8 +10,15 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from quantlab.desktop_runtime import (AppPaths, BackupManager, RuntimeSafetyError,
-    WorkspaceLocator, WORKSPACE_FORMAT, REPLAY_REQUIREMENT, _write_workspace_format)
+from quantlab.desktop_runtime import (
+    AppPaths,
+    BackupManager,
+    RuntimeSafetyError,
+    WorkspaceLocator,
+    WORKSPACE_FORMAT,
+    REPLAY_REQUIREMENT,
+    _write_workspace_format,
+)
 
 GUARDED = {**WORKSPACE_FORMAT, 'sqlite_replay': REPLAY_REQUIREMENT}
 
@@ -34,6 +42,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         module = types.ModuleType('quantlab._released_runtime_guard_test')
         module.__package__ = 'quantlab'
         import sys
+
         sys.modules[module.__name__] = module
         self.addCleanup(sys.modules.pop, module.__name__, None)
         exec(compile(source, '<released 0.2.1 desktop_runtime>', 'exec'), module.__dict__)
@@ -81,9 +90,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
 
     def test_restore_preserves_every_raw_byte_and_guard_fresh_and_same_path(self):
         self.paths.require_replay_wal()
-        for name, data in [('replays/a.sqlite3', b'database'),
-                           ('replays/a.sqlite3-wal', b'committed frames'),
-                           ('replays/a.sqlite3-shm', b'shared memory')]:
+        for name, data in [('replays/a.sqlite3', b'database'), ('replays/a.sqlite3-wal', b'committed frames'), ('replays/a.sqlite3-shm', b'shared memory')]:
             path = self.paths.state / name
             path.parent.mkdir(exist_ok=True)
             path.write_bytes(data)
@@ -118,9 +125,12 @@ class WorkspaceWALGuardTests(unittest.TestCase):
 
     def test_malformed_and_symlink_marker_denied_without_rewrite(self):
         marker = self.paths.root / 'workspace-format.json'
-        for value in ({**WORKSPACE_FORMAT, 'sqlite_replay': {'profile': 'wal_full'}},
-                      {**GUARDED, 'extra': True}, {**GUARDED, 'schema_version': True},
-                      {**GUARDED, 'sqlite_replay': {**REPLAY_REQUIREMENT, 'minimum_runtime': '0'}}):
+        for value in (
+            {**WORKSPACE_FORMAT, 'sqlite_replay': {'profile': 'wal_full'}},
+            {**GUARDED, 'extra': True},
+            {**GUARDED, 'schema_version': True},
+            {**GUARDED, 'sqlite_replay': {**REPLAY_REQUIREMENT, 'minimum_runtime': '0'}},
+        ):
             marker.write_text(json.dumps(value))
             before = marker.read_bytes()
             with self.assertRaises(RuntimeSafetyError):
@@ -129,9 +139,9 @@ class WorkspaceWALGuardTests(unittest.TestCase):
 
     def test_recovery_does_not_remove_guard_from_token_retired_commit(self):
         self.paths.require_replay_wal()
-        (self.paths.root / 'restore-transaction.json').write_text(json.dumps({
-            'id': 'a'*32, 'phase': 'committed', 'prior_format': WORKSPACE_FORMAT,
-            'restored_format': GUARDED}))
+        (self.paths.root / 'restore-transaction.json').write_text(
+            json.dumps({'id': 'a' * 32, 'phase': 'committed', 'prior_format': WORKSPACE_FORMAT, 'restored_format': GUARDED})
+        )
         BackupManager(self.paths).recover()
         self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), GUARDED)
 
@@ -144,6 +154,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
 
     def test_restore_crash_matrix_selects_matching_data_and_guard(self):
         from quantlab.desktop_runtime import atomic_write
+
         for prior, restored in ((WORKSPACE_FORMAT, GUARDED), (GUARDED, WORKSPACE_FORMAT)):
             for committed in (False, True):
                 with self.subTest(prior=prior, committed=committed):
@@ -154,9 +165,12 @@ class WorkspaceWALGuardTests(unittest.TestCase):
                     rollback.mkdir()
                     (rollback / 'item').write_bytes(b'prior')
                     atomic_write(paths.state / '.restore-transaction', b'{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}')
-                    atomic_write(paths.root / 'restore-transaction.json', json.dumps({
-                        'id': 'a'*32, 'phase': 'committed' if committed else 'prepared',
-                        'prior_format': prior, 'restored_format': restored}).encode())
+                    atomic_write(
+                        paths.root / 'restore-transaction.json',
+                        json.dumps(
+                            {'id': 'a' * 32, 'phase': 'committed' if committed else 'prepared', 'prior_format': prior, 'restored_format': restored}
+                        ).encode(),
+                    )
                     BackupManager(paths).recover()
                     self.assertEqual((paths.state / 'item').read_bytes(), b'restored' if committed else b'prior')
                     self.assertEqual(json.loads((paths.root / 'workspace-format.json').read_text()), restored if committed else prior)
@@ -164,28 +178,45 @@ class WorkspaceWALGuardTests(unittest.TestCase):
     def test_real_ui_adapter_guards_before_replay_constructor(self):
         # Compile the actual worker adapter without importing optional Qt widgets.
         import ast
+
         source = Path(__file__).resolve().parents[1] / 'desktop_ui.py'
         tree = ast.parse(source.read_text(encoding='utf-8'))
         # Compile the entire replacement body, including every registered handler
         # and shared paper helper, so the constructor-order assertion stays real.
-        functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
-                     and (node.name == 'execute_ui_operation' or node.name.startswith('_handle_ui_')
-                          or node.name in ('_prepare_paper_operation', '_finish_paper_operation'))]
-        registry = next(node for node in tree.body if isinstance(node, ast.Assign)
-                        and any(isinstance(target, ast.Name) and target.id == '_UI_OPERATION_HANDLERS'
-                                for target in node.targets))
+        functions = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and (
+                node.name == 'execute_ui_operation'
+                or node.name.startswith('_handle_ui_')
+                or node.name in ('_prepare_paper_operation', '_finish_paper_operation')
+            )
+        ]
+        registry = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == '_UI_OPERATION_HANDLERS' for target in node.targets)
+        )
         broker = types.SimpleNamespace(reconcile=lambda snapshot: None, _margin_schedule=())
-        namespace = {'UI_OPERATIONS': {'ui_paper_replay'}, '_root': lambda paths: paths.state,
-                     '_paper': lambda root: broker,
-                     '_dataset': lambda root, payload: types.SimpleNamespace(manifest={'data_hash': 'data'}),
-                     'load_selection': lambda path: {'strategy_hash': 'strategy', 'strategy': {}},
-                     'content_hash': lambda value: 'binding', 'StrategySpec': lambda **value: value}
+        namespace = {
+            'UI_OPERATIONS': {'ui_paper_replay'},
+            '_root': lambda paths: paths.state,
+            '_paper': lambda root: broker,
+            '_dataset': lambda root, payload: types.SimpleNamespace(manifest={'data_hash': 'data'}),
+            'load_selection': lambda path: {'strategy_hash': 'strategy', 'strategy': {}},
+            'content_hash': lambda value: 'binding',
+            'StrategySpec': lambda **value: value,
+        }
         exec(compile(ast.Module(body=[*functions, registry], type_ignores=[]), str(source), 'exec'), namespace)
+
         class ReachedConstructor(Exception):
             pass
+
         def constructor(*args, **kwargs):
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), GUARDED)
             raise ReachedConstructor()
+
         with patch('quantlab.paper_replay.PaperReplay', side_effect=constructor):
             with self.assertRaises(ReachedConstructor):
                 namespace['execute_ui_operation']('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': {}}, self.paths)
@@ -207,18 +238,25 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         import sqlite3
         import subprocess
         import sys
+
         if sqlite3.sqlite_version_info < (3, 51, 3):
             self.skipTest('Real WAL restore requires the supported SQLite runtime')
         self.runtime.stop()
         self.paths.require_replay_wal()
         database = self.paths.state / 'replay.sqlite3'
         # Exit without closing to model a stopped writer with committed WAL.
-        subprocess.run([sys.executable, '-c',
-            "import os,sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
-            "c.execute('PRAGMA journal_mode=WAL'); c.execute('PRAGMA wal_autocheckpoint=0'); "
-            "c.execute('CREATE TABLE proof(value TEXT)'); "
-            "c.execute(\"INSERT INTO proof VALUES ('durable committed row')\"); c.commit(); os._exit(0)",
-            str(database)], check=True)
+        subprocess.run(
+            [
+                sys.executable,
+                '-c',
+                "import os,sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
+                "c.execute('PRAGMA journal_mode=WAL'); c.execute('PRAGMA wal_autocheckpoint=0'); "
+                "c.execute('CREATE TABLE proof(value TEXT)'); "
+                "c.execute(\"INSERT INTO proof VALUES ('durable committed row')\"); c.commit(); os._exit(0)",
+                str(database),
+            ],
+            check=True,
+        )
         wal = Path(str(database) + '-wal')
         self.assertGreater(wal.stat().st_size, 32)
         raw_wal = wal.read_bytes()
@@ -241,23 +279,27 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
 
     def formats(self):
         from quantlab.desktop_runtime import WALK_FORWARD_REQUIREMENT
+
         wfo = {**WORKSPACE_FORMAT, 'sqlite_walk_forward': WALK_FORWARD_REQUIREMENT}
         return WORKSPACE_FORMAT, GUARDED, wfo, {**GUARDED, **wfo}
 
     def test_exact_composed_formats_and_both_setter_orders(self):
         from quantlab.desktop_runtime import _workspace_format
+
         base, replay, wfo, both = self.formats()
         for value in (base, replay, wfo, both):
             self.assertEqual(_workspace_format(value), value)
-        for order in (('require_replay_wal', 'require_walk_forward_wal'),
-                      ('require_walk_forward_wal', 'require_replay_wal')):
+        for order in (('require_replay_wal', 'require_walk_forward_wal'), ('require_walk_forward_wal', 'require_replay_wal')):
             _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
             for method in order:
                 getattr(self.paths, method)()
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), both)
-        for value in ({**wfo, 'extra': True}, {**wfo, 'schema_version': True},
-                      {**wfo, 'sqlite_walk_forward': {'profile': 'wal_full'}},
-                      {**both, 'sqlite_replay': {**REPLAY_REQUIREMENT, 'minimum_runtime': '0'}}):
+        for value in (
+            {**wfo, 'extra': True},
+            {**wfo, 'schema_version': True},
+            {**wfo, 'sqlite_walk_forward': {'profile': 'wal_full'}},
+            {**both, 'sqlite_replay': {**REPLAY_REQUIREMENT, 'minimum_runtime': '0'}},
+        ):
             with self.assertRaises(RuntimeSafetyError):
                 _workspace_format(value)
 
@@ -311,18 +353,26 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
         import sqlite3
         import subprocess
         import sys
+
         if sqlite3.sqlite_version_info < (3, 51, 3):
             self.skipTest('Real WAL restore requires the supported SQLite runtime')
         for index, value in enumerate(self.formats()[2:]):
             source = AppPaths(self.root / f'real-source-{index}').ensure()
             _write_workspace_format(source.root, value)
             database = source.state / 'walk_forward.sqlite3'
-            subprocess.run([sys.executable, '-c',
-                "import os,sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
-                "c.execute('PRAGMA journal_mode=WAL'); c.execute('PRAGMA synchronous=FULL'); "
-                "c.execute('PRAGMA wal_autocheckpoint=0'); c.execute('CREATE TABLE proof(value TEXT)'); "
-                "c.execute(\"INSERT INTO proof VALUES ('committed WFO row')\"); c.commit(); os._exit(0)",
-                str(database)], check=True, timeout=10)
+            subprocess.run(
+                [
+                    sys.executable,
+                    '-c',
+                    "import os,sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
+                    "c.execute('PRAGMA journal_mode=WAL'); c.execute('PRAGMA synchronous=FULL'); "
+                    "c.execute('PRAGMA wal_autocheckpoint=0'); c.execute('CREATE TABLE proof(value TEXT)'); "
+                    "c.execute(\"INSERT INTO proof VALUES ('committed WFO row')\"); c.commit(); os._exit(0)",
+                    str(database),
+                ],
+                check=True,
+                timeout=10,
+            )
             raw_wal = Path(str(database) + '-wal').read_bytes()
             self.assertGreater(len(raw_wal), 32)
             archive = BackupManager(source).create(self.root / f'real-wfo-{index}.zip')
@@ -347,9 +397,11 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             _write_workspace_format(self.paths.root, value)
             folder = self.paths.state / 'walk_forward'
             folder.mkdir(exist_ok=True)
-            for name, raw in (('walk_forward.sqlite3', b'database'),
-                              ('walk_forward.sqlite3-wal', b'committed frames'),
-                              ('walk_forward.sqlite3-shm', b'shared memory')):
+            for name, raw in (
+                ('walk_forward.sqlite3', b'database'),
+                ('walk_forward.sqlite3-wal', b'committed frames'),
+                ('walk_forward.sqlite3-shm', b'shared memory'),
+            ):
                 (folder / name).write_bytes(raw)
             before = {p.relative_to(self.paths.state): p.read_bytes() for p in self.paths.state.rglob('*') if p.is_file()}
             archive = BackupManager(self.paths).create(self.root / f'raw-{index}.zip')
@@ -367,10 +419,12 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             archive = BackupManager(source).create(self.root / f'union-{index}.zip')
             _write_workspace_format(self.paths.root, prior)
             (self.paths.state / 'proof').write_bytes(b'prior state')
+
             def before_promotion(*args, **kwargs):
                 self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), both)
                 self.assertEqual((self.paths.state / 'proof').read_bytes(), b'prior state')
                 raise OSError('before promotion')
+
             with patch('quantlab.analysis_recovery.advance_restore_epoch', side_effect=before_promotion):
                 with self.assertRaisesRegex(OSError, 'before promotion'):
                     BackupManager(self.paths).restore(archive)
@@ -379,6 +433,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
 
     def test_composed_restore_crash_matrix_selects_exact_matching_format(self):
         from quantlab.desktop_runtime import atomic_write
+
         for prior_index, prior in enumerate(self.formats()):
             for incoming_index, incoming in enumerate(self.formats()):
                 for committed in (False, True):
@@ -390,9 +445,12 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
                         rollback.mkdir()
                         (rollback / 'proof').write_bytes(b'prior')
                         atomic_write(paths.state / '.restore-transaction', b'{"id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}')
-                        atomic_write(paths.root / 'restore-transaction.json', json.dumps({
-                            'id': 'a' * 32, 'phase': 'committed' if committed else 'prepared',
-                            'prior_format': prior, 'restored_format': incoming}).encode())
+                        atomic_write(
+                            paths.root / 'restore-transaction.json',
+                            json.dumps(
+                                {'id': 'a' * 32, 'phase': 'committed' if committed else 'prepared', 'prior_format': prior, 'restored_format': incoming}
+                            ).encode(),
+                        )
                         BackupManager(paths).recover()
                         self.assertEqual((paths.state / 'proof').read_bytes(), b'incoming' if committed else b'prior')
                         self.assertEqual(json.loads((paths.root / 'workspace-format.json').read_text()), incoming if committed else prior)
@@ -400,18 +458,23 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
     def test_new_host_run_guards_before_owner_and_fsync_failure_prevents_claim(self):
         from quantlab.desktop_runtime import JobManager
         from tests.test_desktop_walk_forward_runtime import plan_payload
+
         manager = JobManager(self.paths)
         payload = {'plan': plan_payload(), 'preview_identity': 'a' * 64}
+
         def claimed(*args):
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), self.formats()[2])
             raise RuntimeError('reached ownership')
+
         with patch.object(manager, '_claim_walk_forward', side_effect=claimed):
             with self.assertRaisesRegex(RuntimeError, 'reached ownership'):
                 manager.start('ui_walk_forward_run', payload)
         _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
-        with patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')), \
-                patch.object(manager, '_claim_walk_forward') as claim, \
-                patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with (
+            patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')),
+            patch.object(manager, '_claim_walk_forward') as claim,
+            patch('quantlab.desktop_runtime.mp.get_context') as spawn,
+        ):
             with self.assertRaisesRegex(OSError, 'flush failed'):
                 manager.start('ui_walk_forward_run', payload)
             claim.assert_not_called()
@@ -420,6 +483,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
     def test_existing_host_journal_is_rejected_without_marker_mutation(self):
         from quantlab.desktop_runtime import JobManager
         from tests.test_desktop_walk_forward_runtime import plan_payload
+
         folder = self.paths.state / 'walk_forward' / ('a' * 64)
         folder.mkdir(parents=True)
         (folder / 'walk_forward.sqlite3').write_bytes(b'original database')
@@ -436,17 +500,22 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
         import sys
         import desktop_walk_forward as adapter
         from tests.test_desktop_walk_forward_runtime import plan_payload
+
         identity = 'b' * 64
         preview = {'preview_identity': identity, 'plan': plan_payload()}
         fake_ui = types.ModuleType('desktop_presentation')
         fake_ui._dataset = lambda *args: object()
         fake_ui.research_controls = lambda paths: paths.controls
+
         def run(*args, **kwargs):
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), self.formats()[2])
             raise RuntimeError('reached core')
-        with patch.dict(sys.modules, {'desktop_presentation': fake_ui}), \
-                patch.object(adapter, 'preview_walk_forward', return_value=preview), \
-                patch.object(adapter, 'run_walk_forward', side_effect=run):
+
+        with (
+            patch.dict(sys.modules, {'desktop_presentation': fake_ui}),
+            patch.object(adapter, 'preview_walk_forward', return_value=preview),
+            patch.object(adapter, 'run_walk_forward', side_effect=run),
+        ):
             with self.assertRaisesRegex(RuntimeError, 'reached core'):
                 adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths)
             folder = self.paths.state / 'walk_forward' / identity
@@ -454,9 +523,13 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             (folder / 'walk_forward.sqlite3').write_bytes(b'old data')
             _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
             before = (self.paths.root / 'workspace-format.json').read_bytes()
-            with patch.object(AppPaths, 'require_walk_forward_wal') as require, \
-                    patch.object(adapter, 'read_walk_forward_state', return_value={'old': True}), \
-                    patch.object(adapter, 'compact_walk_forward', return_value={'old': True}):
-                self.assertEqual(adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths), {'old': True})
+            with (
+                patch.object(AppPaths, 'require_walk_forward_wal') as require,
+                patch.object(adapter, 'read_walk_forward_state', return_value={'old': True}),
+                patch.object(adapter, 'compact_walk_forward', return_value={'old': True}),
+            ):
+                self.assertEqual(
+                    adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths), {'old': True}
+                )
                 require.assert_not_called()
             self.assertEqual((self.paths.root / 'workspace-format.json').read_bytes(), before)

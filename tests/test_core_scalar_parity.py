@@ -1,4 +1,5 @@
 """Frozen pre-change dispatch oracle, with exact byte/hash/error parity."""
+
 from collections import UserDict
 from dataclasses import dataclass, fields, is_dataclass
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ import random
 import sys
 import unittest
 from quantlab.core import ValidationError, canonical_json, content_hash, freeze, validate_decimal, validate_utc
+
 
 def original_json_value(value):
     if is_dataclass(value) and not isinstance(value, type):
@@ -39,22 +41,36 @@ def original_json_value(value):
 def original_bytes(value):
     return json.dumps(original_json_value(value), sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode('utf-8')
 
+
 class Text(str):
     pass
+
+
 class Integer(int):
     pass
+
+
 class Float(float):
     pass
+
+
 class Number(IntEnum):
     ONE = 1
+
+
 class Word(str, Enum):
     TEXT = 'word'
+
+
 class General(Enum):
     DECIMAL = Decimal('1.2300')
+
+
 @dataclass
 class Record:
     scalar: object
     nested: object
+
 
 class CoreScalarParityTests(unittest.TestCase):
     def assert_parity(self, value):
@@ -63,10 +79,28 @@ class CoreScalarParityTests(unittest.TestCase):
         self.assertEqual(content_hash(value), hashlib.sha256(expected).hexdigest())
 
     def test_exact_scalar_and_subclass_bytes_and_hashes(self):
-        values = [None, True, False, 0, -1, 2**100, 0.0, -0.0, 1e-200, 1e200,
-                  '', '繁體中文😀', Text('subclass'), Integer(17), Float(-0.0),
-                  Number.ONE, Word.TEXT, General.DECIMAL, Decimal('-0.000'),
-                  datetime(2026, 1, 2, tzinfo=timezone.utc)]
+        values = [
+            None,
+            True,
+            False,
+            0,
+            -1,
+            2**100,
+            0.0,
+            -0.0,
+            1e-200,
+            1e200,
+            '',
+            '繁體中文😀',
+            Text('subclass'),
+            Integer(17),
+            Float(-0.0),
+            Number.ONE,
+            Word.TEXT,
+            General.DECIMAL,
+            Decimal('-0.000'),
+            datetime(2026, 1, 2, tzinfo=timezone.utc),
+        ]
         for value in values:
             with self.subTest(type=type(value).__name__):
                 self.assert_parity(value)
@@ -76,21 +110,36 @@ class CoreScalarParityTests(unittest.TestCase):
 
     def test_seeded_nested_values(self):
         rng = random.Random(8821)
-        atoms = [None, True, False, -23, 1e-12, -0.0, '文', Integer(4), Number.ONE,
-                 Word.TEXT, Decimal('0.0300'), datetime(2026, 1, 2, tzinfo=timezone.utc)]
+        atoms = [None, True, False, -23, 1e-12, -0.0, '文', Integer(4), Number.ONE, Word.TEXT, Decimal('0.0300'), datetime(2026, 1, 2, tzinfo=timezone.utc)]
+
         def make(depth):
             if not depth or rng.randrange(4) == 0:
                 return rng.choice(atoms)
             if rng.randrange(2):
-                return [make(depth-1) for _ in range(rng.randrange(5))]
-            return {str(i): make(depth-1) for i in range(rng.randrange(5))}
+                return [make(depth - 1) for _ in range(rng.randrange(5))]
+            return {str(i): make(depth - 1) for i in range(rng.randrange(5))}
+
         for _ in range(80):
             self.assert_parity(make(5))
 
     def test_rejections_match_type_and_message(self):
-        values = [float('nan'), float('inf'), float('-inf'), Float('nan'), Float('inf'),
-                  Decimal('NaN'), Decimal('Infinity'), datetime(2026, 1, 2),
-                  UserDict({'x': 1}), {1: 'bad'}, {True: 'bad'}, b'bytes', {1}, object(), '\ud800']
+        values = [
+            float('nan'),
+            float('inf'),
+            float('-inf'),
+            Float('nan'),
+            Float('inf'),
+            Decimal('NaN'),
+            Decimal('Infinity'),
+            datetime(2026, 1, 2),
+            UserDict({'x': 1}),
+            {1: 'bad'},
+            {True: 'bad'},
+            b'bytes',
+            {1},
+            object(),
+            '\ud800',
+        ]
         limit = getattr(sys, 'get_int_max_str_digits', lambda: 0)()
         if limit:
             values.append(10 ** (limit + 1))

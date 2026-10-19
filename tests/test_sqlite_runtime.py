@@ -1,4 +1,5 @@
 """Supply-chain checks stay offline; native provisioning is exercised by CI setup."""
+
 import hashlib
 from contextlib import closing
 import io
@@ -67,9 +68,9 @@ class SQLiteRuntimeSupplyTests(unittest.TestCase):
     def test_download_checks_both_hashes_and_origin(self):
         class Response(io.BytesIO):
             url = 'https://www.sqlite.org/2026/test.zip'
+
         data = b'archive'
-        pin = {'url': Response.url, 'sha256': hashlib.sha256(data).hexdigest(),
-               'sha3_256': hashlib.sha3_256(data).hexdigest()}
+        pin = {'url': Response.url, 'sha256': hashlib.sha256(data).hexdigest(), 'sha3_256': hashlib.sha3_256(data).hexdigest()}
         with patch.object(installer.urllib.request, 'urlopen', return_value=Response(data)):
             self.assertEqual(installer.download(pin), data)
         for algorithm in ('sha256', 'sha3_256'):
@@ -84,6 +85,7 @@ class SQLiteRuntimeSupplyTests(unittest.TestCase):
 
     def test_verifier_checks_sql_version_source_path_and_hash(self):
         import sqlite3
+
         with closing(sqlite3.connect(':memory:')) as db:
             version, source_id = db.execute('SELECT sqlite_version(), sqlite_source_id()').fetchone()
         with tempfile.TemporaryDirectory() as root:

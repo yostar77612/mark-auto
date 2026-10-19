@@ -1,4 +1,5 @@
 """Generate project-owned Windows EXE version metadata, not a signature."""
+
 from __future__ import annotations
 
 import argparse
@@ -11,8 +12,7 @@ COMPANY_NAME = 'Mark Auto contributors'
 
 
 def version_tuple(version):
-    if not isinstance(version, str) or not re.fullmatch(
-            r'(?:0|[1-9][0-9]{0,4})\.(?:0|[1-9][0-9]{0,4})\.(?:0|[1-9][0-9]{0,4})', version):
+    if not isinstance(version, str) or not re.fullmatch(r'(?:0|[1-9][0-9]{0,4})\.(?:0|[1-9][0-9]{0,4})\.(?:0|[1-9][0-9]{0,4})', version):
         raise ValueError('Version must be canonical numeric x.y.z')
     parts = tuple(int(value) for value in version.split('.'))
     if any(value > 65535 for value in parts):
@@ -31,8 +31,7 @@ def render_version_resource(version):
         'ProductName': PRODUCT_NAME,
         'ProductVersion': version,
     }
-    entries = ',\n'.join(f'            StringStruct({key!r}, {value!r})'
-                         for key, value in strings.items())
+    entries = ',\n'.join(f'            StringStruct({key!r}, {value!r})' for key, value in strings.items())
     return f'''# UTF-8; generated from the validated build version. Not a code signature.
 VSVersionInfo(
     ffi=FixedFileInfo(

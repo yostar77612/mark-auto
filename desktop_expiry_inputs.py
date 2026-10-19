@@ -1,4 +1,5 @@
 """Presentation-only helpers that fill existing validated input controls."""
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QTableWidgetItem
 from desktop_strings import ui_text
@@ -60,8 +61,7 @@ class ExpiryPicker(QWidget):
         match = lookup_expiry(self.product.currentText(), month, data=self.data)
         self.summary.setText(ui_text('expiry.date').format(match['expiry_date']) if match else ui_text('expiry.uncovered'))
         source = match['source'] if match else self.data['sources'][0]
-        self.source.setText(ui_text('expiry.provenance').format(source['url'], self.data['data_version'],
-            self.data['verified_date'], source['retrieval_date']))
+        self.source.setText(ui_text('expiry.provenance').format(source['url'], self.data['data_version'], self.data['verified_date'], source['retrieval_date']))
         if match:
             self.selected.emit(self.product.currentText(), month, match['expiry_date'])
 
@@ -83,6 +83,7 @@ def attach_expiry_table(form):
         row = table.rowCount() - 1
         for column, value in enumerate((contract, expiry)):
             table.setItem(row, column, QTableWidgetItem(value))
+
     picker.selected.connect(fill)
 
 
@@ -95,6 +96,7 @@ def attach_history_picker(dialog, layout):
         dialog.product.setCurrentIndex(dialog.product.findData(product))
         dialog.expiry_type.setCurrentIndex(dialog.expiry_type.findData('monthly'))
         dialog.month.setText(month)
+
     picker.selected.connect(fill)
 
 

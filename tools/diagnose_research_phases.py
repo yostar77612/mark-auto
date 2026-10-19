@@ -1,4 +1,5 @@
 """Bounded observation of three unchanged synthetic cases; never an acceptance gate."""
+
 from __future__ import annotations
 
 import argparse
@@ -23,10 +24,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from tools.diagnose_wfo_storage import write_report
 
-TESTS = tuple('tests.test_saved_candidate_pool.SavedCandidatePoolTests.' + name for name in (
-    'test_saved_execution_evaluates_all_candidates_and_never_calls_model',
-    'test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity')) + (
-    'tests.test_walk_forward.WalkForwardTests.test_registry_lock_cannot_overrun_deadline_or_reserve_after_it',)
+TESTS = tuple(
+    'tests.test_saved_candidate_pool.SavedCandidatePoolTests.' + name
+    for name in (
+        'test_saved_execution_evaluates_all_candidates_and_never_calls_model',
+        'test_saved_terminal_report_reads_without_sources_and_with_windows_registry_identity',
+    )
+) + ('tests.test_walk_forward.WalkForwardTests.test_registry_lock_cannot_overrun_deadline_or_reserve_after_it',)
 
 
 def source_key(path, root):
@@ -36,14 +40,22 @@ def source_key(path, root):
 
 def identity():
     paths = sorted((ROOT / 'quantlab').glob('*.py')) + [
-        ROOT / 'tests/test_saved_candidate_pool.py', ROOT / 'tests/test_walk_forward.py',
-        ROOT / 'tests/saved_pool_fixtures.py', Path(__file__).resolve(),
-        ROOT / 'packaging/sqlite-runtime.json', ROOT / 'tools/diagnose_wfo_storage.py']
-    return {'head_sha': os.environ.get('GITHUB_SHA'), 'python': sys.version,
-            'executable': sys.executable, 'platform': platform.platform(),
-            'tempfile_gettempdir': tempfile.gettempdir(),
-            'environment_temp': {k: os.environ.get(k) for k in ('TEMP', 'TMP', 'RUNNER_TEMP')},
-            'source_sha256': {source_key(p, ROOT): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
+        ROOT / 'tests/test_saved_candidate_pool.py',
+        ROOT / 'tests/test_walk_forward.py',
+        ROOT / 'tests/saved_pool_fixtures.py',
+        Path(__file__).resolve(),
+        ROOT / 'packaging/sqlite-runtime.json',
+        ROOT / 'tools/diagnose_wfo_storage.py',
+    ]
+    return {
+        'head_sha': os.environ.get('GITHUB_SHA'),
+        'python': sys.version,
+        'executable': sys.executable,
+        'platform': platform.platform(),
+        'tempfile_gettempdir': tempfile.gettempdir(),
+        'environment_temp': {k: os.environ.get(k) for k in ('TEMP', 'TMP', 'RUNNER_TEMP')},
+        'source_sha256': {source_key(p, ROOT): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
+    }
 
 
 class Observer:
@@ -53,6 +65,7 @@ class Observer:
     Checkpoints occur at completed operations at most once per second, so a
     blocked operation remains absent from the last snapshot and is incomplete.
     """
+
     def __init__(self, report, path):
         self.report, self.path = report, path
         self.phases = report['phases'] = {}
@@ -61,8 +74,7 @@ class Observer:
         self.save_calls = 0
 
     def call(self, name, function, *args, payload_bytes=0, **kwargs):
-        value = self.phases.setdefault(name, {'calls': 0, 'completed': 0, 'errors': 0,
-                                             'wall_seconds': 0.0, 'cpu_seconds': 0.0, 'payload_bytes': 0})
+        value = self.phases.setdefault(name, {'calls': 0, 'completed': 0, 'errors': 0, 'wall_seconds': 0.0, 'cpu_seconds': 0.0, 'payload_bytes': 0})
         value['calls'] += 1
         wall, cpu = time.monotonic(), time.process_time()
         try:
@@ -90,15 +102,17 @@ class Observer:
 
     def instrument(self, stack):
         from quantlab import walk_forward
+
         for name in ('_save_state', '_read_state', '_validate_state', '_reserve_holdout'):
             original = getattr(walk_forward, name)
+
             def wrapped(*args, _name=name, _original=original, **kwargs):
                 if _name == '_save_state':
-                    phase = ('initial_save' if self.save_calls == 0 else
-                             'terminal_save' if args[2]['status'] != 'running' else 'later_save')
+                    phase = 'initial_save' if self.save_calls == 0 else 'terminal_save' if args[2]['status'] != 'running' else 'later_save'
                     self.save_calls += 1
                     return self.call('wfo.' + _name, lambda: self.call('wfo.' + phase, _original, *args, **kwargs))
                 return self.call('wfo.' + _name, _original, *args, **kwargs)
+
             stack.enter_context(patch.object(walk_forward, name, wrapped))
         observer = self
         original_connect = sqlite3.connect
@@ -107,16 +121,23 @@ class Observer:
             def __init__(self, database, *args, **kwargs):
                 super().__init__(database, *args, **kwargs)
                 name = str(database).replace('\\', '/').rsplit('/', 1)[-1].split('?', 1)[0]
-                self.phase_kind = ('state' if name == 'walk_forward.sqlite3' else
-                                   'registry' if name in ('holdout.sqlite3', 'source-registry.sqlite3') else 'other')
+                self.phase_kind = (
+                    'state' if name == 'walk_forward.sqlite3' else 'registry' if name in ('holdout.sqlite3', 'source-registry.sqlite3') else 'other'
+                )
 
             def execute(self, sql, parameters=(), /):
-                payload = sum(len(v.encode('utf-8')) for v in parameters if isinstance(v, str)) if sql.upper().startswith(('INSERT OR REPLACE INTO STATE', 'UPDATE STATE')) else 0
+                payload = (
+                    sum(len(v.encode('utf-8')) for v in parameters if isinstance(v, str))
+                    if sql.upper().startswith(('INSERT OR REPLACE INTO STATE', 'UPDATE STATE'))
+                    else 0
+                )
                 operation = sql.lstrip().split()[0].lower()
                 execute = super().execute
-                return observer.call('sqlite.execute', lambda: observer.call(
-                    'sqlite.' + self.phase_kind + '.execute.' + operation,
-                    execute, sql, parameters, payload_bytes=payload), payload_bytes=payload)
+                return observer.call(
+                    'sqlite.execute',
+                    lambda: observer.call('sqlite.' + self.phase_kind + '.execute.' + operation, execute, sql, parameters, payload_bytes=payload),
+                    payload_bytes=payload,
+                )
 
             def executemany(self, sql, parameters, /):
                 return observer.call('sqlite.executemany', super().executemany, sql, parameters)
@@ -131,29 +152,30 @@ class Observer:
                         profile = getattr(self, 'observed_profile', None)
                         if profile is not None and 'close_profile' not in profile:
                             profile['close_profile'] = {
-                                key: sqlite3.Connection.execute(self, 'PRAGMA ' + key).fetchone()[0]
-                                for key in ('journal_mode', 'synchronous', 'locking_mode')}
+                                key: sqlite3.Connection.execute(self, 'PRAGMA ' + key).fetchone()[0] for key in ('journal_mode', 'synchronous', 'locking_mode')
+                            }
                     finally:
                         # Profile/report failure must never defer owned closure.
                         sqlite3.Connection.close(self)
-                return observer.call('sqlite.close', lambda: observer.call(
-                    'sqlite.' + self.phase_kind + '.close', close_with_profile))
+
+                return observer.call('sqlite.close', lambda: observer.call('sqlite.' + self.phase_kind + '.close', close_with_profile))
 
             def __exit__(self, *args):
                 # sqlite3's C context manager commits without calling commit().
                 phase = 'sqlite.context_commit' if self.in_transaction and args[0] is None else 'sqlite.context_exit_other'
                 exit_context = super().__exit__
-                return observer.call(phase, lambda: observer.call(
-                    'sqlite.' + self.phase_kind + '.' + phase.split('.', 1)[1], exit_context, *args))
+                return observer.call(phase, lambda: observer.call('sqlite.' + self.phase_kind + '.' + phase.split('.', 1)[1], exit_context, *args))
 
         def connect(*args, **kwargs):
             if len(args) > 5 or 'factory' in kwargs:
                 raise RuntimeError('Unexpected connection factory in fixed diagnostic workload')
             opened = None
+
             def open_connection():
                 nonlocal opened
                 opened = original_connect(*args, **kwargs, factory=Connection)
                 return opened
+
             try:
                 db = observer.call('sqlite.connect', open_connection)
             except BaseException:
@@ -164,8 +186,7 @@ class Observer:
                 raise
             # Read only; never set PRAGMAs or relocate the original test data.
             try:
-                profile = {key: sqlite3.Connection.execute(db, 'PRAGMA ' + key).fetchone()[0]
-                           for key in ('journal_mode', 'synchronous', 'locking_mode')}
+                profile = {key: sqlite3.Connection.execute(db, 'PRAGMA ' + key).fetchone()[0] for key in ('journal_mode', 'synchronous', 'locking_mode')}
             except BaseException:
                 db.close()
                 raise
@@ -174,27 +195,37 @@ class Observer:
             db.observed_profile = profile
             self.report.setdefault('sqlite_profiles', []).append(profile)
             return db
+
         stack.enter_context(patch.object(sqlite3, 'connect', connect))
         original_write, original_replace = Path.write_text, Path.replace
 
         def write(path, data, *args, **kwargs):
             if path.name.endswith(('.json', '.json.tmp')):
-                return self.call('json.write_text', original_write, path, data, *args,
-                                 payload_bytes=len(data.encode(kwargs.get('encoding') or 'utf-8')), **kwargs)
+                return self.call(
+                    'json.write_text', original_write, path, data, *args, payload_bytes=len(data.encode(kwargs.get('encoding') or 'utf-8')), **kwargs
+                )
             return original_write(path, data, *args, **kwargs)
 
         def replace(path, target):
             if path.name.endswith(('.json', '.json.tmp')):
                 return self.call('json.replace', original_replace, path, target)
             return original_replace(path, target)
+
         stack.enter_context(patch.object(Path, 'write_text', write))
         stack.enter_context(patch.object(Path, 'replace', replace))
 
 
 def run_cases(path, runtime):
-    report = {'status': 'INCOMPLETE', 'observation_only': True, 'acceptance': 'NOT_ESTABLISHED',
-              'identity': identity(), 'runtime': runtime, 'selected_tests': list(TESTS), 'cases': [],
-              'counter_semantics': 'inclusive nested counters, never sum; initial_save is first save in case; test-parent process CPU only; completed-operation checkpoint; no timing threshold'}
+    report = {
+        'status': 'INCOMPLETE',
+        'observation_only': True,
+        'acceptance': 'NOT_ESTABLISHED',
+        'identity': identity(),
+        'runtime': runtime,
+        'selected_tests': list(TESTS),
+        'cases': [],
+        'counter_semantics': 'inclusive nested counters, never sum; initial_save is first save in case; test-parent process CPU only; completed-operation checkpoint; no timing threshold',
+    }
     write_report(path, report)
     for test_id in TESTS:
         case = {'test_id': test_id, 'status': 'INCOMPLETE'}
@@ -208,11 +239,16 @@ def run_cases(path, runtime):
             suite = unittest.defaultTestLoader.loadTestsFromName(test_id)
             result = unittest.TestResult()
             suite.run(result)
-        case.update(status='COMPLETE' if result.wasSuccessful() and result.testsRun == 1 and not result.skipped else 'ERROR',
-                    tests_run=result.testsRun, failures=len(result.failures), errors=len(result.errors),
-                    skipped=len(result.skipped), failure_details=[text[-8000:] for _, text in result.failures + result.errors],
-                    wall_seconds=time.monotonic() - wall,
-                    cpu_seconds=time.process_time() - cpu)
+        case.update(
+            status='COMPLETE' if result.wasSuccessful() and result.testsRun == 1 and not result.skipped else 'ERROR',
+            tests_run=result.testsRun,
+            failures=len(result.failures),
+            errors=len(result.errors),
+            skipped=len(result.skipped),
+            failure_details=[text[-8000:] for _, text in result.failures + result.errors],
+            wall_seconds=time.monotonic() - wall,
+            cpu_seconds=time.process_time() - cpu,
+        )
         write_report(path, report)
         if case['status'] != 'COMPLETE':
             report['status'] = 'ERROR'
@@ -263,7 +299,7 @@ def stop_owned(process, job):
                 if time.monotonic() >= deadline:
                     confirmed = False
                     break
-                time.sleep(.02)
+                time.sleep(0.02)
     except (OSError, subprocess.TimeoutExpired, ValueError):
         confirmed = False
     finally:
@@ -284,26 +320,35 @@ def evidence_directory():
 
 def supervise(args):
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    report = {'status': 'INCOMPLETE', 'observation_only': True, 'acceptance': 'NOT_ESTABLISHED',
-              'identity': identity(), 'selected_tests': list(TESTS), 'cases': []}
+    report = {
+        'status': 'INCOMPLETE',
+        'observation_only': True,
+        'acceptance': 'NOT_ESTABLISHED',
+        'identity': identity(),
+        'selected_tests': list(TESTS),
+        'cases': [],
+    }
     write_report(args.report, report)
     with evidence_directory() as evidence:
         partial = Path(evidence['path']) / 'partial.json'
-        command = [sys.executable, str(Path(__file__).resolve()), '--worker', '--report', str(partial),
-                   '--runtime-root', str(args.runtime_root)]
+        command = [sys.executable, str(Path(__file__).resolve()), '--worker', '--report', str(partial), '--runtime-root', str(args.runtime_root)]
         if args.library_sha256:
             command += ['--library-sha256', args.library_sha256]
-        process = None; job = None; code = None; reason = None
+        process = None
+        job = None
+        code = None
+        reason = None
         started = time.monotonic()
         try:
-            process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                                       stderr=subprocess.DEVNULL, start_new_session=os.name != 'nt')
+            process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=os.name != 'nt')
             if os.name == 'nt':
                 from quantlab.analysis_recovery_windows import _OriginalJob, _kernel
+
                 job = _OriginalJob(_kernel(), process._handle)
             # Worker cannot import/run fixtures or spawn descendants before this.
-            process.stdin.write(b'1'); process.stdin.close()
-            code = process.wait(timeout=max(.001, args.seconds - (time.monotonic() - started)))
+            process.stdin.write(b'1')
+            process.stdin.close()
+            code = process.wait(timeout=max(0.001, args.seconds - (time.monotonic() - started)))
         except subprocess.TimeoutExpired:
             reason = 'diagnostic_deadline'
         except BaseException as exc:
@@ -317,12 +362,12 @@ def supervise(args):
             except (OSError, ValueError):
                 reason = reason or 'invalid_partial_report'
         if reason or code != 0 or not confirmed:
-            report.update(status='INCOMPLETE', reason=reason or 'worker_or_cleanup_failed',
-                          partial_operation_counts_unknown=True)
+            report.update(status='INCOMPLETE', reason=reason or 'worker_or_cleanup_failed', partial_operation_counts_unknown=True)
         if not confirmed:
             report['retained_partial_directory'] = evidence['path']
-        report.update(deadline_seconds=args.seconds, worker_exit_code=code,
-                      owned_cleanup_confirmed=confirmed, supervisor_wall_seconds=time.monotonic() - started)
+        report.update(
+            deadline_seconds=args.seconds, worker_exit_code=code, owned_cleanup_confirmed=confirmed, supervisor_wall_seconds=time.monotonic() - started
+        )
         write_report(args.report, report)
     return 0 if report['status'] == 'COMPLETE' else 2
 
@@ -341,6 +386,7 @@ def main():
         if sys.stdin.buffer.read(1) != b'1':
             return 2
         from quantlab.sqlite_runtime import verify
+
         runtime = verify(ROOT / 'packaging/sqlite-runtime.json', args.runtime_root, args.library_sha256)
         return run_cases(args.report, runtime)
     return supervise(args)

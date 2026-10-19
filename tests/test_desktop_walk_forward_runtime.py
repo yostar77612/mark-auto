@@ -2,6 +2,7 @@
 
 Mock process/Job Object checks are protocol tests, not native Windows evidence.
 """
+
 import copy
 from contextlib import closing
 from functools import partial
@@ -17,8 +18,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from quantlab.core import to_dict
-from quantlab.desktop_runtime import (AppPaths, JobManager, RuntimeSafetyError,
-    UI_OPERATIONS, WALK_FORWARD_OPERATIONS, _job_worker)
+from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, UI_OPERATIONS, WALK_FORWARD_OPERATIONS, _job_worker
 from quantlab.reporting import demo_config
 from quantlab.walk_forward import build_walk_forward_plan
 
@@ -28,14 +28,17 @@ OTHER_REFERENCE = 'b' * 64
 
 
 def plan_payload():
-    return to_dict(build_walk_forward_plan(backtest_config=demo_config(),
-        train_bars=60, validation_bars=40, oos_bars=40, fold_count=3,
-        final_holdout=(220, 240), process_start_method='spawn'))
+    return to_dict(
+        build_walk_forward_plan(
+            backtest_config=demo_config(), train_bars=60, validation_bars=40, oos_bars=40, fold_count=3, final_holdout=(220, 240), process_start_method='spawn'
+        )
+    )
 
 
 def _held_walk_forward_evaluation(dataset, spec, config, started, release):
     """Keep a genuine nested evaluator alive while its durable reservation is read."""
     from quantlab.walk_forward import _evaluate_split
+
     started.set()
     release.wait(30)
     return _evaluate_split(dataset, spec, config)
@@ -45,8 +48,7 @@ def _cancellable_walk_forward_worker(*args, evaluation_started, evaluation_relea
     from quantlab.walk_forward import _run_bounded
 
     def held_evaluation(function, arguments, **kwargs):
-        return _run_bounded(_held_walk_forward_evaluation,
-            (*arguments, evaluation_started, evaluation_release), **kwargs)
+        return _run_bounded(_held_walk_forward_evaluation, (*arguments, evaluation_started, evaluation_release), **kwargs)
 
     with patch('quantlab.walk_forward._run_bounded', side_effect=held_evaluation):
         _job_worker(*args)
@@ -74,15 +76,19 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         self.receiver.poll.side_effect = lambda: bool(self.frames)
         self.receiver.recv_bytes.side_effect = lambda limit: self.frames.pop(0)
         self.tree = Mock()
+
         def stopped():
             self.alive = False
             self.trace.append('subtree_stopped')
+
         self.tree.stop_and_join.side_effect = stopped
         context = Mock()
         context.Pipe.return_value = self.receiver, Mock()
         context.Process.return_value = self.process
-        with patch('quantlab.desktop_runtime.mp.get_context', return_value=context), \
-                patch('quantlab.desktop_runtime._WindowsProcessTree', return_value=self.tree):
+        with (
+            patch('quantlab.desktop_runtime.mp.get_context', return_value=context),
+            patch('quantlab.desktop_runtime._WindowsProcessTree', return_value=self.tree),
+        ):
             job_id = self.manager.start(operation, payload)
         # Use the same isolated-tree protocol on all test host platforms.
         self.manager.tree = self.tree
@@ -90,17 +96,14 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         return job_id
 
     def frame(self, kind='result', **values):
-        self.frames.append(json.dumps({'job_id': self.manager.job_id,
-            'type': kind, **values}).encode())
+        self.frames.append(json.dumps({'job_id': self.manager.job_id, 'type': kind, **values}).encode())
 
     def stop(self):
         self.manager.cancel()
         return self.manager.poll()
 
     def test_exact_allowlist_and_no_implicit_worker_on_construction(self):
-        self.assertEqual(WALK_FORWARD_OPERATIONS, {
-            'ui_walk_forward_preview', 'ui_walk_forward_run',
-            'ui_walk_forward_read', 'ui_walk_forward_reconcile'})
+        self.assertEqual(WALK_FORWARD_OPERATIONS, {'ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read', 'ui_walk_forward_reconcile'})
         self.assertTrue(WALK_FORWARD_OPERATIONS <= UI_OPERATIONS)
         self.assertFalse(self.manager.active)
         self.assertIsNone(self.manager._quiesced_walk_forward)
@@ -163,8 +166,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         job_id = self.start_fake()
         self.stop()
         with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
-            for value in ({'reference': OTHER_REFERENCE, 'stopped_job_id': job_id},
-                          {'reference': REFERENCE, 'stopped_job_id': 'forged'}):
+            for value in ({'reference': OTHER_REFERENCE, 'stopped_job_id': job_id}, {'reference': REFERENCE, 'stopped_job_id': 'forged'}):
                 with self.subTest(value=value), self.assertRaises(RuntimeSafetyError):
                     self.manager.start('ui_walk_forward_reconcile', value)
             restarted = JobManager(self.paths)
@@ -310,9 +312,13 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]['message'], 'Recorded failure')
 
     def test_stale_job_and_mismatched_reference_never_deliver_result(self):
-        for index, frame in enumerate(({'job_id': 'old-job', 'type': 'result', 'result': {'reference': REFERENCE}},
-                      {'type': 'result', 'result': {'reference': OTHER_REFERENCE}},
-                      {'type': 'result', 'result': {'status': 'completed'}})):
+        for index, frame in enumerate(
+            (
+                {'job_id': 'old-job', 'type': 'result', 'result': {'reference': REFERENCE}},
+                {'type': 'result', 'result': {'reference': OTHER_REFERENCE}},
+                {'type': 'result', 'result': {'status': 'completed'}},
+            )
+        ):
             with self.subTest(frame=frame):
                 self.start_fake(payload={'plan': self.plan, 'preview_identity': f'{index:064x}'})
                 self.frames.append(json.dumps({'job_id': self.manager.job_id, **frame}).encode())
@@ -367,11 +373,20 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             sender, gate = Mock(), Mock()
             gate.wait.return_value = True
             execute = Mock(return_value={'reference': REFERENCE})
-            with patch('quantlab.desktop_runtime.os.setsid', create=True), \
-                    patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(execute_ui_operation=execute)}):
-                _job_worker(sender, gate, 'ui_walk_forward_reconcile',
+            with (
+                patch('quantlab.desktop_runtime.os.setsid', create=True),
+                patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(execute_ui_operation=execute)}),
+            ):
+                _job_worker(
+                    sender,
+                    gate,
+                    'ui_walk_forward_reconcile',
                     {'reference': REFERENCE, 'descendants_stopped': True},
-                    str(self.paths.root), None, 'worker-fixture', admitted)
+                    str(self.paths.root),
+                    None,
+                    'worker-fixture',
+                    admitted,
+                )
             self.assertIs(execute.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once()
 
@@ -379,9 +394,11 @@ class WalkForwardRuntimeTests(unittest.TestCase):
 @unittest.skipUnless(importlib.util.find_spec('PySide6'), 'Pinned Qt required by desktop worker adapter')
 class WalkForwardSpawnSmokeTests(unittest.TestCase):
     """Actual offline spawned workers and generated bars; no provider or broker."""
+
     def setUp(self):
         from quantlab.reporting import save_dataset
         from tests.test_walk_forward import inputs
+
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.paths = AppPaths(Path(self.temp.name) / 'app').ensure()
@@ -396,7 +413,7 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
         deadline = time.monotonic() + 80
         while self.manager.active and time.monotonic() < deadline:
             events.extend(self.manager.poll())
-            time.sleep(.01)
+            time.sleep(0.01)
         self.assertFalse(self.manager.active, 'Bounded spawned task did not finish')
         failures = [event for event in events if event['type'] == 'error']
         self.assertEqual(failures, [], events)
@@ -413,8 +430,7 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
 
     def test_generated_run_completes_and_reloads_without_replay(self):
         reference = self.preview()
-        job_id = self.manager.start('ui_walk_forward_run', {
-            'plan': self.plan, 'preview_identity': reference})
+        job_id = self.manager.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': reference})
         result = self.finish()
         self.assertEqual(result['reference'], reference)
         self.assertEqual(result['status'], 'completed')
@@ -432,18 +448,16 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
         reference = self.preview()
         context = multiprocessing.get_context('spawn')
         evaluation_started, evaluation_release = context.Event(), context.Event()
-        worker = partial(_cancellable_walk_forward_worker,
-            evaluation_started=evaluation_started, evaluation_release=evaluation_release)
+        worker = partial(_cancellable_walk_forward_worker, evaluation_started=evaluation_started, evaluation_release=evaluation_release)
         with patch('quantlab.desktop_runtime._job_worker', worker):
-            job_id = self.manager.start('ui_walk_forward_run', {
-                'plan': self.plan, 'preview_identity': reference})
+            job_id = self.manager.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': reference})
         journal = self.paths.state / 'walk_forward' / reference / 'walk_forward.sqlite3'
         observed = None
         event_evidence = []
         terminal_journal = None
 
         def read_journal():
-            with closing(sqlite3.connect(journal, timeout=.1)) as db, db:
+            with closing(sqlite3.connect(journal, timeout=0.1)) as db, db:
                 row = db.execute('SELECT payload FROM state WHERE id=1').fetchone()
             return json.loads(row[0]) if row else None
 
@@ -472,21 +486,25 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
             event_evidence = event_evidence[-20:]
             if any(event['type'] in ('result', 'error', 'cancelled') for event in polled):
                 break  # A terminal worker cannot later expose an active evaluation.
-            time.sleep(.005)
+            time.sleep(0.005)
         if observed is None and journal.exists():
             try:
                 candidate = read_journal()
-                terminal_journal = None if candidate is None else {
-                    'status': candidate['status'],
-                    'evaluation_statuses': [item['status'] for item in candidate['evaluations']]}
+                terminal_journal = (
+                    None if candidate is None else {'status': candidate['status'], 'evaluation_statuses': [item['status'] for item in candidate['evaluations']]}
+                )
             except sqlite3.OperationalError as exc:
                 terminal_journal = {'read_error': str(exc)}
-        self.assertIsNotNone(observed, 'Did not observe a durable running evaluation to cancel; ' +
-            json.dumps({'worker_events': event_evidence, 'journal': terminal_journal}, ensure_ascii=False))
+        self.assertIsNotNone(
+            observed,
+            'Did not observe a durable running evaluation to cancel; '
+            + json.dumps({'worker_events': event_evidence, 'journal': terminal_journal}, ensure_ascii=False),
+        )
         self.manager.cancel()
         events = self.manager.poll()
         self.assertEqual([event['type'] for event in events], ['cancelled'])
         from quantlab.walk_forward import read_walk_forward_state
+
         stopped = read_walk_forward_state(journal.parent)
         reserved_count = len(stopped['evaluations'])
         self.assertEqual(stopped['status'], 'running')

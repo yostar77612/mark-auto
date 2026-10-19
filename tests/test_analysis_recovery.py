@@ -1,4 +1,5 @@
 """Real SQLite/tempdir protocol tests; no production helper or provider transport."""
+
 import copy
 from contextlib import closing
 import multiprocessing as mp
@@ -25,6 +26,7 @@ def _hold_operation(root, bootstrap, ready, release):
 
 def _crash_ledger_transaction(database):
     import os
+
     db = sqlite3.connect(database)
     db.execute('PRAGMA journal_mode=DELETE')
     db.execute('PRAGMA synchronous=FULL')
@@ -42,12 +44,16 @@ class RecoveryLedgerTests(unittest.TestCase):
         cls.source_tmp = tempfile.TemporaryDirectory()
         data, state, folder = source(Path(cls.source_tmp.name))
         packet = prepare(folder, data, state)
-        cls.plan = a.make_analysis_plan(packet, model='fixture-model', registration='a' * 32,
-            provider_implementation=PROVENANCE, timeout_seconds=30)
-        cls.base_request = {'campaign_reference': folder.name,
+        cls.plan = a.make_analysis_plan(packet, model='fixture-model', registration='a' * 32, provider_implementation=PROVENANCE, timeout_seconds=30)
+        cls.base_request = {
+            'campaign_reference': folder.name,
             'original_dataset': {'kind': 'local_dataset_file', 'path': str(folder / 'original.json')},
-            'attempt_ids': [state['attempts'][0]['attempt_id']], 'task': 'critique',
-            'model': 'fixture-model', 'registration': 'a' * 32, 'timeout_seconds': 30}
+            'attempt_ids': [state['attempts'][0]['attempt_id']],
+            'task': 'critique',
+            'model': 'fixture-model',
+            'registration': 'a' * 32,
+            'timeout_seconds': 30,
+        }
 
     @classmethod
     def tearDownClass(cls):
@@ -74,19 +80,24 @@ class RecoveryLedgerTests(unittest.TestCase):
         self.register()
         original_connect = sqlite3.connect
         opened = []
+
         class SetupFailure(sqlite3.Connection):
             was_closed = False
+
             def execute(connection, sql, *args):
                 if sql == 'PRAGMA busy_timeout=250':
                     raise sqlite3.OperationalError('synthetic configuration failure')
                 return super().execute(sql, *args)
+
             def close(connection):
                 connection.was_closed = True
                 return super().close()
+
         def connect(*args, **kwargs):
             connection = original_connect(*args, **kwargs, factory=SetupFailure)
             opened.append(connection)  # Retain handles so GC cannot conceal a leak.
             return connection
+
         try:
             with patch.object(r.sqlite3, 'connect', side_effect=connect):
                 with self.assertRaises(sqlite3.OperationalError):
@@ -107,15 +118,19 @@ class RecoveryLedgerTests(unittest.TestCase):
         database.write_bytes(raw)
         original_connect = sqlite3.connect
         opened = []
+
         class TrackedConnection(sqlite3.Connection):
             was_closed = False
+
             def close(connection):
                 connection.was_closed = True
                 return super().close()
+
         def connect(*args, **kwargs):
             connection = original_connect(*args, **kwargs, factory=TrackedConnection)
             opened.append(connection)
             return connection
+
         try:
             with patch.object(r.sqlite3, 'connect', side_effect=connect):
                 with self.assertRaises(sqlite3.DatabaseError):
@@ -131,15 +146,19 @@ class RecoveryLedgerTests(unittest.TestCase):
     def test_production_ledger_connections_close_without_garbage_collection(self):
         original_connect = sqlite3.connect
         opened = []
+
         class TrackedConnection(sqlite3.Connection):
             was_closed = False
+
             def close(connection):
                 connection.was_closed = True
                 return super().close()
+
         def connect(*args, **kwargs):
             connection = original_connect(*args, **kwargs, factory=TrackedConnection)
             opened.append(connection)
             return connection
+
         try:
             with patch.object(r.sqlite3, 'connect', side_effect=connect):
                 launch = self.register()
@@ -211,9 +230,11 @@ class RecoveryLedgerTests(unittest.TestCase):
     def test_publication_failure_rolls_back_and_lost_ack_is_idempotent(self):
         launch = self.register()
         original = r._append
+
         def failed_append(db, state, events):
             original(db, state, events)
             raise sqlite3.OperationalError('simulated write failure before commit')
+
         with patch.object(r, '_append', side_effect=failed_append), self.assertRaises(sqlite3.OperationalError):
             self.publish(launch)
         self.assertTrue(r.inspect_recovery(self.paths).unresolved)
@@ -228,8 +249,7 @@ class RecoveryLedgerTests(unittest.TestCase):
         self.publish(launch)
         record = {'plan': self.plan, 'provider_descriptor': a.expected_provider_descriptor(self.plan)}
         r.validate_stop_receipt(self.paths, launch['job_id'], record=record)
-        for mutate in (lambda x: x['plan']['binding'].update(timeout_seconds=31),
-                       lambda x: x['provider_descriptor'].update(model='different')):
+        for mutate in (lambda x: x['plan']['binding'].update(timeout_seconds=31), lambda x: x['provider_descriptor'].update(model='different')):
             broken = copy.deepcopy(record)
             mutate(broken)
             with self.assertRaises(ValueError):
@@ -317,9 +337,12 @@ class RecoveryLedgerTests(unittest.TestCase):
         self.register()
         database = self.paths.controls / r._DATABASE
         original = database.read_bytes()
-        mutations = ["PRAGMA user_version=99", "CREATE TABLE extra(value TEXT)",
+        mutations = [
+            "PRAGMA user_version=99",
+            "CREATE TABLE extra(value TEXT)",
             "UPDATE events SET digest='" + '0' * 64 + "' WHERE sequence=3",
-            "UPDATE events SET payload='{}' WHERE sequence=3"]
+            "UPDATE events SET payload='{}' WHERE sequence=3",
+        ]
         for statement in mutations:
             with self.subTest(statement=statement):
                 database.write_bytes(original)
@@ -371,8 +394,13 @@ class RecoveryLedgerTests(unittest.TestCase):
         original = database.read_bytes()
         for key in ('analysis_id', 'helper_nonce'):
             database.write_bytes(original)
-            duplicate = {**launch, 'job_id': 'd' * 32, 'helper_nonce': 'e' * 32,
-                'analysis_id': 'f' * 64, 'ledger_basename': 'chatgpt-analysis-' + 'f' * 64 + '.sqlite3'}
+            duplicate = {
+                **launch,
+                'job_id': 'd' * 32,
+                'helper_nonce': 'e' * 32,
+                'analysis_id': 'f' * 64,
+                'ledger_basename': 'chatgpt-analysis-' + 'f' * 64 + '.sqlite3',
+            }
             duplicate[key] = launch[key]
             duplicate['ledger_basename'] = 'chatgpt-analysis-' + duplicate['analysis_id'] + '.sqlite3'
             state = r._load(self.paths)
@@ -386,11 +414,11 @@ class RecoveryLedgerTests(unittest.TestCase):
         self.publish(first)
         original_paths = self.paths
         self.paths = AppPaths(Path(self.tmp.name) / 'second-workspace', self.bootstrap).ensure()
-        plan = a.make_analysis_plan(self.plan['binding']['packet'], model='other-model',
-            registration='a' * 32, provider_implementation=PROVENANCE, timeout_seconds=30)
+        plan = a.make_analysis_plan(
+            self.plan['binding']['packet'], model='other-model', registration='a' * 32, provider_implementation=PROVENANCE, timeout_seconds=30
+        )
         with patch.object(r, 'MAX_ROWS', 7):
-            second = self.register(job_id='e' * 32, helper_nonce='f' * 32,
-                approved_plan=plan, request={**self.request, 'model': 'other-model'})
+            second = self.register(job_id='e' * 32, helper_nonce='f' * 32, approved_plan=plan, request={**self.request, 'model': 'other-model'})
             self.assertEqual(r._load(self.paths)['length'], 6)
             with r.admission(original_paths) as token:
                 with self.assertRaises(r.RecoveryError):
@@ -399,8 +427,7 @@ class RecoveryLedgerTests(unittest.TestCase):
             state = r._load(self.paths)
             with closing(sqlite3.connect(self.paths.controls / r._DATABASE)) as db, db:
                 with self.assertRaisesRegex(r.RecoveryError, 'receipt capacity'):
-                    r._append(db, state, [('epoch', {'root': first['workspace']['root'],
-                        'transaction_id': 'd' * 32, 'epoch': 1})])
+                    r._append(db, state, [('epoch', {'root': first['workspace']['root'], 'transaction_id': 'd' * 32, 'epoch': 1})])
             self.publish(second)
             self.assertEqual(r._load(self.paths)['length'], 7)
             r.validate_stop_receipt(self.paths, second['job_id'])
@@ -419,37 +446,37 @@ class RecoveryLedgerTests(unittest.TestCase):
 
     def test_strict_marker_and_event_bounds_and_test_receipt_kind(self):
         import json
+
         launch = self.register()
         marker = self.bootstrap / r._SENTINEL
         marker_raw = marker.read_bytes()
-        for raw in (b'{"version":1,"version":1}', b'\xff', b'[' * 1200 + b']' * 1200,
-                    b'x' * (r.MAX_RECORD + 1)):
+        for raw in (b'{"version":1,"version":1}', b'\xff', b'[' * 1200 + b']' * 1200, b'x' * (r.MAX_RECORD + 1)):
             marker.write_bytes(raw)
             with self.assertRaises(r.RecoveryError):
                 r.inspect_recovery(self.paths)
         marker.write_bytes(marker_raw)
         database = self.paths.controls / r._DATABASE
         original = database.read_bytes()
-        for change in (lambda v: v.update(extra='untrusted'),
-                       lambda v: v.update(epoch=True),
-                       lambda v: v.update(helper_protocol='TEST_ONLY'),
-                       lambda v: v.update(request_bytes=True)):
+        for change in (
+            lambda v: v.update(extra='untrusted'),
+            lambda v: v.update(epoch=True),
+            lambda v: v.update(helper_protocol='TEST_ONLY'),
+            lambda v: v.update(request_bytes=True),
+        ):
             database.write_bytes(original)
             with closing(sqlite3.connect(database)) as db, db:
                 raw = db.execute('SELECT payload FROM events WHERE sequence=3').fetchone()[0]
                 event = json.loads(raw)
                 change(event['value'])
                 db.execute('DROP TRIGGER no_update')
-                db.execute('UPDATE events SET payload=?,digest=? WHERE sequence=3',
-                           (r._json(event), r._hash(event)))
+                db.execute('UPDATE events SET payload=?,digest=? WHERE sequence=3', (r._json(event), r._hash(event)))
                 db.execute(r._SCHEMA['no_update'])
             with self.assertRaises(r.RecoveryError):
                 r.inspect_recovery(self.paths)
         database.write_bytes(original)
         state = r._load(self.paths)
         with r.admission(self.paths), closing(sqlite3.connect(database)) as db, db:
-            r._append(db, state, [('receipt', {'protocol': 'TEST_ONLY', 'job_id': launch['job_id'],
-                'launch_hash': r._hash(launch), 'active_processes': 0})])
+            r._append(db, state, [('receipt', {'protocol': 'TEST_ONLY', 'job_id': launch['job_id'], 'launch_hash': r._hash(launch), 'active_processes': 0})])
         with self.assertRaises(r.RecoveryError):
             r.validate_stop_receipt(self.paths, launch['job_id'])
 
@@ -477,6 +504,7 @@ class RecoveryLedgerTests(unittest.TestCase):
             r.inspect_recovery(self.paths)
         database.unlink()
         import os
+
         os.link(backup, database)
         with self.assertRaises(r.RecoveryError):
             r.inspect_recovery(self.paths)
@@ -489,8 +517,7 @@ class RecoveryLedgerTests(unittest.TestCase):
         with r.admission(self.paths) as token:
             pass
         with self.assertRaises(r.RecoveryError):
-            r.register_launch(self.paths, job_id='b' * 32, helper_nonce='c' * 32,
-                approved_plan=self.plan, request=self.request, admission=token)
+            r.register_launch(self.paths, job_id='b' * 32, helper_nonce='c' * 32, approved_plan=self.plan, request=self.request, admission=token)
         for changes in ({'registration': 'f' * 32}, {'campaign_reference': 'f' * 64}, {'attempt_ids': ['f' * 64]}):
             with self.assertRaises(ValueError):
                 self.register(request={**self.request, **changes})
@@ -502,8 +529,7 @@ class RecoveryLedgerTests(unittest.TestCase):
                 self.assertIs(first, second)
         context = mp.get_context('spawn')
         ready, release = context.Event(), context.Event()
-        child = context.Process(target=_hold_operation,
-            args=(str(self.paths.root), str(self.bootstrap), ready, release))
+        child = context.Process(target=_hold_operation, args=(str(self.paths.root), str(self.bootstrap), ready, release))
         child.start()
         try:
             self.assertTrue(ready.wait(5))
@@ -523,12 +549,14 @@ class RecoveryLedgerTests(unittest.TestCase):
     def test_concurrent_registration_admits_at_most_one(self):
         barrier = threading.Barrier(2)
         successes, failures = [], []
+
         def register(index):
             barrier.wait()
             try:
                 successes.append(self.register(job_id=str(index) * 32))
             except r.RecoveryError as exc:
                 failures.append(exc)
+
         threads = [threading.Thread(target=register, args=(i,)) for i in (1, 2)]
         for thread in threads:
             thread.start()

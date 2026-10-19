@@ -4,6 +4,7 @@ The executable used by these tests cannot open a real device or create a VM:
 its open/fstat/ioctl/mmap/munmap/close/signal/timer interfaces are replaced before
 including the production source. No sudo, VM, image or external download runs.
 """
+
 import json
 from pathlib import Path
 import platform
@@ -18,9 +19,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tools/selftest_kvm_x86_execution.c'
 STRICT_FLAGS = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wpedantic']
-NATIVE_TESTS_SUPPORTED = (platform.system() == 'Linux'
-                          and platform.machine().lower() in ('x86_64', 'amd64')
-                          and shutil.which('cc') is not None)
+NATIVE_TESTS_SUPPORTED = platform.system() == 'Linux' and platform.machine().lower() in ('x86_64', 'amd64') and shutil.which('cc') is not None
 
 
 HARNESS = r'''
@@ -348,13 +347,35 @@ class KvmExecutionSourceContractTests(unittest.TestCase):
         self.assertIn('#define GUEST_RAM_BYTES 4096U', source)
         self.assertIn('#define MAX_RUN_MAPPING_BYTES 65536U', source)
         self.assertIn('index < 2', source)
-        self.assertEqual(set(re.findall(r'ioctl\([^,]+,\s*(KVM_\w+)', source)), {
-            'KVM_GET_API_VERSION', 'KVM_CHECK_EXTENSION', 'KVM_GET_VCPU_MMAP_SIZE',
-            'KVM_CREATE_VM', 'KVM_SET_USER_MEMORY_REGION', 'KVM_CREATE_VCPU',
-            'KVM_GET_SREGS', 'KVM_SET_SREGS', 'KVM_SET_REGS', 'KVM_RUN'})
-        for prohibited in ('system(', 'execve(', 'popen(', 'socket(', 'chmod(',
-                           'chown(', 'KVM_CREATE_IRQCHIP', 'KVM_SET_TSS_ADDR',
-                           'KVM_CREATE_DEVICE', 'PROT_EXEC', '/proc/', '/sys/'):
+        self.assertEqual(
+            set(re.findall(r'ioctl\([^,]+,\s*(KVM_\w+)', source)),
+            {
+                'KVM_GET_API_VERSION',
+                'KVM_CHECK_EXTENSION',
+                'KVM_GET_VCPU_MMAP_SIZE',
+                'KVM_CREATE_VM',
+                'KVM_SET_USER_MEMORY_REGION',
+                'KVM_CREATE_VCPU',
+                'KVM_GET_SREGS',
+                'KVM_SET_SREGS',
+                'KVM_SET_REGS',
+                'KVM_RUN',
+            },
+        )
+        for prohibited in (
+            'system(',
+            'execve(',
+            'popen(',
+            'socket(',
+            'chmod(',
+            'chown(',
+            'KVM_CREATE_IRQCHIP',
+            'KVM_SET_TSS_ADDR',
+            'KVM_CREATE_DEVICE',
+            'PROT_EXEC',
+            '/proc/',
+            '/sys/',
+        ):
             self.assertNotIn(prohibited, source)
 
 
@@ -369,14 +390,11 @@ class KvmExecutionMockedTests(unittest.TestCase):
         harness = directory / 'harness.c'
         harness.write_text(HARNESS.replace('PRODUCTION_SOURCE', str(SOURCE)), encoding='utf-8')
         # Production is compile-checked, never executed.
-        subprocess.run(['cc', *STRICT_FLAGS, str(SOURCE), '-o', str(directory / 'production')],
-                       check=True, capture_output=True, text=True, timeout=30)
-        subprocess.run(['cc', *STRICT_FLAGS, str(harness), '-o', str(cls.executable)],
-                       check=True, capture_output=True, text=True, timeout=30)
+        subprocess.run(['cc', *STRICT_FLAGS, str(SOURCE), '-o', str(directory / 'production')], check=True, capture_output=True, text=True, timeout=30)
+        subprocess.run(['cc', *STRICT_FLAGS, str(harness), '-o', str(cls.executable)], check=True, capture_output=True, text=True, timeout=30)
 
     def run_mock(self, scenario='success', failure='none'):
-        completed = subprocess.run([str(self.executable), scenario, failure],
-                                   capture_output=True, text=True, timeout=5)
+        completed = subprocess.run([str(self.executable), scenario, failure], capture_output=True, text=True, timeout=5)
         self.assertIn(completed.returncode, (0, 1), completed.stderr)
         report = json.loads(completed.stdout)
         trace = json.loads(completed.stderr)
@@ -402,8 +420,7 @@ class KvmExecutionMockedTests(unittest.TestCase):
         self.assertTrue(report['halt_observed'])
         self.assertTrue(report['cleanup_complete'])
         self.assertEqual(report['kvm_run_calls'], 2)
-        self.assertTrue(trace['trace'].endswith(
-            'timer_disarm,unmap_run,close_vcpu,close_vm,unmap_memory,close_kvm,signal_restore,'))
+        self.assertTrue(trace['trace'].endswith('timer_disarm,unmap_run,close_vcpu,close_vm,unmap_memory,close_kvm,signal_restore,'))
 
     def test_no_or_arbitrary_arguments_never_touch_host(self):
         for scenario in ('no_arguments', 'extra_arguments', 'arbitrary_payload'):
@@ -425,13 +442,15 @@ class KvmExecutionMockedTests(unittest.TestCase):
 
     def test_preflight_rejections_never_create_vm(self):
         for scenario, status in (
-                ('page_size_wrong', 'unsupported_page_size'),
-                ('device_regular', 'unexpected_device'), ('device_wrong_id', 'unexpected_device'),
-                ('api_wrong', 'unsupported_api_version'),
-                ('memory_unsupported', 'user_memory_unavailable'),
-                ('map_size_small', 'unsupported_run_mapping_size'),
-                ('map_size_large', 'unsupported_run_mapping_size'),
-                ('map_size_unaligned', 'unsupported_run_mapping_size')):
+            ('page_size_wrong', 'unsupported_page_size'),
+            ('device_regular', 'unexpected_device'),
+            ('device_wrong_id', 'unexpected_device'),
+            ('api_wrong', 'unsupported_api_version'),
+            ('memory_unsupported', 'user_memory_unavailable'),
+            ('map_size_small', 'unsupported_run_mapping_size'),
+            ('map_size_large', 'unsupported_run_mapping_size'),
+            ('map_size_unaligned', 'unsupported_run_mapping_size'),
+        ):
             with self.subTest(scenario=scenario):
                 code, report, trace = self.run_mock(scenario)
                 self.assertEqual(code, 1)
@@ -439,11 +458,26 @@ class KvmExecutionMockedTests(unittest.TestCase):
                 self.assertNotIn('create_vm', trace['trace'])
 
     def test_every_setup_and_run_failure_closes_all_acquired_resources(self):
-        for failure in ('signal_install', 'timer_arm', 'page_size', 'open_device',
-                        'device_identity', 'api_version', 'memory_capability',
-                        'run_mapping_size', 'create_vm', 'map_memory', 'register_memory',
-                        'create_vcpu', 'map_run', 'get_sregs', 'set_sregs', 'set_regs',
-                        'run_first', 'run_second'):
+        for failure in (
+            'signal_install',
+            'timer_arm',
+            'page_size',
+            'open_device',
+            'device_identity',
+            'api_version',
+            'memory_capability',
+            'run_mapping_size',
+            'create_vm',
+            'map_memory',
+            'register_memory',
+            'create_vcpu',
+            'map_run',
+            'get_sregs',
+            'set_sregs',
+            'set_regs',
+            'run_first',
+            'run_second',
+        ):
             with self.subTest(failure=failure):
                 code, report, trace = self.run_mock(failure=failure)
                 self.assertEqual(code, 1)
@@ -453,8 +487,17 @@ class KvmExecutionMockedTests(unittest.TestCase):
                 self.assertEqual(trace['trace'].split(',').count(failure), 1)
 
     def test_malformed_io_metadata_and_marker_never_resume_guest(self):
-        for scenario in ('io_in', 'io_size', 'io_port', 'io_count', 'io_header_offset',
-                         'io_end_offset', 'io_overflow_offset', 'marker_wrong', 'first_exit_wrong'):
+        for scenario in (
+            'io_in',
+            'io_size',
+            'io_port',
+            'io_count',
+            'io_header_offset',
+            'io_end_offset',
+            'io_overflow_offset',
+            'marker_wrong',
+            'first_exit_wrong',
+        ):
             with self.subTest(scenario=scenario):
                 code, report, trace = self.run_mock(scenario)
                 self.assertEqual(code, 1)
@@ -482,8 +525,7 @@ class KvmExecutionMockedTests(unittest.TestCase):
                 self.assertTrue(report['cleanup_complete'])
 
     def test_cleanup_failures_invalidate_success_and_remaining_cleanup_is_attempted(self):
-        expected = ('timer_disarm', 'unmap_run', 'close_vcpu', 'close_vm',
-                    'unmap_memory', 'close_kvm', 'signal_restore')
+        expected = ('timer_disarm', 'unmap_run', 'close_vcpu', 'close_vm', 'unmap_memory', 'close_kvm', 'signal_restore')
         for failure in expected:
             with self.subTest(failure=failure):
                 code, report, trace = self.run_mock(failure=failure)
@@ -499,14 +541,15 @@ class KvmExecutionWorkflowContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.workflow = (ROOT / '.github/workflows/quantlab.yml').read_text(encoding='utf-8')
-        match = re.search(r'(?ms)^  guest-execution-diagnostic:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)',
-                          cls.workflow)
+        match = re.search(r'(?ms)^  guest-execution-diagnostic:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)', cls.workflow)
         if match is None:
             raise AssertionError('Missing separate infrastructure diagnostic job')
         cls.job = match.group(0)
         script = re.search(
             r'(?ms)      - name: Execute fixed five-byte KVM diagnostic[^\n]*\n'
-            r'        shell: bash\n        run: \|\n(.*?)^      - name: Preserve KVM', cls.job)
+            r'        shell: bash\n        run: \|\n(.*?)^      - name: Preserve KVM',
+            cls.job,
+        )
         if script is None:
             raise AssertionError('Missing bounded diagnostic command step')
         cls.script = textwrap.dedent(script.group(1))
@@ -521,21 +564,36 @@ class KvmExecutionWorkflowContractTests(unittest.TestCase):
         self.assertIn('persist-credentials: false', self.job)
 
     def test_only_system_tools_mocked_tests_and_strict_unprivileged_compile(self):
-        self.assertIn('run: /usr/bin/python3 -m unittest discover -s tests '
-                      '-p test_kvm_x86_execution.py -v', self.job)
-        expected = ('/usr/bin/cc -std=c11 -O2 -Wall -Wextra -Werror -Wpedantic '
-                    'tools/selftest_kvm_x86_execution.c -o build/selftest-kvm-x86')
+        self.assertIn('run: /usr/bin/python3 -m unittest discover -s tests -p test_kvm_x86_execution.py -v', self.job)
+        expected = '/usr/bin/cc -std=c11 -O2 -Wall -Wextra -Werror -Wpedantic tools/selftest_kvm_x86_execution.c -o build/selftest-kvm-x86'
         self.assertIn(expected, self.job)
         self.assertEqual(self.job.count('sudo '), 1)
-        for prohibited in ('setup-python', 'pip install', 'apt-get', 'curl ', 'wget ',
-                           'chmod', 'chown', 'usermod', 'modprobe', 'sysctl', 'setfacl',
-                           'sudo cc', 'sudo /usr/bin/cc', 'sudo sh', 'sudo bash', 'sudo tee'):
+        for prohibited in (
+            'setup-python',
+            'pip install',
+            'apt-get',
+            'curl ',
+            'wget ',
+            'chmod',
+            'chown',
+            'usermod',
+            'modprobe',
+            'sysctl',
+            'setfacl',
+            'sudo cc',
+            'sudo /usr/bin/cc',
+            'sudo sh',
+            'sudo bash',
+            'sudo tee',
+        ):
             self.assertNotIn(prohibited, self.job)
 
     def test_execution_is_fixed_bounded_and_preserves_separate_reports(self):
-        expected = ('if timeout --kill-after=2s 10s sudo -n ./build/selftest-kvm-x86 '
-                    '--run-kvm-self-test > dist/validation/kvm-execution-self-test.json '
-                    '2>/dev/null; then')
+        expected = (
+            'if timeout --kill-after=2s 10s sudo -n ./build/selftest-kvm-x86 '
+            '--run-kvm-self-test > dist/validation/kvm-execution-self-test.json '
+            '2>/dev/null; then'
+        )
         self.assertIn(expected, self.script)
         self.assertEqual(self.script.count('> dist/validation/kvm-execution-self-test.json'), 1)
         self.assertEqual(self.script.count('> dist/validation/kvm-execution-command.json'), 1)
@@ -553,14 +611,12 @@ class KvmExecutionWorkflowContractTests(unittest.TestCase):
         self.assertIn('if: always()', upload)
         self.assertIn('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', upload)
         self.assertIn('name: kvm-execution-infrastructure-diagnostic', upload)
-        self.assertIn('path: |\n            dist/validation/kvm-execution-self-test.json\n'
-                      '            dist/validation/kvm-execution-command.json', upload)
+        self.assertIn('path: |\n            dist/validation/kvm-execution-self-test.json\n            dist/validation/kvm-execution-command.json', upload)
         self.assertIn('retention-days: 7', upload)
 
     def test_quality_remains_read_only_and_product_jobs_do_not_depend_on_diagnostic(self):
         other_jobs = self.workflow.replace(self.job, '')
-        quality = re.search(r'(?ms)^  quality:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)',
-                            other_jobs).group(0)
+        quality = re.search(r'(?ms)^  quality:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)', other_jobs).group(0)
         self.assertEqual(quality.count('sudo '), 1)
         self.assertIn('--query-kvm-api', quality)
         self.assertNotIn('--run-kvm-self-test', quality)
@@ -570,38 +626,47 @@ class KvmExecutionWorkflowContractTests(unittest.TestCase):
         self.assertIn('- run: python -m unittest discover -s tests -v', other_jobs)
         self.assertIn('- run: python tools/quality_gate.py --history', quality)
 
-    @unittest.skipUnless(NATIVE_TESTS_SUPPORTED and shutil.which('bash'),
-                         'Hosted Linux shell contract requires bash')
+    @unittest.skipUnless(NATIVE_TESTS_SUPPORTED and shutil.which('bash'), 'Hosted Linux shell contract requires bash')
     def test_mocked_wrapper_preserves_complete_partial_and_empty_stdout(self):
         # A shell function replaces timeout itself: sudo and the production
         # executable are only arguments to the stub and are never executed.
         for code, diagnostic, outcome in (
-                (0, '{"status":"expected_io_and_halt_observed"}\n', 'command_completed'),
-                (1, '{"execution_attempted":true,"status":"syscall_failed"}\n', 'command_failed'),
-                (124, '{"payload_observed":true', 'command_timed_out'),
-                (137, '', 'command_killed'), (126, '', 'command_failed')):
+            (0, '{"status":"expected_io_and_halt_observed"}\n', 'command_completed'),
+            (1, '{"execution_attempted":true,"status":"syscall_failed"}\n', 'command_failed'),
+            (124, '{"payload_observed":true', 'command_timed_out'),
+            (137, '', 'command_killed'),
+            (126, '', 'command_failed'),
+        ):
             with self.subTest(code=code), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 (root / 'dist/validation').mkdir(parents=True)
                 payload = root / 'mock-stdout'
                 payload.write_text(diagnostic, encoding='utf-8')
-                stub = ('timeout() {\n'
-                        '  test "$*" = "--kill-after=2s 10s sudo -n ./build/selftest-kvm-x86 --run-kvm-self-test" || return 99\n'
-                        '  cat mock-stdout\n'
-                        f'  return {code}\n'
-                        '}\n')
-                completed = subprocess.run([shutil.which('bash'), '-euo', 'pipefail', '-c',
-                                            stub + self.script], cwd=root,
-                                           capture_output=True, text=True, timeout=5)
+                stub = (
+                    'timeout() {\n'
+                    '  test "$*" = "--kill-after=2s 10s sudo -n ./build/selftest-kvm-x86 --run-kvm-self-test" || return 99\n'
+                    '  cat mock-stdout\n'
+                    f'  return {code}\n'
+                    '}\n'
+                )
+                completed = subprocess.run(
+                    [shutil.which('bash'), '-euo', 'pipefail', '-c', stub + self.script], cwd=root, capture_output=True, text=True, timeout=5
+                )
                 self.assertEqual(completed.returncode, 0, completed.stderr)
-                self.assertEqual((root / 'dist/validation/kvm-execution-self-test.json').read_text(),
-                                 diagnostic)
+                self.assertEqual((root / 'dist/validation/kvm-execution-self-test.json').read_text(), diagnostic)
                 report = json.loads((root / 'dist/validation/kvm-execution-command.json').read_text())
-                self.assertEqual(report, {
-                    'schema_version': 1, 'diagnostic_only': True,
-                    'windows_client_acceptance': 'NOT_RUN', 'status': outcome,
-                    'command_exit_code': code, 'guest_execution_state': 'UNKNOWN',
-                    'diagnostic_report': 'kvm-execution-self-test.json'})
+                self.assertEqual(
+                    report,
+                    {
+                        'schema_version': 1,
+                        'diagnostic_only': True,
+                        'windows_client_acceptance': 'NOT_RUN',
+                        'status': outcome,
+                        'command_exit_code': code,
+                        'guest_execution_state': 'UNKNOWN',
+                        'diagnostic_report': 'kvm-execution-self-test.json',
+                    },
+                )
 
 
 if __name__ == '__main__':

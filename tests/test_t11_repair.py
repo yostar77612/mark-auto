@@ -1,4 +1,5 @@
 """Core-free import guards; AST only, no child processes or workspace I/O."""
+
 import unittest
 
 from tests.test_import_graph import import_graph, reaches, source_map

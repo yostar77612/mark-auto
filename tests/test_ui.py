@@ -1,4 +1,5 @@
 """Run with optional Streamlit dependency. Core-only runs explicitly skip UI."""
+
 import importlib.util
 import json
 import os
@@ -14,6 +15,7 @@ HAS_STREAMLIT = importlib.util.find_spec('streamlit') is not None
 class UITests(unittest.TestCase):
     def setUp(self):
         from streamlit.testing.v1 import AppTest
+
         self.AppTest = AppTest
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

@@ -1,4 +1,5 @@
 """Manual online maintenance only. Tests use saved HTML, never this command."""
+
 import argparse
 from datetime import date
 import hashlib
@@ -53,8 +54,7 @@ def parse_expiries(html):
         if cells is None:
             column = None
             continue
-        header = next((i for i, cell in enumerate(cells)
-                       if re.search(r'TX\s*/\s*MTX\s*/\s*TMF', cell)), None)
+        header = next((i for i, cell in enumerate(cells) if re.search(r'TX\s*/\s*MTX\s*/\s*TMF', cell)), None)
         if header is not None:
             column = header
             continue
@@ -71,8 +71,7 @@ def parse_expiries(html):
         found[month] = expiry
     if not found:
         raise ValueError('no verified monthly TX/MTX/TMF settlements')
-    return [{'contract_month': month, 'expiry_date': found[month], 'status': 'verified', 'source_index': 0}
-            for month in sorted(found)]
+    return [{'contract_month': month, 'expiry_date': found[month], 'status': 'verified', 'source_index': 0} for month in sorted(found)]
 
 
 def main():
@@ -87,12 +86,20 @@ def main():
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError('source too large')
     today = date.today().isoformat()
-    value = validate_data({'data_version': args.data_version, 'verified_date': today, 'status': 'verified',
-        'sources': [{'url': OFFICIAL_URL, 'retrieval_date': today, 'retrieval_method': RETRIEVAL_METHOD,
-                     'sha256': hashlib.sha256(raw).hexdigest()}], 'products': ['TX', 'MTX', 'TMF'],
-        'expiries': parse_expiries(raw.decode('utf-8-sig')),
-        'trading_calendar': {'status': 'not_bundled', 'reason':
-            'Official 2026 calendar is a colour-coded PDF that cannot be machine-verified; supply the existing manual calendar.'}})
+    value = validate_data(
+        {
+            'data_version': args.data_version,
+            'verified_date': today,
+            'status': 'verified',
+            'sources': [{'url': OFFICIAL_URL, 'retrieval_date': today, 'retrieval_method': RETRIEVAL_METHOD, 'sha256': hashlib.sha256(raw).hexdigest()}],
+            'products': ['TX', 'MTX', 'TMF'],
+            'expiries': parse_expiries(raw.decode('utf-8-sig')),
+            'trading_calendar': {
+                'status': 'not_bundled',
+                'reason': 'Official 2026 calendar is a colour-coded PDF that cannot be machine-verified; supply the existing manual calendar.',
+            },
+        }
+    )
     args.output.write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
 
 

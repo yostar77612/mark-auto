@@ -1,4 +1,5 @@
 """Exact TLS trust-anchor producer identity; offline fixtures, never real OAuth."""
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -35,7 +36,7 @@ class TlsAnchorProducerProfileTests(unittest.TestCase):
                 if name == 'desktop_chatgpt_provider.py':
                     # Provider bytes changed later (models limit); pin stays historical.
                     continue
-                raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
+                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest, name)
@@ -47,8 +48,9 @@ class TlsAnchorProducerProfileTests(unittest.TestCase):
                     self.assertIs(pools._select_producer(binding(profile, index, target)), profile)
         for index in (0, 1):
             item = binding(PROFILE, index)
-            item['provider']['descriptor']['source_sha256']['desktop_chatgpt_auth.py'] = (
-                PREVIOUS['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'])
+            item['provider']['descriptor']['source_sha256']['desktop_chatgpt_auth.py'] = PREVIOUS['chatgpt_plan_implementations'][index]['source_sha256'][
+                'desktop_chatgpt_auth.py'
+            ]
             with self.assertRaises(pools.SavedCandidatePoolError):
                 pools._select_producer(item)
 

@@ -5667,9 +5667,9 @@
           "pending": false,
           "state": "ready"
         },
-        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+        "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
         "plan": {
-          "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+          "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
           "binding": {
             "max_calls": 1,
             "model": "fixture-model",
@@ -6844,10 +6844,10 @@
                 }
               },
               "implementation": {
-                "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+                "indicators.py": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+                "research_analysis.py": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2"
               },
-              "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+              "packet_hash": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
               "provenance": {
                 "archived_result_status": "reference_only_unverified",
                 "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -6889,7 +6889,7 @@
           }
         },
         "receipt_snapshot": {
-          "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+          "provider_descriptor_hash": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
           "receipts": [],
           "version": 1
         }
@@ -6898,11 +6898,11 @@
     "ui_analysis_read": {
       "events": [],
       "result": {
-        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+        "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
         "cache_hit": true,
         "record": {
           "plan": {
-            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -8077,10 +8077,10 @@
                   }
                 },
                 "implementation": {
-                  "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+                  "indicators.py": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+                  "research_analysis.py": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2"
                 },
-                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+                "packet_hash": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -8124,7 +8124,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "campaign_id": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -8148,7 +8148,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+            "provider_descriptor_hash": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -8282,11 +8282,11 @@
     "ui_analysis_reconcile": {
       "events": [],
       "result": {
-        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+        "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
         "cache_hit": true,
         "record": {
           "plan": {
-            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -9461,10 +9461,10 @@
                   }
                 },
                 "implementation": {
-                  "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+                  "indicators.py": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+                  "research_analysis.py": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2"
                 },
-                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+                "packet_hash": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -9508,7 +9508,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "campaign_id": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -9532,7 +9532,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+            "provider_descriptor_hash": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -9679,11 +9679,11 @@
         ]
       ],
       "result": {
-        "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+        "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
         "cache_hit": false,
         "record": {
           "plan": {
-            "analysis_id": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "binding": {
               "max_calls": 1,
               "model": "fixture-model",
@@ -10858,10 +10858,10 @@
                   }
                 },
                 "implementation": {
-                  "indicators.py": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
-                  "research_analysis.py": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6"
+                  "indicators.py": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+                  "research_analysis.py": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2"
                 },
-                "packet_hash": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+                "packet_hash": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
                 "provenance": {
                   "archived_result_status": "reference_only_unverified",
                   "campaign_id": "17dfe63d206045063450ce3f5cdfec9921558eb3423412eae3e061e910093778",
@@ -10905,7 +10905,7 @@
           "provider_descriptor": {
             "account_credit_policy": "unverified_user_setting",
             "billing_route": "chatgpt_plan",
-            "campaign_id": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+            "campaign_id": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
             "endpoint": "https://api.openai.com/v1/responses",
             "included_usage_policy_ack_required": true,
             "max_calls": 1,
@@ -10929,7 +10929,7 @@
           },
           "real_model_status": "not_verified",
           "receipt_snapshot": {
-            "provider_descriptor_hash": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+            "provider_descriptor_hash": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
             "receipts": [
               {
                 "account_credit_policy": "unverified_user_setting",
@@ -11241,12 +11241,12 @@
             }
           ],
           "instructions": "quantlab-v2: Propose one strategy for the requested family using only the supplied training summary and prior train/validation results. Return one JSON object, without prose or code.\nRequired keys: strategy_id (1..64 ASCII letters, digits, underscore or hyphen), family (exactly the requested family), parameters (object), rules (object). Optional schema_version must be 1.\nChoose parameter values yourself. The current context's parameter_contract lists the exact parameter keys to emit; family names are never parameter keys. Required parameters by family:\ntrend: fast and slow integers, 1 <= fast < slow <= 1000.\nmean_reversion: lookback integer 2..1000, entry_bps positive decimal string <= 10000.\nchannel_breakout: lookback integer 2..1000.\nmomentum: lookback integer 2..1000, threshold_bps positive decimal string <= 10000, max_holding_bars integer 1..1000.\nvolatility_compression: lookback integer 2..1000, max_range_bps positive decimal string <= 10000.\nUse only the required family parameters; do not alter quantity, stops, costs, margin or risk controls. Prefer lookbacks comfortably shorter than the training bar count.\nUse rules={} to use the built-in causal family signal logic. Alternatively rules must contain long and short boolean AST nodes, optionally exit. Numeric AST nodes: {\"op\":\"const\",\"value\":decimal_string_or_integer}; {\"op\":\"field\",\"name\":OHLCV_field,\"lag\":nonnegative_integer}; or {\"op\":indicator,\"field\":OHLCV_field,\"period\":integer_1_to_500,\"lag\":nonnegative_integer}. OHLCV_field is open, high, low, close or volume; indicator is sma, highest, lowest or return_bps; lag is optional and at most 500. Boolean nodes: {\"op\":comparison,\"left\":numeric_node,\"right\":numeric_node} with comparison gt/gte/lt/lte/eq; {\"op\":\"and\" or \"or\",\"args\":[boolean_nodes]} with 2..8 arguments; {\"op\":\"not\",\"arg\":boolean_node}. Maximum AST depth 12 and 128 nodes. No other operators, expressions, executable code, or extra keys.\nTraining summaries are descriptive, not proof of profitability. Risk controls are immutable.\nManual exchange: return exactly one response envelope following response_schema. Copy all envelope identities exactly. Supply one candidate for each requested family, in that order. In this manual v1 mode, rules MUST be {} and every parameter MUST be an integer as specified by response_schema. Return JSON only. Origin cannot be verified by this application.",
-          "module_source_hash": "a70084196c8d99bc49c1db09eb131d77699a579065c2a9bc7bf3553e227eaa68",
+          "module_source_hash": "1e05c23de4b91150462195318135ce759e21584bf829d4ca5c9932fcb0a06aae",
           "prompt_hash": "31c09f395b9ca6c5ee53751fcf30131907ad513bf1708e048359421516102845",
           "prompt_version": "quantlab-v2",
           "registry_hash": "283206fa3ebddf5ef2851185fac12e031f967bbc930d9d5530ada3d818552703",
           "registry_version": "manual-registry-v1",
-          "request_id": "cd03e902969df1de28893a5a9828a8df41422fa5e252e3366ad7c7dfa5be6000",
+          "request_id": "c43a1320e8395105945ee31cbbefe9cabd3530df93daca93c731134dd32d08b6",
           "response_schema": {
             "additionalProperties": false,
             "properties": {
@@ -11600,7 +11600,7 @@
                 "const": "a65bd7916c6ac617702e9d3ba1ba3085ccd83f8f3b8943d626c4acbc0cd02849"
               },
               "request_id": {
-                "const": "cd03e902969df1de28893a5a9828a8df41422fa5e252e3366ad7c7dfa5be6000"
+                "const": "c43a1320e8395105945ee31cbbefe9cabd3530df93daca93c731134dd32d08b6"
               },
               "schema_version": {
                 "const": 1
@@ -12773,7 +12773,7 @@
           "research.py": "e04798caaa69264a7f2207cf03490b34b258779ff55b2e4327302e76c1a418e5",
           "saved_candidate_pool.py": "d864fac6bd5575cab411ee74d8ed323f9f9105b36dadb5f22badb548af3b6613",
           "strategies.py": "7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0",
-          "walk_forward.py": "8deca9f555ed1a390c0e90a36a07e655bc263ac887b9c7021846c2f9b7684fe0"
+          "walk_forward.py": "0320356b07c982c24b99e546f53510b5a83d272922be326a72221b7dd01c414e"
         },
         "source_identity": "5e8c32efea7e3a067013c884a8e5386a1601405dc5c973bfab182569ff73505d",
         "source_type": "synthetic"

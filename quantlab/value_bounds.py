@@ -1,4 +1,5 @@
 """Shared numeric and metadata validation, independent of experiment runners."""
+
 from dataclasses import fields, is_dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -6,13 +7,13 @@ import math
 import re
 from .core import ValidationError
 
+
 def _bounded_number(value):
     if not isinstance(value, Decimal) or not value.is_finite():
         raise ValidationError('Finite bounded decimal required')
     parts = value.as_tuple()
     if abs(parts.exponent) > 32 or len(parts.digits) > 64 or value.copy_abs() > Decimal('1e15'):
         raise ValidationError('Decimal precision, exponent or magnitude exceeds resource bounds')
-
 
 
 def _exact_number(value):
@@ -26,10 +27,10 @@ def _exact_number(value):
     return result
 
 
-
 def _bounded_value(value, *, max_nodes=4096):
     """Bound BEFORE canonical serialization or JSON numeric conversion."""
     count, byte_count = 0, 0
+
     def visit(item, depth=0):
         nonlocal count, byte_count
         count += 1
@@ -66,5 +67,5 @@ def _bounded_value(value, *, max_nodes=4096):
             _bounded_number(Decimal(str(item)))
         elif item is not None and type(item) is not bool and not isinstance(item, datetime):
             raise ValidationError('Unsupported plan/metadata type')
-    visit(value)
 
+    visit(value)

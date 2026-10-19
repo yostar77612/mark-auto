@@ -1,4 +1,5 @@
 """Live P1-04 budgets, preserved explanations and T8 layout boundaries."""
+
 import json
 from pathlib import Path
 import tempfile
@@ -41,6 +42,7 @@ class HelpReachabilityTests(unittest.TestCase):
                 self.assertTrue(hint.objectName().endswith('_page_hint'))
                 self.assertTrue(0 < len(hint.text()) <= 30)
             from desktop_help import MOVED_STRINGS, CAPTIONS
+
             expected = set(MOVED_STRINGS)
             expected.update(key for captions in CAPTIONS.values() for key, _ in captions)
             expected.update('onboarding.empty.' + key for key in ('market', 'strategy', 'backtest', 'compare', 'paper'))
@@ -61,8 +63,15 @@ class HelpReachabilityTests(unittest.TestCase):
             for name, widgets in (
                 ('data', (window.overview,)),
                 ('settings', (window.workspace_path,)),
-                ('market', (window.market.source_status, window.market.message, window.market.indicator_summary,
-                            window.market.findChild(QLabel, 'market_vwap_disclosure'))),
+                (
+                    'market',
+                    (
+                        window.market.source_status,
+                        window.market.message,
+                        window.market.indicator_summary,
+                        window.market.findChild(QLabel, 'market_vwap_disclosure'),
+                    ),
+                ),
             ):
                 toggle = window.findChild(QToolButton, name + '_help_advanced')
                 details = window.findChild(QWidget, name + '_help_details')
@@ -73,8 +82,7 @@ class HelpReachabilityTests(unittest.TestCase):
                 self.assertFalse(details.isHidden())
             self.assertTrue(window.settings_page.settings_sections[3].isAncestorOf(window.log_view))
             for key in ('market.__init__.text_42', 'market.__init__.text_53'):
-                self.assertTrue(any(label.text() == ui_text(key) for label in
-                                    window.findChild(QWidget, 'market_help_details').findChildren(QLabel)), key)
+                self.assertTrue(any(label.text() == ui_text(key) for label in window.findChild(QWidget, 'market_help_details').findChildren(QLabel)), key)
         finally:
             harness.doCleanups()
 

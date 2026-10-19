@@ -5,6 +5,7 @@ A replay is bound to one immutable strategy, dataset, broker journal and margin
 policy. This is next-bar market execution, not a streaming feed, order-book
 simulation, or a substitute for backtest stop/target execution.
 """
+
 from contextlib import contextmanager
 from bisect import bisect_left
 from decimal import Decimal
@@ -30,6 +31,7 @@ def _require_local_wal_path(path):
     resolved = path.resolve()
     if sys.platform == "win32":
         import ctypes
+
         if str(resolved).startswith(("\\\\", "//")) or ctypes.windll.kernel32.GetDriveTypeW(str(resolved.anchor)) not in (2, 3, 6):
             raise ValidationError("WAL replay requires an available local drive")
     elif sys.platform.startswith("linux"):
@@ -49,10 +51,10 @@ def _require_local_wal_path(path):
         raise ValidationError("WAL replay filesystem verification is unavailable on this platform")
 
 
-
 class PaperReplay:
-    def __init__(self, path, *, dataset, strategy, broker, margin_per_contract=None,
-                 margin_version=None, margin_schedule=None, storage_profile="rollback_full"):
+    def __init__(
+        self, path, *, dataset, strategy, broker, margin_per_contract=None, margin_version=None, margin_schedule=None, storage_profile="rollback_full"
+    ):
         if storage_profile not in ("rollback_full", "wal_full"):
             raise ValidationError("Unsupported replay storage profile")
         # All replay readers may encounter a migrated WAL database. Check before
@@ -66,8 +68,13 @@ class PaperReplay:
         if any(key in strategy.parameters for key in ('stop_ticks', 'target_ticks')):
             raise ValidationError('Paper replay cannot execute protective stop/target rules; use the backtest engine or a supported strategy')
         if margin_schedule is None:
-            if (not isinstance(margin_per_contract, Decimal) or not margin_per_contract.is_finite()
-                    or margin_per_contract <= 0 or not isinstance(margin_version, str) or not margin_version.strip()):
+            if (
+                not isinstance(margin_per_contract, Decimal)
+                or not margin_per_contract.is_finite()
+                or margin_per_contract <= 0
+                or not isinstance(margin_version, str)
+                or not margin_version.strip()
+            ):
                 raise ValidationError('Explicit positive margin and version required')
         elif margin_per_contract is not None or margin_version is not None:
             raise ValidationError('Use either the pinned margin schedule or an explicit scalar margin')
@@ -82,12 +89,17 @@ class PaperReplay:
         self.dataset, self.strategy, self.broker = dataset, strategy, broker
         self.margin = margin_per_contract
         self.margin_version = margin_version
-        self.policy = freeze(json.loads(canonical_json({'risk_sessions': broker._risk_sessions,
-                                                        'margin_schedule': broker._margin_schedule})))
+        self.policy = freeze(json.loads(canonical_json({'risk_sessions': broker._risk_sessions, 'margin_schedule': broker._margin_schedule})))
         self.policy_hash = content_hash(self.policy)
-        binding = {'data': dataset.manifest['data_hash'], 'strategy': strategy,
-                   'broker_journal': str(broker.path.resolve()), 'costs': broker.costs,
-                   'limits': broker.limits, 'margin': margin_per_contract, 'margin_version': margin_version}
+        binding = {
+            'data': dataset.manifest['data_hash'],
+            'strategy': strategy,
+            'broker_journal': str(broker.path.resolve()),
+            'costs': broker.costs,
+            'limits': broker.limits,
+            'margin': margin_per_contract,
+            'margin_version': margin_version,
+        }
         if margin_schedule is not None:
             binding.update(replay_schema=2, broker_config=broker._config, risk_policy=self.policy)
         # Scalar callers retain their identity; their broker journal still pins
@@ -106,8 +118,10 @@ class PaperReplay:
             db.execute('CREATE TABLE IF NOT EXISTS replay (id INTEGER PRIMARY KEY, binding TEXT, cursor INTEGER, active INTEGER, plan TEXT)')
             row = db.execute('SELECT binding FROM replay WHERE id=1').fetchone()
             if row and row[0] != self.binding:
-                raise ValidationError('Replay is bound to a different dataset, strategy, account configuration or margin mode. '
-                                      'Preserve this workspace and its orders; reconcile existing execution before using a separate workspace.')
+                raise ValidationError(
+                    'Replay is bound to a different dataset, strategy, account configuration or margin mode. '
+                    'Preserve this workspace and its orders; reconcile existing execution before using a separate workspace.'
+                )
             if not row:
                 db.execute('INSERT INTO replay VALUES (1, ?, 0, 0, NULL)', (self.binding,))
         if storage_profile == 'wal_full':
@@ -151,11 +165,18 @@ class PaperReplay:
 
     def _snapshot(self, db):
         row = db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone()
-        return {'binding': self.binding, 'cursor': row[0], 'total_bars': len(self.dataset.bars),
-                'active': bool(row[1]), 'pending_plan': row[2] is not None,
-                'complete': row[0] >= len(self.dataset.bars), 'mode': 'historical_synthetic_execution',
-                'source_type': self.dataset.manifest['source_type'], 'live_status': 'disabled',
-                'execution_scope': 'next-bar market targets; stop/target intrabar simulation excluded'}
+        return {
+            'binding': self.binding,
+            'cursor': row[0],
+            'total_bars': len(self.dataset.bars),
+            'active': bool(row[1]),
+            'pending_plan': row[2] is not None,
+            'complete': row[0] >= len(self.dataset.bars),
+            'mode': 'historical_synthetic_execution',
+            'source_type': self.dataset.manifest['source_type'],
+            'live_status': 'disabled',
+            'execution_scope': 'next-bar market targets; stop/target intrabar simulation excluded',
+        }
 
     def start(self):
         state = self.broker.snapshot()
@@ -176,8 +197,7 @@ class PaperReplay:
         """Test-only crash injection seam."""
 
     def _quote_policy(self, bar):
-        if content_hash({'risk_sessions': self.broker._risk_sessions,
-                         'margin_schedule': self.broker._margin_schedule}) != self.policy_hash:
+        if content_hash({'risk_sessions': self.broker._risk_sessions, 'margin_schedule': self.broker._margin_schedule}) != self.policy_hash:
             raise ValidationError('Replay pinned broker policy changed')
         policy = self.broker.quote_policy(bar.timestamp)
         if policy['trade_date'] != bar.trade_date:
@@ -189,8 +209,7 @@ class PaperReplay:
         margin = max(margins, key=lambda row: row['effective_from'])
         if Decimal(policy['margin_per_contract']) != Decimal(margin['margin_per_contract']):
             raise ValidationError('Replay margin does not match pinned broker policy')
-        if self.margin is not None and (Decimal(margin['margin_per_contract']) != self.margin
-                                        or margin['version'] != self.margin_version):
+        if self.margin is not None and (Decimal(margin['margin_per_contract']) != self.margin or margin['version'] != self.margin_version):
             raise ValidationError('Replay scalar margin or version does not match pinned broker policy')
         return policy
 
@@ -228,9 +247,17 @@ class PaperReplay:
                     # Single-contract legs also split reversals into close then open.
                     for leg in range(abs(target - current)):
                         oid = content_hash([self.binding, index, leg])
-                        plan.append({'client_order_id': oid, 'strategy_hash': content_hash(self.strategy),
-                                     'contract_id': bar.contract_id, 'side': 'buy' if target > current else 'sell',
-                                     'quantity': 1, 'order_type': 'market', 'created_at': bar.timestamp})
+                        plan.append(
+                            {
+                                'client_order_id': oid,
+                                'strategy_hash': content_hash(self.strategy),
+                                'contract_id': bar.contract_id,
+                                'side': 'buy' if target > current else 'sell',
+                                'quantity': 1,
+                                'order_type': 'market',
+                                'created_at': bar.timestamp,
+                            }
+                        )
                     if plan:
                         db.execute('UPDATE replay SET plan=? WHERE id=1', (canonical_json(plan),))
                 else:
@@ -249,25 +276,32 @@ class PaperReplay:
                 if state['kill_switch'] or state['reconciliation_required']:
                     return self._snapshot(connection)
                 policy = self._quote_policy(bar)
-                quote = {'account_id': state['account_id'], 'contract_id': bar.contract_id,
-                         'timestamp': bar.timestamp, 'price': bar.open, **policy}
+                quote = {'account_id': state['account_id'], 'contract_id': bar.contract_id, 'timestamp': bar.timestamp, 'price': bar.open, **policy}
                 order = self.broker.submit(intent, quote=quote, now=bar.timestamp)
                 self._fault('after_submit_before_fill')
                 if order['status'] in ('accepted', 'filled'):
                     price = bar.open + (1 if intent['side'] == 'buy' else -1) * self.broker.costs.slippage_ticks
                     commission, tax = calculate_costs(price, 1, self.broker.costs)
                     oid = intent['client_order_id']
-                    event = {'event_id': oid + ':fill', 'fill_id': oid + ':fill',
-                             'order_id': oid, 'sequence': 1, 'type': 'fill', 'timestamp': bar.timestamp,
-                             'quantity': 1, 'price': price, 'commission': commission, 'tax': tax}
+                    event = {
+                        'event_id': oid + ':fill',
+                        'fill_id': oid + ':fill',
+                        'order_id': oid,
+                        'sequence': 1,
+                        'type': 'fill',
+                        'timestamp': bar.timestamp,
+                        'quantity': 1,
+                        'price': price,
+                        'commission': commission,
+                        'tax': tax,
+                    }
                     result = self.broker.apply_event(event)
                     applied = result['status'] == 'applied'
                     if result['status'] == 'duplicate':
                         # Duplicate receipt can also refer to a quarantined
                         # event. Only a matching executed fill consumes a plan.
                         fill = self.broker.snapshot()['fills'].get(event['fill_id'])
-                        applied = canonical_json(fill) == canonical_json(
-                            dict(event, multiplier=self.broker.instrument.multiplier))
+                        applied = canonical_json(fill) == canonical_json(dict(event, multiplier=self.broker.instrument.multiplier))
                     if not applied:
                         raise ValidationError('Replay fill was not applied; pending plan retained for reconciliation')
                     self._fault('after_fill_before_cursor')

@@ -1,4 +1,5 @@
 """Ship corresponding sources beside binary releases, verified against Qt hashes."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -6,10 +7,14 @@ import sys
 import urllib.request
 
 SOURCES = [
-    ('https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/pyside-setup-everywhere-src-6.12.0.tar.xz',
-     '099c1a597cf33c1b000e11cf68a0b82d216fb802bf81726efc720394f10c7751'),
-    ('https://download.qt.io/official_releases/qt/6.12/6.12.0/single/qt-everywhere-src-6.12.0.tar.xz',
-     '98ff4f44bac6ec3e1e62ee2a4316ae0e3d15badb015d753cc0268a20db52f165'),
+    (
+        'https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/pyside-setup-everywhere-src-6.12.0.tar.xz',
+        '099c1a597cf33c1b000e11cf68a0b82d216fb802bf81726efc720394f10c7751',
+    ),
+    (
+        'https://download.qt.io/official_releases/qt/6.12/6.12.0/single/qt-everywhere-src-6.12.0.tar.xz',
+        '98ff4f44bac6ec3e1e62ee2a4316ae0e3d15badb015d753cc0268a20db52f165',
+    ),
 ]
 # Expected digests verified from each official URL + '.sha256' on 2026-10-09.
 

@@ -3,6 +3,7 @@
 This validates original core execution only. Research retains its own mandatory
 job and worker gate; the workflow also requires every offline matrix job to pass.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,9 +19,18 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from tools.run_test_group import (CORE_SHARDS, CORE_SHARD_PLAN, RESEARCH_MODULES,
-                                 cases, core_shard_for_module, execution_identity, partition,
-                                 portable_source_identity, read_worker_report, write_manifest)
+from tools.run_test_group import (
+    CORE_SHARDS,
+    CORE_SHARD_PLAN,
+    RESEARCH_MODULES,
+    cases,
+    core_shard_for_module,
+    execution_identity,
+    partition,
+    portable_source_identity,
+    read_worker_report,
+    write_manifest,
+)
 
 # Exact original Windows applicability skips, verified against the 70d inventory.
 # Missing Qt or any new skip must fail this gate, not silently reduce coverage.
@@ -51,7 +61,7 @@ WINDOWS_CORE_SKIPS = {
     "test_ui.UITests.test_empty_error_and_import": "Optional Streamlit is not installed; UI verification not run",
     "test_ui.UITests.test_paper_repeated_intent_stop_and_reconciliation_error": "Optional Streamlit is not installed; UI verification not run",
     "test_ui.UITests.test_repeated_run_selection_and_restart": "Optional Streamlit is not installed; UI verification not run",
-    "test_ui.UITests.test_selected_strategy_paper_replay": "Optional Streamlit is not installed; UI verification not run"
+    "test_ui.UITests.test_selected_strategy_paper_replay": "Optional Streamlit is not installed; UI verification not run",
 }
 REPORT_LIMIT = 8 * 1024 * 1024
 
@@ -67,9 +77,12 @@ def read_core_report(path):
 
 
 def _ids(value, label, *, nonempty=True):
-    if (type(value) is not list or (nonempty and not value)
-            or any(type(item) is not str or not 1 <= len(item) <= 1024 for item in value)
-            or len(value) != len(set(value))):
+    if (
+        type(value) is not list
+        or (nonempty and not value)
+        or any(type(item) is not str or not 1 <= len(item) <= 1024 for item in value)
+        or len(value) != len(set(value))
+    ):
         raise ValueError('Invalid ordered IDs: ' + label)
     return value
 
@@ -89,14 +102,16 @@ def _selection(report):
     core = _ids(partitions['core'], 'core')
     research = _ids(partitions['research'], 'research')
     core_set, research_set = set(core), set(research)
-    if (core_set & research_set or core_set | research_set != set(discovered)
-            or [item for item in discovered if item in core_set] != core
-            or [item for item in discovered if item in research_set] != research
-            or any(_module(item) in RESEARCH_MODULES for item in core)
-            or any(_module(item) not in RESEARCH_MODULES for item in research)):
+    if (
+        core_set & research_set
+        or core_set | research_set != set(discovered)
+        or [item for item in discovered if item in core_set] != core
+        or [item for item in discovered if item in research_set] != research
+        or any(_module(item) in RESEARCH_MODULES for item in core)
+        or any(_module(item) not in RESEARCH_MODULES for item in research)
+    ):
         raise ValueError('Original discovery/partitions are inconsistent')
-    assignments = {name: [item for item in core if core_shard_for_module(_module(item)) == name]
-                   for name in CORE_SHARDS}
+    assignments = {name: [item for item in core if core_shard_for_module(_module(item)) == name] for name in CORE_SHARDS}
     if not all(assignments.values()):
         raise ValueError('Empty core shard')
     return discovered, partitions, assignments
@@ -109,18 +124,24 @@ def collect_expected_inventory(start_directory='tests'):
     if loader.errors:
         raise ValueError('Independent aggregate discovery failed')
     groups = partition(suite)
-    return {'discovered_ids': [case.id() for case in cases(suite)],
-            'partitions': {name: [case.id() for case in cases(groups[name])]
-                           for name in ('core', 'research')}}
+    return {
+        'discovered_ids': [case.id() for case in cases(suite)],
+        'partitions': {name: [case.id() for case in cases(groups[name])] for name in ('core', 'research')},
+    }
 
 
-def validate_core_reports(reports, *, expected_inventory, head_sha, run_id, run_attempt,
-                          python_profile, source_sha256):
-    if (type(head_sha) is not str or re.fullmatch('[0-9a-f]{40}', head_sha) is None
-            or type(source_sha256) is not str or re.fullmatch('[0-9a-f]{64}', source_sha256) is None
-            or type(run_id) is not str or re.fullmatch('[1-9][0-9]*', run_id) is None
-            or type(run_attempt) is not str or re.fullmatch('[1-9][0-9]*', run_attempt) is None
-            or python_profile not in ('3.11', '3.12')):
+def validate_core_reports(reports, *, expected_inventory, head_sha, run_id, run_attempt, python_profile, source_sha256):
+    if (
+        type(head_sha) is not str
+        or re.fullmatch('[0-9a-f]{40}', head_sha) is None
+        or type(source_sha256) is not str
+        or re.fullmatch('[0-9a-f]{64}', source_sha256) is None
+        or type(run_id) is not str
+        or re.fullmatch('[1-9][0-9]*', run_id) is None
+        or type(run_attempt) is not str
+        or re.fullmatch('[1-9][0-9]*', run_attempt) is None
+        or python_profile not in ('3.11', '3.12')
+    ):
         raise ValueError('Invalid expected run/source/profile identity')
     if type(reports) is not list or len(reports) != len(CORE_SHARDS):
         raise ValueError('Exactly ' + str(len(CORE_SHARDS)) + ' core reports required')
@@ -136,63 +157,78 @@ def validate_core_reports(reports, *, expected_inventory, head_sha, run_id, run_
     if type(expected_inventory) is not dict or set(expected_inventory) != {'discovered_ids', 'partitions'}:
         raise ValueError('Independent expected inventory required')
     discovered, partitions, assignments = _selection(expected_inventory)
-    context = dict(head_sha=head_sha, run_id=run_id, run_attempt=run_attempt,
-                   python_profile=python_profile, source_sha256=source_sha256)
+    context = dict(head_sha=head_sha, run_id=run_id, run_attempt=run_attempt, python_profile=python_profile, source_sha256=source_sha256)
     sqlite_version = json.loads((ROOT / 'packaging/sqlite-runtime.json').read_text(encoding='utf-8'))['version']
     python_version = first.get('python')
-    if (type(python_version) is not str or
-            re.fullmatch(re.escape(python_profile) + r'\.[0-9]+', python_version) is None):
+    if type(python_version) is not str or re.fullmatch(re.escape(python_profile) + r'\.[0-9]+', python_version) is None:
         raise ValueError('Wrong Python runtime profile')
     for name in CORE_SHARDS:
         report = by_shard[name]
         expected = assignments[name]
-        if (report.get('head_sha') != head_sha or report.get('platform') != 'win32'
-                or report.get('python') != python_version or report.get('group') != 'core'
-                or report.get('core_shard_plan') != CORE_SHARD_PLAN
-                or report.get('shard_context') != context
-                or report.get('source_sha256_after') != source_sha256
-                or report.get('discovered_ids') != discovered or report.get('partitions') != partitions
-                or report.get('core_shard_assignments') != assignments
-                or report.get('selected_ids') != expected or report.get('discovery_errors') != []
-                or report.get('run_completed') is not True or report.get('successful') is not True
-                or type(report.get('tests_run')) is not int or report['tests_run'] != len(expected)
-                or report.get('started_ids') != expected or report.get('stopped_ids') != expected
-                or 'selection_error' in report or 'shard_identity_error' in report
-                or any(report.get(key) != [] for key in
-                       ('failures', 'errors', 'expected_failures', 'unexpected_successes'))):
+        if (
+            report.get('head_sha') != head_sha
+            or report.get('platform') != 'win32'
+            or report.get('python') != python_version
+            or report.get('group') != 'core'
+            or report.get('core_shard_plan') != CORE_SHARD_PLAN
+            or report.get('shard_context') != context
+            or report.get('source_sha256_after') != source_sha256
+            or report.get('discovered_ids') != discovered
+            or report.get('partitions') != partitions
+            or report.get('core_shard_assignments') != assignments
+            or report.get('selected_ids') != expected
+            or report.get('discovery_errors') != []
+            or report.get('run_completed') is not True
+            or report.get('successful') is not True
+            or type(report.get('tests_run')) is not int
+            or report['tests_run'] != len(expected)
+            or report.get('started_ids') != expected
+            or report.get('stopped_ids') != expected
+            or 'selection_error' in report
+            or 'shard_identity_error' in report
+            or any(report.get(key) != [] for key in ('failures', 'errors', 'expected_failures', 'unexpected_successes'))
+        ):
             raise ValueError('Incomplete, stale or inconsistent core shard: ' + name)
         before, after = report.get('local_identity_before'), report.get('local_identity_after')
-        if (type(before) is not dict or before != after or set(before) != {
-                'source_sha256', 'head_sha', 'executable', 'python', 'sqlite_version',
-                'environment', 'tempfile_gettempdir'}
-                or before.get('head_sha') != head_sha or before.get('sqlite_version') != sqlite_version
-                or type(before.get('python')) is not str or not before['python'].split()
-                or before['python'].split()[0] != python_version
-                or type(before.get('source_sha256')) is not str
-                or re.fullmatch('[0-9a-f]{64}', before['source_sha256']) is None
-                or any(type(before.get(key)) is not str or not before[key]
-                       for key in ('executable', 'tempfile_gettempdir'))
-                or type(before.get('environment')) is not dict
-                or set(before['environment']) != {'TEMP', 'TMP', 'RUNNER_TEMP', 'QT_QPA_PLATFORM'}
-                or before['environment'].get('QT_QPA_PLATFORM') != 'offscreen'):
+        if (
+            type(before) is not dict
+            or before != after
+            or set(before) != {'source_sha256', 'head_sha', 'executable', 'python', 'sqlite_version', 'environment', 'tempfile_gettempdir'}
+            or before.get('head_sha') != head_sha
+            or before.get('sqlite_version') != sqlite_version
+            or type(before.get('python')) is not str
+            or not before['python'].split()
+            or before['python'].split()[0] != python_version
+            or type(before.get('source_sha256')) is not str
+            or re.fullmatch('[0-9a-f]{64}', before['source_sha256']) is None
+            or any(type(before.get(key)) is not str or not before[key] for key in ('executable', 'tempfile_gettempdir'))
+            or type(before.get('environment')) is not dict
+            or set(before['environment']) != {'TEMP', 'TMP', 'RUNNER_TEMP', 'QT_QPA_PLATFORM'}
+            or before['environment'].get('QT_QPA_PLATFORM') != 'offscreen'
+        ):
             raise ValueError('Missing, changed or wrong local runtime identity: ' + name)
-        expected_skips = [{'id': test_id, 'reason': WINDOWS_CORE_SKIPS[test_id]}
-                          for test_id in expected if test_id in WINDOWS_CORE_SKIPS]
+        expected_skips = [{'id': test_id, 'reason': WINDOWS_CORE_SKIPS[test_id]} for test_id in expected if test_id in WINDOWS_CORE_SKIPS]
         if report.get('skipped') != expected_skips:
             raise ValueError('Unexpected or missing original applicability skips: ' + name)
-    return {'coverage_scope': 'original core only; research remains a separate mandatory gate',
-            'head_sha': head_sha, 'run_id': run_id, 'run_attempt': run_attempt,
-            'python_profile': python_profile, 'source_sha256': source_sha256,
-            'core_shard_plan': CORE_SHARD_PLAN, 'shards': len(CORE_SHARDS),
-            'tests_run': len(partitions['core']), 'core_ids': partitions['core'],
-            'successful': True}
+    return {
+        'coverage_scope': 'original core only; research remains a separate mandatory gate',
+        'head_sha': head_sha,
+        'run_id': run_id,
+        'run_attempt': run_attempt,
+        'python_profile': python_profile,
+        'source_sha256': source_sha256,
+        'core_shard_plan': CORE_SHARD_PLAN,
+        'shards': len(CORE_SHARDS),
+        'tests_run': len(partitions['core']),
+        'core_ids': partitions['core'],
+        'successful': True,
+    }
 
 
 def verify_discovery_runtime(python_profile):
     pinned_sqlite = json.loads((ROOT / 'packaging/sqlite-runtime.json').read_text(encoding='utf-8'))['version']
     version = platform.python_version()
-    if (sys.platform != 'win32' or not version.startswith(python_profile + '.')
-            or sqlite3.sqlite_version != pinned_sqlite):
+    if sys.platform != 'win32' or not version.startswith(python_profile + '.') or sqlite3.sqlite_version != pinned_sqlite:
         raise ValueError('Independent discovery requires the matching pinned Windows runtime')
     return version
 
@@ -207,28 +243,26 @@ def main(argv=None):
     expected_inventory = None
     discovery_identity = None
     try:
-        context = {name: os.environ[key] for name, key in (
-            ('head_sha', 'GITHUB_SHA'), ('run_id', 'GITHUB_RUN_ID'),
-            ('run_attempt', 'GITHUB_RUN_ATTEMPT'))}
-        expected = {'test-inventory-windows-latest-' + args.python_profile + '-core-' + name +
-                    '-attempt-' + context['run_attempt'] for name in CORE_SHARDS}
+        context = {name: os.environ[key] for name, key in (('head_sha', 'GITHUB_SHA'), ('run_id', 'GITHUB_RUN_ID'), ('run_attempt', 'GITHUB_RUN_ATTEMPT'))}
+        expected = {'test-inventory-windows-latest-' + args.python_profile + '-core-' + name + '-attempt-' + context['run_attempt'] for name in CORE_SHARDS}
         directories = list(args.reports.iterdir())
-        if (any(path.is_symlink() or not path.is_dir() for path in directories)
-                or {path.name for path in directories} != expected):
+        if any(path.is_symlink() or not path.is_dir() for path in directories) or {path.name for path in directories} != expected:
             raise ValueError('Missing or unexpected downloaded core artifacts')
         reports = [read_core_report(path / 'test-inventory.json') for path in sorted(directories)]
         python_version = verify_discovery_runtime(args.python_profile)
         source_before = portable_source_identity()
-        discovery_identity = dict(context, python_profile=args.python_profile, python=python_version,
-                                  sqlite_version=sqlite3.sqlite_version, source_sha256=source_before)
+        discovery_identity = dict(
+            context, python_profile=args.python_profile, python=python_version, sqlite_version=sqlite3.sqlite_version, source_sha256=source_before
+        )
         local_before = execution_identity('tests')
         expected_inventory = collect_expected_inventory()
-        if (portable_source_identity() != source_before or execution_identity('tests') != local_before):
+        if portable_source_identity() != source_before or execution_identity('tests') != local_before:
             raise ValueError('Aggregate source or local runtime changed during discovery')
         if any(report.get('python') != python_version for report in reports):
             raise ValueError('Shard Python version differs from independent discovery runtime')
-        summary = validate_core_reports(reports, expected_inventory=expected_inventory, **context,
-                                        python_profile=args.python_profile, source_sha256=source_before)
+        summary = validate_core_reports(
+            reports, expected_inventory=expected_inventory, **context, python_profile=args.python_profile, source_sha256=source_before
+        )
     except (Exception, KeyboardInterrupt) as error:
         summary['error_type'] = type(error).__name__
         print('Core coverage verification failed: ' + type(error).__name__, file=sys.stderr)

@@ -1,4 +1,5 @@
 """Offline validator tests only. These mocks never establish real-model acceptance."""
+
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,22 +15,37 @@ from tools.validate_real_ai import recording_proxy, summarize_evidence, verify_a
 
 class RealAIValidatorTests(unittest.TestCase):
     def improvement_fixture(self, duplicate=False):
-        first = {'attempt_id': 'a', 'parent_id': None, 'iteration': 0, 'family': 'trend',
-                 'status': 'evaluated', 'output': {'unit-test': 'not a real model'},
-                 'candidate_fingerprint': 'first',
-                 'metrics': {'train': {'metrics': {'net_pnl': '10'}},
-                             'validation': {'metrics': {'net_pnl': '10'}}}}
-        second = {'attempt_id': 'b', 'parent_id': 'a', 'iteration': 1, 'family': 'trend',
-                  'status': 'rejected' if duplicate else 'evaluated', 'output': {},
-                  'candidate_fingerprint': 'first' if duplicate else 'second',
-                  'metrics': {} if duplicate else {'validation': {'metrics': {'net_pnl': '5'}}}}
+        first = {
+            'attempt_id': 'a',
+            'parent_id': None,
+            'iteration': 0,
+            'family': 'trend',
+            'status': 'evaluated',
+            'output': {'unit-test': 'not a real model'},
+            'candidate_fingerprint': 'first',
+            'metrics': {'train': {'metrics': {'net_pnl': '10'}}, 'validation': {'metrics': {'net_pnl': '10'}}},
+        }
+        second = {
+            'attempt_id': 'b',
+            'parent_id': 'a',
+            'iteration': 1,
+            'family': 'trend',
+            'status': 'rejected' if duplicate else 'evaluated',
+            'output': {},
+            'candidate_fingerprint': 'first' if duplicate else 'second',
+            'metrics': {} if duplicate else {'validation': {'metrics': {'net_pnl': '5'}}},
+        }
         if duplicate:
             second['duplicate_of'] = 'a'
-        previous = {'output': first['output'], 'status': 'evaluated',
-                    'metrics': {k: v['metrics'] for k, v in first['metrics'].items()}}
-        request = {'messages': [{'role': 'user', 'content': json.dumps({
-            'previous': previous, 'task': 'improve_previous_candidate',
-            'improvement_instruction': 'unit-test instruction'})}]}
+        previous = {'output': first['output'], 'status': 'evaluated', 'metrics': {k: v['metrics'] for k, v in first['metrics'].items()}}
+        request = {
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': json.dumps({'previous': previous, 'task': 'improve_previous_candidate', 'improvement_instruction': 'unit-test instruction'}),
+                }
+            ]
+        }
         return {'attempts': [first, second]}, [{'request': {}}, {'request': request}]
 
     def test_improvement_protocol_pass_does_not_claim_better_performance(self):
@@ -59,8 +75,7 @@ class RealAIValidatorTests(unittest.TestCase):
 
     def test_frozen_replay_is_labeled_and_never_repairs_or_improves(self):
         # Inert unit-test candidate, not actual model acceptance.
-        payload = {'strategy_id': 'unit_fixture', 'family': 'trend',
-                   'parameters': {'fast': 3, 'slow': 8}, 'rules': {}}
+        payload = {'strategy_id': 'unit_fixture', 'family': 'trend', 'parameters': {'fast': 3, 'slow': 8}, 'rules': {}}
         record = {'response': {'choices': [{'message': {'content': json.dumps(payload)}}]}}
         replay = FrozenResponseReplay(record, 'unit-test-mock')
         self.assertEqual(replay.mode, 'frozen_model_output_replay')
@@ -78,16 +93,20 @@ class RealAIValidatorTests(unittest.TestCase):
 
     def test_replay_predeclares_all_baselines_before_evaluation(self):
         # This mock tests replay bookkeeping only, never real model acceptance.
-        payload = {'strategy_id': 'unit_fixture', 'family': 'trend',
-                   'parameters': {'fast': 3, 'slow': 8}, 'rules': {}}
+        payload = {'strategy_id': 'unit_fixture', 'family': 'trend', 'parameters': {'fast': 3, 'slow': 8}, 'rules': {}}
         record = {'response': {'choices': [{'message': {'content': json.dumps(payload)}}]}}
-        state = {'attempts': [], 'provider_receipts': [], 'selected': [],
-                 'evaluations': {'oos': [], 'holdout': []},
-                 'status': 'completed', 'real_model_status': 'not_verified'}
+        state = {
+            'attempts': [],
+            'provider_receipts': [],
+            'selected': [],
+            'evaluations': {'oos': [], 'holdout': []},
+            'status': 'completed',
+            'real_model_status': 'not_verified',
+        }
         with tempfile.TemporaryDirectory() as tmp, patch('tools.validate_real_ai.run_campaign', return_value=state):
             with self.assertRaisesRegex(ValidationError, 'did not complete'):
                 replay_and_compare(None, {}, record, {'model_id': 'unit-test-mock'}, Path(tmp))
-            declared = json.loads((Path(tmp)/'replay-predeclared.json').read_text())
+            declared = json.loads((Path(tmp) / 'replay-predeclared.json').read_text())
             self.assertEqual(len(declared['baselines']), 5)
             self.assertEqual(declared['new_model_calls'], 0)
             self.assertEqual(declared['model_candidate']['parameters'], payload['parameters'])
@@ -101,9 +120,14 @@ class RealAIValidatorTests(unittest.TestCase):
                 verify_artifacts(model, Path(tmp) / 'absent-server', Path(tmp) / 'absent-archive')
 
     def test_empty_results_do_not_pass_by_vacuous_truth(self):
-        state = {'attempts': [], 'provider_receipts': [], 'selected': [],
-                 'evaluations': {'oos': [], 'holdout': []},
-                 'status': 'completed', 'real_model_status': 'not_verified'}
+        state = {
+            'attempts': [],
+            'provider_receipts': [],
+            'selected': [],
+            'evaluations': {'oos': [], 'holdout': []},
+            'status': 'completed',
+            'real_model_status': 'not_verified',
+        }
         result = summarize_evidence(state, [])
         self.assertFalse(result['multi_strategy_comparison_completed'])
         self.assertFalse(result['train_validation_oos_holdout_completed'])
@@ -115,15 +139,18 @@ class RealAIValidatorTests(unittest.TestCase):
         """A mock server checks recorder behavior only, not AI inference."""
         incoming = []
         response_bytes = b'{"choices":[{"message":{"content":"deliberately invalid DSL"}}],"usage":{"total_tokens":1}}'
+
         class MockServer(BaseHTTPRequestHandler):
             def log_message(self, *args):
                 pass
+
             def do_POST(self):
                 incoming.append(self.rfile.read(int(self.headers['Content-Length'])))
                 self.send_response(200)
                 self.send_header('Content-Length', str(len(response_bytes)))
                 self.end_headers()
                 self.wfile.write(response_bytes)
+
         upstream = ThreadingHTTPServer(('127.0.0.1', 0), MockServer)
         thread = threading.Thread(target=upstream.serve_forever, daemon=True)
         thread.start()
@@ -144,9 +171,14 @@ class RealAIValidatorTests(unittest.TestCase):
             thread.join(timeout=5)
 
     def test_receipt_mismatch_is_not_verified(self):
-        state = {'attempts': [], 'provider_receipts': [{'response_hash': 'not-the-recorded-hash'}],
-                 'selected': [], 'evaluations': {'oos': [], 'holdout': []},
-                 'status': 'completed', 'real_model_status': 'not_verified'}
+        state = {
+            'attempts': [],
+            'provider_receipts': [{'response_hash': 'not-the-recorded-hash'}],
+            'selected': [],
+            'evaluations': {'oos': [], 'holdout': []},
+            'status': 'completed',
+            'real_model_status': 'not_verified',
+        }
         result = summarize_evidence(state, [{'response': {'mock': True}, 'elapsed_seconds': 0}])
         self.assertFalse(result['http_receipts_match_recorded_responses'])
         self.assertEqual(result['campaign_real_model_status'], 'not_verified')

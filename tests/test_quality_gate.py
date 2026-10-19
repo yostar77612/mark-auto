@@ -1,4 +1,5 @@
 """Failure-injection coverage for the offline quality/security gate."""
+
 import contextlib
 import io
 from pathlib import Path
@@ -13,11 +14,16 @@ from tools.quality_gate import main, python_findings, scan, secret_findings
 
 class QualityGateTests(unittest.TestCase):
     def test_secret_signatures_are_detected_without_value_disclosure(self):
-        tokens = ["ghp_" + "a" * 36, "AKIA" + "A" * 16,
-                  "xoxb-" + "a" * 30, "123456789:" + "a" * 35,
-                  "-----BEGIN " + "PRIVATE KEY-----",
-                  "sk-proj-" + "a" * 48, "sk-svcacct-" + "b" * 48,
-                  "AIza" + "c" * 35]
+        tokens = [
+            "ghp_" + "a" * 36,
+            "AKIA" + "A" * 16,
+            "xoxb-" + "a" * 30,
+            "123456789:" + "a" * 35,
+            "-----BEGIN " + "PRIVATE KEY-----",
+            "sk-proj-" + "a" * 48,
+            "sk-svcacct-" + "b" * 48,
+            "AIza" + "c" * 35,
+        ]
         for token in tokens:
             with self.subTest(kind=token[:4]):
                 findings = secret_findings("token = '" + token + "'", "fixture")
@@ -38,28 +44,33 @@ class QualityGateTests(unittest.TestCase):
         self.assertTrue(python_findings("return 1", "invalid.py"))
 
     def test_research_boundary_rejects_imports_and_dynamic_execution(self):
-        for source in ("import trader", "from shioaji import API", "import pickle",
-                       "import subprocess", "eval('1')", "builtins.exec('1')"):
+        for source in ("import trader", "from shioaji import API", "import pickle", "import subprocess", "eval('1')", "builtins.exec('1')"):
             self.assertTrue(python_findings(source, "quantlab/new.py", research=True))
         self.assertEqual(python_findings("import json", "quantlab/new.py", research=True), [])
 
     def test_desktop_boundary_allows_qt_but_rejects_legacy(self):
-        self.assertEqual(python_findings("from PySide6.QtWidgets import QWidget",
-                                       "desktop_ui.py", desktop=True), [])
+        self.assertEqual(python_findings("from PySide6.QtWidgets import QWidget", "desktop_ui.py", desktop=True), [])
         for source in ("import trader", "import shioaji", "eval('1')"):
             self.assertTrue(python_findings(source, "desktop_ui.py", desktop=True))
 
     def test_all_desktop_components_enforce_existing_execution_boundary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in ("desktop_ui.py", "desktop_charts.py", "desktop_forms.py", "desktop_market.py",
-                         "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py", "desktop_chatgpt_ui.py",
-                         "desktop_tls_smoke.py"):
+            for name in (
+                "desktop_ui.py",
+                "desktop_charts.py",
+                "desktop_forms.py",
+                "desktop_market.py",
+                "desktop_chatgpt_auth.py",
+                "desktop_chatgpt_provider.py",
+                "desktop_chatgpt_ui.py",
+                "desktop_tls_smoke.py",
+            ):
                 (root / name).write_text("import trader\n", encoding="utf-8")
-                with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
+                with patch("tools.quality_gate.git", return_value=(name + "\0").encode()):
                     self.assertTrue(scan(root), name)
                 (root / name).write_text("from PySide6.QtWidgets import QWidget\n", encoding="utf-8")
-                with patch("tools.quality_gate.git", return_value=(name+"\0").encode()):
+                with patch("tools.quality_gate.git", return_value=(name + "\0").encode()):
                     self.assertEqual(scan(root), [], name)
 
     def test_automatic_backup_component_keeps_desktop_boundary(self):
@@ -67,11 +78,11 @@ class QualityGateTests(unittest.TestCase):
             root = Path(directory)
             name = 'desktop_automatic_backup.py'
             for source in ('import trader', 'import shioaji', "eval('1')", "exec('1')"):
-                (root/name).write_text(source, encoding='utf-8')
-                with self.subTest(source=source), patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+                (root / name).write_text(source, encoding='utf-8')
+                with self.subTest(source=source), patch('tools.quality_gate.git', return_value=(name + '\0').encode()):
                     self.assertTrue(scan(root))
-            (root/name).write_text('from PySide6.QtWidgets import QWidget', encoding='utf-8')
-            with patch('tools.quality_gate.git', return_value=(name+'\0').encode()):
+            (root / name).write_text('from PySide6.QtWidgets import QWidget', encoding='utf-8')
+            with patch('tools.quality_gate.git', return_value=(name + '\0').encode()):
                 self.assertEqual(scan(root), [])
 
     def test_research_dependencies_are_standard_library_only(self):
@@ -90,9 +101,10 @@ class QualityGateTests(unittest.TestCase):
         secret = "ghp_" + "a" * 36
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+
             def git(*args):
-                return subprocess.run(["git", "-C", directory, *args], check=True,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                return subprocess.run(["git", "-C", directory, *args], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
             git("init")
             (root / "bad.py").write_text("TOKEN = '" + secret + "'", encoding="utf-8")
             git("add", "bad.py")
@@ -124,8 +136,7 @@ class QualityGateTests(unittest.TestCase):
 
     def test_git_failure_is_closed_and_redacted(self):
         output = io.StringIO()
-        with patch("tools.quality_gate.scan", side_effect=OSError("secret error")), \
-                patch.object(sys, "argv", ["gate"]), contextlib.redirect_stdout(output):
+        with patch("tools.quality_gate.scan", side_effect=OSError("secret error")), patch.object(sys, "argv", ["gate"]), contextlib.redirect_stdout(output):
             self.assertEqual(main(), 1)
         self.assertNotIn("secret error", output.getvalue())
 

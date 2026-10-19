@@ -10,6 +10,7 @@ Range: python -m tools.validate_official_history --cache CACHE --start YYYY-MM-D
 Range mode requires adjacent DAILY-source.json with download URL and SHA256.
 Every requested date/session is accepted or the entire range is rejected.
 """
+
 import argparse
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -33,14 +34,29 @@ DAILY_SOURCE = 'https://openapi.taifex.com.tw/v1/DailyMarketReportFut'
 
 def verified_oct8_calendar():
     """Finite observed non-expiry sessions; not a generator for other dates."""
-    return SessionCalendar([
-        {'open': '2026-10-07T15:00:00+08:00', 'end': '2026-10-08T05:00:00+08:00',
-         'trade_date': '2026-10-08', 'session': 'night', 'contract_id': CONTRACT,
-         'include_end': True, 'source': SPEC + '; ' + DAILY_SOURCE},
-        {'open': '2026-10-08T08:45:00+08:00', 'end': '2026-10-08T13:45:00+08:00',
-         'trade_date': '2026-10-08', 'session': 'day', 'contract_id': CONTRACT,
-         'include_end': True, 'source': SPEC + '; ' + DAILY_SOURCE},
-    ], version='verified-TMF202610-20261008-two-sessions-v2')
+    return SessionCalendar(
+        [
+            {
+                'open': '2026-10-07T15:00:00+08:00',
+                'end': '2026-10-08T05:00:00+08:00',
+                'trade_date': '2026-10-08',
+                'session': 'night',
+                'contract_id': CONTRACT,
+                'include_end': True,
+                'source': SPEC + '; ' + DAILY_SOURCE,
+            },
+            {
+                'open': '2026-10-08T08:45:00+08:00',
+                'end': '2026-10-08T13:45:00+08:00',
+                'trade_date': '2026-10-08',
+                'session': 'day',
+                'contract_id': CONTRACT,
+                'include_end': True,
+                'source': SPEC + '; ' + DAILY_SOURCE,
+            },
+        ],
+        version='verified-TMF202610-20261008-two-sessions-v2',
+    )
 
 
 def validate_full_sessions(dataset, calendar, contract_id):
@@ -66,9 +82,10 @@ def validate_full_sessions(dataset, calendar, contract_id):
     missing = set(expected) - set(observed)
     unexpected = set(observed) - set(expected)
     if not expected or missing or unexpected or len(observed) != len(set(observed)):
-        raise ValidationError(f'full-session coverage failed: missing={len(missing)}, unexpected={len(unexpected)}, duplicate={len(observed)-len(set(observed))}')
-    return {'expected_minutes': len(expected), 'observed_minutes': len(observed),
-            'missing_minutes': 0, 'unexpected_minutes': 0, 'boundaries_checked': True}
+        raise ValidationError(
+            f'full-session coverage failed: missing={len(missing)}, unexpected={len(unexpected)}, duplicate={len(observed) - len(set(observed))}'
+        )
+    return {'expected_minutes': len(expected), 'observed_minutes': len(observed), 'missing_minutes': 0, 'unexpected_minutes': 0, 'boundaries_checked': True}
 
 
 def verified_bytes(path, sha):
@@ -95,9 +112,16 @@ def cache_inventory(cache):
                     raise ValidationError('extracted file differs from archive')
         except (OSError, ValueError, KeyError) as exc:
             status, error = 'quarantined', str(exc)
-        results.append({'trade_date': record['trade_date'], 'archive_sha256': record['sha256'],
-                        'source_url': record['source_url'], 'status': status, 'error': error,
-                        'ranking_eligible': False})
+        results.append(
+            {
+                'trade_date': record['trade_date'],
+                'archive_sha256': record['sha256'],
+                'source_url': record['source_url'],
+                'status': status,
+                'error': error,
+                'ranking_eligible': False,
+            }
+        )
     return results
 
 
@@ -125,27 +149,60 @@ def load_verified_oct8(cache, daily_json):
         if prices != (official.open, official.high, official.low, official.close):
             raise ValidationError('independent daily OHLC mismatch')
         volume = sum(b.volume for b in bars)
-        comparisons.append({'session': official.session, 'bars': len(bars), 'ohlc_match': True,
-                            'outright_volume': volume, 'official_volume': official.volume,
-                            'volume_delta': official.volume - volume,
-                            'volume_reconciled': False})
-    report = {'schema_version': 1, 'integration_accepted': True, 'ranking_eligible': False,
-              'trade_dates': ['2026-10-08'], 'contract_id': CONTRACT, 'coverage': coverage,
-              'source_hashes': {'archive': ARCHIVE_HASH, 'ticks': TICK_HASH, 'daily': DAILY_HASH},
-              'calendar_hash': calendar.hash, 'data_hash': dataset.manifest['data_hash'],
-              'session_comparisons': comparisons,
-              'limitations': ['One trade date cannot establish economic or out-of-sample ranking validity.',
-                             'Outright ticks exclude spreads and block trades; daily volume scope differs.',
-                             'OHLC agreement and full minute coverage do not prove every tick is present.',
-                             'Public download is not a redistribution license. Raw files remain local.',
-                             'All other dates require separate explicit calendar and daily evidence.']}
+        comparisons.append(
+            {
+                'session': official.session,
+                'bars': len(bars),
+                'ohlc_match': True,
+                'outright_volume': volume,
+                'official_volume': official.volume,
+                'volume_delta': official.volume - volume,
+                'volume_reconciled': False,
+            }
+        )
+    report = {
+        'schema_version': 1,
+        'integration_accepted': True,
+        'ranking_eligible': False,
+        'trade_dates': ['2026-10-08'],
+        'contract_id': CONTRACT,
+        'coverage': coverage,
+        'source_hashes': {'archive': ARCHIVE_HASH, 'ticks': TICK_HASH, 'daily': DAILY_HASH},
+        'calendar_hash': calendar.hash,
+        'data_hash': dataset.manifest['data_hash'],
+        'session_comparisons': comparisons,
+        'limitations': [
+            'One trade date cannot establish economic or out-of-sample ranking validity.',
+            'Outright ticks exclude spreads and block trades; daily volume scope differs.',
+            'OHLC agreement and full minute coverage do not prove every tick is present.',
+            'Public download is not a redistribution license. Raw files remain local.',
+            'All other dates require separate explicit calendar and daily evidence.',
+        ],
+    }
     return dataset, report
 
 
-DAILY_CSV_COLUMNS = ('交易日期', '契約', '到期月份(週別)', '開盤價', '最高價', '最低價',
-                     '收盤價', '漲跌價', '漲跌%', '成交量', '結算價', '未沖銷契約數',
-                     '最後最佳買價', '最後最佳賣價', '歷史最高價', '歷史最低價',
-                     '是否因訊息面暫停交易', '交易時段', '價差對單式委託成交量')
+DAILY_CSV_COLUMNS = (
+    '交易日期',
+    '契約',
+    '到期月份(週別)',
+    '開盤價',
+    '最高價',
+    '最低價',
+    '收盤價',
+    '漲跌價',
+    '漲跌%',
+    '成交量',
+    '結算價',
+    '未沖銷契約數',
+    '最後最佳買價',
+    '最後最佳賣價',
+    '歷史最高價',
+    '歷史最低價',
+    '是否因訊息面暫停交易',
+    '交易時段',
+    '價差對單式委託成交量',
+)
 
 
 def read_daily_evidence(paths, *, contract_id, start, end):
@@ -164,8 +221,7 @@ def read_daily_evidence(paths, *, contract_id, start, end):
         reader = csv.DictReader(io.StringIO(raw.decode('cp950')), strict=True)
         if tuple(reader.fieldnames or ()) != DAILY_CSV_COLUMNS:
             raise ValidationError('unrecognized daily evidence CSV schema')
-        sources.append({'filename': path.name, 'source_url': metadata['source_url'],
-                        'sha256': metadata['sha256']})
+        sources.append({'filename': path.name, 'source_url': metadata['source_url'], 'sha256': metadata['sha256']})
         for number, row in enumerate(reader, 2):
             if number > 1_000_001:
                 raise ValidationError('daily evidence row limit exceeded')
@@ -186,7 +242,7 @@ def read_daily_evidence(paths, *, contract_id, start, end):
             if key in evidence:
                 raise ValidationError('duplicate daily evidence session')
             try:
-                prices = tuple(Decimal(row[k]) for k in ('開盤價','最高價','最低價','收盤價'))
+                prices = tuple(Decimal(row[k]) for k in ('開盤價', '最高價', '最低價', '收盤價'))
                 if any(not value.is_finite() or value <= 0 for value in prices):
                     raise ValueError()
             except (InvalidOperation, ValueError):
@@ -197,10 +253,11 @@ def read_daily_evidence(paths, *, contract_id, start, end):
     return evidence, sources
 
 
-def load_verified_range(cache, *, start, end, contract_id, calendar_path,
-                        calendar_version, daily_csv, as_of):
+def load_verified_range(cache, *, start, end, contract_id, calendar_path, calendar_version, daily_csv, as_of):
     """All-or-nothing explicit range acceptance; no inferred calendar or dropped days."""
-    validate_date(start); validate_date(end); validate_contract(contract_id)
+    validate_date(start)
+    validate_date(end)
+    validate_contract(contract_id)
     cutoff = parse_timestamp(as_of)
     if start > end:
         raise ValidationError('date range is reversed')
@@ -208,8 +265,7 @@ def load_verified_range(cache, *, start, end, contract_id, calendar_path,
     records = json.loads(calendar_raw)
     if not isinstance(records, list):
         raise ValidationError('calendar JSON must be explicit session array')
-    records = [r for r in records if start <= r['trade_date'] <= end and
-               r.get('contract_id') in (None, '', contract_id)]
+    records = [r for r in records if start <= r['trade_date'] <= end and r.get('contract_id') in (None, '', contract_id)]
     calendar = SessionCalendar(records, version=calendar_version)
     expected = {(r['trade_date'], r['session']) for r in calendar.sessions if not r.get('closed')}
     if not expected or any(r['end'] > cutoff for r in calendar.sessions):
@@ -239,15 +295,14 @@ def load_verified_range(cache, *, start, end, contract_id, calendar_path,
         if members[0]['name'] != member['name'] or members[0]['sha256'] != member['sha256']:
             raise ValidationError('archive member provenance mismatch')
         verified_bytes(member['path'], member['sha256'])
-        day_calendar = SessionCalendar([r for r in records if r['trade_date'] == date],
-                                       version=calendar_version + ':' + date)
-        dataset = import_taifex(Path(member['path']), kind='ticks_csv', calendar=day_calendar,
-                               contract_id=contract_id)
+        day_calendar = SessionCalendar([r for r in records if r['trade_date'] == date], version=calendar_version + ':' + date)
+        dataset = import_taifex(Path(member['path']), kind='ticks_csv', calendar=day_calendar, contract_id=contract_id)
         try:
             validate_full_sessions(dataset, day_calendar, contract_id)
         except ValidationError as exc:
-            raise ValidationError(f'{date}: rejected incomplete or invalid archive: {exc}; '
-                                  f'gaps={canonical_json(dataset.quality.get("session_coverage_gaps", []))}') from exc
+            raise ValidationError(
+                f'{date}: rejected incomplete or invalid archive: {exc}; gaps={canonical_json(dataset.quality.get("session_coverage_gaps", []))}'
+            ) from exc
         if any(b.end > cutoff for b in dataset.bars):
             raise ValidationError('observed data exceeds as-of cutoff')
         for key in sorted(k for k in expected if k[0] == date):
@@ -255,27 +310,48 @@ def load_verified_range(cache, *, start, end, contract_id, calendar_path,
             ohlc = (group[0].open, max(b.high for b in group), min(b.low for b in group), group[-1].close)
             if ohlc != daily[key]:
                 raise ValidationError(f'{date} {key[1]}: independent daily OHLC mismatch')
-            comparisons.append({'trade_date': date, 'session': key[1], 'bars': len(group),
-                                'ohlc_match': True, 'volume_reconciled': False})
+            comparisons.append({'trade_date': date, 'session': key[1], 'bars': len(group), 'ohlc_match': True, 'volume_reconciled': False})
         bars.extend(dataset.bars)
-        sources.append({'trade_date': date, 'source_url': record['source_url'],
-                        'archive_sha256': record['sha256'], 'csv_sha256': member['sha256']})
-    provenance = {'archives': sources, 'daily': daily_sources,
-                  'calendar_input_sha256': hashlib.sha256(calendar_raw).hexdigest()}
-    dataset = _dataset(bars, calendar=calendar, source_type='official_local',
-                       quality={'valid': True, 'errors': [], 'warnings': [
-                           'Technical diagnostic replay only; insufficient economic OOS history.',
-                           'Outright tick and daily volume scopes differ; no redistribution rights inferred.']},
-                       extra={'ranking_eligible': False, 'timeframe_minutes': 1, 'bar_granularity': 'minute',
-                              'source_hash': hashlib.sha256(canonical_json(provenance).encode()).hexdigest()})
+        sources.append({'trade_date': date, 'source_url': record['source_url'], 'archive_sha256': record['sha256'], 'csv_sha256': member['sha256']})
+    provenance = {'archives': sources, 'daily': daily_sources, 'calendar_input_sha256': hashlib.sha256(calendar_raw).hexdigest()}
+    dataset = _dataset(
+        bars,
+        calendar=calendar,
+        source_type='official_local',
+        quality={
+            'valid': True,
+            'errors': [],
+            'warnings': [
+                'Technical diagnostic replay only; insufficient economic OOS history.',
+                'Outright tick and daily volume scopes differ; no redistribution rights inferred.',
+            ],
+        },
+        extra={
+            'ranking_eligible': False,
+            'timeframe_minutes': 1,
+            'bar_granularity': 'minute',
+            'source_hash': hashlib.sha256(canonical_json(provenance).encode()).hexdigest(),
+        },
+    )
     coverage = validate_full_sessions(dataset, calendar, contract_id)
-    report = {'integration_accepted': True, 'ranking_eligible': False, 'contract_id': contract_id,
-              'trade_dates': sorted(dates), 'trading_days': len(dates), 'bars': len(bars),
-              'coverage': coverage, 'data_hash': dataset.manifest['data_hash'],
-              'calendar_hash': calendar.hash, 'as_of': cutoff, 'sources': provenance,
-              'session_comparisons': comparisons,
-              'limitations': ['Technical validation only; no economic ranking or untouched-OOS claim.',
-                             'OHLC and minute coverage do not establish completeness of every tick.']}
+    report = {
+        'integration_accepted': True,
+        'ranking_eligible': False,
+        'contract_id': contract_id,
+        'trade_dates': sorted(dates),
+        'trading_days': len(dates),
+        'bars': len(bars),
+        'coverage': coverage,
+        'data_hash': dataset.manifest['data_hash'],
+        'calendar_hash': calendar.hash,
+        'as_of': cutoff,
+        'sources': provenance,
+        'session_comparisons': comparisons,
+        'limitations': [
+            'Technical validation only; no economic ranking or untouched-OOS claim.',
+            'OHLC and minute coverage do not establish completeness of every tick.',
+        ],
+    }
     return dataset, report
 
 
@@ -284,8 +360,11 @@ def main():
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--daily-json', type=Path, help='Pinned October 8 compatibility mode')
     parser.add_argument('--daily-csv', type=Path, action='append', default=[])
-    parser.add_argument('--start'); parser.add_argument('--end'); parser.add_argument('--contract')
-    parser.add_argument('--calendar', type=Path); parser.add_argument('--calendar-version')
+    parser.add_argument('--start')
+    parser.add_argument('--end')
+    parser.add_argument('--contract')
+    parser.add_argument('--calendar', type=Path)
+    parser.add_argument('--calendar-version')
     parser.add_argument('--as-of', help='Explicit UTC/offset observation cutoff for range mode')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -293,21 +372,28 @@ def main():
         parser.error('fresh output directory required; existing evidence is never overwritten')
     try:
         if args.daily_json:
-            if any((args.daily_csv, args.start, args.end, args.contract, args.calendar,
-                    args.calendar_version, args.as_of)):
+            if any((args.daily_csv, args.start, args.end, args.contract, args.calendar, args.calendar_version, args.as_of)):
                 parser.error('do not mix pinned October 8 and explicit range modes')
             dataset, report = load_verified_oct8(args.cache, args.daily_json)
             calendar_records = verified_oct8_calendar().sessions
         else:
-            if not all((args.daily_csv, args.start, args.end, args.contract, args.calendar,
-                        args.calendar_version, args.as_of)):
+            if not all((args.daily_csv, args.start, args.end, args.contract, args.calendar, args.calendar_version, args.as_of)):
                 parser.error('range mode requires daily-csv, start, end, contract, calendar, calendar-version, as-of')
-            dataset, report = load_verified_range(args.cache, start=args.start, end=args.end,
-                contract_id=args.contract, calendar_path=args.calendar, calendar_version=args.calendar_version,
-                daily_csv=args.daily_csv, as_of=args.as_of)
-            calendar_records = [r for r in json.loads(args.calendar.read_text())
-                                if args.start <= r['trade_date'] <= args.end and
-                                r.get('contract_id') in (None, '', args.contract)]
+            dataset, report = load_verified_range(
+                args.cache,
+                start=args.start,
+                end=args.end,
+                contract_id=args.contract,
+                calendar_path=args.calendar,
+                calendar_version=args.calendar_version,
+                daily_csv=args.daily_csv,
+                as_of=args.as_of,
+            )
+            calendar_records = [
+                r
+                for r in json.loads(args.calendar.read_text())
+                if args.start <= r['trade_date'] <= args.end and r.get('contract_id') in (None, '', args.contract)
+            ]
     except (ValueError, OSError, KeyError) as exc:
         parser.exit(2, f'History acceptance rejected: {exc}\n')
     # No dataset is written on rejection; do not reuse an earlier successful output directory.

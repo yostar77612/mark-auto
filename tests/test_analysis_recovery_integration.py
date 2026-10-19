@@ -3,6 +3,7 @@
 The Windows capability switch is patched for platform-neutral ledger/journal
 integration. No kernel object, original-GUI-death or Windows token claim follows.
 """
+
 from contextlib import closing
 import copy
 import json
@@ -33,17 +34,25 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.base = Path(self.tmp.name)
         self.paths = runtime.AppPaths(self.base / 'workspace', self.base / 'bootstrap').ensure()
         self.data, self.state, self.folder = source(self.paths.state / 'campaigns')
-        self.plan = a.make_analysis_plan(prepare(self.folder, self.data, self.state),
-            model='fixture-model', registration='a' * 32, provider_implementation=PROVENANCE)
-        self.request = {'campaign_reference': self.folder.name,
+        self.plan = a.make_analysis_plan(
+            prepare(self.folder, self.data, self.state), model='fixture-model', registration='a' * 32, provider_implementation=PROVENANCE
+        )
+        self.request = {
+            'campaign_reference': self.folder.name,
             'original_dataset': {'kind': 'local_dataset_file', 'path': str(self.base / 'original.json')},
-            'attempt_ids': [self.state['attempts'][0]['attempt_id']], 'task': 'critique',
-            'registration': 'a' * 32, 'model': 'fixture-model', 'timeout_seconds': 30}
-        for patcher in (patch.object(p, 'implementation_provenance', return_value=PROVENANCE),
-                        patch.object(p, 'PlanHTTPTransport', AnalysisWire),
-                        patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
-                        patch.object(p.ChatGPTPlanProvider, 'analyze', side_effect=AssertionError('No model call')),
-                        patch.object(p.ChatGPTPlanProvider, 'analysis_preflight', side_effect=AssertionError('No preflight'))):
+            'attempt_ids': [self.state['attempts'][0]['attempt_id']],
+            'task': 'critique',
+            'registration': 'a' * 32,
+            'model': 'fixture-model',
+            'timeout_seconds': 30,
+        }
+        for patcher in (
+            patch.object(p, 'implementation_provenance', return_value=PROVENANCE),
+            patch.object(p, 'PlanHTTPTransport', AnalysisWire),
+            patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
+            patch.object(p.ChatGPTPlanProvider, 'analyze', side_effect=AssertionError('No model call')),
+            patch.object(p.ChatGPTPlanProvider, 'analysis_preflight', side_effect=AssertionError('No preflight')),
+        ):
             patcher.start()
             self.addCleanup(patcher.stop)
         AnalysisWire.requests = []
@@ -53,17 +62,22 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def register(self):
         with r.admission(self.paths) as token:
-            return r.register_launch(self.paths, job_id='b' * 32, helper_nonce='c' * 32,
-                approved_plan=self.plan, request=self.request, admission=token)
+            return r.register_launch(self.paths, job_id='b' * 32, helper_nonce='c' * 32, approved_plan=self.plan, request=self.request, admission=token)
 
     def pending_record(self):
         self.analysis_folder.mkdir(parents=True)
         with closing(sqlite3.connect(self.analysis_folder / 'analysis.lock.sqlite3')):
             pass
-        record = {'schema_version': 1, 'plan': self.plan,
-            'provider_descriptor': self.provider.provider_descriptor(), 'status': 'running',
-            'response': None, 'response_hash': None, 'receipt_snapshot': self.provider.read_receipt_snapshot(),
-            'real_model_status': 'not_verified'}
+        record = {
+            'schema_version': 1,
+            'plan': self.plan,
+            'provider_descriptor': self.provider.provider_descriptor(),
+            'status': 'running',
+            'response': None,
+            'response_hash': None,
+            'receipt_snapshot': self.provider.read_receipt_snapshot(),
+            'real_model_status': 'not_verified',
+        }
         a._save(self.analysis_folder, record)
         request = a.analysis_request(self.plan)
         self.provider._reserve(content_hash(request), len(canonical_json(request).encode()))
@@ -76,14 +90,14 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         return launch
 
     def reconcile(self, **changes):
-        args = dict(output_root=self.output, analysis_id=self.plan['analysis_id'], provider=self.provider,
-            recovery=(self.paths, 'b' * 32))
+        args = dict(output_root=self.output, analysis_id=self.plan['analysis_id'], provider=self.provider, recovery=(self.paths, 'b' * 32))
         args.update(changes)
         with patch.object(r, 'supports_durable_recovery', return_value=True):
             return a.reconcile_analysis(**args)
 
     def test_new_manager_admission_then_real_local_repair_preserves_provider_controls(self):
         from desktop_ui import execute_ui_operation
+
         self.stopped()
         manager = runtime.JobManager(self.paths)
         self.assertIsNone(manager._quiesced_analysis)
@@ -95,9 +109,11 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         context.Pipe.return_value = (receiver, sender)
         context.Event.return_value = gate
         context.Process.return_value = process
-        with patch.object(r, 'supports_durable_recovery', return_value=True), \
-             patch.object(runtime.mp, 'get_context', return_value=context), \
-             patch.object(runtime, '_WindowsProcessTree') as simulated_tree:
+        with (
+            patch.object(r, 'supports_durable_recovery', return_value=True),
+            patch.object(runtime.mp, 'get_context', return_value=context),
+            patch.object(runtime, '_WindowsProcessTree') as simulated_tree,
+        ):
             manager.start('ui_analysis_reconcile', payload)
         self.assertEqual(context.Process.call_args.kwargs['args'][3], payload)
         process.start.assert_called_once()
@@ -147,12 +163,14 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.stopped()
         original = r.validate_stop_receipt
         observed = []
+
         def verify(*args, **kwargs):
             with closing(sqlite3.connect(self.analysis_folder / 'analysis.lock.sqlite3', timeout=0)) as other:
                 with self.assertRaises(sqlite3.OperationalError):
                     other.execute('BEGIN EXCLUSIVE')
             observed.append(kwargs.get('record', {}).get('status'))
             return original(*args, **kwargs)
+
         with patch.object(r, 'validate_stop_receipt', side_effect=verify):
             self.assertEqual(self.reconcile()['status'], 'blocked')
         self.assertEqual(observed, ['running'])
@@ -161,20 +179,23 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.stopped()
         original_save = a._save
         attempted = []
+
         def save_while_restore_contends(folder, record):
             def restore():
                 try:
-                    with r.admission(self.paths, timeout=.05) as token:
+                    with r.admission(self.paths, timeout=0.05) as token:
                         r.advance_restore_epoch(self.paths, 'd' * 32, admission=token)
                     attempted.append('unexpectedly admitted')
                 except r.RecoveryError:
                     attempted.append('blocked')
+
             thread = threading.Thread(target=restore)
             thread.start()
             thread.join(2)
             self.assertFalse(thread.is_alive())
             self.assertEqual(attempted, ['blocked'])
             return original_save(folder, record)
+
         with patch.object(a, '_save', side_effect=save_while_restore_contends):
             self.assertEqual(self.reconcile()['status'], 'blocked')
         self.assertEqual(attempted, ['blocked'])
@@ -183,18 +204,21 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_restore_epoch_changed_after_adapter_precheck_is_rechecked_under_lock(self):
         from desktop_ui import execute_ui_operation
+
         self.stopped()
         original = a.reconcile_analysis
+
         def change_epoch(**kwargs):
             with r.admission(self.paths) as token:
                 r.advance_restore_epoch(self.paths, 'd' * 32, admission=token)
             return original(**kwargs)
+
         before = snapshot(self.analysis_folder)
-        with patch.object(r, 'supports_durable_recovery', return_value=True), \
-             patch.object(a, 'reconcile_analysis', side_effect=change_epoch):
+        with patch.object(r, 'supports_durable_recovery', return_value=True), patch.object(a, 'reconcile_analysis', side_effect=change_epoch):
             with self.assertRaises(r.RecoveryError):
-                execute_ui_operation('ui_analysis_reconcile', {'analysis_id': self.plan['analysis_id'],
-                    'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}, self.paths)
+                execute_ui_operation(
+                    'ui_analysis_reconcile', {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}, self.paths
+                )
         self.assertEqual(snapshot(self.analysis_folder), before)
         self.assertEqual(AnalysisWire.requests, [])
 
@@ -219,9 +243,14 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertEqual(AnalysisWire.requests, [])
 
     def test_windows_missing_approved_plan_rejects_before_spawn(self):
-        payload = {'request': self.request, 'expected_analysis_id': self.plan['analysis_id'],
-            'expected_plan_hash': content_hash(self.plan), 'user_confirmed': True,
-            'network_opt_in': True, 'included_usage_policy_confirmed': True}
+        payload = {
+            'request': self.request,
+            'expected_analysis_id': self.plan['analysis_id'],
+            'expected_plan_hash': content_hash(self.plan),
+            'user_confirmed': True,
+            'network_opt_in': True,
+            'included_usage_policy_confirmed': True,
+        }
         manager = runtime.JobManager(self.paths)
         # Only enter Windows validation; no Win32 API or path operation is run.
         with patch.object(runtime.sys, 'platform', 'win32'), patch.object(runtime.mp, 'get_context') as spawn:
@@ -233,6 +262,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_linux_durable_route_remains_rejected_at_every_product_boundary(self):
         from desktop_ui import execute_ui_operation
+
         self.stopped()
         payload = {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}
         with patch.object(r, 'supports_durable_recovery', return_value=False):
@@ -243,8 +273,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 execute_ui_operation('ui_analysis_reconcile', payload, self.paths)
             with self.assertRaises(ValidationError):
-                a.reconcile_analysis(output_root=self.output, analysis_id=self.plan['analysis_id'],
-                    provider=self.provider, recovery=(self.paths, 'b' * 32))
+                a.reconcile_analysis(output_root=self.output, analysis_id=self.plan['analysis_id'], provider=self.provider, recovery=(self.paths, 'b' * 32))
 
     def test_direct_backup_services_block_unresolved_before_writes(self):
         self.register()
@@ -287,6 +316,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         from quantlab.core import to_dict
         from quantlab.reporting import save_dataset, demo_config
         from quantlab.paper import ReconciliationError, LiveBroker, LiveTradingDisabled
+
         save_dataset(self.data, self.paths.state / 'dataset.json')
         execute_ui_operation('ui_backtest', {'family': 'trend', 'config': to_dict(demo_config())}, self.paths)
         report = next((self.paths.state / 'reports').glob('*/result.json'))
@@ -297,38 +327,69 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         controls = snapshot(self.paths.controls)
         source = (self.paths.state / 'dataset.json').read_bytes()
         campaigns = snapshot(self.paths.state / 'campaigns')
+
         def call(operation, payload):
             # The real service dispatcher admission plus actual paper adapter.
             r.require_operation(self.paths, operation)
             with runtime._worker_recovery_guard(self.paths, operation, 'f' * 32, None):
                 return execute_ui_operation(operation, payload, self.paths)
+
         selection = call('ui_select', {'result': str(report)})
         self.assertEqual(selection['scope'], 'research_and_paper_only')
         first, last = self.data.bars[0], self.data.bars[-1]
-        policy = {'contract_id': first.contract_id,
-            'risk_sessions': [{'open': first.timestamp.isoformat(), 'end': last.end.isoformat(),
-                'trade_date': first.trade_date, 'session': first.session,
-                'contract_id': first.contract_id, 'source': 'explicit synthetic demonstration'}],
-            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000',
-                'version': 'synthetic-assumption-v1'}]}
+        policy = {
+            'contract_id': first.contract_id,
+            'risk_sessions': [
+                {
+                    'open': first.timestamp.isoformat(),
+                    'end': last.end.isoformat(),
+                    'trade_date': first.trade_date,
+                    'session': first.session,
+                    'contract_id': first.contract_id,
+                    'source': 'explicit synthetic demonstration',
+                }
+            ],
+            'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000', 'version': 'synthetic-assumption-v1'}],
+        }
         result = call('ui_paper_snapshot', {'policy': policy})
         self.assertTrue(result['account']['reconciliation_required'])
         with self.assertRaises(ReconciliationError):
             call('ui_paper_reconcile', {'policy': policy, 'snapshot': {}})
-        account = call('ui_paper_reconcile', {'policy': policy, 'snapshot': {
-            'account_id': 'synthetic', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}})['account']
+        account = call(
+            'ui_paper_reconcile', {'policy': policy, 'snapshot': {'account_id': 'synthetic', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}}
+        )['account']
         for operation in ('ui_paper_submit', 'ui_paper_replay'):
             with self.assertRaises(ValidationError):
                 call(operation, {'policy': policy, 'snapshot': account})
         now = (first.timestamp + timedelta(minutes=1)).isoformat()
-        result = call('ui_paper_submit', {'policy': policy, 'snapshot': account, 'reconcile_confirmed': True,
-            'intent': {'client_order_id': 'risk-rejected', 'strategy_hash': selection['strategy_hash'],
-                'contract_id': first.contract_id, 'side': 'buy', 'quantity': 2,
-                'order_type': 'market', 'created_at': now},
-            'quote': {'account_id': 'synthetic', 'contract_id': first.contract_id,
-                'timestamp': now, 'price': '20000', 'trade_date': first.trade_date,
-                'session_open': first.timestamp.isoformat(), 'session_end': last.end.isoformat(),
-                'margin_per_contract': '100000'}, 'now': now})
+        result = call(
+            'ui_paper_submit',
+            {
+                'policy': policy,
+                'snapshot': account,
+                'reconcile_confirmed': True,
+                'intent': {
+                    'client_order_id': 'risk-rejected',
+                    'strategy_hash': selection['strategy_hash'],
+                    'contract_id': first.contract_id,
+                    'side': 'buy',
+                    'quantity': 2,
+                    'order_type': 'market',
+                    'created_at': now,
+                },
+                'quote': {
+                    'account_id': 'synthetic',
+                    'contract_id': first.contract_id,
+                    'timestamp': now,
+                    'price': '20000',
+                    'trade_date': first.trade_date,
+                    'session_open': first.timestamp.isoformat(),
+                    'session_end': last.end.isoformat(),
+                    'margin_per_contract': '100000',
+                },
+                'now': now,
+            },
+        )
         order = result['account']['orders']['risk-rejected']
         self.assertEqual(order['status'], 'rejected')
         self.assertEqual(order['reason'], 'max_order_quantity')
@@ -345,8 +406,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertEqual(AnalysisWire.requests, [])
         with self.assertRaises(LiveTradingDisabled):
             LiveBroker()
-        for operation in ('ui_chatgpt_auth', 'ui_chatgpt_reconcile', 'ui_campaign',
-                          'ui_analysis_run', 'ui_import', 'ui_backup_restore'):
+        for operation in ('ui_chatgpt_auth', 'ui_chatgpt_reconcile', 'ui_campaign', 'ui_analysis_run', 'ui_import', 'ui_backup_restore'):
             with self.assertRaises(r.RecoveryError):
                 r.require_operation(self.paths, operation)
 
@@ -370,13 +430,16 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         entered, finish, gate = threading.Event(), threading.Event(), threading.Event()
         gate.set()
         sender = Mock()
+
         def slow_operation(*args, **kwargs):
             entered.set()
             self.assertTrue(finish.wait(5))
             return {}
+
         with patch('desktop_ui.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
-            thread = threading.Thread(target=runtime._job_worker, args=(sender, gate, 'ui_import', {},
-                str(self.paths.root), str(self.paths.bootstrap), 'f' * 32))
+            thread = threading.Thread(
+                target=runtime._job_worker, args=(sender, gate, 'ui_import', {}, str(self.paths.root), str(self.paths.bootstrap), 'f' * 32)
+            )
             thread.start()
             try:
                 self.assertTrue(entered.wait(3))

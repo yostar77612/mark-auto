@@ -1,4 +1,5 @@
 """Read-only projection of the runtime's allowlisted log reader."""
+
 import csv
 import json
 from datetime import datetime, timedelta, timezone
@@ -21,8 +22,7 @@ def log_rows(lines):
             if operation not in LOG_OPERATION_NAMES or event not in LOG_EVENT_NAMES:
                 continue
             stamp = datetime.fromtimestamp(value['time'], timezone(timedelta(hours=8)))
-            rows.append((stamp.strftime('%Y-%m-%d %H:%M:%S'),
-                         ui_text(LOG_OPERATION_NAMES[operation]), ui_text(LOG_EVENT_NAMES[event]), event))
+            rows.append((stamp.strftime('%Y-%m-%d %H:%M:%S'), ui_text(LOG_OPERATION_NAMES[operation]), ui_text(LOG_EVENT_NAMES[event]), event))
         except (ValueError, TypeError, KeyError, OverflowError, OSError):
             continue
     return rows

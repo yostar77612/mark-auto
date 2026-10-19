@@ -1,4 +1,5 @@
 """Deterministic SQLite busy-wait budgets, without relaxing wall-clock gates."""
+
 from pathlib import Path
 from contextlib import closing
 import sqlite3
@@ -12,10 +13,19 @@ from quantlab.reporting import synthetic_dataset
 
 
 class RegistryDeadlineTests(unittest.TestCase):
-    def run_reservation(self, *, deadline=1.0, schema_delays=(0.0, 0.0),
-                        connect_delay=0.0, locked=False, select_delay=0.0,
-                        busy_delay=None, as_walk_forward=False, busy_code=sqlite3.SQLITE_BUSY,
-                        registry_alias=False):
+    def run_reservation(
+        self,
+        *,
+        deadline=1.0,
+        schema_delays=(0.0, 0.0),
+        connect_delay=0.0,
+        locked=False,
+        select_delay=0.0,
+        busy_delay=None,
+        as_walk_forward=False,
+        busy_code=sqlite3.SQLITE_BUSY,
+        registry_alias=False,
+    ):
         clock = [0.0]
         events = []
 
@@ -23,12 +33,16 @@ class RegistryDeadlineTests(unittest.TestCase):
             def __init__(self, timeout):
                 self.busy = int(timeout * 1000) / 1000  # sqlite3.connect uses integer milliseconds.
                 self.schemas = iter(schema_delays)
+
             def __enter__(self):
                 return self
+
             def __exit__(self, kind, value, traceback):
                 events.append(('rollback' if kind else 'commit', clock[0]))
+
             def close(self):
                 events.append(('close', clock[0]))
+
             def execute(self, sql, parameters=()):
                 events.append(('execute', sql, clock[0], self.busy))
                 if sql.startswith('PRAGMA busy_timeout='):
@@ -43,12 +57,15 @@ class RegistryDeadlineTests(unittest.TestCase):
                 elif sql.startswith('SELECT DISTINCT'):
                     clock[0] += select_delay
                 return self
+
             def fetchall(self):
                 return []
+
             def executemany(self, sql, parameters):
                 events.append(('executemany', sql, tuple(parameters)))
 
         real_connect = sqlite3.connect
+
         def connect(path, timeout):
             if Path(path).resolve() != target_registry.resolve():
                 return real_connect(path, timeout=timeout)
@@ -67,31 +84,33 @@ class RegistryDeadlineTests(unittest.TestCase):
             if as_walk_forward:
                 from tests.test_walk_forward import inputs
                 from quantlab.walk_forward import run_walk_forward
+
                 dataset, plan = inputs(max_runtime_seconds=1)
-            with patch.object(research.time, 'monotonic', side_effect=lambda: clock[0]), \
-                    patch.object(research.sqlite3, 'connect', side_effect=connect):
+            with patch.object(research.time, 'monotonic', side_effect=lambda: clock[0]), patch.object(research.sqlite3, 'connect', side_effect=connect):
                 try:
                     if as_walk_forward:
-                        result = run_walk_forward(dataset, plan=plan,
-                            holdout_registry_path=target_registry, output_dir=Path(temporary) / 'output')
+                        result = run_walk_forward(dataset, plan=plan, holdout_registry_path=target_registry, output_dir=Path(temporary) / 'output')
                     else:
-                        result = research._reserve_holdout(dataset,
-                            registry_path=target_registry, campaign_id='fixture',
-                            selection_hash='fixture', output_dir=Path(temporary) / 'output', deadline=deadline)
+                        result = research._reserve_holdout(
+                            dataset,
+                            registry_path=target_registry,
+                            campaign_id='fixture',
+                            selection_hash='fixture',
+                            output_dir=Path(temporary) / 'output',
+                            deadline=deadline,
+                        )
                 except (research.ResourceTimeout, sqlite3.OperationalError) as exc:
                     error = exc
-            self.assertEqual(sum(e[0] == 'connect' for e in events), 1,
-                'Deadline fixture must intercept exactly one intended registry connection')
+            self.assertEqual(sum(e[0] == 'connect' for e in events), 1, 'Deadline fixture must intercept exactly one intended registry connection')
         return result, error, clock[0], events
 
     def test_schema_time_is_subtracted_before_busy_begin(self):
-        result, error, elapsed, events = self.run_reservation(schema_delays=(.35, .35), locked=True)
+        result, error, elapsed, events = self.run_reservation(schema_delays=(0.35, 0.35), locked=True)
         self.assertIsNone(result)
         self.assertIsInstance(error, research.ResourceTimeout)
         self.assertLessEqual(elapsed, 1.0)
-        busy = [e[3] for e in events if e[0] == 'execute' and
-                (e[1].startswith('CREATE TABLE') or e[1] == 'BEGIN IMMEDIATE')]
-        self.assertEqual(busy, [1.0, .65, .3])
+        busy = [e[3] for e in events if e[0] == 'execute' and (e[1].startswith('CREATE TABLE') or e[1] == 'BEGIN IMMEDIATE')]
+        self.assertEqual(busy, [1.0, 0.65, 0.3])
         self.assertEqual(events[-2][0], 'rollback')
         self.assertEqual(events[-1][0], 'close')
         self.assertFalse(any(e[0] == 'executemany' for e in events))
@@ -126,15 +145,14 @@ class RegistryDeadlineTests(unittest.TestCase):
         result, error, _, events = self.run_reservation(deadline=30)
         self.assertIsNone(error)
         self.assertEqual(result['status'], 'reserved_consumed')
-        guarded = [e for e in events if e[0] == 'execute' and
-                   (e[1].startswith('CREATE TABLE') or e[1] == 'BEGIN IMMEDIATE')]
+        guarded = [e for e in events if e[0] == 'execute' and (e[1].startswith('CREATE TABLE') or e[1] == 'BEGIN IMMEDIATE')]
         self.assertEqual([e[3] for e in guarded], [10, 10, 10])
 
     def test_submillisecond_budget_is_not_rounded_up(self):
-        result, error, elapsed, events = self.run_reservation(deadline=.0005, locked=True)
+        result, error, elapsed, events = self.run_reservation(deadline=0.0005, locked=True)
         self.assertIsNone(result)
         self.assertIsInstance(error, research.ResourceTimeout)
-        self.assertLessEqual(elapsed, .0005)
+        self.assertLessEqual(elapsed, 0.0005)
         begin = next(e for e in events if e[0] == 'execute' and e[1] == 'BEGIN IMMEDIATE')
         self.assertEqual(begin[3], 0)
 
@@ -150,15 +168,14 @@ class RegistryDeadlineTests(unittest.TestCase):
         dataset = synthetic_dataset(10)
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'registry.sqlite3'
-            options = dict(registry_path=path, campaign_id='fixture', selection_hash='fixture',
-                           output_dir=Path(temporary) / 'output')
+            options = dict(registry_path=path, campaign_id='fixture', selection_hash='fixture', output_dir=Path(temporary) / 'output')
             original = research._reserve_holdout(dataset, **options)
             self.assertEqual(original['status'], 'reserved_consumed')
             with closing(sqlite3.connect(path)) as blocker:
                 blocker.execute('BEGIN IMMEDIATE')
                 started = time.monotonic()
                 with self.assertRaises((research.ResourceTimeout, sqlite3.OperationalError)):
-                    research._reserve_holdout(dataset, deadline=started + .1, **options)
+                    research._reserve_holdout(dataset, deadline=started + 0.1, **options)
                 elapsed = time.monotonic() - started
                 blocker.rollback()
             self.assertLess(elapsed, 2)
@@ -170,18 +187,25 @@ class RegistryDeadlineTests(unittest.TestCase):
         dataset = synthetic_dataset(10)
         statements = []
         connect = sqlite3.connect
+
         def traced(*args, **kwargs):
             db = connect(*args, **kwargs)
             self.assertEqual(db.execute('PRAGMA synchronous').fetchone()[0], 2)
             self.assertEqual(db.execute('PRAGMA journal_mode').fetchone()[0], 'delete')
             db.set_trace_callback(statements.append)
             return db
+
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'registry.sqlite3'
             with patch.object(research.sqlite3, 'connect', side_effect=traced):
-                result = research._reserve_holdout(dataset, registry_path=path,
-                    campaign_id='fixture', selection_hash='fixture',
-                    output_dir=Path(temporary) / 'output', deadline=time.monotonic() + 10)
+                result = research._reserve_holdout(
+                    dataset,
+                    registry_path=path,
+                    campaign_id='fixture',
+                    selection_hash='fixture',
+                    output_dir=Path(temporary) / 'output',
+                    deadline=time.monotonic() + 10,
+                )
             self.assertEqual(result['status'], 'reserved_consumed')
             self.assertEqual(statements.count('BEGIN IMMEDIATE'), 1)
             self.assertEqual(statements.count('COMMIT'), 1)
@@ -191,46 +215,41 @@ class RegistryDeadlineTests(unittest.TestCase):
                 self.assertEqual(db.execute('SELECT count(*) FROM coverage').fetchone()[0], 1)
 
     def test_walk_forward_exhausted_millisecond_wait_is_budget_exhausted(self):
-        result, error, elapsed, _ = self.run_reservation(
-            as_walk_forward=True, schema_delays=(.3502, .35), locked=True)
+        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True, schema_delays=(0.3502, 0.35), locked=True)
         self.assertIsNone(error)
         self.assertLess(elapsed, 1)
-        self.assertLess(1 - elapsed, .001)
+        self.assertLess(1 - elapsed, 0.001)
         self.assertEqual(result['status'], 'budget_exhausted')
         self.assertEqual(result['evaluations'], [])
         self.assertIsNone(result['registry_reservation'])
 
     def test_walk_forward_genuinely_early_busy_remains_blocked(self):
-        result, error, elapsed, _ = self.run_reservation(
-            as_walk_forward=True, schema_delays=(.3502, .35), locked=True, busy_delay=.01)
+        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True, schema_delays=(0.3502, 0.35), locked=True, busy_delay=0.01)
         self.assertIsNone(error)
-        self.assertGreater(1 - elapsed, .001)
+        self.assertGreater(1 - elapsed, 0.001)
         self.assertEqual(result['status'], 'blocked_registry_busy')
         self.assertEqual(result['evaluations'], [])
         self.assertIsNone(result['registry_reservation'])
 
     def test_walk_forward_locked_is_not_relabelled_as_busy_budget(self):
-        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True,
-            schema_delays=(.3502, .35), locked=True, busy_code=sqlite3.SQLITE_LOCKED)
+        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True, schema_delays=(0.3502, 0.35), locked=True, busy_code=sqlite3.SQLITE_LOCKED)
         self.assertIsNone(error)
-        self.assertLess(1 - elapsed, .001)
+        self.assertLess(1 - elapsed, 0.001)
         self.assertEqual(result['status'], 'blocked_registry_busy')
         self.assertEqual(result['evaluations'], [])
         self.assertIsNone(result['registry_reservation'])
 
     def test_other_sqlite_errors_are_not_relabelled_at_deadline(self):
-        result, error, _, _ = self.run_reservation(
-            schema_delays=(.3502, .35), locked=True, busy_code=sqlite3.SQLITE_IOERR)
+        result, error, _, _ = self.run_reservation(schema_delays=(0.3502, 0.35), locked=True, busy_code=sqlite3.SQLITE_IOERR)
         self.assertIsNone(result)
         self.assertIsInstance(error, sqlite3.OperationalError)
         self.assertEqual(error.sqlite_errorcode, sqlite3.SQLITE_IOERR)
 
     def test_walk_forward_registry_alias_reaches_deadline_fixture(self):
-        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True,
-            registry_alias=True, schema_delays=(.3502, .35), locked=True)
+        result, error, elapsed, _ = self.run_reservation(as_walk_forward=True, registry_alias=True, schema_delays=(0.3502, 0.35), locked=True)
         self.assertIsNone(error)
         self.assertLess(elapsed, 1)
-        self.assertLess(1 - elapsed, .001)
+        self.assertLess(1 - elapsed, 0.001)
         self.assertEqual(result['status'], 'budget_exhausted')
         self.assertEqual(result['evaluations'], [])
         self.assertIsNone(result['registry_reservation'])

@@ -1,4 +1,5 @@
 """Exact campaign-catalog-limit producer identity; offline fixtures, never real OAuth."""
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -31,7 +32,7 @@ class CampaignCatalogProducerProfileTests(unittest.TestCase):
     def test_pins_match_reviewed_lf_and_crlf_bytes(self):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
-                raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
+                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest, name)
@@ -42,7 +43,7 @@ class CampaignCatalogProducerProfileTests(unittest.TestCase):
                 for target in implementation['dependency_targets']:
                     self.assertIs(pools._select_producer(binding(profile, index, target)), profile)
         for index in (0, 1):
-            other = PROFILE['chatgpt_plan_implementations'][1-index]['source_sha256']['desktop_chatgpt_provider.py']
+            other = PROFILE['chatgpt_plan_implementations'][1 - index]['source_sha256']['desktop_chatgpt_provider.py']
             for digest in ('f' * 64, other):
                 item = binding(PROFILE, index)
                 item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = digest

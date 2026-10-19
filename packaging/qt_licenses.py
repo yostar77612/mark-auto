@@ -2,6 +2,7 @@
 
 This is a packaging check, not a legal-clearance assertion. It never loads DLLs.
 """
+
 import argparse
 import hashlib
 import json
@@ -11,34 +12,65 @@ import stat
 
 QT_VERSION = (6, 12, 0)
 QT_DEPENDENCY_VERSIONS = {
-    'PySide6': '6.12.0', 'PySide6_Essentials': '6.12.0',
-    'PySide6_Addons': '6.12.0', 'shiboken6': '6.12.0',
+    'PySide6': '6.12.0',
+    'PySide6_Essentials': '6.12.0',
+    'PySide6_Addons': '6.12.0',
+    'shiboken6': '6.12.0',
 }
 MANIFEST_SHA256 = '71043b02fdedfd821fb505f7fb46ee9520cdaa74e9dd2754e98647f0ebc61a2c'
 MAX_NOTICE_BYTES = 256 * 1024
-MODULES = frozenset({
-    'Core', 'Gui', 'Network', 'OpenGL', 'Qml', 'QmlMeta', 'QmlModels',
-    'QmlWorkerScript', 'Quick', 'Svg', 'Widgets',
-})
+MODULES = frozenset(
+    {
+        'Core',
+        'Gui',
+        'Network',
+        'OpenGL',
+        'Qml',
+        'QmlMeta',
+        'QmlModels',
+        'QmlWorkerScript',
+        'Quick',
+        'Svg',
+        'Widgets',
+    }
+)
 BINDINGS = frozenset({'QtCore.pyd', 'QtGui.pyd', 'QtNetwork.pyd', 'QtWidgets.pyd'})
-PLUGINS = frozenset({
-    'generic/qtuiotouchplugin.dll', 'iconengines/qsvgicon.dll',
-    'imageformats/qgif.dll', 'imageformats/qicns.dll', 'imageformats/qico.dll',
-    'imageformats/qjpeg.dll', 'imageformats/qsvg.dll', 'imageformats/qtga.dll',
-    'imageformats/qtiff.dll', 'imageformats/qwbmp.dll', 'imageformats/qwebp.dll',
-    'networkinformation/qnetworklistmanager.dll',
-    'platforms/qdirect2d.dll', 'platforms/qminimal.dll',
-    'platforms/qoffscreen.dll', 'platforms/qwindows.dll',
-    'styles/qmodernwindowsstyle.dll', 'tls/qcertonlybackend.dll',
-    'tls/qschannelbackend.dll',
-})
-REQUIRED = frozenset({
-    'pyside6/qt6core.dll', 'pyside6/qt6gui.dll', 'pyside6/qt6widgets.dll',
-    'pyside6/qtcore.pyd', 'pyside6/qtgui.pyd', 'pyside6/qtwidgets.pyd',
-    'pyside6/plugins/platforms/qwindows.dll',
-    'pyside6/plugins/tls/qschannelbackend.dll',
-    'pyside6/plugins/tls/qcertonlybackend.dll',
-})
+PLUGINS = frozenset(
+    {
+        'generic/qtuiotouchplugin.dll',
+        'iconengines/qsvgicon.dll',
+        'imageformats/qgif.dll',
+        'imageformats/qicns.dll',
+        'imageformats/qico.dll',
+        'imageformats/qjpeg.dll',
+        'imageformats/qsvg.dll',
+        'imageformats/qtga.dll',
+        'imageformats/qtiff.dll',
+        'imageformats/qwbmp.dll',
+        'imageformats/qwebp.dll',
+        'networkinformation/qnetworklistmanager.dll',
+        'platforms/qdirect2d.dll',
+        'platforms/qminimal.dll',
+        'platforms/qoffscreen.dll',
+        'platforms/qwindows.dll',
+        'styles/qmodernwindowsstyle.dll',
+        'tls/qcertonlybackend.dll',
+        'tls/qschannelbackend.dll',
+    }
+)
+REQUIRED = frozenset(
+    {
+        'pyside6/qt6core.dll',
+        'pyside6/qt6gui.dll',
+        'pyside6/qt6widgets.dll',
+        'pyside6/qtcore.pyd',
+        'pyside6/qtgui.pyd',
+        'pyside6/qtwidgets.pyd',
+        'pyside6/plugins/platforms/qwindows.dll',
+        'pyside6/plugins/tls/qschannelbackend.dll',
+        'pyside6/plugins/tls/qcertonlybackend.dll',
+    }
+)
 NATIVE_REQUIRED = frozenset({'libssl-3.dll', 'libcrypto-3.dll'})
 
 
@@ -114,16 +146,15 @@ def unused_component(path):
         return True
     # Include module, plugin, QML/resource directories and translation variants.
     if ('pyside6/' in value and 'virtualkeyboard' in value) or (
-            name.startswith(('qtvirtualkeyboard', 'qt6virtualkeyboard')) and
-            PurePosixPath(name).suffix in {'.dll', '.pyd', '.rcc', '.qm', '.qml'}):
+        name.startswith(('qtvirtualkeyboard', 'qt6virtualkeyboard')) and PurePosixPath(name).suffix in {'.dll', '.pyd', '.rcc', '.qm', '.qml'}
+    ):
         return True
     if name in {'qt6virtualkeyboard.dll', 'qtvirtualkeyboardplugin.dll', 'qtvirtualkeyboard.pyd'}:
         return True
     # No QtPdf/QPdfWriter/QPrinter use exists in the application's report export.
     if name in {'qt6pdf.dll', 'qt6pdfwidgets.dll', 'qtpdf.pyd', 'qtpdfwidgets.pyd'}:
         return True
-    return value.endswith('pyside6/plugins/imageformats/qpdf.dll') or (
-        'pyside6/translations/' in value and name.startswith('qtpdf_'))
+    return value.endswith('pyside6/plugins/imageformats/qpdf.dll') or ('pyside6/translations/' in value and name.startswith('qtpdf_'))
 
 
 def audit_paths(paths, require_core=True):
@@ -135,7 +166,7 @@ def audit_paths(paths, require_core=True):
         if PurePosixPath(value).is_absolute() or any(part in {'.', '..'} for part in value.split('/')) or ':' in value:
             raise RuntimeError('Unsafe Qt payload destination: ' + str(path))
         if value.startswith('_internal/'):
-            value = value[len('_internal/'):]
+            value = value[len('_internal/') :]
         if unused_component(value):
             raise RuntimeError('Excluded Qt component remains in payload: ' + str(path))
         if value.startswith(('pyside6/qml/', 'pyside6/resources/')):
@@ -176,6 +207,7 @@ def filter_payload_toc(entries):
 
 def pe_version(path):
     import pefile
+
     pe = pefile.PE(str(path), fast_load=True)
     try:
         pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_RESOURCE']])
@@ -183,8 +215,7 @@ def pe_version(path):
         if len(values) != 1:
             raise RuntimeError('Qt binary has no unambiguous version resource: ' + str(path))
         value = values[0]
-        return (value.FileVersionMS >> 16, value.FileVersionMS & 65535,
-                value.FileVersionLS >> 16, value.FileVersionLS & 65535)
+        return (value.FileVersionMS >> 16, value.FileVersionMS & 65535, value.FileVersionLS >> 16, value.FileVersionLS & 65535)
     finally:
         pe.close()
 
@@ -228,12 +259,15 @@ def audit_payload(payload):
     if not NATIVE_REQUIRED <= {name.casefold() for name in native_hashes}:
         raise RuntimeError('Required reviewed Python HTTPS libraries are missing')
     return result | {
-        'status': 'PASS', 'scope': 'Qt module/plugin selection, versions, fixed native dependency notices and required license-text copies; not full third-party legal clearance',
+        'status': 'PASS',
+        'scope': 'Qt module/plugin selection, versions, fixed native dependency notices and required license-text copies; not full third-party legal clearance',
         'qt_version': '.'.join(map(str, QT_VERSION)),
-        'binary_versions': versions, 'binary_sha256': hashes,
+        'binary_versions': versions,
+        'binary_sha256': hashes,
         'reviewed_native_dependency_sha256': native_hashes,
         'notice_sha256': {name: hashlib.sha256(raw).hexdigest() for name, raw in notices.items()},
-        'virtual_keyboard_present': False, 'qt_pdf_present': False,
+        'virtual_keyboard_present': False,
+        'qt_pdf_present': False,
         'qwindows_platform_plugin_present': True,
         'qt_tls_backend_scope': 'Schannel and certificate-only; optional OpenSSL backend excluded',
         'python_tls_scope': 'Retained unsuffixed OpenSSL 3.5.9 DLL hashes and version resources; live frozen Python HTTPS not tested here',

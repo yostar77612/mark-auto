@@ -1,4 +1,5 @@
 """Diagnostic correctness only; these tests are not a storage-performance gate."""
+
 import hashlib
 import importlib.util
 import json
@@ -90,9 +91,16 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
 
     def test_deadline_kills_owned_worker_and_reports_incomplete(self):
         from argparse import Namespace
+
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), storage_root=Path(temporary),
-                             library_sha256=None, fixture='smoke', seconds=1, report=Path(temporary) / 'report.json')
+            args = Namespace(
+                runtime_root=Path(temporary),
+                storage_root=Path(temporary),
+                library_sha256=None,
+                fixture='smoke',
+                seconds=1,
+                report=Path(temporary) / 'report.json',
+            )
             with patch.object(subprocess, 'Popen') as spawn:
                 spawn.return_value.wait.side_effect = [subprocess.TimeoutExpired('probe', 1), -9]
                 self.assertEqual(probe.supervise(args), 2)
@@ -103,18 +111,26 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
 
     def test_timeout_preserves_completed_rounds(self):
         from argparse import Namespace
+
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), storage_root=Path(temporary),
-                             library_sha256=None, fixture='smoke', seconds=1,
-                             report=Path(temporary) / 'report.json')
+            args = Namespace(
+                runtime_root=Path(temporary),
+                storage_root=Path(temporary),
+                library_sha256=None,
+                fixture='smoke',
+                seconds=1,
+                report=Path(temporary) / 'report.json',
+            )
+
             def started(command, **kwargs):
                 partial = Path(command[command.index('--report') + 1])
-                probe.write_report(partial, {'status': 'INCOMPLETE', 'rounds': [{'commits': 63}],
-                                             'active_round': {'index': 1}})
+                probe.write_report(partial, {'status': 'INCOMPLETE', 'rounds': [{'commits': 63}], 'active_round': {'index': 1}})
                 from unittest.mock import Mock
+
                 child = Mock()
                 child.wait.side_effect = [subprocess.TimeoutExpired('probe', 1), -9]
                 return child
+
             with patch.object(subprocess, 'Popen', side_effect=started):
                 self.assertEqual(probe.supervise(args), 2)
             report = json.loads(args.report.read_text())
@@ -124,10 +140,16 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
 
     def test_stalled_termination_still_reports_incomplete(self):
         from argparse import Namespace
+
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), storage_root=Path(temporary),
-                             library_sha256=None, fixture='smoke', seconds=1,
-                             report=Path(temporary) / 'report.json')
+            args = Namespace(
+                runtime_root=Path(temporary),
+                storage_root=Path(temporary),
+                library_sha256=None,
+                fixture='smoke',
+                seconds=1,
+                report=Path(temporary) / 'report.json',
+            )
             with patch.object(subprocess, 'Popen') as spawn:
                 spawn.return_value.wait.side_effect = subprocess.TimeoutExpired('probe', 1)
                 self.assertEqual(probe.supervise(args), 2)
@@ -139,9 +161,12 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
         from argparse import Namespace
         from types import ModuleType
         import sys
+
         fake = ModuleType('quantlab.sqlite_runtime')
+
         def reject(*args, **kwargs):
             raise RuntimeError('pin mismatch')
+
         fake.verify = reject
         with patch.dict(sys.modules, {'quantlab.sqlite_runtime': fake}):
             with patch.object(probe, 'replay') as replay:
@@ -151,18 +176,25 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
 
     def test_deadline_above_180_rejected(self):
         import sys
+
         with tempfile.TemporaryDirectory() as temporary:
-            arguments = ['probe', '--report', temporary + '/report.json', '--runtime-root', temporary,
-                         '--storage-root', temporary, '--seconds', '181']
+            arguments = ['probe', '--report', temporary + '/report.json', '--runtime-root', temporary, '--storage-root', temporary, '--seconds', '181']
             with patch.object(sys, 'argv', arguments), self.assertRaises(SystemExit) as caught:
                 probe.main()
             self.assertEqual(caught.exception.code, 2)
 
     def test_worker_failure_cannot_be_complete(self):
         from argparse import Namespace
+
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), storage_root=Path(temporary),
-                             library_sha256=None, fixture='smoke', seconds=1, report=Path(temporary) / 'report.json')
+            args = Namespace(
+                runtime_root=Path(temporary),
+                storage_root=Path(temporary),
+                library_sha256=None,
+                fixture='smoke',
+                seconds=1,
+                report=Path(temporary) / 'report.json',
+            )
             with patch.object(subprocess, 'Popen') as spawn:
                 spawn.return_value.wait.return_value = 1
                 self.assertEqual(probe.supervise(args), 2)
@@ -195,16 +227,23 @@ class WalObservationTests(unittest.TestCase):
                 self.assertEqual(result['retained_bytes'].get('walk_forward.sqlite3-wal', 0), 0)
 
     def test_upsert_full_smoke_and_predeclared_distinct_comparison_order(self):
-        self.assertEqual(probe.WAL_ROUNDS, (
-            ('journal_mode', 'DELETE', 'replace'), ('journal_mode', 'WAL', 'replace'),
-            ('journal_mode', 'WAL', 'replace'), ('journal_mode', 'DELETE', 'replace'),
-            ('sql_operation', 'DELETE', 'replace'), ('sql_operation', 'DELETE', 'upsert'),
-            ('sql_operation', 'DELETE', 'upsert'), ('sql_operation', 'DELETE', 'replace')))
+        self.assertEqual(
+            probe.WAL_ROUNDS,
+            (
+                ('journal_mode', 'DELETE', 'replace'),
+                ('journal_mode', 'WAL', 'replace'),
+                ('journal_mode', 'WAL', 'replace'),
+                ('journal_mode', 'DELETE', 'replace'),
+                ('sql_operation', 'DELETE', 'replace'),
+                ('sql_operation', 'DELETE', 'upsert'),
+                ('sql_operation', 'DELETE', 'upsert'),
+                ('sql_operation', 'DELETE', 'replace'),
+            ),
+        )
         payloads, metadata = probe.load_stream('smoke')
         with tempfile.TemporaryDirectory() as temporary:
             for operation in ('replace', 'upsert'):
-                result = probe.replay(payloads, Path(temporary) / operation, 'DELETE',
-                                      wal_observation=True, operation=operation)
+                result = probe.replay(payloads, Path(temporary) / operation, 'DELETE', wal_observation=True, operation=operation)
                 self.assertEqual(result['sql_operation'], operation)
                 self.assertEqual((result['commits'], result['exports']), (63, 63))
                 self.assertEqual(result['payload_bytes'], metadata['payload_bytes'])
@@ -214,8 +253,7 @@ class WalObservationTests(unittest.TestCase):
                 self.assertGreaterEqual(result['pages_reopened']['freelist_count'], 0)
             for operation, opt_in in (('unknown', True), ('upsert', False)):
                 with self.assertRaises(ValueError):
-                    probe.replay(['{}'], Path(temporary) / 'invalid', 'DELETE',
-                                 wal_observation=opt_in, operation=operation)
+                    probe.replay(['{}'], Path(temporary) / 'invalid', 'DELETE', wal_observation=opt_in, operation=operation)
 
     def test_wal_requires_explicit_opt_in(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -224,6 +262,7 @@ class WalObservationTests(unittest.TestCase):
 
     def test_wal_cli_uses_actual_temp_and_rejects_relocation_or_large(self):
         import sys
+
         base = ['probe', '--report', 'unused.json', '--runtime-root', '.', '--wal-abba']
         with patch.object(sys, 'argv', base), patch.object(probe, 'supervise_wal', return_value=2) as supervise:
             self.assertEqual(probe.main(), 2)
@@ -239,32 +278,37 @@ class WalObservationTests(unittest.TestCase):
 
     def test_wal_runtime_failure_remains_nonzero_and_owned_child_is_cleaned(self):
         from argparse import Namespace
+
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), library_sha256=None,
-                             seconds=10, report=Path(temporary) / 'report.json')
+            args = Namespace(runtime_root=Path(temporary), library_sha256=None, seconds=10, report=Path(temporary) / 'report.json')
             self.assertEqual(probe.supervise_wal(args), 2)
             report = json.loads(args.report.read_text())
             self.assertEqual(report['status'], 'INCOMPLETE')
             self.assertEqual(report['acceptance'], 'NOT_ESTABLISHED')
             self.assertEqual(report['mode_order'], [mode for _, mode, _ in probe.WAL_ROUNDS])
-            self.assertEqual(report['round_plan'], [
-                {'comparison': pair, 'mode': mode, 'sql_operation': operation}
-                for pair, mode, operation in probe.WAL_ROUNDS])
+            self.assertEqual(
+                report['round_plan'], [{'comparison': pair, 'mode': mode, 'sql_operation': operation} for pair, mode, operation in probe.WAL_ROUNDS]
+            )
             self.assertTrue(report['worker_termination_confirmed'])
 
     def test_wal_timeout_retains_rounds_and_active_round(self):
         from argparse import Namespace
+
         original_popen = subprocess.Popen
         with tempfile.TemporaryDirectory() as temporary:
-            args = Namespace(runtime_root=Path(temporary), library_sha256=None,
-                             seconds=1, report=Path(temporary) / 'report.json')
+            args = Namespace(runtime_root=Path(temporary), library_sha256=None, seconds=1, report=Path(temporary) / 'report.json')
+
             def launch(command, **kwargs):
                 import sys
+
                 path = command[command.index('--report') + 1]
-                script = ('import sys,time,json; from pathlib import Path; sys.stdin.buffer.read(1); '
-                          'Path(sys.argv[1]).write_text(json.dumps({"status":"INCOMPLETE",'
-                          '"rounds":[{"commits":63}],"active_round":{"index":1}})); time.sleep(60)')
+                script = (
+                    'import sys,time,json; from pathlib import Path; sys.stdin.buffer.read(1); '
+                    'Path(sys.argv[1]).write_text(json.dumps({"status":"INCOMPLETE",'
+                    '"rounds":[{"commits":63}],"active_round":{"index":1}})); time.sleep(60)'
+                )
                 return original_popen([sys.executable, '-c', script, path], **kwargs)
+
             with patch.object(probe.subprocess, 'Popen', side_effect=launch):
                 self.assertEqual(probe.supervise_wal(args), 2)
             report = json.loads(args.report.read_text())

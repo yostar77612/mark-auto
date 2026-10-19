@@ -1,4 +1,5 @@
 """Scrollable strategy work areas; actions and shared state stay with their owners."""
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QScrollArea, QTabWidget, QVBoxLayout, QWidget
 from desktop_strings import ui_text

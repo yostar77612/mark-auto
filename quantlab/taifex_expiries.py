@@ -1,4 +1,5 @@
 """Offline, validated final settlement dates; never derive a calendar or date."""
+
 from copy import deepcopy
 from datetime import date
 import json
@@ -8,8 +9,7 @@ from urllib.parse import urlsplit
 
 DATA_PATH = Path(__file__).with_name('data_files') / 'taifex_expiries.json'
 OFFICIAL_URL = 'https://www.taifex.com.tw/cht/5/futIndxFSP'
-RETRIEVAL_METHOD = ('raw HTML table parsed; rows where the TX/MTX/TMF '
-                    'final-settlement-price column is numeric')
+RETRIEVAL_METHOD = 'raw HTML table parsed; rows where the TX/MTX/TMF final-settlement-price column is numeric'
 
 
 def _iso(value):
@@ -31,8 +31,13 @@ def validate_data(value):
             raise ValueError('missing expiry sources')
         for source in sources:
             url = urlsplit(source['url'])
-            if (url.scheme != 'https' or url.hostname not in ('taifex.com.tw', 'www.taifex.com.tw')
-                    or url.username or url.password or url.port not in (None, 443)):
+            if (
+                url.scheme != 'https'
+                or url.hostname not in ('taifex.com.tw', 'www.taifex.com.tw')
+                or url.username
+                or url.password
+                or url.port not in (None, 443)
+            ):
                 raise ValueError('non-official expiry source')
             _iso(source['retrieval_date'])
             if not source['retrieval_method'].strip() or not re.fullmatch(r'[a-f0-9]{64}', source['sha256']):
@@ -67,7 +72,10 @@ def lookup_expiry(product, contract_month, *, data=None):
         return None
     for row in data['expiries']:
         if row['contract_month'] == contract_month:
-            return {'expiry_date': row['expiry_date'], 'data_version': data['data_version'],
-                    'verified_date': data['verified_date'],
-                    'source': deepcopy(data['sources'][row['source_index']])}
+            return {
+                'expiry_date': row['expiry_date'],
+                'data_version': data['data_version'],
+                'verified_date': data['verified_date'],
+                'source': deepcopy(data['sources'][row['source_index']]),
+            }
     return None

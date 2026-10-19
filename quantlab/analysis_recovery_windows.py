@@ -4,6 +4,7 @@ The helper owns the only unnamed kill-on-close job handle. The GUI commits the
 launch before activation. Missing durable proof remains unresolved, including
 helper death. An anticipated immutable binding covers lost activation messages.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -23,10 +24,10 @@ SYNCHRONIZE = 0x00100000
 
 def _kernel():
     from ctypes import wintypes as w
+
     k = ctypes.WinDLL('kernel32', use_last_error=True)
     k.GetCurrentProcess.restype = w.HANDLE
-    k.DuplicateHandle.argtypes = [w.HANDLE, w.HANDLE, w.HANDLE,
-                                 ctypes.POINTER(w.HANDLE), w.DWORD, w.BOOL, w.DWORD]
+    k.DuplicateHandle.argtypes = [w.HANDLE, w.HANDLE, w.HANDLE, ctypes.POINTER(w.HANDLE), w.DWORD, w.BOOL, w.DWORD]
     k.DuplicateHandle.restype = w.BOOL
     k.CloseHandle.argtypes = [w.HANDLE]
     k.CloseHandle.restype = w.BOOL
@@ -54,29 +55,55 @@ def _alive(k, handle):
 
 def _duplicate(k, handle, target, access):
     from ctypes import wintypes as w
+
     copied = w.HANDLE()
-    if not k.DuplicateHandle(k.GetCurrentProcess(), handle, target,
-                             ctypes.byref(copied), access, False, 0):
+    if not k.DuplicateHandle(k.GetCurrentProcess(), handle, target, ctypes.byref(copied), access, False, 0):
         raise RuntimeSafetyError('Cannot transfer original process handle')
     return copied.value
 
 
 class _OriginalJob:
     """Constructed only inside the helper from an already-retained worker handle."""
+
     def __init__(self, kernel, worker_handle):
         from ctypes import wintypes as w
+
         class Basic(ctypes.Structure):
-            _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
-                        ('LimitFlags', w.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
-                        ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', w.DWORD),
-                        ('Affinity', ctypes.c_size_t), ('PriorityClass', w.DWORD), ('SchedulingClass', w.DWORD)]
+            _fields_ = [
+                ('PerProcessUserTimeLimit', ctypes.c_int64),
+                ('PerJobUserTimeLimit', ctypes.c_int64),
+                ('LimitFlags', w.DWORD),
+                ('MinimumWorkingSetSize', ctypes.c_size_t),
+                ('MaximumWorkingSetSize', ctypes.c_size_t),
+                ('ActiveProcessLimit', w.DWORD),
+                ('Affinity', ctypes.c_size_t),
+                ('PriorityClass', w.DWORD),
+                ('SchedulingClass', w.DWORD),
+            ]
+
         class Counters(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_uint64) for name in ('ReadOperationCount', 'WriteOperationCount',
-                        'OtherOperationCount', 'ReadTransferCount', 'WriteTransferCount', 'OtherTransferCount')]
+            _fields_ = [
+                (name, ctypes.c_uint64)
+                for name in (
+                    'ReadOperationCount',
+                    'WriteOperationCount',
+                    'OtherOperationCount',
+                    'ReadTransferCount',
+                    'WriteTransferCount',
+                    'OtherTransferCount',
+                )
+            ]
+
         class Extended(ctypes.Structure):
-            _fields_ = [('BasicLimitInformation', Basic), ('IoInfo', Counters),
-                        ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t),
-                        ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
+            _fields_ = [
+                ('BasicLimitInformation', Basic),
+                ('IoInfo', Counters),
+                ('ProcessMemoryLimit', ctypes.c_size_t),
+                ('JobMemoryLimit', ctypes.c_size_t),
+                ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                ('PeakJobMemoryUsed', ctypes.c_size_t),
+            ]
+
         self.kernel = kernel
         self.handle = kernel.CreateJobObjectW(None, None)
         if not self.handle:
@@ -94,13 +121,14 @@ class _OriginalJob:
 
     def active_processes(self):
         from ctypes import wintypes as w
+
         class Accounting(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime', 'TotalKernelTime',
-                        'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')] + [(name, w.DWORD)
-                        for name in ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')]
+            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')] + [
+                (name, w.DWORD) for name in ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')
+            ]
+
         info = Accounting()
-        if not self.handle or not self.kernel.QueryInformationJobObject(
-                self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
+        if not self.handle or not self.kernel.QueryInformationJobObject(self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
             raise RuntimeSafetyError('Cannot query original analysis job')
         return info.ActiveProcesses
 
@@ -111,7 +139,7 @@ class _OriginalJob:
         while self.active_processes() != 0:
             if time.monotonic() >= deadline:
                 raise RuntimeSafetyError('Original analysis descendants still active')
-            time.sleep(.02)
+            time.sleep(0.02)
 
     def close(self):
         if self.handle:
@@ -136,17 +164,17 @@ def _receive(connection):
 def _verify_launch(paths, anticipated, *, for_admission=False, expected=None, recover_controls=False):
     # Read existing controls only. Never create/register or reconstruct a plan.
     from .analysis_recovery import read_launch
+
     if recover_controls:
         # GUI crash can leave an interrupted SQLite transaction. Roll it back
         # only under original control admission; this grants no stop authority.
         from .analysis_recovery import admission, recover_control_journal
+
         with admission(paths) as token:
             recover_control_journal(paths, admission=token)
-            launch = read_launch(paths, anticipated['job_id'], expected=expected,
-                                 for_admission=for_admission)
+            launch = read_launch(paths, anticipated['job_id'], expected=expected, for_admission=for_admission)
     else:
-        launch = read_launch(paths, anticipated['job_id'], expected=expected,
-                             for_admission=for_admission)
+        launch = read_launch(paths, anticipated['job_id'], expected=expected, for_admission=for_admission)
     if any(launch.get(key) != value for key, value in anticipated.items()):
         raise RuntimeSafetyError('Original helper launch binding differs')
     return launch
@@ -154,11 +182,11 @@ def _verify_launch(paths, anticipated, *, for_admission=False, expected=None, re
 
 def _publish(paths, launch, tree):
     from .analysis_recovery import _StopPublisher
+
     _StopPublisher(paths, launch, tree.active_processes).publish()
 
 
-def _supervise(connection, gate, paths, anticipated, deadline, admission_deadline,
-               k, gui, worker, tree):
+def _supervise(connection, gate, paths, anticipated, deadline, admission_deadline, k, gui, worker, tree):
     """Finite protocol, separable for negative fault tests without Windows claims."""
     launch = None
     try:
@@ -166,14 +194,12 @@ def _supervise(connection, gate, paths, anticipated, deadline, admission_deadlin
         while time.monotonic() < min(admission_deadline, deadline):
             if not _alive(k, gui) or not _alive(k, worker):
                 return
-            if connection.poll(.02):
+            if connection.poll(0.02):
                 packet = _receive(connection)
                 if set(packet) != {'activate'}:
                     return
-                launch = _verify_launch(paths, anticipated, for_admission=True,
-                                        expected=packet['activate'])
-                if (time.monotonic() >= min(admission_deadline, deadline)
-                        or not _alive(k, gui) or not _alive(k, worker)):
+                launch = _verify_launch(paths, anticipated, for_admission=True, expected=packet['activate'])
+                if time.monotonic() >= min(admission_deadline, deadline) or not _alive(k, gui) or not _alive(k, worker):
                     return
                 gate.set()
                 _send(connection, {'state': 'active'})
@@ -183,7 +209,7 @@ def _supervise(connection, gate, paths, anticipated, deadline, admission_deadlin
         while time.monotonic() < deadline:
             if not _alive(k, gui) or not _alive(k, worker):
                 break
-            if connection.poll(.02):
+            if connection.poll(0.02):
                 # Any further message seals this one-shot admission.
                 _receive(connection)
                 break
@@ -238,32 +264,48 @@ def _helper_main(connection, gate, paths, anticipated, deadline, admission_deadl
 
 def _validate_anticipated(value):
     # The GUI derives these bounded pure values before spawning this generation.
-    fields = {'job_id', 'helper_nonce', 'analysis_id', 'registration', 'plan_hash',
-              'provider_hash', 'request_hash', 'request_bytes', 'model',
-              'timeout_seconds', 'ledger_basename', 'source_request_hash'}
+    fields = {
+        'job_id',
+        'helper_nonce',
+        'analysis_id',
+        'registration',
+        'plan_hash',
+        'provider_hash',
+        'request_hash',
+        'request_bytes',
+        'model',
+        'timeout_seconds',
+        'ledger_basename',
+        'source_request_hash',
+    }
     import re
+
     if type(value) is not dict or set(value) != fields:
         raise RuntimeSafetyError('Invalid anticipated analysis binding')
-    for key in ('job_id', 'helper_nonce', 'registration', 'analysis_id', 'plan_hash',
-                'provider_hash', 'request_hash', 'source_request_hash'):
+    for key in ('job_id', 'helper_nonce', 'registration', 'analysis_id', 'plan_hash', 'provider_hash', 'request_hash', 'source_request_hash'):
         length = 32 if key in ('job_id', 'helper_nonce', 'registration') else 64
         if type(value[key]) is not str or re.fullmatch('[0-9a-f]{' + str(length) + '}', value[key]) is None:
             raise RuntimeSafetyError('Invalid anticipated analysis identity')
-    if (value['helper_nonce'] == value['job_id'] or type(value['request_bytes']) is not int
-            or not 1 <= value['request_bytes'] <= 65536
-            or type(value['timeout_seconds']) is not int or not 1 <= value['timeout_seconds'] <= 120
-            or type(value['model']) is not str or re.fullmatch('[A-Za-z0-9._:-]{1,128}', value['model']) is None
-            or value['ledger_basename'] != 'chatgpt-analysis-' + value['analysis_id'] + '.sqlite3'):
+    if (
+        value['helper_nonce'] == value['job_id']
+        or type(value['request_bytes']) is not int
+        or not 1 <= value['request_bytes'] <= 65536
+        or type(value['timeout_seconds']) is not int
+        or not 1 <= value['timeout_seconds'] <= 120
+        or type(value['model']) is not str
+        or re.fullmatch('[A-Za-z0-9._:-]{1,128}', value['model']) is None
+        or value['ledger_basename'] != 'chatgpt-analysis-' + value['analysis_id'] + '.sqlite3'
+    ):
         raise RuntimeSafetyError('Invalid anticipated analysis binding')
 
 
 class WindowsAnalysisRecoveryTree:
     """GUI-side adapter. Construct, commit launch in GUI, then activate once."""
+
     def __init__(self, process, gate, paths, execution_timeout, *, anticipated):
         if sys.platform != 'win32':
             raise RuntimeSafetyError('Durable analysis supervision requires Windows')
-        if (type(execution_timeout) not in (int, float) or not math.isfinite(execution_timeout)
-                or not 0 < execution_timeout <= 250):
+        if type(execution_timeout) not in (int, float) or not math.isfinite(execution_timeout) or not 0 < execution_timeout <= 250:
             raise RuntimeSafetyError('Invalid analysis helper deadline')
         _validate_anticipated(anticipated)
         self.helper_nonce = anticipated['helper_nonce']
@@ -275,8 +317,9 @@ class WindowsAnalysisRecoveryTree:
         deadline = time.monotonic() + execution_timeout
         context = mp.get_context('spawn')
         self._connection, child = context.Pipe(duplex=True)
-        self._helper = context.Process(target=_helper_main,
-            args=(child, gate, paths, anticipated, deadline, self._admission_deadline), name='analysis-stop-helper')
+        self._helper = context.Process(
+            target=_helper_main, args=(child, gate, paths, anticipated, deadline, self._admission_deadline), name='analysis-stop-helper'
+        )
         try:
             self._helper.start()
             child.close()
@@ -309,8 +352,11 @@ class WindowsAnalysisRecoveryTree:
                 packet = _receive(self._connection)
                 state = packet.get('state')
                 fields = {'state', 'receipt'} if state == 'stopped' else {'state'}
-                if (state not in ('ready', 'active', 'stopped', 'failed') or set(packet) != fields
-                        or (state == 'stopped' and type(packet['receipt']) is not bool)):
+                if (
+                    state not in ('ready', 'active', 'stopped', 'failed')
+                    or set(packet) != fields
+                    or (state == 'stopped' and type(packet['receipt']) is not bool)
+                ):
                     raise RuntimeSafetyError('Invalid analysis helper acknowledgement')
                 if state in ('stopped', 'failed'):
                     # Activation can race a terminal packet. Preserve it for

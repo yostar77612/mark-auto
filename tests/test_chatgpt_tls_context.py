@@ -1,4 +1,5 @@
 """Offline checks of the official TLS trust context; no network."""
+
 import ssl
 import unittest
 from unittest.mock import patch
@@ -20,15 +21,13 @@ class OfficialTlsContextTests(unittest.TestCase):
             stores.append(name)
             return []
 
-        with patch.object(ssl, 'enum_certificates', fake_enum, create=True), \
-                patch.object(ssl, 'create_default_context'):
+        with patch.object(ssl, 'enum_certificates', fake_enum, create=True), patch.object(ssl, 'create_default_context'):
             auth.official_tls_context()
         self.assertEqual(stores, ['ROOT'])
 
     def test_falls_back_to_default_context_without_roots(self):
         sentinel = object()
-        with patch.object(ssl, 'enum_certificates', lambda name: [], create=True), \
-                patch.object(ssl, 'create_default_context', return_value=sentinel):
+        with patch.object(ssl, 'enum_certificates', lambda name: [], create=True), patch.object(ssl, 'create_default_context', return_value=sentinel):
             self.assertIs(auth.official_tls_context(), sentinel)
 
 

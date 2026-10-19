@@ -1,12 +1,24 @@
 """Semantic control names and visual keyboard traversal for dynamic disclosures."""
+
 from PySide6.QtCore import QObject, QEvent, QTimer, Qt, QPoint
-from PySide6.QtWidgets import (QWidget, QLabel, QAbstractButton, QLineEdit, QComboBox,
-    QAbstractSpinBox, QTabBar, QAbstractItemView, QPlainTextEdit, QTextEdit,
-    QFormLayout, QGroupBox, QSizePolicy)
+from PySide6.QtWidgets import (
+    QWidget,
+    QLabel,
+    QAbstractButton,
+    QLineEdit,
+    QComboBox,
+    QAbstractSpinBox,
+    QTabBar,
+    QAbstractItemView,
+    QPlainTextEdit,
+    QTextEdit,
+    QFormLayout,
+    QGroupBox,
+    QSizePolicy,
+)
 from desktop_strings import ui_text
 
-INTERACTIVE = (QAbstractButton, QLineEdit, QComboBox, QAbstractSpinBox, QTabBar,
-               QAbstractItemView, QPlainTextEdit, QTextEdit)
+INTERACTIVE = (QAbstractButton, QLineEdit, QComboBox, QAbstractSpinBox, QTabBar, QAbstractItemView, QPlainTextEdit, QTextEdit)
 ROW_TOLERANCE = 8
 
 

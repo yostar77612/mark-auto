@@ -4,6 +4,7 @@ The durable attempt watermark is outside restorable research state. An uncertain
 attempt consumes its UTC day, including cancellation or a process crash. This
 bounds retries and prevents clock rollback from producing duplicate archives.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -33,8 +34,7 @@ class AutomaticBackup:
 
     @staticmethod
     def _default():
-        return {'schema_version': 1, 'enabled': False, 'directory': '',
-                'last_attempt_day': None, 'last_status': 'never', 'last_archive': ''}
+        return {'schema_version': 1, 'enabled': False, 'directory': '', 'last_attempt_day': None, 'last_status': 'never', 'last_archive': ''}
 
     @staticmethod
     def _regular_ancestors(path):
@@ -52,6 +52,7 @@ class AutomaticBackup:
             raise RuntimeSafetyError('Automatic backup directory must be absolute')
         if sys.platform == 'win32':
             import ctypes
+
             # DRIVE_FIXED or DRIVE_REMOVABLE only. Reject mapped network drives
             # as well as UNC/device forms before capacity scans or disk writes.
             get_drive_type = ctypes.windll.kernel32.GetDriveTypeW
@@ -103,14 +104,19 @@ class AutomaticBackup:
             raise RuntimeSafetyError('Automatic backup settings must be a regular file')
         value = _read_json(self.path)
         expected = self._default()
-        if (not isinstance(value, dict) or set(value) != set(expected)
-                or type(value['schema_version']) is not int or value['schema_version'] != 1
-                or type(value['enabled']) is not bool
-                or not isinstance(value['directory'], str) or len(value['directory']) > 4096
-                or (value['last_attempt_day'] is not None and
-                    (type(value['last_attempt_day']) is not int or not 0 <= value['last_attempt_day'] <= 3652058))
-                or value['last_status'] not in ('never', 'attempted', 'success', 'error', 'cancelled')
-                or not isinstance(value['last_archive'], str) or len(value['last_archive']) > 8192):
+        if (
+            not isinstance(value, dict)
+            or set(value) != set(expected)
+            or type(value['schema_version']) is not int
+            or value['schema_version'] != 1
+            or type(value['enabled']) is not bool
+            or not isinstance(value['directory'], str)
+            or len(value['directory']) > 4096
+            or (value['last_attempt_day'] is not None and (type(value['last_attempt_day']) is not int or not 0 <= value['last_attempt_day'] <= 3652058))
+            or value['last_status'] not in ('never', 'attempted', 'success', 'error', 'cancelled')
+            or not isinstance(value['last_archive'], str)
+            or len(value['last_archive']) > 8192
+        ):
             raise RuntimeSafetyError('Invalid automatic backup settings; original preserved')
         if validate_destination and value['enabled']:
             self.destination_directory(value['directory'])

@@ -1,4 +1,5 @@
 """Seven-page boundaries, compatibility, host dispatch and pre-change visual contract."""
+
 import ast
 import json
 import os
@@ -12,8 +13,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QWidget
-from desktop_pages import (MarketPage, DataPage, StrategyPage, BacktestPage,
-                           ComparePage, PaperPage, SettingsPage, PageHost)
+from desktop_pages import MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage, PageHost
 from desktop_ui import MainWindow
 from quantlab.core import ValidationError
 from quantlab.core import content_hash
@@ -24,30 +24,70 @@ PAGES = (MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPag
 MOVED = {
     'market': ('refresh_market', 'save_market_preferences', 'load_market_cache', 'bind_result_layers'),
     'data': ('import_market_file', 'import_market_history', 'import_data', 'download_data'),
-    'strategy': ('_walk_forward_section', '_connect_walk_forward_inputs', '_walk_forward_origin_changed',
-                 'pick_walk_forward_original', '_walk_forward_saved_source', '_invalidate_walk_forward_preview',
-                 '_walk_forward_input_key', 'preview_walk_forward', 'run_walk_forward', 'read_walk_forward',
-                 '_refresh_walk_forward_references', '_walk_forward_event', '_family_changed', 'run_campaign',
-                 'export_manual_request', 'inspect_candidate', 'use_candidate', 'use_builtin'),
+    'strategy': (
+        '_walk_forward_section',
+        '_connect_walk_forward_inputs',
+        '_walk_forward_origin_changed',
+        'pick_walk_forward_original',
+        '_walk_forward_saved_source',
+        '_invalidate_walk_forward_preview',
+        '_walk_forward_input_key',
+        'preview_walk_forward',
+        'run_walk_forward',
+        'read_walk_forward',
+        '_refresh_walk_forward_references',
+        '_walk_forward_event',
+        '_family_changed',
+        'run_campaign',
+        'export_manual_request',
+        'inspect_candidate',
+        'use_candidate',
+        'use_builtin',
+    ),
     'backtest': ('run_backtest', 'show_result'),
-    'compare': ('_analysis_section', '_invalidate_analysis_preview', 'pick_analysis_original',
-                '_analysis_request', 'preview_analysis', 'run_analysis', 'read_analysis',
-                '_analysis_saved_changed', '_selected_recovery_launch', 'reconcile_saved_analysis',
-                '_recovery_display_fingerprint', '_refresh_recovery_controls', '_analysis_event',
-                '_refresh_analysis_saved', 'select_strategy'),
-    'paper': ('load_form_file', 'demo_paper_policy', 'paper_job', 'kill_paper', '_show_account',
-              '_remember_stop', 'freeze_paper'),
-    'settings': ('auto_restore_chatgpt', 'show_chatgpt_sign_in', '_chatgpt_quiesce',
-                 '_chatgpt_dispatch', '_chatgpt_cancel', '_chatgpt_open_browser', '_plan_usage_request',
-                 '_current_plan_binding', 'inspect_plan_usage', '_record_connection_error',
-                 '_chatgpt_event', 'save_settings', 'load_settings', 'configure_workspace',
-                 'open_releases', 'record_event', 'read_logs', 'backup'),
+    'compare': (
+        '_analysis_section',
+        '_invalidate_analysis_preview',
+        'pick_analysis_original',
+        '_analysis_request',
+        'preview_analysis',
+        'run_analysis',
+        'read_analysis',
+        '_analysis_saved_changed',
+        '_selected_recovery_launch',
+        'reconcile_saved_analysis',
+        '_recovery_display_fingerprint',
+        '_refresh_recovery_controls',
+        '_analysis_event',
+        '_refresh_analysis_saved',
+        'select_strategy',
+    ),
+    'paper': ('load_form_file', 'demo_paper_policy', 'paper_job', 'kill_paper', '_show_account', '_remember_stop', 'freeze_paper'),
+    'settings': (
+        'auto_restore_chatgpt',
+        'show_chatgpt_sign_in',
+        '_chatgpt_quiesce',
+        '_chatgpt_dispatch',
+        '_chatgpt_cancel',
+        '_chatgpt_open_browser',
+        '_plan_usage_request',
+        '_current_plan_binding',
+        'inspect_plan_usage',
+        '_record_connection_error',
+        '_chatgpt_event',
+        'save_settings',
+        'load_settings',
+        'configure_workspace',
+        'open_releases',
+        'record_event',
+        'read_logs',
+        'backup',
+    ),
 }
 
 
 def classes(path):
-    return {n.name: n for n in ast.parse(path.read_text(encoding='utf-8-sig'),
-                                       feature_version=(3, 11)).body if isinstance(n, ast.ClassDef)}
+    return {n.name: n for n in ast.parse(path.read_text(encoding='utf-8-sig'), feature_version=(3, 11)).body if isinstance(n, ast.ClassDef)}
 
 
 class PageBoundaryTests(unittest.TestCase):
@@ -56,6 +96,7 @@ class PageBoundaryTests(unittest.TestCase):
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
         for page in PAGES:
             import inspect
+
             node = classes(Path(inspect.getfile(page)))[page.__name__]
             self.assertLessEqual(node.end_lineno - node.lineno + 1, 500)
             self.assertTrue(issubclass(page, QWidget))
@@ -63,8 +104,7 @@ class PageBoundaryTests(unittest.TestCase):
     def test_mainwindow_has_no_moved_page_bodies(self):
         node = classes(ROOT / 'desktop_ui.py')['MainWindow']
         names = {n.name for n in node.body if isinstance(n, ast.FunctionDef)}
-        forbidden = {'_dashboard', '_data_page', '_strategy_page', '_backtest_page',
-                     '_compare_page', '_paper_page', '_settings_page', 'refresh_views'}
+        forbidden = {'_dashboard', '_data_page', '_strategy_page', '_backtest_page', '_compare_page', '_paper_page', '_settings_page', 'refresh_views'}
         forbidden.update(name for group in MOVED.values() for name in group)
         self.assertFalse(names & forbidden)
 
@@ -101,8 +141,7 @@ class PageInteractionTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_widget_walk_matches_pre_change_fixture(self):
-        actual = sorted({w.objectName() for w in [self.window, *self.window.findChildren(QWidget)]
-                         if w.objectName()})
+        actual = sorted({w.objectName() for w in [self.window, *self.window.findChildren(QWidget)] if w.objectName()})
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))
         self.assertEqual(actual, expected)
         for group, names in MOVED.items():
@@ -127,14 +166,14 @@ class PageInteractionTests(unittest.TestCase):
             w.data_page.download_data()
             start.assert_called_once_with('ui_refresh', {'days': 1, 'network_opt_in': True})
             self.assertFalse(w.network_data.isChecked())
-        with patch.object(w.page_host, 'start_job') as start, patch.object(
-                QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes):
+        with patch.object(w.page_host, 'start_job') as start, patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes):
             w.market.refresh_requested.emit()
             start.assert_called_once_with('ui_market_refresh', {'network_opt_in': True})
 
     def test_loaded_backtest_still_binds_actual_market_reference_layers(self):
         from tests.test_result_reference_layers import fixture
         from quantlab.reporting import save_dataset, export_report
+
         data, result, series = fixture(mtm=True)
         save_dataset(data, self.paths.state / 'dataset.json')
         exported = export_report(result, self.paths.state / 'reports')
@@ -196,17 +235,19 @@ class PageInteractionTests(unittest.TestCase):
 
     def test_paper_consent_and_policy_payload_stay_fail_closed(self):
         w = self.window
-        with patch.object(w.page_host, 'start_job') as start, patch.object(
-                w.policy_form, 'build_payload', return_value={'fixed': 'policy'}), patch.object(
-                w.snapshot_form, 'build_payload', return_value={'account_id': 'fixture'}):
+        with (
+            patch.object(w.page_host, 'start_job') as start,
+            patch.object(w.policy_form, 'build_payload', return_value={'fixed': 'policy'}),
+            patch.object(w.snapshot_form, 'build_payload', return_value={'account_id': 'fixture'}),
+        ):
             with self.assertRaises(ValidationError):
                 w.paper_page.paper_job('replay', max_bars=3)
             start.assert_not_called()
             w.paper_confirm.setChecked(True)
             w.paper_page.paper_job('replay', max_bars=3)
-            start.assert_called_once_with('ui_paper_replay', {
-                'max_bars': 3, 'snapshot': {'account_id': 'fixture'},
-                'reconcile_confirmed': True, 'policy': {'fixed': 'policy'}})
+            start.assert_called_once_with(
+                'ui_paper_replay', {'max_bars': 3, 'snapshot': {'account_id': 'fixture'}, 'reconcile_confirmed': True, 'policy': {'fixed': 'policy'}}
+            )
             self.assertFalse(w.paper_confirm.isChecked())
 
     def test_settings_signals_and_analysis_state_cross_page_boundaries(self):
@@ -217,8 +258,11 @@ class PageInteractionTests(unittest.TestCase):
         w._invalidate_analysis_preview()
         self.assertIsNone(w.page_state._analysis_preview)
         self.assertFalse(w.analysis_consent.isChecked())
-        with patch.object(w, '_quiesce_and_recover') as quiesce, patch.object(w, 'poll_jobs'), patch.object(
-                w.chatgpt_controller, 'acknowledge_quiescence') as acknowledge:
+        with (
+            patch.object(w, '_quiesce_and_recover') as quiesce,
+            patch.object(w, 'poll_jobs'),
+            patch.object(w.chatgpt_controller, 'acknowledge_quiescence') as acknowledge,
+        ):
             w.chatgpt_controller.quiesce_requested.emit(request)
             quiesce.assert_called_once_with(preserve_primary_sign_in=True)
             acknowledge.assert_called_once_with('fixture-request', joined=True)
@@ -229,8 +273,11 @@ class PageInteractionTests(unittest.TestCase):
     def test_result_dispatch_and_public_renderer_patch_remain_live(self):
         w = self.window
         w.last_operation = 'ui_compare'
-        with patch.object(w, 'refresh_views'), patch.object(w, 'notify_local') as notify, patch.object(
-                w.jobs, 'poll', return_value=[{'type': 'result', 'result': {'rows': []}}]):
+        with (
+            patch.object(w, 'refresh_views'),
+            patch.object(w, 'notify_local') as notify,
+            patch.object(w.jobs, 'poll', return_value=[{'type': 'result', 'result': {'rows': []}}]),
+        ):
             w.poll_jobs()
             self.assertEqual(json.loads(w.comparison.toPlainText()), {'rows': []})
             self.assertEqual(json.loads(w.summary.toPlainText()), {'rows': []})
@@ -242,15 +289,15 @@ class PageInteractionTests(unittest.TestCase):
     def test_analysis_preview_event_and_connection_error_share_shell_state(self):
         w = self.window
         request = {'fixture': 'request'}
-        plan = {'analysis_id': 'fixture', 'binding': {
-            'registration': 'fixture', 'packet': {'context': {'task': 'critique'}}}}
-        result = {'analysis_id': 'fixture', 'plan': plan, 'account_status': {},
-                  'receipt_snapshot': {'receipts': []}}
+        plan = {'analysis_id': 'fixture', 'binding': {'registration': 'fixture', 'packet': {'context': {'task': 'critique'}}}}
+        result = {'analysis_id': 'fixture', 'plan': plan, 'account_status': {}, 'receipt_snapshot': {'receipts': []}}
         w.last_operation = 'ui_analysis_preview'
         w._analysis_request_key = content_hash(request)
-        with patch.object(w.compare_page, '_analysis_request', return_value=request), patch.object(
-                w.chatgpt_controller, 'set_account_status'), patch('desktop_ui.analysis_preview_text',
-                return_value='validated preview'):
+        with (
+            patch.object(w.compare_page, '_analysis_request', return_value=request),
+            patch.object(w.chatgpt_controller, 'set_account_status'),
+            patch('desktop_ui.analysis_preview_text', return_value='validated preview'),
+        ):
             self.assertTrue(w._analysis_event({'type': 'result', 'result': result}))
         self.assertIs(w._analysis_preview, result)
         self.assertEqual(w.analysis_preview.toPlainText(), 'validated preview')
@@ -276,8 +323,7 @@ class PageInteractionTests(unittest.TestCase):
         w.settings_page.save_settings()
         saved = store.save.call_args.args[0]
         self.assertEqual(saved['legacy_provider'], {'inert': True})
-        self.assertEqual(saved['window'], {'x': w.x(), 'y': w.y(),
-                                          'width': w.width(), 'height': w.height()})
+        self.assertEqual(saved['window'], {'x': w.x(), 'y': w.y(), 'width': w.width(), 'height': w.height()})
         self.assertFalse(saved['persist_logs'])
         self.assertFalse(w.jobs.logging_enabled)
         self.assertFalse(w.chatgpt_panel.consent.isChecked())
@@ -286,6 +332,7 @@ class PageInteractionTests(unittest.TestCase):
 class PageSnapshotTests(unittest.TestCase):
     def test_all_seven_pages_match_pre_change_archive(self):
         from tools.ui_snapshot import capture
+
         with tempfile.TemporaryDirectory(prefix='markauto-pages-snapshot-') as temporary:
             output = Path(temporary) / 'after'
             baseline = ROOT / 'tests/fixtures/desktop_pages_before'
@@ -296,13 +343,13 @@ class PageSnapshotTests(unittest.TestCase):
                 # A full capture costs ~2 minutes on software-rendering Linux CI (fixed suite time cap); reuse the
                 # shared metrics-only capture, which is identical for the platform-independent facts compared here.
                 from tests.snapshot_cache import default_metrics
+
                 actual = default_metrics()
             expected = json.loads((baseline / 'metrics.json').read_text(encoding='utf-8'))
             self.assertEqual(len(actual['pages']), 7)
             self.assertEqual(list(actual['pages']), list(expected['pages']))
             for name, page in expected['pages'].items():
-                for field in ('visible_text', 'visible_input_count', 'button_count',
-                              'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
+                for field in ('visible_text', 'visible_input_count', 'button_count', 'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
                     with self.subTest(page=name, field=field):
                         got, want = actual['pages'][name][field], page[field]
                         if field == 'visible_text' and sys.platform != 'win32':

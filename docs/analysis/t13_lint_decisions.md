@@ -161,7 +161,7 @@ manifest allowlist. New verifier/test modules have no base blob and are parsed;
 they are reported separately from the existing-file AST comparison count.
 The manifest lists its own bookkeeping files as well as regenerated goldens.
 
-`MainWindow` expanded from 394 to 471 lines; `_reduce` expanded to 81 lines.
+`MainWindow` would expand from 394 to 471 lines; `_reduce` expanded to 81 lines.
 Their original source blocks are retained inside `fmt: off/on` boundaries to
 preserve both the exact AST and the existing 400/80 limits. Extraction would
 change the AST, so no extraction or budget relaxation was made. All other page
@@ -195,3 +195,5 @@ excluded frozen archive/G3/producer files: normalizing these would violate the
 byte-preservation requirement. All reformatted sources have LF.
 The full suite is reserved for the controller outside the sandbox, per the
 explicit task instruction; focused tests and the static gate run here.
+
+Quote style: `quote-style = "preserve"` (a separate config commit) keeps existing quote characters, because several tests assert on single-quoted source text; MainWindow and `_reduce` keep their `fmt: off/on` fences. The autocrlf test control file is `ordinary.txt` since `*.py` is pinned to LF.

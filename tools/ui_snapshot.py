@@ -2,6 +2,7 @@
 
 See docs/analysis/baseline/ui_snapshot_1366x768/README.md for metric definitions.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -32,10 +33,9 @@ def parse_scale(value):
 
 
 def _input_widgets(page):
-    from PySide6.QtWidgets import (QAbstractSpinBox, QCheckBox, QComboBox,
-                                  QLineEdit, QPlainTextEdit, QRadioButton, QTextEdit, QWidget)
-    kinds = (QAbstractSpinBox, QCheckBox, QComboBox, QLineEdit,
-             QPlainTextEdit, QRadioButton, QTextEdit)
+    from PySide6.QtWidgets import QAbstractSpinBox, QCheckBox, QComboBox, QLineEdit, QPlainTextEdit, QRadioButton, QTextEdit, QWidget
+
+    kinds = (QAbstractSpinBox, QCheckBox, QComboBox, QLineEdit, QPlainTextEdit, QRadioButton, QTextEdit)
     result = []
     for widget in page.findChildren(QWidget):
         if not isinstance(widget, kinds) or not widget.isVisibleTo(page):
@@ -52,13 +52,14 @@ def _input_widgets(page):
 
 def _has_label(widget, page):
     from PySide6.QtWidgets import QAbstractButton, QFormLayout, QLabel
+
     if widget.accessibleName().strip():
         return True
     if isinstance(widget, QAbstractButton) and widget.text().strip():
         return True
-    if any(label.buddy() is widget and label.text().strip()
-           for label in page.findChildren(QLabel) if label.isVisibleTo(page)):
+    if any(label.buddy() is widget and label.text().strip() for label in page.findChildren(QLabel) if label.isVisibleTo(page)):
         return True
+
     # Existing forms use QFormLayout, or a QLabel immediately before a field
     # in a box/grid layout. Do not mistake placeholder/value/tooltip for a label.
     def in_layout(layout):
@@ -75,18 +76,18 @@ def _has_label(widget, page):
             if item.layout() and in_layout(item.layout()):
                 return True
         return False
+
     parent = widget.parentWidget()
     return bool(parent and parent.layout() and in_layout(parent.layout()))
 
 
 def page_metrics(page):
-    from PySide6.QtWidgets import (QAbstractButton, QAbstractSpinBox, QComboBox, QGroupBox,
-                                  QLabel, QLineEdit, QPlainTextEdit, QTabBar, QTextEdit, QWidget)
+    from PySide6.QtWidgets import QAbstractButton, QAbstractSpinBox, QComboBox, QGroupBox, QLabel, QLineEdit, QPlainTextEdit, QTabBar, QTextEdit, QWidget
+
     widgets = [widget for widget in page.findChildren(QWidget) if widget.isVisibleTo(page)]
     inputs = _input_widgets(page)
     # Checkboxes and radio buttons are inputs; action/toggle buttons are buttons.
-    buttons = [widget for widget in widgets if isinstance(widget, QAbstractButton)
-               and widget not in inputs]
+    buttons = [widget for widget in widgets if isinstance(widget, QAbstractButton) and widget not in inputs]
     text = []
     for widget in widgets:
         value = ''
@@ -104,16 +105,19 @@ def page_metrics(page):
         elif isinstance(widget, QGroupBox):
             value = widget.title()
         elif isinstance(widget, QTabBar):
-            text.extend(widget.tabText(index) for index in range(widget.count())
-                        if widget.isTabVisible(index) and widget.tabText(index).strip())
+            text.extend(widget.tabText(index) for index in range(widget.count()) if widget.isTabVisible(index) and widget.tabText(index).strip())
         if value.strip():
             text.append(value)
     from PySide6.QtWidgets import QTableWidget
-    combo_items = [widget.itemText(index) for widget in widgets if isinstance(widget, QComboBox)
-                   for index in range(widget.count())]
-    table_headers = [widget.horizontalHeaderItem(index).text()
-                     for widget in widgets if isinstance(widget, QTableWidget)
-                     for index in range(widget.columnCount()) if widget.horizontalHeaderItem(index)]
+
+    combo_items = [widget.itemText(index) for widget in widgets if isinstance(widget, QComboBox) for index in range(widget.count())]
+    table_headers = [
+        widget.horizontalHeaderItem(index).text()
+        for widget in widgets
+        if isinstance(widget, QTableWidget)
+        for index in range(widget.columnCount())
+        if widget.horizontalHeaderItem(index)
+    ]
     return {
         'page_height': page.height(),
         'visible_input_count': len(inputs),
@@ -122,12 +126,12 @@ def page_metrics(page):
         'visible_text': text,
         'combo_items': combo_items,
         'table_headers': table_headers,
-        'unlabeled_inputs': [widget.objectName() or f'{type(widget).__name__}[{index}]'
-                             for index, widget in enumerate(inputs) if not _has_label(widget, page)],
-        'disabled_buttons': [{'object_name': widget.objectName(), 'text': widget.text(),
-                              'tooltip': widget.toolTip(),
-                              'hint': widget.property('disabled_hint') or ''}
-                             for widget in buttons if not widget.isEnabled()],
+        'unlabeled_inputs': [widget.objectName() or f'{type(widget).__name__}[{index}]' for index, widget in enumerate(inputs) if not _has_label(widget, page)],
+        'disabled_buttons': [
+            {'object_name': widget.objectName(), 'text': widget.text(), 'tooltip': widget.toolTip(), 'hint': widget.property('disabled_hint') or ''}
+            for widget in buttons
+            if not widget.isEnabled()
+        ],
         'primary_button_count': sum(widget.property('role') == 'primary' for widget in buttons),
     }
 
@@ -135,8 +139,8 @@ def page_metrics(page):
 def _save_png(widget, path, scale):
     from PySide6.QtCore import QPoint
     from PySide6.QtGui import QImage, QPainter
-    image = QImage(round(widget.width() * scale), round(widget.height() * scale),
-                   QImage.Format.Format_ARGB32_Premultiplied)
+
+    image = QImage(round(widget.width() * scale), round(widget.height() * scale), QImage.Format.Format_ARGB32_Premultiplied)
     image.fill(0)
     painter = QPainter(image)
     try:
@@ -155,6 +159,7 @@ def tab_heights(page, app):
     Existing top-level metrics continue to describe the selected/default tab.
     """
     from PySide6.QtWidgets import QScrollArea, QTabWidget
+
     result = {}
     for tabs in page.findChildren(QTabWidget):
         if not tabs.isVisibleTo(page):
@@ -175,8 +180,7 @@ def tab_heights(page, app):
                 layout = content.layout()
                 if layout:
                     layout.activate()
-                height = max(content.minimumHeight(), content.sizeHint().height(),
-                             content.minimumSizeHint().height())
+                height = max(content.minimumHeight(), content.sizeHint().height(), content.minimumSizeHint().height())
                 if layout and layout.hasHeightForWidth():
                     height = max(height, layout.heightForWidth(width))
                 result[tabs.tabText(index)] = height
@@ -223,8 +227,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
             jobs = JobManager(paths)
             window = None
             try:
-                window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'),
-                                    BackupManager(paths, jobs))
+                window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
                 # Stop polling before dispatching Qt events: snapshots never run jobs.
                 for timer in window.findChildren(QTimer):
                     timer.stop()
@@ -261,8 +264,9 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                             needed = max(content.sizeHint().height(), content.minimumSizeHint().height())
                             if content.layout() and content.layout().hasHeightForWidth():
                                 needed = max(needed, content.layout().heightForWidth(child.viewport().width()))
-                            child.setMinimumHeight(max(child.minimumHeight(), needed + 2 * child.frameWidth()
-                                                       + child.horizontalScrollBar().sizeHint().height()))
+                            child.setMinimumHeight(
+                                max(child.minimumHeight(), needed + 2 * child.frameWidth() + child.horizontalScrollBar().sizeHint().height())
+                            )
                     page.layout().activate()
                     app.processEvents()
                     scroll.setWidgetResizable(False)
@@ -282,18 +286,15 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                         # Inspect natural layouts without bypassing navigation guards
                         # or launching preview/run operations during a snapshot.
                         metrics['wizard_steps'] = {
-                            str(step + 1): max(wizard.stack.widget(step).sizeHint().height(),
-                                               wizard.stack.widget(step).minimumSizeHint().height())
+                            str(step + 1): max(wizard.stack.widget(step).sizeHint().height(), wizard.stack.widget(step).minimumSizeHint().height())
                             for step in range(wizard.stack.count())
                         }
-                    metrics.update(viewport_png=f'{stem}_viewport.png', full_png=f'{stem}_full.png',
-                                   full_width=page.width())
+                    metrics.update(viewport_png=f'{stem}_viewport.png', full_png=f'{stem}_full.png', full_width=page.width())
                     result['pages'][window.navigation.item(index).text()] = metrics
                     for child, minimum in nested:
                         child.setMinimumHeight(minimum)
                     scroll.setWidgetResizable(True)
-                (out / 'metrics.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n',
-                                                  encoding='utf-8')
+                (out / 'metrics.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
             finally:
                 jobs.close()
                 if window is not None:
@@ -319,31 +320,32 @@ def capture_layout_metrics(window, out, size, scale):
     The caller restores its font when probing larger logical font sizes.
     """
     from PySide6.QtWidgets import QApplication, QScrollArea
+
     old_row, old_size = window.navigation.currentRow(), window.size()
     result = {'schema_version': 1, 'size': list(size), 'scale': parse_scale(scale), 'pages': {}}
     try:
         window.resize(*size)
         for index in range(window.stack.count()):
             window.navigation.setCurrentRow(index)
-            for _ in range(3): QApplication.processEvents()
+            for _ in range(3):
+                QApplication.processEvents()
             container = window.stack.widget(index)
             scroll = container if isinstance(container, QScrollArea) else window.market.page_scroll
             result['pages'][window.navigation.item(index).text()] = page_metrics(scroll.widget())
-        out = Path(out); out.mkdir(parents=True, exist_ok=True)
+        out = Path(out)
+        out.mkdir(parents=True, exist_ok=True)
         (out / 'metrics.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     finally:
-        window.navigation.setCurrentRow(old_row); window.resize(old_size)
+        window.navigation.setCurrentRow(old_row)
+        window.resize(old_size)
     return result
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--size', type=parse_size, default=(1366, 768), metavar='WxH',
-                        help='logical viewport size WxH (default: 1366x768)')
-    parser.add_argument('--scale', type=parse_scale, default=1.0,
-                        help='PNG pixel scale; logical metrics stay unchanged (default: 1)')
-    parser.add_argument('--out', type=Path, default=Path('ui_snapshot'),
-                        help='output directory for 14 PNGs and metrics.json (default: ui_snapshot)')
+    parser.add_argument('--size', type=parse_size, default=(1366, 768), metavar='WxH', help='logical viewport size WxH (default: 1366x768)')
+    parser.add_argument('--scale', type=parse_scale, default=1.0, help='PNG pixel scale; logical metrics stay unchanged (default: 1)')
+    parser.add_argument('--out', type=Path, default=Path('ui_snapshot'), help='output directory for 14 PNGs and metrics.json (default: ui_snapshot)')
     args = parser.parse_args(argv)
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
     # Raster scale is explicit, independent of the host monitor or Qt DPI env.

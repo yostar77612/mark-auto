@@ -9,6 +9,7 @@ remain production integration gates. No service, helper or real AI is launched.
 Run with the prepared cloud Qt interpreter, QT_QPA_PLATFORM=offscreen, and a
 90-second outer timeout. Each actual worker wait is capped at 20 seconds.
 """
+
 from __future__ import annotations
 
 from contextlib import ExitStack, closing
@@ -31,10 +32,13 @@ from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, Runtim
 def _offline_worker(*args, **kwargs):
     """Spawn-safe wrapper around the unchanged real worker, with network denied."""
     from quantlab.desktop_runtime import _job_worker
-    with patch('socket.create_connection', side_effect=AssertionError('TEST_ONLY: no network')), \
-         patch('http.client.HTTPSConnection', side_effect=AssertionError('TEST_ONLY: no HTTP')), \
-         patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')), \
-         patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')):
+
+    with (
+        patch('socket.create_connection', side_effect=AssertionError('TEST_ONLY: no network')),
+        patch('http.client.HTTPSConnection', side_effect=AssertionError('TEST_ONLY: no HTTP')),
+        patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
+        patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
+    ):
         return _job_worker(*args, **kwargs)
 
 
@@ -49,11 +53,11 @@ class _TestOnlyConflictPolicy:
     launch-registration/restore-promotion checks need one interprocess durable
     critical section, independently tested in the Windows protocol fixture.
     """
-    BLOCKED = frozenset({'ui_analysis_run', 'ui_analysis_reconcile',
-                         'ui_backup_create', 'ui_backup_restore',
-                         'ui_demo', 'ui_import', 'ui_refresh', 'ui_campaign'})
-    BUTTONS = ('run_candidate_analysis', 'create_backup', 'restore_backup',
-               'create_demo', 'import_data', 'refresh_data', 'run_campaign')
+
+    BLOCKED = frozenset(
+        {'ui_analysis_run', 'ui_analysis_reconcile', 'ui_backup_create', 'ui_backup_restore', 'ui_demo', 'ui_import', 'ui_refresh', 'ui_campaign'}
+    )
+    BUTTONS = ('run_candidate_analysis', 'create_backup', 'restore_backup', 'create_demo', 'import_data', 'refresh_data', 'run_campaign')
 
     def __init__(self, jobs, backups):
         self.unresolved = True
@@ -88,6 +92,7 @@ class _TestOnlyConflictPolicy:
         if not self.unresolved:
             return
         from PySide6.QtWidgets import QPushButton
+
         for name in self.BUTTONS:
             button = window.findChild(QPushButton, name)
             if button is not None:
@@ -121,6 +126,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
+
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
@@ -131,8 +137,12 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self._seed_synthetic_evidence()
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        for target in ('socket.create_connection', 'http.client.HTTPSConnection',
-                       'desktop_chatgpt_provider.PlanHTTPTransport', 'desktop_ui.analysis_provider_for'):
+        for target in (
+            'socket.create_connection',
+            'http.client.HTTPSConnection',
+            'desktop_chatgpt_provider.PlanHTTPTransport',
+            'desktop_ui.analysis_provider_for',
+        ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('TEST_ONLY forbidden: ' + target)))
         self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
         self.jobs = JobManager(self.paths)
@@ -160,32 +170,41 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         from desktop_chatgpt_auth import OAuthCredentialReference
         import desktop_chatgpt_provider as provider
         import quantlab.research_analysis as analysis
+
         self.data, state, self.campaign = source(self.paths.state / 'campaigns')
         self.dataset = self.paths.state / 'dataset.json'
         save_dataset(self.data, self.dataset)
         packet = prepare(self.campaign, self.data, state)
         AnalysisWire.requests = []
         AnalysisWire.failure = AnalysisWire.mutate = None
-        with patch.object(provider, 'implementation_provenance', return_value=PROVENANCE), \
-             patch.object(provider, 'PlanHTTPTransport', AnalysisWire), \
-             patch('http.client.HTTPSConnection', side_effect=AssertionError('No live fixture HTTP')):
-            plan = analysis.make_analysis_plan(packet, model='fixture-model', registration='a' * 32,
-                                               provider_implementation=PROVENANCE)
+        with (
+            patch.object(provider, 'implementation_provenance', return_value=PROVENANCE),
+            patch.object(provider, 'PlanHTTPTransport', AnalysisWire),
+            patch('http.client.HTTPSConnection', side_effect=AssertionError('No live fixture HTTP')),
+        ):
+            plan = analysis.make_analysis_plan(packet, model='fixture-model', registration='a' * 32, provider_implementation=PROVENANCE)
             reference = OAuthCredentialReference(str(self.paths.bootstrap), 'a' * 32)
             original = provider.analysis_provider(plan, reference, network_opt_in=True, included_usage_policy_confirmed=True)
-            result = analysis.run_analysis(output_root=self.paths.state / 'analyses', plan=plan,
-                                           provider=original, expected_analysis_id=plan['analysis_id'], user_confirmed=True)
+            result = analysis.run_analysis(
+                output_root=self.paths.state / 'analyses', plan=plan, provider=original, expected_analysis_id=plan['analysis_id'], user_confirmed=True
+            )
             self.completed = result['record']
             self.completed_id = plan['analysis_id']
-            pending = analysis.make_analysis_plan(packet, model='synthetic-pending-model', registration='a' * 32,
-                                                  provider_implementation=PROVENANCE)
+            pending = analysis.make_analysis_plan(packet, model='synthetic-pending-model', registration='a' * 32, provider_implementation=PROVENANCE)
             pending_provider = provider.analysis_provider(pending, reference)
             self.pending_id = pending['analysis_id']
             self.pending_folder = self.paths.state / 'analyses' / self.pending_id
             self.pending_folder.mkdir()
-            record = {'schema_version': 1, 'plan': pending, 'provider_descriptor': pending_provider.provider_descriptor(),
-                      'status': 'running', 'response': None, 'response_hash': None,
-                      'receipt_snapshot': pending_provider.read_receipt_snapshot(), 'real_model_status': 'not_verified'}
+            record = {
+                'schema_version': 1,
+                'plan': pending,
+                'provider_descriptor': pending_provider.provider_descriptor(),
+                'status': 'running',
+                'response': None,
+                'response_hash': None,
+                'receipt_snapshot': pending_provider.read_receipt_snapshot(),
+                'real_model_status': 'not_verified',
+            }
             analysis._save(self.pending_folder, record)
             request = analysis.analysis_request(pending)
             pending_provider._reserve(content_hash(request), len(canonical_json(request).encode()))
@@ -197,8 +216,12 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.assertEqual(len(AnalysisWire.requests), 1, 'Only the synthetic saved fixture was generated')
 
     def _protected(self):
-        return {'dataset': self.dataset.read_bytes(), 'campaign': _snapshot(self.campaign),
-                'analyses': _snapshot(self.paths.state / 'analyses'), 'controls': _snapshot(self.paths.controls)}
+        return {
+            'dataset': self.dataset.read_bytes(),
+            'campaign': _snapshot(self.campaign),
+            'analyses': _snapshot(self.paths.state / 'analyses'),
+            'controls': _snapshot(self.paths.controls),
+        }
 
     def _cleanup_window(self):
         self.window.timer.stop()
@@ -214,6 +237,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
 
     def _click(self, name):
         from tests.test_desktop_ui import NativeDesktopTests
+
         NativeDesktopTests.click(self, name)
 
     def _wait_job(self):
@@ -221,7 +245,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         while self.jobs.active and time.monotonic() < deadline:
             self.app.processEvents()
             self.window.poll_jobs()
-            time.sleep(.01)
+            time.sleep(0.01)
         self.window.poll_jobs()
         self.assertFalse(self.jobs.active, self.window.status.text())
         self.assertNotIn('失敗', self.window.status.text(), self.window.status.text())
@@ -234,6 +258,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
 
     def _assert_blocked_buttons(self):
         from PySide6.QtWidgets import QPushButton
+
         for name in self.policy.BUTTONS:
             button = self.window.findChild(QPushButton, name)
             self.assertIsNotNone(button, name)
@@ -271,15 +296,16 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         w = self.window
         self._enable_backup()
         scheduler_before = self.panel.scheduler.path.read_bytes()
-        for callback in (lambda: w._busy(False), w.refresh_views, w.poll_jobs,
-                         lambda: w.freeze_paper('TEST_ONLY clock/freeze callback')):
+        for callback in (lambda: w._busy(False), w.refresh_views, w.poll_jobs, lambda: w.freeze_paper('TEST_ONLY clock/freeze callback')):
             with self.subTest(callback=callback):
                 w._analysis_preview = {'receipt_snapshot': {'receipts': []}}
                 callback()
                 self._assert_blocked_buttons()
                 self.assertTrue(w.run_button.isEnabled())
-        with patch.object(self.policy, 'claim_original', wraps=self.policy.claim_original) as claim, \
-             patch.object(self.policy, 'start_original', wraps=self.policy.start_original) as start:
+        with (
+            patch.object(self.policy, 'claim_original', wraps=self.policy.claim_original) as claim,
+            patch.object(self.policy, 'start_original', wraps=self.policy.start_original) as start,
+        ):
             self.panel.tick()  # Real controller calls the guarded claim boundary.
             claim.assert_not_called()
             start.assert_not_called()
@@ -301,8 +327,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.assertIsNone(self.jobs._quiesced_analysis)
         with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'subtree stop proof'):
-                self.jobs.start('ui_analysis_reconcile', {'analysis_id': self.pending_id,
-                    'registration': 'a' * 32, 'stopped_job_id': 'not-an-original-job'})
+                self.jobs.start('ui_analysis_reconcile', {'analysis_id': self.pending_id, 'registration': 'a' * 32, 'stopped_job_id': 'not-an-original-job'})
             spawn.assert_not_called()
         controls = _snapshot(self.paths.controls)
         self._enable_backup()
@@ -338,6 +363,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
     def test_other_workspace_non_ai_use_preserves_original_controls_and_state(self):
         from desktop_ui import MainWindow
         from quantlab.reporting import save_dataset
+
         before = _snapshot(self.paths.root)
         controls = _snapshot(self.paths.controls)
         locator = WorkspaceLocator(self.paths.bootstrap)
@@ -357,7 +383,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
             while jobs.active and time.monotonic() < deadline:
                 self.app.processEvents()
                 window.poll_jobs()
-                time.sleep(.01)
+                time.sleep(0.01)
             window.poll_jobs()
             self.assertFalse(jobs.active, window.status.text())
             self.assertNotIn('失敗', window.status.text())

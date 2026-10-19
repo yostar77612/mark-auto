@@ -4,6 +4,7 @@ Windows uses a pinned disposable discovery path, real mutex/Qt/spawn, and all
 preservation assertions. OS known-folder discovery is not verified here; native
 discovery and installed-package gates remain separate and unchanged.
 """
+
 import importlib.util
 import json
 import os
@@ -22,13 +23,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def snapshot(root):
     if not root.exists():
         return None
-    return {str(p.relative_to(root)): None if p.is_dir() else p.read_bytes()
-            for p in root.rglob('*')}
+    return {str(p.relative_to(root)): None if p.is_dir() else p.read_bytes() for p in root.rglob('*')}
 
 
 class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_default_does_not_create_user_directories(self):
         from quantlab.desktop_runtime import WorkspaceLocator
+
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / 'absent-bootstrap'
             self.assertEqual(WorkspaceLocator(root).load(probe=False).root, root)
@@ -36,8 +37,10 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 
     def test_read_only_redirect_validates_without_mkdir_or_probe(self):
         from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
+
         with tempfile.TemporaryDirectory() as temporary:
-            bootstrap = Path(temporary).resolve() / 'bootstrap'; bootstrap.mkdir()
+            bootstrap = Path(temporary).resolve() / 'bootstrap'
+            bootstrap.mkdir()
             workspace = Path(temporary).resolve() / 'redirected'
             pointer = bootstrap / 'workspace-location.json'
             pointer.write_text(json.dumps({'schema_version': 1, 'root': str(workspace)}))
@@ -51,31 +54,41 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 
     def test_read_only_redirect_rejects_invalid_paths(self):
         from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve(); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
+            root = Path(temporary).resolve()
+            bootstrap = root / 'bootstrap'
+            bootstrap.mkdir()
             pointer = bootstrap / 'workspace-location.json'
             locator = WorkspaceLocator(bootstrap)
-            for value in ({'schema_version': 99, 'root': str(root / 'other')},
-                          {'schema_version': 1, 'root': '../relative'},
-                          {'schema_version': 1, 'root': str(root)}):
+            for value in (
+                {'schema_version': 99, 'root': str(root / 'other')},
+                {'schema_version': 1, 'root': '../relative'},
+                {'schema_version': 1, 'root': str(root)},
+            ):
                 pointer.write_text(json.dumps(value))
                 with self.subTest(value=value), self.assertRaises(RuntimeSafetyError):
                     locator.load(probe=False)
 
     def test_read_only_redirect_rejects_symlink_when_supported(self):
         from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve(); bootstrap = root / 'bootstrap'; bootstrap.mkdir()
+            root = Path(temporary).resolve()
+            bootstrap = root / 'bootstrap'
+            bootstrap.mkdir()
             pointer = bootstrap / 'workspace-location.json'
             locator = WorkspaceLocator(bootstrap)
-            target = root / 'target'; target.mkdir()
+            target = root / 'target'
+            target.mkdir()
             alias = root / 'alias'
             try:
                 alias.symlink_to(target, target_is_directory=True)
             except OSError as exc:
                 self.skipTest('Symlink fixture unsupported on this platform: ' + type(exc).__name__)
             pointer.write_text(json.dumps({'schema_version': 1, 'root': str(alias)}))
-            with self.assertRaises(RuntimeSafetyError): locator.load(probe=False)
+            with self.assertRaises(RuntimeSafetyError):
+                locator.load(probe=False)
 
 
 @unittest.skipUnless(HAS_QT, 'Pinned Qt required for isolated desktop launch')
@@ -84,6 +97,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
         from desktop import _smoke_steps
         from desktop_ui import _paper
         from quantlab.desktop_runtime import AppPaths
+
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve()
             local_appdata = home / 'LocalAppData'
@@ -91,7 +105,9 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
             workspace = home / 'configured-workspace' if redirected else bootstrap
             if seeded:
                 paths = AppPaths(workspace, bootstrap).ensure()
-                (paths.state / 'settings.json').write_bytes(b'{\n "schema_version": 1, "settings": {"sentinel": "preserve exact bytes", "persist_logs": false}\n}\n')
+                (paths.state / 'settings.json').write_bytes(
+                    b'{\n "schema_version": 1, "settings": {"sentinel": "preserve exact bytes", "persist_logs": false}\n}\n'
+                )
                 policy = _smoke_steps()[4][1]['policy']
                 (paths.state / 'paper_policy.json').write_text(json.dumps(policy))
                 broker = _paper(paths.state)
@@ -103,7 +119,8 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
                 (paths.credentials / 'preservation-sentinel.bin').write_bytes(b'nonsecret test sentinel')
                 # Recovery is a normal-startup action, never part of a read-only
                 # smoke lookup of the user's active or redirected workspace.
-                rollback = workspace / 'state-v1.rollback'; rollback.mkdir()
+                rollback = workspace / 'state-v1.rollback'
+                rollback.mkdir()
                 (rollback / 'original.bin').write_bytes(b'pending recovery must remain untouched')
                 (workspace / 'restore-transaction.json').write_text(json.dumps({'phase': 'prepared', 'id': 'a' * 32}))
                 (workspace / 'session.json').write_bytes(b'{"sentinel":"preserve previous session evidence"}\n')
@@ -111,7 +128,8 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
                     (bootstrap / 'workspace-location.json').write_text(json.dumps({'schema_version': 1, 'root': str(workspace)}))
             roots = [bootstrap] + ([workspace] if redirected else [])
             before = [snapshot(root) for root in roots]
-            report = home / 'report.json'; attempted_writes = home / 'forbidden-writes.txt'
+            report = home / 'report.json'
+            attempted_writes = home / 'forbidden-writes.txt'
             # Snapshot comparisons catch durable changes; an audit hook also
             # rejects temporary probes, locks, repairs and write-then-restore.
             code = "import sys, os\nfrom pathlib import Path\n"
@@ -145,11 +163,16 @@ from PySide6.QtWidgets import QMessageBox
 QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).throw(AssertionError('Unexpected smoke modal'))
 '''
             code += injected + "\nraise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
-            env = dict(os.environ, HOME=str(home), USERPROFILE=str(home),
-                       LOCALAPPDATA=str(local_appdata), APPDATA=str(home / 'AppData'),
-                       QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'))
-            result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT,
-                                    env=env, capture_output=True, text=True, timeout=150)
+            env = dict(
+                os.environ,
+                HOME=str(home),
+                USERPROFILE=str(home),
+                LOCALAPPDATA=str(local_appdata),
+                APPDATA=str(home / 'AppData'),
+                QT_QPA_PLATFORM='offscreen',
+                XDG_CACHE_HOME=str(home / 'qt-cache'),
+            )
+            result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=150)
             self.assertEqual([snapshot(root) for root in roots], before, 'All real user files and directories must be unchanged')
             self.assertFalse(attempted_writes.exists(), attempted_writes.read_text() if attempted_writes.exists() else '')
             self.assertTrue(report.exists(), result.stderr[-3000:])
@@ -172,11 +195,16 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
 
     def test_success_preserves_default_and_redirected_user_state_bytes(self):
         for redirected in (False, True):
-            with self.subTest(redirected=redirected): self.smoke(redirected=redirected)
+            with self.subTest(redirected=redirected):
+                self.smoke(redirected=redirected)
 
     def test_failure_preserves_user_state_and_pending_recovery(self):
         self.smoke(injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
-        self.smoke(redirected=True, injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\ndesktop._history_smoke_fixture = missing", expected_status='failed')
+        self.smoke(
+            redirected=True,
+            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\ndesktop._history_smoke_fixture = missing",
+            expected_status='failed',
+        )
 
     def test_smoke_does_not_create_an_absent_user_workspace(self):
         self.smoke(seeded=False, injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')

@@ -1,4 +1,5 @@
 """Offline P0-15/16 dependency archive and application artwork contracts."""
+
 import ast
 import hashlib
 from pathlib import Path
@@ -32,7 +33,7 @@ class ApplicationIconTests(unittest.TestCase):
             self.assertEqual((colors, reserved, planes, bits), (0, 0, 1, 32))
             self.assertGreaterEqual(offset, 118)
             self.assertLessEqual(offset + length, len(data))
-            self.assertTrue(data[offset:offset + length].startswith(b'\x89PNG\r\n\x1a\n'))
+            self.assertTrue(data[offset : offset + length].startswith(b'\x89PNG\r\n\x1a\n'))
         self.assertEqual(tuple(sizes), (16, 24, 32, 48, 64, 128, 256))
         self.assertEqual(tuple(sizes), SIZES)
         self.assertEqual(make_icon(), data)
@@ -60,8 +61,9 @@ class ApplicationIconTests(unittest.TestCase):
     def test_start_paths_apply_icon_and_freezer_installer_reference_same_artwork(self):
         for name in ('desktop.py', 'desktop_ui.py'):
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8-sig'))
-            self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                                and node.func.attr == 'setWindowIcon' for node in ast.walk(tree)), name)
+            self.assertTrue(
+                any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'setWindowIcon' for node in ast.walk(tree)), name
+            )
         spec = (ROOT / 'packaging/markauto.spec').read_text()
         self.assertIn("icon=str(root / 'packaging/markauto.ico')", spec)
         self.assertIn("(str(root / 'packaging/markauto.ico'), 'packaging')", spec)
@@ -78,8 +80,7 @@ class ApplicationIconTests(unittest.TestCase):
         archived = ROOT / 'archives/legacy_autotrading/requirements.txt'
         # Git may check out text as CRLF on Windows or LF on Linux CI.
         canonical = archived.read_bytes().replace(b'\r\n', b'\n')
-        self.assertEqual(hashlib.sha256(canonical).hexdigest(),
-                         '6b7bc80e0d50e3633ad0087f40b55d7d1ff62fb346ac688fc7cb0519fafda9d7')
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(), '6b7bc80e0d50e3633ad0087f40b55d7d1ff62fb346ac688fc7cb0519fafda9d7')
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertNotIn('pip install -r requirements.txt', readme)
         self.assertIn('requirements-desktop.lock', readme)

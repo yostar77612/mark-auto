@@ -1,4 +1,5 @@
 """Synthetic callback/cleanup failures; no Windows-client acceptance claim."""
+
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ import unittest
 from tests import test_desktop_walk_forward_runtime as runtime_tests
 from tests.smoke_timeout_diagnostics import run_smoke_process
 from tests.test_desktop_smoke_terminal import process_can_run
+
 REFERENCE = runtime_tests.REFERENCE
 from quantlab.desktop_runtime import RuntimeSafetyError
 from desktop import _close_smoke_worker
@@ -21,17 +23,22 @@ ROOT = Path(__file__).resolve().parents[1]
 class TerminalRuntimeProofTests(unittest.TestCase):
     def fixture(self):
         fixture = runtime_tests.WalkForwardRuntimeTests(methodName='runTest')
-        fixture.setUp(); self.addCleanup(fixture.doCleanups)
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
         return fixture
 
     def test_stopped_corrupt_owner_releases_handles_without_reconciliation_proof(self):
-        f = self.fixture(); job_id = f.start_fake()
+        f = self.fixture()
+        job_id = f.start_fake()
         owner = f.manager._walk_forward_owner_path(REFERENCE)
         owner.write_text('{}')
-        f.frame(result={'reference': REFERENCE, 'status': 'completed'}); f.alive = False
-        with self.assertRaisesRegex(RuntimeSafetyError, 'ownership mismatch'): f.manager.poll()
+        f.frame(result={'reference': REFERENCE, 'status': 'completed'})
+        f.alive = False
+        with self.assertRaisesRegex(RuntimeSafetyError, 'ownership mismatch'):
+            f.manager.poll()
         self.assertFalse(f.manager.active)
-        f.process.close.assert_called_once(); f.tree.stop_and_join.assert_called_once()
+        f.process.close.assert_called_once()
+        f.tree.stop_and_join.assert_called_once()
         self.assertIsNone(f.manager._quiesced_walk_forward)
         self.assertEqual(_close_smoke_worker(f.manager), {'verified': False, 'error_type': None})
         self.assertEqual(_close_smoke_worker(f.manager), {'verified': False, 'error_type': None})
@@ -40,11 +47,13 @@ class TerminalRuntimeProofTests(unittest.TestCase):
             f.manager.start('ui_walk_forward_reconcile', {'reference': REFERENCE, 'stopped_job_id': job_id})
 
     def test_join_failure_keeps_slot_handles_state_and_blocks_reconciliation(self):
-        f = self.fixture(); job_id = f.start_fake()
+        f = self.fixture()
+        job_id = f.start_fake()
         stopped = f.tree.stop_and_join.side_effect
         f.tree.stop_and_join.side_effect = RuntimeSafetyError('private exception text must not be reported')
         self.assertEqual(_close_smoke_worker(f.manager), {'verified': False, 'error_type': 'RuntimeSafetyError'})
-        self.assertTrue(f.manager.active); f.process.close.assert_not_called()
+        self.assertTrue(f.manager.active)
+        f.process.close.assert_not_called()
         self.assertIsNone(f.manager._quiesced_walk_forward)
         self.assertTrue(f.manager._walk_forward_owner_path(REFERENCE).exists())
         with self.assertRaises(RuntimeSafetyError):
@@ -58,7 +67,9 @@ class TerminalRuntimeProofTests(unittest.TestCase):
 class TerminalSmokeProcessTests(unittest.TestCase):
     def smoke(self, injected, *, retained, cleanup_verified=None, timed_out=False):
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary); report = home / 'report.json'; pidfile = home / 'worker-pids.json'
+            home = Path(temporary)
+            report = home / 'report.json'
+            pidfile = home / 'worker-pids.json'
             writes = home / 'report-writes.jsonl'
             bootstrap = home / 'LocalAppData/MarkAuto' if sys.platform == 'win32' else home / '.local/share/MarkAuto'
             code = '''import sys, os, json, time, faulthandler
@@ -120,15 +131,35 @@ def tracked_start(self, operation, payload):
  return value
 JobManager.start = tracked_start
 '''
-            code += injected + "\nfaulthandler.dump_traceback_later(35)\ntry:\n status = desktop.main(['--smoke-test', sys.argv[1]])\n trace('main_return', status=status)\nfinally: faulthandler.cancel_dump_traceback_later()\nraise SystemExit(status)\n"
-            (home / 'sitecustomize.py').write_text("import socket\ndef denied(*args, **kwargs): raise AssertionError('No network')\nsocket.create_connection = socket.getaddrinfo = denied\noriginal = socket.socket.connect\ndef connect(self, address):\n if self.family in (socket.AF_INET, socket.AF_INET6): return denied()\n return original(self, address)\nsocket.socket.connect = socket.socket.connect_ex = connect\n")
-            env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), LOCALAPPDATA=str(home / 'LocalAppData'),
-                       APPDATA=str(home / 'AppData'), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'qt-cache'),
-                       PYTHONPATH=str(home) + os.pathsep + str(ROOT))
+            code += (
+                injected
+                + "\nfaulthandler.dump_traceback_later(35)\ntry:\n status = desktop.main(['--smoke-test', sys.argv[1]])\n trace('main_return', status=status)\nfinally: faulthandler.cancel_dump_traceback_later()\nraise SystemExit(status)\n"
+            )
+            (home / 'sitecustomize.py').write_text(
+                "import socket\ndef denied(*args, **kwargs): raise AssertionError('No network')\nsocket.create_connection = socket.getaddrinfo = denied\noriginal = socket.socket.connect\ndef connect(self, address):\n if self.family in (socket.AF_INET, socket.AF_INET6): return denied()\n return original(self, address)\nsocket.socket.connect = socket.socket.connect_ex = connect\n"
+            )
+            env = dict(
+                os.environ,
+                HOME=str(home),
+                USERPROFILE=str(home),
+                LOCALAPPDATA=str(home / 'LocalAppData'),
+                APPDATA=str(home / 'AppData'),
+                QT_QPA_PLATFORM='offscreen',
+                XDG_CACHE_HOME=str(home / 'qt-cache'),
+                PYTHONPATH=str(home) + os.pathsep + str(ROOT),
+            )
             started = time.monotonic()
-            result = run_smoke_process([sys.executable, '-c', code, str(report), str(pidfile), str(writes)], cwd=ROOT,
-                env=env, report=report, pidfile=pidfile, writes=writes, process_can_run=process_can_run,
-                artifact_dir=ROOT / 'dist/validation', timeout=40)
+            result = run_smoke_process(
+                [sys.executable, '-c', code, str(report), str(pidfile), str(writes)],
+                cwd=ROOT,
+                env=env,
+                report=report,
+                pidfile=pidfile,
+                writes=writes,
+                process_can_run=process_can_run,
+                artifact_dir=ROOT / 'dist/validation',
+                timeout=40,
+            )
             self.assertLess(time.monotonic() - started, 40)
             self.assertEqual(result.returncode, 1, result.stderr[-3000:])
             self.assertTrue(report.exists(), result.stderr[-3000:])
@@ -154,24 +185,33 @@ JobManager.start = tracked_start
             return value
 
     def test_corrupt_owner_emits_finite_failed_report_and_retains_unverified_evidence(self):
-        self.smoke('''original = JobManager.start
+        self.smoke(
+            '''original = JobManager.start
 def corrupt(self, operation, payload):
  result = original(self, operation, payload)
  if operation == 'ui_walk_forward_run': self._walk_forward_owner_path(payload['preview_identity']).write_text('{}')
  return result
 JobManager.start = corrupt
-''', retained=True, cleanup_verified=False)
+''',
+            retained=True,
+            cleanup_verified=False,
+        )
 
     def test_join_failure_is_reported_without_fake_cleanup_or_evidence_deletion(self):
-        self.smoke('''original = JobManager._join_descendants
+        self.smoke(
+            '''original = JobManager._join_descendants
 def unverified(self, pid):
  original(self, pid)
  if self._operation == 'ui_walk_forward_run': raise RuntimeSafetyError('private exception join failure')
 JobManager._join_descendants = unverified
-''', retained=True, cleanup_verified=False)
+''',
+            retained=True,
+            cleanup_verified=False,
+        )
 
     def test_poll_exception_cancels_real_spawned_worker_and_proves_cleanup(self):
-        self.smoke('''original = JobManager.poll
+        self.smoke(
+            '''original = JobManager.poll
 raised = False
 def fail(self):
  global raised
@@ -180,10 +220,14 @@ def fail(self):
   raise RuntimeError('private exception poll failure')
  return original(self)
 JobManager.poll = fail
-''', retained=False, cleanup_verified=True)
+''',
+            retained=False,
+            cleanup_verified=True,
+        )
 
     def test_global_deadline_cancels_real_spawn_without_adding_time_budget(self):
-        value = self.smoke('''import time
+        value = self.smoke(
+            '''import time
 original_time = time.monotonic
 expired = False
 def current(): return original_time() + (121 if expired else 0)
@@ -195,8 +239,12 @@ def expire(self, operation, payload):
  if operation == 'ui_walk_forward_run': expired = True
  return result
 JobManager.start = expire
-''', retained=False, timed_out=True)
+''',
+            retained=False,
+            timed_out=True,
+        )
         self.assertFalse(value['walk_forward_smoke']['steps'][-1]['passed'])
 
 
-if __name__ == '__main__': unittest.main()
+if __name__ == '__main__':
+    unittest.main()

@@ -1,4 +1,5 @@
 """Window shortcuts dispatch to existing UI handlers, including their guards."""
+
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QPushButton
 from desktop_strings import ui_text

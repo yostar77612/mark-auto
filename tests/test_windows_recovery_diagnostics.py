@@ -1,4 +1,5 @@
 """Portable observer regressions; these do not certify native Windows recovery."""
+
 import ast
 from contextlib import closing
 import json
@@ -10,8 +11,12 @@ from unittest.mock import Mock, patch
 
 from tests import test_windows_recovery_feasibility as fixture
 from tests.windows_recovery_diagnostics import (
-    BARRIERS, MAX_RECORD_BYTES, MAX_REPORT_BYTES, FixtureDiagnostics,
-    failure_snapshot, report_failure,
+    BARRIERS,
+    MAX_RECORD_BYTES,
+    MAX_REPORT_BYTES,
+    FixtureDiagnostics,
+    failure_snapshot,
+    report_failure,
 )
 
 
@@ -32,14 +37,15 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
         diagnosis = FixtureDiagnostics(self.folder, 'helper')
         error = PermissionError(5, 'SECRET message /private/path', 'SECRET filename')
         error.winerror = 32
+
         def failed(*, diagnosis):
             diagnosis.at('helper.job.create')
             raise error
+
         with self.assertRaises(PermissionError) as raised:
             diagnosis.run(failed)
         self.assertIs(raised.exception, error)
-        record = failure_snapshot(self.folder, {'helper': Mock(poll=Mock(return_value=1))},
-                                  'helper_before_gui')
+        record = failure_snapshot(self.folder, {'helper': Mock(poll=Mock(return_value=1))}, 'helper_before_gui')
         child = record['children']['helper']
         self.assertEqual(child['returncode'], 1)
         self.assertEqual(child['failure']['phase'], 'helper.job.create')
@@ -70,6 +76,7 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
     def test_actual_helper_preserves_primary_failure_before_cleanup_failure(self):
         # Exercise the actual helper body without invoking any native API.
         from quantlab import desktop_runtime
+
         primary, secondary = OSError(5, 'SECRET primary'), RuntimeError('SECRET cleanup')
         kernel = Mock()
         kernel.GetProcessId.return_value = 42
@@ -77,11 +84,13 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
         tree = Mock()
         tree.stop_and_join.side_effect = secondary
         diagnosis = FixtureDiagnostics(self.folder, 'helper')
-        with patch.object(fixture, '_kernel', return_value=kernel), \
-             patch.object(fixture, '_state', return_value=fixture.WAIT_TIMEOUT), \
-             patch.object(desktop_runtime, '_WindowsProcessTree', return_value=tree), \
-             patch.object(fixture, '_wait_file', side_effect=primary), \
-             self.assertRaises(RuntimeError) as raised:
+        with (
+            patch.object(fixture, '_kernel', return_value=kernel),
+            patch.object(fixture, '_state', return_value=fixture.WAIT_TIMEOUT),
+            patch.object(desktop_runtime, '_WindowsProcessTree', return_value=tree),
+            patch.object(fixture, '_wait_file', side_effect=primary),
+            self.assertRaises(RuntimeError) as raised,
+        ):
             diagnosis.run(fixture._fixture, 'helper', self.folder, 1, 'SECRET token', [2, 3])
         # Preserve the existing finalizer's behavior, but not its loss of evidence.
         self.assertIs(raised.exception, secondary)
@@ -116,9 +125,12 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
 
     def test_untrusted_partial_oversized_and_extra_diagnostic_fields_are_rejected(self):
         path = self.folder / 'helper.failure.json'
-        samples = ['{', 'x' * (MAX_RECORD_BYTES + 1), json.dumps({
-            'role': 'helper', 'phase': 'helper.admission', 'errors': [], 'SECRET': 'TOKEN'}),
-            json.dumps({'role': 'helper', 'phase': 'SECRET', 'errors': []})]
+        samples = [
+            '{',
+            'x' * (MAX_RECORD_BYTES + 1),
+            json.dumps({'role': 'helper', 'phase': 'helper.admission', 'errors': [], 'SECRET': 'TOKEN'}),
+            json.dumps({'role': 'helper', 'phase': 'SECRET', 'errors': []}),
+        ]
         for raw in samples:
             with self.subTest(length=len(raw)):
                 path.write_text(raw, encoding='utf-8')
@@ -130,9 +142,8 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
         (self.folder / 'gui-launch-committed.json').write_text('SECRET body', encoding='utf-8')
         artifacts = self.folder / 'artifacts'
         process = Mock(poll=Mock(return_value=1))
-        text = report_failure(self.folder, {'helper': process}, 'helper_before_gui',
-                              artifact_dir=artifacts, barrier='helper readiness')
-        file, = artifacts.glob('smoke-timeout-*.json')
+        text = report_failure(self.folder, {'helper': process}, 'helper_before_gui', artifact_dir=artifacts, barrier='helper readiness')
+        (file,) = artifacts.glob('smoke-timeout-*.json')
         value = json.loads(file.read_text(encoding='utf-8'))
         self.assertEqual(value['awaited_barrier'], 'helper readiness')
         self.assertEqual(set(value['barriers']), set(BARRIERS))
@@ -149,13 +160,16 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
         # Extract the actual failure closure without starting native children.
         source = Path(fixture.__file__).read_text(encoding='utf-8')
         tree = ast.parse(source)
-        fail = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-                    and node.name == 'fail_with_diagnostic')
-        namespace = {'report_failure': report_failure, 'folder': self.folder,
-                     'processes': {}, 'scenario': 'helper_before_gui',
-                     'ROOT': self.folder, 'self': self}
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[fail], type_ignores=[])),
-                     '<original-failure-closure>', 'exec'), namespace)
+        fail = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == 'fail_with_diagnostic')
+        namespace = {
+            'report_failure': report_failure,
+            'folder': self.folder,
+            'processes': {},
+            'scenario': 'helper_before_gui',
+            'ROOT': self.folder,
+            'self': self,
+        }
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[fail], type_ignores=[])), '<original-failure-closure>', 'exec'), namespace)
         with patch.object(Path, 'write_text', side_effect=OSError('SECRET artifact path')):
             with self.assertRaisesRegex(AssertionError, '^helper failed before expected barrier;') as raised:
                 namespace['fail_with_diagnostic']('helper failed before expected barrier', 'helper readiness')
@@ -164,15 +178,14 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
 
     def test_snapshot_failure_does_not_mask_original_assertion(self):
         process = Mock(poll=Mock(side_effect=OSError('SECRET poll')))
-        text = report_failure(self.folder, {'helper': process}, 'normal',
-                              artifact_dir=self.folder / 'artifacts')
+        text = report_failure(self.folder, {'helper': process}, 'normal', artifact_dir=self.folder / 'artifacts')
         self.assertEqual(text, 'WINDOWS_RECOVERY_DIAGNOSTIC unavailable')
         self.assertFalse((self.folder / 'artifacts').exists())
 
     def test_error_chains_and_numbers_are_bounded_and_unnamed_types_are_redacted(self):
         secret_type = type('SECRET_TYPE', (Exception,), {})
         error = secret_type('SECRET body')
-        error.errno = 10 ** 100
+        error.errno = 10**100
         error.winerror = True
         error.__context__ = error
         diagnosis = FixtureDiagnostics(self.folder, 'helper')

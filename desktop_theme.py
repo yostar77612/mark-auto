@@ -1,4 +1,5 @@
 """Application QSS and presentation tokens; widgets select styles via properties."""
+
 from PySide6.QtWidgets import QApplication, QWidget
 
 MINIMUM_WINDOW_SIZE = (1280, 720)
@@ -134,9 +135,10 @@ def scale_window_fonts(window, factor):
     Scoped to one window; never restyle the QApplication or change raster DPI.
     """
     import re
+
     def scaled(stylesheet):
-        return re.sub(r'font-size:\s*(\d+)px',
-                      lambda match: 'font-size:' + str(round(int(match[1]) * factor)) + 'px', stylesheet)
+        return re.sub(r'font-size:\s*(\d+)px', lambda match: 'font-size:' + str(round(int(match[1]) * factor)) + 'px', stylesheet)
+
     window.setStyleSheet(scaled(build_app_stylesheet()))
     window.market.setStyleSheet(scaled(build_market_stylesheet()))
 

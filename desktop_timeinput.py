@@ -4,11 +4,11 @@ No zone database is needed. Taiwan uses UTC+8 without daylight saving time.
 Only an explicit picker edit creates a new canonical value. Loading even an
 invalid legacy string preserves it for the existing fail-closed validators.
 """
+
 from datetime import date, datetime, timedelta, timezone
 
 from PySide6.QtCore import QDate, QDateTime, QTime, QTimeZone, Signal, Qt
-from PySide6.QtWidgets import (QWidget, QHBoxLayout, QCheckBox, QLabel, QDateEdit,
-                              QDateTimeEdit, QStyledItemDelegate, QLineEdit)
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QCheckBox, QLabel, QDateEdit, QDateTimeEdit, QStyledItemDelegate, QLineEdit
 from desktop_strings import ui_text
 
 TAIPEI = timezone(timedelta(hours=8))
@@ -32,6 +32,7 @@ def utc_iso_to_taipei(value):
 
 class DateInput(QWidget):
     """Line-edit-compatible adapter with an explicit unset checkbox."""
+
     textChanged = Signal(str)
 
     def __init__(self, value='', *, timestamp=False, manual=False, parent=None):
@@ -39,7 +40,8 @@ class DateInput(QWidget):
         self.timestamp = timestamp
         self._value = ''
         self._loading = False
-        layout = QHBoxLayout(self); layout.setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.manual = QLineEdit() if manual else None
         if self.manual is not None:
             self.manual.setAccessibleName(ui_text('forms.__init__.text_24'))
@@ -56,9 +58,12 @@ class DateInput(QWidget):
         self.picker.setDateRange(QDate(1, 1, 1), QDate(9999, 12, 31))
         self.picker.setDate(QDate(2026, 1, 1))
         self.picker.setAccessibleName(ui_text('timeinput.taipei'))
-        self.hint = QLabel(); self.hint.setProperty('prerequisite', True)
+        self.hint = QLabel()
+        self.hint.setProperty('prerequisite', True)
         self.hint.setTextFormat(Qt.TextFormat.PlainText)
-        layout.addWidget(self.enabled_value); layout.addWidget(self.picker); layout.addWidget(self.hint)
+        layout.addWidget(self.enabled_value)
+        layout.addWidget(self.picker)
+        layout.addWidget(self.hint)
         self.enabled_value.toggled.connect(self._edited)
         self.picker.dateTimeChanged.connect(self._edited)
         self.setText(value)
@@ -78,9 +83,13 @@ class DateInput(QWidget):
         try:
             if self.timestamp:
                 local = utc_iso_to_taipei(self._value)
-                self.picker.setDateTime(QDateTime(QDate(local.year, local.month, local.day),
-                    QTime(local.hour, local.minute, local.second, local.microsecond // 1000),
-                    QTimeZone.fromSecondsAheadOfUtc(8 * 3600)))
+                self.picker.setDateTime(
+                    QDateTime(
+                        QDate(local.year, local.month, local.day),
+                        QTime(local.hour, local.minute, local.second, local.microsecond // 1000),
+                        QTimeZone.fromSecondsAheadOfUtc(8 * 3600),
+                    )
+                )
             else:
                 day = date.fromisoformat(self._value)
                 self.picker.setDate(QDate(day.year, day.month, day.day))
@@ -114,8 +123,7 @@ class DateInput(QWidget):
             self._value = ''
         elif self.timestamp:
             day, clock = self.picker.date(), self.picker.time()
-            self._value = taipei_to_utc_iso(datetime(day.year(), day.month(), day.day(),
-                clock.hour(), clock.minute(), clock.second()))
+            self._value = taipei_to_utc_iso(datetime(day.year(), day.month(), day.day(), clock.hour(), clock.minute(), clock.second()))
         else:
             self._value = self.picker.date().toString('yyyy-MM-dd')
         if self.manual is not None:
@@ -135,6 +143,7 @@ class DateInput(QWidget):
 
 class DateDelegate(QStyledItemDelegate):
     """Keep canonical table items and legacy setItem/test accessors intact."""
+
     def __init__(self, timestamp, parent, *, manual=False):
         super().__init__(parent)
         self.timestamp = timestamp
@@ -168,6 +177,7 @@ def install_date_columns(table, columns):
 
 def open_date_editors(table, columns, row):
     from PySide6.QtWidgets import QTableWidgetItem
+
     for column, (key, _) in enumerate(columns):
         if key in DATE_KEYS | TIME_KEYS:
             if table.item(row, column) is None:
@@ -178,7 +188,9 @@ def open_date_editors(table, columns, row):
 
 def history_utc_hint(date_field, clock, parent=None):
     """History retains its existing separate Taipei date and time objectNames."""
-    hint = QLabel(parent); hint.setProperty('prerequisite', True)
+    hint = QLabel(parent)
+    hint.setProperty('prerequisite', True)
+
     def refresh(*_):
         try:
             day = date.fromisoformat(date_field.text())
@@ -186,6 +198,8 @@ def history_utc_hint(date_field, clock, parent=None):
             hint.setText(ui_text('timeinput.utc').format(taipei_to_utc_iso(value)))
         except ValueError:
             hint.setText(ui_text('timeinput.unset') if not date_field.text() else ui_text('timeinput.invalid'))
-    date_field.textChanged.connect(refresh); clock.timeChanged.connect(refresh)
+
+    date_field.textChanged.connect(refresh)
+    clock.timeChanged.connect(refresh)
     refresh()
     return hint

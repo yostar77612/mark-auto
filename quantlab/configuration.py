@@ -1,11 +1,16 @@
 """Pure backtest configuration decoding, independent of CLI/reporting."""
+
+
 def config_from_json(value):
     # Keep operation-specific dependencies out of module startup.
     from decimal import Decimal
+
     # Keep operation-specific dependencies out of module startup.
     from .core import BacktestConfig, CostSpec
+
     def costs(item):
         return CostSpec(**{**item, 'commission_per_side': Decimal(item['commission_per_side']), 'tax_rate': Decimal(item['tax_rate'])})
+
     data = dict(value)
     data['costs'] = costs(data['costs'])
     for key in ('initial_cash', 'initial_margin_per_contract', 'maintenance_margin_per_contract'):
@@ -15,6 +20,7 @@ def config_from_json(value):
         data['cost_schedule'] = tuple(costs(c) for c in data['cost_schedule'])
     # Keep operation-specific dependencies out of module startup.
     from datetime import datetime
+
     for key in ('margin_schedule', 'roll_events', 'settlement_events'):
         if key in data:
             rows = []
@@ -29,4 +35,3 @@ def config_from_json(value):
                 rows.append(row)
             data[key] = tuple(rows)
     return BacktestConfig(**data)
-

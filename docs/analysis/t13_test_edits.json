@@ -32,7 +32,13 @@
     "new_tests": [
       "tests/test_format_equivalence.py"
     ],
-    "assertion_edits": [],
+    "assertion_edits": [
+      {
+        "file": "tests/test_qt_licenses.py",
+        "change": "autocrlf control file renamed ordinary.py -> ordinary.txt",
+        "reason": ".gitattributes now pins *.py to LF for the Ruff format check; the CRLF-conversion control must be a non-Python text file. Assertions unchanged."
+      }
+    ],
     "comment_only_lint_annotations": [
       "tests/test_repo_layout.py: F401 pre-existing import",
       "tests/test_docs_layering.py: F841 pre-existing exception binding"

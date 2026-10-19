@@ -1,4 +1,5 @@
 """Verify the actual SQLite native runtime, without altering loader state."""
+
 from __future__ import annotations
 
 import argparse
@@ -25,9 +26,11 @@ def loaded_library() -> Path:
             raise RuntimeError('Cannot identify loaded SQLite DLL')
         return Path(path.value).resolve()
     if sys.platform.startswith('linux'):
-        paths = {Path(line.split(maxsplit=5)[5].strip()).resolve()
-                 for line in Path('/proc/self/maps').read_text().splitlines()
-                 if len(line.split(maxsplit=5)) == 6 and '/libsqlite3.so' in line}
+        paths = {
+            Path(line.split(maxsplit=5)[5].strip()).resolve()
+            for line in Path('/proc/self/maps').read_text().splitlines()
+            if len(line.split(maxsplit=5)) == 6 and '/libsqlite3.so' in line
+        }
         if len(paths) == 1:
             return paths.pop()
     raise RuntimeError('Cannot uniquely identify loaded SQLite library')
@@ -47,14 +50,20 @@ def verify(manifest: Path, expected_root: Path, expected_sha256: str | None = No
     expected_hash = expected_sha256 or pin['windows_x64']['dll_sha256']
     if actual_hash != expected_hash:
         raise RuntimeError('Loaded SQLite library hash mismatch')
-    return {'python': sys.version, 'python_executable': sys.executable,
-            'python_prefix': sys.prefix, 'sqlite_version': version, 'sqlite_source_id': source_id,
-            'library': str(library), 'library_sha256': actual_hash, 'compile_options': compile_options}
+    return {
+        'python': sys.version,
+        'python_executable': sys.executable,
+        'python_prefix': sys.prefix,
+        'sqlite_version': version,
+        'sqlite_source_id': source_id,
+        'library': str(library),
+        'library_sha256': actual_hash,
+        'compile_options': compile_options,
+    }
 
 
 def verify_binaries(binaries, manifest: Path):
-    libraries = [Path(source) for name, source, kind in binaries
-                 if Path(name).name.lower() == 'sqlite3.dll']
+    libraries = [Path(source) for name, source, kind in binaries if Path(name).name.lower() == 'sqlite3.dll']
     pin = json.loads(manifest.read_text(encoding='utf-8'))
     if len(libraries) != 1:
         raise RuntimeError('Expected exactly one bundled SQLite DLL')

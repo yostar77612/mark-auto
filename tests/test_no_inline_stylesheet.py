@@ -1,4 +1,5 @@
 """Keep all desktop QSS application in the theme module."""
+
 import ast
 from pathlib import Path
 import unittest
@@ -13,14 +14,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def stylesheet_calls(source):
-    return [node.lineno for node in ast.walk(ast.parse(source))
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-            and node.func.attr == 'setStyleSheet']
+    return [
+        node.lineno
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'setStyleSheet'
+    ]
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
-        sources = sorted(set(ROOT.glob('desktop*.py')) | set((ROOT/'tools').rglob('*.py')) | set((ROOT/'desktop_pages').rglob('*.py')))
+        sources = sorted(set(ROOT.glob('desktop*.py')) | set((ROOT / 'tools').rglob('*.py')) | set((ROOT / 'desktop_pages').rglob('*.py')))
         violations = []
         for path in sources:
             relative = path.relative_to(ROOT).as_posix()
@@ -42,5 +45,4 @@ class NoInlineStylesheetTests(unittest.TestCase):
         self.assertTrue(sources)
         for path in sources:
             with self.subTest(module=path.name):
-                self.assertTrue(stylesheet_calls(path.read_text(encoding='utf-8-sig')
-                                                 + '\nwidget.setStyleSheet("color:red")\n'))
+                self.assertTrue(stylesheet_calls(path.read_text(encoding='utf-8-sig') + '\nwidget.setStyleSheet("color:red")\n'))

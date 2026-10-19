@@ -1,4 +1,5 @@
 """Generate the exact frozen payload inventory embedded by Inno Setup."""
+
 import hashlib
 import ctypes
 from pathlib import Path
@@ -11,8 +12,10 @@ def reject_alternate_streams(path):
     if sys.platform != 'win32':
         return
     from ctypes import wintypes
+
     class StreamData(ctypes.Structure):
         _fields_ = [('size', ctypes.c_longlong), ('name', wintypes.WCHAR * 296)]
+
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     first = kernel.FindFirstStreamW
     first.argtypes = [wintypes.LPCWSTR, ctypes.c_int, ctypes.POINTER(StreamData), wintypes.DWORD]
@@ -54,10 +57,13 @@ def inventory(root):
         reject_alternate_streams(path)
         relative = path.relative_to(root)
         for part in relative.parts:
-            if (not part.isascii() or re.search(r'[<>:"/\\|?*\x00-\x1f]', part)
-                    or part.endswith((' ', '.')) or part in ('.', '..')
-                    or part.split('.')[0].upper() in {'CON', 'PRN', 'AUX', 'NUL',
-                        *(f'COM{i}' for i in range(1, 10)), *(f'LPT{i}' for i in range(1, 10))}):
+            if (
+                not part.isascii()
+                or re.search(r'[<>:"/\\|?*\x00-\x1f]', part)
+                or part.endswith((' ', '.'))
+                or part in ('.', '..')
+                or part.split('.')[0].upper() in {'CON', 'PRN', 'AUX', 'NUL', *(f'COM{i}' for i in range(1, 10)), *(f'LPT{i}' for i in range(1, 10))}
+            ):
                 raise ValueError(f'Unsafe Windows payload name: {path}')
         key = str(relative).replace('/', '\\')
         if key.lower() in seen:

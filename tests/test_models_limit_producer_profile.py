@@ -1,4 +1,5 @@
 """Exact model-catalog-limit producer identity; offline fixtures, never real OAuth."""
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -35,7 +36,7 @@ class ModelsLimitProducerProfileTests(unittest.TestCase):
                 if name == 'desktop_chatgpt_provider.py':
                     # Provider bytes changed later (campaign catalog limit); pin stays historical.
                     continue
-                raw = (ROOT/name).read_bytes().replace(b'\r\n', b'\n')
+                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest, name)
@@ -46,7 +47,7 @@ class ModelsLimitProducerProfileTests(unittest.TestCase):
                 for target in implementation['dependency_targets']:
                     self.assertIs(pools._select_producer(binding(profile, index, target)), profile)
         for index in (0, 1):
-            other = PROFILE['chatgpt_plan_implementations'][1-index]['source_sha256']['desktop_chatgpt_provider.py']
+            other = PROFILE['chatgpt_plan_implementations'][1 - index]['source_sha256']['desktop_chatgpt_provider.py']
             for digest in ('f' * 64, other):
                 item = binding(PROFILE, index)
                 item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = digest

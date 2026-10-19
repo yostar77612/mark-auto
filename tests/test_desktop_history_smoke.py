@@ -1,4 +1,5 @@
 """Offline synthetic packaging proof, never real TAIFEX or Windows acceptance."""
+
 import hashlib
 import importlib.util
 import json
@@ -20,6 +21,7 @@ class HistorySmokeFixtureTests(unittest.TestCase):
         from desktop import _history_smoke_fixture
         from quantlab.market_history import COLUMNS, PRODUCT_SOURCES, session_from_dict
         import csv
+
         with tempfile.TemporaryDirectory() as temporary:
             report, payload = _history_smoke_fixture(Path(temporary))
             self.assertEqual(set(payload), {'history_import', 'local_path', 'sessions', 'dated_policy_confirmed'})
@@ -50,6 +52,7 @@ class HistorySmokeFixtureTests(unittest.TestCase):
 
     def test_omitted_history_module_cannot_prepare_smoke(self):
         from desktop import _history_smoke_fixture
+
         with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.market_history': None}):
             with self.assertRaises(ImportError):
                 _history_smoke_fixture(Path(temporary))
@@ -60,28 +63,33 @@ class HistorySmokeResultTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
+
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
         from desktop import _history_smoke_fixture
         from desktop_ui import execute_ui_operation
         from quantlab.desktop_runtime import AppPaths
+
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.paths = AppPaths(Path(self.temporary.name)).ensure()
         self.report, self.payload = _history_smoke_fixture(self.paths.root)
-        with patch('socket.socket', side_effect=AssertionError('unexpected network')), \
-                patch('quantlab.market_providers.refresh_daily', side_effect=AssertionError('daily network dispatch')), \
-                patch('quantlab.market_providers.import_daily', side_effect=AssertionError('daily import dispatch')):
+        with (
+            patch('socket.socket', side_effect=AssertionError('unexpected network')),
+            patch('quantlab.market_providers.refresh_daily', side_effect=AssertionError('daily network dispatch')),
+            patch('quantlab.market_providers.import_daily', side_effect=AssertionError('daily import dispatch')),
+        ):
             self.result = execute_ui_operation('ui_market_refresh', self.payload, self.paths)
 
     def check(self, result=None):
         from desktop import _check_history_worker_result
-        return _check_history_worker_result(self.result if result is None else result,
-            self.paths, self.payload, self.report['fixture_sha256'])
+
+        return _check_history_worker_result(self.result if result is None else result, self.paths, self.payload, self.report['fixture_sha256'])
 
     def test_reloads_actual_cache_and_renders_all_three_products_eight_timeframes(self):
         from desktop import _history_smoke_ui
+
         series, evidence = self.check()
         self.assertTrue(evidence['cache_reloaded'])
         self.assertEqual(evidence['bars'], 27)
@@ -92,16 +100,22 @@ class HistorySmokeResultTests(unittest.TestCase):
         self.assertEqual(rendered['chart_render_checks'], 24)
         self.assertEqual(rendered['chart_rendered_bars'], rendered['timeframe_bars'])
         for counts in rendered['timeframe_bars'].values():
-            self.assertEqual(counts, {'1m': 9, '3m': 6, '5m': 6, '15m': 5,
-                                      '30m': 3, '60m': 2, '1d': 1, '1w': 1})
+            self.assertEqual(counts, {'1m': 9, '3m': 6, '5m': 6, '15m': 5, '30m': 3, '60m': 2, '1d': 1, '1w': 1})
         self.assertFalse((self.paths.state / 'dataset.json').exists())
         self.assertFalse(any(name == 'trader' or name.startswith('trader.') for name in sys.modules))
 
     def test_missing_or_forged_worker_result_rejected(self):
-        values = [{}, {'status': 'completed'}, dict(self.result, contracts=2),
-                  dict(self.result, bars=26), dict(self.result, mode='official_local_import'),
-                  dict(self.result, source_hash='0' * 64), dict(self.result, policy_hash='0' * 64),
-                  dict(self.result, counters={}), dict(self.result, warnings=[])]
+        values = [
+            {},
+            {'status': 'completed'},
+            dict(self.result, contracts=2),
+            dict(self.result, bars=26),
+            dict(self.result, mode='official_local_import'),
+            dict(self.result, source_hash='0' * 64),
+            dict(self.result, policy_hash='0' * 64),
+            dict(self.result, counters={}),
+            dict(self.result, warnings=[]),
+        ]
         for value in values:
             with self.subTest(result=value), self.assertRaises((ValueError, KeyError)):
                 self.check(value)
@@ -116,13 +130,16 @@ class HistorySmokeResultTests(unittest.TestCase):
         path = self.paths.state / 'market_history' / (self.result['cache_id'] + '.json')
         original = path.read_bytes()
         path.unlink()
-        with self.assertRaises(ValueError): self.check()
+        with self.assertRaises(ValueError):
+            self.check()
         path.write_bytes(b'{"payload":')
-        with self.assertRaises(ValueError): self.check()
+        with self.assertRaises(ValueError):
+            self.check()
         envelope = json.loads(original)
         envelope['payload']['bars'][0]['high'] = '999'
-        envelope['sha256'] = hashlib.sha256(json.dumps(envelope['payload'], sort_keys=True,
-            separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()
+        envelope['sha256'] = hashlib.sha256(
+            json.dumps(envelope['payload'], sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+        ).hexdigest()
         path.write_text(json.dumps(envelope), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'tick normalization mismatch'):
             self.check()
@@ -138,11 +155,9 @@ class HistorySmokeResultTests(unittest.TestCase):
             with self.subTest(failure=name), tempfile.TemporaryDirectory() as temporary:
                 home = Path(temporary)
                 report = home / 'report.json'
-                env = dict(os.environ, HOME=str(home), QT_QPA_PLATFORM='offscreen',
-                           XDG_CACHE_HOME=str(home / 'cache'))
+                env = dict(os.environ, HOME=str(home), QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(home / 'cache'))
                 code = 'import sys\nimport desktop\n' + injected + "raise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
-                result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT,
-                                        env=env, capture_output=True, text=True, timeout=150)
+                result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=150)
                 self.assertEqual(result.returncode, 1, result.stderr[-2000:])
                 value = json.loads(report.read_text())
                 self.assertEqual(value['status'], 'failed')

@@ -1,4 +1,5 @@
 """Compose pages and retain the public shell widget/handler aliases."""
+
 from . import MarketPage, DataPage, StrategyPage, BacktestPage
 from .compare import ComparePage
 from .paper import PaperPage

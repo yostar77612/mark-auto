@@ -1,4 +1,5 @@
 """Synthetic-only fixed-pool walk-forward acceptance. No network, model or broker."""
+
 import copy
 import json
 import multiprocessing
@@ -18,9 +19,15 @@ from unittest.mock import patch
 from quantlab.core import Bar, Dataset, StrategySpec, ValidationError, content_hash, to_dict
 from quantlab.reporting import demo_config, synthetic_dataset
 from quantlab.research import _reserve_holdout, ResourceTimeout
-from quantlab.walk_forward import (WalkForwardFold, WalkForwardPlan,
-    build_walk_forward_plan, walk_forward_plan_from_dict, run_walk_forward,
-    read_walk_forward_state, reconcile_interrupted_walk_forward)
+from quantlab.walk_forward import (
+    WalkForwardFold,
+    WalkForwardPlan,
+    build_walk_forward_plan,
+    walk_forward_plan_from_dict,
+    run_walk_forward,
+    read_walk_forward_state,
+    reconcile_interrupted_walk_forward,
+)
 
 
 def inputs(**options):
@@ -36,8 +43,9 @@ def inputs(**options):
     options.setdefault('ranking', {'metric': 'net_pnl', 'minimum': '-1000000', 'min_trades': 1, 'max_drawdown_pct': '0.10'})
     if 'fork' in multiprocessing.get_all_start_methods():
         options.setdefault('process_start_method', 'fork')
-    plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=60,
-        validation_bars=40, oos_bars=40, fold_count=3, final_holdout=(220, 240), **options)
+    plan = build_walk_forward_plan(
+        backtest_config=demo_config(), train_bars=60, validation_bars=40, oos_bars=40, fold_count=3, final_holdout=(220, 240), **options
+    )
     return dataset, plan
 
 
@@ -48,8 +56,12 @@ def fake_worker(function, args, **kwargs):
     # A predetermined scoring fixture makes the selected family visibly change.
     winning_family = ('trend', 'momentum', 'mean_reversion')[fold % 3]
     score = '100' if spec.family == winning_family else '0'
-    value = {'metrics': {'net_pnl': score, 'trade_count': 1, 'max_drawdown_pct': '0.01'}, 'warnings': [],
-             'result_hash': content_hash([dataset.bars, spec, role]), 'manifest': {}}
+    value = {
+        'metrics': {'net_pnl': score, 'trade_count': 1, 'max_drawdown_pct': '0.01'},
+        'warnings': [],
+        'result_hash': content_hash([dataset.bars, spec, role]),
+        'manifest': {},
+    }
     return {'status': 'ok', 'value': value, 'memory_limit_enforced': False}
 
 
@@ -57,8 +69,9 @@ def alter_prices(dataset, start, end):
     bars = list(dataset.bars)
     for index in range(start, end):
         b = bars[index]
-        bars[index] = Bar(b.timestamp, b.end, b.trade_date, b.session, b.contract_id,
-            b.open + 500, b.high + 500, b.low + 500, b.close + 500, b.volume, b.source_id)
+        bars[index] = Bar(
+            b.timestamp, b.end, b.trade_date, b.session, b.contract_id, b.open + 500, b.high + 500, b.low + 500, b.close + 500, b.volume, b.source_id
+        )
     manifest = {**dataset.manifest, 'data_hash': content_hash(tuple(bars))}
     manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k not in ('imported_at', 'manifest_hash')})
     return Dataset(tuple(bars), manifest, dict(dataset.quality))
@@ -76,8 +89,9 @@ class WalkForwardTests(unittest.TestCase):
         self.temp.cleanup()
 
     def run_plan(self, *, dataset=None, plan=None, output=None, registry=None, **kwargs):
-        return run_walk_forward(dataset or self.data, plan=plan or self.plan,
-            output_dir=output or self.output, holdout_registry_path=registry or self.registry, **kwargs)
+        return run_walk_forward(
+            dataset or self.data, plan=plan or self.plan, output_dir=output or self.output, holdout_registry_path=registry or self.registry, **kwargs
+        )
 
     def test_typed_plan_round_trip_and_immutable_aliases(self):
         value = to_dict(self.plan)
@@ -103,12 +117,15 @@ class WalkForwardTests(unittest.TestCase):
         # reused across journal reads. Count by identity so selection copies do
         # not masquerade as repeated pool normalization.
         from quantlab import walk_forward as wf
+
         pool = result['binding']['plan']['candidate_pool']
         counts = {id(spec): 0 for spec in pool}
+
         def counted_hash(value):
             if id(value) in counts:
                 counts[id(value)] += 1
             return content_hash(value)
+
         before = copy.deepcopy(result)
         with patch.object(wf, 'content_hash', side_effect=counted_hash):
             for expected in (1, 2):
@@ -128,28 +145,39 @@ class WalkForwardTests(unittest.TestCase):
         wf._validate_state(interrupted)
 
     def test_invalid_windows_and_types_reject_before_io(self):
-        changes = [dict(mode='purge'), dict(folds=self.plan.folds[:1]), dict(max_evaluations=True),
-                   dict(max_evaluations=221), dict(max_runtime_seconds=0), dict(max_bars=True),
-                   dict(final_holdout=(200, 240)), dict(gap_bars=1),
-                   dict(folds=(self.plan.folds[0], self.plan.folds[0])),
-                   dict(folds=(self.plan.folds[0], WalkForwardFold((30, 90), (90, 130), (130, 170))))]
+        changes = [
+            dict(mode='purge'),
+            dict(folds=self.plan.folds[:1]),
+            dict(max_evaluations=True),
+            dict(max_evaluations=221),
+            dict(max_runtime_seconds=0),
+            dict(max_bars=True),
+            dict(final_holdout=(200, 240)),
+            dict(gap_bars=1),
+            dict(folds=(self.plan.folds[0], self.plan.folds[0])),
+            dict(folds=(self.plan.folds[0], WalkForwardFold((30, 90), (90, 130), (130, 170)))),
+        ]
         for change in changes:
             with self.subTest(change=change), self.assertRaises(ValidationError):
                 replace(self.plan, **change)
         with self.assertRaises(ValidationError):
             WalkForwardFold((False, 60), (60, 100), (100, 140))
         with self.assertRaises(ValidationError):
-            build_walk_forward_plan(backtest_config=demo_config(), train_bars=60,
-                validation_bars=40, oos_bars=40, step_bars=39, fold_count=3, final_holdout=(220, 240))
+            build_walk_forward_plan(
+                backtest_config=demo_config(), train_bars=60, validation_bars=40, oos_bars=40, step_bars=39, fold_count=3, final_holdout=(220, 240)
+            )
         self.assertFalse(self.output.exists())
 
     def test_explicit_gaps_preserved_in_plan_and_excluded_from_splits(self):
-        plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=50,
-            validation_bars=30, oos_bars=30, fold_count=3, gap_bars=5, final_holdout=(200, 240))
+        plan = build_walk_forward_plan(
+            backtest_config=demo_config(), train_bars=50, validation_bars=30, oos_bars=30, fold_count=3, gap_bars=5, final_holdout=(200, 240)
+        )
         seen = []
+
         def spy(function, args, **kwargs):
             seen.append(args[0].manifest['walk_forward_split'])
             return fake_worker(function, args, **kwargs)
+
         with patch('quantlab.walk_forward._run_bounded', side_effect=spy):
             result = self.run_plan(plan=plan)
         self.assertEqual(result['status'], 'completed')
@@ -172,12 +200,14 @@ class WalkForwardTests(unittest.TestCase):
         return Dataset(self.data.bars, manifest, dict(self.data.quality))
 
     def test_explicit_historical_replay_is_never_independent_rankable_or_paper_eligible(self):
-        plan = replace(self.plan, evidence_mode='historical_replay', backtest_config=replace(
-            self.plan.backtest_config, instrument_expiries={'TAIFEX:TMF:202601': '2026-01-21'}))
+        plan = replace(
+            self.plan,
+            evidence_mode='historical_replay',
+            backtest_config=replace(self.plan.backtest_config, instrument_expiries={'TAIFEX:TMF:202601': '2026-01-21'}),
+        )
         for source in ('official_local', 'proxy'):
             with self.subTest(source=source):
-                result = self.run_plan(dataset=self.labelled_fixture(source), plan=plan,
-                    output=self.root / source, registry=self.root / (source + '.sqlite3'))
+                result = self.run_plan(dataset=self.labelled_fixture(source), plan=plan, output=self.root / source, registry=self.root / (source + '.sqlite3'))
                 self.assertEqual(result['status'], 'completed')
                 self.assertEqual(result['scope'], 'historical_replay_exposure_unverified')
                 self.assertEqual(result['exposure_status'], 'unverified')
@@ -194,10 +224,10 @@ class WalkForwardTests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, 'expiries'):
             self.run_plan(dataset=data, plan=plan)
         self.assertFalse(self.registry.exists())
-        plan = replace(plan, backtest_config=replace(plan.backtest_config,
-            instrument_expiries={'TAIFEX:TMF:202601': '2026-01-21'}))
-        _reserve_holdout(Dataset(data.bars[:30], {}, {}), registry_path=self.registry,
-            campaign_id='consumed', selection_hash='consumed', output_dir=self.root / 'old')
+        plan = replace(plan, backtest_config=replace(plan.backtest_config, instrument_expiries={'TAIFEX:TMF:202601': '2026-01-21'}))
+        _reserve_holdout(
+            Dataset(data.bars[:30], {}, {}), registry_path=self.registry, campaign_id='consumed', selection_hash='consumed', output_dir=self.root / 'old'
+        )
         with patch('quantlab.walk_forward._run_bounded', side_effect=AssertionError('cannot bypass')):
             result = self.run_plan(dataset=data, plan=plan)
         self.assertEqual(result['status'], 'blocked_previously_consumed_range')
@@ -213,8 +243,10 @@ class WalkForwardTests(unittest.TestCase):
             self.run_plan(plan=replace(self.plan, evidence_mode='historical_replay'))
 
     def test_hash_quality_event_overlap_and_bar_budget_reject(self):
-        invalid = [Dataset(self.data.bars, {**self.data.manifest, 'data_hash': '0' * 64}, dict(self.data.quality)),
-                   Dataset(self.data.bars, dict(self.data.manifest), {'valid': True, 'missing_intervals': 1})]
+        invalid = [
+            Dataset(self.data.bars, {**self.data.manifest, 'data_hash': '0' * 64}, dict(self.data.quality)),
+            Dataset(self.data.bars, dict(self.data.manifest), {'valid': True, 'missing_intervals': 1}),
+        ]
         for data in invalid:
             with self.assertRaises(ValidationError):
                 self.run_plan(dataset=data)
@@ -240,6 +272,7 @@ class WalkForwardTests(unittest.TestCase):
 
     def test_each_fold_freezes_selection_before_oos_and_never_calls_campaign_or_generator(self):
         calls = []
+
         def spy(function, args, **kwargs):
             split = args[0].manifest['walk_forward_split']
             calls.append((split['fold'], split['role']))
@@ -251,9 +284,12 @@ class WalkForwardTests(unittest.TestCase):
                 self.assertEqual(saved['evaluations'][-1]['status'], 'running')
                 self.assertEqual(saved['registry_reservation']['status'], 'reserved_consumed')
             return fake_worker(function, args, **kwargs)
-        with patch('quantlab.walk_forward._run_bounded', side_effect=spy), \
-             patch('quantlab.research.run_campaign', side_effect=AssertionError('not a fold wrapper')), \
-             patch('quantlab.research._generate_candidate', side_effect=AssertionError('no model')):
+
+        with (
+            patch('quantlab.walk_forward._run_bounded', side_effect=spy),
+            patch('quantlab.research.run_campaign', side_effect=AssertionError('not a fold wrapper')),
+            patch('quantlab.research._generate_candidate', side_effect=AssertionError('no model')),
+        ):
             result = self.run_plan()
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(len(calls), 33)
@@ -304,12 +340,14 @@ class WalkForwardTests(unittest.TestCase):
 
     def test_worker_failure_is_recorded_consumes_slot_and_is_not_retried(self):
         count = 0
+
         def flaky(function, args, **kwargs):
             nonlocal count
             count += 1
             if count == 1:
                 raise RuntimeError('private fixture text must not be persisted')
             return fake_worker(function, args, **kwargs)
+
         with patch('quantlab.walk_forward._run_bounded', side_effect=flaky):
             result = self.run_plan()
         self.assertEqual(result['status'], 'completed_with_errors')
@@ -328,10 +366,12 @@ class WalkForwardTests(unittest.TestCase):
 
     def test_cancellation_retains_slots_and_ranges_and_reopen_does_not_replay(self):
         calls = 0
+
         def worker(function, args, **kwargs):
             nonlocal calls
             calls += 1
             return fake_worker(function, args, **kwargs)
+
         with patch('quantlab.walk_forward._run_bounded', side_effect=worker):
             result = self.run_plan(cancelled=lambda: calls >= 3)
             reopened = self.run_plan()
@@ -373,7 +413,7 @@ class WalkForwardTests(unittest.TestCase):
         for name, bounds in [('train', (0, 40)), ('validation', (60, 80)), ('oos', (120, 140)), ('holdout', (225, 235))]:
             with self.subTest(name=name):
                 registry = self.root / (name + '.sqlite3')
-                source = Dataset(self.data.bars[bounds[0]:bounds[1]], {}, {})
+                source = Dataset(self.data.bars[bounds[0] : bounds[1]], {}, {})
                 _reserve_holdout(source, registry_path=registry, campaign_id='old', selection_hash='old', output_dir=self.root / 'old')
                 with patch('quantlab.walk_forward._run_bounded', side_effect=AssertionError('must block before scoring')):
                     result = self.run_plan(output=self.root / name, registry=registry)
@@ -384,20 +424,24 @@ class WalkForwardTests(unittest.TestCase):
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker):
             self.run_plan()
         source = Dataset(self.data.bars[110:130], {}, {})
-        reservation = _reserve_holdout(source, registry_path=self.registry,
-            campaign_id='legacy-new-campaign', selection_hash='legacy', output_dir=self.root / 'legacy')
+        reservation = _reserve_holdout(
+            source, registry_path=self.registry, campaign_id='legacy-new-campaign', selection_hash='legacy', output_dir=self.root / 'legacy'
+        )
         self.assertEqual(reservation['status'], 'previously_consumed')
         # Final holdout was checked for conflicts, never reserved or evaluated.
         excluded = Dataset(self.data.bars[220:240], {}, {})
-        reservation = _reserve_holdout(excluded, registry_path=self.registry,
-            campaign_id='later', selection_hash='later', output_dir=self.root / 'later')
+        reservation = _reserve_holdout(excluded, registry_path=self.registry, campaign_id='later', selection_hash='later', output_dir=self.root / 'later')
         self.assertEqual(reservation['status'], 'reserved_consumed')
 
     def test_changed_source_config_or_name_cannot_reset_range_consumption(self):
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker) as worker:
             first = self.run_plan()
-            for index, (dataset, plan) in enumerate([(alter_prices(self.data, 100, 140), self.plan),
-                    (self.data, replace(self.plan, ranking={'metric': 'net_pnl', 'minimum': '-999999', 'min_trades': 1, 'max_drawdown_pct': '0.10'}))]):
+            for index, (dataset, plan) in enumerate(
+                [
+                    (alter_prices(self.data, 100, 140), self.plan),
+                    (self.data, replace(self.plan, ranking={'metric': 'net_pnl', 'minimum': '-999999', 'min_trades': 1, 'max_drawdown_pct': '0.10'})),
+                ]
+            ):
                 result = self.run_plan(dataset=dataset, plan=plan, output=self.root / str(index))
                 self.assertEqual(result['status'], 'blocked_previously_consumed_range')
             self.assertEqual(worker.call_count, 33)
@@ -423,13 +467,20 @@ class WalkForwardTests(unittest.TestCase):
 
     def test_concurrent_same_output_does_not_duplicate_work(self):
         from tests.active_writer_timeout_diagnostics import observe_writer
+
         entered, release = threading.Event(), threading.Event()
+
         def worker(function, args, **kwargs):
             entered.set()
             if not release.wait(5):
                 raise AssertionError('test barrier timed out')
             return fake_worker(function, args, **kwargs)
-        with patch('quantlab.walk_forward._run_bounded', side_effect=worker) as mocked, observe_writer() as diagnosis, ThreadPoolExecutor(max_workers=1) as pool:
+
+        with (
+            patch('quantlab.walk_forward._run_bounded', side_effect=worker) as mocked,
+            observe_writer() as diagnosis,
+            ThreadPoolExecutor(max_workers=1) as pool,
+        ):
             future = pool.submit(diagnosis.run, self.run_plan)
             self.assertTrue(entered.wait(5))
             try:
@@ -441,8 +492,12 @@ class WalkForwardTests(unittest.TestCase):
                 result = future.result(timeout=20)
             except TimeoutError:
                 try:
-                    diagnosis.report_timeout(artifact_dir=Path(__file__).resolve().parents[1] / 'dist' / 'validation',
-                        evaluations_started=mocked.call_count, future_done=future.done(), timeout_seconds=20)
+                    diagnosis.report_timeout(
+                        artifact_dir=Path(__file__).resolve().parents[1] / 'dist' / 'validation',
+                        evaluations_started=mocked.call_count,
+                        future_done=future.done(),
+                        timeout_seconds=20,
+                    )
                 except Exception:
                     pass  # Preserve the original gate even if diagnostic arguments fail.
                 raise
@@ -451,9 +506,11 @@ class WalkForwardTests(unittest.TestCase):
 
     def test_concurrent_different_names_reserve_shared_ranges_once(self):
         barrier = threading.Barrier(2)
+
         def runner(index):
             barrier.wait(timeout=5)
             return self.run_plan(output=self.root / str(index))
+
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker), ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(runner, (1, 2)))
         self.assertEqual(sorted(r['status'] for r in results), ['blocked_previously_consumed_range', 'completed'])
@@ -462,24 +519,32 @@ class WalkForwardTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 1)
 
     def test_validation_risk_and_trade_gates_precede_profit_ordering(self):
-        cases = [('0.20', 1, 'mean_reversion'), ('0.10', 1, 'trend'),
-                 ('0.01', 0, 'mean_reversion'), (None, 1, 'mean_reversion'),
-                 ('NaN', 1, 'mean_reversion'), ('-0.01', 1, 'mean_reversion')]
+        cases = [
+            ('0.20', 1, 'mean_reversion'),
+            ('0.10', 1, 'trend'),
+            ('0.01', 0, 'mean_reversion'),
+            (None, 1, 'mean_reversion'),
+            ('NaN', 1, 'mean_reversion'),
+            ('-0.01', 1, 'mean_reversion'),
+        ]
         for index, (drawdown, trades, expected) in enumerate(cases):
+
             def worker(function, args, **kwargs):
                 result = fake_worker(function, args, **kwargs)
-                result['value']['metrics'].update(net_pnl='100' if args[1].family == 'trend' else '0',
-                                                 trade_count=trades if args[1].family == 'trend' else 1,
-                                                 max_drawdown_pct=drawdown if args[1].family == 'trend' else '0.01')
+                result['value']['metrics'].update(
+                    net_pnl='100' if args[1].family == 'trend' else '0',
+                    trade_count=trades if args[1].family == 'trend' else 1,
+                    max_drawdown_pct=drawdown if args[1].family == 'trend' else '0.01',
+                )
                 return result
+
             with self.subTest(drawdown=drawdown, trades=trades), patch('quantlab.walk_forward._run_bounded', side_effect=worker):
                 result = self.run_plan(output=self.root / str(index), registry=self.root / (str(index) + '.sqlite3'))
             self.assertEqual(result['folds'][0]['selection']['spec']['family'], expected)
             self.assertIn('max_drawdown_pct', result['folds'][0]['candidates'][0]['train']['result']['metrics'])
 
     def test_risk_defaults_and_invalid_thresholds_are_explicit_and_immutable(self):
-        plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=60,
-            validation_bars=40, oos_bars=40, fold_count=3, final_holdout=(220, 240))
+        plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=60, validation_bars=40, oos_bars=40, fold_count=3, final_holdout=(220, 240))
         self.assertEqual(plan.ranking['max_drawdown_pct'], '0.10')
         self.assertEqual(plan.ranking['min_trades'], 1)
         for cap in ('-0.01', '1.01', 'NaN', 'Infinity', True, '1e-1000000'):
@@ -497,6 +562,7 @@ class WalkForwardTests(unittest.TestCase):
             result = fake_worker(function, args, **kwargs)
             result['value']['metrics']['net_pnl'] = '123.457' if args[1].family == 'mean_reversion' else '123.456'
             return result
+
         with patch('quantlab.walk_forward._run_bounded', side_effect=worker), localcontext() as context:
             context.prec = 2
             context.traps[Inexact] = True
@@ -528,9 +594,11 @@ class WalkForwardTests(unittest.TestCase):
             walk_forward_plan_from_dict(oversized)
 
     def test_unsupported_cross_split_event_config_rejects_before_io(self):
-        for config in (replace(self.plan.backtest_config, roll_events=({'fixture': 'event'},)),
-                       replace(self.plan.backtest_config, settlement_events=({'fixture': 'event'},)),
-                       replace(self.plan.backtest_config, settlement_mode='daily_mtm')):
+        for config in (
+            replace(self.plan.backtest_config, roll_events=({'fixture': 'event'},)),
+            replace(self.plan.backtest_config, settlement_events=({'fixture': 'event'},)),
+            replace(self.plan.backtest_config, settlement_mode='daily_mtm'),
+        ):
             with self.assertRaisesRegex(ValidationError, 'split-scoped'):
                 replace(self.plan, backtest_config=config)
         self.assertFalse(self.output.exists())
@@ -539,10 +607,13 @@ class WalkForwardTests(unittest.TestCase):
     def test_completed_journal_tampering_fails_even_with_recomputed_checksum(self):
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker):
             original = self.run_plan()
+
         def wrong_selection(state):
             state['folds'][0]['selection']['spec']['strategy_id'] = 'forged'
             state['folds'][0]['selection_hash'] = content_hash(state['folds'][0]['selection'])
-        mutations = [wrong_selection,
+
+        mutations = [
+            wrong_selection,
             lambda s: s.update(model_calls=99),
             lambda s: s.update(exposure_status='verified'),
             lambda s: s.update(scope='independent_verified_oos'),
@@ -553,13 +624,15 @@ class WalkForwardTests(unittest.TestCase):
             lambda s: s['folds'][0]['candidates'][0].update(strategy_hash='0' * 64),
             lambda s: s['folds'][0]['candidates'][0].update(pool_index=999),
             lambda s: s['binding']['plan'].update(candidate_pool=[]),
-            lambda s: s['binding']['plan'].update(candidate_pool=[{'malformed': True}])]
+            lambda s: s['binding']['plan'].update(candidate_pool=[{'malformed': True}]),
+        ]
         for index, mutate in enumerate(mutations):
             altered = copy.deepcopy(original)
             mutate(altered)
             # Check structural validation too, rather than relying only on a
             # changed binding being rejected by the outer identity checksum.
             from quantlab import walk_forward as wf
+
             with self.subTest(index=index, check='structure'), self.assertRaises(ValidationError):
                 wf._validate_state(altered)
             altered['state_hash'] = content_hash({k: v for k, v in altered.items() if k != 'state_hash'})
@@ -572,8 +645,7 @@ class WalkForwardTests(unittest.TestCase):
     def test_registry_lock_cannot_overrun_deadline_or_reserve_after_it(self):
         first = self.data.bars[0]
         past = replace(first, timestamp=first.timestamp - timedelta(days=1), end=first.end - timedelta(days=1))
-        _reserve_holdout(Dataset((past,), {}, {}), registry_path=self.registry,
-            campaign_id='past', selection_hash='past', output_dir=self.root / 'past')
+        _reserve_holdout(Dataset((past,), {}, {}), registry_path=self.registry, campaign_id='past', selection_hash='past', output_dir=self.root / 'past')
         with closing(sqlite3.connect(self.registry)) as blocker:
             blocker.execute('BEGIN IMMEDIATE')
             started = time.monotonic()
