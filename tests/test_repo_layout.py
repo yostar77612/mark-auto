@@ -32,6 +32,7 @@ ALLOWED_FILES = {
     'desktop_chatgpt_auth.py',
     'desktop_chatgpt_dependency_manifest.json',
     'desktop_chatgpt_provider.py',
+    'desktop_chatgpt_states.py',
     'desktop_chatgpt_ui.py',
     'desktop_expiry_inputs.py',
     'desktop_forms.py',

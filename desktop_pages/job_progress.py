@@ -83,6 +83,8 @@ class JobFeedback:
         )
 
     def accept(self, shell, event):
+        if self.job_id is None:
+            return True  # Not started through start_job; the host's own job-id filter already applied.
         if event.get('job_id') not in (None, self.job_id) or self.terminal:
             return False
         kind = event.get('type')
