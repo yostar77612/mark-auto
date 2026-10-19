@@ -1,5 +1,40 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### LB-B3: market-indicators-b3-v1
+
+The additive `atr`, `supertrend`, `sar`, `obv` and `ma_channel` functions use
+isolated precision-28 Decimal arithmetic and the existing observation limits.
+The seven earlier formulas and goldens remain unchanged. None observations reset
+history, consistent with the earlier indicators; nonfinite/bool observations and
+invalid parameters raise ValueError. OHLC lengths/ranges are validated; volumes
+are nonnegative integers up to 10^15. Resource bounds raise IndicatorResourceLimitError.
+
+- `atr`: Wilder smoothing, seeded by SMA of first N true ranges; first TR is
+  high-low, later TR=max(high-low, abs(high-previous close), abs(low-previous close)).
+  Default period 14; N-1 leading None values, including after a missing bar.
+- `supertrend`: Wilder ATR period 10, multiplier 3 by default; basic bands are
+  midpoint +/- multiplier*ATR. Bands carry until tightened or crossed by previous
+  close; strict current-close crossings reverse trend. First mature ATR seeds
+  uptrend on its lower band; N-1 leading None values. Missing OHLC resets all state.
+- `sar`: Wilder AF step 0.02, maximum 0.2. One leading None; second close >= first
+  seeds uptrend at first low, otherwise downtrend at first high. Initial EP includes
+  both bars. Project SAR+AF*(EP-SAR), clamp to previous two lows/highs, reverse on
+  strict penetration using old EP; reset AF on reversal and increase on new EP.
+  Missing OHLC restarts the seed. Parameters require 0 < step <= maximum <= 1.
+- `obv`: zero seed without warmup; add/subtract current volume on higher/lower
+  close, hold on equal close or zero volume. Missing close/volume resets to None,
+  with the next valid bar seeding zero. All-zero volume is flat Decimal zero.
+- `ma_channel`: SMA envelope period 20, percent 2 by default; middle*(1 +/-
+  percent/100), N-1 leading None, reset on missing values. Percent is nonnegative.
+
+Chart overlays are SuperTrend, SAR and all three MA channel bands; ATR and OBV
+are panels. Catalog labels include all parameters (OBV has none). Each resource
+failure is isolated using the existing failure message. Version-1 preferences
+with the original seven keys remain accepted and acquire disabled defaults for
+the five additions; unknown keys and malformed original shapes remain rejected.
+No trading, budget, OOS, timeout, profile, acceptance-score or G3 behavior changes.
+Evidence: tests/test_lb_b3_indicators.py and tests/test_lb_b3_chart.py.
+
 ### T14 part A: verified trust anchors and worker error stages (P3-12 / P3-02)
 
 Worker `error` packets retain `job_id`, `type`, fixed `message` and `error_type`,
