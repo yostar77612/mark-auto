@@ -7,9 +7,10 @@ import sys
 from threading import Thread
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 from desktop_strings import ui_text
+from .async_status import AsyncStatus
 from quantlab import __version__
 from quantlab.payload_cleanup import execute_payload_cleanup, plan_payload_cleanup
 from quantlab.update_check import UpdateResult, check_for_update
@@ -45,9 +46,11 @@ class MaintenancePanel(QWidget):
         self.update_button.setObjectName('check_for_updates')
         self.cleanup_button = QPushButton(ui_text('maintenance.check_payloads'))
         self.cleanup_button.setObjectName('check_old_program_versions')
-        self.status = QLabel('')
-        self.status.setWordWrap(True)
-        for widget in (self.update_button, self.cleanup_button, self.status):
+        self.async_status = AsyncStatus()
+        self.async_status.setObjectName('maintenance_async_status')
+        self.async_status.set_state('empty', message='')
+        self.status = self.async_status.label
+        for widget in (self.update_button, self.cleanup_button, self.async_status):
             layout.addWidget(widget)
         self.update_button.clicked.connect(self.check_updates)
         self.cleanup_button.clicked.connect(self.check_payloads)
@@ -60,7 +63,7 @@ class MaintenancePanel(QWidget):
         if not self.update_button.isEnabled():
             return
         self.update_button.setEnabled(False)
-        self.status.setText(ui_text('maintenance.checking'))
+        self.async_status.set_state('loading')
         try:
             Thread(target=_check_in_background, args=(self.results, __version__), daemon=True).start()
             self.timer.start()
@@ -75,26 +78,29 @@ class MaintenancePanel(QWidget):
         self.timer.stop()
         self.update_button.setEnabled(True)
         key = {'update_available': 'maintenance.available', 'up_to_date': 'maintenance.current', 'error': 'maintenance.update_error'}[result.status]
-        self.status.setText(ui_text(key).format(result.version))
+        if result.status == 'error':
+            self.async_status.set_state('error', error_code='operation_failed', retry=self.check_updates)
+        else:
+            self.async_status.set_state('empty', message=ui_text(key).format(result.version))
 
     def check_payloads(self):
         root = installed_payload_root()
         if root is None:
-            self.status.setText(ui_text('maintenance.not_installed'))
+            self.async_status.set_state('empty', message=ui_text('maintenance.not_installed'))
             return
         plan = plan_payload_cleanup(root, __version__)
         if plan.reason:
-            self.status.setText(ui_text('maintenance.refused'))
+            self.async_status.set_state('empty', message=ui_text('maintenance.refused'))
             return
         if not plan.candidates:
-            self.status.setText(ui_text('maintenance.nothing'))
+            self.async_status.set_state('empty', message=ui_text('maintenance.nothing'))
             return
         names = '\n'.join(path.name for path in plan.candidates)
         message = ui_text('maintenance.confirm').format(str(plan.root), names)
         confirmed = QMessageBox.question(self, ui_text('maintenance.check_payloads'), message, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirmed != QMessageBox.Yes:
-            self.status.setText(ui_text('maintenance.cancelled'))
+            self.async_status.set_state('empty', message=ui_text('maintenance.cancelled'))
             return
         result = execute_payload_cleanup(plan)
         key = 'maintenance.cleanup_error' if result.reason else 'maintenance.cleaned'
-        self.status.setText(ui_text(key).format(len(result.deleted)))
+        self.async_status.set_state('empty', message=ui_text(key).format(len(result.deleted)))

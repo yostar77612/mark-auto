@@ -6,6 +6,7 @@ from quantlab.reporting import load_result, demo_config
 from quantlab.desktop_errors import error_message, exception_code
 from desktop_forms import BacktestForm, BacktestSummaryCard, BacktestFillsTable
 from .host import PageHost
+from .async_status import AsyncStatus
 from .equity import EquityPlot
 from .result_widgets import KpiCards, TaipeiFillsTable
 
@@ -35,6 +36,10 @@ class BacktestPage(QWidget):
         layout.addWidget(self.plot)
         self.result_detail = QPlainTextEdit()
         self.result_detail.setReadOnly(True)
+        self.result_empty = AsyncStatus()
+        self.result_empty.setObjectName('result_empty_status')
+        self.result_empty.set_state('empty', message=ui_text('ui.show_result.text_1'))
+        advanced.addWidget(self.result_empty)
         advanced.addWidget(self.result_detail)
         self.result_card = BacktestSummaryCard()
         advanced.addWidget(self.result_card)
@@ -75,10 +80,13 @@ class BacktestPage(QWidget):
             self.plot.set_values([])
             self.kpis.set_values({})
             self.fills_table.set_rows([])
-            self.result_detail.setPlainText(ui_text('ui.show_result.text_1'))
+            self.result_empty.set_state('empty', message=ui_text('ui.show_result.text_1'))
+            self.result_empty.setVisible(True)
+            self.result_detail.clear()
             return
         try:
             result = load_result(path)
+            self.result_empty.setVisible(False)
             self.plot.set_values(result.equity)
             self.result_card.set_values(dict(result.metrics))
             self.kpis.set_values(dict(result.metrics))

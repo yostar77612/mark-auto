@@ -2092,3 +2092,67 @@ seven full-page PNGs remain byte-identical. The controller must refresh only
 tests/fixtures/desktop_pages_before/01_viewport.png through 07_viewport.png for
 the consolidated header, in a separate fixture-only commit. No baseline files
 are edited here. All item changes remain uncommitted for the controller.
+
+### U1-C4: shared asynchronous status presentation
+
+`desktop_pages/async_status.py::AsyncStatus` has exactly four states, selected
+through `set_state`: loading, empty, error and stale. Invalid states raise
+ValueError before changing presentation. Literal desktop_strings keys supply
+default state text and action captions. The state property selects theme QSS;
+the widget, label and action have accessible names without showing a window.
+Both parentless construction and bare SimpleNamespace hosts are supported.
+
+Empty guidance accepts caller text/action and explicitly hides an absent action.
+One permanent click connection dispatches only the latest callback; repeated
+state updates cannot accumulate signal connections. Only actionable empty
+guidance has the primary role; inactive actions and retry/refresh are secondary.
+Error presentation accepts only codes found in quantlab.errors.ERROR_TABLE,
+displaying that code, explanation and recovery action. Unknown codes display
+fixed generic text without echoing the input. Exception and message parameters
+are never rendered in error state, including accessibility and tooltip fields.
+Retry is explicit, with no automatic loop. Stale age is caller supplied; missing
+age produces a fixed stale message, never a fabricated timestamp.
+
+The five onboarding empty boxes use AsyncStatus with their original empty_*
+and empty_*_action objectNames, literal onboarding.empty.* / onboarding.next.*
+keys and callbacks. GettingStarted.refresh, emptiness predicates and existing
+run_campaign/run_backtest/compare_results/paper_submit role switching are
+unchanged. Maintenance reuses its existing queue, worker and polling timer;
+the shared widget adds no timer, thread or worker. Its existing status attribute
+remains the component's label. Log emptiness is projected inside the existing
+table viewport. The advanced backtest result-empty message uses the component
+and hides when a saved result loads. read_job optionally reads existing
+JobProgress.running and JobFeedback.terminal without changing either or starting
+work. It does not infer terminal failure from arbitrary message text.
+
+Seven focused tests pass in under one second locally, with no shown windows,
+application style switching, network, subprocesses or sleeps in new tests.
+They exercise both themes, all B1 codes, secret exception suppression, callback
+replacement, stale age, existing job projection and real page/widget inventory.
+Existing onboarding, log, maintenance, public-name registry, header, catalog,
+import graph, hardcoded-text, inline-style, function-length, B8 drawings, B2
+live-disabled and polish-B tests pass. Accessibility walk passes in both themes.
+Ruff 0.16.10 check/changed-file format check, Python 3.11 compilation and the
+static quality gate pass. Existing result-host tests and polish-A snapshot
+capture hit Windows temporary-directory ACL errors; polish-A's four other
+tests pass. All five desktop smoke modules were attempted unchanged and also
+require controller reruns outside the sandbox. GitNexus indexing failed with
+spawn EPERM and the explicit lane query reported repository not found; fresh
+graph coverage is unverified. These are measured checks, not visual-quality QA.
+
+No protected G3 source or saved_candidate_pool code differs from e0e604f.
+No monetary calculation, live-order path, fail-closed gate, OOS/budget rule,
+timeout, PROJECT_STATE or acceptance score changes. Existing test assertions
+are unchanged; inventory/registration changes are additive. All changes remain
+uncommitted for the controller's single item commit.
+
+No baseline PNG or metrics file is edited. A disposable capture compared with
+the checked-in baseline differs in metrics.json and 01_full.png/01_viewport.png,
+02_full.png/02_viewport.png, 03_full.png/03_viewport.png,
+04_full.png/04_viewport.png, 05_full.png/05_viewport.png,
+07_full.png/07_viewport.png under tests/fixtures/desktop_pages_before.
+The controller should refresh those files in its separate fixture-only commit:
+the current integrated layout has changed page heights, and settings now shows
+the explicit log-empty message. 06_full.png and 06_viewport.png match the
+checked-in baseline. Snapshot differences include inherited lane UI changes;
+this comparison does not attribute every changed pixel to C4.

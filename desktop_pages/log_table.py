@@ -5,7 +5,8 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QFileDialog
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QFileDialog, QVBoxLayout
+from .async_status import AsyncStatus
 from desktop_strings import ui_text, LOG_OPERATION_NAMES, LOG_EVENT_NAMES
 
 
@@ -31,6 +32,11 @@ def log_rows(lines):
 class LogTable(QTableWidget):
     def __init__(self):
         super().__init__(0, 3)
+        self.empty_status = AsyncStatus(self.viewport())
+        self.empty_status.setObjectName('logs_empty_status')
+        self.empty_status.set_state('empty', message=ui_text('async.logs_empty'))
+        overlay = QVBoxLayout(self.viewport())
+        overlay.addWidget(self.empty_status)
         self.rows = []
         self.errors_only = False
         self.setHorizontalHeaderLabels([ui_text('logs.time'), ui_text('logs.operation'), ui_text('logs.result')])
@@ -51,6 +57,7 @@ class LogTable(QTableWidget):
 
     def refresh(self):
         rows = self.visible_rows()
+        self.empty_status.setVisible(not rows)
         self.setRowCount(len(rows))
         for index, row in enumerate(rows):
             for column, text in enumerate(row):

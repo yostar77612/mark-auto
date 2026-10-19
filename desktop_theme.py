@@ -291,6 +291,9 @@ QPushButton[role="secondary"]:disabled { background: @muted_background@; color: 
 QPushButton[role="onboardingChip"], QPushButton#onboarding_dismiss { padding:2px 8px; min-height:20px; }
 QPushButton[role="onboardingChip"][state="done"] { color:@success@; border-color:@success@; }
 QPushButton[role="onboardingChip"][state="pending"] { color:@text@; border-color:@button_border@; }
+QWidget[role="asyncStatus"][state="error"] QLabel { color:@danger@; }
+QWidget[role="asyncStatus"][state="stale"] QLabel { color:@warning@; }
+QWidget[role="asyncStatus"][state="loading"] QLabel { color:@hint_text@; }
 QLabel[themePart="pageTitle"] { font-size:@font_page_title@px; font-weight:600; }
 QLabel[status="success"] { color:@success@; }
 QLabel[status="warning"] { color:@warning@; }
