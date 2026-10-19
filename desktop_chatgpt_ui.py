@@ -7,6 +7,7 @@ one worker and remain there through begin/poll. All test transports are fixtures
 """
 
 from desktop_strings import ui_text
+from desktop_chatgpt_states import outcome_state, outcome_message
 from dataclasses import dataclass, field, asdict
 import re
 import sqlite3
@@ -63,7 +64,7 @@ STATE_LABELS = {
     'client_configuration_required': ui_text('chatgpt_ui.labels.text_15'),
     'unknown': ui_text('chatgpt_ui.labels.text_16'),
 }
-from quantlab.desktop_errors import ERROR_LABELS, error_message, exception_code
+from quantlab.desktop_errors import ERROR_LABELS, exception_code
 
 RECOVERABLE_PAUSES = frozenset(
     ('eligibility_blocked', 'quota_paused', 'transient_blocked', 'invalid_request', 'configuration_blocked', 'credential_diagnosis', 'grant_blocked')
@@ -289,6 +290,7 @@ class ConnectionController(QObject):
         self.host_available = False
         self.busy = False
         self.stopping = False
+        self.outcome = None
         self.state = 'unknown'
         self.message = ui_text('chatgpt_ui.__init__.text_1')
         self.registrations = ()
@@ -345,6 +347,7 @@ class ConnectionController(QObject):
         self._counter += 1
         request = ConnectionRequest(self._counter, action, registration, 600 if action in ('begin', 'first_sign_in', 'enable_plan') else 120, confirmed)
         self.busy = True
+        self.outcome = None
         self.stopping = False
         self._request = request
         self._authorization_url = None
@@ -394,7 +397,8 @@ class ConnectionController(QObject):
             self._terminal_ok = event.kind == 'result'
             self._authorization_url = None
             if event.kind == 'error':
-                self.message = error_message(event.error_code)
+                self.outcome = outcome_state(event.error_code)
+                self.message = outcome_message(event.error_code)
             else:
                 if action == 'models' and event.active_registration != self._request.registration:
                     raise ValueError('model/account mismatch')
@@ -413,7 +417,8 @@ class ConnectionController(QObject):
                     self.usage_known = False
                     self.reserved_count = None
                     self.unknown_count = None
-                self.message = STATE_LABELS[event.state]
+                self.outcome = outcome_state(event.state) if action in ('refresh', 'restore') else None
+                self.message = outcome_message(event.state) if self.outcome else STATE_LABELS[event.state]
                 if action == 'sign_out':
                     self.message = ui_text('chatgpt_ui.apply_event.text_2') if event.revocation_confirmed is True else ui_text('chatgpt_ui.apply_event.text_3')
             # Terminal message is not process-exit evidence. Keep controls locked until joined.
@@ -421,6 +426,11 @@ class ConnectionController(QObject):
             self.message += ui_text('chatgpt_ui.apply_event.text_4')
         self.changed.emit()
         return True
+
+    def show_outcome(self, code):
+        self.outcome = outcome_state(code)
+        self.message = outcome_message(code)
+        self.changed.emit()
 
     def open_authorization(self):
         if not self.busy or self.stopping or not self._authorization_url:
@@ -639,7 +649,13 @@ class ChatGPTConnectionPanel(QWidget):
         # This click authorizes the local read and opening the official page,
         # never granting scopes or starting model requests for the user.
         self._reset_included_usage()
-        self._primary_flow = {'phase': 'list', 'request_id': c._counter + 1, 'selected': self.account.currentData(), 'browser_queued': False}
+        self._primary_flow = {
+            'phase': 'list',
+            'request_id': c._counter + 1,
+            'selected': self.account.currentData(),
+            'browser_queued': False,
+            'reauthorize': c.outcome == 'auth_expired',
+        }
         try:
             c.request('list')
         except Exception:
@@ -704,11 +720,11 @@ class ChatGPTConnectionPanel(QWidget):
                 self._primary_flow = None
                 self.status.setText(ui_text('chatgpt_ui._continue_primary.text_3'))
                 return
-            if registration == c.active_registration and c.state in CONNECTED_STATES:
+            if registration == c.active_registration and c.state in CONNECTED_STATES and not flow.get('reauthorize'):
                 # Already signed in with the saved login: no new authorization.
                 self._primary_flow = None
                 return
-            if registration == c.active_registration and c.state == 'refresh_required':
+            if registration == c.active_registration and c.state == 'refresh_required' and not flow.get('reauthorize'):
                 # Saved refresh token first; a failed refresh shows sign-in again.
                 self._primary_flow = None
                 c.request('refresh', registration, confirmed=True)
@@ -777,7 +793,7 @@ class ChatGPTConnectionPanel(QWidget):
         try:
             return call()
         except Exception as exc:
-            self.status.setText(error_message(exception_code(exc)))
+            self.controller.show_outcome(exception_code(exc))
 
     def _act(self, action):
         self._primary_flow = None
@@ -835,7 +851,8 @@ class ChatGPTConnectionPanel(QWidget):
         ready = c.host_available and not c.busy
         self.primary_sign_in.setEnabled(ready)
         signed_in = c.active_registration is not None and c.state in CONNECTED_STATES
-        self.primary_sign_in.setVisible(not signed_in)
+        self.primary_sign_in.setVisible(not signed_in or c.outcome == 'auth_expired')
+        self.primary_sign_in.setText(ui_text('outcome.auth_expired.action') if c.outcome == 'auth_expired' else ui_text('chatgpt_ui.__init__.text_8'))
         self.buttons['enable_plan'].setVisible(c.state == 'identity_only')
         self.buttons['select'].setVisible(len(c.registrations) > 1)
         self.buttons['models'].setVisible(c.state == 'plan_ready')

@@ -98,8 +98,10 @@ class CorrectnessTests(unittest.TestCase):
         panel = ChatGPTConnectionPanel(ConnectionController())
         self.addCleanup(panel.deleteLater)
         panel._safe(fail)
-        self.assertEqual(panel.status.text(), error_message('operation_failed'))
-        for text in (w.status.text(), error_message('C:/private/token-secret')):
+        from desktop_chatgpt_states import outcome_message
+
+        self.assertEqual(panel.status.text(), outcome_message('operation_failed'))
+        for text in (w.status.text(), panel.status.text(), error_message('C:/private/token-secret')):
             self.assertNotIn('private', text)
             self.assertNotIn('secret', text)
         self.assertTrue(all(row.explanation and row.action for row in ERROR_TABLE.values()))
@@ -144,7 +146,11 @@ class CorrectnessTests(unittest.TestCase):
         controller.worker_joined(request.request_id, joined=True)
         self.assertFalse(panel.primary_sign_in.isHidden())
         self.assertTrue(panel.primary_sign_in.isEnabled())
-        self.assertIn('restore_refresh_failed', controller.message)
+        from desktop_chatgpt_states import outcome_message
+
+        self.assertEqual(controller.outcome, 'auth_expired')
+        self.assertEqual(controller.message, outcome_message('restore_refresh_failed'))
+        self.assertNotIn('restore_refresh_failed', controller.message)
         w = self.window()
         w._record_connection_error(result.error_code)
         session.state = 'authorizing'

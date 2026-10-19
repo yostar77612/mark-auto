@@ -1622,6 +1622,31 @@ ZH_TW.update(
     }
 )
 
+ZH_TW.update(
+    {
+        'outcome.success.title': '連線作業已完成',
+        'outcome.success.body': '本次官方服務作業成功完成。',
+        'outcome.quota_exhausted.title': '可用額度已達限制',
+        'outcome.quota_exhausted.body': '方案用量已受限制；已消耗的額度不會退還。請核對官方用量，等待額度恢復後再安排作業。',
+        'outcome.auth_expired.title': '需要重新授權',
+        'outcome.auth_expired.body': '連線授權已失效或未被接受。請重新授權後核對連線狀態。',
+        'outcome.auth_expired.action': '重新授權',
+        'outcome.generic_failure.title': '本次作業未完成',
+        'outcome.generic_failure.body': '請保留現有紀錄並核對連線與作業狀態；不會自動重送。',
+        'job.stage.unknown': '作業處理中',
+        'job.stage.prepare_operation': '準備作業',
+        'job.stage.load_data': '讀取資料',
+        'job.stage.build_candidates': '準備策略',
+        'job.stage.run_backtest': '執行回測',
+        'job.stage.run_campaign': '執行研究',
+        'job.stage.run_operation': '執行作業',
+        'job.stage.write_result': '儲存結果',
+        'job.cancel': '取消',
+        'job.cancel_notice': '取消作業；已消耗的額度不會退還。',
+        'job.cancelled': '作業已取消；既有紀錄已保留，已消耗的額度不會退還。',
+    }
+)
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

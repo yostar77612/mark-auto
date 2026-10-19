@@ -968,3 +968,39 @@ Evidence: tests/test_t15_maintenance.py and existing text/style/import guards;
 docs/analysis/t15_p3_notes.md lists live update-server, real installer-upgrade and
 certificate evidence still pending. No G3 sources, quotas, validation, trading,
 OOS consumption or existing test assertions change.
+
+
+## T16 part A: fixed inference outcomes and shared job progress
+
+P3-03: `desktop_chatgpt_states` maps fixed error/stage/receipt codes to success,
+quota_exhausted, auth_expired or generic_failure. Unknown/non-string codes are
+neutral failures; diagnostic prose is never parsed or displayed. All outcome
+copy is in desktop_strings. Quota exhaustion offers no retry action and explains
+consumption/limits. Auth expiry exposes the existing primary sign-in flow with
+an explicit reauthorization intent; a successful local list cannot short-circuit
+that user-requested authorization. Existing consent, join, registration and
+browser guards remain in place. Refresh errors/results and subscription campaign
+failures/results use these messages. Durable provider receipt statuses classify
+campaigns whose worker returned normally after a provider failure. The worker's
+existing failure packet gains only an allowlisted error_code; no runtime timeout,
+cancellation, quota or validation behavior changes.
+
+P3-07: `desktop_pages.job_progress.JobProgress` is the single shell progress row
+shared by backtest, campaign, Walk-forward and download views. It preserves
+`cancel_job` and the public progress/cancel aliases. Stages use job_stages'
+allow-list with catalog labels and an unknown fallback. Only finite numeric
+progress (excluding bool) displays a clamped 0..100 percentage; other events use
+an indeterminate bar. Cancellation invokes the existing freeze/recover/cancel
+path, disables repeated clicks and explains that consumed quota is not refunded.
+JobFeedback accepts one terminal outcome per submitted job, ignores stale job
+IDs and duplicate/late terminals, and supplies one completion/cancel notice for
+each of these job kinds. It never infers cancellation from a button click; the
+manager's authoritative terminal result wins a cancel/finish race.
+
+Evidence: tests/test_t16_presentation.py, updated test_job_stages.py and the
+import/text/style guards. MainWindow is 393 lines; ChatGPTConnectionPanel 421.
+Default seven-page metrics and all 14 PNGs remain byte/pixel exact; widget-name
+inventory is identical, so neither fixture is regenerated. No G3 source or
+optimization-plan edits. Real-account inference remains environment-blocked and
+must be performed by the user. Full-suite execution is controller-owned outside
+the sandbox, per the explicit task instruction.

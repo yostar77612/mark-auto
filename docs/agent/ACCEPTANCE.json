@@ -6098,5 +6098,41 @@
     "checks": "tests/test_docs_layering.py",
     "runtime_and_installer_payload": "unchanged by part C",
     "external_acceptance": "pending; no score increase"
+  },
+  "t16_part_a": {
+    "plan_items": [
+      "P3-03",
+      "P3-07"
+    ],
+    "status": "IMPLEMENTED_REAL_ACCOUNT_EVIDENCE_PENDING",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part A: fixed inference outcomes and shared job progress",
+    "evidence": [
+      "tests/test_t16_presentation.py",
+      "tests/test_job_stages.py",
+      "docs/analysis/t16_p3_notes.md"
+    ],
+    "outcomes": [
+      "success",
+      "quota_exhausted",
+      "auth_expired",
+      "generic_failure"
+    ],
+    "progress": "One shared widget; fixed stage labels; finite numeric percentages clamped to 0..100, otherwise indeterminate; existing cancel path and no refunds.",
+    "notifications": "One authoritative terminal notice per submitted job; stale/duplicate terminal suppression; no click-based terminal assumption.",
+    "measurements": {
+      "MainWindow_lines": 393,
+      "ChatGPTConnectionPanel_lines": 421,
+      "unchanged_default_pages": 7,
+      "exact_baseline_pngs": 14,
+      "widget_inventory_additions": 0
+    },
+    "unverified": [
+      "User-operated real-account inference",
+      "Full suite outside sandbox",
+      "Fresh GitNexus index: analyzer spawn EPERM"
+    ],
+    "acceptance_score_change": 0,
+    "verification": "55 focused offscreen tests pass in 8.918s, exit 0, zero skips; 15 new tests, slowest 0.418s. Ruff check/format --check pass (326 files); quality_gate zero findings; Python 3.11 utf-8-sig compile passes for 335 tracked/new files; git diff --check clean. Seven-page metrics/14 PNGs and widget inventory exact. Runtime AST differs only by fixed failure-code metadata. G3 and plan diffs empty.",
+    "graph": "Pre-edit catalog CRITICAL; start_job/_busy HIGH; unresolved dynamic callers confirmed directly. Index refresh spawn EPERM; stale-index detect_changes: 28 symbols, 3 flows, medium risk; fresh/new-module coverage unverified."
   }
 }
