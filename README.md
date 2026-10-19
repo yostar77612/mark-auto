@@ -30,6 +30,7 @@ MarkAuto 是台灣股價指數期貨 TX／MTX／TMF 的離線研究與紙上交�
 設定頁提供手動「檢查更新」與「檢查舊程式版本」；清理須確認，保留目前版與最近舊版。更新檢查只核對版本資訊，不下載或安裝。詳見 [維護契約與待驗證證據](docs/analysis/t15_p3_notes.md)。
 
 - [使用手冊（七頁截圖）](docs/user/使用手冊.md)
+- [Terminology and tooltip style](docs/user/TERMINOLOGY_AND_TOOLTIP_STYLE.md)
 - [Display compatibility checklist — EXTERNAL / UNVERIFIED](docs/qa/display-compatibility.md)
 - [Release notes document template — no publication](docs/release/RELEASE_NOTES_TEMPLATE.md)
 - [Contributor guide and PR verification](docs/CONTRIBUTING.md)

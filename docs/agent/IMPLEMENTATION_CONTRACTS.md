@@ -1629,3 +1629,27 @@ This item changes only documentation: no root allowlist, code, tests, fixtures,
 G3/profile sources, state, acceptance scores or safety thresholds change.
 No Release or tag is created. The controller owns the single item commit;
 lane edits remain uncommitted. No UI baseline refresh is needed.
+
+### DOC-E5: terminology and tooltip writing policy
+
+The [terminology and tooltip guide](../user/TERMINOLOGY_AND_TOOLTIP_STYLE.md),
+linked from README, preserves all twelve glossary pairings and distinguishes
+writing policy from existing catalog observations. Its T16 table quotes the
+recorded 89 tooltip widgets, 41 default-visible inputs, 30 with tooltips,
+11 obvious controls without and 0 non-obvious inputs without; these are scoped
+measurements, not a claim of complete product coverage. Examples and observed
+wording variations identify verbatim desktop_strings values; no strings change.
+
+New or revised explanatory tooltips require plain complete sentences, a
+120-character rendered bound, glossary-backed terminology and accurate units,
+defaults, prerequisites and execution scope. New UI text uses desktop_strings
+with literal ui_text keys; error text retains the B1 ERROR_TABLE. The existing
+test_t16_tooltips module must pass unmodified. Documentation checks and direct
+catalog/JSON comparisons verify the guide without a new runtime test.
+
+This item changes documentation only. No UI baseline refresh is needed.
+G3/profile sources, PROJECT_STATE, ACCEPTANCE scores, gates, OOS consumption,
+irreversible budgets and timeouts remain unchanged. Live trading remains
+permanently disabled; OOS/final-holdout data never enter AI conversations,
+tool returns or prompts. No Release or tag is created. The controller owns the
+single item commit; lane changes remain uncommitted.
