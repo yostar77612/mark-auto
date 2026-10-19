@@ -486,3 +486,11 @@ Use `python -m ruff format .` only for the separate formatting pass (T13 part B)
 The eight hash-pinned sources, frozen producer-profile file, legacy archive,
 fixtures and local/build output are force-excluded. Autofixes are disabled.
 T13 part A installs enforcement; the existing format debt is resolved in part B.
+
+## Release maintenance
+
+The desktop app is the product. Streamlit (`research_app.py`) is a developer
+research workspace excluded from packaged product inputs.
+See [signing readiness](SIGNING_CHECKLIST.md): **nothing is signed today**.
+See [maintenance contracts](../docs/analysis/t15_p3_notes.md) for explicit payload
+cleanup and metadata-only, user-triggered update checks.

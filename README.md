@@ -27,6 +27,8 @@ MarkAuto 是台灣股價指數期貨 TX／MTX／TMF 的離線研究與紙上交�
 
 ## 文件索引
 
+設定頁提供手動「檢查更新」與「檢查舊程式版本」；清理須確認，保留目前版與最近舊版。更新檢查只核對版本資訊，不下載或安裝。詳見 [維護契約與待驗證證據](docs/analysis/t15_p3_notes.md)。
+
 - [使用手冊（七頁截圖）](docs/user/使用手冊.md)
 - [目前狀態](docs/agent/PROJECT_STATE.md)、[實作契約](docs/agent/IMPLEMENTATION_CONTRACTS.md)、[正式驗收](docs/agent/ACCEPTANCE.json)
 - [架構](docs/analysis/01_PROJECT_ARCHITECTURE.md)、[既有功能](docs/analysis/02_EXISTING_FEATURES.md)、[目前品質與風險](docs/analysis/03_CODE_QUALITY_AND_RISKS.md)

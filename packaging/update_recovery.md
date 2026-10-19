@@ -27,6 +27,11 @@ an update. User state remains in the separate `%LOCALAPPDATA%\MarkAuto` director
 and is never targeted by installer cleanup. No historical schema migration is
 claimed merely because sentinel files survive.
 
+T15 adds an explicit Settings action to plan old-version cleanup and ask for
+confirmation, retaining the current and newest older version. There is still no
+automatic cleanup. See [maintenance contracts](../docs/analysis/t15_p3_notes.md)
+for refusal rules and the separate metadata-only update check.
+
 Only the normal local per-user install location is supported. Setup rejects
 custom/redirected install locations and detected reparse points in the installation
 path or payload; uninstall similarly refuses detected reparse points. This is not

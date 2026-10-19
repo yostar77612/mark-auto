@@ -333,7 +333,7 @@ ZH_TW = {
     'ui._settings_page.text_12': '建立本機備份',
     'ui._settings_page.text_13': '我確認還原會替換目前本機狀態，並會要求重新對帳',
     'ui._settings_page.text_14': '驗證並還原備份',
-    'ui._settings_page.text_15': '目前版本 {0} · 未簽章預覽版；尚無已驗證的最新版本資訊。',
+    'ui._settings_page.text_15': '目前版本 {0} · 未簽章預覽版；請手動檢查最新版本資訊。',
     'ui._settings_page.text_16': '更新不會自動下載或執行；請核對官方專案、驗證碼 與發行說明。',
     'ui._settings_page.text_17': '開啟專案 Releases 頁面',
     'ui._settings_page.text_18': '讀取精簡本機日誌',
@@ -1600,6 +1600,25 @@ ZH_TW.update(
     {
         'wf.duration_estimate': '預估耗時最多約 {0} 秒（保守估計：依負載下實測的每次評估時間推算；安靜的電腦通常快很多，非完成保證）。',
         'wf.duration_unknown': '預估耗時未知：尚無可用的隔離評估量測。',
+    }
+)
+
+ZH_TW.update(
+    {
+        'maintenance.options': '版本維護（檢查更新／舊程式版本）',
+        'maintenance.check_updates': '檢查更新',
+        'maintenance.check_payloads': '檢查舊程式版本',
+        'maintenance.checking': '正在檢查版本資訊，請稍候…',
+        'maintenance.available': '有新版本 {0}。請自行按「開啟專案 Releases 頁面」下載並核對安裝檔 SHA256；本工具不會下載或安裝。',
+        'maintenance.current': '依本次已核對 SHA256 的版本資訊，目前無較新版本（發布版本：{0}）。',
+        'maintenance.update_error': '無法核對更新資訊。請稍後重試，或自行查看專案發布頁；不會下載或安裝。',
+        'maintenance.not_installed': '此功能僅適用於預設位置的已安裝桌面版。',
+        'maintenance.refused': '無法安全規劃清理：版本目錄不明確、目前版本不存在、含連結或無法存取。未刪除任何目錄。',
+        'maintenance.nothing': '沒有可清理的舊版本；保留目前版本與最近一個較舊版本以供回退。',
+        'maintenance.confirm': '僅清理下列程式版本及其所有安裝嘗試；保留目前版本與最近一個較舊版本，不處理使用者工作區。\n位置：{0}\n將刪除：\n{1}\n確定刪除？',
+        'maintenance.cancelled': '已取消清理，未刪除任何目錄。',
+        'maintenance.cleaned': '已清理 {0} 個程式版本目錄。',
+        'maintenance.cleanup_error': '清理已停止；已完整刪除 {0} 個版本目錄，失敗目錄可能僅部分刪除。請核對安裝目錄後再重試。',
     }
 )
 
