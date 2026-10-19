@@ -226,6 +226,7 @@
   "market_card_TX",
   "market_catalog",
   "market_contract",
+  "market_converge_annotations",
   "market_dashboard",
   "market_diagnostics",
   "market_diagnostics_toggle",

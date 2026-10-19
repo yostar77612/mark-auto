@@ -177,6 +177,7 @@ class MarketDashboard(QWidget):
         self._stale = False
         self._error = ''
         self._indicator_widgets = {}
+        self.drawing_store = None
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         self.page_scroll = QScrollArea()
@@ -230,6 +231,16 @@ class MarketDashboard(QWidget):
         self.diagnostics.hide()
         self.diagnostics_button.toggled.connect(self._toggle_diagnostics)
         root.addWidget(self.diagnostics)
+        self.converge_annotations = _named(
+            QCheckBox(ui_text('market.converge_annotations')), 'market_converge_annotations', ui_text('market.converge_annotations')
+        )
+        self.converge_annotations.setToolTip(ui_text('market.converge_annotations_hint'))
+        self.converge_annotations.setChecked(True)
+        self.converge_annotations.hide()
+        self.diagnostics_button.toggled.connect(self.converge_annotations.setVisible)
+        self.converge_annotations.toggled.connect(self._annotation_preferences_changed)
+        self.series_rendered.connect(lambda _: self.refresh_annotations())
+        root.addWidget(self.converge_annotations)
         self.message = _label(ui_text('market.__init__.text_15'), 'market_message')
         set_status(self.message, 'warning')
         root.addWidget(self.message)
@@ -803,6 +814,15 @@ class MarketDashboard(QWidget):
         self.message.setText(message + (ui_text('market._apply_indicators.text_7').format(self._indicator_failure_text(failures)) if failures else ''))
         return ()
 
+    def refresh_annotations(self):
+        if self.drawing_store is not None:
+            self.chart.set_drawings(self.drawing_store.load(self._selected, enabled=self.converge_annotations.isChecked()) if self._selected else ())
+
+    def _annotation_preferences_changed(self):
+        if not self._restoring:
+            self.refresh_annotations()
+            self.preferences_changed.emit()
+
     def preferences(self):
         return {
             'version': 1,
@@ -811,12 +831,13 @@ class MarketDashboard(QWidget):
             'timeframe': self._timeframe,
             'indicators': deepcopy(self._indicator_config),
             'theme': 'dark',
+            'converge_annotations': self.converge_annotations.isChecked(),
         }
 
     def restore_preferences(self, payload):
         if (
             not isinstance(payload, dict)
-            or set(payload) - {'version', 'watchlist', 'selected', 'timeframe', 'indicators', 'theme'}
+            or set(payload) - {'version', 'watchlist', 'selected', 'timeframe', 'indicators', 'theme', 'converge_annotations'}
             or type(payload.get('version')) is not int
             or payload.get('version') != 1
         ):
@@ -825,6 +846,9 @@ class MarketDashboard(QWidget):
         selected = payload.get('selected', '')
         timeframe = payload.get('timeframe', '1d')
         config = deepcopy(payload.get('indicators', DEFAULT_INDICATORS))
+        convergence = payload.get('converge_annotations', True)
+        if type(convergence) is not bool:
+            raise ValueError('invalid annotation convergence')
         if not isinstance(watch, list) or len(watch) > 100 or any(not _identity(x) for x in watch) or len(set(watch)) != len(watch):
             raise ValueError('invalid watchlist')
         if (selected and not _identity(selected)) or not isinstance(selected, str) or timeframe not in TIMEFRAMES or payload.get('theme', 'dark') != 'dark':
@@ -866,6 +890,7 @@ class MarketDashboard(QWidget):
         self._indicator_config = config
         self._restoring = True
         try:
+            self.converge_annotations.setChecked(convergence)
             self.timeframe_combo.blockSignals(True)
             self.timeframe_combo.setCurrentIndex(self.timeframe_combo.findData(timeframe))
             self.timeframe_combo.blockSignals(False)
