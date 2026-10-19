@@ -1,5 +1,24 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### T14 part A: verified trust anchors and worker error stages (P3-12 / P3-02)
+
+Worker `error` packets retain `job_id`, `type`, fixed `message` and `error_type`,
+and add `stage`: one of `prepare_operation`, `load_data`, `build_candidates`,
+`run_backtest`, `run_campaign`, `run_operation`, `write_result`, `unknown`.
+Non-string or unrecognized stage values normalize to `unknown`; exception
+values never select stages. UI error notifications render only the fixed
+desktop_strings stage message, with a generic fallback for missing/unknown
+codes; raw message, exception text, paths and secrets are never displayed.
+Stage progress annotations are optional and contain only normalized codes.
+Campaign internals remain one coarse `run_campaign` stage because research.py
+is locked. See docs/analysis/t14_p3_notes.md for the boundary details.
+
+downloads and market_providers use tls_trust.build_trust_context: Windows ROOT
+server-auth anchors only, CERT_REQUIRED and hostname verification mandatory.
+Empty/unavailable/unusable stores use verified platform defaults. provider.py
+and the eight G3 source files/profile literals remain unchanged. Offline fake
+store tests establish selection, not live endpoint or real-chain acceptance.
+
 ### T8 part B: Walk-forward wizard
 
 This supersedes part A's pending/collapsed Walk-forward description below.

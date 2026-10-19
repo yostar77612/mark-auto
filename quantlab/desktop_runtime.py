@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 from . import __version__
+from .job_stages import normalize_stage, stage_from_traceback
 from .runtime_support import RuntimeSafetyError, atomic_write, _sync_directory, _durable_replace, validate_analysis_request
 
 STATE_VERSION = 1
@@ -943,7 +944,13 @@ def _job_worker(
     if not gate.wait(15):
         return
 
+    failure_stage = 'prepare_operation'
+
     def emit(kind, **values):
+        nonlocal failure_stage
+        if 'stage' in values:
+            failure_stage = normalize_stage(values['stage'])
+            values['stage'] = failure_stage
         sender.send_bytes(_json_bytes({'job_id': job_id, 'type': kind, **values}))
 
     try:
@@ -952,6 +959,7 @@ def _job_worker(
         with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
             if operation in UI_OPERATIONS:
                 executor = _worker_operation_executor(operation_registrar)
+                failure_stage = 'run_operation'
                 result = executor(
                     operation,
                     payload,
@@ -975,13 +983,16 @@ def _job_worker(
                 args.setdefault('config', None)
                 args.setdefault('family', 'trend')
                 args.setdefault('bars', 240)
+                failure_stage = 'run_campaign' if operation == 'campaign' else 'run_operation'
                 execute(Namespace(**args))
+                failure_stage = 'write_result'
                 final = stage.with_suffix('')
                 os.replace(stage, final)
                 result = {'output': str(final)}
         # Keep operation-specific dependencies out of module startup.
         from .core import to_dict
 
+        failure_stage = 'write_result'
         result = to_dict(result)
         try:
             _json_bytes(result)
@@ -996,7 +1007,12 @@ def _job_worker(
             'PermissionError': '檔案存取遭拒，請檢查路徑及檔案是否被占用',
             'RuntimeSafetyError': '安全檢查未通過，請檢查備份版本或作業狀態',
         }
-        emit('error', message=categories.get(type(exc).__name__, '作業失敗；既有資料已保留，請檢查輸入後重試'), error_type=type(exc).__name__)
+        emit(
+            'error',
+            message=categories.get(type(exc).__name__, '作業失敗；既有資料已保留，請檢查輸入後重試'),
+            error_type=type(exc).__name__,
+            stage=stage_from_traceback(exc.__traceback__, failure_stage),
+        )
     finally:
         sender.close()
 

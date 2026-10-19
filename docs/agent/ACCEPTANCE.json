@@ -1,5 +1,12 @@
 {
   "schema_version": 2,
+  "tls_worker_stages_t14_part_a": {
+    "plan_items": ["P3-12", "P3-02"],
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T14 part A: verified trust anchors and worker error stages (P3-12 / P3-02)",
+    "evidence": "tests/test_tls_trust.py; tests/test_job_stages.py; docs/analysis/t14_p3_notes.md",
+    "error_event_stage": ["unknown", "prepare_operation", "load_data", "build_candidates", "run_backtest", "run_campaign", "run_operation", "write_result"],
+    "coverage": "Offline ROOT-only selection, verified fallback, shared transport builder, AST TLS guards, fixed stage messages, worker failure redaction and UI display. Locked campaign internals report coarse run_campaign; provider.py retains default TLS. Full suite and native/live TLS remain controller-owned."
+  },
   "ruff_t13_part_a": {
     "plan_item": "P2-B5",
     "status": "PART_A_CONFIGURED_FORMATTING_PENDING",

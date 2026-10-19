@@ -8,6 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'quantlab/tls_trust.py',
+    'quantlab/job_stages.py',
     'quantlab/desktop_runtime.py',
     'quantlab/runtime_support.py',
     'quantlab/analysis_recovery.py',
