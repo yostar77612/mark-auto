@@ -1273,7 +1273,7 @@ it defaults off. Settings use `privacy_mode`, accepting only JSON boolean true;
 missing or corrupt values fall back to off. Existing settings validation remains
 fail-closed. All new labels live in desktop_strings.py.
 
-`mask_money(value)` always returns four bullets (`????`), including None, zero,
+`mask_money(value)` always returns four bullets (`••••`), including None, zero,
 negative, non-finite and arbitrarily large inputs. `mask_account_id(value)`
 returns four bullets plus the last four characters only when the ID is longer
 than four characters; IDs of length zero through four are fully masked. The
@@ -1307,7 +1307,9 @@ Original display strings/tooltips are cached in Python attributes outside Qt
 model roles. Sensitive display, tooltip and accessibility text are replaced;
 UserRole sort/model data are unchanged. Raw business records, hashes, cache keys,
 DBs and export serializers never receive a masked value. Default-off formatters
-use their original output paths; no snapshot fixture images were regenerated.
+use their original output paths. The privacy toggle sits in the window chrome, so the seven *_viewport.png
+files of the default snapshot baseline were refreshed in a separate fixture-only commit (metrics.json and
+the *_full.png files are unchanged).
 Live trading and all existing admission, budget, OOS and timeout gates are untouched.
 
 Validation from lane-c (2026-10-19), base HEAD
@@ -1332,8 +1334,5 @@ Validation from lane-c (2026-10-19), base HEAD
   not register it (sandbox denies the global registry write); the explicit lane
   query consequently reports repository not found. Direct source review used.
 
-Controller handoff: broader tests, default raster snapshot comparison and full
-visual contrast/truncation checks remain unverified in this lane. Changes are
-intentionally UNCOMMITTED per the task's common rules. The controller must stage
-and make the single B11 commit with its required Co-Authored-By trailer, record
-that final SHA, and rerun tracked-root validation. No commit or PR was created.
+Controller handoff: the controller ran the broader groups locally and an independent QA judged the commits;
+the default raster snapshot comparison passes against the refreshed viewport baseline.
