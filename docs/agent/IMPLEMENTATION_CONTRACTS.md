@@ -1218,3 +1218,48 @@ All locked sources, saved-candidate profiles, golden values, research and
 analysis identity bindings remain unchanged. Live trading stays permanently
 disabled; finite AST, OOS consumption, irreversible budget and all timeouts
 remain in force. B1 ancestry and source/impact evidence are recorded in the ADR.
+### LC-B4: persisted appearance preferences
+
+`desktop_theme.THEMES` exposes `dark` and `light`, with identical COLORS key sets.
+The existing `COLORS` and no-argument stylesheet builders retain the original
+dark tokens and byte-identical QSS. `appearance.theme` defaults to `dark`;
+`appearance.rise_fall` defaults to `red_up` (Taiwan), with `green_up` reversing
+the pair. These named keys use the existing SettingsStore envelope and preserve
+other settings. Missing, unknown or corrupt preference values read as defaults;
+corrupt files are preserved, never repaired by the appearance loader.
+
+Settings > General > Advanced contains named theme/convention combo controls.
+Changing either saves immediately and calls `apply_theme(window)` without a
+restart. Preferences belong to each window, not process-global mutable state.
+The market preference payload's historical `theme: dark` field remains an inert
+compatibility field; the named global appearance keys select the rendered theme.
+
+`up_down_colors` is the common convention source. Default candles retain
+`#ff6575/#35cf9b`, market cells/cards `#f58b8b/#76d6b0`; result P&L labels retain
+the theme's danger/success token shades. Only financial values reverse, while
+warning/error/safety statuses retain their semantic meaning. Financial table
+items carry a separate sign role, preserving numeric sorting. Chart background,
+grid, text, reference/marker and overlay palettes resolve through the active
+window theme; chart legend text follows the convention through catalog keys.
+
+Default snapshots and visible layout are unchanged; controls live inside the
+existing collapsed settings disclosure. No baseline replacement is required.
+`tests/test_b4_appearance.py` checks both themes offscreen, including the existing
+accessibility naming/focus walk, layout truncation, and WCAG 4.5 label contrast.
+The existing accessibility walk has no contrast helper/threshold; B4 adds its
+own standard contrast check without altering existing tests or thresholds.
+Real-DPI verification at 150%/200% remains **EXTERNAL / pending**; offscreen
+checks are not real-DPI screenshots or physical display evidence.
+
+Lane verification at base/HEAD `17b5b1b155d2fe40e98c0665a6b0d75ed4526b22`:
+focused B4 suite 8/8 (exit 0, 3.836 s total; seven-page walk 1.242 s),
+import-graph suite 4/4 (exit 0), Ruff 0.16.10 check/format-check (exit 0),
+quality_gate (exit 0, zero findings), and Python 3.11 py_compile for all 12
+changed Python files (exit 0). The unchanged public-name oracle is invoked by
+the B4 suite. All 14 default snapshot images compare pixel-exact; metrics match
+the existing baseline (exit 0). G3/profile files, guard logic, PROJECT_STATE,
+optimization-plan and ACCEPTANCE files have no changes. The sandbox temp ACL
+fixture uses the existing sandbox_ui helper; product I/O is not patched.
+Full-suite/Linux CI exit codes are **pending controller verification** under
+the lane's focused-test-only rule. Changes remain uncommitted as instructed;
+the controller owns the single B4 commit and its required co-author trailer.

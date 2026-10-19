@@ -4,6 +4,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QCheckBox, QToolButton
 from desktop_strings import ui_text
+from desktop_theme import install_appearance_controls
 from .log_table import LogTable
 from .maintenance import MaintenancePanel
 from .diagnostics import DiagnosticsPanel, snapshot_for_state
@@ -49,6 +50,7 @@ def build_settings(page, layout):
     page.paths_advanced.setObjectName('settings_help_details')
     for key, path in (('ui._settings_page.text_2', page.paths.root), ('ui._settings_page.text_3', page.root), ('ui._settings_page.text_5', page.paths.logs)):
         advanced.addWidget(QLabel(ui_text(key).format(str(path))))
+    install_appearance_controls(page, advanced, page.settings)
     page.workspace_path = page._text(advanced, ui_text('ui._settings_page.text_6'), str(page.paths.root))
     page._button(advanced, ui_text('ui._settings_page.text_7'), 'configure_workspace', page.configure_workspace)
     for key, path in (('settings.open_workspace', page.paths.root), ('settings.open_logs', page.paths.logs)):

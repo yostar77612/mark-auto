@@ -5,6 +5,7 @@ exactly to the supplied immutable series. Changing series clears dependent layer
 """
 
 from desktop_strings import ui_text
+import desktop_theme as _theme
 from dataclasses import dataclass
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -141,10 +142,22 @@ class CandlestickChart(QWidget):
     timeframe_changed = Signal(str)
     timeframes = ('1m', '3m', '5m', '15m', '30m', '60m', '1d', '1w')
     MAX_VISIBLE = 600
-    UP = QColor('#ff6575')
-    DOWN = QColor('#35cf9b')
-    TEXT = QColor('#d7e1ee')
-    COLORS = ('#f8cd68', '#6aa9ff', '#bd9bff', '#64d9df', '#f099d1')
+
+    @property
+    def UP(self):
+        return QColor(_theme.up_down_colors(_theme.appearance(self)[1])[0])
+
+    @property
+    def DOWN(self):
+        return QColor(_theme.up_down_colors(_theme.appearance(self)[1])[1])
+
+    @property
+    def TEXT(self):
+        return QColor(_theme.chart_color(self, 'text'))
+
+    @property
+    def COLORS(self):
+        return _theme.chart_color(self, 'overlay')
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -388,7 +401,7 @@ class CandlestickChart(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.fillRect(self.rect(), QColor('#101722'))
+        p.fillRect(self.rect(), QColor(_theme.chart_color(self, 'background')))
         p.setPen(self.TEXT)
 
         def text(x, y, s):
@@ -400,7 +413,7 @@ class CandlestickChart(QWidget):
             22,
             fm.elidedText(ui_text('charts.paintEvent.text_1').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
         )
-        text(12, 43, ui_text('charts.paintEvent.text_2'))
+        text(12, 43, _theme.chart_legend(self))
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
@@ -442,19 +455,19 @@ class CandlestickChart(QWidget):
         y = lambda value: r.bottom() - (float(value) - low) / (high - low) * r.height()
         step = r.width() / len(visible)
         x = lambda i: r.left() + (i - start + 0.5) * step
-        p.setPen(QPen(QColor('#293547'), 1))
+        p.setPen(QPen(QColor(_theme.chart_color(self, 'grid')), 1))
         for tick in range(5):
             value = low + (high - low) * tick / 4
             yy = y(value)
             p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
             p.setPen(self.TEXT)
             text(r.right() + 6, yy + 4, f'{value:,.2f}')
-            p.setPen(QColor('#293547'))
+            p.setPen(QColor(_theme.chart_color(self, 'grid')))
         volume_top = r.bottom() + 30
         volume_bottom = self.height() * (0.76 if self.panes else 0.91)
         volume_max = max((b.volume or 0 for b in visible), default=0) or 1
         for i, b in enumerate(visible, start):
-            color = self.UP if b.close > b.open else self.DOWN if b.close < b.open else QColor('#b5c2d3')
+            color = self.UP if b.close > b.open else self.DOWN if b.close < b.open else QColor(_theme.chart_color(self, 'flat'))
             p.setPen(QPen(color, 1))
             p.setBrush(color)
             p.drawLine(QPointF(x(i), y(b.high)), QPointF(x(i), y(b.low)))
@@ -467,14 +480,14 @@ class CandlestickChart(QWidget):
         self._draw_lines(p, self.overlays, start, end, x, y, r)
         legend_x = r.left()
         for j, label in enumerate(self.overlays):
-            p.setPen(QColor('#8290a3') if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))
+            p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))
             label = fm.elidedText(self._legend_label(label), Qt.TextElideMode.ElideRight, 240)
             if legend_x + fm.horizontalAdvance(label) > r.right():
                 break
             text(legend_x, r.top() - 5, label)
             legend_x += fm.horizontalAdvance(label) + 14
         for line in references:
-            p.setPen(QPen(QColor('#ffcc80'), 1, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(_theme.chart_color(self, 'reference')), 1, Qt.PenStyle.DashLine))
             yy = y(line.price)
             if line.snapshot_index is None:
                 p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
@@ -492,8 +505,10 @@ class CandlestickChart(QWidget):
                 labels.append(policy)
             width = min(r.width(), max(fm.horizontalAdvance(label) for label in labels) + 12)
             panel = QRectF(r.left() + 4, r.top() + 4, width, (fm.height() + 2) * len(labels) + 8)
-            p.fillRect(panel, QColor(16, 23, 34, 225))
-            p.setPen(QColor('#ffcc80'))
+            panel_color = QColor(_theme.chart_color(self, 'background'))
+            panel_color.setAlpha(225)
+            p.fillRect(panel, panel_color)
+            p.setPen(QColor(_theme.chart_color(self, 'reference')))
             for index, label in enumerate(labels):
                 text(
                     panel.left() + 5,
@@ -508,13 +523,13 @@ class CandlestickChart(QWidget):
                 if marker.kind == 'signal':
                     yy = r.top() + 13
                     points = [QPointF(xx, yy - 5), QPointF(xx + 5, yy), QPointF(xx, yy + 5), QPointF(xx - 5, yy)]
-                    p.setPen(QColor('#e4b9ff'))
+                    p.setPen(QColor(_theme.chart_color(self, 'signal')))
                     p.setBrush(Qt.BrushStyle.NoBrush)
                 else:
                     yy = y(marker.price)
                     points = [QPointF(xx, yy - 6), QPointF(xx + 5, yy + 4), QPointF(xx - 5, yy + 4)]
-                    p.setPen(QColor('#ffdb7b'))
-                    p.setBrush(QColor('#ffdb7b'))
+                    p.setPen(QColor(_theme.chart_color(self, 'fill')))
+                    p.setBrush(QColor(_theme.chart_color(self, 'fill')))
                 p.drawPolygon(QPolygonF(points))
         if self.panes:
             pane_top = volume_bottom + 23
@@ -547,7 +562,7 @@ class CandlestickChart(QWidget):
                     p.restore()
                 else:
                     self._draw_lines(p, {label: seq}, start, end, x, py, area)
-                p.setPen(QColor('#8290a3') if label in self._unavailable_panes else self.TEXT)
+                p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_panes else self.TEXT)
                 text(area.left() + 3, area.top() + 10, self._legend_label(label, pane=True))
         first_time = self.bar_details(start)['time']
         last_time = self.bar_details(end - 1)['time']
@@ -557,7 +572,7 @@ class CandlestickChart(QWidget):
         if self.crosshair_index is not None and start <= self.crosshair_index < end:
             xx = x(self.crosshair_index)
             yy = y(self.bars[self.crosshair_index].close)
-            p.setPen(QPen(QColor('#a5b6cc'), 1, Qt.PenStyle.DashLine))
+            p.setPen(QPen(QColor(_theme.chart_color(self, 'crosshair')), 1, Qt.PenStyle.DashLine))
             p.drawLine(QPointF(xx, r.top()), QPointF(xx, volume_bottom))
             p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
             marker_text = ' / '.join(

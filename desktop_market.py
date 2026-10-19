@@ -4,7 +4,7 @@ No network, timers, broker imports or embedded observations. refresh_requested i
 an intent only; host must perform its existing consent/background-job workflow.
 """
 
-from desktop_theme import apply_market_theme, set_status
+from desktop_theme import apply_market_theme, set_status, set_financial_label
 from desktop_strings import ui_text
 from desktop_timeinput import DateInput, history_utc_hint
 from copy import deepcopy
@@ -568,7 +568,7 @@ class MarketDashboard(QWidget):
             item = next((x for x in choices if x.instrument.contract_id == self._selected), choices[0] if choices else None)
             if not item:
                 label.setText(ui_text('market._render_cards.text_1'))
-                set_status(label, 'neutral')
+                set_financial_label(label, None)
                 label.setToolTip('')
                 continue
             quote = QuoteSnapshot.from_series(item, stale=stale)
@@ -591,7 +591,7 @@ class MarketDashboard(QWidget):
                     quote.received_at.isoformat(),
                 )
             )
-            set_status(label, 'danger' if change is not None and change > 0 else 'success' if change is not None and change < 0 else 'neutral')
+            set_financial_label(label, change)
 
     def _render_chart(self):
         item = self._series.get(self._selected)

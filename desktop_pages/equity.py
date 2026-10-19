@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF
 from PySide6.QtWidgets import QWidget, QToolTip
 from desktop_strings import ui_text
-from desktop_theme import COLORS
+from desktop_theme import theme_colors
 from desktop_presentation import display_number
 from .result_widgets import taipei_time
 
@@ -93,8 +93,8 @@ class EquityPlot(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(COLORS['background']))
-        painter.setPen(QColor(COLORS['text']))
+        painter.fillRect(self.rect(), QColor(theme_colors(self)['background']))
+        painter.setPen(QColor(theme_colors(self)['text']))
         if not self.values:
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, ui_text('ui.paintEvent.text_1'))
             return
@@ -122,13 +122,13 @@ class EquityPlot(QWidget):
         painter.drawLine(QPointF(left, top), QPointF(left, bottom))
         painter.drawLine(QPointF(left, dd_top), QPointF(left, dd_bottom))
         points = QPolygonF([QPointF(x, bottom - (v - lo) * (bottom - top) / (hi - lo) if hi > lo else (top + bottom) / 2) for x, v in zip(xs, self.values)])
-        painter.setPen(QPen(QColor(COLORS['primary']), 2))
+        painter.setPen(QPen(QColor(theme_colors(self)['primary']), 2))
         painter.drawPolyline(points)
         for point in points:
             painter.drawEllipse(point, 2, 2)
         valid = [value for value in self.drawdowns if value is not None]
         floor = min(valid) if valid else 0
-        painter.setPen(QPen(QColor(COLORS['danger']), 2))
+        painter.setPen(QPen(QColor(theme_colors(self)['danger']), 2))
         segment = QPolygonF()
         for x, value in zip(xs, self.drawdowns):
             if value is None:
@@ -140,5 +140,5 @@ class EquityPlot(QWidget):
                 painter.drawEllipse(point, 2, 2)
         painter.drawPolyline(segment)
         if self.cursor_x is not None:
-            painter.setPen(QPen(QColor(COLORS['text']), 1, Qt.PenStyle.DashLine))
+            painter.setPen(QPen(QColor(theme_colors(self)['text']), 1, Qt.PenStyle.DashLine))
             painter.drawLine(QPointF(self.cursor_x, top), QPointF(self.cursor_x, dd_bottom))
