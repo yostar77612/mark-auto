@@ -1695,6 +1695,14 @@ ZH_TW.update(
     }
 )
 
+ZH_TW.update(
+    {
+        'diagnostics.notice': '診斷資訊僅含固定狀態與錯誤代碼，可複製提供協助。每日資料沒有事件時間時顯示 unavailable。',
+        'diagnostics.refresh': '更新診斷資訊',
+        'diagnostics.copy': '複製診斷資訊',
+    }
+)
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

@@ -1119,3 +1119,44 @@ only after the first lock/unlock event. Absence means unlocked. No schema/config
 hash changes or legacy-state normalization occurs; old journal hashes and
 snapshots replay exactly. Connections are transaction scoped (no broker close
 method or persistent connection). Evidence: tests/test_paper_lock_b2.py.
+
+### LA-B12: copyable, allowlisted local diagnostics (after B1)
+
+`quantlab.diagnostics.build_diagnostics()` is a pure builder: no filesystem,
+clock, network, job submission or workspace writes. Its explicit `now` input
+makes snapshots deterministic. Settings exposes Refresh diagnostics and Copy
+diagnostics inside the existing collapsed version-maintenance panel through
+desktop_strings keys, preserving the default Settings text and metrics. Copy rebuilds the displayed snapshot
+and passes that exact string to the clipboard; no file export or upload occurs.
+
+The field allowlist is app_version (the package constant); workspace (presence
+only: available/unavailable); data.source (TAIFEX/TWSE/research/synthetic),
+data.mode (history/eod/realtime/delayed/offline), latest_bar_timestamp (canonical
+UTC ISO timestamp), latest_bar_trade_date (canonical date), age_seconds (computed
+nonnegative integer or unavailable); job.operation (existing OPERATION_LABELS
+keys with ui_ prefix), job.stage (JOB_STAGES), job.state (active/idle);
+last_errors (newest first, error_code plus ERROR_TABLE's fixed explanation);
+errors_status (available/unavailable), and an optional truncation marker.
+Unknown strings never pass through: operation/source/mode become unavailable,
+stages become unknown, error codes become operation_failed. Only literal True
+selects available/active. Invalid dates/times become unavailable. Daily bars
+without event timestamps retain their trade date and unavailable timestamp/age;
+no midnight event time or market freshness guarantee is invented.
+
+The UI adapter reads the selected in-memory market series, shared job state and
+an optional bounded 32 KiB tail of desktop-events.jsonl (last 200 lines). Missing,
+unreadable and malformed logs do not block diagnostics. JobFeedback retains up
+to 32 normalized worker errors in memory, including when logging is disabled;
+matching code/explanation entries already in the log are not repeated by the
+adapter. No arbitrary log record or worker packet is displayed. The builder
+keeps at most 32 errors and drops oldest whole entries to fit a fixed 4096-byte
+UTF-8 ceiling, adding `[truncated]` while preserving valid JSON and all sections.
+
+Excluded regardless of input source: account/registration/job identifiers,
+tokens, bearer/authorization headers, refresh tokens, cookies, email, workspace
+or home paths, URLs, attribution, arbitrary metadata, exception messages,
+exception str/repr, types and tracebacks. Redaction is a fixed-field and enum
+projection, never regex scrubbing of arbitrary text. Prices/money are omitted.
+No broker/order path, timeout, budget, OOS rule, G3 file/profile, acceptance
+score or PROJECT_STATE change belongs to B12. Evidence:
+`tests/test_diagnostics_b12.py`; no shown windows, network, subprocess or sleeps.

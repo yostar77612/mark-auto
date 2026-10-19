@@ -1,11 +1,13 @@
 """Shared job progress and terminal presentation, independent of worker control."""
 
 import math
+from collections import deque
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QProgressBar
 from desktop_strings import ui_text, stage_error_message
 from desktop_chatgpt_states import campaign_outcome, outcome_message, outcome_state
 from quantlab.job_stages import normalize_stage
+from quantlab.diagnostics import error_entry
 
 TERMINAL = frozenset({'result', 'completed', 'success', 'error', 'failed', 'cancelled', 'canceled'})
 SUCCESS = frozenset({'result', 'completed', 'success'})
@@ -70,12 +72,15 @@ class JobFeedback:
         self.job_id = None
         self.terminal = False
         self.campaign_code = None
+        self.diagnostic_stage = 'unknown'
+        self.diagnostic_errors = deque(maxlen=32)
 
     def begin(self, job_id):
         self.job_id = job_id
         self.terminal = False
         self.campaign_code = None
         self.widget.begin()
+        self.diagnostic_stage = 'prepare_operation'
 
     def result_failed(self, result):
         return any(row.get('error') for row in result.get('providers', {}).values()) or (
@@ -88,6 +93,9 @@ class JobFeedback:
         if event.get('job_id') not in (None, self.job_id) or self.terminal:
             return False
         kind = event.get('type')
+        self.diagnostic_stage = normalize_stage(event.get('stage', self.diagnostic_stage))
+        if kind in ('error', 'failed'):
+            self.diagnostic_errors.append(error_entry(event))
         if kind not in TERMINAL:
             self.widget.update_event(event)
             return True
@@ -110,6 +118,7 @@ def install_progress(shell, layout):
     widget = JobProgress(shell.cancel_job)
     shell.job_progress = widget
     shell.job_feedback = JobFeedback(widget)
+    shell.page_state.diagnostics_feedback = shell.job_feedback
     shell.progress = widget.bar
     shell.cancel_button = widget.cancel_button
     layout.addWidget(widget)
