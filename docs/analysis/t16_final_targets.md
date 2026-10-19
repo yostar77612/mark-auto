@@ -14,9 +14,9 @@ SHA：**2296916**（量測所用程式碼提交；其後只修改本文件）。
 | 禁用工程用語 0 | 0 | 依 `desktop_strings.FORBIDDEN_DEFAULT_TERMS` 與 `tests/test_t9_onboarding.py` 相同正規式，掃描七頁 `visible_text + combo_items + table_headers` | 2296916 | PASS |
 | 狀態列原始例外 0 | 固定錯誤代碼對照測試 64／64；秘密字串外洩 0 | `test_t16_presentation.py` 的 fixed-code、worker failure、campaign outcome 測試（本次 15 tests PASS） | 2296916 | PASS |
 | MainWindow ≤400 行 | 393 行 | Python AST：`end_lineno-lineno+1` | 2296916 | PASS |
-| 每個非自明欄位皆有 tooltip | 非自明且無 tooltip 的輸入 0（30 個有 tooltip、11 個自明控制項已列入清單） \| `tests/test_t16_tooltips.py`（建立視窗逐頁檢查） \| 2296916 \| PASS |
+| 每個非自明欄位皆有 tooltip | 非自明且無 tooltip 的輸入 0（30 個有 tooltip、11 個自明控制項已列入清單） | `tests/test_t16_tooltips.py`（建立視窗逐頁檢查） | 2296916 | PASS |
 | >4 位小數 0 | 預設畫面 0；長小數／NaN／±inf 測試通過 | 七頁文字掃描 `\d+\.\d{5,}`；`test_market_empty_ui.py` 真實結果表與 `display_number` | 2296916 | PASS |
-| hash／全大寫內部代碼 0（進階除外） | hash 0；內部代碼 0；10 種全大寫詞彙皆為檔案格式／商品代號／交易所／幣別／時區 \| `tests/test_t16_tooltips.py` 要求預設可見文字的全大寫詞彙集合恰等於清單 \| 2296916 \| PASS（詞彙清單見 Part C） |
+| hash／全大寫內部代碼 0（進階除外） | hash 0；內部代碼 0；10 種全大寫詞彙皆為檔案格式／商品代號／交易所／幣別／時區 | `tests/test_t16_tooltips.py` 要求預設可見文字的全大寫詞彙集合恰等於清單 | 2296916 | PASS（詞彙清單見 Part C） |
 | 無原因停用按鈕 0 | 0 | snapshot `disabled_buttons` 的 tooltip／hint 非空檢查 | 2296916 | PASS |
 | 每作業完成通知 1，成功自動消失 | 4 類作業 ×3 終態，每次 1；成功 5000 ms 啟動淡出並隱藏 | `test_t16_presentation.py::test_each_job_notifies_once_and_cancel_after_complete_is_noop`；`test_market_empty_ui.py::test_completion_success_arms_timer_and_fade_hides_without_waiting`（直接發出 timeout／finished，不等待） | 2296916 | PASS |
 
