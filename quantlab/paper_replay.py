@@ -30,6 +30,7 @@ def _require_local_wal_path(path):
     """WAL shared memory is supported only on a verified local filesystem."""
     resolved = path.resolve()
     if sys.platform == "win32":
+        # Windows-only local drive verification; unavailable on other platforms.
         import ctypes
 
         if str(resolved).startswith(("\\\\", "//")) or ctypes.windll.kernel32.GetDriveTypeW(str(resolved.anchor)) not in (2, 3, 6):
@@ -169,21 +170,44 @@ class PaperReplay:
             'binding': self.binding,
             'cursor': row[0],
             'total_bars': len(self.dataset.bars),
-            'active': bool(row[1]),
+            'active': row[1] == 1,
             'pending_plan': row[2] is not None,
             'complete': row[0] >= len(self.dataset.bars),
             'mode': 'historical_synthetic_execution',
             'source_type': self.dataset.manifest['source_type'],
             'live_status': 'disabled',
             'execution_scope': 'next-bar market targets; stop/target intrabar simulation excluded',
+            **({'paused': True} if row[1] == -1 else {}),
         }
 
     def start(self):
+        if self.snapshot().get('paused', False):
+            raise ValidationError('Paused replay requires explicit resume')
         state = self.broker.snapshot()
         if state['reconciliation_required'] or not state['account_id']:
             raise ValidationError('Reconcile paper account explicitly before starting replay')
         self.broker.set_kill_switch(False)
         with self._db() as db:
+            db.execute('UPDATE replay SET active=1 WHERE id=1')
+        return self.snapshot()
+
+    def pause(self):
+        """Persist pause without changing the broker kill switch or journal."""
+        with self._db() as db:
+            state = self._snapshot(db)
+            if not state['active'] or state['complete']:
+                raise ValidationError('Only an active incomplete replay can pause')
+            db.execute('UPDATE replay SET active=-1 WHERE id=1')
+        return self.snapshot()
+
+    def resume(self):
+        """Resume the exact cursor; broker safety latches remain authoritative."""
+        with self._db() as db:
+            if not self._snapshot(db).get('paused', False):
+                raise ValidationError('Only a paused replay can resume')
+            state = self.broker.snapshot()
+            if state['reconciliation_required'] or state['kill_switch'] or not state['account_id']:
+                raise ValidationError('Reconcile and clear paper safety latches before resuming')
             db.execute('UPDATE replay SET active=1 WHERE id=1')
         return self.snapshot()
 

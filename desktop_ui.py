@@ -953,6 +953,16 @@ def _handle_ui_paper_replay(payload, paths, root, *, emit=None, descendants_stop
         margin_schedule=broker._margin_schedule,
         storage_profile='wal_full',
     )
+    if 'replay_action' in payload:
+        # Keep pacing controls out of module startup and the public UI oracle.
+        import quantlab.replay_pacing as _replay_pacing
+
+        try:
+            replay_state = _replay_pacing.control(replay, payload['replay_action'])
+            return _finish_paper_operation(root, broker, replay_state)
+        except BaseException:
+            replay.stop()
+            raise
     replay.start()
     cursor_before = replay.snapshot()['cursor']
     fills_before = len(broker.snapshot()['fills'])
@@ -1566,6 +1576,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def _quiesce_and_recover(self, *, preserve_primary_sign_in=False):
+        if getattr(self.page_state, 'replay_controls', None): self.page_state.replay_controls.cancel()
         if not preserve_primary_sign_in:
             self.chatgpt_panel.abandon_primary_sign_in()
         # Never create state files until the writer has exited and pending swaps recover.

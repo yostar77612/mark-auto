@@ -14,6 +14,7 @@ from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
 from .result_widgets import KpiCards, ResultTable
+from .replay_controls import ReplayControls
 
 
 class PaperPage(PageContext, QWidget):
@@ -80,7 +81,14 @@ class PaperPage(PageContext, QWidget):
         layout.addWidget(self.replay_bars)
         self.paper_confirm = QCheckBox(ui_text('ui._paper_page.text_14'))
         layout.addWidget(self.paper_confirm)
-        self._button(layout, ui_text('ui._paper_page.text_15'), 'paper_replay', lambda: self.paper_job('replay', max_bars=self.replay_bars.value()))
+        self.replay_controls = ReplayControls(self, layout, options_layout=advanced)
+        self.page_state.replay_controls = self.replay_controls
+        self._button(
+            layout,
+            ui_text('ui._paper_page.text_15'),
+            'paper_replay',
+            lambda: self.paper_job('replay', max_bars=self.replay_bars.value(), _paced=self.replay_controls.speed.currentData() is not None),
+        )
         order_layout = self._advanced(layout, ui_text('ui._paper_page.text_16'))
         self.intent_form = PaperIntentForm()
         order_layout.addWidget(self.intent_form)
@@ -180,10 +188,14 @@ class PaperPage(PageContext, QWidget):
                 raise ValidationError(ui_text('ui.paper_job.text_1'))
             payload.update(snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload), reconcile_confirmed=True)
         payload['policy'] = self._payload(self.paper_policy, self.policy_form.build_payload)
-        self.start_job('ui_paper_' + op, payload)
+        if op == 'replay' and payload.pop('_paced', False):
+            self.replay_controls.begin(payload)
+        else:
+            self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
 
     def kill_paper(self):
+        self.replay_controls.cancel()
         self.freeze_paper(ui_text('ui.kill_paper.text_1'))
         self.status.setText(ui_text('ui.kill_paper.text_2'))
 
@@ -271,6 +283,7 @@ class PaperPage(PageContext, QWidget):
         self.host.callbacks['write_json'](self.root / 'paper_stop_display.json', {'account_hash': content_hash(account), 'reason': reason})
 
     def freeze_paper(self, reason):
+        self.replay_controls.cancel()
         self._quiesce_and_recover()
         self.chatgpt_panel.consent.setChecked(False)
         self._pending_usage_refresh = False

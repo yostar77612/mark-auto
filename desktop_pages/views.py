@@ -181,6 +181,8 @@ class ViewCoordinator(PageContext):
             self.paper_detail.setPlainText(text)
             if 'account' in result:
                 self._show_account(result['account'])
+        if self.last_operation == 'ui_paper_replay' and 'replay' in result:
+            self.page_state.replay_controls.result(result)
         if self.last_operation == 'ui_backup_restore':
             self.freeze_paper(ui_text('ui.poll_jobs.text_2'))
         if self.last_operation in ('ui_paper_replay', 'ui_paper_kill') and 'account' in result:
