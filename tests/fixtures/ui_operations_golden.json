@@ -16,6 +16,9 @@
   ],
   "observations": {
     "campaign_fixture": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "attempts": [
@@ -4532,6 +4535,9 @@
       }
     },
     "campaign_subscription_fixture": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "attempts": [
@@ -5620,6 +5626,9 @@
       }
     },
     "history_import": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [
         [
           "progress",
@@ -5654,6 +5663,9 @@
       }
     },
     "ui_analysis_preview": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [
         [
           "progress",
@@ -6896,6 +6908,9 @@
       }
     },
     "ui_analysis_read": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
@@ -8280,6 +8295,9 @@
       }
     },
     "ui_analysis_reconcile": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "analysis_id": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
@@ -9664,6 +9682,9 @@
       }
     },
     "ui_analysis_run": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [
         [
           "progress",
@@ -11061,6 +11082,9 @@
       }
     },
     "ui_backtest": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "metrics": {
@@ -11083,12 +11107,18 @@
       }
     },
     "ui_backup_create": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "backup": "<TEMP>\\offline.zip"
       }
     },
     "ui_backup_restore": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "reconciliation_required": true,
@@ -11096,6 +11126,9 @@
       }
     },
     "ui_campaign": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "manual_export": "<TEMP>\\workspace\\request.json",
@@ -11620,6 +11653,9 @@
       }
     },
     "ui_chatgpt_auth": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "auth_event": {
@@ -11638,6 +11674,9 @@
       }
     },
     "ui_chatgpt_reconcile": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "binding": "dc6e5ac5e81e421d19c501ae84066dd8656297e50215a109b818297439ccbf68",
@@ -11645,6 +11684,9 @@
       }
     },
     "ui_chatgpt_usage": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account_status": {
@@ -11655,6 +11697,9 @@
       }
     },
     "ui_compare": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "rows": [
@@ -11723,6 +11768,9 @@
       }
     },
     "ui_demo": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "bars": 240,
@@ -11731,6 +11779,9 @@
       }
     },
     "ui_disable": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "scope": "research_and_paper_only",
@@ -11738,6 +11789,9 @@
       }
     },
     "ui_import": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "bars": 2,
@@ -11799,6 +11853,9 @@
       }
     },
     "ui_market_refresh": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "mode": "official_local_import",
@@ -11813,6 +11870,9 @@
       }
     },
     "ui_paper_cancel": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12003,6 +12063,9 @@
       }
     },
     "ui_paper_kill": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12067,6 +12130,9 @@
       }
     },
     "ui_paper_reconcile": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12115,6 +12181,9 @@
       }
     },
     "ui_paper_replay": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12235,6 +12304,9 @@
       }
     },
     "ui_paper_snapshot": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12265,6 +12337,9 @@
       }
     },
     "ui_paper_submit": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "account": {
@@ -12437,11 +12512,17 @@
       }
     },
     "ui_refresh": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "exception": "ValidationError",
       "message": "需明確同意連線至臺灣期交所下載公開資料"
     },
     "ui_select": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "result_hash": "f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b",
@@ -12460,6 +12541,9 @@
       }
     },
     "ui_walk_forward_preview": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "admission_status": "admitted",
@@ -12780,6 +12864,9 @@
       }
     },
     "ui_walk_forward_read": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "display_status": "completed",
@@ -13200,6 +13287,9 @@
       }
     },
     "ui_walk_forward_reconcile": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "display_status": "completed",
@@ -13620,6 +13710,9 @@
       }
     },
     "ui_walk_forward_run": {
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
         "display_status": "completed",

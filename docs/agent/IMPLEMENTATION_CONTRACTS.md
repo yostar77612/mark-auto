@@ -1160,3 +1160,46 @@ projection, never regex scrubbing of arbitrary text. Prices/money are omitted.
 No broker/order path, timeout, budget, OOS rule, G3 file/profile, acceptance
 score or PROJECT_STATE change belongs to B12. Evidence:
 `tests/test_diagnostics_b12.py`; no shown windows, network, subprocess or sleeps.
+
+## B6: golden source, review and precision metadata
+
+Only engine_golden.json cases and ui_operations_golden.json complete operation
+observations are counted as golden entries in tools/list_unverified_goldens.py.
+Each adds source (hand-computed / existing-behaviour / cross-checked / derived),
+review (unreviewed / reviewed / independently-verified), and precision. Engine
+money is Decimal-exact; UI observations compare exactly after the fixture's
+existing documented normalisations, including Decimal-exact money. No float
+money tolerance is introduced. These fields never alter application results.
+
+The engine's existing file-level provenance at 17b5b1b identifies independently
+hand-calculated synthetic arithmetic, hence all four sources are hand-computed.
+Per-case arithmetic evidence (multiplier 10 TWD/point): long_ten_points is
+(20010-20000)*10=100; short_ten_points_loss is -(20010-20000)*10=-100;
+short_ten_points_profit is -(20000-20010)*10=100. All three have zero costs.
+For two_lots_costed, gross=(20010-20000)*10*2=200, round-trip commission
+=5*2*2=20, tax=(20000+20010)*10*2*0.00002=16.0040, net=163.9960.
+This preserves historical provenance, not a new independent review attestation.
+All entries retain unreviewed status until per-entry reviewer evidence is added.
+UI observations are existing-behaviour: their capture provenance and T13's
+same-dispatcher comparison establish regression evidence, not an independent
+financial oracle. No UI observation is labelled hand-computed/cross-checked.
+
+Unverified means source outside hand-computed/cross-checked OR review other
+than independently-verified. Both text and --json reports give per-fixture and
+total counts offline; malformed metadata fails rather than disappearing.
+The inventory is scoped, not a claim about every repository fixture.
+Out of scope, bytes unchanged: desktop_ui_public_names.json (API surface),
+desktop_widget_names.json (objectName inventory), desktop_pages_baseline.json
+(layout baseline), wfo-storage-*.gz and wfo-storage-manifest.json (storage/load
+corpus). These structural inventories and generated storage inputs are not
+independent numerical golden oracles. docs/analysis/t*_*.json are historical
+analysis/change records, not golden inputs, and remain unchanged.
+
+Consumer edit record: tests/test_ui_operations_registry.py uses
+golden_observations() at its two comparison load sites to strip exactly the
+three new entry metadata keys before comparing payloads. No expected value,
+normalisation, operation assertion or engine consumer changes. The cheap
+metadata test pins canonical pre-existing fixture content to 17b5b1b digests,
+checks enums/counts/CLI in-process without subprocesses, and defaults into the
+remaining core shard through existing discovery. Full deep equality with
+17b5b1b was also checked before delivery, removing only those three keys.
