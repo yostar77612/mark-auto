@@ -1731,3 +1731,40 @@ the local evidence, without claiming fresh graph coverage.
 The retry with GITNEXUS_MEMORY=off, index-only, skip-fts and one worker completed
 local analysis but could not write the global registry.json temporary file
 (sandbox EPERM); the lane therefore remains unavailable to registered queries.
+
+### TASK A1-D2: agent harness threat model and evidence integrity
+
+The [threat model](../AGENT_HARNESS_THREAT_MODEL.md), linked from the D1
+contract, records trusted core/AST/DPAPI/journal modules, untrusted model output,
+manual imports, remote-compatible API responses, skill text and saved results.
+Every boundary names its control and residual risk. The three mandatory claims
+cite existing definitions and tests: model code never executes, strategy output
+passes AST validation before strategy use, and credentials never cross from
+DPAPI into harness/model outputs. Authorized auth still uses tokens internally;
+DPAPI at rest is not an OS/process-memory sandbox. Raw bounded candidate output
+may enter the local audit record before validation without becoming executable.
+
+tests/test_agent_harness_d2.py resolves every backticked evidence path and
+qualified definition, requires the mandatory claim references, proves removing
+references or corrupting a path/symbol fails, and scans the document for private
+paths/usernames/secret shapes. Its strategy attack cases call existing validators
+only. tests/test_agent_harness_d7.py adds offline skill/saved-result injection
+regressions at the existing D1 boundary; it adds no skill loader or permissions.
+D3/D11 leakage evidence is the existing D1 recursive all-tool sentinel oracle
+and its partition-filter-removal negative control; a full D3 suite is not claimed.
+
+No runtime modules, strings, error codes, UI or fixture baselines change.
+Live trading stays permanently disabled with zero production mutation tools.
+No gate, OOS consumption, budget, timeout or threshold is changed. All G3 sources
+and saved_candidate_pool.py remain untouched, as do PROJECT_STATE.md, the product
+optimization plan and ACCEPTANCE.json. Changes are left uncommitted as required;
+the controller owns the single task commit and broader CI verification.
+
+Local verification: D2 6 tests, D7 2, D1 11, strategy 6, documentation layering 8,
+import graph 5 and repository layout 6 all pass. Ruff 0.16.10 check, changed-file
+format --check, Python 3.11 py_compile and quality_gate pass (0 findings).
+Repo-wide format --check reports only the known ADR 0006 checkout line-ending
+false alarm; that file is untouched. Protected-path diff against e0e604f is empty.
+GitNexus status found an incomplete stale lane index; analyze with index-only,
+skip-fts and one worker rebuilt locally but failed global registry writing with
+sandbox EPERM. The lane query was unavailable; no fresh graph coverage claimed.

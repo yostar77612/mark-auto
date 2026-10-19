@@ -1,6 +1,8 @@
 # Agent harness contract v1 — A1-D1
 
 This is the offline core contract, with no network transport or conversation UI.
+Trust boundaries, evidence and residual risks are recorded in the
+[agent harness threat model](AGENT_HARNESS_THREAT_MODEL.md).
 The [machine-readable schema](agent-app-tools-v1.schema.json) is mirrored by
 `quantlab.agent_tool_contract` and checked for exact equality in contract tests.
 The schema is JSON Schema draft 2020-12; the runtime uses a deliberately closed,
