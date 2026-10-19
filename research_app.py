@@ -56,6 +56,7 @@ def report_view(result):
 def main():
     st.set_page_config(page_title='TMF Offline Research', layout='wide')
     st.title('TMF Offline Research & Paper')
+    st.info('This is a developer research workspace; the desktop app is the product.')
     st.warning(
         'OFFLINE RESEARCH / PAPER ONLY. Live trading is disabled. Synthetic data and fixture-generated candidates are demonstrations, not verified market data or real AI integration.'
     )

@@ -930,3 +930,41 @@ see docs/analysis/t14_p3_storage_design.md. Real worker timing, hosted fsync,
 Linux/Windows comparison and affected-machine live TLS evidence remain pending
 with user ownership in t14_p3_notes.md. Full suite and unchanged registry/goldens
 are controller-owned under the explicit sandbox test restriction.
+
+## T15: explicit maintenance and developer workspace boundary
+
+P3-04: `quantlab.payload_cleanup` plans direct version-directory removal under a
+supplied payload root. Preserve current + newest strictly older version;
+every other version is a candidate. Canonical two/three-part versions only;
+ambiguous names, missing current, links/reparse points (including descendants
+and ancestors), escapes and filesystem errors refuse the entire plan. The UI
+derives only the supported frozen install path, never the user workspace.
+Immutable plans record identities and are revalidated before each rmtree;
+errors stop immediately and may leave a partially deleted candidate. No atomic
+same-user race defense is claimed. Default-No confirmation lists all candidates.
+Both actions are under Settings → About → version maintenance; the default
+disclosure preserves the existing eight-button budget. Snapshot assertions stay
+exact; Settings metrics/PNGs are refreshed with before evidence in t15_ui.
+
+P3-05: `quantlab.update_check.check_for_update` returns up_to_date,
+update_available or error with fixed message codes. Injected transport returns
+raw JSON bytes and companion SHA-256 text; digest verification precedes JSON
+parsing and strict version comparison. Release assets are release-manifest.json
+and release-manifest.json.sha256 (plain hex, optionally filename). HTTPS only,
+no downgrade redirects, verified build_trust_context TLS, eight-second timeout
+per request, generic User-Agent, JSON <=64 KiB, sidecar <=256 bytes. Hashes prove
+consistency, not publisher identity. Settings starts a background check only on
+click, disables its button and renders fixed catalog messages on the UI thread.
+Construction never checks. No installer download/execution, files, cookies,
+browser launch or telemetry. Existing Releases navigation remains separate.
+
+P3-06: packaging/SIGNING_CHECKLIST.md documents future certificate acquisition,
+RFC3161 signing, verification and CI secrets. Nothing is signed today; installer
+and build signing behavior are unchanged. P3-08: research_app.py adds only an
+st.info developer-workspace notice after its title, with no new imports or other
+AST changes. Desktop remains the product; packaging excludes Streamlit.
+
+Evidence: tests/test_t15_maintenance.py and existing text/style/import guards;
+docs/analysis/t15_p3_notes.md lists live update-server, real installer-upgrade and
+certificate evidence still pending. No G3 sources, quotas, validation, trading,
+OOS consumption or existing test assertions change.

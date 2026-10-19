@@ -6071,6 +6071,21 @@
     "backtest_scale_median_seconds": {"1000": 0.0688848, "10000": 0.7305509},
     "unverified": "Real worker and Walk-forward timings: sandbox denies multiprocessing Pipe CreateFile (WinError 5), both opt-in worker runs exit 1. External controller/user rerun required; no end-to-end speedup claimed. Full suite and unchanged registry/goldens remain controller-owned."
   },
+  "t15_batch_b": {
+    "plan_items": ["P3-04", "P3-05", "P3-06", "P3-08"],
+    "status": "IMPLEMENTED_EXTERNAL_EVIDENCE_PENDING",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T15: explicit maintenance and developer workspace boundary",
+    "evidence": ["tests/test_t15_maintenance.py", "docs/analysis/t15_p3_notes.md", "docs/analysis/t15_snapshot_numbers.json", "docs/analysis/t15_ui", "packaging/SIGNING_CHECKLIST.md"],
+    "cleanup": "Explicit default-No confirmation; direct version directories only; keep current and newest older version. Ambiguous names, links/reparse points, escapes, missing current and filesystem errors refuse. Revalidate immutable identity plan immediately before each deletion; stop on error.",
+    "updates": "User-click-only background metadata check; verify companion SHA-256 before JSON; HTTPS verified with build_trust_context, no HTTP downgrade, 8s per request, 64 KiB JSON limit, generic User-Agent. No installer download, execution, file writes, browser launch, cookies or telemetry.",
+    "streamlit": "Developer-only notice, no new imports; AST identical to HEAD after removing the notice; absent from packaging build-manifest inputs/spec/iss.",
+    "signing": "NOTHING is signed today. Checklist only; build.ps1 and markauto.iss unchanged.",
+    "measurements": {"viewport": [1366, 768], "settings_height_before": 1005, "settings_height_after": 1043, "default_button_count_before": 8, "default_button_count_after": 8, "label_characters_before": 70, "label_characters_after": 69, "unchanged_other_pages": 6, "MainWindow_lines": 397, "SettingsPage_lines": 287, "MaintenancePanel_lines": 62},
+    "verification": "30 focused maintenance/import/text/style tests pass (2.460s), exit 0, zero skips; 18 new tests, slowest 0.659s. Existing strict seven-page Windows metric/pixel snapshot test also passes (1 test, 1.992s), exit 0, with the existing test-only sandbox ACL/vault shim. Ruff check and format --check exit 0 (322 formatted files); quality_gate exit 0, zero findings; py -3.11 utf-8-sig compile of 332 tracked/new Python files exit 0; research_app AST notice-only comparison passes; G3 and optimization-plan diffs empty. Exact snapshot assertions retained; only Settings expectation refreshed.",
+    "graph": "Pre-edit build_settings LOW; shared catalog CRITICAL; standalone research_app UNKNOWN confirmed directly. Refresh failed with sandbox spawn EPERM. Stale-index detect_changes reports 10 symbols, eight processes, high risk; new untracked modules require controller refresh, no clean whole-graph claim.",
+    "pending_evidence": ["Real release-manifest server unavailable/unverified", "Real installer upgrade and frozen-layout cleanup run", "Signing certificate and signed artifact verification", "Full existing suite: controller-owned outside sandbox per explicit task instructions"],
+    "acceptance_score_change": 0
+  },
   "t12_documentation_layering": {
     "readme_max_lines": 150,
     "readme_history_source_commit": "7be525fcbf8e55d8c699422252fd8dd93f4649a6",

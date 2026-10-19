@@ -1,0 +1,96 @@
+{
+  "size": [
+    1366,
+    768
+  ],
+  "scale": 1.0,
+  "unchanged_pages": [
+    "資料匯入與更新",
+    "AI 策略中心",
+    "回測與結果",
+    "比較與策略選擇",
+    "紙上交易與復原",
+    "市場總覽"
+  ],
+  "settings_before": {
+    "page_height": 1005,
+    "visible_input_count": 5,
+    "button_count": 8,
+    "label_char_count": 70,
+    "visible_text": [
+      "設定與備份",
+      "一般",
+      "保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）",
+      "作業完成／失敗時顯示本機提示並提醒此視窗",
+      "儲存非敏感偏好",
+      "進階：工作區與日誌路徑",
+      "ChatGPT 連線",
+      "尚未核對本機連線；沒有自動登入或網路請求。",
+      "展開 ChatGPT 完整連線管理",
+      "備份與還原",
+      "進階：備份路徑與還原操作",
+      "?",
+      "關於與更新",
+      "目前版本 0.2.2 · 未簽章預覽版；尚無已驗證的最新版本資訊。",
+      "開啟專案 Releases 頁面",
+      "讀取精簡本機日誌",
+      "只看錯誤",
+      "匯出日誌",
+      "?",
+      "管理連線、備份與偏好。"
+    ],
+    "combo_items": [],
+    "table_headers": [
+      "時間（台北）",
+      "作業（中文名稱）",
+      "結果"
+    ],
+    "unlabeled_inputs": [],
+    "disabled_buttons": [],
+    "primary_button_count": 1,
+    "viewport_png": "07_viewport.png",
+    "full_png": "07_full.png",
+    "full_width": 1146
+  },
+  "settings_after": {
+    "page_height": 1043,
+    "visible_input_count": 6,
+    "button_count": 8,
+    "label_char_count": 69,
+    "visible_text": [
+      "設定與備份",
+      "一般",
+      "保存精簡本機作業日誌（不含金鑰、路徑、請求或回應）",
+      "作業完成／失敗時顯示本機提示並提醒此視窗",
+      "儲存非敏感偏好",
+      "進階：工作區與日誌路徑",
+      "ChatGPT 連線",
+      "尚未核對本機連線；沒有自動登入或網路請求。",
+      "展開 ChatGPT 完整連線管理",
+      "備份與還原",
+      "進階：備份路徑與還原操作",
+      "?",
+      "關於與更新",
+      "目前版本 0.2.2 · 未簽章預覽版；請手動檢查最新版本資訊。",
+      "開啟專案 Releases 頁面",
+      "版本維護（檢查更新／舊程式版本）",
+      "讀取精簡本機日誌",
+      "只看錯誤",
+      "匯出日誌",
+      "?",
+      "管理連線、備份與偏好。"
+    ],
+    "combo_items": [],
+    "table_headers": [
+      "時間（台北）",
+      "作業（中文名稱）",
+      "結果"
+    ],
+    "unlabeled_inputs": [],
+    "disabled_buttons": [],
+    "primary_button_count": 1,
+    "viewport_png": "07_viewport.png",
+    "full_png": "07_full.png",
+    "full_width": 1146
+  }
+}

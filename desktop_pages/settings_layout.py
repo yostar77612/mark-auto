@@ -5,6 +5,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QCheckBox, QToolButton
 from desktop_strings import ui_text
 from .log_table import LogTable
+from .maintenance import MaintenancePanel
 
 
 def open_folder(directory):
@@ -86,6 +87,9 @@ def build_settings(page, layout):
     about.addWidget(page.version_label)
     about.addWidget(QLabel(ui_text('ui._settings_page.text_16')))
     page._button(about, ui_text('ui._settings_page.text_17'), 'open_releases', page.open_releases)
+    page.maintenance_toggle, _, maintenance = collapsed(about, 'maintenance.options')
+    page.maintenance_panel = MaintenancePanel(page)
+    maintenance.addWidget(page.maintenance_panel)
     page._button(about, ui_text('ui._settings_page.text_18'), 'read_logs', page.read_logs)
     page.log_view = LogTable()
     page.errors_only = QCheckBox(ui_text('logs.errors_only'))

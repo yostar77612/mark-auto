@@ -470,6 +470,9 @@ P0（快速修正，含真實 bug）
 | P3-10 背景作業延遲 | 已有可重複的基準 `tools/bench_worker_latency.py` 與報告 `docs/analysis/t14_p3_latency.md`（安靜機器：整個作業約 1.5 s、單次 Walk-forward 評估約 0.49 s；計畫中的 3.5–8 s 為機器負載下的數字）；僅延後 `zipfile` 匯入，保留子程序隔離 | 執行器匯入約 0.4 s 主要來自既有 registrar 載入 Qt；進一步抽離會影響公開名稱與黃金基準，留待有計畫的版本；請在目標機器上重跑基準 |
 | P3-11 大型資料效能與儲存 | `tools/bench_backtest_scale.py`、`docs/analysis/t14_p3_scale.md`、`docs/analysis/t14_p3_storage_design.md`（SQLite／欄式評估與建議）；Walk-forward 預覽顯示保守的預估耗時（標示為估計，以每次評估 8 秒推算上限） | 引擎內部最佳化與資料格式變更屬 G3 鎖定範圍，留待有計畫的引擎版本升級；預估秒數為保守常數，實際依機器而異 |
 | P3-12 TLS 信任錨共用模組 | `quantlab/tls_trust.py` 供 `downloads.py`、`market_providers.py` 使用（只載入 ROOT 存放區、失敗時回到已驗證的預設）；以假憑證庫離線測試 | `provider.py`（G3 鎖定）仍用預設 context；真實網路在含過期交叉簽署 `ISRG Root X2` 的電腦上對 Let's Encrypt 站台的行為需在該電腦實測：用 `quantlab.tls_trust.build_trust_context()` 連線 sqlite.org 驗證 |
+| P3-05 更新檢查的真實更新來源 | `quantlab/update_check.py`：使用者按下按鈕才檢查；以 SHA-256 驗證 release-manifest；不下載、不安裝；以注入的傳輸層離線測試所有情況 | 專案尚未發布 `release-manifest.json` 與其 `.sha256` 附檔，真實網路與真實發行頁面未實測：發布第一個含 manifest 的版本後，在設定頁按「檢查更新」確認顯示「已是最新」或「有新版本」 |
+| P3-04 舊版程式檔清理的真實安裝目錄實跑 | `quantlab/payload_cleanup.py` 只處理 `payloads\<版本>` 的直接子資料夾，保留目前版本與前一版，遇連結、無法解析的名稱或權限問題一律零刪除；以暫存資料夾測試 | 需在真實升級過的安裝（`%LOCALAPPDATA%\Programs\MarkAuto\payloads`）上執行，確認只刪除更舊的版本、捷徑與使用者資料不受影響 |
+| P3-06 程式碼簽署 | 僅提供檢查清單 `packaging/SIGNING_CHECKLIST.md`；目前安裝程式與執行檔皆未簽署，文件與介面也不宣稱已簽署 | 需要使用者取得程式碼簽署憑證與簽署環境後，依清單簽署並用 `signtool verify` 驗證 |
 
 ## 6. 不在本計畫範圍
 

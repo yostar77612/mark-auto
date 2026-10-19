@@ -341,10 +341,10 @@
       "full_width": 1146
     },
     "設定與備份": {
-      "page_height": 1005,
-      "visible_input_count": 5,
+      "page_height": 1043,
+      "visible_input_count": 6,
       "button_count": 8,
-      "label_char_count": 70,
+      "label_char_count": 69,
       "visible_text": [
         "設定與備份",
         "一般",
@@ -359,8 +359,9 @@
         "進階：備份路徑與還原操作",
         "?",
         "關於與更新",
-        "目前版本 0.2.2 · 未簽章預覽版；尚無已驗證的最新版本資訊。",
+        "目前版本 0.2.2 · 未簽章預覽版；請手動檢查最新版本資訊。",
         "開啟專案 Releases 頁面",
+        "版本維護（檢查更新／舊程式版本）",
         "讀取精簡本機日誌",
         "只看錯誤",
         "匯出日誌",
