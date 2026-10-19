@@ -1749,3 +1749,11 @@ ZH_TW.update(
         'appearance.legend.green_up': 'K 線漲 + 綠／跌 − 紅   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移',
     }
 )
+
+
+ZH_TW.update(
+    {
+        'privacy.toggle': '\u96b1\u79c1\u6a21\u5f0f',
+        'privacy.exports_raw': '\u532f\u51fa\u6a94\u6848\u4fdd\u7559\u672a\u906e\u7f69\u7684\u539f\u59cb\u8cc7\u6599',
+    }
+)

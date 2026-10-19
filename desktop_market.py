@@ -6,6 +6,7 @@ an intent only; host must perform its existing consent/background-job workflow.
 
 from desktop_theme import apply_market_theme, set_status, set_financial_label
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 from desktop_timeinput import DateInput, history_utc_hint
 from copy import deepcopy
 from quantlab.desktop_errors import error_message, exception_code
@@ -574,12 +575,18 @@ class MarketDashboard(QWidget):
             quote = QuoteSnapshot.from_series(item, stale=stale)
             change = quote.change
             delta = ui_text('market._render_cards.text_2') if change is None else f'{change:+f}'
-            label.setText(
+            raw = (
                 f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '
                 + (ui_text('market._render_cards.text_3') if stale else ui_text('market._render_cards.text_4'))
                 + ' · '
                 + ui_text('market.not_realtime')
                 + (' · ' + ui_text('market.sample_label') if item.provenance.source_url == 'sample:synthetic-v1' else '')
+            )
+            _privacy.bind_text(
+                label,
+                lambda label=label, raw=raw: label.setText(
+                    '\n'.join(_privacy.display(label, part, 'price') if index == 1 else part for index, part in enumerate(raw.split('\n')))
+                ),
             )
             label.setToolTip(
                 ui_text('market._render_cards.text_5').format(
@@ -832,11 +839,12 @@ class MarketDashboard(QWidget):
             ('paper', ui_text('market.set_trading_status.text_2')),
             ('risk', ui_text('market.set_trading_status.text_3')),
         ]:
-            self.trading_labels[key].setText(
-                ui_text('market.set_trading_status.text_5').format(
-                    title, values[key] if values[key] is not None else ui_text('market.set_trading_status.text_4')
-                )
+            label = self.trading_labels[key]
+            raw = ui_text('market.set_trading_status.text_5').format(
+                title, values[key] if values[key] is not None else ui_text('market.set_trading_status.text_4')
             )
+            field = 'cash' if key == 'paper' else key
+            _privacy.bind_text(label, lambda label=label, raw=raw, field=field: label.setText(_privacy.display(label, raw, field)))
 
     def set_account_tables(self, *, positions=(), orders=(), fills=()):
         """Validated display-only snapshots. Never produces an order or fills blanks."""
@@ -879,7 +887,18 @@ class MarketDashboard(QWidget):
             table.setRowCount(len(rows))
             for r, cells in enumerate(rows):
                 for c, value in enumerate(cells):
-                    table.setItem(r, c, QTableWidgetItem(value))
+                    item = QTableWidgetItem(value)
+                    keys = (
+                        ('contract_id', 'quantity', 'average_price')
+                        if table is self.positions_table
+                        else (
+                            ('order_id', 'contract_id', 'side', 'quantity', 'status')
+                            if table is self.orders_table
+                            else ('fill_id', 'contract_id', 'side', 'quantity', 'price')
+                        )
+                    )
+                    _privacy.item_display(table, item, keys[c])
+                    table.setItem(r, c, item)
 
 
 class MarketHistoryDialog(QDialog):

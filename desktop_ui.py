@@ -1219,6 +1219,7 @@ from desktop_forms import (
 from desktop_pages.bindings import SharedStateBindings
 from desktop_pages.mount import mount_pages
 import desktop_pages.job_progress as _job_progress
+import desktop_privacy as _privacy
 
 
 def _install_window_support(window):
@@ -1290,6 +1291,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         explanation = QLabel(ui_text('ui.__init__.text_4'))
         explanation.setObjectName('research_mode_explanation'); explanation.setWordWrap(True)
         outer.addWidget(explanation); explanation.hide(); banner.toggled.connect(explanation.setVisible)
+        self.privacy = _privacy.PrivacyState(self, outer, banner)
         horizontal = QHBoxLayout(); outer.addLayout(horizontal, 1)
         self.navigation = QListWidget(); self.navigation.setObjectName('navigation'); self.navigation.setMaximumWidth(180)
         self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
@@ -1349,6 +1351,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             window_minimum_size=lambda: (self.minimumWidth(), self.minimumHeight()),
         )
         mount_pages(self)
+        self.privacy.attach_previews()
         # Load the optional UI adapter only when this operation is requested.
         from desktop_pages.onboarding import install_onboarding
         install_onboarding(self)
