@@ -1061,3 +1061,28 @@ validation, payloads, quotas, OOS consumption or G3 files change. MainWindow sta
 Evidence: tests/test_t16_tooltips.py (4 tests), t16_tooltip_metrics.json and
 updated t16_final_targets.md; sandbox verification covers new/changed focused
 modules plus the quality gate, Ruff and all-file Python 3.11 compilation.
+
+### LA-B1: fixed error catalogue and worker log codes
+
+`quantlab/errors.py:ERROR_TABLE` is the sole literal code-to-message table.
+Every code is defined once, matches `^[a-z][a-z0-9_]*$`, and has a nonempty
+explanation and action. `ERROR_LABELS` is only a compatibility projection;
+`ErrorCode` is derived from the same keys. Display rendering remains
+`quantlab.desktop_errors.error_message()`. No new codes are introduced.
+The B1 snapshot pins all 64 pre-existing explanation/action pairs and rendered
+messages from commit `17b5b1b` byte-for-byte using canonical UTF-8 JSON SHA-256.
+
+JobManager forwards worker error codes to `RedactedEventLog.append(error_code=)`.
+Missing or unrecognized IPC codes normalize to `operation_failed`; the log
+continues to accept only catalogue codes and fixed schema fields, never raw
+exception messages, types or payloads. Logging remains optional and storage
+failure cannot interrupt job completion or cancellation. Existing exception
+messages, ValidationError and RecoveryError pickle paths, and unknown-input
+fallback classification remain unchanged; locked core validation is untouched.
+
+Evidence: `tests/test_error_catalog_b1.py` checks AST duplicate keys (including
+updates), enum/key equality, the baseline snapshot, literal display references,
+absence of another literal message table, and fake-worker-to-JSONL propagation.
+It uses no Qt windows, child processes, network or sleeps. Ordinary test discovery
+automatically includes it in the core/remaining CI shard. The import-graph scan
+also includes the changed catalogue module.
