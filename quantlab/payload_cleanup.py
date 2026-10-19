@@ -68,11 +68,8 @@ def plan_payload_cleanup(payload_root, current_version):
             if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
                 raise ValueError('unsafe_link')
         resolved = root.resolve(strict=True)
-        if not root.is_dir():
+        if not root.is_dir() or resolved != root:
             raise ValueError('invalid_root')
-        # Ancestors were lstat-checked above, so a different spelling (for example a
-        # Windows 8.3 short name) is not a link; continue with the canonical spelling.
-        root = resolved
         versions = {}
         children = sorted(root.iterdir())
         for child in children:

@@ -32,7 +32,8 @@ class OfflineTest(unittest.TestCase):
         self.stack.enter_context(sandbox_ui())
 
     def temp(self):
-        return Path(self.stack.enter_context(tempfile.TemporaryDirectory(prefix='t15-')))
+        # Resolve once: CI temp dirs use Windows 8.3 short spellings, which the cleanup (fail closed) treats as a different root spelling.
+        return Path(self.stack.enter_context(tempfile.TemporaryDirectory(prefix='t15-'))).resolve()
 
 
 class PayloadCleanupTests(OfflineTest):
