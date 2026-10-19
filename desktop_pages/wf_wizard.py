@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QS
 from desktop_strings import ui_text
 from desktop_presentation import display_number
 from .result_widgets import ResultTable
-from desktop_theme import COLORS
+from desktop_theme import theme_colors
 from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
 
 
@@ -103,7 +103,7 @@ class WindowTimeline(QWidget):
         self.setObjectName('wf_timeline')
         self.setMinimumHeight(110)
         self.lengths = (1, 1, 1, 1)
-        self.setProperty('segmentColors', [COLORS[k] for k in ('primary', 'success', 'warning', 'neutral')])
+        self.setProperty('segmentColors', [theme_colors(self)[k] for k in ('primary', 'success', 'warning', 'neutral')])
         self.setAccessibleName(' / '.join(ui_text('wf.' + r) for r in self.roles))
 
     def segments(self, width):
@@ -118,10 +118,10 @@ class WindowTimeline(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        colors = self.property('segmentColors')
+        colors = [theme_colors(self)[k] for k in ('primary', 'success', 'warning', 'neutral')]
         for index, (role, label, left, width) in enumerate(self.segments(self.width())):
             painter.fillRect(QRectF(left, 12, width, 30), QColor(colors[index]))
-            painter.setPen(QColor(COLORS['text']))
+            painter.setPen(QColor(theme_colors(self)['text']))
             # Separate legend remains legible even when a segment is narrow.
             painter.drawText(
                 QRectF(index * self.width() / 4, 50, self.width() / 4, 50), Qt.AlignmentFlag.AlignCenter, label + '\n' + display_number(self.lengths[index])

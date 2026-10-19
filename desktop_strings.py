@@ -1736,3 +1736,16 @@ def ui_text(key, locale=None):
     if key in catalog:
         return catalog[key]
     return default[key]
+
+
+ZH_TW.update(
+    {
+        'appearance.theme': '介面主題',
+        'appearance.convention': '漲跌配色',
+        'appearance.dark': '深色',
+        'appearance.light': '淺色',
+        'appearance.red_up': '紅漲綠跌（台灣）',
+        'appearance.green_up': '綠漲紅跌',
+        'appearance.legend.green_up': 'K 線漲 + 綠／跌 − 紅   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移',
+    }
+)

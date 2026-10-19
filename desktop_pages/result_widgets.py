@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QTableWidgetItem
 from desktop_strings import ui_text
+from desktop_theme import FINANCIAL_FIELDS, set_financial_item, set_financial_label
 from desktop_presentation import display_number, display_value, RATIOS, AMOUNTS
 from desktop_forms import ResultTable as LegacyTable, BacktestFillsTable, RESULT_LABELS, _report_text
 
@@ -143,6 +144,8 @@ class ResultTable(CopyTable, LegacyTable):
                 number = numeric(value)
                 item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
                 item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.text_2'))
+                if key in FINANCIAL_FIELDS:
+                    set_financial_item(self, item, value)
                 self.setItem(r, c, item)
         # Enable header sorting without reordering a newly loaded report.
         self.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
@@ -217,6 +220,8 @@ class KpiCards(QWidget):
     def set_values(self, values):
         for key in self.keys:
             self.labels[key].setText(shown(values.get(key, MISSING), key))
+            if key in FINANCIAL_FIELDS and key in values:
+                set_financial_label(self.labels[key], values[key])
             reason = self.reasons[key]
             undefined = key in values and values[key] is None and key in ('profit_factor', 'sharpe')
             reason.setText(_report_text(values.get(key + '_reason')) if undefined else '')

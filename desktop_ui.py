@@ -1225,6 +1225,7 @@ def _install_window_support(window):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_ui_polish import install_polish
 
+    apply_theme(window)
     install_polish(window)
     # Load the optional UI adapter only when this operation is requested.
     from desktop_help import install_page_help

@@ -7,6 +7,7 @@ QDoubleSpinBox rounding. Backend validation remains authoritative.
 """
 
 from desktop_strings import ui_text
+from desktop_theme import FINANCIAL_FIELDS, set_financial_item
 from desktop_timeinput import DateInput, DATE_KEYS, TIME_KEYS, install_date_columns, open_date_editors
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
@@ -958,6 +959,8 @@ class ResultTable(QTableWidget):
                 text = readable(row.get(key), key)
                 item = QTableWidgetItem(text)
                 item.setToolTip(str(row.get(key)))
+                if key in FINANCIAL_FIELDS:
+                    set_financial_item(self, item, row.get(key))
                 self.setItem(i, j, item)
         self.resizeColumnsToContents()
         for j in range(len(columns)):
