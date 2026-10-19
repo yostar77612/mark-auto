@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckB
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
-from .result_widgets import KpiCards, ResultTable
+from .result_widgets import KpiCards, ResultTable, bind_tab_count
 from .replay_controls import ReplayControls
 from .widgets import PanelCard
 
@@ -145,6 +145,8 @@ class PaperPage(PageContext, QWidget):
         self.account_fills_table = ResultTable()
         self.account_fills_table.setObjectName('paper_fills_results')
         tables.addTab(self.account_fills_table, ui_text('results.fills'))
+        for table in (self.positions_table, self.orders_table, self.account_fills_table):
+            bind_tab_count(tables, table)
 
     def load_form_file(self, form, editor):
         name, _ = self.host.open_file(ui_text('ui.load_form_file.text_1'), '', 'JSON (*.json)')

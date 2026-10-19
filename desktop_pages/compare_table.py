@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from desktop_forms import PARAM_LABELS
 from desktop_presentation import display_number, display_status, result_name
 from desktop_strings import ui_text
+from desktop_theme import FINANCIAL_FIELDS, align_table_item, set_financial_item
 import desktop_privacy as _privacy
 from .result_widgets import ResultTable, MISSING, shown, taipei_time, column_label
 
@@ -63,9 +64,12 @@ class SavedResultsTable(ResultTable):
             self.set_rows([row for path, row in records], FIELDS)
             self.setSortingEnabled(False)
             self.setHorizontalHeaderLabels([ui_text('compare.' + key) if key in FIELDS[:5] else column_label(key) for key in FIELDS])
+            for c, key in enumerate(FIELDS):
+                align_table_item(self.horizontalHeaderItem(c), numeric=key in FIELDS[5:])
             for r, (path, row) in enumerate(records):
                 for c in range(self.columnCount()):
                     item = self.item(r, c)
+                    align_table_item(item, numeric=FIELDS[c] in FIELDS[5:])
                     raw, roles = item._privacy_raw
                     item.setText(safe_text(raw))
                     item.setToolTip(roles[0] or '')
@@ -127,7 +131,14 @@ class SideBySideTable(ResultTable):
         ]
         super().set_rows(display, ['metric'] + [str(i) for i in range(len(rows))])
         self.setHorizontalHeaderLabels([ui_text('compare.metric')] + names)
+        for c in range(self.columnCount()):
+            align_table_item(self.horizontalHeaderItem(c), numeric=c > 0)
+        for r in range(self.rowCount()):
+            align_table_item(self.item(r, 0))
         for c, row in enumerate(rows, 1):
             for r, key in enumerate(keys):
+                align_table_item(self.item(r, c), numeric=True)
+                if key in FINANCIAL_FIELDS:
+                    set_financial_item(self, self.item(r, c), row.get(key, MISSING))
                 self.item(r, c).setToolTip(str(row.get(key, '')) + '\n' + str(row.get(key + '_reason', '')))
                 _privacy.item_display(self, self.item(r, c), key)

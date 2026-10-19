@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
+from shiboken6 import isValid
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
@@ -96,6 +97,26 @@ def column_label(key):
     if key == 'position':
         return RESULT_LABELS['open_position']
     return RESULT_LABELS.get(key, key)
+
+
+def bind_tab_count(tabs, table):
+    """Project the model's row count into an existing tab, including direct edits."""
+    title = tabs.tabText(tabs.indexOf(table))
+    tabs.tabBar().setElideMode(Qt.TextElideMode.ElideNone)
+
+    def refresh(*args):
+        # A model can reset during child teardown after its tab widget is gone.
+        if not isValid(tabs) or not isValid(table):
+            return
+        index = tabs.indexOf(table)
+        if index >= 0:
+            tabs.setTabText(index, ui_text('tables.tab_count').format(title, display_number(table.rowCount())))
+
+    model = table.model()
+    model.rowsInserted.connect(refresh)
+    model.rowsRemoved.connect(refresh)
+    model.modelReset.connect(refresh)
+    refresh()
 
 
 class SortItem(QTableWidgetItem):

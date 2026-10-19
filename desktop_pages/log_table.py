@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QFileDialog, QVBoxLayout
 from .async_status import AsyncStatus
 from desktop_strings import ui_text, LOG_OPERATION_NAMES, LOG_EVENT_NAMES
+from desktop_theme import align_table_item
 
 
 def choose_log_export(parent):
@@ -40,6 +41,8 @@ class LogTable(QTableWidget):
         self.rows = []
         self.errors_only = False
         self.setHorizontalHeaderLabels([ui_text('logs.time'), ui_text('logs.operation'), ui_text('logs.result')])
+        for column in range(self.columnCount()):
+            align_table_item(self.horizontalHeaderItem(column))
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.horizontalHeader().setStretchLastSection(True)
         self.setAccessibleName(ui_text('ui._settings_page.text_18'))
@@ -61,7 +64,9 @@ class LogTable(QTableWidget):
         self.setRowCount(len(rows))
         for index, row in enumerate(rows):
             for column, text in enumerate(row):
-                self.setItem(index, column, QTableWidgetItem(text))
+                item = QTableWidgetItem(text)
+                align_table_item(item)
+                self.setItem(index, column, item)
         self.resizeColumnsToContents()
 
     def export(self):
