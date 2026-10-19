@@ -34,9 +34,10 @@ class AppearanceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    # Re-pinned after UI-1 C2: onboarding chip rules were appended to the app stylesheet (market stylesheet unchanged).
     def test_default_stylesheets_are_17b5b1b_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, '3e1f9df28152dffa651af17884c93e66ee1573437d40d2acb3bd73b79ec2f485'),
+            (theme.build_app_stylesheet, 'bce793bc4ead40187b315e63e28aff803623ccff6fb33942235cf8443ca01b06'),
             (theme.build_market_stylesheet, 'da36c77e88d08b8d06c2dab4a44cab9b92d403f2800d1080e96535e32949a571'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)

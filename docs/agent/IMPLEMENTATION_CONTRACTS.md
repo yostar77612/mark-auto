@@ -1982,3 +1982,52 @@ is left to the controller under the explicit sandbox rule; no pass is claimed.
 GitNexus status identified an incomplete index; refresh with index-only/skip-fts
 failed with sandbox spawn EPERM and the lane query reported repository not found.
 No extension downloads, alternative graph tools or fresh graph claims were used.
+### U1-C2: compact onboarding workflow chips
+
+GettingStarted uses one QHBoxLayout for the five clickable workflow chips and
+the existing dismiss button. Its maximum height is 40 logical pixels. With the
+shared interpreter and offscreen Qt, both themes measure a 30 px size hint
+(810 px width), reclaiming 258 px against the e0e604f 288 px baseline recorded
+as BASELINE_E0E604F_HEIGHT in tests/test_onboarding_c2.py. Tests enforce the
+40 px bound without asserting platform-specific font or page measurements.
+No claim of visual quality or high-DPI acceptance follows from these metrics.
+
+Each onboarding_go_<page> button includes the existing localized page caption
+and onboarding.done/onboarding.pending text, derived from the same five-entry
+completed tuple. Role onboardingChip and state done/pending select theme QSS
+tokens; no widget-specific color literals are introduced. Minimum chip widths
+preserve their full size hints. onboarding_status_<page> QLabel objects remain
+as hidden automation compatibility mirrors with their original numbered status
+text; the button is the visible status and navigation target. All existing
+widget names remain in desktop_widget_names.json; no new names require entries.
+
+Refresh now applies restore_visibility, so any completed step or persisted
+dismissal hides the bar and its layout item contributes zero height. Dismissal
+updates only onboarding_dismissed through the existing settings load/save
+round-trip; unrelated settings survive. Hosts without settings retain dismissal
+in widget memory. Missing optional host controls use empty defaults. The existing
+onboarding_help callback clears persisted dismissal and reopens an incomplete
+workflow; completed workflows remain hidden. Its glossary tooltip, WORKFLOW_ORDER,
+navigation hints, per-page empty guidance and completion-file semantics remain
+unchanged. No desktop_ui exports, locked G3 source, candidate profiles, monetary
+calculations, execution paths, limits, timeouts or acceptance scores change.
+
+Evidence: seven new focused tests pass in 0.11 s locally without shown windows,
+style switching, sleeps, network or child processes. Existing T9 onboarding,
+UI operation registry, catalog placeholders, import graph, hardcoded text,
+inline stylesheet, function lengths, B8 drawings, desktop polish/banner and
+B2 live-disabled tests pass unchanged. Accessibility walk passes in dark and
+light themes. Ruff 0.16.10 check and format --check, Python 3.11 compilation,
+and tools/quality_gate.py pass. GitNexus status found no lane index; analyze
+failed with sandbox spawn EPERM and the explicit lane impact query reported
+repository not found. Fresh graph coverage is unverified; direct source reads
+and tests provide the available evidence.
+
+The five requested desktop smoke modules were attempted unchanged; Windows
+temporary-directory ACL errors prevent sandbox validation. Controller reruns
+are required. No baseline files are edited here. The controller must refresh
+tests/fixtures/desktop_pages_before/01_viewport.png through 07_viewport.png
+for the compact bar in a separate fixture-only commit. A fresh disposable
+capture confirms all seven full-page PNGs and metrics.json remain byte-identical;
+only those seven viewport images require refresh.
+The item is left uncommitted for the controller's single item commit.

@@ -13,17 +13,18 @@ WORKFLOW_ORDER = (1, 2, 3, 4, 5, 0, 6)
 
 class GettingStarted(QWidget):
     def __init__(self, shell):
-        super().__init__(shell)
+        super().__init__(shell if isinstance(shell, QWidget) else None)
         self.shell = shell
+        self._dismissed = False
         self.setObjectName('getting_started')
-        layout = QVBoxLayout(self)
-        header = QHBoxLayout()
-        header.addWidget(QLabel(ui_text('onboarding.title')))
+        self.setMaximumHeight(40)
+        self.setToolTip(ui_text('onboarding.title'))
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 2, 0, 2)
+        layout.setSpacing(6)
         dismiss = QPushButton(ui_text('onboarding.dismiss'))
         dismiss.setObjectName('onboarding_dismiss')
         dismiss.clicked.connect(lambda: self.set_dismissed(True))
-        header.addWidget(dismiss)
-        layout.addLayout(header)
         self.labels = []
         self.buttons = []
         captions = {
@@ -34,33 +35,38 @@ class GettingStarted(QWidget):
             'paper': ui_text('onboarding.paper'),
         }
         for index, page in enumerate(('data', 'strategy', 'backtest', 'compare', 'paper')):
-            row = QHBoxLayout()
-            label = QLabel()
-            label.setObjectName('onboarding_status_' + page)
             button = QPushButton(captions[page])
+            # Preserve status-label lookup for automation; the visible chip includes its text.
+            label = QLabel(button)
+            label.setObjectName('onboarding_status_' + page)
+            label.hide()
             button.setObjectName('onboarding_go_' + page)
+            button.setProperty('onboardingCaption', captions[page])
+            set_theme_property(button, 'role', 'onboardingChip')
             button.clicked.connect(lambda checked=False, target=index: self.go(target))
-            row.addWidget(label)
-            row.addWidget(button)
-            layout.addLayout(row)
+            layout.addWidget(button)
             self.labels.append(label)
             self.buttons.append(button)
+        layout.addStretch()
+        layout.addWidget(dismiss)
         self.refresh()
-        self.restore_visibility()
 
     def restore_visibility(self):
-        value = self.shell.settings.load() if self.shell.settings else {}
-        self.setVisible(not value.get('onboarding_dismissed', False) and not any(self.completed))
+        settings = getattr(self.shell, 'settings', None)
+        value = settings.load() if settings else {}
+        self._dismissed = value.get('onboarding_dismissed', self._dismissed)
+        self.setVisible(not self._dismissed and not any(self.completed))
 
     def go(self, index):
         self.shell.navigation.setCurrentRow(index)
 
     def set_dismissed(self, dismissed):
-        if self.shell.settings:
-            value = self.shell.settings.load()
+        self._dismissed = dismissed
+        settings = getattr(self.shell, 'settings', None)
+        if settings:
+            value = settings.load()
             value['onboarding_dismissed'] = dismissed
-            self.shell.settings.save(value)
-        self.setVisible(not dismissed)
+            settings.save(value)
         self.refresh()
 
     def refresh(self):
@@ -74,8 +80,8 @@ class GettingStarted(QWidget):
         self.completed = (
             bool(getattr(shell, '_dataset_ready', False)),
             (root / 'active_candidate.json').is_file() or (root / 'selection.json').is_file(),
-            shell.result_choice.count() > 0,
-            bool(shell.comparison_list.selectedItems()) or (root / 'selection.json').is_file(),
+            getattr(getattr(shell, 'result_choice', None), 'count', lambda: 0)() > 0,
+            bool(getattr(getattr(shell, 'comparison_list', None), 'selectedItems', lambda: ())()) or (root / 'selection.json').is_file(),
             account_ready,
         )
         for index, (label, done) in enumerate(zip(self.labels, self.completed), 1):
@@ -84,11 +90,17 @@ class GettingStarted(QWidget):
             label.setText(
                 ui_text('onboarding.step').format(display_number(index, 'count'), (ui_text('onboarding.done') if done else ui_text('onboarding.pending')))
             )
+            button = self.buttons[index - 1]
+            button.setText(
+                ui_text('onboarding.step').format(button.property('onboardingCaption'), ui_text('onboarding.done') if done else ui_text('onboarding.pending'))
+            )
+            set_theme_property(button, 'state', 'done' if done else 'pending')
+            button.setMinimumWidth(button.sizeHint().width())
         empty = (
-            not bool(getattr(shell.market, '_quote_series', ())),
-            shell.candidate_choice.count() == 0,
-            shell.result_choice.count() == 0,
-            shell.comparison_list.count() == 0,
+            not bool(getattr(getattr(shell, 'market', None), '_quote_series', ())),
+            getattr(getattr(shell, 'candidate_choice', None), 'count', lambda: 0)() == 0,
+            getattr(getattr(shell, 'result_choice', None), 'count', lambda: 0)() == 0,
+            getattr(getattr(shell, 'comparison_list', None), 'count', lambda: 0)() == 0,
             not self.completed[4],
         )
         for widget, visible in zip(getattr(self, 'empty_states', ()), empty):
@@ -96,7 +108,10 @@ class GettingStarted(QWidget):
             set_theme_property(widget.findChild(QPushButton), 'role', 'primary' if visible else 'secondary')
         # An empty result panel has one primary next action.
         for name, is_empty in (('run_campaign', empty[1]), ('run_backtest', empty[2]), ('compare_results', empty[3]), ('paper_submit', empty[4])):
-            set_theme_property(shell.findChild(QPushButton, name), 'role', 'secondary' if is_empty else 'primary')
+            button = shell.findChild(QPushButton, name) if isinstance(shell, QWidget) else None
+            if button is not None:
+                set_theme_property(button, 'role', 'secondary' if is_empty else 'primary')
+        self.restore_visibility()
 
 
 def install_onboarding(shell):
