@@ -345,7 +345,7 @@
       "page_height": 1043,
       "visible_input_count": 6,
       "button_count": 8,
-      "label_char_count": 69,
+      "label_char_count": 78,
       "visible_text": [
         "設定與備份",
         "一般",
@@ -366,6 +366,7 @@
         "讀取精簡本機日誌",
         "只看錯誤",
         "匯出日誌",
+        "尚無符合條件的日誌",
         "?",
         "管理連線、備份與偏好。"
       ],
