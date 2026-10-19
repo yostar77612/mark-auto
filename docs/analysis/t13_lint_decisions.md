@@ -150,3 +150,48 @@ output to preserve usable checks without changing the pinned binary or source by
   part B/fresh checkout. The untracked Ruff lock also has text/eol=lf attributes.
 - Full suite, remote CI and live dependency audit remain controller-owned;
   no network installation/audit was attempted. Graph refresh failed with EPERM.
+
+
+## T13 part B verification
+
+Bulk formatting uses Ruff 0.16.10 and retains identical Python ASTs against
+HEAD. The new stdlib verifier checks tracked and project-untracked changes,
+rejects locked paths, deletions and changes outside Python or the explicit
+manifest allowlist. New verifier/test modules have no base blob and are parsed;
+they are reported separately from the existing-file AST comparison count.
+The manifest lists its own bookkeeping files as well as regenerated goldens.
+
+`MainWindow` expanded from 394 to 471 lines; `_reduce` expanded to 81 lines.
+Their original source blocks are retained inside `fmt: off/on` boundaries to
+preserve both the exact AST and the existing 400/80 limits. Extraction would
+change the AST, so no extraction or budget relaxation was made. All other page
+classes remain under 500 lines; before/after counts are in the golden manifest.
+The full `saved_candidate_pool.py` remains excluded and byte-identical, as do
+the eight G3 files. Two pre-existing lint findings missed in Part A receive
+specific inline annotations: F401 in test_repo_layout.py and F841 in
+test_docs_layering.py. These change comments only, preserving all assertions.
+
+The UI registry golden was regenerated from the real isolated offline exercise;
+current and archived dispatcher outputs are equal. Its 31 changed keys derive
+from indicators.py, research_analysis.py, manual_exchange.py and walk_forward.py.
+Every key, old/new value, source and verification is recorded in the manifest.
+No locked input or pinned producer-profile hash changes. Walk-forward source
+hashes and analysis implementation hashes are otherwise computed dynamically;
+no additional fixed source expectations were found by the source-hash audit.
+
+GitNexus impact covered all formatter targets. desktop_strings.py was CRITICAL
+(32 direct dependents); quantlab/desktop_runtime.py was HIGH (17). MainWindow
+was MEDIUM (six direct dependents). Unresolved callers were supplemented by
+tracked-source text checks. The existing index is stale; refresh was attempted
+but initial sandbox child-process creation returned EPERM. A retry with heap
+respawning disabled rebuilt the local graph, then registry registration failed
+because another checkout already owns the mark-auto alias. No graph result is treated
+as evidence of semantic equivalence; the independent AST check is required.
+
+The pre-existing index has one mixed-EOL blob, tests/test_desktop_paper_exports.py;
+its working file is now LF. The index is left unstaged for the controller.
+Existing working-copy CRLF remains only in
+excluded frozen archive/G3/producer files: normalizing these would violate the
+byte-preservation requirement. All reformatted sources have LF.
+The full suite is reserved for the controller outside the sandbox, per the
+explicit task instruction; focused tests and the static gate run here.

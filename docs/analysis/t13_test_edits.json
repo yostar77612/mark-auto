@@ -27,5 +27,20 @@
       "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
     }
   ],
-  "regenerated_expected_hashes": []
+  "regenerated_expected_hashes": [],
+  "part_b": {
+    "new_tests": [
+      "tests/test_format_equivalence.py"
+    ],
+    "assertion_edits": [],
+    "comment_only_lint_annotations": [
+      "tests/test_repo_layout.py: F401 pre-existing import",
+      "tests/test_docs_layering.py: F841 pre-existing exception binding"
+    ],
+    "regenerated_expected_hashes": {
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "keys": 31,
+      "details": "docs/analysis/t13_golden_changes.json"
+    }
+  }
 }
