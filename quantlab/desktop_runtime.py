@@ -21,7 +21,6 @@ import sys
 import tempfile
 import time
 import uuid
-import zipfile
 from dataclasses import dataclass
 from contextlib import contextmanager
 
@@ -736,6 +735,9 @@ class BackupManager:
             return self._create(destination)
 
     def _create(self, destination):
+        # Archive support is only needed for an explicit backup operation.
+        import zipfile
+
         self._quiescent()
         destination = Path(destination).resolve()
         # Validate before recovery/ensure: even a rejected destination must not
@@ -796,6 +798,9 @@ class BackupManager:
             return self._restore(source, ownership)
 
     def _restore(self, source, ownership):
+        # Archive support is only needed for an explicit restore operation.
+        import zipfile
+
         self._quiescent()
         self.paths.root.mkdir(parents=True, exist_ok=True)
         self.recover()

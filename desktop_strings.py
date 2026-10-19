@@ -1596,6 +1596,13 @@ ZH_TW.update(
     }
 )
 
+ZH_TW.update(
+    {
+        'wf.duration_estimate': '預估耗時最多約 {0} 秒（保守估計：依負載下實測的每次評估時間推算；安靜的電腦通常快很多，非完成保證）。',
+        'wf.duration_unknown': '預估耗時未知：尚無可用的隔離評估量測。',
+    }
+)
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

@@ -902,3 +902,31 @@ Exact observed per-file lint exceptions preserve import and evaluation behavior;
 see docs/analysis/t13_lint_decisions.md and t13_test_edits.json. Cheap config tests
 execute no Ruff or network calls. Part B owns bulk formatting and AST equivalence;
 part A's formatter check is expected to report existing source formatting debt.
+
+
+## T14 part B: measured performance and duration estimate
+
+P3-10/P3-11 add opt-in tools/bench_worker_latency.py and tools/bench_backtest_scale.py,
+with at least five repeats, JSON and median/min/max table output. The runtime
+retains spawn isolation and all existing validation, limits and timeouts. Only
+backup-specific zipfile imports move to their operation paths. G3 and golden
+files remain unchanged. See docs/analysis/t14_p3_latency.md and t14_p3_scale.md.
+
+Walk-forward's existing wf_preview_summary label includes display-only duration
+wording from desktop_strings. estimated_seconds multiplies positive integer
+evaluation count by positive finite measured seconds. Missing/invalid measurements
+return None; zero/invalid counts omit duration wording. The named measurement
+constant is None because this sandbox rejects real multiprocessing pipes, so
+valid previews explicitly show unknown duration, never fabricated numeric timing.
+A future measured value must cite real isolated evaluation samples and their
+machine/dataset limitations in t14_p3_latency.md. The estimate does not alter
+preview identity, journal/evidence, admission, budgets, OOS consumption or consent.
+Default empty-workspace layout and objectNames are unchanged; only populated
+preview text grows. Snapshot baseline regeneration is unnecessary for that state.
+
+Storage remains canonical typed JSON plus current content/manifest/envelope hashes;
+no new dependency or producer profile. Cache/engine migration is design-only;
+see docs/analysis/t14_p3_storage_design.md. Real worker timing, hosted fsync,
+Linux/Windows comparison and affected-machine live TLS evidence remain pending
+with user ownership in t14_p3_notes.md. Full suite and unchanged registry/goldens
+are controller-owned under the explicit sandbox test restriction.
