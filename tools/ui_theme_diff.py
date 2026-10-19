@@ -3,6 +3,7 @@
 Usage: python tools/ui_theme_diff.py BEFORE AFTER [--report REPORT.json]
 Uses Qt QImage so the desktop environment does not need Pillow or NumPy.
 """
+
 import argparse
 import json
 from pathlib import Path
@@ -28,18 +29,20 @@ def compare(before, after):
         right = right.convertToFormat(QImage.Format.Format_RGB888)
         changed = 0
         for y in range(left.height()):
-            a = bytes(left.constScanLine(y))[:left.width() * 3]
-            b = bytes(right.constScanLine(y))[:right.width() * 3]
-            changed += sum(max(abs(a[x] - b[x]), abs(a[x+1] - b[x+1]),
-                               abs(a[x+2] - b[x+2])) > 8 for x in range(0, len(a), 3))
+            a = bytes(left.constScanLine(y))[: left.width() * 3]
+            b = bytes(right.constScanLine(y))[: right.width() * 3]
+            changed += sum(max(abs(a[x] - b[x]), abs(a[x + 1] - b[x + 1]), abs(a[x + 2] - b[x + 2])) > 8 for x in range(0, len(a), 3))
         measurements[path.name] = {
             'size': [left.width(), left.height()],
             'changed_pixel_fraction': changed / (left.width() * left.height()),
         }
-    return {'metrics_identical': True, 'channel_delta_threshold': 8,
-            'maximum_changed_fraction': 0.001, 'images': measurements,
-            'passed': all(item['changed_pixel_fraction'] <= 0.001
-                          for item in measurements.values())}
+    return {
+        'metrics_identical': True,
+        'channel_delta_threshold': 8,
+        'maximum_changed_fraction': 0.001,
+        'images': measurements,
+        'passed': all(item['changed_pixel_fraction'] <= 0.001 for item in measurements.values()),
+    }
 
 
 def main(argv=None):

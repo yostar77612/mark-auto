@@ -4,6 +4,7 @@ Scans tracked files for high-confidence credential signatures, compiles Python
 without executing it, and enforces the research import boundary. This is not a
 complete secret detector or a security audit of the disabled legacy dependency set.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,26 +48,24 @@ def core_import_findings(source: str, label: str) -> list[str]:
             modules = []
         if any(module.split('.')[0].startswith('desktop') for module in modules):
             findings.append(f'{label}:{node.lineno}: no desktop imports under quantlab/')
-        if isinstance(node, ast.Call) and ((
-                isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'importlib')
-                or (isinstance(node.func, ast.Name) and node.func.id == 'import_module')):  # also `from importlib import import_module`
-            if any(isinstance(value, ast.Constant) and isinstance(value.value, str)
-                   and value.value.startswith('desktop')
-                   for value in (*node.args, *(kw.value for kw in node.keywords))):
+        if isinstance(node, ast.Call) and (
+            (isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == 'importlib')
+            or (isinstance(node.func, ast.Name) and node.func.id == 'import_module')
+        ):  # also `from importlib import import_module`
+            if any(
+                isinstance(value, ast.Constant) and isinstance(value.value, str) and value.value.startswith('desktop')
+                for value in (*node.args, *(kw.value for kw in node.keywords))
+            ):
                 findings.append(f'{label}:{node.lineno}: literal desktop importlib target')
     return findings
 
 
 def secret_findings(source: str, label: str) -> list[str]:
     """Only locations and rule names leave this function, never matched values."""
-    return [f"{label}:{source.count(chr(10), 0, match.start()) + 1}: {name}"
-            for name, pattern in SECRET_PATTERNS.items()
-            for match in pattern.finditer(source)]
+    return [f"{label}:{source.count(chr(10), 0, match.start()) + 1}: {name}" for name, pattern in SECRET_PATTERNS.items() for match in pattern.finditer(source)]
 
 
-def python_findings(source: str, label: str, research: bool = False,
-                    desktop: bool = False) -> list[str]:
+def python_findings(source: str, label: str, research: bool = False, desktop: bool = False) -> list[str]:
     try:
         tree = ast.parse(source, filename=label)
         compile(tree, label, "exec")
@@ -94,16 +93,14 @@ def python_findings(source: str, label: str, research: bool = False,
             if prohibited:
                 findings.append(f"{label}:{node.lineno}: forbidden research import")
             if isinstance(node, ast.Call):
-                name = node.func.id if isinstance(node.func, ast.Name) else (
-                    node.func.attr if isinstance(node.func, ast.Attribute) else "")
+                name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else "")
                 if name in BANNED_CALLS:
                     findings.append(f"{label}:{node.lineno}: dynamic execution")
     return findings
 
 
 def git(root: Path, *args: str) -> bytes:
-    return subprocess.run(["git", "-C", str(root), *args], check=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+    return subprocess.run(["git", "-C", str(root), *args], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
 
 
 def scan(root: Path, history: bool = False) -> list[str]:
@@ -134,35 +131,50 @@ def scan(root: Path, history: bool = False) -> list[str]:
                 except SyntaxError:
                     pass  # python_findings reports invalid syntax redacted.
             if tree is not None and name.startswith("archives/legacy_autotrading/"):
-                if name in {"archives/legacy_autotrading/gui.py",
-                            "archives/legacy_autotrading/trader/__init__.py"}:
+                if name in {"archives/legacy_autotrading/gui.py", "archives/legacy_autotrading/trader/__init__.py"}:
                     if not tree.body or not isinstance(tree.body[0], ast.Raise):
                         findings.append(f"{name}: legacy startup must remain disabled")
                 for node in ast.walk(tree):
-                    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-                            and isinstance(node.func.value, ast.Name)
-                            and node.func.value.id == "API"
-                            and node.func.attr in {"place_order", "place_comboorder"}):
+                    if (
+                        isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Attribute)
+                        and isinstance(node.func.value, ast.Name)
+                        and node.func.value.id == "API"
+                        and node.func.attr in {"place_order", "place_comboorder"}
+                    ):
                         findings.append(f"{name}:{node.lineno}: legacy broker submission")
             if name.startswith('quantlab/'):
                 try:
                     findings.extend(core_import_findings(source, name))
                 except SyntaxError:
                     pass  # python_findings below reports invalid syntax redacted.
-            findings.extend(python_findings(source, name, name.startswith("quantlab/"),
-                                            desktop=name in {"desktop_ui.py", "desktop_charts.py",
-                                                             "desktop_forms.py", "desktop_market.py", "desktop_walk_forward.py",
-                                                             "desktop_chatgpt_auth.py", "desktop_chatgpt_provider.py",
-                                                             "desktop_chatgpt_ui.py", "desktop_automatic_backup.py",
-                                                             "desktop_tls_smoke.py"}))
+            findings.extend(
+                python_findings(
+                    source,
+                    name,
+                    name.startswith("quantlab/"),
+                    desktop=name
+                    in {
+                        "desktop_ui.py",
+                        "desktop_charts.py",
+                        "desktop_forms.py",
+                        "desktop_market.py",
+                        "desktop_walk_forward.py",
+                        "desktop_chatgpt_auth.py",
+                        "desktop_chatgpt_provider.py",
+                        "desktop_chatgpt_ui.py",
+                        "desktop_automatic_backup.py",
+                        "desktop_tls_smoke.py",
+                    },
+                )
+            )
     if history:
         if git(root, "rev-parse", "--is-shallow-repository").strip() != b"false":
             findings.append("history: full checkout required")
         else:
             # Scan added text across all fetched refs, including removed secrets.
             patch = git(root, "log", "--all", "--format=", "--no-ext-diff", "--unified=0", "-p")
-            added = "\n".join(line[1:] for line in patch.decode("utf-8", errors="replace").splitlines()
-                              if line.startswith("+") and not line.startswith("+++"))
+            added = "\n".join(line[1:] for line in patch.decode("utf-8", errors="replace").splitlines() if line.startswith("+") and not line.startswith("+++"))
             findings.extend(secret_findings(added, "history (added-line index)"))
     return findings
 

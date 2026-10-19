@@ -1,4 +1,5 @@
 """Invented token responses and in-memory accounts; no real OAuth or network."""
+
 from copy import deepcopy
 import json
 import unittest
@@ -76,9 +77,13 @@ class TokenFormatAndStageTests(unittest.TestCase):
         owner.session.validator.verify = verify
         owner.session.poll = poll
         owner.vault.save = save
-        result = run_connection_request(ConnectionRequest(1, 'begin', registration, user_confirmed=True),
-                                        bootstrap='/fixture', emit=events.append, cancelled=lambda: False,
-                                        session_factory=lambda: owner.session)
+        result = run_connection_request(
+            ConnectionRequest(1, 'begin', registration, user_confirmed=True),
+            bootstrap='/fixture',
+            emit=events.append,
+            cancelled=lambda: False,
+            session_factory=lambda: owner.session,
+        )
         self.assertEqual(len(exchanges), 1)
         self.assertIsNone(result.authorization_url)
         return result, owner, before
@@ -93,30 +98,43 @@ class TokenFormatAndStageTests(unittest.TestCase):
         row = owner.vault.record['registrations'][result.active_registration]
         self.assertEqual(row['tokens']['earliest_refresh_at'], 1792022400)
 
-
     def test_four_failure_stages_are_fixed_safe_and_preserve_existing_accounts(self):
-        cases = [('exchange', None, 'authorization_exchange_failed'),
-                 ('identity', None, 'authorization_identity_failed'),
-                 ('tokens', {'expires_in': True}, 'authorization_tokens_failed'),
-                 ('storage', None, 'authorization_storage_failed')]
+        cases = [
+            ('exchange', None, 'authorization_exchange_failed'),
+            ('identity', None, 'authorization_identity_failed'),
+            ('tokens', {'expires_in': True}, 'authorization_tokens_failed'),
+            ('storage', None, 'authorization_storage_failed'),
+        ]
         for existing in (False, True):
             for stage, changes, expected in cases:
                 with self.subTest(stage=stage, existing=existing):
                     result, owner, before = self.attempt(changes, stage=stage, existing=existing)
-                    self.assertEqual((result.kind, result.state, result.error_code),
-                                     ('error', 'authorization_failed', expected))
+                    self.assertEqual((result.kind, result.state, result.error_code), ('error', 'authorization_failed', expected))
                     self.assertTrue(owner.vault.record == before, 'Existing synthetic account must be preserved')
                     self.assertTrue(result.active_registration == before['active'])
                     text = repr(result)
-                    self.assertTrue(all(marker not in text for marker in
-                                        ['FIXTURE_PRIVATE_', 'fixture-code', owner.query['state'][0],
-                                         owner.query['nonce'][0], 'fixture-access-', 'fixture-refresh-']))
+                    self.assertTrue(
+                        all(
+                            marker not in text
+                            for marker in [
+                                'FIXTURE_PRIVATE_',
+                                'fixture-code',
+                                owner.query['state'][0],
+                                owner.query['nonce'][0],
+                                'fixture-access-',
+                                'fixture-refresh-',
+                            ]
+                        )
+                    )
 
     def test_offsets_milliseconds_and_numeric_seconds_match_pinned_sdk(self):
-        cases = [('2026-10-15T08:00:00+08:00', 1792022400),
-                 ('2026-10-14T20:00:00-04:00', 1792022400),
-                 ('2026-10-15T00:00:00.123987654Z', 1792022400.123),
-                 (1792022400.125, 1792022400.125), (0, 0)]
+        cases = [
+            ('2026-10-15T08:00:00+08:00', 1792022400),
+            ('2026-10-14T20:00:00-04:00', 1792022400),
+            ('2026-10-15T00:00:00.123987654Z', 1792022400.123),
+            (1792022400.125, 1792022400.125),
+            (0, 0),
+        ]
         for value, expected in cases:
             with self.subTest(case=type(value).__name__):
                 result, owner, _ = self.attempt({'earliest_refresh_at': value})
@@ -125,10 +143,22 @@ class TokenFormatAndStageTests(unittest.TestCase):
                 self.assertEqual(row['tokens']['earliest_refresh_at'], expected)
 
     def test_malformed_ambiguous_nonfinite_and_out_of_range_refresh_times_reject(self):
-        cases = [None, True, -1, float('nan'), float('inf'), 2**53 + 1, '', '1792022400',
-                 'not-a-date', '2026-02-30T00:00:00Z', '2026-10-15T00:00:00',
-                 '2026-10-15T00:00:00+99:00', '2026-10-15T00:00:00Z extra',
-                 '1969-12-31T23:59:59Z']
+        cases = [
+            None,
+            True,
+            -1,
+            float('nan'),
+            float('inf'),
+            2**53 + 1,
+            '',
+            '1792022400',
+            'not-a-date',
+            '2026-02-30T00:00:00Z',
+            '2026-10-15T00:00:00',
+            '2026-10-15T00:00:00+99:00',
+            '2026-10-15T00:00:00Z extra',
+            '1969-12-31T23:59:59Z',
+        ]
         for index, value in enumerate(cases):
             with self.subTest(case=index):
                 result, owner, before = self.attempt({'earliest_refresh_at': value})
@@ -154,8 +184,7 @@ class TokenFormatAndStageTests(unittest.TestCase):
                 self.assertTrue(owner.vault.record == before)
 
     def test_identity_only_without_access_credentials_remains_explicitly_unverified(self):
-        result, owner, before = self.attempt({'access_token': None, 'refresh_token': None,
-                                               'scope': 'openid profile email'})
+        result, owner, before = self.attempt({'access_token': None, 'refresh_token': None, 'scope': 'openid profile email'})
         self.assertEqual((result.state, result.error_code), ('authorization_failed', 'authorization_tokens_failed'))
         self.assertTrue(owner.vault.record == before)
 
@@ -180,12 +209,17 @@ class TokenFormatAndStageTests(unittest.TestCase):
 
     def test_unknown_stage_value_never_crosses_terminal_error_boundary(self):
         from tests import test_chatgpt_terminal_reporting as fixtures
+
         for value in ['FIXTURE_PRIVATE_UNKNOWN_STAGE', {'private': 'FIXTURE_PRIVATE_DETAIL'}]:
             session = fixtures.AttemptSession()
             session.authorization_error_code = value
-            result = run_connection_request(ConnectionRequest(1, 'begin', user_confirmed=True),
-                                            bootstrap='/fixture', emit=lambda event: None,
-                                            cancelled=lambda: False, session_factory=lambda: session)
+            result = run_connection_request(
+                ConnectionRequest(1, 'begin', user_confirmed=True),
+                bootstrap='/fixture',
+                emit=lambda event: None,
+                cancelled=lambda: False,
+                session_factory=lambda: session,
+            )
             self.assertEqual(result.error_code, 'authorization_failed')
             self.assertTrue('FIXTURE_PRIVATE_' not in repr(result))
 
@@ -198,10 +232,8 @@ class TokenFormatAndStageTests(unittest.TestCase):
     def test_invalid_offset_minutes_reject_and_preserve_existing_account(self):
         for offset in ('+00:60', '-00:60', '+01:99', '-01:99'):
             with self.subTest(offset=offset):
-                result, owner, before = self.attempt(
-                    {'earliest_refresh_at': '2026-10-15T00:00:00' + offset}, existing=True)
-                self.assertEqual((result.kind, result.state, result.error_code),
-                                 ('error', 'authorization_failed', 'authorization_tokens_failed'))
+                result, owner, before = self.attempt({'earliest_refresh_at': '2026-10-15T00:00:00' + offset}, existing=True)
+                self.assertEqual((result.kind, result.state, result.error_code), ('error', 'authorization_failed', 'authorization_tokens_failed'))
                 self.assertTrue(owner.vault.record == before, 'Invalid offset must preserve the existing account')
                 self.assertTrue(result.active_registration == before['active'])
 

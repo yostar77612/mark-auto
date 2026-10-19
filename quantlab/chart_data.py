@@ -13,6 +13,7 @@ Other display instruments use explicitly supplied session_open/session_end; the
 TMF-only calendar cannot certify another instrument. Minute outputs use scheduled
 bucket end as availability time and partial=True until that end when as_of supplied.
 """
+
 from dataclasses import dataclass, replace
 import hashlib
 import json
@@ -45,8 +46,13 @@ def _utc(value):
 
 def _order(bar):
     # Exchange trade date and night/day order also work for official date-only rows.
-    return (bar.contract_id, bar.trade_date, {'night': 0, 'day': 1, 'combined': 2}[bar.session],
-            bar.timestamp or datetime.min.replace(tzinfo=timezone.utc), bar.interval)
+    return (
+        bar.contract_id,
+        bar.trade_date,
+        {'night': 0, 'day': 1, 'combined': 2}[bar.session],
+        bar.timestamp or datetime.min.replace(tzinfo=timezone.utc),
+        bar.interval,
+    )
 
 
 def _bounds(bar, calendar):
@@ -113,13 +119,28 @@ def _coverage(group, expected):
 def _merge(group, *, timeframe, timestamp, end, session, opening, closing, partial):
     volumes = [b.volume for b in group]
     sources = sorted({b.source_id for b in group})
-    source_id = sources[0] if len(sources) == 1 else 'aggregate:' + hashlib.sha256(
-        json.dumps(sources, ensure_ascii=False, separators=(',', ':')).encode('utf-8')).hexdigest()
-    return replace(group[0], open=group[0].open, high=max(b.high for b in group),
-                   low=min(b.low for b in group), close=group[-1].close,
-                   volume=None if None in volumes else sum(volumes), interval=timeframe,
-                   timestamp=timestamp, end=end, session=session, session_open=opening,
-                   session_end=closing, partial=partial, source_id=source_id, settlement=None)
+    source_id = (
+        sources[0]
+        if len(sources) == 1
+        else 'aggregate:' + hashlib.sha256(json.dumps(sources, ensure_ascii=False, separators=(',', ':')).encode('utf-8')).hexdigest()
+    )
+    return replace(
+        group[0],
+        open=group[0].open,
+        high=max(b.high for b in group),
+        low=min(b.low for b in group),
+        close=group[-1].close,
+        volume=None if None in volumes else sum(volumes),
+        interval=timeframe,
+        timestamp=timestamp,
+        end=end,
+        session=session,
+        session_open=opening,
+        session_end=closing,
+        partial=partial,
+        source_id=source_id,
+        settlement=None,
+    )
 
 
 def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
@@ -162,8 +183,7 @@ def aggregate_bars(bars, *, timeframe, calendar=None, as_of=None):
             _aggregate_minutes(source, timeframe, session_bounds, as_of, contract, warnings, output)
         else:
             _aggregate_dates(source, timeframe, calendar, as_of, contract, warnings, output)
-    return AggregationResult(tuple(sorted(output, key=_order)), tuple(warnings), duplicates,
-                             tuple(sorted({b.source_id for b in ordered})))
+    return AggregationResult(tuple(sorted(output, key=_order)), tuple(warnings), duplicates, tuple(sorted({b.source_id for b in ordered})))
 
 
 def _validate_aggregation_source(source, calendar, contract, warnings):
@@ -182,9 +202,12 @@ def _validate_aggregation_source(source, calendar, contract, warnings):
     for previous, current in zip(source, source[1:]):
         if previous.timestamp is not None and current.timestamp is not None and current.timestamp < previous.end:
             _fail('overlapping or chronologically inconsistent source bars')
-        if (previous.timestamp is not None and current.timestamp is not None
-                and (previous.trade_date, previous.session) == (current.trade_date, current.session)
-                and current.timestamp > previous.end):
+        if (
+            previous.timestamp is not None
+            and current.timestamp is not None
+            and (previous.trade_date, previous.session) == (current.trade_date, current.session)
+            and current.timestamp > previous.end
+        ):
             warnings.append(f'{contract} {previous.end.isoformat()}: missing source interval before {current.timestamp.isoformat()}')
     return session_bounds
 
@@ -220,8 +243,7 @@ def _aggregate_minutes(source, timeframe, session_bounds, as_of, contract, warni
         partial = not complete or any(b.partial for b in group) or (as_of is not None and as_of < end)
         if partial:
             warnings.append(f'{contract} {start.isoformat()}: partial/gapped {timeframe} bar')
-        output.append(_merge(group, timeframe=timeframe, timestamp=start, end=end,
-                             session=session, opening=opening, closing=closing, partial=partial))
+        output.append(_merge(group, timeframe=timeframe, timestamp=start, end=end, session=session, opening=opening, closing=closing, partial=partial))
 
 
 def _aggregate_dates(source, timeframe, calendar, as_of, contract, warnings, output):
@@ -249,7 +271,15 @@ def _aggregate_dates(source, timeframe, calendar, as_of, contract, warnings, out
         if partial:
             warnings.append(f'{contract} {key}: incomplete or unverified session coverage')
         timed = all(b.timestamp is not None for b in group)
-        output.append(_merge(group, timeframe=timeframe,
-                             timestamp=group[0].timestamp if timed else None,
-                             end=group[-1].end if timed else None, session='combined',
-                             opening=None, closing=None, partial=partial))
+        output.append(
+            _merge(
+                group,
+                timeframe=timeframe,
+                timestamp=group[0].timestamp if timed else None,
+                end=group[-1].end if timed else None,
+                session='combined',
+                opening=None,
+                closing=None,
+                partial=partial,
+            )
+        )

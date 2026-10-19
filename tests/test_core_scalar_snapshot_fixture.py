@@ -1,8 +1,10 @@
 """Every pinned historical WFO snapshot retains canonical bytes and state hash."""
+
 import json
 import unittest
 from quantlab.core import canonical_json, content_hash
 from tools.diagnose_wfo_storage import load_stream
+
 
 class ScalarSnapshotFixtureTests(unittest.TestCase):
     def test_all_637_pinned_snapshots_keep_bytes_and_state_hash(self):

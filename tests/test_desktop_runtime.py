@@ -9,8 +9,15 @@ from unittest.mock import patch
 import zipfile
 
 from quantlab.desktop_runtime import (
-    AppPaths, BackupManager, CredentialVault, JobManager, RuntimeGuard,
-    RuntimeSafetyError, SettingsStore, WorkspaceLocator, RedactedEventLog,
+    AppPaths,
+    BackupManager,
+    CredentialVault,
+    JobManager,
+    RuntimeGuard,
+    RuntimeSafetyError,
+    SettingsStore,
+    WorkspaceLocator,
+    RedactedEventLog,
 )
 
 
@@ -57,15 +64,24 @@ class RuntimeTests(unittest.TestCase):
             if mode:
                 info.external_attr = mode << 16
             z.writestr(info, raw)
-            z.writestr('manifest.json', json.dumps({'schema_version': version, 'files': {name: {'size': len(raw), 'sha256': digest or hashlib.sha256(raw).hexdigest()}}}))
+            z.writestr(
+                'manifest.json',
+                json.dumps({'schema_version': version, 'files': {name: {'size': len(raw), 'sha256': digest or hashlib.sha256(raw).hexdigest()}}}),
+            )
         return path
 
     def test_restore_rejects_traversal_symlink_future_and_corruption(self):
         original = self.paths.state / 'keep'
         original.write_text('original')
-        cases = [('a/../../escape', {}), ('C:/escape', {}), ('NUL.txt', {}), ('.restore-transaction', {}),
-                 ('a', {'mode': stat.S_IFLNK | 0o777}), ('a', {'version': 99}),
-                 ('a', {'digest': '0' * 64})]
+        cases = [
+            ('a/../../escape', {}),
+            ('C:/escape', {}),
+            ('NUL.txt', {}),
+            ('.restore-transaction', {}),
+            ('a', {'mode': stat.S_IFLNK | 0o777}),
+            ('a', {'version': 99}),
+            ('a', {'digest': '0' * 64}),
+        ]
         for name, options in cases:
             with self.subTest(name=name, options=options):
                 with self.assertRaises(RuntimeSafetyError):
@@ -138,10 +154,12 @@ class RuntimeTests(unittest.TestCase):
         journal = self.paths.root / 'restore-transaction.json'
         journal.write_text(json.dumps({'id': 'a' * 32, 'phase': 'committed'}))
         real_unlink = Path.unlink
+
         def fail_journal(path, *args, **kwargs):
             if path == journal:
                 raise OSError('simulated interruption retiring journal')
             return real_unlink(path, *args, **kwargs)
+
         with patch.object(Path, 'unlink', fail_journal):
             with self.assertRaises(OSError):
                 self.backups.recover()
@@ -157,11 +175,14 @@ class RuntimeTests(unittest.TestCase):
         (self.paths.state / 'keep').write_text('safe')
         archive = self._archive('new')
         from quantlab.desktop_runtime import _durable_replace
+
         real_replace = _durable_replace
+
         def fail_promotion(source, dest):
             if Path(source).name.startswith('.restore-'):
                 raise OSError('injected failure')
             return real_replace(source, dest)
+
         with patch('quantlab.desktop_runtime._durable_replace', side_effect=fail_promotion):
             with self.assertRaises(OSError):
                 self.backups.restore(archive)
@@ -170,6 +191,7 @@ class RuntimeTests(unittest.TestCase):
     def test_backup_refuses_active_jobs_and_recursive_destination(self):
         class Busy:
             active = True
+
         with self.assertRaises(RuntimeSafetyError):
             BackupManager(self.paths, Busy()).create(Path(self.temp.name) / 'a.zip')
         with self.assertRaises(RuntimeSafetyError):
@@ -180,16 +202,23 @@ class RuntimeTests(unittest.TestCase):
             with self.subTest(relocated=relocated):
                 base = Path(self.temp.name) / str(relocated)
                 bootstrap = base / 'bootstrap'
-                paths = AppPaths(base / 'workspace' if relocated else bootstrap,
-                                 bootstrap if relocated else None).ensure()
+                paths = AppPaths(base / 'workspace' if relocated else bootstrap, bootstrap if relocated else None).ensure()
                 roots = {paths.root, bootstrap}
                 sentinels = {}
                 for root in roots:
-                    for name in ('workspace-format.json', 'workspace-location.json',
-                                 'desktop.lock', 'restore-transaction.json',
-                                 'state-v1/settings.json', 'credentials/key.dpapi',
-                                 'control-v1/ledger.json', 'cache/item', 'logs/item',
-                                 'state-v1.rollback/item', 'future-internal/item'):
+                    for name in (
+                        'workspace-format.json',
+                        'workspace-location.json',
+                        'desktop.lock',
+                        'restore-transaction.json',
+                        'state-v1/settings.json',
+                        'credentials/key.dpapi',
+                        'control-v1/ledger.json',
+                        'cache/item',
+                        'logs/item',
+                        'state-v1.rollback/item',
+                        'future-internal/item',
+                    ):
                         target = root / name
                         target.parent.mkdir(parents=True, exist_ok=True)
                         target.write_bytes(b'original protected sentinel')
@@ -248,18 +277,32 @@ class RuntimeTests(unittest.TestCase):
         manager = JobManager(self.paths)
         manager.job_id = 'fixture-job'
         manager._operation = 'demo'
+
         class Process:
             alive = True
-            def is_alive(self): return self.alive
-            def join(self): pass
-            def close(self): pass
+
+            def is_alive(self):
+                return self.alive
+
+            def join(self):
+                pass
+
+            def close(self):
+                pass
+
         class Receiver:
             pending = True
-            def poll(self): return self.pending
+
+            def poll(self):
+                return self.pending
+
             def recv_bytes(self, limit):
                 self.pending = False
                 return b'{"job_id":"fixture-job","type":"result","result":{}}'
-            def close(self): pass
+
+            def close(self):
+                pass
+
         process = Process()
         manager.process, manager.receiver = process, Receiver()
         self.assertEqual(manager.poll(), [])
@@ -272,17 +315,29 @@ class RuntimeTests(unittest.TestCase):
         manager = JobManager(self.paths)
         manager.job_id = 'fixture-error'
         manager._operation = 'ui_import'
+
         class Process:
             pid = None
-            def is_alive(self): return True
-            def close(self): pass
+
+            def is_alive(self):
+                return True
+
+            def close(self):
+                pass
+
         class Receiver:
             pending = True
-            def poll(self): return self.pending
+
+            def poll(self):
+                return self.pending
+
             def recv_bytes(self, limit):
                 self.pending = False
                 return b'{"job_id":"fixture-error","type":"error","message":"validation failed"}'
-            def close(self): pass
+
+            def close(self):
+                pass
+
         manager.process, manager.receiver = Process(), Receiver()
         self.assertEqual(manager.poll(), [])
         self.assertTrue(manager.active)
@@ -295,14 +350,21 @@ class RuntimeTests(unittest.TestCase):
     def test_windows_closed_pipe_after_terminal_preserves_result(self):
         manager = JobManager(self.paths)
         manager.job_id, manager._operation = 'windows-pipe', 'demo'
+
         class Process:
-            def is_alive(self): return False
-            def join(self): pass
-            def close(self): pass
+            def is_alive(self):
+                return False
+
+            def join(self):
+                pass
+
+            def close(self):
+                pass
+
         class Receiver:
-            frames = [b'{"job_id":"windows-pipe","type":"progress"}',
-                      b'{"job_id":"windows-pipe","type":"result","result":{"output":"fixture"}}']
+            frames = [b'{"job_id":"windows-pipe","type":"progress"}', b'{"job_id":"windows-pipe","type":"result","result":{"output":"fixture"}}']
             polls = 0
+
             def poll(self):
                 self.polls += 1
                 if not self.frames:
@@ -310,8 +372,13 @@ class RuntimeTests(unittest.TestCase):
                     error.winerror = 109
                     raise error
                 return True
-            def recv_bytes(self, limit): return self.frames.pop(0)
-            def close(self): pass
+
+            def recv_bytes(self, limit):
+                return self.frames.pop(0)
+
+            def close(self):
+                pass
+
         receiver = Receiver()
         manager.process, manager.receiver = Process(), receiver
         events = manager.poll()
@@ -323,19 +390,31 @@ class RuntimeTests(unittest.TestCase):
     def test_windows_pipe_eof_without_terminal_is_crash_not_malformed(self):
         manager = JobManager(self.paths)
         manager.job_id, manager._operation = 'windows-eof', 'demo'
+
         class Process:
             alive = True
-            def is_alive(self): return self.alive
-            def join(self): pass
-            def close(self): pass
+
+            def is_alive(self):
+                return self.alive
+
+            def join(self):
+                pass
+
+            def close(self):
+                pass
+
         class Receiver:
             polls = 0
+
             def poll(self):
                 self.polls += 1
                 error = OSError('The pipe has been ended')
                 error.winerror = 109
                 raise error
-            def close(self): pass
+
+            def close(self):
+                pass
+
         process, receiver = Process(), Receiver()
         manager.process, manager.receiver = process, receiver
         self.assertEqual(manager.poll(), [])
@@ -350,15 +429,22 @@ class RuntimeTests(unittest.TestCase):
     def test_non_eof_windows_pipe_error_still_rejected(self):
         manager = JobManager(self.paths)
         manager.job_id, manager._operation = 'invalid-pipe', 'demo'
+
         class Process:
             pid = None
-            def close(self): pass
+
+            def close(self):
+                pass
+
         class Receiver:
             def poll(self):
                 error = OSError('invalid handle')
                 error.winerror = 6
                 raise error
-            def close(self): pass
+
+            def close(self):
+                pass
+
         manager.process, manager.receiver = Process(), Receiver()
         events = manager.poll()
         self.assertEqual(events[-1]['type'], 'error')
@@ -373,7 +459,7 @@ class RuntimeTests(unittest.TestCase):
         deadline = time.monotonic() + 30
         while manager.active and time.monotonic() < deadline:
             events.extend(manager.poll())
-            time.sleep(.02)
+            time.sleep(0.02)
         self.assertFalse(manager.active)
         results = [e for e in events if e['type'] == 'result']
         self.assertEqual(len(results), 1, events)
@@ -383,7 +469,7 @@ class RuntimeTests(unittest.TestCase):
         events = []
         while manager.active and time.monotonic() < deadline:
             events.extend(manager.poll())
-            time.sleep(.02)
+            time.sleep(0.02)
         self.assertTrue(any(e['type'] == 'error' for e in events), events)
 
 
@@ -479,8 +565,15 @@ class WorkspaceTests(unittest.TestCase):
         unrelated.mkdir()
         sentinel = unrelated / 'important'
         sentinel.write_text('keep')
-        for value in ('relative/path', '//server/share/path', '\\\\server\\share', Path('/'), unrelated,
-                      self.bootstrap / 'credentials' / 'nested', self.bootstrap / 'state-v1' / 'nested'):
+        for value in (
+            'relative/path',
+            '//server/share/path',
+            '\\\\server\\share',
+            Path('/'),
+            unrelated,
+            self.bootstrap / 'credentials' / 'nested',
+            self.bootstrap / 'state-v1' / 'nested',
+        ):
             with self.subTest(path=str(value)), self.assertRaises(RuntimeSafetyError):
                 self.locator.configure(value)
         self.assertFalse(self.locator.pointer.exists())
@@ -531,6 +624,7 @@ class WindowsRuntimeTests(unittest.TestCase):
         import ctypes
         from ctypes import wintypes
         from quantlab.desktop_runtime import WindowsAppMutex, WINDOWS_APP_MUTEX
+
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
         kernel.OpenMutexW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
         kernel.OpenMutexW.restype = wintypes.HANDLE
@@ -539,7 +633,8 @@ class WindowsRuntimeTests(unittest.TestCase):
         try:
             handle = kernel.OpenMutexW(0x00100000, False, WINDOWS_APP_MUTEX)
             self.assertTrue(handle)
-            if handle: kernel.CloseHandle(handle)
+            if handle:
+                kernel.CloseHandle(handle)
         finally:
             guard.close()
         self.assertFalse(kernel.OpenMutexW(0x00100000, False, WINDOWS_APP_MUTEX))
@@ -564,24 +659,28 @@ class WindowsRuntimeTests(unittest.TestCase):
         import subprocess
         import sys
         from ctypes import wintypes
+
         # The supervisor owns the Job Object. The worker spawns its grandchild
         # only after the supervisor assigns it, matching the production gate.
         worker = "import subprocess,sys,time; sys.stdin.readline(); p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(90)']); print(p.pid,flush=True); time.sleep(90)"
-        supervisor = "\n".join([
-            'import subprocess,sys,time',
-            'from quantlab.desktop_runtime import _WindowsProcessTree',
-            f'p=subprocess.Popen([sys.executable,"-c",{worker!r}],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)',
-            'tree=_WindowsProcessTree(p.pid)',
-            'p.stdin.write("start\\n"); p.stdin.flush()',
-            'print(str(p.pid)+" "+p.stdout.readline().strip(),flush=True)',
-            'sys.stdin.readline()',
-            'tree.close()',
-            'p.wait(timeout=10)',
-        ])
+        supervisor = "\n".join(
+            [
+                'import subprocess,sys,time',
+                'from quantlab.desktop_runtime import _WindowsProcessTree',
+                f'p=subprocess.Popen([sys.executable,"-c",{worker!r}],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)',
+                'tree=_WindowsProcessTree(p.pid)',
+                'p.stdin.write("start\\n"); p.stdin.flush()',
+                'print(str(p.pid)+" "+p.stdout.readline().strip(),flush=True)',
+                'sys.stdin.readline()',
+                'tree.close()',
+                'p.wait(timeout=10)',
+            ]
+        )
         parent = subprocess.Popen([sys.executable, '-c', supervisor], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         self.addCleanup(lambda: parent.kill() if parent.poll() is None else None)
         # A timeout thread prevents a broken test from waiting forever on stdout.
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as pool:
             future = pool.submit(parent.stdout.readline)
             try:
@@ -602,14 +701,17 @@ class WindowsRuntimeTests(unittest.TestCase):
             if crash_parent:
                 parent.kill()
             else:
-                parent.stdin.write('cancel\n'); parent.stdin.flush()
+                parent.stdin.write('cancel\n')
+                parent.stdin.flush()
             parent.wait(timeout=10)
             for handle in handles:
                 self.assertEqual(kernel.WaitForSingleObject(handle, 10000), 0, 'Descendant survived Job Object close')
         finally:
             for handle in handles:
-                if handle: kernel.CloseHandle(handle)
-            parent.stdin.close(); parent.stdout.close()
+                if handle:
+                    kernel.CloseHandle(handle)
+            parent.stdin.close()
+            parent.stdout.close()
 
     def test_job_object_cancel_kills_descendants(self):
         self._tree_test(False)
@@ -619,6 +721,7 @@ class WindowsRuntimeTests(unittest.TestCase):
 
     def test_backup_rejects_windows_junction(self):
         import subprocess
+
         with tempfile.TemporaryDirectory() as temp:
             paths = AppPaths(Path(temp) / 'app').ensure()
             (paths.credentials / 'must-not-back-up').write_text('dummy')

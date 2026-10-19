@@ -1,4 +1,5 @@
 """Display-only result components; source records and metric semantics stay intact."""
+
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 
@@ -7,13 +8,30 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QTableWidgetItem
 from desktop_strings import ui_text
 from desktop_presentation import display_number, display_value, RATIOS, AMOUNTS
-from desktop_forms import (ResultTable as LegacyTable, BacktestFillsTable,
-                           RESULT_LABELS, _report_text)
+from desktop_forms import ResultTable as LegacyTable, BacktestFillsTable, RESULT_LABELS, _report_text
 
 MISSING = object()
-NUMERIC_FIELDS = AMOUNTS | RATIOS | frozenset(('profit_factor', 'sharpe', 'closed_lots',
-    'trade_count', 'quantity', 'price', 'folds', 'evaluated_oos_folds',
-    'evaluations_reserved', 'evaluation_limit', 'positions', 'orders', 'fills'))
+NUMERIC_FIELDS = (
+    AMOUNTS
+    | RATIOS
+    | frozenset(
+        (
+            'profit_factor',
+            'sharpe',
+            'closed_lots',
+            'trade_count',
+            'quantity',
+            'price',
+            'folds',
+            'evaluated_oos_folds',
+            'evaluations_reserved',
+            'evaluation_limit',
+            'positions',
+            'orders',
+            'fills',
+        )
+    )
+)
 
 
 def numeric(value):
@@ -97,8 +115,9 @@ class CopyTable:
 
     def copy_text(self):
         rows = [[self.horizontalHeaderItem(c).text() for c in range(self.columnCount())]]
-        rows.extend([[self.item(r, c).text() if self.item(r, c) else ui_text('forms.metric.text_2')
-                      for c in range(self.columnCount())] for r in range(self.rowCount())])
+        rows.extend(
+            [[self.item(r, c).text() if self.item(r, c) else ui_text('forms.metric.text_2') for c in range(self.columnCount())] for r in range(self.rowCount())]
+        )
         text = '\n'.join('\t'.join(cell.replace('\t', ' ').replace('\n', ' ') for cell in row) for row in rows)
         QApplication.clipboard().setText(text)
         return text
@@ -113,7 +132,9 @@ class ResultTable(CopyTable, LegacyTable):
         rows = list(rows)
         columns = columns or list(dict.fromkeys(key for row in rows for key in row))
         self.setSortingEnabled(False)
-        self.clear(); self.setColumnCount(len(columns)); self.setRowCount(len(rows))
+        self.clear()
+        self.setColumnCount(len(columns))
+        self.setRowCount(len(rows))
         self.setHorizontalHeaderLabels([column_label(key) for key in columns])
         for r, row in enumerate(rows):
             for c, key in enumerate(columns):
@@ -133,6 +154,7 @@ class ResultTable(CopyTable, LegacyTable):
 
 class TaipeiFillsTable(CopyTable, BacktestFillsTable):
     """Retain the legacy adapter/type and exact tooltips, adding sorting and local time."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.enable_copy()
@@ -166,13 +188,29 @@ class KpiCards(QWidget):
         self.reasons = {}
         row = QHBoxLayout(self)
         for key in keys:
-            card = QWidget(); card.setProperty('resultCard', True)
+            card = QWidget()
+            card.setProperty('resultCard', True)
             column = QVBoxLayout(card)
-            title = QLabel(RESULT_LABELS.get(key, ui_text('results.' + key) if key in ('evaluations_reserved', 'evaluation_limit', 'folds', 'evaluated_oos_folds', 'orders', 'fills', 'positions', 'stop') else key))
-            title.setWordWrap(True); column.addWidget(title)
-            value = QLabel(); value.setWordWrap(True); value.setTextFormat(Qt.TextFormat.PlainText)
-            value.setProperty('kpiValue', True); column.addWidget(value); self.labels[key] = value
-            reason = QLabel(); reason.setWordWrap(True); column.addWidget(reason); self.reasons[key] = reason
+            title = QLabel(
+                RESULT_LABELS.get(
+                    key,
+                    ui_text('results.' + key)
+                    if key in ('evaluations_reserved', 'evaluation_limit', 'folds', 'evaluated_oos_folds', 'orders', 'fills', 'positions', 'stop')
+                    else key,
+                )
+            )
+            title.setWordWrap(True)
+            column.addWidget(title)
+            value = QLabel()
+            value.setWordWrap(True)
+            value.setTextFormat(Qt.TextFormat.PlainText)
+            value.setProperty('kpiValue', True)
+            column.addWidget(value)
+            self.labels[key] = value
+            reason = QLabel()
+            reason.setWordWrap(True)
+            column.addWidget(reason)
+            self.reasons[key] = reason
             row.addWidget(card)
         self.set_values({})
 

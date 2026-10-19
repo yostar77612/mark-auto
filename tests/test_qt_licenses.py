@@ -1,4 +1,5 @@
 """Offline checks for Qt notice inputs, exact module scope and frozen-payload audit."""
+
 import hashlib
 import importlib.util
 import json
@@ -49,15 +50,15 @@ class QtLicenseTests(unittest.TestCase):
                 target = checkout / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(raw)
-            control = checkout / 'ordinary.py'
+            control = checkout / 'ordinary.txt'
             control.write_bytes(b'# ordinary source\npass\n')
+
             def git(*args):
-                return subprocess.run(['git', '-C', str(checkout), *args], check=True,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                return subprocess.run(['git', '-C', str(checkout), *args], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
             git('init', '--quiet')
-            git('-c', 'core.autocrlf=false', 'add', '--', '.gitattributes', 'ordinary.py',
-                *(name.as_posix() for name in expected))
-            for name in [*expected, Path('ordinary.py')]:
+            git('-c', 'core.autocrlf=false', 'add', '--', '.gitattributes', 'ordinary.txt', *(name.as_posix() for name in expected))
+            for name in [*expected, Path('ordinary.txt')]:
                 (checkout / name).unlink()
             git('-c', 'core.autocrlf=true', 'checkout-index', '--all', '--force')
             self.assertEqual(control.read_bytes(), b'# ordinary source\r\npass\r\n')
@@ -70,9 +71,24 @@ class QtLicenseTests(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(notices['QT-NATIVE-NOTICES.zip'])) as archive:
             native = json.loads(archive.read('manifest.json'))
             components = {row['id']: row for row in native['components']}
-            self.assertTrue({'pcre2', 'harfbuzz-ng', 'freetype', 'tika-mimetypes', 'psl-data',
-                             'masm', 'libjpeg-turbo', 'libpng', 'libtiff', 'libwebp',
-                             'mesa-llvmpipe', 'llvm-3.6.2', 'openssl-3.5.9'} <= set(components))
+            self.assertTrue(
+                {
+                    'pcre2',
+                    'harfbuzz-ng',
+                    'freetype',
+                    'tika-mimetypes',
+                    'psl-data',
+                    'masm',
+                    'libjpeg-turbo',
+                    'libpng',
+                    'libtiff',
+                    'libwebp',
+                    'mesa-llvmpipe',
+                    'llvm-3.6.2',
+                    'openssl-3.5.9',
+                }
+                <= set(components)
+            )
             self.assertNotIn('yoga', components)
             self.assertNotIn('pixman', components)
             for row in native['sources']:
@@ -126,10 +142,12 @@ class QtLicenseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = self.copied_notices(temp)
             original = Path.lstat
+
             def lstat(path, *args, **kwargs):
                 if path == target:
                     return SimpleNamespace(st_mode=stat.S_IFDIR | 0o700, st_file_attributes=0x400)
                 return original(path, *args, **kwargs)
+
             with patch.object(Path, 'lstat', lstat), self.assertRaisesRegex(RuntimeError, 'link or reparse'):
                 qt.reviewed_notice_bytes(target)
 
@@ -146,15 +164,18 @@ class QtLicenseTests(unittest.TestCase):
 
     def test_filter_removes_only_unused_components_and_preserves_native_input(self):
         removed = [
-            'libssl-3-x64.dll', 'libcrypto-3-x64.dll',
+            'libssl-3-x64.dll',
+            'libcrypto-3-x64.dll',
             'PySide6/plugins/tls/qopensslbackend.dll',
             'PySide6/Qt6VirtualKeyboard.dll',
             'PySide6/plugins/platforminputcontexts/qtvirtualkeyboardplugin.dll',
             'PySide6/qml/QtQuick/VirtualKeyboard/qmldir',
             'PySide6/resources/qtvirtualkeyboard.rcc',
             'PySide6/translations/qtvirtualkeyboard_zh_TW.qm',
-            'resources/qtvirtualkeyboard.rcc', 'translations/qtvirtualkeyboard_zh_TW.qm',
-            'PySide6/Qt6Pdf.dll', 'PySide6/Qt6PdfWidgets.dll',
+            'resources/qtvirtualkeyboard.rcc',
+            'translations/qtvirtualkeyboard_zh_TW.qm',
+            'PySide6/Qt6Pdf.dll',
+            'PySide6/Qt6PdfWidgets.dll',
             'PySide6/plugins/imageformats/qpdf.dll',
             'PySide6/translations/qtpdf_zh_TW.qm',
         ]
@@ -166,12 +187,19 @@ class QtLicenseTests(unittest.TestCase):
         qt.audit_paths(retained)
 
     def test_unknown_module_binding_plugin_and_resource_fail_closed(self):
-        for name in ('PySide6/Qt6Charts.dll', 'PySide6/Qt6Graphs.dll',
-                     'PySide6/QtCharts.pyd', 'PySide6/plugins/new/unknown.dll',
-                     'PySide6/qml/Unreviewed/qmldir', 'PySide6/resources/new.rcc',
-                     'PySide6/Qt6VirtualKeyboard.dll', 'PySide6/Qt6Pdf.dll',
-                     'libssl-3-x64.dll', 'libcrypto-3-x64.dll',
-                     'PySide6/plugins/tls/qopensslbackend.dll'):
+        for name in (
+            'PySide6/Qt6Charts.dll',
+            'PySide6/Qt6Graphs.dll',
+            'PySide6/QtCharts.pyd',
+            'PySide6/plugins/new/unknown.dll',
+            'PySide6/qml/Unreviewed/qmldir',
+            'PySide6/resources/new.rcc',
+            'PySide6/Qt6VirtualKeyboard.dll',
+            'PySide6/Qt6Pdf.dll',
+            'libssl-3-x64.dll',
+            'libcrypto-3-x64.dll',
+            'PySide6/plugins/tls/qopensslbackend.dll',
+        ):
             with self.subTest(name=name), self.assertRaises(RuntimeError):
                 qt.audit_paths(sorted(qt.REQUIRED) + [name])
         for name in ('../PySide6/Qt6Core.dll', 'C:/PySide6/Qt6Core.dll', '/PySide6/Qt6Core.dll'):
@@ -192,8 +220,7 @@ class QtLicenseTests(unittest.TestCase):
     def test_actual_payload_audit_reports_limited_static_scope(self):
         with tempfile.TemporaryDirectory() as temp:
             root = self.fixture_payload(temp)
-            with patch.object(qt, 'pe_version', return_value=(6, 12, 0, 0)), \
-                    patch.object(qt, 'NATIVE_REQUIRED', frozenset()):
+            with patch.object(qt, 'pe_version', return_value=(6, 12, 0, 0)), patch.object(qt, 'NATIVE_REQUIRED', frozenset()):
                 result = qt.audit_payload(root)
             self.assertEqual(result['status'], 'PASS')
             self.assertFalse(result['virtual_keyboard_present'])

@@ -5,6 +5,7 @@ allows real/proxy data as unverified, non-independent, non-rankable technical
 replay. Legacy OOS exposure is not fully tracked by the shared holdout registry.
 No mode claims untouched data, formal research ranking or paper qualification.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -22,19 +23,15 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Callable
 
-from .core import (BacktestConfig, Dataset, StrategySpec, ValidationError,
-                   canonical_json, content_hash, freeze, to_dict)
+from .core import BacktestConfig, Dataset, StrategySpec, ValidationError, canonical_json, content_hash, freeze, to_dict
 from .value_bounds import _bounded_number, _exact_number, _bounded_value
 from .paper_replay import _require_wal_runtime, _require_local_wal_path
 from .strategies import builtin_strategies, _validate_bars
 from .data import validate_dataset
-from .research import (_dataset_identity, _evaluate_split, _integer,
-                       _keys, _reserve_holdout, _run_bounded,
-                       ResourceTimeout, validate_dsl, _unique_keys)
+from .research import _dataset_identity, _evaluate_split, _integer, _keys, _reserve_holdout, _run_bounded, ResourceTimeout, validate_dsl, _unique_keys
 
 MAX_STATE_BYTES = 16 * 1024 * 1024
-SOURCE_FILES = ('walk_forward.py', 'saved_candidate_pool.py', 'research.py', 'core.py', 'data.py',
-                'strategies.py', 'backtest.py')
+SOURCE_FILES = ('walk_forward.py', 'saved_candidate_pool.py', 'research.py', 'core.py', 'data.py', 'strategies.py', 'backtest.py')
 
 
 def _bounds(value, name):
@@ -98,9 +95,14 @@ class WalkForwardPlan:
         if self.pool_origin not in ('exact_builtin_pool', 'saved_campaign_pool'):
             raise ValidationError('Explicit exact_builtin_pool or saved_campaign_pool origin required')
         evaluation_cap = 220 if self.pool_origin == 'exact_builtin_pool' else 620
-        for name, low, high in (('max_evaluations', 1, evaluation_cap), ('gap_bars', 0, 1000),
-                               ('max_runtime_seconds', 1, 7200), ('max_bars', 1, 100000),
-                               ('worker_memory_mb', 128, 4096), ('max_ipc_bytes', 16384, 16777216)):
+        for name, low, high in (
+            ('max_evaluations', 1, evaluation_cap),
+            ('gap_bars', 0, 1000),
+            ('max_runtime_seconds', 1, 7200),
+            ('max_bars', 1, 100000),
+            ('worker_memory_mb', 128, 4096),
+            ('max_ipc_bytes', 16384, 16777216),
+        ):
             _integer(getattr(self, name), low, high, name)
         if self.process_start_method not in multiprocessing.get_all_start_methods():
             raise ValidationError('Unsupported process start method')
@@ -116,16 +118,15 @@ class WalkForwardPlan:
         object.__setattr__(self, 'ranking', freeze(self.ranking))
         # An asserted snapshot permits deserialization, never admission. Saved
         # launches independently revalidate the authoritative inputs below.
-        if (not isinstance(self.candidate_pool, (tuple, list))
-            or any(not isinstance(spec, StrategySpec) for spec in self.candidate_pool)):
+        if not isinstance(self.candidate_pool, (tuple, list)) or any(not isinstance(spec, StrategySpec) for spec in self.candidate_pool):
             raise ValidationError('Typed candidate pool required')
         if self.pool_origin == 'exact_builtin_pool':
-            if (self.pool_admission is not None
-                or canonical_json(self.candidate_pool) != canonical_json(builtin_strategies())):
+            if self.pool_admission is not None or canonical_json(self.candidate_pool) != canonical_json(builtin_strategies()):
                 raise ValidationError('Only the exact five version-bound built-in candidates are supported')
         else:
             # Keep operation-specific dependencies out of module startup.
             from .saved_candidate_pool import validate_admission_snapshot
+
             validate_admission_snapshot(self.pool_admission, self.candidate_pool)
             if self.max_evaluations > len(self.folds) * (2 * len(self.candidate_pool) + 1):
                 raise ValidationError('Saved pool evaluation budget exceeds exact planned candidate-count bound')
@@ -141,8 +142,7 @@ class WalkForwardPlan:
                 raise ValidationError('Folds require exact predeclared gaps and forward split order')
             current_widths = (train[1] - train[0], validation[1] - validation[0], oos[1] - oos[0])
             if previous is not None:
-                if (oos[0] < previous.oos[1] or train[1] <= previous.train[1]
-                    or validation[0] <= previous.validation[0]):
+                if oos[0] < previous.oos[1] or train[1] <= previous.train[1] or validation[0] <= previous.validation[0]:
                     raise ValidationError('Folds must advance with disjoint forward OOS ranges')
                 if current_widths[1:] != widths[1:]:
                     raise ValidationError('Validation and OOS widths must remain fixed')
@@ -155,11 +155,20 @@ class WalkForwardPlan:
             raise ValidationError('Final holdout must follow and be excluded from all folds')
 
 
-def build_walk_forward_plan(*, backtest_config: BacktestConfig, train_bars: int,
-                            validation_bars: int, oos_bars: int, fold_count: int,
-                            final_holdout: tuple[int, int], start: int = 0,
-                            step_bars: int | None = None, mode: str = 'rolling',
-                            gap_bars: int = 0, **options) -> WalkForwardPlan:
+def build_walk_forward_plan(
+    *,
+    backtest_config: BacktestConfig,
+    train_bars: int,
+    validation_bars: int,
+    oos_bars: int,
+    fold_count: int,
+    final_holdout: tuple[int, int],
+    start: int = 0,
+    step_bars: int | None = None,
+    mode: str = 'rolling',
+    gap_bars: int = 0,
+    **options,
+) -> WalkForwardPlan:
     """Pure typed plan construction; this does not inspect prices or reserve data."""
     for name, value in (('train_bars', train_bars), ('validation_bars', validation_bars), ('oos_bars', oos_bars)):
         _integer(value, 1, 100000, name)
@@ -177,8 +186,7 @@ def build_walk_forward_plan(*, backtest_config: BacktestConfig, train_bars: int,
         oos_start = validation_end + gap_bars
         folds.append(WalkForwardFold((train_start, train_end), (validation_start, validation_end), (oos_start, oos_start + oos_bars)))
     options.setdefault('max_evaluations', fold_count * (2 * len(options.get('candidate_pool', builtin_strategies())) + 1))
-    return WalkForwardPlan(mode=mode, folds=tuple(folds), final_holdout=final_holdout,
-                           backtest_config=backtest_config, gap_bars=gap_bars, **options)
+    return WalkForwardPlan(mode=mode, folds=tuple(folds), final_holdout=final_holdout, backtest_config=backtest_config, gap_bars=gap_bars, **options)
 
 
 def walk_forward_plan_from_dict(payload: dict) -> WalkForwardPlan:
@@ -197,6 +205,7 @@ def walk_forward_plan_from_dict(payload: dict) -> WalkForwardPlan:
     if type(value['backtest_config']) is dict:
         # Keep operation-specific dependencies out of module startup.
         from .configuration import config_from_json
+
         value['backtest_config'] = config_from_json(value['backtest_config'])
     if 'candidate_pool' in value:
         if type(value['candidate_pool']) is not list or not 1 <= len(value['candidate_pool']) <= 15:
@@ -247,10 +256,12 @@ def _slice(dataset, bounds, *, fold_index, role):
     # Whole-source identity lives in the experiment binding, not in a split's
     # result: excluded future prices cannot alter an earlier split's result hash.
     manifest = {key: dataset.manifest[key] for key in ('source_type', 'calendar_version', 'calendar_hash') if key in dataset.manifest}
-    manifest.update(validation_status='valid', data_hash=content_hash(bars),
-                    coverage={'start': bars[0].timestamp, 'end': bars[-1].end},
-                    walk_forward_split={'fold': fold_index, 'role': role, 'start': start, 'end': end,
-                                        'warmup': 'independent_no_prior_access'})
+    manifest.update(
+        validation_status='valid',
+        data_hash=content_hash(bars),
+        coverage={'start': bars[0].timestamp, 'end': bars[-1].end},
+        walk_forward_split={'fold': fold_index, 'role': role, 'start': start, 'end': end, 'warmup': 'independent_no_prior_access'},
+    )
     return Dataset(tuple(bars), manifest, dict(dataset.quality))
 
 
@@ -260,9 +271,12 @@ def _passes_validation(summary, ranking):
         metrics = summary['metrics']
         drawdown = _exact_number(metrics.get('max_drawdown_pct'))
         trades = metrics.get('trade_count')
-        return (type(trades) is int and trades >= ranking['min_trades']
-                and 0 <= drawdown <= _exact_number(ranking['max_drawdown_pct'])
-                and _exact_number(metrics.get('net_pnl')) >= _exact_number(ranking['minimum']))
+        return (
+            type(trades) is int
+            and trades >= ranking['min_trades']
+            and 0 <= drawdown <= _exact_number(ranking['max_drawdown_pct'])
+            and _exact_number(metrics.get('net_pnl')) >= _exact_number(ranking['minimum'])
+        )
     except (KeyError, TypeError, ValidationError):
         return False
 
@@ -273,16 +287,28 @@ def _read_state(db):
         return None
     if type(row[0]) is not str or len(row[0].encode('utf-8')) > MAX_STATE_BYTES:
         raise ValidationError('Invalid walk-forward journal')
-    state = json.loads(row[0], object_pairs_hook=_unique_keys,
-                       parse_constant=lambda _: (_ for _ in ()).throw(ValidationError('Nonfinite journal value')))
-    if (type(state) is not dict or state.get('state_hash') != content_hash({k: v for k, v in state.items() if k != 'state_hash'})
+    state = json.loads(row[0], object_pairs_hook=_unique_keys, parse_constant=lambda _: (_ for _ in ()).throw(ValidationError('Nonfinite journal value')))
+    if (
+        type(state) is not dict
+        or state.get('state_hash') != content_hash({k: v for k, v in state.items() if k != 'state_hash'})
         or state.get('experiment_id') != content_hash(state.get('binding'))
         or type(state.get('binding')) is not dict
-        or type(state.get('evaluations')) is not list or len(state['evaluations']) > 620
-        or type(state.get('folds')) is not list or len(state['folds']) > 20
-        or state.get('status') not in ('running', 'completed', 'completed_with_errors',
-                                      'cancelled', 'budget_exhausted', 'blocked_interrupted',
-                                      'blocked_previously_consumed_range', 'blocked_registry_busy')):
+        or type(state.get('evaluations')) is not list
+        or len(state['evaluations']) > 620
+        or type(state.get('folds')) is not list
+        or len(state['folds']) > 20
+        or state.get('status')
+        not in (
+            'running',
+            'completed',
+            'completed_with_errors',
+            'cancelled',
+            'budget_exhausted',
+            'blocked_interrupted',
+            'blocked_previously_consumed_range',
+            'blocked_registry_busy',
+        )
+    ):
         raise ValidationError('Invalid walk-forward journal identity')
     _validate_state(state)
     return state
@@ -295,11 +321,17 @@ def _state_summary(state):
         'evaluations_reserved': len(state['evaluations']),
         'evaluation_limit': state['binding']['plan']['max_evaluations'],
         'planned_evaluations_upper_bound': len(state['binding']['plan']['folds']) * (2 * len(state['binding']['plan']['candidate_pool']) + 1),
-        'model_calls': 0, 'final_holdout_status': state['final_holdout_status'],
-        'evidence_mode': state['evidence_mode'], 'exposure_status': state['exposure_status'],
-        'independent_oos': False, 'ranking_eligible': False, 'paper_eligible': False,
-        'strategy_qualification': 'not_assessed', 'portfolio_return': None,
-        'portfolio_return_reason': 'independent_flat_start_folds_not_a_continuous_portfolio'}
+        'model_calls': 0,
+        'final_holdout_status': state['final_holdout_status'],
+        'evidence_mode': state['evidence_mode'],
+        'exposure_status': state['exposure_status'],
+        'independent_oos': False,
+        'ranking_eligible': False,
+        'paper_eligible': False,
+        'strategy_qualification': 'not_assessed',
+        'portfolio_return': None,
+        'portfolio_return_reason': 'independent_flat_start_folds_not_a_continuous_portfolio',
+    }
 
 
 def _save_state(db, output_dir, state):
@@ -333,36 +365,44 @@ def _validate_state(state):
         # their original builtin protocol without rewriting the journal.
         origin = plan.get('pool_origin', 'exact_builtin_pool')
         if origin == 'exact_builtin_pool':
-            if (plan.get('pool_admission') is not None or plan['max_evaluations'] > 220
-                or canonical_json(pool) != canonical_json(builtin_strategies())):
+            if plan.get('pool_admission') is not None or plan['max_evaluations'] > 220 or canonical_json(pool) != canonical_json(builtin_strategies()):
                 raise ValidationError('Invalid persisted builtin pool')
         elif origin == 'saved_campaign_pool':
             # Keep operation-specific dependencies out of module startup.
             from .saved_candidate_pool import validate_admission_snapshot
+
             validate_admission_snapshot(plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool))
             if plan['max_evaluations'] > min(620, len(plan['folds']) * (2 * len(pool) + 1)):
                 raise ValidationError('Invalid persisted saved pool evaluation bound')
         else:
             raise ValidationError('Invalid persisted pool origin')
-        if (state['binding']['protocol'] != ('fixed_builtin_walk_forward_v1' if origin == 'exact_builtin_pool' else 'fixed_saved_campaign_walk_forward_v1')
+        if (
+            state['binding']['protocol'] != ('fixed_builtin_walk_forward_v1' if origin == 'exact_builtin_pool' else 'fixed_saved_campaign_walk_forward_v1')
             or state['binding']['candidate_pool_hash'] != content_hash(pool)
-            or type(state['model_calls']) is not int or state['model_calls'] != 0
+            or type(state['model_calls']) is not int
+            or state['model_calls'] != 0
             or state['scope'] != ('historical_replay_exposure_unverified' if replay else 'synthetic_fixed_pool_technical_evaluation')
             or state['exposure_status'] != ('unverified' if replay else 'synthetic_not_market_evidence')
             or state['independent_oos'] is not False
-            or state['ranking_eligible'] is not False or state['paper_eligible'] is not False
+            or state['ranking_eligible'] is not False
+            or state['paper_eligible'] is not False
             or state['evidence_mode'] != plan['evidence_mode']
             or state['final_holdout_status'] != 'excluded_not_evaluated'
             or state['summary'] != _state_summary(state)
-            or len(state['evaluations']) > plan['max_evaluations']):
+            or len(state['evaluations']) > plan['max_evaluations']
+        ):
             raise ValidationError('Inconsistent walk-forward evidence labels or counters')
         pool_hashes = [content_hash(spec) for spec in pool]
         by_sequence, keys = {}, set()
         for index, record in enumerate(state['evaluations'], 1):
             key = (record['fold'], record['role'], record['strategy_hash'])
-            if (record['sequence'] != index or key in keys or record['role'] not in ('train', 'validation', 'oos')
+            if (
+                record['sequence'] != index
+                or key in keys
+                or record['role'] not in ('train', 'validation', 'oos')
                 or record['strategy_hash'] not in pool_hashes
-                or record['status'] not in ('running', 'evaluated', 'failed', 'timed_out', 'interrupted')):
+                or record['status'] not in ('running', 'evaluated', 'failed', 'timed_out', 'interrupted')
+            ):
                 raise ValidationError('Inconsistent walk-forward evaluation ledger')
             keys.add(key)
             by_sequence[index] = record
@@ -378,38 +418,59 @@ def _validate_state(state):
                 for role in ('train', 'validation'):
                     if role in candidate:
                         record = candidate[role]
-                        if (record != by_sequence[record['sequence']] or record['fold'] != index
-                            or record['role'] != role or record['strategy_hash'] != candidate['strategy_hash']):
+                        if (
+                            record != by_sequence[record['sequence']]
+                            or record['fold'] != index
+                            or record['role'] != role
+                            or record['strategy_hash'] != candidate['strategy_hash']
+                        ):
                             raise ValidationError('Inconsistent candidate evaluation')
                         referenced.add(record['sequence'])
-                if (candidate.get('train', {}).get('status') == 'evaluated'
+                if (
+                    candidate.get('train', {}).get('status') == 'evaluated'
                     and candidate.get('validation', {}).get('status') == 'evaluated'
-                    and _passes_validation(candidate['validation']['result'], plan['ranking'])):
+                    and _passes_validation(candidate['validation']['result'], plan['ranking'])
+                ):
                     eligible.append(candidate)
             selection = fold['selection']
             if selection is not None:
                 winner = min(eligible, key=lambda row: (_exact_number(row['validation']['result']['metrics']['net_pnl']).copy_negate(), row['pool_index']))
-                if (fold['selection_hash'] != content_hash(selection) or selection['spec'] != pool[selection['pool_index']]
+                if (
+                    fold['selection_hash'] != content_hash(selection)
+                    or selection['spec'] != pool[selection['pool_index']]
                     or selection['strategy_hash'] != content_hash(selection['spec'])
-                    or selection['pool_index'] != winner['pool_index'] or selection['ranking'] != plan['ranking']
-                    or selection['validation_result_hash'] != winner['validation']['result']['result_hash']):
+                    or selection['pool_index'] != winner['pool_index']
+                    or selection['ranking'] != plan['ranking']
+                    or selection['validation_result_hash'] != winner['validation']['result']['result_hash']
+                ):
                     raise ValidationError('Inconsistent frozen selection')
             elif fold['selection_hash'] is not None:
                 raise ValidationError('Unexpected selection hash')
             if fold['oos'] is not None:
                 record = fold['oos']
-                if (selection is None or record != by_sequence[record['sequence']] or record['fold'] != index
-                    or record['role'] != 'oos' or record['strategy_hash'] != selection['strategy_hash']):
+                if (
+                    selection is None
+                    or record != by_sequence[record['sequence']]
+                    or record['fold'] != index
+                    or record['role'] != 'oos'
+                    or record['strategy_hash'] != selection['strategy_hash']
+                ):
                     raise ValidationError('Inconsistent forward evaluation')
                 referenced.add(record['sequence'])
-            if complete and (len(fold['candidates']) != len(pool) or any(role not in c for c in fold['candidates'] for role in ('train', 'validation'))
+            if complete and (
+                len(fold['candidates']) != len(pool)
+                or any(role not in c for c in fold['candidates'] for role in ('train', 'validation'))
                 or fold['status'] not in ('evaluated', 'evaluation_failed', 'no_eligible_candidate')
                 or (fold['status'] == 'no_eligible_candidate' and (eligible or selection is not None))
-                or (fold['status'] in ('evaluated', 'evaluation_failed') and fold['oos'] is None)):
+                or (fold['status'] in ('evaluated', 'evaluation_failed') and fold['oos'] is None)
+            ):
                 raise ValidationError('Incomplete completed fold')
-        if complete and (len(state['folds']) != len(plan['folds']) or referenced != set(by_sequence)
-                         or any(r['status'] in ('running', 'interrupted') for r in by_sequence.values())
-                         or (state['status'] == 'completed' and any(r['status'] != 'evaluated' for r in by_sequence.values()))):
+        if complete and (
+            len(state['folds']) != len(plan['folds'])
+            or referenced != set(by_sequence)
+            or any(r['status'] in ('running', 'interrupted') for r in by_sequence.values())
+            or (state['status'] == 'completed' and any(r['status'] != 'evaluated' for r in by_sequence.values()))
+        ):
             raise ValidationError('Incomplete completed experiment')
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise ValidationError('Invalid walk-forward journal consistency') from exc
@@ -487,17 +548,28 @@ def planned_evaluations(plan: WalkForwardPlan) -> int:
 def walk_forward_binding(dataset: Dataset, plan: WalkForwardPlan, registry: Path) -> dict:
     """One canonical binding shared with read-only preview adapters."""
     registry = Path(registry).resolve()
-    return {'protocol': ('fixed_builtin_walk_forward_v1' if plan.pool_origin == 'exact_builtin_pool'
-                         else 'fixed_saved_campaign_walk_forward_v1'), 'plan': to_dict(plan),
-            'source_identity': _dataset_identity(dataset), 'source_data_hash': dataset.manifest['data_hash'],
-            'python_version': platform.python_version(), 'candidate_pool_hash': content_hash(plan.candidate_pool),
-            'registry_identity': {'resolved_path': str(registry), 'coverage_policy': 'conservative_per_contract_envelopes'},
-            'source_hashes': {name: content_hash(Path(__file__).with_name(name).read_text(encoding='utf-8')) for name in SOURCE_FILES}}
+    return {
+        'protocol': ('fixed_builtin_walk_forward_v1' if plan.pool_origin == 'exact_builtin_pool' else 'fixed_saved_campaign_walk_forward_v1'),
+        'plan': to_dict(plan),
+        'source_identity': _dataset_identity(dataset),
+        'source_data_hash': dataset.manifest['data_hash'],
+        'python_version': platform.python_version(),
+        'candidate_pool_hash': content_hash(plan.candidate_pool),
+        'registry_identity': {'resolved_path': str(registry), 'coverage_policy': 'conservative_per_contract_envelopes'},
+        'source_hashes': {name: content_hash(Path(__file__).with_name(name).read_text(encoding='utf-8')) for name in SOURCE_FILES},
+    }
 
 
-def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Path,
-                     holdout_registry_path: Path, cancelled: Callable[[], bool] | None = None,
-                     source_campaign_dir: Path | None = None, original_dataset: Dataset | None = None) -> dict:
+def run_walk_forward(
+    dataset: Dataset,
+    *,
+    plan: WalkForwardPlan,
+    output_dir: Path,
+    holdout_registry_path: Path,
+    cancelled: Callable[[], bool] | None = None,
+    source_campaign_dir: Path | None = None,
+    original_dataset: Dataset | None = None,
+) -> dict:
     """Run one nonadaptive, fixed-pool experiment. Every restart is read/fail-closed.
 
     Planned OOS envelopes are consumed before ANY scoring, even if later cancelled.
@@ -513,15 +585,20 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
     if plan.pool_origin == 'saved_campaign_pool':
         # Keep operation-specific dependencies out of module startup.
         from .saved_candidate_pool import admit_saved_campaign_pool
+
         if source_campaign_dir is None or original_dataset is None:
             raise ValidationError('Saved pool requires authoritative source campaign and exact original dataset at launch')
-        admission = admit_saved_campaign_pool(source_campaign_dir=source_campaign_dir,
-            source_campaign_ref=plan.pool_admission['source_campaign_ref'], original_dataset=original_dataset,
+        admission = admit_saved_campaign_pool(
+            source_campaign_dir=source_campaign_dir,
+            source_campaign_ref=plan.pool_admission['source_campaign_ref'],
+            original_dataset=original_dataset,
             original_dataset_ref=plan.pool_admission['original_dataset_ref'],
             first_training_timestamp=dataset.bars[plan.folds[0].train[0]].timestamp,
-            authoritative_registry_path=holdout_registry_path)
-        if (canonical_json(admission.admission) != canonical_json(plan.pool_admission)
-            or canonical_json(admission.candidate_pool) != canonical_json(plan.candidate_pool)):
+            authoritative_registry_path=holdout_registry_path,
+        )
+        if canonical_json(admission.admission) != canonical_json(plan.pool_admission) or canonical_json(admission.candidate_pool) != canonical_json(
+            plan.candidate_pool
+        ):
             raise ValidationError('Saved source/admission changed; preview again before any reservation')
     elif source_campaign_dir is not None or original_dataset is not None:
         raise ValidationError('Builtin and saved source inputs are mutually exclusive')
@@ -538,47 +615,66 @@ def run_walk_forward(dataset: Dataset, *, plan: WalkForwardPlan, output_dir: Pat
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError as exc:
             raise ValidationError('Walk-forward experiment is already running') from exc
-        return _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config,
-                                         output_dir, started, cancelled)
+        return _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config, output_dir, started, cancelled)
 
 
 def _initial_walk_forward_state(experiment_id, binding, dataset, plan):
-    return {'experiment_id': experiment_id, 'binding': binding, 'status': 'running',
-             'source_manifest': to_dict(dataset.manifest), 'elapsed_seconds': 0,
-             'scope': 'historical_replay_exposure_unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_fixed_pool_technical_evaluation',
-             'evidence_mode': plan.evidence_mode,
-             'exposure_status': 'unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_not_market_evidence',
-             'independent_oos': False, 'ranking_eligible': False, 'paper_eligible': False, 'model_calls': 0,
-             'final_holdout_status': 'excluded_not_evaluated', 'registry_reservation': None,
-             'evaluations': [], 'folds': [], 'summary': {},
-             'warnings': [('Fixed built-in pool; no adaptive AI generation or imported AI provenance.'
-                           if plan.pool_origin == 'exact_builtin_pool' else
-                           'Fixed saved campaign pool; local artifact admission does not verify model inference, unseen exposure or profitability.'),
-                          'Technical evidence only; no formal ranking, paper qualification or profitability claim.',
-                          'historical_replay is exposure-unverified and not independent OOS; validation chooses only a scenario to replay.',
-                          'The default 10% validation drawdown cap and minimum one closed lot are engineering guards, not financial acceptance.',
-                          'Training scores are descriptive; a failed training engine evaluation still disqualifies an unverifiable candidate.',
-                          'Independent split warmup and flat starts; no cross-boundary positions or feature state.',
-                          'Later predeclared training may use earlier OOS bars after they become historical, never OOS metrics.',
-                          'Shared registry checks only registered exposures; legacy OOS exposure is not fully registered.',
-                          'OOS coverage envelopes are reserved once before scoring and stay consumed after cancellation.',
-                          'The excluded final holdout is not evaluated here; this is not a claim that it is untouched.',
-                          'Deleting/copying/restoring the authoritative registry cannot establish unseen data.',
-                          'Worker address-space limits apply only where supported; isolation is not a filesystem/network sandbox.']}
+    return {
+        'experiment_id': experiment_id,
+        'binding': binding,
+        'status': 'running',
+        'source_manifest': to_dict(dataset.manifest),
+        'elapsed_seconds': 0,
+        'scope': 'historical_replay_exposure_unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_fixed_pool_technical_evaluation',
+        'evidence_mode': plan.evidence_mode,
+        'exposure_status': 'unverified' if plan.evidence_mode == 'historical_replay' else 'synthetic_not_market_evidence',
+        'independent_oos': False,
+        'ranking_eligible': False,
+        'paper_eligible': False,
+        'model_calls': 0,
+        'final_holdout_status': 'excluded_not_evaluated',
+        'registry_reservation': None,
+        'evaluations': [],
+        'folds': [],
+        'summary': {},
+        'warnings': [
+            (
+                'Fixed built-in pool; no adaptive AI generation or imported AI provenance.'
+                if plan.pool_origin == 'exact_builtin_pool'
+                else 'Fixed saved campaign pool; local artifact admission does not verify model inference, unseen exposure or profitability.'
+            ),
+            'Technical evidence only; no formal ranking, paper qualification or profitability claim.',
+            'historical_replay is exposure-unverified and not independent OOS; validation chooses only a scenario to replay.',
+            'The default 10% validation drawdown cap and minimum one closed lot are engineering guards, not financial acceptance.',
+            'Training scores are descriptive; a failed training engine evaluation still disqualifies an unverifiable candidate.',
+            'Independent split warmup and flat starts; no cross-boundary positions or feature state.',
+            'Later predeclared training may use earlier OOS bars after they become historical, never OOS metrics.',
+            'Shared registry checks only registered exposures; legacy OOS exposure is not fully registered.',
+            'OOS coverage envelopes are reserved once before scoring and stay consumed after cancellation.',
+            'The excluded final holdout is not evaluated here; this is not a claim that it is untouched.',
+            'Deleting/copying/restoring the authoritative registry cannot establish unseen data.',
+            'Worker address-space limits apply only where supported; isolation is not a filesystem/network sandbox.',
+        ],
+    }
 
 
-def _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config,
-                              output_dir, deadline, state, check, save):
+def _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config, output_dir, deadline, state, check, save):
     check()
-    oos_bars = tuple(bar for fold in plan.folds for bar in dataset.bars[fold.oos[0]:fold.oos[1]])
+    oos_bars = tuple(bar for fold in plan.folds for bar in dataset.bars[fold.oos[0] : fold.oos[1]])
     protected = Dataset(oos_bars, {}, {})
-    checked = Dataset(dataset.bars[plan.folds[0].train[0]:plan.final_holdout[1]], {}, {})
+    checked = Dataset(dataset.bars[plan.folds[0].train[0] : plan.final_holdout[1]], {}, {})
     # Reservation's selection_hash binds the predeclared pool/plan;
     # per-fold winner hashes are distinct and frozen later, before OOS.
     try:
-        reservation = _reserve_holdout(protected, registry_path=registry,
-            campaign_id=experiment_id, selection_hash=content_hash(config), output_dir=output_dir,
-            guard_dataset=checked, deadline=deadline)
+        reservation = _reserve_holdout(
+            protected,
+            registry_path=registry,
+            campaign_id=experiment_id,
+            selection_hash=content_hash(config),
+            output_dir=output_dir,
+            guard_dataset=checked,
+            deadline=deadline,
+        )
     except ResourceTimeout:
         raise _StopRun('budget_exhausted') from None
     except sqlite3.OperationalError as exc:
@@ -596,8 +692,15 @@ def _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config,
 
 def _score_walk_forward_folds(dataset, plan, state, evaluate, save):
     for fold_index, fold in enumerate(plan.folds):
-        fold_state = {'index': fold_index, 'plan': to_dict(fold), 'status': 'training',
-                      'candidates': [], 'selection': None, 'selection_hash': None, 'oos': None}
+        fold_state = {
+            'index': fold_index,
+            'plan': to_dict(fold),
+            'status': 'training',
+            'candidates': [],
+            'selection': None,
+            'selection_hash': None,
+            'oos': None,
+        }
         state['folds'].append(fold_state)
         save()
         train = _slice(dataset, fold.train, fold_index=fold_index, role='train')
@@ -608,19 +711,28 @@ def _score_walk_forward_folds(dataset, plan, state, evaluate, save):
             for role, split in (('train', train), ('validation', validation)):
                 scores[role] = evaluate(fold_index, role, split, spec)
             save()
-        eligible = [row for row in fold_state['candidates']
-                    if row['train']['status'] == 'evaluated' and row['validation']['status'] == 'evaluated'
-                    and _passes_validation(row['validation']['result'], plan.ranking)]
+        eligible = [
+            row
+            for row in fold_state['candidates']
+            if row['train']['status'] == 'evaluated'
+            and row['validation']['status'] == 'evaluated'
+            and _passes_validation(row['validation']['result'], plan.ranking)
+        ]
         if not eligible:
             fold_state['status'] = 'no_eligible_candidate'
             save()
             continue
         winner = sorted(eligible, key=lambda row: (_exact_number(row['validation']['result']['metrics']['net_pnl']).copy_negate(), row['pool_index']))[0]
         spec = plan.candidate_pool[winner['pool_index']]
-        selection = {'pool_index': winner['pool_index'], 'spec': to_dict(spec),
-                     'strategy_hash': content_hash(spec), 'train_data_hash': train.manifest['data_hash'],
-                     'validation_data_hash': validation.manifest['data_hash'], 'ranking': to_dict(plan.ranking),
-                     'validation_result_hash': winner['validation']['result']['result_hash']}
+        selection = {
+            'pool_index': winner['pool_index'],
+            'spec': to_dict(spec),
+            'strategy_hash': content_hash(spec),
+            'train_data_hash': train.manifest['data_hash'],
+            'validation_data_hash': validation.manifest['data_hash'],
+            'ranking': to_dict(plan.ranking),
+            'validation_result_hash': winner['validation']['result']['result_hash'],
+        }
         fold_state.update(selection=selection, selection_hash=content_hash(selection), status='selection_frozen')
         save()  # No OOS result or data is passed to selection.
         oos = _slice(dataset, fold.oos, fold_index=fold_index, role='oos')
@@ -629,27 +741,27 @@ def _score_walk_forward_folds(dataset, plan, state, evaluate, save):
         save()
 
 
-def _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
-                              output_dir, db, state, started, cancelled):
+def _score_walk_forward_state(dataset, plan, registry, experiment_id, config, output_dir, db, state, started, cancelled):
     deadline = started + plan.max_runtime_seconds
+
     def save():
         state['elapsed_seconds'] = time.monotonic() - started
         _save_state(db, output_dir, state)
+
     def check():
         if cancelled is not None and cancelled():
             raise _StopRun('cancelled')
         if time.monotonic() >= deadline or len(state['evaluations']) >= plan.max_evaluations:
             raise _StopRun('budget_exhausted')
+
     def evaluate(fold_index, role, split, spec):
         check()
-        record = {'sequence': len(state['evaluations']) + 1, 'fold': fold_index, 'role': role,
-                  'strategy_hash': content_hash(spec), 'status': 'running'}
+        record = {'sequence': len(state['evaluations']) + 1, 'fold': fold_index, 'role': role, 'strategy_hash': content_hash(spec), 'status': 'running'}
         state['evaluations'].append(record)
         save()  # Durable reservation consumes the global slot BEFORE work.
         try:
             result = _run_bounded(_evaluate_split, (split, spec, plan.backtest_config), deadline=deadline, config=config)
-            record.update(result=result['value'], status='evaluated',
-                          memory_limit_enforced=result.get('memory_limit_enforced', False))
+            record.update(result=result['value'], status='evaluated', memory_limit_enforced=result.get('memory_limit_enforced', False))
         except Exception as exc:
             record.update(status='timed_out' if isinstance(exc, ResourceTimeout) else 'failed', error=type(exc).__name__)
             if isinstance(exc, ResourceTimeout):
@@ -657,10 +769,10 @@ def _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
         finally:
             save()
         return record
+
     save()
     try:
-        if not _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config,
-                                         output_dir, deadline, state, check, save):
+        if not _reserve_walk_forward_oos(dataset, plan, registry, experiment_id, config, output_dir, deadline, state, check, save):
             return state
         _score_walk_forward_folds(dataset, plan, state, evaluate, save)
         state['status'] = 'completed_with_errors' if any(row['status'] != 'evaluated' for row in state['evaluations']) else 'completed'
@@ -673,8 +785,7 @@ def _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
     return state
 
 
-def _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config,
-                              output_dir, started, cancelled):
+def _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, config, output_dir, started, cancelled):
     state_path = output_dir / 'walk_forward.sqlite3'
     new_journal = not state_path.exists()
     with closing(sqlite3.connect(state_path, timeout=0)) as db:
@@ -694,5 +805,4 @@ def _run_walk_forward_journal(dataset, plan, registry, experiment_id, binding, c
                 _save_state(db, output_dir, state)
             return state
         state = _initial_walk_forward_state(experiment_id, binding, dataset, plan)
-        return _score_walk_forward_state(dataset, plan, registry, experiment_id, config,
-                                         output_dir, db, state, started, cancelled)
+        return _score_walk_forward_state(dataset, plan, registry, experiment_id, config, output_dir, db, state, started, cancelled)

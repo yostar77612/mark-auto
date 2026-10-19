@@ -1,4 +1,5 @@
 """Original synthetic smoke observation only; no gate, SQL or workload changes."""
+
 from contextlib import ExitStack, contextmanager
 import json
 from pathlib import Path
@@ -16,6 +17,7 @@ MAX_REPORT_BYTES = 32768
 
 class GenericTimings(WorkerTimings):
     """Inclusive phase clocks; CPU excludes spawned evaluation children."""
+
     def __init__(self, operation):
         if operation not in OPERATIONS:
             raise ValueError('Unknown original smoke operation')
@@ -52,20 +54,26 @@ def instrument_generic_operations(timings):
     from quantlab import research
     from quantlab.paper import PaperBroker
     from quantlab.paper_replay import PaperReplay
+
     with ExitStack() as stack:
         stack.enter_context(instrument_walk_forward(timings))
+
         def wrap(owner, name, phase, *, context=False):
             original = getattr(owner, name)
             if context:
+
                 @contextmanager
                 def measured(*args, **kwargs):
                     with timings.measure(phase), original(*args, **kwargs) as value:
                         yield value
             else:
+
                 def measured(*args, **kwargs):
                     with timings.measure(phase):
                         return original(*args, **kwargs)
+
             stack.enter_context(patch.object(owner, name, measured))
+
         for owner, name, phase in (
             (research, 'run_campaign', 'campaign.run'),
             (research, '_run_bounded', 'campaign.worker'),
@@ -85,12 +93,10 @@ def instrument_generic_operations(timings):
         yield
 
 
-def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap,
-                              job_id, reconciliation_admitted=False):
+def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False):
     """Keep the actual ownership gate and worker; retain its failure-time phases."""
     if operation not in OPERATIONS:
-        return _original_job_worker(sender, gate, operation, payload, root, bootstrap,
-                                    job_id, reconciliation_admitted)
+        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     timings = GenericTimings(operation)
     stop = threading.Event()
     stack = ExitStack()
@@ -136,8 +142,7 @@ def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap,
 
     try:
         with timings.measure('worker.body'):
-            return _original_job_worker(sender, Gate(), operation, payload, root,
-                                        bootstrap, job_id, reconciliation_admitted)
+            return _original_job_worker(sender, Gate(), operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     finally:
         try:
             restore()

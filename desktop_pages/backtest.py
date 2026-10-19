@@ -18,21 +18,35 @@ class BacktestPage(QWidget):
         layout = self.host.mount_page(self, ui_text('ui._backtest_page.text_1'))
         layout.addWidget(QLabel(ui_text('ui._backtest_page.text_2')))
         parameters = self.host.advanced(layout, ui_text('ui._backtest_page.text_3'))
-        self.backtest_form = BacktestForm(); parameters.addWidget(self.backtest_form)
-        self.start_date = self.backtest_form.fields['start_date']; self.end_date = self.backtest_form.fields['end_date']
+        self.backtest_form = BacktestForm()
+        parameters.addWidget(self.backtest_form)
+        self.start_date = self.backtest_form.fields['start_date']
+        self.end_date = self.backtest_form.fields['end_date']
         advanced = self.host.advanced(layout)
         self.config = self.host.text(advanced, ui_text('ui._backtest_page.text_4'), canonical_json(demo_config()), True)
         self.host.remember(self.config)
-        self.batch = QCheckBox(ui_text('ui._backtest_page.text_5')); layout.addWidget(self.batch)
+        self.batch = QCheckBox(ui_text('ui._backtest_page.text_5'))
+        layout.addWidget(self.batch)
         self.run_button = self.host.button(layout, ui_text('ui._backtest_page.text_6'), 'run_backtest', self.run_backtest, role='primary')
-        self.result_choice = QComboBox(); self.result_choice.currentIndexChanged.connect(self.show_result); layout.addWidget(self.result_choice)
-        self.plot = EquityPlot(); layout.addWidget(self.plot)
-        self.result_detail = QPlainTextEdit(); self.result_detail.setReadOnly(True); advanced.addWidget(self.result_detail)
-        self.result_card = BacktestSummaryCard(); advanced.addWidget(self.result_card); self.result_card.hide()
-        self.kpis = KpiCards(('net_pnl', 'profit_factor', 'sharpe', 'max_drawdown', 'closed_lots', 'open_position')); layout.addWidget(self.kpis)
-        self.fills_table = TaipeiFillsTable(); layout.addWidget(self.fills_table)
+        self.result_choice = QComboBox()
+        self.result_choice.currentIndexChanged.connect(self.show_result)
+        layout.addWidget(self.result_choice)
+        self.plot = EquityPlot()
+        layout.addWidget(self.plot)
+        self.result_detail = QPlainTextEdit()
+        self.result_detail.setReadOnly(True)
+        advanced.addWidget(self.result_detail)
+        self.result_card = BacktestSummaryCard()
+        advanced.addWidget(self.result_card)
+        self.result_card.hide()
+        self.kpis = KpiCards(('net_pnl', 'profit_factor', 'sharpe', 'max_drawdown', 'closed_lots', 'open_position'))
+        layout.addWidget(self.kpis)
+        self.fills_table = TaipeiFillsTable()
+        layout.addWidget(self.fills_table)
         for kind, caption in (('signal', ui_text('ui._backtest_page.text_7')), ('fill', ui_text('ui._backtest_page.text_8'))):
-            toggle = QCheckBox(caption); toggle.setChecked(True); layout.addWidget(toggle)
+            toggle = QCheckBox(caption)
+            toggle.setChecked(True)
+            layout.addWidget(toggle)
             toggle.toggled.connect(lambda value, layer=kind: self.state.market.chart.set_layer_visible(layer, value))
 
     def run_backtest(self):
@@ -40,17 +54,29 @@ class BacktestPage(QWidget):
         config = self.host.payload(self.config, lambda: typed['config'])
         spec = self.state.strategy_form.build_payload() if self.state.active_candidate is None else None
         parameters = self.host.payload(self.state.parameters, lambda: spec['parameters']) if spec else json.loads(self.state.parameters.toPlainText())
-        self.host.start_job('ui_backtest', {'family': self.state.family.currentText(), 'parameters': parameters,
-            'config': config, 'start_date': typed['start_date'], 'end_date': typed['end_date'],
-            'batch': self.batch.isChecked(), 'candidate': self.state.active_candidate})
+        self.host.start_job(
+            'ui_backtest',
+            {
+                'family': self.state.family.currentText(),
+                'parameters': parameters,
+                'config': config,
+                'start_date': typed['start_date'],
+                'end_date': typed['end_date'],
+                'batch': self.batch.isChecked(),
+                'candidate': self.state.active_candidate,
+            },
+        )
 
     def show_result(self, index=None):
         self.state.market.chart.set_reference_lines(())
         path = self.result_choice.currentData()
         self.state._selection_allowed = False
         if not path:
-            self.plot.set_values([]); self.kpis.set_values({}); self.fills_table.set_rows([])
-            self.result_detail.setPlainText(ui_text('ui.show_result.text_1')); return
+            self.plot.set_values([])
+            self.kpis.set_values({})
+            self.fills_table.set_rows([])
+            self.result_detail.setPlainText(ui_text('ui.show_result.text_1'))
+            return
         try:
             result = load_result(path)
             self.plot.set_values(result.equity)
@@ -64,6 +90,10 @@ class BacktestPage(QWidget):
                 _, provenance = self.host.candidate_record(self.state.root, reference)
                 self.state._selection_allowed = provenance['paper_qualified']
             self.state.select_button.setEnabled(self.state._selection_allowed and not self.state.jobs.active)
-            self.result_detail.setPlainText(canonical_json({'metrics':result.metrics, 'warnings':result.warnings, 'manifest':result.manifest, 'fills':result.fills, 'rejects':result.rejects}))
-        except Exception as exc: self.state.status.setText(error_message(exception_code(exc)))
-
+            self.result_detail.setPlainText(
+                canonical_json(
+                    {'metrics': result.metrics, 'warnings': result.warnings, 'manifest': result.manifest, 'fills': result.fills, 'rejects': result.rejects}
+                )
+            )
+        except Exception as exc:
+            self.state.status.setText(error_message(exception_code(exc)))

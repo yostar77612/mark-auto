@@ -1,4 +1,5 @@
 """Offline synthetic corpus; no private/purchased data and no network calls."""
+
 import copy
 from contextlib import closing, contextmanager
 import json
@@ -14,8 +15,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from quantlab.core import Bar, Dataset, CostSpec, BacktestConfig, ValidationError, content_hash, to_dict
-from quantlab.research import (FixtureGenerator, CompatibleProvider, validate_dsl,
-                              run_campaign, demo_campaign_config)
+from quantlab.research import FixtureGenerator, CompatibleProvider, validate_dsl, run_campaign, demo_campaign_config
 from quantlab.strategies import builtin_strategies
 
 
@@ -24,14 +24,17 @@ def inputs():
     bars = []
     for i in range(240):
         price = Decimal(20000 + (i % 31) * 3)
-        bars.append(Bar(start + timedelta(minutes=i), start + timedelta(minutes=i + 1),
-                        '2026-09-01', 'day', 'TAIFEX:TMF:202609', price, price + 2, price - 2, price, 10))
+        bars.append(
+            Bar(
+                start + timedelta(minutes=i), start + timedelta(minutes=i + 1), '2026-09-01', 'day', 'TAIFEX:TMF:202609', price, price + 2, price - 2, price, 10
+            )
+        )
     bars = tuple(bars)
-    data = Dataset(bars, {'source_type': 'synthetic', 'validation_status': 'valid',
-                         'data_hash': content_hash(bars), 'calendar_version': 'synthetic-v1'}, {'valid': True})
+    data = Dataset(
+        bars, {'source_type': 'synthetic', 'validation_status': 'valid', 'data_hash': content_hash(bars), 'calendar_version': 'synthetic-v1'}, {'valid': True}
+    )
     costs = CostSpec(Decimal('0'), Decimal('0'), 0, 'none', '2026-01-01', 'synthetic-zero-cost')
-    config = BacktestConfig(Decimal('100000'), costs, initial_margin_per_contract=Decimal('1000'),
-                            margin_version='synthetic-margin')
+    config = BacktestConfig(Decimal('100000'), costs, initial_margin_per_contract=Decimal('1000'), margin_version='synthetic-margin')
     campaign = demo_campaign_config(data, config)
     if 'fork' in multiprocessing.get_all_start_methods():
         campaign['process_start_method'] = 'fork'
@@ -41,14 +44,18 @@ def inputs():
 class Spy(FixtureGenerator):
     def __init__(self):
         self.contexts = []
+
     def generate(self, context):
         self.contexts.append(copy.deepcopy(context))
         return super().generate(context)
 
 
 class InvalidGenerator(FixtureGenerator):
-    def generate(self, context): return {'code': 'import os'}
-    def improve(self, context): raise RuntimeError('private provider detail')
+    def generate(self, context):
+        return {'code': 'import os'}
+
+    def improve(self, context):
+        raise RuntimeError('private provider detail')
 
 
 class RenamedDuplicateGenerator(FixtureGenerator):
@@ -87,25 +94,31 @@ def tracked_sqlite_connections(*, fail_open_name=None, fail_statement=None):
     """Retain handles so GC cannot conceal a missing explicit close."""
     opened = []
     original_connect = sqlite3.connect
+
     class TrackingConnection(sqlite3.Connection):
         closed_explicitly = False
+
         def close(self):
             self.closed_explicitly = True
             return super().close()
+
         def execute(self, statement, *args, **kwargs):
             if fail_statement and statement.startswith(fail_statement):
                 raise sqlite3.OperationalError('inert connection failure fixture')
             return super().execute(statement, *args, **kwargs)
+
         def executemany(self, statement, *args, **kwargs):
             if fail_statement and statement.startswith(fail_statement):
                 raise sqlite3.OperationalError('inert connection failure fixture')
             return super().executemany(statement, *args, **kwargs)
+
     def connect(path, *args, **kwargs):
         if fail_open_name and Path(path).name == fail_open_name:
             raise sqlite3.OperationalError('inert database-open failure fixture')
         connection = original_connect(path, *args, factory=TrackingConnection, **kwargs)
         opened.append(connection)
         return connection
+
     try:
         with patch('quantlab.research.sqlite3.connect', side_effect=connect):
             yield opened
@@ -119,6 +132,7 @@ def tracked_sqlite_connections(*, fail_open_name=None, fail_statement=None):
 class ResearchTests(unittest.TestCase):
     def test_production_prompt_explains_schema_without_candidate_answer(self):
         from quantlab.research import PROMPT, FAMILIES
+
         for key in ('strategy_id', 'family', 'parameters', 'rules', 'schema_version'):
             self.assertIn(key, PROMPT)
         for family in FAMILIES:
@@ -130,8 +144,8 @@ class ResearchTests(unittest.TestCase):
     def test_candidate_fingerprint_normalizes_numbers_defaults_and_cosmetic_ids(self):
         from quantlab.research import candidate_fingerprint
         from decimal import localcontext
-        first = {'strategy_id': 'first', 'family': 'mean_reversion',
-                 'parameters': {'lookback': 20, 'entry_bps': '0123.4500'}, 'rules': {}}
+
+        first = {'strategy_id': 'first', 'family': 'mean_reversion', 'parameters': {'lookback': 20, 'entry_bps': '0123.4500'}, 'rules': {}}
         second = copy.deepcopy(first)
         second['strategy_id'] = 'renamed'
         second['parameters'].update(entry_bps='123.45', quantity=1)
@@ -148,7 +162,7 @@ class ResearchTests(unittest.TestCase):
         config.update(families=['trend'], max_trials=2, max_improvements=1)
         config['ranking']['minimum'] = '-1000000'
         with tempfile.TemporaryDirectory() as tmp:
-            state = run_campaign(data, config=config, generator=RenamedDuplicateGenerator(), output_dir=Path(tmp)/'campaign')
+            state = run_campaign(data, config=config, generator=RenamedDuplicateGenerator(), output_dir=Path(tmp) / 'campaign')
         first, second = state['attempts']
         self.assertEqual(first['status'], 'evaluated')
         self.assertEqual(second['status'], 'rejected')
@@ -164,7 +178,7 @@ class ResearchTests(unittest.TestCase):
         config.update(families=['trend'], max_trials=2, max_improvements=1)
         config['ranking']['minimum'] = '-1000000'
         with tempfile.TemporaryDirectory() as tmp:
-            state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp)/'campaign')
+            state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
         first, second = state['attempts']
         self.assertEqual([first['status'], second['status']], ['evaluated', 'evaluated'])
         self.assertNotEqual(first['candidate_fingerprint'], second['candidate_fingerprint'])
@@ -180,11 +194,17 @@ class ResearchTests(unittest.TestCase):
         config.update(families=['trend'], max_trials=2, max_improvements=1)
         config['ranking']['minimum'] = '-1000000'
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp)/'budget.db'
-            provider = CompatibleProvider(model='unit-test-mock-not-real', endpoint='https://example.invalid/v1',
-                transport=invalid_improvement_transport, budget_path=path, network_opt_in=True,
-                max_calls=2, max_tokens=30000)
-            state = run_campaign(data, config=config, generator=provider, output_dir=Path(tmp)/'campaign')
+            path = Path(tmp) / 'budget.db'
+            provider = CompatibleProvider(
+                model='unit-test-mock-not-real',
+                endpoint='https://example.invalid/v1',
+                transport=invalid_improvement_transport,
+                budget_path=path,
+                network_opt_in=True,
+                max_calls=2,
+                max_tokens=30000,
+            )
+            state = run_campaign(data, config=config, generator=provider, output_dir=Path(tmp) / 'campaign')
             with closing(sqlite3.connect(path)) as db:
                 self.assertEqual(db.execute('SELECT calls FROM budget').fetchone()[0], 2)
         first, second = state['attempts']
@@ -195,15 +215,24 @@ class ResearchTests(unittest.TestCase):
 
     def test_provider_improve_marks_task_without_mutating_or_injecting_answers(self):
         requests = []
+
         def transport(endpoint, request, timeout):
             requests.append(request)
             return {'choices': [{'message': {'content': '{}'}}]}
+
         context = {'family': 'trend', 'iteration': 1, 'previous': {'metrics': {'train': {}, 'validation': {}}}}
         before = copy.deepcopy(context)
         with tempfile.TemporaryDirectory() as tmp:
-            provider = CompatibleProvider(model='unit-test-mock', endpoint='https://example.invalid/v1',
-                transport=transport, budget_path=Path(tmp)/'budget.db', network_opt_in=True,
-                max_calls=1, max_tokens=20000, output_mode='registry_json_schema')
+            provider = CompatibleProvider(
+                model='unit-test-mock',
+                endpoint='https://example.invalid/v1',
+                transport=transport,
+                budget_path=Path(tmp) / 'budget.db',
+                network_opt_in=True,
+                max_calls=1,
+                max_tokens=20000,
+                output_mode='registry_json_schema',
+            )
             provider.improve(context)
         sent = json.JSONDecoder().raw_decode(requests[0]['messages'][-1]['content'])[0]
         self.assertEqual(context, before)
@@ -214,6 +243,7 @@ class ResearchTests(unittest.TestCase):
     def test_registry_schema_is_closed_but_keeps_cross_field_validator(self):
         from quantlab.research import registry_json_schema, FAMILIES
         from quantlab.strategies import DEFAULTS
+
         for family in FAMILIES:
             schema = registry_json_schema(family)
             self.assertFalse(schema['additionalProperties'])
@@ -221,46 +251,70 @@ class ResearchTests(unittest.TestCase):
             params = schema['properties']['parameters']
             self.assertFalse(params['additionalProperties'])
             self.assertEqual(set(params['required']), set(DEFAULTS[family]))
-            self.assertTrue(all(v['type'] == 'integer' and v['minimum'] < v['maximum']
-                                for v in params['properties'].values()))
+            self.assertTrue(all(v['type'] == 'integer' and v['minimum'] < v['maximum'] for v in params['properties'].values()))
             self.assertFalse(schema['properties']['rules']['additionalProperties'])
-        with self.assertRaises(ValidationError): registry_json_schema('unknown')
         with self.assertRaises(ValidationError):
-            validate_dsl({'strategy_id': 'unit-invalid', 'family': 'trend',
-                          'parameters': {'fast': 20, 'slow': 10}, 'rules': {}})
+            registry_json_schema('unknown')
+        with self.assertRaises(ValidationError):
+            validate_dsl({'strategy_id': 'unit-invalid', 'family': 'trend', 'parameters': {'fast': 20, 'slow': 10}, 'rules': {}})
 
     def test_structured_request_is_explicit_and_never_falls_back(self):
         requests = []
+
         def transport(endpoint, request, timeout):
             requests.append(request)
             raise ValidationError('unit-test unsupported schema response')
+
         with tempfile.TemporaryDirectory() as tmp:
-            provider = CompatibleProvider(model='unit-test', endpoint='https://example.invalid/v1',
-                transport=transport, budget_path=Path(tmp)/'budget.db', network_opt_in=True,
-                max_calls=1, max_tokens=10000, output_mode='registry_json_schema')
-            with self.assertRaises(ValidationError): provider.generate({'family': 'trend'})
+            provider = CompatibleProvider(
+                model='unit-test',
+                endpoint='https://example.invalid/v1',
+                transport=transport,
+                budget_path=Path(tmp) / 'budget.db',
+                network_opt_in=True,
+                max_calls=1,
+                max_tokens=10000,
+                output_mode='registry_json_schema',
+            )
+            with self.assertRaises(ValidationError):
+                provider.generate({'family': 'trend'})
             self.assertEqual(len(requests), 1)
             fmt = requests[0]['response_format']
             self.assertEqual(fmt['type'], 'json_schema')
             self.assertTrue(fmt['json_schema']['strict'])
             self.assertEqual(fmt['json_schema']['schema']['properties']['family']['const'], 'trend')
-            with self.assertRaises(ValidationError): provider.generate({'family': 'trend'})
+            with self.assertRaises(ValidationError):
+                provider.generate({'family': 'trend'})
             self.assertEqual(len(requests), 1)
 
     def test_default_output_mode_preserves_existing_durable_budget_identity(self):
         def transport(*args):
             return {'choices': [{'message': {'content': '{}'}}]}
+
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp)/'budget.db'
-            options = dict(model='unit-test', endpoint='https://example.invalid/v1',
-                transport=transport, budget_path=path, network_opt_in=True,
-                max_calls=1, max_tokens=10000)
+            path = Path(tmp) / 'budget.db'
+            options = dict(
+                model='unit-test',
+                endpoint='https://example.invalid/v1',
+                transport=transport,
+                budget_path=path,
+                network_opt_in=True,
+                max_calls=1,
+                max_tokens=10000,
+            )
             CompatibleProvider(**options).generate({})
             with closing(sqlite3.connect(path)) as db:
                 binding = db.execute('SELECT binding FROM budget').fetchone()[0]
-            legacy = {'model': 'unit-test', 'endpoint': 'https://example.invalid/v1',
-                      'calls': 1, 'tokens': 10000, 'spend': '0', 'rate': '0',
-                      'per_call': 2048, 'timeout': 30}
+            legacy = {
+                'model': 'unit-test',
+                'endpoint': 'https://example.invalid/v1',
+                'calls': 1,
+                'tokens': 10000,
+                'spend': '0',
+                'rate': '0',
+                'per_call': 2048,
+                'timeout': 30,
+            }
             self.assertEqual(binding, content_hash(legacy))
             with self.assertRaisesRegex(ValidationError, 'budget exhausted'):
                 CompatibleProvider(**options, output_mode='json_object').generate({})
@@ -270,6 +324,7 @@ class ResearchTests(unittest.TestCase):
     def test_parameter_contract_matches_each_registry_family(self):
         from quantlab.research import PARAMETER_CONTRACTS
         from quantlab.strategies import DEFAULTS
+
         self.assertEqual(set(PARAMETER_CONTRACTS), set(DEFAULTS))
         for family, defaults in DEFAULTS.items():
             self.assertEqual(set(PARAMETER_CONTRACTS[family]), set(defaults))
@@ -277,6 +332,7 @@ class ResearchTests(unittest.TestCase):
 
     def test_training_summary_uses_only_partitioned_training_bars(self):
         from quantlab.research import _campaign_config, training_summary
+
         data, config = inputs()
         splits = _campaign_config(data, config)
         summary = training_summary(splits['train'])
@@ -311,9 +367,7 @@ class ResearchTests(unittest.TestCase):
                 path = Path(tmp) / 'untouched' / 'provider.sqlite3'
                 with patch('quantlab.research.canonical_json') as serialize:
                     with self.assertRaises(ValidationError) as caught:
-                        CompatibleProvider(model='fixture', endpoint=endpoint,
-                                           transport=lambda *args: self.fail('No transport call allowed'),
-                                           budget_path=path)
+                        CompatibleProvider(model='fixture', endpoint=endpoint, transport=lambda *args: self.fail('No transport call allowed'), budget_path=path)
                     serialize.assert_not_called()
                 self.assertNotIn('synthetic-secret', str(caught.exception))
                 self.assertFalse(path.parent.exists())
@@ -328,19 +382,29 @@ class ResearchTests(unittest.TestCase):
     def test_provider_connections_close_on_success_failure_and_budget_rejection(self):
         def success(*args):
             return {'choices': [{'message': {'content': json.dumps(to_dict(builtin_strategies()[0]))}}]}
+
         def failure(*args):
             raise RuntimeError('inert transport failure')
+
         for transport in (success, failure):
             with self.subTest(transport=transport.__name__), tempfile.TemporaryDirectory() as tmp:
-                provider = CompatibleProvider(model='fixture', endpoint='https://example.invalid/v1',
-                    transport=transport, budget_path=Path(tmp) / 'provider.db', network_opt_in=True,
-                    max_calls=1, max_tokens=10000)
+                provider = CompatibleProvider(
+                    model='fixture',
+                    endpoint='https://example.invalid/v1',
+                    transport=transport,
+                    budget_path=Path(tmp) / 'provider.db',
+                    network_opt_in=True,
+                    max_calls=1,
+                    max_tokens=10000,
+                )
                 with tracked_sqlite_connections() as connections:
                     if transport is success:
                         provider.generate({})
                     else:
-                        with self.assertRaises(RuntimeError): provider.generate({})
-                    with self.assertRaises(ValidationError): provider.generate({})
+                        with self.assertRaises(RuntimeError):
+                            provider.generate({})
+                    with self.assertRaises(ValidationError):
+                        provider.generate({})
                     self.assertEqual(len(connections), 3)
                     self.assert_connections_closed(connections)
                 with closing(sqlite3.connect(Path(tmp) / 'provider.db')) as db:
@@ -348,12 +412,13 @@ class ResearchTests(unittest.TestCase):
 
     def test_holdout_connections_close_and_failed_reservation_rolls_back(self):
         from quantlab.research import _reserve_holdout
+
         data, _ = inputs()
         with tempfile.TemporaryDirectory() as tmp:
-            args = dict(registry_path=Path(tmp) / 'registry.db', campaign_id='fixture',
-                        selection_hash='fixture-selection', output_dir=Path(tmp) / 'campaign')
+            args = dict(registry_path=Path(tmp) / 'registry.db', campaign_id='fixture', selection_hash='fixture-selection', output_dir=Path(tmp) / 'campaign')
             with tracked_sqlite_connections(fail_statement='INSERT INTO coverage') as connections:
-                with self.assertRaises(sqlite3.OperationalError): _reserve_holdout(data, **args)
+                with self.assertRaises(sqlite3.OperationalError):
+                    _reserve_holdout(data, **args)
                 self.assert_connections_closed(connections)
             with closing(sqlite3.connect(args['registry_path'])) as db:
                 self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 0)
@@ -364,12 +429,15 @@ class ResearchTests(unittest.TestCase):
                 self.assert_connections_closed(connections)
 
     def test_campaign_connections_close_including_initialization_failures(self):
-        data, config = inputs(); config['max_trials'] = 1
+        data, config = inputs()
+        config['max_trials'] = 1
         for failure in ('none', 'open_state', 'create_state', 'begin_lock'):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
                 kwargs = {'fail_open_name': 'campaign.sqlite3'} if failure == 'open_state' else {}
-                if failure == 'create_state': kwargs['fail_statement'] = 'CREATE TABLE IF NOT EXISTS state'
-                if failure == 'begin_lock': kwargs['fail_statement'] = 'BEGIN EXCLUSIVE'
+                if failure == 'create_state':
+                    kwargs['fail_statement'] = 'CREATE TABLE IF NOT EXISTS state'
+                if failure == 'begin_lock':
+                    kwargs['fail_statement'] = 'BEGIN EXCLUSIVE'
                 with tracked_sqlite_connections(**kwargs) as connections:
                     with patch('quantlab.research._run_bounded', side_effect=ValidationError('inert candidate rejection')):
                         if failure == 'none':
@@ -392,30 +460,52 @@ class ResearchTests(unittest.TestCase):
         base = to_dict(builtin_strategies()[0])
         bad = []
         for field, value in [('code', '__import__("os")'), ('url', 'https://bad'), ('path', '/etc/passwd')]:
-            item = copy.deepcopy(base); item[field] = value; bad.append(item)
+            item = copy.deepcopy(base)
+            item[field] = value
+            bad.append(item)
         for value in [float('nan'), float('inf'), -1, True, 'exec(1)']:
-            item = copy.deepcopy(base); item['parameters']['fast'] = value; bad.append(item)
-        for node in [{'op': 'eval', 'value': '1'}, {'op': 'field', 'name': 'close', 'lag': -1},
-                     {'op': 'const', 'value': 'NaN'}, {'op': 'const', 'value': '__import__("os")'}]:
-            item = copy.deepcopy(base); item['rules'] = {'long': node, 'short': node}; bad.append(item)
-        item = copy.deepcopy(base); item['parameters']['risk_override'] = True; bad.append(item)
-        item = copy.deepcopy(base); item['strategy_id'] = '../escape'; bad.append(item)
-        item = copy.deepcopy(base); item['schema_version'] = True; bad.append(item)
-        item = copy.deepcopy(base); item['rules'] = {'long': {'op': 'const', 'value': 1}, 'short': {'op': 'const', 'value': 0}}; bad.append(item)
+            item = copy.deepcopy(base)
+            item['parameters']['fast'] = value
+            bad.append(item)
+        for node in [
+            {'op': 'eval', 'value': '1'},
+            {'op': 'field', 'name': 'close', 'lag': -1},
+            {'op': 'const', 'value': 'NaN'},
+            {'op': 'const', 'value': '__import__("os")'},
+        ]:
+            item = copy.deepcopy(base)
+            item['rules'] = {'long': node, 'short': node}
+            bad.append(item)
+        item = copy.deepcopy(base)
+        item['parameters']['risk_override'] = True
+        bad.append(item)
+        item = copy.deepcopy(base)
+        item['strategy_id'] = '../escape'
+        bad.append(item)
+        item = copy.deepcopy(base)
+        item['schema_version'] = True
+        bad.append(item)
+        item = copy.deepcopy(base)
+        item['rules'] = {'long': {'op': 'const', 'value': 1}, 'short': {'op': 'const', 'value': 0}}
+        bad.append(item)
         for payload in bad:
             with self.subTest(payload=payload), self.assertRaises(ValidationError):
                 validate_dsl(payload)
 
     def test_ast_depth_and_lag(self):
         node = {'op': 'gt', 'left': {'op': 'field', 'name': 'close', 'lag': 0}, 'right': {'op': 'const', 'value': '20000'}}
-        payload = to_dict(builtin_strategies()[0]); payload['rules'] = {'long': node, 'short': {'op': 'not', 'arg': node}}
+        payload = to_dict(builtin_strategies()[0])
+        payload['rules'] = {'long': node, 'short': {'op': 'not', 'arg': node}}
         validate_dsl(payload)
-        for _ in range(20): node = {'op': 'not', 'arg': node}
+        for _ in range(20):
+            node = {'op': 'not', 'arg': node}
         payload['rules']['long'] = node
-        with self.assertRaises(ValidationError): validate_dsl(payload)
+        with self.assertRaises(ValidationError):
+            validate_dsl(payload)
 
     def test_campaign_improves_freezes_and_restarts(self):
-        data, config = inputs(); config['ranking']['minimum'] = '-100000'
+        data, config = inputs()
+        config['ranking']['minimum'] = '-100000'
         spy = Spy()
         with tempfile.TemporaryDirectory() as tmp:
             state = run_campaign(data, config=config, generator=spy, output_dir=Path(tmp) / 'campaign')
@@ -432,30 +522,38 @@ class ResearchTests(unittest.TestCase):
             self.assertEqual(len(spy.contexts), before)
             for context in [a['generator_context'] for a in state['attempts']]:
                 text = json.dumps(context)
-                self.assertNotIn('holdout', text); self.assertNotIn('oos', text)
+                self.assertNotIn('holdout', text)
+                self.assertNotIn('oos', text)
                 self.assertNotIn('bars', context)
             config['seed'] += 1
-            with self.assertRaises(ValidationError): run_campaign(data, config=config, generator=spy, output_dir=Path(tmp) / 'campaign')
+            with self.assertRaises(ValidationError):
+                run_campaign(data, config=config, generator=spy, output_dir=Path(tmp) / 'campaign')
 
     def test_failed_trials_consume_budget(self):
-        data, config = inputs(); config['max_trials'] = 7
+        data, config = inputs()
+        config['max_trials'] = 7
         with tempfile.TemporaryDirectory() as tmp:
             state = run_campaign(data, config=config, generator=InvalidGenerator(), output_dir=Path(tmp) / 'campaign')
             self.assertEqual(len(state['attempts']), 7)
             self.assertEqual([a['status'] for a in state['attempts']], ['rejected'] * 5 + ['failed'] * 2)
-            self.assertEqual(state['selected'], []); self.assertFalse(state['holdout_consumed'])
+            self.assertEqual(state['selected'], [])
+            self.assertFalse(state['holdout_consumed'])
             self.assertNotIn('private provider detail', json.dumps(state))
 
     def test_splits_and_source_integrity(self):
         data, config = inputs()
         with tempfile.TemporaryDirectory() as tmp:
             config['splits']['validation'][0] = 1
-            with self.assertRaises(ValidationError): run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
-            data, config = inputs(); data = Dataset(data.bars, {**data.manifest, 'data_hash': 'forged'}, dict(data.quality))
-            with self.assertRaises(ValidationError): run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
+            with self.assertRaises(ValidationError):
+                run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
+            data, config = inputs()
+            data = Dataset(data.bars, {**data.manifest, 'data_hash': 'forged'}, dict(data.quality))
+            with self.assertRaises(ValidationError):
+                run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
 
     def test_reimport_wallclock_does_not_duplicate_trials(self):
-        data, config = inputs(); config['max_trials'] = 1
+        data, config = inputs()
+        config['max_trials'] = 1
         first = Dataset(data.bars, {**data.manifest, 'imported_at': '2026-10-09T00:00:00Z'}, dict(data.quality))
         later = Dataset(data.bars, {**data.manifest, 'imported_at': '2026-10-09T01:00:00Z'}, dict(data.quality))
         with tempfile.TemporaryDirectory() as tmp:
@@ -465,12 +563,12 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(state['source_manifest']['imported_at'], '2026-10-09T00:00:00Z')
 
     def test_new_name_and_changed_training_cannot_reset_holdout(self):
-        data, config = inputs(); config['max_trials'] = 1
+        data, config = inputs()
+        config['max_trials'] = 1
         config['ranking']['minimum'] = '-100000'
         changed = list(data.bars)
         b = changed[0]
-        changed[0] = Bar(b.timestamp, b.end, b.trade_date, b.session, b.contract_id,
-                         b.open + 1, b.high + 1, b.low + 1, b.close + 1, b.volume)
+        changed[0] = Bar(b.timestamp, b.end, b.trade_date, b.session, b.contract_id, b.open + 1, b.high + 1, b.low + 1, b.close + 1, b.volume)
         changed = Dataset(tuple(changed), {**data.manifest, 'data_hash': content_hash(tuple(changed))}, dict(data.quality))
         with tempfile.TemporaryDirectory() as tmp:
             first = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'first')
@@ -484,20 +582,35 @@ class ResearchTests(unittest.TestCase):
             self.assertNotEqual(first['campaign_id'], second['campaign_id'])
 
     def test_shifted_indexes_and_overlap_are_already_seen(self):
-        data, config = inputs(); config['max_trials'] = 1; config['ranking']['minimum'] = '-100000'
+        data, config = inputs()
+        config['max_trials'] = 1
+        config['ranking']['minimum'] = '-100000'
         b = data.bars[0]
-        prefix = tuple(Bar(b.timestamp - timedelta(minutes=10-i), b.timestamp - timedelta(minutes=9-i),
-                           b.trade_date, b.session, b.contract_id, b.open, b.high, b.low, b.close, b.volume)
-                       for i in range(10))
+        prefix = tuple(
+            Bar(
+                b.timestamp - timedelta(minutes=10 - i),
+                b.timestamp - timedelta(minutes=9 - i),
+                b.trade_date,
+                b.session,
+                b.contract_id,
+                b.open,
+                b.high,
+                b.low,
+                b.close,
+                b.volume,
+            )
+            for i in range(10)
+        )
         shifted_bars = prefix + data.bars
         shifted = Dataset(shifted_bars, {**data.manifest, 'data_hash': content_hash(shifted_bars)}, dict(data.quality))
         shifted_config = copy.deepcopy(config)
-        shifted_config['splits'] = {k: [a+10, b+10] for k, (a, b) in config['splits'].items()}
+        shifted_config['splits'] = {k: [a + 10, b + 10] for k, (a, b) in config['splits'].items()}
         with tempfile.TemporaryDirectory() as tmp:
             run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'first')
             second = run_campaign(shifted, config=shifted_config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'shifted')
             self.assertEqual(second['holdout_status'], 'previously_consumed')
-            overlap = copy.deepcopy(config); overlap['splits']['holdout'][0] += 1
+            overlap = copy.deepcopy(config)
+            overlap['splits']['holdout'][0] += 1
             third = run_campaign(data, config=overlap, generator=FixtureGenerator(), output_dir=Path(tmp) / 'overlap')
             self.assertEqual(third['holdout_status'], 'previously_consumed')
             self.assertEqual(third['evaluations']['holdout'], [])
@@ -505,11 +618,15 @@ class ResearchTests(unittest.TestCase):
     def test_holdout_registry_reservation_is_atomic(self):
         from concurrent.futures import ThreadPoolExecutor
         from quantlab.research import _reserve_holdout
+
         data, _ = inputs()
         with tempfile.TemporaryDirectory() as tmp:
+
             def reserve(index):
-                return _reserve_holdout(data, registry_path=Path(tmp) / 'registry.db',
-                    campaign_id=str(index), selection_hash=str(index), output_dir=Path(tmp) / str(index))
+                return _reserve_holdout(
+                    data, registry_path=Path(tmp) / 'registry.db', campaign_id=str(index), selection_hash=str(index), output_dir=Path(tmp) / str(index)
+                )
+
             with ThreadPoolExecutor(max_workers=2) as executor:
                 rows = list(executor.map(reserve, [1, 2]))
             self.assertEqual(sorted(r['status'] for r in rows), ['previously_consumed', 'reserved_consumed'])
@@ -517,42 +634,58 @@ class ResearchTests(unittest.TestCase):
                 self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 1)
 
     def test_no_winner_is_valid(self):
-        data, config = inputs(); config['ranking']['minimum'] = '100000000'
+        data, config = inputs()
+        config['ranking']['minimum'] = '100000000'
         with tempfile.TemporaryDirectory() as tmp:
             state = run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
-            self.assertEqual(state['selected'], []); self.assertEqual(state['status'], 'completed')
+            self.assertEqual(state['selected'], [])
+            self.assertEqual(state['status'], 'completed')
 
     def test_provider_default_no_call_and_persistent_budget(self):
         calls = []
+
         def transport(endpoint, request, timeout):
             calls.append(request)
             return {'choices': [{'message': {'content': json.dumps(to_dict(builtin_strategies()[0]))}}]}
+
         with tempfile.TemporaryDirectory() as tmp:
-            kw = dict(model='explicit-fixture-model', endpoint='https://example.invalid/v1', transport=transport,
-                      budget_path=Path(tmp) / 'provider.sqlite3', max_calls=1, max_tokens=10000)
+            kw = dict(
+                model='explicit-fixture-model',
+                endpoint='https://example.invalid/v1',
+                transport=transport,
+                budget_path=Path(tmp) / 'provider.sqlite3',
+                max_calls=1,
+                max_tokens=10000,
+            )
             provider = CompatibleProvider(**kw)
-            with self.assertRaises(ValidationError): provider.generate({})
+            with self.assertRaises(ValidationError):
+                provider.generate({})
             self.assertFalse(calls)
             provider = CompatibleProvider(**kw, network_opt_in=True)
             validate_dsl(provider.generate({}))
             self.assertEqual(provider.real_model_status, 'not_verified')
             provider = CompatibleProvider(**kw, network_opt_in=True)
-            with self.assertRaises(ValidationError): provider.generate({})
+            with self.assertRaises(ValidationError):
+                provider.generate({})
             self.assertEqual(len(calls), 1)
 
     def test_crash_consumes_trial(self):
         class Crashes(FixtureGenerator):
-            def generate(self, context): raise KeyboardInterrupt()
+            def generate(self, context):
+                raise KeyboardInterrupt()
+
         data, config = inputs()
         with tempfile.TemporaryDirectory() as tmp:
             with patch('quantlab.research._run_bounded', side_effect=KeyboardInterrupt):
-                with self.assertRaises(KeyboardInterrupt): run_campaign(data, config=config, generator=Crashes(), output_dir=Path(tmp) / 'campaign')
+                with self.assertRaises(KeyboardInterrupt):
+                    run_campaign(data, config=config, generator=Crashes(), output_dir=Path(tmp) / 'campaign')
             state = run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
             self.assertEqual(state['status'], 'blocked_interrupted')
             self.assertEqual(state['attempts'][0]['status'], 'interrupted')
 
     def test_concurrent_campaign_is_rejected_without_trial(self):
-        data, config = inputs(); spy = Spy()
+        data, config = inputs()
+        spy = Spy()
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / 'campaign').mkdir()
             lock = sqlite3.connect(Path(tmp) / 'campaign' / 'campaign.lock.sqlite3')
@@ -562,10 +695,12 @@ class ResearchTests(unittest.TestCase):
                     run_campaign(data, config=config, generator=spy, output_dir=Path(tmp) / 'campaign')
                 self.assertEqual(spy.contexts, [])
             finally:
-                lock.rollback(); lock.close()
+                lock.rollback()
+                lock.close()
 
     def test_hanging_generator_is_killed_and_budget_consumed(self):
-        data, config = inputs(); config['max_runtime_seconds'] = 1
+        data, config = inputs()
+        config['max_runtime_seconds'] = 1
         config['process_start_method'] = 'spawn'
         before = {p.pid for p in multiprocessing.active_children()}
         started = time.monotonic()
@@ -579,7 +714,8 @@ class ResearchTests(unittest.TestCase):
 
     @unittest.skipUnless('fork' in multiprocessing.get_all_start_methods(), 'Patch inheritance uses POSIX fork; production default is spawn')
     def test_hanging_backtest_is_killed(self):
-        data, config = inputs(); config['max_runtime_seconds'] = 1
+        data, config = inputs()
+        config['max_runtime_seconds'] = 1
         started = time.monotonic()
         with tempfile.TemporaryDirectory() as tmp, patch('quantlab.research.run_backtest', side_effect=hanging_backtest):
             state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
@@ -589,20 +725,22 @@ class ResearchTests(unittest.TestCase):
 
     def test_worker_ipc_size_is_bounded(self):
         from quantlab.research import _run_bounded
+
         with self.assertRaises(ValidationError):
-            _run_bounded(oversized_worker, (), deadline=time.monotonic() + 5,
-                         config={'max_ipc_bytes': 16384})
+            _run_bounded(oversized_worker, (), deadline=time.monotonic() + 5, config={'max_ipc_bytes': 16384})
 
     @unittest.skipUnless(sys.platform.startswith('linux'), 'RLIMIT_AS verification requires Linux')
     def test_worker_memory_limit_rejects_large_allocation(self):
         from quantlab.research import _run_bounded
+
         with self.assertRaisesRegex(RuntimeError, 'MemoryError'):
-            _run_bounded(memory_hog, (), deadline=time.monotonic() + 5,
-                         config={'worker_memory_mb': 128})
+            _run_bounded(memory_hog, (), deadline=time.monotonic() + 5, config={'worker_memory_mb': 128})
 
     def test_default_spawn_fixture_completes(self):
-        data, config = inputs(); config.pop('process_start_method', None)
-        config['max_trials'] = 1; config['max_improvements'] = 0
+        data, config = inputs()
+        config.pop('process_start_method', None)
+        config['max_trials'] = 1
+        config['max_improvements'] = 0
         with tempfile.TemporaryDirectory() as tmp:
             state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
         self.assertEqual(state['attempts'][0]['status'], 'evaluated', state['attempts'])
@@ -612,22 +750,37 @@ class ResearchTests(unittest.TestCase):
     def test_provider_rejects_duplicate_and_nonfinite_json(self):
         for payload in ['{"family":"trend","family":"momentum"}', '{"value":NaN}']:
             with tempfile.TemporaryDirectory() as tmp:
-                def transport(*args): return {'choices': [{'message': {'content': payload}}]}
-                provider = CompatibleProvider(model='fixture', endpoint='https://example.invalid/v1',
-                    transport=transport, budget_path=Path(tmp) / 'provider.db', network_opt_in=True,
-                    max_calls=1, max_tokens=10000)
-                with self.assertRaises(ValidationError): provider.generate({})
+
+                def transport(*args):
+                    return {'choices': [{'message': {'content': payload}}]}
+
+                provider = CompatibleProvider(
+                    model='fixture',
+                    endpoint='https://example.invalid/v1',
+                    transport=transport,
+                    budget_path=Path(tmp) / 'provider.db',
+                    network_opt_in=True,
+                    max_calls=1,
+                    max_tokens=10000,
+                )
+                with self.assertRaises(ValidationError):
+                    provider.generate({})
 
     def test_holdout_crash_cannot_be_reconsumed(self):
         from quantlab.research import _run_bounded as real
-        data, config = inputs(); config['ranking']['minimum'] = '-100000'
+
+        data, config = inputs()
+        config['ranking']['minimum'] = '-100000'
         calls = []
+
         def interrupted(function, args, **kwargs):
             if function.__name__ == '_evaluate_split':
                 name = args[0].manifest['research_split']['name']
                 calls.append(name)
-                if name == 'holdout': raise KeyboardInterrupt()
+                if name == 'holdout':
+                    raise KeyboardInterrupt()
             return real(function, args, **kwargs)
+
         with tempfile.TemporaryDirectory() as tmp:
             with patch('quantlab.research._run_bounded', side_effect=interrupted):
                 with self.assertRaises(KeyboardInterrupt):
@@ -641,8 +794,12 @@ class ResearchTests(unittest.TestCase):
 
     def test_purge_and_resource_caps(self):
         from quantlab.research import _run_bounded as real
-        data, config = inputs(); config['purge_bars'] = 3; config['max_trials'] = 1
+
+        data, config = inputs()
+        config['purge_bars'] = 3
+        config['max_trials'] = 1
         observed = []
+
         def inspect(function, args, **kwargs):
             if function.__name__ == '_evaluate_split':
                 dataset = args[0]
@@ -651,6 +808,7 @@ class ResearchTests(unittest.TestCase):
                 self.assertEqual(len(dataset.bars), split['end'] - split['start'] - 3)
                 self.assertEqual(dataset.manifest['data_hash'], content_hash(dataset.bars))
             return real(function, args, **kwargs)
+
         with tempfile.TemporaryDirectory() as tmp:
             with patch('quantlab.research._run_bounded', side_effect=inspect):
                 result = run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
@@ -661,7 +819,8 @@ class ResearchTests(unittest.TestCase):
             run_campaign(data, config=config, generator=Spy(), output_dir=Path(tmp) / 'campaign')
 
     def test_runtime_exhaustion_no_generator_call(self):
-        data, config = inputs(); config['max_runtime_seconds'] = 1
+        data, config = inputs()
+        config['max_runtime_seconds'] = 1
         spy = Spy()
         with tempfile.TemporaryDirectory() as tmp, patch('quantlab.research.time.monotonic', side_effect=range(100)):
             state = run_campaign(data, config=config, generator=spy, output_dir=Path(tmp) / 'campaign')
@@ -669,25 +828,38 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(spy.contexts, [])
 
     def test_provider_failure_consumes_spend_and_retains_receipt(self):
-        def failing(*args): raise RuntimeError('failure')
+        def failing(*args):
+            raise RuntimeError('failure')
+
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'provider.db'
-            kwargs = dict(model='fixture', endpoint='https://example.invalid/v1', transport=failing,
-                          budget_path=path, max_calls=1, max_tokens=10000,
-                          max_spend='100', cost_per_token='0.01', network_opt_in=True)
-            with self.assertRaises(RuntimeError): CompatibleProvider(**kwargs).generate({})
-            with self.assertRaises(ValidationError): CompatibleProvider(**kwargs).generate({})
+            kwargs = dict(
+                model='fixture',
+                endpoint='https://example.invalid/v1',
+                transport=failing,
+                budget_path=path,
+                max_calls=1,
+                max_tokens=10000,
+                max_spend='100',
+                cost_per_token='0.01',
+                network_opt_in=True,
+            )
+            with self.assertRaises(RuntimeError):
+                CompatibleProvider(**kwargs).generate({})
+            with self.assertRaises(ValidationError):
+                CompatibleProvider(**kwargs).generate({})
             with closing(sqlite3.connect(path)) as db, db:
                 self.assertEqual(db.execute('SELECT status FROM calls').fetchone()[0], 'failed_or_interrupted')
                 self.assertGreater(Decimal(db.execute('SELECT spend FROM budget').fetchone()[0]), 0)
 
     def test_holdout_changes_do_not_change_selection_or_generator_feedback(self):
-        data, config = inputs(); config['ranking']['minimum'] = '-100000'; config['max_improvements'] = 1
+        data, config = inputs()
+        config['ranking']['minimum'] = '-100000'
+        config['max_improvements'] = 1
         modified = list(data.bars)
         for i in range(config['splits']['oos'][0], len(modified)):
             b = modified[i]
-            modified[i] = Bar(b.timestamp, b.end, b.trade_date, b.session, b.contract_id,
-                              b.open + 500, b.high + 500, b.low + 500, b.close + 500, b.volume)
+            modified[i] = Bar(b.timestamp, b.end, b.trade_date, b.session, b.contract_id, b.open + 500, b.high + 500, b.low + 500, b.close + 500, b.volume)
         altered = Dataset(tuple(modified), {**data.manifest, 'data_hash': content_hash(tuple(modified))}, dict(data.quality))
         spies = [Spy(), Spy()]
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
@@ -702,6 +874,7 @@ def cleanup_lingering_worker(connection, function, args, memory_mb, max_bytes):
     """Synthetic IPC success followed by a child requiring owned SIGKILL."""
     import os
     import signal
+
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     connection.send_bytes(json.dumps({'status': 'ok', 'value': os.getpid()}).encode())
     time.sleep(30)
@@ -711,35 +884,42 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
     @unittest.skipUnless(sys.platform.startswith('linux'), 'SIGTERM/SIGKILL lifecycle requires POSIX')
     def test_real_worker_success_waits_for_owned_kill_and_reap(self):
         from quantlab.research import _run_bounded
+
         before = {p.pid for p in multiprocessing.active_children()}
         with patch('quantlab.research._isolated_worker', cleanup_lingering_worker):
-            result = _run_bounded(None, (), deadline=time.monotonic() + 1,
-                                  config={'process_start_method': 'fork'})
+            result = _run_bounded(None, (), deadline=time.monotonic() + 1, config={'process_start_method': 'fork'})
         self.assertNotIn(result['value'], {p.pid for p in multiprocessing.active_children()})
         self.assertEqual({p.pid for p in multiprocessing.active_children()}, before)
 
     def exercise_cleanup(self, *, stop_after=None, error=None, terminate_error=None, response_at=0.0):
         from quantlab.research import _run_bounded
+
         clock = [0.0]
         process = Mock(pid=123)
         stopped = [False]
         joins = []
+
         def join(*, timeout):
             self.assertGreaterEqual(timeout, 0)
             self.assertLessEqual(timeout, 0.2)
             joins.append(timeout)
             clock[0] = min(clock[0] + timeout, stop_after) if stop_after is not None else clock[0] + timeout
             stopped[0] = stop_after is not None and clock[0] >= stop_after
+
         process.join.side_effect = join
         process.is_alive.side_effect = lambda: not stopped[0]
         process.terminate.side_effect = terminate_error
+
         def close():
             self.assertTrue(stopped[0], 'must never close a live process')
+
         process.close.side_effect = close
         receiver, sender = Mock(), Mock()
+
         def poll(timeout):
             clock[0] = response_at
             return True
+
         receiver.poll.side_effect = poll
         message = {'status': 'error', 'error': error} if error else {'status': 'ok', 'value': 'completed'}
         receiver.recv_bytes.return_value = json.dumps(message).encode()
@@ -747,8 +927,10 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
         context.Pipe.return_value = receiver, sender
         context.Process.return_value = process
         self.process, self.clock, self.joins = process, clock, joins
-        with patch('quantlab.research.multiprocessing.get_context', return_value=context), \
-                patch('quantlab.research.time.monotonic', side_effect=lambda: clock[0]):
+        with (
+            patch('quantlab.research.multiprocessing.get_context', return_value=context),
+            patch('quantlab.research.time.monotonic', side_effect=lambda: clock[0]),
+        ):
             return _run_bounded(None, (), deadline=1.0, config={})
 
     def test_late_reap_returns_result_only_after_verified_stop(self):
@@ -761,6 +943,7 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
 
     def test_still_alive_after_original_cleanup_allowance_never_closes_or_succeeds(self):
         from quantlab.research import ResourceTimeout
+
         with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
             self.exercise_cleanup()
         self.assertEqual(self.clock[0], 0.45)
@@ -769,6 +952,7 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
 
     def test_prior_055_second_reap_exceeds_original_cleanup_cap_and_rejects(self):
         from quantlab.research import ResourceTimeout
+
         with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
             self.exercise_cleanup(stop_after=0.55)
         self.assertEqual(self.joins, [0.05, 0.2, 0.2])
@@ -783,6 +967,7 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
 
     def test_expired_evaluation_retains_only_original_cleanup_allowance(self):
         from quantlab.research import ResourceTimeout
+
         with self.assertRaisesRegex(ResourceTimeout, 'termination unverified'):
             self.exercise_cleanup(response_at=1.0)
         self.assertEqual(self.joins[:2], [0, 0.2])
@@ -801,21 +986,23 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
 
     def test_unverified_reap_overrides_worker_error_to_halt_following_work(self):
         from quantlab.research import ResourceTimeout
+
         with self.assertRaises(ResourceTimeout):
             self.exercise_cleanup(error='ValueError')
         self.process.close.assert_not_called()
 
     def test_cleanup_api_failure_halts_without_closing_live_handle(self):
         from quantlab.research import ResourceTimeout
+
         with self.assertRaisesRegex(ResourceTimeout, 'cleanup failed'):
             self.exercise_cleanup(terminate_error=OSError('inert signal failure'))
         self.process.close.assert_not_called()
 
     def test_campaign_stops_on_unverified_generation_cleanup_before_deadline(self):
         from quantlab.research import ResourceTimeout
+
         data, config = inputs()
-        with tempfile.TemporaryDirectory() as tmp, \
-                patch('quantlab.research._run_bounded', side_effect=ResourceTimeout('stop unverified')) as worker:
+        with tempfile.TemporaryDirectory() as tmp, patch('quantlab.research._run_bounded', side_effect=ResourceTimeout('stop unverified')) as worker:
             state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
         self.assertEqual(worker.call_count, 1)
         self.assertEqual(state['status'], 'budget_exhausted')
@@ -823,18 +1010,21 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
 
     def test_campaign_stops_after_unverified_oos_or_holdout_cleanup(self):
         from quantlab.research import ResourceTimeout
+
         for failure_split in ('oos', 'holdout'):
             with self.subTest(failure_split=failure_split):
                 data, config = inputs()
                 config.update(max_trials=1, max_improvements=0)
                 config['ranking']['minimum'] = '-100000'
                 calls = []
+
                 def worker(function, args, **kwargs):
                     role = args[0].manifest['research_split']['name'] if function.__name__ == '_evaluate_split' else 'generate'
                     calls.append(role)
                     if role == failure_split:
                         raise ResourceTimeout('stop unverified')
                     return {'status': 'ok', 'value': function(*args), 'memory_limit_enforced': False}
+
                 with tempfile.TemporaryDirectory() as tmp, patch('quantlab.research._run_bounded', side_effect=worker):
                     state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=Path(tmp) / 'campaign')
                 self.assertEqual(state['status'], 'budget_exhausted')
@@ -843,4 +1033,5 @@ class BoundedWorkerCleanupTests(unittest.TestCase):
                 self.assertEqual(state['evaluations'][failure_split][-1]['error'], 'ResourceTimeout')
 
 
-if __name__ == '__main__': unittest.main()
+if __name__ == '__main__':
+    unittest.main()

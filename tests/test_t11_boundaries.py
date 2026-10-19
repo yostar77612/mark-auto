@@ -1,4 +1,5 @@
 """No subprocesses, filesystem fixtures, Qt objects, or environment dependencies."""
+
 import ast
 from contextlib import nullcontext
 from pathlib import Path
@@ -16,10 +17,8 @@ class CoreBoundaryTests(unittest.TestCase):
     def test_clean_tree(self):
         for path in sorted((ROOT / 'quantlab').glob('*.py')):
             with self.subTest(module=path.name):
-                self.assertEqual(core_import_findings(
-                    path.read_text(encoding='utf-8-sig'), path.name), [])
-                self.assertEqual(python_findings(
-                    path.read_text(encoding='utf-8-sig'), path.name, research=True), [])
+                self.assertEqual(core_import_findings(path.read_text(encoding='utf-8-sig'), path.name), [])
+                self.assertEqual(python_findings(path.read_text(encoding='utf-8-sig'), path.name, research=True), [])
 
     def test_repository_scan_enforces_rule_independently_of_legacy_classifier(self):
         fake_path = Mock()
@@ -36,6 +35,7 @@ class CoreBoundaryTests(unittest.TestCase):
         from quantlab import analysis_contracts, configuration, runtime_support, value_bounds
         from quantlab import research_analysis, walk_forward
         from quantlab import __main__ as cli
+
         self.assertIs(runtime.RuntimeSafetyError, runtime_support.RuntimeSafetyError)
         self.assertIs(runtime.validate_analysis_request, runtime_support.validate_analysis_request)
         self.assertIs(research_analysis.validate_analysis_plan, analysis_contracts.validate_analysis_plan)
@@ -44,24 +44,26 @@ class CoreBoundaryTests(unittest.TestCase):
         self.assertIs(cli.config_from_json, configuration.config_from_json)
 
     def test_static_imports_including_function_local_are_rejected(self):
-        for source in ('import desktop_ui', 'from desktop_ui import execute_ui_operation',
-                       'def f():\n    import desktop_walk_forward',
-                       'def f():\n    from desktop_ui import MainWindow'):
+        for source in (
+            'import desktop_ui',
+            'from desktop_ui import execute_ui_operation',
+            'def f():\n    import desktop_walk_forward',
+            'def f():\n    from desktop_ui import MainWindow',
+        ):
             self.assertTrue(core_import_findings(source, 'quantlab/fixture.py'))
 
     def test_negative_control_and_dynamic_literal(self):
-        for source in ('from .desktop_errors import ERROR_TABLE',
-                       'from quantlab.desktop_runtime import JobManager',
-                       'import importlib\nimportlib.import_module(registrar)',
-                       'text = "import desktop_ui"'):
+        for source in (
+            'from .desktop_errors import ERROR_TABLE',
+            'from quantlab.desktop_runtime import JobManager',
+            'import importlib\nimportlib.import_module(registrar)',
+            'text = "import desktop_ui"',
+        ):
             self.assertEqual(core_import_findings(source, 'quantlab/fixture.py'), [])
-        self.assertTrue(core_import_findings(
-            'import importlib\nimportlib.import_module("desktop_ui")', 'quantlab/fixture.py'))
+        self.assertTrue(core_import_findings('import importlib\nimportlib.import_module("desktop_ui")', 'quantlab/fixture.py'))
         # QA finding: the `from importlib import import_module` spelling must be caught as well.
-        self.assertTrue(core_import_findings(
-            'from importlib import import_module' + chr(10) + 'import_module("desktop_ui")', 'quantlab/fixture.py'))
-        self.assertEqual(core_import_findings(
-            'from importlib import import_module' + chr(10) + 'import_module(registrar)', 'quantlab/fixture.py'), [])
+        self.assertTrue(core_import_findings('from importlib import import_module' + chr(10) + 'import_module("desktop_ui")', 'quantlab/fixture.py'))
+        self.assertEqual(core_import_findings('from importlib import import_module' + chr(10) + 'import_module(registrar)', 'quantlab/fixture.py'), [])
 
     def test_registry_is_fail_closed_and_identity_idempotent(self):
         registry = runtime._OperationExecutorRegistry()
@@ -79,8 +81,10 @@ class CoreBoundaryTests(unittest.TestCase):
 
     def test_worker_resolves_injected_entry_point_before_execution(self):
         executor = lambda *args, **kwargs: 'result'
+
         class Module:
             execute = executor
+
         with patch.object(runtime.importlib, 'import_module', return_value=Module) as load:
             resolved = runtime._worker_operation_executor('fixture:execute')
             self.assertIs(resolved, executor)
@@ -96,25 +100,26 @@ class CoreBoundaryTests(unittest.TestCase):
             sender, gate = Mock(), Mock()
             gate.wait.return_value = True
             executor = Mock(return_value={'reference': 'fixture'})
-            with patch.object(runtime.os, 'setsid', create=True), \
-                    patch.object(runtime, 'AppPaths', return_value=object()), \
-                    patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()), \
-                    patch.object(runtime, '_worker_operation_executor', return_value=executor):
-                runtime._job_worker(sender, gate, 'ui_walk_forward_reconcile',
-                                    {'descendants_stopped': True}, 'unused', None,
-                                    'fixture', admitted)
+            with (
+                patch.object(runtime.os, 'setsid', create=True),
+                patch.object(runtime, 'AppPaths', return_value=object()),
+                patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
+                patch.object(runtime, '_worker_operation_executor', return_value=executor),
+            ):
+                runtime._job_worker(sender, gate, 'ui_walk_forward_reconcile', {'descendants_stopped': True}, 'unused', None, 'fixture', admitted)
             self.assertIs(executor.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once_with()
 
     def test_worker_missing_registration_emits_error_without_execution(self):
         sender, gate = Mock(), Mock()
         gate.wait.return_value = True
-        with patch.object(runtime.os, 'setsid', create=True), \
-                patch.object(runtime, 'AppPaths', return_value=object()), \
-                patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()), \
-                patch.object(runtime.importlib, 'import_module') as load:
-            runtime._job_worker(sender, gate, 'ui_demo', {}, 'unused', None,
-                                'fixture', operation_registrar=None)
+        with (
+            patch.object(runtime.os, 'setsid', create=True),
+            patch.object(runtime, 'AppPaths', return_value=object()),
+            patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
+            patch.object(runtime.importlib, 'import_module') as load,
+        ):
+            runtime._job_worker(sender, gate, 'ui_demo', {}, 'unused', None, 'fixture', operation_registrar=None)
         load.assert_not_called()
         self.assertIn(b'"type": "error"', sender.send_bytes.call_args.args[0])
         self.assertIn(b'"error_type": "RuntimeSafetyError"', sender.send_bytes.call_args.args[0])

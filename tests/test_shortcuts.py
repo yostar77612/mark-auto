@@ -7,7 +7,8 @@ from tests.t10_fixture import WindowFixture
 class ShortcutTests(WindowFixture):
     def test_sidebar_keys_and_help(self):
         w = self.window
-        w.activateWindow(); self.settle()
+        w.activateWindow()
+        self.settle()
         for index in range(7):
             QTest.keyClick(w, Qt.Key.Key_1 + index, Qt.KeyboardModifier.ControlModifier)
             self.settle()
@@ -22,10 +23,10 @@ class ShortcutTests(WindowFixture):
             w.navigation.setCurrentRow(index)
             with patch.object(w, 'refresh_views') as views, patch.object(w, 'refresh_market') as market, patch.object(w, 'read_logs') as logs:
                 w.refresh_shortcut.activated.emit()
-                self.assertEqual((views.call_count, market.call_count, logs.call_count),
-                                 (int(index < 5), int(index == 5), int(index == 6)))
+                self.assertEqual((views.call_count, market.call_count, logs.call_count), (int(index < 5), int(index == 5), int(index == 6)))
         with patch.object(w, 'cancel_job') as cancel:
-            w.cancel_shortcut.activated.emit(); cancel.assert_not_called()
+            w.cancel_shortcut.activated.emit()
+            cancel.assert_not_called()
             with patch.object(type(w.jobs), 'active', new_callable=lambda: property(lambda _: True)):
                 w.cancel_shortcut.activated.emit()
             cancel.assert_called_once_with()

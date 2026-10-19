@@ -3,6 +3,7 @@
 The GUI only schedules work. execute_ui_operation runs in the runtime's isolated
 worker process; its inputs are data, never executable strategy source.
 """
+
 from desktop_theme import apply_theme, set_status, set_theme_property, status_for_color
 from desktop_strings import ui_text
 from desktop_presentation import research_controls, _dataset
@@ -13,30 +14,71 @@ import json
 from datetime import datetime
 from decimal import Decimal
 
-from quantlab.core import (Dataset, StrategySpec, Instrument, ValidationError, canonical_json,
-                   content_hash, to_dict)
-from quantlab.reporting import (read_json, write_json, load_dataset, save_dataset, synthetic_dataset,
-                        demo_config, export_report, load_result, comparison_rows,
-                        save_selection, load_selection, saved_analysis_entries)
+from quantlab.core import Dataset, StrategySpec, Instrument, ValidationError, canonical_json, content_hash, to_dict
+from quantlab.reporting import (
+    read_json,
+    write_json,
+    load_dataset,
+    save_dataset,
+    synthetic_dataset,
+    demo_config,
+    export_report,
+    load_result,
+    comparison_rows,
+    save_selection,
+    load_selection,
+    saved_analysis_entries,
+)
 
-UI_OPERATIONS = frozenset('ui_' + op for op in (
-    'analysis_preview', 'analysis_run', 'analysis_read', 'analysis_reconcile',
-    'walk_forward_preview', 'walk_forward_run', 'walk_forward_read', 'walk_forward_reconcile',
-    'demo', 'import', 'refresh', 'market_refresh', 'chatgpt_auth', 'chatgpt_usage', 'chatgpt_reconcile', 'backtest', 'campaign', 'compare', 'select', 'disable',
-    'paper_snapshot', 'paper_reconcile', 'paper_kill', 'paper_replay', 'paper_submit', 'paper_cancel',
-    'backup_create', 'backup_restore'))
+UI_OPERATIONS = frozenset(
+    'ui_' + op
+    for op in (
+        'analysis_preview',
+        'analysis_run',
+        'analysis_read',
+        'analysis_reconcile',
+        'walk_forward_preview',
+        'walk_forward_run',
+        'walk_forward_read',
+        'walk_forward_reconcile',
+        'demo',
+        'import',
+        'refresh',
+        'market_refresh',
+        'chatgpt_auth',
+        'chatgpt_usage',
+        'chatgpt_reconcile',
+        'backtest',
+        'campaign',
+        'compare',
+        'select',
+        'disable',
+        'paper_snapshot',
+        'paper_reconcile',
+        'paper_kill',
+        'paper_replay',
+        'paper_submit',
+        'paper_cancel',
+        'backup_create',
+        'backup_restore',
+    )
+)
 
 
 def provider_binding_options(options):
     # Preserve historical provider identities; these options cannot enable a removed provider.
-    return {key: value for key, value in options.items()
-            if key != 'network_opt_in' and not (options.get('mode') == 'local' and key == 'owner') and not (key == 'output_mode' and value == 'json_object')}
+    return {
+        key: value
+        for key, value in options.items()
+        if key != 'network_opt_in' and not (options.get('mode') == 'local' and key == 'owner') and not (key == 'output_mode' and value == 'json_object')
+    }
 
 
 def campaign_generator(paths, options):
     """Only explicit deterministic fixtures use this non-subscription adapter."""
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research import FixtureGenerator
+
     if not isinstance(options, dict) or options != {'mode': 'fixture'}:
         raise ValidationError(ui_text('ui.campaign_generator.text_1'))
     research_controls(paths)
@@ -46,7 +88,9 @@ def campaign_generator(paths, options):
 def connection_event_from_payload(payload):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import ConnectionEvent
-    if not isinstance(payload, dict): raise ValidationError(ui_text('ui.connection_event_from_payload.text_1'))
+
+    if not isinstance(payload, dict):
+        raise ValidationError(ui_text('ui.connection_event_from_payload.text_1'))
     value = dict(payload)
     value['registrations'] = tuple(tuple(row) for row in value.get('registrations', ()))
     value['models'] = tuple(value.get('models', ()))
@@ -60,41 +104,67 @@ def plan_provider(paths, data, config, options, *, for_usage=False):
     """Fixed bootstrap/control identity, never workspace-relative or random."""
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import ChatGPTPlanProvider
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import SubscriptionOptions
+
     # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
-    allowed = {'mode','registration','model','max_calls','timeout_seconds','network_opt_in',
-               'included_usage_policy_confirmed','paid_api_fallback','expected_binding'}
-    if not isinstance(options, dict) or set(options)-allowed: raise ValidationError(ui_text('ui.plan_provider.text_1'))
-    raw = {key:value for key,value in options.items() if key != 'expected_binding'}
+
+    allowed = {
+        'mode',
+        'registration',
+        'model',
+        'max_calls',
+        'timeout_seconds',
+        'network_opt_in',
+        'included_usage_policy_confirmed',
+        'paid_api_fallback',
+        'expected_binding',
+    }
+    if not isinstance(options, dict) or set(options) - allowed:
+        raise ValidationError(ui_text('ui.plan_provider.text_1'))
+    raw = {key: value for key, value in options.items() if key != 'expected_binding'}
     if for_usage:
         if raw.get('network_opt_in') is not False or raw.get('included_usage_policy_confirmed') is not False:
             raise ValidationError(ui_text('ui.plan_provider.text_2'))
-        validation = {**raw, 'network_opt_in':True, 'included_usage_policy_confirmed':True}
+        validation = {**raw, 'network_opt_in': True, 'included_usage_policy_confirmed': True}
     else:
         validation = raw
     parsed = SubscriptionOptions(**validation)
-    public = {key:value for key,value in asdict(parsed).items() if key not in ('network_opt_in','included_usage_policy_confirmed')}
+    public = {key: value for key, value in asdict(parsed).items() if key not in ('network_opt_in', 'included_usage_policy_confirmed')}
     # Keep operation-specific dependencies out of module startup.
     import hashlib
+
     source_root = Path(__file__).parent
-    source_files = ('desktop_chatgpt_auth.py','desktop_chatgpt_provider.py','quantlab/core.py',
-                    'quantlab/backtest.py','quantlab/research.py','quantlab/strategies.py',
-                    'desktop_chatgpt_dependency_manifest.json')
-    sources = {name:hashlib.sha256((source_root/name).read_bytes()).hexdigest() for name in source_files}
-    identity = content_hash({'data_hash':data.manifest['data_hash'], 'config':config,
-                             'provider':public, 'implementation_sources':sources})
+    source_files = (
+        'desktop_chatgpt_auth.py',
+        'desktop_chatgpt_provider.py',
+        'quantlab/core.py',
+        'quantlab/backtest.py',
+        'quantlab/research.py',
+        'quantlab/strategies.py',
+        'desktop_chatgpt_dependency_manifest.json',
+    )
+    sources = {name: hashlib.sha256((source_root / name).read_bytes()).hexdigest() for name in source_files}
+    identity = content_hash({'data_hash': data.manifest['data_hash'], 'config': config, 'provider': public, 'implementation_sources': sources})
     if not for_usage and options.get('expected_binding') != identity:
         raise ValidationError(ui_text('ui.plan_provider.text_3'))
     controls = research_controls(paths)
-    reference = OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root), parsed.registration)
-    provider = ChatGPTPlanProvider(model=parsed.model, credential_reference=reference,
-        budget_path=controls/('chatgpt-plan-'+identity+'.sqlite3'), campaign_id=identity,
-        network_opt_in=not for_usage, included_usage_policy_confirmed=not for_usage,
-        max_calls=parsed.max_calls, timeout_seconds=parsed.timeout_seconds)
+    reference = OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), parsed.registration)
+    provider = ChatGPTPlanProvider(
+        model=parsed.model,
+        credential_reference=reference,
+        budget_path=controls / ('chatgpt-plan-' + identity + '.sqlite3'),
+        campaign_id=identity,
+        network_opt_in=not for_usage,
+        included_usage_policy_confirmed=not for_usage,
+        max_calls=parsed.max_calls,
+        timeout_seconds=parsed.timeout_seconds,
+    )
     return provider, identity
 
 
@@ -102,17 +172,21 @@ def candidate_record(root, reference):
     """Resolve a persisted, hash-bound DSL candidate and independent evaluation gate."""
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research import validate_dsl
+
     campaigns = (Path(root) / 'campaigns').resolve()
     folder = str(reference.get('campaign_folder', ''))
     if len(folder) != 64 or any(c not in '0123456789abcdef' for c in folder):
         raise ValidationError(ui_text('ui.candidate_record.text_1'))
     path = campaigns / folder / 'campaign.json'
-    if not path.resolve().is_relative_to(campaigns): raise ValidationError(ui_text('ui.candidate_record.text_2'))
+    if not path.resolve().is_relative_to(campaigns):
+        raise ValidationError(ui_text('ui.candidate_record.text_2'))
     state = read_json(path)
     # JSON is a review export; qualify only if it equals the authoritative journal.
     import sqlite3
+
     # Keep operation-specific dependencies out of module startup.
     from contextlib import closing
+
     journal = path.with_name('campaign.sqlite3')
     if not journal.resolve().is_relative_to(campaigns) or not journal.is_file():
         raise ValidationError(ui_text('ui.candidate_record.text_3'))
@@ -125,7 +199,8 @@ def candidate_record(root, reference):
     if state.get('campaign_id') != content_hash(state.get('binding')):
         raise ValidationError(ui_text('ui.candidate_record.text_6'))
     attempt = next((a for a in state.get('attempts', []) if a.get('attempt_id') == reference.get('attempt_id')), None)
-    if not attempt or attempt.get('status') != 'evaluated': raise ValidationError(ui_text('ui.candidate_record.text_7'))
+    if not attempt or attempt.get('status') != 'evaluated':
+        raise ValidationError(ui_text('ui.candidate_record.text_7'))
     spec = validate_dsl(attempt.get('spec'))
     digest = content_hash(spec)
     if digest != attempt.get('strategy_hash') or digest != reference.get('strategy_hash'):
@@ -138,16 +213,23 @@ def candidate_record(root, reference):
         row = next((r for r in state.get('evaluations', {}).get(split, []) if r.get('strategy_hash') == digest), {})
         metrics = row.get('metrics', {})
         trades = metrics.get('trade_count', metrics.get('closed_trades', 0))
-        passed = (row.get('status') == 'evaluated' and metrics.get('net_pnl') is not None
-                  and Decimal(str(metrics['net_pnl'])) >= Decimal(str(ranking['minimum']))
-                  and trades >= ranking['min_trades'])
+        passed = (
+            row.get('status') == 'evaluated'
+            and metrics.get('net_pnl') is not None
+            and Decimal(str(metrics['net_pnl'])) >= Decimal(str(ranking['minimum']))
+            and trades >= ranking['min_trades']
+        )
         qualified = qualified and passed
-        evaluations[split] = {'qualified':passed, 'evaluation':row}
-    return spec, {'reference':reference, 'paper_qualified':bool(qualified), 'evaluations':evaluations,
-                  'source_type':state.get('source_manifest', {}).get('source_type', 'unknown'),
-                  'source_data_hash':state.get('source_manifest', {}).get('data_hash'),
-                  'real_model_status':state.get('real_model_status', 'not_verified'),
-                  'note':ui_text('ui.candidate_record.text_9')}
+        evaluations[split] = {'qualified': passed, 'evaluation': row}
+    return spec, {
+        'reference': reference,
+        'paper_qualified': bool(qualified),
+        'evaluations': evaluations,
+        'source_type': state.get('source_manifest', {}).get('source_type', 'unknown'),
+        'source_data_hash': state.get('source_manifest', {}).get('data_hash'),
+        'real_model_status': state.get('real_model_status', 'not_verified'),
+        'note': ui_text('ui.candidate_record.text_9'),
+    }
 
 
 def _root(paths):
@@ -160,74 +242,133 @@ def paper_risk_limits():
     """The same fixed enforced limits supply both brokers and the read-only UI."""
     # Keep operation-specific dependencies out of module startup.
     from quantlab.paper import RiskLimits
+
     return RiskLimits(1, 1, Decimal('1000'), 30)
 
 
 def _paper(root):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.paper import PaperBroker
+
     policy = read_json(root / 'paper_policy.json')
-    return PaperBroker(root / 'paper.sqlite3', instrument=Instrument(policy['contract_id']),
-                       costs=demo_config().costs, limits=paper_risk_limits(),
-                       risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
+    return PaperBroker(
+        root / 'paper.sqlite3',
+        instrument=Instrument(policy['contract_id']),
+        costs=demo_config().costs,
+        limits=paper_risk_limits(),
+        risk_sessions=tuple(policy['risk_sessions']),
+        margin_schedule=tuple(policy['margin_schedule']),
+    )
 
 
 def analysis_plan(paths, request, *, emit=None):
     # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import validate_analysis_request
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import implementation_provenance
+
     validate_analysis_request(request)
     research_controls(paths)
-    if emit: emit('progress',message=ui_text('ui.analysis_plan.text_1'))
+    if emit:
+        emit('progress', message=ui_text('ui.analysis_plan.text_1'))
     # Keep operation-specific dependencies out of module startup.
     from quantlab.saved_candidate_pool import load_original_dataset
-    data=load_original_dataset(Path(request['original_dataset']['path']))
-    packet=build_analysis_packet(source_campaign_dir=_root(paths)/'campaigns'/request['campaign_reference'],
-        original_dataset=data,attempt_ids=request['attempt_ids'],task=request['task'],max_runtime_seconds=120)
-    return make_analysis_plan(packet,model=request['model'],registration=request['registration'],
-        provider_implementation=implementation_provenance(),timeout_seconds=request['timeout_seconds'])
+
+    data = load_original_dataset(Path(request['original_dataset']['path']))
+    packet = build_analysis_packet(
+        source_campaign_dir=_root(paths) / 'campaigns' / request['campaign_reference'],
+        original_dataset=data,
+        attempt_ids=request['attempt_ids'],
+        task=request['task'],
+        max_runtime_seconds=120,
+    )
+    return make_analysis_plan(
+        packet,
+        model=request['model'],
+        registration=request['registration'],
+        provider_implementation=implementation_provenance(),
+        timeout_seconds=request['timeout_seconds'],
+    )
 
 
 def analysis_provider_for(paths, plan, *, authorized=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import analysis_provider
-    reference=OAuthCredentialReference(str(getattr(paths,'bootstrap',None) or paths.root),plan['binding']['registration'])
-    return analysis_provider(plan,reference,network_opt_in=authorized,included_usage_policy_confirmed=authorized)
+
+    reference = OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), plan['binding']['registration'])
+    return analysis_provider(plan, reference, network_opt_in=authorized, included_usage_policy_confirmed=authorized)
 
 
-ANALYSIS_NOTICE=ui_text('ui.labels.text_1')
-ANALYSIS_WARNING=ui_text('ui.labels.text_2')
-ANALYSIS_CHECKPOINT_STATUS=ui_text('ui.labels.text_3')
-ANALYSIS_CHECKPOINT_NOTICE=(ui_text('ui.labels.text_4').format(ANALYSIS_CHECKPOINT_STATUS))
-ANALYSIS_METRICS={'net_pnl':ui_text('ui.labels.text_5'),'realized_gross_pnl':ui_text('ui.labels.text_6'),'unrealized_pnl':ui_text('ui.labels.text_7'),
-    'total_costs':ui_text('ui.labels.text_8'),'slippage_cost':ui_text('ui.labels.text_9'),'return':ui_text('ui.labels.text_10'),'max_drawdown':ui_text('ui.labels.text_11'),
-    'max_drawdown_pct':ui_text('ui.labels.text_12'),'trade_count':ui_text('ui.labels.text_13'),'fill_count':ui_text('ui.labels.text_14'),'win_rate':ui_text('ui.labels.text_15'),
-    'profit_factor':'Profit Factor','sharpe':'Sharpe','sharpe_observations':ui_text('ui.labels.text_16'),
-    'sharpe_sample_count':ui_text('ui.labels.text_17'),'open_position':ui_text('ui.labels.text_18')}
-ANALYSIS_KINDS={'market':ui_text('ui.labels.text_19'),'entry_exit':ui_text('ui.labels.text_20'),'backtest':ui_text('ui.labels.text_21'),'weakness':ui_text('ui.labels.text_22'),
-    'risk':ui_text('ui.labels.text_23'),'improvement':ui_text('ui.labels.text_24'),'comparison':ui_text('ui.labels.text_25')}
+ANALYSIS_NOTICE = ui_text('ui.labels.text_1')
+ANALYSIS_WARNING = ui_text('ui.labels.text_2')
+ANALYSIS_CHECKPOINT_STATUS = ui_text('ui.labels.text_3')
+ANALYSIS_CHECKPOINT_NOTICE = ui_text('ui.labels.text_4').format(ANALYSIS_CHECKPOINT_STATUS)
+ANALYSIS_METRICS = {
+    'net_pnl': ui_text('ui.labels.text_5'),
+    'realized_gross_pnl': ui_text('ui.labels.text_6'),
+    'unrealized_pnl': ui_text('ui.labels.text_7'),
+    'total_costs': ui_text('ui.labels.text_8'),
+    'slippage_cost': ui_text('ui.labels.text_9'),
+    'return': ui_text('ui.labels.text_10'),
+    'max_drawdown': ui_text('ui.labels.text_11'),
+    'max_drawdown_pct': ui_text('ui.labels.text_12'),
+    'trade_count': ui_text('ui.labels.text_13'),
+    'fill_count': ui_text('ui.labels.text_14'),
+    'win_rate': ui_text('ui.labels.text_15'),
+    'profit_factor': 'Profit Factor',
+    'sharpe': 'Sharpe',
+    'sharpe_observations': ui_text('ui.labels.text_16'),
+    'sharpe_sample_count': ui_text('ui.labels.text_17'),
+    'open_position': ui_text('ui.labels.text_18'),
+}
+ANALYSIS_KINDS = {
+    'market': ui_text('ui.labels.text_19'),
+    'entry_exit': ui_text('ui.labels.text_20'),
+    'backtest': ui_text('ui.labels.text_21'),
+    'weakness': ui_text('ui.labels.text_22'),
+    'risk': ui_text('ui.labels.text_23'),
+    'improvement': ui_text('ui.labels.text_24'),
+    'comparison': ui_text('ui.labels.text_25'),
+}
 
 
 def analysis_preview_text(plan):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import validate_analysis_plan
+
     validate_analysis_plan(plan)
-    binding=plan['binding'];context=binding['packet']['context'];training=context['training']
-    lines=[ANALYSIS_NOTICE,ANALYSIS_WARNING,
+    binding = plan['binding']
+    context = binding['packet']['context']
+    training = context['training']
+    lines = [
+        ANALYSIS_NOTICE,
+        ANALYSIS_WARNING,
         ui_text('ui.analysis_preview_text.text_1'),
         ui_text('ui.analysis_preview_text.text_2').format(binding['model'], str(binding['timeout_seconds'])),
         ui_text('ui.analysis_preview_text.text_3').format(plan['analysis_id']),
-        ui_text('ui.analysis_preview_text.text_4').format(str(training['window_count']), str(training['bar_count']))]
+        ui_text('ui.analysis_preview_text.text_4').format(str(training['window_count']), str(training['bar_count'])),
+    ]
     for row in context['strategies']:
         lines.append(ui_text('ui.analysis_preview_text.text_5').format(row['strategy_hash'], row['spec']['family'], canonical_json(row['spec']['parameters'])))
     for row in context['evidence']:
-        lines.append(ui_text('ui.analysis_preview_text.text_8').format(ui_text('ui.analysis_preview_text.text_6') if row['split']=='train' else ui_text('ui.analysis_preview_text.text_7'), row['strategy_hash'][:16]))
-        lines.append(ui_text('ui.analysis_preview_text.text_9').join(ANALYSIS_METRICS.get(key,key)+'='+(ui_text('ui.analysis_preview_text.text_10') if value is None else str(value)) for key,value in row['metrics'].items()))
+        lines.append(
+            ui_text('ui.analysis_preview_text.text_8').format(
+                ui_text('ui.analysis_preview_text.text_6') if row['split'] == 'train' else ui_text('ui.analysis_preview_text.text_7'), row['strategy_hash'][:16]
+            )
+        )
+        lines.append(
+            ui_text('ui.analysis_preview_text.text_9').join(
+                ANALYSIS_METRICS.get(key, key) + '=' + (ui_text('ui.analysis_preview_text.text_10') if value is None else str(value))
+                for key, value in row['metrics'].items()
+            )
+        )
     lines.append(ui_text('ui.analysis_preview_text.text_11'))
     return '\n'.join(lines)
 
@@ -235,21 +376,51 @@ def analysis_preview_text(plan):
 def analysis_record_text(record):
     # read_analysis/run_analysis already enforce record and evidence bindings.
     from quantlab.research_analysis import validate_analysis_plan, validate_analysis_response
-    plan=validate_analysis_plan(record['plan']);context=plan['binding']['packet']['context']
-    lines=[ANALYSIS_WARNING,ANALYSIS_NOTICE,ui_text('ui.analysis_record_text.text_1').format(plan['analysis_id']),ui_text('ui.analysis_record_text.text_6').format({'completed':ui_text('ui.analysis_record_text.text_2'),'blocked':ui_text('ui.analysis_record_text.text_3'),'running':ui_text('ui.analysis_record_text.text_4')}.get(record['status'],ui_text('ui.analysis_record_text.text_5')))]
-    if record['status']!='completed':return '\n'.join(lines)
-    response=validate_analysis_response(record['response'],context)
-    evidence={row['evidence_id']:row for row in context['evidence']};training=context['training']
+
+    plan = validate_analysis_plan(record['plan'])
+    context = plan['binding']['packet']['context']
+    lines = [
+        ANALYSIS_WARNING,
+        ANALYSIS_NOTICE,
+        ui_text('ui.analysis_record_text.text_1').format(plan['analysis_id']),
+        ui_text('ui.analysis_record_text.text_6').format(
+            {
+                'completed': ui_text('ui.analysis_record_text.text_2'),
+                'blocked': ui_text('ui.analysis_record_text.text_3'),
+                'running': ui_text('ui.analysis_record_text.text_4'),
+            }.get(record['status'], ui_text('ui.analysis_record_text.text_5'))
+        ),
+    ]
+    if record['status'] != 'completed':
+        return '\n'.join(lines)
+    response = validate_analysis_response(record['response'], context)
+    evidence = {row['evidence_id']: row for row in context['evidence']}
+    training = context['training']
     for row in response['findings']:
-        lines+=['',ui_text('ui.analysis_record_text.text_7').format(ANALYSIS_KINDS[row['kind']], row['text']),ui_text('ui.analysis_record_text.text_8').format(', '.join(value[:16] for value in row['strategy_hashes']))]
-        if 'signal_parameter' in row:lines.append(ui_text('ui.analysis_record_text.text_9').format(row['signal_parameter']))
+        lines += [
+            '',
+            ui_text('ui.analysis_record_text.text_7').format(ANALYSIS_KINDS[row['kind']], row['text']),
+            ui_text('ui.analysis_record_text.text_8').format(', '.join(value[:16] for value in row['strategy_hashes'])),
+        ]
+        if 'signal_parameter' in row:
+            lines.append(ui_text('ui.analysis_record_text.text_9').format(row['signal_parameter']))
         for ref in row['evidence_refs']:
-            if ref['evidence_id']==training['evidence_id']:
+            if ref['evidence_id'] == training['evidence_id']:
                 lines.append(ui_text('ui.analysis_record_text.text_10').format(ref['field'], str(training['window_count'])))
             else:
-                local=evidence[ref['evidence_id']];value=local['metrics'][ref['field']]
-                split=ui_text('ui.analysis_record_text.text_13').format(ui_text('ui.analysis_record_text.text_11') if local['split']=='train' else ui_text('ui.analysis_record_text.text_12'), local['split'])
-                lines.append(ui_text('ui.analysis_record_text.text_15').format(local['strategy_hash'][:16], split, ANALYSIS_METRICS.get(ref['field'],ref['field']), ui_text('ui.analysis_record_text.text_14') if value is None else str(value)))
+                local = evidence[ref['evidence_id']]
+                value = local['metrics'][ref['field']]
+                split = ui_text('ui.analysis_record_text.text_13').format(
+                    ui_text('ui.analysis_record_text.text_11') if local['split'] == 'train' else ui_text('ui.analysis_record_text.text_12'), local['split']
+                )
+                lines.append(
+                    ui_text('ui.analysis_record_text.text_15').format(
+                        local['strategy_hash'][:16],
+                        split,
+                        ANALYSIS_METRICS.get(ref['field'], ref['field']),
+                        ui_text('ui.analysis_record_text.text_14') if value is None else str(value),
+                    )
+                )
     return '\n'.join(lines)
 
 
@@ -262,12 +433,21 @@ def _prepare_paper_operation(payload, paths, root, *, emit=None, descendants_sto
         if not existing.exists():
             # Keep operation-specific dependencies out of module startup.
             from quantlab.paper import PaperBroker
+
             if not isinstance(policy, dict) or set(policy) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
                 raise ValidationError(ui_text('ui.execute_ui_operation.text_39'))
             # Keep operation-specific dependencies out of module startup.
             import tempfile
+
             with tempfile.TemporaryDirectory(prefix='policy-', dir=root) as staging:
-                PaperBroker(Path(staging) / 'validation.sqlite3', instrument=Instrument(policy['contract_id']), costs=demo_config().costs, limits=paper_risk_limits(), risk_sessions=tuple(policy['risk_sessions']), margin_schedule=tuple(policy['margin_schedule']))
+                PaperBroker(
+                    Path(staging) / 'validation.sqlite3',
+                    instrument=Instrument(policy['contract_id']),
+                    costs=demo_config().costs,
+                    limits=paper_risk_limits(),
+                    risk_sessions=tuple(policy['risk_sessions']),
+                    margin_schedule=tuple(policy['margin_schedule']),
+                )
             write_json(existing, policy)
     broker = _paper(root)
     return broker
@@ -286,10 +466,13 @@ def _finish_paper_operation(root, broker, replay_state=None):
 def _handle_ui_analysis_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
+
     output = root / 'analyses'
     allowed = {'request'}
     if set(payload) != allowed:
@@ -305,16 +488,20 @@ def _handle_ui_analysis_preview(payload, paths, root, *, emit=None, descendants_
 def _handle_ui_analysis_read(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
+
     output = root / 'analyses'
     expected = {'analysis_id'}
     durable = False
     if durable:
         # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import supports_durable_recovery
+
         if not supports_durable_recovery():
             raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
     if durable:
@@ -328,16 +515,20 @@ def _handle_ui_analysis_read(payload, paths, root, *, emit=None, descendants_sto
 def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
+
     output = root / 'analyses'
     expected = {'analysis_id', 'registration', 'stopped_job_id'}
     durable = 'recovery_launch_id' in payload
     if durable:
         # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import supports_durable_recovery
+
         if not supports_durable_recovery():
             raise ValidationError(ui_text('ui.execute_ui_operation.text_8'))
     if durable:
@@ -352,20 +543,30 @@ def _handle_ui_analysis_reconcile(payload, paths, root, *, emit=None, descendant
     if durable:
         # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import validate_stop_receipt
+
         launch = validate_stop_receipt(paths, payload['recovery_launch_id'], record=record)
         if launch['analysis_id'] != payload['analysis_id'] or launch['registration'] != payload['registration']:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_12'))
-    record = reconcile_analysis(output_root=output, analysis_id=payload['analysis_id'], provider=analysis_provider_for(paths, record['plan']), descendants_stopped=descendants_stopped is True, recovery=(paths, payload['recovery_launch_id']) if durable else None)
+    record = reconcile_analysis(
+        output_root=output,
+        analysis_id=payload['analysis_id'],
+        provider=analysis_provider_for(paths, record['plan']),
+        descendants_stopped=descendants_stopped is True,
+        recovery=(paths, payload['recovery_launch_id']) if durable else None,
+    )
     return {'analysis_id': payload['analysis_id'], 'record': record, 'cache_hit': True}
 
 
 def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import read_analysis, run_analysis, reconcile_analysis, _read_analysis_journal
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
+
     output = root / 'analyses'
     allowed = {'request', 'expected_analysis_id', 'expected_plan_hash', 'user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'}
     if 'approved_plan' in payload:
@@ -381,17 +582,26 @@ def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stop
         raise ValidationError(ui_text('ui.execute_ui_operation.text_6'))
     if emit:
         emit('progress', message=ui_text('ui.execute_ui_operation.text_7'))
-    result = run_analysis(output_root=output, plan=plan, provider=analysis_provider_for(paths, plan, authorized=True), expected_analysis_id=payload['expected_analysis_id'], user_confirmed=True)
+    result = run_analysis(
+        output_root=output,
+        plan=plan,
+        provider=analysis_provider_for(paths, plan, authorized=True),
+        expected_analysis_id=payload['expected_analysis_id'],
+        user_confirmed=True,
+    )
     return {'analysis_id': plan['analysis_id'], **result}
 
 
 def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.strategies import builtin_strategies, validate_strategy
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.backtest import run_backtest
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
+
     data = _dataset(root, payload)
     config = config_from_json(payload['config'])
     specs = list(builtin_strategies())
@@ -423,6 +633,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
         summary_metrics['trade_count'] += result.metrics.get('trade_count', result.metrics.get('closed_trades', 0))
         # Keep operation-specific dependencies out of module startup.
         import tempfile
+
         reports_root = root / 'reports'
         reports_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='.partial-', dir=reports_root) as staging:
@@ -446,6 +657,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
 def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import BackupManager
+
     manager = BackupManager(paths)
     return {'backup': str(manager.create(Path(payload['path'])))}
 
@@ -453,6 +665,7 @@ def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_sto
 def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import BackupManager
+
     manager = BackupManager(paths)
     manager.restore(Path(payload['path']))
     return {'restored': True, 'reconciliation_required': True}
@@ -461,8 +674,10 @@ def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_st
 def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research import FixtureGenerator, run_campaign, demo_campaign_config
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
+
     data = _dataset(root, payload)
     config = payload.get('config') or demo_campaign_config(data, demo_config())
     if isinstance(config.get('backtest_config'), dict):
@@ -474,6 +689,7 @@ def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=
     elif options.get('mode') == 'manual':
         # Keep operation-specific dependencies out of module startup.
         from quantlab.manual_exchange import export_request_file, import_response, import_response_file
+
         if payload.get('manual_export'):
             request = export_request_file(data, config, Path(payload['manual_export']))
             return {'manual_export': payload['manual_export'], 'request': request, 'mode': 'manual_unverified'}
@@ -487,14 +703,22 @@ def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=
     else:
         generator = campaign_generator(paths, options)
     name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
-    return run_campaign(data, config=config, generator=generator, output_dir=root / 'campaigns' / name, holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3')
+    return run_campaign(
+        data,
+        config=config,
+        generator=generator,
+        output_dir=root / 'campaigns' / name,
+        holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3',
+    )
 
 
 def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+
     # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
+
     if set(payload) != {'request'} or not isinstance(payload['request'], dict):
         raise ValidationError(ui_text('ui.execute_ui_operation.text_13'))
     request = ConnectionRequest(**payload['request'])
@@ -503,6 +727,7 @@ def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stop
         if emit is None:
             raise ValidationError(ui_text('ui.private_event.text_1'))
         emit('auth_progress', auth_event=asdict(event))
+
     if request.action in ('begin', 'first_sign_in', 'enable_plan') and emit is None:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_14'))
     result = run_connection_request(request, bootstrap=str(getattr(paths, 'bootstrap', None) or paths.root), emit=private_event, cancelled=lambda: False)
@@ -514,8 +739,10 @@ def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stop
 def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research import reconcile_interrupted_campaign
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.__main__ import config_from_json
+
     if descendants_stopped is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_16'))
     if set(payload) != {'config', 'provider', 'binding', 'stopped_job_id'}:
@@ -526,7 +753,9 @@ def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants
     generator, identity = plan_provider(paths, data, config, payload['provider'], for_usage=True)
     if identity != payload['binding']:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_18'))
-    name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options({'mode': 'chatgpt_plan', 'binding': identity})})
+    name = content_hash(
+        {'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options({'mode': 'chatgpt_plan', 'binding': identity})}
+    )
     state = reconcile_interrupted_campaign(output_dir=root / 'campaigns' / name, generator=generator, descendants_stopped=True)
     return {'binding': identity, 'state': state['status']}
 
@@ -534,8 +763,10 @@ def _handle_ui_chatgpt_reconcile(payload, paths, root, *, emit=None, descendants
 def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_auth import OAuthCredentialReference
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import read_account_status
+
     if set(payload) - {'registration', 'provider', 'config'}:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_19'))
     reference = OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), payload['registration'])
@@ -544,6 +775,7 @@ def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_sto
     if 'provider' in payload:
         # Keep operation-specific dependencies out of module startup.
         from quantlab.__main__ import config_from_json
+
         data = _dataset(root, {})
         config = dict(payload['config'])
         config['backtest_config'] = config_from_json(config['backtest_config'])
@@ -553,7 +785,11 @@ def _handle_ui_chatgpt_usage(payload, paths, root, *, emit=None, descendants_sto
         receipts = provider.read_receipt_snapshot()['receipts']
         if len(receipts) > 10000:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_21'))
-        result.update(receipts=[{'sequence': row['sequence'], 'status': row['status']} for row in receipts], binding=identity, account_status=read_account_status(reference, research_controls(paths)))
+        result.update(
+            receipts=[{'sequence': row['sequence'], 'status': row['status']} for row in receipts],
+            binding=identity,
+            account_status=read_account_status(reference, research_controls(paths)),
+        )
     return result
 
 
@@ -585,12 +821,19 @@ def _handle_ui_disable(payload, paths, root, *, emit=None, descendants_stopped=F
 def _handle_ui_import(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.data import SessionCalendar, import_taifex
+
     cal = read_json(Path(payload['calendar']))
     if payload['kind'] == 'validated_dataset':
         data = load_dataset(Path(payload['path']))
         dataset_market_series(data, cal)
     else:
-        data = import_taifex(Path(payload['path']), kind=payload['kind'], calendar=SessionCalendar(cal['sessions'], version=cal['version']), contract_id=payload.get('contract') or None, encoding=payload.get('encoding'))
+        data = import_taifex(
+            Path(payload['path']),
+            kind=payload['kind'],
+            calendar=SessionCalendar(cal['sessions'], version=cal['version']),
+            contract_id=payload.get('contract') or None,
+            encoding=payload.get('encoding'),
+        )
     save_dataset(data, root / 'dataset.json')
     write_json(root / 'dataset_calendar.json', cal)
     return {'dataset': str(root / 'dataset.json'), 'bars': len(data.bars), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}
@@ -602,6 +845,7 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
             raise ValidationError(ui_text('ui.execute_ui_operation.text_22'))
         # Keep operation-specific dependencies out of module startup.
         from quantlab.market_history import import_history, session_from_dict
+
         if payload.get('dated_policy_confirmed') is not True:
             raise ValidationError(ui_text('ui.execute_ui_operation.text_23'))
         records = payload.get('sessions')
@@ -610,9 +854,19 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
         if emit is not None:
             emit('progress', message=ui_text('ui.execute_ui_operation.text_25'))
         result = import_history(Path(payload['local_path']), root / 'market_history', sessions=tuple((session_from_dict(row) for row in records)))
-        return {'mode': 'local_unverified_history', 'cache_id': result.cache_id, 'source_hash': result.source_hash, 'policy_hash': result.policy_hash, 'counters': dict(result.counters), 'warnings': list(result.warnings), 'contracts': len(result.series), 'bars': sum((len(x.bars) for x in result.series))}
+        return {
+            'mode': 'local_unverified_history',
+            'cache_id': result.cache_id,
+            'source_hash': result.source_hash,
+            'policy_hash': result.policy_hash,
+            'counters': dict(result.counters),
+            'warnings': list(result.warnings),
+            'contracts': len(result.series),
+            'bars': sum((len(x.bars) for x in result.series)),
+        }
     # Keep operation-specific dependencies out of module startup.
     from quantlab.market_providers import refresh_daily, import_daily, MAX_BYTES
+
     local = payload.get('local_path')
     if not local and payload.get('network_opt_in') is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_26'))
@@ -634,7 +888,12 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
                 result = import_daily(provider, root / 'market_cache', raw, format=payload.get('format', 'json'))
             else:
                 result = refresh_daily(provider, root / 'market_cache', network_enabled=True, **kwargs)
-            outcomes[provider] = {'stale': result.stale, 'error': result.error, 'contracts': len(result.series), 'bars': sum((len(x.bars) for x in result.series))}
+            outcomes[provider] = {
+                'stale': result.stale,
+                'error': result.error,
+                'contracts': len(result.series),
+                'bars': sum((len(x.bars) for x in result.series)),
+            }
         except Exception as exc:
             outcomes[provider] = {'stale': True, 'error': exception_code(exc), 'contracts': None, 'bars': None}
     return {'providers': outcomes, 'mode': 'official_local_import' if local else 'official_explicit_refresh'}
@@ -669,11 +928,19 @@ def _handle_ui_paper_replay(payload, paths, root, *, emit=None, descendants_stop
     broker.reconcile(payload['snapshot'])
     # Keep operation-specific dependencies out of module startup.
     from quantlab.paper_replay import PaperReplay
+
     data = _dataset(root, payload)
     selection = load_selection(root / 'selection.json')
     binding = content_hash([data.manifest['data_hash'], selection['strategy_hash']])
     paths.require_replay_wal()
-    replay = PaperReplay(root / 'replays' / (binding + '.sqlite3'), dataset=data, strategy=StrategySpec(**selection['strategy']), broker=broker, margin_schedule=broker._margin_schedule, storage_profile='wal_full')
+    replay = PaperReplay(
+        root / 'replays' / (binding + '.sqlite3'),
+        dataset=data,
+        strategy=StrategySpec(**selection['strategy']),
+        broker=broker,
+        margin_schedule=broker._margin_schedule,
+        storage_profile='wal_full',
+    )
     replay.start()
     cursor_before = replay.snapshot()['cursor']
     fills_before = len(broker.snapshot()['fills'])
@@ -712,6 +979,7 @@ def _handle_ui_refresh(payload, paths, root, *, emit=None, descendants_stopped=F
         raise ValidationError(ui_text('ui.execute_ui_operation.text_30'))
     # Keep operation-specific dependencies out of module startup.
     from quantlab.downloads import refresh
+
     return refresh(Path(paths.cache), days=payload.get('days', 1), kind=payload.get('format', 'csv'))
 
 
@@ -731,24 +999,28 @@ def _handle_ui_select(payload, paths, root, *, emit=None, descendants_stopped=Fa
 def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
+
     return execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_read(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
+
     return execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
+
     return execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped)
 
 
 def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
+
     return execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped)
 
 
@@ -788,17 +1060,19 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
     """Allowlisted process-worker adapter; no Qt objects are created here."""
     if operation not in UI_OPERATIONS:
         raise ValidationError(ui_text('ui.execute_ui_operation.text_1'))
-    if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
-        or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
+    if operation == 'ui_campaign' and (
+        not isinstance(payload.get('provider'), dict) or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')
+    ):
         raise ValidationError(ui_text('ui.execute_ui_operation.text_2'))
     root = _root(paths)
-    return _UI_OPERATION_HANDLERS[operation](payload, paths, root, emit=emit,
-                                            descendants_stopped=descendants_stopped)
+    return _UI_OPERATION_HANDLERS[operation](payload, paths, root, emit=emit, descendants_stopped=descendants_stopped)
 
 
 # Register after the executor definition, before GUI startup and smoke dispatch.
-from quantlab.desktop_runtime import (register_operation_executor as _register_operation_executor,
-                                     register_operation_executor_factory as _register_operation_executor_factory)
+from quantlab.desktop_runtime import (
+    register_operation_executor as _register_operation_executor,
+    register_operation_executor_factory as _register_operation_executor_factory,
+)
 
 OPERATION_REGISTRAR = 'desktop_ui:execute_ui_operation'
 _register_operation_executor(execute_ui_operation)
@@ -831,39 +1105,87 @@ def dataset_market_series(dataset, calendar_payload):
     """Adapt only validated one-minute official history with hash-bound calendar."""
     # Keep operation-specific dependencies out of module startup.
     from quantlab.data import validate_dataset, SessionCalendar
+
     # Keep operation-specific dependencies out of module startup.
     from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance, bar_key
+
     validate_dataset(dataset)
     manifest = dataset.manifest
     if manifest['source_type'] != 'official_local' or manifest.get('bar_granularity') != 'minute' or manifest.get('timeframe_minutes', 1) != 1:
         raise ValidationError(ui_text('ui.dataset_market_series.text_1'))
     calendar = SessionCalendar(calendar_payload['sessions'], version=calendar_payload['version'])
-    if calendar.hash != manifest.get('calendar_hash'): raise ValidationError(ui_text('ui.dataset_market_series.text_2'))
+    if calendar.hash != manifest.get('calendar_hash'):
+        raise ValidationError(ui_text('ui.dataset_market_series.text_2'))
     grouped = {}
     for bar in dataset.bars:
         instrument = InstrumentRef('TAIFEX', 'TMF', bar.contract_id, bar.contract_id.split(':')[-1])
         session = calendar.lookup(bar.timestamp, bar.contract_id)
-        value = MarketBar(instrument, bar.trade_date, bar.session, bar.open, bar.high, bar.low, bar.close, bar.volume,
-            interval='1m', timestamp=bar.timestamp, end=bar.end, session_open=session['open'], session_end=session['end'], source_id=bar.source_id)
+        value = MarketBar(
+            instrument,
+            bar.trade_date,
+            bar.session,
+            bar.open,
+            bar.high,
+            bar.low,
+            bar.close,
+            bar.volume,
+            interval='1m',
+            timestamp=bar.timestamp,
+            end=bar.end,
+            session_open=session['open'],
+            session_end=session['end'],
+            source_id=bar.source_id,
+        )
         grouped.setdefault(instrument, []).append(value)
     result = []
     for instrument, bars in grouped.items():
-        bars.sort(key=bar_key); dates = [b.trade_date for b in bars]
-        provenance = SourceProvenance(manifest['source_url'], manifest['source_hash'],
+        bars.sort(key=bar_key)
+        dates = [b.trade_date for b in bars]
+        provenance = SourceProvenance(
+            manifest['source_url'],
+            manifest['source_hash'],
             ui_text('ui.dataset_market_series.text_3').format(manifest['data_hash']),
-            'https://www.taifex.com.tw', datetime.fromisoformat(manifest['imported_at'].replace('Z', '+00:00')),
-            max(dates), min(dates), max(dates), mode='history', timestamp_basis='hash-bound explicit session calendar; one-minute source',
-            warnings=tuple(str(x) for x in dataset.quality.get('warnings', ())))
+            'https://www.taifex.com.tw',
+            datetime.fromisoformat(manifest['imported_at'].replace('Z', '+00:00')),
+            max(dates),
+            min(dates),
+            max(dates),
+            mode='history',
+            timestamp_basis='hash-bound explicit session calendar; one-minute source',
+            warnings=tuple(str(x) for x in dataset.quality.get('warnings', ())),
+        )
         result.append(MarketSeries(instrument, tuple(bars), provenance))
     return tuple(result)
 
+
 from PySide6.QtCore import Qt, QTimer, QPoint, QPointF, QUrl, QPropertyAnimation
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QListWidget, QStackedWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox,
-    QSpinBox, QCheckBox, QProgressBar, QFileDialog, QFormLayout, QScrollArea,
-    QTableWidget, QTableWidgetItem, QAbstractItemView, QMessageBox, QApplication, QGroupBox,
-    QGraphicsOpacityEffect)
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QStackedWidget,
+    QPushButton,
+    QLineEdit,
+    QPlainTextEdit,
+    QComboBox,
+    QSpinBox,
+    QCheckBox,
+    QProgressBar,
+    QFileDialog,
+    QFormLayout,
+    QScrollArea,
+    QTableWidget,
+    QTableWidgetItem,
+    QAbstractItemView,
+    QMessageBox,
+    QApplication,
+    QGroupBox,
+    QGraphicsOpacityEffect,
+)
 
 
 from desktop_pages import PageHost, PageState, MarketPage, DataPage, StrategyPage, BacktestPage
@@ -872,8 +1194,21 @@ from desktop_pages.result_layers import result_snapshot_lines
 
 from desktop_presentation import display_number, display_status, result_name
 from desktop_market import MarketDashboard, MarketHistoryDialog
-from desktop_forms import (StrategyForm, BacktestForm, CampaignForm, WalkForwardForm, PaperPolicyForm,
-    PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, ResultTable, SummaryCard, BacktestSummaryCard, BacktestFillsTable, CandidateSummaryCard)
+from desktop_forms import (
+    StrategyForm,
+    BacktestForm,
+    CampaignForm,
+    WalkForwardForm,
+    PaperPolicyForm,
+    PaperIntentForm,
+    PaperQuoteForm,
+    PaperSnapshotForm,
+    ResultTable,
+    SummaryCard,
+    BacktestSummaryCard,
+    BacktestFillsTable,
+    CandidateSummaryCard,
+)
 
 
 from desktop_pages.bindings import SharedStateBindings
@@ -883,18 +1218,23 @@ from desktop_pages.mount import mount_pages
 def _install_window_support(window):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_ui_polish import install_polish
+
     install_polish(window)
     # Load the optional UI adapter only when this operation is requested.
     from desktop_help import install_page_help
+
     install_page_help(window)
     # Load the optional UI adapter only when this operation is requested.
     from desktop_pages.shortcuts import install_shortcuts
+
     # Load the optional UI adapter only when this operation is requested.
     from desktop_accessibility import install_accessibility
+
     install_shortcuts(window)
     install_accessibility(window)
 
 
+# fmt: off
 class MainWindow(SharedStateBindings, QMainWindow):
     def __init__(self, paths, jobs, settings=None, backups=None, guard=None):
         super().__init__()
@@ -1289,6 +1629,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     _result_snapshot_lines = staticmethod(result_snapshot_lines)
+# fmt: on
 
 
 def create_window(paths, jobs, settings=None, backups=None, guard=None):

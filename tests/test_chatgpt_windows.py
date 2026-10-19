@@ -2,6 +2,7 @@
 
 Run with unittest on Windows. A Linux pass explicitly skips native evidence.
 """
+
 import json
 import multiprocessing
 import os
@@ -29,9 +30,10 @@ def _hold_lock(root, pipe):
 
 def _contend_lock(root, pipe):
     import msvcrt
+
     vault = a.DPAPIVault(root)
     # Prove contention before asking the production lock to wait; no sleep gate.
-    with (vault.directory/'vault.lock').open('r+b') as stream:
+    with (vault.directory / 'vault.lock').open('r+b') as stream:
         try:
             msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
         except OSError:
@@ -47,18 +49,17 @@ def _private_dacl_matches_sid(descriptor, expected_sid):
     """Validate binary ACL identity; SDDL may abbreviate a trustee as LA."""
     import ctypes
     from ctypes import wintypes as w
+
     class AclSizeInformation(ctypes.Structure):
-        _fields_ = [('AceCount', w.DWORD), ('AclBytesInUse', w.DWORD),
-                    ('AclBytesFree', w.DWORD)]
+        _fields_ = [('AceCount', w.DWORD), ('AclBytesInUse', w.DWORD), ('AclBytesFree', w.DWORD)]
+
     class AllowedAce(ctypes.Structure):
-        _fields_ = [('AceType', w.BYTE), ('AceFlags', w.BYTE),
-                    ('AceSize', w.WORD), ('Mask', w.DWORD), ('SidStart', w.DWORD)]
+        _fields_ = [('AceType', w.BYTE), ('AceFlags', w.BYTE), ('AceSize', w.WORD), ('Mask', w.DWORD), ('SidStart', w.DWORD)]
+
     adv = ctypes.WinDLL('advapi32', use_last_error=True)
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    adv.GetSecurityDescriptorControl.argtypes = [ctypes.c_void_p,
-        ctypes.POINTER(w.WORD), ctypes.POINTER(w.DWORD)]
-    adv.GetSecurityDescriptorDacl.argtypes = [ctypes.c_void_p,
-        ctypes.POINTER(w.BOOL), ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(w.BOOL)]
+    adv.GetSecurityDescriptorControl.argtypes = [ctypes.c_void_p, ctypes.POINTER(w.WORD), ctypes.POINTER(w.DWORD)]
+    adv.GetSecurityDescriptorDacl.argtypes = [ctypes.c_void_p, ctypes.POINTER(w.BOOL), ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(w.BOOL)]
     adv.GetAclInformation.argtypes = [ctypes.c_void_p, ctypes.c_void_p, w.DWORD, ctypes.c_int]
     adv.GetAce.argtypes = [ctypes.c_void_p, w.DWORD, ctypes.POINTER(ctypes.c_void_p)]
     adv.ConvertStringSidToSidW.argtypes = [w.LPCWSTR, ctypes.POINTER(ctypes.c_void_p)]
@@ -82,7 +83,7 @@ def _private_dacl_matches_sid(descriptor, expected_sid):
     if not adv.GetAce(dacl, 0, ctypes.byref(ace_pointer)):
         raise ctypes.WinError(ctypes.get_last_error())
     ace = ctypes.cast(ace_pointer, ctypes.POINTER(AllowedAce)).contents
-    if ace.AceType != 0 or ace.Mask != 0x1f01ff or ace.AceFlags & 0x08:
+    if ace.AceType != 0 or ace.Mask != 0x1F01FF or ace.AceFlags & 0x08:
         return False  # ACCESS_ALLOWED_ACE, FILE_ALL_ACCESS, not INHERIT_ONLY.
     trustee = ctypes.c_void_p(ace_pointer.value + AllowedAce.SidStart.offset)
     if not adv.IsValidSid(trustee):
@@ -100,24 +101,29 @@ def _security_sddl(path, expected_sid):
     """Read actual kernel DACL, rather than mocking ACL installation."""
     import ctypes
     from ctypes import wintypes as w
+
     adv = ctypes.WinDLL('advapi32', use_last_error=True)
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    adv.GetNamedSecurityInfoW.argtypes = [w.LPWSTR, ctypes.c_int, w.DWORD,
-        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_void_p)]
+    adv.GetNamedSecurityInfoW.argtypes = [
+        w.LPWSTR,
+        ctypes.c_int,
+        w.DWORD,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_void_p),
+    ]
     adv.GetNamedSecurityInfoW.restype = w.DWORD
-    adv.ConvertSecurityDescriptorToStringSecurityDescriptorW.argtypes = [
-        ctypes.c_void_p, w.DWORD, w.DWORD, ctypes.POINTER(w.LPWSTR), ctypes.c_void_p]
+    adv.ConvertSecurityDescriptorToStringSecurityDescriptorW.argtypes = [ctypes.c_void_p, w.DWORD, w.DWORD, ctypes.POINTER(w.LPWSTR), ctypes.c_void_p]
     kernel.LocalFree.argtypes = [ctypes.c_void_p]
     descriptor = ctypes.c_void_p()
     text = w.LPWSTR()
     try:
-        result = adv.GetNamedSecurityInfoW(str(path), 1, 4, None, None, None,
-                                           None, ctypes.byref(descriptor))
+        result = adv.GetNamedSecurityInfoW(str(path), 1, 4, None, None, None, None, ctypes.byref(descriptor))
         if result:
             raise ctypes.WinError(result)
-        if not adv.ConvertSecurityDescriptorToStringSecurityDescriptorW(
-                descriptor, 1, 4, ctypes.byref(text), None):
+        if not adv.ConvertSecurityDescriptorToStringSecurityDescriptorW(descriptor, 1, 4, ctypes.byref(text), None):
             raise ctypes.WinError(ctypes.get_last_error())
         return text.value, _private_dacl_matches_sid(descriptor, expected_sid)
     finally:
@@ -130,14 +136,14 @@ def _security_sddl(path, expected_sid):
 def _current_sid():
     import ctypes
     from ctypes import wintypes as w
+
     adv = ctypes.WinDLL('advapi32', use_last_error=True)
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     kernel.GetCurrentProcess.restype = w.HANDLE
     kernel.CloseHandle.argtypes = [w.HANDLE]
     kernel.LocalFree.argtypes = [ctypes.c_void_p]
     adv.OpenProcessToken.argtypes = [w.HANDLE, w.DWORD, ctypes.POINTER(w.HANDLE)]
-    adv.GetTokenInformation.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p,
-                                      w.DWORD, ctypes.POINTER(w.DWORD)]
+    adv.GetTokenInformation.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWORD)]
     adv.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(w.LPWSTR)]
     handle, size, sid = w.HANDLE(), w.DWORD(), w.LPWSTR()
     try:
@@ -172,9 +178,7 @@ with patch.object(socket, 'socket', denied), patch.object(socket, 'create_connec
     assert session.state == 'disconnected'
     assert not any(name in sys.modules for name in ('jwt', 'cryptography'))
 '''
-        result = subprocess.run([sys.executable, '-c', code],
-            cwd=Path(__file__).resolve().parents[1], capture_output=True,
-            text=True, timeout=WAIT_SECONDS)
+        result = subprocess.run([sys.executable, '-c', code], cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=WAIT_SECONDS)
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
@@ -183,7 +187,7 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='mark-auto-native-auth-')
         self.addCleanup(self.temp.cleanup)
-        self.root = str(Path(self.temp.name).resolve()/'bootstrap')
+        self.root = str(Path(self.temp.name).resolve() / 'bootstrap')
         self.vault = a.DPAPIVault(self.root)
         self.session = a.AuthSession(self.vault)
         self.host = self.session.initialize_host()
@@ -198,20 +202,21 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         process = ctx.Process(target=target, args=(self.root, child))
         process.start()
         child.close()
+
         def cleanup():
             if process.is_alive():
                 process.terminate()
             process.join(WAIT_SECONDS)
             parent.close()
             self.assertFalse(process.is_alive(), 'native child failed to stop')
+
         self.addCleanup(cleanup)
         return process, parent
 
     def test_encrypted_host_reload_private_dacl_and_no_reparse(self):
         other = a.AuthSession(a.DPAPIVault(self.root))
         self.assertEqual(other.initialize_host(), self.host)
-        self.assertEqual(other.status_summary(), {'registrations': [],
-            'active_registration': None, 'state': 'disconnected'})
+        self.assertEqual(other.status_summary(), {'registrations': [], 'active_registration': None, 'state': 'disconnected'})
         raw = self.vault.path.read_bytes()
         self.assertLessEqual(len(raw), a.MAX_RECORD)
         self.assertNotIn(self.host.encode(), raw)
@@ -219,12 +224,12 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         with self.vault.lock():
             self.assertEqual(self.vault.load()['host_id'], self.host)
         sid = _current_sid()
-        for path in (self.vault.directory, self.vault.path, self.vault.directory/'vault.lock'):
+        for path in (self.vault.directory, self.vault.path, self.vault.directory / 'vault.lock'):
             with self.subTest(path=path.name):
                 sddl, private_current_user = _security_sddl(path, sid)
                 self.assertTrue(sddl.startswith('D:P'), sddl)
                 self.assertEqual(sddl.count('('), 1, sddl)
-                ace = sddl[sddl.index('(')+1:sddl.index(')')].split(';')
+                ace = sddl[sddl.index('(') + 1 : sddl.index(')')].split(';')
                 self.assertEqual(ace[0], 'A')
                 self.assertEqual(ace[2], 'FA')
                 self.assertTrue(private_current_user, sddl)
@@ -236,10 +241,10 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
     def test_binary_dacl_identity_handles_admin_and_regular_sids(self):
         import ctypes
         from ctypes import wintypes as w
+
         adv = ctypes.WinDLL('advapi32', use_last_error=True)
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        adv.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
-            w.LPCWSTR, w.DWORD, ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p]
+        adv.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [w.LPCWSTR, w.DWORD, ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p]
         kernel.LocalFree.argtypes = [ctypes.c_void_p]
         # Synthetic principals: no account creation, ACL installation or lookup.
         admin = 'S-1-5-21-101-202-303-500'
@@ -262,8 +267,7 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
             with self.subTest(sddl=sddl, expected_sid=expected_sid):
                 descriptor = ctypes.c_void_p()
                 try:
-                    if not adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-                            sddl, 1, ctypes.byref(descriptor), None):
+                    if not adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl, 1, ctypes.byref(descriptor), None):
                         raise ctypes.WinError(ctypes.get_last_error())
                     self.assertEqual(_private_dacl_matches_sid(descriptor, expected_sid), accepted)
                 finally:
@@ -271,17 +275,16 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
                         kernel.LocalFree(descriptor)
 
     def test_actual_junction_ancestor_is_rejected(self):
-        target = Path(self.temp.name)/'junction-target'
+        target = Path(self.temp.name) / 'junction-target'
         target.mkdir()
-        junction = Path(self.temp.name)/'junction'
+        junction = Path(self.temp.name) / 'junction'
         # Both target and junction are test-owned. mklink /J needs no symlink privilege.
-        result = subprocess.run(['cmd.exe', '/d', '/c', 'mklink', '/J', str(junction), str(target)],
-                                capture_output=True, text=True, timeout=WAIT_SECONDS)
+        result = subprocess.run(['cmd.exe', '/d', '/c', 'mklink', '/J', str(junction), str(target)], capture_output=True, text=True, timeout=WAIT_SECONDS)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.addCleanup(lambda: os.rmdir(junction) if junction.exists() else None)
         self.assertTrue(junction.lstat().st_file_attributes & 0x400)
         with self.assertRaisesRegex(a.AuthError, 'vault_reparse_point'):
-            a.AuthSession(a.DPAPIVault(str(junction/'bootstrap'))).initialize_host()
+            a.AuthSession(a.DPAPIVault(str(junction / 'bootstrap'))).initialize_host()
         self.assertEqual(list(target.iterdir()), [])
 
     def test_cross_process_lock_serialization(self):
@@ -310,25 +313,31 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         self.assertEqual(contender.exitcode, 0)
 
     def test_durable_refresh_barrier_after_simulated_network_ambiguity(self):
-        ref = 'a'*32
-        tokens = dict(access_token='native-fixture-access-NOT-A-CREDENTIAL',
+        ref = 'a' * 32
+        tokens = dict(
+            access_token='native-fixture-access-NOT-A-CREDENTIAL',
             refresh_token='native-fixture-refresh-NOT-A-CREDENTIAL',
-            id_token='native-fixture-id-NOT-A-CREDENTIAL', scopes=a.SCOPES.split(),
-            expires_at=time.time()-1, earliest_refresh_at=0)
+            id_token='native-fixture-id-NOT-A-CREDENTIAL',
+            scopes=a.SCOPES.split(),
+            expires_at=time.time() - 1,
+            earliest_refresh_at=0,
+        )
         with self.vault.lock():
             record = self.vault.load()
             record['active'] = ref
-            record['registrations'][ref] = dict(identity=dict(issuer=a.ISSUER,
-                client_id='fixture-native-client', subject='fixture-native-subject'),
-                tokens=tokens, generation=1, operation=None)
+            record['registrations'][ref] = dict(
+                identity=dict(issuer=a.ISSUER, client_id='fixture-native-client', subject='fixture-native-subject'), tokens=tokens, generation=1, operation=None
+            )
             self.vault.save(record)
         calls = []
+
         class AmbiguousTransport:
             def request(inner, *args, **kwargs):
                 calls.append(1)
                 # Same-thread read sees the actual atomic DPAPI write before send.
                 self.assertEqual(self.vault.load()['registrations'][ref]['operation'], 'refresh')
                 raise OSError('synthetic transport ambiguity; no network')
+
         with self.assertRaisesRegex(a.AuthError, 'reauthorization_required'):
             a.AuthSession(self.vault, AmbiguousTransport()).refresh(ref)
         restarted = a.AuthSession(a.DPAPIVault(self.root), AmbiguousTransport())
@@ -340,8 +349,7 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         raw = self.vault.path.read_bytes()
         for fixture in tokens['access_token'], tokens['refresh_token'], tokens['id_token']:
             self.assertNotIn(fixture.encode(), raw)
-        self.assertEqual(sorted(p.name for p in self.vault.directory.iterdir()),
-                         ['accounts.dpapi', 'vault.lock'])
+        self.assertEqual(sorted(p.name for p in self.vault.directory.iterdir()), ['accounts.dpapi', 'vault.lock'])
 
 
 if __name__ == '__main__':

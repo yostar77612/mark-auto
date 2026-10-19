@@ -11,9 +11,9 @@ caller precision, rounding, flags and traps are untouched. Inputs are bounded to
 100,000 observations, periods 1..10,000, prices ±1e9 / 24 digits / exponent ±12.
 KD/Bollinger cap window work at 5 million observation-period operations.
 """
+
 from collections import deque
-from decimal import (Decimal, InvalidOperation, Context, localcontext, ROUND_HALF_EVEN,
-                     DivisionByZero, Overflow)
+from decimal import Decimal, InvalidOperation, Context, localcontext, ROUND_HALF_EVEN, DivisionByZero, Overflow
 from functools import wraps
 from itertools import islice
 
@@ -32,9 +32,9 @@ def _fixed_context(function):
     @wraps(function)
     def calculate(*args, **kwargs):
         # Explicit constructor avoids caller context and mutable DefaultContext.
-        context = Context(prec=28, rounding=ROUND_HALF_EVEN, Emin=-999999, Emax=999999,
-                          capitals=1, clamp=0, flags=[],
-                          traps=[InvalidOperation, DivisionByZero, Overflow])
+        context = Context(
+            prec=28, rounding=ROUND_HALF_EVEN, Emin=-999999, Emax=999999, capitals=1, clamp=0, flags=[], traps=[InvalidOperation, DivisionByZero, Overflow]
+        )
         with localcontext(context):
             bounded = []
             for values in args:
@@ -50,6 +50,7 @@ def _fixed_context(function):
                         raise IndicatorResourceLimitError('indicator observation limit exceeded')
                     kwargs[name] = values
             return function(*bounded, **kwargs)
+
     return calculate
 
 
@@ -70,8 +71,7 @@ def _number(value):
         result = value if isinstance(value, Decimal) else Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError) as exc:
         raise ValueError('invalid numeric observation') from exc
-    if (not result.is_finite() or len(result.as_tuple().digits) > 24
-            or abs(result.as_tuple().exponent) > 12 or abs(result) > Decimal('1000000000')):
+    if not result.is_finite() or len(result.as_tuple().digits) > 24 or abs(result.as_tuple().exponent) > 12 or abs(result) > Decimal('1000000000'):
         raise ValueError('observation must be finite, within ±1e9, at most 24 digits and exponent ±12')
     return result
 

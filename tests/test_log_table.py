@@ -1,4 +1,5 @@
 """T10 log projection/export is derived only from the real redacted reader."""
+
 import csv
 import os
 from pathlib import Path
@@ -20,12 +21,14 @@ class LogTableTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.context = sandbox_ui(); self.context.__enter__()
+        self.context = sandbox_ui()
+        self.context.__enter__()
         self.addCleanup(self.context.__exit__, None, None, None)
         self.temp = tempfile.TemporaryDirectory(prefix='t10-logs-')
         self.addCleanup(self.temp.cleanup)
         self.log = RedactedEventLog(Path(self.temp.name) / 'events.jsonl')
-        self.table = LogTable(); self.addCleanup(self.table.deleteLater)
+        self.table = LogTable()
+        self.addCleanup(self.table.deleteLater)
 
     def seed(self):
         with patch('quantlab.desktop_runtime.time.time', return_value=1704067200):
@@ -40,8 +43,9 @@ class LogTableTests(unittest.TestCase):
         for key in LOG_OPERATION_NAMES.values():
             self.assertRegex(ui_text(key), r'[\u4e00-\u9fff]')
         self.seed()
-        self.assertEqual([self.table.horizontalHeaderItem(i).text() for i in range(3)],
-                         [ui_text('logs.time'), ui_text('logs.operation'), ui_text('logs.result')])
+        self.assertEqual(
+            [self.table.horizontalHeaderItem(i).text() for i in range(3)], [ui_text('logs.time'), ui_text('logs.operation'), ui_text('logs.result')]
+        )
         self.assertEqual(self.table.item(0, 0).text(), '2024-01-01 08:00:00')
         self.assertEqual(self.table.item(2, 2).text(), ui_text('logs.event.result'))
         for row in range(self.table.rowCount()):
@@ -50,8 +54,10 @@ class LogTableTests(unittest.TestCase):
 
     def test_filter_and_export_match_visible_rows_cancel_is_noop(self):
         self.seed()
-        toggle = QCheckBox(); self.addCleanup(toggle.deleteLater)
-        toggle.toggled.connect(self.table.filter_errors); toggle.setChecked(True)
+        toggle = QCheckBox()
+        self.addCleanup(toggle.deleteLater)
+        toggle.toggled.connect(self.table.filter_errors)
+        toggle.setChecked(True)
         self.assertEqual(self.table.rowCount(), 1)
         self.assertEqual(self.table.item(0, 2).text(), ui_text('logs.event.error'))
         destination = Path(self.temp.name) / 'export.csv'
@@ -62,14 +68,15 @@ class LogTableTests(unittest.TestCase):
         self.assertEqual(rows[1:], [list(row) for row in self.table.visible_rows()])
         with patch('desktop_pages.log_table.choose_log_export', return_value=''):
             self.table.export()
-        toggle.setChecked(False); self.assertEqual(self.table.rowCount(), 5)
+        toggle.setChecked(False)
+        self.assertEqual(self.table.rowCount(), 5)
 
     def test_hostile_inputs_rejected_by_real_redaction_never_reach_export(self):
         secrets = ['sentinel-token-SECRET', r'C:\private\sentinel-account', 'sentinel-response-password']
         for secret in secrets:
-            for args, kwargs in (((secret, 'error'), {}), (('ui_demo', secret), {}),
-                                 (('ui_demo', 'error'), {'error_code': secret})):
-                with self.assertRaises(RuntimeSafetyError): self.log.append(*args, **kwargs)
+            for args, kwargs in (((secret, 'error'), {}), (('ui_demo', secret), {}), (('ui_demo', 'error'), {'error_code': secret})):
+                with self.assertRaises(RuntimeSafetyError):
+                    self.log.append(*args, **kwargs)
         self.seed()
         destination = Path(self.temp.name) / 'safe.csv'
         with patch('desktop_pages.log_table.choose_log_export', return_value=str(destination)):

@@ -3,6 +3,7 @@
 Import/export never evaluates a candidate. Call preflight before passing the
 sealed generator to research.run_campaign with the existing shared controls.
 """
+
 from __future__ import annotations
 
 import copy
@@ -16,9 +17,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .core import ValidationError, canonical_json, content_hash, to_dict
-from .research import (PARAMETER_CONTRACTS, PROMPT, _campaign_config,
-                       _dataset_identity, candidate_fingerprint,
-                       registry_json_schema, training_summary, validate_dsl)
+from .research import (
+    PARAMETER_CONTRACTS,
+    PROMPT,
+    _campaign_config,
+    _dataset_identity,
+    candidate_fingerprint,
+    registry_json_schema,
+    training_summary,
+    validate_dsl,
+)
 
 MAX_BYTES = 131072
 SCHEMA_VERSION = 1
@@ -33,6 +41,7 @@ def _strict(raw):
         data = raw.encode('utf-8') if type(raw) is str else raw
         if len(data) > MAX_BYTES:
             raise ValidationError('Manual JSON byte budget exceeded')
+
         def unique(pairs):
             result = {}
             for key, value in pairs:
@@ -40,21 +49,27 @@ def _strict(raw):
                     raise ValidationError('Duplicate manual JSON key')
                 result[key] = value
             return result
+
         def invalid(_):
             raise ValidationError('Nonfinite manual JSON number')
+
         result = json.loads(data.decode('utf-8'), object_pairs_hook=unique, parse_constant=invalid)
         count = 0
+
         def walk(value, depth=0):
             nonlocal count
             count += 1
             if depth > 24 or count > 8192:
                 raise ValidationError('Manual JSON depth/node budget exceeded')
             if type(value) is dict:
-                for item in value.values(): walk(item, depth + 1)
+                for item in value.values():
+                    walk(item, depth + 1)
             elif type(value) is list:
-                for item in value: walk(item, depth + 1)
+                for item in value:
+                    walk(item, depth + 1)
             elif type(value) is float and not math.isfinite(value):
                 raise ValidationError('Nonfinite manual JSON number')
+
         walk(result)
         return result
     except (UnicodeError, ValueError, RecursionError) as exc:
@@ -80,33 +95,45 @@ def export_request(dataset, config):
     families = []
     schemas = []
     for family in config['families']:
-        context = {'family': family, 'iteration': 0, 'seed': config['seed'],
-                   'parameter_contract': copy.deepcopy(PARAMETER_CONTRACTS[family]),
-                   'training': training_summary(splits['train']),
-                   'validation': {'bar_count': len(splits['validation'].bars),
-                                  'hash': content_hash(splits['validation'].bars)},
-                   'previous': None}
+        context = {
+            'family': family,
+            'iteration': 0,
+            'seed': config['seed'],
+            'parameter_contract': copy.deepcopy(PARAMETER_CONTRACTS[family]),
+            'training': training_summary(splits['train']),
+            'validation': {'bar_count': len(splits['validation'].bars), 'hash': content_hash(splits['validation'].bars)},
+            'previous': None,
+        }
         families.append({'family': family, 'context_hash': content_hash(context), 'context': context})
-        schemas.append({'type': 'object', 'additionalProperties': False,
-            'required': ['family', 'context_hash', 'candidate'], 'properties': {
-                'family': {'const': family}, 'context_hash': {'const': content_hash(context)},
-                'candidate': registry_json_schema(family)}})
-    request = {'schema_version': SCHEMA_VERSION,
-               'data_hash': _dataset_identity(dataset), 'config_hash': content_hash(to_dict(config)),
-               'prompt_version': PROMPT_VERSION, 'prompt_hash': content_hash(PROMPT),
-               'registry_version': REGISTRY_VERSION,
-               'registry_hash': content_hash({f: registry_json_schema(f) for f in config['families']}),
-               'module_source_hash': _source_hash(), 'families': families}
+        schemas.append(
+            {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['family', 'context_hash', 'candidate'],
+                'properties': {'family': {'const': family}, 'context_hash': {'const': content_hash(context)}, 'candidate': registry_json_schema(family)},
+            }
+        )
+    request = {
+        'schema_version': SCHEMA_VERSION,
+        'data_hash': _dataset_identity(dataset),
+        'config_hash': content_hash(to_dict(config)),
+        'prompt_version': PROMPT_VERSION,
+        'prompt_hash': content_hash(PROMPT),
+        'registry_version': REGISTRY_VERSION,
+        'registry_hash': content_hash({f: registry_json_schema(f) for f in config['families']}),
+        'module_source_hash': _source_hash(),
+        'families': families,
+    }
     request['request_id'] = content_hash(request)
-    request['instructions'] = (PROMPT + '\nManual exchange: return exactly one response envelope following response_schema. '
+    request['instructions'] = (
+        PROMPT + '\nManual exchange: return exactly one response envelope following response_schema. '
         'Copy all envelope identities exactly. Supply one candidate for each requested family, in that order. '
         'In this manual v1 mode, rules MUST be {} and every parameter MUST be an integer as specified by response_schema. '
-        'Return JSON only. Origin cannot be verified by this application.')
+        'Return JSON only. Origin cannot be verified by this application.'
+    )
     props = {key: {'const': request[key]} for key in ('schema_version', 'request_id', 'data_hash', 'config_hash')}
-    props['candidates'] = {'type': 'array', 'minItems': len(families), 'maxItems': len(families),
-                           'prefixItems': schemas, 'items': False}
-    request['response_schema'] = {'type': 'object', 'additionalProperties': False,
-        'required': list(props), 'properties': props}
+    props['candidates'] = {'type': 'array', 'minItems': len(families), 'maxItems': len(families), 'prefixItems': schemas, 'items': False}
+    request['response_schema'] = {'type': 'object', 'additionalProperties': False, 'required': list(props), 'properties': props}
     encoded = canonical_json(request).encode('utf-8')
     if len(encoded) > MAX_BYTES:
         raise ValidationError('Manual export exceeds byte budget')
@@ -118,9 +145,7 @@ def _checked_directory(path):
     path = Path(os.path.abspath(os.fspath(path)))
     for ancestor in reversed((path, *path.parents)):
         info = ancestor.lstat()
-        if (stat.S_ISLNK(info.st_mode) or
-                getattr(info, 'st_file_attributes', 0) & 0x400 or
-                not stat.S_ISDIR(info.st_mode)):
+        if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400 or not stat.S_ISDIR(info.st_mode):
             raise ValidationError('Manual export directory contains a link or reparse point')
     return path
 
@@ -170,8 +195,7 @@ def export_request_file(dataset, config, path):
                     stream.flush()
                     os.fsync(stream.fileno())
                 _checked_directory(parent)
-                link_kwargs = ({'src_dir_fd': directory_fd, 'dst_dir_fd': directory_fd}
-                               if directory_fd is not None else {})
+                link_kwargs = {'src_dir_fd': directory_fd, 'dst_dir_fd': directory_fd} if directory_fd is not None else {}
                 current = os.stat(tmp_name, follow_symlinks=False, **kwargs)
                 if (current.st_dev, current.st_ino) != (owned.st_dev, owned.st_ino):
                     raise ValidationError('Manual export temporary file changed')
@@ -232,15 +256,13 @@ def import_response(dataset, config, raw):
 def import_response_file(dataset, config, path):
     path = Path(path)
     info = path.lstat()
-    if (not stat.S_ISREG(info.st_mode) or info.st_size > MAX_BYTES or
-            getattr(info, 'st_file_attributes', 0) & 0x400):
+    if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_BYTES or getattr(info, 'st_file_attributes', 0) & 0x400:
         raise ValidationError('Manual import requires a bounded regular JSON file')
     # Nonblocking on POSIX also prevents a raced-in FIFO from blocking the UI.
     descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_NONBLOCK', 0) | getattr(os, 'O_NOFOLLOW', 0))
     with os.fdopen(descriptor, 'rb') as stream:
         opened = os.fstat(stream.fileno())
-        if (not stat.S_ISREG(opened.st_mode) or opened.st_size > MAX_BYTES or
-                (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino)):
+        if not stat.S_ISREG(opened.st_mode) or opened.st_size > MAX_BYTES or (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
             raise ValidationError('Manual import file changed or exceeds the byte limit')
         raw = stream.read(MAX_BYTES + 1)
     return import_response(dataset, config, raw)
@@ -253,6 +275,7 @@ class ManualGenerator:
     model binds package and this module's source into unchanged campaign identity.
     This is provenance, never proof of an actual ChatGPT response or model usage.
     """
+
     _package_json: bytes
     _seal: str
     mode = 'manual_unverified'

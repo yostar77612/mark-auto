@@ -1,4 +1,5 @@
 """Fixed desktop error catalogue. Exception values never become display/log text."""
+
 import sqlite3
 from .errors import ErrorCode, ErrorText, ERROR_LABELS, ERROR_TABLE
 
@@ -25,6 +26,7 @@ def exception_code(exc):
 
 def startup_error_code(exc):
     from quantlab.desktop_runtime import RuntimeSafetyError
+
     if isinstance(exc, RuntimeSafetyError) and len(exc.args) == 1 and type(exc.args[0]) is str:
         return {
             'This workspace requires a WAL-safe SQLite runtime (3.51.3 or newer)': 'startup_sqlite_old',

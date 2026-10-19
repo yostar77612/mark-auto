@@ -1,4 +1,5 @@
 """T9 repair: keyboard expiry parity and an independent legacy oracle."""
+
 import os
 import unittest
 from unittest.mock import patch
@@ -30,8 +31,7 @@ class ExpiryKeyboardParityTests(unittest.TestCase):
             old.expiries.table.setItem(0, column, QTableWidgetItem(value))
         typed.show()
         self.app.processEvents()
-        QTest.mouseClick(typed.expiries.findChild(QPushButton, 'instrument_expiries_add'),
-                         Qt.MouseButton.LeftButton)
+        QTest.mouseClick(typed.expiries.findChild(QPushButton, 'instrument_expiries_add'), Qt.MouseButton.LeftButton)
         table = typed.expiries.table
         for column, value in enumerate(values):
             table.setCurrentCell(0, column)
@@ -56,12 +56,15 @@ class ExpiryKeyboardParityTests(unittest.TestCase):
                 date.manual.setText(raw)
                 old.expiries.table.item(0, 1).setText(raw)
                 self.assertEqual(table.item(0, 1).text(), raw)
-                with self.assertRaises(ValidationError): old.build_payload()
-                with self.assertRaises(ValidationError): typed.build_payload()
+                with self.assertRaises(ValidationError):
+                    old.build_payload()
+                with self.assertRaises(ValidationError):
+                    typed.build_payload()
         date.setText(values[1])
         date.enabled_value.setChecked(False)
         self.assertEqual(date.manual.text(), '')
-        with self.assertRaises(ValidationError): typed.build_payload()
+        with self.assertRaises(ValidationError):
+            typed.build_payload()
 
 
 class LegacyOracleTests(unittest.TestCase):
@@ -74,8 +77,7 @@ class LegacyOracleTests(unittest.TestCase):
         with old_module() as old:
             self.assertIsNot(old.execute_ui_operation, ui.execute_ui_operation)
             self.assertNotIn('_UI_OPERATION_HANDLERS', vars(old))
-            with patch.dict(ui._UI_OPERATION_HANDLERS,
-                            ui_analysis_preview=mutated):
+            with patch.dict(ui._UI_OPERATION_HANDLERS, ui_analysis_preview=mutated):
                 legacy = exercise(old.execute_ui_operation)
                 current = exercise(ui.execute_ui_operation)
         self.assertIn('analysis_id', legacy['ui_analysis_preview']['result'])

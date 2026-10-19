@@ -1,4 +1,5 @@
 """Read-only capability observations must not imply client acceptance."""
+
 import ast
 import contextlib
 import errno
@@ -18,20 +19,17 @@ class WindowsGuestHostTests(unittest.TestCase):
     def test_missing_devices_and_cpu_info_are_observations_not_errors(self):
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / 'absent'
-            self.assertEqual(probe.kvm_availability(missing), {
-                'exists': False, 'character_device': False, 'readable': False,
-                'writable': False, 'stat_available': True})
-            self.assertEqual(probe.cpu_virtualization_flags(missing),
-                             {'readable': False, 'flags': []})
+            self.assertEqual(
+                probe.kvm_availability(missing), {'exists': False, 'character_device': False, 'readable': False, 'writable': False, 'stat_available': True}
+            )
+            self.assertEqual(probe.cpu_virtualization_flags(missing), {'readable': False, 'flags': []})
             self.assertFalse(probe.disk_capacity(missing)['available'])
 
     def test_cpu_metadata_is_allowlisted(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'cpuinfo'
-            path.write_text('Serial: private-host-id\nflags : vmx secret svm vmx\n'
-                            'model name: hidden\n', encoding='utf-8')
-            self.assertEqual(probe.cpu_virtualization_flags(path),
-                             {'readable': True, 'flags': ['svm', 'vmx']})
+            path.write_text('Serial: private-host-id\nflags : vmx secret svm vmx\nmodel name: hidden\n', encoding='utf-8')
+            self.assertEqual(probe.cpu_virtualization_flags(path), {'readable': True, 'flags': ['svm', 'vmx']})
 
     def test_access_check_does_not_open_device_or_change_permissions(self):
         device = Mock()
@@ -53,28 +51,40 @@ class WindowsGuestHostTests(unittest.TestCase):
         self.assertNotIn('private', json.dumps(result))
 
     def test_report_shape_excludes_host_identity_paths_and_environment(self):
-        with patch.object(probe.platform, 'system', return_value='Linux'), \
-                patch.object(probe.platform, 'release', return_value='6.0'), \
-                patch.object(probe.platform, 'machine', return_value='x86_64'), \
-                patch.object(probe.shutil, 'which', return_value='/private/tool'), \
-                patch.object(probe, 'kvm_availability', return_value={}), \
-                patch.object(probe, 'cpu_virtualization_flags', return_value={}):
+        with (
+            patch.object(probe.platform, 'system', return_value='Linux'),
+            patch.object(probe.platform, 'release', return_value='6.0'),
+            patch.object(probe.platform, 'machine', return_value='x86_64'),
+            patch.object(probe.shutil, 'which', return_value='/private/tool'),
+            patch.object(probe, 'kvm_availability', return_value={}),
+            patch.object(probe, 'cpu_virtualization_flags', return_value={}),
+        ):
             report = probe.collect_report(Path.cwd())
-        self.assertEqual(set(report), {'schema_version', 'observation_only',
-            'windows_client_acceptance', 'guest_started', 'os', 'kvm',
-            'cpu_virtualization', 'disk', 'tools_on_path', 'limits'})
+        self.assertEqual(
+            set(report),
+            {
+                'schema_version',
+                'observation_only',
+                'windows_client_acceptance',
+                'guest_started',
+                'os',
+                'kvm',
+                'cpu_virtualization',
+                'disk',
+                'tools_on_path',
+                'limits',
+            },
+        )
         self.assertEqual(report['windows_client_acceptance'], 'NOT_RUN')
         self.assertFalse(report['guest_started'])
         self.assertTrue(report['observation_only'])
-        self.assertEqual(report['os'], {'system': 'Linux', 'release': '6.0',
-                                       'architecture': 'x86_64'})
+        self.assertEqual(report['os'], {'system': 'Linux', 'release': '6.0', 'architecture': 'x86_64'})
         self.assertEqual(set(report['disk']), {'workspace', 'temporary'})
         self.assertTrue(all(report['tools_on_path'].values()))
         self.assertNotIn('/private', json.dumps(report))
 
     def test_default_report_never_calls_device_query(self):
-        with patch.object(probe, 'query_kvm_api') as query, \
-                patch.object(probe.os, 'open') as device_open:
+        with patch.object(probe, 'query_kvm_api') as query, patch.object(probe.os, 'open') as device_open:
             report = probe.collect_report(Path.cwd())
         query.assert_not_called()
         device_open.assert_not_called()
@@ -103,17 +113,23 @@ class KvmApiQueryTests(unittest.TestCase):
         # Replace the entire OS interface: these tests cannot touch a device
         # even on a host with /dev/kvm and passwordless sudo.
         self.os = SimpleNamespace(
-            O_RDWR=2, O_CLOEXEC=0x80000, O_NOFOLLOW=0x20000, O_NONBLOCK=0x800,
+            O_RDWR=2,
+            O_CLOEXEC=0x80000,
+            O_NOFOLLOW=0x20000,
+            O_NONBLOCK=0x800,
             open=Mock(return_value=7),
-            fstat=Mock(return_value=SimpleNamespace(st_mode=stat.S_IFCHR,
-                                                  st_rdev=123)),
-            major=Mock(return_value=10), minor=Mock(return_value=232),
-            close=Mock())
+            fstat=Mock(return_value=SimpleNamespace(st_mode=stat.S_IFCHR, st_rdev=123)),
+            major=Mock(return_value=10),
+            minor=Mock(return_value=232),
+            close=Mock(),
+        )
         self.fcntl = SimpleNamespace(ioctl=Mock(side_effect=[12, 1, 1, 4, 256]))
         for target, name, value in (
-                (probe, 'os', self.os), (probe, 'fcntl', self.fcntl),
-                (probe.platform, 'system', Mock(return_value='Linux')),
-                (probe.platform, 'machine', Mock(return_value='x86_64'))):
+            (probe, 'os', self.os),
+            (probe, 'fcntl', self.fcntl),
+            (probe.platform, 'system', Mock(return_value='Linux')),
+            (probe.platform, 'machine', Mock(return_value='x86_64')),
+        ):
             patcher = patch.object(target, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -127,9 +143,7 @@ class KvmApiQueryTests(unittest.TestCase):
         self.os.fstat.assert_called_once_with(7)
         self.os.major.assert_called_once_with(123)
         self.os.minor.assert_called_once_with(123)
-        self.assertEqual(self.fcntl.ioctl.call_args_list, [
-            call(7, 0xAE00, 0), call(7, 0xAE03, 0), call(7, 0xAE03, 3),
-            call(7, 0xAE03, 9), call(7, 0xAE03, 66)])
+        self.assertEqual(self.fcntl.ioctl.call_args_list, [call(7, 0xAE00, 0), call(7, 0xAE03, 0), call(7, 0xAE03, 3), call(7, 0xAE03, 9), call(7, 0xAE03, 66)])
         self.assertEqual(result['status'], 'api_available')
         self.assertEqual(result['api_version'], 12)
         self.assertEqual(result['extensions']['KVM_CAP_NR_VCPUS']['value'], 4)
@@ -142,8 +156,7 @@ class KvmApiQueryTests(unittest.TestCase):
         self.assertTrue(result['observation_only'])
         self.assertFalse(result['guest_started'])
         self.assertEqual(result['windows_client_acceptance'], 'NOT_RUN')
-        self.assertEqual(set(result), {'schema_version', 'observation_only',
-            'windows_client_acceptance', 'guest_started', 'kvm_api', 'limits'})
+        self.assertEqual(set(result), {'schema_version', 'observation_only', 'windows_client_acceptance', 'guest_started', 'kvm_api', 'limits'})
         self.assertIn('not a product acceptance gate', ' '.join(result['limits']))
         self.assert_closed()
 
@@ -173,9 +186,13 @@ class KvmApiQueryTests(unittest.TestCase):
 
     def test_open_errors_are_sanitized_and_do_not_close_an_unopened_fd(self):
         for number, status in (
-                (errno.ENOENT, 'device_missing'), (errno.EACCES, 'permission_denied'),
-                (errno.EPERM, 'permission_denied'), (errno.ELOOP, 'symlink_refused'),
-                (errno.ENODEV, 'query_failed'), (errno.EIO, 'query_failed')):
+            (errno.ENOENT, 'device_missing'),
+            (errno.EACCES, 'permission_denied'),
+            (errno.EPERM, 'permission_denied'),
+            (errno.ELOOP, 'symlink_refused'),
+            (errno.ENODEV, 'query_failed'),
+            (errno.EIO, 'query_failed'),
+        ):
             with self.subTest(number=number):
                 self.os.open.side_effect = OSError(number, 'private-host-id /private/path')
                 result = probe.query_kvm_api()
@@ -204,8 +221,7 @@ class KvmApiQueryTests(unittest.TestCase):
     def test_fstat_failure_is_sanitized_and_closes_fd(self):
         self.os.fstat.side_effect = OSError(errno.EIO, 'private-host-id')
         result = probe.query_kvm_api()
-        self.assertEqual((result['status'], result['stage'], result['errno']),
-                         ('query_failed', 'fstat', errno.EIO))
+        self.assertEqual((result['status'], result['stage'], result['errno']), ('query_failed', 'fstat', errno.EIO))
         self.assertNotIn('private', json.dumps(result))
         self.fcntl.ioctl.assert_not_called()
         self.assert_closed()
@@ -213,8 +229,7 @@ class KvmApiQueryTests(unittest.TestCase):
     def test_api_query_error_does_not_query_extensions_and_closes_fd(self):
         self.fcntl.ioctl.side_effect = OSError(errno.ENOTTY, 'private-host-id')
         result = probe.query_kvm_api()
-        self.assertEqual((result['status'], result['stage'], result['errno']),
-                         ('query_failed', 'api_version', errno.ENOTTY))
+        self.assertEqual((result['status'], result['stage'], result['errno']), ('query_failed', 'api_version', errno.ENOTTY))
         self.assertEqual(result['extensions'], {})
         self.assertNotIn('private', json.dumps(result))
         self.fcntl.ioctl.assert_called_once_with(7, 0xAE00, 0)
@@ -231,10 +246,8 @@ class KvmApiQueryTests(unittest.TestCase):
     def test_extension_unsupported_and_query_error_are_distinct(self):
         self.fcntl.ioctl.side_effect = [12, 0, OSError(errno.EINVAL, 'private-host-id'), 4, -1]
         result = probe.query_kvm_api()
-        self.assertEqual(result['extensions']['KVM_CAP_IRQCHIP'], {
-            'status': 'unsupported', 'value': 0, 'errno': None})
-        self.assertEqual(result['extensions']['KVM_CAP_USER_MEMORY'], {
-            'status': 'query_failed', 'value': None, 'errno': errno.EINVAL})
+        self.assertEqual(result['extensions']['KVM_CAP_IRQCHIP'], {'status': 'unsupported', 'value': 0, 'errno': None})
+        self.assertEqual(result['extensions']['KVM_CAP_USER_MEMORY'], {'status': 'query_failed', 'value': None, 'errno': errno.EINVAL})
         self.assertEqual(result['extensions']['KVM_CAP_NR_VCPUS']['value'], 4)
         self.assertEqual(result['extensions']['KVM_CAP_MAX_VCPUS']['status'], 'invalid_result')
         self.assertNotIn('private', json.dumps(result))
@@ -257,9 +270,7 @@ class KvmApiQueryTests(unittest.TestCase):
 
     def test_stdout_only_cli_does_not_write_files_or_collect_host_identity(self):
         output = io.StringIO()
-        with contextlib.redirect_stdout(output), \
-                patch.object(probe, 'write_report') as write, \
-                patch.object(probe, 'collect_report') as collect:
+        with contextlib.redirect_stdout(output), patch.object(probe, 'write_report') as write, patch.object(probe, 'collect_report') as collect:
             self.assertEqual(probe.main(['--query-kvm-api']), 0)
         result = json.loads(output.getvalue())
         self.assertEqual(result['kvm_api']['status'], 'api_available')
@@ -276,11 +287,15 @@ class KvmApiQueryTests(unittest.TestCase):
         self.assertEqual(result['windows_client_acceptance'], 'NOT_RUN')
 
     def test_cli_refuses_arbitrary_paths_query_options_and_abbreviations(self):
-        for args in ([], ['--query-kvm-api', '--output', '/private/output'],
-                     ['--query-kvm-api', '/dev/another'],
-                     ['--query-kvm-api', '--device', '/dev/another'],
-                     ['--query-kvm-api', '--ioctl', '0xAE01'],
-                     ['--query-kvm-api', '--capability', '999'], ['--query-kvm']):
+        for args in (
+            [],
+            ['--query-kvm-api', '--output', '/private/output'],
+            ['--query-kvm-api', '/dev/another'],
+            ['--query-kvm-api', '--device', '/dev/another'],
+            ['--query-kvm-api', '--ioctl', '0xAE01'],
+            ['--query-kvm-api', '--capability', '999'],
+            ['--query-kvm'],
+        ):
             with self.subTest(args=args), contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:
                     probe.main(args)
@@ -296,13 +311,14 @@ class KvmWorkflowContractTests(unittest.TestCase):
         cls.quality = cls.workflow.split('  quality:\n', 1)[1].split('  security:\n', 1)[0]
 
     def test_fixed_timed_isolated_root_invocation_stdout_is_unprivileged(self):
-        expected = ('if timeout --kill-after=2s 10s sudo -n /usr/bin/python3 -I -B -S '
-                    'tools/probe_windows_guest_host.py --query-kvm-api > '
-                    'dist/validation/windows-guest-kvm-api.json 2>/dev/null; then')
+        expected = (
+            'if timeout --kill-after=2s 10s sudo -n /usr/bin/python3 -I -B -S '
+            'tools/probe_windows_guest_host.py --query-kvm-api > '
+            'dist/validation/windows-guest-kvm-api.json 2>/dev/null; then'
+        )
         self.assertIn(expected, self.quality)
         self.assertEqual(self.quality.count('sudo '), 1)
-        for forbidden in ('sudo sh', 'sudo bash', 'sudo tee', 'chmod', 'chown',
-                          'usermod', 'modprobe', 'eval ', 'sh -c', 'bash -c'):
+        for forbidden in ('sudo sh', 'sudo bash', 'sudo tee', 'chmod', 'chown', 'usermod', 'modprobe', 'eval ', 'sh -c', 'bash -c'):
             self.assertNotIn(forbidden, self.quality)
         self.assertIn('shell: bash', self.quality)
 
@@ -317,18 +333,14 @@ class KvmWorkflowContractTests(unittest.TestCase):
         self.assertNotIn('continue-on-error', self.workflow)
         self.assertNotIn('|| true', self.quality)
         self.assertIn('- run: python tools/quality_gate.py --history', self.quality)
-        self.assertIn('- run: python -m unittest discover -s tests -p test_quality_gate.py -v',
-                      self.quality)
-        self.assertIn('run: python -m unittest discover -s tests -p test_windows_guest_host.py -v',
-                      self.quality)
+        self.assertIn('- run: python -m unittest discover -s tests -p test_quality_gate.py -v', self.quality)
+        self.assertIn('run: python -m unittest discover -s tests -p test_windows_guest_host.py -v', self.quality)
 
     def test_both_separate_reports_are_preserved_even_after_failure(self):
-        self.assertIn('run: python tools/probe_windows_guest_host.py --output '
-                      'dist/validation/windows-guest-host.json', self.quality)
+        self.assertIn('run: python tools/probe_windows_guest_host.py --output dist/validation/windows-guest-host.json', self.quality)
         upload = self.quality.split('      - name: Preserve host availability evidence', 1)[1]
         self.assertIn('if: always()', upload)
-        self.assertIn('path: |\n            dist/validation/windows-guest-host.json\n'
-                      '            dist/validation/windows-guest-kvm-api.json', upload)
+        self.assertIn('path: |\n            dist/validation/windows-guest-host.json\n            dist/validation/windows-guest-kvm-api.json', upload)
 
     def test_privileged_script_imports_only_standard_library_and_no_process_launch(self):
         tree = ast.parse((self.root / 'tools/probe_windows_guest_host.py').read_text(encoding='utf-8'))
@@ -338,10 +350,8 @@ class KvmWorkflowContractTests(unittest.TestCase):
                 imports.update(item.name for item in node.names)
             elif isinstance(node, ast.ImportFrom):
                 imports.add(node.module)
-        self.assertEqual(imports, {'__future__', 'argparse', 'errno', 'fcntl', 'json',
-                                  'os', 'pathlib', 'platform', 'shutil', 'stat', 'tempfile'})
-        calls = {node.func.id for node in ast.walk(tree)
-                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
+        self.assertEqual(imports, {'__future__', 'argparse', 'errno', 'fcntl', 'json', 'os', 'pathlib', 'platform', 'shutil', 'stat', 'tempfile'})
+        calls = {node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
         self.assertFalse(calls & {'eval', 'exec', 'compile', '__import__'})
 
 

@@ -1,4 +1,5 @@
 """Version metadata is deterministic project identity, never proof of signing."""
+
 import ast
 from pathlib import Path
 import runpy
@@ -12,13 +13,23 @@ RESOURCE = runpy.run_path(str(ROOT / 'packaging/version_resource.py'))
 class VersionResourceTests(unittest.TestCase):
     def test_valid_versions_have_four_bounded_numeric_parts(self):
         self.assertEqual(RESOURCE['version_tuple']('0.2.2'), (0, 2, 2, 0))
-        self.assertEqual(RESOURCE['version_tuple']('65535.65535.65535'),
-                         (65535, 65535, 65535, 0))
+        self.assertEqual(RESOURCE['version_tuple']('65535.65535.65535'), (65535, 65535, 65535, 0))
 
     def test_rejects_injection_unicode_overflow_and_noncanonical_versions(self):
-        for value in ('', '1.2', '1.2.3.4', '1.2.3-beta', '-1.2.3', '01.2.3',
-                      '1.2.65536', '999999999.1.1', '١.٢.٣', '1.2.3\n',
-                      "1.2.3');__import__('os')", None):
+        for value in (
+            '',
+            '1.2',
+            '1.2.3.4',
+            '1.2.3-beta',
+            '-1.2.3',
+            '01.2.3',
+            '1.2.65536',
+            '999999999.1.1',
+            '١.٢.٣',
+            '1.2.3\n',
+            "1.2.3');__import__('os')",
+            None,
+        ):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 RESOURCE['render_version_resource'](value)
 
@@ -26,14 +37,23 @@ class VersionResourceTests(unittest.TestCase):
         source = RESOURCE['render_version_resource']('0.2.2')
         tree = ast.parse(source, mode='eval')
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
-        strings = {ast.literal_eval(call.args[0]): ast.literal_eval(call.args[1])
-                   for call in calls if isinstance(call.func, ast.Name)
-                   and call.func.id == 'StringStruct'}
-        self.assertEqual(strings, {
-            'CompanyName': 'Mark Auto contributors', 'FileDescription': 'MarkAuto',
-            'FileVersion': '0.2.2', 'InternalName': 'MarkAuto',
-            'OriginalFilename': 'MarkAuto.exe', 'ProductName': 'MarkAuto',
-            'ProductVersion': '0.2.2'})
+        strings = {
+            ast.literal_eval(call.args[0]): ast.literal_eval(call.args[1])
+            for call in calls
+            if isinstance(call.func, ast.Name) and call.func.id == 'StringStruct'
+        }
+        self.assertEqual(
+            strings,
+            {
+                'CompanyName': 'Mark Auto contributors',
+                'FileDescription': 'MarkAuto',
+                'FileVersion': '0.2.2',
+                'InternalName': 'MarkAuto',
+                'OriginalFilename': 'MarkAuto.exe',
+                'ProductName': 'MarkAuto',
+                'ProductVersion': '0.2.2',
+            },
+        )
         fixed = next(call for call in calls if call.func.id == 'FixedFileInfo')
         fields = {entry.arg: ast.literal_eval(entry.value) for entry in fixed.keywords}
         self.assertEqual(fields['filevers'], (0, 2, 2, 0))
@@ -58,8 +78,16 @@ class VersionResourceTests(unittest.TestCase):
         self.assertLess(build.index('packaging/version_resource.py'), build.index('-m PyInstaller'))
         self.assertLess(build.index('-m PyInstaller'), build.index('[System.Diagnostics.FileVersionInfo]'))
         self.assertLess(build.index('[System.Diagnostics.FileVersionInfo]'), build.index('packaging/payload_inventory.py'))
-        for field in ('FileVersion', 'ProductVersion', 'ProductName', 'CompanyName',
-                      'OriginalFilename', 'InternalName', 'FilePrivatePart', 'ProductPrivatePart'):
+        for field in (
+            'FileVersion',
+            'ProductVersion',
+            'ProductName',
+            'CompanyName',
+            'OriginalFilename',
+            'InternalName',
+            'FilePrivatePart',
+            'ProductPrivatePart',
+        ):
             self.assertIn('$nativeVersion.' + field, build)
         self.assertIn('signature_verified = $false', build)
         # Lower installer fixture deliberately wraps the same candidate payload.

@@ -5,6 +5,7 @@ The explicit --query-kvm-api mode opens only that fixed device and issues fixed
 read-only system queries. Neither mode creates or starts a guest, changes
 permissions, inspects credentials, or establishes Windows acceptance.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,16 +32,24 @@ KVM_GET_API_VERSION = 0xAE00
 KVM_CHECK_EXTENSION = 0xAE03
 KVM_API_VERSION = 12
 KVM_QUERY_CAPABILITIES = (
-    ('KVM_CAP_IRQCHIP', 0), ('KVM_CAP_USER_MEMORY', 3),
-    ('KVM_CAP_NR_VCPUS', 9), ('KVM_CAP_MAX_VCPUS', 66),
+    ('KVM_CAP_IRQCHIP', 0),
+    ('KVM_CAP_USER_MEMORY', 3),
+    ('KVM_CAP_NR_VCPUS', 9),
+    ('KVM_CAP_MAX_VCPUS', 66),
 )
 
 
 def query_kvm_api():
     """Explicit opt-in: fixed control-device queries only, never a guest."""
-    result = {'status': 'not_queried', 'stage': 'platform', 'errno': None,
-              'api_version': None, 'extensions': {},
-              'close_status': 'not_opened', 'close_errno': None}
+    result = {
+        'status': 'not_queried',
+        'stage': 'platform',
+        'errno': None,
+        'api_version': None,
+        'extensions': {},
+        'close_status': 'not_opened',
+        'close_errno': None,
+    }
     if platform.system() != 'Linux':
         result['status'] = 'unsupported_platform'
         return result
@@ -48,8 +57,7 @@ def query_kvm_api():
     if platform.machine().lower() not in ('x86_64', 'amd64'):
         result['status'] = 'unsupported_architecture'
         return result
-    if fcntl is None or not all(hasattr(os, flag) for flag in (
-            'O_CLOEXEC', 'O_NOFOLLOW', 'O_NONBLOCK')):
+    if fcntl is None or not all(hasattr(os, flag) for flag in ('O_CLOEXEC', 'O_NOFOLLOW', 'O_NONBLOCK')):
         result['status'] = 'query_support_unavailable'
         return result
     fd = None
@@ -57,8 +65,7 @@ def query_kvm_api():
         result['stage'] = 'open'
         # O_RDWR follows the KVM API opening convention. Only observation
         # ioctls below are allowed; no write, mmap, VM, VCPU or RUN operation.
-        fd = os.open('/dev/kvm', os.O_RDWR | os.O_CLOEXEC | os.O_NOFOLLOW
-                     | os.O_NONBLOCK)
+        fd = os.open('/dev/kvm', os.O_RDWR | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
         result['stage'] = 'fstat'
         device = os.fstat(fd)
         if not stat.S_ISCHR(device.st_mode):
@@ -82,12 +89,12 @@ def query_kvm_api():
             try:
                 value = fcntl.ioctl(fd, KVM_CHECK_EXTENSION, capability)
                 result['extensions'][name] = {
-                    'status': ('supported' if value > 0 else
-                               'unsupported' if value == 0 else 'invalid_result'),
-                    'value': value, 'errno': None}
+                    'status': ('supported' if value > 0 else 'unsupported' if value == 0 else 'invalid_result'),
+                    'value': value,
+                    'errno': None,
+                }
             except OSError as error:
-                result['extensions'][name] = {
-                    'status': 'query_failed', 'value': None, 'errno': error.errno}
+                result['extensions'][name] = {'status': 'query_failed', 'value': None, 'errno': error.errno}
         result['stage'] = 'complete'
     except OSError as error:
         result['errno'] = error.errno
@@ -144,21 +151,22 @@ def kvm_availability(path=Path('/dev/kvm')):
     try:
         mode = path.stat().st_mode
     except FileNotFoundError:
-        return {'exists': False, 'character_device': False,
-                'readable': False, 'writable': False, 'stat_available': True}
+        return {'exists': False, 'character_device': False, 'readable': False, 'writable': False, 'stat_available': True}
     except OSError:
-        return {'exists': None, 'character_device': None,
-                'readable': False, 'writable': False, 'stat_available': False}
-    return {'exists': True, 'character_device': stat.S_ISCHR(mode),
-            'readable': os.access(path, os.R_OK),
-            'writable': os.access(path, os.W_OK), 'stat_available': True}
+        return {'exists': None, 'character_device': None, 'readable': False, 'writable': False, 'stat_available': False}
+    return {
+        'exists': True,
+        'character_device': stat.S_ISCHR(mode),
+        'readable': os.access(path, os.R_OK),
+        'writable': os.access(path, os.W_OK),
+        'stat_available': True,
+    }
 
 
 def disk_capacity(path):
     try:
         usage = shutil.disk_usage(path)
-        return {'available': True, 'total_bytes': usage.total,
-                'free_bytes': usage.free}
+        return {'available': True, 'total_bytes': usage.total, 'free_bytes': usage.free}
     except OSError:
         return {'available': False, 'total_bytes': None, 'free_bytes': None}
 
@@ -169,14 +177,11 @@ def collect_report(workspace):
         'observation_only': True,
         'windows_client_acceptance': 'NOT_RUN',
         'guest_started': False,
-        'os': {'system': platform.system(), 'release': platform.release(),
-               'architecture': platform.machine()},
+        'os': {'system': platform.system(), 'release': platform.release(), 'architecture': platform.machine()},
         'kvm': kvm_availability(),
         'cpu_virtualization': cpu_virtualization_flags(),
-        'disk': {'workspace': disk_capacity(workspace),
-                 'temporary': disk_capacity(tempfile.gettempdir())},
-        'tools_on_path': {name: shutil.which(name) is not None for name in (
-            'qemu-system-x86_64', 'qemu-img', 'swtpm')},
+        'disk': {'workspace': disk_capacity(workspace), 'temporary': disk_capacity(tempfile.gettempdir())},
+        'tools_on_path': {name: shutil.which(name) is not None for name in ('qemu-system-x86_64', 'qemu-img', 'swtpm')},
         'limits': [
             'Device access flags do not establish usable KVM or nested virtualization.',
             'No OS image, guest license, TPM, Secure Boot, or clean-client test was verified.',
@@ -189,8 +194,7 @@ def write_report(path, report):
     # Atomic output; a failed write cannot leave a partially valid JSON report.
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8',
-                                         dir=path.parent, delete=False) as stream:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, delete=False) as stream:
             temporary = Path(stream.name)
             json.dump(report, stream, indent=2, sort_keys=True)
             stream.write('\n')
@@ -204,8 +208,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--output', type=Path, help='Write the no-open availability report.')
-    mode.add_argument('--query-kvm-api', action='store_true',
-                      help='Opt in to fixed /dev/kvm query ioctls; JSON to stdout only.')
+    mode.add_argument('--query-kvm-api', action='store_true', help='Opt in to fixed /dev/kvm query ioctls; JSON to stdout only.')
     args = parser.parse_args(argv)
     if args.query_kvm_api:
         # The unprivileged caller owns stdout redirection. This mode does not

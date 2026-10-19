@@ -1,15 +1,18 @@
 """Structural budgets and locked source guards (checkout newline independent) for T11."""
+
 import ast
 import hashlib
 from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGETS = {'quantlab/saved_candidate_pool.py': 'admit_saved_campaign_pool',
-           'quantlab/desktop_runtime.py': 'JobManager.start',
-           'quantlab/walk_forward.py': 'run_walk_forward',
-           'quantlab/paper.py': '_reduce',
-           'quantlab/chart_data.py': 'aggregate_bars'}
+TARGETS = {
+    'quantlab/saved_candidate_pool.py': 'admit_saved_campaign_pool',
+    'quantlab/desktop_runtime.py': 'JobManager.start',
+    'quantlab/walk_forward.py': 'run_walk_forward',
+    'quantlab/paper.py': '_reduce',
+    'quantlab/chart_data.py': 'aggregate_bars',
+}
 
 
 class FunctionLengthTests(unittest.TestCase):
@@ -19,8 +22,7 @@ class FunctionLengthTests(unittest.TestCase):
                 tree = ast.parse((ROOT / filename).read_text(encoding='utf-8-sig'))
                 parts = qualified.split('.')
                 for name in parts:
-                    tree = next(node for node in tree.body if isinstance(
-                        node, (ast.FunctionDef, ast.ClassDef)) and node.name == name)
+                    tree = next(node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name == name)
                 self.assertLessEqual(tree.end_lineno - tree.lineno + 1, 80)
 
     def test_locked_source_text(self):

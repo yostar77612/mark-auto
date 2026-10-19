@@ -1,5 +1,13 @@
 {
   "schema_version": 2,
+  "ruff_t13_part_a": {
+    "plan_item": "P2-B5",
+    "status": "PART_A_CONFIGURED_FORMATTING_PENDING",
+    "verification": "7 new static tests PASS; 57 focused tests PASS with one existing skip using execution-only temp ACL shim; 11 additional workflow tests PASS; static gate zero findings; ruff check PASS; Python 3.11 compile 316 files PASS. Format check reports 269 pending files, 30 unchanged; no formatting applied. Full suite and remote CI controller-owned.",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T13 part A: pinned Ruff enforcement (P2-B5)",
+    "evidence": "tests/test_ruff_config.py; docs/analysis/t13_lint_decisions.md; docs/analysis/t13_test_edits.json",
+    "coverage": "Configuration, hash lock, CI/audit/publication and aggregate requirements. No bulk formatting; formatter debt and full CI acceptance remain part B/controller-owned."
+  },
   "developer_setup_t12": {
     "plan_item": "P2-B8",
     "contract": "IMPLEMENTATION_CONTRACTS.md: T12 part B: project-local developer setup (P2-B8)",

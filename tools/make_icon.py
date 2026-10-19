@@ -1,4 +1,5 @@
 """Generate the MarkAuto multi-size ICO deterministically, offline (stdlib only)."""
+
 from pathlib import Path
 import struct
 import zlib
@@ -29,7 +30,7 @@ def _png(size):
                     x, y = (col + (sx + 0.5) / 4) / size, (row + (sy + 0.5) / 4) / size
                     # Rounded square inset by 4%, with a 17% corner radius.
                     dx, dy = max(0.21 - x, 0, x - 0.79), max(0.21 - y, 0, y - 0.79)
-                    if dx * dx + dy * dy <= 0.17 ** 2:
+                    if dx * dx + dy * dy <= 0.17**2:
                         covered += 1
                         white += min(_distance(x, y, a, b) for a, b in zip(POINTS, POINTS[1:])) <= 0.035
             if covered:

@@ -1,0 +1,416 @@
+{
+  "task": "T13 part B",
+  "files": [
+    "docs/analysis/t13_golden_changes.json",
+    "docs/analysis/t13_lint_decisions.md",
+    "docs/analysis/t13_test_edits.json",
+    "tests/fixtures/ui_operations_golden.json"
+  ],
+  "changes": [
+    {
+      "key": "observations.ui_analysis_preview.result.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_preview.result.plan.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_preview.result.plan.binding.packet.implementation.indicators.py",
+      "old": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
+      "new": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_preview.result.plan.binding.packet.implementation.research_analysis.py",
+      "old": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6",
+      "new": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_preview.result.plan.binding.packet.packet_hash",
+      "old": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+      "new": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_preview.result.receipt_snapshot.provider_descriptor_hash",
+      "old": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+      "new": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.plan.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.plan.binding.packet.implementation.indicators.py",
+      "old": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
+      "new": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.plan.binding.packet.implementation.research_analysis.py",
+      "old": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6",
+      "new": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.plan.binding.packet.packet_hash",
+      "old": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+      "new": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.provider_descriptor.campaign_id",
+      "old": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_read.result.record.receipt_snapshot.provider_descriptor_hash",
+      "old": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+      "new": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.plan.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.plan.binding.packet.implementation.indicators.py",
+      "old": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
+      "new": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.plan.binding.packet.implementation.research_analysis.py",
+      "old": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6",
+      "new": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.plan.binding.packet.packet_hash",
+      "old": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+      "new": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.provider_descriptor.campaign_id",
+      "old": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_reconcile.result.record.receipt_snapshot.provider_descriptor_hash",
+      "old": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+      "new": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.plan.analysis_id",
+      "old": "98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.plan.binding.packet.implementation.indicators.py",
+      "old": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
+      "new": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.plan.binding.packet.implementation.research_analysis.py",
+      "old": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6",
+      "new": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.plan.binding.packet.packet_hash",
+      "old": "c653c9193cfd45cfe975fc0236e834a543bf9855d77dfede7b850e1b1dffa959",
+      "new": "d21454278cf8981cf3ddd8cf2af815e49dbdf0244cb8e0a16afe663e8fec36a5",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.provider_descriptor.campaign_id",
+      "old": "analysis-98c274838de0027b4577bca31526355536ae3f06331f52eaad9f129282c00cfe",
+      "new": "analysis-09a26cf0c607f025a94471fe0448351b66958bed8705241717f6f602b77969ff",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_analysis_run.result.record.receipt_snapshot.provider_descriptor_hash",
+      "old": "a93aa8fdff1f6f4044a2dfb38656de46208c5c0c7b531e24cf6292d40b54ac74",
+      "new": "13a60bd5c29c4caa98f8bcefbf2deb34b5fa3c6cd27e420b41a44a02059710bd",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/indicators.py",
+        "quantlab/research_analysis.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_campaign.result.request.module_source_hash",
+      "old": "a70084196c8d99bc49c1db09eb131d77699a579065c2a9bc7bf3553e227eaa68",
+      "new": "1e05c23de4b91150462195318135ce759e21584bf829d4ca5c9932fcb0a06aae",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/manual_exchange.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_campaign.result.request.request_id",
+      "old": "cd03e902969df1de28893a5a9828a8df41422fa5e252e3366ad7c7dfa5be6000",
+      "new": "c43a1320e8395105945ee31cbbefe9cabd3530df93daca93c731134dd32d08b6",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/manual_exchange.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_campaign.result.request.response_schema.properties.request_id.const",
+      "old": "cd03e902969df1de28893a5a9828a8df41422fa5e252e3366ad7c7dfa5be6000",
+      "new": "c43a1320e8395105945ee31cbbefe9cabd3530df93daca93c731134dd32d08b6",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/manual_exchange.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    },
+    {
+      "key": "observations.ui_walk_forward_preview.result.source_hashes.walk_forward.py",
+      "old": "8deca9f555ed1a390c0e90a36a07e655bc263ac887b9c7021846c2f9b7684fe0",
+      "new": "0320356b07c982c24b99e546f53510b5a83d272922be326a72221b7dd01c414e",
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "source_files": [
+        "quantlab/walk_forward.py"
+      ],
+      "verification": "Recomputed by tests.test_ui_operations_registry.exercise for both current and archived dispatcher; outputs equal. Source ASTs equal HEAD."
+    }
+  ],
+  "source_proofs": {
+    "quantlab/indicators.py": {
+      "ast_equal": true,
+      "base_blob_sha256": "e805859f8db64884756138fdf3dcafc873196dd4e79b2864aca25524f31794ca",
+      "working_sha256": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d",
+      "prior_working_copy_computation": "sha256 of CRLF checkout bytes (base blob with CRLF checkout conversion)",
+      "recomputed_old_source_hash": "8bb6c0cfe9aab03c5ed2e9c836c1a5fbbad14743d44ffe6f82e2c19f2dc98fef",
+      "recomputed_new_source_hash": "ba7bdac5c4b0cfed7b623ca60fca490b71a2ce19a517f7098bda4298b1b87d4d"
+    },
+    "quantlab/research_analysis.py": {
+      "ast_equal": true,
+      "base_blob_sha256": "4d1781e52039d5888402fedab59d681934fab03369e9fb2dfe806efebf963281",
+      "working_sha256": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2",
+      "prior_working_copy_computation": "sha256 of CRLF checkout bytes (base blob with CRLF checkout conversion)",
+      "recomputed_old_source_hash": "3f835a0d3f119a76edf4c342fcb2014e8965316a5e1276f02731ccd9ea10d0a6",
+      "recomputed_new_source_hash": "d85e1de35b133e5111755bd9d13cab61096ec7340149ae1dfdbb256c854803c2"
+    },
+    "quantlab/manual_exchange.py": {
+      "ast_equal": true,
+      "base_blob_sha256": "86cff0e6f0500b6f4f9d885e8c2945b1775646f93916b43f5899755f652b60ce",
+      "working_sha256": "f08c4f16e017b1f46fda323c3c098e57e86c359cc8ad061220405a293ed3ace6",
+      "prior_working_copy_computation": "content_hash of newline-normalized source text",
+      "recomputed_old_source_hash": "a70084196c8d99bc49c1db09eb131d77699a579065c2a9bc7bf3553e227eaa68",
+      "recomputed_new_source_hash": "f08c4f16e017b1f46fda323c3c098e57e86c359cc8ad061220405a293ed3ace6"
+    },
+    "quantlab/walk_forward.py": {
+      "ast_equal": true,
+      "base_blob_sha256": "eb8b966dc790639778d9fc1337f2241b7ead114f6baf3dee259d555b77af0a01",
+      "working_sha256": "a4d8bb0c3ec17f005be62755b3e4d07e2e073cdbb78d06fab7d07feae246a333",
+      "prior_working_copy_computation": "content_hash of newline-normalized source text",
+      "recomputed_old_source_hash": "8deca9f555ed1a390c0e90a36a07e655bc263ac887b9c7021846c2f9b7684fe0",
+      "recomputed_new_source_hash": "a4d8bb0c3ec17f005be62755b3e4d07e2e073cdbb78d06fab7d07feae246a333"
+    }
+  },
+  "class_line_counts": {
+    "MainWindow": {
+      "file": "desktop_ui.py",
+      "before": 394,
+      "after": 394
+    },
+    "BacktestPage": {
+      "file": "desktop_pages/backtest.py",
+      "before": 56,
+      "after": 87
+    },
+    "ComparePage": {
+      "file": "desktop_pages/compare.py",
+      "before": 282,
+      "after": 405
+    },
+    "DataPage": {
+      "file": "desktop_pages/data.py",
+      "before": 75,
+      "after": 101
+    },
+    "MarketPage": {
+      "file": "desktop_pages/market.py",
+      "before": 143,
+      "after": 184
+    },
+    "PaperPage": {
+      "file": "desktop_pages/paper.py",
+      "before": 153,
+      "after": 247
+    },
+    "SettingsPage": {
+      "file": "desktop_pages/settings.py",
+      "before": 269,
+      "after": 287
+    },
+    "StrategyPage": {
+      "file": "desktop_pages/strategy.py",
+      "before": 346,
+      "after": 443
+    }
+  }
+}

@@ -1,4 +1,5 @@
 """Release boundary: research is import-safe and never depends on legacy trading."""
+
 import ast
 import subprocess
 import sys
@@ -42,8 +43,7 @@ for path in sorted((root / "quantlab").glob("*.py")):
 assert "trader" not in sys.modules and "shioaji" not in sys.modules
 assert set(root.iterdir()) == before
 '''
-        result = subprocess.run([sys.executable, "-B", "-c", code], cwd=ROOT,
-                                capture_output=True, text=True, timeout=30)
+        result = subprocess.run([sys.executable, "-B", "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_quantlab_contains_no_dynamic_code_execution(self):

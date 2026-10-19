@@ -2,6 +2,7 @@
 
 These controls do not run, shorten, mock out, or replace product test workloads.
 """
+
 import contextlib
 import copy
 import io
@@ -48,51 +49,73 @@ EXPECTED_WINDOWS_CORE_SKIPS = {
     "test_ui.UITests.test_empty_error_and_import": "Optional Streamlit is not installed; UI verification not run",
     "test_ui.UITests.test_paper_repeated_intent_stop_and_reconciliation_error": "Optional Streamlit is not installed; UI verification not run",
     "test_ui.UITests.test_repeated_run_selection_and_restart": "Optional Streamlit is not installed; UI verification not run",
-    "test_ui.UITests.test_selected_strategy_paper_replay": "Optional Streamlit is not installed; UI verification not run"
+    "test_ui.UITests.test_selected_strategy_paper_replay": "Optional Streamlit is not installed; UI verification not run",
 }
 
 
 def _fixture_cases(module, names=('test_b', 'test_a'), class_name='Fixture'):
-    case_type = type(class_name, (unittest.TestCase,), {
-        '__module__': module, **{name: lambda self: None for name in names},
-    })
+    case_type = type(
+        class_name,
+        (unittest.TestCase,),
+        {
+            '__module__': module,
+            **{name: lambda self: None for name in names},
+        },
+    )
     return [case_type(name) for name in names]
 
 
-EXPECTED_PAPER_MODULES = frozenset({
-    'test_paper', 'test_paper_diagnostics', 'test_paper_replay',
-    'test_paper_replay_policy', 'test_paper_replay_storage',
-    'test_paper_replay_timeout_diagnostics', 'test_paper_replay_wal',
-})
+EXPECTED_PAPER_MODULES = frozenset(
+    {
+        'test_paper',
+        'test_paper_diagnostics',
+        'test_paper_replay',
+        'test_paper_replay_policy',
+        'test_paper_replay_storage',
+        'test_paper_replay_timeout_diagnostics',
+        'test_paper_replay_wal',
+    }
+)
 
 
 def _expected_shard(module):
     # Independent assertion of the versioned rule, not the production classifier.
-    if module.startswith('test_desktop_') or module in (
-            'test_analysis_recovery_ui', 'test_market_history_ui'):
+    if module.startswith('test_desktop_') or module in ('test_analysis_recovery_ui', 'test_market_history_ui'):
         return 'desktop'
     return 'paper' if module in EXPECTED_PAPER_MODULES else 'remaining'
 
 
 class CoreShardAssignmentTests(unittest.TestCase):
     def suite(self):
-        modules = ('test_analysis_recovery_ui', 'test_core_future',
-                   'test_desktop_future', 'test_market_history_ui',
-                   'test_other_future', 'test_paper', 'test_paper_replay_wal')
-        return unittest.TestSuite(
-            unittest.TestSuite(_fixture_cases(module)) for module in modules)
+        modules = (
+            'test_analysis_recovery_ui',
+            'test_core_future',
+            'test_desktop_future',
+            'test_market_history_ui',
+            'test_other_future',
+            'test_paper',
+            'test_paper_replay_wal',
+        )
+        return unittest.TestSuite(unittest.TestSuite(_fixture_cases(module)) for module in modules)
 
     def test_versioned_rule_and_future_modules(self):
         self.assertEqual(group.CORE_SHARDS, ('desktop', 'paper', 'remaining'))
         self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v2')
         self.assertEqual(group.PAPER_MODULES, EXPECTED_PAPER_MODULES)
-        for module in ('test_desktop_future', 'test_analysis_recovery_ui',
-                       'test_market_history_ui', 'test_core_future',
-                       'test_future', 'test_desktopish', 'test_analysis_recovery',
-                       'test_paper_future', 'test_paperish', *sorted(EXPECTED_PAPER_MODULES)):
+        for module in (
+            'test_desktop_future',
+            'test_analysis_recovery_ui',
+            'test_market_history_ui',
+            'test_core_future',
+            'test_future',
+            'test_desktopish',
+            'test_analysis_recovery',
+            'test_paper_future',
+            'test_paperish',
+            *sorted(EXPECTED_PAPER_MODULES),
+        ):
             with self.subTest(module=module):
-                self.assertEqual(group.core_shard_for_module(module),
-                                 _expected_shard(module))
+                self.assertEqual(group.core_shard_for_module(module), _expected_shard(module))
 
     def test_deterministic_complete_disjoint_whole_module_assignment(self):
         suite = self.suite()
@@ -102,8 +125,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
         self.assertEqual(assigned, group.core_shard_assignments(suite))
         self.assertEqual(tuple(assigned), group.CORE_SHARDS)
         for label in group.CORE_SHARDS:
-            expected = [case.id() for case in original_cases
-                        if _expected_shard(type(case).__module__) == label]
+            expected = [case.id() for case in original_cases if _expected_shard(type(case).__module__) == label]
             self.assertEqual(assigned[label], expected)
             self.assertTrue(assigned[label])
         union = sum(assigned.values(), [])
@@ -112,8 +134,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
         self.assertEqual(list(group.cases(suite)), original_cases)
         self.assertEqual([case.id() for case in group.cases(suite)], original_ids)
         for module in {type(case).__module__ for case in original_cases}:
-            owners = {label for label, ids in assigned.items()
-                      if any(test_id.startswith(module + '.') for test_id in ids)}
+            owners = {label for label, ids in assigned.items() if any(test_id.startswith(module + '.') for test_id in ids)}
             self.assertEqual(owners, {_expected_shard(module)})
 
     def test_original_research_modules_are_rejected_including_desktop_names(self):
@@ -127,17 +148,19 @@ class CoreShardAssignmentTests(unittest.TestCase):
 
     def test_empty_duplicate_and_one_sided_assignments_fail_closed(self):
         one = _fixture_cases('test_desktop_future')[0]
-        bad_suites = [unittest.TestSuite(), unittest.TestSuite([one, one]),
-                      unittest.TestSuite(_fixture_cases('test_desktop_future')),
-                      unittest.TestSuite(_fixture_cases('test_core_future')),
-                      unittest.TestSuite(_fixture_cases('test_paper'))]
+        bad_suites = [
+            unittest.TestSuite(),
+            unittest.TestSuite([one, one]),
+            unittest.TestSuite(_fixture_cases('test_desktop_future')),
+            unittest.TestSuite(_fixture_cases('test_core_future')),
+            unittest.TestSuite(_fixture_cases('test_paper')),
+        ]
         for suite in bad_suites:
             with self.subTest(ids=[case.id() for case in group.cases(suite)]):
                 with self.assertRaises(ValueError):
                     group.core_shard_assignments(suite)
         for missing in ('desktop', 'paper', 'remaining'):
-            suite = unittest.TestSuite(case for case in group.cases(self.suite())
-                                      if _expected_shard(type(case).__module__) != missing)
+            suite = unittest.TestSuite(case for case in group.cases(self.suite()) if _expected_shard(type(case).__module__) != missing)
             with self.subTest(missing=missing), self.assertRaises(ValueError):
                 group.core_shard_assignments(suite)
         suite = self.suite()
@@ -150,8 +173,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
         modules = {}
         original_cases = []
         expected_by_shard = {name: [] for name in ('desktop', 'paper', 'remaining')}
-        for module_name in ('test_desktop_fixture_alpha', 'test_future_fixture',
-                            'test_desktop_fixture_beta', 'test_paper', 'test_paper_replay_wal'):
+        for module_name in ('test_desktop_fixture_alpha', 'test_future_fixture', 'test_desktop_fixture_beta', 'test_paper', 'test_paper_replay_wal'):
             module = types.ModuleType(module_name)
             module.setUpModule = lambda name=module_name: events.append(name + ':module-setup')
             module.tearDownModule = lambda name=module_name: events.append(name + ':module-teardown')
@@ -160,16 +182,19 @@ class CoreShardAssignmentTests(unittest.TestCase):
             expected.append(module_name + ':module-setup')
             for class_name in ('Second', 'First'):
                 prefix = module_name + ':' + class_name
-                case_type = type(class_name, (unittest.TestCase,), {
-                    '__module__': module_name,
-                    'setUpClass': classmethod(lambda cls, p=prefix: events.append(p + ':class-setup')),
-                    'tearDownClass': classmethod(lambda cls, p=prefix: events.append(p + ':class-teardown')),
-                    'test_b': lambda self, p=prefix: events.append(p + ':b'),
-                    'test_a': lambda self, p=prefix: events.append(p + ':a'),
-                })
+                case_type = type(
+                    class_name,
+                    (unittest.TestCase,),
+                    {
+                        '__module__': module_name,
+                        'setUpClass': classmethod(lambda cls, p=prefix: events.append(p + ':class-setup')),
+                        'tearDownClass': classmethod(lambda cls, p=prefix: events.append(p + ':class-teardown')),
+                        'test_b': lambda self, p=prefix: events.append(p + ':b'),
+                        'test_a': lambda self, p=prefix: events.append(p + ':a'),
+                    },
+                )
                 original_cases.extend((case_type('test_b'), case_type('test_a')))
-                expected.extend((prefix + ':class-setup', prefix + ':b',
-                                 prefix + ':a', prefix + ':class-teardown'))
+                expected.extend((prefix + ':class-setup', prefix + ':b', prefix + ':a', prefix + ':class-teardown'))
             expected.append(module_name + ':module-teardown')
         suite = unittest.TestSuite(original_cases)
         assigned = group.core_shard_assignments(suite)
@@ -199,8 +224,7 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
             path.write_bytes(content)
 
     def identity(self, root):
-        with patch.object(group, 'ROOT', root), patch.object(
-                group, '__file__', str(root / 'tools/run_test_group.py')):
+        with patch.object(group, 'ROOT', root), patch.object(group, '__file__', str(root / 'tools/run_test_group.py')):
             return group.portable_source_identity(str(root / 'tests'))
 
     def test_portable_identity_matches_across_independent_checkout_paths(self):
@@ -215,8 +239,7 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
             self.assertEqual(before, self.identity(second))
 
     def test_source_bytes_relative_paths_and_validator_changes_affect_identity(self):
-        for relative in ('application.py', 'quantlab/model.py', 'tests/test_synthetic.py',
-                         'tools/run_test_group.py', 'tools/validate_core_shards.py'):
+        for relative in ('application.py', 'quantlab/model.py', 'tests/test_synthetic.py', 'tools/run_test_group.py', 'tools/validate_core_shards.py'):
             with self.subTest(source=relative), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 self.write_sources(root)
@@ -286,10 +309,10 @@ class IndependentCoreInventoryTests(unittest.TestCase):
                 " def test_a(self): forbidden()\n def test_b(self): forbidden()\n"
                 "def load_tests(loader, tests, pattern):\n"
                 " return unittest.TestSuite([Fixture('test_b'), Fixture('test_a')])\n",
-                encoding='utf-8')
+                encoding='utf-8',
+            )
         if broken:
-            (root / 'test_unrelated_broken.py').write_text(
-                "raise RuntimeError('synthetic unrelated discovery failure')\n", encoding='utf-8')
+            (root / 'test_unrelated_broken.py').write_text("raise RuntimeError('synthetic unrelated discovery failure')\n", encoding='utf-8')
 
     def collect(self, root):
         # Isolate synthetic module names from the enclosing test runner imports.
@@ -302,8 +325,7 @@ except ValueError as error:
 else:
  print(json.dumps({'inventory': inventory}))
 """
-        result = subprocess.run([sys.executable, '-c', script, str(root)], cwd=group.ROOT,
-                                capture_output=True, text=True, timeout=15)
+        result = subprocess.run([sys.executable, '-c', script, str(root)], cwd=group.ROOT, capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((root / 'execution-was-forbidden').exists())
         return json.loads(result.stdout)
@@ -314,12 +336,12 @@ else:
             self.write_suite(root)
             result = self.collect(root)
             self.assertNotIn('error', result)
-            expected = [module + '.Fixture.' + method
-                        for module in ('test_desktop_expected_inventory', 'test_expected_inventory',
-                                       'test_paper', 'test_research') for method in ('test_b', 'test_a')]
-            self.assertEqual(result['inventory'], {
-                'discovered_ids': expected,
-                'partitions': {'core': expected[:6], 'research': expected[6:]}})
+            expected = [
+                module + '.Fixture.' + method
+                for module in ('test_desktop_expected_inventory', 'test_expected_inventory', 'test_paper', 'test_research')
+                for method in ('test_b', 'test_a')
+            ]
+            self.assertEqual(result['inventory'], {'discovered_ids': expected, 'partitions': {'core': expected[:6], 'research': expected[6:]}})
 
     def test_unrelated_import_error_is_fatal_to_independent_inventory(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -332,16 +354,17 @@ else:
 
 
 class CoreShardReportTests(unittest.TestCase):
-    CONTEXT = {'head_sha': 'a' * 40, 'run_id': '123456789', 'run_attempt': '2',
-               'python_profile': '3.11', 'source_sha256': 'b' * 64}
+    CONTEXT = {'head_sha': 'a' * 40, 'run_id': '123456789', 'run_attempt': '2', 'python_profile': '3.11', 'source_sha256': 'b' * 64}
 
     def expected_inventory(self):
-        core = ['test_desktop_synthetic.Fixture.test_a',
-                'test_desktop_synthetic.Fixture.test_b',
-                'test_paper.Fixture.test_a',
-                'test_paper.Fixture.test_b',
-                'test_future_synthetic.Fixture.test_a',
-                'test_future_synthetic.Fixture.test_b'] + sorted(EXPECTED_WINDOWS_CORE_SKIPS)
+        core = [
+            'test_desktop_synthetic.Fixture.test_a',
+            'test_desktop_synthetic.Fixture.test_b',
+            'test_paper.Fixture.test_a',
+            'test_paper.Fixture.test_b',
+            'test_future_synthetic.Fixture.test_a',
+            'test_future_synthetic.Fixture.test_b',
+        ] + sorted(EXPECTED_WINDOWS_CORE_SKIPS)
         research = ['test_research.Fixture.test_a', 'test_walk_forward.Fixture.test_b']
         discovered = core[:2] + research[:1] + core[2:] + research[1:]
         return {'discovered_ids': discovered, 'partitions': {'core': core, 'research': research}}
@@ -350,37 +373,55 @@ class CoreShardReportTests(unittest.TestCase):
         inventory = self.expected_inventory()
         discovered = inventory['discovered_ids']
         core, research = inventory['partitions']['core'], inventory['partitions']['research']
-        assignments = {label: [test_id for test_id in core
-                              if _expected_shard(test_id.rsplit('.', 2)[0]) == label]
-                       for label in ('desktop', 'paper', 'remaining')}
+        assignments = {
+            label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label] for label in ('desktop', 'paper', 'remaining')
+        }
         reports = []
         for index, label in enumerate(('desktop', 'paper', 'remaining')):
             selected = assignments[label]
             identity = {
-                'source_sha256': str(index + 1) * 64, 'head_sha': self.CONTEXT['head_sha'],
+                'source_sha256': str(index + 1) * 64,
+                'head_sha': self.CONTEXT['head_sha'],
                 'executable': 'C:\\runner-' + str(index) + '\\python.exe',
-                'python': '3.11.14 (synthetic Windows fixture)', 'sqlite_version': json.loads((group.ROOT / 'packaging/sqlite-runtime.json').read_text())['version'],
-                'environment': {'TEMP': 'C:\\temp-' + str(index), 'TMP': 'C:\\temp-' + str(index),
-                                'RUNNER_TEMP': 'C:\\runner-temp-' + str(index),
-                                'QT_QPA_PLATFORM': 'offscreen'},
+                'python': '3.11.14 (synthetic Windows fixture)',
+                'sqlite_version': json.loads((group.ROOT / 'packaging/sqlite-runtime.json').read_text())['version'],
+                'environment': {
+                    'TEMP': 'C:\\temp-' + str(index),
+                    'TMP': 'C:\\temp-' + str(index),
+                    'RUNNER_TEMP': 'C:\\runner-temp-' + str(index),
+                    'QT_QPA_PLATFORM': 'offscreen',
+                },
                 'tempfile_gettempdir': 'C:\\temp-' + str(index),
             }
-            reports.append({
-                'head_sha': self.CONTEXT['head_sha'], 'python': '3.11.14', 'platform': 'win32',
-                'group': 'core', 'core_shard': label, 'core_shard_plan': 'core-modules-v2',
-                'core_shard_assignments': copy.deepcopy(assignments),
-                'shard_context': dict(self.CONTEXT),
-                'source_sha256_after': self.CONTEXT['source_sha256'],
-                'local_identity_before': copy.deepcopy(identity),
-                'local_identity_after': copy.deepcopy(identity),
-                'discovered_ids': discovered[:], 'partitions': {'core': core[:], 'research': research[:]},
-                'selected_ids': selected[:], 'discovery_errors': [],
-                'run_completed': True, 'successful': True, 'tests_run': len(selected),
-                'started_ids': selected[:], 'stopped_ids': selected[:],
-                'failures': [], 'errors': [], 'expected_failures': [], 'unexpected_successes': [],
-                'skipped': [{'id': test_id, 'reason': gate.WINDOWS_CORE_SKIPS[test_id]}
-                            for test_id in selected if test_id in gate.WINDOWS_CORE_SKIPS],
-            })
+            reports.append(
+                {
+                    'head_sha': self.CONTEXT['head_sha'],
+                    'python': '3.11.14',
+                    'platform': 'win32',
+                    'group': 'core',
+                    'core_shard': label,
+                    'core_shard_plan': 'core-modules-v2',
+                    'core_shard_assignments': copy.deepcopy(assignments),
+                    'shard_context': dict(self.CONTEXT),
+                    'source_sha256_after': self.CONTEXT['source_sha256'],
+                    'local_identity_before': copy.deepcopy(identity),
+                    'local_identity_after': copy.deepcopy(identity),
+                    'discovered_ids': discovered[:],
+                    'partitions': {'core': core[:], 'research': research[:]},
+                    'selected_ids': selected[:],
+                    'discovery_errors': [],
+                    'run_completed': True,
+                    'successful': True,
+                    'tests_run': len(selected),
+                    'started_ids': selected[:],
+                    'stopped_ids': selected[:],
+                    'failures': [],
+                    'errors': [],
+                    'expected_failures': [],
+                    'unexpected_successes': [],
+                    'skipped': [{'id': test_id, 'reason': gate.WINDOWS_CORE_SKIPS[test_id]} for test_id in selected if test_id in gate.WINDOWS_CORE_SKIPS],
+                }
+            )
         return reports
 
     def validate(self, reports):
@@ -392,8 +433,7 @@ class CoreShardReportTests(unittest.TestCase):
         self.assertNotEqual(reports[0]['local_identity_before'], reports[1]['local_identity_before'])
         result = self.validate(reports)
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['coverage_scope'],
-                         'original core only; research remains a separate mandatory gate')
+        self.assertEqual(result['coverage_scope'], 'original core only; research remains a separate mandatory gate')
         self.assertEqual(result['head_sha'], self.CONTEXT['head_sha'])
         self.assertEqual(result['python_profile'], self.CONTEXT['python_profile'])
         self.assertEqual(result['core_shard_plan'], 'core-modules-v2')
@@ -406,8 +446,7 @@ class CoreShardReportTests(unittest.TestCase):
 
     def test_exactly_three_distinct_named_shards_required(self):
         self.assert_each_of_three_shards_is_required_with_original_order_and_identity()
-        for bad in ([], self.reports()[:1], self.reports()[:2], self.reports() + self.reports()[:1],
-                    [None, {}], [{}, {}], [[], []]):
+        for bad in ([], self.reports()[:1], self.reports()[:2], self.reports() + self.reports()[:1], [None, {}], [{}, {}], [[], []]):
             with self.subTest(reports=bad), self.assertRaises(ValueError):
                 self.validate(bad)
         for label in ('desktop', 'remaining', 'unknown', None, True):
@@ -421,8 +460,7 @@ class CoreShardReportTests(unittest.TestCase):
             reports = self.reports()
             with self.subTest(missing=label), self.assertRaises(ValueError):
                 self.validate([row for row in reports if row['core_shard'] != label])
-            for field, value in (('successful', False), ('run_completed', False),
-                                 ('tests_run', 0), ('core_shard_plan', 'core-modules-v1')):
+            for field, value in (('successful', False), ('run_completed', False), ('tests_run', 0), ('core_shard_plan', 'core-modules-v1')):
                 changed = self.reports()
                 next(row for row in changed if row['core_shard'] == label)[field] = value
                 with self.subTest(shard=label, field=field), self.assertRaises(ValueError):
@@ -469,9 +507,13 @@ class CoreShardReportTests(unittest.TestCase):
             del reports[0]['shard_context'][field]
             with self.subTest(missing=field), self.assertRaises(ValueError):
                 self.validate(reports)
-        for field, value in (('head_sha', 'f' * 40), ('group', 'research'),
-                             ('python', '3.12.1'), ('platform', 'linux'),
-                             ('core_shard_plan', 'core-modules-v1')):
+        for field, value in (
+            ('head_sha', 'f' * 40),
+            ('group', 'research'),
+            ('python', '3.12.1'),
+            ('platform', 'linux'),
+            ('core_shard_plan', 'core-modules-v1'),
+        ):
             reports = self.reports()
             for report in reports:
                 report[field] = value
@@ -488,10 +530,8 @@ class CoreShardReportTests(unittest.TestCase):
             'partition overlap': lambda r: r['partitions']['research'].append(r['partitions']['core'][0]),
             'research omitted': lambda r: r['partitions'].pop('research'),
             'assignment omitted': lambda r: r['core_shard_assignments']['desktop'].pop(),
-            'assignment duplicate': lambda r: r['core_shard_assignments']['desktop'].append(
-                r['core_shard_assignments']['desktop'][0]),
-            'assignment overlap': lambda r: r['core_shard_assignments']['remaining'].append(
-                r['core_shard_assignments']['desktop'][0]),
+            'assignment duplicate': lambda r: r['core_shard_assignments']['desktop'].append(r['core_shard_assignments']['desktop'][0]),
+            'assignment overlap': lambda r: r['core_shard_assignments']['remaining'].append(r['core_shard_assignments']['desktop'][0]),
             'assignment reordered': lambda r: r['core_shard_assignments']['desktop'].reverse(),
             'unexpected shard': lambda r: r['core_shard_assignments'].update(extra=[]),
         }
@@ -505,9 +545,13 @@ class CoreShardReportTests(unittest.TestCase):
         self.assert_correlated_paper_omission_or_reassignment_cannot_redefine_core()
         ordinary = 'test_desktop_synthetic.Fixture.test_a'
         skipped = next(iter(EXPECTED_WINDOWS_CORE_SKIPS))
-        for mode, target in (('omission', ordinary), ('omission', skipped),
-                             ('addition', ordinary), ('reclassification', ordinary),
-                             ('research-omission', ordinary)):
+        for mode, target in (
+            ('omission', ordinary),
+            ('omission', skipped),
+            ('addition', ordinary),
+            ('reclassification', ordinary),
+            ('research-omission', ordinary),
+        ):
             reports = self.reports()
             expected = self.expected_inventory()
             original_expected = copy.deepcopy(expected)
@@ -528,15 +572,15 @@ class CoreShardReportTests(unittest.TestCase):
                     report['discovered_ids'].remove(omitted)
                 core = report['partitions']['core']
                 report['core_shard_assignments'] = {
-                    label: [test_id for test_id in core
-                            if _expected_shard(test_id.rsplit('.', 2)[0]) == label]
-                    for label in ('desktop', 'paper', 'remaining')}
+                    label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label] for label in ('desktop', 'paper', 'remaining')
+                }
                 selected = report['core_shard_assignments'][report['core_shard']]
                 for field in ('selected_ids', 'started_ids', 'stopped_ids'):
                     report[field] = selected[:]
                 report['tests_run'] = len(selected)
-                report['skipped'] = [{'id': test_id, 'reason': EXPECTED_WINDOWS_CORE_SKIPS[test_id]}
-                                     for test_id in selected if test_id in EXPECTED_WINDOWS_CORE_SKIPS]
+                report['skipped'] = [
+                    {'id': test_id, 'reason': EXPECTED_WINDOWS_CORE_SKIPS[test_id]} for test_id in selected if test_id in EXPECTED_WINDOWS_CORE_SKIPS
+                ]
             with self.subTest(mode=mode, target=target), self.assertRaises(ValueError):
                 gate.validate_core_reports(reports, expected_inventory=expected, **self.CONTEXT)
             self.assertEqual(expected, original_expected)
@@ -544,8 +588,7 @@ class CoreShardReportTests(unittest.TestCase):
     def test_missing_or_malformed_independent_inventory_cannot_fall_back_to_reports(self):
         with self.assertRaises(TypeError):
             gate.validate_core_reports(self.reports(), **self.CONTEXT)
-        for inventory in (None, {}, [], {'discovered_ids': [], 'partitions': {}},
-                          {'discovered_ids': self.expected_inventory()['discovered_ids']}):
+        for inventory in (None, {}, [], {'discovered_ids': [], 'partitions': {}}, {'discovered_ids': self.expected_inventory()['discovered_ids']}):
             with self.subTest(inventory=inventory), self.assertRaises(ValueError):
                 gate.validate_core_reports(self.reports(), expected_inventory=inventory, **self.CONTEXT)
 
@@ -594,9 +637,14 @@ class CoreShardReportTests(unittest.TestCase):
 
     def test_incomplete_false_pass_wrong_counts_outcomes_and_fixture_errors_rejected(self):
         changes = (
-            ('discovery_errors', ['broken import']), ('run_completed', False),
-            ('run_completed', 1), ('successful', False), ('successful', 1),
-            ('tests_run', True), ('tests_run', 0), ('tests_run', 999999),
+            ('discovery_errors', ['broken import']),
+            ('run_completed', False),
+            ('run_completed', 1),
+            ('successful', False),
+            ('successful', 1),
+            ('tests_run', True),
+            ('tests_run', 0),
+            ('tests_run', 999999),
             ('failures', ['test_desktop_synthetic.Fixture.test_a (subtest=1)']),
             ('errors', ['setUpClass (test_desktop_synthetic.Fixture)']),
             ('errors', ['tearDownModule (test_desktop_synthetic)']),
@@ -608,9 +656,20 @@ class CoreShardReportTests(unittest.TestCase):
             reports[0][field] = value
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 self.validate(reports)
-        for field in ('discovery_errors', 'run_completed', 'successful', 'tests_run',
-                      'failures', 'errors', 'expected_failures', 'unexpected_successes',
-                      'selected_ids', 'started_ids', 'stopped_ids', 'skipped'):
+        for field in (
+            'discovery_errors',
+            'run_completed',
+            'successful',
+            'tests_run',
+            'failures',
+            'errors',
+            'expected_failures',
+            'unexpected_successes',
+            'selected_ids',
+            'started_ids',
+            'stopped_ids',
+            'skipped',
+        ):
             reports = self.reports()
             del reports[0][field]
             with self.subTest(missing=field), self.assertRaises(ValueError):
@@ -627,14 +686,12 @@ class CoreShardReportTests(unittest.TestCase):
             'duplicate': lambda skipped: skipped + skipped[:1],
             'reordered': lambda skipped: list(reversed(skipped)),
             'changed reason': lambda skipped: [dict(skipped[0], reason='Qt missing')] + skipped[1:],
-            'new skip': lambda skipped: skipped + [
-                {'id': 'test_desktop_synthetic.Fixture.test_a', 'reason': 'temporarily disabled'}],
+            'new skip': lambda skipped: skipped + [{'id': 'test_desktop_synthetic.Fixture.test_a', 'reason': 'temporarily disabled'}],
         }
         paper = next(row for row in reports if row['core_shard'] == 'paper')
         self.assertEqual(paper['skipped'], [])
         changed = copy.deepcopy(reports)
-        next(row for row in changed if row['core_shard'] == 'paper')['skipped'] = [
-            {'id': paper['selected_ids'][0], 'reason': 'temporarily disabled'}]
+        next(row for row in changed if row['core_shard'] == 'paper')['skipped'] = [{'id': paper['selected_ids'][0], 'reason': 'temporarily disabled'}]
         with self.assertRaises(ValueError):
             self.validate(changed)
         for label in ('desktop', 'remaining'):
@@ -665,22 +722,31 @@ class CoreShardReportTests(unittest.TestCase):
                     gate.validate_core_reports(reports, expected_inventory=self.expected_inventory(), **context)
 
     def test_invalid_expected_run_identity_is_rejected(self):
-        invalid = {'head_sha': ('A' * 40, 'a' * 39, None, True),
-                   'run_id': ('0', '-1', '', 123456789, True),
-                   'run_attempt': ('0', '-1', '', 2, True),
-                   'python_profile': ('3.10', '3.13', '', None, True),
-                   'source_sha256': ('B' * 64, 'b' * 63, None, True)}
+        invalid = {
+            'head_sha': ('A' * 40, 'a' * 39, None, True),
+            'run_id': ('0', '-1', '', 123456789, True),
+            'run_attempt': ('0', '-1', '', 2, True),
+            'python_profile': ('3.10', '3.13', '', None, True),
+            'source_sha256': ('B' * 64, 'b' * 63, None, True),
+        }
         for field, values in invalid.items():
             for value in values:
                 with self.subTest(field=field, value=value), self.assertRaises(ValueError):
-                    gate.validate_core_reports(self.reports(), expected_inventory=self.expected_inventory(),
-                                               **dict(self.CONTEXT, **{field: value}))
+                    gate.validate_core_reports(self.reports(), expected_inventory=self.expected_inventory(), **dict(self.CONTEXT, **{field: value}))
 
     def test_malformed_or_wrong_stable_local_identity_is_rejected(self):
-        changes = (('source_sha256', ''), ('head_sha', 'f' * 40), ('executable', ''),
-                   ('python', ''), ('python', '   '), ('python', '3.12.14 synthetic'),
-                   ('sqlite_version', '0.0.0'), ('tempfile_gettempdir', None),
-                   ('environment', {}), ('environment', {'QT_QPA_PLATFORM': 'offscreen'}))
+        changes = (
+            ('source_sha256', ''),
+            ('head_sha', 'f' * 40),
+            ('executable', ''),
+            ('python', ''),
+            ('python', '   '),
+            ('python', '3.12.14 synthetic'),
+            ('sqlite_version', '0.0.0'),
+            ('tempfile_gettempdir', None),
+            ('environment', {}),
+            ('environment', {'QT_QPA_PLATFORM': 'offscreen'}),
+        )
         for field, value in changes:
             reports = self.reports()
             for key in ('local_identity_before', 'local_identity_after'):
@@ -696,9 +762,12 @@ class CoreShardReportTests(unittest.TestCase):
 
     def test_local_source_runtime_environment_or_path_drift_rejected(self):
         changes = (
-            ('source_sha256', 'f' * 64), ('head_sha', 'e' * 40),
-            ('executable', 'C:\\different\\python.exe'), ('python', '3.12.1'),
-            ('sqlite_version', '3.0.0'), ('tempfile_gettempdir', 'C:\\different-temp'),
+            ('source_sha256', 'f' * 64),
+            ('head_sha', 'e' * 40),
+            ('executable', 'C:\\different\\python.exe'),
+            ('python', '3.12.1'),
+            ('sqlite_version', '3.0.0'),
+            ('tempfile_gettempdir', 'C:\\different-temp'),
             ('environment', {'QT_QPA_PLATFORM': 'different'}),
         )
         for field, value in changes:
@@ -734,8 +803,9 @@ class CoreShardRunnerTests(unittest.TestCase):
                 " @classmethod\n def setUpClass(cls): print('CLASS_SETUP:' + __name__)\n"
                 " @classmethod\n def tearDownClass(cls): print('CLASS_TEARDOWN:' + __name__)\n"
                 " def test_a(self):\n  global reference\n  reference = weakref.ref(self)\n  " + outcome + "\n"
-                " def test_b(self):\n  self.assertEqual(reference() is None, " +
-                repr(outcome == 'pass') + ")\n", encoding='utf-8')
+                " def test_b(self):\n  self.assertEqual(reference() is None, " + repr(outcome == 'pass') + ")\n",
+                encoding='utf-8',
+            )
 
     def run_shard(self, root, label, mode='normal'):
         # The only discovered cases are the tiny temporary fixtures above.
@@ -764,12 +834,11 @@ def changing(start):
 g.portable_source_identity = changing
 """
         script += "raise SystemExit(g.main(['--group', 'core', '--core-shard', sys.argv[2], '--start-directory', sys.argv[1], '--manifest', sys.argv[3]]))\n"
-        environment = dict(os.environ, GITHUB_SHA='a' * 40, GITHUB_RUN_ID='123456789',
-                           GITHUB_RUN_ATTEMPT='2', QT_QPA_PLATFORM='offscreen')
+        environment = dict(os.environ, GITHUB_SHA='a' * 40, GITHUB_RUN_ID='123456789', GITHUB_RUN_ATTEMPT='2', QT_QPA_PLATFORM='offscreen')
         output = root / (label + '-manifest.json')
-        result = subprocess.run([sys.executable, '-c', script, str(root), label, str(output)],
-                                cwd=group.ROOT, env=environment, capture_output=True,
-                                text=True, timeout=15)
+        result = subprocess.run(
+            [sys.executable, '-c', script, str(root), label, str(output)], cwd=group.ROOT, env=environment, capture_output=True, text=True, timeout=15
+        )
         return result, json.loads(output.read_text(encoding='utf-8'))
 
     def test_independent_shards_keep_fixtures_ids_order_and_release_successful_cases(self):
@@ -777,9 +846,7 @@ g.portable_source_identity = changing
             root = Path(temporary)
             self.write_suite(root)
             reports = []
-            for label, module in (('desktop', 'test_desktop_synthetic'),
-                                  ('paper', 'test_paper'),
-                                  ('remaining', 'test_future_synthetic')):
+            for label, module in (('desktop', 'test_desktop_synthetic'), ('paper', 'test_paper'), ('remaining', 'test_future_synthetic')):
                 result, report = self.run_shard(root, label)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected = [module + '.Fixture.test_a', module + '.Fixture.test_b']
@@ -809,8 +876,7 @@ g.portable_source_identity = changing
             self.assertEqual(set(selected), set(reports[0]['partitions']['core']))
 
     def test_failure_and_skip_remain_owned_by_result_without_release_rewrite(self):
-        for outcome, code, field in (("self.fail('synthetic failure')", 1, 'failures'),
-                                     ("self.skipTest('synthetic skip')", 0, 'skipped')):
+        for outcome, code, field in (("self.fail('synthetic failure')", 1, 'failures'), ("self.skipTest('synthetic skip')", 0, 'skipped')):
             with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 self.write_suite(root, outcome=outcome)
@@ -862,8 +928,7 @@ g.portable_source_identity = changing
         )
         for platform, arguments in scenarios:
             with self.subTest(platform=platform, arguments=arguments):
-                with patch.object(group.sys, 'platform', platform), patch.object(
-                        group.unittest.TestLoader, 'discover') as discover:
+                with patch.object(group.sys, 'platform', platform), patch.object(group.unittest.TestLoader, 'discover') as discover:
                     with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
                         group.main(arguments + ['--manifest', 'unused.json'])
                     self.assertEqual(error.exception.code, 2)
@@ -878,31 +943,27 @@ class CoreShardReportFileTests(unittest.TestCase):
         downloads.mkdir()
         paths = []
         for report in CoreShardReportTests().reports():
-            directory = downloads / ('test-inventory-windows-latest-3.11-core-' +
-                                     report['core_shard'] + '-attempt-2')
+            directory = downloads / ('test-inventory-windows-latest-3.11-core-' + report['core_shard'] + '-attempt-2')
             directory.mkdir()
             path = directory / 'test-inventory.json'
             path.write_text(json.dumps(report), encoding='utf-8')
             paths.append(path)
         return downloads, paths
 
-    def run_gate(self, root, downloads, environment=None, *, runtime_effect=None,
-                 inventory_effect=None, source_effect=None, local_effect=None):
-        env = {'GITHUB_SHA': self.CONTEXT['head_sha'], 'GITHUB_RUN_ID': self.CONTEXT['run_id'],
-               'GITHUB_RUN_ATTEMPT': self.CONTEXT['run_attempt']}
+    def run_gate(self, root, downloads, environment=None, *, runtime_effect=None, inventory_effect=None, source_effect=None, local_effect=None):
+        env = {'GITHUB_SHA': self.CONTEXT['head_sha'], 'GITHUB_RUN_ID': self.CONTEXT['run_id'], 'GITHUB_RUN_ATTEMPT': self.CONTEXT['run_attempt']}
         if environment is not None:
             env = environment
         manifest = root / 'summary.json'
-        with patch.dict(os.environ, env, clear=True), patch.object(
-                gate, 'portable_source_identity', return_value=self.CONTEXT['source_sha256'],
-                side_effect=source_effect), patch.object(
-                gate, 'collect_expected_inventory',
-                side_effect=inventory_effect or CoreShardReportTests().expected_inventory), patch.object(
-                gate, 'verify_discovery_runtime', return_value='3.11.14', side_effect=runtime_effect), patch.object(
-                gate, 'execution_identity', return_value={'synthetic': 'stable'}, side_effect=local_effect):
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch.object(gate, 'portable_source_identity', return_value=self.CONTEXT['source_sha256'], side_effect=source_effect),
+            patch.object(gate, 'collect_expected_inventory', side_effect=inventory_effect or CoreShardReportTests().expected_inventory),
+            patch.object(gate, 'verify_discovery_runtime', return_value='3.11.14', side_effect=runtime_effect),
+            patch.object(gate, 'execution_identity', return_value={'synthetic': 'stable'}, side_effect=local_effect),
+        ):
             with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
-                code = gate.main(['--reports', str(downloads), '--python-profile', '3.11',
-                                  '--manifest', str(manifest)])
+                code = gate.main(['--reports', str(downloads), '--python-profile', '3.11', '--manifest', str(manifest)])
         return code, json.loads(manifest.read_text(encoding='utf-8'))
 
     def test_cli_accepts_exact_three_artifacts_and_emits_core_only_summary(self):
@@ -913,8 +974,7 @@ class CoreShardReportFileTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIs(summary['successful'], True)
             self.assertEqual(summary['shards'], 3)
-            self.assertEqual(summary['coverage_scope'],
-                             'original core only; research remains a separate mandatory gate')
+            self.assertEqual(summary['coverage_scope'], 'original core only; research remains a separate mandatory gate')
             self.assertEqual(summary['run_id'], self.CONTEXT['run_id'])
             self.assertEqual(summary['run_attempt'], self.CONTEXT['run_attempt'])
 
@@ -935,9 +995,18 @@ class CoreShardReportFileTests(unittest.TestCase):
                     self.assertIs(summary['successful'], False)
 
     def test_json_loading_rejects_malformed_duplicate_nonfinite_and_nonobject_reports(self):
-        payloads = ('{', '{"value": 1, "value": 2}', '{"nested": {"value": 1, "value": 2}}',
-                    '{"value": NaN}', '{"value": Infinity}', '{"value": -Infinity}',
-                    '[]', 'null', 'true', '"report"')
+        payloads = (
+            '{',
+            '{"value": 1, "value": 2}',
+            '{"nested": {"value": 1, "value": 2}}',
+            '{"value": NaN}',
+            '{"value": Infinity}',
+            '{"value": -Infinity}',
+            '[]',
+            'null',
+            'true',
+            '"report"',
+        )
         for raw in payloads:
             with self.subTest(raw=raw), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
@@ -1017,8 +1086,7 @@ class CoreShardReportFileTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertTrue(summary['successful'])
             for missing in ('GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'):
-                env = {'GITHUB_SHA': self.CONTEXT['head_sha'], 'GITHUB_RUN_ID': self.CONTEXT['run_id'],
-                       'GITHUB_RUN_ATTEMPT': self.CONTEXT['run_attempt']}
+                env = {'GITHUB_SHA': self.CONTEXT['head_sha'], 'GITHUB_RUN_ID': self.CONTEXT['run_id'], 'GITHUB_RUN_ATTEMPT': self.CONTEXT['run_attempt']}
                 del env[missing]
                 with self.subTest(missing=missing):
                     code, summary = self.run_gate(root, downloads, environment=env)
@@ -1033,8 +1101,7 @@ class CoreShardWorkflowTests(unittest.TestCase):
         cls.workflow = (group.ROOT / '.github/workflows/quantlab.yml').read_text(encoding='utf-8')
 
     def job(self, name):
-        match = re.search(r'(?ms)^  ' + re.escape(name) + r':\n.*?(?=^  [a-z][a-z0-9_-]*:\n|\Z)',
-                          self.workflow)
+        match = re.search(r'(?ms)^  ' + re.escape(name) + r':\n.*?(?=^  [a-z][a-z0-9_-]*:\n|\Z)', self.workflow)
         self.assertIsNotNone(match, 'Missing job: ' + name)
         return match.group(0)
 
@@ -1045,11 +1112,9 @@ class CoreShardWorkflowTests(unittest.TestCase):
 
     def test_exact_matrix_keeps_original_linux_and_research_with_six_core_shards(self):
         offline = self.job('offline')
-        rows = re.findall(r"^          - \{os: ([^,]+), python: '([^']+)', group: ([^,}]+)(?:, shard: ([^}]+))?\}$",
-                          offline, re.MULTILINE)
+        rows = re.findall(r"^          - \{os: ([^,]+), python: '([^']+)', group: ([^,}]+)(?:, shard: ([^}]+))?\}$", offline, re.MULTILINE)
         expected = [('ubuntu-latest', version, 'all', '') for version in ('3.11', '3.12')]
-        expected += [('windows-latest', version, 'core', shard)
-                     for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining')]
+        expected += [('windows-latest', version, 'core', shard) for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining')]
         expected += [('windows-latest', version, 'research', '') for version in ('3.11', '3.12')]
         self.assertCountEqual(rows, expected)
         self.assertEqual(len(rows), 10)
@@ -1063,26 +1128,33 @@ class CoreShardWorkflowTests(unittest.TestCase):
     def test_subset_check_names_and_artifacts_are_distinct_and_attempt_bound(self):
         offline = self.job('offline')
         name = re.search(r'^    name: (.*)$', offline, re.MULTILINE).group(1)
-        self.assertEqual(name, "${{ matrix.shard && format('offline core {0}', matrix.shard) || "
-                         "(matrix.group == 'research' && 'offline research' || 'offline') }} "
-                         "(${{ matrix.os }}, ${{ matrix.python }})")
+        self.assertEqual(
+            name,
+            "${{ matrix.shard && format('offline core {0}', matrix.shard) || "
+            "(matrix.group == 'research' && 'offline research' || 'offline') }} "
+            "(${{ matrix.os }}, ${{ matrix.python }})",
+        )
         self.assertNotIn('name: offline (windows-latest,', offline)
         inventory = self.step(offline, 'Preserve exact-head discovery and selection evidence')
         self.assertIn('if: always()', inventory)
-        self.assertIn("name: test-inventory-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}"
-                      "${{ matrix.shard && format('-{0}-attempt-{1}', matrix.shard, github.run_attempt) || '' }}",
-                      inventory)
+        self.assertIn(
+            "name: test-inventory-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}"
+            "${{ matrix.shard && format('-{0}-attempt-{1}', matrix.shard, github.run_attempt) || '' }}",
+            inventory,
+        )
         self.assertIn('if-no-files-found: error', inventory)
         for prefix in ('desktop-auth', 'paper-timing'):
-            self.assertIn('name: ' + prefix + '-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}'
-                          "${{ matrix.shard && format('-{0}', matrix.shard) || '' }}", offline)
+            self.assertIn(
+                'name: ' + prefix + '-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.group }}${{ matrix.shard && format(\'-{0}\', matrix.shard) || \'\' }}',
+                offline,
+            )
 
     def test_aggregate_owns_exact_mandatory_names_and_reads_each_current_attempt_artifact(self):
         aggregate = self.job('core-coverage')
         self.assertIn('name: offline (windows-latest, ${{ matrix.python }})', aggregate)
         self.assertEqual(self.workflow.count('name: offline (windows-latest, ${{ matrix.python }})'), 1)
         self.assertIn("python: ['3.11', '3.12']", aggregate)
-        self.assertIn('needs: offline', aggregate)
+        self.assertIn('needs: [offline, ruff]', aggregate)
         self.assertRegex(aggregate, r'(?m)^    if: always\(\)$')
         self.assertIn('timeout-minutes: 15', aggregate)
         self.assertIn('fail-fast: false', aggregate)
@@ -1094,8 +1166,11 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn('path: dist/validation/core-shards', download)
         validator = self.step(aggregate, 'Require exact complete original core coverage')
         self.assertIn('if: always()', validator)
-        self.assertIn('run: python tools/validate_core_shards.py --reports dist/validation/core-shards '
-                      '--python-profile ${{ matrix.python }} --manifest dist/validation/core-coverage.json', validator)
+        self.assertIn(
+            'run: python tools/validate_core_shards.py --reports dist/validation/core-shards '
+            '--python-profile ${{ matrix.python }} --manifest dist/validation/core-coverage.json',
+            validator,
+        )
 
     def test_aggregate_provisions_original_windows_runtime_before_independent_discovery(self):
         offline, aggregate = self.job('offline'), self.job('core-coverage')
@@ -1103,8 +1178,7 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn('timeout-minutes: 15', aggregate)
         validator = 'python tools/validate_core_shards.py'
         setup_commands = (
-            'python tools/install_sqlite_runtime.py --destination build/sqlite-runtime '
-            '--report dist/validation/sqlite-runtime.json --github',
+            'python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github',
             'python -m pip install tzdata==2026.5',
             'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes '
             '--only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json '

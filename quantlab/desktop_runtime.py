@@ -3,6 +3,7 @@
 State format versions are independent of binary versions. Incompatible state is
 never migrated in place, allowing an older installer to be restored safely.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -25,8 +26,7 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 from . import __version__
-from .runtime_support import (RuntimeSafetyError, atomic_write, _sync_directory,
-                              _durable_replace, validate_analysis_request)
+from .runtime_support import RuntimeSafetyError, atomic_write, _sync_directory, _durable_replace, validate_analysis_request
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
@@ -77,8 +77,7 @@ def register_operation_executor_factory(registrar):
     point is idempotent; changing an established entry point fails closed.
     """
     global _executor_registrar
-    if (type(registrar) is not str or re.fullmatch(
-            r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*', registrar) is None):
+    if type(registrar) is not str or re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*', registrar) is None:
         raise RuntimeSafetyError('Invalid operation executor registrar')
     if _executor_registrar is not None and _executor_registrar != registrar:
         raise RuntimeSafetyError('A different operation executor registrar is already registered')
@@ -114,9 +113,13 @@ def _workspace_format(value):
         return value
     requirements = {'sqlite_replay': REPLAY_REQUIREMENT, 'sqlite_walk_forward': WALK_FORWARD_REQUIREMENT}
     extras = set(value) - set(WORKSPACE_FORMAT)
-    if (set(WORKSPACE_FORMAT) <= set(value) and extras and extras <= set(requirements)
-            and {key: value[key] for key in WORKSPACE_FORMAT} == WORKSPACE_FORMAT
-            and all(value[key] == requirements[key] for key in extras)):
+    if (
+        set(WORKSPACE_FORMAT) <= set(value)
+        and extras
+        and extras <= set(requirements)
+        and {key: value[key] for key in WORKSPACE_FORMAT} == WORKSPACE_FORMAT
+        and all(value[key] == requirements[key] for key in extras)
+    ):
         return value
     raise RuntimeSafetyError('Unsupported workspace version; original preserved')
 
@@ -127,8 +130,10 @@ def _verify_replay_runtime(value):
         return
     # Keep operation-specific dependencies out of module startup.
     import sqlite3
+
     # Keep operation-specific dependencies out of module startup.
     from contextlib import closing
+
     with closing(sqlite3.connect(':memory:')) as connection:
         version = connection.execute('SELECT sqlite_version()').fetchone()[0]
     try:
@@ -145,12 +150,13 @@ def _marker_stream(marker):
     # WRITE_THROUGH also flushes NTFS metadata for a newly created marker.
     # FlushFileBuffers via os.fsync below remains the explicit WAL barrier.
     import msvcrt
+
     # Load this platform-specific API only on its supported execution path.
     from ctypes import wintypes
+
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     create = kernel.CreateFileW
-    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
-                       ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
     create.restype = wintypes.HANDLE
     handle = create(str(marker), 0x40000000, 0, None, 2, 0x80000000 | 0x80, None)
     if handle == ctypes.c_void_p(-1).value:
@@ -202,7 +208,7 @@ class AppPaths:
         if sys.platform == 'win32':
             # SHGetFolderPathW avoids writing to Program Files or trusting cwd.
             buf = ctypes.create_unicode_buffer(32768)
-            if ctypes.windll.shell32.SHGetFolderPathW(None, 0x001c, None, 0, buf) != 0:
+            if ctypes.windll.shell32.SHGetFolderPathW(None, 0x001C, None, 0, buf) != 0:
                 raise RuntimeSafetyError('Cannot locate Windows Local AppData')
             return cls(Path(buf.value) / 'MarkAuto')
         return cls(Path.home() / '.local' / 'share' / 'MarkAuto')
@@ -261,6 +267,7 @@ class WorkspaceLocator:
     Changing this pointer never moves, merges, deletes or overwrites workspace
     contents. Credentials and the single-instance lock stay in the bootstrap.
     """
+
     def __init__(self, bootstrap):
         self.bootstrap = Path(bootstrap)
         self.pointer = self.bootstrap / 'workspace-location.json'
@@ -278,7 +285,7 @@ class WorkspaceLocator:
         if not ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer)):
             raise RuntimeSafetyError('Cannot validate Windows system directory')
         result.append(Path(buffer.value))
-        for identifier in (0x0026, 0x002a, 0x0023):  # Program Files, x86, ProgramData
+        for identifier in (0x0026, 0x002A, 0x0023):  # Program Files, x86, ProgramData
             if ctypes.windll.shell32.SHGetFolderPathW(None, identifier, None, 0, buffer) == 0:
                 result.append(Path(buffer.value))
         return result
@@ -308,7 +315,13 @@ class WorkspaceLocator:
         # Do not let a new workspace enclose the fixed bootstrap/vault.
         if resolved != self.bootstrap.resolve() and self.bootstrap.resolve().is_relative_to(resolved):
             raise RuntimeSafetyError('Workspace cannot contain the fixed application bootstrap')
-        for protected in (self.bootstrap / 'credentials', self.bootstrap / 'state-v1', self.bootstrap / 'cache', self.bootstrap / 'logs', self.bootstrap / 'control-v1'):
+        for protected in (
+            self.bootstrap / 'credentials',
+            self.bootstrap / 'state-v1',
+            self.bootstrap / 'cache',
+            self.bootstrap / 'logs',
+            self.bootstrap / 'control-v1',
+        ):
             if resolved.is_relative_to(protected.resolve()):
                 raise RuntimeSafetyError('Choose a standalone workspace, not an internal application directory')
         if path.exists():
@@ -339,7 +352,12 @@ class WorkspaceLocator:
     def configure(self, next_root):
         if self.pointer.exists():
             value = _read_json(self.pointer)
-            if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
+            if (
+                not isinstance(value, dict)
+                or set(value) != {'schema_version', 'root'}
+                or value['schema_version'] != STATE_VERSION
+                or not isinstance(value['root'], str)
+            ):
                 raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
         destination = self._validate(next_root, probe=True)
         self.bootstrap.mkdir(parents=True, exist_ok=True)
@@ -352,7 +370,12 @@ class WorkspaceLocator:
         if not self.pointer.exists():
             return AppPaths(self.bootstrap, self.bootstrap)
         value = _read_json(self.pointer)
-        if not isinstance(value, dict) or set(value) != {'schema_version', 'root'} or value['schema_version'] != STATE_VERSION or not isinstance(value['root'], str):
+        if (
+            not isinstance(value, dict)
+            or set(value) != {'schema_version', 'root'}
+            or value['schema_version'] != STATE_VERSION
+            or not isinstance(value['root'], str)
+        ):
             raise RuntimeSafetyError('Unsupported workspace pointer; original preserved')
         root = self._validate(value['root'], probe=probe)
         return AppPaths(root, self.bootstrap)
@@ -384,6 +407,7 @@ class CredentialVault:
     The caller must never log the returned value. Backups exclude this directory;
     credentials must be re-entered after account/machine migration.
     """
+
     def __init__(self, paths):
         self.directory = paths.credentials
 
@@ -398,8 +422,10 @@ class CredentialVault:
     def _crypt(raw, decrypt=False):
         # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes
+
         class Blob(ctypes.Structure):
             _fields_ = [('cbData', wintypes.DWORD), ('pbData', ctypes.POINTER(ctypes.c_byte))]
+
         buffer = ctypes.create_string_buffer(raw)
         source = Blob(len(raw), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_byte)))
         target = Blob()
@@ -407,9 +433,25 @@ class CredentialVault:
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
         kernel.LocalFree.argtypes = [ctypes.c_void_p]
         kernel.LocalFree.restype = ctypes.c_void_p
-        crypt.CryptProtectData.argtypes = [ctypes.POINTER(Blob), wintypes.LPCWSTR, ctypes.POINTER(Blob), ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(Blob)]
+        crypt.CryptProtectData.argtypes = [
+            ctypes.POINTER(Blob),
+            wintypes.LPCWSTR,
+            ctypes.POINTER(Blob),
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            ctypes.POINTER(Blob),
+        ]
         crypt.CryptProtectData.restype = wintypes.BOOL
-        crypt.CryptUnprotectData.argtypes = [ctypes.POINTER(Blob), ctypes.c_void_p, ctypes.POINTER(Blob), ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(Blob)]
+        crypt.CryptUnprotectData.argtypes = [
+            ctypes.POINTER(Blob),
+            ctypes.c_void_p,
+            ctypes.POINTER(Blob),
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            ctypes.POINTER(Blob),
+        ]
         crypt.CryptUnprotectData.restype = wintypes.BOOL
         if decrypt:
             ok = crypt.CryptUnprotectData(ctypes.byref(source), None, None, None, None, 1, ctypes.byref(target))
@@ -446,6 +488,7 @@ class CredentialVault:
 @dataclass(frozen=True)
 class DesktopCredentialReference:
     """Pickle-safe DPAPI reference; resolves only when the HTTP child calls it."""
+
     root: str
     name: str = 'model_api_key'
 
@@ -464,11 +507,13 @@ WINDOWS_APP_MUTEX = r'Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA42
 
 class WindowsAppMutex:
     """Installer-visible lifetime guard; QLockFile still owns single-instance logic."""
+
     def __init__(self):
         self.handle = None
         if sys.platform == 'win32':
             # Load this platform-specific API only on its supported execution path.
             from ctypes import wintypes
+
             self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
             self.kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
             self.kernel.CreateMutexW.restype = wintypes.HANDLE
@@ -485,6 +530,7 @@ class WindowsAppMutex:
 
 class RedactedEventLog:
     """Bounded local status log: only approved operation/status codes, never payloads."""
+
     MAX_BYTES = 128 * 1024
     EVENTS = frozenset({'started', 'progress', 'result', 'error', 'cancelled'})
 
@@ -494,6 +540,7 @@ class RedactedEventLog:
     def append(self, operation, event_type, *, error_code=None):
         # Load the optional UI adapter only when this operation is requested.
         from .desktop_errors import ERROR_TABLE
+
         if error_code is not None and (type(error_code) is not str or error_code not in ERROR_TABLE):
             raise RuntimeSafetyError('Only fixed error codes can be logged')
         if operation not in OPERATIONS or event_type not in self.EVENTS:
@@ -529,6 +576,7 @@ class RedactedEventLog:
                     continue
                 # Load the optional UI adapter only when this operation is requested.
                 from .desktop_errors import ERROR_TABLE
+
                 if 'error_code' in value and (type(value['error_code']) is not str or value['error_code'] not in ERROR_TABLE):
                     continue
                 if value['operation'] not in OPERATIONS or value['event'] not in self.EVENTS or type(value['time']) not in (int, float):
@@ -541,6 +589,7 @@ class RedactedEventLog:
 
 class RuntimeGuard:
     """Every startup and clock discontinuity requires explicit paper reconciliation."""
+
     def __init__(self, paths):
         self.paths = paths
         self.marker = paths.root / 'session.json'
@@ -577,6 +626,7 @@ class BackupManager:
     Restore uses a same-volume staging directory and recovery marker. A crash
     between the two directory renames is recovered on next startup.
     """
+
     def __init__(self, paths, jobs=None):
         self.paths, self.jobs = paths, jobs
 
@@ -586,12 +636,12 @@ class BackupManager:
 
     def recover(self):
         self._quiescent()
-        artifacts = (self.paths.root / 'state-v1.rollback', self.paths.root / 'restore-transaction.json',
-                     self.paths.state / '.restore-transaction')
+        artifacts = (self.paths.root / 'state-v1.rollback', self.paths.root / 'restore-transaction.json', self.paths.state / '.restore-transaction')
         if not any(path.exists() or path.is_symlink() for path in artifacts):
             return  # No mutation, including intact unresolved-analysis startup.
         # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
+
         with operation_guard(self.paths, 'restore_recovery') as ownership:
             return self._recover(ownership)
 
@@ -604,13 +654,19 @@ class BackupManager:
         if journal.exists():
             try:
                 value = _read_json(journal)
-                if isinstance(value, dict) and value.get('phase') in ('prepared', 'committed') and isinstance(value.get('id'), str) and re.fullmatch(r'[a-f0-9]{32}', value['id']):
+                if (
+                    isinstance(value, dict)
+                    and value.get('phase') in ('prepared', 'committed')
+                    and isinstance(value.get('id'), str)
+                    and re.fullmatch(r'[a-f0-9]{32}', value['id'])
+                ):
                     transaction = value
             except (OSError, ValueError):
                 pass  # Unknown journal is never evidence that rollback is disposable.
         if transaction:
             # Keep operation-specific dependencies out of module startup.
             from .analysis_recovery import advance_restore_epoch
+
             advance_restore_epoch(self.paths, transaction['id'], admission=ownership)
         verified_commit = False
         if transaction and transaction['phase'] == 'committed' and token.is_file():
@@ -650,7 +706,14 @@ class BackupManager:
     @staticmethod
     def _safe_name(name):
         parts = PurePosixPath(name).parts
-        if not name or '\\' in name or ':' in name or name.startswith('/') or any(p in ('.', '..') or p.endswith((' ', '.')) for p in parts) or '/'.join(parts) != name:
+        if (
+            not name
+            or '\\' in name
+            or ':' in name
+            or name.startswith('/')
+            or any(p in ('.', '..') or p.endswith((' ', '.')) for p in parts)
+            or '/'.join(parts) != name
+        ):
             raise RuntimeSafetyError('Unsafe backup path')
         if any(re.fullmatch(r'(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?', p, re.I) for p in parts):
             raise RuntimeSafetyError('Reserved Windows backup path')
@@ -667,6 +730,7 @@ class BackupManager:
     def create(self, destination):
         # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
+
         with operation_guard(self.paths, 'ui_backup_create'):
             return self._create(destination)
 
@@ -725,6 +789,7 @@ class BackupManager:
     def restore(self, source):
         # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import operation_guard
+
         (self.paths.bootstrap or self.paths.root).mkdir(parents=True, exist_ok=True)
         with operation_guard(self.paths, 'ui_backup_restore') as ownership:
             return self._restore(source, ownership)
@@ -747,7 +812,11 @@ class BackupManager:
                 if 'manifest.json' not in names or archive.getinfo('manifest.json').file_size > MAX_JSON:
                     raise RuntimeSafetyError('Missing or oversized backup manifest')
                 manifest = json.loads(archive.read('manifest.json'))
-                if not isinstance(manifest, dict) or manifest.get('schema_version') not in (STATE_VERSION, GUARDED_BACKUP_VERSION) or not isinstance(manifest.get('files'), dict):
+                if (
+                    not isinstance(manifest, dict)
+                    or manifest.get('schema_version') not in (STATE_VERSION, GUARDED_BACKUP_VERSION)
+                    or not isinstance(manifest.get('files'), dict)
+                ):
                     raise RuntimeSafetyError('Incompatible backup state version')
                 restored_format = WORKSPACE_FORMAT
                 if manifest['schema_version'] == GUARDED_BACKUP_VERSION:
@@ -785,6 +854,7 @@ class BackupManager:
             transaction_id = uuid.uuid4().hex
             # Keep operation-specific dependencies out of module startup.
             from .analysis_recovery import advance_restore_epoch
+
             advance_restore_epoch(self.paths, transaction_id, admission=ownership)
             formats = {'prior_format': prior_format, 'restored_format': restored_format}
             atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}), durable=True)
@@ -803,27 +873,55 @@ class BackupManager:
                 shutil.rmtree(staging)
 
 
-UI_OPERATIONS = frozenset({
-    'ui_demo', 'ui_import', 'ui_refresh', 'ui_market_refresh', 'ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile', 'ui_backtest', 'ui_campaign',
-    'ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read', 'ui_walk_forward_reconcile',
-    'ui_analysis_preview', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile',
-    'ui_compare', 'ui_select', 'ui_disable', 'ui_paper_snapshot',
-    'ui_paper_reconcile', 'ui_paper_kill', 'ui_paper_replay',
-    'ui_paper_submit', 'ui_paper_cancel', 'ui_backup_create', 'ui_backup_restore',
-})
+UI_OPERATIONS = frozenset(
+    {
+        'ui_demo',
+        'ui_import',
+        'ui_refresh',
+        'ui_market_refresh',
+        'ui_chatgpt_auth',
+        'ui_chatgpt_usage',
+        'ui_chatgpt_reconcile',
+        'ui_backtest',
+        'ui_campaign',
+        'ui_walk_forward_preview',
+        'ui_walk_forward_run',
+        'ui_walk_forward_read',
+        'ui_walk_forward_reconcile',
+        'ui_analysis_preview',
+        'ui_analysis_run',
+        'ui_analysis_read',
+        'ui_analysis_reconcile',
+        'ui_compare',
+        'ui_select',
+        'ui_disable',
+        'ui_paper_snapshot',
+        'ui_paper_reconcile',
+        'ui_paper_kill',
+        'ui_paper_replay',
+        'ui_paper_submit',
+        'ui_paper_cancel',
+        'ui_backup_create',
+        'ui_backup_restore',
+    }
+)
 OPERATIONS = UI_OPERATIONS | {'demo', 'backtest', 'campaign'}
 ANALYSIS_OPERATIONS = frozenset({'ui_analysis_preview', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile'})
-WALK_FORWARD_OPERATIONS = frozenset({
-    'ui_walk_forward_preview', 'ui_walk_forward_run',
-    'ui_walk_forward_read', 'ui_walk_forward_reconcile',
-})
+WALK_FORWARD_OPERATIONS = frozenset(
+    {
+        'ui_walk_forward_preview',
+        'ui_walk_forward_run',
+        'ui_walk_forward_read',
+        'ui_walk_forward_reconcile',
+    }
+)
 
 
 @contextmanager
 def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
     # Keep operation-specific dependencies out of module startup.
-    from .analysis_recovery import (admission, operation_guard, read_launch,
-                                    SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS)
+    from .analysis_recovery import admission, operation_guard, read_launch, SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS
+
     if operation == 'ui_analysis_run' and helper_nonce is not None:
         with admission(paths):
             launch = read_launch(paths, job_id, for_admission=True)
@@ -837,29 +935,38 @@ def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
         yield
 
 
-def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                reconciliation_admitted=False, helper_nonce=None,
-                operation_registrar=DEFAULT_OPERATION_REGISTRAR):
+def _job_worker(
+    sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, helper_nonce=None, operation_registrar=DEFAULT_OPERATION_REGISTRAR
+):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
         return
+
     def emit(kind, **values):
         sender.send_bytes(_json_bytes({'job_id': job_id, 'type': kind, **values}))
+
     try:
         emit('progress', message='Working', progress=0)
         paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
         with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
             if operation in UI_OPERATIONS:
                 executor = _worker_operation_executor(operation_registrar)
-                result = executor(operation, payload, paths, emit=emit,
-                    descendants_stopped=reconciliation_admitted is True and operation in (
-                        'ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'))
+                result = executor(
+                    operation,
+                    payload,
+                    paths,
+                    emit=emit,
+                    descendants_stopped=reconciliation_admitted is True
+                    and operation in ('ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'),
+                )
             else:
                 # Keep operation-specific dependencies out of module startup.
                 from argparse import Namespace
+
                 # Keep operation-specific dependencies out of module startup.
                 from .__main__ import execute
+
                 stage = paths.state / 'runs' / (job_id + '.partial')
                 stage.mkdir(parents=True, exist_ok=False)
                 args = {'command': operation, 'output': stage, **payload}
@@ -874,6 +981,7 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
                 result = {'output': str(final)}
         # Keep operation-specific dependencies out of module startup.
         from .core import to_dict
+
         result = to_dict(result)
         try:
             _json_bytes(result)
@@ -882,7 +990,12 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
         emit('result', result=result, message='Completed', progress=100)
     except BaseException as exc:
         # Do not echo exception text: providers/files may include credentials.
-        categories = {'ValidationError': '輸入驗證失敗，請檢查資料、設定與紙上帳戶對帳', 'FileNotFoundError': '找不到所需檔案，請重新選取資料', 'PermissionError': '檔案存取遭拒，請檢查路徑及檔案是否被占用', 'RuntimeSafetyError': '安全檢查未通過，請檢查備份版本或作業狀態'}
+        categories = {
+            'ValidationError': '輸入驗證失敗，請檢查資料、設定與紙上帳戶對帳',
+            'FileNotFoundError': '找不到所需檔案，請重新選取資料',
+            'PermissionError': '檔案存取遭拒，請檢查路徑及檔案是否被占用',
+            'RuntimeSafetyError': '安全檢查未通過，請檢查備份版本或作業狀態',
+        }
         emit('error', message=categories.get(type(exc).__name__, '作業失敗；既有資料已保留，請檢查輸入後重試'), error_type=type(exc).__name__)
     finally:
         sender.close()
@@ -890,20 +1003,47 @@ def _job_worker(sender, gate, operation, payload, root, bootstrap, job_id,
 
 class _WindowsProcessTree:
     """Kill-on-close job object. Child waits until assigned; grandchildren inherit."""
+
     def __init__(self, pid):
         # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes as w
+
         class Basic(ctypes.Structure):
-            _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
-                        ('LimitFlags', w.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
-                        ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', w.DWORD),
-                        ('Affinity', ctypes.c_size_t), ('PriorityClass', w.DWORD), ('SchedulingClass', w.DWORD)]
+            _fields_ = [
+                ('PerProcessUserTimeLimit', ctypes.c_int64),
+                ('PerJobUserTimeLimit', ctypes.c_int64),
+                ('LimitFlags', w.DWORD),
+                ('MinimumWorkingSetSize', ctypes.c_size_t),
+                ('MaximumWorkingSetSize', ctypes.c_size_t),
+                ('ActiveProcessLimit', w.DWORD),
+                ('Affinity', ctypes.c_size_t),
+                ('PriorityClass', w.DWORD),
+                ('SchedulingClass', w.DWORD),
+            ]
+
         class Counters(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_uint64) for name in ('ReadOperationCount', 'WriteOperationCount', 'OtherOperationCount', 'ReadTransferCount', 'WriteTransferCount', 'OtherTransferCount')]
+            _fields_ = [
+                (name, ctypes.c_uint64)
+                for name in (
+                    'ReadOperationCount',
+                    'WriteOperationCount',
+                    'OtherOperationCount',
+                    'ReadTransferCount',
+                    'WriteTransferCount',
+                    'OtherTransferCount',
+                )
+            ]
+
         class Extended(ctypes.Structure):
-            _fields_ = [('BasicLimitInformation', Basic), ('IoInfo', Counters),
-                        ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t),
-                        ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
+            _fields_ = [
+                ('BasicLimitInformation', Basic),
+                ('IoInfo', Counters),
+                ('ProcessMemoryLimit', ctypes.c_size_t),
+                ('JobMemoryLimit', ctypes.c_size_t),
+                ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                ('PeakJobMemoryUsed', ctypes.c_size_t),
+            ]
+
         self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
         k = self.kernel
         k.CreateJobObjectW.argtypes, k.CreateJobObjectW.restype = [ctypes.c_void_p, w.LPCWSTR], w.HANDLE
@@ -918,7 +1058,11 @@ class _WindowsProcessTree:
         limits.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE
         child = k.OpenProcess(0x0100 | 0x0001, False, pid)
         try:
-            if not child or not k.SetInformationJobObject(self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)) or not k.AssignProcessToJobObject(self.handle, child):
+            if (
+                not child
+                or not k.SetInformationJobObject(self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits))
+                or not k.AssignProcessToJobObject(self.handle, child)
+            ):
                 self.close()
                 raise RuntimeSafetyError('Cannot isolate worker process tree')
         finally:
@@ -929,30 +1073,38 @@ class _WindowsProcessTree:
         """Keep the Job handle; an earlier caller deadline shares the six-second reserve."""
         # Keep operation-specific dependencies out of module startup.
         import math
+
         now = time.monotonic()
         if deadline is None:
             deadline = now + 6
-        elif (type(deadline) not in (int, float) or not math.isfinite(deadline)):
+        elif type(deadline) not in (int, float) or not math.isfinite(deadline):
             raise RuntimeSafetyError('Invalid worker cleanup deadline')
         else:
             deadline = min(deadline, now + 6)
         # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes as w
+
         class Accounting(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime','TotalKernelTime','ThisPeriodTotalUserTime','ThisPeriodTotalKernelTime')] + [(name,w.DWORD) for name in ('TotalPageFaultCount','TotalProcesses','ActiveProcesses','TotalTerminatedProcesses')]
+            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')] + [
+                (name, w.DWORD) for name in ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')
+            ]
+
         k = self.kernel
-        k.TerminateJobObject.argtypes = [w.HANDLE,w.UINT]
-        k.QueryInformationJobObject.argtypes = [w.HANDLE,ctypes.c_int,ctypes.c_void_p,w.DWORD,ctypes.c_void_p]
-        if not self.handle or not k.TerminateJobObject(self.handle,1):
+        k.TerminateJobObject.argtypes = [w.HANDLE, w.UINT]
+        k.QueryInformationJobObject.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p]
+        if not self.handle or not k.TerminateJobObject(self.handle, 1):
             raise RuntimeSafetyError('Cannot stop worker process tree')
         while True:
             info = Accounting()
-            if not k.QueryInformationJobObject(self.handle,1,ctypes.byref(info),ctypes.sizeof(info),None):
+            if not k.QueryInformationJobObject(self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
                 raise RuntimeSafetyError('Cannot verify worker process tree')
-            if time.monotonic() > deadline: raise RuntimeSafetyError('Worker cleanup exceeded unchanged deadline')
-            if info.ActiveProcesses == 0: return
-            if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active')
-            time.sleep(.02)
+            if time.monotonic() > deadline:
+                raise RuntimeSafetyError('Worker cleanup exceeded unchanged deadline')
+            if info.ActiveProcesses == 0:
+                return
+            if time.monotonic() >= deadline:
+                raise RuntimeSafetyError('Worker descendants still active')
+            time.sleep(0.02)
 
     def close(self):
         if self.handle:
@@ -969,8 +1121,10 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
     """
     # Keep operation-specific dependencies out of module startup.
     from .core import ValidationError
+
     # Keep operation-specific dependencies out of module startup.
     from .walk_forward import walk_forward_plan_from_dict
+
     if not isinstance(plan_payload, dict):
         raise ValidationError('Explicit walk-forward plan required')
     saved = plan_payload.get('pool_origin', 'exact_builtin_pool') == 'saved_campaign_pool'
@@ -980,18 +1134,27 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
         return walk_forward_plan_from_dict(plan_payload)
     if 'candidate_pool' in plan_payload or 'pool_admission' in plan_payload:
         raise ValidationError('Saved candidates must be admitted from local source records')
-    if (not isinstance(saved_source, dict) or set(saved_source) != {'campaign_reference', 'original_dataset'}
+    if (
+        not isinstance(saved_source, dict)
+        or set(saved_source) != {'campaign_reference', 'original_dataset'}
         or type(saved_source['campaign_reference']) is not str
-        or not re.fullmatch(r'[0-9a-f]{64}', saved_source['campaign_reference'])):
+        or not re.fullmatch(r'[0-9a-f]{64}', saved_source['campaign_reference'])
+    ):
         raise ValidationError('Explicit immutable source campaign reference required')
     original = saved_source['original_dataset']
-    if (not isinstance(original, dict) or set(original) != {'kind', 'path'}
-        or original['kind'] != 'local_dataset_file'):
+    if not isinstance(original, dict) or set(original) != {'kind', 'path'} or original['kind'] != 'local_dataset_file':
         raise ValidationError('Explicit local original dataset file reference required')
     path = original['path']
-    if (type(path) is not str or not path or len(path) > 4096 or '\0' in path
-        or '://' in path or path.startswith(('//', '\\\\'))
-        or not Path(path).is_absolute() or '..' in Path(path).parts):
+    if (
+        type(path) is not str
+        or not path
+        or len(path) > 4096
+        or '\0' in path
+        or '://' in path
+        or path.startswith(('//', '\\\\'))
+        or not Path(path).is_absolute()
+        or '..' in Path(path).parts
+    ):
         raise ValidationError('Original dataset must be an explicitly selected local absolute file path')
     budget = plan_payload.get('max_evaluations')
     if type(budget) is not int or not 1 <= budget <= 620:
@@ -1002,6 +1165,7 @@ def validate_walk_forward_request(plan_payload, saved_source=None):
 
 class JobManager:
     """One spawned bounded-IPC task at a time; no arbitrary callable execution."""
+
     def __init__(self, paths):
         self.paths = paths.ensure()
         self.process = self.receiver = self.tree = None
@@ -1063,8 +1227,7 @@ class JobManager:
         except FileExistsError as exc:
             raise RuntimeSafetyError('Walk-forward run already claimed; use read without retry') from exc
         with os.fdopen(fd, 'wb') as stream:
-            stream.write(_json_bytes({'kind': 'desktop_walk_forward_owner_v1',
-                'job_id': job_id, 'reference': reference}))
+            stream.write(_json_bytes({'kind': 'desktop_walk_forward_owner_v1', 'job_id': job_id, 'reference': reference}))
             stream.flush()
             os.fsync(stream.fileno())
         # A pre-existing writer is never adopted as this worker's descendants.
@@ -1087,9 +1250,11 @@ class JobManager:
         _json_bytes(payload)
         # Keep operation-specific dependencies out of module startup.
         from .analysis_recovery import require_operation
+
         require_operation(self.paths, operation)
-        if operation == 'ui_campaign' and (not isinstance(payload.get('provider'), dict)
-            or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')):
+        if operation == 'ui_campaign' and (
+            not isinstance(payload.get('provider'), dict) or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')
+        ):
             raise RuntimeSafetyError('Unsupported model provider; local models and paid API fallback are disabled')
         if operation not in UI_OPERATIONS:
             allowed = {'demo': {'bars'}, 'backtest': {'dataset', 'family'}, 'campaign': {'dataset'}}[operation]
@@ -1120,6 +1285,7 @@ class JobManager:
                 raise RuntimeSafetyError('Explicit walk-forward plan required')
             # Keep operation-specific dependencies out of module startup.
             from .core import ValidationError
+
             try:
                 plan = validate_walk_forward_request(payload['plan'], payload.get('saved_source'))
             except (ValidationError, TypeError, KeyError) as exc:
@@ -1140,8 +1306,7 @@ class JobManager:
                 # journal writer. Never mint recovery authority by reopening.
                 raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
         if operation == 'ui_walk_forward_reconcile':
-            if (not self._quiesced_walk_forward
-                or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward):
+            if not self._quiesced_walk_forward or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward:
                 raise RuntimeSafetyError('Matching walk-forward subtree stop proof required')
             self._check_walk_forward_owner(payload['stopped_job_id'], payload['reference'])
             reconciliation_admitted = True
@@ -1156,58 +1321,66 @@ class JobManager:
         helper_nonce = None
         reconciliation_admitted = False
         request = None
-        allowed={'ui_analysis_preview':{'request'},
-                 'ui_analysis_run':{'request','expected_analysis_id','expected_plan_hash','user_confirmed','network_opt_in','included_usage_policy_confirmed'},
-                 'ui_analysis_read':{'analysis_id'},
-                 'ui_analysis_reconcile':{'analysis_id','registration','stopped_job_id'}}[operation]
+        allowed = {
+            'ui_analysis_preview': {'request'},
+            'ui_analysis_run': {'request', 'expected_analysis_id', 'expected_plan_hash', 'user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'},
+            'ui_analysis_read': {'analysis_id'},
+            'ui_analysis_reconcile': {'analysis_id', 'registration', 'stopped_job_id'},
+        }[operation]
         if operation == 'ui_analysis_run' and 'approved_plan' in payload:
             allowed = allowed | {'approved_plan'}
         if operation == 'ui_analysis_reconcile' and 'recovery_launch_id' in payload:
             allowed = {'analysis_id', 'registration', 'recovery_launch_id'}
-        if set(payload)!=allowed: raise RuntimeSafetyError('Invalid analysis job fields')
-        if operation in ('ui_analysis_preview','ui_analysis_run'):
-            request=validate_analysis_request(payload['request'])
-            deadline=time.monotonic()+120+10+(request['timeout_seconds'] if operation=='ui_analysis_run' else 0)
-        else: deadline=time.monotonic()+60
-        if operation!='ui_analysis_preview':
-            reference=payload['expected_analysis_id'] if operation=='ui_analysis_run' else payload['analysis_id']
-            if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}',reference):
+        if set(payload) != allowed:
+            raise RuntimeSafetyError('Invalid analysis job fields')
+        if operation in ('ui_analysis_preview', 'ui_analysis_run'):
+            request = validate_analysis_request(payload['request'])
+            deadline = time.monotonic() + 120 + 10 + (request['timeout_seconds'] if operation == 'ui_analysis_run' else 0)
+        else:
+            deadline = time.monotonic() + 60
+        if operation != 'ui_analysis_preview':
+            reference = payload['expected_analysis_id'] if operation == 'ui_analysis_run' else payload['analysis_id']
+            if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}', reference):
                 raise RuntimeSafetyError('Invalid analysis identity')
-            analysis_result_reference=reference
-        if operation=='ui_analysis_run':
-            if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}',payload['expected_plan_hash']):
+            analysis_result_reference = reference
+        if operation == 'ui_analysis_run':
+            if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}', payload['expected_plan_hash']):
                 raise RuntimeSafetyError('Invalid immutable analysis plan hash')
-            if any(payload[key] is not True for key in ('user_confirmed','network_opt_in','included_usage_policy_confirmed')):
+            if any(payload[key] is not True for key in ('user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed')):
                 raise RuntimeSafetyError('Explicit one-call analysis consent required')
-            analysis_job_identity=(reference,request['registration'])
+            analysis_job_identity = (reference, request['registration'])
             if 'approved_plan' in payload or sys.platform == 'win32':
                 # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery import plan_bindings
+
                 # Keep operation-specific dependencies out of module startup.
                 from .core import content_hash
+
                 approved_analysis_plan = payload.get('approved_plan')
                 bindings = plan_bindings(approved_analysis_plan)
-                if (bindings['analysis_id'] != reference
+                if (
+                    bindings['analysis_id'] != reference
                     or bindings['plan_hash'] != payload['expected_plan_hash']
-                    or any(bindings[key] != request[key] for key in ('registration','model','timeout_seconds'))):
+                    or any(bindings[key] != request[key] for key in ('registration', 'model', 'timeout_seconds'))
+                ):
                     raise RuntimeSafetyError('Original approved analysis plan differs')
             if sys.platform == 'win32':
                 helper_nonce = uuid.uuid4().hex
-        if operation=='ui_analysis_reconcile':
+        if operation == 'ui_analysis_reconcile':
             if 'recovery_launch_id' in payload:
                 # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery import validate_stop_receipt, supports_durable_recovery
+
                 if not supports_durable_recovery():
                     raise RuntimeSafetyError('Durable analysis recovery requires Windows')
                 launch = validate_stop_receipt(self.paths, payload['recovery_launch_id'])
                 if launch['analysis_id'] != reference or launch['registration'] != payload['registration']:
                     raise RuntimeSafetyError('Original durable analysis binding differs')
             else:
-                if self._quiesced_analysis!=(payload['stopped_job_id'],reference,payload['registration']):
+                if self._quiesced_analysis != (payload['stopped_job_id'], reference, payload['registration']):
                     raise RuntimeSafetyError('Matching analysis subtree stop proof required')
-                reconciliation_admitted=True
-        return (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan,
-                helper_nonce, reconciliation_admitted, request)
+                reconciliation_admitted = True
+        return (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan, helper_nonce, reconciliation_admitted, request)
 
     def _prepare_other_job(self, operation, payload):
         deadline = None
@@ -1218,11 +1391,17 @@ class JobManager:
             if set(payload) != {'request'} or not isinstance(request, dict):
                 raise RuntimeSafetyError('Invalid authentication request')
             allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
-            if set(request) != allowed or type(request['request_id']) is not int or request['request_id'] < 1 or type(request['max_runtime_seconds']) is not int or not 1 <= request['max_runtime_seconds'] <= 600:
+            if (
+                set(request) != allowed
+                or type(request['request_id']) is not int
+                or request['request_id'] < 1
+                or type(request['max_runtime_seconds']) is not int
+                or not 1 <= request['max_runtime_seconds'] <= 600
+            ):
                 raise RuntimeSafetyError('Invalid bounded authentication request')
             auth_request_id = request['request_id']
             deadline = time.monotonic() + request['max_runtime_seconds'] + 5
-        elif operation in ('ui_chatgpt_usage','ui_chatgpt_reconcile'):
+        elif operation in ('ui_chatgpt_usage', 'ui_chatgpt_reconcile'):
             if operation == 'ui_chatgpt_reconcile' and (not self._quiesced_subscription_id or payload.get('stopped_job_id') != self._quiesced_subscription_id):
                 raise RuntimeSafetyError('Subscription subtree stop proof required')
             reconciliation_admitted = operation == 'ui_chatgpt_reconcile'
@@ -1234,8 +1413,7 @@ class JobManager:
             deadline = time.monotonic() + seconds + 10
         return deadline, auth_request_id, reconciliation_admitted
 
-    def _launch_job_process(self, operation, payload, job_id, reconciliation_admitted,
-                            helper_nonce, approved_analysis_plan, request):
+    def _launch_job_process(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request):
         context = mp.get_context('spawn')
         receiver, sender = context.Pipe(duplex=False)
         gate = context.Event()
@@ -1244,7 +1422,16 @@ class JobManager:
         self._terminal = False
         self._pipe_eof = False
         self._deferred = []
-        worker_args = (sender, gate, operation, payload, str(self.paths.root), str(self.paths.bootstrap) if self.paths.bootstrap else None, self.job_id, reconciliation_admitted)
+        worker_args = (
+            sender,
+            gate,
+            operation,
+            payload,
+            str(self.paths.root),
+            str(self.paths.bootstrap) if self.paths.bootstrap else None,
+            self.job_id,
+            reconciliation_admitted,
+        )
         if helper_nonce is not None:
             worker_args += (helper_nonce,)
         if _executor_registrar not in (None, DEFAULT_OPERATION_REGISTRAR):
@@ -1259,17 +1446,24 @@ class JobManager:
             if helper_nonce is not None:
                 # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery import admission, register_launch, plan_bindings
+
                 # Keep operation-specific dependencies out of module startup.
                 from .analysis_recovery_windows import WindowsAnalysisRecoveryTree
+
                 # Keep operation-specific dependencies out of module startup.
                 from .core import content_hash
-                anticipated = {'job_id': job_id, 'helper_nonce': helper_nonce,
-                    **plan_bindings(approved_analysis_plan), 'source_request_hash': content_hash(request)}
-                self.tree = WindowsAnalysisRecoveryTree(self.process, gate, self.paths,
-                    max(0.0, self._deadline - time.monotonic()), anticipated=anticipated)
+
+                anticipated = {
+                    'job_id': job_id,
+                    'helper_nonce': helper_nonce,
+                    **plan_bindings(approved_analysis_plan),
+                    'source_request_hash': content_hash(request),
+                }
+                self.tree = WindowsAnalysisRecoveryTree(self.process, gate, self.paths, max(0.0, self._deadline - time.monotonic()), anticipated=anticipated)
                 with admission(self.paths) as ownership:
-                    launch = register_launch(self.paths, job_id=job_id, helper_nonce=helper_nonce,
-                        approved_plan=approved_analysis_plan, request=request, admission=ownership)
+                    launch = register_launch(
+                        self.paths, job_id=job_id, helper_nonce=helper_nonce, approved_plan=approved_analysis_plan, request=request, admission=ownership
+                    )
                 self.tree.activate(launch)
             else:
                 if sys.platform == 'win32':
@@ -1300,8 +1494,9 @@ class JobManager:
         if operation in WALK_FORWARD_OPERATIONS:
             deadline, walk_forward_reference, walk_forward_result_reference, reconciliation_admitted = self._prepare_walk_forward_job(operation, payload)
         elif operation in ANALYSIS_OPERATIONS:
-            (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan,
-             helper_nonce, reconciliation_admitted, request) = self._prepare_analysis_job(operation, payload)
+            (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan, helper_nonce, reconciliation_admitted, request) = (
+                self._prepare_analysis_job(operation, payload)
+            )
         else:
             deadline, auth_request_id, reconciliation_admitted = self._prepare_other_job(operation, payload)
         job_id = uuid.uuid4().hex
@@ -1310,20 +1505,26 @@ class JobManager:
             self._claim_walk_forward(walk_forward_reference, job_id)
         self._analysis_job_identity = analysis_job_identity
         self._analysis_result_reference = analysis_result_reference
-        if analysis_job_identity is not None: self._quiesced_analysis = None
-        self._subscription_job = operation == 'ui_campaign' and payload.get('provider',{}).get('mode') == 'chatgpt_plan'
-        if self._subscription_job: self._quiesced_subscription_id = None
+        if analysis_job_identity is not None:
+            self._quiesced_analysis = None
+        self._subscription_job = operation == 'ui_campaign' and payload.get('provider', {}).get('mode') == 'chatgpt_plan'
+        if self._subscription_job:
+            self._quiesced_subscription_id = None
         self._walk_forward_reference = walk_forward_reference
         self._walk_forward_result_reference = walk_forward_result_reference
         if walk_forward_reference is not None:
             self._quiesced_walk_forward = None
         self._tree_quiesced = False
-        self._requires_tree_quiescence = operation in WALK_FORWARD_OPERATIONS or operation in ANALYSIS_OPERATIONS or operation in ('ui_chatgpt_auth','ui_chatgpt_usage','ui_chatgpt_reconcile') or self._subscription_job
+        self._requires_tree_quiescence = (
+            operation in WALK_FORWARD_OPERATIONS
+            or operation in ANALYSIS_OPERATIONS
+            or operation in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile')
+            or self._subscription_job
+        )
         self._operation = operation
         self._deadline = deadline
         self._auth_request_id = auth_request_id
-        self._launch_job_process(operation, payload, job_id, reconciliation_admitted,
-                                 helper_nonce, approved_analysis_plan, request)
+        self._launch_job_process(operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request)
         return self.job_id
 
     def poll(self):
@@ -1350,20 +1551,42 @@ class JobManager:
                         return
                     raise  # Invalid handles, oversized packets, etc. fail closed.
                 event = json.loads(raw)
-                if not isinstance(event, dict) or event.get('job_id') != self.job_id or event.get('type') not in {'progress', 'result', 'error', 'auth_progress'}:
+                if (
+                    not isinstance(event, dict)
+                    or event.get('job_id') != self.job_id
+                    or event.get('type') not in {'progress', 'result', 'error', 'auth_progress'}
+                ):
                     raise RuntimeSafetyError('Invalid worker response')
                 if event['type'] == 'result' and self._walk_forward_result_reference is not None:
                     result = event.get('result')
                     if not isinstance(result, dict) or result.get('reference') != self._walk_forward_result_reference:
                         raise RuntimeSafetyError('Walk-forward worker reference mismatch')
                 if event['type'] == 'result' and self._analysis_result_reference is not None:
-                    result=event.get('result')
-                    if not isinstance(result,dict) or result.get('analysis_id')!=self._analysis_result_reference:
+                    result = event.get('result')
+                    if not isinstance(result, dict) or result.get('analysis_id') != self._analysis_result_reference:
                         raise RuntimeSafetyError('Analysis worker reference mismatch')
                 if event['type'] == 'auth_progress':
                     auth_event = event.get('auth_event')
-                    allowed = {'request_id','kind','state','registrations','active_registration','authorization_url','error_code','revocation_confirmed','models','model_labels','account_labels'}
-                    if self._operation != 'ui_chatgpt_auth' or not isinstance(auth_event, dict) or set(auth_event) - allowed or auth_event.get('request_id') != self._auth_request_id or auth_event.get('kind') not in ('authorization', 'progress'):
+                    allowed = {
+                        'request_id',
+                        'kind',
+                        'state',
+                        'registrations',
+                        'active_registration',
+                        'authorization_url',
+                        'error_code',
+                        'revocation_confirmed',
+                        'models',
+                        'model_labels',
+                        'account_labels',
+                    }
+                    if (
+                        self._operation != 'ui_chatgpt_auth'
+                        or not isinstance(auth_event, dict)
+                        or set(auth_event) - allowed
+                        or auth_event.get('request_id') != self._auth_request_id
+                        or auth_event.get('kind') not in ('authorization', 'progress')
+                    ):
                         raise RuntimeSafetyError('Invalid private authentication event')
                     # Transient OAuth query data must never enter persistent logs.
                 else:
@@ -1383,7 +1606,14 @@ class JobManager:
                 pending, self._pending = self._pending, []
                 events.extend(event for event in pending if event.get('type') != 'cancelled')
                 if not terminal:
-                    events.append({'job_id': self.job_id, 'type': 'error', 'message': '背景作業超過期限並已停止；遠端完成／額度可能未知，禁止自動重送或退還。', 'error_type': 'DeadlineExceeded'})
+                    events.append(
+                        {
+                            'job_id': self.job_id,
+                            'type': 'error',
+                            'message': '背景作業超過期限並已停止；遠端完成／額度可能未知，禁止自動重送或退還。',
+                            'error_type': 'DeadlineExceeded',
+                        }
+                    )
                 return events
             if exited:
                 self.process.join()
@@ -1428,7 +1658,7 @@ class JobManager:
         self._deadline = None
         self._auth_request_id = None
         if self._analysis_job_identity is not None and self._tree_quiesced:
-            self._quiesced_analysis = (self.job_id,*self._analysis_job_identity)
+            self._quiesced_analysis = (self.job_id, *self._analysis_job_identity)
         if self._subscription_job:
             self._quiesced_subscription_id = self.job_id
         if self._walk_forward_reference is not None and self._tree_quiesced and ownership_error is None:
@@ -1446,32 +1676,45 @@ class JobManager:
             if self._operation in WALK_FORWARD_OPERATIONS or self._operation in ANALYSIS_OPERATIONS:
                 raise RuntimeSafetyError('Cannot prove managed subtree stopped; reconciliation blocked')
             return
-        try: os.killpg(pid, signal.SIGKILL)
-        except ProcessLookupError: return
-        deadline = time.monotonic()+6
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return
+        deadline = time.monotonic() + 6
         while True:
-            try: os.killpg(pid,0)
-            except ProcessLookupError: return
+            try:
+                os.killpg(pid, 0)
+            except ProcessLookupError:
+                return
             # A reparented zombie cannot perform I/O. Linux may retain it until
             # its new parent reaps it; prove every remaining group member is Z.
             if sys.platform.startswith('linux'):
                 live = False
                 for item in Path('/proc').iterdir():
-                    if not item.name.isdigit(): continue
-                    try: fields=(item/'stat').read_text().rsplit(')',1)[1].split()
-                    except (FileNotFoundError, ProcessLookupError): continue
-                    if int(fields[2]) == pid and fields[0] != 'Z': live=True;break
-                if not live: return
-            if time.monotonic() >= deadline: raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')
-            time.sleep(.02)
+                    if not item.name.isdigit():
+                        continue
+                    try:
+                        fields = (item / 'stat').read_text().rsplit(')', 1)[1].split()
+                    except (FileNotFoundError, ProcessLookupError):
+                        continue
+                    if int(fields[2]) == pid and fields[0] != 'Z':
+                        live = True
+                        break
+                if not live:
+                    return
+            if time.monotonic() >= deadline:
+                raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')
+            time.sleep(0.02)
 
     def cancel(self):
         if not self.active:
             return
         proc = self.process
         if self.tree:
-            if self._requires_tree_quiescence: self.tree.stop_and_join()
-            else: self.tree.close()
+            if self._requires_tree_quiescence:
+                self.tree.stop_and_join()
+            else:
+                self.tree.close()
         elif proc.pid and proc.is_alive():
             if sys.platform != 'win32':
                 try:

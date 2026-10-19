@@ -3,6 +3,7 @@
 No network at import. Downloaded bytes are provenance, not a quality certificate.
 No trading calendar, completion, redistribution rights, or rankings are inferred.
 """
+
 from datetime import date, datetime, timezone
 from html import unescape
 import hashlib
@@ -38,8 +39,7 @@ def official_url(url):
     """Reject credentials, ports, fragments, HTTP and lookalike hosts."""
     try:
         p = urlsplit(url)
-        ok = (p.scheme == 'https' and p.hostname in OFFICIAL_HOSTS and
-              p.port in (None, 443) and not p.username and not p.password and not p.fragment)
+        ok = p.scheme == 'https' and p.hostname in OFFICIAL_HOSTS and p.port in (None, 443) and not p.username and not p.password and not p.fragment
     except (ValueError, TypeError):
         ok = False
     if not ok:
@@ -57,8 +57,7 @@ def https_transport(url, timeout):
     """Return a file-like HTTP response; SSL default context verifies TLS."""
     official_url(url)
     opener = build_opener(_OfficialRedirect(), HTTPSHandler(context=ssl.create_default_context()))
-    return opener.open(Request(url, headers={'User-Agent': 'QuantLab-research/1.0',
-                                            'Accept-Encoding': 'identity'}), timeout=timeout)
+    return opener.open(Request(url, headers={'User-Agent': 'QuantLab-research/1.0', 'Accept-Encoding': 'identity'}), timeout=timeout)
 
 
 def fetch(url, *, limit, transport=https_transport):
@@ -99,8 +98,11 @@ def discover(page):
     text = unescape(page.decode('utf-8', errors='replace'))
     found = {}
     for url in re.findall(r'https://[^\s\"\'<>]+', text):
-        match = re.fullmatch(r'https://www\.taifex\.com\.tw/file/taifex/Dailydownload/'
-                             r'(DailydownloadCSV|Dailydownload)/Daily_(\d{4})_(\d{2})_(\d{2})\.zip', url)
+        match = re.fullmatch(
+            r'https://www\.taifex\.com\.tw/file/taifex/Dailydownload/'
+            r'(DailydownloadCSV|Dailydownload)/Daily_(\d{4})_(\d{2})_(\d{2})\.zip',
+            url,
+        )
         if not match:
             continue
         kind, year, month, day = match.groups()
@@ -129,23 +131,31 @@ def inspect_archive(raw, kind):
                 name = item.filename
                 path = PurePosixPath(name)
                 mode = item.external_attr >> 16
-                if (not name or '\\' in name or ':' in name or '\x00' in item.orig_filename or
-                        path.is_absolute() or len(path.parts) != 1 or '..' in path.parts or
-                        name.casefold() in names or item.is_dir() or stat.S_ISLNK(mode) or
-                        (stat.S_IFMT(mode) not in (0, stat.S_IFREG)) or item.flag_bits & 1 or
-                        path.suffix.lower() != '.' + kind):
+                if (
+                    not name
+                    or '\\' in name
+                    or ':' in name
+                    or '\x00' in item.orig_filename
+                    or path.is_absolute()
+                    or len(path.parts) != 1
+                    or '..' in path.parts
+                    or name.casefold() in names
+                    or item.is_dir()
+                    or stat.S_ISLNK(mode)
+                    or (stat.S_IFMT(mode) not in (0, stat.S_IFREG))
+                    or item.flag_bits & 1
+                    or path.suffix.lower() != '.' + kind
+                ):
                     raise ValidationError('unsafe or unexpected archive member')
                 names.add(name.casefold())
                 total += item.file_size
-                if (total > MAX_EXPANDED or item.file_size > MAX_EXPANDED or
-                        item.file_size / max(1, item.compress_size) > MAX_RATIO):
+                if total > MAX_EXPANDED or item.file_size > MAX_EXPANDED or item.file_size / max(1, item.compress_size) > MAX_RATIO:
                     raise ValidationError('archive expansion limit exceeded')
                 with archive.open(item) as stream:
                     content = stream.read(min(MAX_EXPANDED, item.file_size) + 1)
                 if len(content) != item.file_size:
                     raise ValidationError('archive member size mismatch')
-                members.append({'name': name, 'bytes': len(content),
-                                'sha256': hashlib.sha256(content).hexdigest(), 'content': content})
+                members.append({'name': name, 'bytes': len(content), 'sha256': hashlib.sha256(content).hexdigest(), 'content': content})
             return members
     except (zipfile.BadZipFile, RuntimeError, NotImplementedError, EOFError, zlib.error) as exc:
         raise ValidationError(f'invalid ZIP archive: {exc}') from exc
@@ -200,16 +210,29 @@ def refresh(cache, *, days=1, kind='csv', transport=https_transport):
             output = base / member['name']
             _atomic_write(output, content)
             files.append({**member, 'path': str(output)})
-        record = {**item, 'sha256': sha, 'bytes': len(raw), 'archive_path': str(base / 'archive.zip'),
-                  'files': files, 'completion_status': 'provisional_unverified',
-                  'quality_status': 'not_imported_or_validated', 'ranking_eligible': False}
+        record = {
+            **item,
+            'sha256': sha,
+            'bytes': len(raw),
+            'archive_path': str(base / 'archive.zip'),
+            'files': files,
+            'completion_status': 'provisional_unverified',
+            'quality_status': 'not_imported_or_validated',
+            'ranking_eligible': False,
+        }
         _atomic_write(base / 'manifest.json', json.dumps(record, sort_keys=True, indent=2).encode())
         results.append(record)
-    manifest = {'source_page': SOURCE_URL, 'source_page_sha256': hashlib.sha256(page).hexdigest(),
-                'checked_at': checked_at, 'requested_recent_archives': days,
-                'downloaded_archives': len(results), 'available_archives': len([x for x in discovered if x['format'] == kind]),
-                'coverage_status': 'not_certified', 'archives': results,
-                'notice': 'Free recent official downloads only; no redistribution license assumed. '
-                          'An explicit calendar and import quality validation are required before research.'}
+    manifest = {
+        'source_page': SOURCE_URL,
+        'source_page_sha256': hashlib.sha256(page).hexdigest(),
+        'checked_at': checked_at,
+        'requested_recent_archives': days,
+        'downloaded_archives': len(results),
+        'available_archives': len([x for x in discovered if x['format'] == kind]),
+        'coverage_status': 'not_certified',
+        'archives': results,
+        'notice': 'Free recent official downloads only; no redistribution license assumed. '
+        'An explicit calendar and import quality validation are required before research.',
+    }
     _atomic_write(cache / 'latest.json', json.dumps(manifest, sort_keys=True, indent=2).encode())
     return manifest

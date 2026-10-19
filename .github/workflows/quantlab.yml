@@ -10,6 +10,20 @@ concurrency:
   group: quantlab-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  ruff:
+    name: Ruff lint and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --require-hashes -r requirements-ruff.lock
+      - run: ruff check .
+      - run: ruff format --check .
   offline:
     name: ${{ matrix.shard && format('offline core {0}', matrix.shard) || (matrix.group == 'research' && 'offline research' || 'offline') }} (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
@@ -88,7 +102,7 @@ jobs:
     # Existing mandatory publication check names belong to complete coverage,
     # never to one subset. A failed/cancelled dependency cannot yield success.
     name: offline (windows-latest, ${{ matrix.python }})
-    needs: offline
+    needs: [offline, ruff]
     if: always()
     runs-on: windows-latest
     timeout-minutes: 15
@@ -130,6 +144,9 @@ jobs:
         env:
           OFFLINE_RESULT: ${{ needs.offline.result }}
         run: python -c "import os, sys; sys.exit(0 if os.environ.get('OFFLINE_RESULT') == 'success' else 1)"
+      - name: Require Ruff lint and format to have succeeded
+        if: always()
+        run: python -c "import sys; sys.exit(0 if '${{ needs.ruff.result }}' == 'success' else 1)"
       - name: Preserve complete or failed aggregate coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -233,6 +250,10 @@ jobs:
             os: ubuntu-latest
             requirements: requirements-qt-ci.lock
             python: '3.11'
+          - profile: ruff
+            os: ubuntu-latest
+            requirements: requirements-ruff.lock
+            python: '3.11'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -250,6 +271,9 @@ jobs:
       - name: Resolve hash-locked Linux CP311 Qt compatibility closure
         if: matrix.profile == 'qt-linux311'
         run: 'python -m pip --isolated install --index-url https://pypi.org/simple --ignore-installed --target audit-runtime --require-hashes --only-binary=:all: --no-cache-dir -r requirements-qt-ci.lock'
+      - name: Resolve hash-locked Ruff tooling closure
+        if: matrix.profile == 'ruff'
+        run: python -m pip install --ignore-installed --target audit-runtime --require-hashes -r requirements-ruff.lock
       - name: Install verified PyPA audit release
         run: python -m pip install pip-audit==2.10.1
       - name: Fail on known runtime vulnerabilities or audit errors

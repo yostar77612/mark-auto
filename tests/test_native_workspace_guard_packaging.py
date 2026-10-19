@@ -1,4 +1,5 @@
 """Static contracts for the separately executed Windows old-EXE refusal proof."""
+
 import json
 from pathlib import Path
 import re
@@ -22,10 +23,15 @@ class NativeWorkspaceGuardPackagingTests(unittest.TestCase):
         self.assertIn('unchanged_files=$before.Count', self.proof)
 
     def test_exact_release_bounded_process_and_expected_refusal(self):
-        for required in ("$BaselineVersion -ne '0.2.1'", '2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8',
-                         'WaitForExit(30000)', 'taskkill.exe /PID $p.Id /T /F',
-                         '$p.ExitCode -ne 1', "$evidence.market_smoke.error_type -ne 'RuntimeSafetyError'",
-                         '@($evidence.steps).Count -ne 0'):
+        for required in (
+            "$BaselineVersion -ne '0.2.1'",
+            '2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8',
+            'WaitForExit(30000)',
+            'taskkill.exe /PID $p.Id /T /F',
+            '$p.ExitCode -ne 1',
+            "$evidence.market_smoke.error_type -ne 'RuntimeSafetyError'",
+            '@($evidence.steps).Count -ne 0',
+        ):
             self.assertIn(required, self.proof)
         self.assertIn("throw 'Required 0.2.1 native guard proof has an unexpected baseline source commit'", self.proof)
         self.assertNotIn('Run-Setup', self.proof)

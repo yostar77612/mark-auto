@@ -22,15 +22,20 @@ class MarketPage(MarketDashboard):
         self.series_rendered.connect(lambda _: host.safe(self.bind_result_layers))
 
     def refresh_market(self):
-        if self.state.jobs.active: raise ValidationError(ui_text('ui.refresh_market.text_1'))
-        answer = self.host.question(ui_text('ui.refresh_market.text_2'),
+        if self.state.jobs.active:
+            raise ValidationError(ui_text('ui.refresh_market.text_1'))
+        answer = self.host.question(
+            ui_text('ui.refresh_market.text_2'),
             ui_text('ui.refresh_market.text_3'),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
         if answer == QMessageBox.StandardButton.Yes:
             self.host.start_job('ui_market_refresh', {'network_opt_in': True})
 
     def save_market_preferences(self):
-        if self.state.settings is None: return
+        if self.state.settings is None:
+            return
         value = self.state.settings.load()
         value['market'] = self.market.preferences()
         geometry = self.host.window_geometry()
@@ -41,6 +46,7 @@ class MarketPage(MarketDashboard):
     def load_market_cache(self):
         from quantlab.market_providers import load_cached
         from desktop_expiry_inputs import show_research_dataset
+
         show_research_dataset(self.research_summary, None)
         research_path = self.state.root / 'dataset.json'
         if research_path.exists():
@@ -54,11 +60,14 @@ class MarketPage(MarketDashboard):
         for provider in ('twse', 'taifex'):
             try:
                 loaded = load_cached(provider, self.state.root / 'market_cache')
-                series.update({x.instrument.contract_id: x for x in loaded.series}); quotes.extend(loaded.series)
+                series.update({x.instrument.contract_id: x for x in loaded.series})
+                quotes.extend(loaded.series)
                 outcome = self.state._market_outcomes.get(provider)
-                if outcome and outcome.get('error'): errors.append(ui_text('ui.load_market_cache.text_1').format(provider.upper()))
+                if outcome and outcome.get('error'):
+                    errors.append(ui_text('ui.load_market_cache.text_1').format(provider.upper()))
             except ValueError:
-                if (self.state.root / 'market_cache' / (provider + '.json')).exists(): errors.append(ui_text('ui.load_market_cache.text_2').format(provider.upper()))
+                if (self.state.root / 'market_cache' / (provider + '.json')).exists():
+                    errors.append(ui_text('ui.load_market_cache.text_2').format(provider.upper()))
                 if self.state._market_outcomes.get(provider, {}).get('error'):
                     errors.append(ui_text('ui.load_market_cache.text_3').format(provider.upper()))
         dataset_path, calendar_path = self.state.root / 'dataset.json', self.state.root / 'dataset_calendar.json'
@@ -74,6 +83,7 @@ class MarketPage(MarketDashboard):
                 errors.append(error_message(exception_code(exc)))
         try:
             from quantlab.market_history import list_history
+
             histories = list_history(self.state.root / 'market_history')
             # Keep immutable imports separate; newest received snapshot wins per
             # exact contract. Do not blend policies or minute/daily observations.
@@ -87,12 +97,15 @@ class MarketPage(MarketDashboard):
         selection = self.state.root / 'selection.json'
         strategy = ui_text('ui.load_market_cache.text_5')
         if selection.exists():
-            try: strategy = ui_text('ui.load_market_cache.text_6').format(load_selection(selection)['strategy_hash'][:16])
-            except (ValueError, KeyError): strategy = ui_text('ui.load_market_cache.text_7')
+            try:
+                strategy = ui_text('ui.load_market_cache.text_6').format(load_selection(selection)['strategy_hash'][:16])
+            except (ValueError, KeyError):
+                strategy = ui_text('ui.load_market_cache.text_7')
         self.market.set_trading_status(strategy=strategy)
         if (self.state.root / 'paper.sqlite3').exists() and (self.state.root / 'paper_policy.json').exists():
             try:
                 from quantlab.paper import PaperBroker
+
                 self.host.show_account(PaperBroker.read_snapshot(self.state.root / 'paper.sqlite3'), strategy=strategy)
             except Exception:
                 self.market.set_trading_status(strategy=strategy, paper=ui_text('ui.load_market_cache.text_8'), risk=ui_text('ui.load_market_cache.text_9'))
@@ -101,6 +114,7 @@ class MarketPage(MarketDashboard):
     def bind_result_layers(self, result=None):
         """Only exact source, strategy and chart identities may carry result layers."""
         from desktop_charts import ChartTrace, ChartMarker
+
         chart = self.market.chart
         bars = chart.bars
         old_overlays, old_panes, styles = dict(chart.overlays), dict(chart.panes), dict(chart.pane_styles)
@@ -108,10 +122,12 @@ class MarketPage(MarketDashboard):
         chart.set_series(bars, source_label=source, status_label=status)
         chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
         path = self.state.result_choice.currentData() if hasattr(self.state, 'result_choice') else None
-        if not bars or not path or not (self.state.root / 'dataset.json').exists(): return
+        if not bars or not path or not (self.state.root / 'dataset.json').exists():
+            return
         result = result or load_result(path)
         data = load_dataset(self.state.root / 'dataset.json')
         from quantlab.reporting import validate_result_payload
+
         try:
             # Use the report loader's authoritative full dataset/provenance binding.
             validate_result_payload(to_dict(result), dataset=data)
@@ -120,34 +136,58 @@ class MarketPage(MarketDashboard):
         # Require the exact adapted market source, not merely matching price/date.
         selected = self.market.contract_combo.currentData()
         item = self.market.selected_series()
-        if item is None or self.state._market_data_bindings.get(selected) != data.manifest['data_hash']: return
-        if item != self.state._market_research_series.get(selected): return
+        if item is None or self.state._market_data_bindings.get(selected) != data.manifest['data_hash']:
+            return
+        if item != self.state._market_research_series.get(selected):
+            return
         trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], ui_text('ui.bind_result_layers.text_1'))
         markers = []
         from bisect import bisect_left, bisect_right
-        timed = [(i,b) for i,b in enumerate(bars) if b.timestamp is not None and b.end is not None]
-        starts, ends = [b.timestamp for _,b in timed], [b.end for _,b in timed]
+
+        timed = [(i, b) for i, b in enumerate(bars) if b.timestamp is not None and b.end is not None]
+        starts, ends = [b.timestamp for _, b in timed], [b.end for _, b in timed]
+
         def event_index(timestamp, at_close):
-            position = bisect_left(ends, timestamp) if at_close else bisect_right(starts, timestamp)-1
-            if not 0 <= position < len(timed): return None
+            position = bisect_left(ends, timestamp) if at_close else bisect_right(starts, timestamp) - 1
+            if not 0 <= position < len(timed):
+                return None
             i, bar = timed[position]
             return i if (bar.timestamp < timestamp <= bar.end if at_close else bar.timestamp <= timestamp < bar.end) else None
+
         for signal in result.signals:
-            if signal.contract_id != selected: continue
+            if signal.contract_id != selected:
+                continue
             index = event_index(signal.timestamp, True)
             if index is not None:
-                markers.append(ChartMarker(index, 'signal', ui_text('ui.bind_result_layers.text_2').format(str(signal.target_position)),
-                    reason=signal.reason, timestamp=signal.timestamp, target_position=signal.target_position))
+                markers.append(
+                    ChartMarker(
+                        index,
+                        'signal',
+                        ui_text('ui.bind_result_layers.text_2').format(str(signal.target_position)),
+                        reason=signal.reason,
+                        timestamp=signal.timestamp,
+                        target_position=signal.target_position,
+                    )
+                )
         for fill in result.fills:
-            if fill.contract_id != selected: continue
+            if fill.contract_id != selected:
+                continue
             # Core timestamps are event availability; never infer intrabar execution time.
             index = event_index(fill.timestamp, fill.reason in ('stop', 'target'))
             if index is not None:
-                markers.append(ChartMarker(index, 'fill', ui_text('ui.bind_result_layers.text_3') if fill.side == 'buy' else ui_text('ui.bind_result_layers.text_4'),
-                    price=fill.price, quantity=fill.quantity, cost=fill.commission+fill.tax,
-                    reason=fill.reason, timestamp=fill.timestamp))
+                markers.append(
+                    ChartMarker(
+                        index,
+                        'fill',
+                        ui_text('ui.bind_result_layers.text_3') if fill.side == 'buy' else ui_text('ui.bind_result_layers.text_4'),
+                        price=fill.price,
+                        quantity=fill.quantity,
+                        cost=fill.commission + fill.tax,
+                        reason=fill.reason,
+                        timestamp=fill.timestamp,
+                    )
+                )
         chart.set_series(bars, trace=trace, source_label=source, status_label=ui_text('ui.bind_result_layers.text_5').format(status))
         chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
         chart.set_markers(markers, trace=trace)
         chart.set_reference_lines(self.host.result_snapshot_lines(result, bars, selected), trace=trace)
-

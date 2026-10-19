@@ -1,4 +1,5 @@
 """Cheap, offline installer language and unchanged security-contract checks."""
+
 import ast
 import hashlib
 from pathlib import Path
@@ -9,19 +10,18 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 LANGUAGE = 'packaging/languages/ChineseTraditional.isl'
 LANGUAGE_SHA256 = 'ab22b0ebf82969d1c9a7208e0e9f60e5119c0c95b9dacc00eb8e5582c7d3c604'
-SOURCE_URL = ('https://raw.githubusercontent.com/jrsoftware/issrc/is-6_4_3/'
-              'Files/Languages/Unofficial/ChineseTraditional.isl')
+SOURCE_URL = 'https://raw.githubusercontent.com/jrsoftware/issrc/is-6_4_3/Files/Languages/Unofficial/ChineseTraditional.isl'
 # Captured from git show b6777a86d2bf1167e361de3d52f61aa6f15e7e63:packaging/markauto.iss.
 # Byte-identical line bodies; checkout LF/CRLF and source BOM are canonicalized.
 SECURITY_LINES = (
     b'AppId={{58788303-95B7-491B-A67A-B1EBA50DA420}',
-    br'DefaultDirName={localappdata}\Programs\MarkAuto',
+    rb'DefaultDirName={localappdata}\Programs\MarkAuto',
     b'PrivilegesRequired=lowest',
     b'UsePreviousAppDir=no',
     b'CloseApplications=no',
     b'RestartApplications=no',
-    br'AppMutex=Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420',
-    br'; Deliberately no [UninstallDelete]: %LOCALAPPDATA%\MarkAuto is never removed.',
+    rb'AppMutex=Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420',
+    rb'; Deliberately no [UninstallDelete]: %LOCALAPPDATA%\MarkAuto is never removed.',
 )
 # Pins the WHOLE original script, including uninstall/data handling, except the
 # bodies of UI literals below. No variable, condition, flag, path or log is masked.
@@ -43,10 +43,8 @@ class InstallerLanguageTests(unittest.TestCase):
         cls.source = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')
 
     def test_single_language_resolves_from_script_directory(self):
-        entries = [line for line in section(self.source, 'Languages').splitlines()
-                   if line.strip() and not line.lstrip().startswith(';')]
-        self.assertEqual(entries, [
-            'Name: "chinesetraditional"; MessagesFile: "languages\\ChineseTraditional.isl"'])
+        entries = [line for line in section(self.source, 'Languages').splitlines() if line.strip() and not line.lstrip().startswith(';')]
+        self.assertEqual(entries, ['Name: "chinesetraditional"; MessagesFile: "languages\\ChineseTraditional.isl"'])
         self.assertNotRegex(self.source, r'(?im)^\s*SourceDir\s*=')
         relative = re.search(r'MessagesFile: "([^"]+)"', entries[0]).group(1)
         resolved = ROOT / 'packaging' / Path(relative.replace('\\', '/'))
@@ -59,11 +57,9 @@ class InstallerLanguageTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(data).hexdigest(), LANGUAGE_SHA256)
         for name in ('README.md', 'THIRD_PARTY_NOTICES.md'):
             notice = (ROOT / 'packaging' / name).read_text(encoding='utf-8')
-            for value in (LANGUAGE_SHA256, SOURCE_URL, 'is-6_4_3',
-                          'Inno Setup license', 'Enfeng Tsao', 'Samuel Lee'):
+            for value in (LANGUAGE_SHA256, SOURCE_URL, 'is-6_4_3', 'Inno Setup license', 'Enfeng Tsao', 'Samuel Lee'):
                 self.assertIn(value, notice, name)
-        self.assertIn('packaging/languages/ChineseTraditional.isl -text',
-                      (ROOT / '.gitattributes').read_text(encoding='utf-8'))
+        self.assertIn('packaging/languages/ChineseTraditional.isl -text', (ROOT / '.gitattributes').read_text(encoding='utf-8'))
 
     def test_all_custom_ui_messages_are_chinese(self):
         messages = [match[1] for match in re.findall(UI_CALL, section(self.source, 'Code'))]
@@ -90,20 +86,18 @@ class InstallerLanguageTests(unittest.TestCase):
         normalized = re.sub(r'^\[Languages\]\n.*?(?=^\[)', '', self.source, flags=re.M | re.S)
         normalized = re.sub(UI_CALL, r"\1'<UI>'", normalized)
         normalized = re.sub(r'Description: "[^"]*"', 'Description: "<UI>"', normalized)
-        self.assertEqual(hashlib.sha256(normalized.encode('utf-8')).hexdigest(),
-                         BASELINE_NON_UI_SHA256)
+        self.assertEqual(hashlib.sha256(normalized.encode('utf-8')).hexdigest(), BASELINE_NON_UI_SHA256)
 
     def test_translation_is_build_input_only(self):
         # Evaluate only the real glob comprehension: no manifest generation,
         # filesystem mutation, subprocess, installed metadata or fixture payload.
         source = (ROOT / 'packaging/build_manifest.py').read_text(encoding='utf-8')
-        main = next(node for node in ast.parse(source).body
-                    if isinstance(node, ast.FunctionDef) and node.name == 'main')
-        assignment = next(node for node in main.body if isinstance(node, ast.Assign)
-                          and any(isinstance(t, ast.Name) and t.id == 'inputs' for t in node.targets))
+        main = next(node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef) and node.name == 'main')
+        assignment = next(
+            node for node in main.body if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'inputs' for t in node.targets)
+        )
         patterns = assignment.value.generators[0].iter
-        names = {p.relative_to(ROOT).as_posix() for pattern in ast.literal_eval(patterns)
-                 for p in ROOT.glob(pattern) if p.is_file()}
+        names = {p.relative_to(ROOT).as_posix() for pattern in ast.literal_eval(patterns) for p in ROOT.glob(pattern) if p.is_file()}
         self.assertIn(LANGUAGE, names)
         spec = (ROOT / 'packaging/markauto.spec').read_text(encoding='utf-8')
         self.assertNotIn('ChineseTraditional.isl', spec)

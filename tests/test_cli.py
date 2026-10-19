@@ -44,11 +44,21 @@ class CLITests(unittest.TestCase):
         self.assertEqual(status, 2)
 
     def test_import_backtest_and_campaign_reopen(self):
-        status, out, error = self.call('import', 'examples/synthetic_bars.csv', '--kind', 'synthetic_bars',
-                                      '--calendar', 'examples/synthetic_calendar.json', '--output', str(self.root / 'dataset.json'))
+        status, out, error = self.call(
+            'import',
+            'examples/synthetic_bars.csv',
+            '--kind',
+            'synthetic_bars',
+            '--calendar',
+            'examples/synthetic_calendar.json',
+            '--output',
+            str(self.root / 'dataset.json'),
+        )
         self.assertEqual(status, 0, error)
         self.assertEqual(json.loads(out)['manifest']['source_type'], 'synthetic')
-        status, out, error = self.call('backtest', str(self.root / 'dataset.json'), '--config', 'examples/synthetic_config.json', '--output', str(self.root / 'reports'))
+        status, out, error = self.call(
+            'backtest', str(self.root / 'dataset.json'), '--config', 'examples/synthetic_config.json', '--output', str(self.root / 'reports')
+        )
         self.assertEqual(status, 0, error)
         args = ('campaign', str(self.root / 'dataset.json'), '--output', str(self.root / 'campaign'))
         status, out, error = self.call(*args)

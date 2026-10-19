@@ -4,6 +4,7 @@ Runs the same typed 960-bar / 120000-margin UI and spawned-worker flow with a
 separate 180s overall observation limit. SQLite calls retain their exact SQL,
 transactions and durability settings. Timings are inclusive and overlap.
 """
+
 from contextlib import contextmanager
 import json
 import os
@@ -48,17 +49,18 @@ class Timings:
                 value['max_seconds'] = max(value.get('max_seconds', 0.0), elapsed)
                 # Last completed timer at this snapshot, never deadline state
                 # or evidence of a committed/verified result.
-                self.last_completed = {'phase': name, 'calls': value['calls'],
-                    'seconds': elapsed, 'elapsed_seconds': finished - self.started}
+                self.last_completed = {'phase': name, 'calls': value['calls'], 'seconds': elapsed, 'elapsed_seconds': finished - self.started}
 
     def snapshot(self):
         with self.lock:
             now = time.perf_counter()
-            return {'elapsed_seconds': now - self.started,
-                    'timings': {key: dict(value) for key, value in self.values.items()},
-                    'active': [{'phase': name, 'seconds': now - started} for name, started in self.stack],
-                    'boundaries': dict(self.boundaries),
-                    'last_completed': dict(self.last_completed)}
+            return {
+                'elapsed_seconds': now - self.started,
+                'timings': {key: dict(value) for key, value in self.values.items()},
+                'active': [{'phase': name, 'seconds': now - started} for name, started in self.stack],
+                'boundaries': dict(self.boundaries),
+                'last_completed': dict(self.last_completed),
+            }
 
 
 def _database_role(path):
@@ -123,6 +125,7 @@ def _instrument_connect(real_connect, timings):
             connection = real_connect(database, *args, factory=TimedConnection, **kwargs)
         connection.role = role
         return connection
+
     return connect
 
 
@@ -139,6 +142,7 @@ def _filesystem(root):
     result = {'synthetic_workspace': str(root)}
     if sys.platform == 'win32':
         import ctypes
+
         volume = ctypes.create_unicode_buffer(1024)
         fs = ctypes.create_unicode_buffer(1024)
         kernel = ctypes.windll.kernel32
@@ -152,29 +156,39 @@ def _filesystem(root):
     return result
 
 
-def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                      reconciliation_admitted=False):
+def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False):
     if operation != 'ui_paper_replay':
-        return _original_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                                reconciliation_admitted)
+        return _original_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     timings = Timings()
     target = Path(os.environ['MARKAUTO_DIAGNOSTIC_OUTPUT']) / (job_id + '.json')
-    metadata = {'observation_only': True, 'worker_pid': os.getpid(), 'operation': operation,
-                'python': sys.version, 'sqlite': sqlite3.sqlite_version,
-                'os': platform.platform(), 'os_build': platform.version(), **_filesystem(root)}
+    metadata = {
+        'observation_only': True,
+        'worker_pid': os.getpid(),
+        'operation': operation,
+        'python': sys.version,
+        'sqlite': sqlite3.sqlite_version,
+        'os': platform.platform(),
+        'os_build': platform.version(),
+        **_filesystem(root),
+    }
     stop = threading.Event()
+
     def report():
         _write_json(target, {**metadata, **timings.snapshot()})
+
     def periodic():
         while not stop.wait(1):
             report()
+
     report()
     writer = threading.Thread(target=periodic, daemon=True)
     writer.start()
     import quantlab.paper as paper
     import quantlab.paper_replay as replay
+
     sqlite3.connect = _instrument_connect(sqlite3.connect, timings)
     original_connection = replay.PaperReplay._connection
+
     @contextmanager
     def observed_connection(self):
         with original_connection(self) as db:
@@ -186,36 +200,47 @@ def _diagnosed_worker(sender, gate, operation, payload, root, bootstrap, job_id,
                 'sqlite_source_id': db.execute('SELECT sqlite_source_id()').fetchone()[0],
             }
             yield db
+
     replay.PaperReplay._connection = observed_connection
+
     def wrap(cls, name, label):
         original = getattr(cls, name)
+
         def call(self, *args, **kwargs):
             with timings.measure(label):
                 return original(self, *args, **kwargs)
+
         setattr(cls, name, call)
-    for cls, name, label in ((paper.PaperBroker, '_restore', 'broker.restore'),
-                            (paper.PaperBroker, 'snapshot', 'broker.snapshot'),
-                            (replay.PaperReplay, '__init__', 'replay.initialize_and_preflight'),
-                            (replay.PaperReplay, 'snapshot', 'replay.snapshot'),
-                            (replay.PaperReplay, '_quote_policy', 'replay.policy'),
-                            (replay.PaperReplay, 'step', 'replay.step')):
+
+    for cls, name, label in (
+        (paper.PaperBroker, '_restore', 'broker.restore'),
+        (paper.PaperBroker, 'snapshot', 'broker.snapshot'),
+        (replay.PaperReplay, '__init__', 'replay.initialize_and_preflight'),
+        (replay.PaperReplay, 'snapshot', 'replay.snapshot'),
+        (replay.PaperReplay, '_quote_policy', 'replay.policy'),
+        (replay.PaperReplay, 'step', 'replay.step'),
+    ):
         wrap(cls, name, label)
     original_fault = replay.PaperReplay._fault
+
     def boundary(self, point):
         original_fault(self, point)
         with timings.lock:
             timings.boundaries[point] = timings.boundaries.get(point, 0) + 1
+
     replay.PaperReplay._fault = boundary
+
     class Sender:
         def send_bytes(self, value):
             with timings.measure('ipc.send'):
                 sender.send_bytes(value)
+
         def close(self):
             sender.close()
+
     try:
         with timings.measure('worker.body'):
-            _original_worker(Sender(), gate, operation, payload, root, bootstrap, job_id,
-                             reconciliation_admitted)
+            _original_worker(Sender(), gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     finally:
         stop.set()
         writer.join()
@@ -231,20 +256,25 @@ def _broker_probe(output, point):
         from quantlab.paper import PaperBroker
     sqlite3.connect = _instrument_connect(sqlite3.connect, timings)
     fixture = PaperTests()
+
     def record(phase):
         _write_json(output, {'probe': point, 'phase': phase, **_filesystem(fixture.tmp.name), **timings.snapshot()})
+
     for label, action in (
-            ('fixture.setup', lambda: fixture.setUp()),
-            ('fixture.second_broker', lambda: setattr(fixture, 'broker', PaperBroker(Path(fixture.tmp.name) / 'second.sqlite3', **fixture.kw))),
-            ('fixture.reconcile', lambda: fixture.broker.reconcile(dict(account_id='synthetic', cash='100000', positions={}, orders={}, fills={}))),
-            ('fixture.submit', lambda: fixture.submit())):
+        ('fixture.setup', lambda: fixture.setUp()),
+        ('fixture.second_broker', lambda: setattr(fixture, 'broker', PaperBroker(Path(fixture.tmp.name) / 'second.sqlite3', **fixture.kw))),
+        ('fixture.reconcile', lambda: fixture.broker.reconcile(dict(account_id='synthetic', cash='100000', positions={}, orders={}, fills={}))),
+        ('fixture.submit', lambda: fixture.submit()),
+    ):
         with timings.measure(label):
             action()
         record(label)
+
     def fail(boundary):
         if boundary == point:
             record(boundary)
             os._exit(73)
+
     fixture.broker._fault = fail
     with timings.measure('fixture.apply_event'):
         fixture.broker.apply_event(fixture.event())
@@ -253,6 +283,7 @@ def _broker_probe(output, point):
 
 def _process_probes(directory, deadline):
     import subprocess
+
     result = []
     commands = [('python_bootstrap', [sys.executable, '-c', 'pass'], 0)]
     for point in ('before_event_commit', 'after_event_commit'):
@@ -264,10 +295,13 @@ def _process_probes(directory, deadline):
             raise TimeoutError('Diagnostic observation deadline reached')
         started = time.monotonic()
         try:
-            completed = subprocess.run(command, cwd=ROOT, timeout=min(30, remaining),
-                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            entry = {'probe': name, 'seconds': time.monotonic() - started,
-                     'returncode': completed.returncode, 'expected_exit': completed.returncode == expected}
+            completed = subprocess.run(command, cwd=ROOT, timeout=min(30, remaining), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            entry = {
+                'probe': name,
+                'seconds': time.monotonic() - started,
+                'returncode': completed.returncode,
+                'expected_exit': completed.returncode == expected,
+            }
         except subprocess.TimeoutExpired:
             # subprocess.run kills and waits for this no-descendant probe.
             entry = {'probe': name, 'seconds': time.monotonic() - started, 'timed_out': True}
@@ -302,16 +336,22 @@ def _journal_mode_probe(output, mode, root):
         raise ValueError('Diagnostic database must be new')
     timings = Timings()
     connect = _instrument_connect(sqlite3.connect, timings)
-    metadata = {'probe': 'rollback_journal_comparison', 'mode': mode,
-                'sqlite': sqlite3.sqlite_version, 'commits_expected': 960,
-                'verified_pragmas': {'journal_mode': mode.lower(), 'synchronous': 2},
-                **_filesystem(root)}
+    metadata = {
+        'probe': 'rollback_journal_comparison',
+        'mode': mode,
+        'sqlite': sqlite3.sqlite_version,
+        'commits_expected': 960,
+        'verified_pragmas': {'journal_mode': mode.lower(), 'synchronous': 2},
+        **_filesystem(root),
+    }
     consumed = 0
+
     def record(complete=False):
-        _write_json(output, {**metadata, 'complete': complete,
-                            'commits_completed': consumed, **timings.snapshot()})
+        _write_json(output, {**metadata, 'complete': complete, 'commits_completed': consumed, **timings.snapshot()})
+
     def connection():
         return _rollback_connection(connect, path, mode)
+
     with connection() as db:
         db.execute('CREATE TABLE replay (id INTEGER PRIMARY KEY, binding TEXT, cursor INTEGER, active INTEGER, plan TEXT)')
         db.execute('INSERT INTO replay VALUES (1, ?, 0, 1, NULL)', ('0' * 64,))
@@ -331,8 +371,10 @@ def _journal_mode_probe(output, mode, root):
         if time.monotonic() - last_report >= 1:
             record()
             last_report = time.monotonic()
+
     class RollbackProbe(Exception):
         pass
+
     try:
         with connection() as db:
             db.execute('UPDATE replay SET cursor=-1 WHERE id=1')
@@ -357,6 +399,7 @@ def _journal_mode_probe(output, mode, root):
 def _journal_mode_comparison(directory, deadline):
     import subprocess
     import tempfile
+
     results = []
     # The controller owns the entire disposable tree, even if a probe is killed.
     # subprocess.run waits for the no-descendant child before this tree is removed.
@@ -367,24 +410,24 @@ def _journal_mode_comparison(directory, deadline):
                 results.append({'mode': mode, 'complete': False, 'not_started': True, 'reason': 'deadline'})
                 continue
             output = directory / ('journal-' + mode.lower() + '.json')
-            command = [sys.executable, str(Path(__file__).resolve()), str(output),
-                       '--journal-child', mode, '--journal-root', root]
+            command = [sys.executable, str(Path(__file__).resolve()), str(output), '--journal-child', mode, '--journal-root', root]
             started = time.monotonic()
             try:
-                completed = subprocess.run(command, cwd=ROOT, timeout=remaining,
-                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                entry = {'mode': mode, 'seconds': time.monotonic() - started,
-                         'returncode': completed.returncode, 'complete': completed.returncode == 0}
+                completed = subprocess.run(command, cwd=ROOT, timeout=remaining, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                entry = {'mode': mode, 'seconds': time.monotonic() - started, 'returncode': completed.returncode, 'complete': completed.returncode == 0}
             except subprocess.TimeoutExpired:
-                entry = {'mode': mode, 'seconds': time.monotonic() - started,
-                         'timed_out': True, 'complete': False}
+                entry = {'mode': mode, 'seconds': time.monotonic() - started, 'timed_out': True, 'complete': False}
             if output.exists():
                 observation = json.loads(output.read_text(encoding='utf-8'))
-                entry['complete'] = (entry['complete'] and observation.get('complete') is True
-                    and observation.get('mode') == mode and observation.get('commits_completed') == 960
+                entry['complete'] = (
+                    entry['complete']
+                    and observation.get('complete') is True
+                    and observation.get('mode') == mode
+                    and observation.get('commits_completed') == 960
                     and observation.get('verified_pragmas') == {'journal_mode': mode.lower(), 'synchronous': 2}
                     and observation.get('rollback_and_reopen_verified') is True
-                    and observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls') == 960)
+                    and observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls') == 960
+                )
             else:
                 entry['complete'] = False
             results.append(entry)
@@ -400,18 +443,29 @@ def observe(output, *, limit=180):
     import quantlab.desktop_runtime as runtime
     from quantlab.reporting import read_json
     from desktop_ui import paper_risk_limits
+
     output = Path(output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     import tempfile
+
     worker_dir = Path(tempfile.mkdtemp(prefix='paper-timing-', dir=output.parent))
     os.environ['MARKAUTO_DIAGNOSTIC_OUTPUT'] = str(worker_dir)
     original = runtime._job_worker
     runtime._job_worker = _diagnosed_worker
-    report = {'observation_only': True, 'acceptance_timeout_unchanged': 30,
-              'observation_limit_seconds': limit, 'bars': 960, 'margin': '120000',
-              'python': sys.version, 'sqlite': sqlite3.sqlite_version,
-              'os': platform.platform(), 'os_build': platform.version(), 'jobs': []}
+    report = {
+        'observation_only': True,
+        'acceptance_timeout_unchanged': 30,
+        'observation_limit_seconds': limit,
+        'bars': 960,
+        'margin': '120000',
+        'python': sys.version,
+        'sqlite': sqlite3.sqlite_version,
+        'os': platform.platform(),
+        'os_build': platform.version(),
+        'jobs': [],
+    }
     fixture = None
+
     def action(name):
         began = time.monotonic()
         if began >= deadline:
@@ -420,7 +474,7 @@ def observe(output, *, limit=180):
         while fixture.jobs.active and time.monotonic() < deadline:
             fixture.app.processEvents()
             fixture.window.poll_jobs()
-            time.sleep(.02)
+            time.sleep(0.02)
         elapsed = time.monotonic() - began
         if fixture.jobs.active:
             fixture.jobs.cancel()  # Existing platform process-tree cleanup.
@@ -429,6 +483,7 @@ def observe(output, *, limit=180):
         if '失敗' in fixture.window.status.text():
             raise AssertionError('Diagnostic worker reported failure')
         report['jobs'].append({'action': name, 'seconds': elapsed})
+
     try:
         report['process_probes'] = _process_probes(worker_dir, deadline)
         NativeDesktopTests.setUpClass()
@@ -461,8 +516,9 @@ def observe(output, *, limit=180):
         assert repeated['replay']['binding'] == result['replay']['binding']
         for key in ('fills', 'orders', 'positions', 'cash', 'order_send_timestamps'):
             assert repeated['account'][key] == result['account'][key]
-        report.update(status='measured', complete=True, cursor=result['replay']['cursor'],
-                      orders=len(result['account']['orders']), fills=len(result['account']['fills']))
+        report.update(
+            status='measured', complete=True, cursor=result['replay']['cursor'], orders=len(result['account']['orders']), fills=len(result['account']['fills'])
+        )
     except (Exception, KeyboardInterrupt) as error:
         report.update(status='observation_incomplete', complete=False, error_type=type(error).__name__)
     finally:
@@ -483,16 +539,24 @@ def observe(output, *, limit=180):
 def observe_persistence(output, *, limit=180):
     """Separate bounded calibration; it never runs or replaces an acceptance test."""
     import tempfile
+
     started = time.monotonic()
     deadline = started + limit - 6
     output = Path(output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix='paper-journal-timing-', dir=output.parent))
-    report = {'observation_only': True, 'kind': 'rollback_journal_comparison',
-              'observation_limit_seconds': limit, 'commits_per_mode': 960,
-              'python': sys.version, 'sqlite': sqlite3.sqlite_version,
-              'os': platform.platform(), 'os_build': platform.version(),
-              'status': 'observation_incomplete', 'complete': False}
+    report = {
+        'observation_only': True,
+        'kind': 'rollback_journal_comparison',
+        'observation_limit_seconds': limit,
+        'commits_per_mode': 960,
+        'python': sys.version,
+        'sqlite': sqlite3.sqlite_version,
+        'os': platform.platform(),
+        'os_build': platform.version(),
+        'status': 'observation_incomplete',
+        'complete': False,
+    }
     try:
         report['comparisons'] = _journal_mode_comparison(directory, deadline)
         if len(report['comparisons']) == 3 and all(item['complete'] for item in report['comparisons']):
@@ -505,7 +569,6 @@ def observe_persistence(output, *, limit=180):
         _write_json(output, report)
         print(json.dumps(report, ensure_ascii=True, sort_keys=True), flush=True)
     return 0 if report['complete'] else 1
-
 
 
 CONNECTION_PROFILES = ('delete-reopen', 'delete-step', 'persist-reopen', 'persist-step')
@@ -521,8 +584,7 @@ def _probe_connection(connect, path, profile):
         if db.execute('PRAGMA journal_mode=' + mode.upper()).fetchone() != (mode,):
             raise RuntimeError('Diagnostic journal mode not accepted')
         db.execute('PRAGMA synchronous=FULL')
-        if (db.execute('PRAGMA synchronous').fetchone() != (2,)
-                or db.execute('PRAGMA locking_mode').fetchone() != ('normal',)):
+        if db.execute('PRAGMA synchronous').fetchone() != (2,) or db.execute('PRAGMA locking_mode').fetchone() != ('normal',):
             raise RuntimeError('Diagnostic FULL/normal settings not accepted')
         return db
     except BaseException:
@@ -530,12 +592,10 @@ def _probe_connection(connect, path, profile):
         raise
 
 
-
 def _owned_connection_path(root, profile):
     root = Path(root)
     owner = json.loads((root / 'connection-probe-owner.json').read_text(encoding='utf-8'))
-    if (not root.name.startswith('paper-connection-probe-')
-            or owner != {'profile': profile, 'controller_pid': os.getppid()}):
+    if not root.name.startswith('paper-connection-probe-') or owner != {'profile': profile, 'controller_pid': os.getppid()}:
         raise ValueError('Connection probe must use its controller-owned fixture')
     return root / 'replays' / 'probe.sqlite3'
 
@@ -563,8 +623,7 @@ def _connection_observer(output, profile, root, action):
             raise RuntimeError('Observer control write did not survive reopen')
     finally:
         db.close()
-    _write_json(output, {'action': action, 'cursor': expected, 'active': after,
-                         'committed_and_reopened': True, 'pid': os.getpid()})
+    _write_json(output, {'action': action, 'cursor': expected, 'active': after, 'committed_and_reopened': True, 'pid': os.getpid()})
     return 0
 
 
@@ -590,26 +649,41 @@ def _connection_probe(output, profile, root):
     last_completed_phase = 'setup'
     publication_finished = timings.started
     publication_seconds = 0.0
-    report = {'profile': profile, 'complete': False, 'phase': 'setup',
-              'commits_expected': CONNECTION_BLOCK_COMMITS,
-              'verified_pragmas': {'journal_mode': profile.split('-')[0],
-                                   'synchronous': 2, 'locking_mode': 'normal'},
-              'sqlite': sqlite3.sqlite_version, 'pid': os.getpid(), **_filesystem(root)}
+    report = {
+        'profile': profile,
+        'complete': False,
+        'phase': 'setup',
+        'commits_expected': CONNECTION_BLOCK_COMMITS,
+        'verified_pragmas': {'journal_mode': profile.split('-')[0], 'synchronous': 2, 'locking_mode': 'normal'},
+        'sqlite': sqlite3.sqlite_version,
+        'pid': os.getpid(),
+        **_filesystem(root),
+    }
+
     def record():
         nonlocal publication_finished, publication_seconds
         publication_started = time.perf_counter()
-        _write_json(output, {**report, 'commits_completed': consumed,
-            'pre_timing_seconds': pre_timing_seconds,
-            'probe_entry_seconds': publication_started - entered,
-            'process_cpu_seconds': time.process_time(),
-            'checkpoint_progress': {'last_completed_phase': last_completed_phase,
-                'completed_iterations': consumed,
-                'sample_elapsed_seconds': publication_started - timings.started,
-                'prior_publication_seconds': publication_seconds,
-                'iteration_samples': iteration_samples},
-            **timings.snapshot()})
+        _write_json(
+            output,
+            {
+                **report,
+                'commits_completed': consumed,
+                'pre_timing_seconds': pre_timing_seconds,
+                'probe_entry_seconds': publication_started - entered,
+                'process_cpu_seconds': time.process_time(),
+                'checkpoint_progress': {
+                    'last_completed_phase': last_completed_phase,
+                    'completed_iterations': consumed,
+                    'sample_elapsed_seconds': publication_started - timings.started,
+                    'prior_publication_seconds': publication_seconds,
+                    'iteration_samples': iteration_samples,
+                },
+                **timings.snapshot(),
+            },
+        )
         publication_finished = time.perf_counter()
         publication_seconds = publication_finished - publication_started
+
     @contextmanager
     def transaction():
         db = held if held is not None else _probe_connection(connect, path, profile)
@@ -621,27 +695,32 @@ def _connection_probe(output, profile, root):
         finally:
             if held is None:
                 db.close()
+
     def observe_control(action, active):
         report['phase'] = 'waiting_external_' + action
         record()
         # Write-once readiness avoids Windows replace/read sharing races.
-        _write_json(output.with_suffix('.ready-' + action + '.json'),
-                    {'action': action, 'cursor': consumed, 'pid': os.getpid()})
+        _write_json(output.with_suffix('.ready-' + action + '.json'), {'action': action, 'cursor': consumed, 'pid': os.getpid()})
         witness = output.with_suffix('.' + action + '.json')
         end = time.monotonic() + 10
         while not witness.exists():
             if time.monotonic() >= end:
                 raise TimeoutError('External diagnostic control did not arrive')
-            time.sleep(.02)
+            time.sleep(0.02)
         proof = json.loads(witness.read_text(encoding='utf-8'))
-        if (proof.get('action') != action or proof.get('cursor') != consumed
-                or proof.get('active') != active or proof.get('committed_and_reopened') is not True
-                or proof.get('pid') == os.getpid()):
+        if (
+            proof.get('action') != action
+            or proof.get('cursor') != consumed
+            or proof.get('active') != active
+            or proof.get('committed_and_reopened') is not True
+            or proof.get('pid') == os.getpid()
+        ):
             raise RuntimeError('Invalid external diagnostic control proof')
         with transaction() as db:
             if db.execute('SELECT cursor,active,plan FROM replay WHERE id=1').fetchone() != (consumed, active, None):
                 raise RuntimeError('Retained connection did not see external control')
         report['external_' + action] = proof
+
     try:
         with transaction() as db:
             db.execute('CREATE TABLE replay (id INTEGER PRIMARY KEY, binding TEXT, cursor INTEGER, active INTEGER, plan TEXT)')
@@ -663,9 +742,9 @@ def _connection_probe(output, profile, root):
                     db.execute('UPDATE replay SET cursor=cursor+1,plan=NULL WHERE id=1')
                 consumed += 1
                 iteration_finished = time.perf_counter()
-                iteration_samples.append({'iteration': consumed,
-                    'wall_seconds': iteration_finished - iteration_started,
-                    'cpu_seconds': time.process_time() - iteration_cpu})
+                iteration_samples.append(
+                    {'iteration': consumed, 'wall_seconds': iteration_finished - iteration_started, 'cpu_seconds': time.process_time() - iteration_cpu}
+                )
                 last_completed_phase = 'cursor_iteration'
                 if _connection_checkpoint_due(consumed, iteration_finished, publication_finished):
                     # Single writer, nondurable report, after completed work only.
@@ -680,8 +759,10 @@ def _connection_probe(output, profile, root):
         with timings.measure('replay.external_start'):
             observe_control('start', 1)
         last_completed_phase = 'external_start'
+
         class RollbackProbe(Exception):
             pass
+
         with timings.measure('replay.rollback_test'):
             try:
                 with transaction() as db:
@@ -702,11 +783,17 @@ def _connection_probe(output, profile, root):
                     raise RuntimeError('Diagnostic integrity check failed')
         last_completed_phase = 'verify_reopen'
         journal = Path(str(path) + '-journal')
-        report.update(complete=True, phase='complete', rollback_and_reopen_verified=True,
-                      external_control_verified=True,
-                      journal_after_close={'exists': journal.exists(),
-                          'bytes': journal.stat().st_size if journal.exists() else 0,
-                          'header': journal.read_bytes()[:28].hex() if journal.exists() else ''})
+        report.update(
+            complete=True,
+            phase='complete',
+            rollback_and_reopen_verified=True,
+            external_control_verified=True,
+            journal_after_close={
+                'exists': journal.exists(),
+                'bytes': journal.stat().st_size if journal.exists() else 0,
+                'header': journal.read_bytes()[:28].hex() if journal.exists() else '',
+            },
+        )
     except (Exception, KeyboardInterrupt) as error:
         report.update(complete=False, phase='failed', error_type=type(error).__name__)
     finally:
@@ -723,25 +810,27 @@ def _connection_case(output, profile, base, deadline):
     """Controller owns fixture cleanup and every direct, no-descendant child."""
     import subprocess
     import tempfile
-    result = {'profile': profile, 'complete': False, 'workers_stopped': True,
-              'returncode': None}
+
+    result = {'profile': profile, 'complete': False, 'workers_stopped': True, 'returncode': None}
     if time.monotonic() >= deadline:
         return {**result, 'not_started': True, 'reason': 'deadline'}
     started = time.perf_counter()
     milestones = result['controller_milestones'] = {}
+
     def mark(name):
         try:
             milestones[name] = time.perf_counter() - started
         except Exception:
             result['controller_observation_failed'] = True
+
     import shutil
+
     root = tempfile.mkdtemp(prefix='paper-connection-probe-', dir=base)
     try:
         _write_json(Path(root) / 'connection-probe-owner.json', {'profile': profile, 'controller_pid': os.getpid()})
         mark('owner_file_written')
         result['fixture_root'] = root
-        command = [sys.executable, str(Path(__file__).resolve()), str(output),
-                   '--connection-child', profile, '--connection-root', root]
+        command = [sys.executable, str(Path(__file__).resolve()), str(output), '--connection-child', profile, '--connection-root', root]
         child = None
         children = []
         observer_actions = []
@@ -757,8 +846,7 @@ def _connection_case(output, profile, base, deadline):
                     raise subprocess.TimeoutExpired(command, 0)
                 # Presence only: do not open a live report or impede its atomic
                 # replacement. This is a sampled setup boundary, not a heartbeat.
-                if ('probe_output_first_seen' not in milestones
-                        and not result.get('controller_observation_failed')):
+                if 'probe_output_first_seen' not in milestones and not result.get('controller_observation_failed'):
                     try:
                         if output.exists():
                             mark('probe_output_first_seen')
@@ -767,16 +855,22 @@ def _connection_case(output, profile, base, deadline):
                 for action in ('stop', 'start'):
                     ready = output.with_suffix('.ready-' + action + '.json')
                     if ready.exists() and action not in observer_actions:
-                        observer = [sys.executable, str(Path(__file__).resolve()),
+                        observer = [
+                            sys.executable,
+                            str(Path(__file__).resolve()),
                             str(output.with_suffix('.' + action + '.json')),
-                            '--connection-child', profile, '--connection-root', root,
-                            '--connection-observer', action]
+                            '--connection-child',
+                            profile,
+                            '--connection-root',
+                            root,
+                            '--connection-observer',
+                            action,
+                        ]
                         remaining = deadline - time.monotonic()
                         if remaining <= 0:
                             raise subprocess.TimeoutExpired(observer, 0)
                         mark('observer_' + action + '_launch_requested')
-                        helper = subprocess.Popen(observer, cwd=ROOT,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        helper = subprocess.Popen(observer, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         children.append(helper)
                         mark('observer_' + action + '_launch_returned')
                         helper.wait(timeout=min(8, remaining))
@@ -784,7 +878,7 @@ def _connection_case(output, profile, base, deadline):
                         observer_actions.append(action)
                         if helper.returncode != 0:
                             raise RuntimeError('External diagnostic observer failed')
-                time.sleep(.02)
+                time.sleep(0.02)
             mark('probe_exit_observed')
         except subprocess.TimeoutExpired:
             mark('timeout_observed')
@@ -831,17 +925,21 @@ def _connection_case(output, profile, base, deadline):
         if result['workers_stopped'] and output.exists():
             observation = json.loads(output.read_text(encoding='utf-8'))
             result['observation'] = observation
-            result['complete'] = (result['returncode'] == 0 and result['workers_stopped']
-                and not result.get('timed_out') and 'error_type' not in result
-                and observer_actions == ['stop', 'start'] and observation.get('complete') is True
+            result['complete'] = (
+                result['returncode'] == 0
+                and result['workers_stopped']
+                and not result.get('timed_out')
+                and 'error_type' not in result
+                and observer_actions == ['stop', 'start']
+                and observation.get('complete') is True
                 and observation.get('profile') == profile
                 and observation.get('commits_completed') == CONNECTION_BLOCK_COMMITS
-                and observation.get('verified_pragmas') == {'journal_mode': profile.split('-')[0],
-                    'synchronous': 2, 'locking_mode': 'normal'}
+                and observation.get('verified_pragmas') == {'journal_mode': profile.split('-')[0], 'synchronous': 2, 'locking_mode': 'normal'}
                 and observation.get('external_control_verified') is True
                 and observation.get('rollback_and_reopen_verified') is True
                 and observation.get('timings', {}).get('replay.cursor_commit', {}).get('calls') == CONNECTION_BLOCK_COMMITS
-                and observation.get('timings', {}).get('replay.cursor_rollback', {}).get('calls') == 1)
+                and observation.get('timings', {}).get('replay.cursor_rollback', {}).get('calls') == 1
+            )
     finally:
         # A failed process teardown is a blocker, never permission to delete live state.
         if result['workers_stopped']:
@@ -851,37 +949,46 @@ def _connection_case(output, profile, base, deadline):
                 result['cleanup_error_type'] = type(error).__name__
         result['fixture_removed'] = not Path(root).exists()
     result['seconds'] = time.perf_counter() - started
-    result['complete'] = (result['complete'] and result['fixture_removed']
-                          and 'cleanup_error_type' not in result)
+    result['complete'] = result['complete'] and result['fixture_removed'] and 'cleanup_error_type' not in result
     return result
 
 
 def _connection_location(path):
     import shutil
+
     path = Path(path).resolve(strict=True)
     if not path.is_dir():
         raise ValueError('Diagnostic root must be an existing directory')
-    return {'canonical_path': str(path), 'device_id': path.stat().st_dev,
-            'free_bytes': shutil.disk_usage(path).free, **_filesystem(path)}
+    return {'canonical_path': str(path), 'device_id': path.stat().st_dev, 'free_bytes': shutil.disk_usage(path).free, **_filesystem(path)}
 
 
 def observe_connections(output, *, limit=180):
     """Fixed 2x120 commits/profile; never changes TEMP or runs acceptance tests."""
     import tempfile
+
     output = Path(output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix='paper-connection-timing-', dir=output.parent))
     started = time.monotonic()
     deadline = started + limit - 6
-    report = {'observation_only': True, 'kind': 'connection_and_volume_comparison',
-              'acceptance_timeout_unchanged': 30, 'acceptance_workload_unchanged': 960,
-              'observation_limit_seconds': limit, 'blocks': 2,
-              'commits_per_block': CONNECTION_BLOCK_COMMITS,
-              'commits_per_profile': 2 * CONNECTION_BLOCK_COMMITS,
-              'python': sys.version, 'sqlite': sqlite3.sqlite_version,
-              'os': platform.platform(), 'os_build': platform.version(),
-              'status': 'observation_incomplete', 'complete': False, 'comparisons': [],
-              'environment': {key: os.environ.get(key) for key in ('TEMP', 'TMP', 'RUNNER_TEMP', 'ImageOS', 'ImageVersion')}}
+    report = {
+        'observation_only': True,
+        'kind': 'connection_and_volume_comparison',
+        'acceptance_timeout_unchanged': 30,
+        'acceptance_workload_unchanged': 960,
+        'observation_limit_seconds': limit,
+        'blocks': 2,
+        'commits_per_block': CONNECTION_BLOCK_COMMITS,
+        'commits_per_profile': 2 * CONNECTION_BLOCK_COMMITS,
+        'python': sys.version,
+        'sqlite': sqlite3.sqlite_version,
+        'os': platform.platform(),
+        'os_build': platform.version(),
+        'status': 'observation_incomplete',
+        'complete': False,
+        'comparisons': [],
+        'environment': {key: os.environ.get(key) for key in ('TEMP', 'TMP', 'RUNNER_TEMP', 'ImageOS', 'ImageVersion')},
+    }
     try:
         os_temp = _connection_location(tempfile.gettempdir())
         report['os_temp'] = os_temp
@@ -894,11 +1001,10 @@ def observe_connections(output, *, limit=180):
         cases = [('os_temp', profile, os_temp['canonical_path']) for profile in CONNECTION_PROFILES]
         cases.append(('runner_temp', 'delete-reopen', runner_temp['canonical_path'] if runner_temp else None))
         for block in range(2):
-            for location, profile, base in (cases if block == 0 else list(reversed(cases))):
+            for location, profile, base in cases if block == 0 else list(reversed(cases)):
                 key = str(block) + '-' + location + '-' + profile
                 if base is None:
-                    entry = {'profile': profile, 'complete': False, 'not_started': True,
-                             'workers_stopped': True, 'reason': 'RUNNER_TEMP unavailable'}
+                    entry = {'profile': profile, 'complete': False, 'not_started': True, 'workers_stopped': True, 'reason': 'RUNNER_TEMP unavailable'}
                 else:
                     entry = _connection_case(directory / (key + '.json'), profile, base, deadline)
                 report['comparisons'].append({'block': block, 'location': location, **entry})
@@ -919,6 +1025,7 @@ def observe_connections(output, *, limit=180):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
     parser.add_argument('--broker-child', choices=['before_event_commit', 'after_event_commit'])
@@ -957,5 +1064,6 @@ def main():
 
 if __name__ == '__main__':
     import multiprocessing
+
     multiprocessing.freeze_support()
     raise SystemExit(main())

@@ -1,0 +1,52 @@
+{
+  "task": "T13 part A",
+  "edits": [
+    {
+      "file": "tests/test_core_shards.py",
+      "reason": "Aggregate now requires offline and ruff.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_wfo_storage_ci.py",
+      "reason": "Aggregate now requires offline and ruff.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_application_icon.py",
+      "reason": "Audit inventory includes the new Ruff lock.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_repo_layout.py",
+      "reason": "Exact root inventory includes the new Ruff lock and ignores the generated Ruff cache alongside other local caches.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_release_provenance.py",
+      "reason": "Missing Ruff or Ruff audit evidence must reject publication.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    }
+  ],
+  "regenerated_expected_hashes": [],
+  "part_b": {
+    "new_tests": [
+      "tests/test_format_equivalence.py"
+    ],
+    "assertion_edits": [
+      {
+        "file": "tests/test_qt_licenses.py",
+        "change": "autocrlf control file renamed ordinary.py -> ordinary.txt",
+        "reason": ".gitattributes now pins *.py to LF for the Ruff format check; the CRLF-conversion control must be a non-Python text file. Assertions unchanged."
+      }
+    ],
+    "comment_only_lint_annotations": [
+      "tests/test_repo_layout.py: F401 pre-existing import",
+      "tests/test_docs_layering.py: F841 pre-existing exception binding"
+    ],
+    "regenerated_expected_hashes": {
+      "file": "tests/fixtures/ui_operations_golden.json",
+      "keys": 31,
+      "details": "docs/analysis/t13_golden_changes.json"
+    }
+  }
+}

@@ -131,10 +131,8 @@ class StrategyConfig:
             df['day_return'] = group.Close.pct_change()
         else:
             ranges = df.High - df.Low
-            df['ATR'] = ranges.groupby(df.name).transform(
-                lambda s: s.rolling(15).mean())
-            df['volume_ma'] = group.Volume.transform(
-                lambda s: s.shift().rolling(60).mean())
+            df['ATR'] = ranges.groupby(df.name).transform(lambda s: s.rolling(15).mean())
+            df['volume_ma'] = group.Volume.transform(lambda s: s.shift().rolling(60).mean())
 
         return df
 
@@ -148,10 +146,7 @@ class StrategyConfig:
         ===================================================================
         '''
         for scale in self.kbarScales:
-            TradeData.KBars.Freq[scale] = self.add_features(
-                TradeData.KBars.Freq[scale],
-                scale=scale
-            )
+            TradeData.KBars.Freq[scale] = self.add_features(TradeData.KBars.Freq[scale], scale=scale)
 
     def select_preprocess(self, df: pd.DataFrame, **kwargs):
         '''
@@ -228,7 +223,7 @@ class StrategyConfig:
 
         price = trade['tOpen'] if price is None else price
         atr = trade.get('ATR')
-        return (atr > 3)
+        return atr > 3
 
     @staticmethod
     def stop_loss(trade: dict, entries: list, price=None, **kwargs):
@@ -244,7 +239,7 @@ class StrategyConfig:
         price = trade['tOpen'] if price is None else price
         K15min = kwargs.get('K15T', {})
         atr = K15min.get('ATR', trade.get('ATR'))
-        return (atr < 4)
+        return atr < 4
 
     @staticmethod
     def stop_profit(trade: dict, entries: list, price=None, **kwargs):
@@ -259,7 +254,7 @@ class StrategyConfig:
 
         price = trade['tOpen'] if price is None else price
         atr = trade.get('ATR')
-        return (atr > 10)
+        return atr > 10
 
     def get_kbar(self, target: str, scale=None):
         '''
@@ -274,8 +269,7 @@ class StrategyConfig:
         try:
             df = df[df.name == target].tail(1)
             if df.empty or df.isnull().values.any():
-                logging.warning(
-                    f"Dataframe contains empty/NaN values for target: {target}, scale: {scale}")
+                logging.warning(f"Dataframe contains empty/NaN values for target: {target}, scale: {scale}")
                 return {'name': target}
             return df.to_dict('records')[0]
         except Exception:
@@ -306,8 +300,7 @@ class StrategyConfig:
 
         # Raise position
         elif self.raise_position(Kbar, self.positions, price=price, K15T=K15min):
-            raise_qty = min(
-                self.raise_qty, self.max_qty - self.positions.total_qty)
+            raise_qty = min(self.raise_qty, self.max_qty - self.positions.total_qty)
             self.positions.open(price, now, qty=raise_qty)
 
             reason = 'raise position'
@@ -331,15 +324,13 @@ class StrategyConfig:
         entries = self.positions.entries
 
         if self.stop_loss(Kbar, entries, price=price, K15T=K15min):
-            self.positions.close(
-                price, now, reason='stop loss', qty=self.stop_loss_qty)
+            self.positions.close(price, now, reason='stop loss', qty=self.stop_loss_qty)
 
             reason = 'stop loss'
             return Action(action, reason, self.stop_loss_qty)
 
         elif self.stop_profit(Kbar, entries, price=price, K15T=K15min):
-            self.positions.close(
-                price, now, reason='stop profit', qty=self.stop_profit_qty)
+            self.positions.close(price, now, reason='stop profit', qty=self.stop_profit_qty)
 
             reason = 'stop profit'
             return Action(action, reason, self.stop_profit_qty)

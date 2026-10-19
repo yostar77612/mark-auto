@@ -23,6 +23,7 @@ Order frequency counts persisted accepted intent reservations in (now-window,now
 including interrupted submissions, excluding rejects, exact retries, cancels and reads.
 Default limits: 3 consecutive losses, 20 orders per 60 seconds.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -104,8 +105,8 @@ class RiskLimits:
         _integer(self.max_order_quantity, 'max_order_quantity', minimum=1)
         _money(self.max_daily_loss, 'max_daily_loss', positive=True)
         _integer(self.max_quote_age_seconds, 'max_quote_age_seconds', minimum=1)
-        for name, maximum in (('max_consecutive_losses',1000), ('max_orders_per_window',10000), ('window_seconds',86400)):
-            value = _integer(getattr(self,name), name, minimum=1)
+        for name, maximum in (('max_consecutive_losses', 1000), ('max_orders_per_window', 10000), ('window_seconds', 86400)):
+            value = _integer(getattr(self, name), name, minimum=1)
             if value > maximum:
                 raise ValidationError(f'{name} exceeds bounded maximum {maximum}')
 
@@ -117,11 +118,32 @@ class RiskDecision:
 
 
 def _initial():
-    return dict(account_id=None, cash='0', positions={}, orders={}, fills={},
-                lots=[], round_trips=[], consecutive_losses=0, max_consecutive_losses_observed=0, consecutive_loss_halt=False, order_send_timestamps=[], daily_pnl={}, daily_equity_baselines={}, kill_switch=False, reconciliation_required=True,
-                quarantined={}, last_timestamp=None, last_mark_price=None, last_mark_timestamp=None, verification='synthetic_paper_only', real_broker='not_verified')
+    return dict(
+        account_id=None,
+        cash='0',
+        positions={},
+        orders={},
+        fills={},
+        lots=[],
+        round_trips=[],
+        consecutive_losses=0,
+        max_consecutive_losses_observed=0,
+        consecutive_loss_halt=False,
+        order_send_timestamps=[],
+        daily_pnl={},
+        daily_equity_baselines={},
+        kill_switch=False,
+        reconciliation_required=True,
+        quarantined={},
+        last_timestamp=None,
+        last_mark_price=None,
+        last_mark_timestamp=None,
+        verification='synthetic_paper_only',
+        real_broker='not_verified',
+    )
 
 
+# fmt: off
 def _reduce(state, op, payload):
     """Pure journal replay, independently recomputing balances from fills."""
     s = deepcopy(state)
@@ -197,6 +219,7 @@ def _reduce(state, op, payload):
     if stamp is not None:
         s['last_timestamp'] = stamp
     return s
+# fmt: on
 
 
 def _reduce_fill(s, order, e):
@@ -220,15 +243,35 @@ def _reduce_fill(s, order, e):
             lot['quantity'] -= matched
             if not lot['quantity']:
                 lot_net = Decimal(lot['gross_realized']) - Decimal(lot['entry_cost']) - Decimal(lot['exit_cost'])
-                s['round_trips'].append(dict(entry_fill_id=lot['entry_fill_id'], exit_fill_id=e['fill_id'],
-                    quantity=lot['original_quantity'], gross_pnl=lot['gross_realized'], entry_cost=lot['entry_cost'],
-                    exit_cost=lot['exit_cost'], net_pnl=str(lot_net), timestamp=e['timestamp']))
+                s['round_trips'].append(
+                    dict(
+                        entry_fill_id=lot['entry_fill_id'],
+                        exit_fill_id=e['fill_id'],
+                        quantity=lot['original_quantity'],
+                        gross_pnl=lot['gross_realized'],
+                        entry_cost=lot['entry_cost'],
+                        exit_cost=lot['exit_cost'],
+                        net_pnl=str(lot_net),
+                        timestamp=e['timestamp'],
+                    )
+                )
                 s['consecutive_losses'] = s['consecutive_losses'] + 1 if lot_net < 0 else 0
                 s['max_consecutive_losses_observed'] = max(s['max_consecutive_losses_observed'], s['consecutive_losses'])
     s['lots'] = [lot for lot in s['lots'] if lot['quantity']]
     if remaining:
-        s['lots'].append(dict(quantity=remaining, original_quantity=remaining, direction=direction, price=e['price'], entry_trade_date=order['trade_date'],
-                              entry_fill_id=e['fill_id'], entry_cost=str(expense_remaining), gross_realized='0', exit_cost='0'))
+        s['lots'].append(
+            dict(
+                quantity=remaining,
+                original_quantity=remaining,
+                direction=direction,
+                price=e['price'],
+                entry_trade_date=order['trade_date'],
+                entry_fill_id=e['fill_id'],
+                entry_cost=str(expense_remaining),
+                gross_realized='0',
+                exit_cost='0',
+            )
+        )
     net = realized - Decimal(e['commission']) - Decimal(e['tax'])
     s['cash'] = str(Decimal(s['cash']) + net)
     day = order['trade_date']
@@ -245,9 +288,9 @@ def _reduce_fill(s, order, e):
     elif order['status'] not in ('cancelled', 'cancel_pending', 'unknown'):
         order['status'] = 'partial'
 
+
 class PaperBroker:
-    def __init__(self, journal_path: Path, *, instrument: Instrument, costs: CostSpec, limits: RiskLimits,
-                 risk_sessions=(), margin_schedule=()):
+    def __init__(self, journal_path: Path, *, instrument: Instrument, costs: CostSpec, limits: RiskLimits, risk_sessions=(), margin_schedule=()):
         self.instrument, self.costs, self.limits = instrument, costs, limits
         # Canonical copies sever all aliases; persisted config detects policy changes.
         self._risk_sessions = freeze(_json(risk_sessions))
@@ -257,11 +300,14 @@ class PaperBroker:
         self._storage_uncertain = False
         self._verified_restore = None
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._config = content_hash(dict(journal_schema=4, instrument=instrument, costs=costs, limits=limits,
-                                         risk_sessions=self._risk_sessions, margin_schedule=self._margin_schedule))
+        self._config = content_hash(
+            dict(journal_schema=4, instrument=instrument, costs=costs, limits=limits, risk_sessions=self._risk_sessions, margin_schedule=self._margin_schedule)
+        )
         with self._transaction() as db:
             db.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
-            db.execute('CREATE TABLE IF NOT EXISTS journal (seq INTEGER PRIMARY KEY AUTOINCREMENT, identity TEXT UNIQUE NOT NULL, operation TEXT NOT NULL, payload TEXT NOT NULL, state_hash TEXT NOT NULL)')
+            db.execute(
+                'CREATE TABLE IF NOT EXISTS journal (seq INTEGER PRIMARY KEY AUTOINCREMENT, identity TEXT UNIQUE NOT NULL, operation TEXT NOT NULL, payload TEXT NOT NULL, state_hash TEXT NOT NULL)'
+            )
             db.execute('CREATE TABLE IF NOT EXISTS materialized (id INTEGER PRIMARY KEY CHECK(id=1), state TEXT NOT NULL)')
             old = db.execute("SELECT value FROM metadata WHERE key='config'").fetchone()
             if old and old[0] != self._config:
@@ -333,8 +379,7 @@ class PaperBroker:
         if not margins:
             raise ValidationError('no effective pinned margin policy')
         margin = max(margins, key=lambda r: r['effective_from'])
-        return dict(trade_date=row['trade_date'], session_open=row['open'], session_end=row['end'],
-                    margin_per_contract=margin['margin_per_contract'])
+        return dict(trade_date=row['trade_date'], session_open=row['open'], session_end=row['end'], margin_per_contract=margin['margin_per_contract'])
 
     @contextmanager
     def _transaction(self):
@@ -388,8 +433,7 @@ class PaperBroker:
         else:
             self._verified_restore = None
             state = _initial()
-            rows = (record[2:] for record in records) if records is not None else db.execute(
-                'SELECT operation,payload,state_hash FROM journal ORDER BY seq')
+            rows = (record[2:] for record in records) if records is not None else db.execute('SELECT operation,payload,state_hash FROM journal ORDER BY seq')
             for operation, payload, expected in rows:
                 state = _reduce(state, operation, json.loads(payload))
                 if content_hash(state) != expected:
@@ -398,9 +442,9 @@ class PaperBroker:
                 raise JournalConflict('materialized snapshot disagrees with journal replay')
             self._verified_restore = proof
         if self._storage_uncertain:
-            state = self._append(db, state, 'reconcile_failure',
-                                 {'reason': 'storage failure; explicit reconciliation required'},
-                                 self._next_id(db, 'storage_recovery'))
+            state = self._append(
+                db, state, 'reconcile_failure', {'reason': 'storage failure; explicit reconciliation required'}, self._next_id(db, 'storage_recovery')
+            )
             self._storage_uncertain = False
         return state
 
@@ -412,8 +456,9 @@ class PaperBroker:
                 raise JournalConflict('mismatched duplicate identity')
             return state
         state = _reduce(state, operation, payload)
-        db.execute('INSERT INTO journal(identity,operation,payload,state_hash) VALUES (?,?,?,?)',
-                   (identity, operation, canonical_json(payload), content_hash(state)))
+        db.execute(
+            'INSERT INTO journal(identity,operation,payload,state_hash) VALUES (?,?,?,?)', (identity, operation, canonical_json(payload), content_hash(state))
+        )
         db.execute('UPDATE materialized SET state=? WHERE id=1', (canonical_json(state),))
         return state
 
@@ -445,8 +490,10 @@ class PaperBroker:
         """Ordered, read-only journal records for audit UI (synthetic data only)."""
         with self._transaction() as db:
             self._restore(db)
-            return [dict(sequence=row[0], identity=row[1], operation=row[2], payload=json.loads(row[3]), state_hash=row[4])
-                    for row in db.execute('SELECT seq,identity,operation,payload,state_hash FROM journal ORDER BY seq')]
+            return [
+                dict(sequence=row[0], identity=row[1], operation=row[2], payload=json.loads(row[3]), state_hash=row[4])
+                for row in db.execute('SELECT seq,identity,operation,payload,state_hash FROM journal ORDER BY seq')
+            ]
 
     def _intent(self, intent):
         required = {'client_order_id', 'strategy_hash', 'contract_id', 'side', 'quantity', 'order_type', 'created_at'}
@@ -500,9 +547,12 @@ class PaperBroker:
             policy = self.quote_policy(now)
         except ValidationError:
             return RiskDecision(False, 'outside_pinned_session')
-        if (_time(policy['session_open']) != opening or _time(policy['session_end']) != closing
-                or quote.get('trade_date') != policy['trade_date']
-                or _money(quote.get('margin_per_contract'), 'margin_per_contract', positive=True) != Decimal(policy['margin_per_contract'])):
+        if (
+            _time(policy['session_open']) != opening
+            or _time(policy['session_end']) != closing
+            or quote.get('trade_date') != policy['trade_date']
+            or _money(quote.get('margin_per_contract'), 'margin_per_contract', positive=True) != Decimal(policy['margin_per_contract'])
+        ):
             return RiskDecision(False, 'risk_policy_mismatch')
         day = policy['trade_date']
         try:
@@ -533,7 +583,9 @@ class PaperBroker:
         worst = max(abs(position + buy), abs(position - sell), abs(position))
         if worst > self.limits.max_position:
             return RiskDecision(False, 'max_position')
-        unrealized = sum(((price - Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier for lot in state['lots']), Decimal('0'))
+        unrealized = sum(
+            ((price - Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier for lot in state['lots']), Decimal('0')
+        )
         pnl = Decimal(state['cash']) + unrealized - Decimal(state['daily_equity_baselines'][day]['equity'])
         if pnl <= -Decimal(self.limits.max_daily_loss):
             return RiskDecision(False, 'max_daily_loss')
@@ -557,16 +609,15 @@ class PaperBroker:
         baseline = Decimal(state['cash'])
         reference = None
         if state['lots']:
-            references = [r['opening_reference'] for r in self._risk_sessions
-                          if r['trade_date'] == day and 'opening_reference' in r]
+            references = [r['opening_reference'] for r in self._risk_sessions if r['trade_date'] == day and 'opening_reference' in r]
             if not references:
                 return None
             reference = references[0]
             mark = Decimal(reference['price'])
-            baseline += sum(((mark-Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier
-                             for lot in state['lots']), Decimal('0'))
-        return dict(trade_date=day, equity=str(baseline), reference=reference, now=now,
-                    method='pinned_opening_reference' if reference else 'flat_opening_cash')
+            baseline += sum(
+                ((mark - Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier for lot in state['lots']), Decimal('0')
+            )
+        return dict(trade_date=day, equity=str(baseline), reference=reference, now=now, method='pinned_opening_reference' if reference else 'flat_opening_cash')
 
     def _worst_exposure(self, state):
         position = state['positions'].get(self.instrument.contract_id, 0)
@@ -590,8 +641,9 @@ class PaperBroker:
             return True
         policy = self.quote_policy(state['last_mark_timestamp'])
         mark = Decimal(state['last_mark_price'])
-        unrealized = sum(((mark-Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier
-                          for lot in state['lots']), Decimal('0'))
+        unrealized = sum(
+            ((mark - Decimal(lot['price'])) * lot['quantity'] * lot['direction'] * self.instrument.multiplier for lot in state['lots']), Decimal('0')
+        )
         available = Decimal(state['cash']) + min(unrealized, Decimal('0'))
         return available < exposure * Decimal(policy['margin_per_contract'])
 
@@ -613,7 +665,21 @@ class PaperBroker:
             if not decision.allowed:
                 state = self._append(db, state, 'risk_reject', {'intent': intent, 'reason': decision.reason, 'quote': quote, 'now': now}, 'intent:' + oid)
                 return deepcopy(state['orders'][oid])
-            state = self._append(db, state, 'intent', dict(intent=intent, trade_date=quote['trade_date'], session_open=quote['session_open'], session_end=quote['session_end'], quote=quote, now=now, window_seconds=self.limits.window_seconds), 'intent:' + oid)
+            state = self._append(
+                db,
+                state,
+                'intent',
+                dict(
+                    intent=intent,
+                    trade_date=quote['trade_date'],
+                    session_open=quote['session_open'],
+                    session_end=quote['session_end'],
+                    quote=quote,
+                    now=now,
+                    window_seconds=self.limits.window_seconds,
+                ),
+                'intent:' + oid,
+            )
             self._fault('before_intent_commit')
         self._fault('after_intent_commit')
         with self._transaction() as db:
@@ -650,8 +716,7 @@ class PaperBroker:
             with self._transaction() as db:
                 state = self._restore(db)
                 identity = self._next_id(db, 'invalid_event')
-                self._append(db, state, 'quarantine',
-                             {'event_id': identity, 'reason': str(exc), 'rejected_payload': rejected}, identity)
+                self._append(db, state, 'quarantine', {'event_id': identity, 'reason': str(exc), 'rejected_payload': rejected}, identity)
             raise
 
     def _apply_event(self, event: dict):
@@ -698,7 +763,11 @@ class PaperBroker:
             if order and order.get('last_event_timestamp') and _time(event['timestamp']) < _time(order['last_event_timestamp']):
                 invalid = True
             if order and event['type'] == 'fill':
-                if not order.get('session_open') or not order.get('session_end') or not (_time(order['session_open']) <= _time(event['timestamp']) < _time(order['session_end'])):
+                if (
+                    not order.get('session_open')
+                    or not order.get('session_end')
+                    or not (_time(order['session_open']) <= _time(event['timestamp']) < _time(order['session_end']))
+                ):
                     invalid = True
                 invalid = invalid or event['fill_id'] in state['fills'] or order['status'] == 'rejected'
                 invalid = invalid or order['filled_quantity'] + event['quantity'] > order['intent']['quantity']
@@ -711,11 +780,22 @@ class PaperBroker:
             operation = 'quarantine' if invalid else 'event'
             state = self._append(db, state, operation, event, identity)
             if operation == 'event' and event['type'] == 'fill' and self._capacity_breach(state):
-                state = self._append(db, state, 'risk_breach',
-                                     {'event_id': event['event_id'], 'reason': 'post_fill_exposure_or_margin_breach'}, identity + ':risk_breach')
-            if operation == 'event' and event['type'] == 'fill' and not state['consecutive_loss_halt'] and state['max_consecutive_losses_observed'] >= self.limits.max_consecutive_losses:
-                state = self._append(db, state, 'consecutive_loss_halt',
-                                     {'event_id':event['event_id'], 'observed':state['max_consecutive_losses_observed'], 'limit':self.limits.max_consecutive_losses}, identity + ':loss_halt')
+                state = self._append(
+                    db, state, 'risk_breach', {'event_id': event['event_id'], 'reason': 'post_fill_exposure_or_margin_breach'}, identity + ':risk_breach'
+                )
+            if (
+                operation == 'event'
+                and event['type'] == 'fill'
+                and not state['consecutive_loss_halt']
+                and state['max_consecutive_losses_observed'] >= self.limits.max_consecutive_losses
+            ):
+                state = self._append(
+                    db,
+                    state,
+                    'consecutive_loss_halt',
+                    {'event_id': event['event_id'], 'observed': state['max_consecutive_losses_observed'], 'limit': self.limits.max_consecutive_losses},
+                    identity + ':loss_halt',
+                )
             self._fault('before_event_commit')
         self._fault('after_event_commit')
         return {'status': 'quarantined' if invalid else 'applied', 'event_id': event['event_id']}
@@ -775,6 +855,7 @@ class PaperBroker:
 
 class LiveBroker:
     """Deliberately incapable of live execution; no flag enables it."""
+
     def __init__(self, *args, **kwargs):
         raise LiveTradingDisabled('Live trading is disabled; paper tests do not verify a real broker')
 

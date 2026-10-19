@@ -4,8 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from quantlab.core import content_hash, ValidationError
-from quantlab.reporting import (synthetic_dataset, demo_config, export_report, load_result,
-                               load_dataset, save_dataset, read_json, write_json, comparison_rows)
+from quantlab.reporting import synthetic_dataset, demo_config, export_report, load_result, load_dataset, save_dataset, read_json, write_json, comparison_rows
 from quantlab.strategies import builtin_strategies
 from quantlab.backtest import run_backtest
 
@@ -59,6 +58,7 @@ class ReportingTests(unittest.TestCase):
     def test_immutable_selection_rejects_tamper_and_mismatch(self):
         from quantlab.core import to_dict
         from quantlab.reporting import save_selection, load_selection
+
         path = self.root / 'selection.json'
         saved = save_selection(to_dict(builtin_strategies()[0]), self.result, path)
         self.assertEqual(load_selection(path), saved)

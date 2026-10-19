@@ -1,4 +1,5 @@
 """Exact new auth provenance; generated offline receipts, never real OAuth."""
+
 from datetime import timedelta
 import hashlib
 from pathlib import Path
@@ -38,8 +39,7 @@ HISTORICAL_HASHES = [
 
 class TokenFormatProducerProfileTests(unittest.TestCase):
     def test_all_sixteen_historical_profiles_keep_exact_identity(self):
-        self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:16]],
-                         HISTORICAL_HASHES)
+        self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:16]], HISTORICAL_HASHES)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[15], PROFILE)
         for profile in pools.SUPPORTED_PRODUCERS:
             with self.assertRaises(TypeError):
@@ -50,13 +50,13 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
         self.assertNotEqual(PROFILE['protocol'], PREVIOUS['protocol'])
         restored = to_dict(PROFILE)
         restored['protocol'] = PREVIOUS['protocol']
-        expected = ('3c2eef9d3b46b9ae74369fad67d5c016dbd97ea24d4c6f38a989d8b813f52f44',
-                    'c62dc5ba0f06f04997d792e81552a41faa9f983f4a1fb6ef3a59e8596dee05b5')
+        expected = ('3c2eef9d3b46b9ae74369fad67d5c016dbd97ea24d4c6f38a989d8b813f52f44', 'c62dc5ba0f06f04997d792e81552a41faa9f983f4a1fb6ef3a59e8596dee05b5')
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             digest = implementation['source_sha256']['desktop_chatgpt_auth.py']
             self.assertEqual(digest, expected[index])
-            restored['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'] = (
-                PREVIOUS['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'])
+            restored['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py'] = PREVIOUS['chatgpt_plan_implementations'][index][
+                'source_sha256'
+            ]['desktop_chatgpt_auth.py']
             with self.assertRaises(TypeError):
                 implementation['source_sha256']['desktop_chatgpt_auth.py'] = 'f' * 64
         self.assertEqual(restored, PREVIOUS)
@@ -75,17 +75,17 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
         for index in (0, 1):
             bad = []
             for name in PROFILE['chatgpt_plan_implementations'][index]['source_sha256']:
-                for digest in ('f' * 64,
-                               PROFILE['chatgpt_plan_implementations'][1-index]['source_sha256'][name]):
+                for digest in ('f' * 64, PROFILE['chatgpt_plan_implementations'][1 - index]['source_sha256'][name]):
                     item = binding(PROFILE, index)
                     item['provider']['descriptor']['source_sha256'][name] = digest
                     bad.append(item)
             for key, value in (
                 ('dependency_manifest_sha256', 'f' * 64),
-                ('dependency_manifest_sha256', PROFILE['chatgpt_plan_implementations'][1-index]['dependency_manifest_sha256']),
+                ('dependency_manifest_sha256', PROFILE['chatgpt_plan_implementations'][1 - index]['dependency_manifest_sha256']),
                 ('dependency_versions', {'PyJWT': '0'}),
                 ('dependency_target', 'windows-cp314-amd64'),
-                ('dependency_artifact_evidence', 'not_reviewed')):
+                ('dependency_artifact_evidence', 'not_reviewed'),
+            ):
                 item = binding(PROFILE, index)
                 item['provider']['descriptor'][key] = value
                 bad.append(item)
@@ -103,16 +103,18 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             for profile in (PREVIOUS, PROFILE):
                 for index in (0, 1):
-                    root = Path(temporary)/f"{profile['protocol']}-{index}"
-                    folder, ref, original, _ = make_chatgpt_source(
-                        root, producer=profile, implementation=index, candidates=1)
+                    root = Path(temporary) / f"{profile['protocol']}-{index}"
+                    folder, ref, original, _ = make_chatgpt_source(root, producer=profile, implementation=index, candidates=1)
                     before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
                     with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
                         admission = pools.admit_saved_campaign_pool(
-                            source_campaign_dir=folder, source_campaign_ref=ref,
-                            original_dataset=original, original_dataset_ref='explicit-fixture-original',
-                            first_training_timestamp=max(b.end for b in original.bars)+timedelta(days=1),
-                            authoritative_registry_path=root/'source-registry.sqlite3')
+                            source_campaign_dir=folder,
+                            source_campaign_ref=ref,
+                            original_dataset=original,
+                            original_dataset_ref='explicit-fixture-original',
+                            first_training_timestamp=max(b.end for b in original.bars) + timedelta(days=1),
+                            authoritative_registry_path=root / 'source-registry.sqlite3',
+                        )
                     pools.validate_admission_snapshot(admission.admission, admission.candidate_pool)
                     self.assertEqual(admission.admission['producer'], profile)
                     self.assertEqual(admission.admission['real_model_status'], 'not_verified')

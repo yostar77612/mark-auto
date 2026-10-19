@@ -1,4 +1,5 @@
 """Application artwork shared by development and PyInstaller's _internal tree."""
+
 from pathlib import Path
 
 from PySide6.QtGui import QIcon

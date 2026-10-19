@@ -1,4 +1,5 @@
 """Read-only workflow guidance; completion comes from persisted app state."""
+
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from desktop_strings import ui_text
 from desktop_theme import set_theme_property
@@ -21,7 +22,8 @@ class GettingStarted(QWidget):
         dismiss = QPushButton(ui_text('onboarding.dismiss'))
         dismiss.setObjectName('onboarding_dismiss')
         dismiss.clicked.connect(lambda: self.set_dismissed(True))
-        header.addWidget(dismiss); layout.addLayout(header)
+        header.addWidget(dismiss)
+        layout.addLayout(header)
         self.labels = []
         self.buttons = []
         captions = {
@@ -33,12 +35,16 @@ class GettingStarted(QWidget):
         }
         for index, page in enumerate(('data', 'strategy', 'backtest', 'compare', 'paper')):
             row = QHBoxLayout()
-            label = QLabel(); label.setObjectName('onboarding_status_' + page)
+            label = QLabel()
+            label.setObjectName('onboarding_status_' + page)
             button = QPushButton(captions[page])
             button.setObjectName('onboarding_go_' + page)
             button.clicked.connect(lambda checked=False, target=index: self.go(target))
-            row.addWidget(label); row.addWidget(button); layout.addLayout(row)
-            self.labels.append(label); self.buttons.append(button)
+            row.addWidget(label)
+            row.addWidget(button)
+            layout.addLayout(row)
+            self.labels.append(label)
+            self.buttons.append(button)
         self.refresh()
         self.restore_visibility()
 
@@ -74,17 +80,22 @@ class GettingStarted(QWidget):
         )
         for index, (label, done) in enumerate(zip(self.labels, self.completed), 1):
             from desktop_presentation import display_number
-            label.setText(ui_text('onboarding.step').format(display_number(index, 'count'),
-                          (ui_text('onboarding.done') if done else ui_text('onboarding.pending'))))
-        empty = (not bool(getattr(shell.market, '_quote_series', ())),
-                 shell.candidate_choice.count() == 0, shell.result_choice.count() == 0,
-                 shell.comparison_list.count() == 0, not self.completed[4])
+
+            label.setText(
+                ui_text('onboarding.step').format(display_number(index, 'count'), (ui_text('onboarding.done') if done else ui_text('onboarding.pending')))
+            )
+        empty = (
+            not bool(getattr(shell.market, '_quote_series', ())),
+            shell.candidate_choice.count() == 0,
+            shell.result_choice.count() == 0,
+            shell.comparison_list.count() == 0,
+            not self.completed[4],
+        )
         for widget, visible in zip(getattr(self, 'empty_states', ()), empty):
             widget.setVisible(visible)
             set_theme_property(widget.findChild(QPushButton), 'role', 'primary' if visible else 'secondary')
         # An empty result panel has one primary next action.
-        for name, is_empty in (('run_campaign', empty[1]), ('run_backtest', empty[2]),
-                               ('compare_results', empty[3]), ('paper_submit', empty[4])):
+        for name, is_empty in (('run_campaign', empty[1]), ('run_backtest', empty[2]), ('compare_results', empty[3]), ('paper_submit', empty[4])):
             set_theme_property(shell.findChild(QPushButton, name), 'role', 'secondary' if is_empty else 'primary')
 
 
@@ -105,7 +116,8 @@ def install_onboarding(shell):
     for old_index in WORKFLOW_ORDER:
         item = items[old_index]
         item.setToolTip(hints[old_index])
-        shell.navigation.addItem(item); shell.stack.addWidget(pages[old_index])
+        shell.navigation.addItem(item)
+        shell.stack.addWidget(pages[old_index])
     shell.onboarding = GettingStarted(shell)
     shell.page_state.onboarding = shell.onboarding
     outer = shell.centralWidget().layout()
@@ -115,13 +127,14 @@ def install_onboarding(shell):
     help_button.setToolTip(ui_text('onboarding.glossary'))
     help_button.clicked.connect(lambda: shell.onboarding.set_dismissed(False))
     outer.insertWidget(1, help_button)
-    targets = (shell.market.page_scroll.widget(), shell.strategy_page.tabs.widget(1).widget(),
-               shell.backtest_page, shell.compare_page, shell.paper_page)
-    callbacks = (lambda: shell.navigation.setCurrentRow(0),
-                 lambda: shell.strategy_page.tabs.setCurrentIndex(0),
-                 lambda: shell.navigation.setCurrentRow(0 if not shell._dataset_ready else 1),
-                 lambda: shell.navigation.setCurrentRow(2),
-                 lambda: shell.navigation.setCurrentRow(0))
+    targets = (shell.market.page_scroll.widget(), shell.strategy_page.tabs.widget(1).widget(), shell.backtest_page, shell.compare_page, shell.paper_page)
+    callbacks = (
+        lambda: shell.navigation.setCurrentRow(0),
+        lambda: shell.strategy_page.tabs.setCurrentIndex(0),
+        lambda: shell.navigation.setCurrentRow(0 if not shell._dataset_ready else 1),
+        lambda: shell.navigation.setCurrentRow(2),
+        lambda: shell.navigation.setCurrentRow(0),
+    )
     guidance = {
         'market': (ui_text('onboarding.empty.market'), ui_text('onboarding.next.market')),
         'strategy': (ui_text('onboarding.empty.strategy'), ui_text('onboarding.next.strategy')),
@@ -131,13 +144,17 @@ def install_onboarding(shell):
     }
     shell.onboarding.empty_states = []
     for key, parent, callback in zip(('market', 'strategy', 'backtest', 'compare', 'paper'), targets, callbacks):
-        box = QWidget(); box.setObjectName('empty_' + key)
+        box = QWidget()
+        box.setObjectName('empty_' + key)
         layout = QVBoxLayout(box)
-        label = QLabel(guidance[key][0]); label.setWordWrap(True)
+        label = QLabel(guidance[key][0])
+        label.setWordWrap(True)
         layout.addWidget(label)
         button = QPushButton(guidance[key][1])
-        button.setObjectName('empty_' + key + '_action'); button.setProperty('role', 'primary')
-        button.clicked.connect(callback); layout.addWidget(button)
+        button.setObjectName('empty_' + key + '_action')
+        button.setProperty('role', 'primary')
+        button.clicked.connect(callback)
+        layout.addWidget(button)
         parent.layout().insertWidget(1, box)
         shell.onboarding.empty_states.append(box)
     shell.comparison_list.itemSelectionChanged.connect(shell.onboarding.refresh)

@@ -3,6 +3,7 @@
 Analysis documents keep their own schema. All sources and receipts here are
 manufactured offline fixtures; no inference, identity, or profit claim is made.
 """
+
 import copy
 from datetime import timedelta
 from pathlib import Path
@@ -23,16 +24,20 @@ PROFILE = pools.SIWC_ANALYSIS_CAPABLE_PROFILE_V1
 class AnalysisCapableProducerProfileTests(unittest.TestCase):
     def admit(self, folder, reference, original):
         return pools.admit_saved_campaign_pool(
-            source_campaign_dir=folder, source_campaign_ref=reference,
-            original_dataset=original, original_dataset_ref='explicit-fixture-original',
-            first_training_timestamp=max(bar.end for bar in original.bars)+timedelta(days=1),
-            authoritative_registry_path=folder.parent/'source-registry.sqlite3')
+            source_campaign_dir=folder,
+            source_campaign_ref=reference,
+            original_dataset=original,
+            original_dataset_ref='explicit-fixture-original',
+            first_training_timestamp=max(bar.end for bar in original.bars) + timedelta(days=1),
+            authoritative_registry_path=folder.parent / 'source-registry.sqlite3',
+        )
 
     def test_prior_safety_profile_remains_exact_and_new_profile_is_frozen(self):
         old = pools.SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1
         self.assertEqual(content_hash(old), 'b4b257c6ab32da8631a8ef82ad4244f6f757c27a78246f96544649738009c2ea')
         self.assertEqual(content_hash(PROFILE), 'e14aba96d7c734c46f0713a7bedf2be5d33e4ff50bba1c60ed9a447f380af4a1')
-        restored = to_dict(PROFILE); restored['protocol'] = old['protocol']
+        restored = to_dict(PROFILE)
+        restored['protocol'] = old['protocol']
         for new, previous in zip(restored['chatgpt_plan_implementations'], old['chatgpt_plan_implementations']):
             new['source_sha256'] = to_dict(previous['source_sha256'])
         self.assertEqual(restored, old)
@@ -57,21 +62,29 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
         for index in (0, 1):
             for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'):
                 value = binding(PROFILE, index)
-                value['provider']['descriptor']['source_sha256'][name] = variants[1-index]['source_sha256'][name]
+                value['provider']['descriptor']['source_sha256'][name] = variants[1 - index]['source_sha256'][name]
                 bad.append(value)
                 value = binding(PROFILE, index)
-                value['provider']['descriptor']['source_sha256'][name] = pools.SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1['chatgpt_plan_implementations'][index]['source_sha256'][name]
+                value['provider']['descriptor']['source_sha256'][name] = pools.SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1['chatgpt_plan_implementations'][index][
+                    'source_sha256'
+                ][name]
                 bad.append(value)
             value = binding(PROFILE, index)
-            value['provider']['descriptor']['dependency_manifest_sha256'] = variants[1-index]['dependency_manifest_sha256']
+            value['provider']['descriptor']['dependency_manifest_sha256'] = variants[1 - index]['dependency_manifest_sha256']
             bad.append(value)
             value = binding(PROFILE, index)
-            value['provider']['descriptor']['source_sha256']['desktop_chatgpt_auth.py'] = pools.TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2['chatgpt_plan_implementations'][index]['source_sha256']['desktop_chatgpt_auth.py']
+            value['provider']['descriptor']['source_sha256']['desktop_chatgpt_auth.py'] = pools.TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2[
+                'chatgpt_plan_implementations'
+            ][index]['source_sha256']['desktop_chatgpt_auth.py']
             bad.append(value)
         for index, target in ((0, 'windows-cp314-amd64'), (0, 'linux-cp313-x86_64'), (1, 'linux-cp312-x86_64')):
             bad.append(binding(PROFILE, index, target))
-        value = binding(PROFILE); value['provider']['descriptor']['dependency_versions']['PyJWT'] = '2.15.0'; bad.append(value)
-        value = binding(PROFILE); value['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64; bad.append(value)
+        value = binding(PROFILE)
+        value['provider']['descriptor']['dependency_versions']['PyJWT'] = '2.15.0'
+        bad.append(value)
+        value = binding(PROFILE)
+        value['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64
+        bad.append(value)
         for index, value in enumerate(bad):
             with self.subTest(index=index), self.assertRaises(pools.SavedCandidatePoolError) as caught:
                 pools._select_producer(value)
@@ -81,8 +94,8 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             for variant in (0, 1):
                 folder, reference, original, _ = make_chatgpt_source(
-                    Path(temporary)/f'variant-{variant}', producer=PROFILE,
-                    implementation=variant, candidates=1)
+                    Path(temporary) / f'variant-{variant}', producer=PROFILE, implementation=variant, candidates=1
+                )
                 before = {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()}
                 with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
                     admitted = self.admit(folder, reference, original)
@@ -93,15 +106,19 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
 
     def test_analysis_request_receipt_is_not_ordinary_campaign_certification(self):
         from quantlab.research_analysis import ANALYSIS_PROMPT
+
         with tempfile.TemporaryDirectory() as temporary:
             folder, reference, original, state = make_chatgpt_source(Path(temporary), producer=PROFILE, candidates=1)
             attempt = state['attempts'][0]
-            request = {'model': state['binding']['provider']['model'], 'instructions': ANALYSIS_PROMPT,
-                       'input': [{'role': 'user', 'content': canonical_json(attempt['generator_context'])}],
-                       'store': False, 'stream': True}
+            request = {
+                'model': state['binding']['provider']['model'],
+                'instructions': ANALYSIS_PROMPT,
+                'input': [{'role': 'user', 'content': canonical_json(attempt['generator_context'])}],
+                'store': False,
+                'stream': True,
+            }
             changed = copy.deepcopy(state)
-            changed['provider_receipts'][0].update(request_hash=content_hash(request),
-                request_bytes=len(canonical_json(request).encode('utf-8')))
+            changed['provider_receipts'][0].update(request_hash=content_hash(request), request_bytes=len(canonical_json(request).encode('utf-8')))
             write_source(folder, changed)
             before = {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()}
             with self.assertRaises(pools.SavedCandidatePoolError) as caught:
@@ -110,4 +127,5 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
             self.assertEqual(before, {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()})
 
 
-if __name__ == '__main__': unittest.main()
+if __name__ == '__main__':
+    unittest.main()

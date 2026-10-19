@@ -869,3 +869,17 @@ Acceptance: `tests/test_repo_layout.py`, `tests/test_legacy_security.py`, `tests
 README is limited to 150 lines. The Traditional Chinese user manual covers seven pages with disposable offscreen screenshots. Current state documents retain current status and open risks; complete original checkpoint text is preserved in literal history blocks with origin/main SHA, SHA-256 and line count. Historical text is evidence, not current operating guidance. Link and provenance checks are in tests/test_docs_layering.py. No runtime, G3 source or installer payload change is made by part C.
 
 The README history body is the byte-exact 374-line README.md from commit 7be525fcbf8e55d8c699422252fd8dd93f4649a6 (SHA-256 61174a23c71a8078f319256852a6c11907d26a4d6c3913a54191af92bdfffa36). All history headers carry an original-location relative-link banner; only docs/agent/history is excluded from current-link resolution. Hash, count, coverage and available git-object checks remain offline and bounded.
+
+
+## T13 part A: pinned Ruff enforcement (P2-B5)
+
+Ruff 0.16.10 is installed only from requirements-ruff.lock with --require-hashes.
+A three-minute Ubuntu lint/format job is required by the Windows coverage aggregate
+and exact-head publication, and its dependency closure joins the strict audit matrix.
+Python 3.11, LF output, line length 160 and disabled autofixes are explicit.
+The eight G3 sources and entire saved_candidate_pool.py remain byte-unchanged and
+force-excluded, along with frozen archive, fixtures and local/generated output.
+Exact observed per-file lint exceptions preserve import and evaluation behavior;
+see docs/analysis/t13_lint_decisions.md and t13_test_edits.json. Cheap config tests
+execute no Ruff or network calls. Part B owns bulk formatting and AST equivalence;
+part A's formatter check is expected to report existing source formatting debt.

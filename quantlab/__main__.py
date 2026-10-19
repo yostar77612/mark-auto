@@ -1,4 +1,5 @@
 """Local-only research CLI. No imports from the legacy live trading package."""
+
 from .configuration import config_from_json
 
 import argparse
@@ -6,8 +7,7 @@ import sys
 from pathlib import Path
 
 from .core import canonical_json, ValidationError, content_hash
-from .reporting import (synthetic_dataset, demo_config, save_dataset, load_dataset,
-                        load_result, read_json, write_json, export_report, comparison_rows)
+from .reporting import synthetic_dataset, demo_config, save_dataset, load_dataset, load_result, read_json, write_json, export_report, comparison_rows
 
 
 def parser():
@@ -46,10 +46,12 @@ def execute(args):
     if args.command in ('refresh', 'download'):
         # Keep operation-specific dependencies out of module startup.
         from .downloads import refresh
+
         return refresh(args.cache, days=args.days, kind=args.format)
     if args.command == 'import':
         # Keep operation-specific dependencies out of module startup.
         from .data import SessionCalendar, import_taifex
+
         raw = read_json(args.calendar)
         calendar = SessionCalendar(raw['sessions'], version=raw['version'])
         dataset = import_taifex(args.path, kind=args.kind, calendar=calendar, contract_id=args.contract, encoding=args.encoding)
@@ -62,18 +64,26 @@ def execute(args):
         return result
     # Keep operation-specific dependencies out of module startup.
     from .strategies import builtin_strategies
+
     # Keep operation-specific dependencies out of module startup.
     from .backtest import run_backtest
+
     if args.command == 'demo':
         dataset = synthetic_dataset(args.bars)
         save_dataset(dataset, args.output / 'dataset.json')
         reports = [export_report(run_backtest(dataset, spec, demo_config()), args.output / 'reports') for spec in builtin_strategies()]
-        return {'source_type': 'SYNTHETIC', 'dataset': str(args.output / 'dataset.json'), 'reports': reports,
-                'live_status': 'disabled', 'real_model_status': 'not_verified'}
+        return {
+            'source_type': 'SYNTHETIC',
+            'dataset': str(args.output / 'dataset.json'),
+            'reports': reports,
+            'live_status': 'disabled',
+            'real_model_status': 'not_verified',
+        }
     dataset = load_dataset(args.dataset)
     if args.command == 'campaign':
         # Keep operation-specific dependencies out of module startup.
         from .research import run_campaign, FixtureGenerator, demo_campaign_config
+
         config = read_json(args.config) if args.config else demo_campaign_config(dataset, demo_config())
         if isinstance(config.get('backtest_config'), dict):
             config['backtest_config'] = config_from_json(config['backtest_config'])

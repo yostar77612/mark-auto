@@ -1,4 +1,5 @@
 """P0-02/03/04/13: offline native-widget presentation contracts."""
+
 import os
 from pathlib import Path
 import shutil
@@ -26,8 +27,7 @@ class DesktopPolishATests(unittest.TestCase):
         self.root.mkdir()
         self.paths = AppPaths(self.root / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state/'settings.json'),
-                                 BackupManager(self.paths, self.jobs))
+        self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), BackupManager(self.paths, self.jobs))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.window.resize(1366, 768)
@@ -43,8 +43,7 @@ class DesktopPolishATests(unittest.TestCase):
 
     def test_p0_02_roles_names_and_confirmation(self):
         w = self.window
-        expected = {'paper_kill', 'paper_cancel', 'restore_backup',
-                    'instrument_expiries_remove', 'risk_sessions_remove', 'margin_schedule_remove'}
+        expected = {'paper_kill', 'paper_cancel', 'restore_backup', 'instrument_expiries_remove', 'risk_sessions_remove', 'margin_schedule_remove'}
         danger = {b.objectName() for b in w.findChildren(QPushButton) if b.property('role') == 'danger'}
         self.assertEqual(danger, expected)
         for i in range(w.stack.count()):
@@ -85,8 +84,9 @@ class DesktopPolishATests(unittest.TestCase):
                 self.assertGreaterEqual(table.columnWidth(i), table.fontMetrics().horizontalAdvance(table.horizontalHeaderItem(i).text()) + 12)
         obsolete = '策略' + '與版本'
         root = Path(__file__).resolve().parents[1]
-        for path in [root/'desktop_ui.py', root/'README.md', *list((root/'docs').rglob('*.md')), *list((root/'docs').rglob('*.json'))]:
-            if path.name == '06_PRODUCT_OPTIMIZATION_PLAN.md': continue  # the plan quotes the obsolete name as its problem statement
+        for path in [root / 'desktop_ui.py', root / 'README.md', *list((root / 'docs').rglob('*.md')), *list((root / 'docs').rglob('*.json'))]:
+            if path.name == '06_PRODUCT_OPTIMIZATION_PLAN.md':
+                continue  # the plan quotes the obsolete name as its problem statement
             self.assertNotIn(obsolete, path.read_text(encoding='utf-8'), str(path))
 
     def test_p0_13_all_disabled_actions_have_visible_prerequisite(self):

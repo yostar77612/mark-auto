@@ -1,4 +1,5 @@
 """Snapshot CLI, logical metrics, full content rendering, and workspace isolation."""
+
 import json
 import os
 from pathlib import Path
@@ -16,13 +17,21 @@ class UiSnapshotTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from PySide6.QtWidgets import QApplication
+
         cls.app = QApplication.instance() or QApplication([])
 
     def cli(self, *args):
         env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_SCALE_FACTOR='3')
-        return subprocess.run([sys.executable, str(ROOT / 'tools/ui_snapshot.py'), *map(str, args)],
-                              cwd=ROOT, env=env, capture_output=True, text=True,
-                              encoding='utf-8', errors='replace', timeout=120)
+        return subprocess.run(
+            [sys.executable, str(ROOT / 'tools/ui_snapshot.py'), *map(str, args)],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=120,
+        )
 
     def test_help_and_invalid_arguments_write_nothing(self):
         result = self.cli('--help')
@@ -45,6 +54,7 @@ class UiSnapshotTests(unittest.TestCase):
 
     def check_output(self, out, size, scale):
         from PySide6.QtGui import QImage
+
         metrics = json.loads((out / 'metrics.json').read_text(encoding='utf-8'))
         self.assertEqual(metrics['size'], list(size))
         self.assertEqual(metrics['scale'], scale)
@@ -52,8 +62,7 @@ class UiSnapshotTests(unittest.TestCase):
         self.assertEqual(len(list(out.glob('*.json'))), 1)
         self.assertEqual(len(list(out.glob('*.png'))), 14)
         for page in metrics['pages'].values():
-            for key in ('page_height', 'visible_input_count', 'button_count', 'label_char_count',
-                        'primary_button_count', 'full_width'):
+            for key in ('page_height', 'visible_input_count', 'button_count', 'label_char_count', 'primary_button_count', 'full_width'):
                 self.assertIs(type(page[key]), int, key)
                 self.assertGreaterEqual(page[key], 0)
             self.assertIsInstance(page['visible_text'], list)
@@ -67,16 +76,14 @@ class UiSnapshotTests(unittest.TestCase):
             self.assertFalse(viewport.isNull())
             self.assertFalse(full.isNull())
             self.assertEqual((viewport.width(), viewport.height()), tuple(round(n * scale) for n in size))
-            self.assertEqual((full.width(), full.height()),
-                             (round(page['full_width'] * scale), round(page['page_height'] * scale)))
+            self.assertEqual((full.width(), full.height()), (round(page['full_width'] * scale), round(page['page_height'] * scale)))
         self.assertGreater(metrics['pages']['AI 策略中心']['page_height'], size[1])  # P0-08 shortened this page to <=1600px
         return metrics
 
     def test_cli_scale_size_and_schema(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
-            for name, size, scale in (('normal', (1366, 768), 1), ('double', (1366, 768), 2),
-                                      ('smaller', (1200, 700), 1)):
+            for name, size, scale in (('normal', (1366, 768), 1), ('double', (1366, 768), 2), ('smaller', (1200, 700), 1)):
                 result = self.cli('--size', f'{size[0]}x{size[1]}', '--scale', scale, '--out', base / name)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 metrics = self.check_output(base / name, size, scale)
@@ -88,6 +95,7 @@ class UiSnapshotTests(unittest.TestCase):
     def test_metrics_roles_labels_and_hidden_controls(self):
         from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox
         from tools.ui_snapshot import page_metrics
+
         page = QWidget()
         self.addCleanup(page.deleteLater)
         layout = QVBoxLayout(page)
@@ -122,6 +130,7 @@ class UiSnapshotTests(unittest.TestCase):
     def test_tab_heights_measure_content_and_restore_selection(self):
         from PySide6.QtWidgets import QScrollArea, QTabWidget, QVBoxLayout, QWidget
         from tools.ui_snapshot import tab_heights
+
         page = QWidget()
         self.addCleanup(page.deleteLater)
         layout = QVBoxLayout(page)
@@ -149,11 +158,15 @@ class UiSnapshotTests(unittest.TestCase):
         # in a fresh process rather than dispatching timers left by other tests.
         if os.environ.get('MARKAUTO_UI_SNAPSHOT_ISOLATION_CHILD') != '1':
             result = subprocess.run(
-                [sys.executable, '-m', 'unittest',
-                 'tests.test_ui_snapshot.UiSnapshotTests.test_workspace_isolation_cleanup_and_default_fallback_tripwire'],
-                cwd=ROOT, env=dict(os.environ, QT_QPA_PLATFORM='offscreen',
-                                  MARKAUTO_UI_SNAPSHOT_ISOLATION_CHILD='1'),
-                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
+                [sys.executable, '-m', 'unittest', 'tests.test_ui_snapshot.UiSnapshotTests.test_workspace_isolation_cleanup_and_default_fallback_tripwire'],
+                cwd=ROOT,
+                env=dict(os.environ, QT_QPA_PLATFORM='offscreen', MARKAUTO_UI_SNAPSHOT_ISOLATION_CHILD='1'),
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                timeout=120,
+            )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             return
         from tools import ui_snapshot
@@ -171,9 +184,9 @@ class UiSnapshotTests(unittest.TestCase):
                 if not root.exists():
                     result[str(root)] = None
                     continue
-                result[str(root)] = [(str(path.relative_to(root)), path.is_dir(),
-                                      path.stat().st_size, path.stat().st_mtime_ns)
-                                     for path in [root, *sorted(root.rglob('*'))]]
+                result[str(root)] = [
+                    (str(path.relative_to(root)), path.is_dir(), path.stat().st_size, path.stat().st_mtime_ns) for path in [root, *sorted(root.rglob('*'))]
+                ]
             return result
 
         before = listing()
@@ -202,6 +215,7 @@ class UiSnapshotTests(unittest.TestCase):
 
         def save(widget, path, scale):
             from PySide6.QtWidgets import QScrollArea
+
             if path.name.endswith('_full.png'):
                 full_captures.append(path.name)
                 for scroll in widget.findChildren(QScrollArea):
@@ -210,12 +224,14 @@ class UiSnapshotTests(unittest.TestCase):
             return original_save(widget, path, scale)
 
         with original_temp() as temporary:
-            with (patch.object(ui_snapshot.tempfile, 'TemporaryDirectory', side_effect=disposable),
-                  patch.object(AppPaths, 'ensure', ensure),
-                  patch.object(AppPaths, 'discover', side_effect=AssertionError('default workspace forbidden')),
-                  patch.object(WorkspaceLocator, 'load', side_effect=AssertionError('workspace lookup forbidden')),
-                  patch.object(desktop_ui, 'MainWindow', side_effect=construct),
-                  patch.object(ui_snapshot, '_save_png', side_effect=save)):
+            with (
+                patch.object(ui_snapshot.tempfile, 'TemporaryDirectory', side_effect=disposable),
+                patch.object(AppPaths, 'ensure', ensure),
+                patch.object(AppPaths, 'discover', side_effect=AssertionError('default workspace forbidden')),
+                patch.object(WorkspaceLocator, 'load', side_effect=AssertionError('workspace lookup forbidden')),
+                patch.object(desktop_ui, 'MainWindow', side_effect=construct),
+                patch.object(ui_snapshot, '_save_png', side_effect=save),
+            ):
                 ui_snapshot.capture(Path(temporary) / 'out')
                 self.assertEqual(len(windows), 1)
                 self.assertEqual(len(full_captures), 7)
@@ -226,9 +242,11 @@ class UiSnapshotTests(unittest.TestCase):
                     with self.assertRaisesRegex(OSError, 'injected render failure'):
                         ui_snapshot.capture(Path(temporary) / 'failure')
                 self.assertTrue(all(not path.exists() for path in directories))
+
                 # Prove this guard would fail if construction fell back to defaults.
                 def fallback(*args, **kwargs):
                     return original_window(AppPaths.discover(), *args[1:], **kwargs)
+
                 with patch.object(desktop_ui, 'MainWindow', side_effect=fallback):
                     with self.assertRaisesRegex(AssertionError, 'default workspace forbidden'):
                         ui_snapshot.capture(Path(temporary) / 'fallback')

@@ -1,4 +1,5 @@
 """Frozen Windows desktop entry point; no web server, browser, or Python setup."""
+
 from __future__ import annotations
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
@@ -11,16 +12,20 @@ import sys
 
 class _SmokeSettingsView:
     """Validated settings snapshot for automated smoke; never writes user preferences."""
+
     def __init__(self, settings):
         from copy import deepcopy
+
         self._settings = deepcopy(settings)
 
     def load(self):
         from copy import deepcopy
+
         return deepcopy(self._settings)
 
     def save(self, settings):
         from copy import deepcopy
+
         if not isinstance(settings, dict):
             raise ValueError('Smoke preferences must be a dictionary')
         self._settings = deepcopy(settings)
@@ -43,8 +48,7 @@ def _auth_smoke_dependencies():
     def deny_network(*args, **kwargs):
         raise RuntimeError('Network forbidden in synthetic auth packaging smoke')
 
-    versions = {'PyJWT': jwt.__version__, 'cryptography': cryptography.__version__,
-                'cffi': cffi.__version__, 'pycparser': pycparser.__version__}
+    versions = {'PyJWT': jwt.__version__, 'cryptography': cryptography.__version__, 'cffi': cffi.__version__, 'pycparser': pycparser.__version__}
     expected = {'PyJWT': '2.15.1', 'cryptography': '50.0.2', 'cffi': '2.1.1', 'pycparser': '3.11'}
     if versions != expected or 'OpenSSL 4.0.3' not in backend.openssl_version_text():
         raise ValueError('Auth packaging dependency mismatch')
@@ -60,10 +64,8 @@ def _auth_smoke_dependencies():
         if len(parsed.ext) != 2 or ffi.new('struct sample *', {'value': 17}).value != 17:
             raise ValueError('Parser or native CFFI packaging failed')
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        jwk = dict(json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key())),
-                   kid='packaging-fixture', alg='RS256', use='sig')
-        claims = dict(iss=auth.ISSUER, sub='packaging-fixture', aud='fixture-client',
-                      nonce='fixture-nonce', iat=int(time.time()), exp=int(time.time()) + 60)
+        jwk = dict(json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key())), kid='packaging-fixture', alg='RS256', use='sig')
+        claims = dict(iss=auth.ISSUER, sub='packaging-fixture', aud='fixture-client', nonce='fixture-nonce', iat=int(time.time()), exp=int(time.time()) + 60)
         token = jwt.encode(claims, key, algorithm='RS256', headers={'kid': 'packaging-fixture'})
 
         class FixtureTransport:
@@ -90,8 +92,7 @@ def _auth_smoke_dependencies():
             else:
                 raise ValueError('Identity binding failure accepted')
         try:
-            jwt.decode(token, jwt.PyJWK.from_dict(jwk), algorithms=['HS256'],
-                       issuer=auth.ISSUER, audience='fixture-client')
+            jwt.decode(token, jwt.PyJWK.from_dict(jwk), algorithms=['HS256'], issuer=auth.ISSUER, audience='fixture-client')
         except jwt.InvalidAlgorithmError:
             pass
         else:
@@ -101,11 +102,19 @@ def _auth_smoke_dependencies():
             setattr(socket, name, function)
     if set(Path.cwd().iterdir()) != before:
         raise ValueError('Auth packaging parser wrote into working directory')
-    return {'status': 'passed', 'source_type': 'synthetic', 'network_used': False,
-            'versions': versions, 'native_openssl': backend.openssl_version_text(),
-            'parser_and_cffi': True, 'rs256_identity_binding': True, 'implementation_provenance': provenance,
-            'real_oauth_status': 'not_verified', 'real_model_status': 'not_verified',
-            'scope': 'offline packaging only; not an account grant or actual model verification'}
+    return {
+        'status': 'passed',
+        'source_type': 'synthetic',
+        'network_used': False,
+        'versions': versions,
+        'native_openssl': backend.openssl_version_text(),
+        'parser_and_cffi': True,
+        'rs256_identity_binding': True,
+        'implementation_provenance': provenance,
+        'real_oauth_status': 'not_verified',
+        'real_model_status': 'not_verified',
+        'scope': 'offline packaging only; not an account grant or actual model verification',
+    }
 
 
 def _smoke_steps():
@@ -113,14 +122,25 @@ def _smoke_steps():
     from quantlab.core import to_dict
     from quantlab.reporting import demo_config, synthetic_dataset
     from quantlab.research import demo_campaign_config
+
     campaign = to_dict(demo_campaign_config(synthetic_dataset(120), demo_config()))
     campaign.update(families=['trend'], max_trials=1, max_improvements=0, max_runtime_seconds=45)
     campaign['ranking']['minimum'] = '-100000000'
     contract = 'TAIFEX:TMF:202601'
-    policy = {'contract_id': contract, 'risk_sessions': [{'open': '2026-01-05T00:45:00Z',
-        'end': '2026-01-05T02:45:00Z', 'trade_date': '2026-01-05', 'session': 'day',
-        'contract_id': contract, 'source': 'explicit synthetic smoke fixture'}],
-        'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000', 'version': 'synthetic-assumption-v1'}]}
+    policy = {
+        'contract_id': contract,
+        'risk_sessions': [
+            {
+                'open': '2026-01-05T00:45:00Z',
+                'end': '2026-01-05T02:45:00Z',
+                'trade_date': '2026-01-05',
+                'session': 'day',
+                'contract_id': contract,
+                'source': 'explicit synthetic smoke fixture',
+            }
+        ],
+        'margin_schedule': [{'effective_from': '2026-01-01', 'margin_per_contract': '100000', 'version': 'synthetic-assumption-v1'}],
+    }
     snapshot = {'account_id': 'paper-demo', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}
     return [
         ('ui_demo', {'bars': 120}),
@@ -144,22 +164,46 @@ def _market_smoke_ui(app):
     from desktop_forms import StrategyForm, CampaignForm
     from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance
     from quantlab.core import canonical_json
+
     widgets = []
     try:
-        dashboard = MarketDashboard(); widgets.append(dashboard)
+        dashboard = MarketDashboard()
+        widgets.append(dashboard)
         dashboard.setWindowTitle('SYNTHETIC ENGINEERING FIXTURE — not market acceptance')
         dashboard.resize(1280, 900)
         instrument = InstrumentRef('TAIFEX', 'TMF', 'TAIFEX:TMF:202610', '202610')
         start = datetime(2026, 10, 1, 1, tzinfo=timezone.utc)
-        bars = tuple(MarketBar(instrument, '2026-10-01', 'day', Decimal(100 + i % 7),
-            Decimal(111), Decimal(90), Decimal(101 + i % 7), 100 + i, interval='1m',
-            timestamp=start + timedelta(minutes=i), end=start + timedelta(minutes=i + 1),
-            session_open=start, session_end=start + timedelta(minutes=120)) for i in range(120))
+        bars = tuple(
+            MarketBar(
+                instrument,
+                '2026-10-01',
+                'day',
+                Decimal(100 + i % 7),
+                Decimal(111),
+                Decimal(90),
+                Decimal(101 + i % 7),
+                100 + i,
+                interval='1m',
+                timestamp=start + timedelta(minutes=i),
+                end=start + timedelta(minutes=i + 1),
+                session_open=start,
+                session_end=start + timedelta(minutes=120),
+            )
+            for i in range(120)
+        )
         fixture_hash = hashlib.sha256(canonical_json(bars).encode('utf-8')).hexdigest()
-        source = SourceProvenance('https://example.invalid/synthetic-engineering-fixture', fixture_hash,
+        source = SourceProvenance(
+            'https://example.invalid/synthetic-engineering-fixture',
+            fixture_hash,
             'SYNTHETIC ENGINEERING FIXTURE — not official market data',
-            'https://example.invalid/fixture-not-a-license', start, '2026-10-01', '2026-10-01',
-            '2026-10-01', mode='offline', warnings=('Synthetic packaging smoke only; no market acceptance.',))
+            'https://example.invalid/fixture-not-a-license',
+            start,
+            '2026-10-01',
+            '2026-10-01',
+            '2026-10-01',
+            mode='offline',
+            warnings=('Synthetic packaging smoke only; no market acceptance.',),
+        )
         dashboard.set_market_series(MarketSeries(instrument, bars, source))
         if not isinstance(dashboard.chart, CandlestickChart):
             raise ValueError('Market chart module contract failed')
@@ -174,18 +218,22 @@ def _market_smoke_ui(app):
             checkbox.setChecked(True)
         if not dashboard.chart.overlays or not dashboard.chart.panes:
             raise ValueError('Market indicators missing')
-        if not all(any(value is not None for value in values)
-                   for values in (*dashboard.chart.overlays.values(), *dashboard.chart.panes.values())):
+        if not all(any(value is not None for value in values) for values in (*dashboard.chart.overlays.values(), *dashboard.chart.panes.values())):
             raise ValueError('Market indicators did not warm up')
-        dashboard.show(); app.processEvents()
+        dashboard.show()
+        app.processEvents()
         pixmap = dashboard.chart.grab()
         image = pixmap.toImage()
-        colors = {image.pixel(x, y) for x in range(0, image.width(), max(1, image.width() // 20))
-                  for y in range(0, image.height(), max(1, image.height() // 20))}
+        colors = {
+            image.pixel(x, y) for x in range(0, image.width(), max(1, image.width() // 20)) for y in range(0, image.height(), max(1, image.height() // 20))
+        }
         if pixmap.isNull() or dashboard.chart.last_rendered_bar_count < 1 or len(colors) < 4:
             raise ValueError('Market chart did not render nonempty candles')
-        strategy = StrategyForm(); campaign = CampaignForm(); widgets.extend((strategy, campaign))
-        strategy.fields['fast'].setText('5'); strategy.fields['slow'].setText('20')
+        strategy = StrategyForm()
+        campaign = CampaignForm()
+        widgets.extend((strategy, campaign))
+        strategy.fields['fast'].setText('5')
+        strategy.fields['slow'].setText('20')
         candidate = strategy.build_payload()
         config = _smoke_steps()[3][1]['config']
         # No selection/holdout reuse in this additional packaging-only evaluation.
@@ -194,24 +242,37 @@ def _market_smoke_ui(app):
         typed_config = campaign.build_payload()
         if candidate['family'] != 'trend' or candidate['parameters']['fast'] != 5 or typed_config['max_trials'] != 1:
             raise ValueError('Typed forms changed the bounded smoke payload')
-        return {'status': 'pending', 'source_type': 'synthetic', 'generator': 'fixture',
-            'scope': 'engineering packaging smoke only; not official-data or real-model acceptance',
-            'network_used': False, 'live_status': 'disabled', 'fixture_sha256': fixture_hash,
-            'modules': ['desktop_market', 'desktop_charts', 'desktop_forms'],
-            'chart_rendered_bars': dashboard.chart.last_rendered_bar_count,
-            'timeframe_bars': counts, 'indicator_series': len(dashboard.chart.overlays) + len(dashboard.chart.panes),
-            'typed_payload': True, 'steps': []}, typed_config, candidate
+        return (
+            {
+                'status': 'pending',
+                'source_type': 'synthetic',
+                'generator': 'fixture',
+                'scope': 'engineering packaging smoke only; not official-data or real-model acceptance',
+                'network_used': False,
+                'live_status': 'disabled',
+                'fixture_sha256': fixture_hash,
+                'modules': ['desktop_market', 'desktop_charts', 'desktop_forms'],
+                'chart_rendered_bars': dashboard.chart.last_rendered_bar_count,
+                'timeframe_bars': counts,
+                'indicator_series': len(dashboard.chart.overlays) + len(dashboard.chart.panes),
+                'typed_payload': True,
+                'steps': [],
+            },
+            typed_config,
+            candidate,
+        )
     finally:
         for widget in reversed(widgets):
-            widget.close(); shiboken6.delete(widget)
+            widget.close()
+            shiboken6.delete(widget)
 
 
 def _market_smoke_response(request, candidate):
     """Create a clearly synthetic response from typed local input, never a model call."""
     from quantlab.core import canonical_json
+
     response = {key: request[key] for key in ('schema_version', 'request_id', 'data_hash', 'config_hash')}
-    response['candidates'] = [{'family': 'trend', 'context_hash': request['families'][0]['context_hash'],
-                               'candidate': candidate}]
+    response['candidates'] = [{'family': 'trend', 'context_hash': request['families'][0]['context_hash'], 'candidate': candidate}]
     return canonical_json(response)
 
 
@@ -219,9 +280,11 @@ def _check_market_worker_result(phase, result, export_path):
     """Fail closed on missing provenance, bundled-source failures or fake completion."""
     import re
     from quantlab.core import content_hash
+
     if phase == 'manual_export':
         import json
         from quantlab import manual_exchange
+
         request = result['request']
         if result.get('mode') != 'manual_unverified' or json.loads(export_path.read_text(encoding='utf-8')) != request:
             raise ValueError('Manual export was not written by the worker')
@@ -233,13 +296,20 @@ def _check_market_worker_result(phase, result, export_path):
         raise ValueError('Unknown market smoke phase')
     hashes = result.get('binding', {}).get('engine_source_hashes', {})
     from quantlab import research
-    expected = {name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
-                for name in ('research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py')}
-    if (result.get('status') != 'completed' or result.get('real_model_status') != 'not_verified'
-            or result.get('binding', {}).get('provider', {}).get('mode') != 'manual_unverified'
-            or result.get('source_manifest', {}).get('source_type') != 'synthetic'
-            or hashes != expected or len(result.get('attempts', [])) != 1
-            or result['attempts'][0].get('status') != 'evaluated'):
+
+    expected = {
+        name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
+        for name in ('research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py')
+    }
+    if (
+        result.get('status') != 'completed'
+        or result.get('real_model_status') != 'not_verified'
+        or result.get('binding', {}).get('provider', {}).get('mode') != 'manual_unverified'
+        or result.get('source_manifest', {}).get('source_type') != 'synthetic'
+        or hashes != expected
+        or len(result.get('attempts', [])) != 1
+        or result['attempts'][0].get('status') != 'evaluated'
+    ):
         raise ValueError('Manual import or frozen source provenance failed')
     return {'engine_source_hashes': hashes, 'real_model_status': 'not_verified'}
 
@@ -249,6 +319,7 @@ def _history_smoke_fixture(workspace):
     from datetime import datetime, timedelta
     import hashlib
     from quantlab.market_history import PRODUCT_SOURCES
+
     header = ui_text('desktop._history_smoke_fixture.text_1')
     rows, sessions = [], []
     for product, base in (('TX', 100), ('MTX', 200), ('TMF', 300)):
@@ -257,20 +328,34 @@ def _history_smoke_fixture(workspace):
             rows.append(f'20261008,{product},202610,{stamp:%H%M%S},{base + index},2,-,-,')
             if minute == 0:
                 rows.append(f'20261008,{product},202610,084559,{base + 2},4,-,-,')
-        sessions.append({'contract_id': f'TAIFEX:{product}:202610', 'trade_date': '2026-10-08',
-            'session': 'day', 'open': '2026-10-08T00:45:00+00:00',
-            'end': '2026-10-08T01:46:00+00:00', 'include_end': False,
-            'source': PRODUCT_SOURCES[product]})
+        sessions.append(
+            {
+                'contract_id': f'TAIFEX:{product}:202610',
+                'trade_date': '2026-10-08',
+                'session': 'day',
+                'open': '2026-10-08T00:45:00+00:00',
+                'end': '2026-10-08T01:46:00+00:00',
+                'include_end': False,
+                'source': PRODUCT_SOURCES[product],
+            }
+        )
     raw = (header + '\n'.join(rows) + '\n').encode('utf-8')
     path = Path(workspace) / 'SYNTHETIC-packaging-fixture-not-exchange-data.csv'
     path.write_bytes(raw)
-    payload = {'history_import': True, 'local_path': str(path), 'sessions': sessions,
-               'dated_policy_confirmed': True}
-    return {'status': 'pending', 'source_type': 'synthetic', 'generator': 'fixture',
+    payload = {'history_import': True, 'local_path': str(path), 'sessions': sessions, 'dated_policy_confirmed': True}
+    return {
+        'status': 'pending',
+        'source_type': 'synthetic',
+        'generator': 'fixture',
         'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance',
-        'network_used': False, 'live_status': 'disabled', 'real_model_status': 'not_verified',
-        'real_market_status': 'not_verified', 'windows_client_status': 'not_verified',
-        'fixture_sha256': hashlib.sha256(raw).hexdigest(), 'steps': []}, payload
+        'network_used': False,
+        'live_status': 'disabled',
+        'real_model_status': 'not_verified',
+        'real_market_status': 'not_verified',
+        'windows_client_status': 'not_verified',
+        'fixture_sha256': hashlib.sha256(raw).hexdigest(),
+        'steps': [],
+    }, payload
 
 
 def _check_history_worker_result(result, paths, payload, fixture_sha256):
@@ -280,6 +365,7 @@ def _check_history_worker_result(result, paths, payload, fixture_sha256):
     from datetime import datetime, timedelta, timezone
     from decimal import Decimal
     from quantlab.market_history import load_history, list_history
+
     with Path(payload['local_path']).open('rb') as stream:
         source = stream.read(2049)  # This fixed fixture is smaller than 2 KiB.
     if len(source) > 2048 or hashlib.sha256(source).hexdigest() != fixture_sha256:
@@ -289,42 +375,62 @@ def _check_history_worker_result(result, paths, payload, fixture_sha256):
     if tuple(item.cache_id for item in list_history(cache)) != (loaded.cache_id,):
         raise ValueError('Unexpected history cache contents')
     policy = sorted(payload['sessions'], key=lambda row: (row['contract_id'], row['open']))
-    policy_hash = hashlib.sha256(json.dumps(policy, sort_keys=True, separators=(',', ':'),
-                                           ensure_ascii=False).encode('utf-8')).hexdigest()
-    counters = {'rows': 30, 'accepted_ticks': 30, 'spread_rows': 0,
-                'excluded_rows': 0, 'outside_session_rows': 0, 'missing_minutes': 156}
-    if (result.get('mode') != 'local_unverified_history' or result.get('contracts') != 3
-            or result.get('bars') != 27 or result.get('source_hash') != fixture_sha256
-            or loaded.source_hash != fixture_sha256 or result.get('policy_hash') != policy_hash
-            or loaded.policy_hash != policy_hash or result.get('counters') != counters
-            or dict(loaded.counters) != counters or not loaded.warnings
-            or result.get('warnings') != list(loaded.warnings)):
+    policy_hash = hashlib.sha256(json.dumps(policy, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()
+    counters = {'rows': 30, 'accepted_ticks': 30, 'spread_rows': 0, 'excluded_rows': 0, 'outside_session_rows': 0, 'missing_minutes': 156}
+    if (
+        result.get('mode') != 'local_unverified_history'
+        or result.get('contracts') != 3
+        or result.get('bars') != 27
+        or result.get('source_hash') != fixture_sha256
+        or loaded.source_hash != fixture_sha256
+        or result.get('policy_hash') != policy_hash
+        or loaded.policy_hash != policy_hash
+        or result.get('counters') != counters
+        or dict(loaded.counters) != counters
+        or not loaded.warnings
+        or result.get('warnings') != list(loaded.warnings)
+    ):
         raise ValueError('History worker result or cache provenance mismatch')
-    expected = {'TAIFEX:TX:202610': ('TX', 100), 'TAIFEX:MTX:202610': ('MXF', 200),
-                'TAIFEX:TMF:202610': ('TMF', 300)}
+    expected = {'TAIFEX:TX:202610': ('TX', 100), 'TAIFEX:MTX:202610': ('MXF', 200), 'TAIFEX:TMF:202610': ('TMF', 300)}
     if {item.instrument.contract_id for item in loaded.series} != set(expected):
         raise ValueError('History product identities missing')
     start = datetime(2026, 10, 8, 0, 45, tzinfo=timezone.utc)
     for item in loaded.series:
         symbol, base = expected[item.instrument.contract_id]
-        if (item.instrument.symbol != symbol or item.instrument.expiry != '202610'
-                or len(item.bars) != 9 or item.provenance.mode != 'history'
-                or item.provenance.sha256 != fixture_sha256):
+        if (
+            item.instrument.symbol != symbol
+            or item.instrument.expiry != '202610'
+            or len(item.bars) != 9
+            or item.provenance.mode != 'history'
+            or item.provenance.sha256 != fixture_sha256
+        ):
             raise ValueError('History series identity or provenance mismatch')
         for index, (bar, minute) in enumerate(zip(item.bars, (0, 1, 2, 3, 5, 15, 30, 59, 60))):
             price = Decimal(base + index)
             high = Decimal(base + 2) if index == 0 else price
-            if ((bar.open, bar.high, bar.low, bar.close, bar.volume) !=
-                    (price, high, price, high, 3 if index == 0 else 1)
-                    or bar.timestamp != start + timedelta(minutes=minute)
-                    or bar.end != start + timedelta(minutes=minute + 1)
-                    or bar.session_open != start or bar.session_end != start + timedelta(minutes=61)
-                    or bar.trade_date != '2026-10-08' or bar.session != 'day'
-                    or bar.interval != '1m' or not bar.partial or bar.source_id != fixture_sha256):
+            if (
+                (bar.open, bar.high, bar.low, bar.close, bar.volume) != (price, high, price, high, 3 if index == 0 else 1)
+                or bar.timestamp != start + timedelta(minutes=minute)
+                or bar.end != start + timedelta(minutes=minute + 1)
+                or bar.session_open != start
+                or bar.session_end != start + timedelta(minutes=61)
+                or bar.trade_date != '2026-10-08'
+                or bar.session != 'day'
+                or bar.interval != '1m'
+                or not bar.partial
+                or bar.source_id != fixture_sha256
+            ):
                 raise ValueError('History synthetic tick normalization mismatch')
-    return loaded.series, {'cache_id': loaded.cache_id, 'policy_hash': policy_hash,
-        'source_hash': loaded.source_hash, 'counters': counters, 'cache_reloaded': True,
-        'contracts': sorted(expected), 'bars': 27, 'mode': result['mode']}
+    return loaded.series, {
+        'cache_id': loaded.cache_id,
+        'policy_hash': policy_hash,
+        'source_hash': loaded.source_hash,
+        'counters': counters,
+        'cache_reloaded': True,
+        'contracts': sorted(expected),
+        'bars': 27,
+        'mode': result['mode'],
+    }
 
 
 def _history_smoke_ui(app, series):
@@ -332,12 +438,14 @@ def _history_smoke_ui(app, series):
     import shiboken6
     from desktop_market import MarketDashboard
     from desktop_charts import CandlestickChart
+
     dashboard = MarketDashboard()
     try:
         dashboard.setWindowTitle('SYNTHETIC HISTORY FIXTURE — not actual market acceptance')
         dashboard.resize(1280, 900)
         dashboard.set_market_series(series)
-        dashboard.show(); app.processEvents()
+        dashboard.show()
+        app.processEvents()
         expected = {'1m': 9, '3m': 6, '5m': 6, '15m': 5, '30m': 3, '60m': 2, '1d': 1, '1w': 1}
         counts, rendered = {}, {}
         for item in series:
@@ -352,19 +460,33 @@ def _history_smoke_ui(app, series):
                     raise ValueError('History chart timeframe missing')
                 dashboard.timeframe_combo.setCurrentIndex(index)
                 app.processEvents()
-                pixmap = dashboard.chart.grab(); image = pixmap.toImage()
-                colors = {image.pixel(x, y) for x in range(0, image.width(), max(1, image.width() // 20))
-                          for y in range(0, image.height(), max(1, image.height() // 20))}
+                pixmap = dashboard.chart.grab()
+                image = pixmap.toImage()
+                colors = {
+                    image.pixel(x, y)
+                    for x in range(0, image.width(), max(1, image.width() // 20))
+                    for y in range(0, image.height(), max(1, image.height() // 20))
+                }
                 bars = dashboard.chart.bars
-                if (len(bars) != count or any(bar.contract_id != contract for bar in bars)
-                        or pixmap.isNull() or dashboard.chart.last_rendered_bar_count != count or len(colors) < 4):
+                if (
+                    len(bars) != count
+                    or any(bar.contract_id != contract for bar in bars)
+                    or pixmap.isNull()
+                    or dashboard.chart.last_rendered_bar_count != count
+                    or len(colors) < 4
+                ):
                     raise ValueError('History product/timeframe chart did not render expected candles')
                 counts[contract][timeframe] = len(bars)
                 rendered[contract][timeframe] = dashboard.chart.last_rendered_bar_count
-        return {'timeframe_bars': counts, 'chart_rendered_bars': rendered,
-                'chart_render_checks': 24, 'modules': ['quantlab.market_history', 'desktop_market', 'desktop_charts']}
+        return {
+            'timeframe_bars': counts,
+            'chart_rendered_bars': rendered,
+            'chart_render_checks': 24,
+            'modules': ['quantlab.market_history', 'desktop_market', 'desktop_charts'],
+        }
     finally:
-        dashboard.close(); shiboken6.delete(dashboard)
+        dashboard.close()
+        shiboken6.delete(dashboard)
 
 
 def _walk_forward_smoke_fixture(paths):
@@ -374,33 +496,55 @@ def _walk_forward_smoke_fixture(paths):
     from quantlab.core import Dataset, content_hash, to_dict
     from quantlab.reporting import demo_config, save_dataset, synthetic_dataset
     from quantlab.walk_forward import build_walk_forward_plan
+
     data = synthetic_dataset(200)
     cycle = (-120, -80, -40, 0, 40, 80, 120, 80, 40, 0, -40, -80)
     bars = []
     for index, bar in enumerate(data.bars):
         price = Decimal(20000 + cycle[index % len(cycle)])
-        bars.append(replace(bar, open=price, high=price + 2, low=price - 2,
-                            close=price, source_id='synthetic-walk-forward-smoke-v1'))
-    manifest = {**data.manifest, 'source_filename': 'generated walk-forward engineering smoke',
-                'source_hash': content_hash(bars), 'data_hash': content_hash(bars)}
-    manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items()
-                                            if k not in ('imported_at', 'manifest_hash')})
+        bars.append(replace(bar, open=price, high=price + 2, low=price - 2, close=price, source_id='synthetic-walk-forward-smoke-v1'))
+    manifest = {
+        **data.manifest,
+        'source_filename': 'generated walk-forward engineering smoke',
+        'source_hash': content_hash(bars),
+        'data_hash': content_hash(bars),
+    }
+    manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k not in ('imported_at', 'manifest_hash')})
     data = Dataset(tuple(bars), manifest, dict(data.quality))
     # Default minimum one closed lot and 10% drawdown gate are NOT relaxed.
     # Twenty train/validation evaluations plus two actual forward evaluations.
-    plan = build_walk_forward_plan(backtest_config=demo_config(), train_bars=60,
-        validation_bars=40, oos_bars=40, fold_count=2, final_holdout=(180, 200),
-        max_runtime_seconds=30, max_bars=200, max_evaluations=22,
-        process_start_method='spawn', max_ipc_bytes=65536)
+    plan = build_walk_forward_plan(
+        backtest_config=demo_config(),
+        train_bars=60,
+        validation_bars=40,
+        oos_bars=40,
+        fold_count=2,
+        final_holdout=(180, 200),
+        max_runtime_seconds=30,
+        max_bars=200,
+        max_evaluations=22,
+        process_start_method='spawn',
+        max_ipc_bytes=65536,
+    )
     paths.ensure()
     save_dataset(data, paths.state / 'dataset.json')
-    return {'status': 'pending', 'source_type': 'synthetic', 'generator': 'fixture',
+    return {
+        'status': 'pending',
+        'source_type': 'synthetic',
+        'generator': 'fixture',
         'scope': 'engineering synthetic packaging smoke only; never actual research PASS or Windows-client acceptance',
-        'network_used': False, 'model_calls': 0, 'paper_eligible': False,
-        'independent_oos': False, 'ranking_eligible': False, 'live_status': 'disabled',
-        'real_model_status': 'not_verified', 'real_market_status': 'not_verified',
-        'windows_client_status': 'not_verified', 'fixture_data_hash': manifest['data_hash'],
-        'steps': []}, {'plan': to_dict(plan)}
+        'network_used': False,
+        'model_calls': 0,
+        'paper_eligible': False,
+        'independent_oos': False,
+        'ranking_eligible': False,
+        'live_status': 'disabled',
+        'real_model_status': 'not_verified',
+        'real_market_status': 'not_verified',
+        'windows_client_status': 'not_verified',
+        'fixture_data_hash': manifest['data_hash'],
+        'steps': [],
+    }, {'plan': to_dict(plan)}
 
 
 def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
@@ -412,6 +556,7 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
     from quantlab.reporting import load_dataset
     from quantlab.walk_forward import read_walk_forward_state
     from desktop_walk_forward import compact_walk_forward, preview_walk_forward
+
     if type(result) is not dict or len(json.dumps(result, allow_nan=False).encode('utf-8')) > 65536:
         raise ValueError('Walk-forward smoke result exceeds compact reply bound')
     data = load_dataset(paths.state / 'dataset.json')
@@ -420,14 +565,18 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
     expected = preview_walk_forward(data, payload['plan'], paths)
     reference = expected['preview_identity']
     if operation == 'ui_walk_forward_preview':
-        if (result != expected or (paths.state / 'walk_forward').exists()
-                or (paths.controls / 'holdout-registry.sqlite3').exists()):
+        if result != expected or (paths.state / 'walk_forward').exists() or (paths.controls / 'holdout-registry.sqlite3').exists():
             raise ValueError('Walk-forward preview mismatch or unexpected mutation')
-        return {'reference': reference, 'source_identity': expected['source_identity'],
+        return {
+            'reference': reference,
+            'source_identity': expected['source_identity'],
             'engine_source_hashes': expected['source_hashes'],
             'candidate_pool_hash': content_hash(expected['candidate_pool']),
-            'runtime_seconds': expected['runtime_seconds'], 'evaluation_limit': expected['evaluation_limit'],
-            'final_holdout_status': expected['final_holdout_status'], 'preview_verified': True}
+            'runtime_seconds': expected['runtime_seconds'],
+            'evaluation_limit': expected['evaluation_limit'],
+            'final_holdout_status': expected['final_holdout_status'],
+            'preview_verified': True,
+        }
     if operation not in ('ui_walk_forward_run', 'ui_walk_forward_read'):
         raise ValueError('Unknown walk-forward smoke operation')
     if result.get('reference') != reference or report.get('reference') != reference:
@@ -438,15 +587,21 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
         raise ValueError('Walk-forward smoke journal exceeds fixture bound')
     state = read_walk_forward_state(folder)  # Validates hashes, ledger, winner and no-winner decisions.
     summary = state['summary']
-    if (result != compact_walk_forward(state, reference) or state['status'] != 'completed'
-            or state['binding']['plan'] != payload['plan']
-            or state['binding']['source_hashes'] != expected['source_hashes']
-            or state['source_manifest'] != dict(data.manifest)
-            or summary['planned_folds'] != 2 or summary['evaluated_oos_folds'] != 2
-            or summary['evaluations_reserved'] != 22 or summary['evaluation_limit'] != 22
-            or summary['model_calls'] != 0 or summary['final_holdout_status'] != 'excluded_not_evaluated'
-            or summary['evidence_mode'] != 'synthetic_validation'
-            or any(summary[key] is not False for key in ('independent_oos', 'ranking_eligible', 'paper_eligible'))):
+    if (
+        result != compact_walk_forward(state, reference)
+        or state['status'] != 'completed'
+        or state['binding']['plan'] != payload['plan']
+        or state['binding']['source_hashes'] != expected['source_hashes']
+        or state['source_manifest'] != dict(data.manifest)
+        or summary['planned_folds'] != 2
+        or summary['evaluated_oos_folds'] != 2
+        or summary['evaluations_reserved'] != 22
+        or summary['evaluation_limit'] != 22
+        or summary['model_calls'] != 0
+        or summary['final_holdout_status'] != 'excluded_not_evaluated'
+        or summary['evidence_mode'] != 'synthetic_validation'
+        or any(summary[key] is not False for key in ('independent_oos', 'ranking_eligible', 'paper_eligible'))
+    ):
         raise ValueError('Walk-forward smoke journal or result mismatch')
     folds = []
     for fold in state['folds']:
@@ -455,33 +610,53 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
         validation = winner['validation']['result']['metrics']
         oos = fold['oos']['result']['metrics']
         zero_trade = sum(c['validation']['result']['metrics']['trade_count'] == 0 for c in fold['candidates'])
-        if (fold['status'] != 'evaluated' or len(fold['candidates']) != 5
-                or selected['spec']['strategy_id'] != 'mean_reversion-v1'
-                or validation['trade_count'] < 1 or oos['trade_count'] < 1
-                or Decimal(validation['total_costs']) <= 0 or Decimal(oos['total_costs']) <= 0
-                or zero_trade < 1):
+        if (
+            fold['status'] != 'evaluated'
+            or len(fold['candidates']) != 5
+            or selected['spec']['strategy_id'] != 'mean_reversion-v1'
+            or validation['trade_count'] < 1
+            or oos['trade_count'] < 1
+            or Decimal(validation['total_costs']) <= 0
+            or Decimal(oos['total_costs']) <= 0
+            or zero_trade < 1
+        ):
             raise ValueError('Walk-forward smoke requires real closed trades and excludes zero-trade candidates')
-        folds.append({'index': fold['index'], 'winner': selected['spec']['strategy_id'],
-            'validation_closed_lots': validation['trade_count'], 'oos_closed_lots': oos['trade_count'],
-            'zero_trade_candidates_excluded': zero_trade})
+        folds.append(
+            {
+                'index': fold['index'],
+                'winner': selected['spec']['strategy_id'],
+                'validation_closed_lots': validation['trade_count'],
+                'oos_closed_lots': oos['trade_count'],
+                'zero_trade_candidates_excluded': zero_trade,
+            }
+        )
     for record in state['evaluations']:
         start, end = payload['plan']['folds'][record['fold']][record['role']]
         manifest = record['result']['manifest']
         split = manifest['dataset_manifest']['walk_forward_split']
-        if (record['status'] != 'evaluated' or end > payload['plan']['final_holdout'][0]
-                or split != {'fold': record['fold'], 'role': record['role'], 'start': start, 'end': end,
-                             'warmup': 'independent_no_prior_access'}
-                or manifest['source_type'] != 'synthetic' or manifest['data_hash'] != content_hash(data.bars[start:end])):
+        if (
+            record['status'] != 'evaluated'
+            or end > payload['plan']['final_holdout'][0]
+            or split != {'fold': record['fold'], 'role': record['role'], 'start': start, 'end': end, 'warmup': 'independent_no_prior_access'}
+            or manifest['source_type'] != 'synthetic'
+            or manifest['data_hash'] != content_hash(data.bars[start:end])
+        ):
             raise ValueError('Walk-forward smoke evaluated unexpected source or excluded final holdout')
-    if any((paths.state / name).exists() for name in
-           ('selection.json', 'active_candidate.json', 'paper.sqlite3', 'paper_policy.json', 'campaigns')):
+    if any((paths.state / name).exists() for name in ('selection.json', 'active_candidate.json', 'paper.sqlite3', 'paper_policy.json', 'campaigns')):
         raise ValueError('Walk-forward smoke unexpectedly mutated AI or paper state')
     digest = hashlib.sha256(journal.read_bytes()).hexdigest()
     if operation == 'ui_walk_forward_read' and report.get('journal_sha256') != digest:
         raise ValueError('Walk-forward smoke read mutated the completed journal')
-    return {'journal_reloaded': True, 'journal_sha256': digest, 'state_hash': state['state_hash'],
-        'summary': summary, 'folds': folds, 'compact_result_bytes': len(json.dumps(result).encode('utf-8')),
-        'journal_bytes': journal.stat().st_size, 'read_verified': operation == 'ui_walk_forward_read'}
+    return {
+        'journal_reloaded': True,
+        'journal_sha256': digest,
+        'state_hash': state['state_hash'],
+        'summary': summary,
+        'folds': folds,
+        'compact_result_bytes': len(json.dumps(result).encode('utf-8')),
+        'journal_bytes': journal.stat().st_size,
+        'read_verified': operation == 'ui_walk_forward_read',
+    }
 
 
 def _start_smoke_job(manager, operation, payload):
@@ -525,6 +700,7 @@ def _retain_smoke_directory(directory):
 def _prepare_startup_workspace(paths, backups):
     """Serialize startup recovery; an unresolved analysis is not a global lockout."""
     from quantlab.analysis_recovery import admission, inspect_recovery, recover_control_journal, RecoveryError
+
     with admission(paths) as token:
         # SQLite may roll back only its own validated original hot journal. No
         # missing ledger or receipt is created; corrupt controls stay unknown.
@@ -534,9 +710,10 @@ def _prepare_startup_workspace(paths, backups):
         except RecoveryError:
             disposition = None
         if disposition is None or disposition.unresolved:
-            ambiguous = (not paths.state.is_dir() or any(path.exists() or path.is_symlink() for path in (
-                paths.root / 'state-v1.rollback', paths.root / 'restore-transaction.json',
-                paths.state / '.restore-transaction')))
+            ambiguous = not paths.state.is_dir() or any(
+                path.exists() or path.is_symlink()
+                for path in (paths.root / 'state-v1.rollback', paths.root / 'restore-transaction.json', paths.state / '.restore-transaction')
+            )
             if ambiguous:
                 raise RecoveryError('Unknown original analysis stop state and ambiguous workspace restore layout')
             # Keep intact state in place for bounded non-AI use. None means
@@ -550,9 +727,13 @@ def _prepare_startup_workspace(paths, backups):
 def _offer_workspace_after_recovery_block(locator):
     """One bounded, user-directed choice; never repair or reset unknown controls."""
     from PySide6.QtWidgets import QFileDialog, QMessageBox
-    box = QMessageBox(QMessageBox.Icon.Warning, ui_text('desktop._offer_workspace_after_recovery_block.text_1'),
+
+    box = QMessageBox(
+        QMessageBox.Icon.Warning,
+        ui_text('desktop._offer_workspace_after_recovery_block.text_1'),
         ui_text('desktop._offer_workspace_after_recovery_block.text_2'),
-        QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Cancel)
+        QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Cancel,
+    )
     box.button(QMessageBox.StandardButton.Open).setText(ui_text('desktop._offer_workspace_after_recovery_block.text_3'))
     box.setDefaultButton(QMessageBox.StandardButton.Cancel)
     if box.exec() != QMessageBox.StandardButton.Open:
@@ -563,10 +744,13 @@ def _offer_workspace_after_recovery_block(locator):
     try:
         locator.configure(Path(selected))
     except (OSError, ValueError):
-        QMessageBox.warning(None, ui_text('desktop._offer_workspace_after_recovery_block.text_5'), ui_text('desktop._offer_workspace_after_recovery_block.text_6'))
+        QMessageBox.warning(
+            None, ui_text('desktop._offer_workspace_after_recovery_block.text_5'), ui_text('desktop._offer_workspace_after_recovery_block.text_6')
+        )
         return
-    QMessageBox.information(None, ui_text('desktop._offer_workspace_after_recovery_block.text_7'),
-        ui_text('desktop._offer_workspace_after_recovery_block.text_8'))
+    QMessageBox.information(
+        None, ui_text('desktop._offer_workspace_after_recovery_block.text_7'), ui_text('desktop._offer_workspace_after_recovery_block.text_8')
+    )
 
 
 def parse_args(argv=None):
@@ -585,6 +769,7 @@ def parse_args(argv=None):
 def acquire_instance_lock(locator, smoke_startup_directory=None):
     from PySide6.QtCore import QLockFile
     from PySide6.QtWidgets import QMessageBox
+
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
@@ -597,10 +782,12 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
 
 def prepare_workspace(state):
     from quantlab.desktop_runtime import BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
+
     state.installation_guard = WindowsAppMutex()
     state.paths = state.locator.load(probe=False)
     state.backups = BackupManager(state.paths)
     from quantlab.analysis_recovery import RecoveryError
+
     try:
         _prepare_startup_workspace(state.paths, state.backups)
     except RecoveryError:
@@ -627,6 +814,7 @@ def run_smoke(state):
     import tempfile
     import time
     from desktop_recovery_smoke import run_recovery_smoke
+
     # Exercise the real frozen multiprocessing bootstrap in disposable
     # cache state, never replacing the user's research dataset.
     state.smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=state.paths.cache)
@@ -641,25 +829,36 @@ def run_smoke(state):
     market_results = {}
     smoke_steps = _smoke_steps()
     original_step_count = len(smoke_steps)
-    smoke_steps.extend([
-        ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
-        ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
-        ('ui_market_refresh', history_payload),
-        ('ui_walk_forward_preview', walk_forward_payload),
-        ('ui_walk_forward_run', {}),  # Bound only to the verified preview.
-        ('ui_walk_forward_read', {}),  # Reopen the same immutable journal.
-    ])
+    smoke_steps.extend(
+        [
+            ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}, 'manual_export': str(manual_export_path)}),
+            ('ui_campaign', {'config': manual_config, 'provider': {'mode': 'manual'}}),
+            ('ui_market_refresh', history_payload),
+            ('ui_walk_forward_preview', walk_forward_payload),
+            ('ui_walk_forward_run', {}),  # Bound only to the verified preview.
+            ('ui_walk_forward_read', {}),  # Reopen the same immutable journal.
+        ]
+    )
     smoke_index = 0
     _start_smoke_job(state.smoke_jobs, *smoke_steps[0])
     smoke_result = {'failed': False, 'results': {}, 'steps': []}
-    recovery_report = {'status': 'pending', 'cleanup_verified': True, 'source_type': 'synthetic',
-        'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'}
+    recovery_report = {
+        'status': 'pending',
+        'cleanup_verified': True,
+        'source_type': 'synthetic',
+        'scope': 'original Windows helper packaging proof only; not Windows-client acceptance',
+    }
     smoke_timer = QTimer(state.window)
     smoke_timer.setInterval(100)
+
     def complete_smoke():
         nonlocal smoke_index, recovery_report
         operation = smoke_steps[smoke_index][0]
-        market_phase = ('manual_export' if smoke_index == original_step_count else 'manual_import') if original_step_count <= smoke_index < original_step_count + 2 else None
+        market_phase = (
+            ('manual_export' if smoke_index == original_step_count else 'manual_import')
+            if original_step_count <= smoke_index < original_step_count + 2
+            else None
+        )
         history_phase = smoke_index == original_step_count + 2
         walk_forward_phase = operation.startswith('ui_walk_forward_')
         for event in state.smoke_jobs.poll():
@@ -667,8 +866,7 @@ def run_smoke(state):
                 result = event.get('result', {})
                 if walk_forward_phase:
                     try:
-                        evidence = _check_walk_forward_smoke_result(operation, result, state.smoke_jobs.paths,
-                            walk_forward_payload, walk_forward_report)
+                        evidence = _check_walk_forward_smoke_result(operation, result, state.smoke_jobs.paths, walk_forward_payload, walk_forward_report)
                         walk_forward_report.update(evidence)
                         walk_forward_report['steps'].append({'operation': operation, 'passed': True})
                     except Exception as exc:
@@ -677,8 +875,7 @@ def run_smoke(state):
                     continue
                 if history_phase:
                     try:
-                        series, evidence = _check_history_worker_result(result, state.smoke_jobs.paths,
-                            history_payload, history_report['fixture_sha256'])
+                        series, evidence = _check_history_worker_result(result, state.smoke_jobs.paths, history_payload, history_report['fixture_sha256'])
                         history_report.update(evidence)
                         history_report.update(_history_smoke_ui(state.app, series))
                         history_report['steps'].append({'operation': 'history_import', 'passed': True})
@@ -705,7 +902,12 @@ def run_smoke(state):
                 elif operation == 'ui_backtest':
                     valid = bool(result.get('reports')) and result.get('source_type') == 'synthetic'
                 elif operation == 'ui_campaign':
-                    valid = result.get('status') == 'completed' and bool(result.get('attempts')) and all(row.get('status') == 'evaluated' for row in result['attempts']) and result.get('real_model_status') == 'not_verified'
+                    valid = (
+                        result.get('status') == 'completed'
+                        and bool(result.get('attempts'))
+                        and all(row.get('status') == 'evaluated' for row in result['attempts'])
+                        and result.get('real_model_status') == 'not_verified'
+                    )
                 elif operation == 'ui_paper_replay':
                     valid = result.get('replay', {}).get('cursor') == 25 and result.get('account', {}).get('kill_switch') is True
                 elif operation == 'ui_paper_kill':
@@ -714,8 +916,22 @@ def run_smoke(state):
                 smoke_result['failed'] |= not valid
             elif event['type'] in ('error', 'cancelled'):
                 smoke_result['failed'] = True
-                step_report = walk_forward_report['steps'] if walk_forward_phase else history_report['steps'] if history_phase else market_report['steps'] if market_phase else smoke_result['steps']
-                step_report.append({'operation': 'history_import' if history_phase else market_phase or operation, 'passed': False, 'error_type': event.get('error_type', event['type'])})
+                step_report = (
+                    walk_forward_report['steps']
+                    if walk_forward_phase
+                    else history_report['steps']
+                    if history_phase
+                    else market_report['steps']
+                    if market_phase
+                    else smoke_result['steps']
+                )
+                step_report.append(
+                    {
+                        'operation': 'history_import' if history_phase else market_phase or operation,
+                        'passed': False,
+                        'error_type': event.get('error_type', event['type']),
+                    }
+                )
         timed_out = time.monotonic() > smoke_deadline
         if state.smoke_jobs.active and not timed_out:
             return
@@ -742,34 +958,74 @@ def run_smoke(state):
         state.smoke_jobs.close()
         prior_cleanup_verified = state.smoke_cleanup_verified
         state.smoke_cleanup_verified = False  # Unexpected hook failure must retain disposable evidence.
-        recovery_report = run_recovery_smoke(AppPaths(Path(state.smoke_directory.name)),
-            smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
+        recovery_report = run_recovery_smoke(AppPaths(Path(state.smoke_directory.name)), smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
         state.smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
         recovery_required = sys.platform == 'win32' and bool(getattr(sys, 'frozen', False))
-        recovery_passed = ((recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
-            if recovery_required else recovery_report['status'] == 'not_applicable')
+        recovery_passed = (
+            (recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
+            if recovery_required
+            else recovery_report['status'] == 'not_applicable'
+        )
         timed_out = timed_out or time.monotonic() > smoke_deadline
         completed = len(smoke_result['results']) == original_step_count
         market_report['status'] = 'passed' if len(market_results) == 2 and not smoke_result['failed'] and not timed_out else 'failed'
-        history_report['status'] = 'passed' if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out else 'failed'
-        walk_forward_report['status'] = 'passed' if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'] and all(row['passed'] for row in walk_forward_report['steps']) and walk_forward_report.get('read_verified') and not smoke_result['failed'] and not timed_out else 'failed'
-        passed = recovery_passed and state.smoke_cleanup_verified and walk_forward_report['status'] == 'passed' and completed and auth_report['status'] == 'passed' and market_report['status'] == 'passed' and history_report['status'] == 'passed' and not smoke_result['failed'] and not timed_out and state.window.isVisible()
+        history_report['status'] = (
+            'passed'
+            if len(history_report['steps']) == 1 and history_report['steps'][0]['passed'] and not smoke_result['failed'] and not timed_out
+            else 'failed'
+        )
+        walk_forward_report['status'] = (
+            'passed'
+            if [row['operation'] for row in walk_forward_report['steps']] == ['ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read']
+            and all(row['passed'] for row in walk_forward_report['steps'])
+            and walk_forward_report.get('read_verified')
+            and not smoke_result['failed']
+            and not timed_out
+            else 'failed'
+        )
+        passed = (
+            recovery_passed
+            and state.smoke_cleanup_verified
+            and walk_forward_report['status'] == 'passed'
+            and completed
+            and auth_report['status'] == 'passed'
+            and market_report['status'] == 'passed'
+            and history_report['status'] == 'passed'
+            and not smoke_result['failed']
+            and not timed_out
+            and state.window.isVisible()
+        )
         completed_operations = {row['operation'] for row in smoke_result['steps'] if row['passed']}
         # data_dir remains the inspected settings location for installer
         # compatibility; mutable execution uses smoke_data_dir. The
         # explicitly requested report path is also written by the caller
         # contract and is excluded from the user-state read-only claim.
-        state.smoke_report = {'status': 'passed' if passed else 'failed', 'data_dir': str(state.settings_paths.root),
-            'smoke_data_dir': str(state.paths.root), 'user_state_read_only': True,
-            'version': __version__, 'native_window_visible': state.window.isVisible(), 'worker_completed': completed,
+        state.smoke_report = {
+            'status': 'passed' if passed else 'failed',
+            'data_dir': str(state.settings_paths.root),
+            'smoke_data_dir': str(state.paths.root),
+            'user_state_read_only': True,
+            'version': __version__,
+            'native_window_visible': state.window.isVisible(),
+            'worker_completed': completed,
             'backtest_completed': 'ui_backtest' in completed_operations,
             'campaign_completed': 'ui_campaign' in completed_operations,
             'paper_completed': {'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'} <= completed_operations,
-            'source_type': 'synthetic', 'generator': 'fixture', 'real_model_status': 'not_verified',
-            'live_status': 'disabled', 'timed_out': timed_out, 'steps': smoke_result['steps'], 'market_smoke': market_report, 'auth_smoke': auth_report, 'history_smoke': history_report,
-            'walk_forward_smoke': walk_forward_report, 'recovery_helper_smoke': recovery_report}
+            'source_type': 'synthetic',
+            'generator': 'fixture',
+            'real_model_status': 'not_verified',
+            'live_status': 'disabled',
+            'timed_out': timed_out,
+            'steps': smoke_result['steps'],
+            'market_smoke': market_report,
+            'auth_smoke': auth_report,
+            'history_smoke': history_report,
+            'walk_forward_smoke': walk_forward_report,
+            'recovery_helper_smoke': recovery_report,
+        }
         state.window.close()
         state.app.exit(0 if passed else 1)
+
     def guarded_complete_smoke():
         pass
         try:
@@ -784,30 +1040,56 @@ def run_smoke(state):
             rows = walk_forward_report['steps'] if operation.startswith('ui_walk_forward_') else smoke_result['steps']
             rows.append({'operation': operation, 'passed': False, 'error_type': type(exc).__name__})
             walk_forward_report['status'] = 'failed'
-            state.smoke_report = {'status': 'failed', 'version': __version__,
-                'data_dir': str(state.settings_paths.root), 'smoke_data_dir': str(state.paths.root),
-                'user_state_read_only': True, 'source_type': 'synthetic', 'generator': 'fixture',
-                'live_status': 'disabled', 'real_model_status': 'not_verified',
-                'native_window_visible': state.window.isVisible(), 'worker_completed': False,
-                'timed_out': time.monotonic() > smoke_deadline, 'error_type': type(exc).__name__,
-                'worker_cleanup': cleanup, 'steps': smoke_result['steps'],
-                'auth_smoke': auth_report, 'market_smoke': market_report,
-                'history_smoke': history_report, 'walk_forward_smoke': walk_forward_report,
-                'recovery_helper_smoke': recovery_report}
+            state.smoke_report = {
+                'status': 'failed',
+                'version': __version__,
+                'data_dir': str(state.settings_paths.root),
+                'smoke_data_dir': str(state.paths.root),
+                'user_state_read_only': True,
+                'source_type': 'synthetic',
+                'generator': 'fixture',
+                'live_status': 'disabled',
+                'real_model_status': 'not_verified',
+                'native_window_visible': state.window.isVisible(),
+                'worker_completed': False,
+                'timed_out': time.monotonic() > smoke_deadline,
+                'error_type': type(exc).__name__,
+                'worker_cleanup': cleanup,
+                'steps': smoke_result['steps'],
+                'auth_smoke': auth_report,
+                'market_smoke': market_report,
+                'history_smoke': history_report,
+                'walk_forward_smoke': walk_forward_report,
+                'recovery_helper_smoke': recovery_report,
+            }
             state.app.exit(1)
+
     smoke_timer.timeout.connect(guarded_complete_smoke)
     smoke_timer.start()
 
 
 def run_gui(args):
     from types import SimpleNamespace
+
     state = SimpleNamespace(args=args)
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
     from PySide6.QtWidgets import QApplication, QMessageBox
     from quantlab import __version__
-    from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
+    from quantlab.desktop_runtime import (
+        AppPaths,
+        BackupManager,
+        JobManager,
+        RuntimeGuard,
+        SettingsStore,
+        WorkspaceLocator,
+        WindowsAppMutex,
+        atomic_write,
+        _json_bytes,
+    )
+
     state.app = QApplication(sys.argv[:1])
     from desktop_icon import application_icon
+
     state.app.setWindowIcon(application_icon(state.app))
     state.app.setApplicationName('MarkAuto')
     state.app.setOrganizationName('MarkAuto')
@@ -816,6 +1098,7 @@ def run_gui(args):
     state.smoke_startup_directory = None
     if state.args.smoke_test:
         import tempfile
+
         # Isolate even GUI startup, recovery, guards and paper freeze. Only the
         # validated user settings snapshot is read from the configured workspace.
         state.smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-')
@@ -835,13 +1118,17 @@ def run_gui(args):
         if not prepare_workspace(state):
             return 3
         from desktop_ui import MainWindow
+
         state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
         state.window.show()
         if hasattr(state.window, 'freeze_paper'):
-            state.window.freeze_paper('Previous session ended unexpectedly; reconcile paper account' if state.previous_unclean else 'Startup requires paper reconciliation')
+            state.window.freeze_paper(
+                'Previous session ended unexpectedly; reconcile paper account' if state.previous_unclean else 'Startup requires paper reconciliation'
+            )
         if not state.args.smoke_test and hasattr(state.window, 'auto_restore_chatgpt'):
             # Remembered login: reload the saved ChatGPT credentials (smoke runs stay inert).
             state.window.auto_restore_chatgpt()
+
         # Windows suspend/resume notifications complement wall/monotonic checks,
         # including short sleeps and platforms whose monotonic clock pauses.
         class PowerEvents(QAbstractNativeEventFilter):
@@ -849,20 +1136,24 @@ def run_gui(args):
                 if sys.platform == 'win32':
                     import ctypes
                     from ctypes import wintypes
+
                     msg = wintypes.MSG.from_address(int(message))
                     if msg.message == 0x0218 and msg.wParam in (4, 6, 7, 18):
                         state.guard.reconciliation_required = True
                         if hasattr(state.window, 'freeze_paper'):
                             state.window._safe(lambda: state.window.freeze_paper('Windows power event; reconcile paper account before resuming'))
                 return False, 0
+
         power_events = PowerEvents()
         state.app.installNativeEventFilter(power_events)
         timer = QTimer(state.window)
         timer.setInterval(1000)
+
         def clock_tick():
             if state.guard.check_clock():
                 if hasattr(state.window, 'freeze_paper'):
                     state.window._safe(lambda: state.window.freeze_paper('Sleep or clock change detected; reconcile paper account before resuming'))
+
         timer.timeout.connect(clock_tick)
         timer.start()
         if state.args.smoke_test:
@@ -876,20 +1167,39 @@ def run_gui(args):
         # No exception values or secret-bearing tracebacks in a general GUI dialog.
         if state.args.smoke_test:
             if state.smoke_report is None:
-                state.smoke_report = {'status': 'failed', 'version': __version__,
+                state.smoke_report = {
+                    'status': 'failed',
+                    'version': __version__,
                     'data_dir': str(state.settings_paths.root) if state.settings_paths else None,
-                    'smoke_data_dir': str(state.bootstrap), 'user_state_read_only': True,
-                    'steps': [], 'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
-                    'walk_forward_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
-                        'source_type': 'synthetic', 'real_model_status': 'not_verified',
-                        'scope': 'engineering synthetic packaging smoke only; never actual research PASS or Windows-client acceptance'},
-                    'market_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
-                        'scope': 'engineering packaging smoke only; not official-data or real-model acceptance'},
-                    'history_smoke': {'status': 'failed', 'error_type': type(exc).__name__,
+                    'smoke_data_dir': str(state.bootstrap),
+                    'user_state_read_only': True,
+                    'steps': [],
+                    'source_type': 'synthetic',
+                    'generator': 'fixture',
+                    'live_status': 'disabled',
+                    'walk_forward_smoke': {
+                        'status': 'failed',
+                        'error_type': type(exc).__name__,
                         'source_type': 'synthetic',
-                        'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance'}}
-            state.smoke_report.setdefault('recovery_helper_smoke', {'status': 'not_run', 'cleanup_verified': True,
-                'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'})
+                        'real_model_status': 'not_verified',
+                        'scope': 'engineering synthetic packaging smoke only; never actual research PASS or Windows-client acceptance',
+                    },
+                    'market_smoke': {
+                        'status': 'failed',
+                        'error_type': type(exc).__name__,
+                        'scope': 'engineering packaging smoke only; not official-data or real-model acceptance',
+                    },
+                    'history_smoke': {
+                        'status': 'failed',
+                        'error_type': type(exc).__name__,
+                        'source_type': 'synthetic',
+                        'scope': 'synthetic packaging proof only; not actual market or Windows-client acceptance',
+                    },
+                }
+            state.smoke_report.setdefault(
+                'recovery_helper_smoke',
+                {'status': 'not_run', 'cleanup_verified': True, 'scope': 'original Windows helper packaging proof only; not Windows-client acceptance'},
+            )
             state.smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
         QMessageBox.critical(None, ui_text('desktop.main.text_2'), error_message(startup_error_code(exc)))
@@ -925,17 +1235,23 @@ def run_gui(args):
                 for directory in directories:
                     _retain_smoke_directory(directory)
             if state.smoke_report is None:
-                state.smoke_report = {'status': 'failed', 'version': __version__, 'steps': [],
-                    'source_type': 'synthetic', 'generator': 'fixture', 'live_status': 'disabled',
+                state.smoke_report = {
+                    'status': 'failed',
+                    'version': __version__,
+                    'steps': [],
+                    'source_type': 'synthetic',
+                    'generator': 'fixture',
+                    'live_status': 'disabled',
                     'data_dir': str(state.settings_paths.root) if state.settings_paths else None,
-                    'smoke_data_dir': str(state.bootstrap), 'user_state_read_only': True,
-                    'error_type': 'SmokeDidNotComplete'}
+                    'smoke_data_dir': str(state.bootstrap),
+                    'user_state_read_only': True,
+                    'error_type': 'SmokeDidNotComplete',
+                }
             if not state.smoke_cleanup_verified or not state.smoke_shutdown_completed:
                 state.smoke_report['status'] = 'failed'
             if not state.smoke_shutdown_completed:
                 state.smoke_report.setdefault('error_type', 'ShutdownIncomplete')
-            state.smoke_report['worker_cleanup'] = {'verified': state.smoke_cleanup_verified,
-                                              'error_types': cleanup_errors}
+            state.smoke_report['worker_cleanup'] = {'verified': state.smoke_cleanup_verified, 'error_types': cleanup_errors}
             try:
                 atomic_write(state.args.smoke_test, _json_bytes(state.smoke_report))
             except BaseException:
@@ -952,6 +1268,7 @@ def main(argv=None):
     args = parse_args(argv)
     if args.tls_smoke is not None:
         from desktop_tls_smoke import write_report
+
         return write_report(args.tls_smoke)
     return run_gui(args)
 

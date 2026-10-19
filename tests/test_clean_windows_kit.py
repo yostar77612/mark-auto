@@ -1,4 +1,5 @@
 """Kit assembly integrity and fail-closed contracts; not client execution evidence."""
+
 import importlib.util
 import json
 from pathlib import Path
@@ -32,8 +33,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         path.mkdir()
         exe = path / f'MarkAuto-{version}-windows-x64-setup.exe'
         exe.write_bytes(('synthetic integrity fixture ' + version).encode())
-        manifest = {'source_commit': commit, 'artifacts_sha256': {exe.name: kit.digest(exe)},
-                    'inputs_sha256': {'quantlab\\' + n: 'c' * 64 for n in kit.ENGINE}}
+        manifest = {'source_commit': commit, 'artifacts_sha256': {exe.name: kit.digest(exe)}, 'inputs_sha256': {'quantlab\\' + n: 'c' * 64 for n in kit.ENGINE}}
         manifest['inputs_sha256']['packaging/acceptance_process.dll'] = kit.digest(kit.HELPER_DLL)
         (path / 'build-manifest.json').write_text(json.dumps(manifest))
         return path
@@ -49,8 +49,7 @@ class CleanWindowsKitTests(unittest.TestCase):
         self.assertEqual(len(result['files_sha256']), 9)
         for name, checksum in result['files_sha256'].items():
             self.assertEqual(kit.digest(dest / name), checksum)
-        self.assertEqual((dest / 'packaging/test_installer.ps1').read_bytes(),
-                         (ROOT / 'packaging/test_installer.ps1').read_bytes())
+        self.assertEqual((dest / 'packaging/test_installer.ps1').read_bytes(), (ROOT / 'packaging/test_installer.ps1').read_bytes())
         self.assertFalse(list(dest.rglob('*.py')))
         self.assertFalse((dest / '.git').exists())
         with self.assertRaises(FileExistsError):
@@ -93,9 +92,19 @@ class CleanWindowsKitTests(unittest.TestCase):
     def test_wrapper_preflight_precedes_any_app_execution(self):
         source = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
         run = source.index("& (Join-Path $PSScriptRoot 'test_installer.ps1')")
-        for marker in ('ProductType -ne 1', 'Architecture -ne 9', '$build -ne 19045', '$build -lt 22000',
-                       'Is64BitProcess', 'WindowsBuiltInRole]::Administrator', 'get_SessionId() -eq 0',
-                       'Existing MarkAuto', 'developer_tools.Count', 'Get-FileHash', 'LicenseAlreadyAccepted'):
+        for marker in (
+            'ProductType -ne 1',
+            'Architecture -ne 9',
+            '$build -ne 19045',
+            '$build -lt 22000',
+            'Is64BitProcess',
+            'WindowsBuiltInRole]::Administrator',
+            'get_SessionId() -eq 0',
+            'Existing MarkAuto',
+            'developer_tools.Count',
+            'Get-FileHash',
+            'LicenseAlreadyAccepted',
+        ):
             self.assertLess(source.index(marker), run)
         self.assertNotIn('Remove-Item', source)
         self.assertNotIn('Set-ExecutionPolicy', source)
@@ -106,17 +115,22 @@ class CleanWindowsKitTests(unittest.TestCase):
 
     def test_harness_checks_each_releases_sources_and_app_version(self):
         source = (ROOT / 'packaging/test_installer.ps1').read_text()
-        for marker in ('Install-Version $BaselineVersion $BaselineManifest',
-                       'Install-Version $Version $CandidateManifest',
-                       "Smoke 'installed' $BaselineAppVersion", "Smoke 'upgraded' $Version",
-                       '$json.version -ne $expectedVersion', '$manifest.inputs_sha256', 'CreateShortcut($startLink).TargetPath', 'Join-Path $activeDirectory',
-                       'historical schema migration requires separate evidence'):
+        for marker in (
+            'Install-Version $BaselineVersion $BaselineManifest',
+            'Install-Version $Version $CandidateManifest',
+            "Smoke 'installed' $BaselineAppVersion",
+            "Smoke 'upgraded' $Version",
+            '$json.version -ne $expectedVersion',
+            '$manifest.inputs_sha256',
+            'CreateShortcut($startLink).TargetPath',
+            'Join-Path $activeDirectory',
+            'historical schema migration requires separate evidence',
+        ):
             self.assertIn(marker, source)
 
     @unittest.skipUnless(shutil.which('pwsh'), 'Actual PowerShell parser runs in Windows CI; unavailable here')
     def test_actual_powershell_parser(self):
-        result = subprocess.run(['pwsh', '-NoProfile', '-File', str(ROOT / 'packaging/validate_powershell.ps1')],
-                                text=True, capture_output=True)
+        result = subprocess.run(['pwsh', '-NoProfile', '-File', str(ROOT / 'packaging/validate_powershell.ps1')], text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 

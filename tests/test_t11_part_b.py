@@ -1,4 +1,5 @@
 """Cheap startup and error-contract checks; no subprocesses or disk fixtures."""
+
 import ast
 import copy
 from contextlib import ExitStack
@@ -23,8 +24,7 @@ class _NormalizeState(ast.NodeTransformer):
         return self.generic_visit(node)
 
     def visit_Nonlocal(self, node):
-        node.names = [name for name in node.names if name not in
-                      {'smoke_jobs', 'smoke_report', 'smoke_cleanup_verified'}]
+        node.names = [name for name in node.names if name not in {'smoke_jobs', 'smoke_report', 'smoke_cleanup_verified'}]
         return node if node.names else None
 
     def visit_Pass(self, node):
@@ -55,9 +55,7 @@ def _digest(nodes):
 
 class StartupTests(unittest.TestCase):
     def test_main_budget_and_named_seams(self):
-        functions = {node.name: node for node in ast.parse(
-            (ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body
-            if isinstance(node, ast.FunctionDef)}
+        functions = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body if isinstance(node, ast.FunctionDef)}
         main = functions['main']
         self.assertLessEqual(main.end_lineno - main.lineno + 1, 80)
         for name in ('parse_args', 'acquire_instance_lock', 'prepare_workspace', 'run_smoke', 'run_gui'):
@@ -66,9 +64,7 @@ class StartupTests(unittest.TestCase):
     def test_baseline_smoke_and_terminal_cleanup(self):
         # Original main AST fingerprints, normalizing only the state carrier
         # and the corresponding closure declarations. Dict order is retained.
-        functions = {node.name: node for node in ast.parse(
-            (ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body
-            if isinstance(node, ast.FunctionDef)}
+        functions = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body if isinstance(node, ast.FunctionDef)}
         lifecycle = next(node for node in functions['run_gui'].body if isinstance(node, ast.Try))
         self.assertEqual(_digest(functions['run_smoke'].body[3:]), SMOKE_DIGEST)
         self.assertEqual(_digest(lifecycle.handlers), HANDLERS_DIGEST)
@@ -91,15 +87,13 @@ class StartupTests(unittest.TestCase):
         lock = Mock()
         lock.tryLock.return_value = False
         directory = Mock()
-        with patch('PySide6.QtCore.QLockFile', return_value=lock) as factory, \
-                patch('PySide6.QtWidgets.QMessageBox.information') as dialog:
+        with patch('PySide6.QtCore.QLockFile', return_value=lock) as factory, patch('PySide6.QtWidgets.QMessageBox.information') as dialog:
             self.assertIsNone(desktop.acquire_instance_lock(SimpleNamespace(lock_path='lock-path'), directory))
         factory.assert_called_once_with('lock-path')
         lock.setStaleLockTime.assert_called_once_with(0)
         lock.tryLock.assert_called_once_with(0)
         directory.cleanup.assert_called_once_with()
-        dialog.assert_called_once_with(None, desktop.ui_text('desktop.main.text_1'),
-                                       error_message('startup_workspace_busy'))
+        dialog.assert_called_once_with(None, desktop.ui_text('desktop.main.text_1'), error_message('startup_workspace_busy'))
 
     def test_lock_acquired_retains_handle(self):
         lock = Mock()
@@ -111,11 +105,14 @@ class StartupTests(unittest.TestCase):
 
     def test_normal_gui_lifecycle_order_without_workspace_io(self):
         events = []
+
         def event(name, result=None):
             def record(*args, **kwargs):
                 events.append(name)
                 return result
+
             return record
+
         app = Mock()
         app.exec.side_effect = event('exec', 19)
         app.installNativeEventFilter.side_effect = event('filter')
@@ -127,6 +124,7 @@ class StartupTests(unittest.TestCase):
         timer.start.side_effect = event('timer')
         lock = Mock()
         lock.unlock.side_effect = event('unlock')
+
         def prepare(state):
             events.append('prepare')
             state.paths = Mock()
@@ -140,22 +138,21 @@ class StartupTests(unittest.TestCase):
             state.installation_guard = Mock()
             state.installation_guard.close.side_effect = event('mutex.close')
             return True
+
         with ExitStack() as stack:
             stack.enter_context(patch('PySide6.QtCore.QAbstractNativeEventFilter', object))
             stack.enter_context(patch('PySide6.QtCore.QTimer', return_value=timer))
             stack.enter_context(patch('PySide6.QtWidgets.QApplication', return_value=app))
             stack.enter_context(patch('desktop_icon.application_icon', return_value=None))
-            stack.enter_context(patch('quantlab.desktop_runtime.AppPaths.discover',
-                                      return_value=SimpleNamespace(root=MagicMock())))
+            stack.enter_context(patch('quantlab.desktop_runtime.AppPaths.discover', return_value=SimpleNamespace(root=MagicMock())))
             stack.enter_context(patch('quantlab.desktop_runtime.WorkspaceLocator'))
             stack.enter_context(patch('desktop.acquire_instance_lock', return_value=lock))
             stack.enter_context(patch('desktop.prepare_workspace', side_effect=prepare))
-            stack.enter_context(patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(
-                MainWindow=Mock(return_value=window))}))
+            stack.enter_context(patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(MainWindow=Mock(return_value=window))}))
             self.assertEqual(desktop.main([]), 19)
-        self.assertEqual(events, ['prepare', 'show', 'freeze', 'restore', 'filter', 'timer',
-                                  'exec', 'jobs.close', 'guard.finish', 'jobs.close',
-                                  'mutex.close', 'unlock'])
+        self.assertEqual(
+            events, ['prepare', 'show', 'freeze', 'restore', 'filter', 'timer', 'exec', 'jobs.close', 'guard.finish', 'jobs.close', 'mutex.close', 'unlock']
+        )
         window.freeze_paper.assert_called_once_with('Startup requires paper reconciliation')
 
 
@@ -174,11 +171,14 @@ class SharedErrorTests(unittest.TestCase):
         from quantlab import analysis_contracts, analysis_recovery, chart_data, market_history, saved_candidate_pool
         from quantlab.core import ValidationError
         from quantlab.market import MarketValidationError
-        for module, error in ((analysis_contracts, ValidationError),
-                              (analysis_recovery, errors.RecoveryError),
-                              (chart_data, MarketValidationError),
-                              (market_history, MarketValidationError),
-                              (saved_candidate_pool, SavedCandidatePoolError)):
+
+        for module, error in (
+            (analysis_contracts, ValidationError),
+            (analysis_recovery, errors.RecoveryError),
+            (chart_data, MarketValidationError),
+            (market_history, MarketValidationError),
+            (saved_candidate_pool, SavedCandidatePoolError),
+        ):
             with self.subTest(module=module.__name__):
                 with self.assertRaises(error) as raised:
                     module._fail('verbatim message \u4e2d\n')
@@ -193,10 +193,13 @@ class SharedErrorTests(unittest.TestCase):
 
     def test_saved_reason_precedence(self):
         from quantlab.saved_candidate_pool import _fail, SavedCandidatePoolError
-        for message, code in [('strictly before producer protocol', 'source_temporal_overlap'),
-                              ('Source provider protocol', 'source_provider_unsupported'),
-                              ('Source provider receipt Missing', 'source_provider_receipt_invalid'),
-                              ('Missing evidence', 'source_missing_evidence')]:
+
+        for message, code in [
+            ('strictly before producer protocol', 'source_temporal_overlap'),
+            ('Source provider protocol', 'source_provider_unsupported'),
+            ('Source provider receipt Missing', 'source_provider_receipt_invalid'),
+            ('Missing evidence', 'source_missing_evidence'),
+        ]:
             with self.subTest(message=message):
                 with self.assertRaises(SavedCandidatePoolError) as raised:
                     _fail(message)
@@ -204,10 +207,12 @@ class SharedErrorTests(unittest.TestCase):
                 self.assertEqual(raised.exception.args, (message,))
 
     def test_exception_fallbacks(self):
-        for exc, code in [(ValueError('history_date_invalid'), 'history_date_invalid'),
-                          (ValueError('unknown'), 'validation_failed'),
-                          (OSError('unknown'), 'operation_failed_local'),
-                          (RuntimeError('unknown'), 'operation_failed')]:
+        for exc, code in [
+            (ValueError('history_date_invalid'), 'history_date_invalid'),
+            (ValueError('unknown'), 'validation_failed'),
+            (OSError('unknown'), 'operation_failed_local'),
+            (RuntimeError('unknown'), 'operation_failed'),
+        ]:
             self.assertEqual(exception_code(exc), code)
         self.assertEqual(error_message('unknown'), error_message('operation_failed'))
 

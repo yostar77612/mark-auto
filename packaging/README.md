@@ -477,3 +477,12 @@ The sole `[Languages]` entry selects Traditional Chinese on every Windows locale
 No `SourceDir` override is used: `languages\ChineseTraditional.isl` resolves
 relative to `packaging/markauto.iss` for both repository-root CI invocation and
 local ISCC invocation. Product/shortcut identity remains `Mark Auto`.
+
+## Local lint and formatting
+
+Install the pinned Ruff 0.16.10 with `python -m pip install --require-hashes -r requirements-ruff.lock`.
+Run `python -m ruff check .` and `python -m ruff format --check .` from the root.
+Use `python -m ruff format .` only for the separate formatting pass (T13 part B).
+The eight hash-pinned sources, frozen producer-profile file, legacy archive,
+fixtures and local/build output are force-excluded. Autofixes are disabled.
+T13 part A installs enforcement; the existing format debt is resolved in part B.

@@ -1,4 +1,5 @@
 """Retain dependency license/notice texts and Python license in the bundle."""
+
 from importlib.metadata import distributions, version
 from pathlib import Path
 import shutil
@@ -13,8 +14,10 @@ import runpy
 # Changing any dependency or archive content requires a new review and code pin.
 NATIVE_NOTICES_SHA256 = 'cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24'
 AUTH_DEPENDENCY_VERSIONS = {
-    'PyJWT': '2.15.1', 'cryptography': '50.0.2',
-    'cffi': '2.1.1', 'pycparser': '3.11',
+    'PyJWT': '2.15.1',
+    'cryptography': '50.0.2',
+    'cffi': '2.1.1',
+    'pycparser': '3.11',
 }
 MAX_NATIVE_NOTICES_BYTES = 2 * 1024 * 1024
 

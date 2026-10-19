@@ -3,6 +3,7 @@
 No credentials or dynamic latest-release lookup. Bytes and source commit are pinned.
 This downloads but never executes the installer; execution belongs to Windows CI.
 """
+
 import hashlib
 import json
 from pathlib import Path
@@ -47,7 +48,10 @@ def fetch(destination):
             if os.path.exists(temporary):
                 os.unlink(temporary)
     manifest = json.loads((destination / 'build-manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('source_commit') != SOURCE or manifest.get('artifacts_sha256', {}).get('MarkAuto-0.2.1-windows-x64-setup.exe') != ASSETS['MarkAuto-0.2.1-windows-x64-setup.exe'][0]:
+    if (
+        manifest.get('source_commit') != SOURCE
+        or manifest.get('artifacts_sha256', {}).get('MarkAuto-0.2.1-windows-x64-setup.exe') != ASSETS['MarkAuto-0.2.1-windows-x64-setup.exe'][0]
+    ):
         raise ValueError('Baseline manifest provenance mismatch')
     return manifest
 

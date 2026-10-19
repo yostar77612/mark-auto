@@ -5,6 +5,7 @@ controller are exercised. Receipt publication uses an explicitly synthetic
 query fixture; original Windows handle semantics are a separate native test.
 No provider/network/helper is executed. All workspaces are temporary.
 """
+
 from contextlib import ExitStack
 import importlib.util
 import json
@@ -36,6 +37,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
     def setUp(self):
         from desktop_ui import MainWindow
         from quantlab.research_analysis import _read_analysis_journal
+
         self.tmp = tempfile.TemporaryDirectory(prefix='markauto-recovery-ui-')
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
@@ -44,18 +46,25 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         plan = _read_analysis_journal(self.paths.state / 'analyses', self.pending_id)['plan']
         binding = plan['binding']
         packet = binding['packet']
-        request = {'campaign_reference': self.campaign.name,
+        request = {
+            'campaign_reference': self.campaign.name,
             'original_dataset': {'kind': 'local_dataset_file', 'path': str(self.dataset)},
             'attempt_ids': sorted({row['attempt_id'] for row in packet['provenance']['result_links']}),
-            'task': packet['context']['task'], 'model': binding['model'],
-            'registration': binding['registration'], 'timeout_seconds': binding['timeout_seconds']}
+            'task': packet['context']['task'],
+            'model': binding['model'],
+            'registration': binding['registration'],
+            'timeout_seconds': binding['timeout_seconds'],
+        }
         with recovery.admission(self.paths) as token:
-            self.launch = recovery.register_launch(self.paths, job_id='c' * 32, helper_nonce='d' * 32,
-                approved_plan=plan, request=request, admission=token)
+            self.launch = recovery.register_launch(self.paths, job_id='c' * 32, helper_nonce='d' * 32, approved_plan=plan, request=request, admission=token)
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        for target in ('socket.create_connection', 'http.client.HTTPSConnection',
-                       'desktop_chatgpt_provider.PlanHTTPTransport', 'desktop_ui.analysis_provider_for'):
+        for target in (
+            'socket.create_connection',
+            'http.client.HTTPSConnection',
+            'desktop_chatgpt_provider.PlanHTTPTransport',
+            'desktop_ui.analysis_provider_for',
+        ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('No recovery UI network/provider')))
         self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
         self.jobs = JobManager(self.paths)
@@ -109,17 +118,24 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_refresh_completion_and_freeze_keep_conflicts_before_backup_claim(self):
         from PySide6.QtWidgets import QPushButton
+
         self._enable_backup()
         before = self.panel.scheduler.path.read_bytes()
-        for callback in (lambda: self.window._busy(False, refresh_recovery=True), self.window.refresh_views,
-                         self.window.poll_jobs, lambda: self.window.freeze_paper('synthetic clock event')):
+        for callback in (
+            lambda: self.window._busy(False, refresh_recovery=True),
+            self.window.refresh_views,
+            self.window.poll_jobs,
+            lambda: self.window.freeze_paper('synthetic clock event'),
+        ):
             self.window._analysis_preview = {'receipt_snapshot': {'receipts': []}}
             callback()
             for name in ('run_candidate_analysis', 'create_backup', 'restore_backup', 'import_data', 'run_campaign', 'market_refresh'):
                 self.assertFalse(self.window.findChild(QPushButton, name).isEnabled(), name)
             self.assertTrue(self.window.run_button.isEnabled())
-        with patch.object(self.panel.scheduler, 'claim_due', wraps=self.panel.scheduler.claim_due) as claim, \
-             patch.object(self.window, 'start_job', wraps=self.window.start_job) as start:
+        with (
+            patch.object(self.panel.scheduler, 'claim_due', wraps=self.panel.scheduler.claim_due) as claim,
+            patch.object(self.window, 'start_job', wraps=self.window.start_job) as start,
+        ):
             self.panel.tick()
             claim.assert_not_called()
             start.assert_not_called()
@@ -135,23 +151,29 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_idle_display_throttles_reads_but_reapplies_masks_and_dispatch_is_fresh(self):
         from PySide6.QtWidgets import QPushButton
+
         self.window._refresh_recovery_controls(force=True)
-        with patch('time.monotonic', return_value=self.window._recovery_display[0]+3), \
-             patch('quantlab.analysis_recovery.inspect_recovery', wraps=recovery.inspect_recovery) as inspect:
+        with (
+            patch('time.monotonic', return_value=self.window._recovery_display[0] + 3),
+            patch('quantlab.analysis_recovery.inspect_recovery', wraps=recovery.inspect_recovery) as inspect,
+        ):
             for _ in range(12):
                 self.window._busy(False)
-                self.assertFalse(self.window.findChild(QPushButton,'restore_backup').isEnabled())
+                self.assertFalse(self.window.findChild(QPushButton, 'restore_backup').isEnabled())
             inspect.assert_not_called()
-            with self.assertRaises(recovery.RecoveryError):self.window.start_job('ui_import', {})
+            with self.assertRaises(recovery.RecoveryError):
+                self.window.start_job('ui_import', {})
             inspect.assert_called_once()
-        database=self.paths.controls/'analysis-recovery-v1.sqlite3'
-        info=database.stat()
-        os.utime(database,ns=(info.st_atime_ns,info.st_mtime_ns+1_000_000))
-        with patch('time.monotonic',return_value=self.window._recovery_display[0]+3), \
-             patch('quantlab.analysis_recovery.inspect_recovery',wraps=recovery.inspect_recovery) as inspect:
+        database = self.paths.controls / 'analysis-recovery-v1.sqlite3'
+        info = database.stat()
+        os.utime(database, ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000))
+        with (
+            patch('time.monotonic', return_value=self.window._recovery_display[0] + 3),
+            patch('quantlab.analysis_recovery.inspect_recovery', wraps=recovery.inspect_recovery) as inspect,
+        ):
             self.window._busy(False)
             inspect.assert_called_once()
-        self.assertEqual(self._protected(),self.protected)
+        self.assertEqual(self._protected(), self.protected)
 
     @patch('quantlab.analysis_recovery.supports_durable_recovery', return_value=True)
     def test_exact_receipt_enables_explicit_route_but_restore_epoch_disables_it(self, supported):
@@ -163,9 +185,9 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         controls = _snapshot(self.paths.controls)
         with patch.object(self.jobs, 'start', return_value='local-repair-job') as start:
             self.window.reconcile_saved_analysis()
-            start.assert_called_once_with('ui_analysis_reconcile', {
-                'analysis_id': self.pending_id, 'registration': 'a' * 32,
-                'recovery_launch_id': self.launch['job_id']})
+            start.assert_called_once_with(
+                'ui_analysis_reconcile', {'analysis_id': self.pending_id, 'registration': 'a' * 32, 'recovery_launch_id': self.launch['job_id']}
+            )
         self.assertEqual(_snapshot(self.paths.controls), controls)
         self.assertIsNone(self.jobs._quiesced_analysis)
         with recovery.admission(self.paths) as token:
@@ -173,7 +195,8 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         self.window._busy(False, refresh_recovery=True)
         self.assertFalse(self.window.analysis_recover.isEnabled())
         with patch.object(self.jobs, 'start') as start:
-            with self.assertRaises(ValueError):self.window.reconcile_saved_analysis()
+            with self.assertRaises(ValueError):
+                self.window.reconcile_saved_analysis()
             start.assert_not_called()
 
     def test_unsupported_runtime_never_offers_durable_reconciliation(self):
@@ -182,10 +205,12 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         with patch('quantlab.analysis_recovery.supports_durable_recovery', return_value=False):
             self.window._busy(False, refresh_recovery=True)
             self.assertFalse(self.window.analysis_recover.isEnabled())
-            with self.assertRaises(ValueError):self.window.reconcile_saved_analysis()
+            with self.assertRaises(ValueError):
+                self.window.reconcile_saved_analysis()
 
     def test_unknown_controls_keep_non_ai_available_without_becoming_legacy(self):
         from desktop import _prepare_startup_workspace
+
         database = self.paths.controls / 'analysis-recovery-v1.sqlite3'
         database.write_bytes(b'corrupt synthetic controls')
         original = _snapshot(self.paths.controls)
@@ -198,9 +223,11 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         self._click('run_backtest')
         self._wait_job()
         self.assertTrue(self.window.plot.values)
-        with self.assertRaises(recovery.RecoveryError):recovery.inspect_recovery(self.paths)
+        with self.assertRaises(recovery.RecoveryError):
+            recovery.inspect_recovery(self.paths)
         self.assertEqual(_snapshot(self.paths.controls), original)
-        self.window.close();self.app.processEvents()
+        self.window.close()
+        self.app.processEvents()
         self.assertFalse(self.window.isVisible())
 
     def test_positive_stop_allows_real_backup_when_journal_is_missing(self):
@@ -220,6 +247,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_startup_is_safe_for_intact_unresolved_and_rejects_ambiguous_layout(self):
         from desktop import _prepare_startup_workspace
+
         before = self._protected()
         with patch.object(self.backups, 'recover', side_effect=AssertionError('Must not recover unresolved writer')):
             disposition = _prepare_startup_workspace(self.paths, self.backups)
@@ -233,8 +261,10 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         before = _snapshot(self.paths.root)
         try:
             with patch.object(self.paths.__class__, 'ensure', side_effect=AssertionError('No state writes')):
-                with self.assertRaises(recovery.RecoveryError):_prepare_startup_workspace(self.paths, self.backups)
-            with self.assertRaises(recovery.RecoveryError):self.window.freeze_paper('ambiguous synthetic restore')
+                with self.assertRaises(recovery.RecoveryError):
+                    _prepare_startup_workspace(self.paths, self.backups)
+            with self.assertRaises(recovery.RecoveryError):
+                self.window.freeze_paper('ambiguous synthetic restore')
             self.assertEqual(_snapshot(self.paths.root), before)
         finally:
             journal.unlink()
@@ -245,6 +275,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         from PySide6.QtWidgets import QPushButton
         from desktop_ui import MainWindow
         from quantlab.reporting import save_dataset
+
         original = _snapshot(self.paths.root)
         controls = _snapshot(self.paths.controls)
         locator = WorkspaceLocator(self.paths.bootstrap)
@@ -258,28 +289,39 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         try:
             self.assertFalse(recovery.inspect_recovery(other).workspace_unresolved)
             from desktop import _prepare_startup_workspace
-            with patch.object(BackupManager,'recover',side_effect=AssertionError('Global unresolved may protect external source')):
-                self.assertTrue(_prepare_startup_workspace(other,BackupManager(other)).unresolved)
-            rollback=other.root/'state-v1.rollback';rollback.mkdir()
+
+            with patch.object(BackupManager, 'recover', side_effect=AssertionError('Global unresolved may protect external source')):
+                self.assertTrue(_prepare_startup_workspace(other, BackupManager(other)).unresolved)
+            rollback = other.root / 'state-v1.rollback'
+            rollback.mkdir()
             try:
-                with self.assertRaises(recovery.RecoveryError):_prepare_startup_workspace(other,BackupManager(other))
-                with self.assertRaises(recovery.RecoveryError):window.freeze_paper('other workspace ambiguous restore')
-            finally:rollback.rmdir()
+                with self.assertRaises(recovery.RecoveryError):
+                    _prepare_startup_workspace(other, BackupManager(other))
+                with self.assertRaises(recovery.RecoveryError):
+                    window.freeze_paper('other workspace ambiguous restore')
+            finally:
+                rollback.rmdir()
             self.assertTrue(window.run_button.isEnabled())
             self.assertFalse(window.findChild(QPushButton, 'import_data').isEnabled())
             self.assertTrue(window.findChild(QPushButton, 'create_backup').isEnabled())
             self.assertFalse(window.findChild(QPushButton, 'restore_backup').isEnabled())
-            with self.assertRaises(recovery.RecoveryError):window.start_job('ui_backup_restore', {})
-            with self.assertRaises(recovery.RecoveryError):window.start_job('ui_import', {})
+            with self.assertRaises(recovery.RecoveryError):
+                window.start_job('ui_backup_restore', {})
+            with self.assertRaises(recovery.RecoveryError):
+                window.start_job('ui_import', {})
             window.run_backtest()
             deadline = time.monotonic() + 20
             while jobs.active and time.monotonic() < deadline:
-                self.app.processEvents();window.poll_jobs();time.sleep(.01)
+                self.app.processEvents()
+                window.poll_jobs()
+                time.sleep(0.01)
             window.poll_jobs()
             self.assertFalse(jobs.active, window.status.text())
             self.assertEqual(len(list((other.state / 'reports').glob('*/result.json'))), 1)
         finally:
-            jobs.close();window.close();self.app.processEvents()
+            jobs.close()
+            window.close()
+            self.app.processEvents()
         self.assertEqual(_snapshot(self.paths.root), original)
         self.assertEqual(_snapshot(self.paths.controls), controls)
 
@@ -294,6 +336,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         import desktop
         from desktop_ui import MainWindow
         from PySide6.QtCore import QTimer
+
         locator = WorkspaceLocator(self.paths.bootstrap)
         locator.configure(self.paths.root)
         self.window.hide()
@@ -304,43 +347,54 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         def show_then_close(window):
             real_show(window)
             opened.append(window)
+
             def finish():
                 window.close()
                 self.app.exit(0)
+
             QTimer.singleShot(40, finish)
 
-        with patch('PySide6.QtWidgets.QApplication', return_value=self.app), \
-             patch.object(AppPaths, 'discover', return_value=AppPaths(self.paths.bootstrap)), \
-             patch.object(MainWindow, 'show', show_then_close), \
-             patch.object(BackupManager, 'recover', side_effect=AssertionError('Unresolved startup must skip recovery')), \
-             patch('desktop._offer_workspace_after_recovery_block', side_effect=AssertionError('Intact state must remain usable')):
+        with (
+            patch('PySide6.QtWidgets.QApplication', return_value=self.app),
+            patch.object(AppPaths, 'discover', return_value=AppPaths(self.paths.bootstrap)),
+            patch.object(MainWindow, 'show', show_then_close),
+            patch.object(BackupManager, 'recover', side_effect=AssertionError('Unresolved startup must skip recovery')),
+            patch('desktop._offer_workspace_after_recovery_block', side_effect=AssertionError('Intact state must remain usable')),
+        ):
             self.assertEqual(desktop.main([]), 0)
         self.assertEqual(len(opened), 1)
         self.assertFalse(opened[0].isVisible())
         self.assertEqual(self._protected(), before)
         if unknown:
-            with self.assertRaises(recovery.RecoveryError):recovery.inspect_recovery(self.paths)
+            with self.assertRaises(recovery.RecoveryError):
+                recovery.inspect_recovery(self.paths)
         else:
             self.assertTrue(recovery.inspect_recovery(self.paths).workspace_unresolved)
 
     def test_clean_legacy_startup_has_no_recovery_ledger_or_conflict(self):
         from desktop import _prepare_startup_workspace
         from desktop_ui import MainWindow
+
         clean = AppPaths(self.base / 'legacy-workspace', self.base / 'legacy-bootstrap').ensure()
         backups = BackupManager(clean)
         self.assertTrue(_prepare_startup_workspace(clean, backups).legacy)
         self.assertFalse((clean.controls / 'analysis-recovery-v1.sqlite3').exists())
         jobs = JobManager(clean)
         window = MainWindow(clean, jobs, SettingsStore(clean.state / 'settings.json'), backups)
-        window.timer.stop();window.automatic_backup_panel.timer.stop()
+        window.timer.stop()
+        window.automatic_backup_panel.timer.stop()
         try:
             from PySide6.QtWidgets import QPushButton
+
             self.assertTrue(window.findChild(QPushButton, 'create_demo').isEnabled())
             self.assertTrue(window.findChild(QPushButton, 'create_backup').isEnabled())
             self.assertTrue(window.findChild(QPushButton, 'restore_backup').isEnabled())
             self.assertEqual(window.analysis_recovery_notice.text(), '')
         finally:
-            jobs.close();window.close();self.app.processEvents()
+            jobs.close()
+            window.close()
+            self.app.processEvents()
 
 
-if __name__ == '__main__':unittest.main()
+if __name__ == '__main__':
+    unittest.main()

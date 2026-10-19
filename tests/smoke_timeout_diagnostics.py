@@ -1,4 +1,5 @@
 """Failure-only synthetic smoke evidence; never copy raw output or user state."""
+
 from contextlib import contextmanager
 import json
 import os
@@ -17,20 +18,45 @@ from quantlab.desktop_runtime import JobManager, RuntimeSafetyError, _WindowsPro
 PREFIX = 'SMOKE_DIAGNOSTIC '
 STATUSES = {'passed', 'failed', 'completed', 'running', 'cancelled'}
 # Fixed labels only: no paths, SQL, arguments, result data, or exception text.
-WORKER_PHASES = frozenset({
-    'worker.body', 'wfo.run', 'wfo.reserve', 'wfo.evaluate', 'wfo.save',
-    'wfo.hash', 'wfo.serialize', 'sqlite.connect', 'sqlite.execute',
-    'sqlite.commit', 'sqlite.transaction_exit', 'sqlite.close',
-    'process.start', 'process.join', 'ipc.poll', 'ipc.receive',
-    'worker.instrumentation', 'campaign.run', 'campaign.worker', 'campaign.reserve',
-    'broker.initialize', 'broker.restore', 'broker.transaction', 'broker.reconcile',
-    'broker.kill', 'replay.initialize', 'replay.transaction', 'replay.step',
-    'export.write', 'export.replace',
-})
+WORKER_PHASES = frozenset(
+    {
+        'worker.body',
+        'wfo.run',
+        'wfo.reserve',
+        'wfo.evaluate',
+        'wfo.save',
+        'wfo.hash',
+        'wfo.serialize',
+        'sqlite.connect',
+        'sqlite.execute',
+        'sqlite.commit',
+        'sqlite.transaction_exit',
+        'sqlite.close',
+        'process.start',
+        'process.join',
+        'ipc.poll',
+        'ipc.receive',
+        'worker.instrumentation',
+        'campaign.run',
+        'campaign.worker',
+        'campaign.reserve',
+        'broker.initialize',
+        'broker.restore',
+        'broker.transaction',
+        'broker.reconcile',
+        'broker.kill',
+        'replay.initialize',
+        'replay.transaction',
+        'replay.step',
+        'export.write',
+        'export.replace',
+    }
+)
 
 
 class WorkerTimings:
     """Inclusive, overlapping timings for the original synthetic worker only."""
+
     def __init__(self):
         self.started = time.perf_counter()
         self.lock = threading.RLock()
@@ -55,12 +81,14 @@ class WorkerTimings:
     def snapshot(self):
         with self.lock:
             now = time.perf_counter()
-            return {'stage': 'worker_timing', 'operation': 'ui_walk_forward_run',
-                'pid': os.getpid(), 'elapsed_ms': int((now - self.started) * 1000),
-                'active': [{'phase': name, 'elapsed_ms': int((now - started) * 1000)}
-                           for name, started in self.active],
-                'timings': [{'phase': name, 'calls': calls, 'elapsed_ms': int(seconds * 1000)}
-                            for name, (calls, seconds) in sorted(self.timings.items())]}
+            return {
+                'stage': 'worker_timing',
+                'operation': 'ui_walk_forward_run',
+                'pid': os.getpid(),
+                'elapsed_ms': int((now - self.started) * 1000),
+                'active': [{'phase': name, 'elapsed_ms': int((now - started) * 1000)} for name, started in self.active],
+                'timings': [{'phase': name, 'calls': calls, 'elapsed_ms': int(seconds * 1000)} for name, (calls, seconds) in sorted(self.timings.items())],
+            }
 
 
 @contextmanager
@@ -70,6 +98,7 @@ def instrument_walk_forward(timings):
     from multiprocessing.process import BaseProcess
     import sqlite3
     from quantlab import walk_forward
+
     restores = []
 
     def replace(owner, name, value):
@@ -78,9 +107,11 @@ def instrument_walk_forward(timings):
 
     def wrap(owner, name, phase):
         original = getattr(owner, name)
+
         def measured(*args, **kwargs):
             with timings.measure(phase):
                 return original(*args, **kwargs)
+
         replace(owner, name, measured)
 
     class TimedConnection(sqlite3.Connection):
@@ -101,6 +132,7 @@ def instrument_walk_forward(timings):
                 return super().close()
 
     original_connect = sqlite3.connect
+
     def connect(*args, **kwargs):
         # Leave any explicit caller factory untouched, including positional use.
         if len(args) < 6 and 'factory' not in kwargs:
@@ -110,9 +142,14 @@ def instrument_walk_forward(timings):
 
     try:
         replace(sqlite3, 'connect', connect)
-        for name, phase in (('run_walk_forward', 'wfo.run'), ('_reserve_holdout', 'wfo.reserve'),
-                            ('_run_bounded', 'wfo.evaluate'), ('_save_state', 'wfo.save'),
-                            ('content_hash', 'wfo.hash'), ('canonical_json', 'wfo.serialize')):
+        for name, phase in (
+            ('run_walk_forward', 'wfo.run'),
+            ('_reserve_holdout', 'wfo.reserve'),
+            ('_run_bounded', 'wfo.evaluate'),
+            ('_save_state', 'wfo.save'),
+            ('content_hash', 'wfo.hash'),
+            ('canonical_json', 'wfo.serialize'),
+        ):
             wrap(walk_forward, name, phase)
         wrap(BaseProcess, 'start', 'process.start')
         wrap(BaseProcess, 'join', 'process.join')
@@ -124,33 +161,33 @@ def instrument_walk_forward(timings):
             setattr(owner, name, original)
 
 
-def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id,
-                            reconciliation_admitted=False):
+def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False):
     """Spawnable test-only observer; no changes to the real worker or its jobs."""
     if operation in {'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'}:
         from tests.generic_smoke_phase_diagnostics import diagnosed_generic_worker
-        return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap,
-                                         job_id, reconciliation_admitted)
+
+        return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     if operation != 'ui_walk_forward_run':
-        return _original_job_worker(sender, gate, operation, payload, root, bootstrap,
-                                    job_id, reconciliation_admitted)
+        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     # Preserve Job Object admission before importing or instrumenting work.
     if not gate.wait(15):
         return
     timings = WorkerTimings()
     stop = threading.Event()
+
     def report():
         print(PREFIX + json.dumps(timings.snapshot()), file=sys.stderr, flush=True)
+
     def periodic():
         while not stop.wait(1):
             report()
+
     report()
     reporter = threading.Thread(target=periodic, daemon=True)
     reporter.start()
     try:
         with timings.measure('worker.body'), instrument_walk_forward(timings):
-            return _original_job_worker(sender, gate, operation, payload, root, bootstrap,
-                                        job_id, reconciliation_admitted)
+            return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
     finally:
         stop.set()
         reporter.join()
@@ -162,9 +199,13 @@ def timing_rows(value, *, active=False):
         return []
     rows = []
     for item in value[:32]:
-        if (type(item) is not dict or type(item.get('phase')) is not str
-                or item['phase'] not in WORKER_PHASES
-                or type(item.get('elapsed_ms')) is not int or not 0 <= item['elapsed_ms'] <= 7200000):
+        if (
+            type(item) is not dict
+            or type(item.get('phase')) is not str
+            or item['phase'] not in WORKER_PHASES
+            or type(item.get('elapsed_ms')) is not int
+            or not 0 <= item['elapsed_ms'] <= 7200000
+        ):
             continue
         row = {'phase': item['phase'], 'elapsed_ms': item['elapsed_ms']}
         if not active:
@@ -215,18 +256,43 @@ def output_summary(raw):
     for line in raw.splitlines():
         if line.startswith(PREFIX):
             try:
-                value = json.loads(line[len(PREFIX):])
+                value = json.loads(line[len(PREFIX) :])
             except ValueError:
                 continue
             if not isinstance(value, dict):
                 continue
             event = {}
-            if type(value.get('stage')) is str and value['stage'] in {'start_requested', 'started', 'terminal', 'cleanup_start', 'cleanup_end', 'main_return', 'worker_timing', 'join_start', 'join_end', 'join_error', 'poll_error', 'report_write'}:
+            if type(value.get('stage')) is str and value['stage'] in {
+                'start_requested',
+                'started',
+                'terminal',
+                'cleanup_start',
+                'cleanup_end',
+                'main_return',
+                'worker_timing',
+                'join_start',
+                'join_end',
+                'join_error',
+                'poll_error',
+                'report_write',
+            }:
                 event['stage'] = value['stage']
             for name in ('pid', 'elapsed_ms', 'status'):
                 if type(value.get(name)) is int:
                     event[name] = value[name]
-            if type(value.get('operation')) is str and value['operation'] in {'ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill', 'ui_market_refresh', 'ui_walk_forward_preview', 'ui_walk_forward_run', 'ui_walk_forward_read'}:
+            if type(value.get('operation')) is str and value['operation'] in {
+                'ui_demo',
+                'ui_backtest',
+                'ui_select',
+                'ui_campaign',
+                'ui_paper_reconcile',
+                'ui_paper_replay',
+                'ui_paper_kill',
+                'ui_market_refresh',
+                'ui_walk_forward_preview',
+                'ui_walk_forward_run',
+                'ui_walk_forward_read',
+            }:
                 event['operation'] = value['operation']
             if type(value.get('event')) is str and value['event'] in {'result', 'error', 'cancelled'}:
                 event['event'] = value['event']
@@ -253,6 +319,7 @@ class SmokeOutputCapture:
     partial output on TimeoutExpired. Keep the same EOF requirement, but retain
     flushed bytes as they arrive so failed cleanup cannot erase diagnostics.
     """
+
     LIMIT = 1048576
 
     def __init__(self, process):
@@ -280,9 +347,9 @@ class SmokeOutputCapture:
                 import ctypes
                 import msvcrt
                 from ctypes import wintypes as w
+
                 kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-                kernel.PeekNamedPipe.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD,
-                    ctypes.c_void_p, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
+                kernel.PeekNamedPipe.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.c_void_p, ctypes.POINTER(w.DWORD), ctypes.c_void_p]
                 kernel.PeekNamedPipe.restype = w.BOOL
                 handle = msvcrt.get_osfhandle(stream.fileno())
             else:
@@ -297,11 +364,11 @@ class SmokeOutputCapture:
                             return
                         raise ctypes.WinError(ctypes.get_last_error())
                     if not available.value:
-                        self.stop.wait(.01)
+                        self.stop.wait(0.01)
                         continue
                     count = min(available.value, 65536)
                 else:
-                    if not select.select([stream], [], [], .05)[0]:
+                    if not select.select([stream], [], [], 0.05)[0]:
                         continue
                     count = 65536
                 # There is exactly one reader. Read only bytes known available,
@@ -315,7 +382,7 @@ class SmokeOutputCapture:
                     buffer = self.buffers[name]
                     buffer.extend(raw)
                     if len(buffer) > self.LIMIT:
-                        del buffer[:-self.LIMIT]
+                        del buffer[: -self.LIMIT]
                         self.truncated[name] = True
         except (OSError, ValueError):
             with self.lock:
@@ -363,18 +430,21 @@ class SmokeOutputCapture:
 
 class _WindowsSmokeWorkers:
     """Retain only current private-job members; never terminate by recorded PID."""
+
     def __init__(self, tree, launcher, pids, kernel=None, deadline=None):
         import ctypes
         from ctypes import wintypes as w
+
         self.kernel = kernel if kernel is not None else ctypes.WinDLL('kernel32', use_last_error=True)
         self.handles = []
         job_handle = tree.handle
-        if (type(job_handle) is not int or job_handle <= 0
-                or job_handle == ctypes.c_void_p(-1).value):
+        if type(job_handle) is not int or job_handle <= 0 or job_handle == ctypes.c_void_p(-1).value:
             raise RuntimeSafetyError('A valid private smoke Job handle is required')
+
         def budget():
             if deadline is not None and time.monotonic() >= deadline:
                 raise RuntimeSafetyError('Smoke retention exceeded unchanged cleanup deadline')
+
         k = self.kernel
         k.OpenProcess.argtypes, k.OpenProcess.restype = [w.DWORD, w.BOOL, w.DWORD], w.HANDLE
         k.CloseHandle.argtypes = [w.HANDLE]
@@ -382,11 +452,13 @@ class _WindowsSmokeWorkers:
         k.GetProcessTimes.argtypes = [w.HANDLE, *([ctypes.POINTER(w.FILETIME)] * 4)]
         k.GetProcessTimes.restype = w.BOOL
         k.WaitForSingleObject.argtypes, k.WaitForSingleObject.restype = [w.HANDLE, w.DWORD], w.DWORD
+
         def creation(handle):
             values = [w.FILETIME() for _ in range(4)]
             if not k.GetProcessTimes(handle, *[ctypes.byref(value) for value in values]):
                 raise RuntimeSafetyError('Cannot verify smoke process creation identity')
             return (values[0].dwHighDateTime << 32) | values[0].dwLowDateTime
+
         # Popen retains its original creation handle even after the launcher exits.
         budget()
         launcher_created = creation(int(launcher._handle))
@@ -403,8 +475,7 @@ class _WindowsSmokeWorkers:
                 self.handles.append(handle)
                 budget()
                 member = w.BOOL()
-                if (not k.IsProcessInJob(handle, job_handle, ctypes.byref(member))
-                        or not member.value or creation(handle) < launcher_created):
+                if not k.IsProcessInJob(handle, job_handle, ctypes.byref(member)) or not member.value or creation(handle) < launcher_created:
                     raise RuntimeSafetyError('Recorded smoke worker ownership is not proven')
                 budget()
         except BaseException:
@@ -484,15 +555,14 @@ def _stop_windows_smoke_workers(tree, launcher, pids, *, kernel=None):
         raise error from None
 
 
-def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can_run,
-                      artifact_dir, timeout=40):
+def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can_run, artifact_dir, timeout=40):
     """Retain the original gate; kill/join owned processes before timeout evidence."""
     command = list(command)
     # No application code can spawn before Windows Job Object admission.
     command[2] = 'import sys; sys.stdin.read(1)\n' + command[2]
-    process = subprocess.Popen(command, cwd=cwd, env=env, stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-        start_new_session=sys.platform != 'win32')
+    process = subprocess.Popen(
+        command, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=sys.platform != 'win32'
+    )
     tree = None
     capture = None
     try:
@@ -505,8 +575,7 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
             # must not turn leaked workers into a false successful smoke.
             completed_pids = read_json(pidfile)
             if isinstance(completed_pids, list):
-                if any(process_can_run(pid) for pid in completed_pids
-                       if type(pid) is int and pid > 0):
+                if any(process_can_run(pid) for pid in completed_pids if type(pid) is int and pid > 0):
                     if tree is not None:
                         _stop_windows_smoke_workers(tree, process, completed_pids)
                     else:
@@ -518,13 +587,19 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
             return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
         except subprocess.TimeoutExpired:
             if sys.platform != 'win32':
-                try: os.killpg(process.pid, signal.SIGSTOP)
-                except ProcessLookupError: pass
+                try:
+                    os.killpg(process.pid, signal.SIGSTOP)
+                except ProcessLookupError:
+                    pass
             pids = read_json(pidfile)
             pids = [pid for pid in pids if type(pid) is int and pid > 0] if isinstance(pids, list) else []
+
             def liveness(pid, states):
-                try: return process_can_run(pid, linux_states=states)
-                except (OSError, AssertionError): return None
+                try:
+                    return process_can_run(pid, linux_states=states)
+                except (OSError, AssertionError):
+                    return None
+
             before_states, after_states = {}, {}
             before = {str(pid): liveness(pid, before_states) for pid in pids}
             cleanup_error = None
@@ -537,15 +612,21 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                     owned = set(pids)
                     if sys.platform.startswith('linux'):
                         for entry in Path('/proc').iterdir():
-                            if not entry.name.isdigit(): continue
-                            try: fields = (entry / 'stat').read_text().rsplit(')', 1)[1].split()
-                            except (FileNotFoundError, ProcessLookupError): continue
-                            if int(fields[1]) == process.pid: owned.add(int(entry.name))
+                            if not entry.name.isdigit():
+                                continue
+                            try:
+                                fields = (entry / 'stat').read_text().rsplit(')', 1)[1].split()
+                            except (FileNotFoundError, ProcessLookupError):
+                                continue
+                            if int(fields[1]) == process.pid:
+                                owned.add(int(entry.name))
                     owner = SimpleNamespace(tree=None, _operation='ui_walk_forward_run')
                     for pid in owned:
                         JobManager._join_descendants(owner, pid)
-                    try: os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError: pass
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                 stdout, stderr = capture.communicate(timeout=6)
             except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
                 cleanup_error = type(error).__name__
@@ -558,13 +639,22 @@ def run_smoke_process(command, *, cwd, env, report, pidfile, writes, process_can
                     audited = [report_summary(json.loads(line)) for line in writes.read_text(encoding='utf-8').splitlines()]
             except (OSError, ValueError):
                 pass
-            evidence = {'scope': 'synthetic smoke timeout diagnostic; not acceptance',
-                'timeout_seconds': timeout, 'report': report_summary(read_json(report)),
-                'report_writes': audited, 'worker_alive_before': before, 'worker_alive_after': after,
-                'worker_linux_state_before': before_states, 'worker_linux_state_after': after_states,
+            evidence = {
+                'scope': 'synthetic smoke timeout diagnostic; not acceptance',
+                'timeout_seconds': timeout,
+                'report': report_summary(read_json(report)),
+                'report_writes': audited,
+                'worker_alive_before': before,
+                'worker_alive_after': after,
+                'worker_linux_state_before': before_states,
+                'worker_linux_state_after': after_states,
                 'cleanup_verified': cleanup_error is None and process.poll() is not None and all(value is False for value in after.values()),
-                'cleanup_error_type': cleanup_error, 'stdout': output_summary(stdout), 'stderr': output_summary(stderr),
-                'stdout_truncated': stdout_truncated, 'stderr_truncated': stderr_truncated}
+                'cleanup_error_type': cleanup_error,
+                'stdout': output_summary(stdout),
+                'stderr': output_summary(stderr),
+                'stdout_truncated': stdout_truncated,
+                'stderr_truncated': stderr_truncated,
+            }
             artifact_dir.mkdir(parents=True, exist_ok=True)
             target = artifact_dir / ('smoke-timeout-' + uuid.uuid4().hex + '.json')
             target.write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')

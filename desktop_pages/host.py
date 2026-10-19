@@ -1,4 +1,5 @@
 """Explicit shell services and shared cross-page state for desktop pages."""
+
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Callable

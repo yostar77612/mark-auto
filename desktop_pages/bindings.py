@@ -31,6 +31,7 @@ class HostMethod:
 
 class SharedStateBindings:
     """Data only: never contains a reference to MainWindow."""
+
     _advanced_values = StateField()
     _analysis_checkpoint_ids = StateField()
     _analysis_launch = StateField()
@@ -199,7 +200,6 @@ class SharedStateBindings:
     walk_forward_status = StateField()
     workspace_path = StateField()
 
-
     _candidate_valid = StateField()
     _closing = StateField()
     _history_dialog = StateField()
@@ -221,6 +221,7 @@ class SharedStateBindings:
 
 class PageContext(SharedStateBindings):
     """Explicit shared state and host operations used by page helpers."""
+
     def setup_context(self, host):
         self.host = host
         self.page_state = self.state = host.state

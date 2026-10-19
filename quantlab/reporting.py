@@ -1,4 +1,5 @@
 """Offline report persistence, comparison and spreadsheet-safe exports."""
+
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -7,8 +8,7 @@ import json
 import os
 import tempfile
 
-from .core import (Bar, Dataset, Fill, Signal, BacktestResult, CostSpec,
-                   BacktestConfig, ValidationError, canonical_json, content_hash, to_dict)
+from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, BacktestConfig, ValidationError, canonical_json, content_hash, to_dict
 
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
@@ -21,6 +21,7 @@ def saved_analysis_entries(root):
     Unsafe individual candidates are excluded; root errors reach the caller.
     """
     from .research_analysis import _safe_path
+
     root = _safe_path(root)
     if not root.is_dir():
         return ()
@@ -47,8 +48,10 @@ def read_json(path):
     path = Path(path)
     if path.stat().st_size > MAX_JSON_BYTES:
         raise ValidationError('JSON file exceeds 32 MiB limit')
+
     def reject(value):
         raise ValidationError(f'Invalid JSON constant: {value}')
+
     return json.loads(path.read_text(encoding='utf-8'), parse_constant=reject)
 
 
@@ -119,8 +122,16 @@ def load_result(path, *, dataset=None):
         for key in ('price', 'commission', 'tax'):
             row[key] = Decimal(row[key])
         fills.append(Fill(**row))
-    return BacktestResult(payload['manifest'], signals, tuple(fills), tuple(payload['ledger']),
-                          tuple(payload['equity']), payload['metrics'], tuple(payload['rejects']), tuple(payload['warnings']))
+    return BacktestResult(
+        payload['manifest'],
+        signals,
+        tuple(fills),
+        tuple(payload['ledger']),
+        tuple(payload['equity']),
+        payload['metrics'],
+        tuple(payload['rejects']),
+        tuple(payload['warnings']),
+    )
 
 
 def validate_result_payload(payload, *, dataset=None):
@@ -132,6 +143,7 @@ def validate_result_payload(payload, *, dataset=None):
     from .core import StrategySpec
     from .strategies import validate_strategy
     from .__main__ import config_from_json
+
     manifest = payload['manifest']
     unhashed = {**payload, 'manifest': {k: v for k, v in manifest.items() if k not in ('run_hash', 'reproducibility_hash')}}
     digest = content_hash(unhashed)
@@ -158,6 +170,7 @@ def validate_result_payload(payload, *, dataset=None):
             raise ValidationError('Dataset binding mismatch: ' + name)
     if dataset is not None:
         from .data import validate_dataset
+
         validate_dataset(dataset)
         expected = {k: v for k, v in dataset.manifest.items() if k != 'imported_at'}
         if content_hash(dataset.bars) != manifest['data_hash'] or content_hash(expected) != manifest['dataset_manifest_hash']:
@@ -168,10 +181,17 @@ def comparison_rows(results):
     rows = []
     for result in results:
         manifest = result.manifest
-        rows.append({**to_dict(result.metrics), 'result_hash': content_hash(result), 'source_type': manifest.get('source_type', manifest.get('dataset_manifest', {}).get('source_type', 'see manifest')),
-                     'strategy_hash': manifest.get('strategy_hash', manifest.get('spec_hash', 'see manifest')),
-                     'fill_count': len(result.fills), 'equity_samples': len(result.equity),
-                     'warnings': '; '.join(result.warnings)})
+        rows.append(
+            {
+                **to_dict(result.metrics),
+                'result_hash': content_hash(result),
+                'source_type': manifest.get('source_type', manifest.get('dataset_manifest', {}).get('source_type', 'see manifest')),
+                'strategy_hash': manifest.get('strategy_hash', manifest.get('spec_hash', 'see manifest')),
+                'fill_count': len(result.fills),
+                'equity_samples': len(result.equity),
+                'warnings': '; '.join(result.warnings),
+            }
+        )
     return rows
 
 
@@ -204,8 +224,12 @@ def export_report(result, output_dir):
     folder.mkdir(exist_ok=True)
     files = {}
     payload = to_dict(result)
-    for name, value in [('result', {'kind': 'quantlab_result_v1', 'sha256': digest, 'payload': payload}),
-                        ('manifest', result.manifest), ('ledger', result.ledger), ('metrics', result.metrics)]:
+    for name, value in [
+        ('result', {'kind': 'quantlab_result_v1', 'sha256': digest, 'payload': payload}),
+        ('manifest', result.manifest),
+        ('ledger', result.ledger),
+        ('metrics', result.metrics),
+    ]:
         path = folder / f'{name}.json'
         write_json(path, value)
         files[name] = str(path)
@@ -228,36 +252,66 @@ def synthetic_dataset(count=240):
         ts = start + timedelta(days=day, minutes=minute)
         price = Decimal(20000 + (i % 60) * (1 if (i // 60) % 2 == 0 else -1))
         close = price + Decimal((i % 5) - 2)
-        bars.append(Bar(ts, ts + timedelta(minutes=1), ts.date().isoformat(), 'day', 'TAIFEX:TMF:202601',
-                        price, max(price, close) + 2, min(price, close) - 2, close, 20 + i % 10, 'synthetic-v1'))
-    manifest = {'schema_version': 1, 'source_type': 'synthetic', 'source_url': None,
-                'source_filename': 'generated synthetic fixture', 'source_hash': content_hash(bars), 'data_hash': content_hash(bars),
-                'imported_at': '2026-01-05T00:00:00Z', 'product': 'TMF', 'coverage': {'bars': count},
-                'encoding': 'generated', 'schema': 'quantlab-bars-v1', 'timezone': 'UTC',
-                'calendar_hash': content_hash({'calendar': 'invented synthetic intervals'}), 'calendar_version': 'synthetic-only-v1', 'aggregation_version': 'synthetic-v1',
-                'license_note': 'Invented demonstration data; not official market observations.',
-                'validation_status': 'valid'}
+        bars.append(
+            Bar(
+                ts,
+                ts + timedelta(minutes=1),
+                ts.date().isoformat(),
+                'day',
+                'TAIFEX:TMF:202601',
+                price,
+                max(price, close) + 2,
+                min(price, close) - 2,
+                close,
+                20 + i % 10,
+                'synthetic-v1',
+            )
+        )
+    manifest = {
+        'schema_version': 1,
+        'source_type': 'synthetic',
+        'source_url': None,
+        'source_filename': 'generated synthetic fixture',
+        'source_hash': content_hash(bars),
+        'data_hash': content_hash(bars),
+        'imported_at': '2026-01-05T00:00:00Z',
+        'product': 'TMF',
+        'coverage': {'bars': count},
+        'encoding': 'generated',
+        'schema': 'quantlab-bars-v1',
+        'timezone': 'UTC',
+        'calendar_hash': content_hash({'calendar': 'invented synthetic intervals'}),
+        'calendar_version': 'synthetic-only-v1',
+        'aggregation_version': 'synthetic-v1',
+        'license_note': 'Invented demonstration data; not official market observations.',
+        'validation_status': 'valid',
+    }
     manifest['manifest_hash'] = content_hash({k: v for k, v in manifest.items() if k != 'imported_at'})
-    return Dataset(tuple(bars), manifest, {'valid': True, 'errors': [], 'accepted_rows': count, 'rejected_rows': 0, 'warnings': ['SYNTHETIC prices and calendar']})
+    return Dataset(
+        tuple(bars), manifest, {'valid': True, 'errors': [], 'accepted_rows': count, 'rejected_rows': 0, 'warnings': ['SYNTHETIC prices and calendar']}
+    )
 
 
 def demo_config():
-    return BacktestConfig(Decimal('1000000'), CostSpec(Decimal('20'), Decimal('0.00002'), 1,
-                          'half_up_twd', '2026-01-01', 'synthetic-assumption-v1'),
-                          initial_margin_per_contract=Decimal('100000'), margin_version='synthetic-assumption-v1',
-                          maintenance_margin_per_contract=Decimal('80000'))
+    return BacktestConfig(
+        Decimal('1000000'),
+        CostSpec(Decimal('20'), Decimal('0.00002'), 1, 'half_up_twd', '2026-01-01', 'synthetic-assumption-v1'),
+        initial_margin_per_contract=Decimal('100000'),
+        margin_version='synthetic-assumption-v1',
+        maintenance_margin_per_contract=Decimal('80000'),
+    )
 
 
 def save_selection(strategy, result, path):
     from .core import StrategySpec
     from .strategies import validate_strategy
+
     spec = StrategySpec(**strategy)
     validate_strategy(spec)
     digest = content_hash(spec)
     if digest != result.manifest.get('spec_hash'):
         raise ValidationError('Strategy content does not match selected result')
-    selection = {'strategy_hash': digest, 'strategy': to_dict(spec),
-                 'result_hash': content_hash(result), 'scope': 'research_and_paper_only'}
+    selection = {'strategy_hash': digest, 'strategy': to_dict(spec), 'result_hash': content_hash(result), 'scope': 'research_and_paper_only'}
     write_json(path, selection)
     return selection
 
@@ -265,6 +319,7 @@ def save_selection(strategy, result, path):
 def load_selection(path):
     from .core import StrategySpec
     from .strategies import validate_strategy
+
     selection = read_json(path)
     spec = StrategySpec(**selection['strategy'])
     validate_strategy(spec)

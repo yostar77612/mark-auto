@@ -1,4 +1,5 @@
 """Window persistence uses frame position even without native window decorations."""
+
 import ast
 from copy import deepcopy
 from pathlib import Path
@@ -51,13 +52,24 @@ class WindowPositionTests(unittest.TestCase):
         self.screen = SimpleNamespace(availableGeometry=lambda: QRect(0, 0, 1920, 1080))
         self.host = SimpleNamespace(
             window_position=lambda: QPoint(self.window.x(), self.window.y()),
-            window_geometry=self.window.geometry, resize_window=self.window.resize,
-            move_window=self.window.move, window_screen=lambda: self.screen,
-            window_minimum_size=lambda: self.window.minimum_size)
+            window_geometry=self.window.geometry,
+            resize_window=self.window.resize,
+            move_window=self.window.move,
+            window_screen=lambda: self.screen,
+            window_minimum_size=lambda: self.window.minimum_size,
+        )
         self.page = SimpleNamespace(
-            host=self.host, settings=self.store, _section_toggles={},
-            persist_logs=Mock(), local_notifications=Mock(), jobs=SimpleNamespace(),
-            chatgpt_panel=Mock(), status=Mock(), read_logs=Mock(), market=Mock())
+            host=self.host,
+            settings=self.store,
+            _section_toggles={},
+            persist_logs=Mock(),
+            local_notifications=Mock(),
+            jobs=SimpleNamespace(),
+            chatgpt_panel=Mock(),
+            status=Mock(),
+            read_logs=Mock(),
+            market=Mock(),
+        )
         self.page.persist_logs.isChecked.return_value = True
         self.page.local_notifications.isChecked.return_value = True
         self.page.market.preferences.return_value = {'contract': 'fixture'}
@@ -100,26 +112,23 @@ class WindowPositionTests(unittest.TestCase):
     def test_shell_position_binding_uses_x_y_not_client_geometry(self):
         # Exercise the actual shell lambda with a decorated window double.
         tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_ui.py').read_text(encoding='utf-8-sig'))
-        constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call)
-                           and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
+        constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         binding = next(k.value for k in constructor.keywords if k.arg == 'window_position')
-        callback = eval(compile(ast.Expression(binding), '<window_position>', 'eval'),
-                        {'self': self.window, 'QPoint': QPoint})
+        callback = eval(compile(ast.Expression(binding), '<window_position>', 'eval'), {'self': self.window, 'QPoint': QPoint})
         self.assertEqual(callback(), QPoint(120, 140))
 
     def test_dialog_bindings_keep_shell_parent(self):
         tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_ui.py').read_text(encoding='utf-8-sig'))
-        constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call)
-                           and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
+        constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         dialogs = Mock()
-        for name, factory in (('question', 'question'), ('open_file', 'getOpenFileName'),
-                              ('save_file', 'getSaveFileName'), ('market_history_dialog', None)):
+        for name, factory in (('question', 'question'), ('open_file', 'getOpenFileName'), ('save_file', 'getSaveFileName'), ('market_history_dialog', None)):
             with self.subTest(binding=name):
                 binding = next(k.value for k in constructor.keywords if k.arg == name)
                 history = Mock()
-                callback = eval(compile(ast.Expression(binding), '<dialog>', 'eval'),
-                                {'self': self.window, 'QFileDialog': dialogs,
-                                 'QMessageBox': dialogs, 'MarketHistoryDialog': history})
+                callback = eval(
+                    compile(ast.Expression(binding), '<dialog>', 'eval'),
+                    {'self': self.window, 'QFileDialog': dialogs, 'QMessageBox': dialogs, 'MarketHistoryDialog': history},
+                )
                 if factory:
                     callback('title')
                     getattr(dialogs, factory).assert_called_once_with(self.window, 'title')
@@ -133,8 +142,7 @@ class WindowPositionTests(unittest.TestCase):
         host.save_file.return_value = ('', '')
         host.question.return_value = 0
         host.payload.return_value = {'max_improvements': 0}
-        page = SimpleNamespace(host=host, state=SimpleNamespace(jobs=SimpleNamespace(active=False)),
-                               campaign_config=Mock(), campaign_form=Mock())
+        page = SimpleNamespace(host=host, state=SimpleNamespace(jobs=SimpleNamespace(active=False)), campaign_config=Mock(), campaign_form=Mock())
         DataPage.import_market_file(page)
         StrategyPage.pick_walk_forward_original(page)
         StrategyPage.export_manual_request(page)
@@ -160,8 +168,10 @@ class ProductionWindowMinimumTests(WindowFixture):
                     value = w.settings.load()
                     value['window'] = {'x': 0, 'y': 0, 'width': saved_size[0], 'height': saved_size[1]}
                     w.settings.save(value)
-                    with patch('desktop_pages.settings.QApplication.screens', return_value=[screen]), patch.object(
-                            w.page_host, 'window_screen', return_value=screen):
+                    with (
+                        patch('desktop_pages.settings.QApplication.screens', return_value=[screen]),
+                        patch.object(w.page_host, 'window_screen', return_value=screen),
+                    ):
                         w.load_settings()
                         self.assertGreaterEqual(w.width(), 1280)
                         self.assertGreaterEqual(w.height(), 720)

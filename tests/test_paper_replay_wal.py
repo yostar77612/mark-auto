@@ -1,4 +1,5 @@
 """Additional WAL/FULL gates; existing rollback fixtures and gates stay intact."""
+
 from contextlib import closing
 from decimal import Decimal
 import json
@@ -17,10 +18,15 @@ from tests import test_paper_replay_storage as storage_tests
 
 
 def wal_replay(fixture):
-    return PaperReplay(fixture.root / 'replay.sqlite3', dataset=fixture.data,
-                       strategy=fixture.spec, broker=fixture.broker,
-                       margin_per_contract=Decimal('100000'), margin_version='synthetic-v1',
-                       storage_profile='wal_full')
+    return PaperReplay(
+        fixture.root / 'replay.sqlite3',
+        dataset=fixture.data,
+        strategy=fixture.spec,
+        broker=fixture.broker,
+        margin_per_contract=Decimal('100000'),
+        margin_version='synthetic-v1',
+        storage_profile='wal_full',
+    )
 
 
 class WalReplayTests(replay_tests.ReplayTests):
@@ -32,8 +38,7 @@ class WalReplayTests(replay_tests.ReplayTests):
         missing = self.root / 'missing' / 'replay.sqlite3'
         with patch('quantlab.paper_replay.sqlite3.sqlite_version_info', (3, 49, 1)), patch('quantlab.paper_replay.sqlite3.connect') as connect:
             with self.assertRaisesRegex(ValidationError, 'patched SQLite'):
-                PaperReplay(missing, dataset=self.data, strategy=self.spec,
-                            broker=self.broker, storage_profile='wal_full')
+                PaperReplay(missing, dataset=self.data, strategy=self.spec, broker=self.broker, storage_profile='wal_full')
             connect.assert_not_called()
         self.assertFalse(missing.parent.exists())
 
@@ -50,16 +55,19 @@ class WalReplayTests(replay_tests.ReplayTests):
         self.replay.start()
         opened, statements, observed = [], [], []
         real_connect = sqlite3.connect
+
         def connect(path, *args, **kwargs):
             db = real_connect(path, *args, **kwargs)
             if Path(path) == self.replay.path:
                 opened.append(db)
                 db.set_trace_callback(statements.append)
             return db
+
         def boundary(point):
             if point == 'after_empty_cursor':
                 db = opened[0]
                 observed.append((db.in_transaction, db.execute('PRAGMA synchronous').fetchone()[0]))
+
         self.replay._fault = boundary
         with patch('quantlab.paper_replay.sqlite3.connect', side_effect=connect):
             self.assertTrue(self.replay.step(max_bars=120)['complete'])
@@ -75,17 +83,20 @@ class WalReplayTests(replay_tests.ReplayTests):
         self.replay.start()
         real_connect = sqlite3.connect
         opened = []
+
         class FailedCommit(sqlite3.Connection):
             def __exit__(db, *args):
                 if db.in_transaction:
                     db.rollback()
                     raise sqlite3.OperationalError('injected WAL commit failure')
                 return super().__exit__(*args)
+
         def connect(path, *args, **kwargs):
             db = real_connect(path, *args, factory=FailedCommit, **kwargs)
             if Path(path) == self.replay.path:
                 opened.append(db)
             return db
+
         with patch('quantlab.paper_replay.sqlite3.connect', side_effect=connect):
             with self.assertRaisesRegex(ValidationError, 'storage is unavailable'):
                 self.replay.step(max_bars=1)
@@ -104,15 +115,18 @@ class WalReplayTests(replay_tests.ReplayTests):
     def test_full_readback_failure_closes_without_any_replay_writes(self):
         real_connect = sqlite3.connect
         opened = []
+
         class WrongFull(sqlite3.Connection):
             def execute(db, sql, *args):
                 if sql == 'PRAGMA synchronous':
                     return super().execute('SELECT 1')
                 return super().execute(sql, *args)
+
         def connect(path, *args, **kwargs):
             db = real_connect(path, *args, factory=WrongFull, **kwargs)
             opened.append(db)
             return db
+
         with patch('quantlab.paper_replay.sqlite3.connect', side_effect=connect):
             with self.assertRaisesRegex(ValidationError, 'FULL replay durability'):
                 self.replay.snapshot()
@@ -131,7 +145,11 @@ class WalReplayTests(replay_tests.ReplayTests):
     def test_linux_nested_network_mount_and_unknown_filesystem_are_rejected(self):
         for filesystem in ('nfs', 'cifs', 'fuse.sshfs', 'unknown'):
             mounts = '1 0 0:1 / / rw - ext4 /dev/root rw\n2 1 0:2 / /mnt/net rw - ' + filesystem + ' source rw\n'
-            with self.subTest(filesystem=filesystem), patch('quantlab.paper_replay.sys.platform', 'linux'), patch.object(Path, 'read_text', return_value=mounts):
+            with (
+                self.subTest(filesystem=filesystem),
+                patch('quantlab.paper_replay.sys.platform', 'linux'),
+                patch.object(Path, 'read_text', return_value=mounts),
+            ):
                 with self.assertRaisesRegex(ValidationError, 'verified local'):
                     _require_local_wal_path(Path('/mnt/net/replay.sqlite3'))
 
@@ -142,8 +160,12 @@ class WalStorageTests(unittest.TestCase):
     _child = storage_tests.ReplayStorageTests._child
     _resume_once = storage_tests.ReplayStorageTests._resume_once
     test_full_setup_failure_closes_connection_before_replay_sql = storage_tests.ReplayStorageTests.test_full_setup_failure_closes_connection_before_replay_sql
-    test_concurrent_snapshot_start_stop_and_step_do_not_retain_replay_lock = storage_tests.ReplayStorageTests.test_concurrent_snapshot_start_stop_and_step_do_not_retain_replay_lock
-    test_real_process_death_boundaries_backup_same_path_and_resume_exactly_once = storage_tests.ReplayStorageTests.test_real_process_death_boundaries_backup_same_path_and_resume_exactly_once
+    test_concurrent_snapshot_start_stop_and_step_do_not_retain_replay_lock = (
+        storage_tests.ReplayStorageTests.test_concurrent_snapshot_start_stop_and_step_do_not_retain_replay_lock
+    )
+    test_real_process_death_boundaries_backup_same_path_and_resume_exactly_once = (
+        storage_tests.ReplayStorageTests.test_real_process_death_boundaries_backup_same_path_and_resume_exactly_once
+    )
 
     def setUp(self):
         storage_tests.ReplayStorageTests.setUp(self)
@@ -194,9 +216,18 @@ class WalStorageTests(unittest.TestCase):
 
     def test_uncommitted_wal_spill_is_discarded_after_death_backup_restore(self):
         witness = self.paths.root / 'witness.json'
-        result = subprocess.run([sys.executable, '-c',
-            'from tests.test_paper_replay_wal import die_uncommitted; import sys; die_uncommitted(*sys.argv[1:])',
-            str(self.paths.state), str(witness)], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            [
+                sys.executable,
+                '-c',
+                'from tests.test_paper_replay_wal import die_uncommitted; import sys; die_uncommitted(*sys.argv[1:])',
+                str(self.paths.state),
+                str(witness),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
         self.assertEqual(result.returncode, 73, result.stdout + result.stderr)
         proof = json.loads(witness.read_text())
         self.assertGreater(proof['wal_size'], proof['committed_wal_size'])
@@ -232,6 +263,5 @@ def die_uncommitted(state, witness):
         size = Path(str(replay.path) + '-wal').stat().st_size
         if size <= committed_size or not db.in_transaction:
             raise AssertionError('Uncommitted WAL spill was not exercised')
-        Path(witness).write_text(json.dumps({'wal_size': size,
-            'committed_wal_size': committed_size, 'in_transaction': db.in_transaction}))
+        Path(witness).write_text(json.dumps({'wal_size': size, 'committed_wal_size': committed_size, 'in_transaction': db.in_transaction}))
         os._exit(73)

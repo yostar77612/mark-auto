@@ -1,4 +1,5 @@
 """Bounded standalone frozen Python TLS gate; no accounts, models or downloads."""
+
 from __future__ import annotations
 
 import argparse
@@ -21,9 +22,9 @@ def validate(executable, report):
         raise ValueError('Refusing stale or existing TLS evidence')
     # The executable contains no child-process launch for this dedicated path.
     # subprocess.run kills and joins the sole process on timeout.
-    subprocess.run([str(executable), '--tls-smoke', str(report)],
-                   check=True, timeout=30, stdin=subprocess.DEVNULL,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        [str(executable), '--tls-smoke', str(report)], check=True, timeout=30, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
     report = safe_path(report, file=True)
     if report.stat().st_size > 65536:
         raise ValueError('TLS evidence exceeds byte bound')

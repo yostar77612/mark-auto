@@ -1,4 +1,5 @@
 """Cross-platform static safeguards; Windows execution is a separate CI gate."""
+
 import importlib.util
 import os
 from pathlib import Path
@@ -39,6 +40,7 @@ class PackagingTests(unittest.TestCase):
 
     def test_real_release_baseline_pin_matches_upgrade_workflow(self):
         import runpy
+
         baseline = runpy.run_path(str(ROOT / 'packaging/fetch_baseline.py'))
         names = [name for name in baseline['ASSETS'] if name.endswith('.exe')]
         self.assertEqual(len(names), 1)
@@ -52,21 +54,33 @@ class PackagingTests(unittest.TestCase):
         source = (ROOT / 'packaging/build_manifest.py').read_text()
         self.assertIn("'desktop*.py'", source)
         included = {path.name for path in ROOT.glob('desktop*.py')}
-        self.assertTrue({'desktop.py', 'desktop_ui.py', 'desktop_market.py',
-                         'desktop_charts.py', 'desktop_forms.py'} <= included)
+        self.assertTrue({'desktop.py', 'desktop_ui.py', 'desktop_market.py', 'desktop_charts.py', 'desktop_forms.py'} <= included)
 
     def test_build_inputs_are_committed_not_silently_gitignored(self):
-        required = {'desktop.py', 'desktop_ui.py', 'requirements-desktop.lock',
-                    'packaging/markauto.spec', 'packaging/markauto.iss',
-                    'packaging/build.ps1', 'packaging/collect_licenses.py',
-                    'packaging/THIRD_PARTY_NOTICES.md', 'LICENSE',
-                    'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_tls_smoke.py',
-                    'desktop_chatgpt_dependency_manifest.json',
-                    'packaging/third_party/chatgpt-auth-native-notices.zip',
-                    'packaging/third_party/README.md', '.gitattributes',
-                    'packaging/qt_licenses.py', 'packaging/qt_notices/manifest.json',
-                    'packaging/qt_notices/QT-NOTICE.txt', 'packaging/qt_notices/QT-NATIVE-NOTICES.zip',
-                    'packaging/qt_notices/GPL-3.0-only.txt', 'packaging/qt_notices/LGPL-3.0-only.txt'}
+        required = {
+            'desktop.py',
+            'desktop_ui.py',
+            'requirements-desktop.lock',
+            'packaging/markauto.spec',
+            'packaging/markauto.iss',
+            'packaging/build.ps1',
+            'packaging/collect_licenses.py',
+            'packaging/THIRD_PARTY_NOTICES.md',
+            'LICENSE',
+            'desktop_chatgpt_auth.py',
+            'desktop_chatgpt_provider.py',
+            'desktop_tls_smoke.py',
+            'desktop_chatgpt_dependency_manifest.json',
+            'packaging/third_party/chatgpt-auth-native-notices.zip',
+            'packaging/third_party/README.md',
+            '.gitattributes',
+            'packaging/qt_licenses.py',
+            'packaging/qt_notices/manifest.json',
+            'packaging/qt_notices/QT-NOTICE.txt',
+            'packaging/qt_notices/QT-NATIVE-NOTICES.zip',
+            'packaging/qt_notices/GPL-3.0-only.txt',
+            'packaging/qt_notices/LGPL-3.0-only.txt',
+        }
         required.update('quantlab/' + name for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'))
         for name in required:
             self.assertTrue((ROOT / name).is_file(), name)
@@ -80,19 +94,28 @@ class PackagingTests(unittest.TestCase):
         hooks.collect_data_files = lambda name: []
         metadata_names = []
         hooks.copy_metadata = lambda name: metadata_names.append(name) or []
+
         def analysis(*args, **kwargs):
             captured.update(kwargs)
             # Real Analysis output is destination-first TOC, unlike its source-first inputs.
-            datas = [(str(Path(destination) / Path(source).name), source, 'DATA')
-                     for source, destination in kwargs['datas']]
+            datas = [(str(Path(destination) / Path(source).name), source, 'DATA') for source, destination in kwargs['datas']]
             return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=datas)
-        with patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}), \
-                patch('quantlab.sqlite_runtime.verify') as verify_sqlite, \
-                patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries:
-            runpy.run_path(str(ROOT / 'packaging/markauto.spec'), init_globals={
-                'SPECPATH': str(ROOT / 'packaging'), 'Analysis': analysis,
-                'PYZ': lambda *a, **kw: None, 'EXE': lambda *a, **kw: None,
-                'COLLECT': lambda *a, **kw: None})
+
+        with (
+            patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}),
+            patch('quantlab.sqlite_runtime.verify') as verify_sqlite,
+            patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries,
+        ):
+            runpy.run_path(
+                str(ROOT / 'packaging/markauto.spec'),
+                init_globals={
+                    'SPECPATH': str(ROOT / 'packaging'),
+                    'Analysis': analysis,
+                    'PYZ': lambda *a, **kw: None,
+                    'EXE': lambda *a, **kw: None,
+                    'COLLECT': lambda *a, **kw: None,
+                },
+            )
         self.assertEqual(captured['binaries'], [])
         self.assertFalse(any('local_ai' in str(entry) or 'local-ai' in str(entry) for entry in captured['datas']))
         verify_sqlite.assert_called_once()
@@ -120,14 +143,40 @@ class PackagingTests(unittest.TestCase):
 
     def test_publication_requires_successful_exact_sha_and_all_jobs(self):
         gate = self.gate_module()
-        run = {'head_sha': 'abc', 'event': 'push', 'run_number': 1, 'run_attempt': 1,
-               'status': 'completed', 'conclusion': 'success', 'id': 2, 'html_url': 'https://example.test/run'}
+        run = {
+            'head_sha': 'abc',
+            'event': 'push',
+            'run_number': 1,
+            'run_attempt': 1,
+            'status': 'completed',
+            'conclusion': 'success',
+            'id': 2,
+            'html_url': 'https://example.test/run',
+        }
         with patch.dict(os.environ, GITHUB_REPOSITORY='owner/repo', GITHUB_SHA='abc'):
-            with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
-                              {'jobs': [{'name': name, 'conclusion': 'success'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)}]):
+            with (
+                patch.object(gate, 'require_main_ancestry'),
+                patch.object(
+                    gate,
+                    'api',
+                    side_effect=[
+                        {'workflow_runs': [run]},
+                        {'jobs': [{'name': name, 'conclusion': 'success'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)},
+                    ],
+                ),
+            ):
                 gate.main()
-            with patch.object(gate, 'require_main_ancestry'), patch.object(gate, 'api', side_effect=[{'workflow_runs': [run]},
-                              {'jobs': [{'name': name, 'conclusion': 'skipped'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)}]):
+            with (
+                patch.object(gate, 'require_main_ancestry'),
+                patch.object(
+                    gate,
+                    'api',
+                    side_effect=[
+                        {'workflow_runs': [run]},
+                        {'jobs': [{'name': name, 'conclusion': 'skipped'} for name in gate.REQUIRED_JOBS], 'total_count': len(gate.REQUIRED_JOBS)},
+                    ],
+                ),
+            ):
                 with self.assertRaises(RuntimeError):
                     gate.main()
             run['conclusion'] = 'failure'
@@ -149,14 +198,13 @@ class PackagingTests(unittest.TestCase):
 
     def test_auth_notice_and_provenance_build_inputs(self):
         import hashlib
+
         source = (ROOT / 'packaging/build_manifest.py').read_text()
         for pattern in ('desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*'):
             self.assertIn(pattern, source)
         archive = ROOT / 'packaging/third_party/chatgpt-auth-native-notices.zip'
-        self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(),
-                         'cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24')
-        self.assertIn('_internal/licenses/chatgpt-auth-native-notices.zip',
-                      (ROOT / 'packaging/THIRD_PARTY_NOTICES.md').read_text())
+        self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), 'cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24')
+        self.assertIn('_internal/licenses/chatgpt-auth-native-notices.zip', (ROOT / 'packaging/THIRD_PARTY_NOTICES.md').read_text())
         for name in ('PyJWT[crypto]==2.15.1', 'cryptography==50.0.2', 'cffi==2.1.1', 'pycparser==3.11'):
             self.assertIn(name, (ROOT / 'requirements-desktop.txt').read_text())
             self.assertIn(name, (ROOT / 'requirements-desktop.lock').read_text())
@@ -166,27 +214,33 @@ class PackagingTests(unittest.TestCase):
     def test_source_manifest_hashes_auth_and_notice_inputs(self):
         import hashlib
         import json
+
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / 'packaging/third_party').mkdir(parents=True)
             (root / 'dist/validation').mkdir(parents=True)
             (root / 'dist/validation/sqlite-runtime.json').write_text(json.dumps({'runtime': 'test-only'}))
             shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
-            names = ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py',
-                     'desktop_chatgpt_ui.py', 'desktop_chatgpt_dependency_manifest.json',
-                     'desktop_icon.py', 'packaging/markauto.ico', 'tools/make_icon.py',
-                     'packaging/third_party/chatgpt-auth-native-notices.zip',
-                     'packaging/third_party/README.md', 'requirements-desktop.lock')
+            names = (
+                'desktop_chatgpt_auth.py',
+                'desktop_chatgpt_provider.py',
+                'desktop_chatgpt_ui.py',
+                'desktop_chatgpt_dependency_manifest.json',
+                'desktop_icon.py',
+                'packaging/markauto.ico',
+                'tools/make_icon.py',
+                'packaging/third_party/chatgpt-auth-native-notices.zip',
+                'packaging/third_party/README.md',
+                'requirements-desktop.lock',
+            )
             for name in names:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_bytes(('fixture:' + name).encode())
-            with patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'), \
-                    patch('importlib.metadata.distributions', return_value=[]):
+            with patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'), patch('importlib.metadata.distributions', return_value=[]):
                 runpy.run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
             manifest = json.loads((root / 'dist/build-manifest.json').read_text())
             for name in names:
-                self.assertEqual(manifest['inputs_sha256'][name],
-                                 hashlib.sha256((root / name).read_bytes()).hexdigest())
+                self.assertEqual(manifest['inputs_sha256'][name], hashlib.sha256((root / name).read_bytes()).hexdigest())
 
     def test_installer_is_per_user_and_preserves_data(self):
         source = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')

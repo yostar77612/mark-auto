@@ -15,3 +15,19 @@ docs/agent/history/* -text
 
 # The verbatim original README retains upstream trailing whitespace.
 docs/agent/history/README_before_layering.md whitespace=-blank-at-eol
+
+# Python source and the pinned Ruff tool lock use LF on every platform.
+*.py text eol=lf
+requirements-ruff.lock text eol=lf
+
+# Frozen G3 producer files are excluded from Ruff and keep platform line-ending
+# conversion so their pinned bytes and derived goldens match the pre-Ruff behaviour.
+quantlab/research.py !eol
+quantlab/provider.py !eol
+quantlab/core.py !eol
+quantlab/strategies.py !eol
+quantlab/backtest.py !eol
+quantlab/data.py !eol
+desktop_chatgpt_auth.py !eol
+desktop_chatgpt_provider.py !eol
+quantlab/saved_candidate_pool.py !eol

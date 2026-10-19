@@ -1,0 +1,7 @@
+# Formatter/linter used by CI (P2-B5). Install: pip install --require-hashes -r requirements-ruff.lock
+# ruff 0.16.10 (released 2026-10-01); hashes copied from the PyPI JSON API on 2026-10-19.
+ruff==0.16.10 \
+    --hash=sha256:f33f43a864a8483eebd160e713336c8bab02c934feaff0a33cf5ccb41546d09a \
+    --hash=sha256:7ae7375f803b5520dc9f546bed7e3a0acb70b91812e9bb4b19927de22f25b77d \
+    --hash=sha256:97f2015c92aa97105b0eab19eb5d224884399281cfc5da86a92db4ab5e7fb2ca \
+    --hash=sha256:eff4728c4eaae93f0955cd264d24b2ab348e74bf59986ccf282ba6dc16b3b017

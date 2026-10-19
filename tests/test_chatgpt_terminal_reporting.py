@@ -1,4 +1,5 @@
 """Offline terminal-attempt reporting; no real OAuth, vault, browser or network."""
+
 import unittest
 from unittest.mock import patch
 
@@ -31,8 +32,7 @@ class AttemptSession:
         self.state = 'cancelled'
 
     def status_summary(self):
-        return {'state': self.saved_state, 'active_registration': self.active_registration,
-                'registrations': self.rows}
+        return {'state': self.saved_state, 'active_registration': self.active_registration, 'registrations': self.rows}
 
 
 class TerminalAttemptReportingTests(unittest.TestCase):
@@ -44,10 +44,14 @@ class TerminalAttemptReportingTests(unittest.TestCase):
 
     def run_attempt(self, session, **kwargs):
         self.events = []
-        return run_connection_request(ConnectionRequest(1, 'begin', user_confirmed=True),
-                                      bootstrap='/fixture', emit=self.events.append,
-                                      session_factory=lambda: session,
-                                      cancelled=kwargs.pop('cancelled', lambda: False), **kwargs)
+        return run_connection_request(
+            ConnectionRequest(1, 'begin', user_confirmed=True),
+            bootstrap='/fixture',
+            emit=self.events.append,
+            session_factory=lambda: session,
+            cancelled=kwargs.pop('cancelled', lambda: False),
+            **kwargs,
+        )
 
     def test_failed_attempt_without_saved_account_is_an_explicit_safe_error(self):
         session = AttemptSession()
@@ -60,14 +64,12 @@ class TerminalAttemptReportingTests(unittest.TestCase):
         self.assertIsNone(result.authorization_url)
         self.assertEqual(session.calls, ['begin', 'poll'])
 
-
     def test_failed_attempt_preserves_existing_account_without_reporting_it_as_success(self):
         session = AttemptSession(existing=True)
         session.saved_state = 'plan_ready'
         session.rows = [{'registration': REF, 'state': 'plan_ready'}]
         result = self.run_attempt(session)
-        self.assertEqual((result.kind, result.state, result.error_code),
-                         ('error', 'authorization_failed', 'authorization_failed'))
+        self.assertEqual((result.kind, result.state, result.error_code), ('error', 'authorization_failed', 'authorization_failed'))
         self.assertEqual(result.active_registration, REF)
         self.assertEqual(result.registrations, ((REF, 'plan_ready'),))
         self.assertEqual(session.rows, [{'registration': REF, 'state': 'plan_ready'}])
@@ -114,6 +116,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
                 self.active_registration = REF
                 self.saved_state = 'plan_ready'
                 self.rows = [{'registration': REF, 'state': 'plan_ready'}]
+
         session = Success(terminal='plan_ready')
         result = self.run_attempt(session)
         self.assertEqual((result.kind, result.state, result.error_code), ('result', 'plan_ready', ''))
@@ -132,6 +135,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
 
     def test_failure_is_visible_and_controls_stay_locked_until_worker_join(self):
         from desktop_chatgpt_ui import ConnectionController, ERROR_LABELS
+
         controller = ConnectionController()
         controller.set_host_available(True)
         request = controller.request('begin', confirmed=True)
@@ -149,6 +153,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
         from unittest.mock import MagicMock
         from desktop_chatgpt_auth import AuthSession, LoopbackListener
         from tests.test_chatgpt_auth import FakeVault
+
         listeners = []
 
         class NoTransport:
@@ -181,6 +186,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
         result = self.run_attempt(session, cancelled=cancelled)
         self.assertEqual(result.state, 'cancelled')
         listeners[0].socket.close.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()
