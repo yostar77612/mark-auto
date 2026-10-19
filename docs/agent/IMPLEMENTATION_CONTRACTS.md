@@ -2219,3 +2219,63 @@ Protected G3 files and all saved_candidate_pool.py content have empty diffs
 against e0e604f. No monetary calculation, gate, OOS/budget rule, timeout, live
 flag, PROJECT_STATE, optimization plan or ACCEPTANCE score is changed. Changes
 remain uncommitted for the controller's single C3 implementation commit.
+
+## UI-1 C9: table readability and model-derived tab counts (2026-10-20)
+
+SavedResultsTable's five metric columns and SideBySideTable's transposed result
+columns use desktop_theme.align_table_item for right/vertical-center alignment,
+including missing/undefined/masked values and matching headers. The single
+NUMERIC_FONT_FAMILY token selects a fixed-pitch monospace font through this same
+helper. Text cells and headers stay left/vertical-center aligned. LogTable has
+three text columns (formatted Taipei timestamp, operation, result), so none is
+treated as a numeric measure. No column, header label or row is added or removed.
+
+Saved financial cells retain ResultTable's B4 treatment. Transposed net_pnl cells
+now call set_financial_item with the original value, preserving financial_sign
+and centralized up_down_colors under both themes/conventions. Zero/undefined
+remain neutral. No new colors, formatters, rounding, float conversions or changes
+to DisplayRole/UserRole are introduced. Existing privacy adapters still mask
+money text and tooltips while keeping alignment and original sorting roles.
+
+The three existing paper table tabs retain objectNames and indices. bind_tab_count
+listens to model insertion/removal/reset, reads table.rowCount(), and formats the
+existing title through literal ui_text('tables.tab_count') and display_number.
+Empty tabs show [0]; there is no parallel count state. Elision is disabled. The
+callback ignores deleted Qt wrappers during teardown. No host/settings dependency,
+new desktop module, widget objectName or desktop_ui public name is introduced;
+the existing widget inventory and automatic text/style module scans still apply.
+The touched source/test paths are added to the import-graph scan.
+
+Eight cheap in-memory tests cover baseline cell bytes, column alignment/font,
+both B4 themes/conventions, privacy, Decimal sorting/check selection, direct
+model edits, a bare SimpleNamespace paper host and Qt destruction. The additive
+table_values_e0e604f.json fixture records headers/text/DisplayRole/UserRole from
+the actual e0e604f table modules (loaded only for fixture generation). Existing
+tests and assertions are unchanged. No new test uses show, style changes, sleeps,
+subprocesses, networks or platform font/geometry measurements. No new page metrics
+capture is added to the tests; existing captures use snapshot_cache.default_metrics.
+
+Local checks: focused tests, log-table, UI operations/public-name registry,
+catalog, import graph, hardcoded text, inline stylesheet and function limits pass.
+The accessibility walk passes in dark and light; the research-mode banner tests
+pass unchanged. Ruff 0.16.10 check, changed-file formatting, Python 3.11 compile
+and quality_gate pass. Full compare-host and real desktop terminal/isolation/
+history/market/walk-forward smoke checks encounter sandbox temporary-directory
+ACL errors or their pre-existing environment skips; controller reruns are needed.
+B4's baseline-text assertion correctly detects the three new [0] tab titles;
+its fixture comparison needs the controller refresh before that module can pass.
+GitNexus status is stale/incomplete, analyze --skip-fts fails spawning a worker
+(EPERM), and the explicit lane context lookup is unregistered. Source reads and
+runtime tests supply the local implementation evidence instead.
+
+A disposable 1366x768 capture compared all seven pages without editing fixtures.
+Only these files under tests/fixtures/desktop_pages_before need controller refresh
+in a separate fixture-only commit: 04_full.png, 04_viewport.png (numeric compare
+headers), 05_full.png (paper tab counts), 07_full.png (left-aligned log headers),
+and metrics.json (paper visible tab text and subpage keys). Other decoded PNGs
+match; all other page metrics match. These are measurements, not quality claims.
+
+Protected G3 sources and all saved_candidate_pool.py content have empty diffs
+against e0e604f. No live/broker path, gate, OOS/budget rule, timeout, credential
+handling, PROJECT_STATE, optimization plan or ACCEPTANCE score changes. Leave
+this implementation uncommitted for the controller's single C9 commit.

@@ -1837,3 +1837,5 @@ ZH_TW.update(
         'panel.controls': '\u9762\u677f\u63a7\u5236',
     }
 )
+
+ZH_TW.update({'tables.tab_count': '{0} [{1}]'})

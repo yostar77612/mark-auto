@@ -47,6 +47,7 @@ COLORS = {
     'danger': '#ff8282',
 }
 FONT_SIZES = {'body': 14, 'hint': 12, 'page_title': 22, 'market_title': 20}
+NUMERIC_FONT_FAMILY = 'monospace'
 SPACING = {'label': 3, 'input': 7, 'button_vertical': 9, 'button_horizontal': 14}
 STATUS_COLORS = {state: COLORS[state] for state in ('success', 'warning', 'danger', 'neutral')}
 
@@ -186,6 +187,17 @@ def _refresh_financial_label(label):
 def set_financial_item(table, item, value):
     item.setData(SIGN_ROLE, financial_sign(value))
     _refresh_financial_item(table, item)
+
+
+def align_table_item(item, *, numeric=False):
+    """Style cells and headers without touching display or sorting roles."""
+    item.setTextAlignment((Qt.AlignmentFlag.AlignRight if numeric else Qt.AlignmentFlag.AlignLeft) | Qt.AlignmentFlag.AlignVCenter)
+    if numeric:
+        font = item.font()
+        font.setFamily(NUMERIC_FONT_FAMILY)
+        font.setStyleHint(font.StyleHint.Monospace)
+        font.setFixedPitch(True)
+        item.setFont(font)
 
 
 def _refresh_financial_item(table, item):
