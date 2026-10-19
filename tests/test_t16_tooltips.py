@@ -50,14 +50,12 @@ class TooltipCoverageTests(unittest.TestCase):
         self.addCleanup(self.window.close)
         for timer in self.window.findChildren(QTimer):
             timer.stop()
+        # Never shown: isVisibleTo() answers from widget flags, and painting is slow on software-rendering CI hosts.
         self.window.resize(1366, 768)
-        self.window.show()
-        self.app.processEvents()
 
     def pages(self):
         for index in range(self.window.stack.count()):
             self.window.navigation.setCurrentRow(index)
-            self.app.processEvents()
             page = self.window.stack.widget(index)
             yield index, page.widget() if isinstance(page, QScrollArea) else page
 
