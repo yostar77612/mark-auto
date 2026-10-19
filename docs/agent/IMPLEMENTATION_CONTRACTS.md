@@ -1,5 +1,32 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### LB-B8: chart-drawings-v1
+
+`quantlab/chart_drawings.py` is a pure standard-library display model. Frozen
+HorizontalLine, TrendLine, Ray and Box objects contain only Anchor values:
+timezone-aware UTC datetime (zero UTC offset) and finite positive Decimal price.
+Integers/bar indices, naive/local timestamps and float prices are rejected.
+Projection uses half-open supplied bar intervals [timestamp, end); missing,
+date-only or uncovered timestamps do not guess a bar. Transient containing-bar
+ordinals are never serialized. Prices and stored anchors survive all eight
+timeframes unchanged. Rays extend from start through end; boxes use opposite
+corners. Painting clips geometry to the price viewport and keeps the market's
+price scale. The host explicitly selects the instrument's drawings; set_series
+preserves them across aggregation changes, while set_drawings emits no requests.
+
+DrawingStore writes dedicated `<display-profile>/chart_drawings_v1/` files named
+by instrument SHA256, outside research/data/results/hash-bound roots (resolved
+paths checked). Schema version 1 has sorted canonical JSON keys, string Decimal
+prices and ISO UTC Z timestamps. Limits: 200 drawings per instrument, 262144 bytes
+per file; invalid/truncated/unknown-version/unknown-kind files load as empty
+without changing their bytes. Saves validate first, flush/fsync a same-directory
+temporary file, then atomically os.replace; failed writes preserve the old file.
+DrawingHistory supports add/move/delete and bounded undo/redo, MAX_HISTORY=100;
+empty operations are no-ops, new actions clear redo. These display objects and
+files never enter backtest/research inputs, manifests or reproducibility hashes.
+No trading, budget, OOS, timeout, profile or G3 changes. Evidence:
+tests/test_lb_b8_drawings.py (offscreen QImage, no show/style or network).
+
 ### LB-B3: market-indicators-b3-v1
 
 The additive `atr`, `supertrend`, `sar`, `obv` and `ma_channel` functions use
