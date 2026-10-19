@@ -1,0 +1,98 @@
+{
+  "provenance": "Frozen HEAD quantlab/paper.py before LB-B10; synthetic accepted limit, schema 4; exact old state hashes.",
+  "metadata": [
+    [
+      "config",
+      "3334887cbafe175ff58d24da66b4b3c2df92de6452e3ace4124805732cb5f287"
+    ]
+  ],
+  "journal": [
+    [
+      1,
+      "initialize:1",
+      "initialize",
+      "{\"account_id\":\"synthetic\",\"cash\":\"100000\"}",
+      "ed2a26472215d1a579f11012992e41b7fe9d05188c6cc2db77979b6ec4ddd633"
+    ],
+    [
+      2,
+      "daily_baseline:2026-10-09",
+      "daily_baseline",
+      "{\"equity\":\"100000\",\"method\":\"flat_opening_cash\",\"now\":\"2026-10-09T01:00:00Z\",\"reference\":null,\"trade_date\":\"2026-10-09\"}",
+      "7c5b8798262390d02ffb958c181c59d442cab190e3d3583385f69af3a59a1769"
+    ],
+    [
+      3,
+      "intent:a",
+      "intent",
+      "{\"intent\":{\"client_order_id\":\"a\",\"contract_id\":\"TAIFEX:TMF:202610\",\"created_at\":\"2026-10-09T01:00:00Z\",\"limit_price\":\"20000\",\"order_type\":\"limit\",\"quantity\":1,\"side\":\"buy\",\"strategy_hash\":\"synthetic-strategy\"},\"now\":\"2026-10-09T01:00:00Z\",\"quote\":{\"account_id\":\"synthetic\",\"contract_id\":\"TAIFEX:TMF:202610\",\"margin_per_contract\":\"10000\",\"price\":\"20000\",\"session_end\":\"2026-10-09T05:00:00Z\",\"session_open\":\"2026-10-09T00:45:00Z\",\"timestamp\":\"2026-10-09T01:00:00Z\",\"trade_date\":\"2026-10-09\"},\"session_end\":\"2026-10-09T05:00:00Z\",\"session_open\":\"2026-10-09T00:45:00Z\",\"trade_date\":\"2026-10-09\",\"window_seconds\":60}",
+      "a7085ceda8f38458f89d50d8ebdc04246b5fe91e81731c5495a0ee2a2c68dfa9"
+    ],
+    [
+      4,
+      "ack:a",
+      "ack",
+      "{\"order_id\":\"a\"}",
+      "c801161df969586a40f96057d68f2d37319df012a9773d2be164a5dc9f2d9781"
+    ]
+  ],
+  "materialized": [
+    [
+      1,
+      "{\"account_id\":\"synthetic\",\"cash\":\"100000\",\"consecutive_loss_halt\":false,\"consecutive_losses\":0,\"daily_equity_baselines\":{\"2026-10-09\":{\"equity\":\"100000\",\"method\":\"flat_opening_cash\",\"now\":\"2026-10-09T01:00:00Z\",\"reference\":null,\"trade_date\":\"2026-10-09\"}},\"daily_pnl\":{},\"fills\":{},\"kill_switch\":false,\"last_mark_price\":\"20000\",\"last_mark_timestamp\":\"2026-10-09T01:00:00Z\",\"last_timestamp\":\"2026-10-09T01:00:00Z\",\"lots\":[],\"max_consecutive_losses_observed\":0,\"order_send_timestamps\":[\"2026-10-09T01:00:00Z\"],\"orders\":{\"a\":{\"filled_quantity\":0,\"intent\":{\"client_order_id\":\"a\",\"contract_id\":\"TAIFEX:TMF:202610\",\"created_at\":\"2026-10-09T01:00:00Z\",\"limit_price\":\"20000\",\"order_type\":\"limit\",\"quantity\":1,\"side\":\"buy\",\"strategy_hash\":\"synthetic-strategy\"},\"last_event_timestamp\":null,\"sequence\":0,\"session_end\":\"2026-10-09T05:00:00Z\",\"session_open\":\"2026-10-09T00:45:00Z\",\"status\":\"accepted\",\"trade_date\":\"2026-10-09\"}},\"positions\":{},\"quarantined\":{},\"real_broker\":\"not_verified\",\"reconciliation_required\":false,\"round_trips\":[],\"verification\":\"synthetic_paper_only\"}"
+    ]
+  ],
+  "snapshot": {
+    "account_id": "synthetic",
+    "cash": "100000",
+    "positions": {},
+    "orders": {
+      "a": {
+        "intent": {
+          "client_order_id": "a",
+          "contract_id": "TAIFEX:TMF:202610",
+          "created_at": "2026-10-09T01:00:00Z",
+          "limit_price": "20000",
+          "order_type": "limit",
+          "quantity": 1,
+          "side": "buy",
+          "strategy_hash": "synthetic-strategy"
+        },
+        "status": "accepted",
+        "filled_quantity": 0,
+        "sequence": 0,
+        "trade_date": "2026-10-09",
+        "session_open": "2026-10-09T00:45:00Z",
+        "session_end": "2026-10-09T05:00:00Z",
+        "last_event_timestamp": null
+      }
+    },
+    "fills": {},
+    "lots": [],
+    "round_trips": [],
+    "consecutive_losses": 0,
+    "max_consecutive_losses_observed": 0,
+    "consecutive_loss_halt": false,
+    "order_send_timestamps": [
+      "2026-10-09T01:00:00Z"
+    ],
+    "daily_pnl": {},
+    "daily_equity_baselines": {
+      "2026-10-09": {
+        "equity": "100000",
+        "method": "flat_opening_cash",
+        "now": "2026-10-09T01:00:00Z",
+        "reference": null,
+        "trade_date": "2026-10-09"
+      }
+    },
+    "kill_switch": false,
+    "reconciliation_required": false,
+    "quarantined": {},
+    "last_timestamp": "2026-10-09T01:00:00Z",
+    "last_mark_price": "20000",
+    "last_mark_timestamp": "2026-10-09T01:00:00Z",
+    "verification": "synthetic_paper_only",
+    "real_broker": "not_verified"
+  }
+}

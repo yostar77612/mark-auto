@@ -30,6 +30,7 @@ ALLOWED_FILES = {
     'desktop_accessibility.py',
     'desktop_automatic_backup.py',
     'desktop_charts.py',
+    'desktop_order_lines.py',
     'desktop_chatgpt_auth.py',
     'desktop_chatgpt_dependency_manifest.json',
     'desktop_chatgpt_provider.py',

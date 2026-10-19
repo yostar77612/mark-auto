@@ -21,6 +21,9 @@ The configured loss threshold latches permanently for this journal, including
 a streak reached before later pending wins; restart/reconcile never clears it.
 Order frequency counts persisted accepted intent reservations in (now-window,now],
 including interrupted submissions, excluding rejects, exact retries, cancels and reads.
+Successful amends also count in that same window; they never change loss lots or
+clear reconciliation. An unacknowledged amend retains accepted/partial status
+and pending_amend until a matching simulated amend event; reconcile refuses it.
 Default limits: 3 consecutive losses, 20 orders per 60 seconds.
 """
 
@@ -164,6 +167,8 @@ def _reduce(state, op, payload):
         if op == 'risk_reject':
             s['orders'][oid]['status'] = 'rejected'
             s['orders'][oid]['reason'] = payload['reason']
+    elif op == 'amend':
+        _reduce_amend(s, payload)
     elif op == 'ack':
         order = s['orders'][payload['order_id']]
         if order['status'] == 'submitting':
@@ -174,23 +179,7 @@ def _reduce(state, op, payload):
         if order['status'] not in ('filled', 'cancelled', 'rejected', 'unknown', 'submitting'):
             order['status'] = 'cancel_pending'
     elif op == 'event':
-        e = payload
-        order = s['orders'][e['order_id']]
-        order['sequence'] = e['sequence']
-        order['last_event_timestamp'] = e['timestamp']
-        typ = e['type']
-        if typ == 'unknown':
-            order['status'] = 'unknown'
-            s['reconciliation_required'] = True
-        elif typ == 'ack':
-            if order['status'] == 'submitting':
-                order['status'] = 'accepted'
-                s['reconciliation_required'] = True
-        elif typ in ('cancel', 'reject'):
-            if order['status'] != 'filled':
-                order['status'] = 'cancelled' if typ == 'cancel' else 'rejected'
-        elif typ == 'fill':
-            _reduce_fill(s, order, e)
+        _reduce_event(s, payload)
     elif op == 'quarantine':
         s['quarantined'][payload['event_id']] = payload
         s['reconciliation_required'] = True
@@ -218,11 +207,43 @@ def _reduce(state, op, payload):
         s['reconciliation_required'] = False
     else:
         raise JournalConflict('unknown journal operation')
-    stamp = payload.get('timestamp') if op == 'event' else payload.get('now') if op in ('intent', 'cancel_request', 'daily_baseline') else None
+    stamp = payload.get('timestamp') if op == 'event' else payload.get('now') if op in ('intent', 'amend', 'cancel_request', 'daily_baseline') else None
     if stamp is not None:
         s['last_timestamp'] = stamp
     return s
 # fmt: on
+
+
+def _reduce_event(s, e):
+    """Replay an event identically for legacy journals and amend acknowledgements."""
+    order = s['orders'][e['order_id']]
+    order['sequence'] = e['sequence']
+    order['last_event_timestamp'] = e['timestamp']
+    typ = e['type']
+    if typ == 'unknown':
+        order['status'] = 'unknown'
+        s['reconciliation_required'] = True
+    elif typ == 'ack':
+        if order['status'] == 'submitting':
+            order['status'] = 'accepted'
+            s['reconciliation_required'] = True
+    elif typ in ('cancel', 'reject'):
+        if order['status'] != 'filled':
+            order['status'] = 'cancelled' if typ == 'cancel' else 'rejected'
+    elif typ == 'amend':
+        order.pop('pending_amend', None)
+    elif typ == 'fill':
+        _reduce_fill(s, order, e)
+
+
+def _reduce_amend(s, payload):
+    """Replay a price reservation without changing legacy journal operations."""
+    order = s['orders'][payload['order_id']]
+    order['intent']['limit_price'] = payload['price']
+    order['pending_amend'] = payload['amend_key']
+    cutoff = _time(payload['now']) - timedelta(seconds=payload['window_seconds'])
+    s['order_send_timestamps'] = [stamp for stamp in s['order_send_timestamps'] if _time(stamp) > cutoff]
+    s['order_send_timestamps'].append(payload['now'])
 
 
 def _reduce_fill(s, order, e):
@@ -520,8 +541,8 @@ class PaperBroker:
             raise ValidationError('price is not an integral tick')
         return price
 
-    def _risk(self, state, intent, quote, now):
-        """Single gate for every new paper order.
+    def _risk(self, state, intent, quote, now, *, replace_order_id=None):
+        """Single gate for every new paper order and price amendment.
 
         Daily pnl = cash + unrealized mark-to-market of open lots - the
         trade_date equity baseline (realized + unrealized); block when
@@ -587,7 +608,9 @@ class PaperBroker:
             return RiskDecision(False, 'max_order_quantity')
         position = state['positions'].get(intent['contract_id'], 0)
         buy, sell = (quantity, 0) if intent['side'] == 'buy' else (0, quantity)
-        for order in state['orders'].values():
+        for oid, order in state['orders'].items():
+            if oid == replace_order_id:
+                continue
             if order['status'] not in ('filled', 'cancelled', 'rejected'):
                 remainder = order['intent']['quantity'] - order['filled_quantity']
                 if order['intent']['side'] == 'buy':
@@ -703,6 +726,51 @@ class PaperBroker:
         self._fault('after_ack_commit')
         return deepcopy(state['orders'][oid])
 
+    def amend(self, order_id: str, *, price: Decimal, amend_key: str, quote: dict, now: datetime):
+        """Re-price a limit order without changing quantity, through submit's risk gate.
+
+        Keys identify the complete request. Different keys apply in journal sequence
+        order; exact retries write nothing, including after restart or acknowledgement.
+        """
+        if not isinstance(price, Decimal):
+            raise ValidationError('amend price must be Decimal')
+        with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
+            self._price(price)
+            try:
+                aligned = price % self.instrument.tick_size == 0
+            except InvalidOperation:
+                aligned = False
+            if not aligned:
+                raise ValidationError('amend price must align to instrument tick')
+        now = _time(now, 'now')
+        _text(order_id, 'order_id')
+        _text(amend_key, 'amend_key')
+        if not isinstance(quote, dict):
+            raise ValidationError('quote must be an object')
+        payload = _json(dict(order_id=order_id, price=price, amend_key=amend_key, quote=quote, now=now, window_seconds=self.limits.window_seconds))
+        with self._transaction() as db:
+            state = self._restore(db)
+            identity = 'amend:' + amend_key
+            old = db.execute('SELECT payload FROM journal WHERE identity=?', (identity,)).fetchone()
+            if old:
+                if old[0] != canonical_json(payload):
+                    raise JournalConflict('amend key reused with different request')
+                return deepcopy(state['orders'][order_id])
+            if state['last_timestamp'] and now < _time(state['last_timestamp']):
+                raise ValidationError('amend timestamp regression')
+            order = state['orders'].get(order_id)
+            if not order or order['status'] not in ('accepted', 'partial') or order['intent']['order_type'] != 'limit':
+                raise ValidationError('amend requires an active limit order')
+            remaining = order['intent']['quantity'] - order['filled_quantity']
+            if remaining <= 0:
+                raise ValidationError('amend requires remaining quantity')
+            intent = dict(order['intent'], limit_price=str(price), quantity=remaining)
+            decision = self._risk(state, intent, quote, now, replace_order_id=order_id)
+            if not decision.allowed:
+                raise ValidationError(decision.reason)
+            state = self._append(db, state, 'amend', payload, identity)
+            return deepcopy(state['orders'][order_id])
+
     def cancel(self, order_id: str, *, now: datetime):
         now = _time(now, 'now')
         with self._transaction() as db:
@@ -744,9 +812,11 @@ class PaperBroker:
             _text(event[key], key)
         _time(event['timestamp'])
         _integer(event['sequence'], 'sequence', minimum=1)
-        if event['type'] not in ('ack', 'fill', 'cancel', 'reject', 'unknown'):
+        if event['type'] not in ('ack', 'fill', 'cancel', 'reject', 'unknown', 'amend'):
             raise ValidationError('unknown event type')
-        permitted = required | ({'fill_id', 'quantity', 'price', 'commission', 'tax'} if event['type'] == 'fill' else {'reason'})
+        permitted = required | (
+            {'fill_id', 'quantity', 'price', 'commission', 'tax'} if event['type'] == 'fill' else {'amend_key'} if event['type'] == 'amend' else {'reason'}
+        )
         if event.keys() - permitted:
             raise ValidationError('unknown event fields')
         if event['type'] == 'fill':
@@ -770,6 +840,8 @@ class PaperBroker:
                 return {'status': 'duplicate', 'event_id': event['event_id']}
             order = state['orders'].get(event['order_id'])
             invalid = not order or event['sequence'] != order['sequence'] + 1
+            if event['type'] == 'amend':
+                invalid = invalid or not event.get('amend_key') or event.get('amend_key') != (order or {}).get('pending_amend')
             if order and _time(event['timestamp']) < _time(order['intent']['created_at']):
                 invalid = True
             if state['last_timestamp'] and _time(event['timestamp']) < _time(state['last_timestamp']):
@@ -837,6 +909,8 @@ class PaperBroker:
                             raise ReconciliationError(f'{key} discrepancy; local journal unchanged')
                     if state['quarantined']:
                         raise ReconciliationError('quarantined events require investigation; cannot silently discard or replay')
+                    if any(order.get('pending_amend') for order in state['orders'].values()):
+                        raise ReconciliationError('pending amend requires simulated acknowledgement')
                     if self._capacity_breach(state):
                         raise ReconciliationError('Unresolved position/reserved exposure, cash or marked margin breach')
                     statuses = external.get('order_statuses', {})
