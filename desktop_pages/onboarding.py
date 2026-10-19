@@ -1,7 +1,8 @@
 """Read-only workflow guidance; completion comes from persisted app state."""
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from desktop_strings import ui_text
+from .async_status import AsyncStatus
 from desktop_theme import set_theme_property
 from quantlab.paper import PaperBroker
 import sqlite3
@@ -159,17 +160,10 @@ def install_onboarding(shell):
     }
     shell.onboarding.empty_states = []
     for key, parent, callback in zip(('market', 'strategy', 'backtest', 'compare', 'paper'), targets, callbacks):
-        box = QWidget()
+        box = AsyncStatus()
         box.setObjectName('empty_' + key)
-        layout = QVBoxLayout(box)
-        label = QLabel(guidance[key][0])
-        label.setWordWrap(True)
-        layout.addWidget(label)
-        button = QPushButton(guidance[key][1])
-        button.setObjectName('empty_' + key + '_action')
-        button.setProperty('role', 'primary')
-        button.clicked.connect(callback)
-        layout.addWidget(button)
+        box.action.setObjectName('empty_' + key + '_action')
+        box.set_state('empty', message=guidance[key][0], action_text=guidance[key][1], action=callback)
         parent.layout().insertWidget(1, box)
         shell.onboarding.empty_states.append(box)
     shell.comparison_list.itemSelectionChanged.connect(shell.onboarding.refresh)
