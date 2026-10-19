@@ -66,7 +66,10 @@ OPERATION_LABELS = dict(
 )
 
 
-def stop_presentation(account, reason=None):
+def stop_presentation(account, reason=None, *, manual_lock_text='manual_order_lock'):
+    """Keep legacy output; the UI supplies catalogue text for the manual stop."""
+    if account.get('manual_order_lock', False):
+        return manual_lock_text, '#f1b65c'
     orders = list(account.get('orders', {}).values())
     risk_rejected = bool(orders and orders[-1].get('status') == 'rejected' and orders[-1].get('reason') not in (None, 'kill_switch', 'reconciliation_required'))
     if account.get('consecutive_loss_halt') or account.get('quarantined'):

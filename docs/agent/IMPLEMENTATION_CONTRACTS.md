@@ -1086,3 +1086,36 @@ absence of another literal message table, and fake-worker-to-JSONL propagation.
 It uses no Qt windows, child processes, network or sleeps. Ordinary test discovery
 automatically includes it in the core/remaining CI shard. The import-graph scan
 also includes the changed catalogue module.
+
+### LA-B2: persistent manual order lock and daily-loss definition
+
+Daily pnl (the signed loss measure) is `(cash + unrealized mark-to-market of
+open lots) - day equity baseline` for the pinned session `trade_date`: realized
+plus unrealized PnL, including paid costs. New orders block when
+`pnl <= -max_daily_loss`. Each trade_date establishes a fresh baseline: cash
+when flat, or cash plus carried lots marked at a versioned opening reference
+known by the first session open. Overnight lots without that reference cannot
+establish a baseline and block with `overnight_daily_loss_baseline_required`.
+The quote must match pinned session/margin policy; UTC midnight is not the day boundary.
+
+`PaperBroker.submit()` is the single new-order gate through `_risk()`, including
+manual UI and strategy-driven PaperReplay orders. Quantity caps include pending
+reservations when measuring worst position exposure; rejects never append an
+`intent` event. Existing limits, reasons, live-disable and timeouts are unchanged.
+
+`set_manual_order_lock(bool)` journals `manual_order_lock` with boolean `active`;
+new orders reject with stable reason `manual_order_lock`. It neither cancels
+working orders nor liquidates positions. Unlike the kill switch, which replay
+start and confirmed UI submit can disable after reconciliation, this manual latch
+survives restart, reconciliation, replay start/stop and a new execution session.
+Only an explicit journaled unlock clears it, requiring a reconciled account and
+no UNKNOWN/submitting orders. The UI exposes lock through the existing paper
+kill operation with an explicit lock payload, and reconcile/unlock through the
+existing reconciliation operation with an explicit unlock payload. All new text
+comes from desktop_strings; stop_presentation displays the manual stop state.
+
+For compatibility the snapshot key `manual_order_lock` is additive and appears
+only after the first lock/unlock event. Absence means unlocked. No schema/config
+hash changes or legacy-state normalization occurs; old journal hashes and
+snapshots replay exactly. Connections are transaction scoped (no broker close
+method or persistent connection). Evidence: tests/test_paper_lock_b2.py.
