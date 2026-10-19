@@ -1006,6 +1006,9 @@ def _job_worker(
         emit('result', result=result, message='Completed', progress=100)
     except BaseException as exc:
         # Do not echo exception text: providers/files may include credentials.
+        # Fixed presentation metadata only; never expose exception prose.
+        from .desktop_errors import exception_code
+
         categories = {
             'ValidationError': '輸入驗證失敗，請檢查資料、設定與紙上帳戶對帳',
             'FileNotFoundError': '找不到所需檔案，請重新選取資料',
@@ -1016,6 +1019,7 @@ def _job_worker(
             'error',
             message=categories.get(type(exc).__name__, '作業失敗；既有資料已保留，請檢查輸入後重試'),
             error_type=type(exc).__name__,
+            error_code=exception_code(exc),
             stage=stage_from_traceback(exc.__traceback__, failure_stage),
         )
     finally:

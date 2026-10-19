@@ -1,0 +1,68 @@
+{
+  "sha": "HEAD at commit time",
+  "evidence": "tests/test_t16_tooltips.py",
+  "tooltip_widgets": 89,
+  "visible_inputs": 41,
+  "inputs_with_tooltips": 30,
+  "obvious_controls_without_tooltips": 11,
+  "non_obvious_inputs_without_tooltips": 0,
+  "pages": {
+    "資料匯入與更新": {
+      "visible_inputs": 8,
+      "inputs_with_tooltips": 7,
+      "obvious_label_keys": [
+        "ui._data_page.text_14"
+      ],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "AI 策略中心": {
+      "visible_inputs": 7,
+      "inputs_with_tooltips": 7,
+      "obvious_label_keys": [],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "回測與結果": {
+      "visible_inputs": 6,
+      "inputs_with_tooltips": 3,
+      "obvious_label_keys": [
+        "ui._backtest_page.text_5",
+        "ui._backtest_page.text_7",
+        "ui._backtest_page.text_8"
+      ],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "比較與策略選擇": {
+      "visible_inputs": 1,
+      "inputs_with_tooltips": 1,
+      "obvious_label_keys": [],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "紙上交易與復原": {
+      "visible_inputs": 9,
+      "inputs_with_tooltips": 8,
+      "obvious_label_keys": [
+        "ui._paper_page.text_14"
+      ],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "市場總覽": {
+      "visible_inputs": 4,
+      "inputs_with_tooltips": 4,
+      "obvious_label_keys": [],
+      "non_obvious_inputs_without_tooltips": []
+    },
+    "設定與備份": {
+      "visible_inputs": 6,
+      "inputs_with_tooltips": 0,
+      "obvious_label_keys": [
+        "ui._settings_page.text_8",
+        "ui._settings_page.text_9",
+        "settings.manage_connection",
+        "settings.backup_advanced",
+        "maintenance.options",
+        "logs.errors_only"
+      ],
+      "non_obvious_inputs_without_tooltips": []
+    }
+  }
+}

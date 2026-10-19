@@ -1213,6 +1213,7 @@ from desktop_forms import (
 
 from desktop_pages.bindings import SharedStateBindings
 from desktop_pages.mount import mount_pages
+import desktop_pages.job_progress as _job_progress
 
 
 def _install_window_support(window):
@@ -1298,10 +1299,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.notification_fade.setDuration(300); self.notification_fade.setStartValue(1.0); self.notification_fade.setEndValue(0.0)
         self.notification_fade.finished.connect(self.notification.hide)
         self.notification_timer.timeout.connect(self.notification_fade.start)
-        progress = QHBoxLayout(); self.progress = QProgressBar(); self.progress.setRange(0, 100)
-        self.cancel_button = QPushButton(ui_text('ui.__init__.text_6')); self.cancel_button.setObjectName('cancel_job')
-        self.cancel_button.clicked.connect(self.cancel_job); self.cancel_button.setEnabled(False)
-        progress.addWidget(self.progress); progress.addWidget(self.cancel_button); outer.addLayout(progress)
+        _job_progress.install_progress(self, outer)
         self.setCentralWidget(body)
         self.page_state._section_toggles = self._section_toggles
         self.page_state._advanced_values = self._advanced_values
@@ -1429,6 +1427,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         job_id = self.jobs.start(operation, payload)
         self.last_operation = operation
         self._ui_job_id = job_id
+        self.job_feedback.begin(job_id)
         self.status.setText(ui_text('ui.start_job.text_2'))
         self._busy(True)
         return job_id
@@ -1438,9 +1437,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         for button in self.actions: button.setEnabled(not active)
         self.market.set_loading(active)
         self.kill_button.setEnabled(True)
-        self.cancel_button.setEnabled(active)
-        self.cancel_button.setVisible(active); self.progress.setVisible(active)
-        self.progress.setRange(0, 0 if active else 100)
+        self.job_progress.set_running(active and not self.job_feedback.terminal)
         if not active:
             self.progress.setValue(0)
             self.run_button.setEnabled(bool(getattr(self, '_dataset_ready', False)))
@@ -1452,9 +1449,10 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def cancel_job(self):
+        if not _job_progress.cancel_allowed(self): return
         def cancel_and_recover():
             self.freeze_paper(ui_text('ui.cancel_and_recover.text_1'))
-            self.status.setText(ui_text('ui.cancel_and_recover.text_2'))
+            self.status.setText(ui_text('job.cancel_notice'))
         self._safe(cancel_and_recover)
 
 
@@ -1464,6 +1462,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             for event in self.jobs.poll():
                 if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
                     continue  # A joined old worker can never overwrite a newer view.
+                if not self.job_feedback.accept(self, event): continue
                 recovery_changed = recovery_changed or event.get('type') in ('result','error','failed','cancelled','canceled')
                 self.automatic_backup_panel.handle_job_event(event)
                 if self._walk_forward_event(event): continue
@@ -1480,23 +1479,21 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 if kind in ('result', 'completed', 'success'):
                     result = self.views_page.render_result(event)
                     message = completion_summary(self.last_operation, result)
+                    if self.job_feedback.campaign_code is not None: message = self.chatgpt_controller.message
                     if self.last_operation == 'ui_market_refresh' and any(v.get('error') for v in self._market_outcomes.values()):
                         message += ui_text('ui.poll_jobs.text_3')
                     self.status.clear()
-                    self.notify_local(message, error=any(v.get('error') for v in result.get('providers', {}).values()), completion=True)
+                    self.notify_local(message, error=self.job_feedback.result_failed(result), completion=True)
                 elif kind in ('error', 'failed'):
                     if self.last_operation == 'ui_backup_restore':
                         self.freeze_paper(ui_text('ui.poll_jobs.text_4'))
                     self.status.clear()
-                    # Resolve the stage catalog only when a worker reports failure.
-                    from desktop_strings import stage_error_message
-
-                    self.notify_local(stage_error_message(event.get('stage')), error=True, completion=True)
+                    self.notify_local(_job_progress.failure_notice(self, event), error=True, completion=True)
                 elif kind in ('cancelled', 'canceled'):
                     self.freeze_paper(ui_text('ui.poll_jobs.text_5'))
                     self.status.setText(ui_text('ui.poll_jobs.text_6'))
                 else:
-                    self.status.setText(str(event.get('message', ui_text('ui.poll_jobs.text_7'))))
+                    self.status.setText(_job_progress.progress_status(self, event))
             if not self.jobs.active:
                 self._busy(False,refresh_recovery=recovery_changed)
                 if self._wf_pending_reconcile and self._wf_launch is not None:

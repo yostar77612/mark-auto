@@ -968,3 +968,96 @@ Evidence: tests/test_t15_maintenance.py and existing text/style/import guards;
 docs/analysis/t15_p3_notes.md lists live update-server, real installer-upgrade and
 certificate evidence still pending. No G3 sources, quotas, validation, trading,
 OOS consumption or existing test assertions change.
+
+
+## T16 part A: fixed inference outcomes and shared job progress
+
+P3-03: `desktop_chatgpt_states` maps fixed error/stage/receipt codes to success,
+quota_exhausted, auth_expired or generic_failure. Unknown/non-string codes are
+neutral failures; diagnostic prose is never parsed or displayed. All outcome
+copy is in desktop_strings. Quota exhaustion offers no retry action and explains
+consumption/limits. Auth expiry exposes the existing primary sign-in flow with
+an explicit reauthorization intent; a successful local list cannot short-circuit
+that user-requested authorization. Existing consent, join, registration and
+browser guards remain in place. Refresh errors/results and subscription campaign
+failures/results use these messages. Durable provider receipt statuses classify
+campaigns whose worker returned normally after a provider failure. The worker's
+existing failure packet gains only an allowlisted error_code; no runtime timeout,
+cancellation, quota or validation behavior changes.
+
+P3-07: `desktop_pages.job_progress.JobProgress` is the single shell progress row
+shared by backtest, campaign, Walk-forward and download views. It preserves
+`cancel_job` and the public progress/cancel aliases. Stages use job_stages'
+allow-list with catalog labels and an unknown fallback. Only finite numeric
+progress (excluding bool) displays a clamped 0..100 percentage; other events use
+an indeterminate bar. Cancellation invokes the existing freeze/recover/cancel
+path, disables repeated clicks and explains that consumed quota is not refunded.
+JobFeedback accepts one terminal outcome per submitted job, ignores stale job
+IDs and duplicate/late terminals, and supplies one completion/cancel notice for
+each of these job kinds. It never infers cancellation from a button click; the
+manager's authoritative terminal result wins a cancel/finish race.
+
+Evidence: tests/test_t16_presentation.py, updated test_job_stages.py and the
+import/text/style guards. MainWindow is 393 lines; ChatGPTConnectionPanel 421.
+Default seven-page metrics and all 14 PNGs remain byte/pixel exact; widget-name
+inventory is identical, so neither fixture is regenerated. No G3 source or
+optimization-plan edits. Real-account inference remains environment-blocked and
+must be performed by the user. Full-suite execution is controller-owned outside
+the sandbox, per the explicit task instruction.
+
+
+## T16 part B: market empty state and final target evidence
+
+MarketPage exposes `market_load_sample` and `market_download_official` only while
+the market series is empty. `sample_market_series()` reuses
+`quantlab.reporting.synthetic_dataset(960)` and projects invented daily bars in
+memory; it never writes a cache, dataset, calendar, selection or ledger. Sample
+cards and chart source labels explicitly identify synthetic, nonofficial data.
+The sample action cannot replace a populated series. A later cache reload may
+replace the transient sample through the existing host refresh path.
+
+Official download emits the same refresh intent as `market_refresh` and uses
+`MarketPage.refresh_market`: a default-No consent dialog must return Yes before
+submitting `ui_market_refresh` with `network_opt_in=True`. There is no network
+call or job submission on empty-state construction, sample loading or refusal.
+Once data exists, the two actions hide and the existing refresh button appears.
+Cards show trade dates and the catalog's not-real-time label; source details use
+the provenance date, with precise receipt timestamps retained in diagnostics.
+All new UI text uses literal desktop_strings keys. Existing objectNames remain;
+the widget fixture adds two action names and two prerequisite-label names.
+
+P3-13 uses the unchanged real `display_result_rows` / ResultTable / display_number
+path. A 30-digit Decimal, NaN and infinity fixture verifies bounded display,
+missing-value text and four timeline segments. Exact records/tooltips are not
+rounded or persisted by presentation. No validation, quota, OOS, timeout,
+cancellation or G3 source changes are authorized by this contract.
+
+Evidence: tests/test_market_empty_ui.py, tests/test_t16_presentation.py,
+docs/analysis/t16_final_targets.md and its measured JSON. Only the market page's
+two snapshot PNGs and metrics change; six other pages remain exact. MainWindow
+stays 393 lines. Part B initially recorded tooltip and uppercase-token gaps;
+Part C below closes those measured targets. The optimization plan remains
+untouched per the final task checklist; proposed append-only rows are in
+t16_p3_notes.md for the controller.
+
+
+### T16 part C: default input explanations and domain vocabulary
+
+Every non-obvious default-visible input across the seven pages has a nonempty
+plain-language tooltip from literal ui_text keys in desktop_strings.py.
+StrategyForm rebuilds tooltip text with each family switch and payload load.
+The 41 default inputs comprise 30 with tooltips and 11 obvious checkboxes whose
+stable catalog label keys and individual reasons are explicitly allowlisted in
+docs/analysis/t16_final_targets.md. The offscreen test reads that policy, rejects
+missing and stale exceptions, and checks all five strategy families.
+RPT means comma-delimited history file format (market.__init__.text_71), not an
+internal state. The ten domain terms CSV, JSON, MTX, MXF, RPT, TAIFEX, TMF, TWD,
+TWSE and UTC remain visible. A live seven-page scan of visible text, combo items
+and table headers rejects any other uppercase token or raw hash: internal codes
+are zero after this explicit domain classification.
+Only tooltips change: no geometry, widget names, public desktop_ui names,
+validation, payloads, quotas, OOS consumption or G3 files change. MainWindow stays
+393 lines; Part B snapshot images and metrics remain unchanged by Part C.
+Evidence: tests/test_t16_tooltips.py (4 tests), t16_tooltip_metrics.json and
+updated t16_final_targets.md; sandbox verification covers new/changed focused
+modules plus the quality gate, Ruff and all-file Python 3.11 compilation.

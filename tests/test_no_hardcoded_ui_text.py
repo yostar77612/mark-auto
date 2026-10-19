@@ -14,6 +14,7 @@ UI_MODULES = (
     'desktop_automatic_backup.py',
     'desktop_charts.py',
     'desktop_chatgpt_ui.py',
+    'desktop_chatgpt_states.py',
     'desktop_forms.py',
     'desktop_help.py',
     'desktop_icon.py',

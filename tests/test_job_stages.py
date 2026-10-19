@@ -91,6 +91,7 @@ class JobStageTests(unittest.TestCase):
             host = SimpleNamespace(
                 jobs=SimpleNamespace(poll=lambda: [event], active=True),
                 _ui_job_id=None,
+                job_feedback=SimpleNamespace(accept=Mock(return_value=True), campaign_code=None),
                 automatic_backup_panel=SimpleNamespace(handle_job_event=Mock()),
                 _walk_forward_event=lambda event: False,
                 _analysis_event=lambda event: False,

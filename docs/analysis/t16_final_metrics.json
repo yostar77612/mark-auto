@@ -1,0 +1,76 @@
+{
+  "size": [
+    1366,
+    768
+  ],
+  "sha": "HEAD at commit time",
+  "max_page_height": 1377,
+  "max_primary_buttons": 1,
+  "unlabeled_inputs": 0,
+  "labels": [
+    {
+      "page": "資料匯入與更新",
+      "before": 75,
+      "after": 30,
+      "reduction_percent": 60.0
+    },
+    {
+      "page": "AI 策略中心",
+      "before": 940,
+      "after": 119,
+      "reduction_percent": 87.34
+    },
+    {
+      "page": "回測與結果",
+      "before": 460,
+      "after": 91,
+      "reduction_percent": 80.22
+    },
+    {
+      "page": "比較與策略選擇",
+      "before": 216,
+      "after": 45,
+      "reduction_percent": 79.17
+    },
+    {
+      "page": "紙上交易與復原",
+      "before": 636,
+      "after": 201,
+      "reduction_percent": 68.4
+    },
+    {
+      "page": "市場總覽",
+      "before": 233,
+      "after": 74,
+      "reduction_percent": 68.24
+    },
+    {
+      "page": "設定與備份",
+      "before": 648,
+      "after": 69,
+      "reduction_percent": 89.35
+    }
+  ],
+  "forbidden_terms": 0,
+  "long_decimals": 0,
+  "hashes": 0,
+  "uppercase_tokens": 29,
+  "uppercase_token_values": [
+    "CSV",
+    "JSON",
+    "MTX",
+    "MXF",
+    "RPT",
+    "TAIFEX",
+    "TMF",
+    "TWD",
+    "TWSE",
+    "UTC"
+  ],
+  "main_window_lines": 393,
+  "disabled_without_reason": 0,
+  "internal_codes": 0,
+  "non_obvious_inputs_without_tooltips": 0,
+  "obvious_controls_without_tooltips": 11,
+  "inputs_with_tooltips": 30
+}

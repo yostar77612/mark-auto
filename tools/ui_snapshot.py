@@ -217,7 +217,10 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                 font_ids.append(font_id)
     old_font, old_locale = app.font(), QLocale()
     old_style = app.style().objectName()
-    app.setStyle('Fusion')
+    # Re-setting the same style still re-polishes every live widget (minutes on CI hosts that leak windows).
+    style_changed = old_style.lower() != 'fusion'
+    if style_changed:
+        app.setStyle('Fusion')
     app.setFont(QFont('Microsoft JhengHei UI', 10))
     QLocale.setDefault(QLocale('zh_TW'))
     result = {'schema_version': 1, 'size': list(size), 'scale': scale, 'pages': {}}
@@ -306,7 +309,8 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                         QCoreApplication.sendPostedEvents(window, QEvent.Type.DeferredDelete)
     finally:
         app.setFont(old_font)
-        app.setStyle(old_style)
+        if style_changed:
+            app.setStyle(old_style)
         QLocale.setDefault(old_locale)
         for font_id in font_ids:
             QFontDatabase.removeApplicationFont(font_id)

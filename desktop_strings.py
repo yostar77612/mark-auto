@@ -7,6 +7,35 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'tooltip.market_provider': '選擇本機官方行情檔案所屬的交易所與檔案格式，匯入時須與檔案來源一致。',
+    'tooltip.import_path': '要匯入的本機資料檔完整路徑；格式須符合下方選擇的資料類型。',
+    'tooltip.calendar_path': '描述交易時段與交易日的本機日曆檔路徑；系統用它核對資料時間，不會自行推算。',
+    'tooltip.import_kind': '選擇檔案實際包含的資料類型；示範、代理與真實資料的用途不同，不能互相替代。',
+    'tooltip.bars': '建立合成示範資料的 K 棒根數；只供操作練習，不代表真實行情。',
+    'tooltip.days': '本次下載要涵蓋的最近交易日數；須先勾選本次連線同意，下載後不會自動匯入。',
+    'tooltip.family': '選擇策略的判斷方式；切換後會載入該家族的預設參數。',
+    'tooltip.fast': '快速移動平均使用最近幾根 K 棒計算；應短於慢速均線的根數。',
+    'tooltip.slow': '慢速移動平均使用最近幾根 K 棒計算；應長於快速均線的根數。',
+    'tooltip.lookback': '策略判斷時回看最近幾根 K 棒；根數的實際時間取決於資料週期。',
+    'tooltip.entry_bps': '突破進場門檻，以基點表示；100 基點等於 1%。',
+    'tooltip.threshold_bps': '價格偏離的觸發門檻，以基點表示；100 基點等於 1%。',
+    'tooltip.max_holding_bars': '持倉最多保留幾根 K 棒；達到上限時策略會提出出場訊號。',
+    'tooltip.max_range_bps': '區間寬度的上限，以基點表示；100 基點等於 1%。',
+    'tooltip.quantity': '每次策略訊號的委託口數；留白使用預設 1 口，仍須通過部位與風控限制。',
+    'tooltip.stop_ticks': '停損價距離進場價的價格點數；留白不設定策略停損，原有風控仍生效。',
+    'tooltip.target_ticks': '停利價距離進場價的價格點數；留白不設定策略停利。',
+    'tooltip.result_choice': '選擇已保存的回測結果，以檢視其績效與成交；不會重新執行回測。',
+    'tooltip.replay_bars': '本次紙上重播最多讀取的歷史 K 棒根數；不是委託口數，也不會送出真實交易。',
+    'tooltip.cancel_order': '填入要取消的紙上委託識別碼，可從委託結果表查閱；不是商品代號。',
+    'tooltip.paper_time': '本次紙上操作的模擬時間，以台北時間輸入並轉成世界標準時間；用於報價時效與交易時段檢查。',
+    'tooltip.market_contract': '選擇圖表要顯示的實際商品與到期月份；不同月份合約的價格不會自動串接。',
+    'tooltip.market_timeframe': '每根 K 棒涵蓋的時間；切換只改變圖表彙整週期，不會改寫研究資料。',
+    'tooltip.market_search': '輸入商品名稱、代號或合約月份，縮小下方可用合約清單。',
+    'tooltip.market_catalog': '選擇要加入市場清單的實際到期月份合約；加入後再從圖表合約欄選取。',
+    'tooltip.workspace_path': '工作區資料夾的完整路徑；研究資料、結果與本機狀態將放在此工作區。',
+    'tooltip.backup_path': '建立備份時指定輸出檔路徑，還原時指定要讀取的備份檔；還原前須另行確認。',
+    'tooltip.backup_directory': '自動備份檔要存放的本機資料夾；請選擇可寫入且有足夠空間的位置。',
+    'tooltip.advanced': '勾選後顯示此區的詳細參數或診斷資料，取消勾選只收合內容，不會執行作業。',
     'expiry.product': '商品',
     'expiry.unavailable': '內建到期日資料未通過來源驗證，請手動提供到期日；不推算日期。',
     'expiry.month': '已核對合約月份',
@@ -1619,6 +1648,42 @@ ZH_TW.update(
         'maintenance.cancelled': '已取消清理，未刪除任何目錄。',
         'maintenance.cleaned': '已清理 {0} 個程式版本目錄。',
         'maintenance.cleanup_error': '清理已停止；已完整刪除 {0} 個版本目錄，失敗目錄可能僅部分刪除。請核對安裝目錄後再重試。',
+    }
+)
+
+ZH_TW.update(
+    {
+        'outcome.success.title': '連線作業已完成',
+        'outcome.success.body': '本次官方服務作業成功完成。',
+        'outcome.quota_exhausted.title': '可用額度已達限制',
+        'outcome.quota_exhausted.body': '方案用量已受限制；已消耗的額度不會退還。請核對官方用量，等待額度恢復後再安排作業。',
+        'outcome.auth_expired.title': '需要重新授權',
+        'outcome.auth_expired.body': '連線授權已失效或未被接受。請重新授權後核對連線狀態。',
+        'outcome.auth_expired.action': '重新授權',
+        'outcome.generic_failure.title': '本次作業未完成',
+        'outcome.generic_failure.body': '請保留現有紀錄並核對連線與作業狀態；不會自動重送。',
+        'job.stage.unknown': '作業處理中',
+        'job.stage.prepare_operation': '準備作業',
+        'job.stage.load_data': '讀取資料',
+        'job.stage.build_candidates': '準備策略',
+        'job.stage.run_backtest': '執行回測',
+        'job.stage.run_campaign': '執行研究',
+        'job.stage.run_operation': '執行作業',
+        'job.stage.write_result': '儲存結果',
+        'job.cancel': '取消',
+        'job.cancel_notice': '取消作業；已消耗的額度不會退還。',
+        'job.cancelled': '作業已取消；既有紀錄已保留，已消耗的額度不會退還。',
+    }
+)
+
+ZH_TW.update(
+    {
+        'market.load_sample': '載入範例行情',
+        'market.download_official': '下載官方近期資料',
+        'market.sample_label': '合成範例行情（非官方資料）',
+        'market.official_consent': '先確認同意連線，才會下載官方近期資料；選擇否不會連線。',
+        'market.not_realtime': '非即時',
+        'market.data_date': '{0}｜資料日 {1}｜{2}',
     }
 )
 

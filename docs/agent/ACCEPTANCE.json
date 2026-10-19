@@ -1,5 +1,46 @@
 {
   "schema_version": 2,
+  "t16_part_c": {
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part C: default input explanations and domain vocabulary",
+    "evidence": [
+      "tests/test_t16_tooltips.py",
+      "docs/analysis/t16_final_targets.md",
+      "docs/analysis/t16_tooltip_metrics.json"
+    ],
+    "visible_inputs": 41,
+    "inputs_with_tooltips": 30,
+    "obvious_allowlisted_checkboxes": 11,
+    "non_obvious_inputs_without_tooltips": 0,
+    "internal_codes": 0,
+    "domain_terms": [
+      "CSV",
+      "JSON",
+      "RPT",
+      "MTX",
+      "MXF",
+      "TMF",
+      "TAIFEX",
+      "TWSE",
+      "TWD",
+      "UTC"
+    ],
+    "rpt": "Comma-delimited historical data file format; market.__init__.text_71",
+    "invariants": "Tooltips only; no geometry, public desktop_ui names, widget names, payload, validation, G3 or Part B snapshot changes."
+  },
+  "market_empty_state_t16_part_b": {
+    "plan_items": [
+      "P3-09",
+      "P3-13"
+    ],
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part B: market empty state and final target evidence",
+    "evidence": "tests/test_market_empty_ui.py; docs/analysis/t16_final_targets.md; docs/analysis/t16_final_metrics.json",
+    "sample": "Existing synthetic_dataset(960), in-memory daily display projection, labelled synthetic/nonofficial, no persistence or network",
+    "official_download": "Existing default-No consent flow; ui_market_refresh network_opt_in=True only after Yes",
+    "cached": "Date and not-real-time label; empty actions replaced by existing refresh",
+    "walk_forward": "Unchanged real formatter/result table handles 30-digit Decimal, NaN, infinity; four-segment timeline",
+    "verification": "5 new tests PASS in 0.852 s; 4 import graph tests PASS; 15 Part A presentation tests PASS; quality gate zero findings. Full existing suite controller-owned.",
+    "final_targets": "Max page 1377 px; primary max 1; unlabeled 0; label reductions 60.00?89.35%; forbidden terms 0; long decimals 0; MainWindow 393 lines. Part C closes tooltip coverage and classifies the ten uppercase domain terms; see measured report."
+  },
   "tls_worker_stages_t14_part_a": {
     "plan_items": ["P3-12", "P3-02"],
     "contract": "IMPLEMENTATION_CONTRACTS.md: T14 part A: verified trust anchors and worker error stages (P3-12 / P3-02)",
@@ -6098,5 +6139,41 @@
     "checks": "tests/test_docs_layering.py",
     "runtime_and_installer_payload": "unchanged by part C",
     "external_acceptance": "pending; no score increase"
+  },
+  "t16_part_a": {
+    "plan_items": [
+      "P3-03",
+      "P3-07"
+    ],
+    "status": "IMPLEMENTED_REAL_ACCOUNT_EVIDENCE_PENDING",
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part A: fixed inference outcomes and shared job progress",
+    "evidence": [
+      "tests/test_t16_presentation.py",
+      "tests/test_job_stages.py",
+      "docs/analysis/t16_p3_notes.md"
+    ],
+    "outcomes": [
+      "success",
+      "quota_exhausted",
+      "auth_expired",
+      "generic_failure"
+    ],
+    "progress": "One shared widget; fixed stage labels; finite numeric percentages clamped to 0..100, otherwise indeterminate; existing cancel path and no refunds.",
+    "notifications": "One authoritative terminal notice per submitted job; stale/duplicate terminal suppression; no click-based terminal assumption.",
+    "measurements": {
+      "MainWindow_lines": 393,
+      "ChatGPTConnectionPanel_lines": 421,
+      "unchanged_default_pages": 7,
+      "exact_baseline_pngs": 14,
+      "widget_inventory_additions": 0
+    },
+    "unverified": [
+      "User-operated real-account inference",
+      "Full suite outside sandbox",
+      "Fresh GitNexus index: analyzer spawn EPERM"
+    ],
+    "acceptance_score_change": 0,
+    "verification": "55 focused offscreen tests pass in 8.918s, exit 0, zero skips; 15 new tests, slowest 0.418s. Ruff check/format --check pass (326 files); quality_gate zero findings; Python 3.11 utf-8-sig compile passes for 335 tracked/new files; git diff --check clean. Seven-page metrics/14 PNGs and widget inventory exact. Runtime AST differs only by fixed failure-code metadata. G3 and plan diffs empty.",
+    "graph": "Pre-edit catalog CRITICAL; start_job/_busy HIGH; unresolved dynamic callers confirmed directly. Index refresh spawn EPERM; stale-index detect_changes: 28 symbols, 3 flows, medium risk; fresh/new-module coverage unverified."
   }
 }

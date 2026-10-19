@@ -274,14 +274,13 @@
       "full_width": 1146
     },
     "市場總覽": {
-      "page_height": 913,
+      "page_height": 950,
       "visible_input_count": 4,
-      "button_count": 10,
+      "button_count": 11,
       "label_char_count": 74,
       "visible_text": [
         "市場總覽",
         "歷史行情",
-        "更新官方資料",
         "加權指數",
         "尚無可用資料\n—",
         "臺指期 TX",
@@ -291,6 +290,8 @@
         "微臺指 TMF",
         "尚無可用資料\n—",
         "進階・資料來源與診斷 ▸",
+        "載入範例行情",
+        "下載官方近期資料",
         "日",
         "商品搜尋 / 自選",
         "＋ 加入自選",

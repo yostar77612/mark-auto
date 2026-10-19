@@ -8,6 +8,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'desktop_market.py',
+    'desktop_pages/market.py',
+    'desktop_chatgpt_states.py',
+    'desktop_pages/job_progress.py',
     'quantlab/payload_cleanup.py',
     'quantlab/update_check.py',
     'desktop_pages/maintenance.py',
@@ -39,7 +43,7 @@ PAIRS = (
 
 
 def source_map():
-    paths = sorted((ROOT / 'quantlab').glob('*.py')) + sorted(ROOT.glob('desktop*.py'))
+    paths = sorted((ROOT / 'quantlab').glob('*.py')) + sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').glob('*.py'))
     return {path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.'): path.read_text(encoding='utf-8-sig') for path in paths}
 
 
