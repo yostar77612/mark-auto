@@ -80,9 +80,14 @@ IGNORED_LOCAL_NAMES = {
     '.ruff_cache',
 }
 IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info')
+AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_agent_schema_registered_location(self):
+        self.assertTrue((ROOT / AGENT_TOOL_SCHEMA).is_file())
+        self.assertEqual(Path(AGENT_TOOL_SCHEMA).parent.as_posix(), 'docs')
+
     def test_exact_root_layout(self):
         # Judge the TRACKED layout: other tests and tools legitimately leave untracked artifacts
         # (e.g. qt-install-report.json) in the working directory of a CI job.

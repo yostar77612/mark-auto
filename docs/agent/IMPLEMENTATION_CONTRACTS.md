@@ -1671,3 +1671,63 @@ permanently disabled; no order path, dynamic execution or credential handling
 is added. OOS/final-holdout data never enter AI conversations, tool returns or
 prompts. Formal acceptance remains 230/300. No Release or tag is created;
 the controller owns the single item commit and lane edits remain uncommitted.
+### TASK A1-D1: offline agent tool contract v1
+
+The [agent harness contract](../AGENT_HARNESS_CONTRACT.md) and
+[JSON schema](../agent-app-tools-v1.schema.json) establish exactly four layers:
+research.read, paper.read, ui.navigate, research.run. Declarations and inputs
+are closed; effect is explicitly read or mutation. Registration fails atomically
+on missing/unknown effect, unknown capability, unknown field or malformed input
+schema. A mutation requires a required nonempty string idempotency_key. The
+only mutation declaration is a test-local fake; all mutation dispatch is denied.
+
+quantlab.agent_tool_contract implements the closed standard-library JSON/schema
+validator and resource bounds. quantlab.agent_tools owns the default-deny
+Registry; unknown tools/capabilities, missing grants, bad model JSON and unsafe
+returns produce only B1 agent_tool_refused with empty params. No input, context
+or exception text is echoed. Model output cannot become code, a handler, a grant
+or partition provenance. Resolved declarations are copies; the production
+registry is frozen. No UI/provider/broker dependency or executable ui.navigate
+or research.run handler exists.
+
+The single read contract exerciser, research.list_training_status, accepts only
+host-supplied in-memory snapshots with trusted training provenance. It filters
+partitions before counting/paging and positively projects only completed and
+training observations. D3 storage adapters and research metrics are not added.
+OOS, final holdout, unknown/missing partitions, guards, names, raw files, paths,
+credentials and arbitrary fields are never copied to returns. Host adapters must
+derive training-only counts from approved evidence, never mixed-period totals.
+Strict typed output validation refuses malformed visible rows and extra fields.
+
+The D11 success envelope is ok/items/truncated/limit/next_cursor: at most 50
+rows and 8192 UTF-8 bytes; input JSON at most 4096 bytes. Cursors index only
+visible training records in a stable host snapshot. Truncation is explicit,
+exhaustion has a null cursor, and oversized returns refuse without silent loss.
+The sentinel oracle recursively scans every output field from every registered
+read tool, all fixture pages and empty/protected-only contexts. Its negative
+control removes partition filtering and catches leaked OOS row-count 31337.
+Sentinel fixtures also include prices, returns, metrics, trades, equity, guard
+contents, credentials, tokens, drive/POSIX/UNC paths, user names and raw content.
+
+Verification: focused D1 tests, import graph, repository layout, documentation
+layering, B1 catalog, function lengths, catalog placeholders and ADR glossary;
+Ruff 0.16.10 check/format, Python 3.11 compile and quality gate. The B1 test adds
+only the new registry entry before checking the original 64-message count/hash;
+all historical assertions remain. Other existing tests receive additive entries
+only. ADR 0006 code-fence line endings were locally normalized for Ruff, with no
+Git content diff. No UI/default-page baseline changes or fixture refresh needed.
+
+G3 files and all saved_candidate_pool.py bytes, PROJECT_STATE.md, the product
+optimization plan and ACCEPTANCE.json remain unchanged against e0e604f. Live
+trading permanently disabled; no new order path and no existing gate, timeout,
+budget, threshold or OOS-consumption change. Broader suite and the single final
+A1-D1 commit are controller responsibilities; this lane leaves work uncommitted
+per the explicit process instruction. The full suite is not run in this sandbox.
+
+GitNexus status found no lane-local index. The initial analyze hit sandbox spawn
+EPERM; the explicit lane query reported repository not registered. No extension
+download or alternate graph tool was used; exact source review and tests provide
+the local evidence, without claiming fresh graph coverage.
+The retry with GITNEXUS_MEMORY=off, index-only, skip-fts and one worker completed
+local analysis but could not write the global registry.json temporary file
+(sandbox EPERM); the lane therefore remains unavailable to registered queries.

@@ -8,6 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'quantlab/agent_tool_contract.py',
+    'quantlab/agent_tools.py',
     'quantlab/replay_pacing.py',
     'quantlab/paper_replay.py',
     'desktop_pages/replay_controls.py',
@@ -114,6 +116,14 @@ def uncommented_local_imports(source):
 
 
 class ImportGraphTests(unittest.TestCase):
+    def test_agent_tools_have_only_permitted_core_edges(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(graph['quantlab.agent_tool_contract'], set())
+        self.assertEqual(graph['quantlab.agent_tools'], {'quantlab.agent_tool_contract', 'quantlab.errors'})
+        for name in ('quantlab.agent_tool_contract', 'quantlab.agent_tools'):
+            imports = module_imports(name, self.sources[name])
+            self.assertFalse(any(part.startswith(('desktop', 'PySide6', 'Qt')) for target in imports for part in target.split('.')))
+
     @classmethod
     def setUpClass(cls):
         cls.sources = source_map()

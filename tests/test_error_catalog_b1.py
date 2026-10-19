@@ -85,6 +85,9 @@ class ErrorCatalogTests(unittest.TestCase):
 
     def test_existing_message_bytes_match_17b5b1b(self):
         payload = {code: [row.explanation, row.action, error_message(code)] for code, row in ERROR_TABLE.items()}
+        # A1-D1 adds one B1 registry entry; all 64 historical bytes stay locked.
+        self.assertEqual(len(payload), BASELINE_COUNT + 1)
+        payload.pop('agent_tool_refused')
         self.assertEqual(len(payload), BASELINE_COUNT)
         self.assertEqual(hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest(), BASELINE_SHA256)
 
