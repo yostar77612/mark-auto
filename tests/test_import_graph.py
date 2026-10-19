@@ -8,6 +8,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'quantlab/diagnostics.py',
+    'desktop_pages/diagnostics.py',
+    'desktop_pages/settings_layout.py',
+    'tests/test_diagnostics_b12.py',
     'tests/test_paper_lock_b2.py',
     'quantlab/paper.py',
     'quantlab/desktop_feedback.py',

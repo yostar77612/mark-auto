@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QCheckBox
 from desktop_strings import ui_text
 from .log_table import LogTable
 from .maintenance import MaintenancePanel
+from .diagnostics import DiagnosticsPanel, snapshot_for_state
 
 
 def open_folder(directory):
@@ -55,6 +56,7 @@ def build_settings(page, layout):
     page.connection_status = QLabel()
     connection.addWidget(page.connection_status)
     page.connection_toggle, _, management = collapsed(connection, 'settings.manage_connection')
+    # Load the optional connection UI only when settings are mounted.
     from desktop_chatgpt_ui import ChatGPTConnectionPanel, ConnectionController
 
     page.chatgpt_controller = ConnectionController(page)
@@ -75,11 +77,13 @@ def build_settings(page, layout):
     page.restore_confirm = QCheckBox(ui_text('ui._settings_page.text_13'))
     controls.addWidget(page.restore_confirm)
     page._button(controls, ui_text('ui._settings_page.text_14'), 'restore_backup', lambda: page.backup(True), role='danger')
+    # Load backup controls only when settings are mounted.
     from desktop_automatic_backup import AutomaticBackupPanel
 
     page.automatic_backup_panel = AutomaticBackupPanel(page)
     controls.addWidget(page.automatic_backup_panel)
     page._button(controls, ui_text('settings.open_backup'), '', lambda: open_folder(page.automatic_backup_panel.directory.text() or page.paths.root))
+    # Resolve the installed package version when rendering settings.
     from quantlab import __version__
 
     page.version_label = QLabel(ui_text('ui._settings_page.text_15').format(__version__))
@@ -90,6 +94,8 @@ def build_settings(page, layout):
     page.maintenance_toggle, _, maintenance = collapsed(about, 'maintenance.options')
     page.maintenance_panel = MaintenancePanel(page)
     maintenance.addWidget(page.maintenance_panel)
+    page.diagnostics_panel = DiagnosticsPanel(lambda: snapshot_for_state(page.state), page)
+    maintenance.addWidget(page.diagnostics_panel)
     page._button(about, ui_text('ui._settings_page.text_18'), 'read_logs', page.read_logs)
     page.log_view = LogTable()
     page.errors_only = QCheckBox(ui_text('logs.errors_only'))
