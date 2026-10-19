@@ -51,9 +51,9 @@ Baseline: `main@1cacce4ee4eef4ce7e8760f8153ef64a74852d22`. Frozen 2026-10-09 bef
 
 ## Decision and evidence
 
-Keep Python and Streamlit. Add sibling `quantlab/` package, not a wholesale rewrite and not a subpackage of `trader`. Core uses Python standard library only (`dataclasses`, `decimal`, `datetime`, `zoneinfo`, `csv`, `json`, `sqlite3`, `hashlib`); UI alone imports Streamlit. Python 3.11+ target; optional Windows tzdata dependency must be documented. Separate `research_app.py` entry point; never invoke existing `gui.py` or `run.py` in research tests.
+Keep Python and Streamlit. Add sibling `quantlab/` package, not a wholesale rewrite and not a subpackage of `trader`. Core uses Python standard library only (`dataclasses`, `decimal`, `datetime`, `zoneinfo`, `csv`, `json`, `sqlite3`, `hashlib`); UI alone imports Streamlit. Python 3.11+ target; optional Windows tzdata dependency must be documented. Separate `research_app.py` entry point; never invoke archived `archives/legacy_autotrading/gui.py` or `archives/legacy_autotrading/run.py` in research tests.
 
-Evidence: `trader/config.py:6,15–16,79` imports Shioaji and constructs a non-simulation API at import; `trader/__init__.py:1–29` creates executor/shared objects/directories; `gui.py:10–13` imports that configuration/database path and `start_trader` launches `run.py`; `trader/utils/strategy.py:6–12` couples signals to mutable TradeData, database and configuration; `trader/performance/reports.py:18` imports missing backtest module. The historical dependency list (now `archives/legacy_autotrading/requirements.txt`) contains Streamlit 1.45.1 and pandas 2.3.3; it is not a current installation recipe. Preserve legacy indicators as reference, but do not import them through `trader`; reuse only after explicit extraction with regression fixtures. This avoids making unrelated stock/live infrastructure a prerequisite for safe TMF research.
+Evidence: `archives/legacy_autotrading/trader/config.py:6,15–16,79` imports Shioaji and constructs a non-simulation API at import; `archives/legacy_autotrading/trader/__init__.py:1–29` creates executor/shared objects/directories; `archives/legacy_autotrading/gui.py:10–13` imports that configuration/database path and `start_trader` launches `archives/legacy_autotrading/run.py`; `archives/legacy_autotrading/trader/utils/strategy.py:6–12` couples signals to mutable TradeData, database and configuration; `archives/legacy_autotrading/trader/performance/reports.py:18` imports missing backtest module. The historical dependency list (now `archives/legacy_autotrading/requirements.txt`) contains Streamlit 1.45.1 and pandas 2.3.3; it is not a current installation recipe. Preserve legacy indicators as reference, but do not import them through `trader`; reuse only after explicit extraction with regression fixtures. This avoids making unrelated stock/live infrastructure a prerequisite for safe TMF research.
 
 Legacy safety patch is separate: disable unsafe automatic/live entry paths, require nonempty Telegram allowlist, redact credential-bearing SQL logging. Do not modernize every legacy dependency or claim retained legacy execution is verified. Never enable a live client via environment variable alone.
 
@@ -384,7 +384,7 @@ Regression evidence: tests/test_desktop_ui_polish_b.py plus updated backtest/can
 
 ## T3-C ? dependency archive and application icon contracts
 
-P0-15: the legacy requirements file is archived byte-for-byte at `archives/legacy_autotrading/requirements.txt` (SHA-256 `0402de4d2eb719a30c7dd5428e9fcc9db10732fc76ce1419b959719d99f08ec0`). Root requirements.txt is absent. README directs installation to requirements-desktop.lock and packaging/build.ps1; current lock dependency audits remain unchanged. Historical commit links remain historical evidence.
+P0-15: the legacy requirements file is archived byte-for-byte at `archives/legacy_autotrading/requirements.txt` (SHA-256 `0402de4d2eb719a30c7dd5428e9fcc9db10732fc76ce1419b959719d99f08ec0`). The obsolete root dependency list is absent. README directs installation to requirements-desktop.lock and packaging/build.ps1; current lock dependency audits remain unchanged. Historical commit links remain historical evidence.
 
 P0-16: tools/make_icon.py uses only the standard library, no network, to produce packaging/markauto.ico with 16/24/32/48/64/128/256 px images. desktop_icon.application_icon loads from the module-relative packaging path (also PyInstaller _internal); absent/corrupt artwork falls back to Qt's standard computer icon. QApplication startup and MainWindow explicitly set non-null window icons. PyInstaller embeds the EXE icon and ships the ICO as data; Inno Setup uses it for setup and uninstall display. Shortcut icons use the EXE resource.
 
@@ -835,3 +835,37 @@ Existing installer readers use explicit UTF-8 BOM-aware decoding; assertions sta
 ISCC was absent from Program Files (x86)/Inno Setup 6 and the build script's
 TEMP/MarkAuto-Inno-6.4.3 directory. Compiler/native wizard and lifecycle execution
 remain controller-owned. Static checks do not claim Windows wizard acceptance.
+
+
+## T12 part B: project-local developer setup (P2-B8)
+
+`tools/dev_setup.ps1` supports Windows PowerShell 5.1, `-DryRun` and `-WhatIf`.
+It derives all generated locations from PSScriptRoot: `.runtime-sqlite`, `.venv`
+and unique temporary downloads below `build/dev-setup-downloads`. It rejects
+reparse-point output paths and never targets LocalAppData (MSIX redirection).
+The desktop lock requires the pinned x64 CPython 3.13 version; no additional
+UI/Qt CI lock is installed. Existing workspace/AppPaths behaviour is unchanged.
+
+Windows OS certificate validation downloads the official HTTPS SQLite artifact
+without redirects. The installer's optional `--archive` reuses unchanged archive
+SHA256/SHA3-256 and extracted DLL content SHA256 checks before any runtime copy.
+Old CLI callers retain online behaviour. Hash failure leaves no installed runtime.
+Re-runs probe pinned SQLite source/version, loaded path and hash, and verify the
+venv base before hashed pip installation. Existing invalid output is refused;
+only a newly attempted failed runtime and owned temporary downloads are removed.
+Offline socket-blocked evidence: `tests/test_dev_setup.py` (PowerShell AST and
+preview, safety strings, local fake archive failures at each hash stage, CLI
+compatibility, git ignores). No real download or native installation is claimed.
+No existing test was edited in part B; part A's test-edit inventory remains intact.
+
+## T12 part A: disabled legacy archive (P2-B7)
+
+All disabled legacy package, GUI, CLI and Telegram instructions reside in `archives/legacy_autotrading/`. Earlier legacy source locations in historical evidence above refer to that archived tree; commit-pinned upstream paths remain historical evidence. The root LICENSE and upstream headers remain intact. The product never imports the archive; setuptools and PyInstaller exclude it. Tracked archived Python stays in quality-gate syntax, credential and G1 startup/order checks, and the complete legacy security assertions still run by source extraction only. The root README links to the archive instead of advertising upstream functionality. `.streamlit/config.toml` remains a setting for the active auxiliary `research_app.py`.
+
+Acceptance: `tests/test_repo_layout.py`, `tests/test_legacy_security.py`, `tests/test_quality_gate.py`, `tests/test_packaging.py`; exact pre/post static packaging inventory evidence in `docs/analysis/t12_payload_inventory.json`. This compares recipes and explicit inputs, not a newly built frozen installer. Existing-test edits are enumerated in `docs/analysis/t12_test_edits.json`; file decisions and verification limits are in `docs/analysis/t12_legacy_move_notes.md`.
+
+## T12 P2-B9 documentation layering
+
+README is limited to 150 lines. The Traditional Chinese user manual covers seven pages with disposable offscreen screenshots. Current state documents retain current status and open risks; complete original checkpoint text is preserved in literal history blocks with origin/main SHA, SHA-256 and line count. Historical text is evidence, not current operating guidance. Link and provenance checks are in tests/test_docs_layering.py. No runtime, G3 source or installer payload change is made by part C.
+
+The README history body is the byte-exact 374-line README.md from commit 7be525fcbf8e55d8c699422252fd8dd93f4649a6 (SHA-256 61174a23c71a8078f319256852a6c11907d26a4d6c3913a54191af92bdfffa36). All history headers carry an original-location relative-link banner; only docs/agent/history is excluded from current-link resolution. Hash, count, coverage and available git-object checks remain offline and bounded.

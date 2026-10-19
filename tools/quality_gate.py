@@ -23,7 +23,7 @@ SECRET_PATTERNS = {
     "slack-token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
     "telegram-token": re.compile(r"\b[0-9]{8,12}:[A-Za-z0-9_-]{35}\b"),
 }
-BANNED_IMPORTS = {"trader", "shioaji", "pickle", "subprocess"}
+BANNED_IMPORTS = {"archives", "trader", "shioaji", "pickle", "subprocess"}
 BANNED_CALLS = {"eval", "exec", "compile", "__import__"}
 
 
@@ -126,6 +126,24 @@ def scan(root: Path, history: bool = False) -> list[str]:
             continue
         findings.extend(secret_findings(source, name))
         if path.suffix == ".py":
+            # Tracked archived sources stay in syntax/secret and G1 scans.
+            tree = None
+            if name.startswith("archives/legacy_autotrading/"):
+                try:
+                    tree = ast.parse(source, filename=name)
+                except SyntaxError:
+                    pass  # python_findings reports invalid syntax redacted.
+            if tree is not None and name.startswith("archives/legacy_autotrading/"):
+                if name in {"archives/legacy_autotrading/gui.py",
+                            "archives/legacy_autotrading/trader/__init__.py"}:
+                    if not tree.body or not isinstance(tree.body[0], ast.Raise):
+                        findings.append(f"{name}: legacy startup must remain disabled")
+                for node in ast.walk(tree):
+                    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                            and isinstance(node.func.value, ast.Name)
+                            and node.func.value.id == "API"
+                            and node.func.attr in {"place_order", "place_comboorder"}):
+                        findings.append(f"{name}:{node.lineno}: legacy broker submission")
             if name.startswith('quantlab/'):
                 try:
                     findings.extend(core_import_findings(source, name))

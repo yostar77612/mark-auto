@@ -462,6 +462,8 @@ P0（快速修正，含真實 bug）
 | P1-16 安裝精靈的實際外觀（繁體中文） | 靜態測試確認 `[Languages]` 指向已核對雜湊的官方翻譯檔、自訂訊息已中文化、升級／解除安裝／資料保留相關行與修改前位元組相同；本機未安裝 Inno Setup，原生編譯由 CI `build` 工作驗證 | 在中文 Windows 執行安裝、升級、解除安裝，確認精靈、錯誤訊息與解除安裝提示皆為繁體中文且資料保留行為不變 |
 | 乾淨 Windows 10 環境 | 現有 `packaging/test_installer.ps1`、更新復原測試與 CI 安裝驗收腳本（在 CI 的 Windows 映像執行） | 在另一台乾淨的 Windows 10 電腦或虛擬機安裝並啟動，確認圖示、捷徑、工作列、「設定 → 應用程式」顯示正確 |
 | P1-08 交易日曆未內建 | 內建的期交所到期日僅含已由官方頁面核對的 TX／MTX／TMF 202510–202609 共 12 筆（`quantlab/data_files/`，含來源網址、擷取日期與原始 HTML 的 SHA-256）；`tools/update_taifex_expiries.py` 可由官方頁面重新產生 | 官方 2026 年曆只有色塊 PDF，無法機器核對，故交易日曆仍須手動提供；日後若期交所提供可機器讀取的休市日清單，再擴充並重新核對。更新資料時執行 `tools/update_taifex_expiries.py` 並檢視差異 |
+| P2-B8 `tools/dev_setup.ps1` 在乾淨 Windows 帳號的實跑 | 靜態檢查（PowerShell 語法剖析、無 LOCALAPPDATA 安裝目標、無不安全下載、使用 `$PSScriptRoot`）、以本機假工件驗證雙重雜湊不符會中止且不安裝、`-DryRun`／`-WhatIf` 只列計畫；測試皆離線 | 需要真實的乾淨 Windows 帳號與網路：在全新帳號 clone 專案後執行 `powershell -File tools/dev_setup.ps1`，確認 `.runtime-sqlite` 與 `.venv` 建在專案資料夾內（不在 `%LOCALAPPDATA%`）、雜湊驗證通過、`python desktop.py` 可開啟既有工作區；再用竄改過的雜湊確認腳本中止 |
+| 安裝程式／MSIX 建置 | 專案內容清單前後逐項相同（舊程式搬入 `archives/legacy_autotrading/` 且不在安裝包內） | 原生安裝包只由 CI `build` 工作驗證；請在實機安裝一次確認啟動與圖示 |
 | P2-B2 抽出模組的來源雜湊涵蓋範圍 | 驗證邏輯（有界數值、分析計畫驗證等）自 `research_analysis.py`／`walk_forward.py` 抽到 `quantlab/value_bounds.py`、`analysis_contracts.py`、`errors.py`、`configuration.py`、`runtime_support.py`；定義與原版 AST 逐一相同，八個鎖定檔與 producer profile 零差異，測試全過 | 這些新模組目前未列入 walk-forward／分析封包的來源雜湊清單（`walk_forward.SOURCE_FILES`、分析實作雜湊），因此修改它們不會改變既有溯源雜湊。這是刻意不動 G3 溯源邏輯的取捨；建議在下次有計畫的引擎版本升級（會追加新 profile）時，一併把這些模組納入雜湊清單並重新產生黃金基準 |
 
 ## 6. 不在本計畫範圍
