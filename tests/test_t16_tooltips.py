@@ -32,7 +32,6 @@ class TooltipCoverageTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
-        cls.app.setStyle('Fusion')
 
     def setUp(self):
         context = sandbox_ui()
