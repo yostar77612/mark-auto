@@ -163,7 +163,45 @@ class ReferenceLine:
                 raise ValueError(ui_text('charts.__post_init__.text_14'))
 
 
-class CandlestickChart(_order_lines.PaperOrderChartMixin, QWidget):
+class _ChartAnnotationMixin:
+    """Marker and reference-line setters (kept outside CandlestickChart to bound its size)."""
+
+    def set_markers(self, markers, *, trace):
+        if self.trace is None or trace != self.trace:
+            raise ValueError(ui_text('charts.set_markers.text_1'))
+        markers = tuple(markers)
+        if len(markers) > 100000 or any(not isinstance(m, ChartMarker) or m.index >= len(self.bars) for m in markers):
+            raise ValueError(ui_text('charts.set_markers.text_2'))
+        self.markers = markers
+        indexed = {}
+        for m in markers:
+            indexed.setdefault(m.index, []).append(m)
+        self._marker_index = indexed
+        self.update()
+
+    def set_reference_lines(self, lines, *, trace=None):
+        lines = tuple(lines)
+        if len(lines) > 16 or any(not isinstance(x, ReferenceLine) for x in lines):
+            raise ValueError(ui_text('charts.set_reference_lines.text_1'))
+        snapshots = [line for line in lines if line.snapshot_index is not None]
+        if snapshots:
+            if self.trace is None or trace != self.trace:
+                raise ValueError(ui_text('charts.set_reference_lines.text_2'))
+            if len(snapshots) > 6:
+                raise ValueError(ui_text('charts.set_reference_lines.text_3'))
+            for line in snapshots:
+                if line.snapshot_index >= len(self.bars) or self.bars[line.snapshot_index].end != line.as_of:
+                    raise ValueError(ui_text('charts.set_reference_lines.text_4'))
+        self.reference_lines = lines
+        self.update()
+
+    def visible_reference_lines(self):
+        """End-event snapshots never project backward into a historical viewport."""
+        start, end = self.visible_range
+        return tuple(line for line in self.reference_lines if line.snapshot_index is None or start <= line.snapshot_index < end)
+
+
+class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin, QWidget):
     """Wheel zoom / left-drag pan / hover OHLC; arrows pan, +/- zoom, Home reset.
 
     set_series accepts MarketSeries or sequence of MarketBar. Optional ChartTrace
@@ -326,45 +364,11 @@ class CandlestickChart(_order_lines.PaperOrderChartMixin, QWidget):
         unavailable = self._unavailable_panes if pane else self._unavailable_overlays
         return ui_text('charts._legend_label.text_1').format(label) if label in unavailable else label
 
-    def set_markers(self, markers, *, trace):
-        if self.trace is None or trace != self.trace:
-            raise ValueError(ui_text('charts.set_markers.text_1'))
-        markers = tuple(markers)
-        if len(markers) > 100000 or any(not isinstance(m, ChartMarker) or m.index >= len(self.bars) for m in markers):
-            raise ValueError(ui_text('charts.set_markers.text_2'))
-        self.markers = markers
-        indexed = {}
-        for m in markers:
-            indexed.setdefault(m.index, []).append(m)
-        self._marker_index = indexed
-        self.update()
-
     def set_layer_visible(self, kind, visible):
         if kind not in self.layer_visibility:
             raise ValueError(ui_text('charts.set_layer_visible.text_1'))
         self.layer_visibility[kind] = bool(visible)
         self.update()
-
-    def set_reference_lines(self, lines, *, trace=None):
-        lines = tuple(lines)
-        if len(lines) > 16 or any(not isinstance(x, ReferenceLine) for x in lines):
-            raise ValueError(ui_text('charts.set_reference_lines.text_1'))
-        snapshots = [line for line in lines if line.snapshot_index is not None]
-        if snapshots:
-            if self.trace is None or trace != self.trace:
-                raise ValueError(ui_text('charts.set_reference_lines.text_2'))
-            if len(snapshots) > 6:
-                raise ValueError(ui_text('charts.set_reference_lines.text_3'))
-            for line in snapshots:
-                if line.snapshot_index >= len(self.bars) or self.bars[line.snapshot_index].end != line.as_of:
-                    raise ValueError(ui_text('charts.set_reference_lines.text_4'))
-        self.reference_lines = lines
-        self.update()
-
-    def visible_reference_lines(self):
-        """End-event snapshots never project backward into a historical viewport."""
-        start, end = self.visible_range
-        return tuple(line for line in self.reference_lines if line.snapshot_index is None or start <= line.snapshot_index < end)
 
     def bar_details(self, index):
         b = self.bars[index]
@@ -467,7 +471,6 @@ class CandlestickChart(_order_lines.PaperOrderChartMixin, QWidget):
             fm.elidedText(ui_text('charts.paintEvent.text_1').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
         )
         text(12, 43, _theme.chart_legend(self))
-        text(12, 43, ui_text('charts.paintEvent.text_2'))
         if self.paper_orders.notice:
             text(12, 81, self.paper_orders.notice)
         self.last_rendered_bar_count = 0
