@@ -1236,7 +1236,7 @@ from desktop_forms import (
 from desktop_pages.bindings import SharedStateBindings
 from desktop_pages.mount import mount_pages
 import desktop_pages.job_progress as _job_progress
-import desktop_privacy as _privacy
+import desktop_pages.app_header as _app_header
 
 
 def _install_window_support(window):
@@ -1257,6 +1257,7 @@ def _install_window_support(window):
 
     install_shortcuts(window)
     install_accessibility(window)
+    window.app_header.refresh()
 
 
 # fmt: off
@@ -1302,18 +1303,12 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.resize(1366, 768)
         apply_theme(self)
         body = QWidget(); outer = QVBoxLayout(body)
-        banner = QCheckBox(ui_text('ui.__init__.text_3'))
-        banner.setObjectName('research_mode_status')
-        outer.addWidget(banner)
-        explanation = QLabel(ui_text('ui.__init__.text_4'))
-        explanation.setObjectName('research_mode_explanation'); explanation.setWordWrap(True)
-        outer.addWidget(explanation); explanation.hide(); banner.toggled.connect(explanation.setVisible)
-        self.privacy = _privacy.PrivacyState(self, outer, banner)
+        _app_header.install_header(self, outer, paper_risk_limits().max_quote_age_seconds)
         horizontal = QHBoxLayout(); outer.addLayout(horizontal, 1)
         self.navigation = QListWidget(); self.navigation.setObjectName('navigation'); self.navigation.setMaximumWidth(180)
         self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
         self.status = QLabel(ui_text('ui.__init__.text_5')); self.status.setObjectName('status'); self.status.setWordWrap(True)
-        outer.addWidget(self.status)
+        self.app_header.layout().insertWidget(self.app_header.layout().count() - 1, self.status)
         self.notification = QLabel(''); self.notification.setObjectName('local_notification'); self.notification.setWordWrap(True); self.notification.hide(); outer.addWidget(self.notification)
         self.notification.setTextFormat(Qt.TextFormat.RichText)
         self.notification.linkActivated.connect(self._notification_link)
@@ -1368,6 +1363,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             window_minimum_size=lambda: (self.minimumWidth(), self.minimumHeight()),
         )
         mount_pages(self)
+        self.app_header.bind_controls()
         self.privacy.attach_previews()
         # Load the optional UI adapter only when this operation is requested.
         from desktop_pages.onboarding import install_onboarding
@@ -1652,7 +1648,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             event.ignore(); self.status.setText(ui_text('ui.closeEvent.text_3')); return
         self._safe(self.save_market_preferences)
         self.chatgpt_controller.set_host_available(False)
-        self.timer.stop(); event.accept()
+        self.timer.stop(); self.app_header.timer.stop(); event.accept()
 
 
     _result_snapshot_lines = staticmethod(result_snapshot_lines)

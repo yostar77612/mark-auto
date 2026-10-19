@@ -13,6 +13,8 @@ TOUCHED = (
     'quantlab/agent_read_tools.py',
     'quantlab/agent_tool_contract.py',
     'quantlab/agent_tools.py',
+    'desktop_pages/app_header.py',
+    'tests/test_header_c1.py',
     'quantlab/replay_pacing.py',
     'quantlab/paper_replay.py',
     'desktop_pages/replay_controls.py',
