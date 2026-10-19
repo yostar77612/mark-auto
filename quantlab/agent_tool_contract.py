@@ -79,13 +79,29 @@ ROW_SCHEMA = {
 RETURN_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
-    'required': ['ok', 'items', 'truncated', 'limit', 'next_cursor'],
+    'required': ['ok', 'items', 'count', 'total', 'truncated', 'limit', 'next_cursor', 'reason', 'field_truncations'],
     'properties': {
         'ok': {'const': True},
         'items': {'type': 'array', 'maxItems': MAX_LIMIT, 'items': ROW_SCHEMA},
         'truncated': {'type': 'boolean'},
         'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_LIMIT},
-        'next_cursor': {'type': ['integer', 'null'], 'minimum': 0},
+        'next_cursor': {'type': ['string', 'null'], 'minLength': 66, 'maxLength': 128},
+        'count': {'type': 'integer', 'minimum': 0, 'maximum': MAX_LIMIT},
+        'total': {'type': 'integer', 'minimum': 0},
+        'reason': {'enum': [None, 'item_limit', 'byte_limit', 'field_limit']},
+        'field_truncations': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['item', 'field', 'truncated'],
+                'properties': {
+                    'item': {'type': 'integer', 'minimum': 0, 'maximum': MAX_LIMIT - 1},
+                    'field': {'type': 'array', 'items': {'type': ['string', 'integer']}},
+                    'truncated': {'const': True},
+                },
+            },
+        },
     },
 }
 DOCUMENT_SCHEMA = {

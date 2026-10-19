@@ -159,9 +159,13 @@
       "required": [
         "ok",
         "items",
+        "count",
+        "total",
         "truncated",
         "limit",
-        "next_cursor"
+        "next_cursor",
+        "reason",
+        "field_truncations"
       ],
       "properties": {
         "ok": {
@@ -199,10 +203,59 @@
         },
         "next_cursor": {
           "type": [
-            "integer",
+            "string",
             "null"
           ],
+          "minLength": 66,
+          "maxLength": 128
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "total": {
+          "type": "integer",
           "minimum": 0
+        },
+        "reason": {
+          "enum": [
+            null,
+            "item_limit",
+            "byte_limit",
+            "field_limit"
+          ]
+        },
+        "field_truncations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "item",
+              "field",
+              "truncated"
+            ],
+            "properties": {
+              "item": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 49
+              },
+              "field": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ]
+                }
+              },
+              "truncated": {
+                "const": true
+              }
+            }
+          }
         }
       }
     }

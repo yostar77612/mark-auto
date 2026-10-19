@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 from types import SimpleNamespace
 
+from quantlab.agent_return import bounded_return
 from quantlab.agent_tool_contract import MAX_LIMIT, MAX_RETURN_BYTES, RETURN_SCHEMA, validate
 from quantlab.agent_tools import Registry
 from quantlab.core import content_hash
@@ -158,15 +159,6 @@ def _time(value):
     return datetime.fromisoformat(value.replace('Z', '+00:00')).isoformat()
 
 
-def _page(rows, arguments):
-    cursor, limit = arguments.get('cursor', 0), arguments.get('limit', MAX_LIMIT)
-    if cursor > len(rows):
-        raise ValueError
-    items = rows[cursor : cursor + limit]
-    end = cursor + len(items)
-    return {'ok': True, 'items': items, 'truncated': end < len(rows), 'limit': limit, 'next_cursor': end if end < len(rows) else None}
-
-
 def _paper_rows(context, name):
     if not isinstance(context, ReadContext) or context.paper_journal is None:
         raise ValueError
@@ -194,7 +186,7 @@ def _paper_rows(context, name):
 
 def _read(name, context, arguments):
     if name.startswith('get_paper_'):
-        return _page(_paper_rows(context, name), arguments)
+        return _paper_rows(context, name)
     if name == 'list_saved_results':
         # Listing verifies approved records too: stale/corrupt evidence never
         # produces plausible partial results, filenames or protected row counts.
@@ -202,7 +194,7 @@ def _read(name, context, arguments):
         for identity in sorted(_approved(context)):
             _result(context, identity)
             rows.append({'id': identity})
-        return _page(rows, arguments)
+        return rows
     identity = _identity(arguments['result_id'])
     result = _result(context, identity)
     if name == 'get_backtest_summary':
@@ -235,7 +227,7 @@ def _read(name, context, arguments):
         rows = [dict(index=i, timestamp=_time(row['timestamp']), equity=_number(row['equity'])) for i, row in enumerate(result.equity)]
     else:
         raise ValueError
-    return _page(rows, arguments)
+    return rows
 
 
 def _row_schema(name):
@@ -273,7 +265,7 @@ def create_registry():
     schema['properties']['items']['items'] = {'type': 'object'}
     registry = Registry(return_schema=schema)
     for name in TOOL_NAMES:
-        fields = {'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_LIMIT}, 'cursor': {'type': 'integer', 'minimum': 0, 'maximum': MAX_SAVED_ITEMS}}
+        fields = {'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_LIMIT}, 'cursor': {'type': 'string', 'minLength': 66, 'maxLength': 128}}
         required = []
         if name != 'list_saved_results' and not name.startswith('get_paper_'):
             fields['result_id'] = {'type': 'string', 'minLength': 64, 'maxLength': 64}
@@ -300,9 +292,10 @@ def _handler(name):
     def call(context, arguments):
         # Validate all fields before the shared D11 serialization/byte bound.
         output = _read(name, context, arguments)
-        if any(not validate(row, _row_schema(name)) for row in output['items']):
+        if any(not validate(row, _row_schema(name)) for row in output):
             raise ValueError
-        return output
+        scope = json.dumps([name, {key: value for key, value in arguments.items() if key != 'cursor'}], sort_keys=True)
+        return bounded_return(output, limit=arguments.get('limit', MAX_LIMIT), cursor=arguments.get('cursor'), scope=scope)
 
     return call
 
