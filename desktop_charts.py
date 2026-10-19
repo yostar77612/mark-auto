@@ -1,7 +1,8 @@
 """Bounded native read-only OHLCV chart. Host owns data, aggregation and indicators.
 
 No network, trading, indicator calculation or inferred execution. All indices refer
-exactly to the supplied immutable series. Changing series clears dependent layers.
+exactly to the supplied immutable series. Changing series clears index-based layers;
+time/price drawings survive aggregation changes.
 """
 
 from desktop_strings import ui_text
@@ -17,6 +18,37 @@ from types import MappingProxyType
 from PySide6.QtCore import Qt, QRectF, QPointF, Signal
 from PySide6.QtGui import QColor, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import QWidget
+import quantlab.chart_drawings as _drawings
+
+
+def _paint_drawings(painter, drawings, bars, rect, x, y):
+    """Project durable time/price anchors only at paint time; clip all geometry."""
+    painter.save()
+    painter.setClipRect(rect)
+    painter.setPen(QPen(QColor('#64d9df'), 2))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    for drawing in drawings:
+        projected = [_drawings.project_anchor(a, bars) for a in _drawings.anchors(drawing)]
+        if any(point is None for point in projected):
+            continue
+        points = [QPointF(x(position), y(price)) for position, price in projected]
+        if any(not math.isfinite(point.y()) for point in points):
+            continue
+        first = points[0]
+        if isinstance(drawing, _drawings.HorizontalLine):
+            painter.drawLine(QPointF(rect.left(), first.y()), QPointF(rect.right(), first.y()))
+        elif isinstance(drawing, _drawings.Box):
+            painter.drawRect(QRectF(first, points[1]).normalized())
+        else:
+            last = points[1]
+            if isinstance(drawing, _drawings.Ray):
+                dx, dy = last.x() - first.x(), last.y() - first.y()
+                if dx or dy:
+                    # Extend beyond the viewport in its directed screen-space vector.
+                    factor = 1 + (rect.width() + rect.height() + abs(first.x() - rect.left()) + abs(first.y() - rect.top())) / max(abs(dx), abs(dy))
+                    last = QPointF(first.x() + dx * factor, first.y() + dy * factor)
+            painter.drawLine(first, last)
+    painter.restore()
 
 
 def _display_time(value, date_only=''):
@@ -175,6 +207,7 @@ class CandlestickChart(QWidget):
         self.pane_styles = {}
         self.markers = ()
         self.reference_lines = ()
+        self.drawings = ()
         self.layer_visibility = {'signal': True, 'fill': True}
         self.source_label = ui_text('charts.__init__.text_2')
         self.status_label = ''
@@ -244,6 +277,15 @@ class CandlestickChart(QWidget):
         if timeframe != self.timeframe:
             self.timeframe = timeframe
             self.timeframe_changed.emit(timeframe)
+
+    def set_drawings(self, drawings):
+        """Set at most 200 display-only objects; never emit a market request.
+
+        Hosts select the instrument's DrawingStore/History explicitly. Unlike
+        index-based result layers, these immutable anchors survive set_series.
+        """
+        self.drawings = _drawings.checked(drawings)
+        self.update()
 
     def set_overlays(self, values, *, panes=None, pane_styles=None):
         def checked(mapping):
@@ -482,6 +524,7 @@ class CandlestickChart(QWidget):
         p.setPen(self.TEXT)
         text(12, volume_top - 5, ui_text('charts.paintEvent.text_7'))
         self._draw_lines(p, self.overlays, start, end, x, y, r)
+        _paint_drawings(p, self.drawings, self.bars, r, x, y)
         legend_x = r.left()
         for j, label in enumerate(self.overlays):
             p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))

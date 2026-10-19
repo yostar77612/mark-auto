@@ -21,6 +21,7 @@ TOUCHED = (
     'desktop_theme.py',
     'desktop_pages/settings_layout.py',
     'desktop_pages/result_widgets.py',
+    'quantlab/chart_drawings.py',
     'desktop_market.py',
     'desktop_pages/market.py',
     'desktop_chatgpt_states.py',
