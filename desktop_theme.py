@@ -241,12 +241,17 @@ def install_appearance_controls(parent, layout, store):
     return controls
 
 
+_PANEL_QSS = """
+QWidget[themePart="panelCard"] { border:1px solid @table_grid@; border-radius:6px; }
+QWidget[themePart="panelTitleBar"] { background:@background@; color:@text@; border:0; border-left:3px solid @focus_border@; }
+QGroupBox[themePart="panelTitle"] { background:@background@; color:@text@; border:0; margin:0; padding:0; font-weight:600; }
+QGroupBox[themePart="panelTitle"]::title { subcontrol-origin:margin; subcontrol-position:center left; padding:0; }
+"""
+
 _MARKET_QSS = """
 QWidget#market_dashboard { background:@background@; color:@text@; }
 QWidget#market_dashboard QWidget { background:@background@; color:@text@; }
 QWidget#market_dashboard QLabel { color:@text@; }
-QWidget#market_dashboard QGroupBox { border:1px solid @table_grid@; border-radius:6px; margin-top:10px; padding:9px; font-weight:600; color:@text@; }
-QWidget#market_dashboard QGroupBox::title { subcontrol-origin:margin; left:10px; }
 QWidget#market_dashboard QLineEdit, QWidget#market_dashboard QComboBox, QWidget#market_dashboard QSpinBox, QWidget#market_dashboard QDoubleSpinBox, QWidget#market_dashboard QListWidget, QWidget#market_dashboard QTableWidget { background:@input_background@; color:@market_input_text@; border:1px solid @input_border@; border-radius:3px; padding:4px; selection-background-color:@market_selection@; }
 QWidget#market_dashboard QPushButton { background:@market_button@; color:@market_button_text@; padding:6px 9px; border:1px solid @market_button_border@; border-radius:4px; }
 QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid @focus_border@; }
@@ -255,12 +260,11 @@ QWidget#market_dashboard QHeaderView::section { background:@muted_background@; c
 QWidget#market_dashboard QTabBar::tab { background:@muted_background@; color:@header_text@; padding:7px; }
 QWidget#market_dashboard QTabBar::tab:selected { background:@tab_selection@; }
 QWidget#market_dashboard QLabel#market_title { font-size:@font_market_title@px; font-weight:700; }
-QWidget#market_dashboard QGroupBox[themePart="marketCard"] { padding:3px; }
 QWidget#market_dashboard QLabel#market_message { color:@market_warning@; }
 QWidget#market_dashboard QLabel[status="success"] { color:@market_fall@; }
 QWidget#market_dashboard QLabel[status="danger"] { color:@market_rise@; }
 QWidget#market_dashboard QLabel[status="neutral"] { color:@text@; }
-"""
+""" + _PANEL_QSS.replace('QWidget[', 'QWidget#market_dashboard QWidget[').replace('QGroupBox[', 'QWidget#market_dashboard QGroupBox[')
 
 _QSS = """
 QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
@@ -320,7 +324,7 @@ def _expand(template, theme=DEFAULT_THEME, convention=DEFAULT_CONVENTION):
 
 def build_app_stylesheet(theme=DEFAULT_THEME, convention=DEFAULT_CONVENTION):
     """Return the application styles (market dashboard styles are widget-scoped)."""
-    return _expand(_QSS, theme, convention)
+    return _expand(_QSS + _PANEL_QSS, theme, convention)
 
 
 def build_market_stylesheet(theme=DEFAULT_THEME, convention=DEFAULT_CONVENTION):
@@ -361,6 +365,8 @@ def apply_theme(target=None):
         if target.styleSheet() != stylesheet:
             target.setStyleSheet(stylesheet)
         for widget in [target] + target.findChildren(QWidget):
+            if widget.property('themePart') in ('panelCard', 'panelTitleBar', 'panelTitle'):
+                set_theme_property(widget, 'themePart', widget.property('themePart'))
             if widget.objectName() == 'market_dashboard':
                 apply_market_theme(widget)
             if isinstance(widget, QLabel) and widget.property('financialSign') is not None:

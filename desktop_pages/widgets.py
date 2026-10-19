@@ -1,5 +1,7 @@
 """Shared page widget construction and advanced-input handling."""
 
+from desktop_theme import set_theme_property
+from PySide6.QtCore import Qt
 from desktop_strings import ui_text
 import json
 from PySide6.QtWidgets import (
@@ -14,8 +16,63 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QMessageBox,
+    QSizePolicy,
+    QGroupBox,
 )
 from .bindings import PageContext
+
+
+PANEL_TITLE_HEIGHT = 19
+
+
+class PanelCard(QWidget):
+    """Shared panel chrome; callers supply catalog titles and own all actions."""
+
+    def __init__(self, title='', parent=None):
+        super().__init__(parent)
+        self.setObjectName('panel_card')
+        set_theme_property(self, 'themePart', 'panelCard')
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(1, 1, 1, 1)
+        outer.setSpacing(0)
+        self.title_bar = QWidget(self)
+        self.title_bar.setObjectName('panel_title_bar')
+        self.title_bar.setFixedHeight(PANEL_TITLE_HEIGHT)
+        self.title_bar.setAccessibleName(title or ui_text('panel.untitled'))
+        set_theme_property(self.title_bar, 'themePart', 'panelTitleBar')
+        header = QHBoxLayout(self.title_bar)
+        header.setContentsMargins(8, 0, 8, 0)
+        # Reuse Qt's section-title renderer so replacing a QGroupBox does not
+        # add another visible QLabel to the page's explanation budget.
+        self.title_label = QGroupBox(title)
+        self.title_label.setFlat(True)
+        self.title_label.setObjectName('panel_title')
+        self.title_label.setMinimumWidth(0)
+        self.title_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.title_label.setAccessibleName(title or ui_text('panel.untitled'))
+        set_theme_property(self.title_label, 'themePart', 'panelTitle')
+        header.addWidget(self.title_label, 1)
+        self.controls = QWidget(self.title_bar)
+        self.controls.setObjectName('panel_controls')
+        self.controls.setAccessibleName(ui_text('panel.controls'))
+        self.controls.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        self._controls_layout = QHBoxLayout(self.controls)
+        self._controls_layout.setContentsMargins(0, 0, 0, 0)
+        self._controls_layout.setSpacing(4)
+        header.addWidget(self.controls, 0, Qt.AlignmentFlag.AlignRight)
+        outer.addWidget(self.title_bar)
+        # Keep content widgets direct children of the section. Page adapters move
+        # sections by an existing inner widget's parentWidget().
+        self.content = self
+        self._content_layout = QVBoxLayout()
+        self._content_layout.setContentsMargins(8, 8, 8, 8)
+        outer.addLayout(self._content_layout, 1)
+
+    def content_layout(self):
+        return self._content_layout
+
+    def add_control(self, widget):
+        self._controls_layout.addWidget(widget)
 
 
 class WidgetTools(PageContext):

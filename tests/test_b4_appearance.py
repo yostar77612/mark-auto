@@ -34,11 +34,11 @@ class AppearanceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    # Re-pinned after UI-1 C2 (onboarding chip rules) and C4 (AsyncStatus rules); the market stylesheet digest is unchanged.
+    # Re-pinned for C3 shared PanelCard selectors; all exact equality assertions remain.
     def test_default_stylesheets_are_17b5b1b_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, 'b94b311f35a872285f24ec4fef467ea00b73a548b2881f9300ed9d9e909a9217'),
-            (theme.build_market_stylesheet, 'da36c77e88d08b8d06c2dab4a44cab9b92d403f2800d1080e96535e32949a571'),
+            (theme.build_app_stylesheet, '5aac4a6f3d5d63297dd5a6ca4edae927ed7ce23d176390bb9f8b8315563397db'),
+            (theme.build_market_stylesheet, '14687e061e7e41a63632c9c7ba300e315efb83ad9cabcd8e871bc7b9b7025a86'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)
             self.assertEqual(builder(), builder('dark'))

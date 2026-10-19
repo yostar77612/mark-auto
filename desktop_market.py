@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QSplitter,
-    QGroupBox,
     QCheckBox,
     QSpinBox,
     QDoubleSpinBox,
@@ -162,6 +161,9 @@ class MarketDashboard(QWidget):
     preferences_changed = Signal()
 
     def __init__(self, parent=None):
+        # Delay package initialization to avoid the hosted MarketPage import cycle.
+        from desktop_pages.widgets import PanelCard
+
         super().__init__(parent)
         self.setObjectName('market_dashboard')
         apply_market_theme(self)
@@ -209,9 +211,8 @@ class MarketDashboard(QWidget):
             ('MXF', ui_text('market.__init__.text_8')),
             ('TMF', ui_text('market.__init__.text_9')),
         ]:
-            group = QGroupBox(title)
-            group.setProperty('themePart', 'marketCard')
-            layout = QVBoxLayout(group)
+            group = PanelCard(title)
+            layout = group.content_layout()
             layout.setContentsMargins(8, 8, 8, 6)
             value = _label(ui_text('market.__init__.text_10'), 'market_card_' + key)
             layout.addWidget(value)
@@ -323,8 +324,8 @@ class MarketDashboard(QWidget):
         right = QWidget()
         right_layout = QVBoxLayout(right)
         self.trading_labels = {}
-        state = QGroupBox(ui_text('market.__init__.text_37'))
-        state_layout = QVBoxLayout(state)
+        state = PanelCard(ui_text('market.__init__.text_37'))
+        state_layout = state.content_layout()
         for key, title in [
             ('strategy', ui_text('market.__init__.text_38')),
             ('paper', ui_text('market.__init__.text_39')),
@@ -335,8 +336,9 @@ class MarketDashboard(QWidget):
             self.trading_labels[key] = label
         state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
         right_layout.addWidget(state)
-        group = QGroupBox(ui_text('market.__init__.text_43'))
-        grid = QGridLayout(group)
+        group = PanelCard(ui_text('market.__init__.text_43'))
+        grid = QGridLayout()
+        group.content_layout().addLayout(grid)
         row = 0
         for key, config in DEFAULT_INDICATORS.items():
             check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.__init__.text_44').format(key))
