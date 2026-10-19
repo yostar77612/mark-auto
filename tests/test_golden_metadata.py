@@ -16,9 +16,11 @@ from tools.run_test_group import core_shard_for_module
 FIXTURES = Path(__file__).parent / 'fixtures'
 # Canonical JSON digests from git show 17b5b1b:tests/fixtures/<name>,
 # established with a full deep-equality check stripping only B6 entry metadata.
+# Re-pinned after B3: the 23 analysis hash leaves changed only because quantlab/indicators.py source bytes are bound into them
+# (see docs/analysis/b3_golden_changes.md); verified leaf-by-leaf against origin/main with metadata stripped.
 BASELINE = {
     'engine_golden.json': 'dc25575a34ab7847bdf64cf6ea13dd439e2afe471a07076dc57f864ed14f94a9',
-    'ui_operations_golden.json': '64c1b4bdf86e7479477cf15f272f00d3b37fa0357c45f23d57d3a8766475c8bb',
+    'ui_operations_golden.json': '309af774866f26297f853750132793849fdfe6e9ea5c5145b0092bec41050bc9',
 }
 
 
