@@ -17,6 +17,7 @@ TOUCHED = (
     'quantlab/desktop_feedback.py',
     'desktop_pages/paper.py',
     'quantlab/errors.py',
+    'desktop_privacy.py',
     'desktop_theme.py',
     'desktop_pages/settings_layout.py',
     'desktop_pages/result_widgets.py',

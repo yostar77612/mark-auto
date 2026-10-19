@@ -327,6 +327,8 @@
   "preview_walk_forward",
   "preview_walk_forward_prerequisite",
   "price",
+  "privacy_export_notice",
+  "privacy_toggle",
   "purge_bars",
   "qt_scrollarea_hcontainer",
   "qt_scrollarea_vcontainer",

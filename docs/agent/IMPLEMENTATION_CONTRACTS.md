@@ -1263,3 +1263,77 @@ fixture uses the existing sandbox_ui helper; product I/O is not patched.
 Full-suite/Linux CI exit codes are **pending controller verification** under
 the lane's focused-test-only rule. Changes remain uncommitted as instructed;
 the controller owns the single B4 commit and its required co-author trailer.
+
+
+## LC-B11: display-only privacy mode
+
+One window-owned `desktop_privacy.PrivacyState` controls all seven pages. The
+one-click, accessible `privacy_toggle` shares the existing research-banner row;
+it defaults off. Settings use `privacy_mode`, accepting only JSON boolean true;
+missing or corrupt values fall back to off. Existing settings validation remains
+fail-closed. All new labels live in desktop_strings.py.
+
+`mask_money(value)` always returns four bullets (`????`), including None, zero,
+negative, non-finite and arbitrarily large inputs. `mask_account_id(value)`
+returns four bullets plus the last four characters only when the ID is longer
+than four characters; IDs of length zero through four are fully masked. The
+suffix is characters, not digits; no prefix or original length is retained.
+
+Scope: money/account columns in research results, comparisons (including
+transposed comparisons), fills, paper positions/orders/fills and market account
+tables; KPI and summary cards; market price cards; equity value axes/tooltips;
+candlestick prices, crosshair OHLC/change, reference labels and fill prices/costs.
+The money classification includes desktop_presentation.AMOUNTS plus equity,
+price/average/limit/fill/stop prices, OHLC, cost/fees, pnl/balance and initial and
+maintenance margins. Account identifiers use account_id. Symbols, timestamps,
+order status, quantities and ratio metrics retain their original table text.
+Legends containing only indicator names/periods remain unchanged.
+
+All read-only detail/export-preview editors redact structured money/account
+fields recursively. Unknown non-JSON preview text is hidden entirely while on;
+summary-card nested records are likewise hidden conservatively. Editable request
+forms retain their raw input values. The cached original display is restored
+exactly on a second toggle. Toggling uses already-present widgets and cached
+renderers, without refresh_views, worker jobs or database queries.
+
+Export decision: exported FILES ALWAYS retain unmasked raw data. Privacy is for
+screen display and table clipboard copies only, not file sanitization. A visible
+notice beside the toggle explicitly says exported files retain unmasked original
+data (`privacy.exports_raw`). No separate masked-file export is introduced.
+The preview is masked independently. Tests compare actual report export bytes
+with privacy off/on and assert the notice text.
+
+Original display strings/tooltips are cached in Python attributes outside Qt
+model roles. Sensitive display, tooltip and accessibility text are replaced;
+UserRole sort/model data are unchanged. Raw business records, hashes, cache keys,
+DBs and export serializers never receive a masked value. Default-off formatters
+use their original output paths; no snapshot fixture images were regenerated.
+Live trading and all existing admission, budget, OOS and timeout gates are untouched.
+
+Validation from lane-c (2026-10-19), base HEAD
+`205aa138ce6a224ce461322b4fd335a382e874a1`:
+
+- Shared Python unittest discovery, test_b11_privacy.py: 8 tests, exit 0,
+  approximately 1.4 seconds total. No show, setStyle, network, subprocess or sleeps.
+  Includes the unchanged public-name oracle, seven-page widget enumeration,
+  immediate toggles and repopulation, roles, source hashes, previews, comparisons,
+  chart builders, settings corruption, accessibility naming/focus and raw exports.
+- test_import_graph.py: 4 tests, exit 0; test_no_hardcoded_ui_text.py: 5 tests,
+  exit 0. New module registered additively in both inventories and root layout;
+  stylesheet scan discovers new desktop modules automatically.
+- Ruff 0.16.10 check / format --check, Python 3.11 py_compile of changed Python
+  files, quality_gate and git diff --check: exit 0.
+- G3 paths plus quantlab/saved_candidate_pool.py: git diff 17b5b1b empty.
+  PROJECT_STATE.md, optimization plan and ACCEPTANCE scores are unchanged.
+- test_repo_layout.py: 4 pass; tracked-root assertion cannot include the new
+  untracked module until the controller stages it. An intent-to-add attempt was
+  denied by the sandbox's shared worktree index.lock ACL. No test was weakened.
+- GitNexus status found no index. analyze generated local graph data but could
+  not register it (sandbox denies the global registry write); the explicit lane
+  query consequently reports repository not found. Direct source review used.
+
+Controller handoff: broader tests, default raster snapshot comparison and full
+visual contrast/truncation checks remain unverified in this lane. Changes are
+intentionally UNCOMMITTED per the task's common rules. The controller must stage
+and make the single B11 commit with its required Co-Authored-By trailer, record
+that final SHA, and rerun tracked-root validation. No commit or PR was created.

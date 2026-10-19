@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from desktop_forms import PARAM_LABELS
 from desktop_presentation import display_number, display_status, result_name
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 from .result_widgets import ResultTable, MISSING, shown, taipei_time, column_label
 
 
@@ -65,8 +66,11 @@ class SavedResultsTable(ResultTable):
             for r, (path, row) in enumerate(records):
                 for c in range(self.columnCount()):
                     item = self.item(r, c)
-                    item.setText(safe_text(item.text()))
+                    raw, roles = item._privacy_raw
+                    item.setText(safe_text(raw))
+                    item.setToolTip(roles[0] or '')
                     item.setToolTip(str(path) + '\n' + item.toolTip())
+                    _privacy.item_display(self, item, FIELDS[c])
                 item = self.item(r, 0)
                 item.setData(PATH_ROLE, path)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -126,3 +130,4 @@ class SideBySideTable(ResultTable):
         for c, row in enumerate(rows, 1):
             for r, key in enumerate(keys):
                 self.item(r, c).setToolTip(str(row.get(key, '')) + '\n' + str(row.get(key + '_reason', '')))
+                _privacy.item_display(self, self.item(r, c), key)

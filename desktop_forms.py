@@ -7,6 +7,7 @@ QDoubleSpinBox rounding. Backend validation remains authoritative.
 """
 
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 from desktop_theme import FINANCIAL_FIELDS, set_financial_item
 from desktop_timeinput import DateInput, DATE_KEYS, TIME_KEYS, install_date_columns, open_date_editors
 from copy import deepcopy
@@ -961,6 +962,7 @@ class ResultTable(QTableWidget):
                 item.setToolTip(str(row.get(key)))
                 if key in FINANCIAL_FIELDS:
                     set_financial_item(self, item, row.get(key))
+                _privacy.item_display(self, item, key)
                 self.setItem(i, j, item)
         self.resizeColumnsToContents()
         for j in range(len(columns)):
@@ -980,7 +982,22 @@ class SummaryCard(QWidget):
         layout.addWidget(self.label)
 
     def set_values(self, values):
-        self.label.setText('\n'.join(ui_text('forms.set_values.text_1').format(RESULT_LABELS.get(k, k), readable(v, k)) for k, v in values.items()))
+        _privacy.bind_text(
+            self.label,
+            lambda: self.label.setText(
+                '\n'.join(
+                    ui_text('forms.set_values.text_1').format(
+                        RESULT_LABELS.get(k, k),
+                        (
+                            _privacy.mask_money(v)
+                            if _privacy.enabled(self.label) and isinstance(v, (dict, list, tuple))
+                            else _privacy.display(self.label, readable(v, k), k)
+                        ),
+                    )
+                    for k, v in values.items()
+                )
+            ),
+        )
 
 
 # These adapters only present verified report fields. Raw records remain in the
@@ -1023,10 +1040,12 @@ def _report_number(value, key=""):
     return display_number(value, key)
 
 
-def backtest_summary_text(values):
+def backtest_summary_text(values, *, private=False):
     """Bounded Traditional Chinese presentation, preserving exact scalar values."""
 
     def metric(key):
+        if private and key in _privacy.MONEY_FIELDS:
+            return _privacy.mask_money(None)
         value = values.get(key)
         if value is None:
             return ui_text('forms.metric.text_1') if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else ui_text('forms.metric.text_2')
@@ -1091,7 +1110,7 @@ class BacktestSummaryCard(SummaryCard):
     """A report-only view; other summary cards retain their original contract."""
 
     def set_values(self, values):
-        self.label.setText(backtest_summary_text(values))
+        _privacy.bind_text(self.label, lambda: self.label.setText(backtest_summary_text(values, private=_privacy.enabled(self.label))))
 
 
 _FILL_REASONS = {
@@ -1155,7 +1174,7 @@ class BacktestFillsTable(ResultTable):
             )
             for column in range(self.columnCount()):
                 item = self.item(index, column)
-                item.setToolTip(str(row.get(self._columns[column], ui_text('forms.set_rows.text_9'))) + '\n' + detail)
+                _privacy.item_tooltip(self, item, str(row.get(self._columns[column], ui_text('forms.set_rows.text_9'))) + '\n' + detail)
         self.resizeColumnsToContents()
         for column in range(self.columnCount()):
             self.setColumnWidth(column, min(self.columnWidth(column), 340))
@@ -1164,7 +1183,7 @@ class BacktestFillsTable(ResultTable):
 _CANDIDATE_EVALUATION_LABELS = STATUS_LABELS
 
 
-def candidate_summary_text(values):
+def candidate_summary_text(values, *, private=False):
     """Bounded view of saved split records; never recalculate qualification."""
 
     def eligibility(value):
@@ -1177,6 +1196,8 @@ def candidate_summary_text(values):
         )
 
     def metric(metrics, key):
+        if private and key in _privacy.MONEY_FIELDS:
+            return _privacy.mask_money(None)
         value = metrics.get(key)
         if value is None:
             return ui_text('forms.metric.text_3') if key in metrics and key in ('profit_factor', 'sharpe') else ui_text('forms.metric.text_4')
@@ -1268,4 +1289,4 @@ class CandidateSummaryCard(SummaryCard):
     """Only the generated-candidate pane; qualification stays host-owned."""
 
     def set_values(self, values):
-        self.label.setText(candidate_summary_text(values))
+        _privacy.bind_text(self.label, lambda: self.label.setText(candidate_summary_text(values, private=_privacy.enabled(self.label))))

@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QTableWidgetItem
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 from desktop_theme import FINANCIAL_FIELDS, set_financial_item, set_financial_label
 from desktop_presentation import display_number, display_value, RATIOS, AMOUNTS
 from desktop_forms import ResultTable as LegacyTable, BacktestFillsTable, RESULT_LABELS, _report_text
@@ -146,6 +147,7 @@ class ResultTable(CopyTable, LegacyTable):
                 item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.text_2'))
                 if key in FINANCIAL_FIELDS:
                     set_financial_item(self, item, value)
+                _privacy.item_display(self, item, (formats or {}).get(key, key))
                 self.setItem(r, c, item)
         # Enable header sorting without reordering a newly loaded report.
         self.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
@@ -169,14 +171,16 @@ class TaipeiFillsTable(CopyTable, BacktestFillsTable):
         for r, row in enumerate(rows):
             for c, key in enumerate(self._columns):
                 old = self.item(r, c)
-                item = SortItem(old.text())
-                item.setToolTip(old.toolTip())
+                raw, roles = getattr(old, '_privacy_raw', (old.text(), (old.toolTip(),)))
+                item = SortItem(raw)
+                item.setToolTip(roles[0])
                 if key == 'timestamp':
                     item.setText(taipei_time(row.get(key)))
                 elif numeric(row.get(key)) is not None:
                     item.setText(shown(row[key], key))
                 number = numeric(row.get(key))
                 item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
+                _privacy.item_display(self, item, key)
                 self.setItem(r, c, item)
         self.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         self.setSortingEnabled(True)
@@ -219,7 +223,9 @@ class KpiCards(QWidget):
 
     def set_values(self, values):
         for key in self.keys:
-            self.labels[key].setText(shown(values.get(key, MISSING), key))
+            label = self.labels[key]
+            raw = shown(values.get(key, MISSING), key)
+            _privacy.bind_text(label, lambda label=label, raw=raw, key=key: label.setText(_privacy.display(label, raw, key)))
             if key in FINANCIAL_FIELDS and key in values:
                 set_financial_label(self.labels[key], values[key])
             reason = self.reasons[key]

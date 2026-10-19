@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QPointF, QRectF
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF
 from PySide6.QtWidgets import QWidget, QToolTip
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 from desktop_theme import theme_colors
 from desktop_presentation import display_number
 from .result_widgets import taipei_time
@@ -75,7 +76,7 @@ class EquityPlot(QWidget):
         dd = [value for value in self.drawdowns if value is not None]
         return {
             'time': dates,
-            'value': [display_number(v, 'cash') for v in (lo, (lo + hi) / 2, hi)],
+            'value': [_privacy.display(self, display_number(v, 'cash'), 'cash') for v in (lo, (lo + hi) / 2, hi)],
             'drawdown': [display_number(min(dd), 'max_drawdown_pct'), display_number(0, 'max_drawdown_pct')] if dd else [ui_text('forms.metric.text_1')],
         }
 
@@ -83,7 +84,9 @@ class EquityPlot(QWidget):
         self.cursor_x = event.position().x()
         value = self.value_at(self.cursor_x)
         if value is not None:
-            QToolTip.showText(event.globalPosition().toPoint(), taipei_time(value[0]) + '\n' + display_number(value[1], 'cash'), self)
+            QToolTip.showText(
+                event.globalPosition().toPoint(), taipei_time(value[0]) + '\n' + _privacy.display(self, display_number(value[1], 'cash'), 'cash'), self
+            )
         self.update()
 
     def leaveEvent(self, event):

@@ -5,6 +5,7 @@ exactly to the supplied immutable series. Changing series clears dependent layer
 """
 
 from desktop_strings import ui_text
+import desktop_privacy as _privacy
 import desktop_theme as _theme
 from dataclasses import dataclass
 from decimal import Decimal
@@ -271,6 +272,9 @@ class CandlestickChart(QWidget):
         self._unavailable_panes = {label for label, seq in extra.items() if all(v is None for v in seq)}
         self.update()
 
+    def price_text(self, value):
+        return _privacy.display(self, str(value), 'price')
+
     def _legend_label(self, label, *, pane=False):
         unavailable = self._unavailable_panes if pane else self._unavailable_overlays
         return ui_text('charts._legend_label.text_1').format(label) if label in unavailable else label
@@ -431,11 +435,11 @@ class CandlestickChart(QWidget):
         d = self.bar_details(idx)
         detail = ui_text('charts.paintEvent.text_5').format(
             d['time'],
-            d['open'],
-            d['high'],
-            d['low'],
-            d['close'],
-            d['change_text'],
+            self.price_text(d['open']),
+            self.price_text(d['high']),
+            self.price_text(d['low']),
+            self.price_text(d['close']),
+            self.price_text(d['change_text']),
             d['volume'] if d['volume'] is not None else ui_text('charts.paintEvent.text_4'),
         ) + (ui_text('charts.paintEvent.text_6') if d['partial'] else '')
         text(12, 65, fm.elidedText(detail, Qt.TextElideMode.ElideRight, self.width() - 24))
@@ -461,7 +465,7 @@ class CandlestickChart(QWidget):
             yy = y(value)
             p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
             p.setPen(self.TEXT)
-            text(r.right() + 6, yy + 4, f'{value:,.2f}')
+            text(r.right() + 6, yy + 4, self.price_text(f'{value:,.2f}'))
             p.setPen(QColor(_theme.chart_color(self, 'grid')))
         volume_top = r.bottom() + 30
         volume_bottom = self.height() * (0.76 if self.panes else 0.91)
@@ -491,7 +495,7 @@ class CandlestickChart(QWidget):
             yy = y(line.price)
             if line.snapshot_index is None:
                 p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
-                text(r.left() + 5, yy - 4, f'{line.label} {line.price}')
+                text(r.left() + 5, yy - 4, f'{line.label} {self.price_text(line.price)}')
             else:
                 # A short tick at the known event boundary, never a full-history line.
                 xx = x(line.snapshot_index) + step / 2
@@ -500,7 +504,10 @@ class CandlestickChart(QWidget):
         if snapshots:
             caption = ui_text('charts.paintEvent.text_8').format(_display_time(snapshots[0].as_of))
             policy = ui_text('charts.paintEvent.text_9')
-            labels = [caption] + [ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)) for line in snapshots]
+            labels = [caption] + [
+                (self.price_text(line.price) if _privacy.enabled(self) else ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)))
+                for line in snapshots
+            ]
             if any(ui_text('charts.paintEvent.text_11') in line.label for line in snapshots):
                 labels.append(policy)
             width = min(r.width(), max(fm.horizontalAdvance(label) for label in labels) + 12)
@@ -580,7 +587,9 @@ class CandlestickChart(QWidget):
                     ui_text('charts.paintEvent.text_14') if m.kind == 'signal' else ui_text('charts.paintEvent.text_15'), m.label, m.reason
                 )
                 + (
-                    ui_text('charts.paintEvent.text_18').format(m.price, m.quantity, m.cost if m.cost is not None else ui_text('charts.paintEvent.text_17'))
+                    ui_text('charts.paintEvent.text_18').format(
+                        self.price_text(m.price), m.quantity, self.price_text(m.cost) if m.cost is not None else ui_text('charts.paintEvent.text_17')
+                    )
                     if m.kind == 'fill'
                     else ui_text('charts.paintEvent.text_20').format(
                         m.target_position if m.target_position is not None else ui_text('charts.paintEvent.text_19')

@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CJK = re.compile(r'[\u3400-\u9fff\uff00-\uffef\u3000-\u303f]')
 UI_MODULES = (
+    'desktop_privacy.py',
     'desktop_accessibility.py',
     'desktop.py',
     'desktop_automatic_backup.py',
