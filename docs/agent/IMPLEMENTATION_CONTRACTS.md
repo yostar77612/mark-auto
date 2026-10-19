@@ -1587,3 +1587,25 @@ claim visual completeness; final confirmation is the user's and remains pending.
 No code, tests, snapshots, protected sources/profile blocks, state, acceptance
 score, gates, OOS consumption, budgets or timeouts change. Live trading remains
 permanently disabled. The controller creates the single item commit.
+
+### DOC-E3: release-notes document template and verification ledger
+
+[Release-notes template](../release/RELEASE_NOTES_TEMPLATE.md), linked from the
+README documentation index, is a document template only: no released version,
+download link, GitHub Release or tag is created. Its always-present
+"Verification scope and ongoing tracking" table carries ten unfinished
+PROJECT_STATE rows as UNVERIFIED, with unique stable RN-prefixed ledger IDs.
+Display references retain E2's existing DISP-03 and DISP-04 identifiers rather
+than inventing replacement checklist IDs. Summary, upgrade/migration and known
+limitations sections have bracketed placeholders; later evidence must identify
+tested scope and commit without closing unattempted work.
+
+This item changes documentation only. PROJECT_STATE and ACCEPTANCE remain
+unchanged; formal acceptance stays 230/300. Physical displays, real inference,
+installer/client lifecycle and other ledger work remain unverified. No UI
+baseline refresh is needed. Live trading remains permanently disabled; locked
+sources/profile blocks, fail-closed gates, OOS consumption, irreversible budgets
+and all timeouts remain unchanged. No OOS/final-holdout data may enter AI
+conversations, tool returns or prompts. The controller owns the single commit;
+lane changes remain uncommitted. ID uniqueness is checked directly from the
+template table without adding runtime code or tests.
