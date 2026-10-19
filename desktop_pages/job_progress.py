@@ -125,6 +125,8 @@ def install_progress(shell, layout):
 
 
 def failure_notice(shell, event):
+    if getattr(shell, 'last_operation', None) == 'ui_paper_replay':
+        shell.page_state.replay_controls.cancel()
     chart = getattr(getattr(shell, 'market', None), 'chart', None)
     if getattr(shell, 'last_operation', None) == 'ui_paper_cancel' and chart is not None and chart.paper_orders.notice == ui_text('orders.pending'):
         chart.paper_orders.notice = ui_text('orders.failed')

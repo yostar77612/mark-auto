@@ -8,6 +8,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'quantlab/replay_pacing.py',
+    'quantlab/paper_replay.py',
+    'desktop_pages/replay_controls.py',
+    'tests/test_replay_b13.py',
     'quantlab/diagnostics.py',
     'desktop_pages/diagnostics.py',
     'desktop_pages/settings_layout.py',

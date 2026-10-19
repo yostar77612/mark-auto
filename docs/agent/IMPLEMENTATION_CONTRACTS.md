@@ -1487,3 +1487,54 @@ Validation from lane-c (2026-10-19), base HEAD
 
 Controller handoff: the controller ran the broader groups locally and an independent QA judged the commits;
 the default raster snapshot comparison passes against the refreshed viewport baseline.
+
+### LB-B13: bounded paper replay pacing and durable pause
+
+ReplayPacer accepts only integer speeds 1x, 2x, 5x, 10x, 50x and 100x
+(maximum 100x). Speed is session-only presentation state: it changes the timer
+wait between operations (1000/speed milliseconds), never simulated timestamps,
+signals, prices, fills, cursor decisions or binding. There is one bar per paced
+worker operation at EVERY speed, no worker sleep and no catch-up burst. A busy
+worker or another active job prevents another tick. Effective throughput may be
+lower on slow storage. The existing Paper 30 s timeout, smoke 40 s timeout and
+15-minute job cap are unchanged; the hard worker deadline still applies to slow
+storage or a single expensive bar. Pacing never extends it. The legacy unpaced
+ui_paper_replay operation remains start/step(max_bars)/stop; its smoke request
+(max_bars=25, cursor=25, kill_switch=True) is unchanged.
+
+Pause is durable in the existing replay table: active=-1 means paused, 0 stopped,
+1 active. No columns, table versions, binding inputs or journal formats change.
+Old five-column databases open unchanged; the legacy-schema fixture checks the
+original binding formula and cursor. snapshot exposes paused and active separately.
+Pause is allowed only for active, incomplete replay; double pause, stopped pause
+and complete pause raise ValidationError. start on paused raises before touching
+the broker, and step while paused neither consumes a bar nor appends journal rows.
+resume requires paused, reconciled, identified account with kill OFF. It restores
+active=1 at the exact cursor, with no broker journal write. Resume when unpaused
+raises. Pause leaves kill unchanged (normally OFF), and never clears a safety
+latch. stop still journals kill ON and sets active=0, including from paused.
+Completion remains cursor-based; stopping preserves the cursor. Existing int
+1..1000 step validation and kill/reconciliation break conditions are unchanged.
+
+The paper page defaults to the original unpaced one-shot worker and unchanged
+result payload. The speed selector defaults to unpaced; selecting 1x..100x opts
+into the controller. Speed, pause/resume, stop and status controls all live in
+the existing collapsed diagnostics panel; idle page metrics remain unchanged.
+The legacy snapshot shape is unchanged unless paused, when paused=True is added.
+One confirmed request supplies a fixed policy and verified snapshot; subsequent short workers use each returned snapshot
+and the existing explicit reconciliation boundary after broker restart. These
+worker restarts/reconciliations retain their normal audit events. Core pacing
+and pause/resume themselves never add audit rows; identical core runs at all
+speeds and a step-10/pause/fake-wait/resume run have identical full snapshots,
+fills, cursors and journal hashes. The UI applies a requested pause/stop after
+an in-flight one-bar operation, then schedules no ticks while paused. A new
+session inspects durable state before ticking; a saved pause requires Resume.
+The selected max_bars bounds the session total, then an explicit short stop
+operation turns kill ON. Errors/cancellation/close halt the timer; the existing
+freeze and reconciliation paths remain authoritative. No live or broker network
+path is introduced. No public desktop_ui names or locked source files change.
+
+Evidence: tests/test_replay_b13.py uses an injected fake monotonic clock, no real
+sleeps, no shown windows or application style changes. It checks speed/hash
+invariance, old schema, durable pause transitions, safety gates, one-bar per-op
+work at 100x, paused UI, cancellation and the unchanged public-name oracle.

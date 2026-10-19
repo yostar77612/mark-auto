@@ -7,6 +7,19 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'replay.unpaced': '不限速（單次執行）',
+    'replay.speed': '重播速度',
+    'replay.speed_tip': '1、2、5、10、50、100 倍；最高 100 倍。僅改變每次一根 K 棒操作之間的等待，不改變成交結果。',
+    'replay.speed_value': '{}x',
+    'replay.pause': '暫停重播',
+    'replay.stop': '停止重播',
+    'replay.stop_tip': '停止重播並開啟停止開關；保留游標。再次開始需要重新確認。',
+    'replay.resume': '繼續重播',
+    'replay.pause_tip': '在目前一根 K 棒完成後暫停並保存游標；不開啟停止開關。繼續從原游標重播。停止新委託仍會開啟停止開關。',
+    'replay.state': '重播狀態',
+    'replay.idle': '重播已停止',
+    'replay.running': '重播進行中',
+    'replay.paused': '重播已暫停',
     'tooltip.market_provider': '選擇本機官方行情檔案所屬的交易所與檔案格式，匯入時須與檔案來源一致。',
     'tooltip.import_path': '要匯入的本機資料檔完整路徑；格式須符合下方選擇的資料類型。',
     'tooltip.calendar_path': '描述交易時段與交易日的本機日曆檔路徑；系統用它核對資料時間，不會自行推算。',
