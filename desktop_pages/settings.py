@@ -225,7 +225,10 @@ class SettingsPage(PageContext, QWidget):
         if self.settings is None:
             return
         value = self.settings.load()
-        self.host.find_child(type(self.persist_logs), 'privacy_toggle').setChecked(value.get('privacy_mode') is True)
+        finder = getattr(self.host, 'find_child', None)
+        privacy_toggle = finder(type(self.persist_logs), 'privacy_toggle') if finder is not None else None
+        if privacy_toggle is not None:
+            privacy_toggle.setChecked(value.get('privacy_mode') is True)
         self._restoring_sections = True
         for key, toggle in self._section_toggles.items():
             toggle.blockSignals(True)
