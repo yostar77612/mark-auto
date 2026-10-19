@@ -1687,6 +1687,14 @@ ZH_TW.update(
     }
 )
 
+ZH_TW.update(
+    {
+        'paper.manual_lock': '鎖定紙上新委託（持續至明確解鎖）',
+        'paper.manual_unlock': '對帳並明確解除委託鎖定',
+        'paper.manual_locked': '手動委託鎖定中；對帳後仍須明確解鎖',
+    }
+)
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

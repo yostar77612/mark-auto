@@ -66,6 +66,13 @@ class PaperPage(PageContext, QWidget):
             lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload)),
         )
         self.kill_button = self._button(layout, ui_text('ui._paper_page.text_13'), 'paper_kill', self.kill_paper, role='danger')
+        self._button(advanced, ui_text('paper.manual_lock'), 'paper_manual_lock', lambda: self.paper_job('kill', manual_order_lock=True))
+        self._button(
+            advanced,
+            ui_text('paper.manual_unlock'),
+            'paper_manual_unlock',
+            lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload), manual_order_lock=False),
+        )
         self.replay_bars = QSpinBox()
         self.replay_bars.setRange(1, 1000)
         self.replay_bars.setValue(100)
@@ -199,7 +206,7 @@ class PaperPage(PageContext, QWidget):
                 reason = saved.get('reason')
         except (OSError, ValueError):
             pass
-        stop_text, color = stop_presentation(account, reason)
+        stop_text, color = stop_presentation(account, reason, manual_lock_text=ui_text('paper.manual_locked'))
         values[ui_text('ui._show_account.text_5')] = stop_text
         self.paper_card.set_values(values)
         set_status(self.paper_card.label, status_for_color(color))

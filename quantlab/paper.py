@@ -209,6 +209,9 @@ def _reduce(state, op, payload):
                 order['status'] = 'unknown'
     elif op == 'kill':
         s['kill_switch'] = payload['active']
+    elif op == 'manual_order_lock':
+        # Lazy additive field preserves checksums of all pre-lock journals.
+        s['manual_order_lock'] = payload['active']
     elif op == 'reconcile':
         for oid, status in payload.get('order_statuses', {}).items():
             s['orders'][oid]['status'] = status
@@ -518,6 +521,17 @@ class PaperBroker:
         return price
 
     def _risk(self, state, intent, quote, now):
+        """Single gate for every new paper order.
+
+        Daily pnl = cash + unrealized mark-to-market of open lots - the
+        trade_date equity baseline (realized + unrealized); block when
+        pnl <= -max_daily_loss. Re-establish the baseline per trade_date:
+        flat opening cash, or cash plus carried lots marked at the pinned
+        opening reference known by session open. Overnight lots without that
+        reference/baseline fail closed: overnight_daily_loss_baseline_required.
+        """
+        if state.get('manual_order_lock', False):
+            return RiskDecision(False, 'manual_order_lock')
         if state['reconciliation_required'] or any(o['status'] in ('unknown', 'submitting') for o in state['orders'].values()):
             return RiskDecision(False, 'reconciliation_required')
         if state['kill_switch']:
@@ -852,6 +866,20 @@ class PaperBroker:
                 raise ReconciliationError('reconcile before disabling kill switch')
             self._append(db, state, 'kill', {'active': active}, self._next_id(db, 'kill'))
 
+    def set_manual_order_lock(self, active: bool):
+        """Journal an explicit lock/unlock; never cancel orders or liquidate lots.
+
+        Only this operation clears the latch. Unlock requires reconciliation
+        and no UNKNOWN/submitting orders, independently of the kill switch.
+        """
+        if type(active) is not bool:
+            raise ValidationError('manual order lock must be boolean')
+        with self._transaction() as db:
+            state = self._restore(db)
+            if not active and (state['reconciliation_required'] or any(o['status'] in ('unknown', 'submitting') for o in state['orders'].values())):
+                raise ReconciliationError('reconcile before unlocking manual orders')
+            self._append(db, state, 'manual_order_lock', {'active': active}, self._next_id(db, 'manual_order_lock'))
+
 
 class LiveBroker:
     """Deliberately incapable of live execution; no flag enables it."""
@@ -862,4 +890,4 @@ class LiveBroker:
     def submit(self, *args, **kwargs):
         raise LiveTradingDisabled('Live trading is disabled')
 
-    cancel = apply_event = snapshot = reconcile = set_kill_switch = submit
+    cancel = apply_event = snapshot = reconcile = set_kill_switch = set_manual_order_lock = submit

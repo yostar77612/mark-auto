@@ -909,7 +909,10 @@ def _handle_ui_paper_cancel(payload, paths, root, *, emit=None, descendants_stop
 def _handle_ui_paper_kill(payload, paths, root, *, emit=None, descendants_stopped=False):
     broker = _prepare_paper_operation(payload, paths, root)
     replay_state = None
-    broker.set_kill_switch(True)
+    if 'manual_order_lock' in payload:
+        broker.set_manual_order_lock(payload['manual_order_lock'])
+    else:
+        broker.set_kill_switch(True)
     return _finish_paper_operation(root, broker, replay_state)
 
 
@@ -917,6 +920,8 @@ def _handle_ui_paper_reconcile(payload, paths, root, *, emit=None, descendants_s
     broker = _prepare_paper_operation(payload, paths, root)
     replay_state = None
     broker.reconcile(payload['snapshot'])
+    if 'manual_order_lock' in payload:
+        broker.set_manual_order_lock(payload['manual_order_lock'])
     return _finish_paper_operation(root, broker, replay_state)
 
 
