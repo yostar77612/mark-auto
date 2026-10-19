@@ -1203,3 +1203,18 @@ metadata test pins canonical pre-existing fixture content to 17b5b1b digests,
 checks enums/counts/CLI in-process without subprocesses, and defaults into the
 remaining core shard through existing discovery. Full deep equality with
 17b5b1b was also checked before delivery, removing only those three keys.
+
+### LD-B7: strategy intent design boundary
+
+[ADR 0006](../adr/0006-strategy-intent-pipeline.md) accepts a design only:
+strategy -> intent -> order planning -> risk -> simulated execution. Strategies
+would emit intents only; same-instrument, same-period conflicts fail closed
+without implicit priority, using B1's existing `validation_failed` /
+`ErrorCode.VALIDATION_FAILED`. No intent types or planner are implemented.
+The Signal adapter mapping preserves next-open timing; current precomputed
+signals do not read actual post-fill positions. Stateful/multi-instrument
+implementation needs a separately approved task and G3/hash/golden review.
+All locked sources, saved-candidate profiles, golden values, research and
+analysis identity bindings remain unchanged. Live trading stays permanently
+disabled; finite AST, OOS consumption, irreversible budget and all timeouts
+remain in force. B1 ancestry and source/impact evidence are recorded in the ADR.
