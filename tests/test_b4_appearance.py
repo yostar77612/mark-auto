@@ -177,7 +177,16 @@ class AppearanceWindowTests(unittest.TestCase):
         self.assertEqual(len(metrics['pages']), 7)
         self.assertTrue(all(not p['unlabeled_inputs'] for p in metrics['pages'].values()))
         baseline = json.loads((ROOT / 'tests/fixtures/desktop_pages_before/metrics.json').read_text(encoding='utf-8'))
-        self.assertEqual(metrics, baseline)
+        # Heights and font metrics are platform-dependent (the archive is Windows); compare the platform-independent facts.
+        self.assertEqual(list(metrics['pages']), list(baseline['pages']))
+        for page_name, expected in baseline['pages'].items():
+            for field in ('visible_input_count', 'button_count', 'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
+                self.assertEqual(metrics['pages'][page_name][field], expected[field], (page_name, field))
+            self.assertEqual(
+                [t.replace(chr(92), '/') for t in metrics['pages'][page_name]['visible_text']],
+                [t.replace(chr(92), '/') for t in expected['visible_text']],
+                page_name,
+            )
         w = self.window
         for name in theme.THEMES:
             w.findChild(QComboBox, 'appearance_theme').setCurrentIndex(list(theme.THEMES).index(name))
