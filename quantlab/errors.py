@@ -58,6 +58,7 @@ class ErrorText:
 
 # Define each code exactly once; labels below are a compatibility projection.
 ERROR_TABLE = {
+    'agent_tool_refused': ErrorText('AI 工具請求被拒絕：工具未註冊、未宣告能力或輸入格式不符。', '請改用已註冊的唯讀工具、明確的能力宣告與有效的 JSON 輸入。'),
     'explicit_host_recovery_required': ErrorText(
         '發現先前的 ChatGPT 記錄；不會重建識別或重設額度。請先檢查原登入資料，必要時使用進階明確復原。', '請核對官方連線與本機紀錄後再操作。'
     ),
