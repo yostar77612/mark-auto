@@ -1653,3 +1653,21 @@ irreversible budgets and timeouts remain unchanged. Live trading remains
 permanently disabled; OOS/final-holdout data never enter AI conversations,
 tool returns or prompts. No Release or tag is created. The controller owns the
 single item commit; lane changes remain uncommitted.
+
+### DOC-E6: pre-implementation design documents
+
+Before a UI or behavior implementation, use the
+[design template](../design/TEMPLATE.md) to record Problem, Goals/Non-goals,
+Design, Safety constraints, Test plan and Rollout/Verification status.
+The [C5 market-dock workspace proposal](../design/c5-market-dock-workspace.md) is
+PROPOSED / NOT IMPLEMENTED; its implementation checks and the user's final
+real-App visual confirmation remain pending. It names existing source/test paths
+and requires accessibility and snapshot review before future UI acceptance.
+
+E6 changes documentation only; no UI baseline refresh is needed for E6.
+ADRs, G3/profile sources, PROJECT_STATE, ACCEPTANCE scores, gates, OOS consumption,
+irreversible budgets and timeouts stay unchanged. Live trading remains
+permanently disabled; no order path, dynamic execution or credential handling
+is added. OOS/final-holdout data never enter AI conversations, tool returns or
+prompts. Formal acceptance remains 230/300. No Release or tag is created;
+the controller owns the single item commit and lane edits remain uncommitted.
