@@ -36,13 +36,21 @@ def snapshot_for_state(state, *, now=None):
             'latest_bar_timestamp': bar.timestamp,
             'latest_bar_trade_date': bar.trade_date,
         }
-    return build_diagnostics(workspace=workspace, data=data, job=job, errors=errors, now=now if now is not None else datetime.now(timezone.utc))
+    return build_diagnostics(
+        workspace=workspace,
+        data=data,
+        job=job,
+        errors=errors,
+        now=now if now is not None else datetime.now(timezone.utc),
+        startup_timing=getattr(state, 'startup_timing', None),
+    )
 
 
 class DiagnosticsPanel(QWidget):
     def __init__(self, snapshot, parent=None):
         super().__init__(parent)
         self.snapshot = snapshot
+        self.setToolTip(ui_text('diagnostics.startup_timing_hint'))
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(ui_text('diagnostics.notice')))
         self.output = QPlainTextEdit()
