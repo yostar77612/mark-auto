@@ -96,9 +96,9 @@ class AgentReadToolsD3Tests(unittest.TestCase):
             ('get_backtest_trades', 'net_pnl', [str(i) for i in range(123)]),
             ('get_backtest_equity', 'equity', [str(100000 + i) for i in range(123)]),
         ):
-            cursor, rows = 0, []
+            cursor, rows = None, []
             for _ in range(4):
-                page = self.call(name, {'cursor': cursor})
+                page = self.call(name, {'cursor': cursor} if cursor is not None else {})
                 self.assertTrue(page['ok'], page)
                 self.assertLessEqual(len(json.dumps(page).encode()), MAX_RETURN_BYTES)
                 rows.extend(page['items'])
@@ -198,9 +198,20 @@ class AgentReadToolsD3Tests(unittest.TestCase):
             patch('quantlab.provider.HTTPTransport.__call__', side_effect=AssertionError('provider')) as provider,
         ):
             for name in tools.TOOL_NAMES:
-                for cursor in (0, 50, 100, 123):
-                    output = self.call(name, {'cursor': cursor})
+                cursor = None
+                for _ in range(4):
+                    output = self.call(name, {'cursor': cursor} if cursor is not None else {})
+                    if name.startswith('get_paper_'):
+                        self.assertEqual(output, REFUSAL)  # This fixture has no synthetic journal grant.
+                        assert_no_protected_values(self, output)
+                        break
+                    self.assertTrue(output['ok'], output)
                     assert_no_protected_values(self, output)
+                    if output['next_cursor'] is None:
+                        break
+                    cursor = output['next_cursor']
+                else:
+                    self.fail('visible pages did not exhaust')
                 output = self.call(name, {'result_id': protected_id})
                 self.assertEqual(output, REFUSAL)
             quality = self.call('get_data_quality_summary')['items'][0]

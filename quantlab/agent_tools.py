@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import json
 from types import MappingProxyType
 
+from quantlab.agent_return import bounded_return
 from quantlab.agent_tool_contract import CAPABILITIES, MAX_LIMIT, MAX_RETURN_BYTES, RETURN_SCHEMA, TOOL_SCHEMA, strict_json, validate
 from quantlab.errors import ErrorCode
 
@@ -87,8 +88,11 @@ class Registry:
                 return _refusal()
             if len(result['items']) > result['limit'] or result['limit'] != arguments.get('limit', MAX_LIMIT):
                 return _refusal()
-            expected = arguments.get('cursor', 0) + len(result['items']) if result['truncated'] else None
-            if result['next_cursor'] != expected or (result['truncated'] and not result['items']):
+            if result['count'] != len(result['items']) or result['total'] < result['count']:
+                return _refusal()
+            if result['truncated'] != (result['reason'] is not None) or (result['truncated'] and not result['items']):
+                return _refusal()
+            if (result['next_cursor'] is not None) != (result['reason'] in ('item_limit', 'byte_limit')):
                 return _refusal()
             return result
         except Exception:
@@ -104,15 +108,9 @@ def _training_records(context):
 
 def _training_status(context, arguments):
     rows = _training_records(context)
-    cursor, limit = arguments.get('cursor', 0), arguments.get('limit', MAX_LIMIT)
-    if cursor > len(rows):
-        return _refusal()
-    page = rows[cursor : cursor + limit]
     # Positive field allowlist: no identifiers, strings, metrics, raw content or guards.
-    items = [{'completed': row['completed'], 'observations': row['observations']} for row in page]
-    end = cursor + len(page)
-    truncated = end < len(rows)
-    return {'ok': True, 'items': items, 'truncated': truncated, 'limit': limit, 'next_cursor': end if truncated else None}
+    items = [{'completed': row['completed'], 'observations': row['observations']} for row in rows]
+    return bounded_return(items, limit=arguments.get('limit', MAX_LIMIT), cursor=arguments.get('cursor'), scope='research.list_training_status')
 
 
 PRODUCTION_REGISTRY = Registry()
@@ -128,7 +126,7 @@ PRODUCTION_REGISTRY.register(
             'required': [],
             'properties': {
                 'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_LIMIT},
-                'cursor': {'type': 'integer', 'minimum': 0, 'maximum': 1000000000},
+                'cursor': {'type': 'string', 'minLength': 66, 'maxLength': 128},
             },
         },
     },

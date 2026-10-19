@@ -1848,3 +1848,61 @@ placeholders 1 pass. Ruff 0.16.10 check and changed-file format --check,
 Python 3.11 py_compile and quality_gate pass (0 findings). Protected-path diff
 against e0e604f is empty. The full unit suite is left to the controller under
 the task's sandbox rule; no broader-suite pass is claimed.
+
+### TASK A1-D11: central bounded tool returns
+
+`quantlab.agent_return.bounded_return` is the sole success-envelope constructor
+for all registered D1 and D3 handlers. It is pure and deterministic, accepts only
+JSON-safe lists after host authorization and positive projection, and rejects
+nonfinite values, bytes, paths, invalid Unicode and invalid limits. Existing
+MAX_LIMIT=50, MAX_RETURN_BYTES=8192 and MAX_INPUT_BYTES=4096 stay authoritative.
+No existing limit, budget, gate, threshold, OOS consumption or timeout changes.
+
+Successful envelopes include items, count, total, limit, truncated, next_cursor,
+reason, field_truncations and ok. Counts and fingerprints cover only the visible
+training/synthetic-paper rows, never protected records, mixed totals or guards.
+Item overflow has item_limit; byte overflow has byte_limit and cuts only between
+items. Metadata, cursor and both canonical UTF-8 and ordinary JSON serialization
+fit the existing byte cap. Non-progressing single-row overflow refuses via B1's
+existing agent_tool_refused code with empty params; no second error table exists.
+
+String fields over MAX_FIELD_CHARS=256 have explicit page-relative item/field
+component/truncated markers. Field loss sets truncated even on the final page,
+with field_limit and null cursor when no additional rows remain. The helper does
+not change inputs. Item pagination reconstructs uncapped fields without gaps or
+overlap. Opaque cursors bind offset, full visible source (including capped string
+suffixes) and request scope using SHA256. Stale/tampered/cross-scope cursors and
+legacy offsets refuse through the same B1 code. Hashes check consistency, not
+authentication; authorization remains mandatory on each read. Limits are strict,
+never coerced or clamped, so no clamped flag is necessary.
+
+The [harness contract](../AGENT_HARNESS_CONTRACT.md) and its JSON schema now
+describe this envelope. Existing D1 schema/cursor assertions and D3 pagination
+and sentinel traversal are updated only for this intentional contract change;
+all original test cases and safety assertions remain. D3 sentinel traversal now
+requires successful reads for granted research tools and explicitly checks B1
+refusal for paper tools without journal evidence, rather than scanning refusals
+as though they were pages. Import graph entries add only the central helper edge.
+
+Evidence: tests/test_agent_return_d11.py covers all item boundaries across many
+sizes, CJK byte paging, explicit field markers, determinism/purity, unsafe JSON,
+invalid limits, cursor integrity, all-handler AST/registry routing, zero mutation
+declarations and D3 byte-truncation propagation. The whole-envelope sentinel
+oracle covers count and total; removing the training filter demonstrably leaks
+total=31337 and fails that same oracle. Existing D1/D3 fixtures cover OOS/holdout
+values, metrics, prices, trades, equity, guards, credentials, paths and raw files.
+
+No new UI text, error code, root file or default-view change is introduced; no
+baseline fixture refresh is needed. Live trading remains permanently disabled.
+G3 files, all saved_candidate_pool bytes, PROJECT_STATE.md, ACCEPTANCE.json and
+the product optimization plan remain untouched. Work is left uncommitted as
+explicitly required; the controller owns the single A1-D11 commit and full suite.
+
+Local verification: D11 9 tests, D1 11, D3 9, D2 6, D7 2, import graph 6,
+repository layout 6, documentation layering 8, function lengths 2 and catalog
+placeholders 1 pass. Ruff 0.16.10 check, changed-file format --check, Python 3.11
+py_compile and quality_gate (0 findings) pass. Protected-path diff against
+e0e604f is empty. No full-suite result is claimed under the sandbox instruction.
+GitNexus local analysis ran with index-only/skip-fts/one worker, but global
+registration failed with sandbox EPERM; the lane query reported repository not
+found. No extension download, alternate graph tool or fresh graph claim was made.

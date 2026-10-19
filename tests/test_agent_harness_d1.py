@@ -95,7 +95,7 @@ class AgentHarnessD1Tests(unittest.TestCase):
         self.assertTrue(contract.validate(declaration(), schema))
         self.assertFalse(contract.validate(declaration(unknown='rejected'), schema))
         envelope = schema['$defs']['boundedReturn']
-        self.assertEqual(set(envelope['required']), {'ok', 'items', 'truncated', 'limit', 'next_cursor'})
+        self.assertEqual(set(envelope['required']), {'ok', 'items', 'count', 'total', 'truncated', 'limit', 'next_cursor', 'reason', 'field_truncations'})
         self.assertEqual(set(envelope['properties']), set(envelope['required']))
         self.assertIs(envelope['additionalProperties'], False)
         self.assertEqual(envelope['properties']['items']['maxItems'], contract.MAX_LIMIT)
@@ -174,9 +174,9 @@ class AgentHarnessD1Tests(unittest.TestCase):
             if tool['effect'] != 'read':
                 continue
             with self.subTest(tool=name):
-                cursor = 0
+                cursor = None
                 for _page in range(4):
-                    args = json.dumps({'limit': 1, 'cursor': cursor})
+                    args = json.dumps({'limit': 1, **({'cursor': cursor} if cursor is not None else {})})
                     output = REGISTRY.call(name, args, capabilities=[tool['capability']], context=dirty)
                     assert_no_protected_values(self, output)
                     self.assertTrue(output['ok'])
@@ -184,7 +184,8 @@ class AgentHarnessD1Tests(unittest.TestCase):
                     if not output['truncated']:
                         self.assertIsNone(output['next_cursor'])
                         break
-                    self.assertGreater(output['next_cursor'], cursor)
+                    self.assertIsInstance(output['next_cursor'], str)
+                    self.assertNotEqual(output['next_cursor'], cursor)
                     cursor = output['next_cursor']
                 else:
                     self.fail('pagination did not exhaust the visible fixture')
@@ -208,8 +209,9 @@ class AgentHarnessD1Tests(unittest.TestCase):
     def test_bounded_envelope_default_maximum_and_exact_boundary(self):
         context = [{'partition': 'training', 'completed': True, 'observations': number} for number in range(51)]
         first = REGISTRY.call(NAME, '{}', capabilities=GRANTS, context=context)
-        self.assertEqual((len(first['items']), first['limit'], first['truncated'], first['next_cursor']), (50, 50, True, 50))
-        last = REGISTRY.call(NAME, '{"cursor":50}', capabilities=GRANTS, context=context)
+        self.assertEqual((len(first['items']), first['limit'], first['truncated']), (50, 50, True))
+        self.assertIsInstance(first['next_cursor'], str)
+        last = REGISTRY.call(NAME, json.dumps({'cursor': first['next_cursor']}), capabilities=GRANTS, context=context)
         self.assertEqual((len(last['items']), last['truncated'], last['next_cursor']), (1, False, None))
         exact = REGISTRY.call(NAME, '{}', capabilities=GRANTS, context=context[:50])
         self.assertEqual((len(exact['items']), exact['truncated'], exact['next_cursor']), (50, False, None))

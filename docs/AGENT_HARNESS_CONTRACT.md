@@ -69,15 +69,31 @@ detects leaked protected row counts; no fake is installed in production.
 
 ## Bounded return (D11 boundary)
 
-Successful reads return exactly `ok`, `items`, `truncated`, `limit`,
-`next_cursor`. `limit` is an integer from 1 to 50 (default 50); arguments have a
-4096-byte UTF-8 cap and output has an 8192-byte UTF-8 cap. Oversized/invalid
-returns refuse; they are never silently shortened. `truncated=true` means more
-visible training records exist, with `next_cursor` an integer offset into ONLY
-the visible sequence. Exhaustion has `truncated=false`, `next_cursor=null`.
-There is no total count. A past-end cursor refuses. The host must keep its
-snapshot stable across pages. These bounds establish the D11 envelope; richer
-tool-specific paging and data adapters remain later work.
+Every D1/D3 handler returns through `quantlab.agent_return.bounded_return`.
+Successful reads return exactly `ok`, `items`, `count`, `total`, `truncated`,
+`limit`, `next_cursor`, `reason` and `field_truncations`. Counts and cursor hashes
+are derived ONLY from already authorized, positively projected visible rows.
+`limit` is a strict integer from 1 to 50 (default 50); booleans, nonintegers and
+out-of-range values refuse. Arguments retain their 4096-byte UTF-8 cap; complete
+serialized envelopes retain the 8192-byte cap, including metadata and cursors.
+Both canonical UTF-8 and ordinary ASCII-escaped JSON serialization fit the cap.
+The helper has no I/O, clock, randomness, credentials or provenance inference.
+
+Item and byte overflow page at whole-item boundaries with `truncated=true`,
+`reason=item_limit|byte_limit` and a nonnull opaque string cursor. A cursor binds
+the visible snapshot, offset and host-supplied request scope. Tampered, stale,
+cross-scope and legacy integer cursors refuse with B1 `agent_tool_refused`.
+Cursor hashes provide consistency, not authentication or authorization. The
+trusted host must still supply approved training-only evidence on EVERY call.
+
+Strings exceeding 256 characters are capped with an envelope marker containing
+the page-relative item ordinal, nested field components and `truncated=true`.
+Field loss sets the envelope flag even on the last page (`reason=field_limit`,
+null cursor). Pagination never promises to recover capped field suffixes.
+Without field loss, concatenated pages exactly reconstruct the source sequence.
+An indivisible row that cannot fit refuses rather than returning a zero-progress
+page. Non-JSON-safe values, NaN, Infinity, bytes, paths and lone surrogates refuse.
+No truncation has `reason=null`; exhaustion has `next_cursor=null`.
 
 ## Unchanged safety contracts
 
