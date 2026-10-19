@@ -31,6 +31,9 @@ TOOL_SCHEMA = {
         'name': {'type': 'string', 'pattern': r'^[a-z][a-z0-9_.]{0,63}$'},
         'capability': {'enum': sorted(CAPABILITIES)},
         'effect': {'enum': sorted(EFFECTS)},
+        'maxItems': {'type': 'integer', 'const': MAX_LIMIT},
+        'maxSerializedBytes': {'type': 'integer', 'const': MAX_RETURN_BYTES},
+        'pageSizeCap': {'type': 'integer', 'const': MAX_LIMIT},
         'inputSchema': {
             'type': 'object',
             'additionalProperties': False,
