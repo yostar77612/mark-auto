@@ -1572,3 +1572,18 @@ allowlisted names/privacy, bounds, no I/O, JSON sizing and offscreen display/cop
 No G3/profile, OOS, budget, timeout, live-order, acceptance-score or project-state
 change is part of E1. The controller creates the single item commit; its message
 should explain the additive B12 JSON key expectation. No commit is created here.
+
+### DOC-E2: external display compatibility checklist
+
+[Display compatibility](../qa/display-compatibility.md) is a documentation-only
+external checklist, linked from README. Every item is EXTERNAL / UNVERIFIED;
+no 150%/200% DPI run is performed by this item. Unchecked DISP-01 through DISP-07
+cover 100%, 125%, 150%, 200%, mixed-DPI monitors, 1366x768 and Windows text size
+across the seven catalog-named sidebar pages and the catalog-named maintenance
+panel. The results table is empty and requires tester/date/Windows build/commit
+identity and observations. Existing manual offscreen images are automated-only
+evidence, not a substitute for physical-display inspection. Automation cannot
+claim visual completeness; final confirmation is the user's and remains pending.
+No code, tests, snapshots, protected sources/profile blocks, state, acceptance
+score, gates, OOS consumption, budgets or timeouts change. Live trading remains
+permanently disabled. The controller creates the single item commit.
