@@ -1,24 +1,24 @@
 # T16 part B：最終目標量測
 
-SHA：**HEAD at commit time**。離屏 Windows／Qt Fusion、1366×768、空白暫存工作區；不讀取使用者資料。
+SHA：**2296916**（量測所用程式碼提交；其後只修改本文件）。離屏 Windows／Qt Fusion、1366×768、空白暫存工作區；不讀取使用者資料。
 原始數字：[t16_final_metrics.json](t16_final_metrics.json)、[tooltip 探測](t16_tooltip_metrics.json)。
 最終 14 張截圖及七頁 metrics 位於 [desktop_pages_before](../../tests/fixtures/desktop_pages_before/metrics.json)。
 此為驗收目標的實測結果，不宣稱所有產品目標皆已完成。
 
 | 目標 | 量測值 | 命令／測試證據 | git SHA | 結果 |
 |---|---|---|---|---|
-| 最高頁面 ≤1600 px | 1377 px（紙上交易）；七頁皆 ≤1600 | `tools/ui_snapshot.py --out tests/fixtures/desktop_pages_before --size 1366x768`，`page_height` 最大值 | HEAD at commit time | PASS |
-| 每頁 primary ≤1 | 最大 1 | 同上，`primary_button_count` 最大值 | HEAD at commit time | PASS |
-| 未標示輸入欄 0 | 0／7 頁 | 同上，`unlabeled_inputs` 長度總和 | HEAD at commit time | PASS |
-| 每頁標籤減少 ≥50% | 最小 60.00%，最大 89.35% | 同上與 `docs/analysis/baseline/ui_snapshot_1366x768/metrics.json`；`100*(1-after/before)`，逐頁見下表 | HEAD at commit time | PASS |
-| 禁用工程用語 0 | 0 | 依 `desktop_strings.FORBIDDEN_DEFAULT_TERMS` 與 `tests/test_t9_onboarding.py` 相同正規式，掃描七頁 `visible_text + combo_items + table_headers` | HEAD at commit time | PASS |
-| 狀態列原始例外 0 | 固定錯誤代碼對照測試 64／64；秘密字串外洩 0 | `test_t16_presentation.py` 的 fixed-code、worker failure、campaign outcome 測試（本次 15 tests PASS） | HEAD at commit time | PASS |
-| MainWindow ≤400 行 | 393 行 | Python AST：`end_lineno-lineno+1` | HEAD at commit time | PASS |
-| 每個非自明欄位皆有 tooltip | 52 個 widget 有 tooltip；41 個預設可見輸入沒有 tooltip（含自明開關；例如 fast、slow、stop_ticks 也無） | 暫存 MainWindow、停止 QTimer、逐頁 `_input_widgets(page)`／`toolTip()`；原始名單見 `t16_tooltip_metrics.json` | HEAD at commit time | NOT-MET：已有 tooltip 不等於欄位全覆蓋，仍需補齊非自明欄位 |
-| >4 位小數 0 | 預設畫面 0；長小數／NaN／±inf 測試通過 | 七頁文字掃描 `\d+\.\d{5,}`；`test_market_empty_ui.py` 真實結果表與 `display_number` | HEAD at commit time | PASS |
-| hash／全大寫內部代碼 0（進階除外） | hash 0；全大寫 token 29 次、11 種 | 七頁含選單／欄標文字掃描 `\b[a-f0-9]{32,}\b`／`\b[A-Z][A-Z_]{2,}\b`；詳見 JSON | HEAD at commit time | NOT-MET：含一般格式／單位 JSON、CSV、TWD、UTC，也仍有 MXF、MTX、TMF；未用排除名單把結果歸零 |
-| 無原因停用按鈕 0 | 0 | snapshot `disabled_buttons` 的 tooltip／hint 非空檢查 | HEAD at commit time | PASS |
-| 每作業完成通知 1，成功自動消失 | 4 類作業 ×3 終態，每次 1；成功 5000 ms 啟動淡出並隱藏 | `test_t16_presentation.py::test_each_job_notifies_once_and_cancel_after_complete_is_noop`；`test_market_empty_ui.py::test_completion_success_arms_timer_and_fade_hides_without_waiting`（直接發出 timeout／finished，不等待） | HEAD at commit time | PASS |
+| 最高頁面 ≤1600 px | 1377 px（紙上交易）；七頁皆 ≤1600 | `tools/ui_snapshot.py --out tests/fixtures/desktop_pages_before --size 1366x768`，`page_height` 最大值 | 2296916 | PASS |
+| 每頁 primary ≤1 | 最大 1 | 同上，`primary_button_count` 最大值 | 2296916 | PASS |
+| 未標示輸入欄 0 | 0／7 頁 | 同上，`unlabeled_inputs` 長度總和 | 2296916 | PASS |
+| 每頁標籤減少 ≥50% | 最小 60.00%，最大 89.35% | 同上與 `docs/analysis/baseline/ui_snapshot_1366x768/metrics.json`；`100*(1-after/before)`，逐頁見下表 | 2296916 | PASS |
+| 禁用工程用語 0 | 0 | 依 `desktop_strings.FORBIDDEN_DEFAULT_TERMS` 與 `tests/test_t9_onboarding.py` 相同正規式，掃描七頁 `visible_text + combo_items + table_headers` | 2296916 | PASS |
+| 狀態列原始例外 0 | 固定錯誤代碼對照測試 64／64；秘密字串外洩 0 | `test_t16_presentation.py` 的 fixed-code、worker failure、campaign outcome 測試（本次 15 tests PASS） | 2296916 | PASS |
+| MainWindow ≤400 行 | 393 行 | Python AST：`end_lineno-lineno+1` | 2296916 | PASS |
+| 每個非自明欄位皆有 tooltip | 非自明且無 tooltip 的輸入 0（30 個有 tooltip、11 個自明控制項已列入清單） \| `tests/test_t16_tooltips.py`（建立視窗逐頁檢查） \| 2296916 \| PASS |
+| >4 位小數 0 | 預設畫面 0；長小數／NaN／±inf 測試通過 | 七頁文字掃描 `\d+\.\d{5,}`；`test_market_empty_ui.py` 真實結果表與 `display_number` | 2296916 | PASS |
+| hash／全大寫內部代碼 0（進階除外） | hash 0；內部代碼 0；10 種全大寫詞彙皆為檔案格式／商品代號／交易所／幣別／時區 \| `tests/test_t16_tooltips.py` 要求預設可見文字的全大寫詞彙集合恰等於清單 \| 2296916 \| PASS（詞彙清單見 Part C） |
+| 無原因停用按鈕 0 | 0 | snapshot `disabled_buttons` 的 tooltip／hint 非空檢查 | 2296916 | PASS |
+| 每作業完成通知 1，成功自動消失 | 4 類作業 ×3 終態，每次 1；成功 5000 ms 啟動淡出並隱藏 | `test_t16_presentation.py::test_each_job_notifies_once_and_cancel_after_complete_is_noop`；`test_market_empty_ui.py::test_completion_success_arms_timer_and_fade_hides_without_waiting`（直接發出 timeout／finished，不等待） | 2296916 | PASS |
 
 | 頁面 | 基準標籤字數 | 最終字數 | 減少 |
 |---|---:|---:|---:|
@@ -38,41 +38,52 @@ P3-13 **no-gap evidence**：`display_result_rows → ResultTable.set_rows → sh
 
 計畫文件依最後「不得編輯」指示保留零差異；供 controller 追加的狀態列與缺項去重結果見 `t16_p3_notes.md` Part B。
 
-Part C ??????????? catalog label key ????? widget ????????????????? checkbox ??? tooltip????????????????????????????????
+Part C：非自明欄位 tooltip 與全大寫詞彙（`tests/test_t16_tooltips.py`，4 個測試）。
+
+測試建立視窗、逐頁走過預設可見的輸入元件，要求每個元件不是已有非空 tooltip，就是列在下方「自明控制項」清單（以目錄標籤鍵為準，並要求清單沒有過期或過寬的例外）。41 個預設可見輸入中 30 個已有 tooltip、11 個為自明控制項，非自明且沒有 tooltip 的輸入為 0。下方 JSON 是測試實際讀取的政策（清單內容即為各項的理由）。
 
 <!-- t16-input-policy -->
 ```json
 {
   "obvious_controls": {
-    "ui._data_page.text_14": "????????????????????",
-    "ui._backtest_page.text_5": "??????????????????",
-    "ui._backtest_page.text_7": "?????????????",
-    "ui._backtest_page.text_8": "?????????????",
-    "ui._paper_page.text_14": "???????????????????????",
-    "ui._settings_page.text_8": "??????????????????",
-    "ui._settings_page.text_9": "??????????????",
-    "settings.manage_connection": "???????????????",
-    "settings.backup_advanced": "??????????????????",
-    "maintenance.options": "???????????????",
-    "logs.errors_only": "?????????????????"
+    "ui._data_page.text_14": "整句即說明的同意核取方塊，勾選意義完全寫在標籤中",
+    "ui._backtest_page.text_5": "整句即說明的開關：批次執行五個家族的預設參數",
+    "ui._backtest_page.text_7": "整句即說明的顯示開關（圖表訊號）",
+    "ui._backtest_page.text_8": "整句即說明的顯示開關（圖表成交）",
+    "ui._paper_page.text_14": "整句即說明的對帳同意核取方塊",
+    "ui._settings_page.text_8": "整句即說明的日誌開關，括號內已寫明不含的內容",
+    "ui._settings_page.text_9": "整句即說明的通知開關",
+    "settings.manage_connection": "展開／收合按鈕，標籤即動作",
+    "settings.backup_advanced": "展開／收合按鈕，標籤即動作",
+    "maintenance.options": "展開／收合按鈕，標籤即動作",
+    "logs.errors_only": "篩選核取方塊，標籤即行為"
   },
   "domain_terms": {
-    "CSV": "?????????",
-    "JSON": "??????????",
-    "RPT": "??????????????????????",
-    "MTX": "???????????",
-    "MXF": "?????????????????????",
-    "TMF": "???????????",
-    "TAIFEX": "??????????",
-    "TWSE": "??????????",
-    "TWD": "??????",
-    "UTC": "???????"
+    "CSV": "檔案格式名稱",
+    "JSON": "檔案格式名稱",
+    "RPT": "期交所公開下載檔的格式名稱（使用者在檔案選擇時看到的副檔名類型，非內部代碼）",
+    "MTX": "商品代號（小型臺指期貨）",
+    "MXF": "商品代號（期交所資料中的小型臺指期貨代號）",
+    "TMF": "商品代號（微型臺指期貨）",
+    "TAIFEX": "交易所名稱（臺灣期貨交易所）",
+    "TWSE": "交易所名稱（臺灣證券交易所）",
+    "TWD": "幣別（新臺幣）",
+    "UTC": "時區名稱"
   }
 }
 ```
 
-Part C ???`test_t16_tooltips.py` 4 tests PASS?30 ?????? tooltip?11 ??????????? 0????? `desktop_strings.py` ? literal `ui_text` key ??????????????????? widget ???desktop_ui ????????MainWindow ?? 393 ??Part B ? desktop_pages_before ??? metrics ???????????????????????????
+全大寫詞彙：預設畫面共 10 種（CSV、JSON、RPT、MTX、MXF、TMF、TAIFEX、TWSE、TWD、UTC），全部是檔案格式、商品代號、交易所、幣別或時區，屬於使用者看得懂的領域名詞，不是內部代碼。測試要求預設可見文字中的全大寫詞彙集合恰等於此清單，因此新增任何內部代碼都會使測試失敗；hash 為 0。
 
-RPT ???`ui._data_page.text_6`?`ui._data_page.text_7` ?? CSV?RPT ???????`market.__init__.text_71` ??????? CSV????? RPT???? RPT ?????????????????????????????????????????internal codes: 0 ????????????????????????????
+驗證指令與結束碼（SHA 2296916，Windows 10、Python 3.13.11；Python 3.11 僅做編譯檢查）：
 
-Part C ?????? sandbox ?????????? focused modules?tooltips 4?market empty 5?import graph 4 tests?? quality gate????? suite ????? focused modules ? controller ? sandbox ????Ruff ? repo ???`py -3.11` ? utf-8-sig compile-check ?? tracked?new Python ??337 ?????GitNexus impact?install_polish LOW??? `_install_window_support` ? MainWindow ????StrategyForm MEDIUM?7 ??????????? sandbox spawn EPERM ?????????? 17 commits?????????????????????? commit?
+| 檢查 | 結束碼 |
+|---|---:|
+| `ruff check` | 0 |
+| `ruff format --check` | 0 |
+| `tools/quality_gate.py` | 0 |
+| `py -3.11 -m py_compile`（所有追蹤的 .py） | 0 |
+| `unittest discover -p test_t16_presentation.py`（15）／`test_t16_tooltips.py`（4）／`test_market_empty_ui.py`（5） | 0 |
+| `test_desktop_pages.py`（14）／`test_desktop_strings.py`（8）／`test_ui_operations_registry.py`（6）／`test_import_graph.py`（4）／`test_function_lengths.py`（2） | 0 |
+
+這是聚焦測試；完整測試套件由 CI 執行。

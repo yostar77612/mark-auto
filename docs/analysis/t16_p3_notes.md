@@ -73,7 +73,7 @@
 - 新增 test_market_empty_ui.py，5 tests／0.852 s PASS；import graph 4 tests／0.814 s PASS；Part A presentation 15 tests／0.618 s PASS。新增圖形測試無 sleeps、無網路、無 skipTest；通知淡出以訊號觸發，不縮短產品逾時。
 - GitNexus：MarketDashboard MEDIUM（13 upstream）、MarketPage LOW（7）；_render_chart HIGH（8，含 selection／preferences／smoke）、_render_cards HIGH（7，含 series setters／smoke）。已於修改前警告；閱讀實際來源／測試後只改呈現。索引重建被 sandbox spawn EPERM 阻擋，舊圖僅供導航，非完整證明。
 - 初次擴充 import scan 發現既有 local import 未註明延後原因；已加註原因，沒有移動或改變 import 行為，原測試未放寬。新測試初次誤用 Timeline 名稱已修正為既有 WindowTimeline。
-- 最終目標數字與 NOT-MET 詳見 t16_final_targets.md。普通 snapshot 命令 ACL exit 1；既有 sandbox_ui 執行限定 shim 下 capture 成功。最終測試 fixture 僅市場頁變更，其他六頁 metrics／PNG 不變；四個 objectName 只增不減。
+- 最終目標數字詳見 t16_final_targets.md（tooltip 與全大寫詞彙已於 Part C 補齊）。普通 snapshot 命令 ACL exit 1；既有 sandbox_ui 執行限定 shim 下 capture 成功。最終測試 fixture 僅市場頁變更，其他六頁 metrics／PNG 不變；四個 objectName 只增不減。
 - 不改計畫文件：本次要求前文要追加 section 5.1，最後 checklist 卻禁止編輯，遵循最後規則，以下提供 controller 可直接追加的列。舊列全部保留。
 
 ### Section 5.1 去重結果與待追加列
