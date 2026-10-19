@@ -1906,3 +1906,79 @@ e0e604f is empty. No full-suite result is claimed under the sandbox instruction.
 GitNexus local analysis ran with index-only/skip-fts/one worker, but global
 registration failed with sandbox EPERM; the lane query reported repository not
 found. No extension download, alternate graph tool or fresh graph claim was made.
+
+### TASK A1-D7: local read-only research prompt packages
+
+Initial assessment confirmed no loader, front-matter schema or local prompt
+directory. The existing test_agent_harness_d7.py remains unchanged: it tested
+injection at D1's boundary, not local skill loading. New prompt packages live
+only in docs/skills: interpret-backtest, check-overfitting-risk,
+compare-two-results and check-data-quality. Their contract is documented in
+[Local research skills](../AGENT_SKILLS.md).
+
+quantlab.agent_skills implements a strict hand-written Markdown front-matter
+parser with exactly name, description, allowed_tools and output_format.
+Single-line values use duplicate-free strict JSON strings/list syntax, never
+general YAML or dynamic evaluation. Unknown/duplicate/missing keys, invalid
+names/types, empty bodies, invalid UTF-8 and files over 16384 bytes fail closed.
+Names match their filename stems; catalogs have at most 128 files and reject
+invalid or duplicate entries atomically. Whitelists contain only registered
+effect=read tools with research.read/paper.read capabilities. Unknown tools,
+mutation tools and other capabilities fail validation independently.
+
+The directory is application-registered without a model-selectable root.
+Traversal/absolute names are rejected before file access; symlinks and Windows
+reparse points in file or directory components refuse. Reads are binary-capped
+and containment-checked. list/read use D11's single bounded_return constructor,
+strict limit/cursor inputs and snapshot-bound cursors. Body chunks are at most
+256 characters and reconstruct the entire prompt through pagination. Listing
+contains no paths. Prompt packages themselves must not contain secrets or user
+data; the loader has no other user-file, dataset, credential or provider reader.
+Concurrent malicious filesystem replacement remains a host-directory protection
+responsibility, as documented in the contract.
+
+The host activates a skill with already-existing grants and routes model tool
+requests through the immutable SkillSession.call entry point while active.
+Effective capabilities intersect existing grants, read capabilities and the
+registered whitelist's capabilities. A whitelist miss refuses before registry
+dispatch even when that tool exists. D1/D3 then independently enforce effect,
+capability, strict JSON schemas, training provenance and positive projection.
+Every public refusal reuses B1's existing agent_tool_refused with empty params;
+no second error table or grant API exists. Registration and activation remain
+host-only operations. No new model tool can alter skills, grants or evidence.
+
+Authority claims and fenced code remain inert text, without parsing them as
+permissions or executing them. Shipped prompts contain the disclaimer that AI
+interpretation may be wrong and nothing is applied or ordered automatically.
+They contain no actionable trading instructions, parameter application, protected
+partition revelation or mutation tool references. No UI is introduced; no new
+UI string keys, root files, widget names or baseline refresh are needed.
+
+Evidence: tests/test_agent_skills_d7.py adds ten deterministic tests covering
+the parser matrix, byte/catalog caps, unknown/mutation/non-read tools, runtime
+whitelist refusal, unchanged grants/registry/whitelist under authority claims,
+an inert fenced sentinel-file program, path and symlink refusal, D11 pagination,
+strict JSON and shipped prompt lint. Its AST scan rejects dynamic execution,
+process/importlib/pickle and UI imports. It routes D3's real sentinel fixture
+through an active skill for every tool and result page, recursively checking all
+output fields for protected metrics, prices, trades, equity, counts, guards,
+credentials, tokens, paths, usernames and raw file markers. The negative control
+removes provenance filtering and proves the same oracle fails for protected
+metrics and row count 31337. Existing tests remain unchanged except additive
+permitted-edge registration in tests/test_import_graph.py.
+
+Live trading remains permanently disabled. No G3 file, saved_candidate_pool
+byte, gate, OOS consumption, budget, timeout or existing threshold is changed.
+PROJECT_STATE.md, ACCEPTANCE.json, acceptance scores and the optimization plan
+remain untouched. Work is uncommitted as instructed; the controller owns commit
+creation and final commit-count verification, including the task id A1-D7.
+
+Local verification: new D7 10 tests (under 2 seconds), existing D7 2, D1 11,
+D2 6, D3 9, D11 9, import graph 7, repository layout 6, documentation layering
+8, B1 catalog 8, function lengths 2 and catalog placeholders 1 pass. Ruff 0.16.10
+check, changed-file format --check, Python 3.11 py_compile and quality_gate
+(0 findings) pass. Protected-path diff against e0e604f is empty. The full suite
+is left to the controller under the explicit sandbox rule; no pass is claimed.
+GitNexus status identified an incomplete index; refresh with index-only/skip-fts
+failed with sandbox spawn EPERM and the lane query reported repository not found.
+No extension downloads, alternative graph tools or fresh graph claims were used.
