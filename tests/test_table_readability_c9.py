@@ -82,7 +82,7 @@ class TableReadabilityTests(unittest.TestCase):
 
     def test_display_sort_roles_and_headers_match_baseline_bytes(self):
         actual = json.dumps([cell_values(table) for table in self.tables()], ensure_ascii=True, default=str, sort_keys=True, indent=2) + '\n'
-        expected = (Path(__file__).parent / 'fixtures' / 'table_values_e0e604f.json').read_bytes()
+        expected = (Path(__file__).parent / 'fixtures' / 'table_values_e0e604f.json').read_bytes().replace(b'\r\n', b'\n')  # autocrlf-safe
         self.assertEqual(actual.encode('utf-8'), expected)
 
     def test_column_types_align_cells_and_headers_including_missing_values(self):
