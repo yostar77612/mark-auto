@@ -54,3 +54,15 @@ phenomenon and is not claimed to explain the CI behaviour.
   isolation, both forbidden. The remaining mitigation is reducing Linux suite wall time
   (for example sharding the Linux job like the Windows shards); that needs a workflow and
   exact-skip aggregation change and is deferred to a dedicated CI batch.
+
+## Addendum (T16): a measured Linux-suite time sink
+
+Per-test gaps in the `ui` job log (`unittest discover -s tests -v`, timestamps per line) showed
+two gaps of 123 s and 137 s on Linux: `tests.test_desktop_pages.PageSnapshotTests` (first call of the
+shared metrics capture) and the first test of a new T16 test class that called
+`QApplication.setStyle('Fusion')`. `setStyle`/`setFont` on the application re-polish every live widget,
+and earlier test modules leave many windows alive, so each call costs minutes on a software-rendering
+runner (about 0.9 s on a quiet desktop). Fixes without touching any timeout: the T16 tests no longer call
+`setStyle` and never show the window; `tools/ui_snapshot.capture` skips `setStyle` when the style is
+already Fusion (the Linux default). The remaining measured Linux cost of the first capture should be
+re-read from the next CI log (`tools/measure_ci_margin.py` and the per-line timestamps are the method).
