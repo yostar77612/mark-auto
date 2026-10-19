@@ -1,6 +1,7 @@
 """Pure, fixed-code presentation; never interpret diagnostic prose."""
 
 from desktop_strings import ui_text
+from quantlab.desktop_errors import ERROR_LABELS
 
 AUTH_CODES = frozenset(
     {
@@ -42,6 +43,9 @@ def outcome_presentation(code):
 
 def outcome_message(code):
     title, body, _ = outcome_presentation(code)
+    if outcome_state(code) == 'generic_failure' and type(code) is str and code != 'operation_failed':
+        # Keep the specific fixed P0-05 text for known codes; unknown codes get the table's generic text.
+        body = ERROR_LABELS.get(code, body)
     return title + '\n' + body
 
 

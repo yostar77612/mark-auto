@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
+import re
 import unittest
 from unittest.mock import Mock, patch
 import tempfile
@@ -28,6 +29,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SECRET = 'private-token /secret/path ' + 'abcdef0123456789' * 4
 
 
+# Fixed P0-05 labels legitimately name the product and input formats.
+FIXED_TERMS = re.compile(r'ChatGPT|TLS|CSV|RPT|YYYY-MM-DD|YYYYMMDD|YYYYMM')
+
+
 class FixedCodeTests(unittest.TestCase):
     def test_every_p0_error_is_total_and_never_echoes_input(self):
         states = {'success', 'auth_expired', 'quota_exhausted', 'generic_failure'}
@@ -39,7 +44,9 @@ class FixedCodeTests(unittest.TestCase):
                 self.assertEqual(action, 'reauthorize' if outcome_state(code) == 'auth_expired' else None)
                 text = outcome_message(code)
                 self.assertNotIn(SECRET, text)
-                self.assertNotRegex(text, r'[A-Z_]{3,}|[a-f0-9]{16,}|private|/secret')
+                # Fixed P0-05 labels legitimately name the product and input formats.
+                visible = FIXED_TERMS.sub('', text)
+                self.assertNotRegex(visible, r'[A-Z_]{3,}|[a-f0-9]{16,}|private|/secret')
         self.assertEqual(outcome_state(SECRET), 'generic_failure')
         self.assertEqual(outcome_state('quota_paused'), 'quota_exhausted')
         self.assertEqual(outcome_state('credential_diagnosis'), 'auth_expired')
@@ -252,7 +259,7 @@ class PresentationWidgetTests(unittest.TestCase):
                     self.assertEqual(host.chatgpt_controller.outcome, outcome_state(code))
                     self.assertEqual(panel.status.text(), outcome_message(code))
                     self.assertEqual(host.notify_local.call_args.args[0], outcome_message(code))
-                    self.assertNotRegex(panel.status.text(), r'[A-Z_]{3,}|[a-f0-9]{16,}|private|/secret')
+                    self.assertNotRegex(FIXED_TERMS.sub('', panel.status.text()), r'[A-Z_]{3,}|[a-f0-9]{16,}|private|/secret')
                     self.assertEqual(
                         panel.primary_sign_in.text(),
                         ui_text('outcome.auth_expired.action') if code == 'credential_diagnosis' else ui_text('chatgpt_ui.__init__.text_8'),
@@ -271,7 +278,7 @@ class PresentationWidgetTests(unittest.TestCase):
             self.assertEqual(controller.outcome, outcome_state(code))
             self.assertIn(outcome_message(code), panel.status.text())
             self.assertNotIn(code, panel.status.text())
-            self.assertNotRegex(panel.status.text(), r'[A-Z_]{3,}|[a-f0-9]{16,}|private')
+            self.assertNotRegex(FIXED_TERMS.sub('', panel.status.text()), r'[A-Z_]{3,}|[a-f0-9]{16,}|private')
             controller.worker_joined(request.request_id, joined=True)
         request = controller.request('refresh', ref, confirmed=True)
         controller.acknowledge_quiescence(request.request_id, joined=True)
