@@ -32,6 +32,7 @@ MarkAuto 是台灣股價指數期貨 TX／MTX／TMF 的離線研究與紙上交�
 - [使用手冊（七頁截圖）](docs/user/使用手冊.md)
 - [Display compatibility checklist — EXTERNAL / UNVERIFIED](docs/qa/display-compatibility.md)
 - [Release notes document template — no publication](docs/release/RELEASE_NOTES_TEMPLATE.md)
+- [Contributor guide and PR verification](docs/CONTRIBUTING.md)
 - [目前狀態](docs/agent/PROJECT_STATE.md)、[實作契約](docs/agent/IMPLEMENTATION_CONTRACTS.md)、[正式驗收](docs/agent/ACCEPTANCE.json)
 - [架構](docs/analysis/01_PROJECT_ARCHITECTURE.md)、[既有功能](docs/analysis/02_EXISTING_FEATURES.md)、[目前品質與風險](docs/analysis/03_CODE_QUALITY_AND_RISKS.md)
 - [AI 目標設計](docs/analysis/04_AI_QUANT_TARGET_DESIGN.md)、[路線圖](docs/analysis/05_IMPLEMENTATION_ROADMAP.md)、[優化計畫](docs/analysis/06_PRODUCT_OPTIMIZATION_PLAN.md)

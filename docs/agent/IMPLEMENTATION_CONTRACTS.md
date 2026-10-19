@@ -1609,3 +1609,23 @@ and all timeouts remain unchanged. No OOS/final-holdout data may enter AI
 conversations, tool returns or prompts. The controller owns the single commit;
 lane changes remain uncommitted. ID uniqueness is checked directly from the
 template table without adding runtime code or tests.
+
+### DOC-E4: PR template and contributor guide
+
+The [PR template](../../.github/pull_request_template.md) records Change,
+Verification and Risk in that order. Unchecked verification rows require exact
+commands, exit codes and evidence; risk checkboxes cover G3 ownership,
+gates/OOS/budgets/timeouts, permanently disabled live trading and the unchanged
+230/300 acceptance score. Unverified work must remain explicitly unverified.
+
+The [contributor guide](../CONTRIBUTING.md), linked from README, documents the
+eight G3 files, protected profile blocks, owner approval, pinned Ruff 0.16.10,
+Python 3.11, quality-gate exit 0 and per-module test discovery. It preserves UI
+catalog/error-table rules, the OOS/final-holdout AI boundary, irreversible budgets,
+timeouts and PROJECT_STATE ownership. Workflow links name the existing
+quantlab.yml and windows-desktop.yml definitions without claiming CI success.
+
+This item changes only documentation: no root allowlist, code, tests, fixtures,
+G3/profile sources, state, acceptance scores or safety thresholds change.
+No Release or tag is created. The controller owns the single item commit;
+lane edits remain uncommitted. No UI baseline refresh is needed.
