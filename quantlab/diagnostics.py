@@ -8,6 +8,7 @@ from . import __version__
 from .desktop_feedback import OPERATION_LABELS
 from .errors import ERROR_TABLE
 from .job_stages import normalize_stage
+from .startup_timing import timing_snapshot
 
 MAX_BYTES = 4096
 MAX_ERRORS = 32
@@ -52,7 +53,7 @@ def _day(value):
     return UNAVAILABLE
 
 
-def build_diagnostics(*, workspace=None, data=None, job=None, errors=(), now=None):
+def build_diagnostics(*, workspace=None, data=None, job=None, errors=(), now=None, startup_timing=None):
     """Return deterministic UTF-8 JSON text with a fixed byte ceiling.
 
     workspace is a presence boolean, never a path. All mapping values are
@@ -82,6 +83,7 @@ def build_diagnostics(*, workspace=None, data=None, job=None, errors=(), now=Non
         },
         'last_errors': recent,
         'errors_status': 'available' if type(errors) in (list, tuple) else UNAVAILABLE,
+        'startup_timing': timing_snapshot(startup_timing),
     }
     if len(records) > MAX_ERRORS:
         snapshot['truncation'] = TRUNCATION_MARKER
@@ -90,7 +92,11 @@ def build_diagnostics(*, workspace=None, data=None, job=None, errors=(), now=Non
         if len(text.encode('utf-8')) <= MAX_BYTES:
             return text
         snapshot['truncation'] = TRUNCATION_MARKER
-        recent.pop()  # Drop oldest whole entries; retain valid JSON and every section.
+        if recent:
+            recent.pop()  # Drop oldest whole entries; retain valid JSON and every section.
+        else:
+            snapshot['startup_timing']['stages'].pop()
+            snapshot['startup_timing']['truncation'] = TRUNCATION_MARKER
 
 
 def read_error_records(path):

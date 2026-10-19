@@ -1087,6 +1087,10 @@ def run_gui(args):
         _json_bytes,
     )
 
+    # Keep existing dependency imports in place; measure only GUI initialization.
+    from quantlab.startup_timing import StartupTiming
+
+    state.startup_timing = StartupTiming()
     state.app = QApplication(sys.argv[:1])
     from desktop_icon import application_icon
 
@@ -1094,6 +1098,7 @@ def run_gui(args):
     state.app.setApplicationName('MarkAuto')
     state.app.setOrganizationName('MarkAuto')
     state.app.setApplicationVersion(__version__)
+    state.startup_timing.mark('application')
     state.user_bootstrap = AppPaths.discover().root
     state.smoke_startup_directory = None
     if state.args.smoke_test:
@@ -1108,6 +1113,7 @@ def run_gui(args):
     state.lock = acquire_instance_lock(state.locator, state.smoke_startup_directory)
     if state.lock is None:
         return 2
+    state.startup_timing.mark('bootstrap')
     state.jobs = state.guard = state.installation_guard = None
     state.smoke_jobs = state.smoke_directory = None
     state.settings_paths = None
@@ -1117,10 +1123,15 @@ def run_gui(args):
     try:
         if not prepare_workspace(state):
             return 3
+        state.startup_timing.mark('workspace')
         from desktop_ui import MainWindow
 
         state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
+        page_state = getattr(state.window, 'page_state', None)
+        if page_state is not None:
+            page_state.startup_timing = state.startup_timing
         state.window.show()
+        state.startup_timing.mark('window')
         if hasattr(state.window, 'freeze_paper'):
             state.window.freeze_paper(
                 'Previous session ended unexpectedly; reconcile paper account' if state.previous_unclean else 'Startup requires paper reconciliation'
@@ -1156,6 +1167,7 @@ def run_gui(args):
 
         timer.timeout.connect(clock_tick)
         timer.start()
+        state.startup_timing.mark('ready')
         if state.args.smoke_test:
             run_smoke(state)
         status = state.app.exec()

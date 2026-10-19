@@ -1538,3 +1538,37 @@ Evidence: tests/test_replay_b13.py uses an injected fake monotonic clock, no rea
 sleeps, no shown windows or application style changes. It checks speed/hash
 invariance, old schema, durable pause transitions, safety gates, one-bar per-op
 work at 100x, paused UI, cancellation and the unchanged public-name oracle.
+
+### DOC-E1: in-memory GUI startup stage timing
+
+`quantlab/startup_timing.py` records completed intervals with an injected clock
+(default `time.monotonic`). Names are exactly application, bootstrap, workspace,
+window and ready; all other values raise a fixed ValueError without echoing input.
+Durations are finite, nonnegative seconds. Construction reads the clock once;
+each retained mark reads it once; snapshots and overflow read it zero times.
+The first eight entries are retained; overflow adds `[truncated]`. Snapshots
+copy entries and retain no absolute timestamps, arbitrary details or paths.
+The recorder performs no file, logging, environment or network I/O at import
+or during measurement, and creates no threads or timers.
+
+`desktop.py` imports the recorder after its existing GUI/runtime dependency
+imports. Measurements start there, excluding interpreter launch and those
+earlier imports. application ends after QApplication/icon/application metadata;
+bootstrap after workspace-location discovery and instance locking; workspace
+after prepare_workspace; window after MainWindow construction/show; ready after
+startup hooks and the existing guard timer setup, before smoke/event-loop entry.
+window includes desktop_ui import time; ready does not assert first paint or
+background/network readiness. Existing timeouts and safety gates are unchanged.
+
+B12 diagnostics adds `startup_timing` (explicit `unavailable` without a recorder).
+The existing 4096-byte UTF-8 ceiling and whole-entry truncation remain in force;
+oldest errors are removed first, then whole timing entries if needed. The same
+snapshot text is displayed/copied in the existing collapsed maintenance panel.
+There are no new widgets, objectNames or default-view fixture changes. The only
+B12 expected-key change adds this section; no existing section is removed.
+Evidence: `tests/test_startup_timing_e1.py` covers exact fake-clock intervals,
+allowlisted names/privacy, bounds, no I/O, JSON sizing and offscreen display/copy;
+`tests/test_diagnostics_b12.py` retains its previous assertions plus the new key.
+No G3/profile, OOS, budget, timeout, live-order, acceptance-score or project-state
+change is part of E1. The controller creates the single item commit; its message
+should explain the additive B12 JSON key expectation. No commit is created here.
