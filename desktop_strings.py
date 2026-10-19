@@ -1829,3 +1829,11 @@ ZH_TW.update(
         'async.logs_empty': '\u5c1a\u7121\u7b26\u5408\u689d\u4ef6\u7684\u65e5\u8a8c',
     }
 )
+
+
+ZH_TW.update(
+    {
+        'panel.untitled': '\u9762\u677f',
+        'panel.controls': '\u9762\u677f\u63a7\u5236',
+    }
+)

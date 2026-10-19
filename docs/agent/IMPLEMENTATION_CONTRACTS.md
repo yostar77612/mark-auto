@@ -2156,3 +2156,66 @@ the current integrated layout has changed page heights, and settings now shows
 the explicit log-empty message. 06_full.png and 06_viewport.png match the
 checked-in baseline. Snapshot differences include inherited lane UI changes;
 this comparison does not attribute every changed pixel to C4.
+
+
+## UI-1 C3: shared PanelCard (2026-10-20)
+
+PanelCard is defined once in desktop_pages/widgets.py, without a host dependency
+or a new desktop_ui public name. Six existing market sections and two existing
+paper advanced form sections use it. Existing inner widgets and objectNames
+remain. The four shared chrome objectNames are additive in the widget inventory;
+no new module is introduced. widgets.py is included in the import graph scanner.
+
+The fixed title bar uses PANEL_TITLE_HEIGHT (19). Its section-title label uses
+Qt's QGroupBox title renderer, preserving the old section text without adding a
+QLabel to the explanation-character budget. The plain title has an accessible
+catalog fallback when empty. The named controls container has a fixed size policy
+and a right-aligned layout; add_control preserves insertion order across widths.
+content_layout() keeps content widgets directly parented to the card, allowing
+existing help relocation code to move a complete section through parentWidget().
+There is no collapse control, settings write, timer, broker import or order path.
+Paper cards live inside the existing collapsed policy/snapshot sections; default
+paper text, geometry and raster output remain identical to the archive.
+
+Repair findings: the initial content QWidget caused help relocation to strand
+market section titles, adding visible text. Its 36-pixel title bar also squeezed
+the chart by 17 pixels, causing the unchanged history smoke color-sampling check
+to fail for the two-candle timeframe. Direct content parenting and the compact
+fixed title height resolve both symptoms. A disposable workspace probe calls the
+unchanged _history_smoke_ui and _market_smoke_ui: all 24 history product/timeframe
+render checks pass, and the market helper reports 100 rendered bars. desktop.py
+and its smoke assertions are unchanged. The new regression assertion checks the
+actual help-relocation parentage and whole-section title visibility.
+
+set_theme_property selects centralized app/scoped-market QSS. Title foreground
+and background use the original text/background tokens, preserving e0e604f group
+title contrast in dark and light and exceeding 4.5. apply_theme re-polishes panel
+chrome. widgets.py contains no hardcoded hex colors. Tests build both pages with
+bare SimpleNamespace hosts without show(), setStyle(), subprocesses or sleeps.
+The stylesheet hash expectations are re-pinned for the new selectors; their exact
+equality assertions and every existing layout/accessibility assertion remain.
+
+Validation: test_panel_card_c3, test_help_reachability, test_desktop_market,
+test_market_empty_ui, test_b4_appearance, test_t16_tooltips and the dark/light
+accessibility walk pass. Ruff 0.16.10 check, changed-file format check, Python 3.11
+compilation and tools/quality_gate.py pass. The requested history, terminal,
+isolation, market-smoke, desktop_pages and desktop_ui modules were attempted;
+Windows sandbox temporary-directory ACL errors prevent completion. Their full
+subprocess/interaction runs still require controller verification. GitNexus
+reports an incomplete local index; analyze --skip-fts fails spawning its worker
+(EPERM), and the explicit lane-path context query is unregistered. Direct source
+inspection and the available runtime checks provide local evidence instead.
+
+A disposable seven-page raster capture compared every baseline file. Only these
+files need controller refresh in a separate fixture-only commit under
+ tests/fixtures/desktop_pages_before: metrics.json, 06_full.png and
+06_viewport.png. The sole page metric difference is market page_height 950 -> 953;
+all default visible text, label counts and other page metrics match. All other
+PNGs, including both paper PNGs, match byte-for-byte as decoded images. No
+baseline fixture is edited here. These claims describe measurements, not visual
+quality.
+
+Protected G3 files and all saved_candidate_pool.py content have empty diffs
+against e0e604f. No monetary calculation, gate, OOS/budget rule, timeout, live
+flag, PROJECT_STATE, optimization plan or ACCEPTANCE score is changed. Changes
+remain uncommitted for the controller's single C3 implementation commit.

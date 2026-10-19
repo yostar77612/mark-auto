@@ -15,6 +15,7 @@ from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, Pape
 from .bindings import PageContext
 from .result_widgets import KpiCards, ResultTable
 from .replay_controls import ReplayControls
+from .widgets import PanelCard
 
 
 class PaperPage(PageContext, QWidget):
@@ -42,8 +43,10 @@ class PaperPage(PageContext, QWidget):
         layout.addWidget(self.paper_risk_summary)
         advanced = self._advanced(layout)
         policy_layout = self._advanced(layout, ui_text('ui._paper_page.text_4'))
+        policy_panel = PanelCard(ui_text('ui._paper_page.text_4'))
+        policy_layout.addWidget(policy_panel)
         self.policy_form = PaperPolicyForm()
-        policy_layout.addWidget(self.policy_form)
+        policy_panel.content_layout().addWidget(self.policy_form)
         self.paper_policy = self._text(advanced, ui_text('ui._paper_page.text_5'), '{}', True)
         self._remember(self.paper_policy)
         self._button(layout, ui_text('ui._paper_page.text_6'), 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
@@ -51,7 +54,9 @@ class PaperPage(PageContext, QWidget):
         self._button(layout, ui_text('ui._paper_page.text_8'), 'paper_snapshot', lambda: self.paper_job('snapshot'))
         snapshot_layout = self._advanced(layout, ui_text('ui._paper_page.text_9'))
         self.snapshot_form = PaperSnapshotForm()
-        snapshot_layout.addWidget(self.snapshot_form)
+        snapshot_panel = PanelCard(ui_text('ui._paper_page.text_9'))
+        snapshot_layout.addWidget(snapshot_panel)
+        snapshot_panel.content_layout().addWidget(self.snapshot_form)
         self.snapshot = self._text(
             advanced,
             ui_text('ui._paper_page.text_10'),
