@@ -2031,3 +2031,64 @@ for the compact bar in a separate fixture-only commit. A fresh disposable
 capture confirms all seven full-page PNGs and metrics.json remain byte-identical;
 only those seven viewport images require refresh.
 The item is left uncommitted for the controller's single item commit.
+
+### U1-C1: compact application header
+
+`desktop_pages/app_header.py` owns the single `app_header` at central-layout
+index zero. Its maximum height is 48 logical pixels; focused offscreen tests
+verify its size hint also stays within 48 in dark and light themes at 1366x768.
+Default label widths and the complete row's size hint fit that width. These
+are measured layout bounds, not claims about visual quality or high-DPI QA.
+The permanent read-only badge uses literal `ui_text('header.live_disabled')`,
+preserving the research-mode/live-disabled wording. `research_mode_status`
+remains the explanation checkbox for unchanged automation; it controls only
+`research_mode_explanation`, never the badge or any trading capability.
+
+The existing `status` label moves from the bottom line into the header, with
+the same object and all existing writers. The privacy export warning remains
+visible in the header. No information from those lines is dropped. The actual
+`appearance_theme` combo is moved from the settings disclosure, retaining its
+existing B4/B11 callback, load_appearance/store keys, convention and apply_theme
+path. No second preference attribute is introduced. PrivacyState gains only
+an optional compact layout adapter; the header uses that same state/toggle,
+enabled() and existing table refresh/persistence path. Its default adapter
+remains compatible with existing callers. Interactive controls have accessible
+names and tab order follows privacy, explanation, theme.
+
+Data context reads existing host _dataset_ready and market _quote_series/
+_series/provenance through getattr defaults. It adds no data store or I/O.
+Source exchange, source date and freshness are visible; attribution and receipt
+timestamp are available in the tooltip. Cached data stays stale. Age greater
+than the existing paper_risk_limits().max_quote_age_seconds (30 seconds), future
+receipts, unknown timestamps or unknown thresholds also show stale/unverified.
+This is a display marker only: historical snapshots never imply real-time or
+execution eligibility. The quote-age risk limit itself is unchanged.
+
+Job presentation reads JobProgress.running, JobFeedback.terminal and the
+existing terminal notification's danger/neutral presentation for idle, running,
+failed and done; no second job-state field is added. A callable datetime clock
+is injected (default aware UTC). Fixed-clock tests exercise the exact age
+boundary without sleeps; the presentation timer stops on header/host close.
+Bare SimpleNamespace hosts build and refresh without optional state. The
+header contains only the existing privacy/explanation checkboxes and theme
+combo, with no network request, broker import, live order or enable-live control.
+
+Evidence: five focused tests pass in about one second locally, with no shown
+windows, application style changes, network or subprocesses in the new tests.
+Import graph, recursive UI-text/inline-style scans, catalog placeholders,
+unchanged public exports, function lengths, B8 drawings, B2 live-disabled and
+existing banner/polish tests pass. Accessibility walk passes in dark and light
+themes. Ruff 0.16.10 check and changed-file format check, Python 3.11 compilation
+and tools/quality_gate.py pass. The G3 eight files, all candidate-pool code,
+PROJECT_STATE, optimization plan, limits/timeouts and acceptance scores have no
+changes. Existing test assertions are unchanged; registration edits are additive.
+
+GitNexus status found no lane index; analyze failed with sandbox spawn EPERM,
+and the lane-specific query reported repository not found. Graph coverage is
+unverified. All five requested desktop smoke modules were attempted unchanged;
+Windows temporary-directory ACL errors prevent sandbox validation and require
+controller reruns. A disposable snapshot capture proves metrics.json and all
+seven full-page PNGs remain byte-identical. The controller must refresh only
+tests/fixtures/desktop_pages_before/01_viewport.png through 07_viewport.png for
+the consolidated header, in a separate fixture-only commit. No baseline files
+are edited here. All item changes remain uncommitted for the controller.

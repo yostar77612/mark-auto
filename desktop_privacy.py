@@ -108,21 +108,22 @@ def bind_text(widget, render):
 
 
 class PrivacyState:
-    def __init__(self, window, layout, banner):
+    def __init__(self, window, layout, banner, *, compact=False):
         self.window = window
         self.enabled = False
         layout.removeWidget(banner)
-        row = QHBoxLayout()
+        row = layout if compact else QHBoxLayout()
         row.addWidget(banner)
         self.toggle = QCheckBox(ui_text('privacy.toggle'))
         self.toggle.setObjectName('privacy_toggle')
         self.toggle.setAccessibleName(ui_text('privacy.toggle'))
         self.notice = QLabel(ui_text('privacy.exports_raw'))
         self.notice.setObjectName('privacy_export_notice')
-        self.notice.setWordWrap(True)
+        self.notice.setWordWrap(not compact)
         row.addWidget(self.toggle)
         row.addWidget(self.notice)
-        layout.insertLayout(0, row)
+        if not compact:
+            layout.insertLayout(0, row)
         self.toggle.toggled.connect(self.set_enabled)
 
     def restore(self, settings):
