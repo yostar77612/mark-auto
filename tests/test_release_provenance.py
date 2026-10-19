@@ -38,7 +38,7 @@ class ReleaseProvenanceTests(unittest.TestCase):
     def test_windows_research_and_linux_qt_audit_are_required(self):
         required = {'offline research (windows-latest, 3.11)',
                     'offline research (windows-latest, 3.12)',
-                    'Dependency audit (qt-linux311)'}
+                    'Dependency audit (qt-linux311)', 'Dependency audit (ruff)', 'Ruff lint and format'}
         self.assertTrue(required <= gate.REQUIRED_JOBS)
         run = {'head_sha': 'abc', 'event': 'push', 'run_number': 1, 'run_attempt': 1,
                'status': 'completed', 'conclusion': 'success', 'id': 2,

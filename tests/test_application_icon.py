@@ -86,7 +86,7 @@ class ApplicationIconTests(unittest.TestCase):
         self.assertIn('packaging/build.ps1', readme)
         workflow = (ROOT / '.github/workflows/quantlab.yml').read_text()
         self.assertIn('archives/legacy_autotrading/requirements.txt is outside this audit', workflow)
-        for lock in ('requirements-ui.lock', 'requirements-qt-ci.lock'):
+        for lock in ('requirements-ui.lock', 'requirements-qt-ci.lock', 'requirements-ruff.lock'):
             self.assertIn('requirements: ' + lock, workflow)
         self.assertIn('pip-audit', workflow)
 

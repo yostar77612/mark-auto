@@ -14,7 +14,7 @@ ARCHIVE = ROOT / 'archives/legacy_autotrading'
 ALLOWED_FILES = {
     '.gitattributes', '.gitignore', 'LICENSE', 'README.md', 'pyproject.toml',
     'requirements-desktop.lock', 'requirements-desktop.txt',
-    'requirements-qt-ci.lock', 'requirements-ui.lock', 'requirements-ui.txt',
+    'requirements-qt-ci.lock', 'requirements-ui.lock', 'requirements-ui.txt', 'requirements-ruff.lock',
     'research_app.py', 'desktop.py', 'desktop_accessibility.py',
     'desktop_automatic_backup.py', 'desktop_charts.py', 'desktop_chatgpt_auth.py',
     'desktop_chatgpt_dependency_manifest.json', 'desktop_chatgpt_provider.py',
@@ -32,7 +32,7 @@ ALLOWED_DIRECTORIES = {
 # layout. Never inspect their contents or require their presence in CI.
 IGNORED_LOCAL_NAMES = {
     '.claude', 'AGENTS.md', 'CLAUDE.md', '.git', '.gitnexus', '.venv',
-    '.runtime-sqlite', '__pycache__', 'build', 'dist', '.pytest_cache',
+    '.runtime-sqlite', '__pycache__', 'build', 'dist', '.pytest_cache', '.ruff_cache',
 }
 IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info')
 

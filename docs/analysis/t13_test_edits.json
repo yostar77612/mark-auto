@@ -1,0 +1,31 @@
+{
+  "task": "T13 part A",
+  "edits": [
+    {
+      "file": "tests/test_core_shards.py",
+      "reason": "Aggregate now requires offline and ruff.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_wfo_storage_ci.py",
+      "reason": "Aggregate now requires offline and ruff.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_application_icon.py",
+      "reason": "Audit inventory includes the new Ruff lock.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_repo_layout.py",
+      "reason": "Exact root inventory includes the new Ruff lock and ignores the generated Ruff cache alongside other local caches.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    },
+    {
+      "file": "tests/test_release_provenance.py",
+      "reason": "Missing Ruff or Ruff audit evidence must reject publication.",
+      "assertions": "Existing checks retained; expected inventory/dependency requirements extended."
+    }
+  ],
+  "regenerated_expected_hashes": []
+}

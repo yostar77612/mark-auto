@@ -81,7 +81,7 @@ class WfoStorageWorkflowTests(unittest.TestCase):
                               "', group: core, shard: " + shard + '}', offline)
         aggregate = job_text(self.workflow, 'core-coverage')
         self.assertIn('name: offline (windows-latest, ${{ matrix.python }})', aggregate)
-        self.assertIn('needs: offline', aggregate)
+        self.assertIn('needs: [offline, ruff]', aggregate)
         self.assertIn('if: always()', aggregate)
         self.assertIn('timeout-minutes: 15', aggregate)
         self.assertIn('python tools/validate_core_shards.py', aggregate)

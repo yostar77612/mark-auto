@@ -1082,7 +1082,7 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn('name: offline (windows-latest, ${{ matrix.python }})', aggregate)
         self.assertEqual(self.workflow.count('name: offline (windows-latest, ${{ matrix.python }})'), 1)
         self.assertIn("python: ['3.11', '3.12']", aggregate)
-        self.assertIn('needs: offline', aggregate)
+        self.assertIn('needs: [offline, ruff]', aggregate)
         self.assertRegex(aggregate, r'(?m)^    if: always\(\)$')
         self.assertIn('timeout-minutes: 15', aggregate)
         self.assertIn('fail-fast: false', aggregate)
