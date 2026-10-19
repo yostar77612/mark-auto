@@ -31,6 +31,12 @@ from tests.test_walk_forward import inputs, fake_worker
 FIXTURES = Path(__file__).parent / 'fixtures'
 
 
+def golden_observations():
+    """B6: ignore only entry metadata; retain all recorded expected values."""
+    observations = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
+    return {name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}} for name, entry in observations.items()}
+
+
 @contextmanager
 def old_module():
     """Load the committed pre-refactor source under a disposable module name."""
@@ -352,7 +358,7 @@ def exercise(execute):
 
 class RegistryTests(unittest.TestCase):
     def test_all_scenarios_ignore_host_profile_and_remembered_login(self):
-        expected = portable_paths(json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations'])
+        expected = portable_paths(golden_observations())
         original_environment = dict(os.environ)
         with old_module() as old, workspace() as host:
             from desktop_chatgpt_auth import DPAPIVault
@@ -421,7 +427,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(set(coverage), ui.UI_OPERATIONS)
         self.assertTrue(all(callable(test) for test in coverage.values()))
         expected = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))
-        expected['observations'] = portable_paths(expected['observations'])
+        expected['observations'] = portable_paths(golden_observations())
         self.assertEqual(set(expected['offline_limits']), {'ui_refresh'})
         with old_module() as old:
             legacy = exercise(old.execute_ui_operation)
