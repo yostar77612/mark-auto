@@ -13,6 +13,7 @@ import re
 import sys
 import tempfile
 import json
+from datetime import datetime, timezone
 
 
 def parse_size(value):
@@ -230,6 +231,9 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
             jobs = JobManager(paths)
             window = None
             try:
+                import desktop_pages.app_header as _header
+
+                _header.CLOCK_OVERRIDE = lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
                 window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
                 # Stop polling before dispatching Qt events: snapshots never run jobs.
                 for timer in window.findChildren(QTimer):
@@ -308,6 +312,9 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                         window.deleteLater()
                         QCoreApplication.sendPostedEvents(window, QEvent.Type.DeferredDelete)
     finally:
+        import desktop_pages.app_header as _header_reset
+
+        _header_reset.CLOCK_OVERRIDE = None
         app.setFont(old_font)
         if style_changed:
             app.setStyle(old_style)
