@@ -465,6 +465,11 @@ P0（快速修正，含真實 bug）
 | P2-B8 `tools/dev_setup.ps1` 在乾淨 Windows 帳號的實跑 | 靜態檢查（PowerShell 語法剖析、無 LOCALAPPDATA 安裝目標、無不安全下載、使用 `$PSScriptRoot`）、以本機假工件驗證雙重雜湊不符會中止且不安裝、`-DryRun`／`-WhatIf` 只列計畫；測試皆離線 | 需要真實的乾淨 Windows 帳號與網路：在全新帳號 clone 專案後執行 `powershell -File tools/dev_setup.ps1`，確認 `.runtime-sqlite` 與 `.venv` 建在專案資料夾內（不在 `%LOCALAPPDATA%`）、雜湊驗證通過、`python desktop.py` 可開啟既有工作區；再用竄改過的雜湊確認腳本中止 |
 | 安裝程式／MSIX 建置 | 專案內容清單前後逐項相同（舊程式搬入 `archives/legacy_autotrading/` 且不在安裝包內） | 原生安裝包只由 CI `build` 工作驗證；請在實機安裝一次確認啟動與圖示 |
 | P2-B2 抽出模組的來源雜湊涵蓋範圍 | 驗證邏輯（有界數值、分析計畫驗證等）自 `research_analysis.py`／`walk_forward.py` 抽到 `quantlab/value_bounds.py`、`analysis_contracts.py`、`errors.py`、`configuration.py`、`runtime_support.py`；定義與原版 AST 逐一相同，八個鎖定檔與 producer profile 零差異，測試全過 | 這些新模組目前未列入 walk-forward／分析封包的來源雜湊清單（`walk_forward.SOURCE_FILES`、分析實作雜湊），因此修改它們不會改變既有溯源雜湊。這是刻意不動 G3 溯源邏輯的取捨；建議在下次有計畫的引擎版本升級（會追加新 profile）時，一併把這些模組納入雜湊清單並重新產生黃金基準 |
+| P3-01 CI 偶發逾時的根因 | 已量測各階段（python 啟動 0.04 s、匯入 0.16 s、120 次同步 SQLite 提交 0.31 s；所有固定逾時皆有 20 倍以上餘裕）並統計 CI 紀錄（失敗的是不同的啟動子程序的測試，重跑全部工作即過；Linux 同一套件耗時 7.5–14.3 分鐘，另有數次在 15 分鐘上限被取消）；未放寬任何逾時。報告：`docs/analysis/t14_p3_ci_flakes.md` | 結論為 GitHub 託管執行器的環境性停頓，無法在本機證明：請在 CI 上執行 `python tools/measure_ci_margin.py` 取得執行器數據；若要降低 Linux 上限風險，建議另開 CI 批次把 Linux 工作分片 |
+| P3-02 研究 worker 階段代碼 | 固定白名單階段代碼（`quantlab/job_stages.py`），由失敗追蹤的函式名稱對應，絕不回傳例外文字；鎖定檔零差異 | CLI 的 campaign 階段較粗（無法在不修改鎖定檔下區分更細的階段）；於下次引擎升級時處理 |
+| P3-10 背景作業延遲 | 已有可重複的基準 `tools/bench_worker_latency.py` 與報告 `docs/analysis/t14_p3_latency.md`（安靜機器：整個作業約 1.5 s、單次 Walk-forward 評估約 0.49 s；計畫中的 3.5–8 s 為機器負載下的數字）；僅延後 `zipfile` 匯入，保留子程序隔離 | 執行器匯入約 0.4 s 主要來自既有 registrar 載入 Qt；進一步抽離會影響公開名稱與黃金基準，留待有計畫的版本；請在目標機器上重跑基準 |
+| P3-11 大型資料效能與儲存 | `tools/bench_backtest_scale.py`、`docs/analysis/t14_p3_scale.md`、`docs/analysis/t14_p3_storage_design.md`（SQLite／欄式評估與建議）；Walk-forward 預覽顯示保守的預估耗時（標示為估計，以每次評估 8 秒推算上限） | 引擎內部最佳化與資料格式變更屬 G3 鎖定範圍，留待有計畫的引擎版本升級；預估秒數為保守常數，實際依機器而異 |
+| P3-12 TLS 信任錨共用模組 | `quantlab/tls_trust.py` 供 `downloads.py`、`market_providers.py` 使用（只載入 ROOT 存放區、失敗時回到已驗證的預設）；以假憑證庫離線測試 | `provider.py`（G3 鎖定）仍用預設 context；真實網路在含過期交叉簽署 `ISRG Root X2` 的電腦上對 Let's Encrypt 站台的行為需在該電腦實測：用 `quantlab.tls_trust.build_trust_context()` 連線 sqlite.org 驗證 |
 
 ## 6. 不在本計畫範圍
 
