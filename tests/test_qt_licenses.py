@@ -49,15 +49,15 @@ class QtLicenseTests(unittest.TestCase):
                 target = checkout / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(raw)
-            control = checkout / 'ordinary.py'
+            control = checkout / 'ordinary.txt'
             control.write_bytes(b'# ordinary source\npass\n')
             def git(*args):
                 return subprocess.run(['git', '-C', str(checkout), *args], check=True,
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             git('init', '--quiet')
-            git('-c', 'core.autocrlf=false', 'add', '--', '.gitattributes', 'ordinary.py',
+            git('-c', 'core.autocrlf=false', 'add', '--', '.gitattributes', 'ordinary.txt',
                 *(name.as_posix() for name in expected))
-            for name in [*expected, Path('ordinary.py')]:
+            for name in [*expected, Path('ordinary.txt')]:
                 (checkout / name).unlink()
             git('-c', 'core.autocrlf=true', 'checkout-index', '--all', '--force')
             self.assertEqual(control.read_bytes(), b'# ordinary source\r\npass\r\n')
