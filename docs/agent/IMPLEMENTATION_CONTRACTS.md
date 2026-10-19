@@ -1,5 +1,42 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### LB-B9: display-only product-key convergence (after LB-B8)
+
+`quantlab.product_keys.converge_key(symbol, enabled=True)` uses exact,
+case-sensitive tables: TX and TXF map to TXF; MTX and MXF map to MXF;
+TMF maps to TMF. Each prefix accepts the bare root, R1/R2 continuous aliases,
+or exactly one month letter A/B/C/D/E/F/G/H/I/J/K/L (January..December)
+and one year digit 0..9. The explicit 01..12 month table agrees with
+taifex_expiries.load_expiries/lookup_expiry; tests cover every shipped month.
+TAIFEX:TX/MTX/TMF:YYYYMM display identities also converge (years 0001..9999).
+Recognition does not assert settlement/calendar coverage or resolve a decade.
+Options never converge: TXO, weekly option roots, strikes and call/put suffixes
+remain intact. Weekly futures identities are also excluded. Unknown, empty,
+None and non-string keys pass through unchanged, as does every disabled input.
+An enabled value other than an actual bool raises ValueError.
+
+DrawingStore saves and edits under the exact original instrument SHA256 file;
+load_exact exposes that owning collection. load(enabled=True) returns the
+deterministic original-key-sorted union for the product. Repeated drawings from
+different owners remain separate. The existing 200-drawing bound applies to the
+union; overflow returns empty without modifying files. Shared views are read-only;
+callers editing drawings must use load_exact/save for the original instrument.
+Discovery uses <instrument SHA256>.key JSON sidecars containing only the original
+display identity; legacy code aliases are enumerated without migration. Invalid
+metadata cannot redirect a drawing lookup (its filename must match the key hash).
+Original B8 drawing JSON and its schema remain unchanged. Switching or looking up
+never creates, rewrites, migrates or deletes any file. On/off/on is byte-lossless.
+
+Market diagnostics exposes the catalog-only market_converge_annotations checkbox.
+Market preferences persist converge_annotations as a strict bool, default True
+for old payloads; malformed values raise ValueError before state mutation, caught
+by the existing settings restore boundary. The host binds DrawingStore below the
+settings profile's display_profile directory and refreshes overlays on contract,
+timeframe and preference changes. Backtest/research inputs and hashes never depend
+on this preference. No G3, trading, quota, OOS, timeout or profile-block changes.
+Evidence: tests/test_lb_b9_product_keys.py. Existing tests/oracles/expiry data stay
+unchanged; only the import registry and additive widget inventory are updated.
+
 ### LB-B8: chart-drawings-v1
 
 `quantlab/chart_drawings.py` is a pure standard-library display model. Frozen

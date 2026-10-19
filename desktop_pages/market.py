@@ -4,6 +4,7 @@ from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.reporting import read_json, load_dataset, load_result, load_selection
 from quantlab.desktop_errors import error_message, exception_code
 from desktop_market import MarketDashboard, sample_market_series
+from quantlab.chart_drawings import DrawingStore
 from .host import PageHost
 
 
@@ -12,6 +13,9 @@ class MarketPage(MarketDashboard):
         super().__init__()
         self.host = host
         self.state = host.state
+        settings = getattr(self.state, 'settings', None)
+        if settings is not None:
+            self.drawing_store = DrawingStore(settings.path.parent / 'display_profile')
         host.mount_market(self, ui_text('ui._dashboard.text_1'))
         self.market = self
         self.state.market = self

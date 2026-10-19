@@ -1711,6 +1711,8 @@ ZH_TW.update(
         'diagnostics.notice': '診斷資訊僅含固定狀態與錯誤代碼，可複製提供協助。每日資料沒有事件時間時顯示 unavailable。',
         'diagnostics.refresh': '更新診斷資訊',
         'diagnostics.copy': '複製診斷資訊',
+        'market.converge_annotations': '換月共用圖表標註',
+        'market.converge_annotations_hint': '預設開啟。同商品期貨合約共用標註；關閉後只顯示原合約標註，保留所有儲存內容。選擇權不共用。',
     }
 )
 

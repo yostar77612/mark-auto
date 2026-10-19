@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from quantlab.product_keys import converge_key, symbol_aliases
 
 SCHEMA_VERSION = 1
 MAX_DRAWINGS = 200
@@ -152,7 +153,7 @@ class DrawingStore:
         self._safe_path(path)
         return path
 
-    def load(self, instrument):
+    def load_exact(self, instrument):
         path = self.path_for(instrument)
         try:
             with path.open('rb') as stream:
@@ -161,10 +162,38 @@ class DrawingStore:
         except (OSError, ValueError, UnicodeError):
             return ()
 
+    def load(self, instrument, enabled=True):
+        """Read a deterministic union; never rewrite originals or shared views.
+
+        Save always targets the exact original instrument. Shared results are
+        display-only; edits must load_exact/save the owning instrument.
+        Oversized unions fail closed rather than silently hiding some drawings.
+        """
+        self.path_for(instrument)
+        key = converge_key(instrument, enabled)
+        if not enabled or key not in {'TXF', 'MXF', 'TMF'}:
+            return self.load_exact(instrument)
+        sources = {instrument, *symbol_aliases(key)}
+        try:
+            for path in self.directory.glob('*.key'):
+                self._safe_path(path)
+                if path.stat().st_size > 1024:
+                    continue
+                original = json.loads(path.read_text(encoding='utf-8'))
+                if isinstance(original, str) and converge_key(original) == key and self.path_for(original).with_suffix('.key') == path:
+                    sources.add(original)
+            return checked(d for source in sorted(sources) for d in self.load_exact(source))
+        except (OSError, ValueError, UnicodeError):
+            return ()
+
     def save(self, instrument, drawings):
         raw = serialize(drawings).encode('utf-8')
         path = self.path_for(instrument)
         path.parent.mkdir(parents=True, exist_ok=True)
+        # Discovery metadata contains only the original display key; old code
+        # aliases need no migration. No metadata or drawing is written on lookup.
+        if converge_key(instrument) in {'TXF', 'MXF', 'TMF'}:
+            path.with_suffix('.key').write_text(json.dumps(instrument), encoding='utf-8')
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.drawings-', suffix='.tmp', delete=False) as stream:
