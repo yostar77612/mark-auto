@@ -17,7 +17,8 @@ from desktop_strings import ui_text
 from desktop_ui import MainWindow
 from quantlab.desktop_runtime import AppPaths
 from tests.test_t9_onboarding import sandbox_ui
-from tools.ui_snapshot import _input_widgets, page_metrics
+from tests.snapshot_cache import default_metrics
+from tools.ui_snapshot import _input_widgets
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -93,9 +94,9 @@ class TooltipCoverageTests(unittest.TestCase):
             self.assertTrue(all(field.toolTip().strip() for field in form.fields.values()))
 
     def test_default_text_has_only_allowlisted_domain_tokens_and_no_hashes(self):
+        # Shared metrics-only capture: rasterising or re-measuring pages is slow on CI hosts.
         tokens = set()
-        for _, page in self.pages():
-            metrics = page_metrics(page)
+        for metrics in default_metrics()['pages'].values():
             text = '\n'.join(metrics['visible_text'] + metrics['combo_items'] + metrics['table_headers'])
             tokens.update(re.findall(r'\b[A-Z][A-Z_]{2,}\b', text))
             self.assertNotRegex(text, r'\b[a-f0-9]{32,}\b')
@@ -108,13 +109,11 @@ class TooltipCoverageTests(unittest.TestCase):
         public_names = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
         self.assertEqual(sorted(name for name in vars(desktop_ui) if not name.startswith('_')), public_names)
         baseline = json.loads((ROOT / 'tests/fixtures/desktop_pages_before/metrics.json').read_text(encoding='utf-8'))
-        for index, page in self.pages():
-            name = self.window.navigation.item(index).text()
-            actual = page_metrics(page)
-            expected = baseline['pages'][name]
-            # Snapshot sizes the scroll content to its natural height separately.
+        actual_pages = default_metrics()['pages']
+        self.assertEqual(set(actual_pages), set(baseline['pages']))
+        for name, expected in baseline['pages'].items():
             for key in ('visible_input_count', 'label_char_count', 'visible_text', 'combo_items', 'table_headers', 'unlabeled_inputs'):
-                self.assertEqual(actual[key], expected[key], (name, key))
+                self.assertEqual(actual_pages[name][key], expected[key], (name, key))
 
 
 if __name__ == '__main__':
