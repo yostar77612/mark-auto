@@ -13,9 +13,9 @@ class MarketPage(MarketDashboard):
         super().__init__()
         self.host = host
         self.state = host.state
-        settings = getattr(self.state, 'settings', None)
-        if settings is not None:
-            self.drawing_store = DrawingStore(settings.path.parent / 'display_profile')
+        settings_path = getattr(getattr(self.state, 'settings', None), 'path', None)
+        if settings_path is not None:
+            self.drawing_store = DrawingStore(settings_path.parent / 'display_profile')
         host.mount_market(self, ui_text('ui._dashboard.text_1'))
         self.market = self
         self.state.market = self
