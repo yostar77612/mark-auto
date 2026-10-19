@@ -1488,7 +1488,10 @@ class MainWindow(SharedStateBindings, QMainWindow):
                     if self.last_operation == 'ui_backup_restore':
                         self.freeze_paper(ui_text('ui.poll_jobs.text_4'))
                     self.status.clear()
-                    self.notify_local(error_message('operation_failed'), error=True, completion=True)
+                    # Resolve the stage catalog only when a worker reports failure.
+                    from desktop_strings import stage_error_message
+
+                    self.notify_local(stage_error_message(event.get('stage')), error=True, completion=True)
                 elif kind in ('cancelled', 'canceled'):
                     self.freeze_paper(ui_text('ui.poll_jobs.text_5'))
                     self.status.setText(ui_text('ui.poll_jobs.text_6'))

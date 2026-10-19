@@ -12,7 +12,6 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
-import ssl
 import stat
 import tempfile
 import time
@@ -23,6 +22,7 @@ import zipfile
 import zlib
 
 from .core import ValidationError
+from .tls_trust import build_trust_context
 
 SOURCE_URL = 'https://www.taifex.com.tw/cht/3/futPrevious30DaysSalesData'
 OFFICIAL_HOSTS = frozenset({'www.taifex.com.tw'})
@@ -54,9 +54,9 @@ class _OfficialRedirect(HTTPRedirectHandler):
 
 
 def https_transport(url, timeout):
-    """Return a file-like HTTP response; SSL default context verifies TLS."""
+    """Return a file-like HTTP response with verified ROOT-store TLS."""
     official_url(url)
-    opener = build_opener(_OfficialRedirect(), HTTPSHandler(context=ssl.create_default_context()))
+    opener = build_opener(_OfficialRedirect(), HTTPSHandler(context=build_trust_context()))
     return opener.open(Request(url, headers={'User-Agent': 'QuantLab-research/1.0', 'Accept-Encoding': 'identity'}), timeout=timeout)
 
 

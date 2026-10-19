@@ -16,7 +16,6 @@ import json
 import os
 from pathlib import Path
 import re
-import ssl
 import socket
 import threading
 import stat
@@ -25,6 +24,7 @@ import time
 from urllib.request import build_opener, HTTPSHandler, HTTPRedirectHandler, ProxyHandler, Request
 
 from .market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance, MarketValidationError, bar_key, utc
+from .tls_trust import build_trust_context
 
 TWSE_URL = 'https://openapi.twse.com.tw/v1/indicesReport/MI_5MINS_HIST'
 TAIFEX_URL = 'https://openapi.taifex.com.tw/v1/DailyMarketReportFut'
@@ -267,7 +267,7 @@ class _DeadlineHTTPSHandler(HTTPSHandler):
     """
 
     def __init__(self, deadline):
-        super().__init__(context=ssl.create_default_context())
+        super().__init__(context=build_trust_context())
         self.deadline = deadline
         self.timers = []
 

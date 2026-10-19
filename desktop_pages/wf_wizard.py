@@ -7,6 +7,17 @@ from desktop_strings import ui_text
 from desktop_presentation import display_number
 from .result_widgets import ResultTable
 from desktop_theme import COLORS
+from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
+
+
+def duration_estimate_text(evaluations, per_evaluation_seconds=MEASURED_EVALUATION_SECONDS):
+    """An upper-count estimate, never a deadline or permission to run."""
+    if type(evaluations) is not int or evaluations <= 0:
+        return ''
+    seconds = estimated_seconds(evaluations, per_evaluation_seconds)
+    if seconds is None:
+        return ui_text('wf.duration_unknown')
+    return ui_text('wf.duration_estimate').format(display_number(seconds))
 
 
 def display_result_rows(result):
@@ -328,6 +339,7 @@ class WalkForwardWizard(QWidget):
                         display_number(result['candidate_count']),
                         display_number(result['planned_evaluations_upper_bound']),
                     ),
+                    duration_estimate_text(result['planned_evaluations_upper_bound']),
                     ui_text('walk_forward.preview_text.text_11'),
                     ui_text('walk_forward.preview_text.text_12'),
                     ui_text('walk_forward.preview_text.text_26'),
