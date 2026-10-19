@@ -61,6 +61,7 @@ def _label_field(widget, text):
 
 def install_polish(window):
     """Install once after construction; never change action eligibility or payloads."""
+    _install_input_tooltips(window)
     fields = {
         'market_provider': ui_text('ui_polish.install_polish.text_1'),
         'import_kind': ui_text('ui_polish.install_polish.text_2'),
@@ -124,3 +125,34 @@ def install_polish(window):
             window._disabled_hints.append(DisabledHint(button, label, prerequisite))
         else:
             label.deleteLater()
+
+
+def _install_input_tooltips(window):
+    """Explain units and consequences without changing geometry or payloads."""
+    fields = (
+        (window.market_provider, ui_text('tooltip.market_provider')),
+        (window.import_path, ui_text('tooltip.import_path')),
+        (window.calendar_path, ui_text('tooltip.calendar_path')),
+        (window.import_kind, ui_text('tooltip.import_kind')),
+        (window.bars, ui_text('tooltip.bars')),
+        (window.days, ui_text('tooltip.days')),
+        (window.result_choice, ui_text('tooltip.result_choice')),
+        (window.replay_bars, ui_text('tooltip.replay_bars')),
+        (window.cancel_order, ui_text('tooltip.cancel_order')),
+        (window.paper_time.enabled_value, ui_text('tooltip.paper_time')),
+        (window.paper_time.picker, ui_text('tooltip.paper_time')),
+        (window.market.contract_combo, ui_text('tooltip.market_contract')),
+        (window.market.timeframe_combo, ui_text('tooltip.market_timeframe')),
+        (window.market.search, ui_text('tooltip.market_search')),
+        (window.market.catalog_combo, ui_text('tooltip.market_catalog')),
+        (window.workspace_path, ui_text('tooltip.workspace_path')),
+        (window.backup_path, ui_text('tooltip.backup_path')),
+        (window.automatic_backup_panel.directory, ui_text('tooltip.backup_directory')),
+    )
+    for widget, text in fields:
+        widget.setToolTip(text)
+    from PySide6.QtWidgets import QCheckBox
+
+    for widget in window.findChildren(QCheckBox):
+        if widget.objectName().startswith('advanced_'):
+            widget.setToolTip(ui_text('tooltip.advanced'))

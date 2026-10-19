@@ -1,5 +1,46 @@
 {
   "schema_version": 2,
+  "t16_part_c": {
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part C: default input explanations and domain vocabulary",
+    "evidence": [
+      "tests/test_t16_tooltips.py",
+      "docs/analysis/t16_final_targets.md",
+      "docs/analysis/t16_tooltip_metrics.json"
+    ],
+    "visible_inputs": 41,
+    "inputs_with_tooltips": 30,
+    "obvious_allowlisted_checkboxes": 11,
+    "non_obvious_inputs_without_tooltips": 0,
+    "internal_codes": 0,
+    "domain_terms": [
+      "CSV",
+      "JSON",
+      "RPT",
+      "MTX",
+      "MXF",
+      "TMF",
+      "TAIFEX",
+      "TWSE",
+      "TWD",
+      "UTC"
+    ],
+    "rpt": "Comma-delimited historical data file format; market.__init__.text_71",
+    "invariants": "Tooltips only; no geometry, public desktop_ui names, widget names, payload, validation, G3 or Part B snapshot changes."
+  },
+  "market_empty_state_t16_part_b": {
+    "plan_items": [
+      "P3-09",
+      "P3-13"
+    ],
+    "contract": "IMPLEMENTATION_CONTRACTS.md: T16 part B: market empty state and final target evidence",
+    "evidence": "tests/test_market_empty_ui.py; docs/analysis/t16_final_targets.md; docs/analysis/t16_final_metrics.json",
+    "sample": "Existing synthetic_dataset(960), in-memory daily display projection, labelled synthetic/nonofficial, no persistence or network",
+    "official_download": "Existing default-No consent flow; ui_market_refresh network_opt_in=True only after Yes",
+    "cached": "Date and not-real-time label; empty actions replaced by existing refresh",
+    "walk_forward": "Unchanged real formatter/result table handles 30-digit Decimal, NaN, infinity; four-segment timeline",
+    "verification": "5 new tests PASS in 0.852 s; 4 import graph tests PASS; 15 Part A presentation tests PASS; quality gate zero findings. Full existing suite controller-owned.",
+    "final_targets": "Max page 1377 px; primary max 1; unlabeled 0; label reductions 60.00?89.35%; forbidden terms 0; long decimals 0; MainWindow 393 lines. Part C closes tooltip coverage and classifies the ten uppercase domain terms; see measured report."
+  },
   "tls_worker_stages_t14_part_a": {
     "plan_items": ["P3-12", "P3-02"],
     "contract": "IMPLEMENTATION_CONTRACTS.md: T14 part A: verified trust anchors and worker error stages (P3-12 / P3-02)",

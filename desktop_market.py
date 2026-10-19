@@ -98,8 +98,59 @@ def _named(widget, name, label):
     return widget
 
 
+def sample_market_series():
+    """Project the existing invented demo into daily display bars, in memory only."""
+    # Load this operation-specific dependency only when requested.
+    from datetime import datetime, timezone
+
+    # Load this operation-specific dependency only when requested.
+    from quantlab.reporting import synthetic_dataset
+
+    # Load this operation-specific dependency only when requested.
+    from quantlab.market import InstrumentRef, MarketBar, SourceProvenance
+
+    data = synthetic_dataset(960)
+    instrument = InstrumentRef('TAIFEX', 'TMF', 'TAIFEX:TMF:202601', '202601')
+    days = sorted({bar.trade_date for bar in data.bars})
+    bars = []
+    for day in days:
+        group = [bar for bar in data.bars if bar.trade_date == day]
+        bars.append(
+            MarketBar(
+                instrument,
+                day,
+                'day',
+                group[0].open,
+                max(b.high for b in group),
+                min(b.low for b in group),
+                group[-1].close,
+                sum(b.volume for b in group),
+                interval='1d',
+                source_id='synthetic-v1',
+            )
+        )
+    provenance = SourceProvenance(
+        'sample:synthetic-v1',
+        data.manifest['source_hash'],
+        ui_text('market.sample_label'),
+        'sample:synthetic-v1',
+        datetime(2026, 1, 5, tzinfo=timezone.utc),
+        days[-1],
+        days[0],
+        days[-1],
+        mode='offline',
+        warnings=(ui_text('market.sample_label'),),
+    )
+    return MarketSeries(instrument, tuple(bars), provenance)
+
+
+def _series_source(item):
+    return ui_text('market.sample_label') if item.provenance.source_url == 'sample:synthetic-v1' else _friendly_source(item.instrument)
+
+
 class MarketDashboard(QWidget):
     refresh_requested = Signal()
+    sample_requested = Signal()
     selection_changed = Signal(str)
     series_rendered = Signal(str)
     preferences_changed = Signal()
@@ -176,6 +227,19 @@ class MarketDashboard(QWidget):
         self.message = _label(ui_text('market.__init__.text_15'), 'market_message')
         set_status(self.message, 'warning')
         root.addWidget(self.message)
+        self.empty_actions = QWidget()
+        actions = QHBoxLayout(self.empty_actions)
+        actions.setContentsMargins(0, 0, 0, 0)
+        self.sample_button = _named(QPushButton(ui_text('market.load_sample')), 'market_load_sample', ui_text('market.load_sample'))
+        self.sample_button.setToolTip(ui_text('market.sample_label'))
+        self.sample_button.clicked.connect(self.sample_requested.emit)
+        actions.addWidget(self.sample_button)
+        self.official_button = _named(QPushButton(ui_text('market.download_official')), 'market_download_official', ui_text('market.download_official'))
+        self.official_button.setToolTip(ui_text('market.official_consent'))
+        self.official_button.clicked.connect(self.refresh_requested.emit)
+        actions.addWidget(self.official_button)
+        root.addWidget(self.empty_actions)
+        self.refresh_button.hide()
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         root.addWidget(self.main_splitter, 1)
         left = QWidget()
@@ -302,6 +366,7 @@ class MarketDashboard(QWidget):
         right_layout.addStretch()
         right_scroll.setWidget(right)
         self.main_splitter.addWidget(right_scroll)
+        # Load this operation-specific dependency only when requested.
         from PySide6.QtWidgets import QToolButton
 
         self.right_panel = right_scroll
@@ -512,6 +577,9 @@ class MarketDashboard(QWidget):
             label.setText(
                 f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '
                 + (ui_text('market._render_cards.text_3') if stale else ui_text('market._render_cards.text_4'))
+                + ' · '
+                + ui_text('market.not_realtime')
+                + (' · ' + ui_text('market.sample_label') if item.provenance.source_url == 'sample:synthetic-v1' else '')
             )
             label.setToolTip(
                 ui_text('market._render_cards.text_5').format(
@@ -527,6 +595,8 @@ class MarketDashboard(QWidget):
 
     def _render_chart(self):
         item = self._series.get(self._selected)
+        self.empty_actions.setVisible(not self._series)
+        self.refresh_button.setVisible(bool(self._series))
         if item is None:
             self.chart.set_series(())
             self._display_bars = ()
@@ -544,9 +614,7 @@ class MarketDashboard(QWidget):
             if provenance.mode == 'eod'
             else ui_text('market._render_chart.text_5')
         )
-        self.source_status.setText(
-            ui_text('market._render_chart.text_6').format(_friendly_source(item.instrument), status, provenance.as_of, provenance.received_at)
-        )
+        self.source_status.setText(ui_text('market.data_date').format(_series_source(item), provenance.as_of, ui_text('market.not_realtime')))
         try:
             result = aggregate_bars(item.bars, timeframe=self._timeframe)
         except (ValueError, TypeError) as exc:
@@ -555,9 +623,7 @@ class MarketDashboard(QWidget):
             self.message.setText(error_message('market_data_invalid'))
             return
         self._display_bars = result.bars
-        self.chart.set_series(
-            result.bars, source_label=_friendly_contract(item.instrument.contract_id) + ' · ' + _friendly_source(item.instrument), status_label=status
-        )
+        self.chart.set_series(result.bars, source_label=_friendly_contract(item.instrument.contract_id) + ' · ' + _series_source(item), status_label=status)
         warnings = list(provenance.warnings) + list(result.warnings)
         if any(bar.partial for bar in result.bars):
             warnings.insert(0, ui_text('market._render_chart.text_7'))
@@ -803,6 +869,7 @@ class MarketDashboard(QWidget):
                             raise ValueError('invalid price')
                     if not isinstance(value, (str, int, float, Decimal)) or isinstance(value, bool) or len(str(value)) > 500:
                         raise ValueError('invalid display value')
+                    # Load this operation-specific dependency only when requested.
                     from desktop_presentation import display_value
 
                     cells.append(display_value(value, key))
@@ -918,6 +985,7 @@ class MarketHistoryDialog(QDialog):
         self.expiry_type.currentIndexChanged.connect(lambda: self.week.setEnabled(self.expiry_type.currentData() == 'weekly'))
         self.product.currentIndexChanged.connect(self._source_label)
         self._source_label()
+        # Load this operation-specific dependency only when requested.
         from desktop_expiry_inputs import attach_history_picker
 
         attach_history_picker(self, form)
@@ -926,6 +994,7 @@ class MarketHistoryDialog(QDialog):
         self.confirm.setChecked(False)
 
     def _source_label(self, *args):
+        # Load this operation-specific dependency only when requested.
         from quantlab.market_history import PRODUCT_SOURCES
 
         self.source.setText(ui_text('market._source_label.text_1').format(PRODUCT_SOURCES[self.product.currentData()]))
@@ -942,7 +1011,10 @@ class MarketHistoryDialog(QDialog):
             self.path.setText(name)
 
     def session_payload(self):
+        # Load this operation-specific dependency only when requested.
         from datetime import date, datetime, timezone, timedelta
+
+        # Load this operation-specific dependency only when requested.
         from quantlab.market_history import PRODUCT_SOURCES, session_from_dict
 
         if not self.confirm.isChecked():
@@ -1025,6 +1097,7 @@ class MarketHistoryDialog(QDialog):
             self.session_list.takeItem(row)
 
     def request_payload(self):
+        # Load this operation-specific dependency only when requested.
         from pathlib import Path
 
         path = self.path.text().strip()

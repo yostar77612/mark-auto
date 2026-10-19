@@ -3,7 +3,7 @@ from desktop_strings import ui_text
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.reporting import read_json, load_dataset, load_result, load_selection
 from quantlab.desktop_errors import error_message, exception_code
-from desktop_market import MarketDashboard
+from desktop_market import MarketDashboard, sample_market_series
 from .host import PageHost
 
 
@@ -18,8 +18,18 @@ class MarketPage(MarketDashboard):
         self.state._section_toggles['market:diagnostics'] = self.diagnostics_button
         self.diagnostics_button.toggled.connect(lambda checked: host.safe(host.save_sections))
         self.refresh_requested.connect(lambda: host.safe(self.refresh_market))
+        self.sample_requested.connect(lambda: host.safe(self.load_sample_market))
         self.preferences_changed.connect(lambda: host.safe(self.save_market_preferences))
         self.series_rendered.connect(lambda _: host.safe(self.bind_result_layers))
+
+    def load_sample_market(self):
+        """Read-only demo; do not persist or replace a research dataset/cache."""
+        if self._series:
+            return
+        series = sample_market_series()
+        self._selected = series.instrument.contract_id
+        self.set_quote_series(series, stale=True)
+        self.set_market_series(series, stale=True)
 
     def refresh_market(self):
         if self.state.jobs.active:
@@ -44,7 +54,10 @@ class MarketPage(MarketDashboard):
         self.state.settings.save(value)
 
     def load_market_cache(self):
+        # Load this operation-specific dependency only when requested.
         from quantlab.market_providers import load_cached
+
+        # Load this operation-specific dependency only when requested.
         from desktop_expiry_inputs import show_research_dataset
 
         show_research_dataset(self.research_summary, None)
@@ -82,6 +95,7 @@ class MarketPage(MarketDashboard):
             except (ValueError, KeyError, TypeError) as exc:
                 errors.append(error_message(exception_code(exc)))
         try:
+            # Load this operation-specific dependency only when requested.
             from quantlab.market_history import list_history
 
             histories = list_history(self.state.root / 'market_history')
@@ -104,6 +118,7 @@ class MarketPage(MarketDashboard):
         self.market.set_trading_status(strategy=strategy)
         if (self.state.root / 'paper.sqlite3').exists() and (self.state.root / 'paper_policy.json').exists():
             try:
+                # Load this operation-specific dependency only when requested.
                 from quantlab.paper import PaperBroker
 
                 self.host.show_account(PaperBroker.read_snapshot(self.state.root / 'paper.sqlite3'), strategy=strategy)
@@ -113,6 +128,7 @@ class MarketPage(MarketDashboard):
 
     def bind_result_layers(self, result=None):
         """Only exact source, strategy and chart identities may carry result layers."""
+        # Load this operation-specific dependency only when requested.
         from desktop_charts import ChartTrace, ChartMarker
 
         chart = self.market.chart
@@ -126,6 +142,7 @@ class MarketPage(MarketDashboard):
             return
         result = result or load_result(path)
         data = load_dataset(self.state.root / 'dataset.json')
+        # Load this operation-specific dependency only when requested.
         from quantlab.reporting import validate_result_payload
 
         try:
@@ -142,6 +159,7 @@ class MarketPage(MarketDashboard):
             return
         trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], ui_text('ui.bind_result_layers.text_1'))
         markers = []
+        # Load this operation-specific dependency only when requested.
         from bisect import bisect_left, bisect_right
 
         timed = [(i, b) for i, b in enumerate(bars) if b.timestamp is not None and b.end is not None]

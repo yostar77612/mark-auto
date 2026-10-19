@@ -158,6 +158,7 @@ class StrategyForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.family = self.field('family', ui_text('forms.__init__.text_1'), choices=[(FAMILY_LABELS[f], f) for f in FAMILIES])
+        self.family.setToolTip(ui_text('tooltip.family'))
         self.parameter_form = QFormLayout()
         self.outer.addLayout(self.parameter_form)
         self._spec = None
@@ -171,10 +172,23 @@ class StrategyForm(_Form):
         self.fields = {'family': self.family}
         family = self.family.currentData()
         self._spec = {'strategy_id': f'{family}-v1', 'family': family, 'parameters': dict(DEFAULTS[family]), 'rules': {}, 'schema_version': 1}
+        tooltips = {
+            'fast': ui_text('tooltip.fast'),
+            'slow': ui_text('tooltip.slow'),
+            'lookback': ui_text('tooltip.lookback'),
+            'entry_bps': ui_text('tooltip.entry_bps'),
+            'threshold_bps': ui_text('tooltip.threshold_bps'),
+            'max_holding_bars': ui_text('tooltip.max_holding_bars'),
+            'max_range_bps': ui_text('tooltip.max_range_bps'),
+            'quantity': ui_text('tooltip.quantity'),
+            'stop_ticks': ui_text('tooltip.stop_ticks'),
+            'target_ticks': ui_text('tooltip.target_ticks'),
+        }
         for key, value in {**DEFAULTS[family], 'quantity': '', 'stop_ticks': '', 'target_ticks': ''}.items():
             widget = QLineEdit(str(value))
             widget.setObjectName(key)
             widget.setAccessibleName(PARAM_LABELS[key])
+            widget.setToolTip(tooltips[key])
             label = QLabel(PARAM_LABELS[key])
             label.setBuddy(widget)
             self.parameter_form.addRow(label, widget)
