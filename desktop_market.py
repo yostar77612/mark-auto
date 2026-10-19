@@ -55,6 +55,11 @@ DEFAULT_INDICATORS = {
     'KD': {'enabled': False, 'period': 9, 'k_period': 3, 'd_period': 3},
     'Bollinger': {'enabled': False, 'period': 20, 'deviations': 2},
     'VWAP': {'enabled': False},
+    'ATR': {'enabled': False, 'period': 14},
+    'SuperTrend': {'enabled': False, 'period': 10, 'multiplier': 3},
+    'SAR': {'enabled': False, 'step': 0.02, 'maximum': 0.2},
+    'OBV': {'enabled': False},
+    'MA channel': {'enabled': False, 'period': 20, 'percent': 2},
 }
 
 
@@ -334,8 +339,11 @@ class MarketDashboard(QWidget):
                     continue
                 values = value if isinstance(value, list) else [value]
                 for index, number in enumerate(values):
-                    spin = QDoubleSpinBox() if param == 'deviations' else QSpinBox()
-                    spin.setRange(0.1 if param == 'deviations' else 1, 1000)
+                    spin = QDoubleSpinBox() if param in ('deviations', 'multiplier', 'step', 'maximum', 'percent') else QSpinBox()
+                    spin.setRange(
+                        0.01 if param in ('step', 'maximum') else 0.1 if param in ('deviations', 'multiplier', 'percent') else 1,
+                        1 if param in ('step', 'maximum') else 1000,
+                    )
                     spin.setValue(number)
                     field = f'{param}_{index}' if isinstance(value, list) else param
                     _named(spin, f'market_{key}_{field}', f'{key} {field}')
@@ -344,6 +352,10 @@ class MarketDashboard(QWidget):
                             (ui_text('market.__init__.text_45').format(str(index + 1)))
                             if param == 'periods'
                             else {
+                                'multiplier': ui_text('market.indicator.multiplier'),
+                                'step': ui_text('market.indicator.step'),
+                                'maximum': ui_text('market.indicator.maximum'),
+                                'percent': ui_text('market.indicator.percent'),
                                 'period': ui_text('market.__init__.text_46'),
                                 'fast': ui_text('market.__init__.text_47'),
                                 'slow': ui_text('market.__init__.text_48'),
@@ -671,6 +683,10 @@ class MarketDashboard(QWidget):
             else:
                 value.update({name: spin.value() for name, spin in controls.items()})
             config[key] = value
+        if config['SAR']['step'] > config['SAR']['maximum']:
+            self._restore_indicator_controls()
+            self.message.setText(ui_text('market.indicator.invalid_sar'))
+            return
         if config['MACD']['fast'] >= config['MACD']['slow']:
             self._restore_indicator_controls()
             self.message.setText(ui_text('market._indicators_changed.text_1'))
@@ -708,6 +724,7 @@ class MarketDashboard(QWidget):
         highs = []
         lows = []
         keep = []
+        volumes = []
         for index, bar in enumerate(bars):
             previous = bars[index - 1] if index else None
             if (
@@ -716,10 +733,12 @@ class MarketDashboard(QWidget):
                 and (bar.trade_date, bar.session, bar.session_open) == (previous.trade_date, previous.session, previous.session_open)
                 and bar.timestamp > previous.end
             ):
+                volumes.append(None)
                 closes.append(None)
                 highs.append(None)
                 lows.append(None)
             keep.append(len(closes))
+            volumes.append(bar.volume)
             closes.append(bar.close)
             highs.append(bar.high)
             lows.append(bar.low)
@@ -730,7 +749,14 @@ class MarketDashboard(QWidget):
         for key, options in (self._indicator_config if config is None else config).items():
             if not options['enabled']:
                 continue
-            names.append(key)
+            label = {
+                'ATR': lambda: ui_text('market.indicator.atr').format(options['period']),
+                'SuperTrend': lambda: ui_text('market.indicator.supertrend').format(options['period'], format(options['multiplier'], 'g')),
+                'SAR': lambda: ui_text('market.indicator.sar').format(format(options['step'], 'g'), format(options['maximum'], 'g')),
+                'OBV': lambda: ui_text('market.indicator.obv'),
+                'MA channel': lambda: ui_text('market.indicator.channel').format(options['period'], format(options['percent'], 'g')),
+            }.get(key, lambda: key)()
+            names.append((key, label))
             kwargs = {k: v for k, v in options.items() if k != 'enabled'}
             try:
                 if key == 'MA':
@@ -746,6 +772,17 @@ class MarketDashboard(QWidget):
                     panels['KD'] = indicators.kd(highs, lows, closes, **kwargs)
                 elif key == 'Bollinger':
                     overlays.update({'BB ' + k: v for k, v in indicators.bollinger(closes, **kwargs).items()})
+                elif key == 'ATR':
+                    panels[label] = {'': indicators.atr(highs, lows, closes, **kwargs)}
+                elif key == 'OBV':
+                    panels[label] = {'': indicators.obv(closes, volumes)}
+                elif key == 'SuperTrend':
+                    overlays[label] = indicators.supertrend(highs, lows, closes, **kwargs)
+                elif key == 'SAR':
+                    overlays[label] = indicators.sar(highs, lows, closes, **kwargs)
+                elif key == 'MA channel':
+                    for band, values in indicators.ma_channel(closes, **kwargs).items():
+                        overlays[ui_text('market.indicator.band').format(label, band)] = values
                 elif key == 'VWAP':
                     overlays[ui_text('market._apply_indicators.text_1')] = indicators.session_vwap(bars)
             except indicators.IndicatorResourceLimitError:
@@ -753,12 +790,12 @@ class MarketDashboard(QWidget):
         rejected = tuple(key for key in failures if key in reject_failures)
         if rejected:
             return rejected
-        summary = ' / '.join(name + (ui_text('market._apply_indicators.text_2') if name in failures else '') for name in names) or ui_text(
+        summary = ' / '.join(label + (ui_text('market._apply_indicators.text_2') if key in failures else '') for key, label in names) or ui_text(
             'market._apply_indicators.text_3'
         )
         self.indicator_summary.setText(ui_text('market._apply_indicators.text_4').format(summary))
         overlays = {name: values if name == ui_text('market._apply_indicators.text_5') else tuple(values[i] for i in keep) for name, values in overlays.items()}
-        panes = {f'{panel} {key}': tuple(values[i] for i in keep) for panel, entries in panels.items() for key, values in entries.items()}
+        panes = {f'{panel} {key}'.rstrip(): tuple(values[i] for i in keep) for panel, entries in panels.items() for key, values in entries.items()}
         if 'MACD histogram' in panes:
             panes['MACD histogram 1×'] = panes.pop('MACD histogram')
         self.chart.set_overlays(overlays, panes=panes, pane_styles={'MACD histogram 1×': 'histogram'} if 'MACD histogram 1×' in panes else {})
@@ -792,8 +829,14 @@ class MarketDashboard(QWidget):
             raise ValueError('invalid watchlist')
         if (selected and not _identity(selected)) or not isinstance(selected, str) or timeframe not in TIMEFRAMES or payload.get('theme', 'dark') != 'dark':
             raise ValueError('invalid selection/theme')
-        if not isinstance(config, dict) or set(config) != set(DEFAULT_INDICATORS):
+        if (
+            not isinstance(config, dict)
+            or set(config) - set(DEFAULT_INDICATORS)
+            or not set(DEFAULT_INDICATORS).difference({'ATR', 'SuperTrend', 'SAR', 'OBV', 'MA channel'}) <= set(config)
+        ):
             raise ValueError('invalid indicators')
+        for key in ('ATR', 'SuperTrend', 'SAR', 'OBV', 'MA channel'):
+            config.setdefault(key, deepcopy(DEFAULT_INDICATORS[key]))
         for key, default in DEFAULT_INDICATORS.items():
             entry = config[key]
             if not isinstance(entry, dict) or set(entry) != set(default) or type(entry['enabled']) is not bool:
@@ -805,9 +848,15 @@ class MarketDashboard(QWidget):
                 if param == 'periods' and (not isinstance(value, list) or len(value) != 4):
                     raise ValueError('four MA periods required')
                 if any(
-                    type(v) not in ((int, float) if param == 'deviations' else (int,)) or not (0.1 if param == 'deviations' else 1) <= v <= 1000 for v in values
+                    type(v) not in ((int, float) if param in ('deviations', 'multiplier', 'step', 'maximum', 'percent') else (int,))
+                    or not (0.01 if param in ('step', 'maximum') else 0.1 if param in ('deviations', 'multiplier', 'percent') else 1)
+                    <= v
+                    <= (1 if param in ('step', 'maximum') else 1000)
+                    for v in values
                 ):
                     raise ValueError('invalid indicator period')
+        if config['SAR']['step'] > config['SAR']['maximum']:
+            raise ValueError('invalid SAR acceleration')
         if config['MACD']['fast'] >= config['MACD']['slow']:
             raise ValueError('invalid MACD periods')
         self._watch = list(watch)

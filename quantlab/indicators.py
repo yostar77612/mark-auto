@@ -43,7 +43,7 @@ def _fixed_context(function):
                     raise IndicatorResourceLimitError('indicator observation limit exceeded')
                 bounded.append(values)
             # Payloads may also be supplied by keyword; bind them without changing API.
-            for name in ('values', 'highs', 'lows', 'closes', 'bars'):
+            for name in ('values', 'highs', 'lows', 'closes', 'bars', 'volumes'):
                 if name in kwargs:
                     values = tuple(islice(iter(kwargs[name]), MAX_OBSERVATIONS + 1))
                     if len(values) > MAX_OBSERVATIONS:
@@ -94,6 +94,170 @@ def sma(values, *, period=20):
             total -= window.popleft()
         result.append(total / period if len(window) == period else None)
     return tuple(result)
+
+
+def _ohlc(highs, lows, closes):
+    if len(highs) != len(lows) or len(lows) != len(closes):
+        raise ValueError('OHLC sequences must have matching lengths')
+    rows = []
+    for row in zip(highs, lows, closes):
+        high, low, close = map(_number, row)
+        if high is not None and low is not None and high < low:
+            raise ValueError('high below low')
+        if None not in (high, low, close) and not low <= close <= high:
+            raise ValueError('close outside high/low range')
+        rows.append((high, low, close))
+    return rows
+
+
+def _atr_rows(rows, period):
+    previous, average, seed, result = None, None, [], []
+    for high, low, close in rows:
+        if None in (high, low, close):
+            previous, average, seed = None, None, []
+            result.append(None)
+            continue
+        tr = high - low if previous is None else max(high - low, abs(high - previous), abs(low - previous))
+        previous = close
+        if average is None:
+            seed.append(tr)
+            if len(seed) == period:
+                average = sum(seed, Decimal(0)) / period
+                seed = []
+        else:
+            average = (average * (period - 1) + tr) / period
+        result.append(average)
+    return tuple(result)
+
+
+@_fixed_context
+def atr(highs, lows, closes, *, period=14):
+    """market-indicators-b3-v1: Wilder ATR, SMA seed of first period TRs.
+
+    First TR is high-low; subsequent TR includes previous close gaps. Warmup
+    is period-1 None values. Missing OHLC resets history as in existing indicators.
+    """
+    return _atr_rows(_ohlc(highs, lows, closes), _period(period))
+
+
+@_fixed_context
+def supertrend(highs, lows, closes, *, period=10, multiplier=3):
+    """market-indicators-b3-v1: SuperTrend with Wilder ATR period and multiplier.
+
+    Initial trend is up at first mature ATR (period-1 warmup). Carry upper/lower
+    bands unless basic band tightens or previous close crosses the old band;
+    strict close crossings reverse direction. Missing OHLC restarts warmup.
+    """
+    period = _period(period)
+    multiplier = _number(multiplier)
+    if multiplier is None or multiplier <= 0:
+        raise ValueError('multiplier must be positive')
+    rows = _ohlc(highs, lows, closes)
+    upper, lower, previous, upward, result = None, None, None, True, []
+    for (high, low, close), average in zip(rows, _atr_rows(rows, period)):
+        if average is None:
+            upper, lower, previous, upward = None, None, None, True
+            result.append(None)
+            continue
+        midpoint = (high + low) / 2
+        basic_upper, basic_lower = midpoint + multiplier * average, midpoint - multiplier * average
+        if upper is None:
+            upper, lower = basic_upper, basic_lower
+        else:
+            upper = basic_upper if basic_upper < upper or previous > upper else upper
+            lower = basic_lower if basic_lower > lower or previous < lower else lower
+            if upward and close < lower:
+                upward = False
+            elif not upward and close > upper:
+                upward = True
+        result.append(lower if upward else upper)
+        previous = close
+    return tuple(result)
+
+
+@_fixed_context
+def sar(highs, lows, closes, *, step=Decimal('0.02'), maximum=Decimal('0.2')):
+    """market-indicators-b3-v1: Wilder parabolic SAR AF step 0.02 / max 0.2.
+
+    One None warmup; second close >= first seeds an uptrend with first low,
+    otherwise a downtrend with first high. EP includes both seed bars. Project
+    SAR by AF*(EP-SAR), clamp to previous two lows/highs, then reverse on strict
+    penetration; reversal uses old EP and resets AF. Missing OHLC resets state.
+    """
+    step, maximum = _number(step), _number(maximum)
+    if step is None or maximum is None or not 0 < step <= maximum <= 1:
+        raise ValueError('SAR requires 0 < step <= maximum <= 1')
+    history, value, extreme, af, upward, result = deque(maxlen=2), None, None, step, True, []
+    for high, low, close in _ohlc(highs, lows, closes):
+        if None in (high, low, close):
+            history.clear()
+            value, extreme, af = None, None, step
+            result.append(None)
+            continue
+        if not history:
+            history.append((high, low, close))
+            result.append(None)
+            continue
+        if value is None:
+            upward = close >= history[-1][2]
+            value = history[-1][1] if upward else history[-1][0]
+            extreme = max(high, history[-1][0]) if upward else min(low, history[-1][1])
+        else:
+            projected = value + af * (extreme - value)
+            value = min(projected, *(x[1] for x in history)) if upward else max(projected, *(x[0] for x in history))
+            if (upward and low < value) or (not upward and high > value):
+                value, upward, af = extreme, not upward, step
+                extreme = high if upward else low
+            elif (upward and high > extreme) or (not upward and low < extreme):
+                extreme = high if upward else low
+                af = min(maximum, af + step)
+        result.append(value)
+        history.append((high, low, close))
+    return tuple(result)
+
+
+@_fixed_context
+def obv(closes, volumes):
+    """market-indicators-b3-v1: OBV starts at Decimal zero, no warmup.
+
+    Add/subtract current nonnegative integer volume for higher/lower close;
+    unchanged close or zero volume holds value. Missing close/volume resets.
+    """
+    if len(closes) != len(volumes):
+        raise ValueError('close/volume sequences must have matching lengths')
+    previous, total, result = None, Decimal(0), []
+    for raw, volume in zip(closes, volumes):
+        close = _number(raw)
+        if volume is not None and (type(volume) is not int or not 0 <= volume <= 10**15):
+            raise ValueError('volume must be a nonnegative integer or None')
+        if close is None or volume is None:
+            previous, total = None, Decimal(0)
+            result.append(None)
+            continue
+        if previous is not None:
+            total += volume if close > previous else -volume if close < previous else 0
+        previous = close
+        result.append(total)
+    return tuple(result)
+
+
+@_fixed_context
+def ma_channel(values, *, period=20, percent=2):
+    """market-indicators-b3-v1: SMA envelope, middle*(1 +/- percent/100).
+
+    Default period=20, percent=2; period-1 None warmup. Missing prices reset
+    warmup; percentage must be finite and nonnegative. All outputs are Decimal.
+    """
+    _period(period)
+    percent = _number(percent)
+    if percent is None or percent < 0:
+        raise ValueError('percent must be nonnegative')
+    middle = sma(values, period=period)
+    return {
+        'middle': middle,
+        'upper': tuple(None if x is None else x * (1 + percent / 100) for x in middle),
+        'lower': tuple(None if x is None else x * (1 - percent / 100) for x in middle),
+    }
 
 
 @_fixed_context
