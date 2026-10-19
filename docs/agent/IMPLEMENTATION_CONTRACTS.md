@@ -1,5 +1,57 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+### LB-B10: journaled paper order lines and re-price
+
+PaperBroker.amend(order_id, price=Decimal, amend_key, quote, now) only changes
+the limit price of accepted/partial limit orders with remaining quantity. Quantity
+cannot be supplied. Decimal finite positive instrument-tick validation and monotone
+UTC timestamps precede the journal append. It uses submit's single _risk entry;
+replacement excludes the original reservation to avoid double-counting exposure.
+The persistent manual_order_lock is checked first for submissions and amendments,
+before reconciliation and kill gates; only explicit journaled unlock clears it.
+Event replay is extracted into _reduce_event without changing legacy state hashes
+or the lazy additive manual lock field in snapshots.
+Kill, reconciliation, loss halt, session, quote, margin and all other risk gates
+remain authoritative. Rejected amendments write nothing. Every successful amend
+counts toward the SAME 20 reservations per 60 seconds, including the original
+submission; exact retries do not count. Amends never create/close FIFO lots or
+alter consecutive losses, and cannot bypass the latched loss halt.
+
+The additive journal op is amend, identity amend:<amend_key>, with canonical string
+price and request payload. Exact key retries are no-ops; conflicting reuse fails.
+Different keys apply by SQLite journal sequence (last writer wins). The reducer
+updates intent.limit_price and pending_amend, retaining accepted/partial status.
+A matching sequenced simulated event type amend with amend_key removes that marker.
+An interrupted/unacknowledged amend remains pending: reconciliation compares the
+full orders (including price/marker) and refuses pending amendments. Restart sets
+reconciliation_required as before. A simulated acknowledgement followed by explicit
+matching reconciliation restores consistency; amend itself never clears the latch.
+Schema/config version 4 and old reducers/hashes remain unchanged for old operations.
+The frozen pre-change journal fixture tests replay compatibility without migration.
+
+CandlestickChart.set_paper_snapshot accepts copied synthetic_paper_only dicts.
+Only accepted/partial limit orders with positive remaining quantity for the exact
+chart contract project horizontal side/remaining/price labels. The chart imports
+no execution or network objects. Paper-only gesture callbacks emit Decimal prices;
+pixel coordinates cross to Decimal strings before tick rounding (half up). Drag
+does not optimistically move a line. Esc/release outside writes nothing; failures
+retain the last snapshot and display an error. Hosts must provide a new verified
+snapshot after success. Trace-bound backtest/replay series clear paper affordances.
+
+The existing ui_paper_cancel worker envelope carries action=amend; no operation
+allowlist or timeout changes. Consent, paper mode and exact current snapshot are
+required. The adapter rejects a pre-existing reconciliation/kill latch BEFORE
+opening a session, then reconciles only the verified constructor restart and
+journals amend plus its simulated acknowledgement. Interrupted writes require
+investigation/reconciliation, never blind retry. The market host disables replay
+and result-trace interaction; the paper confirmation, quote form and paper clock
+supply consent and risk inputs. Existing generic worker failure notifications apply.
+No G3, profile, OOS, budget, acceptance score or PROJECT_STATE changes.
+Amend replay is isolated in _reduce_amend; the chart snapshot adapter and Decimal
+price bounds live in desktop_order_lines, preserving reducer and chart size limits.
+The append-site enumeration keeps order creation confined to submit.
+Evidence: tests/test_lb_b10_paper_orders.py (offline, offscreen, no show/style).
+
 ### LB-B9: display-only product-key convergence (after LB-B8)
 
 `quantlab.product_keys.converge_key(symbol, enabled=True)` uses exact,

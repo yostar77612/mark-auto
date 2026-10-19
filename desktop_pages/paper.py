@@ -6,6 +6,7 @@ from desktop_timeinput import DateInput
 from pathlib import Path
 from quantlab.desktop_feedback import stop_presentation
 import json
+from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json, write_json, load_dataset, load_selection
 from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog, QTabWidget
@@ -186,7 +187,26 @@ class PaperPage(PageContext, QWidget):
         self.freeze_paper(ui_text('ui.kill_paper.text_1'))
         self.status.setText(ui_text('ui.kill_paper.text_2'))
 
+    def _amend_order(self, order_id, price):
+        if self.jobs.active or not self.paper_confirm.isChecked():
+            raise ValidationError(ui_text('ui.paper_job.text_1'))
+        self.paper_job(
+            'cancel',
+            action='amend',
+            mode='paper',
+            order_id=order_id,
+            price=str(price),
+            amend_key=uuid4().hex,
+            quote=self._payload(self.quote, self.quote_form.build_payload),
+            now=self.paper_time.text(),
+            snapshot=self.market.chart.paper_orders.snapshot,
+            reconcile_confirmed=True,
+        )
+
     def _show_account(self, account, strategy=None):
+        chart = self.market.chart
+        mode = 'paper' if account.get('verification') == 'synthetic_paper_only' and chart.trace is None and self.last_operation != 'ui_paper_replay' else None
+        chart.set_paper_snapshot(account, mode=mode, request=self._amend_order)
         values = {k: account.get(k) for k in ('account_id', 'cash', 'reconciliation_required')}
         if not account.get('account_id'):
             values['cash'] = None

@@ -19,6 +19,7 @@ from PySide6.QtCore import Qt, QRectF, QPointF, Signal
 from PySide6.QtGui import QColor, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import QWidget
 import quantlab.chart_drawings as _drawings
+import desktop_order_lines as _order_lines
 
 
 def _paint_drawings(painter, drawings, bars, rect, x, y):
@@ -162,7 +163,7 @@ class ReferenceLine:
                 raise ValueError(ui_text('charts.__post_init__.text_14'))
 
 
-class CandlestickChart(QWidget):
+class CandlestickChart(_order_lines.PaperOrderChartMixin, QWidget):
     """Wheel zoom / left-drag pan / hover OHLC; arrows pan, +/- zoom, Home reset.
 
     set_series accepts MarketSeries or sequence of MarketBar. Optional ChartTrace
@@ -218,6 +219,7 @@ class CandlestickChart(QWidget):
         self._start = 0
         self._drag = None
         self.last_rendered_bar_count = 0
+        self.paper_orders = _order_lines.PaperOrderLines()
 
     @property
     def price_rect(self):
@@ -244,6 +246,9 @@ class CandlestickChart(QWidget):
             if b.volume is not None and (type(b.volume) is not int or b.volume < 0):
                 raise ValueError(ui_text('charts.set_series.text_5'))
         self.bars = bars
+        self.paper_orders.drag, self.paper_orders.hits = None, ()
+        if trace is not None:
+            self.set_paper_snapshot(None, mode=None)
         self.trace = trace
         provenance = getattr(series, 'provenance', None)
         self.source_label = source_label or (
@@ -404,12 +409,11 @@ class CandlestickChart(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.setFocus()
+            if self.paper_orders.press(event.position(), self.price_rect):
+                event.accept()
+                return
             self._drag = (event.position().x(), self._start)
             event.accept()
-
-    def mouseReleaseEvent(self, event):
-        self._drag = None
-        event.accept()
 
     def mouseMoveEvent(self, event):
         r = self.price_rect
@@ -431,7 +435,10 @@ class CandlestickChart(QWidget):
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key.Key_Left:
+        if key == Qt.Key.Key_Escape:
+            self.paper_orders.drag = None
+            self._drag = None
+        elif key == Qt.Key.Key_Left:
             self._pan(-max(1, self._count // 10))
         elif key == Qt.Key.Key_Right:
             self._pan(max(1, self._count // 10))
@@ -460,6 +467,9 @@ class CandlestickChart(QWidget):
             fm.elidedText(ui_text('charts.paintEvent.text_1').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
         )
         text(12, 43, _theme.chart_legend(self))
+        text(12, 43, ui_text('charts.paintEvent.text_2'))
+        if self.paper_orders.notice:
+            text(12, 81, self.paper_orders.notice)
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
@@ -498,7 +508,8 @@ class CandlestickChart(QWidget):
         pad = max((high - low) * 0.06, 0.5)
         low -= pad
         high += pad
-        y = lambda value: r.bottom() - (float(value) - low) / (high - low) * r.height()
+        low, high = self.paper_orders.price_bounds(self, visible, start, end, references, marker_index, low, high)
+        y = lambda value: r.bottom() - (float(value) - float(low)) / float(high - low) * r.height()
         step = r.width() / len(visible)
         x = lambda i: r.left() + (i - start + 0.5) * step
         p.setPen(QPen(QColor(_theme.chart_color(self, 'grid')), 1))
@@ -525,6 +536,7 @@ class CandlestickChart(QWidget):
         text(12, volume_top - 5, ui_text('charts.paintEvent.text_7'))
         self._draw_lines(p, self.overlays, start, end, x, y, r)
         _paint_drawings(p, self.drawings, self.bars, r, x, y)
+        self.paper_orders.paint(p, r, visible[0].contract_id, y, low, high)
         legend_x = r.left()
         for j, label in enumerate(self.overlays):
             p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))

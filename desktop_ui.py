@@ -900,6 +900,13 @@ def _handle_ui_market_refresh(payload, paths, root, *, emit=None, descendants_st
 
 
 def _handle_ui_paper_cancel(payload, paths, root, *, emit=None, descendants_stopped=False):
+    if payload.get('action') == 'amend':
+        # Load the offline amend adapter only for this paper worker action.
+        from quantlab.paper_amend import execute as _execute_amend
+
+        return _execute_amend(
+            payload, root, prepare=lambda: _prepare_paper_operation(payload, paths, root), finish=lambda broker: _finish_paper_operation(root, broker)
+        )
     broker = _prepare_paper_operation(payload, paths, root)
     replay_state = None
     broker.cancel(payload['order_id'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))

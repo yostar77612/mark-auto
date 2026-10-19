@@ -1716,6 +1716,17 @@ ZH_TW.update(
     }
 )
 
+ZH_TW.update(
+    {
+        'orders.line': '紙上 {0} · 剩餘 {1} · {2}',
+        'orders.buy': '買',
+        'orders.sell': '賣',
+        'orders.invalid_snapshot': '需要有效的紙上帳戶快照。',
+        'orders.pending': '改價處理中；以紙上帳本回讀為準。',
+        'orders.failed': '紙上改價失敗；原價格維持不變。',
+    }
+)
+
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
 

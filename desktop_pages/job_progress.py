@@ -125,6 +125,11 @@ def install_progress(shell, layout):
 
 
 def failure_notice(shell, event):
+    chart = getattr(getattr(shell, 'market', None), 'chart', None)
+    if getattr(shell, 'last_operation', None) == 'ui_paper_cancel' and chart is not None and chart.paper_orders.notice == ui_text('orders.pending'):
+        chart.paper_orders.notice = ui_text('orders.failed')
+        chart.update()
+        return chart.paper_orders.notice
     if shell.job_feedback.campaign_code is not None:
         return outcome_message(shell.job_feedback.campaign_code)
     return stage_error_message(event.get('stage'))

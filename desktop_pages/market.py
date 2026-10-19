@@ -127,6 +127,7 @@ class MarketPage(MarketDashboard):
 
                 self.host.show_account(PaperBroker.read_snapshot(self.state.root / 'paper.sqlite3'), strategy=strategy)
             except Exception:
+                self.market.chart.set_paper_snapshot(None, mode=None)
                 self.market.set_trading_status(strategy=strategy, paper=ui_text('ui.load_market_cache.text_8'), risk=ui_text('ui.load_market_cache.text_9'))
                 self.market.set_account_tables()
 
