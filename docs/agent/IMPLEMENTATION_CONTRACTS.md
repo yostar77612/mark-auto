@@ -1768,3 +1768,83 @@ false alarm; that file is untouched. Protected-path diff against e0e604f is empt
 GitNexus status found an incomplete stale lane index; analyze with index-only,
 skip-fts and one worker rebuilt locally but failed global registry writing with
 sandbox EPERM. The lane query was unavailable; no fresh graph coverage claimed.
+
+### TASK A1-D3: bounded offline saved-result and paper reads
+
+`quantlab.agent_read_tools.READ_REGISTRY` registers exactly nine D3 tools through
+the D1 Registry: list_saved_results, get_backtest_summary, get_backtest_trades,
+get_backtest_equity, compare_results, get_data_quality_summary,
+get_strategy_params, get_paper_positions and get_paper_orders. All effects are
+read, with research.read or paper.read grants. The original D1 training-status
+contract exerciser remains separate and unchanged. No UI wiring is introduced.
+
+Every D3 declaration specifies maxItems=50, pageSizeCap=50 and
+maxSerializedBytes=8192. The closed declaration schema adds only these optional
+bounded fields; the [schema](../agent-app-tools-v1.schema.json) mirrors runtime.
+Registry accepts a host-owned output schema while retaining the original strict
+default. D3 validates a closed per-tool row schema before the shared D11 envelope.
+Above-cap inputs, oversized serialized output, malformed JSON and invalid cursors
+return only existing B1 agent_tool_refused with empty params, never partial data.
+Paging indexes the immutable verified sequence, preserves order, and ends with
+truncated=false and next_cursor=null. Numeric money and deltas use Decimal.
+
+ReadContext is a host-only trust boundary. Its immutable TrainingEvidence tuple
+must come from approved training-only results and binds each exact content hash
+to its in-sample dataset hash and aggregate quality counts. Model arguments and
+saved partition labels cannot supply provenance. Unapproved legacy, OOS, holdout,
+mixed-period and unknown results are refused even when present under saved_root.
+Hosts must never populate this evidence from mixed totals or consumed guards.
+The adapter supplies no provenance inference or OOS/holdout reader. It does not
+change the saved report format or create a new AI cache/export artifact.
+
+Only lowercase SHA256 IDs resolve to saved_root/id/result.json. Validation occurs
+before file access; symlinks and resolved escapes fail closed. A single binary
+read is capped at 32 MiB; duplicate JSON keys and nonfinite constants are refused.
+Envelope content hashes and reporting.validate_result_payload's nested immutable
+strategy/config/dataset bindings are checked before projection. Each stored
+ledger/equity sequence is capped at 100000 entries. Corrupt, missing, oversize or
+malformed data yields the same B1 refusal without traceback, path or partial leak.
+Hash integrity is not authentication; host evidence remains essential.
+
+Summary and comparison return only the fixed METRICS whitelist. Comparison takes
+exactly result_id and other_id plus paging controls, requires distinct approved
+IDs and returns second-minus-first deltas. Quality returns only in-sample
+observations/missing/duplicates/has_gaps. Strategy parameters are projected from
+the hash-validated immutable strategy using the existing PARAMETER_CONTRACTS
+signal keys; risk settings, rules and arbitrary strings are excluded. Trade
+pages contain ordinal, quantity, prices and net PnL; equity pages contain ordinal,
+validated timestamp and equity. No raw IDs, names, paths, warnings, guards,
+credentials, tokens, dataset rows or arbitrary file strings are copied.
+
+Paper reads use only PaperBroker.read_snapshot's read-only SQLite connection,
+never construction or an execution session. They require synthetic_paper_only,
+hash position/order labels, and expose only bounded quantities and fixed status
+enums. No tool makes provider or network calls. Live trading stays permanently
+disabled; zero mutation declarations or new trade execution paths exist.
+
+Evidence: tests/test_agent_read_tools_d3.py covers deterministic concatenated
+pages, summary size on a large fixture, exact declarations/caps, distinct-ID
+comparison, path refusal before open, symlink refusal, corrupt/oversize files,
+strict model JSON, Decimal deltas, immutable parameters and journal hash/spies.
+The recursive sentinel oracle checks all nine outputs and pages with OOS and
+holdout fixtures, aggregate count 31337, value 987654.321, guard contents, paths,
+usernames, raw file content and credential/token markers. Its negative control
+removes the approved-partition filter and proves both metric and count leakage
+fail the same oracle. Socket and provider spies assert zero calls; AST scanning
+rejects dynamic execution, process and UI imports. Tests use inherited temporary
+directory ACLs so the Windows restricted token can access its own fixtures.
+
+Only new D3 tests and additive import-graph assertions are added; no existing
+test is weakened. No G3/profile, PROJECT_STATE, optimization plan, ACCEPTANCE,
+gate, budget, timeout or threshold changes. No UI baseline refresh is required.
+Work remains uncommitted; the controller owns the single A1-D3 commit and broader
+suite. GitNexus local indexing completed but global registration failed with
+sandbox EPERM; the lane query was unavailable. No extension downloads or alternate
+graph tools were used; direct source review and tests supply the local evidence.
+
+Local verification: D3 9 tests, D1 11, D2 6, D7 2, import graph 6, repository
+layout 6, documentation layering 8, B1 catalog 8, function lengths 2 and catalog
+placeholders 1 pass. Ruff 0.16.10 check and changed-file format --check,
+Python 3.11 py_compile and quality_gate pass (0 findings). Protected-path diff
+against e0e604f is empty. The full unit suite is left to the controller under
+the task's sandbox rule; no broader-suite pass is claimed.

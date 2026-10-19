@@ -23,9 +23,10 @@ class _Entry:
 class Registry:
     """Registration is host-only; a valid declaration never grants execution."""
 
-    def __init__(self):
+    def __init__(self, *, return_schema=None):
         self._entries = {}
         self._frozen = False
+        self._return_schema = deepcopy(RETURN_SCHEMA if return_schema is None else return_schema)
 
     @property
     def declarations(self):
@@ -82,7 +83,7 @@ class Registry:
             if not validate(arguments, resolved['tool']['inputSchema']):
                 return _refusal()
             result = self._entries[name].handler(context, deepcopy(arguments))
-            if not validate(result, RETURN_SCHEMA) or len(json.dumps(result, allow_nan=False).encode('utf-8')) > MAX_RETURN_BYTES:
+            if not validate(result, self._return_schema) or len(json.dumps(result, allow_nan=False).encode('utf-8')) > MAX_RETURN_BYTES:
                 return _refusal()
             if len(result['items']) > result['limit'] or result['limit'] != arguments.get('limit', MAX_LIMIT):
                 return _refusal()

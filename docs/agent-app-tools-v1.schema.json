@@ -33,6 +33,18 @@
         "read"
       ]
     },
+    "maxItems": {
+      "type": "integer",
+      "const": 50
+    },
+    "maxSerializedBytes": {
+      "type": "integer",
+      "const": 8192
+    },
+    "pageSizeCap": {
+      "type": "integer",
+      "const": 50
+    },
     "inputSchema": {
       "type": "object",
       "additionalProperties": false,
