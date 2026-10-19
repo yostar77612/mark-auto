@@ -1217,11 +1217,17 @@ class JobManager:
         self._quiesced_walk_forward = None
         self._tree_quiesced = False
 
-    def _log(self, event_type):
+    def _log(self, event_type, *, error_code=None):
         if not self.logging_enabled:
             return
+        if event_type == 'error':
+            # Normalize untrusted IPC metadata without inspecting exception text.
+            from .errors import ERROR_TABLE
+
+            if type(error_code) is not str or error_code not in ERROR_TABLE:
+                error_code = 'operation_failed'
         try:
-            self.event_log.append(self._operation, event_type)
+            self.event_log.append(self._operation, event_type, error_code=error_code)
         except (OSError, RuntimeSafetyError):
             pass  # Diagnostic storage cannot break cancellation or task completion.
 
@@ -1615,7 +1621,7 @@ class JobManager:
                         raise RuntimeSafetyError('Invalid private authentication event')
                     # Transient OAuth query data must never enter persistent logs.
                 else:
-                    self._log(event['type'])
+                    self._log(event['type'], error_code=event.get('error_code') if event['type'] == 'error' else None)
                 if event['type'] in {'result', 'error'}:
                     self._terminal = True
                     self._deferred.append(event)
