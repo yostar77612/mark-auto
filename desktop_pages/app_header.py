@@ -10,11 +10,15 @@ from desktop_strings import ui_text
 from desktop_theme import load_appearance
 
 
+# Set by tools/ui_snapshot.py so raster snapshots do not depend on the wall clock.
+CLOCK_OVERRIDE = None
+
+
 class AppHeader(QWidget):
     def __init__(self, host, *, clock=None, quote_age_seconds=None, parent=None):
         super().__init__(parent)
         self.host = host
-        self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.clock = clock or CLOCK_OVERRIDE or (lambda: datetime.now(timezone.utc))
         self.quote_age_seconds = quote_age_seconds
         self.setObjectName('app_header')
         self.setMaximumHeight(48)
