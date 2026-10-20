@@ -2279,3 +2279,79 @@ Protected G3 sources and all saved_candidate_pool.py content have empty diffs
 against e0e604f. No live/broker path, gate, OOS/budget rule, timeout, credential
 handling, PROJECT_STATE, optimization plan or ACCEPTANCE score changes. Leave
 this implementation uncommitted for the controller's single C9 commit.
+
+### TASK A2-D4: session-only read-only research assistant
+
+Initial assessment confirmed no conversation panel and no UI wiring for D3.
+The new AssistantPanel lives inside Settings' existing collapsed maintenance
+area. No default page text, layout, label count or baseline image is intentionally
+changed. The widget-name inventory adds only five sorted assistant names. The
+current lane has no PanelCard or AsyncStatus implementation to reuse. No new
+desktop_ui public name or MainWindow method is introduced.
+
+quantlab.assistant_chat.ChatDispatcher owns a private frozen registry created
+only by agent_read_tools.create_registry. Its callable tool surface is exactly
+the nine D3 TOOL_NAMES, all effect=read. Unknown, mutation, operator and quota
+names refuse before dispatch using B1 agent_tool_refused. Explicit /tool name
+JSON commands render only the D3/D11 bounded_return envelope, including paging
+metadata; full raw saved results are never rendered or implicitly forwarded.
+The host constructs ReadContext independently of input. Existing GUI results
+have no trusted training evidence, so the mounted panel grants none rather than
+inferring authority from current datasets, saved partition labels or model text.
+Trusted host adapters can supply an already-bound context; model arguments cannot
+widen it. Legacy results fail closed. No broker execution session is constructed.
+
+Offline fixture replies are exact, fixed catalog strings and require no provider
+object or network. Both source selector and reply labels identify this source as
+not real AI. ChatGPT labels always say unverified. All assistant reply paths,
+including refusals and cancellation, append the same Chinese catalog disclaimer:
+AI interpretation may be wrong; nothing is automatically applied or ordered.
+QPlainTextEdit.appendPlainText renders markup/code literally and supports copying;
+there is no renderer, code runner, apply button or transcript persistence path.
+Enter, Ctrl+Enter and the accessible Send button share the submit boundary.
+
+ChatGPT is an optional, unverified single-prompt inference route. Each send first
+opens an Ok/Cancel consent dialog, default Cancel. Denial leaves the input and
+transcript unchanged and makes zero provider calls. Accepted requests transmit
+only that input, with store=False, no history, dataset, automatic tool output or
+function declarations. No model-generated follow-up request is executed. This
+does not invoke the strategy provider, campaign quota reservation, candidate
+saver, backtest, campaign or Walk-forward. The child resolves only an opaque
+DPAPI credential reference through the unchanged pinned transport, checks the
+existing account-ready barrier and uses verified TLS/no redirects/no retries.
+Provider exceptions and invalid/oversize/ambiguous terminal responses become
+fixed B1 refusals; no exception string crosses IPC or enters diagnostics/logs.
+
+ReplyProcess follows desktop_runtime's spawn/gate/process-tree ownership model,
+reusing its Windows process-tree primitive. No GUI worker thread is added. The
+parent owns a 30-second deadline and bounded termination/join; network stall is
+10 seconds. Hide/tab-switch and top-level close cancel the reply, close handles,
+stop polling and retain only a fixed refusal/disclaimer in session memory.
+Existing paper/smoke/job timeouts and every budget/gate/OOS rule are untouched.
+
+Evidence: tests/test_assistant_d4.py adds ten offline tests (about one second).
+It covers exact tools/frozen declarations, no-handler mutation rejection,
+deterministic golden text, disclosures on success/error/cancel, literal markup,
+keyboard/accessibility, per-call consent, bounded byte overflow, host-only
+evidence, legacy refusal, operator/save/quota sentinels, mock process cleanup,
+single-prompt payloads, credential exception redaction and no transcript writes.
+OOS/holdout prices/counts/markers and credential markers are planted in actual
+saved fixtures and scanned through every tool and UI output. A deliberately
+broken provenance filter and a planted sentinel both fail the same scan.
+AST assertions forbid dynamic execution and persistence/operator calls.
+
+Local checks: D4 10, import graph 8, UI operation registry 6, hardcoded-text 6,
+repository layout 7, catalog placeholders 1, inline styles 3 and function-length
+guards 2 pass. Ruff 0.16.10 check/changed-file format, py -3.11 py_compile and
+tools/quality_gate.py pass (zero findings). G3 sources, all saved_candidate_pool
+bytes, PROJECT_STATE, optimization plan and ACCEPTANCE have empty diffs vs HEAD.
+No existing test is weakened or removed; inventory tests are additive only.
+
+The unchanged terminal, smoke-isolation, history, market and Walk-forward smoke
+modules were attempted; Windows restricted-token temporary-directory ACL failures
+prevent full local smoke verification (some existing platform skips also apply).
+Controller native smoke and screenshot verification remain necessary; no baseline
+fixture refresh is requested. No live ChatGPT inference was attempted or claimed
+verified. GitNexus analyze failed with sandbox spawn EPERM and its lane query
+reported repository not found; no graph substitute or extension download was used.
+Changes remain uncommitted; the controller owns the single A2-D4 commit.

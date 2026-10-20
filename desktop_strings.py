@@ -7,6 +7,20 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'assistant.title': '唯讀研究助理（未驗證）',
+    'assistant.fixture': '離線示範（不是真實 AI）',
+    'assistant.chatgpt': 'ChatGPT（未驗證）',
+    'assistant.source': '研究助理來源',
+    'assistant.transcript': '本次工作階段對話（僅記憶體）',
+    'assistant.input': '研究問題',
+    'assistant.hint': '輸入 help；唯讀工具格式：/tool 工具名稱 JSON',
+    'assistant.send': '送出研究問題',
+    'assistant.user': '使用者',
+    'assistant.consent_title': '同意本次 ChatGPT 請求（未驗證）',
+    'assistant.consent_body': '僅傳送本次輸入文字，不傳送歷史或資料集。請勿輸入憑證、樣本外或最終保留資料。本次請求可能耗用 ChatGPT 額度；不會啟動研究作業。是否同意本次網路請求？',
+    'assistant.disclaimer': 'AI 解讀可能有誤；不會自動套用任何變更或下單。',
+    'assistant.fixture_help': '這是固定離線示範，不是真實 AI。只能讀取九項已授權工具；不會啟動回測、研究、Walk-forward 或保存候選。使用 /tool list_saved_results {} 查閱有訓練證據的結果。',
+    'assistant.fixture_research': '固定離線示範：請以訓練資料及唯讀摘要檢視研究假設。缺少可信訓練證據的結果會拒絕讀取。',
     'replay.unpaced': '不限速（單次執行）',
     'replay.speed': '重播速度',
     'replay.speed_tip': '1、2、5、10、50、100 倍；最高 100 倍。僅改變每次一根 K 棒操作之間的等待，不改變成交結果。',

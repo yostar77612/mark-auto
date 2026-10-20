@@ -8,6 +8,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'desktop_pages/assistant_runtime.py',
+    'desktop_pages/assistant.py',
+    'quantlab/assistant_chat.py',
     'quantlab/agent_skills.py',
     'quantlab/agent_return.py',
     'quantlab/agent_read_tools.py',
@@ -128,6 +131,15 @@ def uncommented_local_imports(source):
 
 
 class ImportGraphTests(unittest.TestCase):
+    def test_d4_assistant_core_has_no_operator_or_ui_edges(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(
+            graph['quantlab.assistant_chat'],
+            {'quantlab.agent_read_tools', 'quantlab.agent_tools', 'quantlab.agent_tool_contract'},
+        )
+        self.assertIn('desktop_pages.assistant_runtime', graph['desktop_pages.assistant'])
+        self.assertNotIn('desktop_ui', graph['desktop_pages.assistant_runtime'])
+
     def test_d7_skills_have_only_permitted_edges(self):
         self.assertEqual(
             import_graph(self.sources)['quantlab.agent_skills'],
