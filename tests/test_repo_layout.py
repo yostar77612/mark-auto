@@ -115,6 +115,7 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('desktop_pages/assistant.py', 'desktop_pages/assistant_runtime.py', 'quantlab/assistant_chat.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
+
     def test_c6_modules_stay_in_desktop_package(self):
         for name in ('paper_tabs.py',):
             self.assertTrue((ROOT / 'desktop_pages' / name).is_file())

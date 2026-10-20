@@ -98,6 +98,7 @@ class HardcodedUITextTests(unittest.TestCase):
 
     def test_assistant_d4_package_modules_in_inventory(self):
         self.assertTrue({'desktop_pages/assistant.py', 'desktop_pages/assistant_runtime.py'} <= set(UI_PACKAGE_MODULES))
+
     def test_c6_modules_registered(self):
         self.assertIn('desktop_pages/paper_tabs.py', UI_PACKAGE_MODULES)
         self.assertEqual(hardcoded_ui_text((ROOT / 'quantlab/paper_tab_data.py').read_text(encoding='utf-8')), [])
