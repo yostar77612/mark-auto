@@ -20,6 +20,8 @@ TOUCHED = (
     'desktop_pages/compare_equity.py',
     'desktop_pages/data_gaps.py',
     'quantlab/data_gap_report.py',
+    'desktop_pages/backtest_summary_card.py',
+    'quantlab/backtest_summary.py',
     'desktop_pages/assistant_manifest.py',
     'quantlab/agent_manifest.py',
     'desktop_pages/assistant_models.py',
@@ -176,6 +178,8 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+    def test_backtest_summary_u4_is_pure(self):
+        self.assertEqual(module_imports('quantlab.backtest_summary', self.sources['quantlab.backtest_summary']), set())
 
     def test_manifest_d12_has_only_contract_edges(self):
         graph = import_graph(self.sources)

@@ -63,7 +63,7 @@ class NoInlineStylesheetTests(unittest.TestCase):
 
     def test_package_injection_is_detected(self):
         sources = sorted((ROOT / 'desktop_pages').rglob('*.py'))
-        self.assertTrue({'command_palette.py', 'palette_commands.py'} <= {path.name for path in sources})
+        self.assertTrue({'command_palette.py', 'palette_commands.py', 'backtest_summary_card.py'} <= {path.name for path in sources})
         self.assertTrue(sources)
         for path in sources:
             with self.subTest(module=path.name):

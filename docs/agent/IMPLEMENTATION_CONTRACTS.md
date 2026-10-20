@@ -3810,3 +3810,40 @@ stylesheet digest is needed. Protected sources, saved_candidate_pool,
 PROJECT_STATE, acceptance scores, gates, thresholds and timeouts retain empty
 diffs. Live trading remains disabled; no job-start, order or broker path is
 added.
+
+## Round 3 X-U4: descriptive backtest result summary
+
+The item is a single implementation commit. ReportSummaryCard is the first
+result widget, before the result selector, chart, KPI cards and fills table,
+outside collapsed advanced content. It is hidden until a result exists, adding
+no default visible text. The existing BacktestSummaryCard and its detailed text
+remain unchanged inside advanced content. The new card displays three reported
+fields: net_pnl, max_drawdown and closed_lots (the report's closed trade count),
+using the same formatter and privacy adapter as existing KPI cards. Existing
+detailed report adapters and raw advanced diagnostics retain their source
+semantics. The existing page disclaimer remains visible.
+
+A one-line catalog hint describes the metrics without a verdict. New catalog
+entries are appended in a trailing ZH_TW.update block. The Qt-free
+quantlab.backtest_summary.warning_keys helper emits sample-short warnings below
+MIN_SAMPLE_BARS=30 or MIN_SAMPLE_TRADES=5, and a no-closed-trades warning
+exactly when closed_lots is zero. The bar count is the reported equity row
+count; no external data is loaded. Empty results, failed loads and failed run
+validation clear the summary to a placeholder. Amounts follow privacy toggles
+immediately. The summary and labels have accessible names, and exactly one
+instance of each summary class is created. Widget-name additions are sorted;
+baseline files are unchanged.
+
+The cheap test_backtest_summary_policy_u4 and test_backtest_summary_u4 modules
+cover boundaries, placement, exact KPI parity, privacy, empty/failure reset,
+catalog neutrality and accessibility without showing windows or starting jobs.
+The existing presentation tests, KPI assertions and default-page fixtures retain
+their original expectations. Import-graph checks pin the new policy module's
+lack of dependencies. No new stylesheet, button, public desktop_ui name, timer,
+event filter or deferred deletion is introduced.
+
+Automation evidence claims only "not broken". The user's final visual check
+remains pending. Live trading stays disabled; order paths, paper_confirm,
+existing confirmations, protected engine/provider files, PROJECT_STATE,
+acceptance scores, gates and timeouts are unchanged. No evaluation-data field or
+label is added.
