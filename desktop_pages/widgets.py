@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
 )
 from .bindings import PageContext
+from .error_guidance import run_inline
 
 
 PANEL_TITLE_HEIGHT = 19
@@ -82,7 +83,11 @@ class WidgetTools(PageContext):
     def _button(self, layout, text, name, callback, role='secondary'):
         button = QPushButton(text)
         button.setObjectName(name)
-        button.clicked.connect(lambda checked=False: self._safe(lambda: self._confirm_button(button, callback)))
+        host = getattr(self, 'host', self)
+        owner = getattr(host, 'state', host)
+        button.clicked.connect(
+            lambda checked=False: self._safe(lambda: run_inline(button, lambda: self._confirm_button(button, callback), owner=owner, layout=layout))
+        )
         if role not in ('primary', 'secondary', 'danger'):
             raise ValueError('Unknown button role')
         button.setProperty('role', role)
