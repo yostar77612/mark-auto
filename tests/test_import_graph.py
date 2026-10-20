@@ -8,6 +8,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'desktop_pages/host.py',
+    'tests/page_services_inventory.py',
+    'tests/test_page_services_r1.py',
     'tests/test_r7_function_lengths.py',
     'tests/test_r7_characterization.py',
     'tests/r7_characterization.py',

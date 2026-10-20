@@ -1,0 +1,3047 @@
+{
+  "services": [
+    {
+      "name": "_advanced",
+      "target": "shell._advanced",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_analysis_event",
+      "target": "shell._analysis_event",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_analysis_request",
+      "target": "shell._analysis_request",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_analysis_saved_changed",
+      "target": "shell._analysis_saved_changed",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_analysis_section",
+      "target": "shell._analysis_section",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_browse",
+      "target": "shell._browse",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_busy",
+      "target": "shell._busy",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_button",
+      "target": "shell._button",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_chatgpt_cancel",
+      "target": "shell._chatgpt_cancel",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_dispatch",
+      "target": "shell._chatgpt_dispatch",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_chatgpt_event",
+      "target": "shell._chatgpt_event",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_open_browser",
+      "target": "shell._chatgpt_open_browser",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_quiesce",
+      "target": "shell._chatgpt_quiesce",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_compare_page",
+      "target": "shell._compare_page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_confirm_button",
+      "target": "shell._confirm_button",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_current_plan_binding",
+      "target": "shell._current_plan_binding",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_invalidate_analysis_preview",
+      "target": "shell._invalidate_analysis_preview",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_mount_market",
+      "target": "shell._mount_market",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_mount_page",
+      "target": "shell._mount_page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_navigate_selected_page",
+      "target": "shell._navigate_selected_page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_notification_link",
+      "target": "shell._notification_link",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_page",
+      "target": "shell._page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_paper_page",
+      "target": "shell._paper_page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_payload",
+      "target": "shell._payload",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_plan_usage_request",
+      "target": "shell._plan_usage_request",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_quiesce_and_recover",
+      "target": "shell._quiesce_and_recover",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_record_connection_error",
+      "target": "shell._record_connection_error",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_recovery_display_fingerprint",
+      "target": "shell._recovery_display_fingerprint",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_refresh_analysis_saved",
+      "target": "shell._refresh_analysis_saved",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_refresh_recovery_controls",
+      "target": "shell._refresh_recovery_controls",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_remember",
+      "target": "shell._remember",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_remember_stop",
+      "target": "shell._remember_stop",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_safe",
+      "target": "shell._safe",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "_save_section_preferences",
+      "target": "shell._save_section_preferences",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_selected_recovery_launch",
+      "target": "shell._selected_recovery_launch",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_settings_page",
+      "target": "shell._settings_page",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_show_account",
+      "target": "shell._show_account",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_text",
+      "target": "shell._text",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "auto_restore_chatgpt",
+      "target": "shell.auto_restore_chatgpt",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "backup",
+      "target": "shell.backup",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "cancel_job",
+      "target": "shell.cancel_job",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": true
+    },
+    {
+      "name": "closeEvent",
+      "target": "shell.closeEvent",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "configure_workspace",
+      "target": "shell.configure_workspace",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "demo_paper_policy",
+      "target": "shell.demo_paper_policy",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "form_feedback",
+      "target": "shell.form_feedback",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "freeze_paper",
+      "target": "shell.freeze_paper",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "inspect_plan_usage",
+      "target": "shell.inspect_plan_usage",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "kill_paper",
+      "target": "shell.kill_paper",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_form_file",
+      "target": "shell.load_form_file",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_settings",
+      "target": "shell.load_settings",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "notify_local",
+      "target": "shell.notify_local",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": true
+    },
+    {
+      "name": "open_releases",
+      "target": "shell.open_releases",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "paper_job",
+      "target": "shell.paper_job",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "pick_analysis_original",
+      "target": "shell.pick_analysis_original",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "poll_jobs",
+      "target": "shell.poll_jobs",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "preview_analysis",
+      "target": "shell.preview_analysis",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "read_analysis",
+      "target": "shell.read_analysis",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "read_logs",
+      "target": "shell.read_logs",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "reconcile_saved_analysis",
+      "target": "shell.reconcile_saved_analysis",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "record_event",
+      "target": "shell.record_event",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "refresh_views",
+      "target": "shell.refresh_views",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "run_analysis",
+      "target": "shell.run_analysis",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "save_settings",
+      "target": "shell.save_settings",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "select_strategy",
+      "target": "shell.select_strategy",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "show_chatgpt_sign_in",
+      "target": "shell.show_chatgpt_sign_in",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "start_job",
+      "target": "shell.start_job",
+      "origin": "mount",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/bindings.py",
+          "kind": "HostMethod"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "ui_operations",
+      "target": "UI_OPERATIONS",
+      "origin": "page_services",
+      "variadic": false,
+      "consumers": [],
+      "patch_sensitive": false
+    },
+    {
+      "name": "paper_risk_limits",
+      "target": "paper_risk_limits",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/paper.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_paper",
+      "target": "_paper",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/paper.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "_dataset",
+      "target": "_dataset",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/settings.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "plan_provider",
+      "target": "plan_provider",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/settings.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "connection_event_from_payload",
+      "target": "connection_event_from_payload",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/settings.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "analysis_preview_text",
+      "target": "analysis_preview_text",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/compare.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "analysis_record_text",
+      "target": "analysis_record_text",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/compare.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "saved_analysis_entries",
+      "target": "saved_analysis_entries",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/compare.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "load_result",
+      "target": "load_result",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/views.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "result_name",
+      "target": "result_name",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/views.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "write_json",
+      "target": "write_json",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/paper.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    },
+    {
+      "name": "read_json",
+      "target": "read_json",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/paper.py",
+          "kind": "callbacks"
+        },
+        {
+          "module": "desktop_pages/views.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_dataset",
+      "target": "load_dataset",
+      "origin": "page_services",
+      "variadic": true,
+      "consumers": [
+        {
+          "module": "desktop_pages/paper.py",
+          "kind": "callbacks"
+        },
+        {
+          "module": "desktop_pages/views.py",
+          "kind": "callbacks"
+        }
+      ],
+      "patch_sensitive": true
+    }
+  ],
+  "aliases": [
+    {
+      "name": "_button",
+      "page": "widgets_page",
+      "attribute": "_button",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_confirm_button",
+      "page": "widgets_page",
+      "attribute": "_confirm_button",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_text",
+      "page": "widgets_page",
+      "attribute": "_text",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_advanced",
+      "page": "widgets_page",
+      "attribute": "_advanced",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_save_section_preferences",
+      "page": "widgets_page",
+      "attribute": "_save_section_preferences",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_payload",
+      "page": "widgets_page",
+      "attribute": "_payload",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_remember",
+      "page": "widgets_page",
+      "attribute": "_remember",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_browse",
+      "page": "widgets_page",
+      "attribute": "_browse",
+      "patch_sensitive": false
+    },
+    {
+      "name": "refresh_market",
+      "page": "market_page",
+      "attribute": "refresh_market",
+      "patch_sensitive": true
+    },
+    {
+      "name": "save_market_preferences",
+      "page": "market_page",
+      "attribute": "save_market_preferences",
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_market_cache",
+      "page": "market_page",
+      "attribute": "load_market_cache",
+      "patch_sensitive": true
+    },
+    {
+      "name": "bind_result_layers",
+      "page": "market_page",
+      "attribute": "bind_result_layers",
+      "patch_sensitive": true
+    },
+    {
+      "name": "market",
+      "page": "market_page",
+      "attribute": "",
+      "patch_sensitive": true
+    },
+    {
+      "name": "bars",
+      "page": "data_page",
+      "attribute": "bars",
+      "patch_sensitive": false
+    },
+    {
+      "name": "calendar_path",
+      "page": "data_page",
+      "attribute": "calendar_path",
+      "patch_sensitive": false
+    },
+    {
+      "name": "contract",
+      "page": "data_page",
+      "attribute": "contract",
+      "patch_sensitive": false
+    },
+    {
+      "name": "data_card",
+      "page": "data_page",
+      "attribute": "data_card",
+      "patch_sensitive": false
+    },
+    {
+      "name": "data_detail",
+      "page": "data_page",
+      "attribute": "data_detail",
+      "patch_sensitive": false
+    },
+    {
+      "name": "days",
+      "page": "data_page",
+      "attribute": "days",
+      "patch_sensitive": false
+    },
+    {
+      "name": "import_kind",
+      "page": "data_page",
+      "attribute": "import_kind",
+      "patch_sensitive": false
+    },
+    {
+      "name": "import_path",
+      "page": "data_page",
+      "attribute": "import_path",
+      "patch_sensitive": false
+    },
+    {
+      "name": "market_provider",
+      "page": "data_page",
+      "attribute": "market_provider",
+      "patch_sensitive": false
+    },
+    {
+      "name": "network_data",
+      "page": "data_page",
+      "attribute": "network_data",
+      "patch_sensitive": false
+    },
+    {
+      "name": "overview",
+      "page": "data_page",
+      "attribute": "overview",
+      "patch_sensitive": false
+    },
+    {
+      "name": "summary",
+      "page": "data_page",
+      "attribute": "summary",
+      "patch_sensitive": false
+    },
+    {
+      "name": "import_market_file",
+      "page": "data_page",
+      "attribute": "import_market_file",
+      "patch_sensitive": false
+    },
+    {
+      "name": "import_market_history",
+      "page": "data_page",
+      "attribute": "import_market_history",
+      "patch_sensitive": false
+    },
+    {
+      "name": "import_data",
+      "page": "data_page",
+      "attribute": "import_data",
+      "patch_sensitive": false
+    },
+    {
+      "name": "download_data",
+      "page": "data_page",
+      "attribute": "download_data",
+      "patch_sensitive": false
+    },
+    {
+      "name": "campaign_config",
+      "page": "strategy_page",
+      "attribute": "campaign_config",
+      "patch_sensitive": false
+    },
+    {
+      "name": "campaign_form",
+      "page": "strategy_page",
+      "attribute": "campaign_form",
+      "patch_sensitive": false
+    },
+    {
+      "name": "candidate_card",
+      "page": "strategy_page",
+      "attribute": "candidate_card",
+      "patch_sensitive": false
+    },
+    {
+      "name": "candidate_choice",
+      "page": "strategy_page",
+      "attribute": "candidate_choice",
+      "patch_sensitive": false
+    },
+    {
+      "name": "candidate_detail",
+      "page": "strategy_page",
+      "attribute": "candidate_detail",
+      "patch_sensitive": false
+    },
+    {
+      "name": "chatgpt_sign_in_entry",
+      "page": "strategy_page",
+      "attribute": "chatgpt_sign_in_entry",
+      "patch_sensitive": false
+    },
+    {
+      "name": "evaluation_table",
+      "page": "strategy_page",
+      "attribute": "evaluation_table",
+      "patch_sensitive": false
+    },
+    {
+      "name": "family",
+      "page": "strategy_page",
+      "attribute": "family",
+      "patch_sensitive": false
+    },
+    {
+      "name": "history",
+      "page": "strategy_page",
+      "attribute": "history",
+      "patch_sensitive": false
+    },
+    {
+      "name": "history_table",
+      "page": "strategy_page",
+      "attribute": "history_table",
+      "patch_sensitive": false
+    },
+    {
+      "name": "manual_path",
+      "page": "strategy_page",
+      "attribute": "manual_path",
+      "patch_sensitive": false
+    },
+    {
+      "name": "manual_response",
+      "page": "strategy_page",
+      "attribute": "manual_response",
+      "patch_sensitive": false
+    },
+    {
+      "name": "parameters",
+      "page": "strategy_page",
+      "attribute": "parameters",
+      "patch_sensitive": false
+    },
+    {
+      "name": "provider_mode",
+      "page": "strategy_page",
+      "attribute": "provider_mode",
+      "patch_sensitive": false
+    },
+    {
+      "name": "strategy_detail",
+      "page": "strategy_page",
+      "attribute": "strategy_detail",
+      "patch_sensitive": false
+    },
+    {
+      "name": "strategy_form",
+      "page": "strategy_page",
+      "attribute": "strategy_form",
+      "patch_sensitive": false
+    },
+    {
+      "name": "use_candidate_button",
+      "page": "strategy_page",
+      "attribute": "use_candidate_button",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_advanced",
+      "page": "strategy_page",
+      "attribute": "walk_forward_advanced",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_advanced_group",
+      "page": "strategy_page",
+      "attribute": "walk_forward_advanced_group",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_campaign",
+      "page": "strategy_page",
+      "attribute": "walk_forward_campaign",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_choice",
+      "page": "strategy_page",
+      "attribute": "walk_forward_choice",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_consent",
+      "page": "strategy_page",
+      "attribute": "walk_forward_consent",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_form",
+      "page": "strategy_page",
+      "attribute": "walk_forward_form",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_original",
+      "page": "strategy_page",
+      "attribute": "walk_forward_original",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_preview",
+      "page": "strategy_page",
+      "attribute": "walk_forward_preview",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_results",
+      "page": "strategy_page",
+      "attribute": "walk_forward_results",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_saved_controls",
+      "page": "strategy_page",
+      "attribute": "walk_forward_saved_controls",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_start",
+      "page": "strategy_page",
+      "attribute": "walk_forward_start",
+      "patch_sensitive": false
+    },
+    {
+      "name": "walk_forward_status",
+      "page": "strategy_page",
+      "attribute": "walk_forward_status",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_walk_forward_section",
+      "page": "strategy_page",
+      "attribute": "_walk_forward_section",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_connect_walk_forward_inputs",
+      "page": "strategy_page",
+      "attribute": "_connect_walk_forward_inputs",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_walk_forward_origin_changed",
+      "page": "strategy_page",
+      "attribute": "_walk_forward_origin_changed",
+      "patch_sensitive": false
+    },
+    {
+      "name": "pick_walk_forward_original",
+      "page": "strategy_page",
+      "attribute": "pick_walk_forward_original",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_walk_forward_saved_source",
+      "page": "strategy_page",
+      "attribute": "_walk_forward_saved_source",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_invalidate_walk_forward_preview",
+      "page": "strategy_page",
+      "attribute": "_invalidate_walk_forward_preview",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_walk_forward_input_key",
+      "page": "strategy_page",
+      "attribute": "_walk_forward_input_key",
+      "patch_sensitive": false
+    },
+    {
+      "name": "preview_walk_forward",
+      "page": "strategy_page",
+      "attribute": "preview_walk_forward",
+      "patch_sensitive": true
+    },
+    {
+      "name": "run_walk_forward",
+      "page": "strategy_page",
+      "attribute": "run_walk_forward",
+      "patch_sensitive": true
+    },
+    {
+      "name": "read_walk_forward",
+      "page": "strategy_page",
+      "attribute": "read_walk_forward",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_refresh_walk_forward_references",
+      "page": "strategy_page",
+      "attribute": "_refresh_walk_forward_references",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_walk_forward_event",
+      "page": "strategy_page",
+      "attribute": "_walk_forward_event",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_family_changed",
+      "page": "strategy_page",
+      "attribute": "_family_changed",
+      "patch_sensitive": false
+    },
+    {
+      "name": "run_campaign",
+      "page": "strategy_page",
+      "attribute": "run_campaign",
+      "patch_sensitive": true
+    },
+    {
+      "name": "export_manual_request",
+      "page": "strategy_page",
+      "attribute": "export_manual_request",
+      "patch_sensitive": false
+    },
+    {
+      "name": "inspect_candidate",
+      "page": "strategy_page",
+      "attribute": "inspect_candidate",
+      "patch_sensitive": true
+    },
+    {
+      "name": "use_candidate",
+      "page": "strategy_page",
+      "attribute": "use_candidate",
+      "patch_sensitive": false
+    },
+    {
+      "name": "use_builtin",
+      "page": "strategy_page",
+      "attribute": "use_builtin",
+      "patch_sensitive": false
+    },
+    {
+      "name": "backtest_form",
+      "page": "backtest_page",
+      "attribute": "backtest_form",
+      "patch_sensitive": false
+    },
+    {
+      "name": "batch",
+      "page": "backtest_page",
+      "attribute": "batch",
+      "patch_sensitive": false
+    },
+    {
+      "name": "config",
+      "page": "backtest_page",
+      "attribute": "config",
+      "patch_sensitive": true
+    },
+    {
+      "name": "end_date",
+      "page": "backtest_page",
+      "attribute": "end_date",
+      "patch_sensitive": true
+    },
+    {
+      "name": "fills_table",
+      "page": "backtest_page",
+      "attribute": "fills_table",
+      "patch_sensitive": false
+    },
+    {
+      "name": "plot",
+      "page": "backtest_page",
+      "attribute": "plot",
+      "patch_sensitive": false
+    },
+    {
+      "name": "result_card",
+      "page": "backtest_page",
+      "attribute": "result_card",
+      "patch_sensitive": false
+    },
+    {
+      "name": "result_choice",
+      "page": "backtest_page",
+      "attribute": "result_choice",
+      "patch_sensitive": true
+    },
+    {
+      "name": "result_detail",
+      "page": "backtest_page",
+      "attribute": "result_detail",
+      "patch_sensitive": false
+    },
+    {
+      "name": "run_button",
+      "page": "backtest_page",
+      "attribute": "run_button",
+      "patch_sensitive": false
+    },
+    {
+      "name": "start_date",
+      "page": "backtest_page",
+      "attribute": "start_date",
+      "patch_sensitive": false
+    },
+    {
+      "name": "run_backtest",
+      "page": "backtest_page",
+      "attribute": "run_backtest",
+      "patch_sensitive": false
+    },
+    {
+      "name": "show_result",
+      "page": "backtest_page",
+      "attribute": "show_result",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_analysis_section",
+      "page": "compare_page",
+      "attribute": "_analysis_section",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_invalidate_analysis_preview",
+      "page": "compare_page",
+      "attribute": "_invalidate_analysis_preview",
+      "patch_sensitive": false
+    },
+    {
+      "name": "pick_analysis_original",
+      "page": "compare_page",
+      "attribute": "pick_analysis_original",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_analysis_request",
+      "page": "compare_page",
+      "attribute": "_analysis_request",
+      "patch_sensitive": true
+    },
+    {
+      "name": "preview_analysis",
+      "page": "compare_page",
+      "attribute": "preview_analysis",
+      "patch_sensitive": false
+    },
+    {
+      "name": "run_analysis",
+      "page": "compare_page",
+      "attribute": "run_analysis",
+      "patch_sensitive": false
+    },
+    {
+      "name": "read_analysis",
+      "page": "compare_page",
+      "attribute": "read_analysis",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_analysis_saved_changed",
+      "page": "compare_page",
+      "attribute": "_analysis_saved_changed",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_selected_recovery_launch",
+      "page": "compare_page",
+      "attribute": "_selected_recovery_launch",
+      "patch_sensitive": false
+    },
+    {
+      "name": "reconcile_saved_analysis",
+      "page": "compare_page",
+      "attribute": "reconcile_saved_analysis",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_recovery_display_fingerprint",
+      "page": "compare_page",
+      "attribute": "_recovery_display_fingerprint",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_refresh_recovery_controls",
+      "page": "compare_page",
+      "attribute": "_refresh_recovery_controls",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_analysis_event",
+      "page": "compare_page",
+      "attribute": "_analysis_event",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_refresh_analysis_saved",
+      "page": "compare_page",
+      "attribute": "_refresh_analysis_saved",
+      "patch_sensitive": true
+    },
+    {
+      "name": "select_strategy",
+      "page": "compare_page",
+      "attribute": "select_strategy",
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_form_file",
+      "page": "paper_page",
+      "attribute": "load_form_file",
+      "patch_sensitive": false
+    },
+    {
+      "name": "demo_paper_policy",
+      "page": "paper_page",
+      "attribute": "demo_paper_policy",
+      "patch_sensitive": false
+    },
+    {
+      "name": "paper_job",
+      "page": "paper_page",
+      "attribute": "paper_job",
+      "patch_sensitive": true
+    },
+    {
+      "name": "kill_paper",
+      "page": "paper_page",
+      "attribute": "kill_paper",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_show_account",
+      "page": "paper_page",
+      "attribute": "_show_account",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_remember_stop",
+      "page": "paper_page",
+      "attribute": "_remember_stop",
+      "patch_sensitive": false
+    },
+    {
+      "name": "freeze_paper",
+      "page": "paper_page",
+      "attribute": "freeze_paper",
+      "patch_sensitive": true
+    },
+    {
+      "name": "auto_restore_chatgpt",
+      "page": "settings_page",
+      "attribute": "auto_restore_chatgpt",
+      "patch_sensitive": false
+    },
+    {
+      "name": "show_chatgpt_sign_in",
+      "page": "settings_page",
+      "attribute": "show_chatgpt_sign_in",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_quiesce",
+      "page": "settings_page",
+      "attribute": "_chatgpt_quiesce",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_dispatch",
+      "page": "settings_page",
+      "attribute": "_chatgpt_dispatch",
+      "patch_sensitive": true
+    },
+    {
+      "name": "_chatgpt_cancel",
+      "page": "settings_page",
+      "attribute": "_chatgpt_cancel",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_open_browser",
+      "page": "settings_page",
+      "attribute": "_chatgpt_open_browser",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_plan_usage_request",
+      "page": "settings_page",
+      "attribute": "_plan_usage_request",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_current_plan_binding",
+      "page": "settings_page",
+      "attribute": "_current_plan_binding",
+      "patch_sensitive": false
+    },
+    {
+      "name": "inspect_plan_usage",
+      "page": "settings_page",
+      "attribute": "inspect_plan_usage",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_record_connection_error",
+      "page": "settings_page",
+      "attribute": "_record_connection_error",
+      "patch_sensitive": false
+    },
+    {
+      "name": "_chatgpt_event",
+      "page": "settings_page",
+      "attribute": "_chatgpt_event",
+      "patch_sensitive": false
+    },
+    {
+      "name": "save_settings",
+      "page": "settings_page",
+      "attribute": "save_settings",
+      "patch_sensitive": false
+    },
+    {
+      "name": "load_settings",
+      "page": "settings_page",
+      "attribute": "load_settings",
+      "patch_sensitive": false
+    },
+    {
+      "name": "configure_workspace",
+      "page": "settings_page",
+      "attribute": "configure_workspace",
+      "patch_sensitive": false
+    },
+    {
+      "name": "open_releases",
+      "page": "settings_page",
+      "attribute": "open_releases",
+      "patch_sensitive": false
+    },
+    {
+      "name": "record_event",
+      "page": "settings_page",
+      "attribute": "record_event",
+      "patch_sensitive": true
+    },
+    {
+      "name": "read_logs",
+      "page": "settings_page",
+      "attribute": "read_logs",
+      "patch_sensitive": true
+    },
+    {
+      "name": "backup",
+      "page": "settings_page",
+      "attribute": "backup",
+      "patch_sensitive": false
+    },
+    {
+      "name": "refresh_views",
+      "page": "views_page",
+      "attribute": "refresh_views",
+      "patch_sensitive": true
+    }
+  ],
+  "state_copies": [
+    {
+      "name": "market",
+      "source": "shell.market",
+      "page": "market_page"
+    },
+    {
+      "name": "refresh_market",
+      "source": "shell.refresh_market",
+      "page": "market_page"
+    },
+    {
+      "name": "save_market_preferences",
+      "source": "shell.save_market_preferences",
+      "page": "market_page"
+    },
+    {
+      "name": "load_market_cache",
+      "source": "shell.load_market_cache",
+      "page": "market_page"
+    },
+    {
+      "name": "bind_result_layers",
+      "source": "shell.bind_result_layers",
+      "page": "market_page"
+    },
+    {
+      "name": "bars",
+      "source": "shell.bars",
+      "page": "data_page"
+    },
+    {
+      "name": "calendar_path",
+      "source": "shell.calendar_path",
+      "page": "data_page"
+    },
+    {
+      "name": "contract",
+      "source": "shell.contract",
+      "page": "data_page"
+    },
+    {
+      "name": "data_card",
+      "source": "shell.data_card",
+      "page": "data_page"
+    },
+    {
+      "name": "data_detail",
+      "source": "shell.data_detail",
+      "page": "data_page"
+    },
+    {
+      "name": "days",
+      "source": "shell.days",
+      "page": "data_page"
+    },
+    {
+      "name": "import_kind",
+      "source": "shell.import_kind",
+      "page": "data_page"
+    },
+    {
+      "name": "import_path",
+      "source": "shell.import_path",
+      "page": "data_page"
+    },
+    {
+      "name": "market_provider",
+      "source": "shell.market_provider",
+      "page": "data_page"
+    },
+    {
+      "name": "network_data",
+      "source": "shell.network_data",
+      "page": "data_page"
+    },
+    {
+      "name": "overview",
+      "source": "shell.overview",
+      "page": "data_page"
+    },
+    {
+      "name": "summary",
+      "source": "shell.summary",
+      "page": "data_page"
+    },
+    {
+      "name": "import_market_file",
+      "source": "shell.import_market_file",
+      "page": "data_page"
+    },
+    {
+      "name": "import_market_history",
+      "source": "shell.import_market_history",
+      "page": "data_page"
+    },
+    {
+      "name": "import_data",
+      "source": "shell.import_data",
+      "page": "data_page"
+    },
+    {
+      "name": "download_data",
+      "source": "shell.download_data",
+      "page": "data_page"
+    },
+    {
+      "name": "campaign_config",
+      "source": "shell.campaign_config",
+      "page": "strategy_page"
+    },
+    {
+      "name": "campaign_form",
+      "source": "shell.campaign_form",
+      "page": "strategy_page"
+    },
+    {
+      "name": "candidate_card",
+      "source": "shell.candidate_card",
+      "page": "strategy_page"
+    },
+    {
+      "name": "candidate_choice",
+      "source": "shell.candidate_choice",
+      "page": "strategy_page"
+    },
+    {
+      "name": "candidate_detail",
+      "source": "shell.candidate_detail",
+      "page": "strategy_page"
+    },
+    {
+      "name": "chatgpt_sign_in_entry",
+      "source": "shell.chatgpt_sign_in_entry",
+      "page": "strategy_page"
+    },
+    {
+      "name": "evaluation_table",
+      "source": "shell.evaluation_table",
+      "page": "strategy_page"
+    },
+    {
+      "name": "family",
+      "source": "shell.family",
+      "page": "strategy_page"
+    },
+    {
+      "name": "history",
+      "source": "shell.history",
+      "page": "strategy_page"
+    },
+    {
+      "name": "history_table",
+      "source": "shell.history_table",
+      "page": "strategy_page"
+    },
+    {
+      "name": "manual_path",
+      "source": "shell.manual_path",
+      "page": "strategy_page"
+    },
+    {
+      "name": "manual_response",
+      "source": "shell.manual_response",
+      "page": "strategy_page"
+    },
+    {
+      "name": "parameters",
+      "source": "shell.parameters",
+      "page": "strategy_page"
+    },
+    {
+      "name": "provider_mode",
+      "source": "shell.provider_mode",
+      "page": "strategy_page"
+    },
+    {
+      "name": "strategy_detail",
+      "source": "shell.strategy_detail",
+      "page": "strategy_page"
+    },
+    {
+      "name": "strategy_form",
+      "source": "shell.strategy_form",
+      "page": "strategy_page"
+    },
+    {
+      "name": "use_candidate_button",
+      "source": "shell.use_candidate_button",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_advanced",
+      "source": "shell.walk_forward_advanced",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_advanced_group",
+      "source": "shell.walk_forward_advanced_group",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_campaign",
+      "source": "shell.walk_forward_campaign",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_choice",
+      "source": "shell.walk_forward_choice",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_consent",
+      "source": "shell.walk_forward_consent",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_form",
+      "source": "shell.walk_forward_form",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_original",
+      "source": "shell.walk_forward_original",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_preview",
+      "source": "shell.walk_forward_preview",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_results",
+      "source": "shell.walk_forward_results",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_saved_controls",
+      "source": "shell.walk_forward_saved_controls",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_start",
+      "source": "shell.walk_forward_start",
+      "page": "strategy_page"
+    },
+    {
+      "name": "walk_forward_status",
+      "source": "shell.walk_forward_status",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_walk_forward_section",
+      "source": "shell._walk_forward_section",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_connect_walk_forward_inputs",
+      "source": "shell._connect_walk_forward_inputs",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_walk_forward_origin_changed",
+      "source": "shell._walk_forward_origin_changed",
+      "page": "strategy_page"
+    },
+    {
+      "name": "pick_walk_forward_original",
+      "source": "shell.pick_walk_forward_original",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_walk_forward_saved_source",
+      "source": "shell._walk_forward_saved_source",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_invalidate_walk_forward_preview",
+      "source": "shell._invalidate_walk_forward_preview",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_walk_forward_input_key",
+      "source": "shell._walk_forward_input_key",
+      "page": "strategy_page"
+    },
+    {
+      "name": "preview_walk_forward",
+      "source": "shell.preview_walk_forward",
+      "page": "strategy_page"
+    },
+    {
+      "name": "run_walk_forward",
+      "source": "shell.run_walk_forward",
+      "page": "strategy_page"
+    },
+    {
+      "name": "read_walk_forward",
+      "source": "shell.read_walk_forward",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_refresh_walk_forward_references",
+      "source": "shell._refresh_walk_forward_references",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_walk_forward_event",
+      "source": "shell._walk_forward_event",
+      "page": "strategy_page"
+    },
+    {
+      "name": "_family_changed",
+      "source": "shell._family_changed",
+      "page": "strategy_page"
+    },
+    {
+      "name": "run_campaign",
+      "source": "shell.run_campaign",
+      "page": "strategy_page"
+    },
+    {
+      "name": "export_manual_request",
+      "source": "shell.export_manual_request",
+      "page": "strategy_page"
+    },
+    {
+      "name": "inspect_candidate",
+      "source": "shell.inspect_candidate",
+      "page": "strategy_page"
+    },
+    {
+      "name": "use_candidate",
+      "source": "shell.use_candidate",
+      "page": "strategy_page"
+    },
+    {
+      "name": "use_builtin",
+      "source": "shell.use_builtin",
+      "page": "strategy_page"
+    },
+    {
+      "name": "backtest_form",
+      "source": "shell.backtest_form",
+      "page": "backtest_page"
+    },
+    {
+      "name": "batch",
+      "source": "shell.batch",
+      "page": "backtest_page"
+    },
+    {
+      "name": "config",
+      "source": "shell.config",
+      "page": "backtest_page"
+    },
+    {
+      "name": "end_date",
+      "source": "shell.end_date",
+      "page": "backtest_page"
+    },
+    {
+      "name": "fills_table",
+      "source": "shell.fills_table",
+      "page": "backtest_page"
+    },
+    {
+      "name": "plot",
+      "source": "shell.plot",
+      "page": "backtest_page"
+    },
+    {
+      "name": "result_card",
+      "source": "shell.result_card",
+      "page": "backtest_page"
+    },
+    {
+      "name": "result_choice",
+      "source": "shell.result_choice",
+      "page": "backtest_page"
+    },
+    {
+      "name": "result_detail",
+      "source": "shell.result_detail",
+      "page": "backtest_page"
+    },
+    {
+      "name": "run_button",
+      "source": "shell.run_button",
+      "page": "backtest_page"
+    },
+    {
+      "name": "start_date",
+      "source": "shell.start_date",
+      "page": "backtest_page"
+    },
+    {
+      "name": "run_backtest",
+      "source": "shell.run_backtest",
+      "page": "backtest_page"
+    },
+    {
+      "name": "show_result",
+      "source": "shell.show_result",
+      "page": "backtest_page"
+    },
+    {
+      "name": "chatgpt_panel",
+      "source": "shell.chatgpt_panel",
+      "page": "settings_page"
+    },
+    {
+      "name": "chatgpt_controller",
+      "source": "shell.chatgpt_controller",
+      "page": "settings_page"
+    },
+    {
+      "name": "select_button",
+      "source": "shell.select_button",
+      "page": "compare_page"
+    }
+  ],
+  "patch_points": [
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 233,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "window.paper_page"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "_refresh_analysis_saved",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "_refresh_recovery_controls",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "_refresh_walk_forward_references",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "inspect_candidate",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "load_market_cache",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 251,
+      "name": "show_result",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 267,
+      "name": "_refresh_analysis_saved",
+      "kind": "patch.object",
+      "receiver": "coordinator"
+    },
+    {
+      "file": "tests/r7_characterization.py",
+      "line": 272,
+      "name": "load_dataset",
+      "kind": "patch.dict",
+      "receiver": "window.page_host.callbacks"
+    },
+    {
+      "file": "tests/test_analysis_recovery_ui.py",
+      "line": 137,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_b11_privacy.py",
+      "line": 136,
+      "name": "refresh_views",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_chart_popout_c10.py",
+      "line": 90,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "d"
+    },
+    {
+      "file": "tests/test_chart_popout_c10.py",
+      "line": 153,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "d"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 42,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 46,
+      "name": "cancel_job",
+      "kind": "assignment",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 48,
+      "name": "_safe",
+      "kind": "assignment",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 162,
+      "name": "read_logs",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 162,
+      "name": "refresh_market",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 162,
+      "name": "refresh_views",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 249,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_command_palette_c7.py",
+      "line": 250,
+      "name": "_confirm_button",
+      "kind": "patch.object",
+      "receiver": "window.widgets_page"
+    },
+    {
+      "file": "tests/test_compare_table.py",
+      "line": 111,
+      "name": "load_result",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_compare_table.py",
+      "line": 111,
+      "name": "show_result",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_compare_table.py",
+      "line": 116,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 425,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 468,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 479,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 495,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 496,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 515,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 516,
+      "name": "poll_jobs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 518,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 552,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 553,
+      "name": "poll_jobs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 555,
+      "name": "_chatgpt_dispatch",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 581,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 187,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 216,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 229,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 246,
+      "name": "saved_analysis_entries",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 246,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 266,
+      "name": "analysis_record_text",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 266,
+      "name": "record_event",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 281,
+      "name": "analysis_record_text",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_analysis_discovery.py",
+      "line": 281,
+      "name": "record_event",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_automatic_backup.py",
+      "line": 32,
+      "name": "start_job",
+      "kind": "assignment",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_automatic_backup.py",
+      "line": 91,
+      "name": "start_job",
+      "kind": "assignment",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 131,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 132,
+      "name": "poll_jobs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 133,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 141,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 141,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 172,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 289,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 304,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 406,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 417,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_expiries.py",
+      "line": 202,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_desktop_market_integration.py",
+      "line": 39,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_desktop_market_integration.py",
+      "line": 42,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_desktop_market_integration.py",
+      "line": 98,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 158,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 169,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 199,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 224,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 239,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 262,
+      "name": "_quiesce_and_recover",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 263,
+      "name": "poll_jobs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 277,
+      "name": "refresh_views",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 278,
+      "name": "notify_local",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 285,
+      "name": "saved_analysis_entries",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 297,
+      "name": "_analysis_request",
+      "kind": "patch.object",
+      "receiver": "w.compare_page"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 299,
+      "name": "analysis_preview_text",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 305,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_desktop_paper_exports.py",
+      "line": 117,
+      "name": "write_json",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_paper_exports.py",
+      "line": 167,
+      "name": "write_json",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_ui.py",
+      "line": 293,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_desktop_ui_polish_b.py",
+      "line": 144,
+      "name": "load_result",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_ui_polish_b.py",
+      "line": 145,
+      "name": "show_result",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_desktop_ui_polish_b.py",
+      "line": 146,
+      "name": "result_name",
+      "kind": "patch",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_desktop_walk_forward.py",
+      "line": 341,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_walk_forward.py",
+      "line": 359,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_header_c1.py",
+      "line": 69,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_market_empty_ui.py",
+      "line": 32,
+      "name": "bind_result_layers",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_market_history_ui.py",
+      "line": 175,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_market_history_ui.py",
+      "line": 201,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_market_history_ui.py",
+      "line": 211,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_notifications_c8.py",
+      "line": 120,
+      "name": "_notification_link",
+      "kind": "assignment",
+      "receiver": "center.host"
+    },
+    {
+      "file": "tests/test_onboarding_c2.py",
+      "line": 118,
+      "name": "result_choice",
+      "kind": "assignment",
+      "receiver": "self.shell"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 84,
+      "name": "_safe",
+      "kind": "assignment",
+      "receiver": "typed"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 221,
+      "name": "_safe",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 224,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 227,
+      "name": "freeze_paper",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 230,
+      "name": "_button",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_page_services_r1.py",
+      "line": 233,
+      "name": "_busy",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_panel_card_c3.py",
+      "line": 106,
+      "name": "_advanced",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_panel_card_c3.py",
+      "line": 106,
+      "name": "_button",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_panel_card_c3.py",
+      "line": 106,
+      "name": "_remember",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_panel_card_c3.py",
+      "line": 106,
+      "name": "_text",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_paper_tabs_c6.py",
+      "line": 213,
+      "name": "paper_job",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_primary_sign_in_host.py",
+      "line": 71,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_product_ai_boundary.py",
+      "line": 86,
+      "name": "run_campaign",
+      "kind": "patch.object",
+      "receiver": "validate_real_ai"
+    },
+    {
+      "file": "tests/test_r7_characterization.py",
+      "line": 46,
+      "name": "_busy",
+      "kind": "setattr",
+      "receiver": "shell"
+    },
+    {
+      "file": "tests/test_r7_characterization.py",
+      "line": 46,
+      "name": "_safe",
+      "kind": "setattr",
+      "receiver": "shell"
+    },
+    {
+      "file": "tests/test_replay_b13.py",
+      "line": 200,
+      "name": "_dataset",
+      "kind": "patch.object",
+      "receiver": "ui"
+    },
+    {
+      "file": "tests/test_replay_b13.py",
+      "line": 231,
+      "name": "start_job",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_replay_b13.py",
+      "line": 324,
+      "name": "paper_job",
+      "kind": "patch.object",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_replay_b13.py",
+      "line": 332,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_ruff_config.py",
+      "line": 16,
+      "name": "config",
+      "kind": "assignment",
+      "receiver": "cls"
+    },
+    {
+      "file": "tests/test_shortcuts.py",
+      "line": 24,
+      "name": "read_logs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_shortcuts.py",
+      "line": 24,
+      "name": "refresh_market",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_shortcuts.py",
+      "line": 24,
+      "name": "refresh_views",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_shortcuts.py",
+      "line": 27,
+      "name": "cancel_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_t9_onboarding.py",
+      "line": 181,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_t9_timeinput.py",
+      "line": 181,
+      "name": "end_date",
+      "kind": "setattr",
+      "receiver": "old"
+    },
+    {
+      "file": "tests/test_t9_timeinput.py",
+      "line": 220,
+      "name": "end_date",
+      "kind": "setattr",
+      "receiver": "old"
+    },
+    {
+      "file": "tests/test_table_readability_c9.py",
+      "line": 168,
+      "name": "_advanced",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_table_readability_c9.py",
+      "line": 168,
+      "name": "_button",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_table_readability_c9.py",
+      "line": 168,
+      "name": "_remember",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_table_readability_c9.py",
+      "line": 168,
+      "name": "_text",
+      "kind": "setattr",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_wf_wizard.py",
+      "line": 37,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "page.host"
+    },
+    {
+      "file": "tests/test_wf_wizard.py",
+      "line": 57,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "wizard.page.host"
+    },
+    {
+      "file": "tests/test_wf_wizard.py",
+      "line": 173,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "wizard.page.host"
+    },
+    {
+      "file": "tests/test_wf_wizard.py",
+      "line": 194,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "wizard.page.host"
+    },
+    {
+      "file": "tests/test_workspace_wal_guard.py",
+      "line": 507,
+      "name": "_dataset",
+      "kind": "assignment",
+      "receiver": "fake_ui"
+    },
+    {
+      "file": "tests/test_workspace_wal_guard.py",
+      "line": 516,
+      "name": "preview_walk_forward",
+      "kind": "patch.object",
+      "receiver": "adapter"
+    },
+    {
+      "file": "tests/test_workspace_wal_guard.py",
+      "line": 517,
+      "name": "run_walk_forward",
+      "kind": "patch.object",
+      "receiver": "adapter"
+    }
+  ]
+}
