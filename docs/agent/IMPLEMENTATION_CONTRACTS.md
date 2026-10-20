@@ -3597,3 +3597,36 @@ and result handling, clearing, accessibility, 0/1/1000 evaluation arithmetic,
 invalid-count fallback and summary placement before consent with busy gating.
 Existing test_wf_estimate.py and test_wf_wizard.py retain their assertions. The
 user's final visual check remains pending.
+
+## F4 - Background notification coverage audit (PRESENT)
+
+F4 is a single audit-only commit. The existing C8 notification center covers
+every desktop start_job operation; no product code, mapping, catalogue or widget
+is changed. tests/test_notifications_f4.py derives the operation inventory from
+dispatch call sites, including conditional backup operations and the paper
+dispatcher, and rejects unresolved dispatch expressions. Its table covers every
+operation on success, failure and cancellation, including analysis, walk-
+forward, campaign, comparison, paper and manual backup operations.
+
+Automatic backup terminal outcomes reach the existing center through
+MainWindow.poll_jobs before AutomaticBackupPanel.handle_job_event updates its
+bookkeeping. The audit exercises that shared ingress for success, failure and
+cancellation. Market refresh success and partial-provider failure use the same
+toast/history path. Failure entries allow only B1 ERROR_TABLE codes; unknown
+codes fall back to operation_failed. Cancellation remains informational.
+
+The audit covers duplicate job IDs, begin_event/end_event suppression, generic
+unknown-operation fallback, structural safe_summary projection, private payload
+and auxiliary OOS/holdout exclusion in both privacy states, notifications while
+another page is current, and read-only entry navigation. It also covers unread
+badges, the existing local-toggle exceptions for completion/error, the toast
+cap, nonmodal presentation, maxlen-100 history, hidden-toast timer inactivity,
+hide and close cleanup, and window-owned center shutdown. No test starts a
+worker, shows a window, sleeps, accesses the network or changes application
+style.
+
+Live trading remains permanently disabled. Order paths, consent controls, fail-
+closed validation, gates, timeouts, protected sources, desktop_ui public names,
+PROJECT_STATE and acceptance scores are unchanged. Existing tests and default-
+page snapshots remain unchanged; no baseline fixture refresh is needed. The
+user's final visual check remains pending.
