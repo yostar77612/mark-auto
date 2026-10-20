@@ -202,7 +202,7 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
         self.smoke(injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
         self.smoke(
             redirected=True,
-            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\ndesktop._history_smoke_fixture = missing",
+            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_smoke')._history_smoke_fixture = missing",
             expected_status='failed',
         )
 

@@ -130,7 +130,7 @@ def tracked_cleanup(manager):
  result = diagnostic_original_cleanup(manager)
  trace('cleanup_end', verified=result['verified'])
  return result
-desktop._close_smoke_worker = tracked_cleanup
+desktop._close_smoke_worker = __import__('desktop_smoke')._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):
@@ -268,7 +268,7 @@ def cleanup(manager):
  try: return original_cleanup(manager)
  finally: finalizing = False
 JobManager.close = fail_final
-desktop._close_smoke_worker = cleanup
+desktop._close_smoke_worker = __import__('desktop_smoke')._close_smoke_worker = cleanup
 ''',
             retained=True,
             verified=False,
@@ -311,7 +311,7 @@ RuntimeGuard.finish = interrupt
     def test_startup_error_and_final_cleanup_failure_still_emit_failure(self):
         self.smoke(
             '''def startup_error(*args): raise RuntimeError('private exception startup failure')
-desktop._history_smoke_fixture = startup_error
+__import__('desktop_smoke')._history_smoke_fixture = startup_error
 def cleanup_error(*args): raise RuntimeSafetyError('private exception startup close failure')
 JobManager.close = cleanup_error
 ''',

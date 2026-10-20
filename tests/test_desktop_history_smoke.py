@@ -148,8 +148,8 @@ class HistorySmokeResultTests(unittest.TestCase):
     def test_missing_module_bad_result_and_worker_failure_fail_overall(self):
         variants = {
             'missing_module': "sys.modules['quantlab.market_history'] = None\n",
-            'bad_result': "original = desktop._check_history_worker_result\ndef bad(result, *args):\n return original(dict(result, contracts=2), *args)\ndesktop._check_history_worker_result = bad\n",
-            'worker_failure': "original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\ndesktop._history_smoke_fixture = missing\n",
+            'bad_result': "original = desktop._check_history_worker_result\ndef bad(result, *args):\n return original(dict(result, contracts=2), *args)\n__import__('desktop_smoke')._check_history_worker_result = bad\n",
+            'worker_failure': "original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_smoke')._history_smoke_fixture = missing\n",
         }
         for name, injected in variants.items():
             with self.subTest(failure=name), tempfile.TemporaryDirectory() as temporary:
