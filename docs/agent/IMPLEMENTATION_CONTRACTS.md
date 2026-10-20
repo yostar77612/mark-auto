@@ -2896,3 +2896,62 @@ The controller should review `desktop_pages_before/06_full.png` and
 `desktop_pages_before/06_viewport.png`; the controller refreshed both PNGs in the
 fixture-only baseline commit, and the real-App visual check remains PENDING USER
 FINAL CONFIRMATION.
+
+## UI-3 C10: shared-source chart pop-out (2026-10-20)
+
+The existing market chart panel title menu exposes a localized, keyboard-reachable
+pop-out action with a tooltip. PopoutController owns at most one independent
+ChartPopout; activating again restores/raises it. Empty data remains an empty
+read-only chart. The main chart object, objectName, drawing store and C5 panel
+are retained. No default page layout/text/control-count change or snapshot
+baseline refresh is intended; widget-name inventory additions are additive.
+
+The follower reads MarketDashboard._series directly through series_store, with
+identity preserved even when the dashboard replaces the store. Rendered bars,
+immutable overlays/panes, trace and annotation records are shared by identity
+from the authoritative chart. No aggregation, fetching, data provider, refresh,
+sample, consent, job or network path exists in the pop-out. Exact source/strategy
+binding remains exclusively in MarketPage.bind_result_layers; a rejected binding
+clears the follower's layers too. Source/status, stale/error disclosure and the
+live-disabled notice remain visible. Paper snapshots have no order callback.
+Zoom/pan/crosshair are independent display state; follower gestures never change
+the main chart's viewport. Display changes and completed dashboard renders update
+the follower synchronously, including indicator changes and early empty/error
+returns. The display signal also follows later annotation/snapshot changes.
+
+Close (including Escape and the accessible close button) is idempotent. It
+disconnects only the two follower subscriptions, drops the controller's window
+reference, detaches the closed dialog and releases its dashboard reference.
+There is no deleteLater or retained deleted wrapper. MainWindow explicitly closes
+the follower on accepted shutdown; dashboard close/destruction closes it before
+child chart teardown. Reopen constructs a fresh follower. There are no pop-out
+timers or event filters, hidden/minimized polling, or recurring child searches.
+
+Geometry is saved only on visible, non-minimized close, at the independent
+settings key `market_popout` with x/y from frame x()/y() and width/height.
+SettingsStore.save remains the existing atomic writer; other sections, including
+legacy and main-window geometry, are merged unchanged. Move/resize events write
+nothing, and hidden/minimized close writes nothing. Restore rejects bool, string,
+NaN and missing coordinates without coercion; size is bounded to the chart minimum
+and available screen size. Coordinates inside an injected available secondary
+screen (including negative x) select that screen. Otherwise placement clamps to
+the host screen, with a default rectangle when a bare host has no screen service.
+Legacy settings without the key load without modifying the store. Persistence
+failures show only B1 operation_failed_local, without exception text.
+
+Cheap synthetic offscreen tests cover shared state/source identity, empty data,
+selection/timeframe/indicator/quote updates, exact-source mismatch clearing,
+independent viewport, connection counts, no timers/host operations, reference
+release/reopen, owner destruction, actual MainWindow close, frame round-trip,
+secondary screens, malformed geometry, atomic settings/legacy retention, bounded
+move writes and unchanged C5 layout bytes. No added test shows a native window,
+resets application style, sleeps, networks or launches a subprocess. G3/profile
+blocks, research data/hashes, acceptance scores and all gates/timeouts are unchanged.
+
+GitNexus lane analysis failed with sandbox spawn EPERM. Impact navigation used
+the registered main index (21 commits stale), followed by direct source reads;
+fresh graph coverage is not claimed. Existing market/isolation/history smokes
+hit temp-directory ACL errors and their existing Windows skips inside the
+sandbox; the controller ran them outside it and they pass. The new root module is
+tracked, so the tracked-root layout test passes. The item is a single C10 commit.
+Multi-monitor visual behaviour remains PENDING USER FINAL CONFIRMATION.

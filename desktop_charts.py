@@ -166,6 +166,10 @@ class ReferenceLine:
 class _ChartAnnotationMixin:
     """Marker and reference-line setters (kept outside CandlestickChart to bound its size)."""
 
+    def update(self, *args):
+        super().update(*args)
+        self.display_changed.emit()
+
     def set_markers(self, markers, *, trace):
         if self.trace is None or trace != self.trace:
             raise ValueError(ui_text('charts.set_markers.text_1'))
@@ -212,6 +216,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 
     crosshair_changed = Signal(object)
     timeframe_changed = Signal(str)
+    display_changed = Signal()
     timeframes = ('1m', '3m', '5m', '15m', '30m', '60m', '1d', '1w')
     MAX_VISIBLE = 600
 

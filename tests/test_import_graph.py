@@ -56,6 +56,7 @@ TOUCHED = (
     'desktop_market.py',
     'desktop_market_layout.py',
     'desktop_market_workspace.py',
+    'desktop_chart_popout.py',
     'tests/test_market_workspace_c5.py',
     'desktop_pages/market.py',
     'desktop_chatgpt_states.py',

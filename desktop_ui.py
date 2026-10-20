@@ -1651,6 +1651,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             self.chatgpt_controller.set_host_available(True)
             event.ignore(); self.status.setText(ui_text('ui.closeEvent.text_3')); return
         self._safe(self.save_market_preferences)
+        self.market.popout.close()
         self.chatgpt_controller.set_host_available(False)
         self.timer.stop(); self.app_header.timer.stop(); event.accept()
 

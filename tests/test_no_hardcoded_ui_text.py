@@ -23,6 +23,7 @@ UI_MODULES = (
     'desktop_market.py',
     'desktop_market_layout.py',
     'desktop_market_workspace.py',
+    'desktop_chart_popout.py',
     'desktop_timeinput.py',
     'desktop_expiry_inputs.py',
     'desktop_presentation.py',
