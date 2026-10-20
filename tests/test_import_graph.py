@@ -198,6 +198,7 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+
     def test_r5_leaf_dependencies_and_compatibility_exports(self):
         graph = import_graph(self.sources)
         self.assertEqual(graph['quantlab.runtime_support'], set())
