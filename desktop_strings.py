@@ -2005,3 +2005,15 @@ ZH_TW.update(
     }
 )
 ZH_TW['keyboard.help'] += '\uff1bCtrl+Shift+N \u901a\u77e5\u4e2d\u5fc3\uff1bCtrl+Shift+D \u95dc\u9589\u63d0\u793a\u3002'
+
+ZH_TW.update(
+    {
+        'paper.tabs.title': '\u7d19\u4e0a\u5e33\u52d9',
+        'paper.tabs.events': '\u4e8b\u4ef6',
+        'paper.tabs.sequence': '\u5e8f\u865f',
+        'paper.tabs.active_total': '{0} [{1}/{2}]',
+        'paper.tabs.simulated_pnl': '\u6a21\u64ec\u672a\u5be6\u73fe\u640d\u76ca',
+        'paper.tabs.pnl_basis': '\u7d19\u4e0a\u6a21\u64ec\u672a\u5be6\u73fe\u640d\u76ca\uff08\u672a\u6263\u6210\u672c\uff09',
+        'paper.tabs.event_operation': '\u7d19\u4e0a\u4e8b\u4ef6: {0}',
+    }
+)

@@ -3118,3 +3118,84 @@ The only intended default header addition is the catalog notification button
 (`notification_button`, unread badge text from notifications.badge, initially
 count zero). The seven viewport PNGs were reviewed and refreshed by the controller
 in the fixture-only baseline commit; metrics.json is unchanged.
+
+## U2-C6 — paper account tab counts and simulated P&L distribution
+
+Entry points: PaperPage wires desktop_pages/paper_tabs.build_tabs and calls
+refresh_tables from the existing _show_account refresh. quantlab.paper_tab_data is
+Qt-free and exports account_counts, working_order, scaled_fractions,
+position_rows and event_rows. No execution, broker or network dependency is added.
+PaperPage remains below 500 lines; MainWindow and desktop_ui public names are
+unchanged. The item is a single feat(desktop) implementation commit; no push, tag
+or release is performed by the lane.
+
+The four read-only tables retain existing position/order/fill object names and
+add paper_events_results, paper_account_tabs, paper_account_tab_bar and the
+positions header name paper_positions_pnl. Paper-only order titles become
+label [active/total] after account projection. Accepted, partial, submitting,
+cancel_pending and unknown orders are non-terminal; filled, cancelled and
+rejected are terminal. Every account order is retained, including incomplete
+records, so chart snapshot, table total, account count and order KPI agree.
+Missing collections and None are safe. Legacy initial/bare-host table editing
+retains the single-count contract until an account is projected. Compare and
+results continue using the unchanged bind_tab_count adapter. PaperTable's
+resetting flag suppresses intermediate model notifications and emits one
+refreshed signal after each set_rows; direct row resets still update counts.
+No timer, event filter, deferred deletion or recurring widget discovery is added.
+
+The positions P&L header and basis tooltip explicitly describe simulated,
+unrealized P&L before costs. Only existing last_mark_price, FIFO lot prices and
+quantities, entry fills' explicit multipliers and order contract identities
+are used. A complete single-contract position must match its lots; missing
+marks, prices, multipliers, lots or contract matches produce the existing
+missing-value placeholder and no bar. Nothing is fetched or inferred from an
+unrelated quote. Arithmetic and scaling use Decimal; only pixel widths convert
+to float. Fractions are abs(pnl)/max(abs(pnl)), with zero and missing values
+handled explicitly. The QStyledItemDelegate paints model-role fractions and
+theme-driven semantic up/down colors. There are no widgets per row. SortItem
+numeric roles, numeric alignment and monospaced fonts are retained; fractions
+travel with their items during sorting. Privacy uses desktop_privacy for
+position quantities and P&L display/accessibility/tooltips; bars are not painted
+in privacy mode. Tab titles contain record counts, never account IDs or amounts.
+Raw CSV/JSON exports and guarded submit/cancel/amend handlers are unchanged.
+
+Events project at most 200 structural journal records from the existing
+paper_journal_export.json (input bounded to 4 MiB), supplied account event
+metadata, or existing fill events when no journal is available. Only sequence
+and allowlisted operation codes are shown. Arbitrary identities, messages,
+payloads, secrets and research data never cross into display text. Missing or
+oversized exports fall back without broker access. QTableWidget text remains
+literal PlainText (including markup characters); no HTML renderer, mutation
+action, shortcut or order callback is attached. Existing copy remains available.
+Tab/table accessible names, Ctrl+Tab, tab-bar arrows, row navigation and
+ElideNone are covered without showing windows in the new tests.
+
+Mock/offscreen evidence: test_paper_tab_data_c6.py tests Qt-free projections,
+zero/positive/negative/mixed/equal scaling, missing marks and prices, complete
+cost-basis matching and bounded metadata privacy. test_paper_tabs_c6.py tests
+fixed-seed accounts with 34 orders/2 working, KPI/chart/table/title consistency,
+None refreshes, preserved card and status outputs, sorting, privacy roles,
+keyboard navigation, literal markup, read-only actions and lifetime constraints.
+34/1000/5000-row resets emit one title update each; 5000 P&L rows create O(1)
+QWidgets. These are structural/offscreen checks, not visual-quality evidence.
+The unchanged C9, B10, paper-lock, theme, accessibility walk, shortcuts, header,
+async status, panel, public-name, catalog, import/layout/style and size tests pass.
+The unchanged desktop-pages boundary tests pass. Ruff 0.16.10 check and changed
+file format checks, Python 3.11 compile and tools/quality_gate.py pass.
+
+The required terminal/isolation/history/market/walk-forward smoke modules,
+test_paper, paper exports and full desktop pages/UI modules hit the documented
+sandbox temporary-directory WinError 5 ACL failures (some existing smoke skips
+also remain); the controller reran them outside the sandbox and they pass.
+GitNexus status reported no lane-local index and analyze failed with spawn EPERM,
+so navigation evidence is direct source inspection, without an invented graph result.
+
+G3 sources, saved_candidate_pool profiles, timeouts, gates, PROJECT_STATE,
+optimization plan and ACCEPTANCE scores have empty diffs. Existing tests are
+unchanged except additive registration checks; no test is removed or weakened.
+Widget-name fixture additions are additive. The paper page's visible tab
+text/geometry changed, so the controller reviewed the metrics and refreshed
+tests/fixtures/desktop_pages_before/metrics.json and 05_full.png in a separate
+fixture-only commit (05_viewport.png was already refreshed by the C8 fixture commit). The metadata file
+tests/fixtures/desktop_pages_baseline.json is unchanged. No visual quality or
+real-broker verification is claimed; the user's final visual check remains pending.
