@@ -39,6 +39,7 @@ TOUCHED = (
     'quantlab/paper_tab_data.py',
     'tests/test_paper_tab_data_c6.py',
     'tests/test_paper_tabs_c6.py',
+    'tests/test_paper_timeline_u9.py',
     'desktop_pages/notifications.py',
     'desktop_pages/notification_log.py',
     'tests/test_notifications_c8.py',
@@ -181,6 +182,9 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+    def test_paper_timeline_projection_has_no_application_dependencies(self):
+        self.assertEqual(import_graph(self.sources)['quantlab.paper_tab_data'], set())
+
     def test_quick_start_sequencer_is_pure(self):
         self.assertEqual(module_imports('desktop_pages.quick_start_chain', self.sources['desktop_pages.quick_start_chain']), set())
 

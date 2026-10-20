@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal, QRectF
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QTabWidget, QStyledItemDelegate
+from PySide6.QtWidgets import QTabWidget, QStyledItemDelegate, QWidget, QVBoxLayout, QComboBox, QLabel, QTableWidget, QTableWidgetItem
 from shiboken6 import isValid
 
 import desktop_privacy as privacy
@@ -13,7 +13,7 @@ from desktop_strings import ui_text
 from desktop_presentation import display_number
 from desktop_theme import align_table_item, appearance, set_financial_item, up_down_colors
 from .result_widgets import ResultTable
-from quantlab.paper_tab_data import event_rows, position_rows, scaled_fractions, working_order
+from quantlab.paper_tab_data import event_rows, position_rows, scaled_fractions, working_order, timeline_rows, TIMELINE_LIMIT
 
 BAR_ROLE = int(Qt.ItemDataRole.UserRole) + 81
 STATUS_ROLE = BAR_ROLE + 1
@@ -122,7 +122,89 @@ def build_tabs(page, layout):
     delegate = PnlDelegate(page.positions_table)
     page.positions_table.horizontalHeader().setObjectName('paper_positions_pnl')
     page.positions_table.setItemDelegateForColumn(2, delegate)
+
+    # The existing Events tab is the entry point; no new startup widgets/text.
+    def activate(index):
+        if tabs.widget(index) is page.events_table:
+            open_timeline(page, tabs)
+        timeline = getattr(page, 'timeline_table', None)
+        if timeline is not None:
+            timeline_index = tabs.indexOf(page.timeline_panel)
+            tabs.setTabVisible(timeline_index, tabs.widget(index) is page.events_table or index == timeline_index)
+
+    tabs.currentChanged.connect(activate)
     return tabs
+
+
+def timeline_labels():
+    return (
+        ('', ui_text('paper.timeline.all')),
+        ('intent', ui_text('paper.timeline.intent')),
+        ('ack', ui_text('paper.timeline.ack')),
+        ('fill', ui_text('paper.timeline.fill')),
+        ('reject', ui_text('paper.timeline.reject')),
+        ('reconcile', ui_text('paper.timeline.reconcile')),
+        ('lock', ui_text('paper.timeline.lock')),
+        ('other', ui_text('paper.timeline.other')),
+    )
+
+
+def open_timeline(page, tabs):
+    """Add the adjacent timeline once the user first opens Events."""
+    if getattr(page, 'timeline_table', None) is not None:
+        return
+    panel = QWidget(tabs)
+    layout = QVBoxLayout(panel)
+    selector = QComboBox(panel)
+    selector.setObjectName('paper_timeline_filter')
+    selector.setAccessibleName(ui_text('paper.timeline.filter'))
+    for value, label in timeline_labels():
+        selector.addItem(label, value)
+    layout.addWidget(selector)
+    notice = QLabel(panel)
+    notice.setObjectName('paper_timeline_notice')
+    notice.setWordWrap(True)
+    layout.addWidget(notice)
+    table = QTableWidget(0, 3, panel)
+    table.setObjectName('paper_timeline_results')
+    table.setAccessibleName(ui_text('paper.timeline.title'))
+    table.setHorizontalHeaderLabels((ui_text('paper.timeline.time'), ui_text('paper.timeline.type'), ui_text('paper.timeline.summary')))
+    table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+    table.setSortingEnabled(False)
+    table.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    layout.addWidget(table)
+    QWidget.setTabOrder(selector, table)
+    page.timeline_panel = panel
+    page.timeline_table, page.timeline_filter, page.timeline_notice = table, selector, notice
+    selector.currentIndexChanged.connect(lambda: filter_timeline(page))
+    tabs.addTab(panel, ui_text('paper.timeline.title'))
+    render_timeline(page)
+
+
+def filter_timeline(page):
+    selected = page.timeline_filter.currentData()
+    table = page.timeline_table
+    for index, row in enumerate(getattr(page, '_timeline_rows', [])):
+        table.setRowHidden(index, bool(selected and selected != row['type']))
+
+
+def render_timeline(page):
+    table = getattr(page, 'timeline_table', None)
+    if table is None:
+        return
+    rows = getattr(page, '_timeline_rows', [])
+    labels = dict(timeline_labels())
+    table.setRowCount(len(rows))
+    for index, row in enumerate(rows):
+        values = (row['time'] or ui_text('paper.timeline.unknown_time'), labels[row['type']], ui_text('paper.timeline.event').format(row['sequence']))
+        for column, value in enumerate(values):
+            table.setItem(index, column, QTableWidgetItem(value))
+    text = ui_text('paper.timeline.truncated').format(TIMELINE_LIMIT) if getattr(page, '_timeline_truncated', False) else ''
+    if not rows:
+        text = ui_text('paper.timeline.empty')
+    page.timeline_notice.setText(text)
+    page.timeline_notice.setAccessibleName(text)
+    filter_timeline(page)
 
 
 def existing_journal(page):
@@ -148,7 +230,10 @@ def refresh_tables(page, account, orders, fills):
     page.account_fills_table.set_rows(fills, ('timestamp', 'contract_id', 'side', 'quantity', 'price', 'commission', 'tax'))
     events = getattr(page, 'events_table', None)
     if events is not None:
-        rows = event_rows(account, existing_journal(page))
+        journal = existing_journal(page)
+        page._timeline_rows, page._timeline_truncated = timeline_rows(account, journal)
+        render_timeline(page)
+        rows = event_rows(account, journal)
         for row in rows:
             row['operation'] = ui_text('paper.tabs.event_operation').format(row['operation'] or ui_text('forms.metric.text_2'))
         events.set_rows(rows, ('sequence', 'operation'))
