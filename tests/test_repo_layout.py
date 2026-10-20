@@ -83,7 +83,7 @@ IGNORED_LOCAL_NAMES = {
     '.pytest_cache',
     '.ruff_cache',
 }
-IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info')
+IGNORED_LOCAL_PATTERNS = ('.tmp*', '.t*-work', '*.log', '*.egg-info', 'lt_*.txt', 'nohup.out')
 AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
@@ -92,6 +92,23 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
         self.assertIn('tests', ALLOWED_DIRECTORIES)
+    def test_workflow_artifacts_are_ignored_without_hiding_project_files(self):
+        artifacts = ('lt_LB-B3.txt', 'lt_XX-Y9.txt', 'nohup.out')
+        legitimate = ('README.md', 'AGENTS.md', 'CLAUDE.md', 'docs/agent/PROJECT_STATE.md', 'tests/fixtures/desktop_widget_names.json')
+        for name in artifacts:
+            self.assertTrue(any(fnmatchcase(name, pattern) for pattern in IGNORED_LOCAL_PATTERNS), name)
+        for name in legitimate:
+            self.assertFalse(any(fnmatchcase(name, pattern) for pattern in IGNORED_LOCAL_PATTERNS), name)
+        ignored = subprocess.run(
+            ['git', 'check-ignore', '--no-index', '--', *artifacts, *legitimate],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.splitlines()
+        self.assertEqual(ignored, list(artifacts))
+        tracked_ignored = subprocess.run(['git', 'ls-files', '-ci', '--exclude-standard'], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+        self.assertEqual(tracked_ignored, '')
 
     def test_u8_preferences_modules_have_existing_package_homes(self):
         for name in ('desktop_pages/preferences.py', 'quantlab/ui_preferences.py'):

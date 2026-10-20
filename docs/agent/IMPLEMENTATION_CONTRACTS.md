@@ -4110,3 +4110,18 @@ stays disabled; no order/broker path, protected source, threshold, gate, timeout
 evaluation-data text or acceptance score changes. The item is a single feature
 commit plus the two fixture-only commits described above.
 Automation evidence claims only "not broken". The user's final visual check remains pending.
+## T-R9: local workflow artifact ignore policy
+
+`.gitignore` excludes `lt_*.txt` workflow captures and `nohup.out` in a
+commented block; the existing `*.log` rule covers `t2-*.log`. The repository
+layout policy lists the same new patterns without adding captures to
+`ALLOWED_FILES`. An additive offline regression checks both representative
+captures, nohup output, legitimate project/agent paths and the absence of
+ignored tracked files. Existing layout assertions are unchanged.
+
+This tracked workspace-policy change touches only `.gitignore`,
+`tests/test_repo_layout.py` and this contract. It changes no application
+behavior, public names, UI fixtures, frozen sources, safety gates or acceptance
+scores. Operational artifact inspection/removal and disposable-worktree
+cleanup belong to the controller's separate evidence; this policy does not
+claim that those operations occurred.

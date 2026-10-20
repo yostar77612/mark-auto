@@ -163,3 +163,7 @@ quantlab-output/
 
 # Ruff local cache
 .ruff_cache/
+
+# Local workflow/nohup captures are disposable runtime artifacts.
+lt_*.txt
+nohup.out
