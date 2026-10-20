@@ -14,7 +14,7 @@ import multiprocessing as mp
 import sys
 import time
 
-from .desktop_runtime import RuntimeSafetyError, WindowsAppMutex
+from .runtime_support import RuntimeSafetyError, WindowsAppMutex
 
 GATE_SECONDS = 15
 STOP_SECONDS = 6
@@ -23,6 +23,7 @@ SYNCHRONIZE = 0x00100000
 
 
 def _kernel():
+    # Load Windows handle types only on the platform-specific execution path.
     from ctypes import wintypes as w
 
     k = ctypes.WinDLL('kernel32', use_last_error=True)
@@ -54,6 +55,7 @@ def _alive(k, handle):
 
 
 def _duplicate(k, handle, target, access):
+    # Load Windows handle types only on the platform-specific execution path.
     from ctypes import wintypes as w
 
     copied = w.HANDLE()
@@ -66,6 +68,7 @@ class _OriginalJob:
     """Constructed only inside the helper from an already-retained worker handle."""
 
     def __init__(self, kernel, worker_handle):
+        # Load Windows handle types only on the platform-specific execution path.
         from ctypes import wintypes as w
 
         class Basic(ctypes.Structure):
@@ -120,6 +123,7 @@ class _OriginalJob:
             raise
 
     def active_processes(self):
+        # Load Windows handle types only on the platform-specific execution path.
         from ctypes import wintypes as w
 
         class Accounting(ctypes.Structure):
@@ -181,6 +185,7 @@ def _verify_launch(paths, anticipated, *, for_admission=False, expected=None, re
 
 
 def _publish(paths, launch, tree):
+    # Load journal publication support only when a stop receipt is published.
     from .analysis_recovery import _StopPublisher
 
     _StopPublisher(paths, launch, tree.active_processes).publish()
@@ -278,6 +283,7 @@ def _validate_anticipated(value):
         'ledger_basename',
         'source_request_hash',
     }
+    # Load the reference grammar helper only when validating a launch binding.
     import re
 
     if type(value) is not dict or set(value) != fields:

@@ -26,7 +26,7 @@ from contextlib import contextmanager
 
 from . import __version__
 from .job_stages import normalize_stage, stage_from_traceback
-from .runtime_support import RuntimeSafetyError, atomic_write, _sync_directory, _durable_replace, validate_analysis_request
+from .runtime_support import RuntimeSafetyError, WindowsAppMutex, WINDOWS_APP_MUTEX, atomic_write, _sync_directory, _durable_replace, validate_analysis_request
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
@@ -500,32 +500,6 @@ class DesktopCredentialReference:
 
     def __call__(self):
         return CredentialVault(AppPaths(Path(self.root))).load(self.name)
-
-
-WINDOWS_APP_MUTEX = r'Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420'
-
-
-class WindowsAppMutex:
-    """Installer-visible lifetime guard; QLockFile still owns single-instance logic."""
-
-    def __init__(self):
-        self.handle = None
-        if sys.platform == 'win32':
-            # Load this platform-specific API only on its supported execution path.
-            from ctypes import wintypes
-
-            self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-            self.kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
-            self.kernel.CreateMutexW.restype = wintypes.HANDLE
-            self.kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-            self.handle = self.kernel.CreateMutexW(None, False, WINDOWS_APP_MUTEX)
-            if not self.handle:
-                raise RuntimeSafetyError('Cannot establish installation safety guard')
-
-    def close(self):
-        if self.handle:
-            self.kernel.CloseHandle(self.handle)
-            self.handle = None
 
 
 class RedactedEventLog:

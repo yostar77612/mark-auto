@@ -4216,3 +4216,36 @@ The change set contains only page identity/dispatch, its regression, additive
 import-graph checks and this contract. Live trading remains permanently
 disabled; order guards, fail-closed validation, data boundaries, irreversible
 budgets, timeouts, CI caps and acceptance scores are unchanged.
+
+## T-R5: leaf dependencies remove three reciprocal import paths
+
+`runtime_support` owns `RuntimeSafetyError`, `WindowsAppMutex` and
+`WINDOWS_APP_MUTEX`. The mutex class and constant are relocated without logic
+changes, and `desktop_runtime` re-exports all three names. The dependency
+direction is `runtime_support <- desktop_runtime, desktop_errors,
+analysis_recovery_windows`; the leaf imports none of these consumers.
+`startup_error_code` uses the shared exception type directly from the leaf.
+`configuration <- reporting, __main__` is the configuration dependency direction;
+report validation no longer imports the CLI. `__main__` retains its existing
+`config_from_json`, `execute` and `main` exports.
+
+All pre-existing public names in the five affected consumer modules and
+`desktop_ui` retain their original import paths. The leaf adds only the mutex
+class and constant to its public names. The mutex's canonical module is
+`quantlab.runtime_support`; its old `quantlab.desktop_runtime` alias resolves
+the same class, including old pickle lookups. Recovery and worker entry points
+retain their paths. Platform and ctypes module objects remain shared, preserving
+existing qualified patch targets. Startup classifications and the B1 error
+catalogue retain their existing values and identity.
+
+`tests/test_import_graph.py` adds exactly the three R5 pairs while preserving
+all nine existing pairs, including R4's three registrations. Its AST traversal
+counts function-local imports. All retained local imports in the affected
+modules have adjacent reason comments. Additive regressions cover dependency
+direction, re-export identity, pickle resolution, qualified patches and startup
+and exception codes; all pre-existing assertions remain intact. No new module,
+packaging entry, UI text, widget name or snapshot baseline is introduced. Frozen
+G3 sources and saved-candidate producer inputs, live-order guards, validation
+rules, budgets, timeouts, quality gates and acceptance scores are unchanged. The
+implementation contains only import redirection, the mutex relocation and
+explanatory import comments.
