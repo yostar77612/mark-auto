@@ -142,6 +142,10 @@ class RepoLayoutTests(unittest.TestCase):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
+    def test_u3_modules_stay_in_desktop_package(self):
+        for name in ('quick_start.py', 'quick_start_chain.py'):
+            self.assertTrue((ROOT / 'desktop_pages' / name).is_file())
+
     def test_c6_modules_stay_in_desktop_package(self):
         for name in ('paper_tabs.py',):
             self.assertTrue((ROOT / 'desktop_pages' / name).is_file())

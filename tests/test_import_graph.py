@@ -20,6 +20,8 @@ TOUCHED = (
     'desktop_pages/compare_equity.py',
     'desktop_pages/data_gaps.py',
     'quantlab/data_gap_report.py',
+    'desktop_pages/quick_start.py',
+    'desktop_pages/quick_start_chain.py',
     'desktop_pages/error_guidance.py',
     'desktop_pages/backtest_summary_card.py',
     'quantlab/backtest_summary.py',
@@ -179,6 +181,9 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+    def test_quick_start_sequencer_is_pure(self):
+        self.assertEqual(module_imports('desktop_pages.quick_start_chain', self.sources['desktop_pages.quick_start_chain']), set())
+
     def test_error_guidance_u7_has_only_display_dependencies(self):
         self.assertEqual(
             import_graph(self.sources)['desktop_pages.error_guidance'],

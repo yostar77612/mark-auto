@@ -3934,3 +3934,41 @@ order paths, protected sources, gates, thresholds and timeouts are unchanged. No
 evaluation-period data or label is added. The item is a single commit.
 Automation evidence claims only "not broken". The user's final visual check
 remains pending.
+
+
+## TASK X-U3: confirmed synthetic quick start
+
+The onboarding area exposes one accessible quick-start button with catalogue
+text and an idle/busy tooltip. Its confirmation defaults to cancel. Only an
+explicit affirmative answer starts the chain. The small pure QuickStartChain
+sequences the existing ui_demo handler, a built-in default strategy payload, the
+existing ui_backtest handler, and navigation to the backtest results. Terminal
+events come through the existing notification lifecycle; subsequent work waits
+for the existing worker to become idle. Existing cancel_job stops the chain
+before its original cancellation path. Failure clears sequencing state and
+displays the B1 operation_failed_local message inline. Completion, failure and
+cancellation reset the chain for a fresh confirmed run.
+
+The operation adapter confines the two flagged operations to the fixed
+synthetic-quick-start directory. Real dataset.json, watchlists, candidate
+selection and paper state are not inputs or destinations. The results choice is
+labelled SYNTHETIC; confirmation, stage notices and the lazily created results
+disclaimer explicitly say synthetic data, not real market data. The existing
+summary card and KPI privacy renderers continue to mask demo amounts. No new
+text contains financial quantities, account identifiers or positions. The
+existing onboarding completion rules remain unchanged. The button uses the
+existing explicit secondary-button theme rules; no stylesheet changes. Lazy
+results labels are excluded from the widget fixture. The eager button and status
+names are additive and sorted. Package discovery scans include both new modules,
+and the import-graph test pins the sequencer's lack of dependencies.
+
+The cheap test_quick_start_u3 tests cover consent, busy refusal, recorded
+operation order, blocked sockets, each stage failing, cancellation, reset,
+worker isolation, results labelling and privacy masking without shown windows,
+new threads, sleeps or network. MainWindow and desktop_ui public names are
+unchanged. No paper/live navigation, paper job, new broker or order path is
+introduced. Existing confirmations, paper consent, protected sources, gates,
+thresholds and timeouts are unchanged. Live trading remains disabled. New
+strings occupy a trailing catalogue update block. The item is a single commit.
+Automation evidence claims only "not broken". The user's final visual check
+remains pending.

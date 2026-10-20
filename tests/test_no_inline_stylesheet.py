@@ -37,6 +37,9 @@ class NoInlineStylesheetTests(unittest.TestCase):
         path = ROOT / 'desktop_pages/data_gaps.py'
         self.assertTrue(path.is_file())
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
+    def test_quick_start_uses_theme_only(self):
+        for name in ('quick_start.py', 'quick_start_chain.py'):
+            self.assertEqual(stylesheet_calls((ROOT / 'desktop_pages' / name).read_text(encoding='utf-8')), [])
 
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
         sources = sorted(

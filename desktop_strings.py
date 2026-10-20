@@ -2114,3 +2114,19 @@ ZH_TW.update(
         'errors.next.running': '\u4e0b\u4e00\u6b65\uff1a\u5728\u300c{0}\u300d\u6aa2\u67e5\u4f5c\u696d\u72c0\u614b\uff0c\u7b49\u5f85\u76ee\u524d\u4f5c\u696d\u7d50\u675f\u6216\u53d6\u6d88\u5b8c\u6210\u5f8c\u518d\u91cd\u8a66\u3002',
     }
 )
+
+
+ZH_TW.update(
+    {
+        'quick_start.action': 'SYNTHETIC quick start',
+        'quick_start.tooltip': 'Create isolated synthetic demo data, apply the default strategy, and run a backtest. Available while idle.',
+        'quick_start.busy': 'Wait until the current job finishes before starting the synthetic demo.',
+        'quick_start.confirm': 'SYNTHETIC: synthetic data, not real market data. Create an isolated demo and run a backtest? No performance guarantee. Cancel is the default.',
+        'quick_start.data': 'SYNTHETIC: synthetic data, not real market data. Creating demo data.',
+        'quick_start.backtest': 'SYNTHETIC: synthetic data, not real market data. Running the default strategy backtest.',
+        'quick_start.done': 'SYNTHETIC: synthetic data, not real market data. Results ready.',
+        'quick_start.cancelled': 'Synthetic quick start cancelled.',
+        'quick_start.dataset': 'SYNTHETIC demo dataset',
+        'quick_start.disclaimer': 'SYNTHETIC: synthetic data, not real market data. Demonstration only; no performance guarantee.',
+    }
+)

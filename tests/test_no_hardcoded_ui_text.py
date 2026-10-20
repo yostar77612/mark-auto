@@ -86,6 +86,10 @@ class HardcodedUITextTests(unittest.TestCase):
 
     def test_f2_overlay_registered(self):
         self.assertIn('desktop_pages/compare_equity.py', UI_PACKAGE_MODULES)
+    def test_quick_start_catalog_inventory(self):
+        self.assertIn('desktop_pages/quick_start.py', UI_PACKAGE_MODULES)
+        self.assertIn('desktop_pages/quick_start_chain.py', UI_PACKAGE_MODULES)
+
     def test_backtest_summary_u4_in_ui_catalog_scan(self):
         self.assertIn('desktop_pages/backtest_summary_card.py', UI_PACKAGE_MODULES)
 

@@ -3,6 +3,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from desktop_strings import ui_text
 from .async_status import AsyncStatus
+from .quick_start import QuickStart
 from desktop_theme import set_theme_property
 from quantlab.paper import PaperBroker
 import sqlite3
@@ -138,6 +139,9 @@ def install_onboarding(shell):
     shell.onboarding = GettingStarted(shell)
     shell.page_state.onboarding = shell.onboarding
     outer = shell.centralWidget().layout()
+    quick_row = QWidget(shell)
+    shell.quick_start = QuickStart(shell, QHBoxLayout(quick_row))
+    outer.insertWidget(1, quick_row)
     outer.insertWidget(1, shell.onboarding)
     help_button = QPushButton(ui_text('onboarding.help'))
     help_button.setObjectName('onboarding_help')

@@ -77,6 +77,8 @@ class BacktestPage(QWidget):
         )
 
     def show_result(self, index=None):
+        if getattr(self, 'synthetic_notice', None) is not None:
+            self.synthetic_notice.hide()
         self.summary_card.set_values({})
         self.plot.set_values([])
         self.kpis.set_values({})
@@ -95,6 +97,13 @@ class BacktestPage(QWidget):
             return
         try:
             result = load_result(path)
+            if result.manifest.get('dataset_manifest', {}).get('source_type') == 'synthetic':
+                if getattr(self, 'synthetic_notice', None) is None:
+                    self.synthetic_notice = QLabel(ui_text('quick_start.disclaimer'), self)
+                    self.synthetic_notice.setWordWrap(True)
+                    self.synthetic_notice.setAccessibleName(ui_text('quick_start.disclaimer'))
+                    self.layout().insertWidget(1, self.synthetic_notice)
+                self.synthetic_notice.show()
             self.result_empty.setVisible(False)
             self.plot.set_values(result.equity)
             self.result_card.set_values(dict(result.metrics))
@@ -113,6 +122,7 @@ class BacktestPage(QWidget):
                     {'metrics': result.metrics, 'warnings': result.warnings, 'manifest': result.manifest, 'fills': result.fills, 'rejects': result.rejects}
                 )
             )
+            return True
         except Exception as exc:
             self.summary_card.set_values({})
             self.plot.set_values([])
@@ -123,3 +133,4 @@ class BacktestPage(QWidget):
             self.result_empty.setVisible(True)
             self.state._selection_allowed = False
             self.state.status.setText(error_message(exception_code(exc)))
+            return False
