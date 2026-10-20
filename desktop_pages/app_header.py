@@ -22,6 +22,7 @@ class AppHeader(QWidget):
         self.quote_age_seconds = quote_age_seconds
         self.setObjectName('app_header')
         self.setMaximumHeight(48)
+        self.setMinimumWidth(1)  # let narrow windows shrink the strip instead of forcing a wider window
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)

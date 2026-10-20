@@ -77,7 +77,8 @@ class DesktopThemeTests(unittest.TestCase):
         buttons = window.findChildren(QPushButton)
         self.assertTrue(buttons)
         for button in buttons:
-            self.assertIn(button.property('role'), ('primary', 'secondary', 'danger'), button.objectName())
+            # UI-1 C2 adds the onboardingChip role (QSS rules in desktop_theme); every button still needs a known role.
+            self.assertIn(button.property('role'), ('primary', 'secondary', 'danger', 'onboardingChip'), button.objectName())
         previous = window.strategy_form.property('feedback')
         with patch('desktop_ui.QTimer.singleShot') as single_shot:
             window.form_feedback(window.strategy_form, 'synthetic')

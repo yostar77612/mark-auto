@@ -19,6 +19,7 @@ class GettingStarted(QWidget):
         self._dismissed = False
         self.setObjectName('getting_started')
         self.setMaximumHeight(40)
+        self.setMinimumWidth(1)  # let narrow windows shrink the strip instead of forcing a wider window
         self.setToolTip(ui_text('onboarding.title'))
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 2, 0, 2)
