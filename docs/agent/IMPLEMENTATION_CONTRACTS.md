@@ -4011,3 +4011,43 @@ windows, sleeps or network. Existing C6 table tests preserve their assertions;
 the import-graph test pins the projection's lack of application dependencies.
 The item is a single commit. Automation evidence claims only "not broken".
 The user's final visual check remains pending.
+
+
+## TASK X-U8: remember display preferences
+
+Before this item, advanced_sections, window x/y/width/height and market
+preferences persisted. Last page and per-family parameters did not persist;
+the sidebar had only a maximum width and market splitters used layout hints.
+The existing settings store now also holds last_page as a module/class page
+identity, family_parameters, sidebar_width and bounded splitter_sizes for the
+sidebar and market. Unknown or malformed page identities restore page zero;
+reordering pages preserves identity. Old settings load with defaults and saves
+preserve unknown settings keys. Corrupt settings load as defaults in the UI;
+the store still refuses to overwrite corrupt originals.
+
+The sidebar uses a parent-owned splitter with a 120-to-180 pixel navigation
+bound. Numeric splitter hints are clamped to screen bounds and Qt child minima.
+Family memory follows family switches and explicit settings saves. Only known
+indicator parameters are retained; quantities, monetary amounts, accounts,
+credentials, provider options, rules and consent values are excluded. Restored
+parameters pass through StrategyForm.build_payload and its existing numeric
+and strategy validation before being retained. Invalid family values revert to
+defaults. No new financial text or evaluation labels are displayed, including
+in privacy mode. Existing disclosure, market, geometry and ChatGPT handling
+remain intact. Explicit save uses the existing mechanism without timer writes.
+Restoring only changes display state and never starts work or activates actions.
+Existing consent and paper confirmations remain required; live trading remains
+disabled, with no new broker or order path, timeout or gate change.
+
+The pure quantlab/ui_preferences.py projections have Qt-free unit tests.
+desktop_pages/preferences.py owns shell serialization and bounded restoration;
+desktop_forms.py owns family validation. tests/test_preferences_u8.py covers
+identity reorder/fallback, independent families, invalid values, strict bounds,
+privacy allowlists, bare hosts, settings None, corrupt reads and existing
+market/disclosure/geometry round trips. Registry tests include the new modules.
+The Qt-generated sidebar handle name is registered additively in the sorted
+widget-name fixture. No buttons, stylesheet rules or default text are added. The
+sidebar handle is the only visible change on a first run: the seven viewport
+baselines were refreshed in a separate fixture-only commit (metrics.json is
+unchanged). MainWindow gains no public name. The item is a single feature commit.
+Automation evidence claims only "not broken". The user's final visual check remains pending.

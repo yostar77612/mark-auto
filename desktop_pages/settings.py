@@ -7,6 +7,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWidget, QApplication
 from .bindings import PageContext
+from .preferences import load_store, save_preferences, restore_preferences
 
 
 class SettingsPage(PageContext, QWidget):
@@ -209,13 +210,14 @@ class SettingsPage(PageContext, QWidget):
     def save_settings(self):
         if self.settings is None:
             raise ValidationError(ui_text('ui.save_settings.text_1'))
-        value = self.settings.load()
+        value = load_store(self.settings)
         # Preserve legacy provider settings as inert historical data. They are
         # never read into executable provider options or overwritten on save.
         value.update({'persist_logs': self.persist_logs.isChecked(), 'local_notifications': self.local_notifications.isChecked()})
         value['market'] = self.market.preferences()
         position = self.host.window_position()
         value['window'] = {'x': position.x(), 'y': position.y(), 'width': self.host.window_geometry().width(), 'height': self.host.window_geometry().height()}
+        save_preferences(self, value)
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.chatgpt_panel.consent.setChecked(False)
@@ -224,7 +226,7 @@ class SettingsPage(PageContext, QWidget):
     def load_settings(self):
         if self.settings is None:
             return
-        value = self.settings.load()
+        value = load_store(self.settings)
         finder = getattr(self.host, 'find_child', None)
         privacy_toggle = finder(type(self.persist_logs), 'privacy_toggle') if finder is not None else None
         if privacy_toggle is not None:
@@ -258,6 +260,7 @@ class SettingsPage(PageContext, QWidget):
             )
         except (ValueError, TypeError, KeyError, OverflowError):
             self.status.setText(ui_text('ui.load_settings.text_1'))
+        restore_preferences(self, value)
         self.read_logs()
 
     def configure_workspace(self):
