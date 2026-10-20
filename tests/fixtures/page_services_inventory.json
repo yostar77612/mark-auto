@@ -2604,21 +2604,21 @@
     },
     {
       "file": "tests/test_desktop_market_integration.py",
-      "line": 39,
+      "line": 38,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_desktop_market_integration.py",
-      "line": 42,
+      "line": 41,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_desktop_market_integration.py",
-      "line": 98,
+      "line": 97,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
@@ -2737,35 +2737,35 @@
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 144,
+      "line": 142,
       "name": "load_result",
       "kind": "patch",
       "receiver": "desktop_ui"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 145,
+      "line": 143,
       "name": "show_result",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 146,
+      "line": 144,
       "name": "result_name",
       "kind": "patch",
       "receiver": "desktop_ui"
     },
     {
       "file": "tests/test_desktop_walk_forward.py",
-      "line": 341,
+      "line": 340,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_walk_forward.py",
-      "line": 359,
+      "line": 358,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
@@ -2786,21 +2786,21 @@
     },
     {
       "file": "tests/test_market_history_ui.py",
-      "line": 175,
+      "line": 173,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_market_history_ui.py",
-      "line": 201,
+      "line": 199,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_market_history_ui.py",
-      "line": 211,
+      "line": 209,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
@@ -2867,6 +2867,34 @@
       "name": "result_choice",
       "kind": "assignment",
       "receiver": "self.shell"
+    },
+    {
+      "file": "tests/test_page_identity_r4.py",
+      "line": 85,
+      "name": "_safe",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_page_identity_r4.py",
+      "line": 86,
+      "name": "read_logs",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_page_identity_r4.py",
+      "line": 87,
+      "name": "refresh_market",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_page_identity_r4.py",
+      "line": 88,
+      "name": "refresh_views",
+      "kind": "patch.object",
+      "receiver": "window"
     },
     {
       "file": "tests/test_page_services_r1.py",

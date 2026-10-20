@@ -49,6 +49,8 @@ TOUCHED = (
     'desktop_pages/palette_commands.py',
     'desktop_pages/shortcuts.py',
     'tests/test_command_palette_c7.py',
+    'desktop_pages/onboarding.py',
+    'tests/test_page_identity_r4.py',
     'quantlab/agent_skills.py',
     'quantlab/agent_return.py',
     'quantlab/agent_read_tools.py',
@@ -113,6 +115,9 @@ TOUCHED = (
     'desktop_presentation.py',
 )
 PAIRS = (
+    ('desktop_pages.onboarding', 'desktop_pages.palette_commands'),
+    ('desktop_pages.shortcuts', 'desktop_pages.palette_commands'),
+    ('desktop_pages.command_palette', 'desktop_pages.palette_commands'),
     ('quantlab.desktop_runtime', 'quantlab.analysis_recovery'),
     ('quantlab.analysis_recovery', 'quantlab.research_analysis'),
     ('quantlab.research_analysis', 'quantlab.saved_candidate_pool'),

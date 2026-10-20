@@ -4,12 +4,14 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from desktop_strings import ui_text
 from .async_status import AsyncStatus
 from .quick_start import QuickStart
+from .palette_commands import MOUNT_PAGE_ORDER, register_pages
 from desktop_theme import set_theme_property
 from quantlab.paper import PaperBroker
 import sqlite3
 
 
-# Original page identities remain stable even when their visual order changes.
+# Legacy construction positions mapped to the unchanged default visual order.
+# Identities are captured before this positional compatibility mapping is applied.
 WORKFLOW_ORDER = (1, 2, 3, 4, 5, 0, 6)
 
 
@@ -88,6 +90,7 @@ class GettingStarted(QWidget):
             account_ready,
         )
         for index, (label, done) in enumerate(zip(self.labels, self.completed), 1):
+            # Load presentation formatting when refreshing status labels.
             from desktop_presentation import display_number
 
             label.setText(
@@ -118,6 +121,7 @@ class GettingStarted(QWidget):
 
 
 def install_onboarding(shell):
+    register_pages(shell, MOUNT_PAGE_ORDER)
     items = [shell.navigation.takeItem(0) for _ in range(shell.navigation.count())]
     pages = [shell.stack.widget(index) for index in range(shell.stack.count())]
     for page in pages:

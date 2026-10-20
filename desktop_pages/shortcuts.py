@@ -4,14 +4,19 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QPushButton
 from desktop_strings import ui_text
 from .command_palette import CommandPalette
+from .palette_commands import DEFAULT_PAGE_ORDER, page_widget, register_pages
 
 
 def install_shortcuts(window):
+    # Lightweight legacy hosts mount directly in visual order, without onboarding.
+    if not hasattr(window, '_page_widgets'):
+        register_pages(window, DEFAULT_PAGE_ORDER)
     window.command_palette = CommandPalette(window, lambda: refresh_current_page(window))
     window.palette_shortcut = QShortcut(QKeySequence('Ctrl+K'), window)
     window.palette_shortcut.activated.connect(window.command_palette.toggle)
     window.page_shortcuts = []
     for index in range(window.navigation.count()):
+        # Ctrl+N always addresses visual position N, including after a reorder.
         shortcut = QShortcut(QKeySequence('Ctrl+' + str(index + 1)), window)
         shortcut.activated.connect(lambda row=index: window.navigation.setCurrentRow(row))
         window.page_shortcuts.append(shortcut)
@@ -46,7 +51,7 @@ def install_shortcuts(window):
 def refresh_current_page(window):
     if window.stack.currentWidget() is window.market:
         window._safe(window.refresh_market)
-    elif window.stack.currentIndex() == 6:
+    elif window.stack.currentWidget() is page_widget(window, 'settings'):
         window._safe(window.read_logs)
     else:
         window._safe(window.refresh_views)
