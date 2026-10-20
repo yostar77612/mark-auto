@@ -826,9 +826,13 @@ def _handle_ui_import(payload, paths, root, *, emit=None, descendants_stopped=Fa
     # Keep operation-specific dependencies out of module startup.
     from quantlab.data import SessionCalendar, import_taifex
 
+    # Gap projection is needed only for the import operation.
+    from quantlab.data_gap_report import reject_invalid_import
+
     cal = read_json(Path(payload['calendar']))
     if payload['kind'] == 'validated_dataset':
         data = load_dataset(Path(payload['path']))
+        reject_invalid_import(data, emit)
         dataset_market_series(data, cal)
     else:
         data = import_taifex(
@@ -838,6 +842,7 @@ def _handle_ui_import(payload, paths, root, *, emit=None, descendants_stopped=Fa
             contract_id=payload.get('contract') or None,
             encoding=payload.get('encoding'),
         )
+    reject_invalid_import(data, emit)
     save_dataset(data, root / 'dataset.json')
     write_json(root / 'dataset_calendar.json', cal)
     return {'dataset': str(root / 'dataset.json'), 'bars': len(data.bars), 'manifest': to_dict(data.manifest), 'quality': to_dict(data.quality)}

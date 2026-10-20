@@ -22,6 +22,11 @@ def stylesheet_calls(source):
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
+    def test_f1_gap_widget_is_scanned(self):
+        path = ROOT / 'desktop_pages/data_gaps.py'
+        self.assertTrue(path.is_file())
+        self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
+
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
         sources = sorted(
             set(ROOT.glob('desktop*.py'))
