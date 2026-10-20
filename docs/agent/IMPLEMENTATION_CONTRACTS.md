@@ -1659,9 +1659,9 @@ single item commit; lane changes remain uncommitted.
 Before a UI or behavior implementation, use the
 [design template](../design/TEMPLATE.md) to record Problem, Goals/Non-goals,
 Design, Safety constraints, Test plan and Rollout/Verification status.
-The [C5 market-dock workspace proposal](../design/c5-market-dock-workspace.md) is
-PROPOSED / NOT IMPLEMENTED; its implementation checks and the user's final
-real-App visual confirmation remain pending. It names existing source/test paths
+The [C5 market-dock workspace design](../design/c5-market-dock-workspace.md) is
+IMPLEMENTED (item U3-C5); the user's final real-App visual confirmation remains
+pending. It names existing source/test paths
 and requires accessibility and snapshot review before future UI acceptance.
 
 E6 changes documentation only; no UI baseline refresh is needed for E6.
@@ -2816,3 +2816,83 @@ empty diffs against the starting HEAD. Live trading stays disabled; no operator
 or mutation tool, gate, OOS rule, irreversible budget, timeout, score or test
 exemption changes. Work remains uncommitted for the controller's exactly one
 A2-D12 commit.
+
+## UI-3 C5: market dock workspace (2026-10-20)
+
+MarketWorkspace in desktop_market_workspace.py owns three equivalent dock panels:
+`cards`, `watchlist`, `chart`, with `market_dock_<id>` objectNames. It reparents
+existing content and retains all public widget references and original names.
+Title dragging and keyboard menus dock to top/left/center/right/bottom or reorder;
+C on a focused title collapses/reopens the same content object. Collapsed titles
+show [+]. The layout menu exposes presets, save as, named restore/delete and reset.
+All controls have catalog names/descriptions/tooltips and tab focus; shared theme
+properties and a centralized QToolButton focus selector cover both themes.
+
+Exactly three presets are supported: overview (cards above, watchlist/chart/side
+190:740:230), chart_focus (collapsed cards, 120:810:230), watchlist_focus
+(460:470:230). Applying twice is idempotent. Reset always restores overview.
+Safety/source/stale/live-disabled labels remain outside every collapsible panel.
+No order or live path is added.
+
+LayoutStore in desktop_market_layout.py stores a separate versioned JSON file at
+`<settings parent>/display_profile/market-layout-v1.json`, next to DrawingStore.
+There is one persisted read at page mount; missing settings use memory only.
+The exact document keys are version/current/layouts. Each layout has version/panels,
+with exactly the known three IDs and area/position/size/collapsed fields. Areas
+are allowlisted; positions are strict integers 0..2; sizes strict integers clamped
+to 80..2000; collapsed is boolean. Names are bounded to 64 trimmed characters,
+path separators/control characters/simple reserved names rejected; at most 20
+names and 128000 input bytes. Names are dictionary keys only. Bad UTF-8/JSON,
+missing/incomplete/unsupported/extra-field metadata falls back to overview, without
+modal UI or touching the bad file. Invalid named entries do not poison valid peers.
+Only explicit named save/delete writes; same-name save overwrites. A same-directory
+temporary file is flushed/fsynced then os.replace commits it atomically. Write or
+replace failure preserves prior bytes and memory, cleans temporary files and shows
+only the B1 operation_failed_local message. No exception text/path is displayed.
+
+Layout operations never emit refresh/sample/preferences/render signals or invoke
+consent, host jobs, market/cache loading, series setters, chart.set_series or layer
+binding. Instrument/timeframe, watchlist order/selection, indicator preferences,
+chart bars/overlays and chart identity remain unchanged. No observations, secrets,
+research content or data hashes enter layout JSON or any AI handoff. Research,
+cache, result, selection and paper artifacts stay byte/hash-identical. The refresh
+consent flow/default No and network_opt_in payload are unchanged.
+
+Cheap synthetic tests in test_market_workspace_c5.py cover schema/fallback,
+persistence isolation, atomic faults, identity, all preset/action operations and
+50 preset changes with destruction. Accessibility and scaled-layout modules pass.
+No new test shows a window, resets application style, sleeps, networks or spawns
+processes. Existing snapshot assertions remain; the market title/menu additions
+were refreshed in desktop_pages_before/metrics.json, 06_full.png and
+06_viewport.png by a separate fixture-only commit. The controller ran the full
+startup smokes outside the sandbox (they pass), and the two new root modules are
+tracked so the root-file inventory passes. GitNexus's lane index could not be
+built in the sandbox (spawn EPERM); the stale main graph plus source reads
+provided limited navigation evidence. Real-App visual check remains
+PENDING USER FINAL CONFIRMATION. G3/profile blocks, PROJECT_STATE, acceptance
+scores, gate/budget/OOS rules and all timeouts are unchanged. The work is committed by the controller.
+
+C5 final verification: ruff 0.16.10 check and changed-file format checks pass;
+Python 3.11 compilation and tools/quality_gate.py pass. The new modules also
+pass the strict desktop AST/credential scans; the gate
+inventory includes both modules. All 11 focused C5 tests pass, together with
+accessibility, scaled layout, existing dashboard/empty-page, catalog, import,
+inline-style, public-name and frozen-source checks. Direct unchanged synthetic
+rendering helpers pass 100 market bars and all 24 history combinations. A final
+1366x768 disposable raster comparison changes only the two market PNGs and market
+metrics: page_height 953 -> 974, button_count 11 -> 15, label_char_count 74 -> 81.
+The live-disabled notice is intentionally moved to the source row, outside the
+existing indicator-side disclosure as well as all three workspace panels.
+B4's exact baseline assertion passes after the separate fixture-only refresh commit,
+which changes only the two market PNGs and the market metrics. Real-App visual
+check remains PENDING USER FINAL CONFIRMATION.
+
+C5 watchlist sizing repair: the retained watchlist content and its workspace panel
+have minimum widths derived from the content size hint. Layout requests update
+these constraints after font/theme changes; splitter allocation and every preset
+respect them without changing serialized preset ratios or market state. This
+prevents remove/reorder button clipping and may widen the default watchlist.
+The controller should review `desktop_pages_before/06_full.png` and
+`desktop_pages_before/06_viewport.png`; the controller refreshed both PNGs in the
+fixture-only baseline commit, and the real-App visual check remains PENDING USER
+FINAL CONFIRMATION.

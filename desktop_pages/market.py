@@ -1,3 +1,4 @@
+from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from desktop_strings import ui_text
 from quantlab.core import ValidationError, content_hash, to_dict
@@ -12,13 +13,20 @@ class MarketPage(MarketDashboard):
     def __init__(self, host: PageHost):
         super().__init__()
         self.host = host
-        self.state = host.state
+        self.state = getattr(host, 'state', host)
         settings_path = getattr(getattr(self.state, 'settings', None), 'path', None)
         if settings_path is not None:
-            self.drawing_store = DrawingStore(settings_path.parent / 'display_profile')
-        host.mount_market(self, ui_text('ui._dashboard.text_1'))
+            if isinstance(settings_path, (str, Path)):
+                directory = Path(settings_path).parent / 'display_profile'
+                self.drawing_store = DrawingStore(directory)
+                self.workspace.configure_store(directory)
+        mount = getattr(host, 'mount_market', None)
+        if callable(mount):
+            mount(self, ui_text('ui._dashboard.text_1'))
         self.market = self
         self.state.market = self
+        if not hasattr(self.state, '_section_toggles'):
+            self.state._section_toggles = {}
         self.state._section_toggles['market:diagnostics'] = self.diagnostics_button
         self.diagnostics_button.toggled.connect(lambda checked: host.safe(host.save_sections))
         self.refresh_requested.connect(lambda: host.safe(self.refresh_market))

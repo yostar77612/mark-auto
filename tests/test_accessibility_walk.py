@@ -1,6 +1,60 @@
 from PySide6.QtWidgets import QWidget, QTabBar, QTabWidget
 from tests.t10_fixture import WindowFixture
 from desktop_accessibility import INTERACTIVE, visual_focus_order
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication
+import shiboken6
+import unittest
+
+from desktop_market import MarketDashboard
+from desktop_theme import apply_market_theme, build_market_stylesheet
+
+
+class WorkspaceAccessibilityTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_workspace_controls_themes_font_and_keyboard_disclosure(self):
+        page = MarketDashboard()
+        try:
+            workspace = page.workspace
+            controls = [workspace.button, *(panel.handle for panel in workspace.panels.values())]
+            for theme in ('dark', 'light'):
+                page.setProperty('appearanceTheme', theme)
+                apply_market_theme(page)
+                self.assertIn('QToolButton:focus', build_market_stylesheet(theme))
+                for factor in (1, 2):
+                    font = QFont(page.font())
+                    font.setPointSizeF(11 * factor)
+                    page.setFont(font)
+                    for control in controls:
+                        control.ensurePolished()
+                        self.assertTrue(control.accessibleName())
+                        self.assertTrue(control.accessibleDescription())
+                        self.assertTrue(control.toolTip())
+                        self.assertTrue(control.focusPolicy() & Qt.FocusPolicy.TabFocus)
+                        self.assertGreaterEqual(control.sizeHint().width(), control.fontMetrics().horizontalAdvance(control.text()))
+            for key in workspace.preset_ids:
+                workspace.actions[key].trigger()
+                for panel in workspace.panels.values():
+                    QTest.keyClick(panel.handle, Qt.Key.Key_C)
+                    collapsed = panel.content.isHidden()
+                    QTest.keyClick(panel.handle, Qt.Key.Key_C)
+                    self.assertNotEqual(collapsed, panel.content.isHidden())
+                    self.assertTrue(panel.handle.isVisibleTo(page))
+            for size in ((1366, 768), (1280, 720), (1024, 600)):
+                page.resize(*size)
+                workspace.reset()
+                self.assertTrue(all(panel.isVisibleTo(page) for panel in workspace.panels.values()))
+                self.assertLessEqual(page.minimumWidth(), 1280)
+            self.assertTrue({'save', 'reset', 'overview', 'chart_focus', 'watchlist_focus'} <= set(workspace.actions))
+            self.assertIn(workspace.restore_menu.menuAction(), workspace.menu.actions())
+            self.assertIn(workspace.delete_menu.menuAction(), workspace.menu.actions())
+        finally:
+            shiboken6.delete(page)
 
 
 class AccessibilityWalkTests(WindowFixture):

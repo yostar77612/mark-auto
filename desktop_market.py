@@ -203,7 +203,9 @@ class MarketDashboard(QWidget):
         self.research_summary = _label('', 'market_research_summary')
         self.research_summary.hide()
         root.addWidget(self.research_summary)
-        cards = QHBoxLayout()
+        cards_widget = QWidget()
+        cards = QHBoxLayout(cards_widget)
+        cards.setContentsMargins(0, 0, 0, 0)
         self.cards = {}
         for key, title in [
             ('TAIEX', ui_text('market.__init__.text_6')),
@@ -218,7 +220,7 @@ class MarketDashboard(QWidget):
             layout.addWidget(value)
             cards.addWidget(group)
             self.cards[key] = value
-        root.addLayout(cards)
+        root.addWidget(cards_widget)
         self.source_status = _label(ui_text('market.__init__.text_11'), 'market_source_status')
         source_row = QHBoxLayout()
         source_row.addWidget(self.source_status, 1)
@@ -334,7 +336,9 @@ class MarketDashboard(QWidget):
             label = _label(ui_text('market.__init__.text_41').format(title), 'market_state_' + key)
             state_layout.addWidget(label)
             self.trading_labels[key] = label
-        state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
+        source_row.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
+        # The help details keep their own copy of the notice (existing help-reachability contract).
+        state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled_detail'))
         right_layout.addWidget(state)
         group = PanelCard(ui_text('market.__init__.text_43'))
         grid = QGridLayout()
@@ -440,6 +444,10 @@ class MarketDashboard(QWidget):
         ]:
             self.tables.addTab(table, title)
         root.addWidget(self.tables)
+        # Delay workspace chrome until the existing content widgets are built.
+        from desktop_market_workspace import MarketWorkspace
+
+        self.workspace = MarketWorkspace(self, root, header, cards_widget, left, center)
 
     def _toggle_diagnostics(self, visible):
         self.diagnostics.setVisible(visible)
