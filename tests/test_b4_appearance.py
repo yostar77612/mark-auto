@@ -34,10 +34,10 @@ class AppearanceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    # Re-pinned for C5 keyboard focus selectors and the workspace menu-button rule; all exact equality assertions remain.
+    # Re-pinned for U2 compact help-button rules; all exact equality assertions remain.
     def test_default_stylesheets_are_17b5b1b_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, '6e929b232a718dc8b2592531833956f722742d7bbe0ef334196ea9e3eacc1292'),
+            (theme.build_app_stylesheet, 'e9f50cfe203ec4efe1306afe8f12e1adbc4599af17f2fac430f9ed725093c10a'),
             (theme.build_market_stylesheet, '7ce3a6cb5bc9c2c0eab3fdffc4fc4139327db3a3e9c546661f1b0ef5cde205cf'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)
