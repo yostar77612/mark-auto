@@ -2068,5 +2068,9 @@ ZH_TW.update(
 ZH_TW.update(
     {
         'backup_inspection.optional': '\u53ef\u9078\u64c7\u9810\u89bd\u5099\u4efd\u5167\u5bb9\uff1b\u5fa9\u539f\u4ecd\u9700\u540c\u610f\u8207\u78ba\u8a8d\u3002',
+
+ZH_TW.update(
+    {
+        'job.idle_hint': '\u76ee\u524d\u6c92\u6709\u80cc\u666f\u4f5c\u696d',
     }
 )
