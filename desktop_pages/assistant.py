@@ -8,6 +8,7 @@ from desktop_pages.assistant_runtime import ReplyProcess, host_context
 from desktop_pages.assistant_details import MAX_ROWS, TextFold, ToolTimeline, code_blocks, shown_text
 from desktop_pages.assistant_permissions import ResearchPermission, install_menu
 from desktop_pages.assistant_completion import CompletionMenu, resolve_references
+from desktop_pages.assistant_models import ModelControls
 import desktop_privacy as privacy
 from desktop_strings import ui_text
 from quantlab.assistant_chat import ChatDispatcher, fixture_reply
@@ -59,6 +60,10 @@ class AssistantPanel(QWidget):
         self.send = QPushButton(ui_text('assistant.send'))
         self.send.setAccessibleName(ui_text('assistant.send'))
         layout.addWidget(self.send)
+        self.models = ModelControls(self, layout)
+        self.model = self.models.model
+        self.effort = self.models.effort
+        self.mode.currentIndexChanged.connect(self.models.update_send)
         for name, widget in (
             ('assistant_panel', self),
             ('assistant_mode', self.mode),
@@ -128,6 +133,19 @@ class AssistantPanel(QWidget):
         remote = self.mode.currentData() == 'chatgpt'
         if remote and not self.ask_consent():
             return
+        if self.model.count() == 0:
+            self.error_reply(chatgpt=remote)
+            return
+        selection = {}
+        if remote:
+            try:
+                slug, effort = self.models.validate()
+                selection = {'model': slug}
+                if effort is not None:
+                    selection.update(effort=effort, efforts=list(self.models.binding[2]))
+            except ValueError:
+                self.error_reply(chatgpt=True)
+                return
         try:
             prompt = resolve_references(prompt, self.dispatcher)
         except ValueError:
@@ -148,15 +166,15 @@ class AssistantPanel(QWidget):
                 self.reply(ui_text('assistant.fixture_research'))
             return
         controller = getattr(self.host, 'chatgpt_controller', None)
-        connection = getattr(self.host, 'chatgpt_panel', None)
-        model = getattr(connection, 'model', None)
         try:
+            self.models.set_usage(None)
+            self._reply_binding = (getattr(controller, 'active_registration', None), selection['model'])
             self.worker.start(
                 {
                     'consent': True,
                     'prompt': prompt,
                     'registration': getattr(controller, 'active_registration', None),
-                    'model': model.currentData() if model is not None else None,
+                    **selection,
                 }
             )
             self.send.setEnabled(False)
@@ -169,8 +187,11 @@ class AssistantPanel(QWidget):
         if result is None:
             return
         self.timer.stop()
-        self.send.setEnabled(True)
+        self.models.update_send(idle=True)
         if result.get('ok') is True and type(result.get('text')) is str:
+            controller = getattr(self.host, 'chatgpt_controller', None)
+            binding = (getattr(controller, 'active_registration', None), self.model.currentData())
+            self.models.set_usage(result.get('context_usage') if binding == getattr(self, '_reply_binding', None) else None)
             self.reply(result['text'], chatgpt=True, thinking=result.get('thinking', ''))
         else:
             self.error_reply(chatgpt=True)
@@ -179,7 +200,7 @@ class AssistantPanel(QWidget):
         pending = self.worker.active
         self.timer.stop()
         self.worker.cancel()
-        self.send.setEnabled(True)
+        self.models.update_send(idle=True)
         if pending:
             self.error_reply(chatgpt=True)
 

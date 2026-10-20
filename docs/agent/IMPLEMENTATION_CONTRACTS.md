@@ -2649,3 +2649,79 @@ ACCEPTANCE and default-page fixtures have empty diffs against the starting
 HEAD. No live trading, operator/mutation path, gate, OOS rule, budget, timeout,
 score or existing test exemption is added or loosened. Work remains uncommitted
 for the controller's single A2-D6 commit.
+
+### TASK A2-D10: discovered assistant models, effort and reported context
+
+Initial inspection confirmed the connection model selector/discovery existed,
+but the assistant had neither its own model selector, an effort selector nor a
+context display. assistant_models now owns these controls inside the existing
+collapsed Settings maintenance assistant. No default page changes or baseline
+refresh are requested. Widget-name fixture additions are only assistant_model,
+assistant_effort, assistant_models_empty and assistant_context_usage. Existing
+header behavior is retained; PanelCard and AsyncStatus are absent in this lane.
+
+Model rows come only from ConnectionController.models/model_labels, originally
+populated through discover_models/parse_models. No model names, limits or effort
+levels are inferred or hardcoded. The pinned parse_models currently preserves
+only slug/display_name, so real discovery does not advertise effort metadata:
+the disabled selector therefore says not provided. The optional host catalog
+metadata seam model_metadata[slug].reasoning_efforts accepts only bounded inert
+strings and populates only those advertised values plus unspecified. It makes
+no additional discovery call and cannot create model rows. Model changes reset
+effort to unspecified and synchronize the existing connection selector, retaining
+its D9 test-status reset and campaign-usage invalidation signals. Preference
+restore accepts only current discovered models and their advertised efforts;
+removed, corrupt and unsupported preferences safely fall back. Settings contain
+only model/effort preferences, with no authority or credentials.
+
+Every remote submit still asks per-call consent before reference resolution or
+provider invocation, then validates MODEL syntax and current catalog/effort
+membership. Stale/invalid selections return the existing B1 agent_tool_refused
+message and cannot start a worker. An empty model catalog shows the empty state
+and disables send, including keyboard submission. The offline fixture remains
+labelled not real AI and performs no inference or discovery call.
+The existing public PlanHTTPTransport.stream path carries an explicitly selected
+reasoning.effort; unspecified omits reasoning. The worker validates the bounded
+selection snapshot again. No auth/provider source is changed, no new endpoint,
+operator, quota reservation, candidate saver, tool declaration or retry exists.
+
+Context remains not provided unless a completed response explicitly supplies
+context_usage used/limit integer counters. Ordinary input/output/total token
+counts do not establish context capacity and are never converted to a guessed
+percentage. Only these two bounded counters cross IPC. Percentage uses exact
+integer half-up rounding and clamps to 0..100; absent/invalid usage never shows
+0%. Every display says provider-reported, unverified. Selection/account changes
+and new sends clear old context; replies for a previous model/account cannot
+populate the new selection's usage. Live inference is not claimed verified.
+
+Eleven cheap offline test_assistant_d10 tests cover discovered-only rows, missing
+and malformed metadata, keyboard/accessibility, resets, empty/bare hosts, stale
+send validation, safe preference restore, rounding/clamping, missing/old context,
+public transport payloads, consent denial, literal output and sentinel scans
+with planted negative controls. Existing D4 tests still enumerate the frozen
+read-only surface, patch operator/quota entry points, plant OOS/holdout/secrets
+in fixtures and check payload/transcript exclusion and AST execution bans. The
+only D4 change supplies a discovered fixture model for its remote consent and
+keyboard tests, as newly required by D10; no assertion is removed or weakened.
+Inventory checks register the new package module additively; existing package
+scans cover inline styles and UI text. desktop_ui exports and MainWindow are
+unchanged; new classes remain below the size limit.
+
+Validation: D10 11, D4 10, D6 8, D5 9, D8 6, D9 6, import graph 8,
+hardcoded UI text 11, repo layout 12, inline styles 3, placeholders 1, function
+budgets 2 and UI operations registry 6 pass. Ruff 0.16.10 check and changed-file
+format check, py -3.11 compilation and quality_gate (zero findings) pass.
+Repo-wide format check reports only unchanged ADR 0006's known CRLF checkout
+issue. Unchanged terminal, isolation, history, market and Walk-forward smoke
+modules were attempted and encountered restricted-token Windows temp-directory
+ACL failures; controller native smoke/visual verification remains outstanding.
+No live network verification was attempted. GitNexus status found no lane index;
+analyze failed with spawn EPERM and its MCP query reported repository not found.
+No alternate graph tool or extension download was used. Routing used GitNexus
+and local work; no repository-independent external research was needed.
+
+G3, all saved_candidate_pool bytes, PROJECT_STATE, optimization plan, ACCEPTANCE
+and default-page baseline files remain unchanged against starting HEAD. No gate,
+OOS rule, irreversible budget, timeout, score or test exemption changes; live
+trading stays permanently disabled. Changes remain uncommitted for the
+controller to produce exactly one A2-D10 commit.
