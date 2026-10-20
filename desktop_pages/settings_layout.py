@@ -103,6 +103,10 @@ def build_settings(page, layout):
 
     page.assistant_panel = AssistantPanel(page)
     maintenance.addWidget(page.assistant_panel)
+    # Mirror the session intent in the existing collapsed connection controls.
+    from .assistant_permissions import install_menu
+
+    page.assistant_permission_menu = install_menu(management, page.assistant_panel.permissions, 'settings_research_permission')
     page._button(about, ui_text('ui._settings_page.text_18'), 'read_logs', page.read_logs)
     page.log_view = LogTable()
     page.errors_only = QCheckBox(ui_text('logs.errors_only'))

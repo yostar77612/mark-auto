@@ -1863,3 +1863,9 @@ ZH_TW.update(
 )
 
 ZH_TW.update({'tables.tab_count': '{0} [{1}]'})
+        'assistant.permission_label': '研究動作',
+        'assistant.permission_read': '唯讀',
+        'assistant.permission_confirm': '逐次確認',
+        'assistant.permission_scope': '逐次確認在本版本仍僅允許唯讀工具；不會啟動回測、研究、Walk-forward、保存候選或使用額度。重新啟動後恢復唯讀；實盤永久停用。ChatGPT 推論未驗證，每次連網仍須明確同意。',
+    }
+)

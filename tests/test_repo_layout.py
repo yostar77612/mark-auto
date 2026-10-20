@@ -84,6 +84,10 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_assistant_d8_module_in_existing_package(self):
+        self.assertTrue((ROOT / 'desktop_pages/assistant_permissions.py').is_file())
+        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+
     def test_assistant_d5_module_in_existing_package(self):
         self.assertTrue((ROOT / 'desktop_pages/assistant_details.py').is_file())
         self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
