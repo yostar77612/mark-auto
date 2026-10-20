@@ -120,6 +120,8 @@ class HardcodedUITextTests(unittest.TestCase):
         self.assertTrue(hardcoded_ui_text(original + '\nlabel = "\u6e2c\u8a66"\n'))
 
     def test_package_injection_is_detected(self):
+        self.assertIn('desktop_pages/command_palette.py', UI_PACKAGE_MODULES)
+        self.assertIn('desktop_pages/palette_commands.py', UI_PACKAGE_MODULES)
         self.assertIn('desktop_pages/async_status.py', UI_PACKAGE_MODULES)
         self.assertIn('desktop_pages/app_header.py', UI_PACKAGE_MODULES)
         self.assertTrue(UI_PACKAGE_MODULES)
