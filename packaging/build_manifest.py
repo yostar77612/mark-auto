@@ -29,6 +29,7 @@ def main():
             'packaging/qt_notices/*',
             'requirements-desktop.*',
             'desktop*.py',
+            'desktop_smoke/*.py',
             'desktop_chatgpt_dependency_manifest.json',
             'packaging/third_party/*',
             'tools/quality_gate.py',

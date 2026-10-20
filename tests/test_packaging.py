@@ -1,5 +1,6 @@
 """Cross-platform static safeguards; Windows execution is a separate CI gate."""
 
+import ast
 import importlib.util
 import os
 from pathlib import Path
@@ -55,6 +56,13 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("'desktop*.py'", source)
         included = {path.name for path in ROOT.glob('desktop*.py')}
         self.assertTrue({'desktop.py', 'desktop_ui.py', 'desktop_market.py', 'desktop_charts.py', 'desktop_forms.py'} <= included)
+
+    def test_manifest_includes_smoke_package(self):
+        tree = ast.parse((ROOT / 'packaging/build_manifest.py').read_text(encoding='utf-8'))
+        patterns = {node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
+        self.assertIn('desktop_smoke/*.py', patterns)
+        included = {path for pattern in patterns if '*' in pattern for path in ROOT.glob(pattern) if path.is_file()}
+        self.assertTrue(set((ROOT / 'desktop_smoke').rglob('*.py')) <= included)
 
     def test_build_inputs_are_committed_not_silently_gitignored(self):
         required = {

@@ -23,7 +23,12 @@ def stylesheet_calls(source):
 
 class NoInlineStylesheetTests(unittest.TestCase):
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
-        sources = sorted(set(ROOT.glob('desktop*.py')) | set((ROOT / 'tools').rglob('*.py')) | set((ROOT / 'desktop_pages').rglob('*.py')))
+        sources = sorted(
+            set(ROOT.glob('desktop*.py'))
+            | set((ROOT / 'tools').rglob('*.py'))
+            | set((ROOT / 'desktop_pages').rglob('*.py'))
+            | set((ROOT / 'desktop_smoke').rglob('*.py'))
+        )
         violations = []
         for path in sources:
             relative = path.relative_to(ROOT).as_posix()

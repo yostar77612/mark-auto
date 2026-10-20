@@ -59,6 +59,7 @@ ALLOWED_DIRECTORIES = {
     '.streamlit',
     'archives',
     'desktop_pages',
+    'desktop_smoke',
     'docs',
     'examples',
     'packaging',

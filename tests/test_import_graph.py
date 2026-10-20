@@ -103,8 +103,15 @@ PAIRS = (
 
 
 def source_map():
-    paths = sorted((ROOT / 'quantlab').glob('*.py')) + sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').glob('*.py'))
-    return {path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.'): path.read_text(encoding='utf-8-sig') for path in paths}
+    paths = (
+        sorted((ROOT / 'quantlab').glob('*.py'))
+        + sorted(ROOT.glob('desktop*.py'))
+        + sorted((ROOT / 'desktop_pages').glob('*.py'))
+        + sorted((ROOT / 'desktop_smoke').glob('*.py'))
+    )
+    return {
+        path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__'): path.read_text(encoding='utf-8-sig') for path in paths
+    }
 
 
 @lru_cache(maxsize=256)

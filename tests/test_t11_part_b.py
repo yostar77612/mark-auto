@@ -66,6 +66,13 @@ class StartupTests(unittest.TestCase):
         # and the corresponding closure declarations. Dict order is retained.
         functions = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body if isinstance(node, ast.FunctionDef)}
         lifecycle = next(node for node in functions['run_gui'].body if isinstance(node, ast.Try))
+        functions.update(
+            {
+                node.name: node
+                for node in ast.parse((ROOT / 'desktop_smoke/__init__.py').read_text(encoding='utf-8-sig')).body
+                if isinstance(node, ast.FunctionDef)
+            }
+        )
         self.assertEqual(_digest(functions['run_smoke'].body[3:]), SMOKE_DIGEST)
         self.assertEqual(_digest(lifecycle.handlers), HANDLERS_DIGEST)
         self.assertEqual(_digest(lifecycle.finalbody), FINALLY_DIGEST)

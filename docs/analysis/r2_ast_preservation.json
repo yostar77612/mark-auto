@@ -1,0 +1,95 @@
+{
+  "base": "4c72a302b833d73ab9caf1c9385dd84210d56b4b",
+  "comparison": "ast.dump full definitions, include_attributes=False; no normalization",
+  "definitions": {
+    "_SmokeSettingsView": {
+      "equal": true,
+      "sha256": "25967541718c384e84e84c935970344dd60f221146ce9b6d5cf8e5236cf1def5"
+    },
+    "_auth_smoke_dependencies": {
+      "equal": true,
+      "sha256": "85f9c7cb6ff9a263d4103952163b6186d3bf6f8ee660665d9d247529e42f0e15"
+    },
+    "_smoke_steps": {
+      "equal": true,
+      "sha256": "bdecbd8c719881000da14ebffc15176cf4ebada2cb1bb63c1bf7b818562ae779"
+    },
+    "_market_smoke_ui": {
+      "equal": true,
+      "sha256": "6505691358a9697757162add476548100e13799195d3235a92720bbc25573fea"
+    },
+    "_market_smoke_response": {
+      "equal": true,
+      "sha256": "0dfbfb4ebef99fd3ef270e04700a05e62642203fec474c716e709d6ed8e8cc0e"
+    },
+    "_check_market_worker_result": {
+      "equal": true,
+      "sha256": "b76e3329a618e9992d7191d042cdcb51db085590de1be0f0c6bcbc2347cb644e"
+    },
+    "_history_smoke_fixture": {
+      "equal": true,
+      "sha256": "cbfccec0e046d14a672cd0c929dcb244fad9f1b810c3b23c79325783012b21a5"
+    },
+    "_check_history_worker_result": {
+      "equal": true,
+      "sha256": "1532a05a11028fc217ab4b44ff7c72e494eb463c8669b6ff89575e6d27566c71"
+    },
+    "_history_smoke_ui": {
+      "equal": true,
+      "sha256": "8763e37770d7fb59346a0834482bbda5b49e11cae61f1970ef53c2ffaded502b"
+    },
+    "_walk_forward_smoke_fixture": {
+      "equal": true,
+      "sha256": "e5a89f0c34bfe26f8a6f74d2396a0651cebc1c2df25afa39a37325ca2991c87b"
+    },
+    "_check_walk_forward_smoke_result": {
+      "equal": true,
+      "sha256": "9084f1c44e8aa4acb5449fb70b2ab083b8f31f3375fe8300418d065c99e7d2fd"
+    },
+    "_start_smoke_job": {
+      "equal": true,
+      "sha256": "ae91ceb37418fbe65ec0fb668dfbe5ed687c647b9f27a3dfa914d9270e656804"
+    },
+    "_close_smoke_worker": {
+      "equal": true,
+      "sha256": "b542ac7b021c5c49d506544fabbc28f5ef0a7f8c8e424bca1c22a43014deddc9"
+    },
+    "_retain_smoke_directory": {
+      "equal": true,
+      "sha256": "99356565acab48de7fd183378b7033c9d4fae509313f320352e06908ab8671a3"
+    },
+    "_prepare_startup_workspace": {
+      "equal": true,
+      "sha256": "dc9e6f5d2182ca5f95ef8fe1d82ebb0618883bbfae1cabd599f17cbbb464ac59"
+    },
+    "_offer_workspace_after_recovery_block": {
+      "equal": true,
+      "sha256": "fb96083263b2a50b725713244ee97a0a10641b710b93ddf90c545f42044fe638"
+    },
+    "parse_args": {
+      "equal": true,
+      "sha256": "7138c53e8e3783cad70350f3d6bdc750c7090e005c134e3126a1a96d2bb62a97"
+    },
+    "acquire_instance_lock": {
+      "equal": true,
+      "sha256": "6f5b84d5a9f76ef80e2eadf18692d26c6b5d41b9b7436ef5ee08ee4de44ce9a7"
+    },
+    "prepare_workspace": {
+      "equal": true,
+      "sha256": "fc0e871c1da9f9da8e739f0f8589308f545fa8c2e8079173e7e8e49d0e4a1700"
+    },
+    "run_smoke": {
+      "equal": true,
+      "sha256": "a6f164f5f66767be1ec597e80ed132dcb34f9ad04c5dce647d9fadc7beaaa101"
+    },
+    "run_gui": {
+      "equal": true,
+      "sha256": "9f7caae4117882d7be6aac7413064824f772ba2035026806d1ebbcaff196b14e"
+    },
+    "main": {
+      "equal": true,
+      "sha256": "3d86d64b2296bd2510f7fbfae5a7538e107e1a64052d8146ee288575f4a58c8e"
+    }
+  },
+  "differing": []
+}

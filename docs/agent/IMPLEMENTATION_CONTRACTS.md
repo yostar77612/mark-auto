@@ -3199,3 +3199,71 @@ tests/fixtures/desktop_pages_before/metrics.json and 05_full.png in a separate
 fixture-only commit (05_viewport.png was already refreshed by the C8 fixture commit). The metadata file
 tests/fixtures/desktop_pages_baseline.json is unchanged. No visual quality or
 real-broker verification is claimed; the user's final visual check remains pending.
+
+
+## S-R2 - desktop smoke harness extraction
+
+The offline harness resides in desktop_smoke/__init__.py. desktop.py retains
+only parse_args, acquire_instance_lock, prepare_workspace, run_gui, main and the
+two production startup helpers. It is 360 lines versus 1290 at 4c72a30. All
+fifteen harness definitions, including run_smoke with nested complete_smoke, are
+moved intact. Compatibility imports preserve object identity on desktop,
+including the workflow's _auth_smoke_dependencies import. Both fresh import
+orders succeed. No core-to-desktop dependency or circular import is introduced.
+The item is a single refactor commit with a Co-Authored-By trailer.
+
+Preservation evidence: tools/extract_desktop_smoke_r2.py compares full AST
+canonical dumps against 4c72a302b833d73ab9caf1c9385dd84210d56b4b, without state
+normalization; docs/analysis/r2_ast_preservation.json records identical hashes
+for every moved definition and every retained production definition, with no
+differences. test_t11_part_b retains SMOKE_DIGEST, HANDLERS_DIGEST,
+FINALLY_DIGEST and the body[3:] slice; all three original digest checks pass.
+Smoke semantics, report schema, step order, catalog keys and deadlines are
+unchanged (global 120 seconds, per-step 40 seconds, Paper 30 seconds). No
+widgets, timers, lifetime operations, styles or public desktop_ui names change.
+
+Existing-test path/target changes are limited to:
+
+- test_t11_part_b.py reads run_smoke's AST from desktop_smoke/__init__.py;
+run_gui lifecycle fingerprints still read desktop.py. -
+test_desktop_market_smoke.py and test_desktop_walk_forward_smoke.py read harness
+source from desktop_smoke/__init__.py. Every assertIn literal and timeout is
+retained byte-for-byte. - test_desktop_history_smoke.py and
+test_desktop_smoke_isolation.py direct injected fixture/result assignments to
+desktop_smoke through __import__. - test_desktop_walk_forward_smoke.py directs
+injected checker assignments to desktop_smoke; its other injection logic and
+assertions are unchanged. - test_desktop_smoke_terminal.py and
+test_desktop_walk_forward_terminal.py assign injected cleanup to both desktop
+and desktop_smoke. The former keeps run_gui's terminal cleanup injection; the
+latter reaches the moved harness. Startup fixture injection in
+test_desktop_smoke_terminal targets desktop_smoke. Original-function reads
+retain the identical compatibility exports.
+
+Registry and packaging changes are additive: test_repo_layout allows exactly one
+additional directory, desktop_smoke. test_import_graph includes its Python files
+and maps package __init__ to the importable package name. UI-text and inline-
+stylesheet scanners include the package. packaging/build_manifest.py adds
+desktop_smoke/*.py; test_packaging adds an assertion proving every package
+source is inventoried. packaging/markauto.spec still analyzes desktop.py.
+test_desktop_smoke_package.py adds cheap identity, injection-global, production
+shape/size, evidence-coverage and static freeze-import reachability checks. No
+new lint exemption is needed; pyproject.toml remains unchanged.
+
+packaging/payload_inventory.py is unaffected: it recursively inventories actual
+frozen output rather than selecting source files.
+docs/analysis/t12_payload_inventory.json remains historical T12 comparison
+evidence; it is not a rebuilt R2 payload inventory. The frozen-installer build
+and its smoke are not part of this change.
+
+The five new regression tests, eleven T11 tests, import graph, text/style scans,
+startup timing, icon, UI correctness, dev setup, locked-source lengths and
+public UI registry checks pass. Ruff 0.16.10 check and format --check on all
+changed Python files, Python 3.11 compileall, both fresh import orders and
+quality_gate (0 findings) pass. The exact tracked-layout test enforces the
+directory registry including desktop_smoke; its registry assertion is unchanged.
+
+G3 files, saved_candidate_pool.py, desktop_strings.py, PROJECT_STATE, acceptance
+scores, baseline PNG/metrics/widget-name fixtures and protected documents have
+empty diffs. No baseline refresh is required. Live trading remains permanently
+disabled; OOS consumption, irreversible budgets and fail-closed gates are
+unchanged.
