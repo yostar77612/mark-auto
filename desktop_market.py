@@ -190,268 +190,17 @@ class MarketDashboard(QWidget):
         outer.addWidget(self.page_scroll)
         root = QVBoxLayout(content)
         root.setContentsMargins(10, 8, 10, 8)
-        header = QHBoxLayout()
-        title = _label(ui_text('market.__init__.text_1'), 'market_title')
-        header.addWidget(title)
-        header.addStretch()
-        header.addWidget(_label(ui_text('market.__init__.text_2'), 'market_safety'))
-        self.refresh_button = _named(QPushButton(ui_text('market.__init__.text_3')), 'market_refresh', ui_text('market.__init__.text_4'))
-        self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
-        self.refresh_button.clicked.connect(self.refresh_requested.emit)
-        header.addWidget(self.refresh_button)
-        root.addLayout(header)
-        self.research_summary = _label('', 'market_research_summary')
-        self.research_summary.hide()
-        root.addWidget(self.research_summary)
-        cards_widget = QWidget()
-        cards = QHBoxLayout(cards_widget)
-        cards.setContentsMargins(0, 0, 0, 0)
-        self.cards = {}
-        for key, title in [
-            ('TAIEX', ui_text('market.__init__.text_6')),
-            ('TX', ui_text('market.__init__.text_7')),
-            ('MXF', ui_text('market.__init__.text_8')),
-            ('TMF', ui_text('market.__init__.text_9')),
-        ]:
-            group = PanelCard(title)
-            layout = group.content_layout()
-            layout.setContentsMargins(8, 8, 8, 6)
-            value = _label(ui_text('market.__init__.text_10'), 'market_card_' + key)
-            layout.addWidget(value)
-            cards.addWidget(group)
-            self.cards[key] = value
-        root.addWidget(cards_widget)
-        self.source_status = _label(ui_text('market.__init__.text_11'), 'market_source_status')
-        source_row = QHBoxLayout()
-        source_row.addWidget(self.source_status, 1)
-        self.diagnostics_button = _named(QPushButton(ui_text('market.__init__.text_12')), 'market_diagnostics_toggle', ui_text('market.__init__.text_13'))
-        self.diagnostics_button.setCheckable(True)
-        source_row.addWidget(self.diagnostics_button)
-        root.addLayout(source_row)
-        self.diagnostics = _named(QPlainTextEdit(), 'market_diagnostics', ui_text('market.__init__.text_14'))
-        self.diagnostics.setReadOnly(True)
-        self.diagnostics.setMaximumHeight(160)
-        self.diagnostics.hide()
-        self.diagnostics_button.toggled.connect(self._toggle_diagnostics)
-        root.addWidget(self.diagnostics)
-        self.converge_annotations = _named(
-            QCheckBox(ui_text('market.converge_annotations')), 'market_converge_annotations', ui_text('market.converge_annotations')
-        )
-        self.converge_annotations.setToolTip(ui_text('market.converge_annotations_hint'))
-        self.converge_annotations.setChecked(True)
-        self.converge_annotations.hide()
-        self.diagnostics_button.toggled.connect(self.converge_annotations.setVisible)
-        self.converge_annotations.toggled.connect(self._annotation_preferences_changed)
-        self.series_rendered.connect(lambda _: self.refresh_annotations())
-        root.addWidget(self.converge_annotations)
-        self.message = _label(ui_text('market.__init__.text_15'), 'market_message')
-        set_status(self.message, 'warning')
-        root.addWidget(self.message)
-        self.empty_actions = QWidget()
-        actions = QHBoxLayout(self.empty_actions)
-        actions.setContentsMargins(0, 0, 0, 0)
-        self.sample_button = _named(QPushButton(ui_text('market.load_sample')), 'market_load_sample', ui_text('market.load_sample'))
-        self.sample_button.setToolTip(ui_text('market.sample_label'))
-        self.sample_button.clicked.connect(self.sample_requested.emit)
-        actions.addWidget(self.sample_button)
-        self.official_button = _named(QPushButton(ui_text('market.download_official')), 'market_download_official', ui_text('market.download_official'))
-        self.official_button.setToolTip(ui_text('market.official_consent'))
-        self.official_button.clicked.connect(self.refresh_requested.emit)
-        actions.addWidget(self.official_button)
-        root.addWidget(self.empty_actions)
-        self.refresh_button.hide()
-        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        root.addWidget(self.main_splitter, 1)
-        left = QWidget()
-        left_layout = QVBoxLayout(left)
-        left_layout.setContentsMargins(0, 0, 4, 0)
-        left_layout.addWidget(_label(ui_text('market.__init__.text_16'), 'market_watch_title'))
-        self.search = _named(QLineEdit(), 'market_search', ui_text('market.__init__.text_17'))
-        self.search.setPlaceholderText(ui_text('market.__init__.text_18'))
-        self.search.textChanged.connect(self._filter_catalog)
-        left_layout.addWidget(self.search)
-        self.catalog_combo = _named(QComboBox(), 'market_catalog', ui_text('market.__init__.text_19'))
-        left_layout.addWidget(self.catalog_combo)
-        self.add_button = _named(QPushButton(ui_text('market.__init__.text_20')), 'market_add', ui_text('market.__init__.text_21'))
-        self.add_button.clicked.connect(self._add_watch)
-        left_layout.addWidget(self.add_button)
-        self.watchlist = _named(QListWidget(), 'market_watchlist', ui_text('market.__init__.text_22'))
-        self.watchlist.currentItemChanged.connect(self._watch_selected)
-        left_layout.addWidget(self.watchlist, 1)
-        row = QHBoxLayout()
-        self.remove_button = _named(QPushButton(ui_text('market.__init__.text_23')), 'market_remove', ui_text('market.__init__.text_24'))
-        self.remove_button.clicked.connect(self._remove_watch)
-        row.addWidget(self.remove_button)
-        for text, delta, name in [('↑', -1, 'up'), ('↓', 1, 'down')]:
-            button = _named(QPushButton(text), 'market_watch_' + name, ui_text('market.__init__.text_25') if delta < 0 else ui_text('market.__init__.text_26'))
-            button.clicked.connect(lambda checked=False, d=delta: self._move_watch(d))
-            row.addWidget(button)
-        left_layout.addLayout(row)
-        self.main_splitter.addWidget(left)
-        center = QWidget()
-        center_layout = QVBoxLayout(center)
-        center_layout.setContentsMargins(4, 0, 4, 0)
-        control = QHBoxLayout()
-        self.contract_combo = _named(QComboBox(), 'market_contract', ui_text('market.__init__.text_27'))
-        self.contract_combo.currentIndexChanged.connect(self._contract_changed)
-        control.addWidget(self.contract_combo, 1)
-        self.timeframe_combo = _named(QComboBox(), 'market_timeframe', ui_text('market.__init__.text_28'))
-        for text, value in zip(
-            (
-                ui_text('market.__init__.text_29'),
-                ui_text('market.__init__.text_30'),
-                ui_text('market.__init__.text_31'),
-                ui_text('market.__init__.text_32'),
-                ui_text('market.__init__.text_33'),
-                ui_text('market.__init__.text_34'),
-                ui_text('market.__init__.text_35'),
-                ui_text('market.__init__.text_36'),
-            ),
-            TIMEFRAMES,
-        ):
-            self.timeframe_combo.addItem(text, value)
-        self.timeframe_combo.setCurrentIndex(6)
-        self.timeframe_combo.currentIndexChanged.connect(self._timeframe_changed)
-        control.addWidget(self.timeframe_combo)
-        center_layout.addLayout(control)
-        self.chart = CandlestickChart()
-        self.chart.setObjectName('market_candles')
-        center_layout.addWidget(self.chart, 1)
-        self.indicator_summary = _label('', 'market_indicator_summary')
-        center_layout.addWidget(self.indicator_summary)
-        self.main_splitter.addWidget(center)
-        right_scroll = QScrollArea()
-        right_scroll.setWidgetResizable(True)
-        right_scroll.setMinimumWidth(175)
-        right = QWidget()
-        right_layout = QVBoxLayout(right)
-        self.trading_labels = {}
-        state = PanelCard(ui_text('market.__init__.text_37'))
-        state_layout = state.content_layout()
-        for key, title in [
-            ('strategy', ui_text('market.__init__.text_38')),
-            ('paper', ui_text('market.__init__.text_39')),
-            ('risk', ui_text('market.__init__.text_40')),
-        ]:
-            label = _label(ui_text('market.__init__.text_41').format(title), 'market_state_' + key)
-            state_layout.addWidget(label)
-            self.trading_labels[key] = label
-        source_row.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
-        # The help details keep their own copy of the notice (existing help-reachability contract).
-        state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled_detail'))
-        right_layout.addWidget(state)
-        group = PanelCard(ui_text('market.__init__.text_43'))
-        grid = QGridLayout()
-        group.content_layout().addLayout(grid)
-        row = 0
-        for key, config in DEFAULT_INDICATORS.items():
-            check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.__init__.text_44').format(key))
-            check.setChecked(config['enabled'])
-            grid.addWidget(check, row, 0, 1, 2)
-            row += 1
-            controls = {}
-            self._indicator_widgets[key] = (check, controls)
-            for param, value in config.items():
-                if param == 'enabled':
-                    continue
-                values = value if isinstance(value, list) else [value]
-                for index, number in enumerate(values):
-                    spin = QDoubleSpinBox() if param in ('deviations', 'multiplier', 'step', 'maximum', 'percent') else QSpinBox()
-                    spin.setRange(
-                        0.01 if param in ('step', 'maximum') else 0.1 if param in ('deviations', 'multiplier', 'percent') else 1,
-                        1 if param in ('step', 'maximum') else 1000,
-                    )
-                    spin.setValue(number)
-                    field = f'{param}_{index}' if isinstance(value, list) else param
-                    _named(spin, f'market_{key}_{field}', f'{key} {field}')
-                    grid.addWidget(
-                        _label(
-                            (ui_text('market.__init__.text_45').format(str(index + 1)))
-                            if param == 'periods'
-                            else {
-                                'multiplier': ui_text('market.indicator.multiplier'),
-                                'step': ui_text('market.indicator.step'),
-                                'maximum': ui_text('market.indicator.maximum'),
-                                'percent': ui_text('market.indicator.percent'),
-                                'period': ui_text('market.__init__.text_46'),
-                                'fast': ui_text('market.__init__.text_47'),
-                                'slow': ui_text('market.__init__.text_48'),
-                                'signal': ui_text('market.__init__.text_49'),
-                                'k_period': ui_text('market.__init__.text_50'),
-                                'd_period': ui_text('market.__init__.text_51'),
-                                'deviations': ui_text('market.__init__.text_52'),
-                            }[param],
-                            'label_' + key + field,
-                        ),
-                        row,
-                        0,
-                    )
-                    grid.addWidget(spin, row, 1)
-                    row += 1
-                    controls[field] = spin
-                    spin.valueChanged.connect(self._indicators_changed)
-            check.toggled.connect(self._indicators_changed)
-        right_layout.addWidget(group)
-        right_layout.addWidget(_label(ui_text('market.__init__.text_53'), 'market_vwap_disclosure'))
-        right_layout.addStretch()
-        right_scroll.setWidget(right)
-        self.main_splitter.addWidget(right_scroll)
-        # Load this operation-specific dependency only when requested.
-        from PySide6.QtWidgets import QToolButton
-
-        self.right_panel = right_scroll
-        self.panel_toggle = QToolButton()
-        self.panel_toggle.setObjectName('market_panel_toggle')
-        self.panel_toggle.setText(ui_text('market.panel_toggle'))
-        self.panel_toggle.setAccessibleName(ui_text('market.panel_toggle'))
-        self.panel_toggle.setToolTip(ui_text('market.panel_toggle'))
-        self.panel_toggle.setCheckable(True)
-        self.panel_toggle.setChecked(True)
-        self.panel_toggle.toggled.connect(right_scroll.setVisible)
-        header.insertWidget(1, self.panel_toggle)
-        self.main_splitter.setSizes([190, 740, 230])
-        self.main_splitter.setCollapsible(1, False)
-        self.tables = QTabWidget()
-        self.tables.setMaximumHeight(180)
-        self.tables.setMinimumHeight(95)
-        self.positions_table = self._table(
-            (ui_text('market.__init__.text_54'), ui_text('market.__init__.text_55'), ui_text('market.__init__.text_56')), 'market_positions'
-        )
-        self.orders_table = self._table(
-            (
-                ui_text('market.__init__.text_57'),
-                ui_text('market.__init__.text_58'),
-                ui_text('market.__init__.text_59'),
-                ui_text('market.__init__.text_60'),
-                ui_text('market.__init__.text_61'),
-            ),
-            'market_orders',
-        )
-        self.fills_table = self._table(
-            (
-                ui_text('market.__init__.text_62'),
-                ui_text('market.__init__.text_63'),
-                ui_text('market.__init__.text_64'),
-                ui_text('market.__init__.text_65'),
-                ui_text('market.__init__.text_66'),
-            ),
-            'market_fills',
-        )
-        for title, table in [
-            (ui_text('market.__init__.text_67'), self.positions_table),
-            (ui_text('market.__init__.text_68'), self.orders_table),
-            (ui_text('market.__init__.text_69'), self.fills_table),
-        ]:
-            self.tables.addTab(table, title)
-        root.addWidget(self.tables)
-        # Delay workspace chrome until the existing content widgets are built.
-        from desktop_market_workspace import MarketWorkspace
-
-        self.workspace = MarketWorkspace(self, root, header, cards_widget, left, center)
-        # Delay chart follower construction until the workspace menu exists.
-        from desktop_chart_popout import PopoutController
-
-        self.popout = PopoutController(self)
+        header = _build_market_header(self, root)
+        cards_widget = _build_market_cards(self, root, PanelCard)
+        source_row = _build_market_diagnostics(self, root)
+        _build_market_empty_actions(self, root)
+        left = _build_market_watchlist(self, root)
+        center = _build_market_chart(self)
+        right_scroll, right, right_layout = _build_market_trading_status(self, source_row, PanelCard)
+        _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
+        _build_market_panel_toggle(self, right_scroll, header)
+        _build_market_tables(self, root)
+        _build_market_workspace(self, root, header, cards_widget, left, center)
 
     def closeEvent(self, event):
         self.popout.close()
@@ -1233,3 +982,302 @@ class MarketHistoryDialog(QDialog):
         if self._payload is None:
             raise ValueError(ui_text('market.payload.text_1'))
         return deepcopy(self._payload)
+
+
+def _build_market_header(self, root):
+    header = QHBoxLayout()
+    title = _label(ui_text('market.__init__.text_1'), 'market_title')
+    header.addWidget(title)
+    header.addStretch()
+    header.addWidget(_label(ui_text('market.__init__.text_2'), 'market_safety'))
+    self.refresh_button = _named(QPushButton(ui_text('market.__init__.text_3')), 'market_refresh', ui_text('market.__init__.text_4'))
+    self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
+    self.refresh_button.clicked.connect(self.refresh_requested.emit)
+    header.addWidget(self.refresh_button)
+    root.addLayout(header)
+    self.research_summary = _label('', 'market_research_summary')
+    self.research_summary.hide()
+    root.addWidget(self.research_summary)
+    return header
+
+
+def _build_market_cards(self, root, PanelCard):
+    cards_widget = QWidget()
+    cards = QHBoxLayout(cards_widget)
+    cards.setContentsMargins(0, 0, 0, 0)
+    self.cards = {}
+    for key, title in [
+        ('TAIEX', ui_text('market.__init__.text_6')),
+        ('TX', ui_text('market.__init__.text_7')),
+        ('MXF', ui_text('market.__init__.text_8')),
+        ('TMF', ui_text('market.__init__.text_9')),
+    ]:
+        group = PanelCard(title)
+        layout = group.content_layout()
+        layout.setContentsMargins(8, 8, 8, 6)
+        value = _label(ui_text('market.__init__.text_10'), 'market_card_' + key)
+        layout.addWidget(value)
+        cards.addWidget(group)
+        self.cards[key] = value
+    root.addWidget(cards_widget)
+    return cards_widget
+
+
+def _build_market_diagnostics(self, root):
+    self.source_status = _label(ui_text('market.__init__.text_11'), 'market_source_status')
+    source_row = QHBoxLayout()
+    source_row.addWidget(self.source_status, 1)
+    self.diagnostics_button = _named(QPushButton(ui_text('market.__init__.text_12')), 'market_diagnostics_toggle', ui_text('market.__init__.text_13'))
+    self.diagnostics_button.setCheckable(True)
+    source_row.addWidget(self.diagnostics_button)
+    root.addLayout(source_row)
+    self.diagnostics = _named(QPlainTextEdit(), 'market_diagnostics', ui_text('market.__init__.text_14'))
+    self.diagnostics.setReadOnly(True)
+    self.diagnostics.setMaximumHeight(160)
+    self.diagnostics.hide()
+    self.diagnostics_button.toggled.connect(self._toggle_diagnostics)
+    root.addWidget(self.diagnostics)
+    self.converge_annotations = _named(QCheckBox(ui_text('market.converge_annotations')), 'market_converge_annotations', ui_text('market.converge_annotations'))
+    self.converge_annotations.setToolTip(ui_text('market.converge_annotations_hint'))
+    self.converge_annotations.setChecked(True)
+    self.converge_annotations.hide()
+    self.diagnostics_button.toggled.connect(self.converge_annotations.setVisible)
+    self.converge_annotations.toggled.connect(self._annotation_preferences_changed)
+    self.series_rendered.connect(lambda _: self.refresh_annotations())
+    root.addWidget(self.converge_annotations)
+    return source_row
+
+
+def _build_market_empty_actions(self, root):
+    self.message = _label(ui_text('market.__init__.text_15'), 'market_message')
+    set_status(self.message, 'warning')
+    root.addWidget(self.message)
+    self.empty_actions = QWidget()
+    actions = QHBoxLayout(self.empty_actions)
+    actions.setContentsMargins(0, 0, 0, 0)
+    self.sample_button = _named(QPushButton(ui_text('market.load_sample')), 'market_load_sample', ui_text('market.load_sample'))
+    self.sample_button.setToolTip(ui_text('market.sample_label'))
+    self.sample_button.clicked.connect(self.sample_requested.emit)
+    actions.addWidget(self.sample_button)
+    self.official_button = _named(QPushButton(ui_text('market.download_official')), 'market_download_official', ui_text('market.download_official'))
+    self.official_button.setToolTip(ui_text('market.official_consent'))
+    self.official_button.clicked.connect(self.refresh_requested.emit)
+    actions.addWidget(self.official_button)
+    root.addWidget(self.empty_actions)
+    self.refresh_button.hide()
+
+
+def _build_market_watchlist(self, root):
+    self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+    root.addWidget(self.main_splitter, 1)
+    left = QWidget()
+    left_layout = QVBoxLayout(left)
+    left_layout.setContentsMargins(0, 0, 4, 0)
+    left_layout.addWidget(_label(ui_text('market.__init__.text_16'), 'market_watch_title'))
+    self.search = _named(QLineEdit(), 'market_search', ui_text('market.__init__.text_17'))
+    self.search.setPlaceholderText(ui_text('market.__init__.text_18'))
+    self.search.textChanged.connect(self._filter_catalog)
+    left_layout.addWidget(self.search)
+    self.catalog_combo = _named(QComboBox(), 'market_catalog', ui_text('market.__init__.text_19'))
+    left_layout.addWidget(self.catalog_combo)
+    self.add_button = _named(QPushButton(ui_text('market.__init__.text_20')), 'market_add', ui_text('market.__init__.text_21'))
+    self.add_button.clicked.connect(self._add_watch)
+    left_layout.addWidget(self.add_button)
+    self.watchlist = _named(QListWidget(), 'market_watchlist', ui_text('market.__init__.text_22'))
+    self.watchlist.currentItemChanged.connect(self._watch_selected)
+    left_layout.addWidget(self.watchlist, 1)
+    row = QHBoxLayout()
+    self.remove_button = _named(QPushButton(ui_text('market.__init__.text_23')), 'market_remove', ui_text('market.__init__.text_24'))
+    self.remove_button.clicked.connect(self._remove_watch)
+    row.addWidget(self.remove_button)
+    for text, delta, name in [('↑', -1, 'up'), ('↓', 1, 'down')]:
+        button = _named(QPushButton(text), 'market_watch_' + name, ui_text('market.__init__.text_25') if delta < 0 else ui_text('market.__init__.text_26'))
+        button.clicked.connect(lambda checked=False, d=delta: self._move_watch(d))
+        row.addWidget(button)
+    left_layout.addLayout(row)
+    self.main_splitter.addWidget(left)
+    return left
+
+
+def _build_market_chart(self):
+    center = QWidget()
+    center_layout = QVBoxLayout(center)
+    center_layout.setContentsMargins(4, 0, 4, 0)
+    control = QHBoxLayout()
+    self.contract_combo = _named(QComboBox(), 'market_contract', ui_text('market.__init__.text_27'))
+    self.contract_combo.currentIndexChanged.connect(self._contract_changed)
+    control.addWidget(self.contract_combo, 1)
+    self.timeframe_combo = _named(QComboBox(), 'market_timeframe', ui_text('market.__init__.text_28'))
+    for text, value in zip(
+        (
+            ui_text('market.__init__.text_29'),
+            ui_text('market.__init__.text_30'),
+            ui_text('market.__init__.text_31'),
+            ui_text('market.__init__.text_32'),
+            ui_text('market.__init__.text_33'),
+            ui_text('market.__init__.text_34'),
+            ui_text('market.__init__.text_35'),
+            ui_text('market.__init__.text_36'),
+        ),
+        TIMEFRAMES,
+    ):
+        self.timeframe_combo.addItem(text, value)
+    self.timeframe_combo.setCurrentIndex(6)
+    self.timeframe_combo.currentIndexChanged.connect(self._timeframe_changed)
+    control.addWidget(self.timeframe_combo)
+    center_layout.addLayout(control)
+    self.chart = CandlestickChart()
+    self.chart.setObjectName('market_candles')
+    center_layout.addWidget(self.chart, 1)
+    self.indicator_summary = _label('', 'market_indicator_summary')
+    center_layout.addWidget(self.indicator_summary)
+    self.main_splitter.addWidget(center)
+    return center
+
+
+def _build_market_trading_status(self, source_row, PanelCard):
+    right_scroll = QScrollArea()
+    right_scroll.setWidgetResizable(True)
+    right_scroll.setMinimumWidth(175)
+    right = QWidget()
+    right_layout = QVBoxLayout(right)
+    self.trading_labels = {}
+    state = PanelCard(ui_text('market.__init__.text_37'))
+    state_layout = state.content_layout()
+    for key, title in [
+        ('strategy', ui_text('market.__init__.text_38')),
+        ('paper', ui_text('market.__init__.text_39')),
+        ('risk', ui_text('market.__init__.text_40')),
+    ]:
+        label = _label(ui_text('market.__init__.text_41').format(title), 'market_state_' + key)
+        state_layout.addWidget(label)
+        self.trading_labels[key] = label
+    source_row.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
+    # The help details keep their own copy of the notice (existing help-reachability contract).
+    state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled_detail'))
+    right_layout.addWidget(state)
+    return right_scroll, right, right_layout
+
+
+def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard):
+    group = PanelCard(ui_text('market.__init__.text_43'))
+    grid = QGridLayout()
+    group.content_layout().addLayout(grid)
+    row = 0
+    for key, config in DEFAULT_INDICATORS.items():
+        check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.__init__.text_44').format(key))
+        check.setChecked(config['enabled'])
+        grid.addWidget(check, row, 0, 1, 2)
+        row += 1
+        controls = {}
+        self._indicator_widgets[key] = (check, controls)
+        for param, value in config.items():
+            if param == 'enabled':
+                continue
+            values = value if isinstance(value, list) else [value]
+            for index, number in enumerate(values):
+                spin = QDoubleSpinBox() if param in ('deviations', 'multiplier', 'step', 'maximum', 'percent') else QSpinBox()
+                spin.setRange(
+                    0.01 if param in ('step', 'maximum') else 0.1 if param in ('deviations', 'multiplier', 'percent') else 1,
+                    1 if param in ('step', 'maximum') else 1000,
+                )
+                spin.setValue(number)
+                field = f'{param}_{index}' if isinstance(value, list) else param
+                _named(spin, f'market_{key}_{field}', f'{key} {field}')
+                grid.addWidget(
+                    _label(
+                        (ui_text('market.__init__.text_45').format(str(index + 1)))
+                        if param == 'periods'
+                        else {
+                            'multiplier': ui_text('market.indicator.multiplier'),
+                            'step': ui_text('market.indicator.step'),
+                            'maximum': ui_text('market.indicator.maximum'),
+                            'percent': ui_text('market.indicator.percent'),
+                            'period': ui_text('market.__init__.text_46'),
+                            'fast': ui_text('market.__init__.text_47'),
+                            'slow': ui_text('market.__init__.text_48'),
+                            'signal': ui_text('market.__init__.text_49'),
+                            'k_period': ui_text('market.__init__.text_50'),
+                            'd_period': ui_text('market.__init__.text_51'),
+                            'deviations': ui_text('market.__init__.text_52'),
+                        }[param],
+                        'label_' + key + field,
+                    ),
+                    row,
+                    0,
+                )
+                grid.addWidget(spin, row, 1)
+                row += 1
+                controls[field] = spin
+                spin.valueChanged.connect(self._indicators_changed)
+        check.toggled.connect(self._indicators_changed)
+    right_layout.addWidget(group)
+    right_layout.addWidget(_label(ui_text('market.__init__.text_53'), 'market_vwap_disclosure'))
+    right_layout.addStretch()
+    right_scroll.setWidget(right)
+    self.main_splitter.addWidget(right_scroll)
+
+
+def _build_market_panel_toggle(self, right_scroll, header):
+    # Load this operation-specific dependency only when requested.
+    from PySide6.QtWidgets import QToolButton
+
+    self.right_panel = right_scroll
+    self.panel_toggle = QToolButton()
+    self.panel_toggle.setObjectName('market_panel_toggle')
+    self.panel_toggle.setText(ui_text('market.panel_toggle'))
+    self.panel_toggle.setAccessibleName(ui_text('market.panel_toggle'))
+    self.panel_toggle.setToolTip(ui_text('market.panel_toggle'))
+    self.panel_toggle.setCheckable(True)
+    self.panel_toggle.setChecked(True)
+    self.panel_toggle.toggled.connect(right_scroll.setVisible)
+    header.insertWidget(1, self.panel_toggle)
+    self.main_splitter.setSizes([190, 740, 230])
+    self.main_splitter.setCollapsible(1, False)
+
+
+def _build_market_tables(self, root):
+    self.tables = QTabWidget()
+    self.tables.setMaximumHeight(180)
+    self.tables.setMinimumHeight(95)
+    self.positions_table = self._table(
+        (ui_text('market.__init__.text_54'), ui_text('market.__init__.text_55'), ui_text('market.__init__.text_56')), 'market_positions'
+    )
+    self.orders_table = self._table(
+        (
+            ui_text('market.__init__.text_57'),
+            ui_text('market.__init__.text_58'),
+            ui_text('market.__init__.text_59'),
+            ui_text('market.__init__.text_60'),
+            ui_text('market.__init__.text_61'),
+        ),
+        'market_orders',
+    )
+    self.fills_table = self._table(
+        (
+            ui_text('market.__init__.text_62'),
+            ui_text('market.__init__.text_63'),
+            ui_text('market.__init__.text_64'),
+            ui_text('market.__init__.text_65'),
+            ui_text('market.__init__.text_66'),
+        ),
+        'market_fills',
+    )
+    for title, table in [
+        (ui_text('market.__init__.text_67'), self.positions_table),
+        (ui_text('market.__init__.text_68'), self.orders_table),
+        (ui_text('market.__init__.text_69'), self.fills_table),
+    ]:
+        self.tables.addTab(table, title)
+    root.addWidget(self.tables)
+
+
+def _build_market_workspace(self, root, header, cards_widget, left, center):
+    # Delay workspace chrome until the existing content widgets are built.
+    from desktop_market_workspace import MarketWorkspace
+
+    self.workspace = MarketWorkspace(self, root, header, cards_widget, left, center)
+    # Delay chart follower construction until the workspace menu exists.
+    from desktop_chart_popout import PopoutController
+
+    self.popout = PopoutController(self)

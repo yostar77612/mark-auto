@@ -8,6 +8,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'tests/test_r7_function_lengths.py',
+    'tests/test_r7_characterization.py',
+    'tests/r7_characterization.py',
     'desktop_pages/assistant_manifest.py',
     'quantlab/agent_manifest.py',
     'desktop_pages/assistant_models.py',

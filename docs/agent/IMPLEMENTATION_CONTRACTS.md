@@ -3267,3 +3267,105 @@ scores, baseline PNG/metrics/widget-name fixtures and protected documents have
 empty diffs. No baseline refresh is required. Live trading remains permanently
 disabled; OOS consumption, irreversible budgets and fail-closed gates are
 unchanged.
+
+## S-R7: private stages for desktop composition and rendering
+
+S-R7 is a single refactor-only commit, ordered after S-R2 and before S-R1. The
+characterization base and recorded starting HEAD are
+`8d84b2617855c624d3d1c275fe6fa61583c85a2a` (S-R2). The five target bodies
+at this base match their pre-R2 versions. The base literals were captured by
+running those original sources before comparing the extracted implementation.
+
+`mount_pages` delegates to private registration, construction, alias and state
+copy stages. Their side effects retain their original order, including the
+service update and final signal connections. The comment "Late dispatch
+preserves patching and the shell's single background-job slot." stays with the
+callback lambdas. Lambdas still look up shell methods when called.
+
+Market construction uses module-private build stages, passing the original
+layouts and local widgets between stages. Widget creation, signal wiring, names,
+tab order, accessibility metadata and initial values remain identical. Chart
+painting passes the local painter, font metrics and coordinate functions between
+private stages; it introduces no timer, retained painter, child search, deferred
+deletion or long-lived Qt object. Painter stack counts and four synthetic raster
+fixtures cover empty, bars, indicator/drawing/result layers and paper order
+lines. Native raster hashes are checked on Windows; stack counts and the
+synthetic behavior contracts are platform independent.
+
+Snapshot extraction separates settlement validation, FIFO reconciliation,
+remaining-lot validation and line construction. Its Decimal context, rejection
+sentinels, caught exception types and conservative original-entry price policy
+remain intact. The module function, PageHost field and SharedStateBindings alias
+remain patchable. Refresh extraction keeps dataset, result, history, candidate
+and recovery stages in order, retaining existing error boundaries.
+
+`tests/test_r7_function_lengths.py` checks all five AST spans and every new
+stage's private verb-phrase name and 80-line budget. Running its target budget
+against the base produces five failures (297, 292, 212, 166 and 148 lines). Its
+script entry point emits counts, helper inventories and LF-normalized source
+SHA256 values without importing Qt. `tests/test_r7_characterization.py` pins
+ordered mount assignments/constructions and callback keys as literals, late
+patch dispatch, full-window attributes, public AST names, eight snapshot cases,
+four refresh states, downstream call/error behavior, focus metadata and one
+independently callable stage per target. The synthetic capture support is in
+`tests/r7_characterization.py`; base literals are in
+`tests/fixtures/r7_base.json`. The tests use a fixed clock and confined profile,
+do not show windows or set application style, and add no subprocess or sleep.
+The import-graph and repository-layout tests add only test inventory checks.
+
+Production edits are restricted to desktop_market.py, desktop_charts.py,
+desktop_pages/mount.py, desktop_pages/result_layers.py and
+desktop_pages/views.py. MainWindow, desktop_ui public names, strings, widget-
+name fixture, existing snapshot baselines, G3 sources and
+saved_candidate_pool.py are unchanged. No UI text key or acceptance score
+changes. Live trading remains permanently disabled; fail-closed gates, one-time
+OOS consumption, irreversible budgets, Paper 30-second, smoke 40-second and job
+15-minute limits remain unchanged.
+
+The seven-page 1366x768 offscreen capture has byte-identical before/after PNGs
+and metrics. No baseline fixture refresh is required. The user's final visual
+check remains pending.
+
+### S-R7 AST and source evidence
+
+| Target | Base lines | New lines | Base/new extracted stages | Largest new stage |
+| --- | ---: | ---: | ---: | ---: |
+| desktop_pages/mount.py | 297 | 12 | 0 / 11 | 70 |
+| desktop_market.py | 292 | 41 | 0 / 11 | 57 |
+| desktop_charts.py | 212 | 37 | 0 / 5 | 50 |
+| desktop_pages/result_layers.py | 166 | 47 | 0 / 5 | 48 |
+| desktop_pages/views.py | 148 | 8 | 0 / 5 | 40 |
+
+Stage counts exclude pre-existing nested functions. Source hashes normalize
+checkout line endings to LF (the same convention as the locked-source test).
+
+| Changed production source | SHA256 (UTF-8, LF) |
+| --- | --- |
+| desktop_pages/mount.py | `27e729421f125d88c4acc82f4b52a8459121224eddbbeecef35dcf76e1e2b531` |
+| desktop_market.py | `4a40956d487b4fd87b755f71597c8139dfc539117e813db7d296b31c273e8a3d` |
+| desktop_charts.py | `4212088a0d7cab416b1c371701bc6f6f64d9db98aedbd844fbafd207b13e1fb5` |
+| desktop_pages/result_layers.py | `91ed9b02480db90ba0035e1402914f764f245596d5eb38298b7146a40d3e5ee4` |
+| desktop_pages/views.py | `dcaba54b4e3e0304310134ba48c7ca93153ae355015d3bf91f92b1e69efd0bd9` |
+
+### S-R7 before/after page capture hashes
+
+Both captures use the recorded base above and the extracted source hashes above,
+respectively. Every row has identical before and after bytes.
+
+| Capture | Before SHA256 = after SHA256 |
+| --- | --- |
+| 01_full.png | `d145bbd9d63f220ceca18b611410dd2d2106945454eb97beed78d3064d20e5fd` |
+| 01_viewport.png | `f3a1fcfac026a008d5ba8586ed1a69daee08c0d71f40c457224620d2abe9d42c` |
+| 02_full.png | `1ee8c901d67f93721ddcd6868b777f5e8b673a030b46a26f2f4e532979af2774` |
+| 02_viewport.png | `9f35ba1d5366cf0f9f7756ad872012d955088568dc802d5e9cc66493d3af3612` |
+| 03_full.png | `a8e8a41297642a9902660e8394bb590e9a64445044820dd29c0208ca5f40817d` |
+| 03_viewport.png | `436467e1732bc0af2adaab071bff1da846d541a4cc7d65c6e6e40b95e6f37ca0` |
+| 04_full.png | `a135cc17e18eff2680e7d13af6418cbddca1ce3d4880acb53c97ddeaf7bc0bf1` |
+| 04_viewport.png | `422e973f13e3795bbe826b7e11ea423036f4d1d9143224d7b792aa89721ae793` |
+| 05_full.png | `7267ee0d34523c7681ec8fec4c6123e35349cf601304b25d9a78174233141493` |
+| 05_viewport.png | `cb41461f55d78d4ce078de67b5256575dedba11ea904b711266f07cbeec2eb2e` |
+| 06_full.png | `15d9d437ff2e4b248fa40cea86f0a2fe53ea34117d876cfadefcbb7267f6f4fe` |
+| 06_viewport.png | `2ca64917146f72b6d7a639615740ade715beece21467f6b68fe93649ad721af2` |
+| 07_full.png | `447e166fa4aa152dd6d5921cb849e9445fb5d6a668d3a46c08df24d0324f5b92` |
+| 07_viewport.png | `ee1380c474cc97d1f53948e964a741052637ec082eb6a4ce80cf8d69a6fbe7eb` |
+| metrics.json | `b939266ca7d21be4964d8d90da07181dca1a20e00210fc642b6338e6777c8577` |
