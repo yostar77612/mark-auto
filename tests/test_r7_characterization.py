@@ -569,6 +569,7 @@ WINDOW_ATTRIBUTES = [
     'pick_analysis_original',
     'preview_analysis',
     'privacy',
+    'quick_start',
     'read_analysis',
     'read_logs',
     'reconcile_saved_analysis',

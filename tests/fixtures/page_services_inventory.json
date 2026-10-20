@@ -359,7 +359,7 @@
           "kind": "HostMethod"
         }
       ],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_safe",
@@ -419,7 +419,7 @@
           "kind": "HostMethod"
         }
       ],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_text",
@@ -1218,7 +1218,7 @@
       "name": "strategy_form",
       "page": "strategy_page",
       "attribute": "strategy_form",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "use_candidate_button",
@@ -1602,13 +1602,13 @@
       "name": "_show_account",
       "page": "paper_page",
       "attribute": "_show_account",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_remember_stop",
       "page": "paper_page",
       "attribute": "_remember_stop",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "freeze_paper",
@@ -2730,7 +2730,7 @@
     },
     {
       "file": "tests/test_desktop_ui.py",
-      "line": 293,
+      "line": 295,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
@@ -2939,11 +2939,74 @@
       "receiver": "host"
     },
     {
+      "file": "tests/test_paper_stop_u6.py",
+      "line": 29,
+      "name": "freeze_paper",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_paper_stop_u6.py",
+      "line": 65,
+      "name": "freeze_paper",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_paper_stop_u6.py",
+      "line": 66,
+      "name": "_show_account",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_paper_stop_u6.py",
+      "line": 67,
+      "name": "_remember_stop",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_paper_stop_u6.py",
+      "line": 166,
+      "name": "freeze_paper",
+      "kind": "patch.object",
+      "receiver": "window.paper_page"
+    },
+    {
       "file": "tests/test_paper_tabs_c6.py",
       "line": 213,
       "name": "paper_job",
       "kind": "assignment",
       "receiver": "self.page"
+    },
+    {
+      "file": "tests/test_preferences_u8.py",
+      "line": 109,
+      "name": "strategy_form",
+      "kind": "assignment",
+      "receiver": "window.page_state"
+    },
+    {
+      "file": "tests/test_preferences_u8.py",
+      "line": 153,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "page.host.state"
+    },
+    {
+      "file": "tests/test_preferences_u8.py",
+      "line": 207,
+      "name": "read_logs",
+      "kind": "assignment",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_preferences_u8.py",
+      "line": 208,
+      "name": "market",
+      "kind": "assignment",
+      "receiver": "page"
     },
     {
       "file": "tests/test_primary_sign_in_host.py",
@@ -2958,6 +3021,20 @@
       "name": "run_campaign",
       "kind": "patch.object",
       "receiver": "validate_real_ai"
+    },
+    {
+      "file": "tests/test_quick_start_u3.py",
+      "line": 131,
+      "name": "result_choice",
+      "kind": "assignment",
+      "receiver": "self.host"
+    },
+    {
+      "file": "tests/test_quick_start_u3.py",
+      "line": 195,
+      "name": "result_choice",
+      "kind": "assignment",
+      "receiver": "self.host"
     },
     {
       "file": "tests/test_r7_characterization.py",
