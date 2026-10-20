@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QLineEdit
 
 from desktop_pages.assistant_runtime import ReplyProcess, host_context
 from desktop_pages.assistant_details import MAX_ROWS, TextFold, ToolTimeline, code_blocks, shown_text
+from desktop_pages.assistant_permissions import ResearchPermission, install_menu
 import desktop_privacy as privacy
 from desktop_strings import ui_text
 from quantlab.assistant_chat import ChatDispatcher, fixture_reply
@@ -48,6 +49,11 @@ class AssistantPanel(QWidget):
         self.input.setAccessibleName(ui_text('assistant.input'))
         self.input.setPlaceholderText(ui_text('assistant.hint'))
         layout.addWidget(self.input)
+        self.permissions = ResearchPermission(getattr(host, 'settings', None), self)
+        self.permission_menu = install_menu(layout, self.permissions, 'assistant_research_permission')
+        self.dispatcher.consent = lambda: self.ask_consent()
+        self.permissions.changed.connect(self._permission_changed)
+        self._permission_changed()
         self.send = QPushButton(ui_text('assistant.send'))
         self.send.setAccessibleName(ui_text('assistant.send'))
         layout.addWidget(self.send)
@@ -69,6 +75,9 @@ class AssistantPanel(QWidget):
         self.timer = QTimer(self)
         self.timer.setInterval(50)
         self.timer.timeout.connect(self.poll)
+
+    def _permission_changed(self):
+        self.dispatcher.permission = self.permissions.mode
 
     def _consent(self):
         return (

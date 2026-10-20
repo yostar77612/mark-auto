@@ -15,13 +15,23 @@ class ChatDispatcher:
             raise ValueError
         self.__context = context
         self.__registry = create_registry()
+        self.permission = 'read_only'
+        self.consent = None
 
     @property
     def declarations(self):
         return self.__registry.declarations
 
     def call(self, name, arguments_json):
-        if type(name) is not str or name not in TOOL_NAMES:
+        declaration = self.declarations.get(name) if type(name) is str else None
+        if declaration is None or declaration.get('effect') != 'read' or name not in TOOL_NAMES:
+            # Consent is per attempt, never an executable grant. This release
+            # has no mutation route, even after an explicit dialog approval.
+            if self.permission == 'confirm_each_time' and callable(self.consent):
+                try:
+                    self.consent()
+                except Exception:
+                    pass
             return _refusal()
         return self.__registry.call(name, arguments_json, capabilities=('research.read', 'paper.read'), context=self.__context)
 

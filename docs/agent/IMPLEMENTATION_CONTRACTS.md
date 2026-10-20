@@ -2434,3 +2434,65 @@ credential reader was added. G3 sources, all saved_candidate_pool bytes,
 PROJECT_STATE, optimization plan and ACCEPTANCE remain untouched. No gate,
 budget, OOS rule, timeout or existing test was weakened. Changes remain
 uncommitted; the controller owns the single A2-D5 commit.
+
+### TASK A2-D8: research permission menus and session-only confirmation intent
+
+Initial assessment confirmed the frozen D4/D3 read surface existed without
+permission menus. desktop_pages.assistant_permissions now owns two synchronized
+native QComboBox menus: below the assistant input and inside the existing
+collapsed connection management area. Both say research actions and offer exactly
+read-only and confirm each time through literal desktop_strings catalog keys.
+The accompanying plain-text label explicitly states that confirmation still
+permits only read tools in this release, cannot start research/backtests or
+Walk-forward, save candidates or consume quota, and never enables live trading.
+ChatGPT inference remains unverified and every network call still requires its
+existing separate per-call consent. Offline fixtures remain labelled not real AI.
+
+Restart policy: every new ResearchPermission instance starts read-only, even if
+the saved value is confirm_each_time. Confirmation requires fresh explicit
+selection in the current session. The additive assistant_research_permission
+preference uses the existing SettingsStore, preserves all prior settings and
+does not change any existing schema/key. Missing settings attributes are valid
+for SimpleNamespace hosts. Corrupt/unknown saved values cannot grant anything;
+save failure leaves the session read-only, preserves the original file and
+displays only the B1 agent_tool_refused explanation. Permission changes emit
+the fixed assistant_permission_changed logging event and a normalized mode;
+no settings contents, paths, credentials or exception strings enter that event.
+
+ChatDispatcher checks the current declaration and closed tool name set before
+dispatch. Read-only refuses every non-read/unknown request with the B1 code and
+no handler invocation. Confirm-each-time routes each such attempt through the
+existing Ok/Cancel dialog, with Cancel as default, then still refuses: this
+release deliberately has no executable mutation route. Approval is never saved,
+cached or reused. Registry.resolve/call remain independently read-only, and
+freeze still prohibits late registration. No operator or trade tool is added.
+
+tests/test_assistant_d8.py adds six cheap offline tests. They exercise keyboard
+menu synchronization/accessibility, exact choices and release label, real
+SettingsStore persistence/restart downgrade, corrupt/unknown/legacy state,
+missing attributes, frozen fake-mutation registration and denial with fresh
+dialogs (Cancel and repeated approval), sanitized logging, source/catalog mode
+and AST execution scans. Existing D4 safety oracles run in both modes: every
+callable tool is read-only and frozen; patched backtest/campaign/Walk-forward,
+candidate-save and quota entry points remain untouched; protected saved fixture
+sentinels and the negative control, model-facing payload isolation, inert HTML,
+DPAPI reference isolation and denied consent with zero provider calls all pass.
+
+Local validation: D8 6, unchanged D4 10 and D5 9, import graph 8, hardcoded text
+8, repository layout 9, catalog placeholders 1, inline stylesheet 3, function
+limits 2 and UI operation registry 6 pass. Ruff 0.16.10 check and changed-file
+format check, py -3.11 compilation and quality_gate (zero findings) pass.
+The unchanged terminal, smoke-isolation, history, market and Walk-forward smoke
+modules were attempted; Windows restricted-token temporary-directory ACL
+failures prevent full native smoke verification. Controller smoke/visual checks
+remain necessary; no live inference is claimed verified. GitNexus analyze failed
+with spawn EPERM and its impact query could not find this worktree; no alternative
+graph tool or extension download was used.
+
+All new controls stay in existing collapsed areas; no default-page baseline
+refresh is requested. The widget-name fixture adds only the two permission menu
+names. UI-1 PanelCard/AsyncStatus are absent; the existing page header is retained.
+No new desktop_ui public names, root-level modules, gates, OOS rules, budgets,
+timeouts, scores or existing-test exemptions are introduced. G3 sources, all
+saved_candidate_pool bytes, PROJECT_STATE, optimization plan and ACCEPTANCE have
+empty diffs. Changes remain uncommitted for the controller's single A2-D8 commit.
