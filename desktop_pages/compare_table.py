@@ -1,9 +1,9 @@
 """Saved-result selection and side-by-side presentation; no research operations."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import re
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from desktop_forms import PARAM_LABELS
 from desktop_presentation import display_number, display_status, result_name
 from desktop_strings import ui_text
@@ -21,18 +21,30 @@ def safe_text(value):
 
 
 def saved_row(result, created):
+    # Deferred: the lazy canvas shares safe_text with this table module.
+    from .compare_equity import project_equity
+
     manifest = result.manifest
+    if any(manifest.get(key) not in (None, '', 'is', 'in_sample', 'train') for key in ('partition', 'split', 'sample')):
+        projected = ((), 0)
+    else:
+        projected = project_equity(getattr(result, 'equity', ()))
     spec = manifest.get('strategy', {})
     coverage = manifest.get('dataset_manifest', {}).get('coverage', {})
     dates = [str(coverage.get(key, ''))[:10] for key in ('start', 'end')]
     if not all(dates):
-        dates = [str(row.get('timestamp', row.get('trade_date', '')))[:10] for row in result.equity]
+        dates = [date.fromordinal(day).isoformat() for day, _ in projected[0]]
     metrics = getattr(result, 'metrics', {})
     row = {key: metrics[key] for key in FIELDS if key in metrics}
     if 'trade_count' not in row and 'closed_trades' in metrics:
         row['trade_count'] = metrics['closed_trades']
+    try:
+        name = result_name(result, created)
+    except (TypeError, ValueError, KeyError, AttributeError):
+        name = ui_text('compare.result').format(1)
     row.update(
-        name=result_name(result, created),
+        _overlay=projected,
+        name=name,
         family=display_status(spec.get('family', '')),
         parameters=' / '.join(PARAM_LABELS.get(key, key) + '=' + display_number(value) for key, value in spec.get('parameters', {}).items())
         or ui_text('presentation.result_name.text_2'),
@@ -44,6 +56,8 @@ def saved_row(result, created):
 
 class SavedResultsTable(ResultTable):
     """Keep the legacy QListWidget as a hidden, bidirectional selection adapter."""
+
+    overlay_changed = Signal()
 
     def __init__(self, legacy):
         super().__init__()
@@ -58,6 +72,8 @@ class SavedResultsTable(ResultTable):
         self.set_saved([])
 
     def set_saved(self, records):
+        records = list(records)
+        self._overlay_records = {path: (row.get('name', ''), *row.get('_overlay', ((), 0))) for path, row in records}
         selected = {item.data(Qt.ItemDataRole.UserRole) for item in self.legacy.selectedItems()}
         blocked = self.blockSignals(True)
         try:
@@ -83,6 +99,7 @@ class SavedResultsTable(ResultTable):
             self.setColumnWidth(0, 260)
         finally:
             self.blockSignals(blocked)
+        self.overlay_changed.emit()
 
     def _checked(self, item):
         if item.column() != 0:

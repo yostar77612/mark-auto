@@ -36,9 +36,14 @@ class ComparePage(PageContext, QWidget):
         )
         self.comparison = QPlainTextEdit()
         self.comparison.setReadOnly(True)
-        self._advanced(layout).addWidget(self.comparison)
+        comparison_details = self._advanced(layout)
+        comparison_details.addWidget(self.comparison)
         self.comparison_table = SideBySideTable(self.saved_results_table)
         layout.addWidget(self.comparison_table)
+        # Deferred to keep comparison presentation independent of canvas construction.
+        from .compare_equity import attach_overlay
+
+        attach_overlay(self, comparison_details)
         self.select_button = self._button(layout, ui_text('ui._compare_page.text_4'), 'select_strategy', self.select_strategy)
         self._button(layout, ui_text('ui._compare_page.text_5'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel()

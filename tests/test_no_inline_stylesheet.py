@@ -22,6 +22,10 @@ def stylesheet_calls(source):
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
+    def test_f2_overlay_scanned(self):
+        path = ROOT / 'desktop_pages/compare_equity.py'
+        self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
+
     def test_f1_gap_widget_is_scanned(self):
         path = ROOT / 'desktop_pages/data_gaps.py'
         self.assertTrue(path.is_file())

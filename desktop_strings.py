@@ -2031,3 +2031,18 @@ ZH_TW.update(
         'data.gaps.options': '\u53ef\u884c\u9078\u9805\uff1a\u91cd\u65b0\u4e0b\u8f09\u8a72\u65e5\u8cc7\u6599\uff08\u4f7f\u7528\u65e2\u6709\u66f4\u65b0\u540c\u610f\u6d41\u7a0b\uff09\u3001\u63d0\u4f9b\u7f3a\u6f0f\u6642\u6bb5\u5f8c\u91cd\u65b0\u532f\u5165\u3001\u9078\u64c7\u5176\u4ed6\u7bc4\u570d\u3002',
     }
 )
+
+# F2: saved-result overlay (append-only catalogue extension).
+ZH_TW.update(
+    {
+        'compare.overlay.title': 'Saved in-sample equity and drawdown overlay',
+        'compare.overlay.empty': 'No saved equity to display.',
+        'compare.overlay.equity': 'Equity (rebased)',
+        'compare.overlay.drawdown': 'Drawdown (peak-to-trough fraction)',
+        'compare.overlay.value': '{}: equity {}; drawdown {}',
+        'compare.overlay.legend': '{} {} {}',
+        'compare.overlay.summary': '{} series | {} - {} | {} invalid observations omitted',
+        'compare.overlay.cap': 'Displaying up to {} of {} selected results.',
+        'compare.overlay.normalisation': 'Daily closing in-sample equity; each series rebased to 1.0 at its own first observation (positive initial equity required). Missing dates remain gaps. Left/Right keys inspect dates.',
+    }
+)
