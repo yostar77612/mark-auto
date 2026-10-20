@@ -72,7 +72,7 @@ class AgentReadToolsD3Tests(unittest.TestCase):
 
     def call(self, name, args=None, context=None):
         arguments = {} if name in ('list_saved_results', 'get_paper_positions', 'get_paper_orders') else {'result_id': self.identity}
-        if name == 'compare_results':
+        if name in ('compare_results', 'compare_result_manifests'):
             arguments['other_id'] = self.other
         arguments.update(args or {})
         return tools.READ_REGISTRY.call(name, json.dumps(arguments), capabilities=('research.read', 'paper.read'), context=context or self.context)

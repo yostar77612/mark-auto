@@ -167,7 +167,7 @@ class AssistantD4Tests(unittest.TestCase):
     def test_all_d3_payloads_and_transcript_exclude_protected_values(self):
         for name in TOOL_NAMES:
             arguments = {} if name.startswith('get_paper_') or name == 'list_saved_results' else {'result_id': self.storage.identity}
-            if name == 'compare_results':
+            if name in ('compare_results', 'compare_result_manifests'):
                 arguments['other_id'] = self.storage.other
             raw = self.dispatcher.render_tool(name, json.dumps(arguments))
             assert_no_protected_values(self, json.loads(raw))

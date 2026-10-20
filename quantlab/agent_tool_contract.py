@@ -20,6 +20,7 @@ _SCALAR_SCHEMA = {
         'maximum': {'type': 'integer', 'minimum': 0},
         'minLength': {'type': 'integer', 'minimum': 0},
         'maxLength': {'type': 'integer', 'minimum': 1, 'maximum': 128},
+        'pattern': {'enum': [r'[0-9a-f]{64}']},
     },
 }
 TOOL_SCHEMA = {

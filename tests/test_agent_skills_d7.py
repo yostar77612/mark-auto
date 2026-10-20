@@ -219,7 +219,7 @@ class AgentSkillsD7Tests(unittest.TestCase):
 
         def call(name, args=None, context=None):
             arguments = {} if name in ('list_saved_results', 'get_paper_positions', 'get_paper_orders') else {'result_id': fixture.identity}
-            if name == 'compare_results':
+            if name in ('compare_results', 'compare_result_manifests'):
                 arguments['other_id'] = fixture.other
             arguments.update(args or {})
             return session.call(name, json.dumps(arguments), context=context or fixture.context)

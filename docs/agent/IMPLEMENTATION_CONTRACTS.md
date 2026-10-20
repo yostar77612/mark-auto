@@ -2725,3 +2725,94 @@ and default-page baseline files remain unchanged against starting HEAD. No gate,
 OOS rule, irreversible budget, timeout, score or test exemption changes; live
 trading stays permanently disabled. Changes remain uncommitted for the
 controller to produce exactly one A2-D10 commit.
+
+### TASK A2-D12: saved run manifests and comparison
+
+Assessment: PARTIAL at entry. `quantlab/backtest.py` already embeds the complete
+strategy specification (`strategy`) and its immutable content revision
+(`spec_hash`), dataset identity (`data_hash`, `dataset_manifest` and its hash),
+cost identity (`cost_hash`, `config.costs`, `config.cost_schedule`),
+`engine_version` (`quantlab-event-v1`), engine/source hashes, source commit,
+configuration and seed. ADR 0005 defines the content-hash strategy revision;
+there is no need to introduce a second mutable revision identifier. Existing
+presentation reads result.manifest, and D3 reads strategy/data identity. Only
+dedicated manifest reads, field comparison and human-readable details were
+missing. backtest.py has an empty diff against the starting HEAD.
+
+`get_result_manifest` and `compare_result_manifests` are appended to TOOL_NAMES
+and registered before freeze. Both declare effect `read`, capability
+`research.read`, the existing item/byte caps and closed argument schemas.
+The D1 schema vocabulary adds only the fixed lowercase SHA-256 pattern;
+the checked-in schema remains identical to the runtime contract. Manifest row
+schemas are closed, required and typed; the D3 handler validates them through
+the D1 validator before bounded_return and the frozen registry's envelope
+validation. Unknown IDs return B1 `agent_reference_not_found`; malformed
+hashes are rejected by the input schema before filesystem reads. Existing
+records lacking trusted training evidence return `agent_tool_refused`.
+
+Reads use D3's exact saved envelope, checksum/nested-binding validation and
+host-only TrainingEvidence bound to data_hash. Nothing runs an engine or
+recomputes manifest values. Hash validation is integrity checking, not inference
+or a new run. Historical desktop results have no trusted training evidence:
+the GUI intentionally cannot infer it from labels or current data. They remain
+unavailable until a trusted host supplies evidence; this item adds no bypass.
+
+The positive projection exposes spec_hash, data_hash, cost_hash, engine_version,
+commission_per_side, tax_rate, slippage_ticks, tax_rounding and effective_from,
+including indexed cost schedule entries. Numeric strings and integer values
+retain their saved representation. Free-form strategy IDs, cost-version labels,
+source commits, usernames, paths, credentials, dataset metadata, metrics, raw
+records and partition totals are excluded. Engine versions accept the existing
+quantlab-event-v numeric family; unsupported arbitrary text fails closed.
+Missing optional fields are explicit nulls. Required immutable bindings still
+must pass unchanged validate_result_payload; this item does not relax legacy
+validation. All fields sort lexically, with zero-padded schedule indices.
+Comparison returns both values, `same`/`different` and a per-field
+`non_comparable` warning for differing data_hash, cost_hash or engine_version.
+Warnings never turn a valid comparison into an error. Both tools page through
+the existing bounded_return, with explicit truncation and scoped cursors.
+
+`assistant_manifest.ManifestDetails` lives in the existing collapsed Settings
+maintenance assistant, using the same frozen dispatcher. A refresh lists only
+approved saved IDs (a capped catalog explicitly indicates truncation). Native
+keyboard controls select a result, read its details or compare two results.
+The read-only table displays left/right values together, marks differences
+with text and bold type, and has a next-page button for bounded manifest pages.
+Optional missing values display `not recorded`. All labels use literal ui_text
+keys, QTableWidgetItem paints plain text, and the title uses PlainText. No HTML,
+code execution, provider call, consent bypass or authority is added. Existing
+UI-1 header behavior is retained; PanelCard/AsyncStatus are absent in this lane.
+desktop_ui exports and MainWindow are unchanged; new classes stay below the
+class-size budget. Default-page fixtures are untouched; no baseline refresh is
+requested. The widget-name fixture adds only the eight manifest object names.
+
+Seven new cheap offline D12 tests cover saved verbatim values, closed output
+schemas, frozen read-only surface, input hash rejection, not-found, legacy
+refusal, deterministic comparison, non-comparable warnings, byte/item paging,
+cursor scope, missing optional fields, literal text, keyboard access, bare
+hosts, provider/operator/quota sentinels and protected-data scans with planted
+negative controls. Existing D3/D4 fixture argument builders add the second ID
+for the new compare tool; no assertion is removed or weakened. New modules are
+registered additively in import/layout checks; package scans cover UI text and
+inline styles. Import graph expectations add only the manifest dependency.
+
+Validation: D12 7, D1 11, D3 9, D4 10, D5 9, D6 8, D8 6, D10 11,
+import graph 9, UI text 12, repo layout 13, inline styles 3, placeholders 1,
+function lengths 2 and UI operations registry 6 pass. Ruff 0.16.10 check,
+changed-file format check, Python 3.11 compile and quality_gate (zero findings)
+pass. Repo-wide format check reports only unchanged ADR 0006's documented CRLF
+checkout issue. Unchanged terminal, isolation, history, market and Walk-forward
+smoke modules were attempted and hit restricted-token Windows temporary-folder
+ACL failures; their native subprocess checks and visual QA remain for the
+controller. Live ChatGPT inference remains unverified and was not attempted.
+GitNexus status found no lane index; analyze failed with spawn EPERM and lane
+query/impact reported repository not found. No alternate graph or extension
+download was used. Routing used GitNexus and local work; external research and
+ChatGPT delegation were unnecessary for these repository-owned contracts.
+
+G3 sources, all saved_candidate_pool bytes, result schema/validator,
+PROJECT_STATE, optimization plan, ACCEPTANCE and default-page baselines have
+empty diffs against the starting HEAD. Live trading stays disabled; no operator
+or mutation tool, gate, OOS rule, irreversible budget, timeout, score or test
+exemption changes. Work remains uncommitted for the controller's exactly one
+A2-D12 commit.

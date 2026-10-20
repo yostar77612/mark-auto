@@ -1897,3 +1897,34 @@ ZH_TW.update(
         'assistant.context_usage': 'Context: {0}/{1} ({2}%); provider-reported, unverified',
     }
 )
+
+ZH_TW.update(
+    {
+        'manifest.title': '\u57f7\u884c\u8a18\u9304 / Run manifest (unverified)',
+        'manifest.refresh': '\u5217\u51fa\u5df2\u6388\u6b0a\u7684\u8a13\u7df4\u7d50\u679c / Refresh results',
+        'manifest.left': '\u9078\u53d6\u7d50\u679c / Selected result',
+        'manifest.right': '\u6bd4\u8f03\u7d50\u679c / Other result',
+        'manifest.read': '\u8b80\u53d6\u8a18\u9304 / Read manifest',
+        'manifest.compare': '\u4e26\u6392\u6bd4\u8f03 / Compare manifests',
+        'manifest.field': '\u6b04\u4f4d / Field',
+        'manifest.status': '\u6bd4\u8f03 / Status',
+        'manifest.warning': '\u8b66\u544a / Warning',
+        'manifest.next': '\u4e0b\u4e00\u9801 / Next page',
+        'manifest.not_recorded': '\u672a\u8a18\u9304 (not recorded)',
+        'manifest.same': '\u76f8\u540c (same)',
+        'manifest.different': '* \u4e0d\u540c (different)',
+        'manifest.non_comparable': '\u4e0d\u53ef\u76f4\u63a5\u6bd4\u8f03 (non-comparable; unverified)',
+        'manifest.strategy_revision': '\u7b56\u7565\u4fee\u8a02 / spec_hash',
+        'manifest.data_hash': '\u8cc7\u6599\u8eab\u5206 / data_hash',
+        'manifest.cost_hash': '\u6210\u672c\u8eab\u5206 / cost_hash',
+        'manifest.engine_version': '\u5f15\u64ce\u7248\u672c / engine_version',
+        'manifest.commission': '\u55ae\u908a\u624b\u7e8c\u8cbb / commission_per_side',
+        'manifest.tax_rate': '\u7a05\u7387 / tax_rate',
+        'manifest.slippage': '\u6ed1\u50f9\u8df3\u52d5 / slippage_ticks',
+        'manifest.rounding': '\u7a05\u984d\u6368\u5165 / tax_rounding',
+        'manifest.effective_from': '\u751f\u6548\u65e5 / effective_from',
+        'manifest.schedule': '\u6210\u672c\u6392\u7a0b {0}: {1}',
+        'manifest.truncated': '\u5df2\u622a\u65b7; \u8acb\u8b80\u4e0b\u4e00\u9801 (unverified)',
+        'manifest.catalog_truncated': '\u7d50\u679c\u6e05\u55ae\u5df2\u622a\u65b7; \u5de5\u5177\u53ef\u5206\u9801 (unverified)',
+    }
+)
