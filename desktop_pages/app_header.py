@@ -85,11 +85,16 @@ class AppHeader(QWidget):
         row.addWidget(self.theme)
         row.addStretch(1)
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.refresh)
+        self.timer.timeout.connect(self._tick)
         self.timer.start(1000)
         if isinstance(host, QWidget):
             self._close_watcher = _CloseWatcher(host, self.timer.stop)
         self.refresh()
+
+    def _tick(self):
+        # Hidden strips (and windows that were never shown) have nothing to repaint.
+        if self.isVisible():
+            self.refresh()
 
     def _privacy_changed(self, value):
         state = getattr(self.host, 'privacy', None)
