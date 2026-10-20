@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from PySide6.QtCore import QEvent, QTimer, Qt
+from PySide6.QtCore import QEvent, QObject, QTimer, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QWidget
 
 from desktop_privacy import PrivacyState, enabled
@@ -12,6 +12,23 @@ from desktop_theme import load_appearance
 
 # Set by tools/ui_snapshot.py so raster snapshots do not depend on the wall clock.
 CLOCK_OVERRIDE = None
+
+
+class _CloseWatcher(QObject):
+    """Owned by the watched window (never by the header) so teardown order cannot leave a dangling filter."""
+
+    def __init__(self, window, on_close):
+        super().__init__(window)
+        self._on_close = on_close
+        window.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Close:
+            try:
+                self._on_close()
+            except RuntimeError:  # the header was already destroyed
+                pass
+        return False
 
 
 class AppHeader(QWidget):
@@ -71,7 +88,7 @@ class AppHeader(QWidget):
         self.timer.timeout.connect(self.refresh)
         self.timer.start(1000)
         if isinstance(host, QWidget):
-            host.installEventFilter(self)
+            self._close_watcher = _CloseWatcher(host, self.timer.stop)
         self.refresh()
 
     def _privacy_changed(self, value):
@@ -134,11 +151,6 @@ class AppHeader(QWidget):
         self.privacy_toggle.setChecked(private)
         self.privacy_toggle.blockSignals(False)
         self.theme.setToolTip(ui_text('appearance.theme'))
-
-    def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.Close:
-            self.timer.stop()
-        return super().eventFilter(watched, event)
 
     def closeEvent(self, event):
         self.timer.stop()
