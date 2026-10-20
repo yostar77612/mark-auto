@@ -2562,3 +2562,90 @@ EPERM and the lane query reported repository not found; no other graph tool or
 extension download was used. G3 files, all saved_candidate_pool bytes,
 PROJECT_STATE, optimization plan and ACCEPTANCE have empty diffs. Changes remain
 uncommitted for the controller to create exactly one A2-D9 commit.
+### TASK A2-D6: local skill completion and training-only content references
+
+Initial assessment confirmed D7 SkillLoader and four local docs/skills packages
+were present, but neither slash nor at-sign completion existed. The existing
+collapsed Settings maintenance assistant now owns assistant_completion's inline
+list. Slash at input start lists the four loaded names; whitespace-delimited @
+lists approved saved results and their bound training datasets. Mid-word a/b
+and a@b do not activate either list. Up/Down navigate, Enter/Tab insert only,
+Escape closes, and focus remains/returns to the input. Hidden-widget QTest
+events exercise the same explicit open state. Selection sends nothing and runs
+no skill, model or operator. Skill invocations remain inert prompt text.
+
+SkillLoader.completion_list isolates malformed files, retaining the B1
+agent_tool_refused codes in catalog_errors and the completion accessible
+description. Strict D7 list/read/activate remain atomic and unchanged. Names,
+directory ancestors, reparse points, containment and byte/count bounds are
+validated before reading. The root is still host-registered docs/skills, never
+chosen by input. Missing directories produce an empty list and the B1 code.
+The UI loader uses only READ_REGISTRY; mutation/unknown tool declarations are
+excluded, and skills grant no capabilities or extra tools.
+
+The existing D3 list_saved_results adds optional include_datasets integer 0/1
+(default 0, preserving its original output). Value 1 adds only the content-bound
+data_hash after the same training evidence and saved-content validation. No new
+tool is registered: the complete frozen assistant surface remains exactly nine
+read declarations. Dataset references mean datasets bound to approved saved
+training results, never arbitrary files or current dataset/OOS labels. The
+desktop host still supplies no inferred legacy provenance, so its legacy or
+empty store correctly lists nothing.
+
+Each popup row contains a 12-hex identity plus a fixed catalog one-line summary
+marked unverified, with an accessible name. No saved label, body, metric value,
+trade, equity series, dataset row or quality count enters a row or reference
+expansion. QListWidget and the existing QPlainTextEdit paint literal text.
+At most 20 suggestions are displayed, filtered before slicing. Catalog reads
+are capped at four D3 pages of 50. An incomplete/oversized/invalid catalog fails
+closed rather than resolving a seemingly unique prefix from a partial list.
+
+On explicit submit, @result:hash and @dataset:hash require a unique 12-64 hex
+prefix in a freshly validated D3 catalog. Result resolution calls only D3
+get_backtest_summary; dataset resolution calls only get_data_quality_summary
+for its bound result. Their payload values are discarded. Only the canonical
+full identity and fixed unverified summary can enter the single-prompt request
+or transcript. Unknown, stale, ambiguous or unsupported references return the
+new single-table B1 agent_reference_not_found with no fallback. No saved JSON,
+partition claim, model text or permission selection can create evidence.
+
+Per-call ChatGPT consent precedes even reference resolution on remote submit;
+denial leaves input/transcript intact and reaches no provider. Existing DPAPI,
+single-prompt/no-history, inert model output, copy-only code, read-only tool,
+operator/quota refusal and OOS/holdout protections remain in force. The offline
+fixture still says not real AI, and live inference remains unverified.
+
+Eight cheap tests in test_assistant_d6 cover keyboard insertion without show,
+prefix/count/accessibility, malformed/mutation skills, traversal and reparse
+read confinement, missing catalogs, empty/legacy stores, D3-only resolution,
+stale/protected/ambiguous hashes, protected-value scans with a planted negative
+control, consent denial and summary-only requests. D4 operator/quota and frozen
+registry oracles are also exercised. test_error_catalog_b1 adds the new message
+assertion before the unchanged historical-count and byte-hash assertions;
+this legitimate new text does not relax the historical catalog lock. Module
+inventory assertions and test_import_graph registration are additive, and normal
+CI unittest discovery includes the new test file.
+
+All controls remain inside the existing collapsed assistant. No default-page
+baseline refresh is requested; the widget-name fixture adds only the sorted
+assistant_completions name. Existing header behavior is retained; PanelCard and
+AsyncStatus are absent. desktop_ui exports and MainWindow are unchanged, and
+the new classes remain below the class-size limit.
+
+Validation: D6 8, unchanged D7 10, D3 9, D4 10, D5 9, D8 6, D9 6, B1 8,
+import graph 8, hardcoded UI text 10, repo layout 11, inline styles 3,
+placeholders 1, function budgets 2 and UI operation registry 6 pass. Ruff
+0.16.10 check, changed-file format check, py -3.11 compilation and quality_gate
+(zero findings) pass. Repository-wide format check reports only the known
+unchanged ADR 0006 CRLF checkout issue. The unchanged terminal, isolation,
+history, market and Walk-forward smoke modules were attempted and hit Windows
+restricted-token temporary-directory ACL failures. Native smoke and visual QA
+remain controller checks; no live inference is claimed verified. GitNexus
+analyze failed with spawn EPERM and the lane query reported repository not
+found; no alternate graph or extension download was used.
+
+G3 sources, all saved_candidate_pool bytes, PROJECT_STATE, optimization plan,
+ACCEPTANCE and default-page fixtures have empty diffs against the starting
+HEAD. No live trading, operator/mutation path, gate, OOS rule, budget, timeout,
+score or existing test exemption is added or loosened. Work remains uncommitted
+for the controller's single A2-D6 commit.
