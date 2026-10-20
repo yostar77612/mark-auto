@@ -96,7 +96,7 @@
       "disabled_buttons": [],
       "primary_button_count": 0,
       "subpages": {
-        "策略設定": 545,
+        "策略設定": 547,
         "AI 研究": 502,
         "Walk-forward 驗證": 867
       },
@@ -112,7 +112,7 @@
       "full_width": 1146
     },
     "回測與結果": {
-      "page_height": 1090,
+      "page_height": 1092,
       "visible_input_count": 6,
       "button_count": 4,
       "label_char_count": 91,
@@ -168,7 +168,7 @@
       "full_width": 1146
     },
     "比較與策略選擇": {
-      "page_height": 759,
+      "page_height": 761,
       "visible_input_count": 1,
       "button_count": 7,
       "label_char_count": 45,
@@ -212,7 +212,7 @@
       "full_width": 1146
     },
     "紙上交易與復原": {
-      "page_height": 1377,
+      "page_height": 1379,
       "visible_input_count": 9,
       "button_count": 12,
       "label_char_count": 201,
@@ -349,7 +349,7 @@
       "full_width": 1146
     },
     "設定與備份": {
-      "page_height": 1043,
+      "page_height": 1047,
       "visible_input_count": 6,
       "button_count": 8,
       "label_char_count": 78,
