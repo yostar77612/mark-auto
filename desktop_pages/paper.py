@@ -42,9 +42,20 @@ def stop_exposure_text(account, private=False):
     return '\n'.join(rows)
 
 
+class _StopDialog(QMessageBox):
+    def keyPressEvent(self, event):
+        # QMessageBox normally detects Escape during showEvent. Keep the same
+        # cancel action available to unshown/offscreen keyboard clients.
+        if event.key() == Qt.Key.Key_Escape:
+            self.escapeButton().click()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+
 def stop_dialog(parent, text):
     """Patchable factory; constructing the dialog never executes it."""
-    dialog = QMessageBox(parent)
+    dialog = _StopDialog(parent)
     dialog.setWindowTitle(ui_text('paper.stop.title'))
     dialog.setTextFormat(Qt.TextFormat.PlainText)
     dialog.setText(text)

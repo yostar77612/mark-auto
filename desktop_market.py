@@ -212,7 +212,12 @@ class MarketDashboard(QWidget):
         self.diagnostics_button.setText(ui_text('market._toggle_diagnostics.text_1') if visible else ui_text('market._toggle_diagnostics.text_2'))
 
     def _table(self, headers, name):
-        table = _named(QTableWidget(0, len(headers)), name, name)
+        label = {
+            'market_positions': ui_text('access.market_positions'),
+            'market_orders': ui_text('access.market_orders'),
+            'market_fills': ui_text('access.market_fills'),
+        }[name]
+        table = _named(QTableWidget(0, len(headers)), name, label)
         table.setHorizontalHeaderLabels(headers)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -1200,7 +1205,7 @@ def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
                 )
                 spin.setValue(number)
                 field = f'{param}_{index}' if isinstance(value, list) else param
-                _named(spin, f'market_{key}_{field}', f'{key} {field}')
+                _named(spin, f'market_{key}_{field}', ui_text('access.indicator_parameter').format(key, field))
                 grid.addWidget(
                     _label(
                         (ui_text('market.__init__.text_45').format(str(index + 1)))

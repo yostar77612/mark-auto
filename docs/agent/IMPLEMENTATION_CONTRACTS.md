@@ -4051,3 +4051,67 @@ sidebar handle is the only visible change on a first run: the seven viewport
 baselines were refreshed in a separate fixture-only commit (metrics.json is
 unchanged). MainWindow gains no public name. The item is a single feature commit.
 Automation evidence claims only "not broken". The user's final visual check remains pending.
+
+## TASK X-U10: complete offscreen accessibility walk
+
+The prior walk covered seven hard-coded page positions. CompleteOffscreenWalkTests
+in tests/test_accessibility_walk.py now compares the actual mounted page classes
+and page count with an explicit coverage set. A deliberately mounted extra page
+proves that the guard rejects an omitted page. Settings includes its assistant
+panel. The original accessibility tests and shortcut tests retain their assertions.
+Default unittest discovery includes the new tests; quantlab.yml runs discovery
+with verbose test IDs under its unchanged fifteen-minute limit.
+
+One unshown, offscreen window supplies the audit. Network sockets and job starts
+raise if called. Timers are stopped, disclosures are expanded, paper tabs include
+the lazy timeline, and the chart pop-out is constructed with visible=False.
+The assistant creates a synthetic code fold. The walk covers header privacy,
+theme and job state, palette, notification center, market dock controls, replay,
+quick start, stop/observe/cancel dialog buttons, next-step guidance, and the
+timeline filter. It checks disabled and hidden controls as well as visible ones.
+The complete new walk has an asserted ten-second budget; each added test uses
+bounded widget operations without show(), setStyle(), sleeps, event-pumping
+loops, subprocesses or network. The existing legacy fixture remains separate.
+
+Names are checked against catalog literals and templates, including internal Qt
+editors and popup views; missing names list the widget type and object name.
+NoFocus exceptions have reasons, and repeated logical names have page-specific
+upper bounds and documented context. Composite headers, popup views and editors
+belong to their named owner. The assistant completion list intentionally keeps
+focus in its input, which handles its arrow keys. DisabledHint controls retain
+their names and explanatory tooltip. Privacy-enabled tests check header state,
+masked assistant text and masked position exposure.
+
+Tab traversal is navigation -> current page in visual row order -> header/status
+actions -> notification and cancel actions when enabled and visible. Read-only
+status labels do not add tab stops. QTabWidget's QTabBar focus proxy is traversed
+once: adding the proxy owner again formerly moved its subchain and stranded
+expanded controls. Every page/tab variant now checks membership, uniqueness and
+actual nextInFocusChain order. Coalesced layout callbacks only act while visible;
+there is no recurring polling scan or child-owned filter on a parent window.
+
+Audit fixes are limited to accessibility and keyboard presentation:
+
+- Market tables and indicator parameters use catalog names instead of raw IDs;
+  Qt tab-scroll buttons use catalog names.
+- Lazy timeline popup views, headers and corner selection have catalog names;
+  paper tab names remain available after lazy creation and count updates.
+- The header job label has a catalog accessible name.
+- Mounted buttons accept Enter through their existing click/confirmation path;
+  lazy assistant fold buttons retain native Enter behavior. QTest checks Enter
+  and Space with callbacks blocked, and separately observes disclosure clicks.
+- Escape activates the stop dialog's existing cancel button even before show;
+  palette and notification Escape handlers are exercised directly.
+- The idle cancel tooltip retains its disabled explanation alongside the
+  existing shortcut hint.
+
+New catalog keys occupy one trailing ZH_TW.update block. No widgets, object names,
+menus, modules or stylesheet rules are added and the widget-name fixture is
+unchanged. The navigation list now takes the first Tab stop, so the selected
+navigation row renders in the active selection color: the seven viewport
+baselines and the R7 focus-chain characterization were refreshed in two separate
+fixture-only commits. MainWindow and desktop_ui public names are unchanged. Paper consent and existing confirmations remain required. Live trading
+stays disabled; no order/broker path, protected source, threshold, gate, timeout,
+evaluation-data text or acceptance score changes. The item is a single feature
+commit plus the two fixture-only commits described above.
+Automation evidence claims only "not broken". The user's final visual check remains pending.
