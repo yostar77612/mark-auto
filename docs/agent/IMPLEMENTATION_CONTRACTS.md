@@ -3719,3 +3719,52 @@ include the memory helper. Live trading remains permanently disabled; no order
 path, job dispatch, consent, gate, threshold, budget, timeout, protected source,
 acceptance score or desktop_ui public name changes. The user's final visual
 check remains pending.
+## Round 3 X-U2: compact explanation controls
+
+The strategy question mark is a deliberate QToolButton carrying the unchanged
+ui._strategy_page.text_3 explanation, not residue. No widget is removed and all
+help_* object names remain in the unchanged widget-name fixture. The item is a
+single implementation commit. Existing help.symbol and help.accessible catalog
+keys supply the visible question mark and accessible name; no strings are added.
+
+The help-button factory and its relocation insertion both use left alignment
+without a stretch factor. The factory sets a fixed size policy; the existing
+accessibility pass retains its nonexpanding Minimum policy. Targeted helpButton
+theme rules give these existing controls explicit background, border, hover and
+focus rendering and a compact content width. Other tool buttons are unaffected.
+The appearance stylesheet digest is re-pinned because the stylesheet changed;
+its exact equality assertions are retained.
+
+Offscreen evidence on Windows/PySide6 6.12: the actual strategy explanation
+control, polished in MainWindow, has an original sizeHint of 50 x 21 and geometry
+(9, 81, 982, 21) in a 1000 x 1800 parent layout. With the compact rules and left
+alignment its sizeHint is 33 x 23 and geometry is (9, 81, 33, 23). Geometry was
+assigned directly to the parent layout without showing a window. These structural
+automation checks claim only "not broken"; visual quality remains the user's
+final check.
+
+The new test_help_compact_u2 module checks every page for nonexpanding help
+policies, preservation of all help_* names, and nonempty accessible names and
+tooltips. Strategy assertions cover the <=40 px hint/geometry bound, zero layout
+stretch, left alignment, focus-chain membership, and absence of unnamed or
+unexplained question-mark controls. They run with privacy disabled and enabled;
+the explanation remains exactly the existing catalog text. No account, position,
+amount, evaluation-data text, job action, order path or confirmation is added.
+Existing paper_confirm and other consent controls are unchanged. No timers,
+event filters, deferred deletion or recurring widget discovery are added.
+
+The unchanged accessibility walk and appearance tests pass. Ruff 0.16.10 check
+and format checks, Python 3.11 compileall and tools/quality_gate.py pass. The five
+terminal/isolation/history/market/walk-forward smoke modules encounter existing
+sandbox WinError 5 temporary-directory ACL failures; those runs do not establish
+real-process smoke success. GitNexus has no lane index and analyze fails with
+spawn EPERM; source inspection supplies navigation evidence.
+
+Default help geometry changes affect strategy, backtest, compare, paper and
+settings. Snapshot review is isolated to a separate fixture-only commit for
+02_full.png, 02_viewport.png, 03_full.png, 03_viewport.png, 04_full.png,
+04_viewport.png, 05_full.png, 05_viewport.png, 07_full.png, 07_viewport.png and
+metrics.json under tests/fixtures/desktop_pages_before. This implementation
+preserves all baseline files byte-for-byte. No public desktop_ui name or module
+is added. G3 sources, saved_candidate_pool, PROJECT_STATE, acceptance scores,
+gates, thresholds and timeouts have empty diffs; live trading remains disabled.

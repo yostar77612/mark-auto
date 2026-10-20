@@ -1,6 +1,7 @@
 """Progressive disclosure for page explanations; input values stay untouched."""
 
-from PySide6.QtWidgets import QLabel, QToolButton, QWidget, QVBoxLayout, QPushButton
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QToolButton, QWidget, QVBoxLayout, QPushButton, QSizePolicy
 from desktop_strings import ui_text
 
 
@@ -26,7 +27,9 @@ def help_button(layout, key, text):
     button.setObjectName('help_' + key)
     button.setAccessibleName(ui_text('help.accessible'))
     button.setToolTip(text)
-    layout.addWidget(button)
+    button.setProperty('themePart', 'helpButton')
+    button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+    layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignLeft)
     return button
 
 
@@ -118,7 +121,7 @@ def install_page_help(shell):
                     position = related_layout.indexOf(label)
                     if position >= 0 and hasattr(related_layout, 'insertWidget'):
                         related_layout.removeWidget(button)
-                        related_layout.insertWidget(position + 1, button)
+                        related_layout.insertWidget(position + 1, button, alignment=Qt.AlignmentFlag.AlignLeft)
                     button.setProperty('help_string_key', key)
                     label.hide()
                     shell.help_relocations.append((key, button))

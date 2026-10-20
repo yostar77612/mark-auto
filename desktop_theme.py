@@ -294,6 +294,9 @@ QPushButton[role="danger"] { background: @danger_background@; color: white; bord
 QLabel[prerequisite="true"] { color: @hint_text@; font-size: @font_hint@px; }
 QPushButton:hover { background: @button_hover@; }
 QPushButton:disabled { background: @muted_background@; color: @disabled_text@; }
+QToolButton[themePart="helpButton"] { background: @background@; color: @text@; border: 1px solid @button_border@; border-radius: 4px; padding: 2px 6px; width: 16px; }
+QToolButton[themePart="helpButton"]:hover { background: @button_hover@; }
+QToolButton[themePart="helpButton"]:focus { border-color: @focus_border@; }
 QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: @input_background@; border: 1px solid @input_border@; border-radius: 5px; padding: @space_input@px; selection-background-color: @primary@; }
 QCheckBox { padding: 7px 0; }
 QTableWidget { background:@input_background@; alternate-background-color:@table_alternate@; gridline-color:@table_grid@; selection-background-color:@market_selection@; }
