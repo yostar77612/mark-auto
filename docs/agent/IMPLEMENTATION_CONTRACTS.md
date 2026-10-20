@@ -3369,3 +3369,56 @@ respectively. Every row has identical before and after bytes.
 | 07_full.png | `447e166fa4aa152dd6d5921cb849e9445fb5d6a668d3a46c08df24d0324f5b92` |
 | 07_viewport.png | `ee1380c474cc97d1f53948e964a741052637ec082eb6a4ce80cf8d69a6fbe7eb` |
 | metrics.json | `b939266ca7d21be4964d8d90da07181dca1a20e00210fc642b6338e6777c8577` |
+
+
+### S-R1: page service inventory and stage-1 characterization
+
+R1 delivered a single additive stage-1 item after R2 (`8d84b26`) and R7
+(`71c9112`): inventory, characterization, and a typed declaration.
+`tests/fixtures/page_services_inventory.json` records the ordered 80 service
+entries (66 mount registrations plus 14 MainWindow.page_services entries), 130
+shell aliases, 84 state copies with owning pages, consuming HostMethod and
+callback-read sites, and 127 statically enumerable test patch sites covering 43
+names. The patch-site inventory conservatively includes matching page/helper
+receiver assignments as well as shell patches; receiver expressions identify
+each site.
+`tests/page_services_inventory.py` regenerates it from AST without importing
+the application. `python -m tests.page_services_inventory` writes the fixture.
+Counts were regenerated from the R7 base and match the 66/130 planning counts.
+Mount string-literal registrations remain 66 before and after; all 130 aliases
+remain. Injection, callback replacement, and alias removal were not delivered.
+
+The PageServices public member names are listed in the service inventory. The private opt-in
+`_page_services` factory extends the existing host module; it is not wired into
+MainWindow or page construction. Shell wrappers call getattr at invocation time;
+module wrappers reuse MainWindow.page_services' late global lookup. The
+ui_operations field retains the original UI_OPERATIONS frozenset identity, and
+the private operation-handler mapping retains its keys and function identities.
+No desktop_ui import is introduced into desktop_pages. MainWindow remains 378
+lines and gains no public names. No dependency or lockfile is added.
+
+`tests/test_page_services_r1.py` checks complete AST inventory equality, ordered
+service names and counts, runtime callback key sets and late dispatch. One real
+offscreen MainWindow is reused without show/style or event loops. The
+actual MainWindow/JobManager single-slot gates are exercised with only process
+launch mocked: one start succeeds and the second is refused, with one manager
+start and one launcher call in either service ordering. These tests are mock-
+launch evidence, not a real worker subprocess claim. The existing desktop walk-
+forward terminal, isolation, history and market smoke modules remain the
+separate real-subprocess checks.
+
+MainWindow inherits SharedStateBindings: shell assignment to an inventoried
+StateField also updates page_state, while the owning page's original widget
+attribute remains unchanged. Namespace-only test hosts lack these descriptors;
+their mount-time state copies do not follow later shell assignments. Both base
+behaviors are characterized, including bars/family, refresh_market/import_data
+and method aliases. _busy currently has no page reader; its registered binding
+and typed view are characterized explicitly. PageState contains neither the
+shell nor a shell-bound method. Existing HostMethod declarations, bindings.py,
+mount.py, desktop_ui.py and page bodies retain their behavior and source.
+
+Widget-name and desktop_pages_before fixtures are byte-identical; no baseline
+refresh or UI text change is required. G3 sources and saved_candidate_pool.py,
+PROJECT_STATE, acceptance scores, all existing consumer tests, and timeout
+limits are unchanged. Live trading remains permanently disabled. The import
+registry adds only coverage of the host and new test/helper files.
