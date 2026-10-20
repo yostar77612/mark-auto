@@ -2046,3 +2046,10 @@ ZH_TW.update(
         'compare.overlay.normalisation': 'Daily closing in-sample equity; each series rebased to 1.0 at its own first observation (positive initial equity required). Missing dates remain gaps. Left/Right keys inspect dates.',
     }
 )
+# F3: advisory copy wraps only the shared B1 catalogue.
+ZH_TW.update(
+    {
+        'wf.failure_hint': '\u53ef\u80fd\u539f\u56e0\uff08{0}\uff09\uff1a{1} {2}\uff08\u50c5\u4f9b\u53c3\u8003\uff1b\u4e0d\u6703\u81ea\u52d5\u91cd\u8a66\u3002\uff09',
+        'wf.failure_hint_name': '\u6b65\u9a5f\u8a0a\u606f\u8207\u5931\u6557\u53ef\u80fd\u539f\u56e0',
+    }
+)
