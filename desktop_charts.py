@@ -491,186 +491,11 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             p.end()
             return
         self.last_rendered_bar_count = len(visible)
-        idx = self.crosshair_index if self.crosshair_index is not None else end - 1
-        d = self.bar_details(idx)
-        detail = ui_text('charts.paintEvent.text_5').format(
-            d['time'],
-            self.price_text(d['open']),
-            self.price_text(d['high']),
-            self.price_text(d['low']),
-            self.price_text(d['close']),
-            self.price_text(d['change_text']),
-            d['volume'] if d['volume'] is not None else ui_text('charts.paintEvent.text_4'),
-        ) + (ui_text('charts.paintEvent.text_6') if d['partial'] else '')
-        text(12, 65, fm.elidedText(detail, Qt.TextElideMode.ElideRight, self.width() - 24))
-        low = min(float(b.low) for b in visible)
-        high = max(float(b.high) for b in visible)
-        extras = [float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
-        references = self.visible_reference_lines()
-        extras.extend(float(line.price) for line in references)
-        marker_index = getattr(self, '_marker_index', {})
-        extras.extend(float(m.price) for i in range(start, end) for m in marker_index.get(i, ()) if m.kind == 'fill' and self.layer_visibility['fill'])
-        if extras:
-            low = min(low, min(extras))
-            high = max(high, max(extras))
-        pad = max((high - low) * 0.06, 0.5)
-        low -= pad
-        high += pad
-        low, high = self.paper_orders.price_bounds(self, visible, start, end, references, marker_index, low, high)
-        y = lambda value: r.bottom() - (float(value) - float(low)) / float(high - low) * r.height()
-        step = r.width() / len(visible)
-        x = lambda i: r.left() + (i - start + 0.5) * step
-        p.setPen(QPen(QColor(_theme.chart_color(self, 'grid')), 1))
-        for tick in range(5):
-            value = low + (high - low) * tick / 4
-            yy = y(value)
-            p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
-            p.setPen(self.TEXT)
-            text(r.right() + 6, yy + 4, self.price_text(f'{value:,.2f}'))
-            p.setPen(QColor(_theme.chart_color(self, 'grid')))
-        volume_top = r.bottom() + 30
-        volume_bottom = self.height() * (0.76 if self.panes else 0.91)
-        volume_max = max((b.volume or 0 for b in visible), default=0) or 1
-        for i, b in enumerate(visible, start):
-            color = self.UP if b.close > b.open else self.DOWN if b.close < b.open else QColor(_theme.chart_color(self, 'flat'))
-            p.setPen(QPen(color, 1))
-            p.setBrush(color)
-            p.drawLine(QPointF(x(i), y(b.high)), QPointF(x(i), y(b.low)))
-            p.drawRect(QRectF(x(i) - max(0.7, step * 0.3), min(y(b.open), y(b.close)), max(1, step * 0.6), max(1, abs(y(b.open) - y(b.close)))))
-            if b.volume is not None:
-                vh = (volume_bottom - volume_top) * b.volume / volume_max
-                p.fillRect(QRectF(x(i) - step * 0.3, volume_bottom - vh, max(1, step * 0.6), vh), color)
-        p.setPen(self.TEXT)
-        text(12, volume_top - 5, ui_text('charts.paintEvent.text_7'))
-        self._draw_lines(p, self.overlays, start, end, x, y, r)
-        _paint_drawings(p, self.drawings, self.bars, r, x, y)
-        self.paper_orders.paint(p, r, visible[0].contract_id, y, low, high)
-        legend_x = r.left()
-        for j, label in enumerate(self.overlays):
-            p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))
-            label = fm.elidedText(self._legend_label(label), Qt.TextElideMode.ElideRight, 240)
-            if legend_x + fm.horizontalAdvance(label) > r.right():
-                break
-            text(legend_x, r.top() - 5, label)
-            legend_x += fm.horizontalAdvance(label) + 14
-        for line in references:
-            p.setPen(QPen(QColor(_theme.chart_color(self, 'reference')), 1, Qt.PenStyle.DashLine))
-            yy = y(line.price)
-            if line.snapshot_index is None:
-                p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
-                text(r.left() + 5, yy - 4, f'{line.label} {self.price_text(line.price)}')
-            else:
-                # A short tick at the known event boundary, never a full-history line.
-                xx = x(line.snapshot_index) + step / 2
-                p.drawLine(QPointF(xx - 5, yy), QPointF(xx + 5, yy))
-        snapshots = [line for line in references if line.snapshot_index is not None]
-        if snapshots:
-            caption = ui_text('charts.paintEvent.text_8').format(_display_time(snapshots[0].as_of))
-            policy = ui_text('charts.paintEvent.text_9')
-            labels = [caption] + [
-                (self.price_text(line.price) if _privacy.enabled(self) else ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)))
-                for line in snapshots
-            ]
-            if any(ui_text('charts.paintEvent.text_11') in line.label for line in snapshots):
-                labels.append(policy)
-            width = min(r.width(), max(fm.horizontalAdvance(label) for label in labels) + 12)
-            panel = QRectF(r.left() + 4, r.top() + 4, width, (fm.height() + 2) * len(labels) + 8)
-            panel_color = QColor(_theme.chart_color(self, 'background'))
-            panel_color.setAlpha(225)
-            p.fillRect(panel, panel_color)
-            p.setPen(QColor(_theme.chart_color(self, 'reference')))
-            for index, label in enumerate(labels):
-                text(
-                    panel.left() + 5,
-                    panel.top() + fm.ascent() + 4 + index * (fm.height() + 2),
-                    fm.elidedText(label, Qt.TextElideMode.ElideRight, int(width - 10)),
-                )
-        for i in range(start, end):
-            for marker in marker_index.get(i, ()):
-                if not self.layer_visibility[marker.kind]:
-                    continue
-                xx = x(i)
-                if marker.kind == 'signal':
-                    yy = r.top() + 13
-                    points = [QPointF(xx, yy - 5), QPointF(xx + 5, yy), QPointF(xx, yy + 5), QPointF(xx - 5, yy)]
-                    p.setPen(QColor(_theme.chart_color(self, 'signal')))
-                    p.setBrush(Qt.BrushStyle.NoBrush)
-                else:
-                    yy = y(marker.price)
-                    points = [QPointF(xx, yy - 6), QPointF(xx + 5, yy + 4), QPointF(xx - 5, yy + 4)]
-                    p.setPen(QColor(_theme.chart_color(self, 'fill')))
-                    p.setBrush(QColor(_theme.chart_color(self, 'fill')))
-                p.drawPolygon(QPolygonF(points))
-        if self.panes:
-            pane_top = volume_bottom + 23
-            height = max(10, (self.height() * 0.93 - pane_top) / len(self.panes))
-            for j, (label, seq) in enumerate(self.panes.items()):
-                area = QRectF(r.left(), pane_top + j * height, r.width(), max(8, height - 15))
-                values = [float(v) for v in seq[start:end] if v is not None]
-                lo = min(values) if values else 0
-                hi = max(values) if values else 1
-                histogram = self.pane_styles.get(label) == 'histogram'
-                if histogram:
-                    lo = min(0, lo)
-                    hi = max(0, hi)
-                if hi == lo:
-                    hi += 1
-                    lo -= 1
-                py = lambda v, area=area, lo=lo, hi=hi: area.bottom() - (float(v) - lo) / (hi - lo) * area.height()
-                if histogram:
-                    p.save()
-                    p.setClipRect(area)
-                    for i in range(start, end):
-                        if seq[i] is None:
-                            continue
-                        value = float(seq[i])
-                        baseline = py(0)
-                        yy = py(value)
-                        p.fillRect(
-                            QRectF(x(i) - step * 0.3, min(baseline, yy), max(1, step * 0.6), max(1, abs(baseline - yy))), self.UP if value >= 0 else self.DOWN
-                        )
-                    p.restore()
-                else:
-                    self._draw_lines(p, {label: seq}, start, end, x, py, area)
-                p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_panes else self.TEXT)
-                text(area.left() + 3, area.top() + 10, self._legend_label(label, pane=True))
-        first_time = self.bar_details(start)['time']
-        last_time = self.bar_details(end - 1)['time']
-        footer_detail = ui_text('charts.paintEvent.text_12').format(first_time, last_time)
-        if self.trace:
-            footer_detail += ui_text('charts.paintEvent.text_13').format(self.trace.mode, self.trace.data_hash, self.trace.strategy_hash)
-        if self.crosshair_index is not None and start <= self.crosshair_index < end:
-            xx = x(self.crosshair_index)
-            yy = y(self.bars[self.crosshair_index].close)
-            p.setPen(QPen(QColor(_theme.chart_color(self, 'crosshair')), 1, Qt.PenStyle.DashLine))
-            p.drawLine(QPointF(xx, r.top()), QPointF(xx, volume_bottom))
-            p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
-            marker_text = ' / '.join(
-                ui_text('charts.paintEvent.text_16').format(
-                    ui_text('charts.paintEvent.text_14') if m.kind == 'signal' else ui_text('charts.paintEvent.text_15'), m.label, m.reason
-                )
-                + (
-                    ui_text('charts.paintEvent.text_18').format(
-                        self.price_text(m.price), m.quantity, self.price_text(m.cost) if m.cost is not None else ui_text('charts.paintEvent.text_17')
-                    )
-                    if m.kind == 'fill'
-                    else ui_text('charts.paintEvent.text_20').format(
-                        m.target_position if m.target_position is not None else ui_text('charts.paintEvent.text_19')
-                    )
-                )
-                + (ui_text('charts.paintEvent.text_21').format(_display_time(m.timestamp)) if m.timestamp is not None else ui_text('charts.paintEvent.text_22'))
-                for m in marker_index.get(self.crosshair_index, ())
-            )
-            snapshot_text = '\n'.join(labels) if snapshots else ''
-            self.setToolTip(detail + ('\n' + marker_text if marker_text else '') + ('\n' + snapshot_text if snapshot_text else '') + '\n' + footer_detail)
-        else:
-            self.setToolTip(footer_detail)
-        p.setPen(self.TEXT)
-        for offset, width, label in _footer_items(r.width(), fm, first_time, last_time, self.trace):
-            p.save()
-            p.setClipRect(QRectF(r.left() + offset, self.height() - 12 - fm.ascent(), width, fm.height()))
-            text(r.left() + offset, self.height() - 12, label)
-            p.restore()
+        detail, low, high, references, marker_index, y, step, x = _prepare_chart_geometry(self, p, fm, text, start, end, visible, r)
+        volume_bottom = _paint_chart_bars(self, p, text, start, end, visible, r, low, high, x, y, step)
+        snapshots, labels = _paint_chart_references(self, p, fm, text, references, r, x, y, step)
+        _paint_chart_markers_and_panes(self, p, text, start, end, marker_index, r, x, y, step, volume_bottom)
+        _paint_chart_footer(self, p, fm, text, start, end, r, x, y, volume_bottom, marker_index, detail, snapshots, labels)
         p.end()
 
     def _draw_lines(self, p, series, start, end, x, y, clip):
@@ -688,4 +513,201 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
                 if previous is not None:
                     p.drawLine(previous, point)
                 previous = point
+        p.restore()
+
+
+def _prepare_chart_geometry(self, p, fm, text, start, end, visible, r):
+    idx = self.crosshair_index if self.crosshair_index is not None else end - 1
+    d = self.bar_details(idx)
+    detail = ui_text('charts.paintEvent.text_5').format(
+        d['time'],
+        self.price_text(d['open']),
+        self.price_text(d['high']),
+        self.price_text(d['low']),
+        self.price_text(d['close']),
+        self.price_text(d['change_text']),
+        d['volume'] if d['volume'] is not None else ui_text('charts.paintEvent.text_4'),
+    ) + (ui_text('charts.paintEvent.text_6') if d['partial'] else '')
+    text(12, 65, fm.elidedText(detail, Qt.TextElideMode.ElideRight, self.width() - 24))
+    low = min(float(b.low) for b in visible)
+    high = max(float(b.high) for b in visible)
+    extras = [float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
+    references = self.visible_reference_lines()
+    extras.extend(float(line.price) for line in references)
+    marker_index = getattr(self, '_marker_index', {})
+    extras.extend(float(m.price) for i in range(start, end) for m in marker_index.get(i, ()) if m.kind == 'fill' and self.layer_visibility['fill'])
+    if extras:
+        low = min(low, min(extras))
+        high = max(high, max(extras))
+    pad = max((high - low) * 0.06, 0.5)
+    low -= pad
+    high += pad
+    low, high = self.paper_orders.price_bounds(self, visible, start, end, references, marker_index, low, high)
+    y = lambda value: r.bottom() - (float(value) - float(low)) / float(high - low) * r.height()
+    step = r.width() / len(visible)
+    x = lambda i: r.left() + (i - start + 0.5) * step
+    return detail, low, high, references, marker_index, y, step, x
+
+
+def _paint_chart_bars(self, p, text, start, end, visible, r, low, high, x, y, step):
+    p.setPen(QPen(QColor(_theme.chart_color(self, 'grid')), 1))
+    for tick in range(5):
+        value = low + (high - low) * tick / 4
+        yy = y(value)
+        p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
+        p.setPen(self.TEXT)
+        text(r.right() + 6, yy + 4, self.price_text(f'{value:,.2f}'))
+        p.setPen(QColor(_theme.chart_color(self, 'grid')))
+    volume_top = r.bottom() + 30
+    volume_bottom = self.height() * (0.76 if self.panes else 0.91)
+    volume_max = max((b.volume or 0 for b in visible), default=0) or 1
+    for i, b in enumerate(visible, start):
+        color = self.UP if b.close > b.open else self.DOWN if b.close < b.open else QColor(_theme.chart_color(self, 'flat'))
+        p.setPen(QPen(color, 1))
+        p.setBrush(color)
+        p.drawLine(QPointF(x(i), y(b.high)), QPointF(x(i), y(b.low)))
+        p.drawRect(QRectF(x(i) - max(0.7, step * 0.3), min(y(b.open), y(b.close)), max(1, step * 0.6), max(1, abs(y(b.open) - y(b.close)))))
+        if b.volume is not None:
+            vh = (volume_bottom - volume_top) * b.volume / volume_max
+            p.fillRect(QRectF(x(i) - step * 0.3, volume_bottom - vh, max(1, step * 0.6), vh), color)
+    p.setPen(self.TEXT)
+    text(12, volume_top - 5, ui_text('charts.paintEvent.text_7'))
+    self._draw_lines(p, self.overlays, start, end, x, y, r)
+    _paint_drawings(p, self.drawings, self.bars, r, x, y)
+    self.paper_orders.paint(p, r, visible[0].contract_id, y, low, high)
+    return volume_bottom
+
+
+def _paint_chart_references(self, p, fm, text, references, r, x, y, step):
+    legend_x = r.left()
+    for j, label in enumerate(self.overlays):
+        p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_overlays else QColor(self.COLORS[j % len(self.COLORS)]))
+        label = fm.elidedText(self._legend_label(label), Qt.TextElideMode.ElideRight, 240)
+        if legend_x + fm.horizontalAdvance(label) > r.right():
+            break
+        text(legend_x, r.top() - 5, label)
+        legend_x += fm.horizontalAdvance(label) + 14
+    for line in references:
+        p.setPen(QPen(QColor(_theme.chart_color(self, 'reference')), 1, Qt.PenStyle.DashLine))
+        yy = y(line.price)
+        if line.snapshot_index is None:
+            p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
+            text(r.left() + 5, yy - 4, f'{line.label} {self.price_text(line.price)}')
+        else:
+            # A short tick at the known event boundary, never a full-history line.
+            xx = x(line.snapshot_index) + step / 2
+            p.drawLine(QPointF(xx - 5, yy), QPointF(xx + 5, yy))
+    snapshots = [line for line in references if line.snapshot_index is not None]
+    labels = []
+    if snapshots:
+        caption = ui_text('charts.paintEvent.text_8').format(_display_time(snapshots[0].as_of))
+        policy = ui_text('charts.paintEvent.text_9')
+        labels = [caption] + [
+            (self.price_text(line.price) if _privacy.enabled(self) else ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)))
+            for line in snapshots
+        ]
+        if any(ui_text('charts.paintEvent.text_11') in line.label for line in snapshots):
+            labels.append(policy)
+        width = min(r.width(), max(fm.horizontalAdvance(label) for label in labels) + 12)
+        panel = QRectF(r.left() + 4, r.top() + 4, width, (fm.height() + 2) * len(labels) + 8)
+        panel_color = QColor(_theme.chart_color(self, 'background'))
+        panel_color.setAlpha(225)
+        p.fillRect(panel, panel_color)
+        p.setPen(QColor(_theme.chart_color(self, 'reference')))
+        for index, label in enumerate(labels):
+            text(
+                panel.left() + 5,
+                panel.top() + fm.ascent() + 4 + index * (fm.height() + 2),
+                fm.elidedText(label, Qt.TextElideMode.ElideRight, int(width - 10)),
+            )
+    return snapshots, labels
+
+
+def _paint_chart_markers_and_panes(self, p, text, start, end, marker_index, r, x, y, step, volume_bottom):
+    for i in range(start, end):
+        for marker in marker_index.get(i, ()):
+            if not self.layer_visibility[marker.kind]:
+                continue
+            xx = x(i)
+            if marker.kind == 'signal':
+                yy = r.top() + 13
+                points = [QPointF(xx, yy - 5), QPointF(xx + 5, yy), QPointF(xx, yy + 5), QPointF(xx - 5, yy)]
+                p.setPen(QColor(_theme.chart_color(self, 'signal')))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+            else:
+                yy = y(marker.price)
+                points = [QPointF(xx, yy - 6), QPointF(xx + 5, yy + 4), QPointF(xx - 5, yy + 4)]
+                p.setPen(QColor(_theme.chart_color(self, 'fill')))
+                p.setBrush(QColor(_theme.chart_color(self, 'fill')))
+            p.drawPolygon(QPolygonF(points))
+    if self.panes:
+        pane_top = volume_bottom + 23
+        height = max(10, (self.height() * 0.93 - pane_top) / len(self.panes))
+        for j, (label, seq) in enumerate(self.panes.items()):
+            area = QRectF(r.left(), pane_top + j * height, r.width(), max(8, height - 15))
+            values = [float(v) for v in seq[start:end] if v is not None]
+            lo = min(values) if values else 0
+            hi = max(values) if values else 1
+            histogram = self.pane_styles.get(label) == 'histogram'
+            if histogram:
+                lo = min(0, lo)
+                hi = max(0, hi)
+            if hi == lo:
+                hi += 1
+                lo -= 1
+            py = lambda v, area=area, lo=lo, hi=hi: area.bottom() - (float(v) - lo) / (hi - lo) * area.height()
+            if histogram:
+                p.save()
+                p.setClipRect(area)
+                for i in range(start, end):
+                    if seq[i] is None:
+                        continue
+                    value = float(seq[i])
+                    baseline = py(0)
+                    yy = py(value)
+                    p.fillRect(
+                        QRectF(x(i) - step * 0.3, min(baseline, yy), max(1, step * 0.6), max(1, abs(baseline - yy))), self.UP if value >= 0 else self.DOWN
+                    )
+                p.restore()
+            else:
+                self._draw_lines(p, {label: seq}, start, end, x, py, area)
+            p.setPen(QColor(_theme.chart_color(self, 'muted')) if label in self._unavailable_panes else self.TEXT)
+            text(area.left() + 3, area.top() + 10, self._legend_label(label, pane=True))
+
+
+def _paint_chart_footer(self, p, fm, text, start, end, r, x, y, volume_bottom, marker_index, detail, snapshots, labels):
+    first_time = self.bar_details(start)['time']
+    last_time = self.bar_details(end - 1)['time']
+    footer_detail = ui_text('charts.paintEvent.text_12').format(first_time, last_time)
+    if self.trace:
+        footer_detail += ui_text('charts.paintEvent.text_13').format(self.trace.mode, self.trace.data_hash, self.trace.strategy_hash)
+    if self.crosshair_index is not None and start <= self.crosshair_index < end:
+        xx = x(self.crosshair_index)
+        yy = y(self.bars[self.crosshair_index].close)
+        p.setPen(QPen(QColor(_theme.chart_color(self, 'crosshair')), 1, Qt.PenStyle.DashLine))
+        p.drawLine(QPointF(xx, r.top()), QPointF(xx, volume_bottom))
+        p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
+        marker_text = ' / '.join(
+            ui_text('charts.paintEvent.text_16').format(
+                ui_text('charts.paintEvent.text_14') if m.kind == 'signal' else ui_text('charts.paintEvent.text_15'), m.label, m.reason
+            )
+            + (
+                ui_text('charts.paintEvent.text_18').format(
+                    self.price_text(m.price), m.quantity, self.price_text(m.cost) if m.cost is not None else ui_text('charts.paintEvent.text_17')
+                )
+                if m.kind == 'fill'
+                else ui_text('charts.paintEvent.text_20').format(m.target_position if m.target_position is not None else ui_text('charts.paintEvent.text_19'))
+            )
+            + (ui_text('charts.paintEvent.text_21').format(_display_time(m.timestamp)) if m.timestamp is not None else ui_text('charts.paintEvent.text_22'))
+            for m in marker_index.get(self.crosshair_index, ())
+        )
+        snapshot_text = '\n'.join(labels) if snapshots else ''
+        self.setToolTip(detail + ('\n' + marker_text if marker_text else '') + ('\n' + snapshot_text if snapshot_text else '') + '\n' + footer_detail)
+    else:
+        self.setToolTip(footer_detail)
+    p.setPen(self.TEXT)
+    for offset, width, label in _footer_items(r.width(), fm, first_time, last_time, self.trace):
+        p.save()
+        p.setClipRect(QRectF(r.left() + offset, self.height() - 12 - fm.ascent(), width, fm.height()))
+        text(r.left() + offset, self.height() - 12, label)
         p.restore()

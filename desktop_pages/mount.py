@@ -9,6 +9,20 @@ from .views import ViewCoordinator
 
 
 def mount_pages(shell):
+    _register_shell_callbacks(shell)
+    _mount_widget_tools(shell)
+    _mount_market_page(shell)
+    _mount_data_page(shell)
+    _mount_strategy_page(shell)
+    _copy_strategy_state(shell)
+    _mount_backtest_page(shell)
+    _mount_compare_page(shell)
+    _mount_paper_page(shell)
+    _mount_settings_page(shell)
+    _mount_view_coordinator(shell)
+
+
+def _register_shell_callbacks(shell):
     host = shell.page_host
     # Late dispatch preserves patching and the shell's single background-job slot.
     host.callbacks['_advanced'] = lambda *a, **kw: shell._advanced(*a, **kw)
@@ -78,6 +92,10 @@ def mount_pages(shell):
     host.callbacks['show_chatgpt_sign_in'] = lambda *a, **kw: shell.show_chatgpt_sign_in(*a, **kw)
     host.callbacks['start_job'] = lambda *a, **kw: shell.start_job(*a, **kw)
     host.callbacks.update(shell.page_services())
+
+
+def _mount_widget_tools(shell):
+    host = shell.page_host
     shell.widgets_page = WidgetTools(host)
     shell._button = shell.widgets_page._button
     shell._confirm_button = shell.widgets_page._confirm_button
@@ -87,6 +105,10 @@ def mount_pages(shell):
     shell._payload = shell.widgets_page._payload
     shell._remember = shell.widgets_page._remember
     shell._browse = shell.widgets_page._browse
+
+
+def _mount_market_page(shell):
+    host = shell.page_host
     shell.market_page = MarketPage(host)
     shell.refresh_market = shell.market_page.refresh_market
     shell.save_market_preferences = shell.market_page.save_market_preferences
@@ -98,6 +120,10 @@ def mount_pages(shell):
     host.state.save_market_preferences = shell.save_market_preferences
     host.state.load_market_cache = shell.load_market_cache
     host.state.bind_result_layers = shell.bind_result_layers
+
+
+def _mount_data_page(shell):
+    host = shell.page_host
     shell.data_page = DataPage(host)
     shell.bars = shell.data_page.bars
     shell.calendar_path = shell.data_page.calendar_path
@@ -131,6 +157,10 @@ def mount_pages(shell):
     host.state.import_market_history = shell.import_market_history
     host.state.import_data = shell.import_data
     host.state.download_data = shell.download_data
+
+
+def _mount_strategy_page(shell):
+    host = shell.page_host
     shell.strategy_page = StrategyPage(host)
     shell.campaign_config = shell.strategy_page.campaign_config
     shell.campaign_form = shell.strategy_page.campaign_form
@@ -179,6 +209,10 @@ def mount_pages(shell):
     shell.inspect_candidate = shell.strategy_page.inspect_candidate
     shell.use_candidate = shell.strategy_page.use_candidate
     shell.use_builtin = shell.strategy_page.use_builtin
+
+
+def _copy_strategy_state(shell):
+    host = shell.page_host
     host.state.campaign_config = shell.campaign_config
     host.state.campaign_form = shell.campaign_form
     host.state.candidate_card = shell.candidate_card
@@ -226,6 +260,10 @@ def mount_pages(shell):
     host.state.inspect_candidate = shell.inspect_candidate
     host.state.use_candidate = shell.use_candidate
     host.state.use_builtin = shell.use_builtin
+
+
+def _mount_backtest_page(shell):
+    host = shell.page_host
     shell.backtest_page = BacktestPage(host)
     shell.backtest_form = shell.backtest_page.backtest_form
     shell.batch = shell.backtest_page.batch
@@ -253,6 +291,10 @@ def mount_pages(shell):
     host.state.start_date = shell.start_date
     host.state.run_backtest = shell.run_backtest
     host.state.show_result = shell.show_result
+
+
+def _mount_compare_page(shell):
+    host = shell.page_host
     shell.compare_page = ComparePage(host, shell.strategy_page.analysis_layout)
     shell._analysis_section = shell.compare_page._analysis_section
     shell._invalidate_analysis_preview = shell.compare_page._invalidate_analysis_preview
@@ -269,6 +311,10 @@ def mount_pages(shell):
     shell._analysis_event = shell.compare_page._analysis_event
     shell._refresh_analysis_saved = shell.compare_page._refresh_analysis_saved
     shell.select_strategy = shell.compare_page.select_strategy
+
+
+def _mount_paper_page(shell):
+    host = shell.page_host
     shell.paper_page = PaperPage(host)
     shell.load_form_file = shell.paper_page.load_form_file
     shell.demo_paper_policy = shell.paper_page.demo_paper_policy
@@ -277,6 +323,10 @@ def mount_pages(shell):
     shell._show_account = shell.paper_page._show_account
     shell._remember_stop = shell.paper_page._remember_stop
     shell.freeze_paper = shell.paper_page.freeze_paper
+
+
+def _mount_settings_page(shell):
+    host = shell.page_host
     shell.settings_page = SettingsPage(host)
     shell.auto_restore_chatgpt = shell.settings_page.auto_restore_chatgpt
     shell.show_chatgpt_sign_in = shell.settings_page.show_chatgpt_sign_in
@@ -298,6 +348,10 @@ def mount_pages(shell):
     shell.backup = shell.settings_page.backup
     host.state.chatgpt_panel = shell.chatgpt_panel
     host.state.chatgpt_controller = shell.chatgpt_controller
+
+
+def _mount_view_coordinator(shell):
+    host = shell.page_host
     shell.views_page = ViewCoordinator(host)
     shell.refresh_views = shell.views_page.refresh_views
     host.state.select_button = shell.select_button

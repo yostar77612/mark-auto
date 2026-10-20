@@ -18,6 +18,13 @@ class ViewCoordinator(PageContext):
     def refresh_views(self):
         self._refresh_walk_forward_references()
         self._refresh_analysis_saved()
+        self._refresh_dataset_views()
+        self._refresh_result_choices()
+        history = self._refresh_saved_history()
+        self._refresh_candidate_choices(history)
+        self._restore_active_candidate()
+
+    def _refresh_dataset_views(self):
         path = self.root / 'dataset.json'
         data = None
         if path.exists():
@@ -44,11 +51,14 @@ class ViewCoordinator(PageContext):
         self._dataset_ready = data is not None
         self.load_market_cache()
         if data is not None and self._campaign_data_hash != data.manifest['data_hash']:
+            # Keep this dependency local to the stage that uses it.
             from quantlab.research import demo_campaign_config
 
             self.campaign_form.from_payload(to_dict(demo_campaign_config(data, demo_config())))
             self._campaign_data_hash = data.manifest['data_hash']
         self.run_button.setEnabled(data is not None and not self.jobs.active)
+
+    def _refresh_result_choices(self):
         old = self.result_choice.currentData()
         active = self.root / 'active_result.json'
         if self.last_operation == 'ui_backtest' and active.exists():
@@ -86,6 +96,8 @@ class ViewCoordinator(PageContext):
             self.result_choice.setCurrentIndex(index)
         self.result_choice.blockSignals(False)
         self.show_result()
+
+    def _refresh_saved_history(self):
         selection = self.root / 'selection.json'
         self.selection_status.setText(ui_text('ui.refresh_views.text_7') if selection.exists() else ui_text('ui.refresh_views.text_8'))
         self.selection_status.setToolTip(load_selection(selection)['strategy_hash'] if selection.exists() else '')
@@ -114,6 +126,9 @@ class ViewCoordinator(PageContext):
                 for row in rows
             ]
         )
+        return history
+
+    def _refresh_candidate_choices(self, history):
         selected_analysis = [item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
         self.analysis_candidates.blockSignals(True)
         self.analysis_candidates.clear()
@@ -153,6 +168,8 @@ class ViewCoordinator(PageContext):
         self.candidate_choice.blockSignals(False)
         self.inspect_candidate()
         self.analysis_candidates.blockSignals(False)
+
+    def _restore_active_candidate(self):
         active_candidate = self.root / 'active_candidate.json'
         if self.active_candidate is None and active_candidate.exists():
             reference = self.host.callbacks['read_json'](active_candidate)
