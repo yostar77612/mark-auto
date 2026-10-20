@@ -140,6 +140,7 @@
   "empty_strategy_action",
   "empty_strategy_action_prerequisite",
   "end_date",
+  "error_next_step",
   "evidence_mode",
   "expiry_month",
   "expiry_product",

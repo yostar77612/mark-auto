@@ -9,6 +9,7 @@ from desktop_chatgpt_states import campaign_outcome, outcome_message, outcome_st
 from quantlab.job_stages import normalize_stage
 from quantlab.diagnostics import error_entry
 from .data_gaps import import_event
+from .error_guidance import clear_inline
 
 TERMINAL = frozenset({'result', 'completed', 'success', 'error', 'failed', 'cancelled', 'canceled'})
 SUCCESS = frozenset({'result', 'completed', 'success'})
@@ -68,15 +69,19 @@ class JobProgress(QWidget):
 class JobFeedback:
     """A single terminal packet owns presentation for each submitted job."""
 
-    def __init__(self, widget):
+    def __init__(self, widget, *, guidance_owner=None):
         self.widget = widget
+        self.guidance_owner = guidance_owner
         self.job_id = None
         self.terminal = False
         self.campaign_code = None
+        self.error_code = None
         self.diagnostic_stage = 'unknown'
         self.diagnostic_errors = deque(maxlen=32)
 
     def begin(self, job_id):
+        clear_inline(self.guidance_owner)
+        self.error_code = None
         self.job_id = job_id
         self.terminal = False
         self.campaign_code = None
@@ -102,6 +107,7 @@ class JobFeedback:
         kind = event.get('type')
         self.diagnostic_stage = normalize_stage(event.get('stage', self.diagnostic_stage))
         if kind in ('error', 'failed'):
+            self.error_code = event.get('error_code')
             self.diagnostic_errors.append(error_entry(event))
         if kind not in TERMINAL:
             self.widget.update_event(event)
@@ -124,7 +130,7 @@ class JobFeedback:
 def install_progress(shell, layout):
     widget = JobProgress(shell.cancel_job)
     shell.job_progress = widget
-    shell.job_feedback = JobFeedback(widget)
+    shell.job_feedback = JobFeedback(widget, guidance_owner=shell.page_state)
     shell.page_state.diagnostics_feedback = shell.job_feedback
     shell.progress = widget.bar
     shell.cancel_button = widget.cancel_button

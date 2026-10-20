@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 from desktop_strings import ui_text
 from desktop_theme import set_theme_property
 from quantlab.errors import ERROR_TABLE
+from .error_guidance import with_next_step
 
 
 class AsyncStatus(QWidget):
@@ -15,6 +16,7 @@ class AsyncStatus(QWidget):
         self.host = host if host is not None else parent
         self.setProperty('role', 'asyncStatus')
         self.label = QLabel()
+        self.label.setObjectName('error_next_step')
         self.label.setTextFormat(Qt.TextFormat.PlainText)
         self.label.setWordWrap(True)
         self.action = QPushButton()
@@ -45,6 +47,7 @@ class AsyncStatus(QWidget):
         elif state == 'error':
             entry = ERROR_TABLE.get(error_code) if isinstance(error_code, str) else None
             text = ui_text('async.error').format(error_code, entry.explanation, entry.action) if entry else ui_text('async.error_unknown')
+            text = with_next_step(text, error_code)
             button_text = ui_text('async.retry')
             self._callback = retry if callable(retry) else None
         else:
@@ -65,6 +68,8 @@ class AsyncStatus(QWidget):
         host = self.host if host is None else host
         progress = getattr(host, 'job_progress', None)
         feedback = getattr(host, 'job_feedback', None)
+        if error_code is None:
+            error_code = getattr(feedback, 'error_code', None)
         if getattr(progress, 'running', False):
             self.set_state('loading')
         elif getattr(feedback, 'terminal', False) and error_code is not None:

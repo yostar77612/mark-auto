@@ -3888,3 +3888,49 @@ desktop kill
 button test supplies only a dialog stub and retains its assertions. The item is
 a single commit. Automation evidence claims only "not broken". The user's final
 visual check remains pending.
+
+## TASK X-U7: inline error next steps
+
+`desktop_pages/error_guidance.py` owns the common B1-code to next-step
+catalog-key mapping and the pure `next_step(code)` lookup. Unknown and unmapped
+codes add no text. The existing B1 message remains the prefix; ERROR_TABLE and
+existing catalog values are unchanged. New catalog values occupy one trailing
+ZH_TW.update block and interpolate the existing catalog page names.
+
+Coverage is explicit: missing/empty data uses `history_file_required`,
+`market_data_invalid` or the existing generic `validation_failed`; missing
+calendar and session input uses `history_sessions_required`,
+`history_session_invalid`, `history_date_invalid`, `history_session_limit` or
+`validation_failed`. Invalid parameter ranges, insufficient bars and generic
+form validation use `validation_failed`. Provider unavailability uses
+`network_disabled`, `operation_failed_plan`, `configuration_blocked` and
+`http_transport_failed`. An already-running authorization uses
+`authorization_busy`; the existing general job guard uses `validation_failed`.
+No new error code or exception-text classification is introduced.
+
+The existing WidgetTools button safe/confirmation flow adds a page-local plain
+QLabel on failure and re-raises to the original fixed-message handler. The label
+registry belongs to explicitly supplied page state; the button's supplied layout
+owns the label. JobFeedback receives that same state to clear guidance on a new
+run. Pages never discover the shell through widget ancestry. The label has
+wordWrap, objectName and accessibleName. It is lazy and does not add default-
+page content. Privacy mode neutralizes its message through the existing privacy
+adapter, and exception amounts, account identifiers and paths are never
+displayed. Successful retry and a new job clear the text, accessible name and
+privacy renderer. AsyncStatus reuses its existing label, appending the same
+guidance in error state; JobFeedback retains the failing job's code, resets it
+at begin, and read_job projects it without starting work. Loading and empty
+states replace the error text. The eager AsyncStatus label name is registered
+additively in the sorted widget fixture. Snapshot baselines are unchanged.
+
+`tests/test_error_guidance_u7.py` enumerates every mapped code against B1,
+exercises every B1 code and a bogus code through next_step, pins the unchanged
+ERROR_TABLE source, patches QMessageBox methods to fail during a real typed form
+failure, and covers privacy, reset, job projection, accessibility and
+catalog/module registration. Import-graph checks pin the display dependencies.
+No new button, stylesheet, timer, event filter, deferred deletion or desktop_ui
+public name is introduced. Live trading remains disabled; consent controls,
+order paths, protected sources, gates, thresholds and timeouts are unchanged. No
+evaluation-period data or label is added. The item is a single commit.
+Automation evidence claims only "not broken". The user's final visual check
+remains pending.
