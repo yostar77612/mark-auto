@@ -805,8 +805,9 @@ def _handle_ui_compare(payload, paths, root, *, emit=None, descendants_stopped=F
 
 def _handle_ui_demo(payload, paths, root, *, emit=None, descendants_stopped=False):
     data = synthetic_dataset(payload.get('bars', 960))
-    save_dataset(data, root / 'dataset.json')
-    return {'dataset': str(root / 'dataset.json'), 'source_type': 'synthetic', 'bars': len(data.bars)}
+    destination = root / ('synthetic-demo-dataset.json' if payload.get('synthetic_quick_start') is True else 'dataset.json')
+    save_dataset(data, destination)
+    return {'dataset': str(destination), 'source_type': 'synthetic', 'bars': len(data.bars)}
 
 
 def _handle_ui_disable(payload, paths, root, *, emit=None, descendants_stopped=False):
@@ -1096,6 +1097,13 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
     ):
         raise ValidationError(ui_text('ui.execute_ui_operation.text_2'))
     root = _root(paths)
+    if payload.get('synthetic_quick_start') is True:
+        if operation not in ('ui_demo', 'ui_backtest'):
+            raise ValidationError(ui_text('ui.execute_ui_operation.text_1'))
+        root = root / 'synthetic-quick-start'
+        root.mkdir(exist_ok=True)
+        if operation == 'ui_backtest':
+            payload = {**payload, 'dataset': str(root / 'synthetic-demo-dataset.json')}
     return _UI_OPERATION_HANDLERS[operation](payload, paths, root, emit=emit, descendants_stopped=descendants_stopped)
 
 

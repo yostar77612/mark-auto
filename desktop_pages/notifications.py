@@ -265,12 +265,18 @@ def begin_event(host):
 
 
 def record_event(host, event):
+    quick = getattr(host, 'quick_start', None)
+    if quick is not None:
+        quick.chain.accept(event)
     center = getattr(host, 'notification_center', None)
     if center is not None:
         center.record_event(event)
 
 
 def end_event(host):
+    quick = getattr(host, 'quick_start', None)
+    if quick is not None:
+        quick.tick()
     center = getattr(host, 'notification_center', None)
     if center is not None:
         center.in_event = False

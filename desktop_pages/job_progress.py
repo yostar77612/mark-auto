@@ -151,6 +151,9 @@ def failure_notice(shell, event):
 
 
 def cancel_allowed(shell):
+    quick = getattr(shell, 'quick_start', None)
+    if quick is not None and quick.chain.stage is not None:
+        quick.chain.stop()
     # A queued sign-in continuation still needs the existing abandonment path.
     panel = getattr(shell, 'chatgpt_panel', None)
     pending_sign_in = panel is not None and panel.primary_sign_in_pending
