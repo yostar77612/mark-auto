@@ -19,7 +19,7 @@
       "origin": "mount",
       "variadic": true,
       "consumers": [],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_analysis_request",
@@ -121,7 +121,7 @@
       "origin": "mount",
       "variadic": true,
       "consumers": [],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_chatgpt_open_browser",
@@ -929,7 +929,7 @@
           "kind": "callbacks"
         }
       ],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "load_dataset",
@@ -1278,7 +1278,7 @@
       "name": "walk_forward_results",
       "page": "strategy_page",
       "attribute": "walk_forward_results",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "walk_forward_saved_controls",
@@ -1368,7 +1368,7 @@
       "name": "_walk_forward_event",
       "page": "strategy_page",
       "attribute": "_walk_forward_event",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_family_changed",
@@ -1560,7 +1560,7 @@
       "name": "_analysis_event",
       "page": "compare_page",
       "attribute": "_analysis_event",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "_refresh_analysis_saved",
@@ -1680,7 +1680,7 @@
       "name": "_chatgpt_event",
       "page": "settings_page",
       "attribute": "_chatgpt_event",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "save_settings",
@@ -2232,6 +2232,13 @@
       "receiver": "w"
     },
     {
+      "file": "tests/test_backup_inspection_f5.py",
+      "line": 223,
+      "name": "start_job",
+      "kind": "assignment",
+      "receiver": "self.page"
+    },
+    {
       "file": "tests/test_chart_popout_c10.py",
       "line": 90,
       "name": "market",
@@ -2302,6 +2309,13 @@
       "receiver": "window.widgets_page"
     },
     {
+      "file": "tests/test_compare_equity_f2.py",
+      "line": 121,
+      "name": "start_job",
+      "kind": "assignment",
+      "receiver": "page"
+    },
+    {
       "file": "tests/test_compare_table.py",
       "line": 111,
       "name": "load_result",
@@ -2321,6 +2335,34 @@
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_data_gaps_f1.py",
+      "line": 98,
+      "name": "read_json",
+      "kind": "patch.object",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_data_gaps_f1.py",
+      "line": 101,
+      "name": "write_json",
+      "kind": "patch.object",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_data_gaps_f1.py",
+      "line": 109,
+      "name": "read_json",
+      "kind": "patch.object",
+      "receiver": "desktop_ui"
+    },
+    {
+      "file": "tests/test_data_gaps_f1.py",
+      "line": 112,
+      "name": "write_json",
+      "kind": "patch.object",
+      "receiver": "desktop_ui"
     },
     {
       "file": "tests/test_desktop_analysis.py",
@@ -2771,6 +2813,55 @@
       "receiver": "center.host"
     },
     {
+      "file": "tests/test_notifications_f4.py",
+      "line": 172,
+      "name": "_analysis_event",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 172,
+      "name": "_chatgpt_event",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 172,
+      "name": "_walk_forward_event",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 174,
+      "name": "record_event",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 177,
+      "name": "notify_local",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 178,
+      "name": "freeze_paper",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
+      "file": "tests/test_notifications_f4.py",
+      "line": 216,
+      "name": "_notification_link",
+      "kind": "assignment",
+      "receiver": "host"
+    },
+    {
       "file": "tests/test_onboarding_c2.py",
       "line": 118,
       "name": "result_choice",
@@ -2993,6 +3084,20 @@
       "name": "_text",
       "kind": "setattr",
       "receiver": "host"
+    },
+    {
+      "file": "tests/test_wf_guidance_f3.py",
+      "line": 83,
+      "name": "walk_forward_results",
+      "kind": "assignment",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_wf_guidance_f3.py",
+      "line": 85,
+      "name": "_refresh_walk_forward_references",
+      "kind": "assignment",
+      "receiver": "page"
     },
     {
       "file": "tests/test_wf_wizard.py",
