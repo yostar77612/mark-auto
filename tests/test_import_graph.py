@@ -184,6 +184,7 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+
     def test_paper_timeline_projection_has_no_application_dependencies(self):
         self.assertEqual(import_graph(self.sources)['quantlab.paper_tab_data'], set())
 
