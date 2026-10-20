@@ -3676,3 +3676,46 @@ payload-read prohibition, truncation, both privacy states, sensitive-data
 exclusion, path/file identity invalidation, consent, unchanged job payload and
 completion refresh. Import-graph, layout, UI-string and inline-style inventories
 include the modules. The user's final visual check remains pending.
+
+## F6 - Instrument and timeframe chart memory
+
+F6 is a single commit. Market preferences include an additive chart_state v1
+container keyed by validated instrument identity and timeframe. Existing global
+preferences and legacy settings remain supported. The desktop_chart_memory.py
+projection stores only visible start/count, latest-bar anchoring and allowlisted
+enabled indicator IDs. It retains at most 200 entries in insertion/update order,
+evicts the oldest, bounds each entry, and ignores unknown fields, invalid
+identities, unsupported versions and malformed containers without discarding
+other settings. Invalid, negative, non-integer, non-finite and excessive ranges
+use reset_view; valid ranges clamp to the current bar count. A view ending at
+the last bar follows the newest bars; a historical view retains its start. An
+untouched first view uses the existing reset_view defaults and needs no stored
+override.
+
+Instrument and timeframe transitions capture the outgoing view and restore the
+incoming view after series loading, without a refresh job. Explicit indicator
+enablement edits remain local to each pair. Indicator parameters remain global;
+editing parameters invalidates enabled snapshots for untouched default contexts,
+preserving the existing global preference behavior. Explicitly edited and loaded
+contexts retain their enabled sets. Restore blocks indicator-control signals. No
+data, bars, hashes, manifest, drawing, order-line or annotation payload enters
+the preference store or changes through the memory projection.
+
+The workspace and pop-out share view changes in memory. Interaction and painting
+perform no settings writes. Instrument/timeframe transitions and main-window
+close use the existing atomic settings save path; pop-out close merges view and
+frame position in one atomic settings save, with the existing B1 failure
+handling. No UI text, widgets, object names, styles or default-page baselines
+change. Privacy masking remains in the existing renderers, and unrecognized
+settings content, including OOS/holdout-bearing fixture fields, is excluded from
+the projection.
+
+tests/test_chart_memory_f6.py covers instrument/timeframe and restart round
+trips, default view compatibility, hostile zoom values, clamping, future
+versions, identity and indicator filtering, bounded eviction, data-hash
+equality, privacy states, annotation/order snapshot preservation, latest-bar
+growth, pop-out sharing, save counts and write failure. Module inventories
+include the memory helper. Live trading remains permanently disabled; no order
+path, job dispatch, consent, gate, threshold, budget, timeout, protected source,
+acceptance score or desktop_ui public name changes. The user's final visual
+check remains pending.

@@ -14,6 +14,7 @@ TOUCHED = (
     'tests/test_r7_function_lengths.py',
     'tests/test_r7_characterization.py',
     'tests/r7_characterization.py',
+    'desktop_chart_memory.py',
     'desktop_pages/backup_inspection.py',
     'quantlab/backup_inspection.py',
     'desktop_pages/compare_equity.py',

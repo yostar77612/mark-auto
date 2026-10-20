@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (
 from quantlab.market import MarketSeries, QuoteSnapshot, MarketValidationError
 from quantlab.chart_data import TIMEFRAMES, aggregate_bars
 from quantlab import indicators
+from desktop_chart_memory import ChartMemory
 from desktop_charts import CandlestickChart
 
 DEFAULT_INDICATORS = {
@@ -332,6 +333,7 @@ class MarketDashboard(QWidget):
     def _contract_changed(self, index):
         key = self.contract_combo.itemData(index)
         if key:
+            self._prepare_chart_memory().capture(self, switching=True)
             self._selected = key
             self._render_chart()
             self._render_cards()
@@ -347,6 +349,7 @@ class MarketDashboard(QWidget):
             self.timeframe_combo.blockSignals(False)
             self.message.setText(ui_text('market._timeframe_changed.text_1'))
             return
+        self._prepare_chart_memory().capture(self, switching=True)
         self._timeframe = value
         self._render_chart()
         self.preferences_changed.emit()
@@ -391,6 +394,9 @@ class MarketDashboard(QWidget):
             set_financial_label(label, change)
 
     def _render_chart(self):
+        memory = self._prepare_chart_memory()
+        if memory.active == f'{self._selected}/{self._timeframe}':
+            memory.capture(self)
         item = self._series.get(self._selected)
         self.empty_actions.setVisible(not self._series)
         self.refresh_button.setVisible(bool(self._series))
@@ -423,6 +429,7 @@ class MarketDashboard(QWidget):
             return
         self._display_bars = result.bars
         self.chart.set_series(result.bars, source_label=_friendly_contract(item.instrument.contract_id) + ' · ' + _series_source(item), status_label=status)
+        memory.restore(self)
         warnings = list(provenance.warnings) + list(result.warnings)
         if any(bar.partial for bar in result.bars):
             warnings.insert(0, ui_text('market._render_chart.text_7'))
@@ -477,6 +484,7 @@ class MarketDashboard(QWidget):
             self._restore_indicator_controls()
             self.message.setText(ui_text('market._indicators_changed.text_2').format(self._indicator_failure_text(failures)))
             return
+        self._prepare_chart_memory().indicators_edited(config, self._indicator_config)
         self._indicator_config = config
         self.preferences_changed.emit()
 
@@ -594,6 +602,8 @@ class MarketDashboard(QWidget):
             self.preferences_changed.emit()
 
     def preferences(self):
+        memory = self._prepare_chart_memory()
+        memory.capture(self)
         return {
             'version': 1,
             'watchlist': list(self._watch),
@@ -602,12 +612,18 @@ class MarketDashboard(QWidget):
             'indicators': deepcopy(self._indicator_config),
             'theme': 'dark',
             'converge_annotations': self.converge_annotations.isChecked(),
+            'chart_state': memory.payload(),
         }
+
+    def _prepare_chart_memory(self):
+        if not hasattr(self, '_view_memory'):
+            self._view_memory = ChartMemory(_identity, TIMEFRAMES, DEFAULT_INDICATORS)
+        return self._view_memory
 
     def restore_preferences(self, payload):
         if (
             not isinstance(payload, dict)
-            or set(payload) - {'version', 'watchlist', 'selected', 'timeframe', 'indicators', 'theme', 'converge_annotations'}
+            or set(payload) - {'version', 'watchlist', 'selected', 'timeframe', 'indicators', 'theme', 'converge_annotations', 'chart_state'}
             or type(payload.get('version')) is not int
             or payload.get('version') != 1
         ):
@@ -658,6 +674,7 @@ class MarketDashboard(QWidget):
         self._selected = selected
         self._timeframe = timeframe
         self._indicator_config = config
+        self._view_memory = ChartMemory(_identity, TIMEFRAMES, DEFAULT_INDICATORS, payload.get('chart_state'))
         self._restoring = True
         try:
             self.converge_annotations.setChecked(convergence)
