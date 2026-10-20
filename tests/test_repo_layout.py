@@ -43,6 +43,7 @@ ALLOWED_FILES = {
     'desktop_market.py',
     'desktop_market_layout.py',
     'desktop_market_workspace.py',
+    'desktop_chart_popout.py',
     'desktop_presentation.py',
     'desktop_recovery_smoke.py',
     'desktop_strings.py',

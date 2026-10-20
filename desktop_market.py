@@ -448,6 +448,14 @@ class MarketDashboard(QWidget):
         from desktop_market_workspace import MarketWorkspace
 
         self.workspace = MarketWorkspace(self, root, header, cards_widget, left, center)
+        # Delay chart follower construction until the workspace menu exists.
+        from desktop_chart_popout import PopoutController
+
+        self.popout = PopoutController(self)
+
+    def closeEvent(self, event):
+        self.popout.close()
+        super().closeEvent(event)
 
     def _toggle_diagnostics(self, visible):
         self.diagnostics.setVisible(visible)
@@ -642,6 +650,7 @@ class MarketDashboard(QWidget):
             self._display_bars = ()
             self._apply_indicators()
             self.source_status.setText(ui_text('market._render_chart.text_1').format(' · ' + self._error if self._error else ''))
+            self.chart.display_changed.emit()
             return
         provenance = item.provenance
         # This dashboard consumes historical bar snapshots, never a streaming quote entitlement.
@@ -661,6 +670,7 @@ class MarketDashboard(QWidget):
             self.chart.set_series(())
             self._display_bars = ()
             self.message.setText(error_message('market_data_invalid'))
+            self.chart.display_changed.emit()
             return
         self._display_bars = result.bars
         self.chart.set_series(result.bars, source_label=_friendly_contract(item.instrument.contract_id) + ' · ' + _series_source(item), status_label=status)
@@ -822,6 +832,7 @@ class MarketDashboard(QWidget):
         self.chart.set_overlays(overlays, panes=panes, pane_styles={'MACD histogram 1×': 'histogram'} if 'MACD histogram 1×' in panes else {})
         message = getattr(self, '_indicator_message_base', ui_text('market._apply_indicators.text_6'))
         self.message.setText(message + (ui_text('market._apply_indicators.text_7').format(self._indicator_failure_text(failures)) if failures else ''))
+        self.chart.display_changed.emit()
         return ()
 
     def refresh_annotations(self):
