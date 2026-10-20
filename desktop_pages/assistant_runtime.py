@@ -15,6 +15,7 @@ import time
 from quantlab.agent_read_tools import ReadContext
 from quantlab.agent_tools import _refusal
 from quantlab.desktop_runtime import _WindowsProcessTree
+from desktop_pages.assistant_models import context_usage
 
 
 def host_context(root):
@@ -35,7 +36,7 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
     """Exactly one user-consented call; no conversation or arbitrary host data."""
     if (
         type(request) is not dict
-        or set(request) != {'consent', 'prompt', 'model', 'registration'}
+        or set(request) not in ({'consent', 'prompt', 'model', 'registration'}, {'consent', 'prompt', 'model', 'registration', 'effort', 'efforts'})
         or request['consent'] is not True
         or type(request['prompt']) is not str
         or not 1 <= len(request['prompt'].encode('utf-8')) <= 4096
@@ -43,6 +44,14 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
         or re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request['model']) is None
         or type(request['registration']) is not str
         or not request['registration']
+    ):
+        return _refusal()
+    if 'effort' in request and (
+        type(request['efforts']) is not list
+        or not 1 <= len(request['efforts']) <= 16
+        or any(type(v) is not str or re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', v) is None for v in request['efforts'])
+        or type(request['effort']) is not str
+        or request['effort'] not in request['efforts']
     ):
         return _refusal()
     # Credentials are resolved only by the pinned DPAPI-backed transport in child.
@@ -64,6 +73,8 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
         'stream': True,
     }
     limits = {'deadline': time.monotonic() + 30, 'stall_seconds': 10, 'max_request_bytes': 8192, 'max_response_bytes': 32768}
+    if 'effort' in request:
+        payload['reasoning'] = {'effort': request['effort']}
     parser = SSEParser(max_bytes=32768)
     completed = None
     stream = transport.stream(reference, payload, limits)
@@ -102,6 +113,10 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
         if len(texts) != 1 or not texts[0] or len(texts[0].encode('utf-8')) > 8192:
             return _refusal()
         result = {'ok': True, 'text': texts[0]}
+        # Never infer context occupancy from response token totals or model names.
+        observed = completed.get('context_usage')
+        if context_usage(observed) is not None:
+            result['context_usage'] = {'used': observed['used'], 'limit': observed['limit']}
         if thinking:
             summary = '\n'.join(thinking)
             if len(summary.encode('utf-8')) > 8192:

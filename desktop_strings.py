@@ -1884,3 +1884,16 @@ ZH_TW.update({'tables.tab_count': '{0} [{1}]'})
         'assistant.permission_scope': '逐次確認在本版本仍僅允許唯讀工具；不會啟動回測、研究、Walk-forward、保存候選或使用額度。重新啟動後恢復唯讀；實盤永久停用。ChatGPT 推論未驗證，每次連網仍須明確同意。',
     }
 )
+
+
+ZH_TW.update(
+    {
+        'assistant.model': '\u6a21\u578b (unverified)',
+        'assistant.effort': '\u63a8\u7406\u5f37\u5ea6 (unverified)',
+        'assistant.not_provided': '\u672a\u63d0\u4f9b (not provided)',
+        'assistant.effort_default': '\u9810\u8a2d / unspecified',
+        'assistant.models_empty': '\u672a\u63d0\u4f9b\u6a21\u578b; use the existing consented model refresh (unverified).',
+        'assistant.context_unknown': 'Context: \u672a\u63d0\u4f9b (not provided); provider-reported, unverified',
+        'assistant.context_usage': 'Context: {0}/{1} ({2}%); provider-reported, unverified',
+    }
+)

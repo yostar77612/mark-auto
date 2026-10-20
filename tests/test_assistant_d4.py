@@ -46,7 +46,9 @@ class AssistantD4Tests(unittest.TestCase):
         path.write_text(json.dumps(envelope), encoding='utf-8')
         self.dispatcher = ChatDispatcher(self.storage.context)
         self.worker = SimpleNamespace(active=False, cancel=Mock(), start=Mock(), poll=Mock(return_value=None))
-        self.panel = AssistantPanel(SimpleNamespace(), dispatcher=self.dispatcher, worker=self.worker, consent=lambda: False)
+        # D10 requires current discovery even in the consent/keyboard fixture.
+        host = SimpleNamespace(chatgpt_controller=SimpleNamespace(models=('fixture-model',), model_labels=()))
+        self.panel = AssistantPanel(host, dispatcher=self.dispatcher, worker=self.worker, consent=lambda: False)
         self.addCleanup(self.panel.deleteLater)
 
     def test_exact_frozen_read_surface_and_unknown_names_never_dispatch(self):
