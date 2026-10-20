@@ -22,6 +22,10 @@ def stylesheet_calls(source):
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
+    def test_f5_backup_inspection_scanned(self):
+        path = ROOT / 'desktop_pages/backup_inspection.py'
+        self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
+
     def test_f2_overlay_scanned(self):
         path = ROOT / 'desktop_pages/compare_equity.py'
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])

@@ -76,13 +76,18 @@ def build_settings(page, layout):
     page.backup_toggle, page.backup_advanced, controls = collapsed(backup, 'settings.backup_advanced')
     page.backup_path = page._text(controls, ui_text('ui._settings_page.text_11'))
     page._button(controls, ui_text('ui._settings_page.text_12'), 'create_backup', lambda: page.backup(False))
-    page.restore_confirm = QCheckBox(ui_text('ui._settings_page.text_13'))
-    controls.addWidget(page.restore_confirm)
-    page._button(controls, ui_text('ui._settings_page.text_14'), 'restore_backup', lambda: page.backup(True), role='danger')
-    # Load backup controls only when settings are mounted.
+    # Inspection reads metadata only and stays inside the collapsed backup area.
+    from .backup_inspection import BackupInspectionPanel
+
+    # Load the existing scheduling controls only when settings are mounted.
     from desktop_automatic_backup import AutomaticBackupPanel
 
     page.automatic_backup_panel = AutomaticBackupPanel(page)
+    page.backup_inspection_panel = BackupInspectionPanel(page)
+    controls.addWidget(page.backup_inspection_panel)
+    page.restore_confirm = QCheckBox(ui_text('ui._settings_page.text_13'))
+    controls.addWidget(page.restore_confirm)
+    page._button(controls, ui_text('ui._settings_page.text_14'), 'restore_backup', lambda: page.backup(True), role='danger')
     controls.addWidget(page.automatic_backup_panel)
     page._button(controls, ui_text('settings.open_backup'), '', lambda: open_folder(page.automatic_backup_panel.directory.text() or page.paths.root))
     # Resolve the installed package version when rendering settings.

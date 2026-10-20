@@ -3630,3 +3630,49 @@ closed validation, gates, timeouts, protected sources, desktop_ui public names,
 PROJECT_STATE and acceptance scores are unchanged. Existing tests and default-
 page snapshots remain unchanged; no baseline fixture refresh is needed. The
 user's final visual check remains pending.
+
+## F5 - Read-only backup metadata and restore preview
+
+F5 is a single commit. The collapsed Settings backup section displays the latest
+archive modification time in local time and its stat size in human units. The
+new quantlab/backup_inspection.py reader bounds state JSON reads to 64 KiB and
+uses archive file metadata only for time and size. Missing, moved, absent or
+corrupt state/archive metadata produces an unavailable placeholder. Manual
+backup completions supply session metadata; automatic completions refresh the
+existing durable last_archive state after scheduler completion.
+
+The new desktop_pages/backup_inspection.py panel provides synchronous read-only
+ZIP central-directory inspection before restore. Reads are limited to the
+22-byte EOCD and at most 4 MiB of central metadata; member payloads, including
+the manifest body, are never opened or decompressed. The summary reports member
+count, manifest presence, fixed allowlisted product entry names, suppressed name
+count and truncation beyond 50 entries. Arbitrary names and member content never
+enter widgets, including credential and OOS/holdout-bearing fixtures. ZIP64,
+comments, multidisk, excessive member counts, duplicate names, unsafe paths,
+links, encrypted members and malformed central metadata fail closed with the
+sole B1 validation_failed code. Preview is structural inspection; full manifest,
+CRC and content validation remains in the unchanged restore worker.
+
+Preview performs no writes, extraction, jobs or thread creation. Preview is
+optional and purely informational; it does not change restore preconditions,
+button enablement or the existing call sequence. Restore retains the existing
+restore_confirm consent and default-No danger confirmation. Recovery
+restrictions still apply. Dispatch remains ui_backup_restore with the unchanged
+path payload. Consent resets after dispatch; path changes and job completion
+invalidate previews. The existing automatic scheduling, claim_due, watermark,
+gate validation and timeouts are unchanged. Live trading remains permanently
+disabled and no order path is added. Protected sources and desktop_ui public
+names are unchanged.
+
+Privacy toggles mask time, size, entry names and the selected-path editor. Local
+time formatting is an injected presentation helper. All new prose uses literal
+ui_text keys in a new trailing ZH_TW.update block. The preview button uses the
+existing explicit secondary QPushButton theme rules. Widget names are additive
+and sorted; no default-page baseline or theme digest changes.
+
+tests/test_backup_inspection_f5.py covers bounded reads, fixed time formatting,
+placeholder fallbacks, traversal and corrupt archives, directory hash equality,
+payload-read prohibition, truncation, both privacy states, sensitive-data
+exclusion, path/file identity invalidation, consent, unchanged job payload and
+completion refresh. Import-graph, layout, UI-string and inline-style inventories
+include the modules. The user's final visual check remains pending.
