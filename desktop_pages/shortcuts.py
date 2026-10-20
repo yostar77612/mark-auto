@@ -3,9 +3,13 @@
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QPushButton
 from desktop_strings import ui_text
+from .command_palette import CommandPalette
 
 
 def install_shortcuts(window):
+    window.command_palette = CommandPalette(window, lambda: refresh_current_page(window))
+    window.palette_shortcut = QShortcut(QKeySequence('Ctrl+K'), window)
+    window.palette_shortcut.activated.connect(window.command_palette.toggle)
     window.page_shortcuts = []
     for index in range(window.navigation.count()):
         shortcut = QShortcut(QKeySequence('Ctrl+' + str(index + 1)), window)
@@ -17,7 +21,9 @@ def install_shortcuts(window):
     window.refresh_shortcut = QShortcut(QKeySequence('F5'), window)
     window.refresh_shortcut.activated.connect(lambda: refresh_current_page(window))
     window.cancel_shortcut = QShortcut(QKeySequence('Esc'), window)
-    window.cancel_shortcut.activated.connect(lambda: window.cancel_job() if window.jobs.active else None)
+    window.cancel_shortcut.activated.connect(
+        lambda: window.command_palette.hide() if window.command_palette._opened else window.cancel_job() if window.jobs.active else None
+    )
     window.cancel_button.setToolTip(ui_text('keyboard.cancel'))
     window.market.refresh_button.setToolTip(ui_text('keyboard.refresh'))
     log_button = window.findChild(QPushButton, 'read_logs')

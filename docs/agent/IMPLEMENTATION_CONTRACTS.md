@@ -2955,3 +2955,63 @@ hit temp-directory ACL errors and their existing Windows skips inside the
 sandbox; the controller ran them outside it and they pass. The new root module is
 tracked, so the tracked-root layout test passes. The item is a single C10 commit.
 Multi-monitor visual behaviour remains PENDING USER FINAL CONFIRMATION.
+## U2-C7: keyboard command palette (2026-10-20)
+
+Entry points: desktop_pages.shortcuts.install_shortcuts owns the unique Ctrl+K
+QShortcut and one reusable CommandPalette popup. palette_commands.command_table
+is a pure immutable metadata table (ids, literal catalog keys, localized labels,
+ASCII aliases, handler names and page rows), with no Qt or provider imports.
+The popup is a hidden-by-default window-owned QWidget, never a modal exec loop.
+It has no timers, event filters, deferred deletion, recent-command storage or
+data/credential/catalog lookup. Child editors hold explicit palette references;
+they never discover a shell through parentWidget/window calls.
+
+Invariants: the closed 13-command allow-list contains seven page jumps, existing
+refresh_current_page, active-job-only cancel_job, the existing header theme combo
+and PrivacyState checkbox, and two focus-only actions. Import/backtest actions
+navigate then focus the existing import_data/run_backtest buttons; they never
+click a button, invoke a job or replace its confirmation/validation connection.
+No instrument command is offered. No order, replay, restore, lock, kill, analysis,
+sign-in, provider, quota or walk-forward command is registered. Labels contain
+only catalog text, never account/cash/private symbols or research data. Existing
+theme/privacy handlers retain their existing settings behavior; the palette
+itself persists nothing. Live trading remains permanently disabled.
+
+Keyboard behavior: case-insensitive localized-label/ASCII-alias substring search,
+stable empty-query order, disabled idle cancellation with catalog reason, disabled
+empty-result row, Up/Down selection, Enter dispatch, explicit filter/list Tab
+order, Esc/Ctrl+K close and prior-focus restoration. The popup closes before
+dispatch; repeated Enter and absent selections do nothing. All command targets
+are resolved again at execution and idle cancellation is rechecked. Missing
+optional host targets are omitted, including on a bare SimpleNamespace. Labels
+use PlainText; list items use Qt's plain-text delegate and accessible text roles.
+Every new control has a catalog accessible name and additive inventory entry.
+Ctrl+1..7, F5 and idle/active Esc behavior remain covered by unchanged tests.
+
+Evidence: tests/test_command_palette_c7.py adds cheap offscreen keyboard, pure
+table, exact allow-list, delegation counts, disabled/empty/repeated activation,
+focus/lifetime, literal markup, privacy and actual-window tests. Actual-window
+tests patch the existing button guard to decline and assert zero job starts,
+consent dialogs, connection requests, generation, analysis and HTTP transport
+entries after every command. They also scan confined settings for sentinels.
+No new test calls window.show, QApplication.setStyle, network or subprocesses.
+Package modules are included in import, text, stylesheet and layout guards.
+
+No default-page baseline or screenshot fixture is changed; no controller fixture
+refresh is required for C7. The widget-name fixture only gains the four new names.
+MainWindow/public exports and page classes are unchanged. Protected G3 files,
+saved_candidate_pool, gates, thresholds, timeouts, PROJECT_STATE, optimization
+plan and ACCEPTANCE scores (230/300) retain empty diffs. Changes stay uncommitted
+for the controller. Offscreen unit evidence is distinct from real desktop smoke:
+the required smoke modules were attempted but encounter sandbox temporary-dir ACL
+errors/environment skips, so controller reruns remain necessary. No visual or
+real-broker verification is claimed; the user's final visual check is pending.
+
+Local validation: all 13 C7 tests pass, as do unchanged shortcuts, header C1,
+async C4, panel C3, accessibility walk, desktop theme and UI operations/public-name
+tests. Catalog, import, hardcoded-text, inline-style and layout checks pass.
+Ruff 0.16.10 check and changed-file format --check, Python 3.11 compile and
+tools/quality_gate.py (zero findings) pass. Desktop pages' three structural
+tests pass; its interaction tests and desktop_ui encounter the sandbox ACL
+errors above. GitNexus analyze fails with spawn EPERM; the server has no lane-ui2
+index, so direct source inspection/runtime tests supply local navigation evidence.

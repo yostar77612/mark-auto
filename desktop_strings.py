@@ -1960,3 +1960,28 @@ ZH_TW.update(
         'workspace.name': '\u7248\u9762\u540d\u7a31\uff081-64 \u5b57\u5143\uff09',
     }
 )
+ZH_TW.update(
+    {
+        'palette.title': '\u547d\u4ee4\u9762\u677f',
+        'palette.placeholder': '\u641c\u5c0b\u547d\u4ee4',
+        'palette.results': '\u547d\u4ee4\u7d50\u679c',
+        'palette.empty': '\u6c92\u6709\u7b26\u5408\u7684\u547d\u4ee4',
+        'palette.hint': '\u4e0a/\u4e0b\u9078\u64c7\uff1bEnter \u57f7\u884c\uff1bEsc / Ctrl+K \u95dc\u9589\uff1bTab \u5207\u63db\u63a7\u5236',
+        'palette.unavailable': '{0}\uff08\u76ee\u524d\u6c92\u6709\u9032\u884c\u4e2d\u7684\u5de5\u4f5c\uff09',
+        'palette.prerequisite': '{0}\uff08\u8acb\u5148\u5b8c\u6210\u539f\u9801\u9762\u7684\u524d\u7f6e\u689d\u4ef6\uff09',
+        'palette.cmd.data': '\u8cc7\u6599\u532f\u5165',
+        'palette.cmd.strategy': 'AI \u7b56\u7565\u4e2d\u5fc3',
+        'palette.cmd.backtest': '\u56de\u6e2c',
+        'palette.cmd.compare': '\u7d50\u679c\u6bd4\u8f03',
+        'palette.cmd.paper': '\u7d19\u4e0a\u4ea4\u6613\u8207\u5fa9\u539f',
+        'palette.cmd.market': '\u5e02\u5834\u7e3d\u89bd',
+        'palette.cmd.settings': '\u8a2d\u5b9a',
+        'palette.cmd.refresh': '\u91cd\u65b0\u6574\u7406\u76ee\u524d\u9801\u9762',
+        'palette.cmd.cancel': '\u53d6\u6d88\u9032\u884c\u4e2d\u7684\u5de5\u4f5c',
+        'palette.cmd.theme': '\u5207\u63db\u4e3b\u984c',
+        'palette.cmd.privacy': '\u5207\u63db\u96b1\u79c1\u6a21\u5f0f',
+        'palette.cmd.import': '\u524d\u5f80\u532f\u5165\u8cc7\u6599\u6309\u9215',
+        'palette.cmd.run': '\u524d\u5f80\u958b\u59cb\u56de\u6e2c\u6309\u9215',
+    }
+)
+ZH_TW['keyboard.help'] += '\uff1bCtrl+K \u958b\u555f\u547d\u4ee4\u9762\u677f\u3002'
