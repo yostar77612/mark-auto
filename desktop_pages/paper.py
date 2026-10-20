@@ -1,6 +1,9 @@
 """Paper account presentation and consent-preserving paper actions."""
 
 from desktop_theme import set_status, status_for_color
+import desktop_privacy as privacy
+from decimal import Decimal
+from PySide6.QtCore import Qt
 from desktop_strings import ui_text
 from desktop_timeinput import DateInput
 from pathlib import Path
@@ -9,7 +12,7 @@ import json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json, write_json, load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog, QMessageBox
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
@@ -18,6 +21,42 @@ from quantlab.paper_tab_data import account_counts
 from .paper_tabs import build_tabs, refresh_tables
 from .replay_controls import ReplayControls
 from .widgets import PanelCard
+
+
+def stop_exposure_text(account, private=False):
+    """Format signed snapshot quantities as gross contract exposure, without I/O."""
+    rows = []
+    total = Decimal(0)
+    for symbol, raw in sorted((account.get('positions') or {}).items()):
+        quantity = Decimal(str(raw))
+        if not quantity:
+            continue
+        total += abs(quantity)
+        side = ui_text('paper.stop.long') if quantity > 0 else ui_text('paper.stop.short')
+        shown = privacy.mask_money(None) if private else display_number(abs(quantity))
+        rows.append(ui_text('paper.stop.position').format(symbol, side, shown))
+    if not rows:
+        rows.append(ui_text('paper.stop.empty'))
+    exposure = privacy.mask_money(None) if private else display_number(total)
+    rows.extend((ui_text('paper.stop.exposure').format(exposure), ui_text('paper.stop.not_closed')))
+    return '\n'.join(rows)
+
+
+def stop_dialog(parent, text):
+    """Patchable factory; constructing the dialog never executes it."""
+    dialog = QMessageBox(parent)
+    dialog.setWindowTitle(ui_text('paper.stop.title'))
+    dialog.setTextFormat(Qt.TextFormat.PlainText)
+    dialog.setText(text)
+    dialog.confirm_button = dialog.addButton(ui_text('paper.stop.confirm'), QMessageBox.ButtonRole.AcceptRole)
+    dialog.observe_button = dialog.addButton(ui_text('paper.stop.observe'), QMessageBox.ButtonRole.ActionRole)
+    cancel = dialog.addButton(ui_text('paper.stop.cancel'), QMessageBox.ButtonRole.RejectRole)
+    for button in (dialog.confirm_button, dialog.observe_button, cancel):
+        button.setAccessibleName(button.text())
+        button.setProperty('role', 'secondary')
+    dialog.setDefaultButton(cancel)
+    dialog.setEscapeButton(cancel)
+    return dialog
 
 
 class PaperPage(PageContext, QWidget):
@@ -180,6 +219,8 @@ class PaperPage(PageContext, QWidget):
         self.form_feedback(self.policy_form.sessions, ui_text('ui.demo_paper_policy.text_2').format(len(sessions)))
 
     def paper_job(self, op, **payload):
+        if getattr(self.page_state, 'manual_order_lock', False):
+            raise ValidationError('validation_failed')
         if op in ('submit', 'replay'):
             if not self.paper_confirm.isChecked():
                 raise ValidationError(ui_text('ui.paper_job.text_1'))
@@ -192,6 +233,33 @@ class PaperPage(PageContext, QWidget):
         self.paper_confirm.setChecked(False)
 
     def kill_paper(self):
+        # Snapshot inspection is read-only and does not construct a broker.
+        from quantlab.paper import PaperBroker
+
+        journal = self.root / 'paper.sqlite3'
+        try:
+            account = PaperBroker.read_snapshot(journal) if journal.exists() else getattr(self, '_stop_account', {})
+        except Exception:
+            # Journal inspection must never prevent the safety-file freeze path.
+            account = getattr(self, '_stop_account', None)
+        text = (
+            stop_exposure_text(account, privacy.enabled(self))
+            if account is not None
+            else '\n'.join((ui_text('paper.stop.unknown'), ui_text('paper.stop.not_closed')))
+        )
+        dialog = stop_dialog(self, text)
+        dialog.exec()
+        choice = dialog.clickedButton()
+        if choice is dialog.observe_button:
+            self.replay_controls.cancel()
+            if (self.root / 'paper_policy.json').exists():
+                self.host.callbacks['_paper'](self.root).set_manual_order_lock(True)
+            self.page_state.manual_order_lock = True
+            self.setEnabled(False)
+            self.status.setText(ui_text('paper.stop.observing'))
+            return
+        if choice is not dialog.confirm_button:
+            return
         self.replay_controls.cancel()
         self.freeze_paper(ui_text('ui.kill_paper.text_1'))
         self.status.setText(ui_text('ui.kill_paper.text_2'))
@@ -214,6 +282,7 @@ class PaperPage(PageContext, QWidget):
 
     def _show_account(self, account, strategy=None):
         account = dict(account or {})
+        self._stop_account = account
         for key in ('positions', 'orders', 'fills'):
             if key in account and account[key] is None:
                 account[key] = {}

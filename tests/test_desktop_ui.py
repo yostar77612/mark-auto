@@ -193,7 +193,9 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertGreater(result['replay']['cursor'], 0)
         self.assertTrue(result['account']['kill_switch'])
         self.assertFalse(self.window.paper_confirm.isChecked())
-        self.click('paper_kill')
+        with patch('desktop_pages.paper.stop_dialog') as factory:
+            factory.return_value.clickedButton.return_value = factory.return_value.confirm_button
+            self.click('paper_kill')
         self.wait_job()
         self.assertIn('kill_switch', self.window.paper_detail.toPlainText())
 

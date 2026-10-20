@@ -2086,3 +2086,20 @@ ZH_TW.update(
         'backtest.summary.empty': '\u5c1a\u7121\u56de\u6e2c\u7d50\u679c',
     }
 )
+
+ZH_TW.update(
+    {
+        'paper.stop.title': '\u505c\u6b62\u65b0\u59d4\u8a17\u78ba\u8a8d',
+        'paper.stop.long': '\u591a\u55ae',
+        'paper.stop.short': '\u7a7a\u55ae',
+        'paper.stop.position': '{} | {} | \u6578\u91cf {}',
+        'paper.stop.empty': '\u76ee\u524d\u6c92\u6709\u672a\u5e73\u5009\u90e8\u4f4d\u3002',
+        'paper.stop.exposure': '\u7e3d\u66dd\u96aa\uff08\u5404\u90e8\u4f4d\u7d55\u5c0d\u53e3\u6578\u5408\u8a08\uff09\uff1a{}',
+        'paper.stop.not_closed': '\u505c\u6b62\u65b0\u59d4\u8a17\u4e0d\u6703\u5e73\u5009\uff1b\u73fe\u6709\u90e8\u4f4d\u4e0d\u6703\u95dc\u9589\u3002',
+        'paper.stop.confirm': '\u78ba\u8a8d\u505c\u6b62\u65b0\u59d4\u8a17',
+        'paper.stop.observe': '\u50c5\u89c0\u5bdf',
+        'paper.stop.cancel': '\u53d6\u6d88',
+        'paper.stop.observing': '\u50c5\u89c0\u5bdf\uff1a\u7d19\u4e0a\u64cd\u4f5c\u5df2\u9396\u5b9a\uff0c\u90e8\u4f4d\u4e0d\u8b8a\u3002',
+        'paper.stop.unknown': '\u76ee\u524d\u7121\u6cd5\u78ba\u8a8d\u672a\u5e73\u5009\u90e8\u4f4d\u8207\u7e3d\u66dd\u96aa\u3002',
+    }
+)

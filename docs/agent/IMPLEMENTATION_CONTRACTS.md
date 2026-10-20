@@ -3847,3 +3847,44 @@ remains pending. Live trading stays disabled; order paths, paper_confirm,
 existing confirmations, protected engine/provider files, PROJECT_STATE,
 acceptance scores, gates and timeouts are unchanged. No evaluation-data field or
 label is added.
+
+## TASK X-U6: stop-new-orders exposure confirmation
+
+The stop-new-orders button and host callback open the same patchable three-
+choice confirmation before freezing. The pure `stop_exposure_text` helper in
+`desktop_pages/paper.py` lists each nonzero signed snapshot position as symbol,
+side and absolute quantity, and sums absolute quantities as gross contract
+exposure. It performs no broker calls or currency valuation. Snapshot inspection
+uses the existing read-only journal reader; an empty account still prompts. If
+journal inspection raises, the dialog uses the cached account snapshot when
+available, with the same privacy masking. Without a cached snapshot it displays
+fixed catalogue text stating that positions and exposure are unknown, together
+with the statement that stopping does not close positions. Inspection failures
+never prevent confirmation or expose exception text. Confirm still reaches the
+original safety-file freeze path; cancel leaves safety state and replay
+unchanged. All new UI text is appended to the desktop string catalogue,
+including the explicit
+statement that existing positions are not closed. Privacy mode masks quantities
+and exposure, and dialog buttons have accessible names with cancel as both the
+default and escape action. The lazily created dialog adds no default page
+widgets or snapshot baseline changes. Existing theme rules explicitly style the
+secondary-role push buttons.
+
+Cancel leaves replay and safety state unchanged. Confirm cancels replay and
+calls the original freeze path with the original reason and final status
+strings. Observe-only cancels replay, applies the existing broker manual order
+lock when a policy exists, and locks the paper page against all paper jobs. It
+starts no job and neither grants nor requires paper consent. No close/flatten or
+new order path is added; live trading remains disabled. Existing consent checks,
+protected sources, budgets, timeouts and gates remain unchanged.
+
+`tests/test_paper_stop_u6.py` covers formatting, empty positions, privacy, safe
+default/accessibility, cancel, observe-only, original freeze behavior, unchanged
+position quantities and real host callback dispatch. Added regressions exercise
+a real corrupt SQLite journal and a reader that raises, checking that the dialog
+opens, confirm writes the safety file and clears consent, cancel changes
+nothing, and cached account quantities retain privacy masking. The existing
+desktop kill
+button test supplies only a dialog stub and retains its assertions. The item is
+a single commit. Automation evidence claims only "not broken". The user's final
+visual check remains pending.
