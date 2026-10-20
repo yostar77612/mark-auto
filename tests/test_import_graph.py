@@ -2,8 +2,11 @@
 
 import ast
 from functools import lru_cache
+import importlib
 from pathlib import Path
+import pickle
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,6 +105,9 @@ TOUCHED = (
     'quantlab/wf_estimate.py',
     'quantlab/desktop_runtime.py',
     'quantlab/runtime_support.py',
+    'quantlab/analysis_recovery_windows.py',
+    'quantlab/desktop_errors.py',
+    'quantlab/reporting.py',
     'quantlab/analysis_recovery.py',
     'quantlab/research_analysis.py',
     'quantlab/analysis_contracts.py',
@@ -115,6 +121,9 @@ TOUCHED = (
     'desktop_presentation.py',
 )
 PAIRS = (
+    ('quantlab.analysis_recovery_windows', 'quantlab.desktop_runtime'),
+    ('quantlab.desktop_errors', 'quantlab.desktop_runtime'),
+    ('quantlab.__main__', 'quantlab.reporting'),
     ('desktop_pages.onboarding', 'desktop_pages.palette_commands'),
     ('desktop_pages.shortcuts', 'desktop_pages.palette_commands'),
     ('desktop_pages.command_palette', 'desktop_pages.palette_commands'),
@@ -189,6 +198,63 @@ class ImportGraphTests(unittest.TestCase):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
         self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+    def test_r5_leaf_dependencies_and_compatibility_exports(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(graph['quantlab.runtime_support'], set())
+        self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.analysis_recovery_windows'])
+        self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.desktop_errors'])
+        self.assertNotIn('quantlab.__main__', graph['quantlab.reporting'])
+        runtime = importlib.import_module('quantlab.desktop_runtime')
+        support = importlib.import_module('quantlab.runtime_support')
+        recovery = importlib.import_module('quantlab.analysis_recovery_windows')
+        cli = importlib.import_module('quantlab.__main__')
+        configuration = importlib.import_module('quantlab.configuration')
+        self.assertIs(runtime.RuntimeSafetyError, support.RuntimeSafetyError)
+        self.assertIs(runtime.WindowsAppMutex, support.WindowsAppMutex)
+        self.assertIs(recovery.WindowsAppMutex, support.WindowsAppMutex)
+        self.assertEqual(runtime.WINDOWS_APP_MUTEX, support.WINDOWS_APP_MUTEX)
+        self.assertIs(cli.config_from_json, configuration.config_from_json)
+        for module, name in (
+            (runtime, 'WindowsAppMutex'),
+            (runtime, '_job_worker'),
+            (runtime, '_worker_recovery_guard'),
+            (recovery, 'WindowsAnalysisRecoveryTree'),
+        ):
+            with self.subTest(name=name):
+                obj = getattr(module, name)
+                self.assertIs(pickle.loads(pickle.dumps(obj)), obj)
+                self.assertIs(getattr(importlib.import_module(obj.__module__), obj.__qualname__), obj)
+        # Existing module-qualified platform/ctypes patches still reach the moved class.
+        with patch('quantlab.desktop_runtime.sys.platform', 'win32'), patch('quantlab.desktop_runtime.ctypes.WinDLL', create=True) as load:
+            guard = runtime.WindowsAppMutex()
+            kernel = load.return_value
+            kernel.CreateMutexW.assert_called_once_with(None, False, runtime.WINDOWS_APP_MUTEX)
+            guard.close()
+            kernel.CloseHandle.assert_called_once_with(kernel.CreateMutexW.return_value)
+            self.assertIsNone(guard.handle)
+
+    def test_r5_startup_and_exception_codes_are_preserved(self):
+        errors = importlib.import_module('quantlab.desktop_errors')
+        support = importlib.import_module('quantlab.runtime_support')
+        self.assertIs(errors.ERROR_TABLE, importlib.import_module('quantlab.errors').ERROR_TABLE)
+        for message, code in (
+            ('This workspace requires a WAL-safe SQLite runtime (3.51.3 or newer)', 'startup_sqlite_old'),
+            ('Unsupported workspace version; original preserved', 'startup_workspace_incompatible'),
+            ('Unsupported workspace pointer; original preserved', 'startup_workspace_incompatible'),
+            ('Another MarkAuto instance is using this installation', 'startup_workspace_busy'),
+            ('other', 'startup_failed'),
+        ):
+            with self.subTest(message=message):
+                self.assertEqual(errors.startup_error_code(support.RuntimeSafetyError(message)), code)
+                self.assertEqual(errors.startup_error_code(ValueError(message)), 'startup_failed')
+        for exception, code in (
+            (ValueError('invalid'), 'validation_failed'),
+            (OSError('local'), 'operation_failed_local'),
+            (RuntimeError('unknown'), 'operation_failed'),
+            (support.RuntimeSafetyError('validation_failed'), 'validation_failed'),
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(errors.exception_code(exception), code)
 
     def test_paper_timeline_projection_has_no_application_dependencies(self):
         self.assertEqual(import_graph(self.sources)['quantlab.paper_tab_data'], set())

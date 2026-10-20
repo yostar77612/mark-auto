@@ -20,6 +20,7 @@ def saved_analysis_entries(root):
     entries still require the strict journal/projection reader when selected.
     Unsafe individual candidates are excluded; root errors reach the caller.
     """
+    # Load recovery path validation only when enumerating saved analyses.
     from .research_analysis import _safe_path
 
     root = _safe_path(root)
@@ -140,9 +141,14 @@ def validate_result_payload(payload, *, dataset=None):
     Hashes detect inconsistent/stale rewriting, not authenticate who created data.
     Supplying dataset additionally binds the report to validated actual bars.
     """
+    # Load the strategy type only when validating an embedded report manifest.
     from .core import StrategySpec
+
+    # Load strategy validation only when checking an embedded report manifest.
     from .strategies import validate_strategy
-    from .__main__ import config_from_json
+
+    # Load configuration parsing only when checking an embedded report manifest.
+    from .configuration import config_from_json
 
     manifest = payload['manifest']
     unhashed = {**payload, 'manifest': {k: v for k, v in manifest.items() if k not in ('run_hash', 'reproducibility_hash')}}
@@ -169,6 +175,7 @@ def validate_result_payload(payload, *, dataset=None):
         if manifest.get(name) != data_manifest.get(name):
             raise ValidationError('Dataset binding mismatch: ' + name)
     if dataset is not None:
+        # Load dataset validation only when actual dataset binding is requested.
         from .data import validate_dataset
 
         validate_dataset(dataset)
@@ -303,7 +310,10 @@ def demo_config():
 
 
 def save_selection(strategy, result, path):
+    # Load the strategy type only when persisting a selection.
     from .core import StrategySpec
+
+    # Load strategy validation only when persisting a selection.
     from .strategies import validate_strategy
 
     spec = StrategySpec(**strategy)
@@ -317,7 +327,10 @@ def save_selection(strategy, result, path):
 
 
 def load_selection(path):
+    # Load the strategy type only when reading a selection.
     from .core import StrategySpec
+
+    # Load strategy validation only when reading a selection.
     from .strategies import validate_strategy
 
     selection = read_json(path)

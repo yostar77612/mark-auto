@@ -12,6 +12,32 @@ class RuntimeSafetyError(ValueError):
     pass
 
 
+WINDOWS_APP_MUTEX = r'Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420'
+
+
+class WindowsAppMutex:
+    """Installer-visible lifetime guard; QLockFile still owns single-instance logic."""
+
+    def __init__(self):
+        self.handle = None
+        if sys.platform == 'win32':
+            # Load this platform-specific API only on its supported execution path.
+            from ctypes import wintypes
+
+            self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+            self.kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+            self.kernel.CreateMutexW.restype = wintypes.HANDLE
+            self.kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+            self.handle = self.kernel.CreateMutexW(None, False, WINDOWS_APP_MUTEX)
+            if not self.handle:
+                raise RuntimeSafetyError('Cannot establish installation safety guard')
+
+    def close(self):
+        if self.handle:
+            self.kernel.CloseHandle(self.handle)
+            self.handle = None
+
+
 def atomic_write(path, raw, *, durable=False):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
