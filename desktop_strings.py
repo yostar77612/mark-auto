@@ -1878,6 +1878,10 @@ ZH_TW.update(
 )
 
 ZH_TW.update({'tables.tab_count': '{0} [{1}]'})
+
+
+ZH_TW.update(
+    {
         'assistant.permission_label': '研究動作',
         'assistant.permission_read': '唯讀',
         'assistant.permission_confirm': '逐次確認',
