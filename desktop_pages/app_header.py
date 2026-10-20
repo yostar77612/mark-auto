@@ -91,6 +91,11 @@ class AppHeader(QWidget):
             self._close_watcher = _CloseWatcher(host, self.timer.stop)
         self.refresh()
 
+    def _labels(self):
+        notice = getattr(getattr(self.host, 'privacy', None), 'notice', None)
+        status = getattr(self.host, 'status', None)
+        return [x for x in (self.badge, self.source, self.job, self.time, notice, status) if isinstance(x, QLabel)]
+
     def _tick(self):
         # Hidden strips (and windows that were never shown) have nothing to repaint.
         if self.isVisible():
@@ -107,7 +112,8 @@ class AppHeader(QWidget):
         if combo is not None:
             self.layout().removeWidget(self.theme)
             self.theme.hide()
-            self.theme.deleteLater()
+            self.theme.setParent(None)
+            self._unused_theme = self.theme  # Python keeps sole ownership; no deferred C++ delete
             self.theme = combo
             combo.setParent(self)
             self.layout().insertWidget(self.layout().count() - 1, combo)
@@ -116,7 +122,7 @@ class AppHeader(QWidget):
         QWidget.setTabOrder(self.disclosure, self.theme)
 
     def refresh(self):
-        for label in self.findChildren(QLabel):
+        for label in self._labels():
             label.setWordWrap(False)
         now = self.clock()
         self.time.setText(ui_text('header.clock').format(now.strftime('%H:%M:%S')))
