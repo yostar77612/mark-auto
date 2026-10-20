@@ -192,8 +192,11 @@ def _read(name, context, arguments):
         # produces plausible partial results, filenames or protected row counts.
         rows = []
         for identity in sorted(_approved(context)):
-            _result(context, identity)
-            rows.append({'id': identity})
+            result = _result(context, identity)
+            row = {'id': identity}
+            if arguments.get('include_datasets') == 1:
+                row['data_hash'] = result.manifest['data_hash']
+            rows.append(row)
         return rows
     identity = _identity(arguments['result_id'])
     result = _result(context, identity)
@@ -233,7 +236,7 @@ def _read(name, context, arguments):
 def _row_schema(name):
     properties = {}
     if name == 'list_saved_results':
-        properties = {'id': HASH}
+        properties = {'id': HASH, 'data_hash': HASH}
     elif name in ('get_backtest_summary', 'compare_results'):
         properties = {key: NUMERIC for key in METRICS}
     elif name == 'get_backtest_trades':
@@ -267,6 +270,8 @@ def create_registry():
     for name in TOOL_NAMES:
         fields = {'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_LIMIT}, 'cursor': {'type': 'string', 'minLength': 66, 'maxLength': 128}}
         required = []
+        if name == 'list_saved_results':
+            fields['include_datasets'] = {'type': 'integer', 'minimum': 0, 'maximum': 1}
         if name != 'list_saved_results' and not name.startswith('get_paper_'):
             fields['result_id'] = {'type': 'string', 'minLength': 64, 'maxLength': 64}
             required.append('result_id')

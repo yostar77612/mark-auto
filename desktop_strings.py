@@ -7,6 +7,9 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'assistant.completions': '本機技能與訓練引用（未驗證）',
+    'assistant.reference_result': '已儲存訓練結果（未驗證）',
+    'assistant.reference_dataset': '結果綁定的訓練資料集（未驗證）',
     'assistant.timeline': '工具呼叫時間軸（未驗證）',
     'assistant.thinking': '思考摘要（未驗證／模型產生；預設摺疊）',
     'assistant.code': '程式碼（未驗證；僅供複製）',
@@ -23,7 +26,7 @@ ZH_TW = {
     'assistant.source': '研究助理來源',
     'assistant.transcript': '本次工作階段對話（僅記憶體）',
     'assistant.input': '研究問題',
-    'assistant.hint': '輸入 help；唯讀工具格式：/tool 工具名稱 JSON',
+    'assistant.hint': '輸入 / 選擇本機技能；@ 引用訓練結果與資料集（未驗證）',
     'assistant.send': '送出研究問題',
     'assistant.user': '使用者',
     'assistant.consent_title': '同意本次 ChatGPT 請求（未驗證）',

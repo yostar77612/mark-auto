@@ -85,6 +85,15 @@ class ErrorCatalogTests(unittest.TestCase):
 
     def test_existing_message_bytes_match_17b5b1b(self):
         payload = {code: [row.explanation, row.action, error_message(code)] for code, row in ERROR_TABLE.items()}
+        # D6 adds a not-found message; retain every historical byte assertion.
+        reference = payload.pop('agent_reference_not_found')
+        self.assertEqual(
+            reference[:2],
+            [
+                '\u627e\u4e0d\u5230\u552f\u4e00\u4e14\u6709\u6548\u7684\u8a13\u7df4\u5f15\u7528\u3002',
+                '\u8acb\u91cd\u65b0\u5f9e @ \u6e05\u55ae\u9078\u64c7\u3002',
+            ],
+        )
         # A1-D1 adds one B1 registry entry; all 64 historical bytes stay locked.
         self.assertEqual(len(payload), BASELINE_COUNT + 1)
         payload.pop('agent_tool_refused')

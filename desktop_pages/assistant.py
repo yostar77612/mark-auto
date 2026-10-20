@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QLineEdit
 from desktop_pages.assistant_runtime import ReplyProcess, host_context
 from desktop_pages.assistant_details import MAX_ROWS, TextFold, ToolTimeline, code_blocks, shown_text
 from desktop_pages.assistant_permissions import ResearchPermission, install_menu
+from desktop_pages.assistant_completion import CompletionMenu, resolve_references
 import desktop_privacy as privacy
 from desktop_strings import ui_text
 from quantlab.assistant_chat import ChatDispatcher, fixture_reply
@@ -49,6 +50,7 @@ class AssistantPanel(QWidget):
         self.input.setAccessibleName(ui_text('assistant.input'))
         self.input.setPlaceholderText(ui_text('assistant.hint'))
         layout.addWidget(self.input)
+        self.completions = CompletionMenu(self.input, layout, self.dispatcher)
         self.permissions = ResearchPermission(getattr(host, 'settings', None), self)
         self.permission_menu = install_menu(layout, self.permissions, 'assistant_research_permission')
         self.dispatcher.consent = lambda: self.ask_consent()
@@ -126,6 +128,12 @@ class AssistantPanel(QWidget):
         remote = self.mode.currentData() == 'chatgpt'
         if remote and not self.ask_consent():
             return
+        try:
+            prompt = resolve_references(prompt, self.dispatcher)
+        except ValueError:
+            self.reply(ERROR_TABLE['agent_reference_not_found'].explanation, chatgpt=remote)
+            return
+        self.completions.close()
         tool_request = not remote and prompt.startswith('/tool ')
         self.append_transcript(ui_text('assistant.user') + '\n' + (ui_text('assistant.tool_request') if tool_request else prompt))
         self.input.clear()

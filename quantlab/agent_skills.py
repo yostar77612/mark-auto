@@ -100,25 +100,46 @@ class SkillLoader:
     def __init__(self, registry):
         self._registry = registry
 
-    def _catalog(self):
+    def _catalog(self, *, skip_invalid=False):
         root = SKILLS_DIRECTORY
         if any(_link(path) for path in (root, *root.parents)):
             raise ValueError
         root = root.resolve(strict=True)
         skills = {}
+        self.catalog_errors = []
         for index, path in enumerate(root.iterdir()):
-            if index >= MAX_SKILLS or _link(path) or not path.is_file() or path.suffix != '.md':
+            if index >= MAX_SKILLS:
                 raise ValueError
-            name = _name(path.stem)
-            if path.resolve(strict=True).parent != root:
-                raise ValueError
-            with path.open('rb') as stream:
-                raw = stream.read(MAX_SKILL_BYTES + 1)
-            skill = parse_skill(raw, self._registry)
-            if skill.name != name or name in skills:
-                raise ValueError
-            skills[name] = skill
+            try:
+                if _link(path) or not path.is_file() or path.suffix != '.md':
+                    raise ValueError
+                name = _name(path.stem)
+                if path.resolve(strict=True).parent != root:
+                    raise ValueError
+                with path.open('rb') as stream:
+                    raw = stream.read(MAX_SKILL_BYTES + 1)
+                skill = parse_skill(raw, self._registry)
+                if skill.name != name or name in skills:
+                    raise ValueError
+                skills[name] = skill
+            except (OSError, TypeError, ValueError):
+                if not skip_invalid:
+                    raise
+                self.catalog_errors.append('agent_tool_refused')
         return dict(sorted(skills.items()))
+
+    def completion_list(self):
+        """Local UI listing: isolate bad files, retaining B1 codes without paths.
+
+        Strict list/read/activate semantics remain unchanged. No skill body or
+        capability is loaded into an assistant request by selecting a name.
+        """
+        self.catalog_errors = []
+        try:
+            return tuple(self._catalog(skip_invalid=True))
+        except (OSError, TypeError, ValueError):
+            self.catalog_errors.append('agent_tool_refused')
+            return ()
 
     def list(self, arguments_json='{}'):
         try:
