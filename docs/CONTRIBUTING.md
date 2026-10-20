@@ -55,7 +55,7 @@ $env:PYTHONUTF8 = '1'
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' --version
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' check .
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' format --check .
-py -3.11 -m compileall -q quantlab desktop_pages tools tests desktop.py research_app.py
+py -3.11 -m compileall -q quantlab desktop_pages tools tests desktop.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' tools/quality_gate.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_docs_layering.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_repo_layout.py
@@ -80,3 +80,7 @@ CI definitions are [quantlab.yml](../.github/workflows/quantlab.yml)
 (Windows desktop installer). Inspect their actual jobs when reporting CI
 evidence; a local check does not establish that a workflow passed.
 This documentation task does not publish a GitHub Release or create a git tag.
+
+The developer-only workspace runs from the repository root with
+`streamlit run tools/research_app.py`; this retains the repository-local
+`.streamlit/config.toml` server/privacy settings. It is excluded from the installer.

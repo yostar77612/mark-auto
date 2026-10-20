@@ -489,8 +489,11 @@ T13 part A installs enforcement; the existing format debt is resolved in part B.
 
 ## Release maintenance
 
-The desktop app is the product. Streamlit (`research_app.py`) is a developer
+The desktop app is the product. Streamlit (`tools/research_app.py`) is a developer
 research workspace excluded from packaged product inputs.
 See [signing readiness](SIGNING_CHECKLIST.md): **nothing is signed today**.
 See [maintenance contracts](../docs/analysis/t15_p3_notes.md) for explicit payload
 cleanup and metadata-only, user-triggered update checks.
+
+Developer workspace: run `streamlit run tools/research_app.py` from the repository root
+so repository-local `.streamlit/config.toml` server/privacy settings apply.

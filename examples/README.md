@@ -16,6 +16,9 @@ Campaign defaults use an offline deterministic fixture generator, illustrative l
 
 For a larger invented demo: `python -m quantlab demo --bars 960 --output /tmp/quantlab-demo`.
 
-The separate interface starts with `streamlit run research_app.py`. Choose a local workspace, load data, run and compare backtests, select an immutable strategy, initialize/reconcile a paper account, then start and advance a bounded historical replay. Replay has synthetic next-bar market fills and pinned risk policies, no streaming feed, no live broker, and no intrabar stop/target simulation. Stop blocks further steps without liquidating positions. After a true process restart, explicitly reconcile before resuming. Persisted client IDs and replay plans prevent duplicate simulated fills after an interrupted batch.
+The separate interface starts with `streamlit run tools/research_app.py`. Choose a local workspace, load data, run and compare backtests, select an immutable strategy, initialize/reconcile a paper account, then start and advance a bounded historical replay. Replay has synthetic next-bar market fills and pinned risk policies, no streaming feed, no live broker, and no intrabar stop/target simulation. Stop blocks further steps without liquidating positions. After a true process restart, explicitly reconcile before resuming. Persisted client IDs and replay plans prevent duplicate simulated fills after an interrupted batch.
 
 Paper replay rejects strategies with protective stop/target parameters rather than ignoring them. Paper overnight daily-loss baselines are not implemented; carried positions can block next-day new intents. This limitation is separate from the backtest engine's explicit settlement simulation.
+
+Developer workspace: run `streamlit run tools/research_app.py` from the repository root
+so repository-local `.streamlit/config.toml` server/privacy settings apply.

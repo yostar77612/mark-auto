@@ -25,7 +25,6 @@ ALLOWED_FILES = {
     'requirements-ui.lock',
     'requirements-ui.txt',
     'requirements-ruff.lock',
-    'research_app.py',
     'desktop.py',
     'desktop_accessibility.py',
     'desktop_automatic_backup.py',
