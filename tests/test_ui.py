@@ -23,7 +23,7 @@ class UITests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {'QUANTLAB_WORKSPACE': str(self.root)})
         self.environment.start()
         self.addCleanup(self.environment.stop)
-        self.app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'research_app.py')).run(timeout=30)
+        self.app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'tools' / 'research_app.py')).run(timeout=30)
         self.assertFalse(self.app.exception)
 
     def click(self, label):
@@ -57,7 +57,7 @@ class UITests(unittest.TestCase):
         self.click('Select immutable strategy')
         selection = json.loads((self.root / 'selection.json').read_text())
         self.assertEqual(len(selection['strategy_hash']), 64)
-        self.app = self.AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'research_app.py')).run(timeout=30)
+        self.app = self.AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'tools' / 'research_app.py')).run(timeout=30)
         self.assertFalse(self.app.exception)
         self.assertTrue(any(selection['strategy_hash'] in item.value for item in self.app.json))
         self.assertTrue(any('Selected result SHA-256' in item.value for item in self.app.caption))

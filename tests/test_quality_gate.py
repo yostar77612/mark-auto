@@ -13,6 +13,23 @@ from tools.quality_gate import main, python_findings, scan, secret_findings
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_moved_workspace_keeps_tracked_python_scan_rules(self):
+        name = 'tools/research_app.py'
+        root = Path(__file__).resolve().parents[1]
+        for source in ('import streamlit as st\n', 'return 1', "TOKEN = 'ghp_" + 'a' * 36 + "'"):
+            with (
+                self.subTest(source=source[:20]),
+                patch('tools.quality_gate.git', return_value=(name + '\0').encode()),
+                patch.object(Path, 'is_file', return_value=True),
+                patch.object(Path, 'read_bytes', return_value=source.encode()),
+                patch('tools.quality_gate.python_findings', wraps=python_findings) as findings,
+            ):
+                result = scan(root)
+                findings.assert_called_once_with(source, name, False, desktop=False)
+                self.assertEqual(bool(result), source != 'import streamlit as st\n')
+                if result:
+                    self.assertTrue(all(item.startswith(name + ':') for item in result))
+
     def test_secret_signatures_are_detected_without_value_disclosure(self):
         tokens = [
             "ghp_" + "a" * 36,

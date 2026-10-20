@@ -3422,3 +3422,43 @@ refresh or UI text change is required. G3 sources and saved_candidate_pool.py,
 PROJECT_STATE, acceptance scores, all existing consumer tests, and timeout
 limits are unchanged. Live trading remains permanently disabled. The import
 registry adds only coverage of the host and new test/helper files.
+
+### S-R8: developer research workspace moved into tools
+
+S-R8 is scoped to a single move-only commit. The user's decision was "move, do
+not archive". The developer-only workspace is `tools/research_app.py`, outside
+the product and installer. Its supported command is `streamlit run
+tools/research_app.py`, run from the repository root so `.streamlit/config.toml`
+continues to supply server/privacy settings. The conditional script bootstrap
+prepends the repository root before importing quantlab; its standard-library sys
+import is inside the conditional, preserving the exact eight top-level imports.
+All five function definitions are byte-identical to the base, including the
+main.body[2] developer notice. Only the module docstring and script-path
+bootstrap changed in the moved source.
+
+The UI tests changed only their two paths, maintenance coverage changed only its
+source path, the root layout allowlist lost only the old filename, and the Ruff
+F401 exemption moved with the source. Live contributor, user, packaging and
+example documentation uses the new path. Historical evidence was preserved. The
+quality gate selects every tracked Python source for syntax and secret checks;
+research=True still applies only to quantlab. No gate change was needed. The
+additive test_moved_workspace_keeps_tracked_python_scan_rules injects valid
+Streamlit source, invalid syntax and a credential signature through scan and
+pins the existing flags and new file label. Existing AppTest assertions, import
+and developer-notice pins, packaging exclusions and timeouts are unchanged.
+
+Packaging manifest patterns, PyInstaller data inputs, installer payload lists,
+CI definitions, group/shard tools, dependency locks, desktop/core source, G3
+sources, saved_candidate_pool.py, snapshot/widget fixtures, PROJECT_STATE and
+acceptance scores are unchanged. The moved workspace matches no product manifest
+glob or PyInstaller data input. Live trading remains permanently disabled. This
+item changes no desktop UI and requires no baseline fixture changes.
+
+Source comparison base: `6bdb88349d16ce25c03122118ef923997e80c86e`. Base source
+SHA-256: `4f46f2473d330b6431fe0aef2d2fc54f7067eface793db43bf2147541ad9b2f3`.
+Moved source SHA-256:
+`5019d8dfe99555aab95b15c2cf6c9109a81104608937b7e5609937c8b03b9247`. Both
+compared files use LF; the complete function-definition comparison is exact.
+Ruff 0.16.10 check and format --check on the five changed Python files exit 0.
+`py -3.11 -m compileall -q quantlab desktop_pages tools tests desktop.py` and
+`py -3.11 -m py_compile tools/research_app.py` exit 0.

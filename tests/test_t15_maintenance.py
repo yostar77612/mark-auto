@@ -320,7 +320,7 @@ class MaintenanceUITests(OfflineTest):
 
 class DeveloperWorkspaceTests(unittest.TestCase):
     def test_notice_no_new_imports_and_packaging_exclusion(self):
-        tree = ast.parse((ROOT / 'research_app.py').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'tools' / 'research_app.py').read_text(encoding='utf-8'))
         main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'main')
         notice = main.body[2]
         self.assertIsInstance(notice, ast.Expr)

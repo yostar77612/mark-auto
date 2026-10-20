@@ -1,4 +1,8 @@
-"""Separate offline Streamlit workspace. Run: streamlit run research_app.py."""
+"""Developer-only offline workspace; not part of the product or installer.
+
+Run from the repository root: streamlit run tools/research_app.py.
+The repository-local .streamlit/config.toml supplies server/privacy settings.
+"""
 
 from pathlib import Path
 import json
@@ -6,6 +10,12 @@ import os
 import sqlite3
 
 import streamlit as st
+
+# Streamlit adds tools/ to sys.path when running this file as a script.
+if __package__ in (None, ''):
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from quantlab.core import canonical_json, content_hash, to_dict, ValidationError
 from quantlab.reporting import (
