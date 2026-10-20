@@ -1785,6 +1785,18 @@ def stage_error_message(stage):
     return messages[normalize_stage(stage)]
 
 
+ZH_TW.update(
+    {
+        'connection_test.button': '測試連線（少量額度／唯讀／unverified）',
+        'connection_test.disclosure': '本次測試會連網並使用少量額度，僅作唯讀連線查詢。成功僅表示連線有回應，不代表推論已驗證（unverified）。每次呼叫均需同意；不自動重試。',
+        'connection_test.untested': '連線尚未測試或結果已過期（unverified）；更換帳號或模型後請重測。',
+        'connection_test.responded': '連線有回應（connection responded）；推論仍未驗證（unverified）。',
+        'connection_test.usage': '本次觀察用量：輸入 {0}、輸出 {1}、合計 {2} tokens。',
+        'connection_test.usage_unknown': '本次額度用量未知；可能已消耗額度，請核對官方用量。推論仍未驗證（unverified）。',
+    }
+)
+
+
 def ui_text(key, locale=None):
     """Look up a key at call time, falling back to zh-TW.
 

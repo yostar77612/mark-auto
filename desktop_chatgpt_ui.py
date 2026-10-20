@@ -19,7 +19,9 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QPushBu
 
 USAGE_SETTINGS_URL = 'https://chatgpt.com/settings/usage'
 
-ACTIONS = frozenset(('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'restore', 'select', 'sign_out', 'refresh', 'models', 'clear_pause'))
+ACTIONS = frozenset(
+    ('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'restore', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test')
+)
 # Local-only reads that never need the host to stop background work first.
 LOCAL_ACTIONS = frozenset(('list',))
 # Startup-only restore may refresh over the network; host scheduling ensures idle workers.
@@ -140,6 +142,7 @@ class ConnectionRequest:
     registration: str | None = None
     max_runtime_seconds: int = 120
     user_confirmed: bool = False
+    model: str | None = None
 
     def __post_init__(self):
         if type(self.request_id) is not int or self.request_id < 1 or self.action not in ACTIONS:
@@ -147,8 +150,13 @@ class ConnectionRequest:
         _ref(self.registration, optional=True)
         if self.action == 'first_sign_in' and self.registration is not None:
             raise ValueError('first sign-in cannot select an existing account')
-        if self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause') and self.registration is None:
+        if self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test') and self.registration is None:
             raise ValueError('registration required')
+        if self.action == 'test':
+            if type(self.model) is not str or not re.fullmatch(MODEL, self.model):
+                raise ValueError('discovered model required')
+        elif self.model is not None:
+            raise ValueError('model only for connection test')
         if type(self.max_runtime_seconds) is not int or not 1 <= self.max_runtime_seconds <= 600:
             raise ValueError('bounded runtime required')
         if type(self.user_confirmed) is not bool or (self.action not in LOCAL_ACTIONS | STARTUP_ACTIONS and not self.user_confirmed):
@@ -241,6 +249,21 @@ class ConnectionEvent:
 
 
 @dataclass(frozen=True)
+class TestConnectionEvent(ConnectionEvent):
+    test_usage: tuple | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.test_usage is not None and (
+            type(self.test_usage) is not tuple
+            or len(self.test_usage) != 3
+            or any(type(v) is not int or not 0 <= v <= 2**53 for v in self.test_usage)
+            or self.test_usage[0] + self.test_usage[1] != self.test_usage[2]
+        ):
+            raise ValueError('invalid bounded token usage')
+
+
+@dataclass(frozen=True)
 class SubscriptionOptions:
     registration: str
     model: str
@@ -311,6 +334,7 @@ class ConnectionController(QObject):
         self.account_pending = False
         self.account_state = 'blocked'
         self.account_status_known = False
+        self.test_message = ui_text('connection_test.untested')
 
     def set_host_available(self, available):
         if type(available) is not bool:
@@ -318,9 +342,19 @@ class ConnectionController(QObject):
         self.host_available = available
         self.changed.emit()
 
-    def request(self, action, registration=None, *, confirmed=False):
+    def request(self, action, registration=None, *, confirmed=False, model=None):
         if not self.host_available or self.busy:
             raise ValueError(ui_text('chatgpt_ui.request.text_1'))
+        if action == 'test' and (
+            registration != self.active_registration
+            or self.state != 'plan_ready'
+            or model not in self.models
+            or not self.account_status_known
+            or self.account_paused
+            or self.account_pending
+            or self.unknown_count
+        ):
+            raise ValueError('account_paused')
         if action == 'models' and (
             registration != self.active_registration
             or self.state != 'plan_ready'
@@ -345,7 +379,18 @@ class ConnectionController(QObject):
         if action == 'enable_plan' and (registration != self.active_registration or self.state != 'identity_only'):
             raise ValueError('select an identity-only account before enabling plan use')
         self._counter += 1
-        request = ConnectionRequest(self._counter, action, registration, 600 if action in ('begin', 'first_sign_in', 'enable_plan') else 120, confirmed)
+        request = ConnectionRequest(
+            self._counter,
+            action,
+            registration,
+            600 if action in ('begin', 'first_sign_in', 'enable_plan') else 30 if action == 'test' else 120,
+            confirmed,
+            model,
+        )
+        if action in ('test', 'select', 'sign_out'):
+            self.test_message = ui_text('connection_test.untested')
+            if action == 'test':
+                self.test_message += '\n' + ui_text('connection_test.usage_unknown')
         self.busy = True
         self.outcome = None
         self.stopping = False
@@ -392,6 +437,19 @@ class ConnectionController(QObject):
             self.message = STATE_LABELS[event.state]
         else:
             action = self._request.action
+            if action == 'test':
+                # Use the shared B1 projection without changing legacy connection wording.
+                from quantlab.desktop_errors import error_message
+
+                self._terminal_received = True
+                self._terminal_ok = event.kind == 'result'
+                self.stopping = True
+                self.test_message = ui_text('connection_test.responded') if self._terminal_ok else error_message(event.error_code)
+                usage = getattr(event, 'test_usage', None)
+                self.test_message += '\n' + (ui_text('connection_test.usage').format(*usage) if usage is not None else ui_text('connection_test.usage_unknown'))
+                self.message = self.test_message
+                self.changed.emit()
+                return True
             self.state = event.state
             self._terminal_received = True
             self._terminal_ok = event.kind == 'result'
@@ -641,6 +699,10 @@ class ChatGPTConnectionPanel(QWidget):
             layout.insertWidget(index, widget)
         layout.addStretch(1)
         self._render()
+        # Extend only the optional connection area without a startup import cycle.
+        from desktop_pages.connection_test import ConnectionTest
+
+        self.connection_test = ConnectionTest(self)
 
     def _start_primary_sign_in(self):
         c = self.controller
@@ -995,6 +1057,11 @@ def run_connection_request(request, *, bootstrap, emit, cancelled, session_facto
     """
     if not isinstance(request, ConnectionRequest):
         raise ValueError('typed connection request required')
+    if request.action == 'test':
+        # Load the probe only inside the allowlisted bounded job.
+        from desktop_pages.connection_test import run_probe
+
+        return run_probe(request, bootstrap, cancelled, clock=clock)
     session = None
     deadline = clock() + request.max_runtime_seconds
 

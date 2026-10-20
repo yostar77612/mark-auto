@@ -2496,3 +2496,69 @@ No new desktop_ui public names, root-level modules, gates, OOS rules, budgets,
 timeouts, scores or existing-test exemptions are introduced. G3 sources, all
 saved_candidate_pool bytes, PROJECT_STATE, optimization plan and ACCEPTANCE have
 empty diffs. Changes remain uncommitted for the controller's single A2-D8 commit.
+
+
+### TASK A2-D9: explicit read-only connection test (inference unverified)
+
+Initial inspection confirmed no test action or button existed. The optional,
+already collapsed connection panel now has a keyboard-operable named button.
+It requires the active account, a discovered selected model, a ready known
+account barrier and an idle host. Quota/eligibility pauses and pending requests
+show the existing B1 reason and disable it. Its catalog wording discloses a
+small quota cost, read-only intent and unverified inference. Every press opens
+the per-call Ok/Cancel network dialog (Cancel is default); no checkbox or prior
+approval substitutes for it. Denial dispatches no job or provider call.
+
+ConnectionController's new test action uses the existing quiesce, bounded job,
+IPC, cancellation and actual-worker-join path. The request has a 30-second
+runtime; public PlanHTTPTransport and SSEParser retain verified TLS, byte,
+stall and response bounds. The fixed payload contains only the selected model,
+read-only instructions and `Reply with OK.`; no research context, tools,
+conversation, credentials, OOS or final holdout can enter this payload. Only an
+opaque credential reference enters the worker; credentials stay in the pinned
+DPAPI path. No retry, campaign quota reservation or operator route is added.
+
+A completed response displays the neutral catalog message `connection responded`
+and explicitly says inference is still unverified. Model text is discarded,
+never rendered, logged or executed by the probe. Usage is projected to three
+bounded integer token counts only; unavailable/interrupted usage is explicitly
+unknown and may have consumed quota. Unknown errors use generic B1
+operation_failed; known failures use the existing B1 code and mapped message,
+never exception text. A dedicated TestConnectionEvent carries probe usage,
+preserving the byte-for-byte legacy event schema and UI operations golden.
+Changing selected model/account, changing active account, or signing out clears
+the prior result to stale/untested. invalidate_campaign_usage remains unchanged.
+
+New tests/test_connection_d9.py adds six cheap offline tests for prerequisites,
+paused reasons, keyboard accessibility, fresh dialogs, denied consent with zero
+provider calls, worker/quiesce/join/cancel barriers, injected deadlines, one-call
+failure/no retry, B1 redaction, token usage/unknown display, model/account/signout
+invalidation, exact payload and sentinel scans with a planted negative control.
+All tests use fake transport and no real process or network. Existing unchanged
+D4 (10), D5 (9) and D8 (6) safety tests also pass: the frozen complete assistant
+registry has only read tools, operator/candidate/quota entry-point sentinels stay
+untouched, OOS/holdout/credential scans exclude protected fixtures with negative
+controls, denied consent reaches no provider, HTML is inert plain text and code
+is copyable only. The assistant remains a research assistant and offline fixtures
+remain labelled not real AI; live ChatGPT inference is never claimed verified.
+
+The new module is registered in test_import_graph and covered by the desktop
+package UI-text, stylesheet and repo-layout inventories. The widget-name fixture
+adds only chatgpt_test and chatgpt_test_status. No default-page baseline refresh
+is requested: the controls stay inside the existing collapsed connection area.
+Existing header behavior is retained; UI-1 PanelCard/AsyncStatus are absent.
+MainWindow remains 396 lines; ChatGPTConnectionPanel and the helper stay below
+500 lines. desktop_ui has no new public names. No gate, OOS rule, budget,
+timeout, existing test, golden, score or acceptance evidence is weakened.
+
+Validation: D9 6, D4 10, D5 9, D8 6, import graph 8, UI-text 9, stylesheet 3,
+repo layout 10, placeholders 1, function budgets 2 and UI operations registry 6
+pass. Ruff 0.16.10 check and changed-file format check, Python 3.11 compilation
+and quality_gate pass. The unchanged terminal, smoke-isolation, history, market
+and Walk-forward smoke modules were attempted but hit restricted-token Windows
+temporary-directory ACL failures. Controller smoke and visual checks remain
+unverified; no live network test was made. GitNexus analyze failed with spawn
+EPERM and the lane query reported repository not found; no other graph tool or
+extension download was used. G3 files, all saved_candidate_pool bytes,
+PROJECT_STATE, optimization plan and ACCEPTANCE have empty diffs. Changes remain
+uncommitted for the controller to create exactly one A2-D9 commit.
