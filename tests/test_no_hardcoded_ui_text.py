@@ -75,6 +75,9 @@ def hardcoded_ui_text(source, filename='<injected>'):
 
 
 class HardcodedUITextTests(unittest.TestCase):
+    def test_assistant_d4_package_modules_in_inventory(self):
+        self.assertTrue({'desktop_pages/assistant.py', 'desktop_pages/assistant_runtime.py'} <= set(UI_PACKAGE_MODULES))
+
     def test_inventory_covers_all_desktop_modules(self):
         self.assertEqual({path.name for path in ROOT.glob('desktop*.py')}, set(UI_MODULES) | set(NON_UI_MODULES))
         self.assertEqual(TODO_MODULES, {})

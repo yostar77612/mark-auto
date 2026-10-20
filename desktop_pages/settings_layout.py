@@ -98,6 +98,11 @@ def build_settings(page, layout):
     maintenance.addWidget(page.maintenance_panel)
     page.diagnostics_panel = DiagnosticsPanel(lambda: snapshot_for_state(page.state), page)
     maintenance.addWidget(page.diagnostics_panel)
+    # The assistant belongs to the existing collapsed area; defaults stay intact.
+    from .assistant import AssistantPanel
+
+    page.assistant_panel = AssistantPanel(page)
+    maintenance.addWidget(page.assistant_panel)
     page._button(about, ui_text('ui._settings_page.text_18'), 'read_logs', page.read_logs)
     page.log_view = LogTable()
     page.errors_only = QCheckBox(ui_text('logs.errors_only'))
