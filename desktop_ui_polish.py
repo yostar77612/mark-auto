@@ -22,6 +22,9 @@ class DisabledHint(QObject):
             ui_text('ui_polish.update.text_1') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else self.prerequisite
         )
         text = ui_text('ui_polish.update.text_2').format(prerequisite) if disabled else ''
+        if disabled and self.button.objectName() == 'cancel_job':
+            progress = getattr(self.button.window(), 'job_progress', self.button.parentWidget())
+            text = ui_text('job.cancel_notice') if getattr(progress, 'running', False) else ui_text('job.idle_hint')
         self.button.setToolTip(text if disabled else self.original_tooltip)
         self.button.setProperty('disabled_hint', text)
         self.label.setText(text)
@@ -98,7 +101,7 @@ def install_polish(window):
         'pick_walk_forward_original': ui_text('ui_polish.install_polish.text_25'),
         'run_candidate_analysis': ui_text('ui_polish.install_polish.text_26'),
         'reconcile_saved_analysis': ui_text('ui_polish.install_polish.text_27'),
-        'cancel_job': ui_text('ui_polish.install_polish.text_28'),
+        'cancel_job': ui_text('job.idle_hint'),
         'market_add': ui_text('ui_polish.install_polish.text_29'),
         'market_refresh': ui_text('ui_polish.install_polish.text_30'),
         'chatgpt_enable_plan': ui_text('ui_polish.install_polish.text_31'),

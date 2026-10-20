@@ -3768,3 +3768,45 @@ metrics.json under tests/fixtures/desktop_pages_before. This implementation
 preserves all baseline files byte-for-byte. No public desktop_ui name or module
 is added. G3 sources, saved_candidate_pool, PROJECT_STATE, acceptance scores,
 gates, thresholds and timeouts have empty diffs; live trading remains disabled.
+
+## Round 3 X-U1: idle background-job explanation
+
+The item is a single implementation commit. DisabledHint displays the new
+literal catalog key job.idle_hint for an idle cancel_job control, without the
+prerequisite template. The key is appended in a new trailing ZH_TW.update block;
+existing catalog entries retain their values. A running job with cancellation
+requested retains job.cancel_notice. Other disabled controls retain their
+existing prerequisite wording. The command palette retains palette.unavailable,
+which already describes the absence of an active job.
+
+The existing header projections remain header.idle, header.running, header.done
+and header.failed. JobProgress retains its running stage label, percentage and
+single cancellation request behavior. Eligibility and confirmation controls,
+including paper_confirm, are unchanged. Cancel accessibility and tooltips remain
+nonempty. The new text contains no account, position, amount or evaluation data;
+the same idle statement is checked with privacy enabled and disabled.
+
+The cheap test_idle_hint_u1 module checks the actual MainWindow status/header/
+cancel-hint labels, catalog wiring, accessibility, palette availability, running
+progress, terminal success/failure, cancellation idempotency, other prerequisite
+hints and a SimpleNamespace host without job_progress or job_feedback. It uses
+no shown windows, style changes, sleeps, network or worker subprocesses. No new
+widget, public desktop_ui name, timer, event filter or deferred deletion is
+added. Automation evidence claims only "not broken"; visual quality remains the
+user's final check.
+
+The existing header, async-status, public-name, catalog-placeholder, UI-text,
+import-graph, repository-layout and function-length checks pass. these runs do
+not establish real-process smoke success. Ruff 0.16.10 check and changed-file
+format checks, Python 3.11 compileall and tools/quality_gate.py pass with zero
+gate findings.
+
+The shell-level idle hint changes the seven default-window viewport images:
+01_viewport.png through 07_viewport.png under
+tests/fixtures/desktop_pages_before. Their visual review belongs to the separate
+fixture-only commit. Page content, widget names, full-page baselines and metrics
+fixtures are unchanged by this implementation. No new module registration or
+stylesheet digest is needed. Protected sources, saved_candidate_pool,
+PROJECT_STATE, acceptance scores, gates, thresholds and timeouts retain empty
+diffs. Live trading remains disabled; no job-start, order or broker path is
+added.
