@@ -414,6 +414,8 @@
   "pick_walk_forward_original",
   "pick_walk_forward_original_prerequisite",
   "pool_origin",
+  "preview_backup",
+  "preview_backup_prerequisite",
   "preview_candidate_analysis",
   "preview_candidate_analysis_prerequisite",
   "preview_candidate_comparison",

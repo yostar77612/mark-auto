@@ -14,6 +14,8 @@ TOUCHED = (
     'tests/test_r7_function_lengths.py',
     'tests/test_r7_characterization.py',
     'tests/r7_characterization.py',
+    'desktop_pages/backup_inspection.py',
+    'quantlab/backup_inspection.py',
     'desktop_pages/compare_equity.py',
     'desktop_pages/data_gaps.py',
     'quantlab/data_gap_report.py',
@@ -169,6 +171,11 @@ def uncommented_local_imports(source):
 
 
 class ImportGraphTests(unittest.TestCase):
+    def test_f5_inspection_uses_reader_without_shell_dependency(self):
+        graph = import_graph(self.sources)
+        self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
+        self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+
     def test_manifest_d12_has_only_contract_edges(self):
         graph = import_graph(self.sources)
         self.assertEqual(graph['quantlab.agent_manifest'], {'quantlab.agent_tool_contract'})

@@ -296,7 +296,10 @@ class SettingsPage(PageContext, QWidget):
             raise ValidationError(ui_text('ui.backup.text_2'))
         if restore and not self.restore_confirm.isChecked():
             raise ValidationError(ui_text('ui.backup.text_3'))
+        panel = getattr(self, 'backup_inspection_panel', None)
         if self.jobs.active:
             raise ValidationError(ui_text('ui.backup.text_4'))
         self.start_job('ui_backup_restore' if restore else 'ui_backup_create', {'path': self.backup_path.text()})
         self.restore_confirm.setChecked(False)
+        if panel is not None:
+            panel.invalidate()

@@ -120,6 +120,18 @@ class AutomaticBackupPanel(QWidget):
             self.status.setText(ui_text('automatic_backup.tick.text_4').format(str(exc)))
 
     def handle_job_event(self, event):
+        window = getattr(self, 'window', None)
+        panel = getattr(window, 'backup_inspection_panel', None)
+        backup_event = (self.archive is not None and event.get('job_id') == self.job_id) or getattr(window, 'last_operation', None) in (
+            'ui_backup_create',
+            'ui_backup_restore',
+        )
+        if panel is not None and backup_event and event.get('type') in ('result', 'error', 'cancelled'):
+            archive = None
+            if event.get('type') == 'result' and getattr(window, 'last_operation', None) == 'ui_backup_create':
+                archive = self.archive or window.backup_path.text()
+            panel.refresh(archive)
+            panel.invalidate()
         if self.archive is None or event.get('job_id') != self.job_id:
             return
         status = {'result': 'success', 'error': 'error', 'cancelled': 'cancelled'}.get(event.get('type'))
@@ -139,3 +151,5 @@ class AutomaticBackupPanel(QWidget):
             self.status.setText(ui_text('automatic_backup.handle_job_event.text_4').format(str(exc)))
         finally:
             self.archive = self.job_id = None
+            if panel is not None:
+                panel.refresh()

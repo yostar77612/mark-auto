@@ -80,6 +80,7 @@ class SharedStateBindings:
     backtest_form = StateField()
     backtest_page = StateField()
     backup_path = StateField()
+    backup_inspection_panel = StateField()
     backups = StateField()
     bars = StateField()
     batch = StateField()
