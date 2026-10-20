@@ -75,6 +75,9 @@ def hardcoded_ui_text(source, filename='<injected>'):
 
 
 class HardcodedUITextTests(unittest.TestCase):
+    def test_connection_d9_in_inventory(self):
+        self.assertIn('desktop_pages/connection_test.py', UI_PACKAGE_MODULES)
+
     def test_assistant_d8_permissions_in_inventory(self):
         self.assertIn('desktop_pages/assistant_permissions.py', UI_PACKAGE_MODULES)
 

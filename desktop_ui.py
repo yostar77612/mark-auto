@@ -87,16 +87,20 @@ def campaign_generator(paths, options):
 
 def connection_event_from_payload(payload):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_chatgpt_ui import ConnectionEvent
+    from desktop_chatgpt_ui import ConnectionEvent, TestConnectionEvent
 
     if not isinstance(payload, dict):
         raise ValidationError(ui_text('ui.connection_event_from_payload.text_1'))
     value = dict(payload)
     value['registrations'] = tuple(tuple(row) for row in value.get('registrations', ()))
     value['models'] = tuple(value.get('models', ()))
+    if value.get('test_usage') is not None:
+        value['test_usage'] = tuple(value['test_usage'])
     for key in ('model_labels', 'account_labels'):
         if key in value:
             value[key] = tuple(tuple(row) for row in value[key])
+    if 'test_usage' in value:
+        return TestConnectionEvent(**value)
     return ConnectionEvent(**value)
 
 

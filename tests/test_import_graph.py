@@ -8,6 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'desktop_pages/connection_test.py',
     'desktop_pages/assistant_permissions.py',
     'desktop_pages/assistant_details.py',
     'desktop_pages/assistant_runtime.py',
