@@ -4,7 +4,6 @@ import os
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from pathlib import Path
-import tempfile
 import time
 import unittest
 from unittest.mock import patch
@@ -12,7 +11,6 @@ from PySide6.QtCore import QTime
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog
 from desktop_market import MarketHistoryDialog
 from desktop_ui import execute_ui_operation
-from quantlab.desktop_runtime import AppPaths
 from tests import test_desktop_ui as support
 
 HEADER = '成交日期,商品代號,到期月份(週別),成交時間,成交價格,成交數量(B+S),近月價格,遠月價格,開盤集合競價\n'

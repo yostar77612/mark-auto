@@ -1,6 +1,5 @@
 """Native-loader fixtures plus real, bounded loopback TLS; no external services."""
 
-import ast
 import copy
 import ctypes
 import hashlib

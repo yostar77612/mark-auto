@@ -10,9 +10,9 @@ import unittest
 from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-from quantlab.core import ValidationError, content_hash
+from quantlab.core import content_hash
 from quantlab.reporting import save_dataset, synthetic_dataset
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, validate_analysis_request
+from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 from tests import test_desktop_ui as ui_support
 from tests.test_research_analysis import source, PROVENANCE, AnalysisWire
 import quantlab.research_analysis as analysis
@@ -363,7 +363,7 @@ class AnalysisWidgetTests(unittest.TestCase):
     def prepare(self, compare=False):
         w = self.window
         c = w.chatgpt_controller
-        p = w.chatgpt_panel
+        w.chatgpt_panel
         data, state, folder = source(self.paths.state / 'campaigns')
         request = request_for(self.paths, data, state, folder, compare)
         c.state = 'plan_ready'

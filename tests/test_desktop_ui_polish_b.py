@@ -3,11 +3,9 @@
 from decimal import Decimal
 from pathlib import Path
 import copy
-import json
 import os
 import re
 import shutil
-import tempfile
 import unittest
 import uuid
 from unittest.mock import patch
@@ -16,7 +14,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel
 from desktop_presentation import display_number, display_status, result_name
-from desktop_forms import SummaryCard, ResultTable, backtest_summary_text
+from desktop_forms import SummaryCard, ResultTable
 from desktop_ui import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
 from tests.snapshot_cache import default_metrics
@@ -73,7 +71,7 @@ class PresentationTests(unittest.TestCase):
         self.assertNotIn('NEW_INTERNAL_CODE', display_status('NEW_INTERNAL_CODE'))
 
     def test_snapshot_height_and_default_disclosures(self):
-        with disposable_directory() as root, patch('tempfile.TemporaryDirectory', disposable_directory):
+        with disposable_directory(), patch('tempfile.TemporaryDirectory', disposable_directory):
             metrics = default_metrics()
             for name in ('AI 策略中心', '紙上交易與復原'):
                 self.assertLessEqual(metrics['pages'][name]['page_height'], 1600, name)

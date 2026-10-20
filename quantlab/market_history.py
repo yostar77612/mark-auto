@@ -5,13 +5,13 @@ Product rule references do not authenticate local files or dated user calendars.
 No network, trading-core imports, archive extraction, or fabricated minute bars.
 """
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace as replace
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import csv
 import hashlib
-import io
+import io as io
 import json
 import os
 from pathlib import Path, PureWindowsPath

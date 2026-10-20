@@ -786,7 +786,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         self.assertFalse(c.busy)
 
     def test_existing_connection_reauthorization_preserves_opaque_reference(self):
-        c = self.ready()
+        self.ready()
         self.panel.consent.setChecked(True)
         self.panel._act('reauthorize')
         self.assertEqual(self.quiesce[-1].action, 'begin')
@@ -814,7 +814,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         self.assertFalse(self.panel.primary_sign_in.isHidden())
 
     def test_primary_sign_in_when_already_connected_does_not_reauthorize(self):
-        c = self.ready()
+        self.ready()
         self.panel.primary_sign_in.click()
         self.assertEqual(self.requests[-1].action, 'list')
         self.finish('plan_ready')
@@ -823,7 +823,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         self.assertIsNone(self.panel._primary_flow)
 
     def test_primary_sign_in_with_expired_token_refreshes_before_authorizing(self):
-        c = self.ready()
+        self.ready()
         self.panel.primary_sign_in.click()
         self.finish('refresh_required')
         request = self.quiesce[-1]

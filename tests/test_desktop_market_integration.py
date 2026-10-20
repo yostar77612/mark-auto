@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -243,7 +242,7 @@ class MarketHostTests(unittest.TestCase):
 
     def test_latest_observed_cards_use_minute_only_history_and_preserve_newer_daily(self):
         from dataclasses import replace
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
         from decimal import Decimal
         from desktop_ui import latest_market_observations
         from quantlab.market import MarketSeries, QuoteSnapshot

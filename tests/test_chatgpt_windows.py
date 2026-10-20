@@ -3,7 +3,6 @@
 Run with unittest on Windows. A Linux pass explicitly skips native evidence.
 """
 
-import json
 import multiprocessing
 import os
 from pathlib import Path
@@ -13,7 +12,6 @@ import sys
 import tempfile
 import time
 import unittest
-from unittest.mock import patch
 
 import desktop_chatgpt_auth as a
 

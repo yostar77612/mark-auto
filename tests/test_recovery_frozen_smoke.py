@@ -1,7 +1,6 @@
 """Source/mocked checks only; actual frozen proof belongs to installed EXE CI."""
 
 import ast
-import copy
 from pathlib import Path
 import tempfile
 import time

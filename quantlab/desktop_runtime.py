@@ -26,7 +26,15 @@ from contextlib import contextmanager
 
 from . import __version__
 from .job_stages import normalize_stage, stage_from_traceback
-from .runtime_support import RuntimeSafetyError, WindowsAppMutex, WINDOWS_APP_MUTEX, atomic_write, _sync_directory, _durable_replace, validate_analysis_request
+from .runtime_support import (
+    RuntimeSafetyError,
+    WindowsAppMutex as WindowsAppMutex,
+    WINDOWS_APP_MUTEX as WINDOWS_APP_MUTEX,
+    atomic_write,
+    _sync_directory,
+    _durable_replace,
+    validate_analysis_request,
+)
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
@@ -1359,7 +1367,7 @@ class JobManager:
                 from .analysis_recovery import plan_bindings
 
                 # Keep operation-specific dependencies out of module startup.
-                from .core import content_hash
+                from .core import content_hash as content_hash
 
                 approved_analysis_plan = payload.get('approved_plan')
                 bindings = plan_bindings(approved_analysis_plan)

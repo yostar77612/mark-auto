@@ -213,7 +213,7 @@ class PlanTests(unittest.TestCase):
 
     # P2: catalog shape and ordering, hidden model cannot be selected.
     def test_p2_models(self):
-        tmp_path = self.tmp_path
+        self.tmp_path
         assert parse_models(
             {
                 'models': [
@@ -235,7 +235,7 @@ class PlanTests(unittest.TestCase):
 
     # P3: every byte split, UTF8/comments/CRLF/multiline.
     def test_p3_split_matrix(self):
-        tmp_path = self.tmp_path
+        self.tmp_path
         raw = b': comment\r\n\r\n' + frame({'type': 'response.output_text.delta', 'delta': '\u4e2d'}) + frame(terminal())
         for split in range(len(raw) + 1):
             p = SSEParser()
@@ -270,7 +270,7 @@ class PlanTests(unittest.TestCase):
                 assert receipts[0]['token_usage'] == 'unknown'
 
     def test_p4_terminal_rejection(self):
-        tmp_path = self.tmp_path
+        self.tmp_path
         for change in [
             {'output': [{'type': 'function_call', 'name': 'tool'}]},
             {'output': [{'type': 'message', 'role': 'assistant', 'content': [{'type': 'refusal', 'refusal': 'no'}]}]},
@@ -284,7 +284,7 @@ class PlanTests(unittest.TestCase):
                     parse_completed(response, 'trend')
 
     def test_p4_bounds(self):
-        tmp_path = self.tmp_path
+        self.tmp_path
         with self.assertRaises(ValidationError):
             SSEParser(max_bytes=8).feed(b'x' * 9)
         with self.assertRaises(ValidationError):

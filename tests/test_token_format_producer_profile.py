@@ -1,7 +1,6 @@
 """Exact new auth provenance; generated offline receipts, never real OAuth."""
 
 from datetime import timedelta
-import hashlib
 from pathlib import Path
 import sys
 import tempfile

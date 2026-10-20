@@ -8,7 +8,6 @@ import unittest
 from unittest.mock import patch
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 import desktop_icon

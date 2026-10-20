@@ -38,6 +38,48 @@ def session(symbol='TX', start=OPEN, minutes=3, trade_date='2026-10-08', name='d
     )
 
 
+class R6ImportCompatibilityTests(unittest.TestCase):
+    def test_r6_compatibility_imports_retain_original_objects(self):
+        # Resolve the existing public paths without constructing services or widgets.
+        import importlib
+
+        exports = (
+            ('quantlab.desktop_errors', 'quantlab.errors', ('ErrorCode', 'ErrorText', 'ERROR_LABELS')),
+            ('quantlab.__main__', 'quantlab.core', ('content_hash',)),
+            ('quantlab.market_history', 'dataclasses', ('replace',)),
+            ('quantlab.paper', 'typing', ('Any',)),
+            (
+                'quantlab.research_analysis',
+                'quantlab.analysis_contracts',
+                ('ANALYSIS_PROMPT', 'INDICATORS', 'KINDS', 'MAX_CONTEXT_BYTES', 'make_analysis_plan'),
+            ),
+            ('quantlab.walk_forward', 'dataclasses', ('is_dataclass',)),
+            ('quantlab.walk_forward', 'datetime', ('datetime',)),
+            ('quantlab.walk_forward', 'decimal', ('Decimal', 'InvalidOperation')),
+            ('quantlab.desktop_runtime', 'quantlab.runtime_support', ('WindowsAppMutex', 'WINDOWS_APP_MUTEX')),
+            ('desktop_recovery_smoke', 'pathlib', ('Path',)),
+            ('desktop_market', 'quantlab.market', ('MarketValidationError',)),
+            ('desktop_pages.widgets', 'PySide6.QtWidgets', ('QFileDialog',)),
+            ('desktop_pages.paper', 'quantlab.reporting', ('read_json', 'write_json', 'load_dataset')),
+            ('desktop_pages.views', 'quantlab.reporting', ('read_json', 'load_dataset', 'load_result')),
+            ('desktop_pages.views', 'desktop_presentation', ('result_name',)),
+            ('tools.validate_real_ai', 'quantlab.__main__', ('config_from_json',)),
+            ('tools.validate_real_ai', 'quantlab.provider', ('HTTPTransport',)),
+            ('tools.validate_real_ai', 'quantlab.reporting', ('load_dataset', 'read_json')),
+            ('tools.validate_real_ai', 'quantlab.research', ('CompatibleProvider', 'FAMILIES', 'demo_campaign_config')),
+        )
+        for module_name, origin_name, names in exports:
+            module = importlib.import_module(module_name)
+            origin = importlib.import_module(origin_name)
+            for name in names:
+                with self.subTest(module=module_name, name=name):
+                    self.assertIs(getattr(module, name), getattr(origin, name))
+        validator = importlib.import_module('tools.validate_real_ai')
+        self.assertIs(validator.urllib, importlib.import_module('urllib'))
+        self.assertIs(validator.urllib.request, importlib.import_module('urllib.request'))
+        self.assertEqual(set(validator.__all__), {name for name in dir(validator) if not name.startswith('_')})
+
+
 class HistoryTests(unittest.TestCase):
     def run_import(self, rows, sessions=None, suffix='.csv', **kwargs):
         tmp = tempfile.TemporaryDirectory()
@@ -324,7 +366,6 @@ class HistoryCacheRegressionTests(unittest.TestCase):
             self.assertTrue((cache / '.history-postlink.tmp').exists())
 
     def test_publication_does_not_reopen_locked_byte_through_second_handle(self):
-        from quantlab import market_history as h
 
         original = Path.open
 

@@ -21,7 +21,6 @@ from quantlab.reporting import demo_config, synthetic_dataset
 from quantlab.research import _reserve_holdout, ResourceTimeout
 from quantlab.walk_forward import (
     WalkForwardFold,
-    WalkForwardPlan,
     build_walk_forward_plan,
     walk_forward_plan_from_dict,
     run_walk_forward,

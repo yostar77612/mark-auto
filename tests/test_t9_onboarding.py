@@ -11,7 +11,7 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QComboBox
-from desktop_strings import GLOSSARY, FORBIDDEN_DEFAULT_TERMS, ui_text
+from desktop_strings import GLOSSARY, FORBIDDEN_DEFAULT_TERMS
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
 

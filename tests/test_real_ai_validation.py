@@ -8,7 +8,7 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from quantlab.core import ValidationError, content_hash
+from quantlab.core import ValidationError
 from quantlab.provider import HTTPTransport
 from tools.validate_real_ai import recording_proxy, summarize_evidence, verify_artifacts, FrozenResponseReplay, replay_and_compare, improvement_evidence
 

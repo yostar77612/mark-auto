@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPlainTextEdit,
     QCheckBox,
-    QFileDialog,
+    QFileDialog as QFileDialog,
     QFormLayout,
     QMessageBox,
     QSizePolicy,

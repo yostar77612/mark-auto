@@ -13,7 +13,6 @@ from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
 from desktop_ui import MainWindow
-from tools.ui_snapshot import page_metrics
 from tests.snapshot_cache import default_metrics
 
 

@@ -9,7 +9,7 @@ import ctypes
 import math
 import multiprocessing as mp
 import os
-from pathlib import Path
+from pathlib import Path as Path
 import sys
 import threading
 import time

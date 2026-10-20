@@ -24,12 +24,72 @@ import urllib.request
 
 # Allow direct invocation without installing this repository.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from quantlab.__main__ import config_from_json
+from quantlab.__main__ import config_from_json as config_from_json
 from quantlab.core import ValidationError, content_hash, to_dict
-from quantlab.provider import HTTPTransport
-from quantlab.reporting import load_dataset, read_json, write_json
-from quantlab.research import CompatibleProvider, FAMILIES, demo_campaign_config, run_campaign, validate_dsl, _campaign_config, _run_bounded, _evaluate_split
+from quantlab.provider import HTTPTransport as HTTPTransport
+from quantlab.reporting import load_dataset as load_dataset, read_json as read_json, write_json
+from quantlab.research import (
+    CompatibleProvider as CompatibleProvider,
+    FAMILIES as FAMILIES,
+    demo_campaign_config as demo_campaign_config,
+    run_campaign,
+    validate_dsl,
+    _campaign_config,
+    _run_bounded,
+    _evaluate_split,
+)
 from quantlab.strategies import builtin_strategies
+
+__all__ = [
+    'BaseHTTPRequestHandler',
+    'CompatibleProvider',
+    'Decimal',
+    'FAMILIES',
+    'FrozenResponseReplay',
+    'HTTPTransport',
+    'MODEL_FILENAME',
+    'MODEL_ID',
+    'MODEL_REVISION',
+    'MODEL_SHA256',
+    'Path',
+    'RUNTIME_SHA256',
+    'RUNTIME_URL',
+    'SUPPORTED_MODELS',
+    'ThreadingHTTPServer',
+    'ValidationError',
+    'annotations',
+    'builtin_strategies',
+    'config_from_json',
+    'content_hash',
+    'contextmanager',
+    'copy',
+    'datetime',
+    'demo_campaign_config',
+    'free_port',
+    'hashlib',
+    'http',
+    'improvement_evidence',
+    'json',
+    'load_dataset',
+    'main',
+    'read_json',
+    'recording_proxy',
+    'replay_and_compare',
+    'run_campaign',
+    'sha256_file',
+    'socket',
+    'summarize_evidence',
+    'sys',
+    'tarfile',
+    'threading',
+    'time',
+    'timezone',
+    'to_dict',
+    'urllib',
+    'validate_dsl',
+    'verify_artifacts',
+    'write_json',
+]
 
 MODEL_ID = 'Qwen/Qwen2.5-0.5B-Instruct-GGUF'
 MODEL_REVISION = '9217f5db79a29953eb74d5343926648285ec7e67'
