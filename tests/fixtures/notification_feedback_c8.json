@@ -1,0 +1,140 @@
+{
+  "result": {
+    "bars": 960,
+    "reports": [
+      {}
+    ],
+    "metrics": {
+      "net_pnl": "-706",
+      "trade_count": 29
+    },
+    "account": {
+      "account_id": "paper-demo",
+      "cash": "999976",
+      "positions": {
+        "TMF": -1
+      },
+      "orders": {
+        "o": {}
+      },
+      "fills": {
+        "f": {}
+      }
+    },
+    "replay": {
+      "processed_bars": 40,
+      "new_fills": 1,
+      "cursor": 100
+    },
+    "strategy_hash": "abcdef",
+    "analysis_id": "analysis-demo",
+    "providers": {
+      "synthetic": {
+        "bars": 12
+      }
+    },
+    "summary": {
+      "evaluated_oos_folds": 2
+    }
+  },
+  "completion": {
+    "ui_demo": "示範資料建立完成：960 根（合成資料）",
+    "ui_import": "資料匯入完成：960 根（已匯入資料）",
+    "ui_refresh": "公開資料下載完成：0 份下載紀錄",
+    "ui_market_refresh": "官方行情更新完成：1 個來源；12 根",
+    "ui_backtest": "回測完成：1 份報告，淨損益 -706 TWD、29 筆交易",
+    "ui_campaign": "策略研究完成：0 個候選，0 個入選",
+    "ui_compare": "結果比較完成：0 組結果",
+    "ui_select": "策略啟用完成：策略版本 abcdef（僅研究／紙上）",
+    "ui_disable": "策略停用完成：啟用版本已停用；紙上新委託停止",
+    "ui_paper_snapshot": "帳戶讀取完成：帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆",
+    "ui_paper_reconcile": "帳戶對帳完成：帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆；已完成對帳",
+    "ui_paper_kill": "緊急停止完成：帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆",
+    "ui_paper_replay": "歷史重播完成：處理 40 根、新增 1 筆成交（游標 100），帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆",
+    "ui_paper_submit": "紙上委託完成：帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆",
+    "ui_paper_cancel": "委託取消完成：帳戶 paper-demo，現金 999976 TWD，部位 1 項、委託 1 筆、成交 1 筆",
+    "ui_backup_create": "備份建立完成：本機封存處理已結束；請核對保存紀錄",
+    "ui_backup_restore": "備份還原完成：本機封存處理已結束；請核對保存紀錄",
+    "ui_analysis_preview": "分析預覽完成：識別碼 analysis-dem；建議不自動套用",
+    "ui_analysis_run": "AI 解讀完成：識別碼 analysis-dem；建議不自動套用",
+    "ui_analysis_read": "分析讀取完成：識別碼 analysis-dem；建議不自動套用",
+    "ui_analysis_reconcile": "分析紀錄核對完成：識別碼 analysis-dem；建議不自動套用",
+    "ui_walk_forward_preview": "Walk-forward 預覽完成：已評估 2 折；模型呼叫 0",
+    "ui_walk_forward_run": "Walk-forward 執行完成：已評估 2 折；模型呼叫 0",
+    "ui_walk_forward_read": "Walk-forward 讀取完成：已評估 2 折；模型呼叫 0",
+    "ui_walk_forward_reconcile": "Walk-forward 核對完成：已評估 2 折；模型呼叫 0",
+    "ui_chatgpt_auth": "訂閱連線完成：0 筆請求紀錄；請核對訂閱狀態",
+    "ui_chatgpt_usage": "訂閱用量讀取完成：0 筆請求紀錄；請核對訂閱狀態",
+    "ui_chatgpt_reconcile": "訂閱紀錄核對完成：0 筆請求紀錄；請核對訂閱狀態"
+  },
+  "stop": [
+    [
+      {},
+      null,
+      [
+        "停止狀態未知；請核對帳戶",
+        "#f1b65c"
+      ]
+    ],
+    [
+      {
+        "kill_switch": false
+      },
+      null,
+      [
+        "未停止；仍須通過每次風控與對帳",
+        "#a9c8ee"
+      ]
+    ],
+    [
+      {
+        "manual_order_lock": true
+      },
+      null,
+      [
+        "manual_order_lock",
+        "#f1b65c"
+      ]
+    ],
+    [
+      {
+        "kill_switch": true
+      },
+      "user",
+      [
+        "緊急停止（使用者觸發）",
+        "#ff8282"
+      ]
+    ],
+    [
+      {
+        "kill_switch": true
+      },
+      "replay",
+      [
+        "重播批次已結束（正常）；新委託仍停止",
+        "#82c9ae"
+      ]
+    ],
+    [
+      {
+        "quarantined": true
+      },
+      null,
+      [
+        "風控觸發停止；請核對帳戶",
+        "#f1b65c"
+      ]
+    ],
+    [
+      {
+        "reconciliation_required": true
+      },
+      null,
+      [
+        "需要對帳；禁止新委託",
+        "#f1b65c"
+      ]
+    ]
+  ]
+}
