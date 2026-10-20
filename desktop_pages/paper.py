@@ -9,11 +9,13 @@ import json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json, write_json, load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog, QTabWidget
+from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
-from .result_widgets import KpiCards, ResultTable, bind_tab_count
+from .result_widgets import KpiCards
+from quantlab.paper_tab_data import account_counts
+from .paper_tabs import build_tabs, refresh_tables
 from .replay_controls import ReplayControls
 from .widgets import PanelCard
 
@@ -134,19 +136,7 @@ class PaperPage(PageContext, QWidget):
         advanced.addWidget(self.paper_card)
         self.kpis = KpiCards(('cash', 'positions', 'orders', 'fills', 'reconciliation_required', 'stop'))
         layout.insertWidget(2, self.kpis)
-        tables = QTabWidget()
-        layout.addWidget(tables)
-        self.positions_table = ResultTable()
-        self.positions_table.setObjectName('paper_positions_results')
-        tables.addTab(self.positions_table, ui_text('results.positions'))
-        self.orders_table = ResultTable()
-        self.orders_table.setObjectName('paper_orders_results')
-        tables.addTab(self.orders_table, ui_text('results.orders'))
-        self.account_fills_table = ResultTable()
-        self.account_fills_table.setObjectName('paper_fills_results')
-        tables.addTab(self.account_fills_table, ui_text('results.fills'))
-        for table in (self.positions_table, self.orders_table, self.account_fills_table):
-            bind_tab_count(tables, table)
+        build_tabs(self, layout)
 
     def load_form_file(self, form, editor):
         name, _ = self.host.open_file(ui_text('ui.load_form_file.text_1'), '', 'JSON (*.json)')
@@ -223,17 +213,28 @@ class PaperPage(PageContext, QWidget):
         )
 
     def _show_account(self, account, strategy=None):
+        account = dict(account or {})
+        for key in ('positions', 'orders', 'fills'):
+            if key in account and account[key] is None:
+                account[key] = {}
+        counts = account_counts(account)
         chart = self.market.chart
-        mode = 'paper' if account.get('verification') == 'synthetic_paper_only' and chart.trace is None and self.last_operation != 'ui_paper_replay' else None
+        mode = (
+            'paper'
+            if account.get('verification') == 'synthetic_paper_only'
+            and getattr(chart, 'trace', None) is None
+            and getattr(self, 'last_operation', None) != 'ui_paper_replay'
+            else None
+        )
         chart.set_paper_snapshot(account, mode=mode, request=self._amend_order)
         values = {k: account.get(k) for k in ('account_id', 'cash', 'reconciliation_required')}
         if not account.get('account_id'):
             values['cash'] = None
         values.update(
             {
-                ui_text('ui._show_account.text_1'): len(account.get('positions', {})),
-                ui_text('ui._show_account.text_2'): len(account.get('orders', {})),
-                ui_text('ui._show_account.text_3'): len(account.get('fills', {})),
+                ui_text('ui._show_account.text_1'): counts['positions'],
+                ui_text('ui._show_account.text_2'): counts['orders'],
+                ui_text('ui._show_account.text_3'): counts['fills'],
                 ui_text('ui._show_account.text_4'): account.get('positions', {}),
             }
         )
@@ -253,8 +254,7 @@ class PaperPage(PageContext, QWidget):
         orders = []
         for key, value in account.get('orders', {}).items():
             row = {**value.get('intent', {}), **value, 'order_id': key}
-            if 'quantity' in row and 'contract_id' in row:
-                orders.append(row)
+            orders.append(row)
         fills = []
         for key, value in account.get('fills', {}).items():
             intent = account.get('orders', {}).get(value.get('order_id'), {}).get('intent', {})
@@ -263,16 +263,14 @@ class PaperPage(PageContext, QWidget):
         self.kpis.set_values(
             {
                 'cash': values['cash'],
-                'positions': len(positions) if 'positions' in account else None,
-                'orders': len(account['orders']) if 'orders' in account else None,
-                'fills': len(fills) if 'fills' in account else None,
+                'positions': counts['positions'] if 'positions' in account else None,
+                'orders': counts['orders'] if 'orders' in account else None,
+                'fills': counts['fills'] if 'fills' in account else None,
                 'reconciliation_required': account.get('reconciliation_required'),
                 'stop': stop_text,
             }
         )
-        self.positions_table.set_rows([{'contract_id': row['contract_id'], 'position': row['quantity']} for row in positions], ('contract_id', 'position'))
-        self.orders_table.set_rows(orders, ('order_id', 'contract_id', 'side', 'quantity', 'status'))
-        self.account_fills_table.set_rows(fills, ('timestamp', 'contract_id', 'side', 'quantity', 'price', 'commission', 'tax'))
+        refresh_tables(self, account, orders, fills)
         if strategy is None:
             selection = self.root / 'selection.json'
             strategy = (
