@@ -105,6 +105,9 @@ class HardcodedUITextTests(unittest.TestCase):
         self.assertIn('desktop_pages/paper_tabs.py', UI_PACKAGE_MODULES)
         self.assertEqual(hardcoded_ui_text((ROOT / 'quantlab/paper_tab_data.py').read_text(encoding='utf-8')), [])
 
+    def test_f1_gap_widget_registered(self):
+        self.assertIn('desktop_pages/data_gaps.py', UI_PACKAGE_MODULES)
+
     def test_inventory_covers_all_desktop_modules(self):
         self.assertEqual({path.name for path in ROOT.glob('desktop*.py')}, set(UI_MODULES) | set(NON_UI_MODULES))
         self.assertEqual(TODO_MODULES, {})

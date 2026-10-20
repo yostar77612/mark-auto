@@ -2,8 +2,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QComboBox, QPlainTextEdit, QCheckBox, QSpinBox, QFileDialog
 from desktop_strings import ui_text
 from quantlab.core import ValidationError
+from quantlab.data_gap_report import GapReport
 from desktop_market import MarketHistoryDialog
 from .host import PageHost
+from .data_gaps import GapPanel
 
 
 class DataPage(QWidget):
@@ -16,6 +18,8 @@ class DataPage(QWidget):
         self.summary = QPlainTextEdit()
         self.summary.setReadOnly(True)
         layout = self.host.mount_page(self, ui_text('ui._data_page.text_1'))
+        self._gap_layout = layout
+        self.gap_panel = None
         layout.addWidget(self.overview)
         self.market_provider = QComboBox()
         self.market_provider.addItem(ui_text('ui._data_page.text_2'), ('twse', 'json'))
@@ -95,6 +99,7 @@ class DataPage(QWidget):
         dialog.open()
 
     def import_data(self):
+        self.reset_gap_report()
         if not self.import_path.text().strip() or not self.calendar_path.text().strip():
             raise ValidationError(ui_text('ui.import_data.text_1'))
         self.host.start_job(
@@ -107,3 +112,16 @@ class DataPage(QWidget):
             raise ValidationError(ui_text('ui.download_data.text_1'))
         self.host.start_job('ui_refresh', {'days': self.days.value(), 'network_opt_in': True})
         self.network_data.setChecked(False)
+
+    def show_gap_report(self, report):
+        if not report.gaps:
+            self.reset_gap_report()
+            return
+        if self.gap_panel is None:
+            self.gap_panel = GapPanel(self)
+            self._gap_layout.insertWidget(1, self.gap_panel)
+        self.gap_panel.set_report(report)
+
+    def reset_gap_report(self):
+        if self.gap_panel is not None:
+            self.gap_panel.set_report(GapReport())

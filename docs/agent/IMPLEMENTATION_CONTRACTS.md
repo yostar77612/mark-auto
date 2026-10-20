@@ -3463,3 +3463,59 @@ compared files use LF; the complete function-definition comparison is exact.
 Ruff 0.16.10 check and format --check on the five changed Python files exit 0.
 `py -3.11 -m compileall -q quantlab desktop_pages tools tests desktop.py` and
 `py -3.11 -m py_compile tools/research_app.py` exit 0.
+## F1 - Rejected-import gap diagnosis
+
+F1 adds quantlab/data_gap_report.py and desktop_pages/data_gaps.py. The item is
+scoped to a single commit. The report projects only the existing validator's
+session_coverage_gaps coordinates: contract_id, trade_date, session, start and
+end. It never reads bars, research results, OOS/holdout payloads, filenames,
+paths or arbitrary exception strings. It orders by calendar trade_date and
+segment start, retains at most 500 rows with a bounded heap, and reports the
+remaining count. Malformed, missing and empty quality inputs produce no gaps.
+Only B1 ERROR_TABLE codes are accepted; unknown codes use operation_failed.
+
+The import worker applies the existing validate_dataset rejection before any
+dataset/calendar store write. This closes the previous raw-import boundary
+where invalid quality could be persisted even though downstream validation
+rejected it. Validation rules, quality errors and the existing validator's
+exception text are unchanged. Validated-dataset imports retain their existing
+market-series checks. Accepted data objects, hashes, manifests and serialization
+are unchanged. An existing progress packet carries only the bounded gap
+projection; worker protocol types, consent paths and terminal failure handling
+are unchanged. Old-job packets cannot update the report.
+
+DataPage creates the read-only table and per-contract/day timeline lazily for
+rejections with gaps. Success and explicit page reset clear rows, timeline
+coordinates and accessible segment text. Starting a new import also clears the
+previous report. Table groups list every retained contract. Calendar trade dates
+stay YYYY-MM-DD; segment timestamps show explicit Taipei +08:00 time. Painting
+uses sorted coordinates, palette colors, hatching and borders; the accessible
+name and full textual segment equivalent do not rely on color. All new UI copy
+uses literal ui_text keys in a new trailing ZH_TW.update block. The fix explanation
+lists re-downloading that day through the existing refresh consent flow,
+supplying the missing segment and choosing another range. No fix button, job,
+network access, data repair or order-capable call is added.
+
+Only allowlisted structural values reach the new widgets in either privacy
+state. Paths, filenames, arbitrary error messages and unrelated OOS/holdout
+metadata are omitted in both states. No timer, event filter or deferred deletion
+is added. Parent ownership is explicit. No new objectName or desktop_ui public
+name is added. UI, style, import-graph and layout inventories cover the new
+package modules. Default snapshots, widget-name fixtures, theme stylesheet and
+appearance digests are unchanged; no baseline refresh is required.
+
+The eight cheap offscreen tests in test_data_gaps_f1.py cover the October 7
+08:46-08:47 Taipei missing-minute fixture, unchanged rejection message,
+accepted-object byte serialization, no rejected store writes, shuffled order,
+10,000-gap bounds, malformed and unknown-code fallback, contract grouping,
+privacy states and unrelated OOS-bearing metadata exclusion, lazy construction,
+success/reset clearing, deterministic image rendering and stale-job filtering.
+Existing B1 catalogue, B2 paper-lock, public registry, function budgets, catalog,
+import, style and layout checks pass, as do the data, desktop-page and real
+desktop smoke modules. Offscreen structural checks do not establish visual
+quality; the user's final visual check is the authority.
+
+G3 files and saved_candidate_pool, PROJECT_STATE, acceptance scores, default
+fixtures and timeout constants have empty diffs. Live trading remains permanently
+disabled, fail-closed paths are preserved, and no validation threshold or consent
+control is loosened. Existing tests receive only additive inventory assertions.

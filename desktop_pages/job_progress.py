@@ -8,6 +8,7 @@ from desktop_strings import ui_text, stage_error_message
 from desktop_chatgpt_states import campaign_outcome, outcome_message, outcome_state
 from quantlab.job_stages import normalize_stage
 from quantlab.diagnostics import error_entry
+from .data_gaps import import_event
 
 TERMINAL = frozenset({'result', 'completed', 'success', 'error', 'failed', 'cancelled', 'canceled'})
 SUCCESS = frozenset({'result', 'completed', 'success'})
@@ -88,6 +89,12 @@ class JobFeedback:
         )
 
     def accept(self, shell, event):
+        if self.job_id is not None and (event.get('job_id') not in (None, self.job_id) or self.terminal):
+            return False
+        # Only import packets reach the lazy, display-only data report.
+        page = getattr(shell, 'data_page', None)
+        if getattr(shell, 'last_operation', None) == 'ui_import' and page is not None:
+            import_event(page, event)
         if self.job_id is None:
             return True  # Not started through start_job; the host's own job-id filter already applied.
         if event.get('job_id') not in (None, self.job_id) or self.terminal:

@@ -91,6 +91,10 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
         self.assertIn('tests', ALLOWED_DIRECTORIES)
+    def test_f1_gap_modules_stay_in_existing_packages(self):
+        for name in ('desktop_pages/data_gaps.py', 'quantlab/data_gap_report.py'):
+            self.assertTrue((ROOT / name).is_file())
+            self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
     def test_manifest_d12_in_existing_packages(self):
         for name in ('desktop_pages/assistant_manifest.py', 'quantlab/agent_manifest.py'):
