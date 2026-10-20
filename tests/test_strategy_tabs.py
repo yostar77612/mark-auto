@@ -1,7 +1,6 @@
 """Strategy work areas, preserved widget ancestry and real offscreen heights."""
 
 import os
-from pathlib import Path
 import tempfile
 import unittest
 
@@ -63,7 +62,7 @@ class StrategyTabSnapshotTests(unittest.TestCase):
     def test_default_tab_heights_from_real_capture(self):
         from tests.snapshot_cache import default_metrics
 
-        with tempfile.TemporaryDirectory(prefix='markauto-strategy-tabs-') as temporary:
+        with tempfile.TemporaryDirectory(prefix='markauto-strategy-tabs-'):
             result = default_metrics()
             page = result['pages']['AI 策略中心']
             self.assertEqual(set(page['subpages']), {'策略設定', 'AI 研究', 'Walk-forward 驗證'})

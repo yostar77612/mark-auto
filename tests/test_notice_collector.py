@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import hashlib
-import io
 import json
 import os
 import runpy

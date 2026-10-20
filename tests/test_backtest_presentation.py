@@ -1,11 +1,9 @@
 """Display-only report adapters; generated offline engineering evidence."""
 
-import ast
 import copy
 import json
 import os
 from decimal import Decimal
-from pathlib import Path
 import unittest
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')

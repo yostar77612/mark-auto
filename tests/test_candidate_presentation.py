@@ -1,6 +1,6 @@
 """Candidate pane presentation only; isolated synthetic source fixtures."""
 
-import copy, json, os, tempfile, unittest
+import os, tempfile, unittest
 from pathlib import Path
 from decimal import Decimal
 

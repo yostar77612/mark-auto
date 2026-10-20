@@ -4,9 +4,9 @@ from desktop_strings import ui_text
 from pathlib import Path
 from quantlab.desktop_errors import error_message, exception_code
 from quantlab.core import canonical_json, content_hash, to_dict
-from quantlab.reporting import read_json, load_dataset, demo_config, load_result, load_selection
+from quantlab.reporting import read_json as read_json, load_dataset as load_dataset, demo_config, load_result as load_result, load_selection
 from PySide6.QtCore import Qt
-from desktop_presentation import display_status, result_name
+from desktop_presentation import display_status, result_name as result_name
 from .bindings import PageContext
 from .compare_table import saved_row
 

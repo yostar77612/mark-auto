@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .core import canonical_json, ValidationError, content_hash
+from .core import canonical_json, ValidationError, content_hash as content_hash
 from .reporting import synthetic_dataset, demo_config, save_dataset, load_dataset, load_result, read_json, write_json, export_report, comparison_rows
 
 

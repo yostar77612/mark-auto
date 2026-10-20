@@ -263,7 +263,7 @@ class AuthTests(unittest.TestCase):
                 action(ref)
         self.assertEqual(self.vault.record, record)
         before = len(self.transport.calls)
-        url = self.begin(ref)
+        self.begin(ref)
         self.assertEqual(len(self.transport.calls), before)
         self.assertEqual(self.query['client_id'], ['retry-client'])
         self.assertNotIn('agent_name_hint', self.query)

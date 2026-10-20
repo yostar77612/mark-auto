@@ -1,6 +1,5 @@
 """Generated-bar desktop routing and typed UI checks; never market evidence."""
 
-import copy
 import importlib.util
 import json
 import os
@@ -14,7 +13,7 @@ HAS_QT = importlib.util.find_spec('PySide6') is not None
 from quantlab.core import Dataset, ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths
 from quantlab.reporting import demo_config, save_dataset
-from quantlab.walk_forward import read_walk_forward_state, run_walk_forward
+from quantlab.walk_forward import read_walk_forward_state
 from tests.test_walk_forward import inputs, fake_worker, alter_prices
 
 

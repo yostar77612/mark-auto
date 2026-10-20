@@ -37,7 +37,7 @@ from decimal import Decimal, InvalidOperation, localcontext, ROUND_HALF_EVEN, Co
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any
+from typing import Any as Any
 
 from .core import Instrument, CostSpec, ValidationError, canonical_json, content_hash, freeze
 

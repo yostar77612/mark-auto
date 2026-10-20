@@ -147,7 +147,7 @@ class ChatGPTHostTests(unittest.TestCase):
     def test_worker_failure_clears_url_and_marks_unknown(self):
         w = self.window
         with patch.object(self.jobs, 'start', return_value='fixture-job'):
-            r = w.chatgpt_controller.request('list')
+            w.chatgpt_controller.request('list')
         w._chatgpt_event({'job_id': 'fixture-job', 'type': 'error', 'message': 'fixture'})
         self.assertFalse(w.chatgpt_controller.busy)
         self.assertEqual(w.chatgpt_controller.state, 'unknown')
@@ -423,7 +423,7 @@ class ChatGPTHostTests(unittest.TestCase):
 
 def _fixture_stubborn_tree(sender, ready):
     """Offline adversarial child: ignores TERM; never performs network I/O."""
-    import subprocess, sys, signal, time
+    import subprocess, sys, time
 
     os.setsid()
     child = subprocess.Popen(
@@ -440,7 +440,7 @@ def _fixture_stubborn_tree(sender, ready):
 @unittest.skipUnless(os.name == 'posix' and os.path.isdir('/proc'), 'Linux process evidence')
 class DescendantQuiescenceTests(unittest.TestCase):
     def test_term_ignoring_descendant_cannot_survive_cancel(self):
-        import multiprocessing, tempfile, time
+        import multiprocessing, tempfile
         from pathlib import Path
         from quantlab.desktop_runtime import AppPaths, JobManager
 

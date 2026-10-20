@@ -1,7 +1,7 @@
 """Fixed desktop error catalogue. Exception values never become display/log text."""
 
 import sqlite3
-from .errors import ErrorCode, ErrorText, ERROR_LABELS, ERROR_TABLE
+from .errors import ErrorCode as ErrorCode, ErrorText as ErrorText, ERROR_LABELS as ERROR_LABELS, ERROR_TABLE
 
 
 def error_message(code):

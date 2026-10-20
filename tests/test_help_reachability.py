@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class HelpReachabilityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with onboarding.sandbox_ui(), tempfile.TemporaryDirectory(prefix='t9-help-snapshot-') as folder:
+        with onboarding.sandbox_ui(), tempfile.TemporaryDirectory(prefix='t9-help-snapshot-'):
             cls.metrics = default_metrics()
 
     def test_live_label_budgets_and_t8_heights(self):

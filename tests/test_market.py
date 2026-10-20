@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 import io
 
-from quantlab.market import InstrumentRef, MarketBar, MarketSeries, MarketValidationError, QuoteSnapshot
+from quantlab.market import InstrumentRef, MarketValidationError, QuoteSnapshot
 from quantlab.market_providers import parse_twse_daily, parse_taifex_daily, refresh_daily, load_cached, official_url, TWSE_URL, TAIFEX_URL
 
 NOW = datetime(2026, 10, 10, tzinfo=timezone.utc)

@@ -1,7 +1,6 @@
 """New WFO schema joins its first snapshot; original durable boundaries remain."""
 
 from contextlib import closing
-import json
 import multiprocessing
 from pathlib import Path
 import sqlite3

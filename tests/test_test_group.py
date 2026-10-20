@@ -231,7 +231,6 @@ class ParallelResearchGroupTests(unittest.TestCase):
         self.assertEqual(json.dumps(parent, sort_keys=True), before)
 
     def test_missing_stale_corrupt_counts_ids_outcomes_and_fixtures_fail_closed(self):
-        import copy
 
         changes = [
             lambda r: r.update(worker_token='stale'),

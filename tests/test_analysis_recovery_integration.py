@@ -5,7 +5,6 @@ integration. No kernel object, original-GUI-death or Windows token claim follows
 """
 
 from contextlib import closing
-import copy
 import json
 from pathlib import Path
 import sqlite3

@@ -4249,3 +4249,203 @@ G3 sources and saved-candidate producer inputs, live-order guards, validation
 rules, budgets, timeouts, quality gates and acceptance scores are unchanged. The
 implementation contains only import redirection, the mutex relocation and
 explanatory import comments.
+
+## T-R6: partial per-file F401/F841 tightening
+
+This item removes the F401/F841 per-file exceptions for 49 files and resolves 89
+findings. The number of exception entries containing either code is 59 at
+`4c72a30` and 10 after this stage. R6 remains partial; the remaining
+exceptions are explicitly listed below. The pyproject change only deletes or
+shortens existing per-file entries. Other codes, including E402 and F811,
+remain.
+`select`, `exclude`, `extend-exclude`, gate configuration and rule versions are
+unchanged. No ignore code, noqa, feature, UI control or application module is
+added.
+
+Application imports retain their existing bindings through explicit same-name
+re-exports (`import X as X` or `from module import X as X`). The validation tool
+also declares `__all__` containing its complete original public-name set,
+including the `urllib` package; wildcard imports retain the same names. The
+eight original application modules had no `__all__`. Their fresh-interpreter
+public-name sets are exactly equal before
+and after, and `desktop_ui` has exactly the same public names. All application
+import targets, symbol lists and their initialization order are unchanged,
+including imports from G3 sources and operation registration dependencies.
+
+Per-name `git grep` and module-reference searches precede import removal. The
+consumer audit covers from-imports, module aliases, attribute access, constant
+getattr names and dotted string/patch references; none consumes a deleted test
+import. Existing imported test helpers remain.
+Source reads and runtime identity checks establish the preserved bindings.
+`tests/test_desktop_runtime.py:626` imports `WindowsAppMutex` and
+`WINDOWS_APP_MUTEX` from their retained compatibility path. Whole-repository
+tracked-text searches cover each deleted import name and its importing test
+module, including docs, tools, packaging, getattr and dotted patch references.
+The terminal-smoke consumers use `process_can_run`, the TLS boundary test uses
+`report`, and market consumers use `TWSE`, `ROW` and `NOW`; all remain intact.
+
+The substeps run test files first, followed by leaf services and UI modules.
+Each row records a separate Ruff check after removing that file's F401/F841
+exceptions, followed by cleanup and another check with zero findings. The exact
+removed-exception path list is the table's first column. For tests, 'delete'
+means dead imports only; for application modules, 'export' preserves the public
+compatibility binding. F841 actions are detailed separately.
+
+| File, in substep order | Findings before / after | Import disposition; unused bindings |
+| --- | --- | --- |
+| `tests/test_analysis_recovery_integration.py` | 1 / 0 | delete `copy` |
+| `tests/test_application_icon.py` | 1 / 0 | delete `QIcon` |
+| `tests/test_backtest_presentation.py` | 2 / 0 | delete `ast`, `Path` |
+| `tests/test_candidate_presentation.py` | 2 / 0 | delete `copy`, `json` |
+| `tests/test_chatgpt_auth.py` | 1 / 0 | F841: `url` |
+| `tests/test_chatgpt_research.py` | 2 / 0 | delete `util`, `sys` |
+| `tests/test_chatgpt_windows.py` | 2 / 0 | delete `json`, `patch` |
+| `tests/test_compare_table.py` | 1 / 0 | delete `PATH_ROLE` |
+| `tests/test_data.py` | 1 / 0 | delete `csv` |
+| `tests/test_desktop_analysis.py` | 3 / 0 | delete `ValidationError`, `validate_analysis_request`; F841: `p` |
+| `tests/test_desktop_chatgpt_integration.py` | 3 / 0 | delete `signal`, `time`; F841: `r` |
+| `tests/test_desktop_chatgpt_ui.py` | 3 / 0 | F841: `c`, `c`, `c` |
+| `tests/test_desktop_market_integration.py` | 2 / 0 | delete `tempfile`, `timezone` |
+| `tests/test_desktop_ui_polish_a.py` | 1 / 0 | delete `page_metrics` |
+| `tests/test_desktop_ui_polish_b.py` | 4 / 0 | delete `json`, `tempfile`, `backtest_summary_text`; F841: `root` |
+| `tests/test_desktop_walk_forward.py` | 2 / 0 | delete `copy`, `run_walk_forward` |
+| `tests/test_help_reachability.py` | 1 / 0 | F841: `folder` |
+| `tests/test_market_history.py` | 1 / 0 | delete `market_history` |
+| `tests/test_market_history_ui.py` | 2 / 0 | delete `tempfile`, `AppPaths` |
+| `tests/test_notice_collector.py` | 1 / 0 | delete `io` |
+| `tests/test_paper_replay_policy.py` | 1 / 0 | delete `sqlite3` |
+| `tests/test_performance_metrics.py` | 1 / 0 | delete `replace` |
+| `tests/test_qt_licenses.py` | 1 / 0 | delete `os` |
+| `tests/test_recovery_frozen_smoke.py` | 1 / 0 | delete `copy` |
+| `tests/test_saved_candidate_pool.py` | 1 / 0 | delete `FAIL_CLOSED_TRANSPORT_PROFILE_V1` |
+| `tests/test_settings_sections.py` | 1 / 0 | delete `re` |
+| `tests/test_strategy_tabs.py` | 2 / 0 | delete `Path`; F841: `temporary` |
+| `tests/test_t9_onboarding.py` | 1 / 0 | delete `ui_text` |
+| `tests/test_test_group.py` | 1 / 0 | delete `copy` |
+| `tests/test_token_format_producer_profile.py` | 1 / 0 | delete `hashlib` |
+| `tests/test_walk_forward.py` | 1 / 0 | delete `WalkForwardPlan` |
+| `tests/test_walk_forward_initialization.py` | 1 / 0 | delete `json` |
+| `quantlab/desktop_errors.py` | 3 / 0 | export `ErrorCode`, `ErrorText`, `ERROR_LABELS` |
+| `quantlab/market_history.py` | 2 / 0 | export `replace`, `io` |
+| `quantlab/paper.py` | 1 / 0 | export `Any` |
+| `desktop_recovery_smoke.py` | 1 / 0 | export `Path` |
+| `desktop_pages/widgets.py` | 1 / 0 | export `QFileDialog` |
+| `desktop_pages/paper.py` | 4 / 0 | export `read_json`, `write_json`, `load_dataset`, `QFileDialog` |
+| `desktop_pages/views.py` | 4 / 0 | export `read_json`, `load_dataset`, `load_result`, `result_name` |
+| `desktop_market.py` | 2 / 0 | export `MarketValidationError`; F841: `exc` |
+| `tests/test_baseline_download.py` | 1 / 0 | delete `json` |
+| `tests/test_chatgpt_plan.py` | 4 / 0 | F841: four `tmp_path` bindings; keep `self.tmp_path` evaluation |
+| `tests/test_desktop_smoke_terminal.py` | 1 / 0 | delete `subprocess`; preserve subprocess imports inside embedded programs |
+| `tests/test_desktop_tls_smoke.py` | 1 / 0 | delete `ast` |
+| `tests/test_market.py` | 2 / 0 | delete `MarketBar`, `MarketSeries` |
+| `tests/test_real_ai_validation.py` | 1 / 0 | delete `content_hash` |
+| `quantlab/__main__.py` | 1 / 0 | export `content_hash` |
+| `quantlab/desktop_runtime.py` | 3 / 0 | export `WindowsAppMutex`, `WINDOWS_APP_MUTEX`; retain the function-local `content_hash` alias |
+| `tools/validate_real_ai.py` | 8 / 0 | export `urllib`, `config_from_json`, `HTTPTransport`, `load_dataset`, `read_json`, `CompatibleProvider`, `FAMILIES`, `demo_campaign_config` |
+
+The per-file commands use Ruff **0.16.10** at
+`C:/Users/Mark/Desktop/Mark auto/.venv/Scripts/ruff.exe`:
+`ruff check <file> --output-format json` before cleanup, `ruff check <file>`
+after cleanup, `ruff format <file>`, and `ruff format --check <file>`. Tests use
+the specified shared interpreter with `QT_QPA_PLATFORM=offscreen` and
+`PYTHONUTF8=1`, one module per `python -m unittest discover -s tests -p <file>`.
+
+| F841 site, original source line | Preserved action |
+| --- | --- |
+| `tests/test_chatgpt_auth.py:266` (`url`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_analysis.py:366` (`p`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_chatgpt_integration.py:150` (`r`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_chatgpt_ui.py:789` (`c`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_chatgpt_ui.py:817` (`c`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_chatgpt_ui.py:826` (`c`) | remove unused assignment target; preserve RHS evaluation as expression |
+| `tests/test_desktop_ui_polish_b.py:76` (`root`) | remove unused context-manager binding; enter/exit and context body unchanged |
+| `tests/test_help_reachability.py:19` (`folder`) | remove unused context-manager binding; enter/exit and context body unchanged |
+| `tests/test_strategy_tabs.py:66` (`temporary`) | remove unused context-manager binding; enter/exit and context body unchanged |
+| `desktop_market.py:669` (`exc`) | remove unused exception binding; handler unchanged |
+| `tests/test_chatgpt_plan.py:216,238,273,287` (`tmp_path`) | remove only assignment targets; retain each `self.tmp_path` attribute evaluation |
+
+No original assertion, test method, fixture or skip decorator is removed or
+weakened. Assertion and decorator expressions remain identical. The only
+additive regression is
+`tests/test_market_history.py::R6ImportCompatibilityTests`, which checks the
+identity of existing import-compatible objects without constructing widgets,
+starting services, accessing the network or sleeping. It runs in under one
+second. No snapshot/widget-name baseline, objectName or UI text changes.
+
+The application substeps exercise these existing test modules before and after;
+their case counts are identical for each substep:
+
+| Application module | Test module | Cases before / after |
+| --- | --- | --- |
+| `quantlab/desktop_errors.py` | `test_error_catalog_b1.py` | 8 / 8 |
+| `quantlab/market_history.py` | `test_market_history.py` | 37 / 37 |
+| `quantlab/paper.py` | `test_paper.py` | 59 / 59 |
+| `desktop_recovery_smoke.py` | `test_recovery_frozen_smoke.py` | 7 / 7 |
+| `desktop_pages/widgets.py` | `test_panel_card_c3.py` | 4 / 4 |
+| `desktop_pages/paper.py` | `test_paper_tabs_c6.py` | 11 / 11 |
+| `desktop_pages/views.py` | `test_desktop_pages.py` | 14 / 14 |
+| `desktop_market.py` | `test_desktop_market.py` | 21 / 21 |
+
+The unchanged registry/public-name tests pass (6 tests); import-graph (11), UI-
+text (13), layout (16), function-length (2), and Ruff-configuration (7) checks
+pass. The existing page classes and MainWindow retain their size limits. The
+compatibility regression passes, and all eleven fresh-interpreter module imports
+succeed. The CLI, runtime and validation-tool public-name sets are equal before
+and after their additional substeps. Every changed Python file passes Ruff
+check, format check and `py -3.11
+-m compileall -q <changed files>`. Repository-wide Ruff check exits 0;
+repository-wide format check identifies only unchanged ADR 0006.
+
+`C:/Users/Mark/Desktop/Mark auto/.venv/Scripts/python.exe tools/quality_gate.py`
+passes, reporting **0 findings**, with identical gate configuration.
+
+The following raw working-copy SHA-256 values are equal before and after. Each
+protected source also has an empty `git diff 4c72a30`; its normalized content
+equals the baseline Git blob. No producer literal or loaded G3 import state
+changes.
+
+| Protected source | Raw SHA-256, before = after |
+| --- | --- |
+| `quantlab/research.py` | `4fb7ca86496192d6871477df2fc177a0bd57d755bcaf896f1f5414b97ea1275e` |
+| `quantlab/provider.py` | `b26427d0584d83f1e62bf768c458df9b76eb309ca3cdf930e31bba68bde038ee` |
+| `quantlab/core.py` | `61a89a7ac7978fe16fadd0f88c528374d3dc05b562ec01059d424c6ff0ca78c4` |
+| `quantlab/strategies.py` | `c35ed80ffe11787fbc93b964cbe6403d36921fbf9ca6d6f8a282301691da6132` |
+| `quantlab/backtest.py` | `6295ed2e256cb494b43af550e438583b288f494b07fb86db91ef35f82246d91e` |
+| `quantlab/data.py` | `7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb` |
+| `quantlab/saved_candidate_pool.py` | `20885d4e7680b34eac83ad902cae0819d30f50d178ff217b7093a0a47fda3c3d` |
+| `desktop_chatgpt_auth.py` | `316db25c6d10aac93453d4da68784e09ec9a7270c82b438837339365e90fb15f` |
+| `desktop_chatgpt_provider.py` | `71e9e54a5f2bac93aab0036c60bae4655ca3e0b45cf38e4f7999e5eb3b9e045e` |
+
+The following 10 F401/F841 exceptions remain; scope is partial. No exception was
+added. Seven files have concurrent-lane ownership, two sources form part of
+persisted identities, and the research-app entry belongs to R8.
+
+| Retained file | Existing codes | Reason |
+| --- | --- | --- |
+| `desktop.py` | `F401` | Structure R2 relocates its smoke harness. |
+| `desktop_pages/backtest.py` | `F401` | UX U4 changes this page; UX U3 also edits it. |
+| `desktop_pages/compare.py` | `F401` | Feature F2 changes this page. |
+| `desktop_pages/data.py` | `F401` | Feature F1 changes this page. |
+| `desktop_pages/strategy.py` | `F401` | Feature F3 changes this page. |
+| `desktop_pages/wf_wizard.py` | `F841` | Feature F3 changes this wizard. |
+| `desktop_ui.py` | `E402`, `F401`, `F841` | Feature F1 changes the shell; UX U3 also edits it. Public names and patch targets stay intact. |
+| `quantlab/research_analysis.py` | `F401` | `_implementation()` hashes this source into plan packets; reconciliation rejects an existing plan when that hash changes. Even aliases change persisted-plan validity. |
+| `quantlab/walk_forward.py` | `F401` | `SOURCE_FILES` includes this source; its content hash is part of the walk-forward binding and identity. Re-export spelling changes that identity. |
+| `tools/research_app.py` | `F401` | Development-only Streamlit workspace moved by R8; its exception is kept. |
+
+The additional compatibility assertions cover the validation tool's retained
+imports and the identity of its `urllib` package and `urllib.request` module.
+They also pin `__all__` to the complete public-name set. CLI and runtime imports
+remain at their original locations, including the documented deferred runtime
+import. These substeps use `test_cli.py`, `test_desktop_runtime.py` and
+`test_real_ai_validation.py` as the existing application tests. No new module,
+UI control, objectName, registration, timer or initialization-order change
+exists.
+
+Frozen sources, saved-candidate producer inputs, archives, trader paths,
+`tests/fixtures/desktop_pages_before`, `desktop_widget_names.json`, PROJECT_STATE,
+the optimization plan, CI caps, quality gates and acceptance scores have empty
+diffs for this stage. No fixture refresh is required. Live trading remains
+permanently disabled; fail-closed validation, money arithmetic, data boundaries,
+irreversible budgets, timeouts and retries are unchanged. No object lifetime,
+timer, event-filter or widget-ownership logic changes.

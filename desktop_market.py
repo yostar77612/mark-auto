@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
     QTimeEdit,
     QFormLayout,
 )
-from quantlab.market import MarketSeries, QuoteSnapshot, MarketValidationError
+from quantlab.market import MarketSeries, QuoteSnapshot, MarketValidationError as MarketValidationError
 from quantlab.chart_data import TIMEFRAMES, aggregate_bars
 from quantlab import indicators
 from desktop_chart_memory import ChartMemory
@@ -426,7 +426,7 @@ class MarketDashboard(QWidget):
         self.source_status.setText(ui_text('market.data_date').format(_series_source(item), provenance.as_of, ui_text('market.not_realtime')))
         try:
             result = aggregate_bars(item.bars, timeframe=self._timeframe)
-        except (ValueError, TypeError) as exc:
+        except (ValueError, TypeError):
             self.chart.set_series(())
             self._display_bars = ()
             self.message.setText(error_message('market_data_invalid'))
