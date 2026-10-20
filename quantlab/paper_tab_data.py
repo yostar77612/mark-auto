@@ -1,6 +1,7 @@
 """Qt-free paper presentation projections; never fetch or mutate data."""
 
 from decimal import Decimal, InvalidOperation
+from datetime import datetime, timezone
 
 
 def number(value):
@@ -67,7 +68,52 @@ def position_rows(account):
 
 
 EVENT_LIMIT = 200
+TIMELINE_LIMIT = EVENT_LIMIT
 EVENT_OPERATIONS = frozenset(('intent', 'risk_reject', 'ack', 'cancel', 'amend', 'fill', 'reconcile', 'restart', 'kill', 'manual_lock', 'event'))
+
+
+def event_type(operation, payload=None):
+    """Classify only known journal operations, never echo untrusted labels."""
+    if operation == 'event':
+        operation = payload.get('type') if isinstance(payload, dict) else None
+    if operation in ('intent', 'ack', 'fill', 'reject', 'reconcile'):
+        return operation
+    if operation == 'risk_reject':
+        return 'reject'
+    if operation in ('kill', 'manual_lock', 'manual_order_lock'):
+        return 'lock'
+    return 'other'
+
+
+def timeline_rows(account=None, journal=None):
+    """Bound work before projection/sort; expose only typed structural metadata.
+
+    Missing/invalid times sort first, then UTC time and journal sequence. Payload
+    text, financial values and identifiers never enter the projection.
+    """
+    account = account or {}
+    events = journal if isinstance(journal, (list, tuple)) else account.get('journal_events') or account.get('events') or []
+    if not isinstance(events, (list, tuple)):
+        events = []
+    rows = []
+    for index, event in enumerate(events[-TIMELINE_LIMIT:], start=max(1, len(events) - TIMELINE_LIMIT + 1)):
+        event = event if isinstance(event, dict) else {}
+        sequence = event.get('sequence')
+        sequence = sequence if type(sequence) is int and sequence > 0 else index
+        payload = event.get('payload')
+        payload = payload if isinstance(payload, dict) else {}
+        raw = event.get('timestamp', payload.get('timestamp', payload.get('now')))
+        stamp = None
+        if isinstance(raw, str) and len(raw) <= 40:
+            try:
+                parsed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+                if parsed.tzinfo is not None:
+                    stamp = parsed.astimezone(timezone.utc).isoformat()
+            except (ValueError, OverflowError):
+                pass
+        rows.append({'time': stamp, 'sequence': sequence, 'type': event_type(event.get('operation'), payload)})
+    rows.sort(key=lambda row: (row['time'] or '', row['sequence']))
+    return rows, len(events) > TIMELINE_LIMIT
 
 
 def event_rows(account, journal=None):

@@ -2130,3 +2130,25 @@ ZH_TW.update(
         'quick_start.disclaimer': 'SYNTHETIC: synthetic data, not real market data. Demonstration only; no performance guarantee.',
     }
 )
+
+ZH_TW.update(
+    {
+        'paper.timeline.title': '\u4e8b\u4ef6\u6642\u9593\u8ef8',
+        'paper.timeline.filter': '\u4f9d\u4e8b\u4ef6\u985e\u578b\u7be9\u9078',
+        'paper.timeline.all': '\u5168\u90e8\u985e\u578b',
+        'paper.timeline.intent': '\u610f\u5716',
+        'paper.timeline.ack': '\u78ba\u8a8d (ACK)',
+        'paper.timeline.fill': '\u6210\u4ea4',
+        'paper.timeline.reject': '\u62d2\u7d55',
+        'paper.timeline.reconcile': '\u5c0d\u5e33',
+        'paper.timeline.lock': '\u9396\u5b9a',
+        'paper.timeline.other': '\u5176\u4ed6',
+        'paper.timeline.time': '\u6642\u9593 (UTC)',
+        'paper.timeline.type': '\u985e\u578b',
+        'paper.timeline.summary': '\u6458\u8981',
+        'paper.timeline.event': '\u65e5\u8a8c\u4e8b\u4ef6 #{}',
+        'paper.timeline.unknown_time': '\u6642\u9593\u672a\u8a18\u9304',
+        'paper.timeline.truncated': '\u50c5\u986f\u793a\u6700\u5f8c {} \u7b46\u4e8b\u4ef6\uff08\u5df2\u622a\u65b7\uff09',
+        'paper.timeline.empty': '\u5c1a\u7121\u65e5\u8a8c\u4e8b\u4ef6',
+    }
+)

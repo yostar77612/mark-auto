@@ -3972,3 +3972,42 @@ thresholds and timeouts are unchanged. Live trading remains disabled. New
 strings occupy a trailing catalogue update block. The item is a single commit.
 Automation evidence claims only "not broken". The user's final visual check
 remains pending.
+
+## TASK X-U9: read-only paper journal timeline
+
+The existing Events tab retains events_table and its widget name and behavior.
+Opening Events for the first time creates an adjacent Timeline tab with an
+accessible type filter and a read-only time/type/summary table. The lazy widgets
+are excluded from the eager widget-name fixture. The timeline tab is visible
+only while Events or Timeline is selected. The initial four tabs and
+default-page snapshot baselines are unchanged. Keyboard tab order includes the
+filter and table. There are no new buttons, stylesheet changes, timers, event
+filters or deferred deletions.
+
+The existing paper refresh reads the existing bounded journal export once and
+updates both projections. quantlab/paper_tab_data.py provides the pure event_type
+mapper and timeline_rows projection. Intent, ACK, fill, reject, reconcile and
+lock operations have catalog labels; unknown and legacy rows display as other.
+Wrapped event payloads supply only a known type and validated timestamp. Missing
+times display a catalog placeholder and sort first; recorded times normalize to
+UTC and sort ascending, with journal sequence breaking ties stably. Projection
+work is bounded to the last TIMELINE_LIMIT records before sorting. A catalog
+indicator reports truncation, and an empty journal has a catalog placeholder.
+
+Filtering only hides display rows and preserves the journal. Timeline summaries
+contain only journal sequence; financial values, quantities, account/order IDs,
+arbitrary messages and evaluation data never enter timeline text or roles,
+including with privacy enabled. The table disables editing and interactive
+sorting and has no order actions. Live trading remains disabled, and existing
+paper_confirm, confirmations, job controls, protected sources, gates and timeouts
+are unchanged. No new order or broker path is introduced. New text uses literal
+ui_text keys appended in a trailing desktop_strings.py catalog update.
+
+tests/test_paper_timeline_u9.py covers pure classification, timestamp ordering,
+sequence ties, the legacy fixture, malformed rows, empty data, bounded 10k-row
+projection and rendering, a read-only journal stub that raises on write, filter
+round trips, lazy construction, privacy, refresh and accessibility without shown
+windows, sleeps or network. Existing C6 table tests preserve their assertions;
+the import-graph test pins the projection's lack of application dependencies.
+The item is a single commit. Automation evidence claims only "not broken".
+The user's final visual check remains pending.
