@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal, QRectF
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QTabWidget, QStyledItemDelegate, QWidget, QVBoxLayout, QComboBox, QLabel, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QAbstractButton, QTabWidget, QStyledItemDelegate, QWidget, QVBoxLayout, QComboBox, QLabel, QTableWidget, QTableWidgetItem
 from shiboken6 import isValid
 
 import desktop_privacy as privacy
@@ -93,6 +93,7 @@ def bind_paper_count(tabs, table, title):
         else:
             text = ui_text('tables.tab_count').format(title, display_number(total))
         tabs.setTabText(tabs.indexOf(table), text)
+        tabs.tabBar().setAccessibleTabName(tabs.indexOf(table), title)
 
     for signal in (table.refreshed, table.model().rowsInserted, table.model().rowsRemoved, table.model().modelReset):
         signal.connect(refresh)
@@ -158,6 +159,7 @@ def open_timeline(page, tabs):
     selector = QComboBox(panel)
     selector.setObjectName('paper_timeline_filter')
     selector.setAccessibleName(ui_text('paper.timeline.filter'))
+    selector.view().setAccessibleName(ui_text('access.timeline_options'))
     for value, label in timeline_labels():
         selector.addItem(label, value)
     layout.addWidget(selector)
@@ -168,6 +170,11 @@ def open_timeline(page, tabs):
     table = QTableWidget(0, 3, panel)
     table.setObjectName('paper_timeline_results')
     table.setAccessibleName(ui_text('paper.timeline.title'))
+    table.horizontalHeader().setAccessibleName(ui_text('access.timeline_columns'))
+    table.verticalHeader().setAccessibleName(ui_text('access.timeline_rows'))
+    corner = table.findChild(QAbstractButton)
+    if corner is not None:
+        corner.setAccessibleName(ui_text('access.timeline_select_all'))
     table.setHorizontalHeaderLabels((ui_text('paper.timeline.time'), ui_text('paper.timeline.type'), ui_text('paper.timeline.summary')))
     table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
     table.setSortingEnabled(False)
@@ -177,7 +184,8 @@ def open_timeline(page, tabs):
     page.timeline_panel = panel
     page.timeline_table, page.timeline_filter, page.timeline_notice = table, selector, notice
     selector.currentIndexChanged.connect(lambda: filter_timeline(page))
-    tabs.addTab(panel, ui_text('paper.timeline.title'))
+    index = tabs.addTab(panel, ui_text('paper.timeline.title'))
+    tabs.tabBar().setAccessibleTabName(index, ui_text('paper.timeline.title'))
     render_timeline(page)
 
 

@@ -63,6 +63,10 @@ def visual_focus_order(page):
             continue
         if not widget.focusPolicy() & Qt.FocusPolicy.TabFocus:
             continue
+        if widget.focusProxy() is not None:
+            # QTabWidget delegates to QTabBar. Ordering both moves the proxy's
+            # entire subchain a second time and can strand page controls.
+            continue
         # Composite editors delegate focus internally. Traverse the owning control once.
         parent = widget.parentWidget()
         if isinstance(parent, (QAbstractSpinBox, QComboBox, QAbstractItemView, QPlainTextEdit, QTextEdit)):
@@ -86,6 +90,10 @@ class AccessibleLayout(QObject):
         self.pending = False
         for widget in window.findChildren(QWidget):
             widget.installEventFilter(self)
+            if widget.objectName() == 'ScrollLeftButton':
+                widget.setAccessibleName(ui_text('access.previous_tabs'))
+            elif widget.objectName() == 'ScrollRightButton':
+                widget.setAccessibleName(ui_text('access.next_tabs'))
             if isinstance(widget, INTERACTIVE) and not widget.accessibleName().strip():
                 widget.setAccessibleName(semantic_name(widget))
             if isinstance(widget, QTabBar):
@@ -101,19 +109,38 @@ class AccessibleLayout(QObject):
         self.schedule()
 
     def schedule(self):
-        if not self.pending:
+        if self.window.isVisible() and not self.pending:
             self.pending = True
-            QTimer.singleShot(0, self, self.update_order)
+            QTimer.singleShot(0, self, self._update_visible_order)
+
+    def _update_visible_order(self):
+        self.pending = False
+        if self.window.isVisible():
+            self.update_order()
 
     def update_order(self):
         self.pending = False
         page = self.window.stack.currentWidget()
         if page is not None:
-            controls = visual_focus_order(page)
+            # Navigation enters the page, then the header/status action region.
+            # Status text is a read-only label and deliberately has no tab stop.
+            status_actions = (self.window.notification_center.button, self.window.cancel_button)
+            header = [widget for widget in visual_focus_order(self.window.app_header) if widget not in status_actions]
+            controls = [self.window.navigation, *visual_focus_order(page), *header]
+            controls.extend(widget for widget in status_actions if widget.isEnabled() and widget.isVisibleTo(self.window))
             for first, second in zip(controls, controls[1:]):
                 QWidget.setTabOrder(first, second)
 
     def eventFilter(self, watched, event):
+        if (
+            event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+            and isinstance(watched, QAbstractButton)
+            and watched.isEnabled()
+        ):
+            if not event.isAutoRepeat():
+                watched.click()
+            return True
         if event.type() in (QEvent.Type.Show, QEvent.Type.Resize, QEvent.Type.LayoutRequest):
             self.schedule()
         return False

@@ -10,6 +10,298 @@ import unittest
 
 from desktop_market import MarketDashboard
 from desktop_theme import apply_market_theme, build_market_stylesheet
+from desktop_strings import ZH_TW, ui_text
+
+from pathlib import Path
+import tempfile
+from time import perf_counter
+from unittest.mock import patch
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QScrollArea, QPushButton
+from tests.test_t9_onboarding import sandbox_ui
+
+
+class CompleteOffscreenWalkTests(unittest.TestCase):
+    """U10: one unshown window, bounded tree walks, no workers or network."""
+
+    COVERED_PAGES = {'DataPage', 'StrategyPage', 'BacktestPage', 'ComparePage', 'PaperPage', 'MarketPage', 'SettingsPage'}
+
+    @classmethod
+    def setUpClass(cls):
+        from desktop_ui import MainWindow
+        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+
+        cls.started = perf_counter()
+        cls.app = QApplication.instance() or QApplication([])
+        for target in ('socket.socket', 'socket.create_connection'):
+            guard = patch(target, side_effect=AssertionError('The accessibility walk must stay offline.'))
+            guard.start()
+            cls.addClassCleanup(guard.stop)
+        cls.context = sandbox_ui()
+        cls.context.__enter__()
+        cls.addClassCleanup(cls.context.__exit__, None, None, None)
+        cls.folder = tempfile.TemporaryDirectory(prefix='u10-access-')
+        cls.addClassCleanup(cls.folder.cleanup)
+        paths = AppPaths(Path(cls.folder.name) / 'workspace').ensure()
+        cls.jobs = JobManager(paths)
+        cls.addClassCleanup(cls.jobs.close)
+        guard = patch.object(cls.jobs, 'start', side_effect=AssertionError('The accessibility walk must not start jobs.'))
+        guard.start()
+        cls.addClassCleanup(guard.stop)
+        cls.window = MainWindow(paths, cls.jobs, SettingsStore(paths.state / 'settings.json'))
+        cls.addClassCleanup(shiboken6.delete, cls.window)
+        cls.addClassCleanup(cls.window.close)
+        for timer in cls.window.findChildren(QTimer):
+            timer.stop()
+        from desktop_pages.paper_tabs import open_timeline
+        from desktop_pages.paper import stop_dialog
+
+        paper = cls.window.paper_page
+        open_timeline(paper, paper.findChild(QTabWidget, 'paper_account_tabs'))
+        cls.popout = cls.window.market.popout.open(visible=False)
+        cls.addClassCleanup(shiboken6.delete, cls.popout)
+        cls.addClassCleanup(cls.popout.close)
+        cls.dialog = stop_dialog(cls.window, '')
+        cls.addClassCleanup(shiboken6.delete, cls.dialog)
+        cls.window.settings_page.assistant_panel.reply('```python\npass\n```')
+
+    def pages(self):
+        for index in range(self.window.stack.count()):
+            container = self.window.stack.widget(index)
+            yield container.widget() if isinstance(container, QScrollArea) else container
+
+    def logical_controls(self, page):
+        """Qt popup views, headers and embedded editors belong to their owner."""
+        for widget in page.findChildren(QWidget):
+            if not isinstance(widget, INTERACTIVE):
+                continue
+            parent = widget.parentWidget()
+            while parent is not None and parent is not page and not isinstance(parent, INTERACTIVE):
+                parent = parent.parentWidget()
+            if parent is None or parent is page:
+                yield widget
+
+    def assert_mount_coverage(self):
+        self.assertEqual({type(page).__name__ for page in self.pages()}, self.COVERED_PAGES)
+        self.assertEqual(self.window.stack.count(), len(self.COVERED_PAGES))
+        self.assertEqual(self.window.navigation.count(), len(self.COVERED_PAGES))
+
+    def test_mount_registry_guard(self):
+        self.assert_mount_coverage()
+        self.assertTrue(self.window.settings_page.isAncestorOf(self.window.settings_page.assistant_panel))
+        self.assertTrue(self.window.findChild(QPushButton, 'synthetic_quick_start').accessibleName())
+        self.assertEqual(self.window.app_header.job.accessibleName(), ui_text('access.header_job'))
+        extra = QWidget()
+        self.window._mount_page(extra, ui_text('access.field'))
+        try:
+            with self.assertRaises(AssertionError):
+                self.assert_mount_coverage()
+        finally:
+            container = self.window.stack.widget(self.window.stack.count() - 1)
+            self.window.stack.removeWidget(container)
+            self.window.navigation.takeItem(self.window.navigation.count() - 1)
+            shiboken6.delete(container)
+        self.assert_mount_coverage()
+
+    def test_dynamic_names_audit(self):
+        w = self.window
+        roots = [*self.pages(), w.app_header, w.command_palette, w.notification_center, self.popout, self.dialog]
+        offenders = []
+        for root in roots:
+            for widget in root.findChildren(QWidget):
+                if isinstance(widget, INTERACTIVE) and not widget.accessibleName().strip():
+                    offenders.append((type(root).__name__, type(widget).__name__, widget.objectName()))
+                if isinstance(widget, QTabBar):
+                    for index in range(widget.count()):
+                        if not widget.accessibleTabName(index).strip():
+                            offenders.append((type(root).__name__, 'tab', widget.tabText(index)))
+        self.assertEqual(offenders, [])
+        self.assertTrue(self.window.paper_page.timeline_filter.accessibleName())
+        self.assertTrue(self.window.paper_page.replay_controls.button.accessibleName())
+
+    def test_next_step_hint_has_catalog_accessible_text(self):
+        from desktop_pages.async_status import AsyncStatus
+        from desktop_pages.error_guidance import next_step
+
+        status = self.window.findChildren(AsyncStatus)[0]
+        status.set_state('error', error_code='validation_failed')
+        self.assertEqual(status.label.accessibleName(), status.label.text())
+        self.assertIn(next_step('validation_failed'), status.label.accessibleName())
+        self.assertNotIn('???', status.label.accessibleName())
+        status.set_state('empty')
+
+    def test_no_focus_audit(self):
+        no_focus = {'assistant_completions': 'Arrow keys in the input select completions; focus stays in the input.'}
+        offenders = []
+        for page in [*self.pages(), self.window.app_header, self.window.command_palette, self.window.notification_center, self.popout, self.dialog]:
+            for widget in self.logical_controls(page):
+                if widget.focusPolicy() == Qt.FocusPolicy.NoFocus and widget.objectName() not in no_focus:
+                    offenders.append((type(page).__name__, type(widget).__name__, widget.objectName(), widget.accessibleName()))
+        self.assertEqual(offenders, [])
+
+    def test_duplicate_names_audit(self):
+        from collections import defaultdict
+
+        # Exact upper bounds preserve context-scoped names without allowing new
+        # ambiguous controls. Dates belong to separately labelled DateInputs;
+        # other repeats live in distinct form panels, tabs or disclosure bodies.
+        allowed = {
+            ('DataPage', ui_text('access.editor')): (2, 'Separate read-only data panels.'),
+            ('StrategyPage', ui_text('forms.__init__.text_115')): (5, 'Distinct result tabs.'),
+            ('StrategyPage', ui_text('access.editor')): (8, 'Distinct preview and diagnostic panels.'),
+            ('StrategyPage', ui_text('ui.advanced.default_title')): (2, 'Separate research form disclosures.'),
+            ('BacktestPage', ui_text('timeinput.set')): (3, 'Individually labelled DateInput owners.'),
+            ('BacktestPage', ui_text('timeinput.taipei')): (3, 'Individually labelled DateInput owners.'),
+            ('PaperPage', ui_text('access.table')): (2, 'Policy risk sessions and margin schedule panels.'),
+            ('PaperPage', ui_text('forms.__init__.text_103')): (2, 'One row action per policy table.'),
+            ('PaperPage', ui_text('forms.__init__.text_104')): (2, 'One row action per policy table.'),
+            ('PaperPage', ui_text('forms.__init__.text_115')): (3, 'Separate snapshot result tables.'),
+            ('PaperPage', ui_text('forms.__init__.text_25')): (2, 'Intent and quote form context.'),
+            ('PaperPage', ui_text('timeinput.set')): (6, 'Individually labelled DateInput owners.'),
+            ('PaperPage', ui_text('timeinput.taipei')): (6, 'Individually labelled DateInput owners.'),
+            ('SettingsPage', ui_text('help.accessible')): (8, 'Help buttons announce the associated field through their description.'),
+            ('SettingsPage', ui_text('assistant.permission_label')): (2, 'Settings and assistant share the permission model.'),
+            ('SettingsPage', ui_text('assistant.thinking')): (2, 'Disclosure and its read-only body.'),
+            ('SettingsPage', ui_text('assistant.code')): (2, 'Disclosure and its read-only code body.'),
+            ('SettingsPage', ui_text('ui._settings_page.text_18')): (2, 'Log action and its read-only output.'),
+        }
+        offenders = []
+        for page in self.pages():
+            names = defaultdict(list)
+            for widget in self.logical_controls(page):
+                names[widget.accessibleName()].append(widget.objectName())
+            for name, controls in names.items():
+                limit, reason = allowed.get((type(page).__name__, name), (1, 'Names must distinguish controls.'))
+                if len(controls) > limit:
+                    offenders.append((type(page).__name__, name, controls, reason))
+        self.maxDiff = None
+        self.assertEqual(offenders, [])
+
+    def test_catalog_names_and_disabled_hints(self):
+        import re
+        import string
+
+        # Catalog templates may contain runtime counts; only the literal parts
+        # and format slots are accepted, never an arbitrary widget-derived name.
+        formatter = string.Formatter()
+        patterns = [
+            re.compile(''.join(re.escape(text) + ('.*' if field is not None else '') for text, field, _, _ in formatter.parse(value)), re.S)
+            for value in ZH_TW.values()
+            if isinstance(value, str) and any(text.strip() for text, _, _, _ in formatter.parse(value))
+        ]
+        offenders = []
+        for widget in self.window.findChildren(QWidget):
+            if isinstance(widget, INTERACTIVE):
+                name = widget.accessibleName().strip()
+                if not name or '???' in name or not any(pattern.fullmatch(name) for pattern in patterns):
+                    offenders.append((type(widget).__name__, widget.objectName(), name))
+        self.maxDiff = None
+        self.assertEqual(offenders, [])
+        self.assertTrue(self.window._disabled_hints)
+        for hint in self.window._disabled_hints:
+            if not hint.button.isEnabled():
+                self.assertTrue(hint.button.accessibleName())
+                self.assertIn(hint.label.text(), hint.button.toolTip())
+                self.assertTrue(hint.button.toolTip().strip())
+
+    def test_offscreen_focus_chain_has_no_orphans(self):
+        w = self.window
+        # Expand all existing disclosures without saving display preferences.
+        w._restoring_sections = True
+        for toggle in w._section_toggles.values():
+            toggle.setChecked(True)
+        for index, page in enumerate(self.pages()):
+            w.navigation.setCurrentRow(index)
+            tabs = page.findChildren(QTabWidget)
+            variants = [(None, 0)] + [(tab, i) for tab in tabs for i in range(tab.count())]
+            for tab, position in variants:
+                if tab is not None:
+                    tab.setCurrentIndex(position)
+                w.accessible_layout.update_order()
+                actions = (w.notification_center.button, w.cancel_button)
+                header = [control for control in visual_focus_order(w.app_header) if control not in actions]
+                expected = [w.navigation, *visual_focus_order(w.stack.currentWidget()), *header]
+                expected.extend(control for control in (w.notification_center.button, w.cancel_button) if control.isEnabled() and control.isVisibleTo(w))
+                self.assertEqual(len(expected), len(set(expected)))
+                visible = {
+                    control
+                    for control in self.logical_controls(page)
+                    if control.isVisibleTo(page) and control.isEnabled() and control.focusPolicy() & Qt.FocusPolicy.TabFocus
+                }
+                self.assertTrue(visible <= set(expected), [control.objectName() for control in visible - set(expected)])
+                current = w.navigation.nextInFocusChain()
+                actual, seen = [w.navigation], {w.navigation}
+                while current not in seen:
+                    seen.add(current)
+                    if current in expected:
+                        actual.append(current)
+                    current = current.nextInFocusChain()
+                self.assertEqual(actual, expected, (type(page).__name__, position))
+
+    def test_pushbuttons_enter_and_space_without_dispatch(self):
+        # Signal blocking keeps every existing confirmation/job callback intact
+        # and uncalled; check-state transitions still prove Qt activation.
+        from PySide6.QtCore import QSignalBlocker
+
+        offenders = []
+        for root in [*self.pages(), self.popout, self.dialog, self.window.notification_center]:
+            for button in root.findChildren(QPushButton):
+                if not button.isEnabled():
+                    continue
+                checkable, checked = button.isCheckable(), button.isChecked()
+                button.setFocus()
+                with QSignalBlocker(button):
+                    button.setCheckable(True)
+                    for key in (Qt.Key.Key_Return, Qt.Key.Key_Space):
+                        before = button.isChecked()
+                        QTest.keyClick(button, key)
+                        if button.isChecked() == before:
+                            offenders.append((button.objectName(), button.accessibleName(), key))
+                    button.setChecked(checked)
+                    button.setCheckable(checkable)
+        self.assertEqual(offenders, [])
+        self.assertFalse(self.window.jobs.active)
+
+    def test_keyboard_buttons_escape_and_privacy(self):
+        from PySide6.QtTest import QSignalSpy
+        from desktop_pages.paper import stop_dialog, stop_exposure_text
+
+        w = self.window
+        button = w.app_header.disclosure
+        button.setFocus()
+        spy = QSignalSpy(button.clicked)
+        for key in (Qt.Key.Key_Return, Qt.Key.Key_Space):
+            QTest.keyClick(button, key)
+        self.assertEqual(spy.count(), 2)
+        palette = w.command_palette
+        with patch.object(palette, 'hide', wraps=palette.hide) as close:
+            QTest.keyClick(palette.filter, Qt.Key.Key_Escape)
+            close.assert_called_once()
+        with patch.object(w.notification_center, 'hide', wraps=w.notification_center.hide) as close:
+            QTest.keyClick(w.notification_center.rows, Qt.Key.Key_Escape)
+            close.assert_called_once()
+        dialog = stop_dialog(w, '')
+        self.addCleanup(shiboken6.delete, dialog)
+        spy = QSignalSpy(dialog.rejected)
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.assertEqual(spy.count(), 1)
+        w.privacy.set_enabled(True)
+        try:
+            w.app_header.refresh()
+            self.assertTrue(w.app_header.privacy_toggle.isChecked())
+            self.assertNotIn('123456', stop_exposure_text({'positions': {'TMF': 123456}}, private=True))
+            panel = w.settings_page.assistant_panel
+            panel.append_transcript('123456')
+            self.assertNotIn('123456', panel.transcript.toPlainText())
+            self.assertFalse(w.paper_page.paper_confirm.isChecked())
+            self.assertFalse(w.jobs.active)
+        finally:
+            w.privacy.set_enabled(False)
+
+    def test_z_offscreen_small_time_bound(self):
+        self.assertTrue(self.window.isHidden())
+        self.assertTrue(self.popout.isHidden())
+        self.assertLess(perf_counter() - self.started, 10, 'The complete U10 walk has a ten-second budget.')
 
 
 class WorkspaceAccessibilityTests(unittest.TestCase):

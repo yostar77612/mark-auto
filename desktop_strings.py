@@ -2152,3 +2152,20 @@ ZH_TW.update(
         'paper.timeline.empty': '\u5c1a\u7121\u65e5\u8a8c\u4e8b\u4ef6',
     }
 )
+
+ZH_TW.update(
+    {
+        'access.header_job': '\u4f5c\u696d\u72c0\u614b',
+        'access.disabled_shortcut': '{0}\n{1}',
+        'access.timeline_options': '\u6642\u9593\u8ef8\u7be9\u9078\u9078\u9805',
+        'access.timeline_columns': '\u6642\u9593\u8ef8\u6b04\u4f4d',
+        'access.timeline_rows': '\u6642\u9593\u8ef8\u5217',
+        'access.timeline_select_all': '\u9078\u53d6\u6642\u9593\u8ef8\u5168\u90e8\u8cc7\u6599',
+        'access.market_positions': '\u884c\u60c5\u6301\u5009\u8cc7\u6599\u8868',
+        'access.market_orders': '\u884c\u60c5\u59d4\u8a17\u8cc7\u6599\u8868',
+        'access.market_fills': '\u884c\u60c5\u6210\u4ea4\u8cc7\u6599\u8868',
+        'access.indicator_parameter': '\u6307\u6a19 {0} \u53c3\u6578 {1}',
+        'access.previous_tabs': '\u524d\u4e00\u7d44\u5206\u9801',
+        'access.next_tabs': '\u4e0b\u4e00\u7d44\u5206\u9801',
+    }
+)

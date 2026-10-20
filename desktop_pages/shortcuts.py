@@ -32,7 +32,10 @@ def install_shortcuts(window):
             else None
         )
     )
-    window.cancel_button.setToolTip(ui_text('keyboard.cancel'))
+    tooltip = ui_text('keyboard.cancel')
+    if not window.cancel_button.isEnabled() and window.cancel_button.toolTip():
+        tooltip = ui_text('access.disabled_shortcut').format(window.cancel_button.toolTip(), tooltip)
+    window.cancel_button.setToolTip(tooltip)
     window.market.refresh_button.setToolTip(ui_text('keyboard.refresh'))
     log_button = window.findChild(QPushButton, 'read_logs')
     if log_button is not None:

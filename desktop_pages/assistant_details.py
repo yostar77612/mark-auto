@@ -72,6 +72,7 @@ class TextFold(QWidget):
         self.source = text[:MAX_TEXT_CHARS]
         layout = QVBoxLayout(self)
         self.toggle = QPushButton(title)
+        self.toggle.setAutoDefault(True)
         self.toggle.setAccessibleName(title)
         self.toggle.setCheckable(True)
         layout.addWidget(self.toggle)
@@ -87,6 +88,7 @@ class TextFold(QWidget):
         self.copy_button = None
         if copy:
             self.copy_button = QPushButton(ui_text('assistant.copy_code'))
+            self.copy_button.setAutoDefault(True)
             self.copy_button.setAccessibleName(ui_text('assistant.copy_code'))
             self.copy_button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
             self.copy_button.clicked.connect(self.copy_text)

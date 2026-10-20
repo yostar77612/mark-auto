@@ -51,6 +51,7 @@ class AppHeader(QWidget):
         self.source.setObjectName('header_data_source')
         self.job = QLabel()
         self.job.setObjectName('header_job_state')
+        self.job.setAccessibleName(ui_text('access.header_job'))
         self.time = QLabel()
         self.time.setObjectName('header_clock')
         self.disclosure = QCheckBox(ui_text('header.help'))
