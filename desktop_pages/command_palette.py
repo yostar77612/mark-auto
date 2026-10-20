@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout, QWidget
 
 from desktop_strings import ui_text
-from .palette_commands import command_table
+from .palette_commands import command_row, command_table
 
 
 class _Filter(QLineEdit):
@@ -60,7 +60,7 @@ class CommandPalette(QWidget):
     def target(self, command):
         navigation = getattr(self.host, 'navigation', None)
         if command.handler == 'navigate':
-            return navigation.setCurrentRow if navigation is not None and command.row < navigation.count() else None
+            return navigation.setCurrentRow if navigation is not None and 0 <= command_row(self.host, command) < navigation.count() else None
         if command.handler == 'refresh':
             return self.refresh
         if command.handler == 'cancel_job':
@@ -71,7 +71,7 @@ class CommandPalette(QWidget):
         if command.handler == 'privacy':
             toggle = getattr(getattr(self.host, 'privacy', None), 'toggle', None)
             return toggle.toggle if toggle is not None else None
-        if command.handler in ('focus_import', 'focus_backtest') and navigation is not None and command.row < navigation.count():
+        if command.handler in ('focus_import', 'focus_backtest') and navigation is not None and 0 <= command_row(self.host, command) < navigation.count():
             button = self.focus_button(command)
             return button.setFocus if button is not None else None
         return None
@@ -103,7 +103,7 @@ class CommandPalette(QWidget):
                 continue
             text = command.label
             if command.handler == 'navigate':
-                text = ui_text('keyboard.page').format(text, command.row + 1)
+                text = ui_text('keyboard.page').format(text, command_row(self.host, command) + 1)
             elif command.handler == 'refresh':
                 text = ui_text('keyboard.refresh')
             elif command.handler == 'cancel_job':
@@ -159,12 +159,12 @@ class CommandPalette(QWidget):
             return
         self.hide()  # Close before dispatch: repeated Enter cannot execute twice.
         if command.handler == 'navigate':
-            target(command.row)
+            target(command_row(self.host, command))
         elif command.handler == 'theme':
             combo = self.host.app_header.theme
             target((combo.currentIndex() + 1) % combo.count())
         elif command.handler in ('focus_import', 'focus_backtest'):
-            self.host.navigation.setCurrentRow(command.row)
+            self.host.navigation.setCurrentRow(command_row(self.host, command))
             target()
         else:
             target()

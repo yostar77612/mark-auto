@@ -524,6 +524,7 @@ WINDOW_ATTRIBUTES = [
     '_current_plan_binding',
     '_disabled_hints',
     '_invalidate_analysis_preview',
+    '_page_widgets',
     '_payload',
     '_plan_usage_request',
     '_record_connection_error',

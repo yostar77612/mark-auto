@@ -4125,3 +4125,94 @@ behavior, public names, UI fixtures, frozen sources, safety gates or acceptance
 scores. Operational artifact inspection/removal and disposable-worktree
 cleanup belong to the controller's separate evidence; this policy does not
 claim that those operations occurred.
+
+## T-R4: page identity survives visual reordering
+
+`desktop_pages/palette_commands.py` defines the seven unique page ids and the
+documented construction/default-order mappings. `install_onboarding` captures
+weak references to the actual stack widgets once before its remove/add reorder;
+this includes the scroll-area wrappers around ordinary pages. `page_widget`
+returns the widget or `None`; `page_index` resolves its current stack position
+and returns `-1` for an unknown or unmounted identity. No global registry owns
+windows or widgets. Lightweight hosts installed without onboarding register
+their existing default visual order once in `install_shortcuts`.
+
+F5 dispatch compares widget identity in constant time: market refreshes market,
+settings reads logs, and other pages refresh views. Ctrl+1 through Ctrl+7 retain
+their positional rule: key N selects visual position N after any reorder. Named
+palette navigation and import/backtest focus resolve identities at execution
+time; `command_palette.py` contains the necessary dispatch/hint integration.
+Command ids, label keys, aliases, guards, Esc behavior and shortcut sequences
+are unchanged. `Command.row` remains import-compatible for existing consumers.
+`WORKFLOW_ORDER` remains `(1, 2, 3, 4, 5, 0, 6)`, with a corrected comment
+identifying it as a construction-position compatibility mapping. Default page
+widgets, labels, onboarding hints, tooltips and visible UI remain unchanged. No
+new application module, object name, UI string, feature or fixture is added.
+Import-graph registration adds the exercised modules and three dependency pairs
+without removing existing checks. All pre-existing test assertions remain
+intact.
+
+`tests/test_page_identity_r4.py` constructs one real offscreen MainWindow without
+showing it, stops timers once, and reverses stack/navigation with the onboarding
+remove/add path. It checks every identity/index, the unknown-id sentinel,
+default widgets/order/hints, all positional shortcuts, named palette and focus
+commands, execution after population-before-reorder, and F5 dispatch on all
+seven pages. It explicitly checks settings after onboarding and the non-settings
+data widget at old index 6. Its two tests pass in approximately 1.3 seconds
+without network, sleep, style changes or added skips. Window teardown emits no
+Qt warnings.
+
+Regression sensitivity was verified by temporarily substituting only
+`git show 4c72a30:desktop_pages/shortcuts.py` and running the real-window test:
+exit 1, settings `logs.call_count` was 0 instead of 1, and data at index 6 was 1
+instead of 0. Restoring the implementation yields exit 0 for both new tests. The
+separate AST regression finds no numeric stack/navigation identity comparison in
+`desktop_pages/*.py` or `desktop_ui.py`.
+
+Local evidence uses `QT_QPA_PLATFORM=offscreen`, `PYTHONUTF8=1`, and the
+specified shared interpreter at `C:/Users/Mark/Desktop/Mark
+auto/.venv/Scripts/python.exe` (the installed runtime reports Python 3.13.11).
+Each module ran separately as
+`python -m unittest discover -s tests -p <module>`:
+
+| Module/check | Result |
+| --- | --- |
+| `test_page_identity_r4.py` | 2 passed |
+| `test_shortcuts.py` | 2 passed, unchanged |
+| `test_command_palette_c7.py` | 13 passed, unchanged |
+| `test_onboarding_c2.py` | 7 passed, unchanged |
+| `test_t9_onboarding.py` | 4 passed, unchanged |
+| `test_ui_operations_registry.py` | 6 passed, unchanged public-name assertion |
+| `test_import_graph.py` | 9 passed, additive registry/pairs |
+| `test_no_hardcoded_ui_text.py` | 13 passed, unchanged |
+| `test_repo_layout.py` | 16 passed, unchanged by R4 |
+| `test_function_lengths.py` | 2 passed, unchanged source locks/budgets |
+| `test_desktop_pages.py -k PageBoundaryTests` | 3 passed, unchanged class limits/layout boundaries |
+| Ruff 0.16.10 `check` | Exit 0 repository-wide |
+| Ruff `format --check` changed Python files | Exit 0; repository-wide only unchanged ADR 0006 is flagged |
+| `py -3.11 -m compileall -q` all six changed Python files | Exit 0 |
+| shared `python tools/quality_gate.py` | Exit 0, zero findings, HEAD `b6e6b2a6a1c6e1ce65bbb80d2fae9ecd955c0f83` |
+
+`git diff 4c72a30 --exit-code` returns 0 for all nine protected sources, the
+default snapshot directory, widget-name fixture, PROJECT_STATE, optimization
+plan, pyproject, quality gate, workflows and product/AI boundary tests. No
+fixture refresh is needed. The baseline/current SHA-256 values below are
+identical after UTF-8/newline normalization, matching the existing locked-source
+convention:
+
+| Source | SHA-256 |
+| --- | --- |
+| `quantlab/research.py` | `138a0ee2146a2d63773a3397c12e22ecd5d1577260dcf24cc8f06c7440900804` |
+| `quantlab/provider.py` | `c15c043156de1d6bf4679034328789b18d171344b56a85432a1d56d42a4fd79a` |
+| `quantlab/core.py` | `303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93` |
+| `quantlab/strategies.py` | `f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def` |
+| `quantlab/backtest.py` | `2dcee78c0c7a7d09c54a0d362b6d0a2be957cf910046d3bd6a89525761da5bb6` |
+| `quantlab/data.py` | `bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4` |
+| `desktop_chatgpt_auth.py` | `4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf` |
+| `desktop_chatgpt_provider.py` | `9ceed8ae5c779ebbab725518a7e8bf785e2122de6c95efa915ba69caa5c4f903` |
+| `quantlab/saved_candidate_pool.py` | `0a1020d5151fafd3ee4e37e8d5d4822176baf5563aaf9bbb03c156eeb3bedd43` |
+
+The change set contains only page identity/dispatch, its regression, additive
+import-graph checks and this contract. Live trading remains permanently
+disabled; order guards, fail-closed validation, data boundaries, irreversible
+budgets, timeouts, CI caps and acceptance scores are unchanged.
