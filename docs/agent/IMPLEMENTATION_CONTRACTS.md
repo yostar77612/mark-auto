@@ -3564,3 +3564,36 @@ Protected engine/provider files, saved_candidate_pool, desktop_ui public names,
 gates, timeouts, consent controls, theme, scores and PROJECT_STATE are
 unchanged. Live trading remains permanently disabled and no order path is added.
 The user's final visual check remains pending.
+
+## F3 - Walk-forward estimates and failure guidance
+
+F3 is scoped to a single commit. The existing evaluation upper-bound count and
+duration projection in desktop_pages/wf_wizard.py are reused without changing
+quantlab/wf_estimate.py, its conservative factor, planning or validation rules.
+The same summary label appears above consent on the final confirmation step and
+returns to the preview step when navigating back. The five-step flow and header
+remain unchanged. Consent, busy gating and the 15-minute job limit are
+unchanged.
+
+The pure failure_hint function projects explanation and action from the sole B1
+ERROR_TABLE catalogue, covering every catalogue code. Its advisory wrapper says
+possible cause and explicitly states that no automatic retry occurs. Unknown or
+missing codes use operation_failed, matching notification history; event codes
+take precedence over result codes. Error/failed packets and failed, error or
+blocked terminal results display the hint in the existing step message label.
+Preview invalidation and a new run clear that label. It has an explicit
+accessible name. No widget, button, retry action, job or order path is added.
+
+Hints accept only allowlisted codes, never exception text, result values, paths
+or user names. This fixed projection is identical in both privacy states and
+excludes auxiliary OOS/holdout data. Literal ui_text keys are appended in a
+trailing ZH_TW.update block. Existing widget names, default-page content,
+snapshot fixtures, theme, desktop_ui public names and protected sources are
+unchanged. Live trading remains permanently disabled.
+
+tests/test_wf_guidance_f3.py covers catalogue completeness and fallback,
+notification consistency, privacy states, OOS/holdout exclusion, failure packet
+and result handling, clearing, accessibility, 0/1/1000 evaluation arithmetic,
+invalid-count fallback and summary placement before consent with busy gating.
+Existing test_wf_estimate.py and test_wf_wizard.py retain their assertions. The
+user's final visual check remains pending.

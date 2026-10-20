@@ -201,6 +201,7 @@ class StrategyPage(QWidget):
         self.wf_wizard.summary.set_rows([])
         self.wf_wizard.timeline.setVisible(False)
         self.wf_wizard.preview_summary.clear()
+        self.wf_wizard.message.clear()
 
     def _walk_forward_input_key(self):
         path = self.state.root / 'dataset.json'
@@ -238,6 +239,7 @@ class StrategyPage(QWidget):
         self.walk_forward_status.setText(ui_text('ui.preview_walk_forward.text_2'))
 
     def run_walk_forward(self):
+        self.wf_wizard.message.clear()
         if self.state._wf_preview is None or not self.walk_forward_consent.isChecked():
             raise ValidationError(ui_text('ui.run_walk_forward.text_1'))
         key, plan = self._walk_forward_input_key()
@@ -291,9 +293,16 @@ class StrategyPage(QWidget):
         operation = self.state.last_operation or ''
         if not operation.startswith('ui_walk_forward_'):
             return False
+        from .wf_wizard import failure_hint
+
         kind = event.get('type')
         if kind == 'progress':
             self.state.status.setText(ui_text('ui._walk_forward_event.text_1'))
+            return True
+        if kind == 'failed':
+            result = event.get('result')
+            result = result if type(result) is dict else {}
+            self.wf_wizard.message.setText(failure_hint(event.get('error_code') or result.get('error_code')))
             return True
         if kind not in ('result', 'error', 'cancelled'):
             return True
@@ -359,6 +368,10 @@ class StrategyPage(QWidget):
             self.state.status.setText(error_message('operation_failed'))
             if operation == 'ui_walk_forward_run':
                 self.state._wf_pending_reconcile = self.state._wf_launch is not None
+        result = event.get('result')
+        result = result if type(result) is dict else {}
+        if kind == 'error' or result.get('status') in ('failed', 'error', 'blocked'):
+            self.wf_wizard.message.setText(failure_hint(event.get('error_code') or result.get('error_code')))
         return True
 
     def _family_changed(self):

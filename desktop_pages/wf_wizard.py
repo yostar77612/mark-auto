@@ -8,6 +8,19 @@ from desktop_presentation import display_number
 from .result_widgets import ResultTable
 from desktop_theme import theme_colors
 from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
+from quantlab.errors import ERROR_TABLE
+
+
+def failure_hint(error_code=None):
+    """Project only B1 catalogue text; never accept exception or result details.
+
+    All catalogue codes are covered, including local/validation failures used
+    by walk-forward. Unknown codes use the notification centre's fallback.
+    Catalogue-only copy contains no user names, paths or evaluation values.
+    """
+    code = error_code if type(error_code) is str and error_code in ERROR_TABLE else 'operation_failed'
+    entry = ERROR_TABLE[code]
+    return ui_text('wf.failure_hint').format(code, entry.explanation, entry.action)
 
 
 def duration_estimate_text(evaluations, per_evaluation_seconds=MEASURED_EVALUATION_SECONDS):
@@ -143,6 +156,7 @@ class WalkForwardWizard(QWidget):
         self.message = QLabel()
         self.message.setWordWrap(True)
         self.message.setObjectName('wf_step_message')
+        self.message.setAccessibleName(ui_text('wf.failure_hint_name'))
         self.stack = WizardStack(self)
         self.stack.setObjectName('wf_steps')
         outer.addWidget(self.stack)
@@ -286,6 +300,9 @@ class WalkForwardWizard(QWidget):
             self.apply_preset()
         self.position = index
         self.stack.accept(index)
+        if index in (3, 4):
+            # Reuse the preview projection above consent on the final step.
+            self.layouts[index].insertWidget(0 if index == 4 else 3, self.preview_summary)
         self.message.clear()
         self.update_header()
         self.sync_consent()
