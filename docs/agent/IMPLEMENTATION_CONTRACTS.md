@@ -3519,3 +3519,48 @@ G3 files and saved_candidate_pool, PROJECT_STATE, acceptance scores, default
 fixtures and timeout constants have empty diffs. Live trading remains permanently
 disabled, fail-closed paths are preserved, and no validation threshold or consent
 control is loosened. Existing tests receive only additive inventory assertions.
+
+
+## F2 - Saved equity and drawdown overlay
+
+F2 is scoped to a single commit. desktop_pages/compare_equity.py adds a native
+read-only overlay in the existing collapsed comparison details area, created on
+the first saved-result selection. Default page widgets, snapshots and the
+widget-name inventory are unchanged. No fixture refresh is required.
+SavedResultsTable retains its columns and checkbox adapter; SideBySideTable
+content and columns are unchanged.
+
+saved_row projects only saved in-sample dates and equity into a private display
+cache during the existing refresh. Selection and deselection read that cache;
+painting performs no file access, strategy calculation, provider request or job
+start. Explicit non-training partition markers are excluded, and auxiliary
+OOS/holdout fields are never projected. Malformed or empty equity yields an
+empty placeholder. Non-finite observations are omitted and counted. Decimal
+arithmetic computes peak-to-trough drawdown and rebasing before float painting
+coordinates.
+
+The two panels share date bounds and ticks. Each series uses its daily closing
+observation, rebased to 1.0 at its first observation when positive; the label
+states that convention. Dates are aligned without filling missing days. Gap
+identities survive reduction. At most eight selected series are displayed with a
+cap note; each curve paints at most 2,048 points, prepared outside paintEvent.
+Labels and line patterns identify series alongside color. The canvas reuses
+desktop_charts' footer layout helper without changing its public behavior.
+
+The accessible name and summary identify the series count and date range. Mouse
+and arrow-key readouts report only displayed series on observed dates. Legend
+names pass through safe_text and all names, curve geometry and readout values
+are concealed in privacy mode. Privacy toggles refresh the new text through the
+existing privacy binding. All new copy uses literal ui_text keys in a trailing
+ZH_TW.update block. No buttons, timers, animation, drag editing, event filters
+or deferred deletion are added. Parent ownership is explicit.
+
+The cheap offscreen test_compare_equity_f2.py covers known drawdown, non-finite
+counts, corruption, shared axes, different starts, gaps, rebasing, selection
+updates, lazy allocation, privacy states, excluded auxiliary data, the series
+cap and 100,000-point reduction. Raising mocks protect the saved-read and engine
+boundaries. Import, layout and UI/style inventories include the new module.
+Protected engine/provider files, saved_candidate_pool, desktop_ui public names,
+gates, timeouts, consent controls, theme, scores and PROJECT_STATE are
+unchanged. Live trading remains permanently disabled and no order path is added.
+The user's final visual check remains pending.
