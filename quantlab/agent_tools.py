@@ -15,6 +15,10 @@ def _refusal():
     return {'ok': False, 'error': {'code': ErrorCode.AGENT_TOOL_REFUSED.value, 'params': {}}}
 
 
+class ReferenceNotFound(Exception):
+    """Host-only signal; no identifier or exception text crosses the boundary."""
+
+
 @dataclass(frozen=True)
 class _Entry:
     declaration_json: str
@@ -95,6 +99,8 @@ class Registry:
             if (result['next_cursor'] is not None) != (result['reason'] in ('item_limit', 'byte_limit')):
                 return _refusal()
             return result
+        except ReferenceNotFound:
+            return {'ok': False, 'error': {'code': ErrorCode.AGENT_REFERENCE_NOT_FOUND.value, 'params': {}}}
         except Exception:
             # An untrusted host record or failing adapter cannot leak exception text.
             return _refusal()

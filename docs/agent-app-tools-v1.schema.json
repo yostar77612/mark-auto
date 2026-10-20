@@ -90,6 +90,11 @@
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 128
+              },
+              "pattern": {
+                "enum": [
+                  "[0-9a-f]{64}"
+                ]
               }
             }
           }

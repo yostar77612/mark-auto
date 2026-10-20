@@ -114,7 +114,11 @@ class AgentReturnD11Tests(unittest.TestCase):
                     self.assertIsInstance(node.value, ast.Call)
                     self.assertEqual(node.value.func.id, 'bounded_return')
                 module = agent_tools if name == NAME else agent_read_tools
-                args = '{}' if name == NAME else json.dumps({'result_id': 'a' * 64, **({'other_id': 'b' * 64} if name == 'compare_results' else {})})
+                args = (
+                    '{}'
+                    if name == NAME
+                    else json.dumps({'result_id': 'a' * 64, **({'other_id': 'b' * 64} if name in ('compare_results', 'compare_result_manifests') else {})})
+                )
                 if name in ('list_saved_results', 'get_paper_positions', 'get_paper_orders'):
                     args = '{}'
                 with patch.object(module, 'bounded_return', wraps=bounded_return) as helper, patch.object(agent_read_tools, '_read', return_value=[]):

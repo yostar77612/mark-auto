@@ -17,8 +17,9 @@ import re
 from types import SimpleNamespace
 
 from quantlab.agent_return import bounded_return
+import quantlab.agent_manifest as agent_manifest
 from quantlab.agent_tool_contract import MAX_LIMIT, MAX_RETURN_BYTES, RETURN_SCHEMA, validate
-from quantlab.agent_tools import Registry
+from quantlab.agent_tools import Registry, ReferenceNotFound
 from quantlab.core import content_hash
 from quantlab.paper import PaperBroker
 from quantlab.reporting import validate_result_payload
@@ -41,6 +42,8 @@ TOOL_NAMES = (
     'get_strategy_params',
     'get_paper_positions',
     'get_paper_orders',
+    'get_result_manifest',
+    'compare_result_manifests',
 )
 
 
@@ -185,6 +188,25 @@ def _paper_rows(context, name):
 
 
 def _read(name, context, arguments):
+    if name in ('get_result_manifest', 'compare_result_manifests'):
+
+        def manifest(identity):
+            _identity(identity)
+            approved = _approved(context)
+            if identity not in approved:
+                # Existing records without provenance remain refused, not exposed.
+                if not (Path(context.saved_root) / identity / 'result.json').exists():
+                    raise ReferenceNotFound
+                raise ValueError
+            try:
+                return _result(context, identity).manifest
+            except FileNotFoundError:
+                raise ReferenceNotFound from None
+
+        left = manifest(arguments['result_id'])
+        if name == 'compare_result_manifests':
+            return agent_manifest.compare(left, manifest(arguments['other_id']))
+        return agent_manifest.summary(left)
     if name.startswith('get_paper_'):
         return _paper_rows(context, name)
     if name == 'list_saved_results':
@@ -234,6 +256,8 @@ def _read(name, context, arguments):
 
 
 def _row_schema(name):
+    if name in ('get_result_manifest', 'compare_result_manifests'):
+        return agent_manifest.row_schema(name == 'compare_result_manifests')
     properties = {}
     if name == 'list_saved_results':
         properties = {'id': HASH, 'data_hash': HASH}
@@ -262,7 +286,7 @@ def _row_schema(name):
 
 
 def create_registry():
-    """Nine read tools through D1; each handler has a closed per-tool output."""
+    """Read tools through D1; each handler has a closed per-tool output."""
     schema = deepcopy(RETURN_SCHEMA)
     # Per-tool validation is enforced before D1's common envelope validation.
     schema['properties']['items']['items'] = {'type': 'object'}
@@ -273,10 +297,10 @@ def create_registry():
         if name == 'list_saved_results':
             fields['include_datasets'] = {'type': 'integer', 'minimum': 0, 'maximum': 1}
         if name != 'list_saved_results' and not name.startswith('get_paper_'):
-            fields['result_id'] = {'type': 'string', 'minLength': 64, 'maxLength': 64}
+            fields['result_id'] = {**HASH, 'minLength': 64, 'maxLength': 64}
             required.append('result_id')
-        if name == 'compare_results':
-            fields['other_id'] = {'type': 'string', 'minLength': 64, 'maxLength': 64}
+        if name in ('compare_results', 'compare_result_manifests'):
+            fields['other_id'] = {**HASH, 'minLength': 64, 'maxLength': 64}
             required.append('other_id')
         declaration = {
             'contractVersion': 1,

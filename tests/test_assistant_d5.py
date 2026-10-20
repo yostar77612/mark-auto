@@ -190,7 +190,7 @@ class AssistantD5Tests(unittest.TestCase):
     def test_all_actual_tools_and_timeline_exclude_protected_fixtures_negative_control(self):
         for name in self.dispatcher.declarations:
             arguments = {} if name.startswith('get_paper_') or name == 'list_saved_results' else {'result_id': self.fixture.storage.identity}
-            if name == 'compare_results':
+            if name in ('compare_results', 'compare_result_manifests'):
                 arguments['other_id'] = self.fixture.storage.other
             self.panel.input.setText('/tool ' + name + ' ' + json.dumps(arguments))
             self.panel.submit()

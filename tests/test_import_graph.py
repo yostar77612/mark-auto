@@ -8,6 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'desktop_pages/assistant_manifest.py',
+    'quantlab/agent_manifest.py',
     'desktop_pages/assistant_models.py',
     'desktop_pages/assistant_completion.py',
     'desktop_pages/connection_test.py',
@@ -136,6 +138,11 @@ def uncommented_local_imports(source):
 
 
 class ImportGraphTests(unittest.TestCase):
+    def test_manifest_d12_has_only_contract_edges(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(graph['quantlab.agent_manifest'], {'quantlab.agent_tool_contract'})
+        self.assertIn('desktop_pages.assistant_manifest', graph['desktop_pages.assistant'])
+
     def test_d4_assistant_core_has_no_operator_or_ui_edges(self):
         graph = import_graph(self.sources)
         self.assertEqual(
@@ -161,6 +168,7 @@ class ImportGraphTests(unittest.TestCase):
                 'quantlab.agent_tool_contract',
                 'quantlab.agent_tools',
                 'quantlab.agent_return',
+                'quantlab.agent_manifest',
                 'quantlab.core',
                 'quantlab.paper',
                 'quantlab.reporting',

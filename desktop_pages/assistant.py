@@ -9,6 +9,7 @@ from desktop_pages.assistant_details import MAX_ROWS, TextFold, ToolTimeline, co
 from desktop_pages.assistant_permissions import ResearchPermission, install_menu
 from desktop_pages.assistant_completion import CompletionMenu, resolve_references
 from desktop_pages.assistant_models import ModelControls
+from desktop_pages.assistant_manifest import ManifestDetails
 import desktop_privacy as privacy
 from desktop_strings import ui_text
 from quantlab.assistant_chat import ChatDispatcher, fixture_reply
@@ -61,6 +62,8 @@ class AssistantPanel(QWidget):
         self.send.setAccessibleName(ui_text('assistant.send'))
         layout.addWidget(self.send)
         self.models = ModelControls(self, layout)
+        self.manifest = ManifestDetails(self.dispatcher, self)
+        layout.addWidget(self.manifest)
         self.model = self.models.model
         self.effort = self.models.effort
         self.mode.currentIndexChanged.connect(self.models.update_send)
