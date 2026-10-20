@@ -1326,7 +1326,10 @@ class MainWindow(SharedStateBindings, QMainWindow):
         _app_header.install_header(self, outer, paper_risk_limits().max_quote_age_seconds)
         horizontal = QHBoxLayout(); outer.addLayout(horizontal, 1)
         self.navigation = QListWidget(); self.navigation.setObjectName('navigation'); self.navigation.setMaximumWidth(180)
-        self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
+        self.stack = QStackedWidget()
+        # Keep display persistence outside the shell.
+        from desktop_pages.preferences import install_sidebar
+        install_sidebar(self, horizontal)
         self.status = QLabel(ui_text('ui.__init__.text_5')); self.status.setObjectName('status'); self.status.setWordWrap(True)
         self.app_header.layout().insertWidget(self.app_header.layout().count() - 1, self.status)
         _notifications.install_notifications(self, outer)

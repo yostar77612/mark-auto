@@ -92,6 +92,12 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
         self.assertIn('tests', ALLOWED_DIRECTORIES)
+    def test_u8_preferences_modules_have_existing_package_homes(self):
+        for name in ('desktop_pages/preferences.py', 'quantlab/ui_preferences.py'):
+            self.assertTrue((ROOT / name).is_file())
+        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_backtest_summary_u4_in_existing_packages(self):
         for name in ('desktop_pages/backtest_summary_card.py', 'quantlab/backtest_summary.py'):
             self.assertTrue((ROOT / name).is_file())

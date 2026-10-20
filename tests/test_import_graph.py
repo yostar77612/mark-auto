@@ -20,6 +20,8 @@ TOUCHED = (
     'desktop_pages/compare_equity.py',
     'desktop_pages/data_gaps.py',
     'quantlab/data_gap_report.py',
+    'desktop_pages/preferences.py',
+    'quantlab/ui_preferences.py',
     'desktop_pages/quick_start.py',
     'desktop_pages/quick_start_chain.py',
     'desktop_pages/error_guidance.py',
@@ -249,6 +251,13 @@ class ImportGraphTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sources = source_map()
+
+    def test_u8_preferences_keep_serialization_qt_free(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(graph['quantlab.ui_preferences'], set())
+        imports = module_imports('quantlab.ui_preferences', self.sources['quantlab.ui_preferences'])
+        self.assertFalse(any(target.startswith(('desktop', 'PySide6')) for target in imports))
+        self.assertEqual(graph['desktop_pages.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support'})
 
     def test_listed_cycles_are_absent(self):
         self.assertEqual(listed_cycles(self.sources), [])
