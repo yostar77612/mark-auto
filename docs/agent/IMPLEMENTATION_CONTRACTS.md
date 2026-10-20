@@ -3225,19 +3225,20 @@ widgets, timers, lifetime operations, styles or public desktop_ui names change.
 Existing-test path/target changes are limited to:
 
 - test_t11_part_b.py reads run_smoke's AST from desktop_smoke/__init__.py;
-run_gui lifecycle fingerprints still read desktop.py. -
-test_desktop_market_smoke.py and test_desktop_walk_forward_smoke.py read harness
-source from desktop_smoke/__init__.py. Every assertIn literal and timeout is
-retained byte-for-byte. - test_desktop_history_smoke.py and
-test_desktop_smoke_isolation.py direct injected fixture/result assignments to
-desktop_smoke through __import__. - test_desktop_walk_forward_smoke.py directs
-injected checker assignments to desktop_smoke; its other injection logic and
-assertions are unchanged. - test_desktop_smoke_terminal.py and
-test_desktop_walk_forward_terminal.py assign injected cleanup to both desktop
-and desktop_smoke. The former keeps run_gui's terminal cleanup injection; the
-latter reaches the moved harness. Startup fixture injection in
-test_desktop_smoke_terminal targets desktop_smoke. Original-function reads
-retain the identical compatibility exports.
+  run_gui lifecycle fingerprints still read desktop.py.
+- test_desktop_market_smoke.py and test_desktop_walk_forward_smoke.py read
+  harness source from desktop_smoke/__init__.py. Every assertIn literal and
+  timeout is retained byte-for-byte.
+- test_desktop_history_smoke.py and test_desktop_smoke_isolation.py direct
+  injected fixture/result assignments to desktop_smoke through __import__.
+- test_desktop_walk_forward_smoke.py directs injected checker assignments to
+  desktop_smoke; its other injection logic and assertions are unchanged.
+- test_desktop_smoke_terminal.py and test_desktop_walk_forward_terminal.py
+  assign injected cleanup to both desktop and desktop_smoke. The former keeps
+  run_gui's terminal cleanup injection; the latter reaches the moved harness.
+  Startup fixture injection in test_desktop_smoke_terminal targets
+  desktop_smoke. Original-function reads retain the identical compatibility
+  exports.
 
 Registry and packaging changes are additive: test_repo_layout allows exactly one
 additional directory, desktop_smoke. test_import_graph includes its Python files
