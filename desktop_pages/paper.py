@@ -11,10 +11,8 @@ from quantlab.desktop_feedback import stop_presentation
 import json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
-from quantlab.reporting import read_json, write_json, load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog, QMessageBox
 from quantlab.reporting import read_json as read_json, write_json as write_json, load_dataset as load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog as QFileDialog
+from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog as QFileDialog, QMessageBox
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
