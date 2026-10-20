@@ -84,8 +84,14 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
         if type(output) is not list:
             return _refusal()
         texts = []
+        thinking = []
         for row in output:
             if row.get('type') == 'reasoning':
+                # Display only explicitly returned model summaries, never opaque reasoning data.
+                for part in row.get('summary', []):
+                    if part.get('type') != 'summary_text' or type(part.get('text')) is not str:
+                        return _refusal()
+                    thinking.append(part['text'])
                 continue
             if row.get('type') != 'message' or row.get('role') != 'assistant' or row.get('status') not in (None, 'completed'):
                 return _refusal()
@@ -95,7 +101,13 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
                 texts.append(part['text'])
         if len(texts) != 1 or not texts[0] or len(texts[0].encode('utf-8')) > 8192:
             return _refusal()
-        return {'ok': True, 'text': texts[0]}
+        result = {'ok': True, 'text': texts[0]}
+        if thinking:
+            summary = '\n'.join(thinking)
+            if len(summary.encode('utf-8')) > 8192:
+                return _refusal()
+            result['thinking'] = summary
+        return result
     finally:
         stream.close()
 

@@ -5,13 +5,15 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QLineEdit, QPushButton, QPlainTextEdit, QMessageBox
 
 from desktop_pages.assistant_runtime import ReplyProcess, host_context
+from desktop_pages.assistant_details import MAX_ROWS, TextFold, ToolTimeline, code_blocks, shown_text
+import desktop_privacy as privacy
 from desktop_strings import ui_text
 from quantlab.assistant_chat import ChatDispatcher, fixture_reply
 from quantlab.errors import ERROR_TABLE
 
 
 class AssistantPanel(QWidget):
-    def __init__(self, host=None, *, dispatcher=None, worker=None, consent=None):
+    def __init__(self, host=None, *, dispatcher=None, worker=None, consent=None, clock=None):
         super().__init__()
         self.host = host
         self.dispatcher = dispatcher or ChatDispatcher(host_context(getattr(host, 'root', '.')))
@@ -32,6 +34,15 @@ class AssistantPanel(QWidget):
         self.transcript.setMaximumBlockCount(500)
         self.transcript.setAccessibleName(ui_text('assistant.transcript'))
         layout.addWidget(self.transcript)
+        self._transcript_entries = []
+        privacy.bind_text(self.transcript, self.refresh_transcript)
+        self.timeline = ToolTimeline(**({'clock': clock} if clock is not None else {}))
+        self.timeline.setObjectName('assistant_timeline')
+        layout.addWidget(self.timeline)
+        self.thinking = TextFold(ui_text('assistant.thinking'), parent=self)
+        self.thinking.setObjectName('assistant_thinking')
+        layout.addWidget(self.thinking)
+        self.code_folds = []
         self.input = QLineEdit()
         self.input.setMaxLength(1024)
         self.input.setAccessibleName(ui_text('assistant.input'))
@@ -71,9 +82,30 @@ class AssistantPanel(QWidget):
             == QMessageBox.StandardButton.Ok
         )
 
-    def reply(self, text, *, chatgpt=False):
+    def refresh_transcript(self):
+        self.transcript.setPlainText(shown_text('\n'.join(self._transcript_entries), privacy.enabled(self.transcript)))
+
+    def append_transcript(self, text):
+        self._transcript_entries.append(text[:16384])
+        del self._transcript_entries[:-MAX_ROWS]
+        self.refresh_transcript()
+
+    def reply(self, text, *, chatgpt=False, thinking=''):
         label = ui_text('assistant.chatgpt') if chatgpt else ui_text('assistant.fixture')
-        self.transcript.appendPlainText(label + '\n' + text + '\n' + ui_text('assistant.disclaimer'))
+        self.append_transcript(label + '\n' + text + '\n' + ui_text('assistant.disclaimer'))
+        self.thinking.source = thinking[:8192]
+        self.thinking.toggle.setChecked(False)
+        self.thinking.refresh()
+        for block in code_blocks(text):
+            fold = TextFold(ui_text('assistant.code'), block, copy=True, parent=self)
+            self.layout().addWidget(fold)
+            fold.refresh()
+            self.code_folds.append(fold)
+        while len(self.code_folds) > MAX_ROWS:
+            fold = self.code_folds.pop(0)
+            self.layout().removeWidget(fold)
+            fold.setParent(None)
+            fold.deleteLater()
 
     def error_reply(self, *, chatgpt=False):
         self.reply(ERROR_TABLE['agent_tool_refused'].explanation, chatgpt=chatgpt)
@@ -85,13 +117,14 @@ class AssistantPanel(QWidget):
         remote = self.mode.currentData() == 'chatgpt'
         if remote and not self.ask_consent():
             return
-        self.transcript.appendPlainText(ui_text('assistant.user') + '\n' + prompt)
+        tool_request = not remote and prompt.startswith('/tool ')
+        self.append_transcript(ui_text('assistant.user') + '\n' + (ui_text('assistant.tool_request') if tool_request else prompt))
         self.input.clear()
         if not remote:
             # Tool requests are explicit closed JSON, never authority/evidence.
-            if prompt.startswith('/tool '):
+            if tool_request:
                 name, _, arguments = prompt[6:].partition(' ')
-                self.reply(self.dispatcher.render_tool(name, arguments or '{}'))
+                self.reply(self.timeline.call(self.dispatcher, name, arguments or '{}'))
             elif fixture_reply(prompt) == 'help':
                 self.reply(ui_text('assistant.fixture_help'))
             else:
@@ -121,7 +154,7 @@ class AssistantPanel(QWidget):
         self.timer.stop()
         self.send.setEnabled(True)
         if result.get('ok') is True and type(result.get('text')) is str:
-            self.reply(result['text'], chatgpt=True)
+            self.reply(result['text'], chatgpt=True, thinking=result.get('thinking', ''))
         else:
             self.error_reply(chatgpt=True)
 

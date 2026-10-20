@@ -7,6 +7,16 @@ str.format templates; callers supply values after lookup.
 DEFAULT_LOCALE = 'zh-TW'
 
 ZH_TW = {
+    'assistant.timeline': '工具呼叫時間軸（未驗證）',
+    'assistant.thinking': '思考摘要（未驗證／模型產生；預設摺疊）',
+    'assistant.code': '程式碼（未驗證；僅供複製）',
+    'assistant.copy_code': '複製程式碼文字',
+    'assistant.parameters_hidden': '參數摘要已隱藏',
+    'assistant.result_summary': '結果 {0} 筆；已截斷：{1}',
+    'assistant.tool_row': '{0} · {1} · {2:.3f} 秒（未驗證；展開詳細資料）',
+    'assistant.unknown_tool': '未授權工具',
+    'assistant.tool_recorded': '唯讀工具結果見時間軸（未驗證）。',
+    'assistant.tool_request': '唯讀工具請求（參數僅顯示安全摘要）',
     'assistant.title': '唯讀研究助理（未驗證）',
     'assistant.fixture': '離線示範（不是真實 AI）',
     'assistant.chatgpt': 'ChatGPT（未驗證）',

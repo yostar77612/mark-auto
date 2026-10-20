@@ -84,6 +84,10 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_assistant_d5_module_in_existing_package(self):
+        self.assertTrue((ROOT / 'desktop_pages/assistant_details.py').is_file())
+        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+
     def test_assistant_d4_modules_registered_in_existing_packages(self):
         for name in ('desktop_pages/assistant.py', 'desktop_pages/assistant_runtime.py', 'quantlab/assistant_chat.py'):
             self.assertTrue((ROOT / name).is_file())

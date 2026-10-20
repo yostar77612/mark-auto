@@ -2355,3 +2355,82 @@ fixture refresh is requested. No live ChatGPT inference was attempted or claimed
 verified. GitNexus analyze failed with sandbox spawn EPERM and its lane query
 reported repository not found; no graph substitute or extension download was used.
 Changes remain uncommitted; the controller owns the single A2-D4 commit.
+
+### TASK A2-D5: assistant timeline, folded summaries and code copying
+
+Initial assessment confirmed D4's collapsed maintenance-area assistant existed,
+but had no timeline, thinking fold or code-copy control. The existing assistant
+now owns desktop_pages.assistant_details widgets. No default page, public
+desktop_ui name, MainWindow method, PanelCard or AsyncStatus is changed (the
+latter two components are absent in this lane). The widget inventory adds only
+assistant_thinking and assistant_timeline; no baseline refresh is requested.
+
+Each explicit /tool call passes once through the unchanged D4 dispatcher and
+appends one row: registered tool name, projected JSON parameters, result item
+count/truncation summary, and elapsed seconds formatted to three decimals.
+Timing uses an injectable time.monotonic clock. Exceptions, unknown tools and
+refusals show only B1 agent_tool_refused and ERROR_TABLE's explanation; unknown
+names and rejected parameters are never echoed. Parameters have a fixed
+240-character cap, project only known fields and conceal opaque cursors.
+Credential keys and arbitrary argument keys never enter summaries. Only D3's
+already bounded, training-provenance-filtered return enters result details;
+the transcript records a fixed reference to that row rather than the payload.
+Tool input is no longer repeated verbatim in the transcript.
+
+Rows and code widgets retain only the newest 40 entries. Transcript history
+retains 40 bounded entries, and the current thinking summary is bounded to
+8192 characters. Each detail body is bounded to 16384 characters. Tool results
+and thinking start collapsed; native checkable buttons support click and Space.
+All labels explicitly select plain text, and all bodies use QPlainTextEdit;
+HTML, markup and code remain inert literal characters. Summary headers contain
+counts rather than full results. Fenced code blocks have accessible,
+keyboard-focusable copy buttons using only QClipboard.setText, preserving the
+block's indentation, blank lines and final newline. No execution/apply/send
+action exists. Privacy mode copies only the masked displayed text.
+
+B11 bind_text/render callbacks refresh every assistant document and parameter
+label on toggles, reusing mask_money and mask_account_id. Money, account ids,
+paths and result identities are masked; free-text replies, thinking and result
+documents fail closed to a mask under privacy. Original bounded source remains
+in session-only Python presentation state, outside Qt text/data/accessibility
+roles, like B11's raw source handling. B11 attach_previews now defers to an
+existing owned renderer, preventing a second raw preview cache from retaining
+old assistant document text. The existing B11 tests pass unchanged.
+
+Only explicit summary_text fields from reasoning items in the unchanged pinned
+provider's terminal response are surfaced by assistant_runtime; opaque or
+encrypted reasoning data is ignored. No request for hidden reasoning is made.
+Thinking is labelled unverified/model-generated in the catalog. No-summary
+responses preserve D4's original response shape. Malformed/oversized summaries
+fail closed. The fixture source still says not real AI, and ChatGPT inference
+remains unverified. Per-call explicit consent, the single-prompt payload,
+DPAPI-only credential references, and all runtime deadlines are unchanged.
+
+tests/test_assistant_d5.py adds nine offline tests using real D4/D3 saved
+fixtures with planted protected values. Coverage includes monotonic timing,
+B1 exception redaction, bounded parameter projection, click/keyboard folding,
+privacy toggles with unmasked negative controls and no raw Qt caches, exact
+QClipboard code text, summary-only reasoning extraction, consent denial with
+zero transport calls, fixed row/widget/history counts, and AST exclusion of
+dynamic execution/operator/persistence calls. Protected-data and credential
+scans cover every actual tool row and transcript; planted OOS and credential
+negative controls fail the same scanner. Existing D4 tests continue to prove
+the exact frozen read-only surface, operator/quota sentinels, per-call consent,
+model-facing payload isolation and protected-fixture filtering.
+
+Local validation: D5 9, D4 10, B11 8, import graph 8, hardcoded UI text 7,
+inline styles 3, repository layout 8, catalog placeholders 1, function limits 2
+and UI operation registry 6 pass. Ruff 0.16.10 check, changed-file format check,
+Python 3.11 compilation and quality_gate (zero findings) pass. The
+unchanged terminal, smoke-isolation, history, market and Walk-forward smoke
+modules were attempted but hit Windows restricted-token temporary-directory
+ACL failures; native smoke and visual confirmation remain controller checks.
+No live inference or visual acceptance is claimed. GitNexus analyze failed
+with sandbox spawn EPERM and the lane query reported repository not found;
+no alternate graph or extension download was used.
+
+Live trading remains permanently disabled; no operator, mutation, quota or
+credential reader was added. G3 sources, all saved_candidate_pool bytes,
+PROJECT_STATE, optimization plan and ACCEPTANCE remain untouched. No gate,
+budget, OOS rule, timeout or existing test was weakened. Changes remain
+uncommitted; the controller owns the single A2-D5 commit.
