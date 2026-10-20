@@ -159,6 +159,8 @@ def scan(root: Path, history: bool = False) -> list[str]:
                         "desktop_charts.py",
                         "desktop_forms.py",
                         "desktop_market.py",
+                        "desktop_market_layout.py",
+                        "desktop_market_workspace.py",
                         "desktop_walk_forward.py",
                         "desktop_chatgpt_auth.py",
                         "desktop_chatgpt_provider.py",

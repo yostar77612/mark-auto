@@ -256,6 +256,7 @@ def install_appearance_controls(parent, layout, store):
 _PANEL_QSS = """
 QWidget[themePart="panelCard"] { border:1px solid @table_grid@; border-radius:6px; }
 QWidget[themePart="panelTitleBar"] { background:@background@; color:@text@; border:0; border-left:3px solid @focus_border@; }
+QToolButton[themePart="panelTitleBar"]::menu-button { background:@background@; border:0; width:14px; }
 QGroupBox[themePart="panelTitle"] { background:@background@; color:@text@; border:0; margin:0; padding:0; font-weight:600; }
 QGroupBox[themePart="panelTitle"]::title { subcontrol-origin:margin; subcontrol-position:center left; padding:0; }
 """
@@ -266,7 +267,7 @@ QWidget#market_dashboard QWidget { background:@background@; color:@text@; }
 QWidget#market_dashboard QLabel { color:@text@; }
 QWidget#market_dashboard QLineEdit, QWidget#market_dashboard QComboBox, QWidget#market_dashboard QSpinBox, QWidget#market_dashboard QDoubleSpinBox, QWidget#market_dashboard QListWidget, QWidget#market_dashboard QTableWidget { background:@input_background@; color:@market_input_text@; border:1px solid @input_border@; border-radius:3px; padding:4px; selection-background-color:@market_selection@; }
 QWidget#market_dashboard QPushButton { background:@market_button@; color:@market_button_text@; padding:6px 9px; border:1px solid @market_button_border@; border-radius:4px; }
-QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid @focus_border@; }
+QWidget#market_dashboard QToolButton:focus, QWidget#market_dashboard QPushButton:focus, QWidget#market_dashboard QComboBox:focus, QWidget#market_dashboard QLineEdit:focus { border:2px solid @focus_border@; }
 QWidget#market_dashboard QCheckBox { color:@header_text@; }
 QWidget#market_dashboard QHeaderView::section { background:@muted_background@; color:@header_text@; padding:5px; border:0; }
 QWidget#market_dashboard QTabBar::tab { background:@muted_background@; color:@header_text@; padding:7px; }
