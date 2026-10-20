@@ -32,6 +32,8 @@
   "assistant_panel",
   "assistant_send",
   "assistant_send_prerequisite",
+  "assistant_thinking",
+  "assistant_timeline",
   "assistant_transcript",
   "backtest_page_hint",
   "browse_calendar",

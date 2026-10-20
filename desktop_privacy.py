@@ -156,7 +156,7 @@ class PrivacyState:
 
     def attach_previews(self):
         for editor in self.window.findChildren(QPlainTextEdit):
-            if editor.isReadOnly():
+            if editor.isReadOnly() and not hasattr(editor, '_privacy_render'):
                 editor._privacy_preview_raw = editor.toPlainText()
                 editor.textChanged.connect(lambda editor=editor: self._preview_changed(editor))
 
