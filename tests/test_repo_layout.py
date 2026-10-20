@@ -92,6 +92,7 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
         self.assertIn('tests', ALLOWED_DIRECTORIES)
+
     def test_workflow_artifacts_are_ignored_without_hiding_project_files(self):
         artifacts = ('lt_LB-B3.txt', 'lt_XX-Y9.txt', 'nohup.out')
         legitimate = ('README.md', 'AGENTS.md', 'CLAUDE.md', 'docs/agent/PROJECT_STATE.md', 'tests/fixtures/desktop_widget_names.json')
