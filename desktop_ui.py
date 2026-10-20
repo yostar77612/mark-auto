@@ -1265,6 +1265,9 @@ def _install_window_support(window):
 
 
 # fmt: off
+import desktop_pages.notifications as _notifications
+
+
 class MainWindow(SharedStateBindings, QMainWindow):
     def __init__(self, paths, jobs, settings=None, backups=None, guard=None):
         super().__init__()
@@ -1313,16 +1316,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.stack = QStackedWidget(); horizontal.addWidget(self.navigation); horizontal.addWidget(self.stack, 1)
         self.status = QLabel(ui_text('ui.__init__.text_5')); self.status.setObjectName('status'); self.status.setWordWrap(True)
         self.app_header.layout().insertWidget(self.app_header.layout().count() - 1, self.status)
-        self.notification = QLabel(''); self.notification.setObjectName('local_notification'); self.notification.setWordWrap(True); self.notification.hide(); outer.addWidget(self.notification)
-        self.notification.setTextFormat(Qt.TextFormat.RichText)
-        self.notification.linkActivated.connect(self._notification_link)
-        self.notification_timer = QTimer(self); self.notification_timer.setSingleShot(True)
-        self.notification_opacity = QGraphicsOpacityEffect(self.notification)
-        self.notification.setGraphicsEffect(self.notification_opacity)
-        self.notification_fade = QPropertyAnimation(self.notification_opacity, b'opacity', self)
-        self.notification_fade.setDuration(300); self.notification_fade.setStartValue(1.0); self.notification_fade.setEndValue(0.0)
-        self.notification_fade.finished.connect(self.notification.hide)
-        self.notification_timer.timeout.connect(self.notification_fade.start)
+        _notifications.install_notifications(self, outer)
         _job_progress.install_progress(self, outer)
         self.setCentralWidget(body)
         self.page_state._section_toggles = self._section_toggles
@@ -1488,7 +1482,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
             for event in self.jobs.poll():
                 if event.get('job_id') is not None and self._ui_job_id is not None and event['job_id'] != self._ui_job_id:
                     continue  # A joined old worker can never overwrite a newer view.
+                _notifications.begin_event(self)
                 if not self.job_feedback.accept(self, event): continue
+                _notifications.record_event(self, event)
                 recovery_changed = recovery_changed or event.get('type') in ('result','error','failed','cancelled','canceled')
                 self.automatic_backup_panel.handle_job_event(event)
                 if self._walk_forward_event(event): continue
@@ -1549,25 +1545,18 @@ class MainWindow(SharedStateBindings, QMainWindow):
                     self.paper_job('kill')
         except Exception as exc:
             self.status.setText(error_message(exception_code(exc)))
+        finally:
+            _notifications.end_event(self)
 
 
     def notify_local(self, message, *, error=False, completion=False):
-        # Keep operation-specific dependencies out of module startup.
-        from html import escape
-        if not completion and not self.local_notifications.isChecked(): return
-        self.notification_timer.stop()
-        self.notification_fade.stop(); self.notification_opacity.setOpacity(1.0)
-        self._notification_operation = self.last_operation
-        self.notification.setText(ui_text('ui.notify_local.text_1').format(escape(message)))
-        set_status(self.notification, 'danger' if error else 'neutral')
-        self.notification.show()
-        if not error: self.notification_timer.start(5000)
-        if self.local_notifications.isChecked(): QApplication.alert(self, 1500)
+        _notifications.notify_local(self, message, error=error, completion=completion)
 
 
     def _notification_link(self, link):
         if link == 'close':
-            self.notification_timer.stop(); self.notification_fade.stop(); self.notification.hide(); return
+            _notifications.close_banner(self); return
+        if link != 'result': return
         operation = self._notification_operation or ''
         page = 4 if operation.startswith('ui_paper_') else 2 if operation == 'ui_backtest' else 3 if operation in ('ui_compare', 'ui_select', 'ui_disable') else 1 if operation.startswith(('ui_analysis_', 'ui_walk_forward_')) or operation == 'ui_campaign' else 6 if operation.startswith(('ui_backup_', 'ui_chatgpt_')) else 0
         self.navigation.setCurrentRow(page)

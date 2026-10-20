@@ -94,7 +94,9 @@ class AppHeader(QWidget):
     def _labels(self):
         notice = getattr(getattr(self.host, 'privacy', None), 'notice', None)
         status = getattr(self.host, 'status', None)
-        return [x for x in (self.badge, self.source, self.job, self.time, notice, status) if isinstance(x, QLabel)]
+        button = getattr(getattr(self.host, 'notification_center', None), 'button', None)
+        hints = [hint.label for hint in getattr(self.host, '_disabled_hints', ()) if hint.button is button]
+        return [x for x in (self.badge, self.source, self.job, self.time, notice, status, *hints) if isinstance(x, QLabel)]
 
     def _tick(self):
         # Hidden strips (and windows that were never shown) have nothing to repaint.

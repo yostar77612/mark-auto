@@ -22,7 +22,15 @@ def install_shortcuts(window):
     window.refresh_shortcut.activated.connect(lambda: refresh_current_page(window))
     window.cancel_shortcut = QShortcut(QKeySequence('Esc'), window)
     window.cancel_shortcut.activated.connect(
-        lambda: window.command_palette.hide() if window.command_palette._opened else window.cancel_job() if window.jobs.active else None
+        lambda: (
+            window.notification_center.hide()
+            if getattr(window, 'notification_center', None) is not None and not window.notification_center.isHidden()
+            else window.command_palette.hide()
+            if window.command_palette._opened
+            else window.cancel_job()
+            if window.jobs.active
+            else None
+        )
     )
     window.cancel_button.setToolTip(ui_text('keyboard.cancel'))
     window.market.refresh_button.setToolTip(ui_text('keyboard.refresh'))

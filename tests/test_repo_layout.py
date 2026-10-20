@@ -116,7 +116,7 @@ class RepoLayoutTests(unittest.TestCase):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
     def test_c7_modules_stay_in_desktop_package(self):
-        for name in ('command_palette.py', 'palette_commands.py'):
+        for name in ('command_palette.py', 'palette_commands.py', 'notifications.py', 'notification_log.py'):
             self.assertTrue((ROOT / 'desktop_pages' / name).is_file())
 
     def test_agent_schema_registered_location(self):

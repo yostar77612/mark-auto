@@ -3001,11 +3001,11 @@ No default-page baseline or screenshot fixture is changed; no controller fixture
 refresh is required for C7. The widget-name fixture only gains the four new names.
 MainWindow/public exports and page classes are unchanged. Protected G3 files,
 saved_candidate_pool, gates, thresholds, timeouts, PROJECT_STATE, optimization
-plan and ACCEPTANCE scores (230/300) retain empty diffs. Changes stay uncommitted
-for the controller. Offscreen unit evidence is distinct from real desktop smoke:
-the required smoke modules were attempted but encounter sandbox temporary-dir ACL
-errors/environment skips, so controller reruns remain necessary. No visual or
-real-broker verification is claimed; the user's final visual check is pending.
+plan and ACCEPTANCE scores (230/300) retain empty diffs. The item is a single
+commit. Offscreen unit evidence is distinct from real desktop smoke: the sandbox
+could not run the smoke modules (temporary-dir ACL errors), and the controller
+ran them outside the sandbox where they pass. No visual or real-broker
+verification is claimed; the user's final visual check is pending.
 
 Local validation: all 13 C7 tests pass, as do unchanged shortcuts, header C1,
 async C4, panel C3, accessibility walk, desktop theme and UI operations/public-name
@@ -3015,3 +3015,106 @@ tools/quality_gate.py (zero findings) pass. Desktop pages' three structural
 tests pass; its interaction tests and desktop_ui encounter the sandbox ACL
 errors above. GitNexus analyze fails with spawn EPERM; the server has no lane-ui2
 index, so direct source inspection/runtime tests supply local navigation evidence.
+
+
+## U2-C8: bounded notification history and toast center (2026-10-20)
+
+Entry points: desktop_pages.notification_log.NotificationLog is Qt-free and
+stores at most 100 immutable entries in a deque (configurable only within
+1..200). Id and sequence increase monotonically; eviction removes the oldest
+entry first. Terminal identities have an equally bounded duplicate cache.
+MainWindow.poll_jobs calls NotificationCenter.record_event immediately after
+JobFeedback.accept and before specialized handlers. Compatibility notify_local
+calls during that event cannot create a second center entry. JobFeedback retains
+its previous behavior for all hosts, including bare namespaces. Tolerant module
+helpers begin_event/record_event/end_event are no-ops without a center.
+
+Standalone NotificationCenter owns three reusable Toast QLabel slots. A real
+window uses two slots plus its independent legacy banner, limiting visible
+notices to three in the existing bottom layout, pushing content instead of
+overlaying primary controls. Slots have
+NoFocus and WA_ShowWithoutActivating, fixed internal result/close links and
+escaped message text. Further events stay in the center only. Ctrl+Shift+D
+dismisses all displayed slots independently of job cancellation. Single-shot,
+parented 5000 ms timers start when slots become visible; hiding, closing or
+window close stops them. Errors never auto-expire. Widgets are hidden/reused;
+no deleteLater, parent event filters or timer findChildren loops are introduced.
+The existing window-owned _CloseWatcher performs toast shutdown; header timer
+and close-watcher ownership are unchanged.
+
+The additive header button shows the model unread count, with a catalog
+accessible name. Ctrl+Shift+N also opens the in-layout center. Opening marks
+retained entries viewed and resets the badge. Rows show time, catalog kind and
+severity, and safe message newest first. Up/Down selects, Enter invokes the
+existing _notification_link page mapping, Delete dismisses one entry and Esc
+closes the center before the existing job-cancel shortcut can dispatch. The
+center also has open, dismiss, clear-all and close buttons. Clearing changes
+only in-memory presentation objects and never removes files or event journals.
+No history is persisted. Rebuild visits at most maxlen rows.
+
+Privacy boundary: safe_summary calls the unchanged completion_summary using
+only structural counts and validated bar counts. Account identifiers, cash,
+amounts, hashes, analysis identifiers, replay values and research evaluation
+values never enter stored text, even with privacy off. Thus enabling privacy
+cannot reveal previously retained values. Paper submit/cancel reports carry an
+explicit catalog paper/simulated label. Failed jobs and partial market refresh
+failures persist in history and remain unread after toast dismissal. Errors use
+ERROR_TABLE.get(code) and the same async.error catalog template as AsyncStatus;
+unknown codes fall back to operation_failed. No exception or arbitrary worker
+message is stringified. Center compatibility text accepts catalog values;
+arbitrary messages fall back to a sanitized operation summary. The historical
+numeric synthetic-demo summary remains supported. No retry callback runs on push.
+The separate legacy notification label retains the original caller-supplied
+presentation wording, HTML escaping, danger/neutral status, result/close links,
+notification_timer (5000 ms for non-errors), notification_fade/opacity and
+_notification_operation contract. The checkbox retains its previous banner
+suppression semantics; the center still records completions and failures.
+Bare hosts without labels, timers, fade objects or a QWidget safely no-op for
+missing presentation objects. QApplication.alert is called only for QWidget hosts.
+Legacy compatibility takes priority over replacing its text with B1 center text.
+
+Evidence: tests/test_notifications_c8.py supplies cheap synthetic/offscreen
+model eviction, deduplication, event coverage, focus/modal, timer, dismissal,
+keyboard, badge, navigation parity, B1/retry, sentinel negative-control, markup,
+privacy, bounded-work, window-layout and close/lifetime tests. An additive
+notification_feedback_c8.json golden fixture records unchanged completion and
+stop outputs for every pre-existing operation. quantlab/desktop_feedback.py
+itself has no diff. Package modules are registered in import-graph/layout and
+automatic UI text/stylesheet scans. The widget-name fixture is additive only.
+
+Protected G3 sources, saved_candidate_pool, timeouts, gates, PROJECT_STATE,
+optimization plan and ACCEPTANCE scores have empty diffs. No order, cancel,
+amend, kill or broker path is introduced. The item is a single feat(desktop)
+implementation commit; nothing is pushed, tagged or released by the lane.
+
+Local validation: 14 new tests and unchanged feedback P0, header C1, async C4,
+shortcuts, panel C3, accessibility, theme, public-name registry, catalog, import,
+text/style, layout and function-length checks pass. Ruff check/changed-file
+format, Python 3.11 compile and quality_gate pass. Required terminal/isolation/
+history/market/walk-forward smoke and desktop pages/UI modules were attempted
+but encountered sandbox temporary-directory WinError 5 ACL failures (and existing
+environment skips); the controller reran the real-desktop smoke and the desktop
+pages/UI modules outside the sandbox and they pass. GitNexus analyze failed with
+spawn EPERM in the sandbox and the MCP server had no lane-ui2 index, so graph
+evidence is limited to source reads.
+
+The default header gains a notification button, so tests/fixtures/desktop_pages_before/01_viewport.png
+through 07_viewport.png were refreshed in a separate fixture-only commit. Page content and
+metrics.json are unchanged by this item (reviewed before refreshing).
+No automated visual-quality or real-broker verification is claimed. The user's
+final visual check remains pending.
+
+Repair-round evidence: the unchanged test_t16_presentation.py reproduced all
+26 missing-center errors, then passed all 15 tests after the repair. Additive
+C8 tests cover bare-host notify/close behavior, exact banner message/status,
+timer/fade compatibility and the combined visible-notice cap. B4 appearance
+(8 tests), shortcuts (2), feedback P0 (7), header C1 (5) and async C4 (7) pass.
+Unchanged desktop_ui and desktop_pages runs hit WinError 5 temporary-dir
+ACL errors inside the sandbox; the controller's runs outside it pass. A separate disposable metrics-only
+capture shows zero differences across all seven pages for visible_text,
+button_count, label_char_count, visible_input_count, unlabeled_inputs and
+primary_button_count. This is mock/offscreen structural evidence, not visual QA.
+The only intended default header addition is the catalog notification button
+(`notification_button`, unread badge text from notifications.badge, initially
+count zero). The seven viewport PNGs were reviewed and refreshed by the controller
+in the fixture-only baseline commit; metrics.json is unchanged.

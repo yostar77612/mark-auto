@@ -1985,3 +1985,23 @@ ZH_TW.update(
     }
 )
 ZH_TW['keyboard.help'] += '\uff1bCtrl+K \u958b\u555f\u547d\u4ee4\u9762\u677f\u3002'
+
+
+ZH_TW.update(
+    {
+        'notifications.kind.job': '\u4f5c\u696d',
+        'notifications.kind.paper': '\u7d19\u4e0a\u59d4\u8a17\u56de\u5831',
+        'notifications.kind.data': '\u8cc7\u6599\u66f4\u65b0',
+        'notifications.info': '\u5b8c\u6210',
+        'notifications.error': '\u5931\u6557',
+        'notifications.paper_summary': '\u7d19\u4e0a\u6a21\u64ec: {0}',
+        'notifications.title': '\u901a\u77e5\u4e2d\u5fc3',
+        'notifications.badge': '\u901a\u77e5 ({0})',
+        'notifications.open': '\u67e5\u770b\u7d50\u679c',
+        'notifications.dismiss': '\u79fb\u9664\u901a\u77e5',
+        'notifications.clear': '\u6e05\u9664\u5168\u90e8\u901a\u77e5',
+        'notifications.close': '\u95dc\u9589\u901a\u77e5\u4e2d\u5fc3',
+        'notifications.row': '{0} | {1} | {2} | {3}',
+    }
+)
+ZH_TW['keyboard.help'] += '\uff1bCtrl+Shift+N \u901a\u77e5\u4e2d\u5fc3\uff1bCtrl+Shift+D \u95dc\u9589\u63d0\u793a\u3002'
