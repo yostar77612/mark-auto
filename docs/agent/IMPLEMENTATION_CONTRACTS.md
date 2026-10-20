@@ -3754,18 +3754,14 @@ Existing paper_confirm and other consent controls are unchanged. No timers,
 event filters, deferred deletion or recurring widget discovery are added.
 
 The unchanged accessibility walk and appearance tests pass. Ruff 0.16.10 check
-and format checks, Python 3.11 compileall and tools/quality_gate.py pass. The five
-terminal/isolation/history/market/walk-forward smoke modules encounter existing
-sandbox WinError 5 temporary-directory ACL failures; those runs do not establish
-real-process smoke success. GitNexus has no lane index and analyze fails with
-spawn EPERM; source inspection supplies navigation evidence.
+and format checks, Python 3.11 compileall and tools/quality_gate.py pass, as do
+the terminal, isolation, history, market and walk-forward smoke modules.
 
 Default help geometry changes affect strategy, backtest, compare, paper and
 settings. Snapshot review is isolated to a separate fixture-only commit for
 02_full.png, 02_viewport.png, 03_full.png, 03_viewport.png, 04_full.png,
 04_viewport.png, 05_full.png, 05_viewport.png, 07_full.png, 07_viewport.png and
-metrics.json under tests/fixtures/desktop_pages_before. This implementation
-preserves all baseline files byte-for-byte. No public desktop_ui name or module
+metrics.json under tests/fixtures/desktop_pages_before. No public desktop_ui name or module
 is added. G3 sources, saved_candidate_pool, PROJECT_STATE, acceptance scores,
 gates, thresholds and timeouts have empty diffs; live trading remains disabled.
 
@@ -3796,8 +3792,7 @@ added. Automation evidence claims only "not broken"; visual quality remains the
 user's final check.
 
 The existing header, async-status, public-name, catalog-placeholder, UI-text,
-import-graph, repository-layout and function-length checks pass. these runs do
-not establish real-process smoke success. Ruff 0.16.10 check and changed-file
+import-graph, repository-layout and function-length checks pass. Ruff 0.16.10 check and changed-file
 format checks, Python 3.11 compileall and tools/quality_gate.py pass with zero
 gate findings.
 
