@@ -29,6 +29,7 @@ ALLOWED_FILES = {
     'desktop_accessibility.py',
     'desktop_automatic_backup.py',
     'desktop_charts.py',
+    'desktop_chart_memory.py',
     'desktop_order_lines.py',
     'desktop_chatgpt_auth.py',
     'desktop_chatgpt_dependency_manifest.json',
@@ -91,6 +92,10 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
         self.assertIn('tests', ALLOWED_DIRECTORIES)
+
+    def test_f6_memory_in_existing_package(self):
+        self.assertTrue((ROOT / 'desktop_chart_memory.py').is_file())
+
     def test_f5_inspection_modules(self):
         for name in ('desktop_pages/backup_inspection.py', 'quantlab/backup_inspection.py'):
             self.assertTrue((ROOT / name).is_file())

@@ -217,6 +217,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     crosshair_changed = Signal(object)
     timeframe_changed = Signal(str)
     display_changed = Signal()
+    view_changed = Signal()
     timeframes = ('1m', '3m', '5m', '15m', '30m', '60m', '1d', '1w')
     MAX_VISIBLE = 600
 
@@ -313,6 +314,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     def reset_view(self):
         self._count = min(self.MAX_VISIBLE, 100)
         self._start = max(0, len(self.bars) - self._count)
+        self.view_changed.emit()
         self.update()
 
     def set_error(self, message):
@@ -400,6 +402,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 
     def _pan(self, bars):
         self._start = max(0, min(max(0, len(self.bars) - self._count), self._start + bars))
+        self.view_changed.emit()
         self.update()
 
     def _zoom(self, factor, anchor=0.5):
@@ -407,6 +410,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         new = max(10, min(self.MAX_VISIBLE, len(self.bars) or 10, round(old * factor)))
         self._start = max(0, min(max(0, len(self.bars) - new), round(self._start + (old - new) * anchor)))
         self._count = new
+        self.view_changed.emit()
         self.update()
 
     def wheelEvent(self, event):
@@ -430,6 +434,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         if self._drag is not None:
             x, origin = self._drag
             self._start = max(0, min(max(0, len(self.bars) - self._count), origin - round((event.position().x() - x) / r.width() * max(1, end - start))))
+            self.view_changed.emit()
         if self.bars and r.contains(event.position()):
             self.crosshair_index = min(end - 1, max(start, start + int((event.position().x() - r.left()) / r.width() * max(1, end - start))))
             self.crosshair_changed.emit(self.bar_details(self.crosshair_index))

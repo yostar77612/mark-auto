@@ -22,6 +22,9 @@ def stylesheet_calls(source):
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
+    def test_f6_memory_scanned(self):
+        self.assertEqual(stylesheet_calls((ROOT / 'desktop_chart_memory.py').read_text(encoding='utf-8')), [])
+
     def test_f5_backup_inspection_scanned(self):
         path = ROOT / 'desktop_pages/backup_inspection.py'
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])

@@ -8,10 +8,12 @@ from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message
 
 
-def save_position(window, store):
+def save_position(window, store, market=None):
     """Merge frame coordinates into the existing atomic settings store."""
     value = store.load()
     value['market_popout'] = {'x': window.x(), 'y': window.y(), 'width': window.width(), 'height': window.height()}
+    if market is not None:
+        value['market'] = market
     store.save(value)
 
 
@@ -72,7 +74,6 @@ class ChartPopout(QDialog):
             return
         dashboard = self.controller.dashboard
         source, target = dashboard.chart, self.chart
-        changed = target.bars is not source.bars or target.timeframe != source.timeframe
         # All sequences/mappings are validated by the authoritative main setters.
         # Immutable bars, overlays and annotation records are shared by identity.
         for field in (
@@ -99,8 +100,7 @@ class ChartPopout(QDialog):
         target.paper_orders.snapshot = source.paper_orders.snapshot
         target.paper_orders.mode = source.paper_orders.mode
         target.paper_orders.tick = source.paper_orders.tick
-        if changed:
-            target.reset_view()
+        target._start, target._count = source._start, source._count
         self.status.setText(' · '.join((source.source_label, source.status_label, dashboard.source_status.text(), dashboard.message.text())))
         self.status.setToolTip(dashboard.message.toolTip())
         target.update()
@@ -148,6 +148,8 @@ class PopoutController:
             except (OSError, ValueError, RuntimeError, TypeError):
                 self.dashboard.message.setText(error_message('operation_failed_local'))
             self.dashboard.chart.display_changed.connect(window.sync)
+            self.dashboard.chart.view_changed.connect(window.sync)
+            window.chart.view_changed.connect(self.follow_view)
             self.dashboard.series_rendered.connect(window.sync)
         window = self.window
         if visible:
@@ -160,15 +162,23 @@ class PopoutController:
         store = self.store()
         if store is not None:
             try:
-                save_position(window, store)
+                save_position(window, store, self.dashboard.preferences())
             except (OSError, ValueError, RuntimeError, TypeError):
                 self.dashboard.message.setText(error_message('operation_failed_local'))
 
     def detach(self, window):
         self.dashboard.chart.display_changed.disconnect(window.sync)
+        self.dashboard.chart.view_changed.disconnect(window.sync)
+        window.chart.view_changed.disconnect(self.follow_view)
         if not self.destroying:
             self.dashboard.series_rendered.disconnect(window.sync)
         self.window = None
+
+    def follow_view(self):
+        if self.window is not None:
+            source, target = self.window.chart, self.dashboard.chart
+            target._start, target._count = source._start, source._count
+            target.update()
 
     def close(self):
         if self.window is not None:
