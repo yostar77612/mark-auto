@@ -127,7 +127,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         status.set_state('error', error_code='validation_failed')
         self.assertEqual(status.label.accessibleName(), status.label.text())
         self.assertIn(next_step('validation_failed'), status.label.accessibleName())
-        self.assertNotIn('???', status.label.accessibleName())
+        self.assertNotIn('\u003f\u003f\u003f', status.label.accessibleName())
         status.set_state('empty')
 
     def test_no_focus_audit(self):
@@ -147,23 +147,23 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         # other repeats live in distinct form panels, tabs or disclosure bodies.
         allowed = {
             ('DataPage', ui_text('access.editor')): (2, 'Separate read-only data panels.'),
-            ('StrategyPage', ui_text('forms.__init__.text_115')): (5, 'Distinct result tabs.'),
+            ('StrategyPage', ui_text('forms.init.results_accessible_name')): (5, 'Distinct result tabs.'),
             ('StrategyPage', ui_text('access.editor')): (8, 'Distinct preview and diagnostic panels.'),
             ('StrategyPage', ui_text('ui.advanced.default_title')): (2, 'Separate research form disclosures.'),
             ('BacktestPage', ui_text('timeinput.set')): (3, 'Individually labelled DateInput owners.'),
             ('BacktestPage', ui_text('timeinput.taipei')): (3, 'Individually labelled DateInput owners.'),
             ('PaperPage', ui_text('access.table')): (2, 'Policy risk sessions and margin schedule panels.'),
-            ('PaperPage', ui_text('forms.__init__.text_103')): (2, 'One row action per policy table.'),
-            ('PaperPage', ui_text('forms.__init__.text_104')): (2, 'One row action per policy table.'),
-            ('PaperPage', ui_text('forms.__init__.text_115')): (3, 'Separate snapshot result tables.'),
-            ('PaperPage', ui_text('forms.__init__.text_25')): (2, 'Intent and quote form context.'),
+            ('PaperPage', ui_text('forms.init.add_row')): (2, 'One row action per policy table.'),
+            ('PaperPage', ui_text('forms.init.remove_row')): (2, 'One row action per policy table.'),
+            ('PaperPage', ui_text('forms.init.results_accessible_name')): (3, 'Separate snapshot result tables.'),
+            ('PaperPage', ui_text('forms.init.explicit_contract')): (2, 'Intent and quote form context.'),
             ('PaperPage', ui_text('timeinput.set')): (6, 'Individually labelled DateInput owners.'),
             ('PaperPage', ui_text('timeinput.taipei')): (6, 'Individually labelled DateInput owners.'),
             ('SettingsPage', ui_text('help.accessible')): (8, 'Help buttons announce the associated field through their description.'),
             ('SettingsPage', ui_text('assistant.permission_label')): (2, 'Settings and assistant share the permission model.'),
             ('SettingsPage', ui_text('assistant.thinking')): (2, 'Disclosure and its read-only body.'),
             ('SettingsPage', ui_text('assistant.code')): (2, 'Disclosure and its read-only code body.'),
-            ('SettingsPage', ui_text('ui._settings_page.text_18')): (2, 'Log action and its read-only output.'),
+            ('SettingsPage', ui_text('ui.settings_page.read_logs')): (2, 'Log action and its read-only output.'),
         }
         offenders = []
         for page in self.pages():
@@ -193,7 +193,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         for widget in self.window.findChildren(QWidget):
             if isinstance(widget, INTERACTIVE):
                 name = widget.accessibleName().strip()
-                if not name or '???' in name or not any(pattern.fullmatch(name) for pattern in patterns):
+                if not name or '\u003f\u003f\u003f' in name or not any(pattern.fullmatch(name) for pattern in patterns):
                     offenders.append((type(widget).__name__, widget.objectName(), name))
         self.maxDiff = None
         self.assertEqual(offenders, [])

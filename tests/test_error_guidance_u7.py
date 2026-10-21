@@ -70,7 +70,7 @@ class ErrorGuidanceTests(unittest.TestCase):
             self.assertEqual(with_next_step('existing message', code), 'existing message')
 
     def test_fixed_hints_name_catalog_pages_and_have_no_sensitive_content(self):
-        pages = [ui_text('ui._data_page.text_1'), ui_text('ui._strategy_page.text_1'), ui_text('ui._backtest_page.text_1'), ui_text('ui._settings_page.text_1')]
+        pages = [ui_text('ui.data_page.title'), ui_text('ui.strategy_page.title'), ui_text('ui.backtest_page.title'), ui_text('ui.settings_page.title')]
         for code in COMMON_CODES:
             text = next_step(code)
             self.assertTrue(any(page in text for page in pages))

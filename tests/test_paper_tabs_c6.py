@@ -120,17 +120,17 @@ class PaperTabWidgetTests(unittest.TestCase):
                 'account_id': normalized.get('account_id'),
                 'cash': normalized.get('cash') if normalized.get('account_id') else None,
                 'reconciliation_required': normalized.get('reconciliation_required'),
-                ui_text('ui._show_account.text_1'): counts['positions'],
-                ui_text('ui._show_account.text_2'): counts['orders'],
-                ui_text('ui._show_account.text_3'): counts['fills'],
-                ui_text('ui._show_account.text_4'): normalized.get('positions', {}),
-                ui_text('ui._show_account.text_5'): stop,
+                ui_text('ui.show_account.position_items'): counts['positions'],
+                ui_text('ui.show_account.order_count'): counts['orders'],
+                ui_text('ui.show_account.fill_count'): counts['fills'],
+                ui_text('ui.show_account.position_quantity'): normalized.get('positions', {}),
+                ui_text('ui.show_account.stopped'): stop,
             }
             card.set_values.assert_called_once_with(expected)
             self.assertEqual(market.set_trading_status.call_args.kwargs['risk'], stop)
             self.assertEqual(
                 market.set_trading_status.call_args.kwargs['paper'],
-                ui_text('ui._show_account.text_8').format(normalized['account_id']) if normalized.get('account_id') else ui_text('ui._show_account.text_9'),
+                ui_text('ui.show_account.id').format(normalized['account_id']) if normalized.get('account_id') else ui_text('ui.show_account.needs_reconcile'),
             )
 
     def test_large_resets_notify_once_and_allocate_constant_widgets(self):

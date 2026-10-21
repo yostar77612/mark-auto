@@ -44,7 +44,7 @@ class DateInput(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.manual = QLineEdit() if manual else None
         if self.manual is not None:
-            self.manual.setAccessibleName(ui_text('forms.__init__.text_24'))
+            self.manual.setAccessibleName(ui_text('forms.init.expiry_date'))
             layout.addWidget(self.manual)
             self.manual.textChanged.connect(self.setText)
             self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)

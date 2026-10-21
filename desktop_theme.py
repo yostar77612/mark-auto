@@ -151,7 +151,7 @@ def chart_color(widget, key):
 
 def chart_legend(widget):
     if appearance(widget)[1] == 'red_up':
-        return ui_text('charts.paintEvent.text_2')
+        return ui_text('charts.paint_event.legend')
     return ui_text('appearance.legend.green_up')
 
 

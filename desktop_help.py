@@ -3,28 +3,32 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QToolButton, QWidget, QVBoxLayout, QPushButton, QSizePolicy
 from desktop_strings import ui_text
+import desktop_strings as _strings
 
 
 # Every relocated static explanation is still attached to its original widget.
 MOVED_STRINGS = (
-    'ui._settings_page.text_2',
-    'ui._settings_page.text_3',
-    'ui._settings_page.text_4',
-    'ui._settings_page.text_5',
-    'ui._settings_page.text_16',
-    'chatgpt_ui.__init__.text_3',
-    'automatic_backup.__init__.text_5',
-    'ui._compare_page.text_2',
-    'ui._backtest_page.text_2',
-    'ui._paper_page.text_2',
-    'ui._strategy_page.text_3',
+    'ui.settings_page.workspace_path',
+    'ui.settings_page.state_path',
+    'ui.settings_page.irreversible_records_hint',
+    'ui.settings_page.log_path',
+    'ui.settings_page.manual_update_hint',
+    'chatgpt_ui.init.included_usage_hint',
+    'automatic_backup.init.schedule_hint',
+    'ui.compare_page.comparison_hint',
+    'ui.backtest_page.strategy_hint',
+    'ui.paper_page.reconciliation_hint',
+    'ui.strategy_page.bounded_families_hint',
 )
+# Help widget identities predate semantic catalog keys and stay stable for
+# accessibility consumers and snapshots. Only the lookup identifiers change.
+_HELP_OBJECT_NAMES = {'help_' + new: 'help_' + old for old, new in _strings.TEXT_ALIASES.items() if new in MOVED_STRINGS}
 
 
 def help_button(layout, key, text):
     button = QToolButton()
     button.setText(ui_text('help.symbol'))
-    button.setObjectName('help_' + key)
+    button.setObjectName(_HELP_OBJECT_NAMES.get('help_' + key, 'help_' + key))
     button.setAccessibleName(ui_text('help.accessible'))
     button.setToolTip(text)
     button.setProperty('themePart', 'helpButton')
@@ -68,32 +72,32 @@ def install_page_help(shell):
     }
     shell.help_relocations = []
     texts = {
-        'ui._settings_page.text_2': ui_text('ui._settings_page.text_2'),
-        'ui._settings_page.text_3': ui_text('ui._settings_page.text_3'),
-        'ui._settings_page.text_4': ui_text('ui._settings_page.text_4'),
-        'ui._settings_page.text_5': ui_text('ui._settings_page.text_5'),
-        'ui._settings_page.text_16': ui_text('ui._settings_page.text_16'),
-        'chatgpt_ui.__init__.text_3': ui_text('chatgpt_ui.__init__.text_3'),
-        'automatic_backup.__init__.text_5': ui_text('automatic_backup.__init__.text_5'),
-        'ui._compare_page.text_2': ui_text('ui._compare_page.text_2'),
-        'ui._backtest_page.text_2': ui_text('ui._backtest_page.text_2'),
-        'ui._paper_page.text_2': ui_text('ui._paper_page.text_2'),
-        'ui._strategy_page.text_3': ui_text('ui._strategy_page.text_3'),
-        'ui._data_page.text_7': ui_text('ui._data_page.text_7'),
+        'ui.settings_page.workspace_path': ui_text('ui.settings_page.workspace_path'),
+        'ui.settings_page.state_path': ui_text('ui.settings_page.state_path'),
+        'ui.settings_page.irreversible_records_hint': ui_text('ui.settings_page.irreversible_records_hint'),
+        'ui.settings_page.log_path': ui_text('ui.settings_page.log_path'),
+        'ui.settings_page.manual_update_hint': ui_text('ui.settings_page.manual_update_hint'),
+        'chatgpt_ui.init.included_usage_hint': ui_text('chatgpt_ui.init.included_usage_hint'),
+        'automatic_backup.init.schedule_hint': ui_text('automatic_backup.init.schedule_hint'),
+        'ui.compare_page.comparison_hint': ui_text('ui.compare_page.comparison_hint'),
+        'ui.backtest_page.strategy_hint': ui_text('ui.backtest_page.strategy_hint'),
+        'ui.paper_page.reconciliation_hint': ui_text('ui.paper_page.reconciliation_hint'),
+        'ui.strategy_page.bounded_families_hint': ui_text('ui.strategy_page.bounded_families_hint'),
+        'ui.data_page.local_file_path': ui_text('ui.data_page.local_file_path'),
         'help.caption.file': ui_text('help.caption.file'),
-        'ui._data_page.text_9': ui_text('ui._data_page.text_9'),
+        'ui.data_page.calendar_path': ui_text('ui.data_page.calendar_path'),
         'help.caption.calendar': ui_text('help.caption.calendar'),
-        'ui_polish.install_polish.text_1': ui_text('ui_polish.install_polish.text_1'),
+        'ui_polish.install_polish.official_format': ui_text('ui_polish.install_polish.official_format'),
         'help.caption.source': ui_text('help.caption.source'),
-        'ui_polish.install_polish.text_2': ui_text('ui_polish.install_polish.text_2'),
+        'ui_polish.install_polish.import_format': ui_text('ui_polish.install_polish.import_format'),
         'help.caption.format': ui_text('help.caption.format'),
-        'ui_polish.install_polish.text_3': ui_text('ui_polish.install_polish.text_3'),
+        'ui_polish.install_polish.synthetic_bars': ui_text('ui_polish.install_polish.synthetic_bars'),
         'help.caption.bars': ui_text('help.caption.bars'),
-        'ui_polish.install_polish.text_4': ui_text('ui_polish.install_polish.text_4'),
+        'ui_polish.install_polish.recent_days': ui_text('ui_polish.install_polish.recent_days'),
         'help.caption.days': ui_text('help.caption.days'),
-        'ui._settings_page.text_6': ui_text('ui._settings_page.text_6'),
+        'ui.settings_page.next_workspace': ui_text('ui.settings_page.next_workspace'),
         'help.caption.workspace': ui_text('help.caption.workspace'),
-        'ui._settings_page.text_11': ui_text('ui._settings_page.text_11'),
+        'ui.settings_page.backup_path': ui_text('ui.settings_page.backup_path'),
         'help.caption.backup': ui_text('help.caption.backup'),
     }
     hints = {
@@ -145,7 +149,8 @@ def install_page_help(shell):
     settings.paths_toggle.setChecked(value.get('advanced_sections', {}).get('settings:help') is True)
     for label in settings.paths_advanced.findChildren(QLabel):
         if any(
-            label.text().startswith(texts[key].split('{')[0]) for key in ('ui._settings_page.text_2', 'ui._settings_page.text_3', 'ui._settings_page.text_5')
+            label.text().startswith(texts[key].split('{')[0])
+            for key in ('ui.settings_page.workspace_path', 'ui.settings_page.state_path', 'ui.settings_page.log_path')
         ):
             label.show()
     market = shell.market
@@ -174,15 +179,15 @@ def install_page_help(shell):
 
 CAPTIONS = {
     'data': (
-        ('ui._data_page.text_7', 'help.caption.file'),
-        ('ui._data_page.text_9', 'help.caption.calendar'),
-        ('ui_polish.install_polish.text_1', 'help.caption.source'),
-        ('ui_polish.install_polish.text_2', 'help.caption.format'),
-        ('ui_polish.install_polish.text_3', 'help.caption.bars'),
-        ('ui_polish.install_polish.text_4', 'help.caption.days'),
+        ('ui.data_page.local_file_path', 'help.caption.file'),
+        ('ui.data_page.calendar_path', 'help.caption.calendar'),
+        ('ui_polish.install_polish.official_format', 'help.caption.source'),
+        ('ui_polish.install_polish.import_format', 'help.caption.format'),
+        ('ui_polish.install_polish.synthetic_bars', 'help.caption.bars'),
+        ('ui_polish.install_polish.recent_days', 'help.caption.days'),
     ),
     'settings': (
-        ('ui._settings_page.text_6', 'help.caption.workspace'),
-        ('ui._settings_page.text_11', 'help.caption.backup'),
+        ('ui.settings_page.next_workspace', 'help.caption.workspace'),
+        ('ui.settings_page.backup_path', 'help.caption.backup'),
     ),
 }

@@ -271,195 +271,200 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
 
 
 FAMILY_NAMES = {
-    'trend': ui_text('walk_forward.labels.text_1'),
-    'mean_reversion': ui_text('walk_forward.labels.text_2'),
-    'channel_breakout': ui_text('walk_forward.labels.text_3'),
-    'momentum': ui_text('walk_forward.labels.text_4'),
-    'volatility_compression': ui_text('walk_forward.labels.text_5'),
+    'trend': ui_text('walk_forward.labels.trend'),
+    'mean_reversion': ui_text('walk_forward.labels.mean_reversion'),
+    'channel_breakout': ui_text('walk_forward.labels.breakout'),
+    'momentum': ui_text('walk_forward.labels.momentum'),
+    'volatility_compression': ui_text('walk_forward.labels.volatility'),
 }
 PARAMETER_NAMES = {
-    'fast': ui_text('walk_forward.labels.text_6'),
-    'slow': ui_text('walk_forward.labels.text_7'),
-    'lookback': ui_text('walk_forward.labels.text_8'),
-    'entry_bps': ui_text('walk_forward.labels.text_9'),
-    'threshold_bps': ui_text('walk_forward.labels.text_10'),
-    'max_holding_bars': ui_text('walk_forward.labels.text_11'),
-    'max_range_bps': ui_text('walk_forward.labels.text_12'),
-    'quantity': ui_text('walk_forward.labels.text_13'),
-    'stop_ticks': ui_text('walk_forward.labels.text_14'),
-    'target_ticks': ui_text('walk_forward.labels.text_15'),
+    'fast': ui_text('walk_forward.labels.fast_bars'),
+    'slow': ui_text('walk_forward.labels.slow_bars'),
+    'lookback': ui_text('walk_forward.labels.lookback_bars'),
+    'entry_bps': ui_text('walk_forward.labels.entry_bps'),
+    'threshold_bps': ui_text('walk_forward.labels.threshold_bps'),
+    'max_holding_bars': ui_text('walk_forward.labels.max_holding_bars'),
+    'max_range_bps': ui_text('walk_forward.labels.max_range_bps'),
+    'quantity': ui_text('walk_forward.labels.quantity'),
+    'stop_ticks': ui_text('walk_forward.labels.stop_ticks'),
+    'target_ticks': ui_text('walk_forward.labels.target_ticks'),
 }
 
 
 ADMISSION_REASONS = {
-    'source_duplicate_structure': ui_text('walk_forward.labels.text_16'),
-    'source_not_completed': ui_text('walk_forward.labels.text_17'),
-    'source_producer_unsupported': ui_text('walk_forward.labels.text_18'),
-    'source_dataset_mismatch': ui_text('walk_forward.labels.text_19'),
-    'source_temporal_overlap': ui_text('walk_forward.labels.text_20'),
-    'source_journal_mismatch': ui_text('walk_forward.labels.text_21'),
-    'source_invalid_evidence': ui_text('walk_forward.labels.text_22'),
-    'source_candidate_limit': ui_text('walk_forward.labels.text_23'),
-    'source_no_evaluated_candidates': ui_text('walk_forward.labels.text_24'),
-    'source_missing_evidence': ui_text('walk_forward.labels.text_25'),
-    'source_provider_unsupported': ui_text('walk_forward.labels.text_26'),
-    'source_manual_exchange_missing': ui_text('walk_forward.labels.text_27'),
-    'source_provider_receipt_invalid': ui_text('walk_forward.labels.text_28'),
-    'source_provider_provenance_invalid': ui_text('walk_forward.labels.text_29'),
-    'source_provider_decimal_context_unsupported': ui_text('walk_forward.labels.text_30'),
-    'source_resource_limit': ui_text('walk_forward.labels.text_31'),
-    'source_registry_mismatch': ui_text('walk_forward.labels.text_32'),
+    'source_duplicate_structure': ui_text('walk_forward.labels.duplicate_structure'),
+    'source_not_completed': ui_text('walk_forward.labels.source_incomplete'),
+    'source_producer_unsupported': ui_text('walk_forward.labels.unsupported_producer'),
+    'source_dataset_mismatch': ui_text('walk_forward.labels.dataset_identity_mismatch'),
+    'source_temporal_overlap': ui_text('walk_forward.labels.chronology_mismatch'),
+    'source_journal_mismatch': ui_text('walk_forward.labels.transaction_mismatch'),
+    'source_invalid_evidence': ui_text('walk_forward.labels.evidence_unverifiable'),
+    'source_candidate_limit': ui_text('walk_forward.labels.pool_size_limit'),
+    'source_no_evaluated_candidates': ui_text('walk_forward.labels.no_valid_candidates'),
+    'source_missing_evidence': ui_text('walk_forward.labels.source_missing'),
+    'source_provider_unsupported': ui_text('walk_forward.labels.unsupported_provider'),
+    'source_manual_exchange_missing': ui_text('walk_forward.labels.manual_evidence_missing'),
+    'source_provider_receipt_invalid': ui_text('walk_forward.labels.request_evidence_mismatch'),
+    'source_provider_provenance_invalid': ui_text('walk_forward.labels.producer_unverifiable'),
+    'source_provider_decimal_context_unsupported': ui_text('walk_forward.labels.decimal_context_missing'),
+    'source_resource_limit': ui_text('walk_forward.labels.source_size_limit'),
+    'source_registry_mismatch': ui_text('walk_forward.labels.registry_mismatch'),
 }
 
 
 STATUS_LABELS = {
-    'running': ui_text('walk_forward.labels.text_33'),
-    'training': ui_text('walk_forward.labels.text_34'),
-    'selection_frozen': ui_text('walk_forward.labels.text_35'),
-    'running_or_interrupted_no_stop_proof': ui_text('walk_forward.labels.text_36'),
-    'completed': ui_text('walk_forward.labels.text_37'),
-    'completed_with_errors': ui_text('walk_forward.labels.text_38'),
-    'evaluated': ui_text('walk_forward.labels.text_39'),
-    'not_evaluated': ui_text('walk_forward.labels.text_40'),
-    'failed': ui_text('walk_forward.labels.text_41'),
-    'evaluation_failed': ui_text('walk_forward.labels.text_42'),
-    'timed_out': ui_text('walk_forward.labels.text_43'),
-    'interrupted': ui_text('walk_forward.labels.text_44'),
-    'cancelled': ui_text('walk_forward.labels.text_45'),
-    'budget_exhausted': ui_text('walk_forward.labels.text_46'),
-    'blocked_interrupted': ui_text('walk_forward.labels.text_47'),
-    'blocked_registry_busy': ui_text('walk_forward.labels.text_48'),
-    'blocked_previously_consumed_range': ui_text('walk_forward.labels.text_49'),
-    'no_eligible_candidate': ui_text('walk_forward.labels.text_50'),
-    'stopped_before_journal': ui_text('walk_forward.labels.text_51'),
-    'not_verified': ui_text('walk_forward.labels.text_52'),
-    'unverified': ui_text('walk_forward.labels.text_53'),
-    'synthetic_not_market_evidence': ui_text('walk_forward.labels.text_54'),
-    'synthetic_validation': ui_text('walk_forward.labels.text_55'),
-    'historical_replay': ui_text('walk_forward.labels.text_56'),
+    'running': ui_text('walk_forward.labels.running'),
+    'training': ui_text('walk_forward.labels.training'),
+    'selection_frozen': ui_text('walk_forward.labels.winner_locked'),
+    'running_or_interrupted_no_stop_proof': ui_text('walk_forward.labels.stop_unconfirmed'),
+    'completed': ui_text('walk_forward.labels.completed'),
+    'completed_with_errors': ui_text('walk_forward.labels.completed_with_failures'),
+    'evaluated': ui_text('walk_forward.labels.evaluated'),
+    'not_evaluated': ui_text('walk_forward.labels.unevaluated'),
+    'failed': ui_text('walk_forward.labels.evaluation_failed'),
+    'evaluation_failed': ui_text('walk_forward.labels.evaluation_failed'),
+    'timed_out': ui_text('walk_forward.labels.timed_out'),
+    'interrupted': ui_text('walk_forward.labels.interrupted'),
+    'cancelled': ui_text('walk_forward.labels.cancelled'),
+    'budget_exhausted': ui_text('walk_forward.labels.budget_exhausted'),
+    'blocked_interrupted': ui_text('walk_forward.labels.retry_blocked'),
+    'blocked_registry_busy': ui_text('walk_forward.labels.registry_busy'),
+    'blocked_previously_consumed_range': ui_text('walk_forward.labels.range_consumed'),
+    'no_eligible_candidate': ui_text('walk_forward.labels.no_qualified_candidate'),
+    'stopped_before_journal': ui_text('walk_forward.labels.stopped_before_record'),
+    'not_verified': ui_text('walk_forward.labels.unverified'),
+    'unverified': ui_text('walk_forward.labels.unverified'),
+    'synthetic_not_market_evidence': ui_text('walk_forward.labels.synthetic_not_market'),
+    'synthetic_validation': ui_text('walk_forward.labels.synthetic_only'),
+    'historical_replay': ui_text('walk_forward.labels.historical_exposure_unverified'),
 }
 
 
 def status_label(value):
     """Display translation only; exact machine values stay in saved evidence."""
-    return STATUS_LABELS.get(value, ui_text('walk_forward.status_label.text_1'))
+    return STATUS_LABELS.get(value, ui_text('walk_forward.status_label.no_confirmed_record'))
 
 
 def preview_text(preview, *, advanced=False):
     """Plain-language review by default; exact raw bindings are opt-in details."""
     p = preview
     if advanced:
-        return ui_text('walk_forward.preview_text.text_1').format(json.dumps(json.loads(canonical_json(p)), ensure_ascii=False, indent=2))
+        return ui_text('walk_forward.preview_text.full_source_evidence').format(json.dumps(json.loads(canonical_json(p)), ensure_ascii=False, indent=2))
     if p.get('admission_status') == 'rejected':
         if p.get('reason_code') == 'evaluation_budget_exceeds_pool_bound':
-            return ui_text('walk_forward.preview_text.text_2').format(
+            return ui_text('walk_forward.preview_text.budget_adjustment_required').format(
                 p['fold_count'], p['candidate_count'], p['planned_evaluations_upper_bound'], p['evaluation_limit'], p['planned_evaluations_upper_bound']
             )
-        reason = ADMISSION_REASONS.get(p.get('reason_code'), ui_text('walk_forward.preview_text.text_3'))
-        return ui_text('walk_forward.preview_text.text_4').format(reason)
+        reason = ADMISSION_REASONS.get(p.get('reason_code'), ui_text('walk_forward.preview_text.source_evidence_invalid'))
+        return ui_text('walk_forward.preview_text.pool_rejected').format(reason)
     saved = p.get('pool_origin', 'exact_builtin_pool') == 'saved_campaign_pool'
     evidence = status_label(p['evidence_mode'])
-    mode = ui_text('walk_forward.preview_text.text_5') if p['plan']['mode'] == 'rolling' else ui_text('walk_forward.preview_text.text_6')
+    mode = ui_text('walk_forward.preview_text.rolling_window') if p['plan']['mode'] == 'rolling' else ui_text('walk_forward.preview_text.anchored_window')
     lines = [
-        ui_text('walk_forward.preview_text.text_7').format(mode, evidence, p['bar_count']),
-        (ui_text('walk_forward.preview_text.text_8') if saved else ui_text('walk_forward.preview_text.text_9'))
-        + ui_text('walk_forward.preview_text.text_10').format(len(p['candidate_pool'])),
-        ui_text('walk_forward.preview_text.text_11'),
-        ui_text('walk_forward.preview_text.text_12'),
-        ui_text('walk_forward.preview_text.text_13').format(
+        ui_text('walk_forward.preview_text.training_window').format(mode, evidence, p['bar_count']),
+        (ui_text('walk_forward.preview_text.saved_pool') if saved else ui_text('walk_forward.preview_text.builtin_pool'))
+        + ui_text('walk_forward.preview_text.candidate_count').format(len(p['candidate_pool'])),
+        ui_text('walk_forward.preview_text.irreversible_consumption'),
+        ui_text('walk_forward.preview_text.holdout_excluded'),
+        ui_text('walk_forward.preview_text.evaluation_budget').format(
             p['evaluation_limit'], len(p['folds']), len(p['candidate_pool']), p['planned_evaluations_upper_bound']
         ),
-        ui_text('walk_forward.preview_text.text_14').format(p['runtime_seconds']),
+        ui_text('walk_forward.preview_text.time_budget').format(p['runtime_seconds']),
     ]
     if saved:
         provider = p['pool_admission'].get('provider_mode')
         label = {
-            'fixture': ui_text('walk_forward.preview_text.text_15'),
-            'openai_compatible': ui_text('walk_forward.preview_text.text_16'),
-            'chatgpt_plan': ui_text('walk_forward.preview_text.text_17'),
-        }.get(provider, ui_text('walk_forward.preview_text.text_18'))
-        lines.insert(2, ui_text('walk_forward.preview_text.text_19').format(label, status_label(p['pool_admission']['real_model_status'])))
-    lines.append(ui_text('walk_forward.preview_text.text_20'))
+            'fixture': ui_text('walk_forward.preview_text.fixture_generator'),
+            'openai_compatible': ui_text('walk_forward.preview_text.compatible_provider'),
+            'chatgpt_plan': ui_text('walk_forward.preview_text.chatgpt_source'),
+        }.get(provider, ui_text('walk_forward.preview_text.saved_source'))
+        lines.insert(2, ui_text('walk_forward.preview_text.generator_model_status').format(label, status_label(p['pool_admission']['real_model_status'])))
+    lines.append(ui_text('walk_forward.preview_text.precise_ranges'))
     for fold in p['folds']:
-        lines.append(ui_text('walk_forward.preview_text.text_21').format(str(fold['index'] + 1)))
+        lines.append(ui_text('walk_forward.preview_text.fold_number').format(str(fold['index'] + 1)))
         for role, label in (
-            ('train', ui_text('walk_forward.preview_text.text_22')),
-            ('validation', ui_text('walk_forward.preview_text.text_23')),
-            ('oos', ui_text('walk_forward.preview_text.text_24')),
+            ('train', ui_text('walk_forward.preview_text.training')),
+            ('validation', ui_text('walk_forward.preview_text.validation')),
+            ('oos', ui_text('walk_forward.preview_text.forward_oos')),
         ):
             bounds = fold[role]
             lines.append(f"  {label}: [{bounds['start']}, {bounds['end']}) · {bounds['start_time']} → {bounds['end_time']}")
     b = p['final_holdout']
-    lines.append(ui_text('walk_forward.preview_text.text_25').format(b['start'], b['end'], b['start_time'], b['end_time']))
+    lines.append(ui_text('walk_forward.preview_text.holdout_range').format(b['start'], b['end'], b['start_time'], b['end_time']))
     lines.extend(
         [
-            ui_text('walk_forward.preview_text.text_26'),
-            ui_text('walk_forward.preview_text.text_27').format(
+            ui_text('walk_forward.preview_text.exposure_warning'),
+            ui_text('walk_forward.preview_text.validation_thresholds').format(
                 str(p['ranking']['minimum']), str(p['ranking']['min_trades']), str(p['ranking']['max_drawdown_pct'])
             ),
-            ui_text('walk_forward.preview_text.text_28'),
-            ui_text('walk_forward.preview_text.text_29'),
+            ui_text('walk_forward.preview_text.winner_selection'),
+            ui_text('walk_forward.preview_text.split_warmup'),
         ]
     )
     if saved:
         admission = p['pool_admission']
         lines.extend(
-            [ui_text('walk_forward.preview_text.text_30').format(status_label(admission['real_model_status'])), ui_text('walk_forward.preview_text.text_31')]
+            [
+                ui_text('walk_forward.preview_text.source_model_status').format(status_label(admission['real_model_status'])),
+                ui_text('walk_forward.preview_text.local_consistency_only'),
+            ]
         )
-        lines.append(ui_text('walk_forward.preview_text.text_32'))
+        lines.append(ui_text('walk_forward.preview_text.source_attempts'))
         for attempt in admission['attempts']:
             status = attempt['source_status']
             reason = (
-                ui_text('walk_forward.preview_text.text_33')
+                ui_text('walk_forward.preview_text.included_candidate')
                 if attempt['admitted']
                 else (
                     {
-                        'rejected': ui_text('walk_forward.preview_text.text_34'),
-                        'generated': ui_text('walk_forward.preview_text.text_35'),
-                        'validated': ui_text('walk_forward.preview_text.text_36'),
-                        'failed': ui_text('walk_forward.preview_text.text_37'),
-                        'error': ui_text('walk_forward.preview_text.text_38'),
-                        'timed_out': ui_text('walk_forward.preview_text.text_39'),
-                    }.get(status, ui_text('walk_forward.preview_text.text_40'))
+                        'rejected': ui_text('walk_forward.preview_text.structure_rejected'),
+                        'generated': ui_text('walk_forward.preview_text.unevaluated_candidate'),
+                        'validated': ui_text('walk_forward.preview_text.incomplete_candidate'),
+                        'failed': ui_text('walk_forward.preview_text.failed_candidate'),
+                        'error': ui_text('walk_forward.preview_text.failed_candidate'),
+                        'timed_out': ui_text('walk_forward.preview_text.timed_out_candidate'),
+                    }.get(status, ui_text('walk_forward.preview_text.invalid_candidate'))
                 )
             )
             if attempt['reason'] == 'source_duplicate_rejected':
-                reason = ui_text('walk_forward.preview_text.text_41')
+                reason = ui_text('walk_forward.preview_text.duplicate_candidate')
             lines.append(
-                ui_text('walk_forward.preview_text.text_42').format(attempt['sequence'], FAMILY_NAMES.get(attempt['family'], attempt['family']), reason)
+                ui_text('walk_forward.preview_text.attempt_row').format(attempt['sequence'], FAMILY_NAMES.get(attempt['family'], attempt['family']), reason)
             )
-    lines.append(ui_text('walk_forward.preview_text.text_43'))
+    lines.append(ui_text('walk_forward.preview_text.fixed_candidates'))
     for index, spec in enumerate(p['candidate_pool'], 1):
-        params = ui_text('walk_forward.preview_text.text_44').join(PARAMETER_NAMES.get(k, k) + ' ' + str(v) for k, v in spec['parameters'].items())
+        params = ui_text('walk_forward.preview_text.cost_separator').join(PARAMETER_NAMES.get(k, k) + ' ' + str(v) for k, v in spec['parameters'].items())
         lines.append(f"{index}. {FAMILY_NAMES.get(spec['family'], spec['family'])} · {params}")
     config = p['plan']['backtest_config']
     costs = config['costs']
     labels = {
-        'commission_per_side': ui_text('walk_forward.preview_text.text_45'),
-        'slippage_ticks': ui_text('walk_forward.preview_text.text_46'),
-        'tax_rate': ui_text('walk_forward.preview_text.text_47'),
+        'commission_per_side': ui_text('walk_forward.preview_text.commission'),
+        'slippage_ticks': ui_text('walk_forward.preview_text.slippage'),
+        'tax_rate': ui_text('walk_forward.preview_text.tax_rate'),
     }
     lines.append(
-        ui_text('walk_forward.preview_text.text_49').format(ui_text('walk_forward.preview_text.text_48').join(labels[k] + ' ' + str(costs[k]) for k in labels))
+        ui_text('walk_forward.preview_text.explicit_costs').format(
+            ui_text('walk_forward.preview_text.cost_separator').join(labels[k] + ' ' + str(costs[k]) for k in labels)
+        )
     )
-    lines.append(ui_text('walk_forward.preview_text.text_50').format(str(config['initial_cash']), str(config['max_position'])))
+    lines.append(ui_text('walk_forward.preview_text.initial_cash_position').format(str(config['initial_cash']), str(config['max_position'])))
     margins = [
-        (ui_text('walk_forward.preview_text.text_51'), config['initial_margin_per_contract']),
-        (ui_text('walk_forward.preview_text.text_52'), config['maintenance_margin_per_contract']),
+        (ui_text('walk_forward.preview_text.initial_margin'), config['initial_margin_per_contract']),
+        (ui_text('walk_forward.preview_text.maintenance_margin'), config['maintenance_margin_per_contract']),
     ]
     lines.append(
-        ui_text('walk_forward.preview_text.text_56').format(
-            ui_text('walk_forward.preview_text.text_53').join(
-                ui_text('walk_forward.preview_text.text_55').format(
-                    label, str(value) + ' TWD' if value is not None else ui_text('walk_forward.preview_text.text_54')
+        ui_text('walk_forward.preview_text.per_contract').format(
+            ui_text('walk_forward.preview_text.cost_separator').join(
+                ui_text('walk_forward.preview_text.named_value').format(
+                    label, str(value) + ' TWD' if value is not None else ui_text('walk_forward.preview_text.not_set')
                 )
                 for label, value in margins
             )
         )
     )
     if config['cost_schedule'] or config['margin_schedule']:
-        lines.append(ui_text('walk_forward.preview_text.text_57').format(len(config['cost_schedule']), len(config['margin_schedule'])))
-    lines.append(ui_text('walk_forward.preview_text.text_58'))
+        lines.append(ui_text('walk_forward.preview_text.policy_changes').format(len(config['cost_schedule']), len(config['margin_schedule'])))
+    lines.append(ui_text('walk_forward.preview_text.advanced_hint'))
     return '\n'.join(lines)
 
 
@@ -468,48 +473,48 @@ def result_rows(result):
     for fold in result.get('folds', []):
         for candidate in fold['candidates']:
             winner = (
-                (ui_text('walk_forward.result_rows.text_1').format(str(fold['winner_pool_index'] + 1)))
+                (ui_text('walk_forward.result_rows.candidate_number').format(str(fold['winner_pool_index'] + 1)))
                 if fold.get('winner_pool_index') is not None
-                else (ui_text('walk_forward.result_rows.text_2') if fold['winner'] else ui_text('walk_forward.result_rows.text_3'))
+                else (ui_text('walk_forward.result_rows.selected') if fold['winner'] else ui_text('walk_forward.result_rows.none'))
             )
             row = {
-                ui_text('walk_forward.result_rows.text_4'): fold['index'] + 1,
-                ui_text('walk_forward.result_rows.text_5'): status_label(fold['status']),
-                ui_text('walk_forward.result_rows.text_6'): winner,
-                ui_text('walk_forward.result_rows.text_7'): candidate['pool_index'] + 1,
-                ui_text('walk_forward.result_rows.text_8'): FAMILY_NAMES.get(candidate.get('family'), ui_text('walk_forward.result_rows.text_9')),
+                ui_text('walk_forward.result_rows.fold'): fold['index'] + 1,
+                ui_text('walk_forward.result_rows.status'): status_label(fold['status']),
+                ui_text('walk_forward.result_rows.winner'): winner,
+                ui_text('walk_forward.result_rows.candidate_index'): candidate['pool_index'] + 1,
+                ui_text('walk_forward.result_rows.candidate'): FAMILY_NAMES.get(candidate.get('family'), ui_text('walk_forward.result_rows.saved_candidate')),
             }
-            for role, label in (('train', ui_text('walk_forward.result_rows.text_10')), ('validation', ui_text('walk_forward.result_rows.text_11'))):
+            for role, label in (('train', ui_text('walk_forward.result_rows.training')), ('validation', ui_text('walk_forward.result_rows.validation'))):
                 score = candidate[role]
-                row[ui_text('walk_forward.result_rows.text_12').format(label)] = status_label(score['status'])
+                row[ui_text('walk_forward.result_rows.segment_status').format(label)] = status_label(score['status'])
                 for key, caption in (
-                    ('net_pnl', ui_text('walk_forward.result_rows.text_13')),
-                    ('trade_count', ui_text('walk_forward.result_rows.text_14')),
-                    ('max_drawdown_pct', ui_text('walk_forward.result_rows.text_15')),
+                    ('net_pnl', ui_text('walk_forward.result_rows.net_pnl')),
+                    ('trade_count', ui_text('walk_forward.result_rows.closed_lots')),
+                    ('max_drawdown_pct', ui_text('walk_forward.result_rows.max_drawdown_ratio')),
                 ):
                     row[label + caption] = score['metrics'].get(key)
             if candidate.get('strategy_hash') is not None and candidate['strategy_hash'] == fold.get('winner_hash'):
-                row[ui_text('walk_forward.result_rows.text_16')] = status_label(fold['oos']['status'])
+                row[ui_text('walk_forward.result_rows.forward_status')] = status_label(fold['oos']['status'])
                 names = {
-                    'net_pnl': ui_text('walk_forward.result_rows.text_17'),
-                    'trade_count': ui_text('walk_forward.result_rows.text_18'),
-                    'max_drawdown_pct': ui_text('walk_forward.result_rows.text_19'),
-                    'max_drawdown': ui_text('walk_forward.result_rows.text_20'),
-                    'total_costs': ui_text('walk_forward.result_rows.text_21'),
-                    'realized_gross_pnl': ui_text('walk_forward.result_rows.text_22'),
-                    'unrealized_pnl': ui_text('walk_forward.result_rows.text_23'),
-                    'return': ui_text('walk_forward.result_rows.text_24'),
-                    'open_position': ui_text('walk_forward.result_rows.text_25'),
+                    'net_pnl': ui_text('walk_forward.result_rows.net_pnl'),
+                    'trade_count': ui_text('walk_forward.result_rows.closed_lots'),
+                    'max_drawdown_pct': ui_text('walk_forward.result_rows.max_drawdown_ratio'),
+                    'max_drawdown': ui_text('walk_forward.result_rows.max_drawdown'),
+                    'total_costs': ui_text('walk_forward.result_rows.total_cost'),
+                    'realized_gross_pnl': ui_text('walk_forward.result_rows.realized_gross_pnl'),
+                    'unrealized_pnl': ui_text('walk_forward.result_rows.unrealized_pnl'),
+                    'return': ui_text('walk_forward.result_rows.return_ratio'),
+                    'open_position': ui_text('walk_forward.result_rows.open_quantity'),
                 }
                 for key, value in fold['oos']['metrics'].items():
-                    row[ui_text('walk_forward.result_rows.text_26').format(names[key])] = value
+                    row[ui_text('walk_forward.result_rows.forward_fold').format(names[key])] = value
             rows.append(row)
         if not fold['candidates']:
             rows.append(
                 {
-                    ui_text('walk_forward.result_rows.text_27'): fold['index'] + 1,
-                    ui_text('walk_forward.result_rows.text_28'): status_label(fold['status']),
-                    ui_text('walk_forward.result_rows.text_29'): ui_text('walk_forward.result_rows.text_30'),
+                    ui_text('walk_forward.result_rows.fold'): fold['index'] + 1,
+                    ui_text('walk_forward.result_rows.status'): status_label(fold['status']),
+                    ui_text('walk_forward.result_rows.winner'): ui_text('walk_forward.result_rows.none'),
                 }
             )
     return rows

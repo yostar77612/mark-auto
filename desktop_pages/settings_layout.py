@@ -36,23 +36,27 @@ def build_settings(page, layout):
         sections.append(QVBoxLayout(group))
         page.settings_sections.append(group)
     general, connection, backup, about = sections
-    page.persist_logs = QCheckBox(ui_text('ui._settings_page.text_8'))
+    page.persist_logs = QCheckBox(ui_text('ui.settings_page.save_logs'))
     page.persist_logs.setChecked(True)
     general.addWidget(page.persist_logs)
-    page.local_notifications = QCheckBox(ui_text('ui._settings_page.text_9'))
+    page.local_notifications = QCheckBox(ui_text('ui.settings_page.notify_jobs'))
     page.local_notifications.setChecked(True)
     general.addWidget(page.local_notifications)
-    page._button(general, ui_text('ui._settings_page.text_10'), 'save_settings', page.save_settings, role='primary')
+    page._button(general, ui_text('ui.settings_page.save_preferences'), 'save_settings', page.save_settings, role='primary')
     page.paths_toggle, page.paths_advanced, advanced = collapsed(general, 'settings.advanced')
     page.paths_toggle.setObjectName('settings_help_advanced')
     page.paths_toggle.setAccessibleName(ui_text('help.accessible'))
     page.paths_toggle.setToolTip(ui_text('help.advanced'))
     page.paths_advanced.setObjectName('settings_help_details')
-    for key, path in (('ui._settings_page.text_2', page.paths.root), ('ui._settings_page.text_3', page.root), ('ui._settings_page.text_5', page.paths.logs)):
+    for key, path in (
+        ('ui.settings_page.workspace_path', page.paths.root),
+        ('ui.settings_page.state_path', page.root),
+        ('ui.settings_page.log_path', page.paths.logs),
+    ):
         advanced.addWidget(QLabel(ui_text(key).format(str(path))))
     install_appearance_controls(page, advanced, page.settings)
-    page.workspace_path = page._text(advanced, ui_text('ui._settings_page.text_6'), str(page.paths.root))
-    page._button(advanced, ui_text('ui._settings_page.text_7'), 'configure_workspace', page.configure_workspace)
+    page.workspace_path = page._text(advanced, ui_text('ui.settings_page.next_workspace'), str(page.paths.root))
+    page._button(advanced, ui_text('ui.settings_page.configure_workspace'), 'configure_workspace', page.configure_workspace)
     for key, path in (('settings.open_workspace', page.paths.root), ('settings.open_logs', page.paths.logs)):
         page._button(advanced, ui_text(key), '', lambda directory=path: open_folder(directory))
     page.connection_status = QLabel()
@@ -72,10 +76,10 @@ def build_settings(page, layout):
 
     page.chatgpt_controller.changed.connect(update_status)
     update_status()
-    backup.addWidget(QLabel(ui_text('ui._settings_page.text_4')))
+    backup.addWidget(QLabel(ui_text('ui.settings_page.irreversible_records_hint')))
     page.backup_toggle, page.backup_advanced, controls = collapsed(backup, 'settings.backup_advanced')
-    page.backup_path = page._text(controls, ui_text('ui._settings_page.text_11'))
-    page._button(controls, ui_text('ui._settings_page.text_12'), 'create_backup', lambda: page.backup(False))
+    page.backup_path = page._text(controls, ui_text('ui.settings_page.backup_path'))
+    page._button(controls, ui_text('ui.settings_page.create_backup'), 'create_backup', lambda: page.backup(False))
     # Inspection reads metadata only and stays inside the collapsed backup area.
     from .backup_inspection import BackupInspectionPanel
 
@@ -85,19 +89,19 @@ def build_settings(page, layout):
     page.automatic_backup_panel = AutomaticBackupPanel(page)
     page.backup_inspection_panel = BackupInspectionPanel(page)
     controls.addWidget(page.backup_inspection_panel)
-    page.restore_confirm = QCheckBox(ui_text('ui._settings_page.text_13'))
+    page.restore_confirm = QCheckBox(ui_text('ui.settings_page.restore_consent'))
     controls.addWidget(page.restore_confirm)
-    page._button(controls, ui_text('ui._settings_page.text_14'), 'restore_backup', lambda: page.backup(True), role='danger')
+    page._button(controls, ui_text('ui.settings_page.restore_backup'), 'restore_backup', lambda: page.backup(True), role='danger')
     controls.addWidget(page.automatic_backup_panel)
     page._button(controls, ui_text('settings.open_backup'), '', lambda: open_folder(page.automatic_backup_panel.directory.text() or page.paths.root))
     # Resolve the installed package version when rendering settings.
     from quantlab import __version__
 
-    page.version_label = QLabel(ui_text('ui._settings_page.text_15').format(__version__))
+    page.version_label = QLabel(ui_text('ui.settings_page.current_version').format(__version__))
     page.version_label.setWordWrap(True)
     about.addWidget(page.version_label)
-    about.addWidget(QLabel(ui_text('ui._settings_page.text_16')))
-    page._button(about, ui_text('ui._settings_page.text_17'), 'open_releases', page.open_releases)
+    about.addWidget(QLabel(ui_text('ui.settings_page.manual_update_hint')))
+    page._button(about, ui_text('ui.settings_page.releases'), 'open_releases', page.open_releases)
     page.maintenance_toggle, _, maintenance = collapsed(about, 'maintenance.options')
     page.maintenance_panel = MaintenancePanel(page)
     maintenance.addWidget(page.maintenance_panel)
@@ -112,7 +116,7 @@ def build_settings(page, layout):
     from .assistant_permissions import install_menu
 
     page.assistant_permission_menu = install_menu(management, page.assistant_panel.permissions, 'settings_research_permission')
-    page._button(about, ui_text('ui._settings_page.text_18'), 'read_logs', page.read_logs)
+    page._button(about, ui_text('ui.settings_page.read_logs'), 'read_logs', page.read_logs)
     page.log_view = LogTable()
     page.errors_only = QCheckBox(ui_text('logs.errors_only'))
     about.addWidget(page.errors_only)

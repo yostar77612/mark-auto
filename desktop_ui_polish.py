@@ -19,9 +19,9 @@ class DisabledHint(QObject):
         disabled = not self.button.isEnabled()
         jobs = getattr(self.button.window(), 'jobs', None)
         prerequisite = (
-            ui_text('ui_polish.update.text_1') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else self.prerequisite
+            ui_text('ui_polish.update.job_busy') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else self.prerequisite
         )
-        text = ui_text('ui_polish.update.text_2').format(prerequisite) if disabled else ''
+        text = ui_text('ui_polish.update.prerequisite_required').format(prerequisite) if disabled else ''
         if disabled and self.button.objectName() == 'cancel_job':
             progress = getattr(self.button.window(), 'job_progress', self.button.parentWidget())
             text = ui_text('job.cancel_notice') if getattr(progress, 'running', False) else ui_text('job.idle_hint')
@@ -66,59 +66,59 @@ def install_polish(window):
     """Install once after construction; never change action eligibility or payloads."""
     _install_input_tooltips(window)
     fields = {
-        'market_provider': ui_text('ui_polish.install_polish.text_1'),
-        'import_kind': ui_text('ui_polish.install_polish.text_2'),
-        'bars': ui_text('ui_polish.install_polish.text_3'),
-        'days': ui_text('ui_polish.install_polish.text_4'),
-        'family': ui_text('ui_polish.install_polish.text_5'),
-        'provider_mode': ui_text('ui_polish.install_polish.text_6'),
-        'candidate_choice': ui_text('ui_polish.install_polish.text_7'),
-        'walk_forward_choice': ui_text('ui_polish.install_polish.text_8'),
-        'result_choice': ui_text('ui_polish.install_polish.text_9'),
-        'analysis_saved': ui_text('ui_polish.install_polish.text_10'),
-        'replay_bars': ui_text('ui_polish.install_polish.text_11'),
+        'market_provider': ui_text('ui_polish.install_polish.official_format'),
+        'import_kind': ui_text('ui_polish.install_polish.import_format'),
+        'bars': ui_text('ui_polish.install_polish.synthetic_bars'),
+        'days': ui_text('ui_polish.install_polish.recent_days'),
+        'family': ui_text('ui_polish.install_polish.strategy_family'),
+        'provider_mode': ui_text('ui_polish.install_polish.generator_source'),
+        'candidate_choice': ui_text('ui_polish.install_polish.saved_candidate'),
+        'walk_forward_choice': ui_text('ui_polish.install_polish.saved_walk_forward'),
+        'result_choice': ui_text('ui_polish.install_polish.saved_backtest'),
+        'analysis_saved': ui_text('ui_polish.install_polish.saved_analysis'),
+        'replay_bars': ui_text('ui_polish.install_polish.replay_bars'),
     }
     for name, text in fields.items():
         _label_field(getattr(window, name), text)
-    _label_field(window.chatgpt_panel.account, ui_text('ui_polish.install_polish.text_12'))
-    _label_field(window.automatic_backup_panel.directory, ui_text('ui_polish.install_polish.text_13'))
+    _label_field(window.chatgpt_panel.account, ui_text('ui_polish.install_polish.saved_connection'))
+    _label_field(window.automatic_backup_panel.directory, ui_text('ui_polish.install_polish.backup_directory'))
     for widget, suffix in (
-        (window.bars, ui_text('ui_polish.install_polish.text_14')),
-        (window.days, ui_text('ui_polish.install_polish.text_15')),
-        (window.replay_bars, ui_text('ui_polish.install_polish.text_16')),
-        (window.chatgpt_panel.max_calls, ui_text('ui_polish.install_polish.text_17')),
-        (window.chatgpt_panel.timeout, ui_text('ui_polish.install_polish.text_18')),
+        (window.bars, ui_text('ui_polish.install_polish.bars_suffix')),
+        (window.days, ui_text('ui_polish.install_polish.days_suffix')),
+        (window.replay_bars, ui_text('ui_polish.install_polish.bars_suffix')),
+        (window.chatgpt_panel.max_calls, ui_text('ui_polish.install_polish.attempts_suffix')),
+        (window.chatgpt_panel.timeout, ui_text('ui_polish.install_polish.seconds_suffix')),
     ):
         widget.setSuffix(suffix)
     for _, controls in window.market._indicator_widgets.values():
         for key, widget in controls.items():
-            widget.setSuffix(ui_text('ui_polish.install_polish.text_19') if key == 'deviations' else ui_text('ui_polish.install_polish.text_20'))
+            widget.setSuffix(ui_text('ui_polish.install_polish.speed_suffix') if key == 'deviations' else ui_text('ui_polish.install_polish.bars_suffix'))
     prerequisites = {
-        'run_backtest': ui_text('ui_polish.install_polish.text_21'),
-        'use_candidate': ui_text('ui_polish.install_polish.text_22'),
-        'select_strategy': ui_text('ui_polish.install_polish.text_23'),
-        'run_walk_forward': ui_text('ui_polish.install_polish.text_24'),
-        'pick_walk_forward_original': ui_text('ui_polish.install_polish.text_25'),
-        'run_candidate_analysis': ui_text('ui_polish.install_polish.text_26'),
-        'reconcile_saved_analysis': ui_text('ui_polish.install_polish.text_27'),
+        'run_backtest': ui_text('ui_polish.install_polish.import_prerequisite'),
+        'use_candidate': ui_text('ui_polish.install_polish.candidate_prerequisite'),
+        'select_strategy': ui_text('ui_polish.install_polish.strategy_prerequisite'),
+        'run_walk_forward': ui_text('ui_polish.install_polish.walk_forward_prerequisite'),
+        'pick_walk_forward_original': ui_text('ui_polish.install_polish.saved_pool_prerequisite'),
+        'run_candidate_analysis': ui_text('ui_polish.install_polish.analysis_prerequisite'),
+        'reconcile_saved_analysis': ui_text('ui_polish.install_polish.recovery_prerequisite'),
         'cancel_job': ui_text('job.idle_hint'),
-        'market_add': ui_text('ui_polish.install_polish.text_29'),
-        'market_refresh': ui_text('ui_polish.install_polish.text_30'),
-        'chatgpt_enable_plan': ui_text('ui_polish.install_polish.text_31'),
-        'chatgpt_models': ui_text('ui_polish.install_polish.text_32'),
-        'chatgpt_clear_pause': ui_text('ui_polish.install_polish.text_33'),
-        'chatgpt_open_official': ui_text('ui_polish.install_polish.text_34'),
+        'market_add': ui_text('ui_polish.install_polish.market_catalog_prerequisite'),
+        'market_refresh': ui_text('ui_polish.install_polish.market_update_prerequisite'),
+        'chatgpt_enable_plan': ui_text('ui_polish.install_polish.connection_prerequisite'),
+        'chatgpt_models': ui_text('ui_polish.install_polish.usage_prerequisite'),
+        'chatgpt_clear_pause': ui_text('ui_polish.install_polish.quota_prerequisite'),
+        'chatgpt_open_official': ui_text('ui_polish.install_polish.authorization_prerequisite'),
     }
     window._disabled_hints = []
     for button in window.findChildren(QPushButton):
         if not button.property('role'):
             button.setProperty('role', 'secondary')
         name = button.objectName()
-        prerequisite = prerequisites.get(name, ui_text('ui_polish.install_polish.text_35'))
+        prerequisite = prerequisites.get(name, ui_text('ui_polish.install_polish.idle_prerequisite'))
         if button in window.chatgpt_panel.buttons.values() and name not in prerequisites:
-            prerequisite = ui_text('ui_polish.install_polish.text_36')
+            prerequisite = ui_text('ui_polish.install_polish.saved_connection_prerequisite')
         if button is window.chatgpt_panel.cancel_button:
-            prerequisite = ui_text('ui_polish.install_polish.text_37')
+            prerequisite = ui_text('ui_polish.install_polish.connection_job_prerequisite')
         label = QLabel(button.parentWidget())
         label.setWordWrap(True)
         label.setProperty('prerequisite', True)

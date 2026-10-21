@@ -10,18 +10,18 @@ from PySide6.QtWidgets import QWidget, QLabel, QListWidget, QPushButton, QLineEd
 from .compare_table import SavedResultsTable, SideBySideTable
 from .bindings import PageContext
 
-ANALYSIS_NOTICE = ui_text('ui.labels.text_1')
-ANALYSIS_WARNING = ui_text('ui.labels.text_2')
-ANALYSIS_CHECKPOINT_STATUS = ui_text('ui.labels.text_3')
-ANALYSIS_CHECKPOINT_NOTICE = ui_text('ui.labels.text_4').format(ANALYSIS_CHECKPOINT_STATUS)
+ANALYSIS_NOTICE = ui_text('ui.labels.recalculated_evidence')
+ANALYSIS_WARNING = ui_text('ui.labels.unverified_ai_advice')
+ANALYSIS_CHECKPOINT_STATUS = ui_text('ui.labels.interrupted_checkpoint')
+ANALYSIS_CHECKPOINT_NOTICE = ui_text('ui.labels.missing_result_export').format(ANALYSIS_CHECKPOINT_STATUS)
 
 
 class ComparePage(PageContext, QWidget):
     def __init__(self, host, analysis_layout):
         super().__init__()
         self.setup_context(host)
-        layout = self.host.mount_page(self, ui_text('ui._compare_page.text_1'))
-        layout.addWidget(QLabel(ui_text('ui._compare_page.text_2')))
+        layout = self.host.mount_page(self, ui_text('ui.compare_page.title'))
+        layout.addWidget(QLabel(ui_text('ui.compare_page.comparison_hint')))
         self.comparison_list = QListWidget(self)
         self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         self.comparison_list.hide()
@@ -29,7 +29,7 @@ class ComparePage(PageContext, QWidget):
         layout.addWidget(self.saved_results_table)
         self._button(
             layout,
-            ui_text('ui._compare_page.text_3'),
+            ui_text('ui.compare_page.compare_selected'),
             'compare_results',
             lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}),
             role='primary',
@@ -44,15 +44,15 @@ class ComparePage(PageContext, QWidget):
         from .compare_equity import attach_overlay
 
         attach_overlay(self, comparison_details)
-        self.select_button = self._button(layout, ui_text('ui._compare_page.text_4'), 'select_strategy', self.select_strategy)
-        self._button(layout, ui_text('ui._compare_page.text_5'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
+        self.select_button = self._button(layout, ui_text('ui.compare_page.activate_strategy'), 'select_strategy', self.select_strategy)
+        self._button(layout, ui_text('ui.compare_page.deactivate_strategy'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel()
         self.selection_status.setWordWrap(True)
         layout.addWidget(self.selection_status)
         self._analysis_section(analysis_layout)
 
     def _analysis_section(self, layout):
-        title = QLabel(ui_text('ui._analysis_section.text_1'))
+        title = QLabel(ui_text('ui.analysis_section.title'))
         layout.addWidget(title)
         warning = QLabel(ANALYSIS_WARNING + '\n' + ANALYSIS_NOTICE)
         warning.setWordWrap(True)
@@ -64,11 +64,11 @@ class ComparePage(PageContext, QWidget):
         self.analysis_original = QLineEdit()
         self.analysis_original.setReadOnly(True)
         self.analysis_original.setObjectName('analysis_original_dataset')
-        self.analysis_original.setPlaceholderText(ui_text('ui._analysis_section.text_2'))
+        self.analysis_original.setPlaceholderText(ui_text('ui.analysis_section.original_required'))
         layout.addWidget(self.analysis_original)
-        self._button(layout, ui_text('ui._analysis_section.text_3'), 'pick_analysis_original', self.pick_analysis_original)
-        self._button(layout, ui_text('ui._analysis_section.text_4'), 'preview_candidate_analysis', lambda: self.preview_analysis('critique'))
-        self._button(layout, ui_text('ui._analysis_section.text_5'), 'preview_candidate_comparison', lambda: self.preview_analysis('compare'))
+        self._button(layout, ui_text('ui.analysis_section.browse_original'), 'pick_analysis_original', self.pick_analysis_original)
+        self._button(layout, ui_text('ui.analysis_section.preview_candidate'), 'preview_candidate_analysis', lambda: self.preview_analysis('critique'))
+        self._button(layout, ui_text('ui.analysis_section.preview_comparison'), 'preview_candidate_comparison', lambda: self.preview_analysis('compare'))
         self.analysis_preview = QPlainTextEdit()
         self.analysis_preview.setReadOnly(True)
         self.analysis_preview.setObjectName('analysis_preview')
@@ -77,13 +77,13 @@ class ComparePage(PageContext, QWidget):
         self.analysis_evidence.setReadOnly(True)
         self.analysis_evidence.setObjectName('analysis_evidence')
         self._advanced(layout).addWidget(self.analysis_evidence)
-        self.analysis_consent = QCheckBox(ui_text('ui._analysis_section.text_6'))
+        self.analysis_consent = QCheckBox(ui_text('ui.analysis_section.consent'))
         self.analysis_consent.setObjectName('analysis_one_call_consent')
         layout.addWidget(self.analysis_consent)
-        note = QLabel(ui_text('ui._analysis_section.text_7'))
+        note = QLabel(ui_text('ui.analysis_section.shared_connection_hint'))
         note.setWordWrap(True)
         layout.addWidget(note)
-        self.analysis_start = self._button(layout, ui_text('ui._analysis_section.text_8'), 'run_candidate_analysis', self.run_analysis)
+        self.analysis_start = self._button(layout, ui_text('ui.analysis_section.send'), 'run_candidate_analysis', self.run_analysis)
         self.analysis_start.setEnabled(False)
         self.analysis_saved = QComboBox()
         self.analysis_saved.setObjectName('analysis_saved')
@@ -93,12 +93,12 @@ class ComparePage(PageContext, QWidget):
         self.analysis_checkpoint_notice.setObjectName('analysis_checkpoint_notice')
         self.analysis_checkpoint_notice.setWordWrap(True)
         layout.addWidget(self.analysis_checkpoint_notice)
-        self._button(layout, ui_text('ui._analysis_section.text_9'), 'read_candidate_analysis', self.read_analysis)
+        self._button(layout, ui_text('ui.analysis_section.read_saved'), 'read_candidate_analysis', self.read_analysis)
         self.analysis_recovery_notice = QLabel()
         self.analysis_recovery_notice.setWordWrap(True)
         self.analysis_recovery_notice.setObjectName('analysis_recovery_notice')
         layout.addWidget(self.analysis_recovery_notice)
-        self.analysis_recover = self._button(layout, ui_text('ui._analysis_section.text_10'), 'reconcile_saved_analysis', self.reconcile_saved_analysis)
+        self.analysis_recover = self._button(layout, ui_text('ui.analysis_section.reconcile_saved'), 'reconcile_saved_analysis', self.reconcile_saved_analysis)
         self.analysis_recover.setEnabled(False)
         self.analysis_findings = QPlainTextEdit()
         self.analysis_findings.setReadOnly(True)
@@ -118,27 +118,27 @@ class ComparePage(PageContext, QWidget):
             self.analysis_evidence.clear()
 
     def pick_analysis_original(self):
-        name, _ = self.host.open_file(ui_text('ui.pick_analysis_original.text_1'), '', 'JSON (*.json)')
+        name, _ = self.host.open_file(ui_text('ui.pick_analysis_original.dialog_title'), '', 'JSON (*.json)')
         if not name:
             return
         if '://' in name or name.startswith(('//', chr(92) * 2)) or not Path(name).is_absolute():
-            raise ValidationError(ui_text('ui.pick_analysis_original.text_2'))
+            raise ValidationError(ui_text('ui.pick_analysis_original.absolute_path_required'))
         path = Path(name).resolve(strict=True)
         if not path.is_file():
-            raise ValidationError(ui_text('ui.pick_analysis_original.text_3'))
+            raise ValidationError(ui_text('ui.pick_analysis_original.original_required'))
         self.analysis_original.setText(str(path))
-        self.form_feedback(self.analysis_original, ui_text('ui.pick_analysis_original.text_4'))
+        self.form_feedback(self.analysis_original, ui_text('ui.pick_analysis_original.original_selected'))
 
     def _analysis_request(self, task):
         from quantlab.desktop_runtime import validate_analysis_request
 
         refs = [item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
         if not refs or len({ref['campaign_folder'] for ref in refs}) != 1:
-            raise ValidationError(ui_text('ui._analysis_request.text_1'))
+            raise ValidationError(ui_text('ui.analysis_request.same_research_required'))
         c = self.chatgpt_controller
         p = self.chatgpt_panel
         if c.busy or c.state != 'plan_ready' or not c.active_registration or p.model.currentData() not in c.models:
-            raise ValidationError(ui_text('ui._analysis_request.text_2'))
+            raise ValidationError(ui_text('ui.analysis_request.connection_required'))
         request = {
             'campaign_reference': refs[0]['campaign_folder'],
             'original_dataset': {'kind': 'local_dataset_file', 'path': self.analysis_original.text()},
@@ -162,22 +162,22 @@ class ComparePage(PageContext, QWidget):
 
         preview = self._analysis_preview
         if preview is None or not self.analysis_consent.isChecked():
-            raise ValidationError(ui_text('ui.run_analysis.text_1'))
+            raise ValidationError(ui_text('ui.run_analysis.preview_consent_required'))
         plan = preview['plan']
         request = self._analysis_request(plan['binding']['packet']['context']['task'])
         if content_hash(request) != self._analysis_request_key:
-            raise ValidationError(ui_text('ui.run_analysis.text_2'))
+            raise ValidationError(ui_text('ui.run_analysis.selection_changed'))
         c = self.chatgpt_controller
         p = self.chatgpt_panel
         if not c.account_status_known or c.account_paused or c.account_pending or preview['receipt_snapshot']['receipts']:
-            raise ValidationError(ui_text('ui.run_analysis.text_3'))
+            raise ValidationError(ui_text('ui.run_analysis.budget_consumed'))
         if (
             not p.consent.isChecked()
             or not p.included_usage_only.isChecked()
             or p._included_usage_registration != request['registration']
             or p.account.currentData() != request['registration']
         ):
-            raise ValidationError(ui_text('ui.run_analysis.text_4'))
+            raise ValidationError(ui_text('ui.run_analysis.usage_consent_required'))
         SubscriptionOptions(request['registration'], request['model'], 1, request['timeout_seconds'], network_opt_in=True, included_usage_policy_confirmed=True)
         import copy
 
@@ -203,7 +203,7 @@ class ComparePage(PageContext, QWidget):
     def read_analysis(self):
         reference = self.analysis_saved.currentData()
         if not reference:
-            raise ValidationError(ui_text('ui.read_analysis.text_1'))
+            raise ValidationError(ui_text('ui.read_analysis.saved_analysis_required'))
         self._invalidate_analysis_preview()
         if reference in self._analysis_checkpoint_ids:
             self._analysis_saved_changed()
@@ -218,7 +218,7 @@ class ComparePage(PageContext, QWidget):
             self.analysis_checkpoint_notice.setText(ANALYSIS_CHECKPOINT_NOTICE)
             self.status.setText(ANALYSIS_CHECKPOINT_STATUS)
         elif self.status.text() == ANALYSIS_CHECKPOINT_STATUS:
-            self.status.setText(ui_text('ui._analysis_saved_changed.text_1'))
+            self.status.setText(ui_text('ui.analysis_saved_changed.read_saved_hint'))
         self._refresh_recovery_controls(force=True)
 
     def _selected_recovery_launch(self, disposition=None):
@@ -244,10 +244,10 @@ class ComparePage(PageContext, QWidget):
 
     def reconcile_saved_analysis(self):
         if self.jobs.active:
-            raise ValidationError(ui_text('ui.reconcile_saved_analysis.text_1'))
+            raise ValidationError(ui_text('ui.reconcile_saved_analysis.job_busy'))
         launch = self._selected_recovery_launch()
         if launch is None:
-            raise ValidationError(ui_text('ui.reconcile_saved_analysis.text_2'))
+            raise ValidationError(ui_text('ui.reconcile_saved_analysis.stop_record_missing'))
         self._invalidate_analysis_preview()
         self.start_job(
             'ui_analysis_reconcile', {'analysis_id': launch['analysis_id'], 'registration': launch['registration'], 'recovery_launch_id': launch['job_id']}
@@ -305,13 +305,13 @@ class ComparePage(PageContext, QWidget):
                 failed = True
                 source_blocked = workspace_blocked = True
             if failed:
-                message = ui_text('ui._refresh_recovery_controls.text_1')
+                message = ui_text('ui.refresh_recovery_controls.stop_record_unverifiable')
             elif workspace_blocked:
-                message = ui_text('ui._refresh_recovery_controls.text_2')
+                message = ui_text('ui.refresh_recovery_controls.analysis_stop_unconfirmed')
             elif source_blocked:
-                message = ui_text('ui._refresh_recovery_controls.text_3')
+                message = ui_text('ui.refresh_recovery_controls.other_workspace_busy')
             elif launch is not None:
-                message = ui_text('ui._refresh_recovery_controls.text_4')
+                message = ui_text('ui.refresh_recovery_controls.stop_record_available')
             else:
                 message = ''
             cached = (now, source_blocked, workspace_blocked, launch is not None, message)
@@ -348,7 +348,7 @@ class ComparePage(PageContext, QWidget):
             return False
         kind = event.get('type')
         if kind == 'progress':
-            self.status.setText(str(event.get('message', ui_text('ui._analysis_event.text_1'))))
+            self.status.setText(str(event.get('message', ui_text('ui.analysis_event.running'))))
             return True
         if kind not in ('result', 'error', 'failed', 'cancelled', 'canceled'):
             return True
@@ -367,17 +367,17 @@ class ComparePage(PageContext, QWidget):
                 task = plan['binding']['packet']['context']['task']
                 if content_hash(self._analysis_request(task)) != self._analysis_request_key:
                     self._invalidate_analysis_preview()
-                    self.status.setText(ui_text('ui._analysis_event.text_2'))
+                    self.status.setText(ui_text('ui.analysis_event.selection_changed'))
                     return True
                 if result['analysis_id'] != plan['analysis_id']:
-                    raise ValidationError(ui_text('ui._analysis_event.text_3'))
+                    raise ValidationError(ui_text('ui.analysis_event.preview_id_mismatch'))
                 self._analysis_preview = result
                 self.chatgpt_controller.set_account_status(plan['binding']['registration'], result['account_status'])
                 self.analysis_preview.setPlainText(self.host.callbacks['analysis_preview_text'](plan))
                 self.analysis_evidence.setPlainText(canonical_json(plan['binding']['packet']['context']))
                 self.analysis_start.setEnabled(not result['receipt_snapshot']['receipts'])
                 self._refresh_recovery_controls(force=True)
-                self.status.setText(ui_text('ui._analysis_event.text_4'))
+                self.status.setText(ui_text('ui.analysis_event.preview_local_only'))
             else:
                 self._refresh_analysis_saved(preferred_reference=result['analysis_id'])
                 if result['analysis_id'] in self._analysis_checkpoint_ids:
@@ -385,11 +385,11 @@ class ComparePage(PageContext, QWidget):
                 if self.analysis_saved.currentData() != result['analysis_id']:
                     self.analysis_findings.clear()
                     self.analysis_evidence.clear()
-                    self.status.setText(ui_text('ui._analysis_event.text_5'))
+                    self.status.setText(ui_text('ui.analysis_event.saved_result_unavailable'))
                     return True
                 self.analysis_findings.setPlainText(self.host.callbacks['analysis_record_text'](result['record']))
                 self.analysis_evidence.setPlainText(canonical_json(result['record']['plan']['binding']['packet']['context']))
-                self.status.setText(ui_text('ui._analysis_event.text_6'))
+                self.status.setText(ui_text('ui.analysis_event.saved_result_loaded'))
         else:
             self.analysis_consent.setChecked(False)
             self.status.setText(error_message('operation_failed'))
@@ -419,10 +419,10 @@ class ComparePage(PageContext, QWidget):
         if failed:
             self._invalidate_analysis_preview()
             self.analysis_findings.clear()
-            self.analysis_checkpoint_notice.setText(ui_text('ui._refresh_analysis_saved.text_1'))
+            self.analysis_checkpoint_notice.setText(ui_text('ui.refresh_analysis_saved.listing_unsafe'))
 
     def select_strategy(self):
         path = self.result_choice.currentData()
         if not path:
-            raise ValidationError(ui_text('ui.select_strategy.text_1'))
+            raise ValidationError(ui_text('ui.select_strategy.result_required'))
         self.start_job('ui_select', {'result': path})

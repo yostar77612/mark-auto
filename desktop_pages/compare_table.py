@@ -17,7 +17,7 @@ PATH_ROLE = int(Qt.ItemDataRole.UserRole) + 1
 
 
 def safe_text(value):
-    return re.sub(r'[0-9a-fA-F]{8,}', ui_text('presentation.result_name.text_3'), str(value))
+    return re.sub(r'[0-9a-fA-F]{8,}', ui_text('presentation.result_name.id_in_diagnostics'), str(value))
 
 
 def saved_row(result, created):
@@ -47,8 +47,8 @@ def saved_row(result, created):
         name=name,
         family=display_status(spec.get('family', '')),
         parameters=' / '.join(PARAM_LABELS.get(key, key) + '=' + display_number(value) for key, value in spec.get('parameters', {}).items())
-        or ui_text('presentation.result_name.text_2'),
-        range=ui_text('presentation.result_name.text_4').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.text_5'),
+        or ui_text('presentation.result_name.default_parameters'),
+        range=ui_text('presentation.result_name.date_range').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.dates_not_provided'),
         created=taipei_time(datetime.fromtimestamp(created, timezone.utc)),
     )
     return row

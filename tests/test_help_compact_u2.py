@@ -57,7 +57,7 @@ class CompactHelpTests(unittest.TestCase):
                     self.assertEqual(button.text(), ui_text('help.symbol'))
                     self.assertEqual(button.accessibleName(), ui_text('help.accessible'))
                     self.assertTrue(button.toolTip().strip())
-                    self.assertEqual(button.toolTip(), ui_text('ui._strategy_page.text_3'))
+                    self.assertEqual(button.toolTip(), ui_text('ui.strategy_page.bounded_families_hint'))
                     button.ensurePolished()
                     self.assertLessEqual(button.sizeHint().width(), 40)
                     layout = button.parentWidget().layout()

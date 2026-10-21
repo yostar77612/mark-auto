@@ -42,7 +42,7 @@ class CatalogTests(unittest.TestCase):
         from types import SimpleNamespace
         from desktop_presentation import result_name
 
-        self.assertEqual(strings.ui_text('ui.paintEvent.text_2').format(1234, 5678), '權益 TWD  最低 1,234  最高 5,678 | 時間 →')
+        self.assertEqual(strings.ui_text('ui.paint_event.equity_range').format(1234, 5678), '權益 TWD  最低 1,234  最高 5,678 | 時間 →')
         result = SimpleNamespace(
             manifest={
                 'strategy': {'family': 'trend', 'parameters': {'period': Decimal('3.123456')}},
@@ -73,7 +73,7 @@ class CatalogTests(unittest.TestCase):
         button.setEnabled(False)
         hint = DisabledHint(button, label, 'ready')
         original = label.text()
-        stub = dict(strings.ZH_TW, **{'ui_polish.update.text_2': 'Stub prerequisite: {0}'})
+        stub = dict(strings.ZH_TW, **{'ui_polish.update.prerequisite_required': 'Stub prerequisite: {0}'})
         try:
             with patch.dict(strings.LOCALES, {strings.DEFAULT_LOCALE: stub}):
                 hint.update()
@@ -104,14 +104,14 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(str(caught.exception), expected)
         self.assertEqual(_display_time(datetime(2026, 1, 1, 18, 30, tzinfo=timezone.utc)), '2026/01/02 02:30 台北時間')
         self.assertEqual(_display_time(datetime(2026, 1, 1)), '時間未提供／未驗證')
-        self.assertEqual(strings.ui_text('charts.paintEvent.text_10').format('門檻', Decimal('1234.56789')), '門檻：1,234.5679')
+        self.assertEqual(strings.ui_text('charts.paint_event.named_price').format('門檻', Decimal('1234.56789')), '門檻：1,234.5679')
 
     def test_part_b_form_uses_registry_at_widget_construction(self):
         from PySide6.QtWidgets import QApplication, QLabel
         from desktop_forms import StrategyForm
 
         app = QApplication.instance() or QApplication([])
-        stub = dict(strings.ZH_TW, **{'forms.__init__.text_1': 'Stub field caption'})
+        stub = dict(strings.ZH_TW, **{'forms.init.strategy_family': 'Stub field caption'})
         with patch.dict(strings.LOCALES, {strings.DEFAULT_LOCALE: stub}):
             form = StrategyForm()
             try:

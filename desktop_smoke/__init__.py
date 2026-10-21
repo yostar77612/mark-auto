@@ -318,7 +318,7 @@ def _history_smoke_fixture(workspace):
     import hashlib
     from quantlab.market_history import PRODUCT_SOURCES
 
-    header = ui_text('desktop._history_smoke_fixture.text_1')
+    header = ui_text('desktop.history_smoke_fixture.tick_csv_header')
     rows, sessions = [], []
     for product, base in (('TX', 100), ('MTX', 200), ('TMF', 300)):
         for index, minute in enumerate((0, 1, 2, 3, 5, 15, 30, 59, 60)):

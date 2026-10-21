@@ -243,6 +243,6 @@ def refresh_tables(page, account, orders, fills):
         render_timeline(page)
         rows = event_rows(account, journal)
         for row in rows:
-            row['operation'] = ui_text('paper.tabs.event_operation').format(row['operation'] or ui_text('forms.metric.text_2'))
+            row['operation'] = ui_text('paper.tabs.event_operation').format(row['operation'] or ui_text('forms.metric.not_provided'))
         events.set_rows(rows, ('sequence', 'operation'))
         events.setHorizontalHeaderLabels((ui_text('paper.tabs.sequence'), ui_text('paper.tabs.events')))

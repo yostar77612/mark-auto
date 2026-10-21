@@ -115,7 +115,7 @@ def chart_capture(kind):
     try:
         if kind:
             bars = tuple(bar(i, 100 + i % 7, session_end=START + timedelta(minutes=60)) for i in range(40))
-            trace = ChartTrace(bars[0].contract_id, 'a' * 64, 'b' * 64, ui_text('charts.__post_init__.text_1'))
+            trace = ChartTrace(bars[0].contract_id, 'a' * 64, 'b' * 64, ui_text('charts.post_init.backtest'))
             chart.set_series(bars, trace=trace, source_label='synthetic', status_label='fixture')
             if kind == 2:
                 # Keep this dependency local to the stage that uses it.

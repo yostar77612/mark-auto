@@ -28,12 +28,12 @@ def next_step(code):
     """Return fixed catalog guidance, or nothing for an unknown/unmapped code."""
     texts = {
         'errors.next.validation': ui_text('errors.next.validation').format(
-            ui_text('ui._data_page.text_1'), ui_text('ui._strategy_page.text_1'), ui_text('ui._backtest_page.text_1')
+            ui_text('ui.data_page.title'), ui_text('ui.strategy_page.title'), ui_text('ui.backtest_page.title')
         ),
-        'errors.next.data': ui_text('errors.next.data').format(ui_text('ui._data_page.text_1')),
-        'errors.next.calendar': ui_text('errors.next.calendar').format(ui_text('ui._data_page.text_1')),
-        'errors.next.provider': ui_text('errors.next.provider').format(ui_text('ui._settings_page.text_1')),
-        'errors.next.running': ui_text('errors.next.running').format(ui_text('ui._settings_page.text_1')),
+        'errors.next.data': ui_text('errors.next.data').format(ui_text('ui.data_page.title')),
+        'errors.next.calendar': ui_text('errors.next.calendar').format(ui_text('ui.data_page.title')),
+        'errors.next.provider': ui_text('errors.next.provider').format(ui_text('ui.settings_page.title')),
+        'errors.next.running': ui_text('errors.next.running').format(ui_text('ui.settings_page.title')),
     }
     return texts.get(NEXT_STEP_KEYS.get(code), '') if isinstance(code, str) else ''
 

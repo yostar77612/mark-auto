@@ -46,7 +46,7 @@ class ChartPopout(QDialog):
         self.setAccessibleName(ui_text('popout.title'))
         self.setMinimumSize(360, 280)
         layout = QVBoxLayout(self)
-        self.safety = QLabel(ui_text('market.__init__.text_42'))
+        self.safety = QLabel(ui_text('market.init.research_paper'))
         self.safety.setWordWrap(True)
         layout.addWidget(self.safety)
         self.status = QLabel()

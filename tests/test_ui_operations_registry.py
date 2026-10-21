@@ -409,7 +409,7 @@ class RegistryTests(unittest.TestCase):
                 self.assertLessEqual(node.end_lineno - node.lineno + 1, 60)
 
     def test_unknown_operations_fail_before_dispatch_or_workspace_access(self):
-        expected = ui.ui_text('ui.execute_ui_operation.text_1')
+        expected = ui.ui_text('ui.execute_ui_operation.unknown_operation')
         with patch.dict(ui._UI_OPERATION_HANDLERS, {'': unittest.mock.Mock(), 'ui_unknown': unittest.mock.Mock()}):
             with patch.object(ui, '_root', side_effect=AssertionError('workspace accessed')):
                 for operation in ('', 'ui_unknown', 'backtest', 'demo', 'ui_analysis_unknown', None):

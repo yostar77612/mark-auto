@@ -49,22 +49,22 @@ STATES = frozenset(
     )
 )
 STATE_LABELS = {
-    'host_initialization_required': ui_text('chatgpt_ui.labels.text_1'),
-    'disconnected': ui_text('chatgpt_ui.labels.text_2'),
-    'initialized': ui_text('chatgpt_ui.labels.text_3'),
-    'authorizing': ui_text('chatgpt_ui.labels.text_4'),
-    'validating': ui_text('chatgpt_ui.labels.text_5'),
-    'plan_ready': ui_text('chatgpt_ui.labels.text_6'),
-    'identity_only': ui_text('chatgpt_ui.labels.text_7'),
-    'refresh_required': ui_text('chatgpt_ui.labels.text_8'),
-    'reauthorization_required': ui_text('chatgpt_ui.labels.text_9'),
-    'registration_retry_required': ui_text('chatgpt_ui.labels.text_10'),
-    'authorization_failed': ui_text('chatgpt_ui.labels.text_11'),
-    'timeout': ui_text('chatgpt_ui.labels.text_12'),
-    'cancelled': ui_text('chatgpt_ui.labels.text_13'),
-    'transient_blocked': ui_text('chatgpt_ui.labels.text_14'),
-    'client_configuration_required': ui_text('chatgpt_ui.labels.text_15'),
-    'unknown': ui_text('chatgpt_ui.labels.text_16'),
+    'host_initialization_required': ui_text('chatgpt_ui.labels.identity_uninitialized'),
+    'disconnected': ui_text('chatgpt_ui.labels.disconnected'),
+    'initialized': ui_text('chatgpt_ui.labels.unauthorized'),
+    'authorizing': ui_text('chatgpt_ui.labels.awaiting_authorization'),
+    'validating': ui_text('chatgpt_ui.labels.verifying_response'),
+    'plan_ready': ui_text('chatgpt_ui.labels.subscription_entitled'),
+    'identity_only': ui_text('chatgpt_ui.labels.identity_only'),
+    'refresh_required': ui_text('chatgpt_ui.labels.refresh_required'),
+    'reauthorization_required': ui_text('chatgpt_ui.labels.reauthorize_required'),
+    'registration_retry_required': ui_text('chatgpt_ui.labels.registration_unverified'),
+    'authorization_failed': ui_text('chatgpt_ui.labels.authorization_incomplete'),
+    'timeout': ui_text('chatgpt_ui.labels.authorization_timeout'),
+    'cancelled': ui_text('chatgpt_ui.labels.authorization_cancelled'),
+    'transient_blocked': ui_text('chatgpt_ui.labels.unavailable'),
+    'client_configuration_required': ui_text('chatgpt_ui.labels.client_settings_required'),
+    'unknown': ui_text('chatgpt_ui.labels.unknown_state'),
 }
 from quantlab.desktop_errors import ERROR_LABELS, exception_code
 
@@ -242,7 +242,7 @@ class ConnectionEvent:
                 or row[0] in label_refs
                 or states[row[0]] == 'registration_retry_required'
                 or not isinstance(row[1], str)
-                or not re.fullmatch(ui_text('chatgpt_ui.__post_init__.text_1'), row[1])
+                or not re.fullmatch(ui_text('chatgpt_ui.post_init.masked_account_pattern'), row[1])
             ):
                 raise ValueError('invalid verified account label')
             label_refs.add(row[0])
@@ -315,7 +315,7 @@ class ConnectionController(QObject):
         self.stopping = False
         self.outcome = None
         self.state = 'unknown'
-        self.message = ui_text('chatgpt_ui.__init__.text_1')
+        self.message = ui_text('chatgpt_ui.init.unchecked_connection')
         self.registrations = ()
         self.account_labels = ()
         self.active_registration = None
@@ -344,7 +344,7 @@ class ConnectionController(QObject):
 
     def request(self, action, registration=None, *, confirmed=False, model=None):
         if not self.host_available or self.busy:
-            raise ValueError(ui_text('chatgpt_ui.request.text_1'))
+            raise ValueError(ui_text('chatgpt_ui.request.host_busy'))
         if action == 'test' and (
             registration != self.active_registration
             or self.state != 'plan_ready'
@@ -362,7 +362,7 @@ class ConnectionController(QObject):
             or self.account_paused
             or self.account_pending
         ):
-            raise ValueError(ui_text('chatgpt_ui.request.text_2'))
+            raise ValueError(ui_text('chatgpt_ui.request.reconciliation_required'))
         if action == 'clear_pause' and (
             registration != self.active_registration
             or not self.account_status_known
@@ -370,7 +370,7 @@ class ConnectionController(QObject):
             or self.unknown_count
             or self.account_state not in RECOVERABLE_PAUSES
         ):
-            raise ValueError(ui_text('chatgpt_ui.request.text_3'))
+            raise ValueError(ui_text('chatgpt_ui.request.unknown_requests_block_resume'))
         if (
             action in ('select', 'sign_out', 'refresh', 'models', 'clear_pause', 'enable_plan')
             and dict(self.registrations).get(registration) == 'registration_retry_required'
@@ -400,9 +400,9 @@ class ConnectionController(QObject):
         self._terminal_ok = False
         self._awaiting_join = action not in LOCAL_ACTIONS | STARTUP_ACTIONS
         self.message = (
-            ui_text('chatgpt_ui.request.text_4')
+            ui_text('chatgpt_ui.request.stop_required')
             if self._awaiting_join
-            else (ui_text('chatgpt_ui.request.text_5') if action == 'restore' else ui_text('chatgpt_ui.request.text_6'))
+            else (ui_text('chatgpt_ui.request.restoring_login') if action == 'restore' else ui_text('chatgpt_ui.request.reading_local_state'))
         )
         self.changed.emit()
         (self.quiesce_requested if self._awaiting_join else self.request_ready).emit(request)
@@ -412,13 +412,13 @@ class ConnectionController(QObject):
         if not self._request or request_id != self._request.request_id or not self._awaiting_join:
             return False
         if joined is not True:
-            self.message = ui_text('chatgpt_ui.acknowledge_quiescence.text_1')
+            self.message = ui_text('chatgpt_ui.acknowledge_quiescence.stop_unconfirmed')
             self.changed.emit()
             return False
         if self.stopping:
             return False
         self._awaiting_join = False
-        self.message = ui_text('chatgpt_ui.acknowledge_quiescence.text_2')
+        self.message = ui_text('chatgpt_ui.acknowledge_quiescence.running_authorization')
         self.changed.emit()
         self.request_ready.emit(self._request)
         return True
@@ -431,7 +431,7 @@ class ConnectionController(QObject):
         if event.kind == 'authorization':
             self._authorization_url = event.authorization_url
             self.state = 'authorizing'
-            self.message = ui_text('chatgpt_ui.apply_event.text_1')
+            self.message = ui_text('chatgpt_ui.apply_event.official_destination')
         elif event.kind == 'progress':
             self.state = event.state
             self.message = STATE_LABELS[event.state]
@@ -478,10 +478,14 @@ class ConnectionController(QObject):
                 self.outcome = outcome_state(event.state) if action in ('refresh', 'restore') else None
                 self.message = outcome_message(event.state) if self.outcome else STATE_LABELS[event.state]
                 if action == 'sign_out':
-                    self.message = ui_text('chatgpt_ui.apply_event.text_2') if event.revocation_confirmed is True else ui_text('chatgpt_ui.apply_event.text_3')
+                    self.message = (
+                        ui_text('chatgpt_ui.apply_event.revocation_confirmed')
+                        if event.revocation_confirmed is True
+                        else ui_text('chatgpt_ui.apply_event.revocation_unconfirmed')
+                    )
             # Terminal message is not process-exit evidence. Keep controls locked until joined.
             self.stopping = True
-            self.message += ui_text('chatgpt_ui.apply_event.text_4')
+            self.message += ui_text('chatgpt_ui.apply_event.wait_for_host')
         self.changed.emit()
         return True
 
@@ -492,7 +496,7 @@ class ConnectionController(QObject):
 
     def open_authorization(self):
         if not self.busy or self.stopping or not self._authorization_url:
-            raise ValueError(ui_text('chatgpt_ui.open_authorization.text_1'))
+            raise ValueError(ui_text('chatgpt_ui.open_authorization.authorization_unavailable'))
         value = official_authorization_url(self._authorization_url)
         self._authorization_url = None
         self.changed.emit()
@@ -505,7 +509,7 @@ class ConnectionController(QObject):
         self._authorization_url = None
         self._terminal_received = False
         self._terminal_ok = False
-        self.message = ui_text('chatgpt_ui.cancel.text_1')
+        self.message = ui_text('chatgpt_ui.cancel.stopping_remote_unknown')
         self.changed.emit()
         self.cancel_requested.emit(self._request.request_id)
 
@@ -516,11 +520,11 @@ class ConnectionController(QObject):
         succeeded = terminal_received is True and self._terminal_received and self._terminal_ok
         if terminal_received is not True or not self._terminal_received:
             self.state = 'unknown'
-            self.message = ui_text('chatgpt_ui.worker_joined.text_1')
+            self.message = ui_text('chatgpt_ui.worker_joined.remote_outcome_unknown')
             self.usage_known = False
             self.unknown_count = None
             self.account_status_known = False
-        self.message = self.message.removesuffix(ui_text('chatgpt_ui.worker_joined.text_2'))
+        self.message = self.message.removesuffix(ui_text('chatgpt_ui.worker_joined.wait_for_host'))
         self.busy = False
         self.stopping = False
         self._awaiting_join = False
@@ -606,22 +610,22 @@ class ChatGPTConnectionPanel(QWidget):
         self._restore_flow = None
         self.setObjectName('chatgpt_subscription_panel')
         layout = QVBoxLayout(self)
-        title = QLabel(ui_text('chatgpt_ui.__init__.text_2'))
+        title = QLabel(ui_text('chatgpt_ui.init.title'))
         layout.addWidget(title)
-        self.disclosure = QLabel(ui_text('chatgpt_ui.__init__.text_3'))
+        self.disclosure = QLabel(ui_text('chatgpt_ui.init.included_usage_hint'))
         self.disclosure.setWordWrap(True)
         self.disclosure.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.disclosure)
-        self.consent = QCheckBox(ui_text('chatgpt_ui.__init__.text_4'))
+        self.consent = QCheckBox(ui_text('chatgpt_ui.init.connection_consent'))
         layout.addWidget(self.consent)
-        self.included_usage_only = QCheckBox(ui_text('chatgpt_ui.__init__.text_5'))
+        self.included_usage_only = QCheckBox(ui_text('chatgpt_ui.init.included_usage_consent'))
         self.included_usage_only.setObjectName('chatgpt_included_usage_only')
         layout.addWidget(self.included_usage_only)
         self.included_usage_only.toggled.connect(self._confirm_included_usage)
-        self.manage_usage = QPushButton(ui_text('chatgpt_ui.__init__.text_6'))
+        self.manage_usage = QPushButton(ui_text('chatgpt_ui.init.usage_settings'))
         layout.addWidget(self.manage_usage)
         self.manage_usage.clicked.connect(self._open_usage_settings)
-        self.active_account = QLabel(ui_text('chatgpt_ui.__init__.text_7'))
+        self.active_account = QLabel(ui_text('chatgpt_ui.init.signed_out'))
         self.active_account.setTextFormat(Qt.TextFormat.PlainText)
         self.active_account.setWordWrap(True)
         layout.addWidget(self.active_account)
@@ -629,14 +633,14 @@ class ChatGPTConnectionPanel(QWidget):
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.status)
-        self.primary_sign_in = QPushButton(ui_text('chatgpt_ui.__init__.text_8'))
+        self.primary_sign_in = QPushButton(ui_text('chatgpt_ui.init.primary_sign_in'))
         self.primary_sign_in.setObjectName('chatgpt_primary_sign_in')
         layout.addWidget(self.primary_sign_in)
         self.primary_sign_in.clicked.connect(lambda: self._safe(self._start_primary_sign_in))
         self.account = QComboBox()
-        self.account.setAccessibleName(ui_text('chatgpt_ui.__init__.text_9'))
+        self.account.setAccessibleName(ui_text('chatgpt_ui.init.saved_connections'))
         layout.addWidget(self.account)
-        self.advanced_toggle = QPushButton(ui_text('chatgpt_ui.__init__.text_10'))
+        self.advanced_toggle = QPushButton(ui_text('chatgpt_ui.init.advanced_management'))
         self.advanced_toggle.setCheckable(True)
         layout.addWidget(self.advanced_toggle)
         self.advanced = QWidget()
@@ -647,41 +651,41 @@ class ChatGPTConnectionPanel(QWidget):
         self.advanced_toggle.toggled.connect(self._render)
         self.buttons = {}
         for action, label in [
-            ('list', ui_text('chatgpt_ui.__init__.text_11')),
-            ('initialize', ui_text('chatgpt_ui.__init__.text_12')),
-            ('begin', ui_text('chatgpt_ui.__init__.text_13')),
-            ('reauthorize', ui_text('chatgpt_ui.__init__.text_14')),
-            ('enable_plan', ui_text('chatgpt_ui.__init__.text_15')),
-            ('select', ui_text('chatgpt_ui.__init__.text_16')),
-            ('refresh', ui_text('chatgpt_ui.__init__.text_17')),
-            ('models', ui_text('chatgpt_ui.__init__.text_18')),
-            ('sign_out', ui_text('chatgpt_ui.__init__.text_19')),
-            ('clear_pause', ui_text('chatgpt_ui.__init__.text_20')),
+            ('list', ui_text('chatgpt_ui.init.read_local')),
+            ('initialize', ui_text('chatgpt_ui.init.initialize_identity')),
+            ('begin', ui_text('chatgpt_ui.init.add_connection')),
+            ('reauthorize', ui_text('chatgpt_ui.init.reauthorize')),
+            ('enable_plan', ui_text('chatgpt_ui.init.enable_usage')),
+            ('select', ui_text('chatgpt_ui.init.switch_connection')),
+            ('refresh', ui_text('chatgpt_ui.init.refresh_connection')),
+            ('models', ui_text('chatgpt_ui.init.fetch_models')),
+            ('sign_out', ui_text('chatgpt_ui.init.logout')),
+            ('clear_pause', ui_text('chatgpt_ui.init.resume_known_pause')),
         ]:
             button = QPushButton(label)
             button.setObjectName('chatgpt_' + action)
             (layout if action in ('select', 'models', 'sign_out', 'enable_plan') else advanced_layout).addWidget(button)
             self.buttons[action] = button
             button.clicked.connect(lambda checked=False, a=action: self._act(a))
-        self.open_button = QPushButton(ui_text('chatgpt_ui.__init__.text_21'))
+        self.open_button = QPushButton(ui_text('chatgpt_ui.init.continue_authorization'))
         self.open_button.setObjectName('chatgpt_open_official')
         advanced_layout.addWidget(self.open_button)
         self.open_button.clicked.connect(lambda: self._safe(self.controller.open_authorization))
-        self.cancel_button = QPushButton(ui_text('chatgpt_ui.__init__.text_22'))
+        self.cancel_button = QPushButton(ui_text('chatgpt_ui.init.cancel_wait'))
         layout.addWidget(self.cancel_button)
         self.cancel_button.clicked.connect(self._cancel_primary)
         form = QFormLayout()
         self.model_form = form
         layout.addLayout(form)
         self.model = QComboBox()
-        form.addRow(ui_text('chatgpt_ui.__init__.text_23'), self.model)
+        form.addRow(ui_text('chatgpt_ui.init.available_models'), self.model)
         self.max_calls = QSpinBox()
         self.max_calls.setRange(0, 100)
-        form.addRow(ui_text('chatgpt_ui.__init__.text_24'), self.max_calls)
+        form.addRow(ui_text('chatgpt_ui.init.request_limit'), self.max_calls)
         self.timeout = QSpinBox()
         self.timeout.setRange(1, 120)
         self.timeout.setValue(30)
-        form.addRow(ui_text('chatgpt_ui.__init__.text_25'), self.timeout)
+        form.addRow(ui_text('chatgpt_ui.init.timeout_seconds'), self.timeout)
         self.usage = QLabel()
         self.usage.setWordWrap(True)
         layout.addWidget(self.usage)
@@ -760,8 +764,8 @@ class ChatGPTConnectionPanel(QWidget):
         if c.state == 'host_initialization_required':
             answer = QMessageBox.question(
                 self,
-                ui_text('chatgpt_ui._continue_primary.text_1'),
-                ui_text('chatgpt_ui._continue_primary.text_2'),
+                ui_text('chatgpt_ui.continue_primary.first_sign_in_title'),
+                ui_text('chatgpt_ui.continue_primary.initialize_or_recover_question'),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,
             )
@@ -780,7 +784,7 @@ class ChatGPTConnectionPanel(QWidget):
                 registration = next(iter(refs))
             if registration is None and len(refs) > 1:
                 self._primary_flow = None
-                self.status.setText(ui_text('chatgpt_ui._continue_primary.text_3'))
+                self.status.setText(ui_text('chatgpt_ui.continue_primary.connection_required'))
                 return
             if registration == c.active_registration and c.state in CONNECTED_STATES and not flow.get('reauthorize'):
                 # Already signed in with the saved login: no new authorization.
@@ -849,7 +853,7 @@ class ChatGPTConnectionPanel(QWidget):
         from PySide6.QtGui import QDesktopServices
 
         if not QDesktopServices.openUrl(QUrl(USAGE_SETTINGS_URL)):
-            self.status.setText(ui_text('chatgpt_ui._open_usage_settings.text_1'))
+            self.status.setText(ui_text('chatgpt_ui.open_usage_settings.browser_failed'))
 
     def _safe(self, call):
         try:
@@ -887,13 +891,16 @@ class ChatGPTConnectionPanel(QWidget):
         labels = dict(c.account_labels)
         for reference, state in c.registrations:
             label = labels.get(
-                reference, ui_text('chatgpt_ui._render.text_1') if state == 'registration_retry_required' else ui_text('chatgpt_ui._render.text_2')
+                reference,
+                ui_text('chatgpt_ui.render.unverified_registration')
+                if state == 'registration_retry_required'
+                else ui_text('chatgpt_ui.render.saved_connection'),
             )
-            self.account.addItem(ui_text('chatgpt_ui._render.text_3').format(label, reference[-8:], STATE_LABELS[state]), reference)
+            self.account.addItem(ui_text('chatgpt_ui.render.masked_connection').format(label, reference[-8:], STATE_LABELS[state]), reference)
         self.active_account.setText(
-            (ui_text('chatgpt_ui._render.text_5').format(labels.get(c.active_registration, ui_text('chatgpt_ui._render.text_4'))))
+            (ui_text('chatgpt_ui.render.signed_in').format(labels.get(c.active_registration, ui_text('chatgpt_ui.render.saved_account'))))
             if c.active_registration is not None
-            else ui_text('chatgpt_ui._render.text_6')
+            else ui_text('chatgpt_ui.render.signed_out')
         )
         selection = c.active_registration if c.active_registration != self._rendered_active else selected or c.active_registration
         self._rendered_active = c.active_registration
@@ -914,7 +921,7 @@ class ChatGPTConnectionPanel(QWidget):
         self.primary_sign_in.setEnabled(ready)
         signed_in = c.active_registration is not None and c.state in CONNECTED_STATES
         self.primary_sign_in.setVisible(not signed_in or c.outcome == 'auth_expired')
-        self.primary_sign_in.setText(ui_text('outcome.auth_expired.action') if c.outcome == 'auth_expired' else ui_text('chatgpt_ui.__init__.text_8'))
+        self.primary_sign_in.setText(ui_text('outcome.auth_expired.action') if c.outcome == 'auth_expired' else ui_text('chatgpt_ui.init.primary_sign_in'))
         self.buttons['enable_plan'].setVisible(c.state == 'identity_only')
         self.buttons['select'].setVisible(len(c.registrations) > 1)
         self.buttons['models'].setVisible(c.state == 'plan_ready')
@@ -955,13 +962,15 @@ class ChatGPTConnectionPanel(QWidget):
         self.account.setEnabled(ready)
         self.model.setEnabled(ready)
         self.usage.setText(
-            ui_text('chatgpt_ui._render.text_7') if not c.usage_known else ui_text('chatgpt_ui._render.text_8').format(c.reserved_count, c.unknown_count)
+            ui_text('chatgpt_ui.render.request_record_unknown')
+            if not c.usage_known
+            else ui_text('chatgpt_ui.render.reserved_requests').format(c.reserved_count, c.unknown_count)
         )
         if c.account_status_known:
             barrier = (
-                ui_text('chatgpt_ui._render.text_9')
+                ui_text('chatgpt_ui.render.unresolved_requests')
                 if c.account_pending
-                else (ui_text('chatgpt_ui._render.text_10') if c.account_paused else ui_text('chatgpt_ui._render.text_11'))
+                else (ui_text('chatgpt_ui.render.account_paused') if c.account_paused else ui_text('chatgpt_ui.render.local_not_paused_disclaimer'))
             )
             self.usage.setText(self.usage.text() + '\n' + barrier)
 

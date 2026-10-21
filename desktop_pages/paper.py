@@ -74,13 +74,13 @@ class PaperPage(PageContext, QWidget):
     def __init__(self, host):
         super().__init__()
         self.setup_context(host)
-        layout = self.host.mount_page(self, ui_text('ui._paper_page.text_1'))
-        note = QLabel(ui_text('ui._paper_page.text_2'))
+        layout = self.host.mount_page(self, ui_text('ui.paper_page.title'))
+        note = QLabel(ui_text('ui.paper_page.reconciliation_hint'))
         note.setWordWrap(True)
         layout.addWidget(note)
         limits = self.host.callbacks['paper_risk_limits']()
         self.paper_risk_summary = QLabel(
-            ui_text('ui._paper_page.text_3').format(
+            ui_text('ui.paper_page.fixed_risk_limits').format(
                 limits.max_position,
                 limits.max_order_quantity,
                 display_number(limits.max_daily_loss, "cash"),
@@ -94,37 +94,37 @@ class PaperPage(PageContext, QWidget):
         self.paper_risk_summary.setWordWrap(True)
         layout.addWidget(self.paper_risk_summary)
         advanced = self._advanced(layout)
-        policy_layout = self._advanced(layout, ui_text('ui._paper_page.text_4'))
-        policy_panel = PanelCard(ui_text('ui._paper_page.text_4'))
+        policy_layout = self._advanced(layout, ui_text('ui.paper_page.policy_advanced'))
+        policy_panel = PanelCard(ui_text('ui.paper_page.policy_advanced'))
         policy_layout.addWidget(policy_panel)
         self.policy_form = PaperPolicyForm()
         policy_panel.content_layout().addWidget(self.policy_form)
-        self.paper_policy = self._text(advanced, ui_text('ui._paper_page.text_5'), '{}', True)
+        self.paper_policy = self._text(advanced, ui_text('ui.paper_page.policy_json'), '{}', True)
         self._remember(self.paper_policy)
-        self._button(layout, ui_text('ui._paper_page.text_6'), 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
-        self._button(layout, ui_text('ui._paper_page.text_7'), 'demo_policy', self.demo_paper_policy)
-        self._button(layout, ui_text('ui._paper_page.text_8'), 'paper_snapshot', lambda: self.paper_job('snapshot'))
-        snapshot_layout = self._advanced(layout, ui_text('ui._paper_page.text_9'))
+        self._button(layout, ui_text('ui.paper_page.load_policy'), 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
+        self._button(layout, ui_text('ui.paper_page.synthetic_policy'), 'demo_policy', self.demo_paper_policy)
+        self._button(layout, ui_text('ui.paper_page.load_account'), 'paper_snapshot', lambda: self.paper_job('snapshot'))
+        snapshot_layout = self._advanced(layout, ui_text('ui.paper_page.snapshot_advanced'))
         self.snapshot_form = PaperSnapshotForm()
-        snapshot_panel = PanelCard(ui_text('ui._paper_page.text_9'))
+        snapshot_panel = PanelCard(ui_text('ui.paper_page.snapshot_advanced'))
         snapshot_layout.addWidget(snapshot_panel)
         snapshot_panel.content_layout().addWidget(self.snapshot_form)
         self.snapshot = self._text(
             advanced,
-            ui_text('ui._paper_page.text_10'),
+            ui_text('ui.paper_page.snapshot_json'),
             canonical_json({'account_id': 'paper-demo', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}),
             True,
         )
         self.snapshot_form.from_payload(json.loads(self.snapshot.toPlainText()))
         self._remember(self.snapshot)
-        self._button(layout, ui_text('ui._paper_page.text_11'), 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
+        self._button(layout, ui_text('ui.paper_page.load_snapshot'), 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
         self._button(
             layout,
-            ui_text('ui._paper_page.text_12'),
+            ui_text('ui.paper_page.reconcile'),
             'paper_reconcile',
             lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload)),
         )
-        self.kill_button = self._button(layout, ui_text('ui._paper_page.text_13'), 'paper_kill', self.kill_paper, role='danger')
+        self.kill_button = self._button(layout, ui_text('ui.paper_page.emergency_stop'), 'paper_kill', self.kill_paper, role='danger')
         self._button(advanced, ui_text('paper.manual_lock'), 'paper_manual_lock', lambda: self.paper_job('kill', manual_order_lock=True))
         self._button(
             advanced,
@@ -136,23 +136,23 @@ class PaperPage(PageContext, QWidget):
         self.replay_bars.setRange(1, 1000)
         self.replay_bars.setValue(100)
         layout.addWidget(self.replay_bars)
-        self.paper_confirm = QCheckBox(ui_text('ui._paper_page.text_14'))
+        self.paper_confirm = QCheckBox(ui_text('ui.paper_page.snapshot_consent'))
         layout.addWidget(self.paper_confirm)
         self.replay_controls = ReplayControls(self, layout, options_layout=advanced)
         self.page_state.replay_controls = self.replay_controls
         self._button(
             layout,
-            ui_text('ui._paper_page.text_15'),
+            ui_text('ui.paper_page.replay_history'),
             'paper_replay',
             lambda: self.paper_job('replay', max_bars=self.replay_bars.value(), _paced=self.replay_controls.speed.currentData() is not None),
         )
-        order_layout = self._advanced(layout, ui_text('ui._paper_page.text_16'))
+        order_layout = self._advanced(layout, ui_text('ui.paper_page.order_advanced'))
         self.intent_form = PaperIntentForm()
         order_layout.addWidget(self.intent_form)
         self.quote_form = PaperQuoteForm()
         order_layout.addWidget(self.quote_form)
-        self.intent = self._text(advanced, ui_text('ui._paper_page.text_17'), '{}', True)
-        self.quote = self._text(advanced, ui_text('ui._paper_page.text_18'), '{}', True)
+        self.intent = self._text(advanced, ui_text('ui.paper_page.intent_json'), '{}', True)
+        self.quote = self._text(advanced, ui_text('ui.paper_page.quote_json'), '{}', True)
         self._remember(self.intent)
         self._remember(self.quote)
         layout.addWidget(QLabel(ui_text('timeinput.paper_clock')))
@@ -161,7 +161,7 @@ class PaperPage(PageContext, QWidget):
         layout.addWidget(self.paper_time)
         self._button(
             layout,
-            ui_text('ui._paper_page.text_20'),
+            ui_text('ui.paper_page.submit_order'),
             'paper_submit',
             lambda: self.paper_job(
                 'submit',
@@ -171,10 +171,10 @@ class PaperPage(PageContext, QWidget):
             ),
             role='primary',
         )
-        self.cancel_order = self._text(layout, ui_text('ui._paper_page.text_21'))
+        self.cancel_order = self._text(layout, ui_text('ui.paper_page.order_id'))
         self._button(
             layout,
-            ui_text('ui._paper_page.text_22'),
+            ui_text('ui.paper_page.cancel_order'),
             'paper_cancel',
             lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()),
             role='danger',
@@ -189,23 +189,23 @@ class PaperPage(PageContext, QWidget):
         build_tabs(self, layout)
 
     def load_form_file(self, form, editor):
-        name, _ = self.host.open_file(ui_text('ui.load_form_file.text_1'), '', 'JSON (*.json)')
+        name, _ = self.host.open_file(ui_text('ui.load_form_file.dialog_title'), '', 'JSON (*.json)')
         if not name:
             return
         path = Path(name)
         if path.stat().st_size > 4 * 1024 * 1024:
-            raise ValidationError(ui_text('ui.load_form_file.text_2'))
+            raise ValidationError(ui_text('ui.load_form_file.file_too_large'))
         value = self.host.callbacks['read_json'](path)
         form.from_payload(value)
         editor.setPlainText(canonical_json(value))
         self._remember(editor)
         self.paper_confirm.setChecked(False)
-        self.form_feedback(form, ui_text('ui.load_form_file.text_3'))
+        self.form_feedback(form, ui_text('ui.load_form_file.reference_loaded'))
 
     def demo_paper_policy(self):
         data = self.host.callbacks['load_dataset'](self.root / 'dataset.json')
         if data.manifest['source_type'] != 'synthetic':
-            raise ValidationError(ui_text('ui.demo_paper_policy.text_1'))
+            raise ValidationError(ui_text('ui.demo_paper_policy.synthetic_only'))
         sessions = []
         for day in sorted({b.trade_date for b in data.bars}):
             bars = [b for b in data.bars if b.trade_date == day]
@@ -227,14 +227,14 @@ class PaperPage(PageContext, QWidget):
         self.paper_policy.setPlainText(canonical_json(policy))
         self.policy_form.from_payload(policy)
         self._remember(self.paper_policy)
-        self.form_feedback(self.policy_form.sessions, ui_text('ui.demo_paper_policy.text_2').format(len(sessions)))
+        self.form_feedback(self.policy_form.sessions, ui_text('ui.demo_paper_policy.policy_filled').format(len(sessions)))
 
     def paper_job(self, op, **payload):
         if getattr(self.page_state, 'manual_order_lock', False):
             raise ValidationError('validation_failed')
         if op in ('submit', 'replay'):
             if not self.paper_confirm.isChecked():
-                raise ValidationError(ui_text('ui.paper_job.text_1'))
+                raise ValidationError(ui_text('ui.paper_job.snapshot_consent_required'))
             payload.update(snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload), reconcile_confirmed=True)
         payload['policy'] = self._payload(self.paper_policy, self.policy_form.build_payload)
         if op == 'replay' and payload.pop('_paced', False):
@@ -272,12 +272,12 @@ class PaperPage(PageContext, QWidget):
         if choice is not dialog.confirm_button:
             return
         self.replay_controls.cancel()
-        self.freeze_paper(ui_text('ui.kill_paper.text_1'))
-        self.status.setText(ui_text('ui.kill_paper.text_2'))
+        self.freeze_paper(ui_text('ui.kill_paper.user_emergency_stop'))
+        self.status.setText(ui_text('ui.kill_paper.stopped_frozen'))
 
     def _amend_order(self, order_id, price):
         if self.jobs.active or not self.paper_confirm.isChecked():
-            raise ValidationError(ui_text('ui.paper_job.text_1'))
+            raise ValidationError(ui_text('ui.paper_job.snapshot_consent_required'))
         self.paper_job(
             'cancel',
             action='amend',
@@ -312,10 +312,10 @@ class PaperPage(PageContext, QWidget):
             values['cash'] = None
         values.update(
             {
-                ui_text('ui._show_account.text_1'): counts['positions'],
-                ui_text('ui._show_account.text_2'): counts['orders'],
-                ui_text('ui._show_account.text_3'): counts['fills'],
-                ui_text('ui._show_account.text_4'): account.get('positions', {}),
+                ui_text('ui.show_account.position_items'): counts['positions'],
+                ui_text('ui.show_account.order_count'): counts['orders'],
+                ui_text('ui.show_account.fill_count'): counts['fills'],
+                ui_text('ui.show_account.position_quantity'): account.get('positions', {}),
             }
         )
         reason = None
@@ -327,7 +327,7 @@ class PaperPage(PageContext, QWidget):
         except (OSError, ValueError):
             pass
         stop_text, color = stop_presentation(account, reason, manual_lock_text=ui_text('paper.manual_locked'))
-        values[ui_text('ui._show_account.text_5')] = stop_text
+        values[ui_text('ui.show_account.stopped')] = stop_text
         self.paper_card.set_values(values)
         set_status(self.paper_card.label, status_for_color(color))
         positions = [{'contract_id': key, 'quantity': value} for key, value in account.get('positions', {}).items()]
@@ -354,13 +354,15 @@ class PaperPage(PageContext, QWidget):
         if strategy is None:
             selection = self.root / 'selection.json'
             strategy = (
-                (ui_text('ui._show_account.text_6').format(load_selection(selection)['strategy_hash'][:16]))
+                (ui_text('ui.show_account.active_version').format(load_selection(selection)['strategy_hash'][:16]))
                 if selection.exists()
-                else ui_text('ui._show_account.text_7')
+                else ui_text('ui.show_account.inactive')
             )
         self.market.set_trading_status(
             strategy=strategy,
-            paper=(ui_text('ui._show_account.text_8').format(str(account['account_id']))) if account.get('account_id') else ui_text('ui._show_account.text_9'),
+            paper=(ui_text('ui.show_account.id').format(str(account['account_id'])))
+            if account.get('account_id')
+            else ui_text('ui.show_account.needs_reconcile'),
             risk=stop_text,
         )
 
@@ -384,6 +386,6 @@ class PaperPage(PageContext, QWidget):
         if (self.root / 'paper_policy.json').exists():
             broker = self.host.callbacks['_paper'](self.root)
             broker.set_kill_switch(True)
-            self._remember_stop(broker.snapshot(), 'user' if ui_text('ui.freeze_paper.text_1') in str(reason) else 'freeze')
+            self._remember_stop(broker.snapshot(), 'user' if ui_text('ui.freeze_paper.emergency_stop') in str(reason) else 'freeze')
             self._show_account(broker.snapshot())
-        self.status.setText(ui_text('ui.freeze_paper.text_2').format(str(reason)))
+        self.status.setText(ui_text('ui.freeze_paper.frozen_reason').format(str(reason)))

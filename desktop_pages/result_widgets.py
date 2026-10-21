@@ -50,7 +50,7 @@ def numeric(value):
 def position_text(value):
     number = numeric(value)
     if number is None:
-        return ui_text('forms.metric.text_2')
+        return ui_text('forms.metric.not_provided')
     if number == 0:
         return ui_text('results.flat')
     return ui_text('results.short' if number < 0 else 'results.long').format(display_number(abs(number)))
@@ -63,14 +63,14 @@ def taipei_time(value):
             raise ValueError('timezone required')
         return parsed.astimezone(timezone(timedelta(hours=8))).isoformat(sep=' ', timespec='seconds').removesuffix('+08:00')
     except (ValueError, TypeError, AttributeError):
-        return ui_text('forms.set_rows.text_5')
+        return ui_text('forms.set_rows.time_missing')
 
 
 def shown(value=MISSING, key=''):
     if value is MISSING:
-        return ui_text('forms.metric.text_2')
+        return ui_text('forms.metric.not_provided')
     if value is None:
-        return ui_text('forms.metric.text_1')
+        return ui_text('forms.metric.undefined')
     if key.endswith(('_id', '_hash')) and value is not None:
         return str(value)
     if key in ('open_position', 'position'):
@@ -85,10 +85,10 @@ def shown(value=MISSING, key=''):
             text = format(int(whole), ',') + (dot + fraction if dot else '')
         return text
     if key in NUMERIC_FIELDS:
-        return ui_text('presentation.display_number.text_1')
+        return ui_text('presentation.display_number.diagnostics_required')
     if isinstance(value, (dict, list, tuple)):
-        return ui_text('presentation.display_number.text_1')
-    return display_value(value, key) or ui_text('forms.metric.text_2')
+        return ui_text('presentation.display_number.diagnostics_required')
+    return display_value(value, key) or ui_text('forms.metric.not_provided')
 
 
 def column_label(key):
@@ -139,7 +139,10 @@ class CopyTable:
     def copy_text(self):
         rows = [[self.horizontalHeaderItem(c).text() for c in range(self.columnCount())]]
         rows.extend(
-            [[self.item(r, c).text() if self.item(r, c) else ui_text('forms.metric.text_2') for c in range(self.columnCount())] for r in range(self.rowCount())]
+            [
+                [self.item(r, c).text() if self.item(r, c) else ui_text('forms.metric.not_provided') for c in range(self.columnCount())]
+                for r in range(self.rowCount())
+            ]
         )
         text = '\n'.join('\t'.join(cell.replace('\t', ' ').replace('\n', ' ') for cell in row) for row in rows)
         QApplication.clipboard().setText(text)
@@ -165,7 +168,7 @@ class ResultTable(CopyTable, LegacyTable):
                 item = SortItem(shown(value, (formats or {}).get(key, key)))
                 number = numeric(value)
                 item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
-                item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.text_2'))
+                item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.not_provided'))
                 if key in FINANCIAL_FIELDS:
                     set_financial_item(self, item, value)
                 _privacy.item_display(self, item, (formats or {}).get(key, key))

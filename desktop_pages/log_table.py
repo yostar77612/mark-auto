@@ -45,7 +45,7 @@ class LogTable(QTableWidget):
             align_table_item(self.horizontalHeaderItem(column))
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.horizontalHeader().setStretchLastSection(True)
-        self.setAccessibleName(ui_text('ui._settings_page.text_18'))
+        self.setAccessibleName(ui_text('ui.settings_page.read_logs'))
 
     def load(self, lines):
         self.rows = log_rows(lines)

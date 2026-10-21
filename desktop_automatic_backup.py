@@ -14,19 +14,19 @@ class AutomaticBackupPanel(QWidget):
         self.archive = self.job_id = None
         self.paused = False
         layout = QVBoxLayout(self)
-        self.enabled = QCheckBox(ui_text('automatic_backup.__init__.text_1'))
+        self.enabled = QCheckBox(ui_text('automatic_backup.init.enable'))
         layout.addWidget(self.enabled)
         self.directory = QLineEdit()
-        self.directory.setPlaceholderText(ui_text('automatic_backup.__init__.text_2'))
+        self.directory.setPlaceholderText(ui_text('automatic_backup.init.directory'))
         layout.addWidget(self.directory)
-        browse = QPushButton(ui_text('automatic_backup.__init__.text_3'))
+        browse = QPushButton(ui_text('automatic_backup.init.browse'))
         browse.clicked.connect(self.browse)
         layout.addWidget(browse)
-        save = QPushButton(ui_text('automatic_backup.__init__.text_4'))
+        save = QPushButton(ui_text('automatic_backup.init.save'))
         save.setObjectName('save_automatic_backup')
         save.clicked.connect(self.save)
         layout.addWidget(save)
-        note = QLabel(ui_text('automatic_backup.__init__.text_5'))
+        note = QLabel(ui_text('automatic_backup.init.schedule_hint'))
         note.setWordWrap(True)
         layout.addWidget(note)
         self.status = QLabel('')
@@ -37,36 +37,36 @@ class AutomaticBackupPanel(QWidget):
             self.enabled.setChecked(settings['enabled'])
             self.directory.setText(settings['directory'])
             labels = {
-                'never': ui_text('automatic_backup.__init__.text_6'),
-                'attempted': ui_text('automatic_backup.__init__.text_7'),
-                'success': ui_text('automatic_backup.__init__.text_8'),
-                'error': ui_text('automatic_backup.__init__.text_9'),
-                'cancelled': ui_text('automatic_backup.__init__.text_10'),
+                'never': ui_text('automatic_backup.init.never_attempted'),
+                'attempted': ui_text('automatic_backup.init.last_unknown'),
+                'success': ui_text('automatic_backup.init.last_success'),
+                'error': ui_text('automatic_backup.init.last_failed'),
+                'cancelled': ui_text('automatic_backup.init.last_cancelled'),
             }
             self.status.setText(labels[settings['last_status']])
         except Exception as exc:
             self.paused = True
-            self.status.setText(ui_text('automatic_backup.__init__.text_11').format(str(exc)))
+            self.status.setText(ui_text('automatic_backup.init.suspended').format(str(exc)))
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(60000)
 
     def browse(self):
-        selected = QFileDialog.getExistingDirectory(self, ui_text('automatic_backup.browse.text_1'), self.directory.text())
+        selected = QFileDialog.getExistingDirectory(self, ui_text('automatic_backup.browse.dialog_title'), self.directory.text())
         if selected:
             self.directory.setText(selected)
 
     def save(self):
         try:
             if self.archive is not None:
-                self.status.setText(ui_text('automatic_backup.save.text_1'))
+                self.status.setText(ui_text('automatic_backup.save.job_busy'))
                 return
             self.scheduler.configure(enabled=self.enabled.isChecked(), directory=self.directory.text().strip())
             self.paused = False
-            self.status.setText(ui_text('automatic_backup.save.text_2') if self.enabled.isChecked() else ui_text('automatic_backup.save.text_3'))
+            self.status.setText(ui_text('automatic_backup.save.saved') if self.enabled.isChecked() else ui_text('automatic_backup.save.disabled'))
         except Exception as exc:
             self.paused = True
-            self.status.setText(ui_text('automatic_backup.save.text_4').format(str(exc)))
+            self.status.setText(ui_text('automatic_backup.save.save_failed').format(str(exc)))
 
     def tick(self):
         w = self.window
@@ -83,7 +83,7 @@ class AutomaticBackupPanel(QWidget):
         )
         if busy:
             if self.enabled.isChecked():
-                self.status.setText(ui_text('automatic_backup.tick.text_1'))
+                self.status.setText(ui_text('automatic_backup.tick.waiting_idle'))
             return
         from quantlab.analysis_recovery import operation_guard, RecoveryError
 
@@ -96,7 +96,7 @@ class AutomaticBackupPanel(QWidget):
                     return
                 self.archive = payload['path']
                 self.job_id = w.start_job('ui_backup_create', payload)
-                self.status.setText(ui_text('automatic_backup.tick.text_2'))
+                self.status.setText(ui_text('automatic_backup.tick.running'))
         except RecoveryError:
             if self.archive is not None:
                 # A genuine attempted launch keeps the existing no-retry rule.
@@ -106,7 +106,7 @@ class AutomaticBackupPanel(QWidget):
                     pass
                 self.archive = self.job_id = None
                 self.paused = True
-            self.status.setText(ui_text('automatic_backup.tick.text_3'))
+            self.status.setText(ui_text('automatic_backup.tick.recovery_unconfirmed'))
         except Exception as exc:
             # A storage/configuration failure is sticky and visible, never a
             # timer error loop. Saving corrected settings explicitly resumes.
@@ -117,7 +117,7 @@ class AutomaticBackupPanel(QWidget):
                 except Exception:
                     pass
                 self.archive = self.job_id = None
-            self.status.setText(ui_text('automatic_backup.tick.text_4').format(str(exc)))
+            self.status.setText(ui_text('automatic_backup.tick.suspended').format(str(exc)))
 
     def handle_job_event(self, event):
         window = getattr(self, 'window', None)
@@ -141,14 +141,14 @@ class AutomaticBackupPanel(QWidget):
             self.scheduler.complete(archive=self.archive, status=status)
             self.status.setText(
                 {
-                    'success': ui_text('automatic_backup.handle_job_event.text_1'),
-                    'error': ui_text('automatic_backup.handle_job_event.text_2'),
-                    'cancelled': ui_text('automatic_backup.handle_job_event.text_3'),
+                    'success': ui_text('automatic_backup.handle_job_event.success'),
+                    'error': ui_text('automatic_backup.handle_job_event.failed'),
+                    'cancelled': ui_text('automatic_backup.handle_job_event.cancelled'),
                 }[status]
             )
         except Exception as exc:
             self.paused = True
-            self.status.setText(ui_text('automatic_backup.handle_job_event.text_4').format(str(exc)))
+            self.status.setText(ui_text('automatic_backup.handle_job_event.outcome_unknown').format(str(exc)))
         finally:
             self.archive = self.job_id = None
             if panel is not None:

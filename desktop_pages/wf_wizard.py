@@ -38,11 +38,11 @@ def display_result_rows(result):
     from desktop_walk_forward import result_rows
 
     rows = result_rows(result)
-    winner_key = ui_text('walk_forward.result_rows.text_6')
+    winner_key = ui_text('walk_forward.result_rows.winner')
     for fold in result.get('folds', []):
         index = fold.get('winner_pool_index')
         if index is not None:
-            old = ui_text('walk_forward.result_rows.text_1').format(str(index + 1))
+            old = ui_text('walk_forward.result_rows.candidate_number').format(str(index + 1))
             for row in rows:
                 if row.get(winner_key) == old:
                     row[winner_key] = ui_text('wf.candidate').format(display_number(index + 1))
@@ -357,11 +357,11 @@ class WalkForwardWizard(QWidget):
                         display_number(result['planned_evaluations_upper_bound']),
                     ),
                     duration_estimate_text(result['planned_evaluations_upper_bound']),
-                    ui_text('walk_forward.preview_text.text_11'),
-                    ui_text('walk_forward.preview_text.text_12'),
-                    ui_text('walk_forward.preview_text.text_26'),
-                    ui_text('walk_forward.preview_text.text_28'),
-                    ui_text('walk_forward.preview_text.text_29'),
+                    ui_text('walk_forward.preview_text.irreversible_consumption'),
+                    ui_text('walk_forward.preview_text.holdout_excluded'),
+                    ui_text('walk_forward.preview_text.exposure_warning'),
+                    ui_text('walk_forward.preview_text.winner_selection'),
+                    ui_text('walk_forward.preview_text.split_warmup'),
                 )
             )
         )

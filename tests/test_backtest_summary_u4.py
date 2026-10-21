@@ -104,7 +104,7 @@ class BacktestSummaryTests(unittest.TestCase):
             self.assertEqual(
                 page.summary_card.label.text().splitlines(),
                 [
-                    ui_text('forms.set_values.text_1').format(RESULT_LABELS[key], page.kpis.labels[key].text())
+                    ui_text('forms.set_values.named_value').format(RESULT_LABELS[key], page.kpis.labels[key].text())
                     for key in ('net_pnl', 'max_drawdown', 'closed_lots')
                 ],
             )
@@ -195,7 +195,7 @@ class BacktestSummaryTests(unittest.TestCase):
             '\u6700\u4f73',
             'oos',
             'holdout',
-            '???',
+            '\u003f\u003f\u003f',
         )
         for key, value in ZH_TW.items():
             if key.startswith('backtest.summary.'):

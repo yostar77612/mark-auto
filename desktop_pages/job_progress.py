@@ -163,7 +163,11 @@ def cancel_allowed(shell):
 def progress_status(shell, event):
     # Preserve fixed context notices used by existing import/cancel workflows.
     message = event.get('message')
-    keys = ('ui.analysis_plan.text_1', 'ui.execute_ui_operation.text_7', 'ui.execute_ui_operation.text_25')
+    keys = (
+        'ui.analysis_plan.recomputing_training_evidence',
+        'ui.execute_ui_operation.sending_single_request',
+        'ui.execute_ui_operation.importing_local_history',
+    )
     if type(message) is str and message in {ui_text(key) for key in keys}:
         return message
     return shell.job_progress.stage.text()

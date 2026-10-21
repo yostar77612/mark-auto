@@ -54,9 +54,9 @@ class StopTests(unittest.TestCase):
         self.dialog.clickedButton.return_value = self.dialog.confirm_button
         self.dialog.exec.side_effect = lambda: self.freeze.assert_not_called()
         self.page.kill_paper()
-        self.freeze.assert_called_once_with(ui_text('ui.kill_paper.text_1'))
+        self.freeze.assert_called_once_with(ui_text('ui.kill_paper.user_emergency_stop'))
         self.page.replay_controls.cancel.assert_called_once_with()
-        self.assertEqual(self.state.status.text(), ui_text('ui.kill_paper.text_2'))
+        self.assertEqual(self.state.status.text(), ui_text('ui.kill_paper.stopped_frozen'))
         self.assertEqual(self.page._stop_account, self.account)
         self.assertEqual(self.broker.mock_calls, [])
         self.assertFalse(self.state.manual_order_lock)
@@ -242,13 +242,13 @@ class UnreadableJournalStopTests(unittest.TestCase):
                     self.host.callbacks['_paper'].assert_not_called()
                     self.assertEqual(self.journal.read_bytes(), b'not a SQLite database')
                     if confirm:
-                        self.assertEqual(read_json(marker), {'reconciliation_required': True, 'reason': ui_text('ui.kill_paper.text_1')})
+                        self.assertEqual(read_json(marker), {'reconciliation_required': True, 'reason': ui_text('ui.kill_paper.user_emergency_stop')})
                         self.assertTrue(self.state.guard.reconciliation_required)
                         self.assertTrue(self.page.replay_controls.cancel.called)
                         self.host.callbacks['_quiesce_and_recover'].assert_called_once_with()
                         self.state.paper_confirm.setChecked.assert_called_once_with(False)
                         self.state.chatgpt_panel.consent.setChecked.assert_called_once_with(False)
-                        self.assertEqual(self.state.status.text(), ui_text('ui.kill_paper.text_2'))
+                        self.assertEqual(self.state.status.text(), ui_text('ui.kill_paper.stopped_frozen'))
                     else:
                         self.assertFalse(marker.exists())
                         self.assertFalse(self.state.guard.reconciliation_required)

@@ -17,19 +17,19 @@ class BacktestPage(QWidget):
         super().__init__()
         self.host = host
         self.state = host.state
-        layout = self.host.mount_page(self, ui_text('ui._backtest_page.text_1'))
-        layout.addWidget(QLabel(ui_text('ui._backtest_page.text_2')))
-        parameters = self.host.advanced(layout, ui_text('ui._backtest_page.text_3'))
+        layout = self.host.mount_page(self, ui_text('ui.backtest_page.title'))
+        layout.addWidget(QLabel(ui_text('ui.backtest_page.strategy_hint')))
+        parameters = self.host.advanced(layout, ui_text('ui.backtest_page.advanced'))
         self.backtest_form = BacktestForm()
         parameters.addWidget(self.backtest_form)
         self.start_date = self.backtest_form.fields['start_date']
         self.end_date = self.backtest_form.fields['end_date']
         advanced = self.host.advanced(layout)
-        self.config = self.host.text(advanced, ui_text('ui._backtest_page.text_4'), canonical_json(demo_config()), True)
+        self.config = self.host.text(advanced, ui_text('ui.backtest_page.cost_json'), canonical_json(demo_config()), True)
         self.host.remember(self.config)
-        self.batch = QCheckBox(ui_text('ui._backtest_page.text_5'))
+        self.batch = QCheckBox(ui_text('ui.backtest_page.batch_defaults'))
         layout.addWidget(self.batch)
-        self.run_button = self.host.button(layout, ui_text('ui._backtest_page.text_6'), 'run_backtest', self.run_backtest, role='primary')
+        self.run_button = self.host.button(layout, ui_text('ui.backtest_page.run'), 'run_backtest', self.run_backtest, role='primary')
         self.summary_card = ReportSummaryCard(self)
         layout.addWidget(self.summary_card)
         self.result_choice = QComboBox()
@@ -41,7 +41,7 @@ class BacktestPage(QWidget):
         self.result_detail.setReadOnly(True)
         self.result_empty = AsyncStatus()
         self.result_empty.setObjectName('result_empty_status')
-        self.result_empty.set_state('empty', message=ui_text('ui.show_result.text_1'))
+        self.result_empty.set_state('empty', message=ui_text('ui.show_result.no_result'))
         advanced.addWidget(self.result_empty)
         advanced.addWidget(self.result_detail)
         self.result_card = BacktestSummaryCard()
@@ -51,7 +51,7 @@ class BacktestPage(QWidget):
         layout.addWidget(self.kpis)
         self.fills_table = TaipeiFillsTable()
         layout.addWidget(self.fills_table)
-        for kind, caption in (('signal', ui_text('ui._backtest_page.text_7')), ('fill', ui_text('ui._backtest_page.text_8'))):
+        for kind, caption in (('signal', ui_text('ui.backtest_page.show_signals')), ('fill', ui_text('ui.backtest_page.show_fills'))):
             toggle = QCheckBox(caption)
             toggle.setChecked(True)
             layout.addWidget(toggle)
@@ -91,7 +91,7 @@ class BacktestPage(QWidget):
             self.plot.set_values([])
             self.kpis.set_values({})
             self.fills_table.set_rows([])
-            self.result_empty.set_state('empty', message=ui_text('ui.show_result.text_1'))
+            self.result_empty.set_state('empty', message=ui_text('ui.show_result.no_result'))
             self.result_empty.setVisible(True)
             self.result_detail.clear()
             return
@@ -129,7 +129,7 @@ class BacktestPage(QWidget):
             self.kpis.set_values({})
             self.fills_table.set_rows([])
             self.result_detail.clear()
-            self.result_empty.set_state('empty', message=ui_text('ui.show_result.text_1'))
+            self.result_empty.set_state('empty', message=ui_text('ui.show_result.no_result'))
             self.result_empty.setVisible(True)
             self.state._selection_allowed = False
             self.state.status.setText(error_message(exception_code(exc)))
