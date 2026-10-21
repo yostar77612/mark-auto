@@ -2213,6 +2213,17 @@ ZH_TW.update(
 
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
+# Lane R
+ZH_TW.update(
+    {
+        'walk_forward.decline.line': '\u512a\u52e2\u8870\u6e1b\u6aa2\u5b9a\uff1a{0}',
+        'walk_forward.decline.significant_decline': '\u986f\u8457\u4e0b\u964d',
+        'walk_forward.decline.significant_increase': '\u986f\u8457\u4e0a\u5347\uff08\u975e\u672a\u4f86\u4fdd\u8b49\uff09',
+        'walk_forward.decline.no_significant_difference': '\u770b\u4e0d\u51fa\u986f\u8457\u5dee\u7570\uff08\u4e0d\u7b49\u65bc\u6c92\u6709\u8b8a\u5316\uff09',
+        'walk_forward.decline.too_few_folds': '\u6210\u529f\u8a55\u4f30\u7684\u6a23\u672c\u5916 fold \u5c11\u65bc 2',
+    }
+)
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')
 
 # Compatibility only: historical positional keys never store rendered text.

@@ -361,7 +361,7 @@ def oos_statistics_text(state):
             'dates_not_strictly_increasing': ui_text('walk_forward.statistics.overlap'),
             'no_evaluated_folds': ui_text('walk_forward.statistics.no_folds'),
         }
-        return title + '\n' + reasons[merged['reason']]
+        return title + '\n' + reasons[merged['reason']] + '\n' + ui_text('walk_forward.decline.line').format(reasons[merged['reason']])
     stats = _significance.mean_positive_test(merged['returns'])
     required = _significance.required_observations(merged['returns'])
     reasons = {
@@ -374,7 +374,15 @@ def oos_statistics_text(state):
         _significance.BOOTSTRAP_INVALID: ui_text('walk_forward.statistics.bootstrap_invalid'),
         _significance.NONPOSITIVE: ui_text('walk_forward.statistics.nonpositive'),
         _significance.REQUIRED_CAP: ui_text('walk_forward.statistics.required_cap'),
+        'fewer_than_two_evaluated_folds': ui_text('walk_forward.decline.too_few_folds'),
     }
+    decline = _significance.oos_decline_test(state)
+    decline_labels = {
+        'significant_decline': ui_text('walk_forward.decline.significant_decline'),
+        'significant_increase': ui_text('walk_forward.decline.significant_increase'),
+        'no_significant_difference': ui_text('walk_forward.decline.no_significant_difference'),
+    }
+    decline_text = decline_labels[decline['classification']] if decline['classification'] else reasons[decline['reason']]
 
     def value(key):
         return str(stats[key]) if stats[key] is not None else reasons[stats[key + '_reason']]
@@ -392,6 +400,7 @@ def oos_statistics_text(state):
             ),
             ui_text('walk_forward.statistics.draws').format(value('n_bootstrap_actual'), merged['skipped_folds']),
             ui_text('walk_forward.statistics.explanation'),
+            ui_text('walk_forward.decline.line').format(decline_text),
         )
     )
 

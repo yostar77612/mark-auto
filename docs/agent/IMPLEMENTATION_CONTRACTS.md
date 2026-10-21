@@ -4801,3 +4801,45 @@ covers numeric goldens, precision, deterministic bootstrap, the independent
 small-case resampling reference, caps, zero variance, missing data, strict date
 merging, holdout refusal, bounded compaction and unchanged synthetic journal
 bytes and hashes. The user's final visual check remains pending.
+
+### R-B4 — fixed-fold Welch decline display
+
+R-B4 is a single item commit. `quantlab.significance.welch_decline_test(early,
+recent)` computes Welch's unequal-variance t statistic as early mean minus recent
+mean, with Welch–Satterthwaite degrees of freedom. It reuses B2's `_t_tail` and
+regularized incomplete-beta implementation. Nothing was adapted from the reference
+project. The fixed decline check uses p(early > recent) < 0.05; the mirrored
+increase check uses p(recent > early) < 0.05. Otherwise the classification is
+`no_significant_difference`. These are descriptive directional checks, without a
+claim of familywise error control or a future-performance guarantee.
+
+| Rule | Fixed value |
+| --- | --- |
+| Directional significance threshold | p < 0.05 |
+| Fold split | sort evaluated fold indices; first floor(k/2) early, remainder recent |
+| Minimum | 2 evaluated folds and 2 daily observations per half |
+| Precision | Decimal exponent -12, ROUND_HALF_EVEN, isolated context; floats internal only |
+| Randomness | none |
+
+`split_oos_daily_returns` first applies B2's complete merge validation, including
+strictly increasing disjoint dates and the 20-fold bound. It reads only evaluated
+OOS results from the `read_walk_forward_state` shape; holdout payloads are never
+read. Invalid input, missing returns, insufficient observations and zero variance
+in both halves produce None statistics plus reasons, with no partial result.
+The cut has no configurable parameter. One constant half is valid when the other
+half has positive variance.
+
+`desktop_walk_forward.oos_statistics_text` adds exactly one catalog-based line
+for decline, increase (非未來保證), no detectable difference (不等於沒有變化), or
+the reason. It creates no widgets or UI operations. These derived display data
+are not written back to results, metrics, journals, manifests or any file and
+are excluded from content_hash and reproducibility_hash. They have no effect on
+eligibility, selection, ranking, B3 verdict or paper permission. Live trading
+remains permanently disabled and no order path is added.
+
+`tests/test_significance_b4.py` covers the offline SciPy 1.16.3 golden, its mirrored
+tail and degrees of freedom, deterministic effects, split membership for k=2–5,
+shuffled-input invariance, invalid inputs, no mutation, Decimal precision and
+the display states. `tools/generate_welch_goldens.py` regenerates the synthetic
+fixture; SciPy is development-only and is not a product or test dependency.
+The user's final visual check remains pending.

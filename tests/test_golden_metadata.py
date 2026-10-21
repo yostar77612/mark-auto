@@ -24,6 +24,8 @@ BASELINE = {
     'ui_operations_golden.json': '1698bf02b98db750e44f1664f4f102d743ff060710ae8543a6822ad1a4f5613a',
     # B2: regenerated with test_ui_operations_registry.exercise; only walk-forward oos_statistics_text was added.
     'ui_operations_golden.json': '03aa65b0c0a76f5927f6bd717d9bee71c8e4e35fa8f646ff10b0c093cb62bfa5',
+    # B4: regenerated with test_ui_operations_registry.exercise; only oos_statistics_text gained the Welch decay line.
+    'ui_operations_golden.json': '943dd88b44f6900d42a32b71f0a8d791430db3210b30e83b854d8f838241fd2c',
 }
 
 

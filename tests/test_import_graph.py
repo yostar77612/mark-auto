@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'tests/test_significance_b4.py',
     'quantlab/significance.py',
     'tests/test_significance_b2.py',
     'quantlab/trade_statistics.py',

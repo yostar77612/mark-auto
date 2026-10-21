@@ -92,6 +92,11 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 class RepoLayoutTests(unittest.TestCase):
     def test_a3_strict_json_stays_in_quantlab(self):
         self.assertTrue((ROOT / 'quantlab/strict_json.py').is_file())
+    def test_b4_extends_registered_significance_module(self):
+        for path in ('quantlab/significance.py', 'tests/test_significance_b4.py', 'tools/generate_welch_goldens.py'):
+            self.assertTrue((ROOT / path).is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_b2_significance_in_quantlab_package(self):
         self.assertTrue((ROOT / 'quantlab/significance.py').is_file())
         self.assertIn('quantlab', ALLOWED_DIRECTORIES)
