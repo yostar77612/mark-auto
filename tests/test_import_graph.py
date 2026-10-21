@@ -108,6 +108,7 @@ TOUCHED = (
     'quantlab/analysis_recovery_windows.py',
     'quantlab/desktop_errors.py',
     'quantlab/reporting.py',
+    'quantlab/strict_json.py',
     'quantlab/analysis_recovery.py',
     'quantlab/research_analysis.py',
     'quantlab/analysis_contracts.py',
@@ -194,6 +195,15 @@ def uncommented_local_imports(source):
 
 
 class ImportGraphTests(unittest.TestCase):
+    def test_a3_strict_json_dependencies(self):
+        graph = import_graph(self.sources)
+        self.assertEqual(graph['quantlab.strict_json'], {'quantlab.core'})
+        self.assertEqual(
+            graph['quantlab.reporting'],
+            {'quantlab.core', 'quantlab.strict_json', 'quantlab.research_analysis', 'quantlab.configuration', 'quantlab.strategies', 'quantlab.data'},
+        )
+        self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'pathlib', 'quantlab.core'})
+
     def test_f5_inspection_uses_reader_without_shell_dependency(self):
         graph = import_graph(self.sources)
         self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])

@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from tools.quality_gate import python_findings, scan
+from quantlab import strict_json
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'archives/legacy_autotrading'
@@ -88,6 +89,10 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_a3_strict_json_stays_in_quantlab(self):
+        self.assertTrue((ROOT / 'quantlab/strict_json.py').is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_r7_characterization_stays_in_existing_test_package(self):
         for name in ('test_r7_function_lengths.py', 'test_r7_characterization.py', 'r7_characterization.py', 'fixtures/r7_base.json'):
             self.assertTrue((ROOT / 'tests' / name).is_file())
@@ -189,6 +194,11 @@ class RepoLayoutTests(unittest.TestCase):
         # (e.g. qt-install-report.json) in the working directory of a CI job.
         listing = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True, text=True, check=True).stdout
         tracked = [name for name in listing.split(chr(0)) if name]
+        # Reuse the existing tracked-file inventory; no additional Git invocation.
+        for name in tracked:
+            if name.endswith('.json'):
+                with self.subTest(json_fixture=name):
+                    strict_json.loads((ROOT / name).read_text(encoding='utf-8'))
         files = {name for name in tracked if '/' not in name}
         directories = {name.split('/', 1)[0] for name in tracked if '/' in name}
         self.assertEqual(files, ALLOWED_FILES)

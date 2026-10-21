@@ -4546,3 +4546,36 @@ fail-closed gate, threshold, consumed guard, irreversible budget, OOS/Holdout
 warning or data boundary changes. Paper 30 s, smoke 40 s and the 15-minute job
 cap retain their limits. Protected engine/provider sources, saved-candidate
 profiles, PROJECT_STATE and acceptance scores remain unchanged.
+
+## A3: shared strict JSON input
+
+`quantlab.strict_json.loads(text)` accepts string JSON documents and rejects
+duplicate object keys at every depth, including objects inside arrays. Duplicate
+diagnostics name the key. NaN, Infinity and -Infinity constants, malformed JSON,
+non-string input and excessive parser recursion raise `ValidationError`.
+Valid documents retain standard JSON value semantics and canonical JSON
+round trips, including Unicode, large integers and Decimal strings.
+
+`strict_json.read(path, max_bytes)` checks file size before opening or decoding,
+then reads at most the byte limit plus one to detect growth. Exact-limit files
+are accepted; invalid UTF-8 raises `ValidationError`. `reporting.read_json`
+delegates with its unchanged 32 MiB limit and preserves the oversize diagnostic.
+The four desktop page consumers use the shared loader; journal display retains
+its 4 MiB bound and returns None for invalid input. Validation completes before
+form values change. The existing B1 validation message and inline guidance
+handle rejection without exposing raw exception values; no catalog text changes.
+The user manual documents the newly rejected inputs because this rejection is
+visible through existing validation feedback.
+
+The private manual-exchange and agent-tool parsers retain their separate
+contracts. `quantlab/data.py:447` is intentionally unchanged as a frozen G3
+input. No engine, provider, saved-candidate or walk-forward source changes.
+Live trading remains permanently disabled; no order path, timeout, eligibility,
+OOS/Holdout boundary, consumed guard or irreversible budget changes.
+Default page text, widgets and baseline fixtures remain unchanged.
+
+`tests/test_strict_json_a3.py` covers parser failures, file bounds, reporting
+delegation, policy round trips, journal rejection and bare-host inline feedback
+with preserved form values. The existing tracked-layout test additionally parses
+every tracked JSON fixture. Import-graph tests pin the loader to `quantlab.core`
+and add `quantlab.strict_json` to reporting's dependencies.

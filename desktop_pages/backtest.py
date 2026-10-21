@@ -1,4 +1,4 @@
-import json
+from quantlab import strict_json
 from PySide6.QtWidgets import QWidget, QLabel, QComboBox, QPlainTextEdit, QCheckBox
 from desktop_strings import ui_text
 from quantlab.core import canonical_json, to_dict
@@ -62,7 +62,7 @@ class BacktestPage(QWidget):
         typed = self.backtest_form.build_payload()
         config = self.host.payload(self.config, lambda: typed['config'])
         spec = self.state.strategy_form.build_payload() if self.state.active_candidate is None else None
-        parameters = self.host.payload(self.state.parameters, lambda: spec['parameters']) if spec else json.loads(self.state.parameters.toPlainText())
+        parameters = self.host.payload(self.state.parameters, lambda: spec['parameters']) if spec else strict_json.loads(self.state.parameters.toPlainText())
         self.host.start_job(
             'ui_backtest',
             {

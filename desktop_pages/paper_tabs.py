@@ -1,6 +1,6 @@
 """Paper-only read-only tabs and model-painted P&L distribution."""
 
-import json
+from quantlab import strict_json
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal, QRectF
@@ -226,7 +226,7 @@ def existing_journal(page):
             return None
         with path.open(encoding='utf-8') as stream:
             text = stream.read(4 * 1024 * 1024 + 1)
-        return json.loads(text) if len(text) <= 4 * 1024 * 1024 else None
+        return strict_json.loads(text) if len(text) <= 4 * 1024 * 1024 else None
     except (OSError, ValueError):
         return None
 

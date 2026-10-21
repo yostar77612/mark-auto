@@ -4,11 +4,12 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from pathlib import Path
 import csv
-import json
 import os
 import tempfile
 
 from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, BacktestConfig, ValidationError, canonical_json, content_hash, to_dict
+
+from . import strict_json
 
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
@@ -46,14 +47,7 @@ def saved_analysis_entries(root):
 
 
 def read_json(path):
-    path = Path(path)
-    if path.stat().st_size > MAX_JSON_BYTES:
-        raise ValidationError('JSON file exceeds 32 MiB limit')
-
-    def reject(value):
-        raise ValidationError(f'Invalid JSON constant: {value}')
-
-    return json.loads(path.read_text(encoding='utf-8'), parse_constant=reject)
+    return strict_json.read(path, MAX_JSON_BYTES)
 
 
 def write_json(path, value):
