@@ -32,9 +32,13 @@ FIXTURES = Path(__file__).parent / 'fixtures'
 
 
 def golden_observations():
-    """B6: ignore only entry metadata; retain all recorded expected values."""
+    """B6 historical observations; A2 has its own result assertion below."""
     observations = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
-    return {name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}} for name, entry in observations.items()}
+    return {
+        name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}}
+        for name, entry in observations.items()
+        if name != 'ui_paper_cancel_all'
+    }
 
 
 @contextmanager
@@ -229,6 +233,8 @@ def exercise(execute):
             },
         )
         call('ui_paper_cancel', {'order_id': 'offline-order', 'now': now})
+        if execute is ui.execute_ui_operation:
+            call('ui_paper_cancel_all', {'now': now})
         call('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': ui.read_json(paths.state / 'paper_snapshot.json'), 'max_bars': 100})
         call('ui_disable', {})
         local = paths.root / 'official.json'
@@ -386,7 +392,7 @@ class RegistryTests(unittest.TestCase):
                     for execute in (old.execute_ui_operation, ui.execute_ui_operation):
                         results.append(exercise(execute))
                         self.assertEqual({key: os.environ[key] for key in host_environment}, host_environment)
-                    self.assertEqual(results[1], results[0])
+                    self.assertEqual({k: v for k, v in results[1].items() if k != 'ui_paper_cancel_all'}, results[0])
                     if sys.platform == 'win32':
                         # The golden (hashes of CRLF working-copy sources, Windows path spellings) was
                         # recorded on Windows; other platforms rely on the live old-vs-new equality above.
@@ -428,12 +434,18 @@ class RegistryTests(unittest.TestCase):
         self.assertTrue(all(callable(test) for test in coverage.values()))
         expected = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))
         expected['observations'] = portable_paths(golden_observations())
+        new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']['ui_paper_cancel_all']
+        expected['observations']['ui_paper_cancel_all'] = portable_paths({k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}})
         self.assertEqual(set(expected['offline_limits']), {'ui_refresh'})
         with old_module() as old:
             legacy = exercise(old.execute_ui_operation)
         self.assertEqual(set(observed), set(expected['observations']))
         for operation in observed:
             with self.subTest(operation=operation):
+                if operation == 'ui_paper_cancel_all':
+                    self.assertIn('result', observed[operation], 'Offline operation must succeed')
+                    self.assertEqual(observed[operation], expected['observations'][operation])
+                    continue
                 self.assertEqual(observed[operation], legacy[operation])
                 if sys.platform == 'win32':
                     self.assertEqual(legacy[operation], expected['observations'][operation])

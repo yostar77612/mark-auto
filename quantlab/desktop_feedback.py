@@ -18,6 +18,7 @@ OPERATION_LABELS = dict(
             'paper_replay',
             'paper_submit',
             'paper_cancel',
+            'paper_cancel_all',
             'backup_create',
             'backup_restore',
             'analysis_preview',
@@ -48,6 +49,7 @@ OPERATION_LABELS = dict(
             '歷史重播',
             '紙上委託',
             '委託取消',
+            '\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4',
             '備份建立',
             '備份還原',
             '分析預覽',
@@ -103,6 +105,11 @@ def completion_summary(operation, result):
             detail = (
                 f"處理 {replay.get('processed_bars', '未知')} 根、新增 {replay.get('new_fills', '未知')} 筆成交（游標 {replay.get('cursor', '未知')}），"
                 + detail
+            )
+        if op == 'paper_cancel_all':
+            report = result.get('cancel_all_report', {})
+            detail += '\uff1b\u64a4\u92b7 {} \u7b46\u3001\u5931\u6557 {} \u7b46'.format(
+                len(report.get('cancelled_order_ids', [])), len(report.get('failed_order_ids', []))
             )
         if op == 'paper_reconcile':
             detail += '；' + ('仍需對帳' if account.get('reconciliation_required') else '已完成對帳')

@@ -385,6 +385,8 @@
   "paper_account_tab_bar",
   "paper_account_tabs",
   "paper_cancel",
+  "paper_cancel_all",
+  "paper_cancel_all_prerequisite",
   "paper_cancel_prerequisite",
   "paper_events_results",
   "paper_fills_results",

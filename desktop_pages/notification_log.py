@@ -36,6 +36,13 @@ def safe_summary(operation, result):
     providers = result.get('providers')
     if type(providers) is dict:
         safe['providers'] = {i: {'error': bool(type(row) is dict and row.get('error')), 'bars': 0} for i, row in enumerate(list(providers.values())[:200])}
+    report = result.get('cancel_all_report')
+    if operation == 'ui_paper_cancel_all' and type(report) is dict:
+        safe['cancel_all_report'] = {}
+        for field in ('cancelled_order_ids', 'failed_order_ids'):
+            value = report.get(field)
+            if type(value) in (list, tuple):
+                safe['cancel_all_report'][field] = [None] * min(len(value), 10000)
     # Deliberately omit account, amounts, hashes, analysis ids, replay and OOS.
     text = completion_summary(operation, safe)
     if operation.startswith('ui_paper_'):
@@ -84,7 +91,7 @@ class NotificationLog:
         self.sequence += 1
         kind = (
             'paper'
-            if operation in ('ui_paper_submit', 'ui_paper_cancel')
+            if operation in ('ui_paper_submit', 'ui_paper_cancel', 'ui_paper_cancel_all')
             else 'data'
             if operation in ('ui_market_refresh', 'ui_refresh', 'ui_import')
             else 'job'

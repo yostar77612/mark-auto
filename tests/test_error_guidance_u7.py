@@ -79,8 +79,9 @@ class ErrorGuidanceTests(unittest.TestCase):
             self.assertFalse(any(c.isdigit() for c in text))
 
     def test_catalog_source_is_unchanged(self):
+        # Re-pinned after A1: the only catalogue change is the added paper_manual_order_lock entry.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), 'c406f8d52bbc93dccb4f0f889d29d6f0b7e6e2aa33429ad1502ed32a35946ca1')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '49a53d71e356110a0b4506296b1948f1bc38f684376c64a9e327424773023ecc')
 
     def test_form_failure_is_inline_without_message_box_then_clears(self):
         page = QWidget()

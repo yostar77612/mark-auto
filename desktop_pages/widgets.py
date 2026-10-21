@@ -99,7 +99,7 @@ class WidgetTools(PageContext):
         return button
 
     def _confirm_button(self, button, callback):
-        if button.property('role') == 'danger':
+        if button.property('role') == 'danger' and button.property('custom_confirmation') is not True:
             answer = self.host.question(
                 ui_text('ui.confirm_button.danger_title'),
                 ui_text('ui.confirm_button.confirmation_question').format(button.text()),

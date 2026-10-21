@@ -1657,7 +1657,7 @@
       "market.not_realtime": "\u975e\u5373\u6642",
       "market.data_date": "{0}\uff5c\u8cc7\u6599\u65e5 {1}\uff5c{2}",
       "paper.manual_lock": "\u9396\u5b9a\u7d19\u4e0a\u65b0\u59d4\u8a17\uff08\u6301\u7e8c\u81f3\u660e\u78ba\u89e3\u9396\uff09",
-      "paper.manual_unlock": "\u5c0d\u5e33\u4e26\u660e\u78ba\u89e3\u9664\u59d4\u8a17\u9396\u5b9a",
+      "paper.manual_unlock": "\u6062\u5fa9\u65b0\u59d4\u8a17\uff08\u9700\u5148\u5c0d\u5e33\uff09",
       "paper.manual_locked": "\u624b\u52d5\u59d4\u8a17\u9396\u5b9a\u4e2d\uff1b\u5c0d\u5e33\u5f8c\u4ecd\u9808\u660e\u78ba\u89e3\u9396",
       "diagnostics.notice": "\u8a3a\u65b7\u8cc7\u8a0a\u50c5\u542b\u56fa\u5b9a\u72c0\u614b\u8207\u932f\u8aa4\u4ee3\u78bc\uff0c\u53ef\u8907\u88fd\u63d0\u4f9b\u5354\u52a9\u3002\u6bcf\u65e5\u8cc7\u6599\u6c92\u6709\u4e8b\u4ef6\u6642\u9593\u6642\u986f\u793a unavailable\u3002",
       "diagnostics.refresh": "\u66f4\u65b0\u8a3a\u65b7\u8cc7\u8a0a",
@@ -1903,7 +1903,15 @@
       "access.market_fills": "\u884c\u60c5\u6210\u4ea4\u8cc7\u6599\u8868",
       "access.indicator_parameter": "\u6307\u6a19 {0} \u53c3\u6578 {1}",
       "access.previous_tabs": "\u524d\u4e00\u7d44\u5206\u9801",
-      "access.next_tabs": "\u4e0b\u4e00\u7d44\u5206\u9801"
+      "access.next_tabs": "\u4e0b\u4e00\u7d44\u5206\u9801",
+      "paper.lock.rejected": "\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d",
+      "paper.stop.pending_orders": "\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\uff08\u8cb7 {1} \u53e3\uff0f\u8ce3 {2} \u53e3\uff09\uff0c\u505c\u6b62\u5f8c\u4ecd\u4fdd\u7559",
+      "paper.cancel_all.button": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4",
+      "paper.cancel_all.title": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4",
+      "paper.cancel_all.confirmation": "\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\u3002\u78ba\u8a8d\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4\uff1f\u4e0d\u5e73\u5009\uff0c\u4e0d\u6062\u5fa9\u65b0\u59d4\u8a17\u3002",
+      "paper.cancel_all.confirm": "\u78ba\u8a8d\u64a4\u92b7",
+      "paper.cancel_all.empty": "\u76ee\u524d\u6c92\u6709\u672a\u6210\u4ea4\u59d4\u8a17\u3002",
+      "logs.operation.ui_paper_cancel_all": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4"
     },
     "registries": {
       "DEFAULT_LOCALE": "zh-TW",
@@ -1971,7 +1979,8 @@
         "ui_backup_restore": "logs.operation.ui_backup_restore",
         "demo": "logs.operation.demo",
         "backtest": "logs.operation.backtest",
-        "campaign": "logs.operation.campaign"
+        "campaign": "logs.operation.campaign",
+        "ui_paper_cancel_all": "logs.operation.ui_paper_cancel_all"
       },
       "LOG_EVENT_NAMES": {
         "started": "logs.event.started",

@@ -72,7 +72,13 @@ class NotificationTests(unittest.TestCase):
             self.assertIsNone(center.record_event(dict(event)))
             center.notify_local(SECRET, completion=True)
             self.assertEqual(len(center.log.entries), before + 1)
-            expected = 'paper' if operation in ('paper_submit', 'paper_cancel') else 'data' if operation in ('market_refresh', 'refresh', 'import') else 'job'
+            expected = (
+                'paper'
+                if operation in ('paper_submit', 'paper_cancel', 'paper_cancel_all')
+                else 'data'
+                if operation in ('market_refresh', 'refresh', 'import')
+                else 'job'
+            )
             self.assertEqual(entry.kind, expected)
             if expected == 'paper':
                 self.assertIn(ui_text('notifications.paper_summary').split(':')[0], entry.message)
