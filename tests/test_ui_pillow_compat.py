@@ -1,8 +1,11 @@
-"""Streamlit's image path under the deliberately overridden Pillow 13 pin."""
+"""Pillow 13 override: static lock contract plus Streamlit image path when installed."""
 
+import hashlib
 import importlib.util
+from pathlib import Path
 import unittest
 
+ROOT = Path(__file__).resolve().parents[1]
 HAS_STREAMLIT = importlib.util.find_spec('streamlit') is not None and importlib.util.find_spec('PIL') is not None
 
 
@@ -22,26 +25,28 @@ def _image_app():
     st.image(pil.convert('P'), output_format='PNG')
 
 
-@unittest.skipUnless(HAS_STREAMLIT, 'Optional Streamlit/Pillow is not installed; UI image verification not run')
-class StreamlitPillowCompatibilityTests(unittest.TestCase):
-    def test_pillow_major_carries_the_audit_fix(self):
+class PillowOverrideTests(unittest.TestCase):
+    """Never skipped: the core coverage gate pins the exact set of allowed skips."""
+
+    def test_override_lock_is_separate_and_ui_lock_has_no_conflicting_pin(self):
+        override = (ROOT / 'requirements-ui-pillow.lock').read_text(encoding='utf-8')
+        ui_lock = (ROOT / 'requirements-ui.lock').read_text(encoding='utf-8')
+        self.assertIn('pillow==13.0.0', override.splitlines())
+        self.assertNotIn('pillow==', ui_lock)
+        self.assertIn('certifi==2026.10.19', ui_lock.splitlines())
+
+    def test_streamlit_image_path_under_pillow_13_when_installed(self):
+        if not HAS_STREAMLIT:
+            return
         import PIL
-
-        self.assertGreaterEqual(int(PIL.__version__.split('.')[0]), 13)
-
-    def test_st_image_renders_pil_numpy_and_encoded_bytes(self):
+        from PIL import Image
+        from streamlit.runtime.caching.hashing import update_hash
         from streamlit.testing.v1 import AppTest
 
+        self.assertGreaterEqual(int(PIL.__version__.split('.')[0]), 13)
         app = AppTest.from_function(_image_app).run(timeout=30)
         self.assertFalse(app.exception)
         self.assertEqual(len(app.get('image')), 4)
-
-    def test_streamlit_hashes_pil_images(self):
-        from PIL import Image
-        from streamlit.runtime.caching.hashing import update_hash
-
-        import hashlib
-
         digest = hashlib.new('md5', usedforsecurity=False)
         update_hash(Image.new('RGB', (2, 2)), digest, 'test', None)
         self.assertTrue(digest.hexdigest())
