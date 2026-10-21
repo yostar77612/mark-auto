@@ -4579,3 +4579,40 @@ delegation, policy round trips, journal rejection and bare-host inline feedback
 with preserved form values. The existing tracked-layout test additionally parses
 every tracked JSON fixture. Import-graph tests pin the loader to `quantlab.core`
 and add `quantlab.strict_json` to reporting's dependencies.
+
+## A4: fixed report source disclosure
+
+`quantlab.reporting.export_report` writes `SOURCE.txt` beside the six existing
+data files in the unchanged content-hash directory and returns its string path
+as `files['source']`. The source comes exclusively from
+`result.manifest['dataset_manifest']['source_type']`. A mismatched top-level
+classification does not override it; `load_result` retains its existing binding
+validation and rejects inconsistent results.
+
+Each classification has fixed UTF-8 text, terminated by one LF, with no local
+paths or timestamps:
+
+- `synthetic`: 資料來源：合成示範（synthetic）。不是實際行情或成交，數字不代表獲利能力。
+- `proxy`: 資料來源：代理資料（proxy）。僅供研究參考，不等同官方行情或實際成交，數字不代表獲利能力。
+- `official_local`: 資料來源：本機官方資料（official_local）。行情來源為本機匯入的官方資料；回測成交為模擬，數字不代表獲利能力。
+
+Unknown, missing and non-string source types raise `ValidationError` before
+any directory creation or write, preserving existing exports. An existing
+`SOURCE.txt` symlink is rejected before report writes. Source text uses atomic
+replacement and removes temporary files on failure. Repeated export is
+idempotent. CSV/JSON bytes, existing return keys, result hashes, dataset/result
+loading and validation retain their contracts. No source disclosure enters the
+result payload or eligibility decisions.
+
+`tests/test_report_source_a4.py` pins exact source bytes for all three validated
+dataset classifications, nested-source precedence, write-free rejection,
+symlink refusal, atomic replacement cleanup, round trips and repeated exports.
+It pins the six data-file SHA-256 values and digest recorded from main
+`1c65154`. Live trading remains permanently disabled; no order path, G3 source,
+saved-candidate profile, walk-forward source, timeout, OOS/Holdout boundary,
+consumed guard or irreversible budget changes. Default UI and baseline fixtures
+remain unchanged.
+
+The UI-operation golden observation includes the normalized `SOURCE.txt` path
+in the `ui_backtest` report dictionary. All other observations and existing
+registry assertions retain their values and contracts.

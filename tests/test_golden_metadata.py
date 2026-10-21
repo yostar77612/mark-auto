@@ -18,9 +18,10 @@ FIXTURES = Path(__file__).parent / 'fixtures'
 # established with a full deep-equality check stripping only B6 entry metadata.
 # Re-pinned after B3: the 23 analysis hash leaves changed only because quantlab/indicators.py source bytes are bound into them
 # (see docs/analysis/b3_golden_changes.md); verified leaf-by-leaf against origin/main with metadata stripped.
+# Re-pinned after A4: the only change is the added files['source'] observation of the ui_backtest export.
 BASELINE = {
     'engine_golden.json': 'dc25575a34ab7847bdf64cf6ea13dd439e2afe471a07076dc57f864ed14f94a9',
-    'ui_operations_golden.json': '309af774866f26297f853750132793849fdfe6e9ea5c5145b0092bec41050bc9',
+    'ui_operations_golden.json': '1698bf02b98db750e44f1664f4f102d743ff060710ae8543a6822ad1a4f5613a',
 }
 
 

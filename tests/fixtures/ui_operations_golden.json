@@ -11099,7 +11099,8 @@
             "manifest": "<TEMP>\\workspace\\state-v1\\reports\\f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b\\manifest.json",
             "metrics": "<TEMP>\\workspace\\state-v1\\reports\\f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b\\metrics.json",
             "result": "<TEMP>\\workspace\\state-v1\\reports\\f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b\\result.json",
-            "result_hash": "f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b"
+            "result_hash": "f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b",
+            "source": "<TEMP>/workspace/state-v1/reports/f02a7f8a08fb7ade12ac4d65c74cd1bfb5581636f5735d05f0ad462fe1ae767b/SOURCE.txt"
           }
         ],
         "scope": "research_only",
