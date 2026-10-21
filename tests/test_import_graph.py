@@ -208,6 +208,7 @@ class ImportGraphTests(unittest.TestCase):
             {'quantlab.core', 'quantlab.strict_json', 'quantlab.research_analysis', 'quantlab.configuration', 'quantlab.strategies', 'quantlab.data'},
         )
         self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'pathlib', 'quantlab.core'})
+
     def test_b2_significance_has_no_application_dependencies(self):
         self.assertEqual(import_graph(self.sources)['quantlab.significance'], set())
 
