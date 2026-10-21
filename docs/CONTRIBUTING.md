@@ -38,6 +38,24 @@ uses the single B1 `ERROR_TABLE` in [quantlab/errors.py](../quantlab/errors.py).
 Do not weaken, skip or delete existing tests or rewrite baseline fixtures to
 conceal behavior changes.
 
+## Fast pre-push check
+
+Before pushing, run `powershell -File tools/prepush.ps1` (add `-Tests` to also run the
+unit tests of changed files). It is offline and runs Ruff check and format, a Python 3.11
+syntax scan of every tracked `.py`, and `tools/quality_gate.py`; it exits nonzero on failure.
+
+## CI behavior for pull requests
+
+- Documentation-only PRs (only `docs/**`/`*.md`/PR template that no test or tool reads;
+  see `tools/ci_changes.py`) run Ruff, the static/credential gate and the aggregate
+  `Quantlab gates complete` check; heavy test groups are skipped. Pushes to main, tags and
+  manual runs always run everything.
+- The Windows installer workflow runs on a PR only when packaging inputs change
+  (`packaging/**`, `requirements*`, `*.spec`, `*.iss`, `tools/make_icon.py`,
+  the dependency manifest). It always runs on main, `desktop-v*` tags and manual dispatch.
+- New pushes to a PR cancel its older runs. If a job must be rerun, use **Re-run all jobs**
+  (G8): the aggregate coverage check only accepts evidence from a single run attempt.
+
 ## Local verification
 
 Run from the repository root in PowerShell. Use Python 3.11 (`py -3.11`). Ruff

@@ -54,7 +54,8 @@ class WfoStorageWorkflowTests(unittest.TestCase):
         )
         self.assertNotIn('continue-on-error', self.job)
         self.assertNotIn('strategy:', self.job)
-        self.assertNotIn('needs:', self.job)
+        self.assertEqual(self.job.count('needs:'), 1)
+        self.assertIn('    needs: changes\n', self.job)  # only the documentation-only detection
 
     def test_existing_runtime_provisioning_precedes_measurement(self):
         provision = 'python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github'
@@ -90,7 +91,7 @@ class WfoStorageWorkflowTests(unittest.TestCase):
                 self.assertIn("{os: windows-latest, python: '" + version + "', group: core, shard: " + shard + '}', offline)
         aggregate = job_text(self.workflow, 'core-coverage')
         self.assertIn('name: offline (windows-latest, ${{ matrix.python }})', aggregate)
-        self.assertIn('needs: [offline, ruff]', aggregate)
+        self.assertIn('needs: [changes, offline, ruff]', aggregate)
         self.assertIn('if: always()', aggregate)
         self.assertIn('timeout-minutes: 15', aggregate)
         self.assertIn('python tools/validate_core_shards.py', aggregate)

@@ -146,6 +146,8 @@ Build defaults target0.2.2. Upgrade and standalone client kit use the actually d
 Normal typedexpiry/date input and effective-dated Paper margins are included. Existing scalar PaperReplay callers retain their binding. Desktop schedule mode refuses an incompatible old replay at the same path without modifying its journal or generating replacement orders; retain and reconcile prior state, never erase it to bypass validation. No broker/live order capability is enabled.
 
 
+Developer pre-push check (offline): `powershell -File tools/prepush.ps1` (see `docs/CONTRIBUTING.md`).
+
 ### Developer environment (Windows PowerShell 5.1+, T12 / P2-B8)
 
 From any current directory, invoke the repository's `tools/dev_setup.ps1`:
