@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import unittest
+import unittest.mock
 from unittest.mock import patch
 
 from desktop_chatgpt_provider import PlanError
@@ -183,3 +184,29 @@ class ValidateToolTests(unittest.TestCase):
         result = tool.run('gpt-fixture', transport=transport, reference=object())
         self.assertEqual((result['status'], result['error_code'], result['http_status']), ('error', 'subscription_sharing_unsupported_capability', 400))
         self.assertEqual(result['parameters_accepted']['filters.blocked_domains'], 'no_or_unknown')
+
+
+class ListModelsTests(unittest.TestCase):
+    def test_list_models_needs_consent_and_prints_display_names_and_values(self):
+        # Capture tool output only in this test.
+        import contextlib
+
+        # Capture tool output only in this test.
+        import io
+
+        # Import the developer tool only in the tests that exercise it.
+        from tools import validate_web_search as tool
+
+        out = io.StringIO()
+        with patch.object(tool, 'list_models', side_effect=AssertionError('must not run')), contextlib.redirect_stdout(out):
+            self.assertEqual(tool.main(['--list-models']), 2)
+        self.assertEqual(json.loads(out.getvalue())['sent_requests'], 0)
+        discover = unittest.mock.Mock(return_value=[{'slug': 'gpt-fixture', 'display_name': 'GPT Fixture'}])
+        result = tool.list_models(reference=object(), discover=discover)
+        discover.assert_called_once()
+        self.assertEqual(discover.call_args.kwargs, {'network_opt_in': True})
+        self.assertEqual(result['models'], [{'display_name': 'GPT Fixture', 'model': 'gpt-fixture'}])
+        failing = unittest.mock.Mock(side_effect=PlanError('account_paused'))
+        self.assertEqual(tool.list_models(reference=object(), discover=failing)['error_code'], 'account_paused')
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            tool.main(['--i-consent'])

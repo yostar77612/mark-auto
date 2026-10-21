@@ -1,7 +1,8 @@
 """Owner-run check: can this ChatGPT plan and model use hosted web_search?
 
-Sends nothing unless --i-consent is given; then exactly one minimal streamed
-Responses request with the same web_search tool settings as idea research.
+Sends nothing unless --i-consent is given. --list-models then reads only the
+model catalog (as the settings page does); otherwise exactly one minimal
+streamed Responses request uses the same web_search settings as idea research.
 Prints only a status or error code, counts, per-parameter acceptance and the
 elapsed time: never tokens, account references, queries or response text.
 This is a diagnostic, not product acceptance.
@@ -48,20 +49,51 @@ def summarize(session, *, ok, error=None, http_status=None, elapsed, include_see
     }
 
 
-def run(model, *, registration=None, bootstrap=None, transport=None, reference=None, clock=time.monotonic):
-    from desktop_chatgpt_provider import PlanError, SSEParser, read_account_status, PlanHTTPTransport
+def _reference(registration, bootstrap):
+    """The active (or given) sign-in reference and its local readiness; never a token."""
+    from desktop_chatgpt_auth import AuthSession, DPAPIVault, OAuthCredentialReference
+    from desktop_chatgpt_provider import read_account_status
+    from quantlab.desktop_runtime import AppPaths
+
+    root = Path(bootstrap) if bootstrap else AppPaths.discover().root
+    registration = registration or AuthSession(DPAPIVault(str(root))).status_summary()['active_registration']
+    if not registration:
+        return None, 'not_signed_in'
+    reference = OAuthCredentialReference(str(root), registration)
+    if read_account_status(reference, root / 'control-v1') != {'state': 'ready', 'pending': False}:
+        return None, 'account_not_ready'
+    return reference, None
+
+
+def list_models(*, registration=None, bootstrap=None, reference=None, discover=None):
+    """One model-catalog read, as the settings page does: no web search and no inference."""
+    from desktop_chatgpt_provider import PlanError, discover_models
 
     if reference is None:
-        from desktop_chatgpt_auth import AuthSession, DPAPIVault, OAuthCredentialReference
-        from quantlab.desktop_runtime import AppPaths
+        reference, error = _reference(registration, bootstrap)
+        if error:
+            return {'status': 'error', 'error_code': error, 'models': []}
+    try:
+        models = (discover or discover_models)(reference, network_opt_in=True)
+    except PlanError as exc:
+        return {'status': 'error', 'error_code': exc.remote_code or exc.code, 'http_status': exc.http_status, 'models': []}
+    except Exception as exc:
+        code = getattr(exc, 'code', None)
+        return {'status': 'error', 'error_code': code if isinstance(code, str) and code.isidentifier() else type(exc).__name__, 'models': []}
+    return {
+        'status': 'ok',
+        'models': [{'display_name': row['display_name'], 'model': row['slug']} for row in models],
+        'scope': 'model catalog only; use a model value with --model for the search check',
+    }
 
-        root = Path(bootstrap) if bootstrap else AppPaths.discover().root
-        registration = registration or AuthSession(DPAPIVault(str(root))).status_summary()['active_registration']
-        if not registration:
-            return summarize(None, ok=False, error='not_signed_in', elapsed=0, include_seen=False)
-        reference = OAuthCredentialReference(str(root), registration)
-        if read_account_status(reference, root / 'control-v1') != {'state': 'ready', 'pending': False}:
-            return summarize(None, ok=False, error='account_not_ready', elapsed=0, include_seen=False)
+
+def run(model, *, registration=None, bootstrap=None, transport=None, reference=None, clock=time.monotonic):
+    from desktop_chatgpt_provider import PlanError, SSEParser, PlanHTTPTransport
+
+    if reference is None:
+        reference, error = _reference(registration, bootstrap)
+        if error:
+            return summarize(None, ok=False, error=error, elapsed=0, include_seen=False)
     request = build_search_request(model, TOPIC_TASK)
     session = SearchSession(clock=clock)
     started = clock()
@@ -98,15 +130,21 @@ def run(model, *, registration=None, bootstrap=None, transport=None, reference=N
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='One consented web_search capability check (no secrets printed).')
-    parser.add_argument('--model', required=True, help='Model slug shown in the MarkAuto settings page')
-    parser.add_argument('--i-consent', action='store_true', help='Send exactly one request using your ChatGPT plan, including web search')
+    parser.add_argument('--model', help='Model value printed by --list-models')
+    parser.add_argument('--list-models', action='store_true', help='Only read the model catalog (no web search, no inference)')
+    parser.add_argument('--i-consent', action='store_true', help='Allow exactly one network request with your ChatGPT sign-in')
     parser.add_argument('--registration', help='Opaque sign-in reference; defaults to the active one')
     parser.add_argument('--bootstrap', help='MarkAuto data folder; defaults to the installed location')
     args = parser.parse_args(argv)
+    if not args.list_models and not args.model:
+        parser.error('--model is required unless --list-models is given')
     if not args.i_consent:
         print(json.dumps({'status': 'refused', 'error_code': 'consent_required', 'sent_requests': 0}))
         return 2
-    result = run(args.model, registration=args.registration, bootstrap=args.bootstrap)
+    if args.list_models:
+        result = list_models(registration=args.registration, bootstrap=args.bootstrap)
+    else:
+        result = run(args.model, registration=args.registration, bootstrap=args.bootstrap)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result['status'] == 'ok' else 1
 

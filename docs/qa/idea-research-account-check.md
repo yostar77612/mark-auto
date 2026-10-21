@@ -11,8 +11,16 @@
 
 ## 步驟 A：最小搜尋測試
 
+先取得模型代號（只讀模型清單，不搜尋、不推論）：
+
 ```
-python tools/validate_web_search.py --model <模型> --i-consent
+python tools/validate_web_search.py --list-models --i-consent
+```
+
+再用輸出中的 `model` 值執行一次搜尋測試：
+
+```
+python tools/validate_web_search.py --model <model 值> --i-consent
 ```
 
 | 模型 | status | error_code | http_status | searches | sources | citations | blocked_domains | user_location | include | 耗時（秒） |

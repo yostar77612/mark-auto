@@ -5007,7 +5007,9 @@ reopens the same content-addressed campaign without rewriting it. Cancelling use
 the existing process-tree stop; the dialog then shows unfinished sources as
 cancelled. Results open in the system browser (https only); all web text is
 plain text. `tools/validate_web_search.py --model <slug> --i-consent` sends one
-request and prints only codes, counts, parameter acceptance and elapsed time.
+request and prints only codes, counts, parameter acceptance and elapsed time;
+`--list-models --i-consent` reads only the model catalog (display name and
+model value), with no search or inference.
 Tests: `tests/test_web_fetch.py`, `tests/test_idea_search.py`,
 `tests/test_idea_research.py`, `tests/test_idea_research_ui.py` (T1-T19, offline).
 Plan/model availability of web search, usage accounting and the real dialog
