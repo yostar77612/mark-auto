@@ -105,7 +105,7 @@ class VerdictTests(unittest.TestCase):
             self.assertEqual(verdict.judge(*args), result)
             before_flags = dict(context.flags)
             self.assertEqual(judge(returns=['bad'] * 60)['level'], verdict.INSUFFICIENT)
-            self.assertEqual(context.flags, before_flags)
+            self.assertEqual(dict(context.flags), before_flags)
         self.assertEqual(args, before)
         self.assertEqual(result['reasons'], ['positive_significant_mean', 'note: a', 'note: z'])
         self.assertEqual(set(result), {'level', 'display_name', 'reasons', 'recommended_observations'})
