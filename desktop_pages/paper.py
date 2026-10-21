@@ -8,7 +8,7 @@ from desktop_strings import ui_text
 from desktop_timeinput import DateInput
 from pathlib import Path
 from quantlab.desktop_feedback import stop_presentation
-import json
+from quantlab import strict_json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json as read_json, write_json as write_json, load_dataset as load_dataset, load_selection
@@ -115,7 +115,7 @@ class PaperPage(PageContext, QWidget):
             canonical_json({'account_id': 'paper-demo', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}),
             True,
         )
-        self.snapshot_form.from_payload(json.loads(self.snapshot.toPlainText()))
+        self.snapshot_form.from_payload(strict_json.loads(self.snapshot.toPlainText()))
         self._remember(self.snapshot)
         self._button(layout, ui_text('ui.paper_page.load_snapshot'), 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
         self._button(

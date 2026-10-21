@@ -3,7 +3,7 @@
 from desktop_theme import set_theme_property
 from PySide6.QtCore import Qt
 from desktop_strings import ui_text
-import json
+from quantlab import strict_json
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -144,7 +144,7 @@ class WidgetTools(PageContext):
     def _payload(self, editor, build):
         text = editor.toPlainText()
         if text != self._advanced_values.get(editor, text):
-            return json.loads(text)
+            return strict_json.loads(text)
         return build()
 
     def _remember(self, editor):

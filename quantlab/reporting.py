@@ -4,13 +4,20 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from pathlib import Path
 import csv
-import json
 import os
 import tempfile
 
 from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, BacktestConfig, ValidationError, canonical_json, content_hash, to_dict
 
+from . import strict_json
+
 MAX_JSON_BYTES = 32 * 1024 * 1024
+
+_SOURCE_TEXT = {
+    'synthetic': '資料來源：合成示範（synthetic）。不是實際行情或成交，數字不代表獲利能力。\n',
+    'proxy': '資料來源：代理資料（proxy）。僅供研究參考，不等同官方行情或實際成交，數字不代表獲利能力。\n',
+    'official_local': '資料來源：本機官方資料（official_local）。行情來源為本機匯入的官方資料；回測成交為模擬，數字不代表獲利能力。\n',
+}
 
 
 def saved_analysis_entries(root):
@@ -46,14 +53,7 @@ def saved_analysis_entries(root):
 
 
 def read_json(path):
-    path = Path(path)
-    if path.stat().st_size > MAX_JSON_BYTES:
-        raise ValidationError('JSON file exceeds 32 MiB limit')
-
-    def reject(value):
-        raise ValidationError(f'Invalid JSON constant: {value}')
-
-    return json.loads(path.read_text(encoding='utf-8'), parse_constant=reject)
+    return strict_json.read(path, MAX_JSON_BYTES)
 
 
 def write_json(path, value):
@@ -222,13 +222,20 @@ def _csv(path, rows):
 
 def export_report(result, output_dir):
     """Fixed filenames and content-addressed directory ignore untrusted IDs."""
+    data_manifest = result.manifest.get('dataset_manifest')
+    source_type = data_manifest.get('source_type') if isinstance(data_manifest, dict) else None
+    if not isinstance(source_type, str) or source_type not in _SOURCE_TEXT:
+        raise ValidationError('Invalid dataset source classification')
+    source_text = _SOURCE_TEXT[source_type]
     root = Path(output_dir).resolve()
-    root.mkdir(parents=True, exist_ok=True)
     digest = content_hash(result)
     folder = root / digest
     if folder.is_symlink():
         raise ValidationError('Refusing symlink report directory')
-    folder.mkdir(exist_ok=True)
+    source_path = folder / 'SOURCE.txt'
+    if source_path.is_symlink():
+        raise ValidationError('Refusing symlink output')
+    folder.mkdir(parents=True, exist_ok=True)
     files = {}
     payload = to_dict(result)
     for name, value in [
@@ -244,6 +251,15 @@ def export_report(result, output_dir):
         path = folder / f'{name}.csv'
         _csv(path, payload[name])
         files[name] = str(path)
+    fd, temporary = tempfile.mkstemp(prefix='.quantlab-', dir=folder)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as out:
+            out.write(source_text)
+        os.replace(temporary, source_path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    files['source'] = str(source_path)
     files['result_hash'] = digest
     return files
 

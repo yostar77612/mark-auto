@@ -4546,3 +4546,73 @@ fail-closed gate, threshold, consumed guard, irreversible budget, OOS/Holdout
 warning or data boundary changes. Paper 30 s, smoke 40 s and the 15-minute job
 cap retain their limits. Protected engine/provider sources, saved-candidate
 profiles, PROJECT_STATE and acceptance scores remain unchanged.
+
+## A3: shared strict JSON input
+
+`quantlab.strict_json.loads(text)` accepts string JSON documents and rejects
+duplicate object keys at every depth, including objects inside arrays. Duplicate
+diagnostics name the key. NaN, Infinity and -Infinity constants, malformed JSON,
+non-string input and excessive parser recursion raise `ValidationError`.
+Valid documents retain standard JSON value semantics and canonical JSON
+round trips, including Unicode, large integers and Decimal strings.
+
+`strict_json.read(path, max_bytes)` checks file size before opening or decoding,
+then reads at most the byte limit plus one to detect growth. Exact-limit files
+are accepted; invalid UTF-8 raises `ValidationError`. `reporting.read_json`
+delegates with its unchanged 32 MiB limit and preserves the oversize diagnostic.
+The four desktop page consumers use the shared loader; journal display retains
+its 4 MiB bound and returns None for invalid input. Validation completes before
+form values change. The existing B1 validation message and inline guidance
+handle rejection without exposing raw exception values; no catalog text changes.
+The user manual documents the newly rejected inputs because this rejection is
+visible through existing validation feedback.
+
+The private manual-exchange and agent-tool parsers retain their separate
+contracts. `quantlab/data.py:447` is intentionally unchanged as a frozen G3
+input. No engine, provider, saved-candidate or walk-forward source changes.
+Live trading remains permanently disabled; no order path, timeout, eligibility,
+OOS/Holdout boundary, consumed guard or irreversible budget changes.
+Default page text, widgets and baseline fixtures remain unchanged.
+
+`tests/test_strict_json_a3.py` covers parser failures, file bounds, reporting
+delegation, policy round trips, journal rejection and bare-host inline feedback
+with preserved form values. The existing tracked-layout test additionally parses
+every tracked JSON fixture. Import-graph tests pin the loader to `quantlab.core`
+and add `quantlab.strict_json` to reporting's dependencies.
+
+## A4: fixed report source disclosure
+
+`quantlab.reporting.export_report` writes `SOURCE.txt` beside the six existing
+data files in the unchanged content-hash directory and returns its string path
+as `files['source']`. The source comes exclusively from
+`result.manifest['dataset_manifest']['source_type']`. A mismatched top-level
+classification does not override it; `load_result` retains its existing binding
+validation and rejects inconsistent results.
+
+Each classification has fixed UTF-8 text, terminated by one LF, with no local
+paths or timestamps:
+
+- `synthetic`: 資料來源：合成示範（synthetic）。不是實際行情或成交，數字不代表獲利能力。
+- `proxy`: 資料來源：代理資料（proxy）。僅供研究參考，不等同官方行情或實際成交，數字不代表獲利能力。
+- `official_local`: 資料來源：本機官方資料（official_local）。行情來源為本機匯入的官方資料；回測成交為模擬，數字不代表獲利能力。
+
+Unknown, missing and non-string source types raise `ValidationError` before
+any directory creation or write, preserving existing exports. An existing
+`SOURCE.txt` symlink is rejected before report writes. Source text uses atomic
+replacement and removes temporary files on failure. Repeated export is
+idempotent. CSV/JSON bytes, existing return keys, result hashes, dataset/result
+loading and validation retain their contracts. No source disclosure enters the
+result payload or eligibility decisions.
+
+`tests/test_report_source_a4.py` pins exact source bytes for all three validated
+dataset classifications, nested-source precedence, write-free rejection,
+symlink refusal, atomic replacement cleanup, round trips and repeated exports.
+It pins the six data-file SHA-256 values and digest recorded from main
+`1c65154`. Live trading remains permanently disabled; no order path, G3 source,
+saved-candidate profile, walk-forward source, timeout, OOS/Holdout boundary,
+consumed guard or irreversible budget changes. Default UI and baseline fixtures
+remain unchanged.
+
+The UI-operation golden observation includes the normalized `SOURCE.txt` path
+in the `ui_backtest` report dictionary. All other observations and existing
+registry assertions retain their values and contracts.
