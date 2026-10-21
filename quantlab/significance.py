@@ -41,7 +41,9 @@ def _empty(reason):
 
 def _sample(returns):
     try:
-        values = [Decimal(str(value)) for value in returns]
+        # A private context keeps conversion signals out of the caller's decimal flags.
+        with localcontext(Context(prec=400)):
+            values = [Decimal(str(value)) for value in returns]
         if any(not value.is_finite() for value in values):
             return None, '每日報酬有缺值或非有限值，不補值'
         floats = [float(value) for value in values]
