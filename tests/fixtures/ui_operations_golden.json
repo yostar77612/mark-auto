@@ -14132,6 +14132,213 @@
           "strategy_qualification": "not_assessed"
         }
       }
+    },
+    "ui_paper_cancel_all": {
+      "events": [],
+      "result": {
+        "account": {
+          "account_id": "fixture",
+          "cash": "1000000",
+          "consecutive_loss_halt": false,
+          "consecutive_losses": 0,
+          "daily_equity_baselines": {
+            "2026-01-05": {
+              "equity": "1000000",
+              "method": "flat_opening_cash",
+              "now": "2026-01-05T00:46:00Z",
+              "reference": null,
+              "trade_date": "2026-01-05"
+            }
+          },
+          "daily_pnl": {},
+          "fills": {},
+          "kill_switch": false,
+          "last_mark_price": "20000",
+          "last_mark_timestamp": "2026-01-05T00:46:00Z",
+          "last_timestamp": "2026-01-05T00:46:00Z",
+          "lots": [],
+          "max_consecutive_losses_observed": 0,
+          "order_send_timestamps": [
+            "2026-01-05T00:46:00Z"
+          ],
+          "orders": {
+            "offline-order": {
+              "cancel_requested": true,
+              "filled_quantity": 0,
+              "intent": {
+                "client_order_id": "offline-order",
+                "contract_id": "TAIFEX:TMF:202601",
+                "created_at": "2026-01-05T00:46:00Z",
+                "order_type": "market",
+                "quantity": 1,
+                "side": "buy",
+                "strategy_hash": "b7570aa9692cdcc5b46538fb11882d9b510814aa7019452653f24aee4695a82c"
+              },
+              "last_event_timestamp": null,
+              "sequence": 0,
+              "session_end": "2026-01-05T04:45:00Z",
+              "session_open": "2026-01-05T00:45:00Z",
+              "status": "cancel_pending",
+              "trade_date": "2026-01-05"
+            }
+          },
+          "positions": {},
+          "quarantined": {},
+          "real_broker": "not_verified",
+          "reconciliation_required": true,
+          "round_trips": [],
+          "verification": "synthetic_paper_only"
+        },
+        "cancel_all_report": {
+          "cancelled_order_ids": [
+            "offline-order"
+          ],
+          "errors": {},
+          "failed_order_ids": []
+        },
+        "journal_file": "<TEMP>/workspace/state-v1/paper_journal_export.json",
+        "journal_tail": [
+          {
+            "identity": "restart:1",
+            "operation": "restart",
+            "payload": {},
+            "sequence": 1,
+            "state_hash": "79e78d0d4683c94dfd6cfbc2e5a14a8bd71f3529d8e573ff67f54c3dcb7ebfb1"
+          },
+          {
+            "identity": "initialize:2",
+            "operation": "initialize",
+            "payload": {
+              "account_id": "fixture",
+              "cash": "1000000"
+            },
+            "sequence": 2,
+            "state_hash": "8baa77f6403e6d156ec2cf94e30307819f1a08f8c0e2e56c960903f6494455b7"
+          },
+          {
+            "identity": "restart:3",
+            "operation": "restart",
+            "payload": {},
+            "sequence": 3,
+            "state_hash": "1715b783c0daa0816c41cecd971b814d3775c74c3e961c59c4dd0f84694dc30d"
+          },
+          {
+            "identity": "kill:4",
+            "operation": "kill",
+            "payload": {
+              "active": true
+            },
+            "sequence": 4,
+            "state_hash": "a7fc7baacf97aecdeae6ef202ddb1fe5dcf2d47150d4fe0cb0e24e86221feb9f"
+          },
+          {
+            "identity": "restart:5",
+            "operation": "restart",
+            "payload": {},
+            "sequence": 5,
+            "state_hash": "a7fc7baacf97aecdeae6ef202ddb1fe5dcf2d47150d4fe0cb0e24e86221feb9f"
+          },
+          {
+            "identity": "reconcile:6",
+            "operation": "reconcile",
+            "payload": {
+              "order_statuses": {}
+            },
+            "sequence": 6,
+            "state_hash": "869b9e970a4263631490e16e012627d62a1603e69f78e54f6d82081c23387699"
+          },
+          {
+            "identity": "kill:7",
+            "operation": "kill",
+            "payload": {
+              "active": false
+            },
+            "sequence": 7,
+            "state_hash": "8baa77f6403e6d156ec2cf94e30307819f1a08f8c0e2e56c960903f6494455b7"
+          },
+          {
+            "identity": "daily_baseline:2026-01-05",
+            "operation": "daily_baseline",
+            "payload": {
+              "equity": "1000000",
+              "method": "flat_opening_cash",
+              "now": "2026-01-05T00:46:00Z",
+              "reference": null,
+              "trade_date": "2026-01-05"
+            },
+            "sequence": 8,
+            "state_hash": "a19a5ae4ff35e5b4d486ca8fbfde5856978a23ad9a5cab62fab94b3cbf08e7d0"
+          },
+          {
+            "identity": "intent:offline-order",
+            "operation": "intent",
+            "payload": {
+              "intent": {
+                "client_order_id": "offline-order",
+                "contract_id": "TAIFEX:TMF:202601",
+                "created_at": "2026-01-05T00:46:00Z",
+                "order_type": "market",
+                "quantity": 1,
+                "side": "buy",
+                "strategy_hash": "b7570aa9692cdcc5b46538fb11882d9b510814aa7019452653f24aee4695a82c"
+              },
+              "now": "2026-01-05T00:46:00Z",
+              "quote": {
+                "account_id": "fixture",
+                "contract_id": "TAIFEX:TMF:202601",
+                "margin_per_contract": "100000",
+                "price": "20000",
+                "session_end": "2026-01-05T04:45:00Z",
+                "session_open": "2026-01-05T00:45:00Z",
+                "timestamp": "2026-01-05T00:46:00Z",
+                "trade_date": "2026-01-05"
+              },
+              "session_end": "2026-01-05T04:45:00Z",
+              "session_open": "2026-01-05T00:45:00Z",
+              "trade_date": "2026-01-05",
+              "window_seconds": 60
+            },
+            "sequence": 9,
+            "state_hash": "7d07d916e01ae8a996b6b9153dbd0e7ce2569311da8d3bc954a09b86b0cc1aa0"
+          },
+          {
+            "identity": "ack:offline-order",
+            "operation": "ack",
+            "payload": {
+              "order_id": "offline-order"
+            },
+            "sequence": 10,
+            "state_hash": "cdd3b0292b1c296700004dd48cb3c8f845c3fb585c1fb8ad3cebf366f4b260a2"
+          },
+          {
+            "identity": "restart:11",
+            "operation": "restart",
+            "payload": {},
+            "sequence": 11,
+            "state_hash": "77a0961275517df16c0075b35830fdcf84911a0884f5c590e743230558b5f742"
+          },
+          {
+            "identity": "cancel_request:offline-order",
+            "operation": "cancel_request",
+            "payload": {
+              "now": "2026-01-05T00:46:00Z",
+              "order_id": "offline-order"
+            },
+            "sequence": 12,
+            "state_hash": "2a8d2537034218fc11aef9b64ce20fa06a03d3c496c23674e8150cdbca6b8b2d"
+          },
+          {
+            "identity": "restart:13",
+            "operation": "restart",
+            "payload": {},
+            "sequence": 13,
+            "state_hash": "2a8d2537034218fc11aef9b64ce20fa06a03d3c496c23674e8150cdbca6b8b2d"
+          }
+        ]
+      },
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money"
     }
   },
   "offline_limits": {

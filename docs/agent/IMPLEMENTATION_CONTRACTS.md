@@ -4627,14 +4627,14 @@ a broker on the confirmation path; the desktop safety file still records the sto
 
 The account journal is authoritative. Every `_show_account` synchronizes the page
 lock from the snapshot, defaulting missing/empty legacy snapshots to unlocked.
-Locked pages disable submit, replay and cancel controls and chart amend requests,
+Locked pages disable submit, replay and single-cancel controls and chart amend requests,
 while reconciliation and the accessible advanced resume button remain reachable.
 The idle transition reapplies the lock after generic action enabling. Rejected
 requests use `paper.lock.rejected` and the single B1 error catalogue code
 `paper_manual_order_lock`; exception values are never rendered as error text.
 
-The locked job gate permits only explicit reconcile-with-snapshot/unlock and
-kill/lock-on requests. Resume sends `manual_order_lock=False` with the complete
+The locked job gate permits explicit reconcile-with-snapshot/unlock,
+kill/lock-on and A2 cancel-all-pending requests. Resume sends `manual_order_lock=False` with the complete
 reference snapshot. The existing handler reconciles before unlocking; unknown
 orders and unresolved reconciliation still fail closed. The successful account
 result clears the page lock in the same process. Consent is never granted by
@@ -4656,3 +4656,34 @@ assertions with the persistent-confirm/reachable-observe behavior.
 `tests/test_paper_lock_b2.py` retains backend safety assertions and enumerates both
 direct stop lock writes plus the explicit kill/unlock job payloads. This item is
 a single commit; protected sources, PROJECT_STATE and acceptance scores are unchanged.
+
+
+## Lane P A2: cancel-all-pending and retained pending orders
+
+The stop confirmation lists nonterminal pending orders and remaining buy/sell
+contracts. It retains its three confirm/observe/cancel actions; stopping keeps
+existing orders and positions. Empty or terminal-only snapshots preserve the
+original text. Privacy masks quantities and counts; order IDs are never shown.
+Malformed order rows cannot interrupt the exposure summary.
+
+The advanced Paper control confirms cancel-all-pending separately, with plain
+text, accessible buttons, and Cancel as both default and Escape. Empty snapshots
+produce a status message without starting a job. The worker derives targets from
+the broker snapshot, excludes filled/cancelled/rejected orders, sorts order IDs,
+and uses only prepare, existing broker.cancel, and finish. Client ID lists do not
+select targets. Broker APIs and journal reducers remain unchanged.
+
+Each order failure is isolated. The normal account result includes
+cancel_all_report with cancelled_order_ids, failed_order_ids and errors keyed by
+order ID. Codes come from the single B1 catalogue, never exception text.
+Repeated requests use existing cancel idempotency and add no duplicate events.
+Cancel-all remains available during manual_order_lock and preserves that lock,
+cash, positions and fills. Single cancel and amend retain the A1 lock gate.
+Submit and replay remain locked until explicit reconcile-and-resume.
+
+All operation, recovery, log, feedback and notification registries include the
+new action. Completion feedback gives cancelled and failed counts, and worker
+failure clears the pending chart notice. tests/test_paper_cancel_all_a2.py pins
+snapshot authority, deterministic attempts, failure isolation, idempotency,
+privacy, confirmation defaults and lock preservation with offline evidence.
+Live trading remains permanently disabled. This item is a single commit.

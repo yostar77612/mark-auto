@@ -2,7 +2,7 @@
 
 from desktop_theme import set_status, status_for_color
 import desktop_privacy as privacy
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 from PySide6.QtCore import Qt
 from desktop_strings import ui_text
 from desktop_timeinput import DateInput
@@ -23,6 +23,14 @@ from .replay_controls import ReplayControls
 from .widgets import PanelCard
 
 
+def pending_orders(account):
+    """Read only nonterminal snapshot rows; tolerate absent legacy orders."""
+    orders = account.get('orders') or {}
+    if not isinstance(orders, dict):
+        return {}
+    return {key: row for key, row in orders.items() if isinstance(row, dict) and row.get('status') not in ('filled', 'cancelled', 'rejected')}
+
+
 def stop_exposure_text(account, private=False):
     """Format signed snapshot quantities as gross contract exposure, without I/O."""
     rows = []
@@ -39,6 +47,22 @@ def stop_exposure_text(account, private=False):
         rows.append(ui_text('paper.stop.empty'))
     exposure = privacy.mask_money(None) if private else display_number(total)
     rows.extend((ui_text('paper.stop.exposure').format(exposure), ui_text('paper.stop.not_closed')))
+    orders = pending_orders(account)
+    if orders:
+        sides = {'buy': Decimal(0), 'sell': Decimal(0)}
+        for order in orders.values():
+            intent = order.get('intent')
+            if not isinstance(intent, dict) or intent.get('side') not in ('buy', 'sell'):
+                continue
+            try:
+                quantity = Decimal(str(intent.get('quantity'))) - Decimal(str(order.get('filled_quantity', 0)))
+                if quantity.is_finite() and quantity > 0:
+                    sides[intent['side']] += quantity
+            except (DecimalException, ValueError, TypeError):
+                continue
+        buy, sell = (privacy.mask_money(None) if private else display_number(sides[side]) for side in ('buy', 'sell'))
+        count = privacy.mask_money(None) if private else len(orders)
+        rows.append(ui_text('paper.stop.pending_orders').format(count, buy, sell))
     return '\n'.join(rows)
 
 
@@ -63,6 +87,22 @@ def stop_dialog(parent, text):
     dialog.observe_button = dialog.addButton(ui_text('paper.stop.observe'), QMessageBox.ButtonRole.ActionRole)
     cancel = dialog.addButton(ui_text('paper.stop.cancel'), QMessageBox.ButtonRole.RejectRole)
     for button in (dialog.confirm_button, dialog.observe_button, cancel):
+        button.setAccessibleName(button.text())
+        button.setProperty('role', 'secondary')
+    dialog.setDefaultButton(cancel)
+    dialog.setEscapeButton(cancel)
+    return dialog
+
+
+def cancel_all_dialog(parent, count):
+    """Patchable plain-text confirmation with a fail-closed default."""
+    dialog = _StopDialog(parent)
+    dialog.setWindowTitle(ui_text('paper.cancel_all.title'))
+    dialog.setTextFormat(Qt.TextFormat.PlainText)
+    dialog.setText(ui_text('paper.cancel_all.confirmation').format(count))
+    dialog.confirm_button = dialog.addButton(ui_text('paper.cancel_all.confirm'), QMessageBox.ButtonRole.AcceptRole)
+    cancel = dialog.addButton(ui_text('paper.stop.cancel'), QMessageBox.ButtonRole.RejectRole)
+    for button in (dialog.confirm_button, cancel):
         button.setAccessibleName(button.text())
         button.setProperty('role', 'secondary')
     dialog.setDefaultButton(cancel)
@@ -126,6 +166,8 @@ class PaperPage(PageContext, QWidget):
         )
         self.kill_button = self._button(layout, ui_text('ui.paper_page.emergency_stop'), 'paper_kill', self.kill_paper, role='danger')
         self._button(advanced, ui_text('paper.manual_lock'), 'paper_manual_lock', lambda: self.paper_job('kill', manual_order_lock=True))
+        cancel_all = self._button(advanced, ui_text('paper.cancel_all.button'), 'paper_cancel_all', self.cancel_all_paper, role='danger')
+        cancel_all.setProperty('custom_confirmation', True)
         self._button(
             advanced,
             ui_text('paper.manual_unlock'),
@@ -231,7 +273,8 @@ class PaperPage(PageContext, QWidget):
 
     def paper_job(self, op, **payload):
         if getattr(self.page_state, 'manual_order_lock', False) and not (
-            (op == 'reconcile' and payload.get('manual_order_lock') is False and 'snapshot' in payload)
+            op == 'cancel_all'
+            or (op == 'reconcile' and payload.get('manual_order_lock') is False and 'snapshot' in payload)
             or (op == 'kill' and payload.get('manual_order_lock') is True)
         ):
             error = ValidationError(ui_text('paper.lock.rejected'))
@@ -247,6 +290,21 @@ class PaperPage(PageContext, QWidget):
         else:
             self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
+
+    def cancel_all_paper(self):
+        # Snapshot inspection is read-only and does not construct a broker.
+        from quantlab.paper import PaperBroker
+
+        journal = self.root / 'paper.sqlite3'
+        account = PaperBroker.read_snapshot(journal) if journal.exists() else getattr(self, '_stop_account', {})
+        count = len(pending_orders(account))
+        if not count:
+            self.status.setText(ui_text('paper.cancel_all.empty'))
+            return
+        dialog = cancel_all_dialog(self, privacy.mask_money(None) if privacy.enabled(self) else count)
+        dialog.exec()
+        if dialog.clickedButton() is dialog.confirm_button:
+            self.paper_job('cancel_all', now=self.paper_time.text())
 
     def _apply_order_lock(self):
         locked = getattr(self.page_state, 'manual_order_lock', False)

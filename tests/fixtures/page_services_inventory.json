@@ -2807,7 +2807,7 @@
     },
     {
       "file": "tests/test_notifications_c8.py",
-      "line": 120,
+      "line": 126,
       "name": "_notification_link",
       "kind": "assignment",
       "receiver": "center.host"
@@ -2965,6 +2965,27 @@
       "name": "_text",
       "kind": "setattr",
       "receiver": "host"
+    },
+    {
+      "file": "tests/test_paper_cancel_all_a2.py",
+      "line": 113,
+      "name": "_show_account",
+      "kind": "assignment",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_paper_cancel_all_a2.py",
+      "line": 114,
+      "name": "_remember_stop",
+      "kind": "assignment",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_paper_cancel_all_a2.py",
+      "line": 236,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "page"
     },
     {
       "file": "tests/test_paper_stop_a1.py",

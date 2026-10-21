@@ -2130,6 +2130,21 @@ ZH_TW.update(
     }
 )
 
+
+# Lane P
+ZH_TW.update(
+    {
+        'paper.stop.pending_orders': '\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\uff08\u8cb7 {1} \u53e3\uff0f\u8ce3 {2} \u53e3\uff09\uff0c\u505c\u6b62\u5f8c\u4ecd\u4fdd\u7559',
+        'paper.cancel_all.button': '\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4',
+        'paper.cancel_all.title': '\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4',
+        'paper.cancel_all.confirmation': '\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\u3002\u78ba\u8a8d\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4\uff1f\u4e0d\u5e73\u5009\uff0c\u4e0d\u6062\u5fa9\u65b0\u59d4\u8a17\u3002',
+        'paper.cancel_all.confirm': '\u78ba\u8a8d\u64a4\u92b7',
+        'paper.cancel_all.empty': '\u76ee\u524d\u6c92\u6709\u672a\u6210\u4ea4\u59d4\u8a17\u3002',
+        'logs.operation.ui_paper_cancel_all': '\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4',
+    }
+)
+LOG_OPERATION_NAMES['ui_paper_cancel_all'] = 'logs.operation.ui_paper_cancel_all'
+
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')

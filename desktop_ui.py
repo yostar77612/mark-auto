@@ -59,6 +59,7 @@ UI_OPERATIONS = frozenset(
         'paper_replay',
         'paper_submit',
         'paper_cancel',
+        'paper_cancel_all',
         'backup_create',
         'backup_restore',
     )
@@ -928,6 +929,24 @@ def _handle_ui_paper_cancel(payload, paths, root, *, emit=None, descendants_stop
     return _finish_paper_operation(root, broker, replay_state)
 
 
+def _handle_ui_paper_cancel_all(payload, paths, root, *, emit=None, descendants_stopped=False):
+    broker = _prepare_paper_operation(payload, paths, root)
+    now = datetime.fromisoformat(payload['now'].replace('Z', '+00:00'))
+    targets = sorted(order_id for order_id, row in broker.snapshot()['orders'].items() if row['status'] not in ('filled', 'cancelled', 'rejected'))
+    report = {'cancelled_order_ids': [], 'failed_order_ids': [], 'errors': {}}
+    for order_id in targets:
+        try:
+            broker.cancel(order_id, now=now)
+        except Exception as exc:
+            report['failed_order_ids'].append(order_id)
+            report['errors'][order_id] = exception_code(exc)
+        else:
+            report['cancelled_order_ids'].append(order_id)
+    result = _finish_paper_operation(root, broker)
+    result['cancel_all_report'] = report
+    return result
+
+
 def _handle_ui_paper_kill(payload, paths, root, *, emit=None, descendants_stopped=False):
     broker = _prepare_paper_operation(payload, paths, root)
     replay_state = None
@@ -1083,6 +1102,7 @@ _UI_OPERATION_HANDLERS = {
     'ui_import': _handle_ui_import,
     'ui_market_refresh': _handle_ui_market_refresh,
     'ui_paper_cancel': _handle_ui_paper_cancel,
+    'ui_paper_cancel_all': _handle_ui_paper_cancel_all,
     'ui_paper_kill': _handle_ui_paper_kill,
     'ui_paper_reconcile': _handle_ui_paper_reconcile,
     'ui_paper_replay': _handle_ui_paper_replay,

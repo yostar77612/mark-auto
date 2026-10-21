@@ -1904,7 +1904,14 @@
       "access.indicator_parameter": "\u6307\u6a19 {0} \u53c3\u6578 {1}",
       "access.previous_tabs": "\u524d\u4e00\u7d44\u5206\u9801",
       "access.next_tabs": "\u4e0b\u4e00\u7d44\u5206\u9801",
-      "paper.lock.rejected": "\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d"
+      "paper.lock.rejected": "\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d",
+      "paper.stop.pending_orders": "\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\uff08\u8cb7 {1} \u53e3\uff0f\u8ce3 {2} \u53e3\uff09\uff0c\u505c\u6b62\u5f8c\u4ecd\u4fdd\u7559",
+      "paper.cancel_all.button": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4",
+      "paper.cancel_all.title": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4",
+      "paper.cancel_all.confirmation": "\u672a\u6210\u4ea4\u59d4\u8a17 {0} \u7b46\u3002\u78ba\u8a8d\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4\uff1f\u4e0d\u5e73\u5009\uff0c\u4e0d\u6062\u5fa9\u65b0\u59d4\u8a17\u3002",
+      "paper.cancel_all.confirm": "\u78ba\u8a8d\u64a4\u92b7",
+      "paper.cancel_all.empty": "\u76ee\u524d\u6c92\u6709\u672a\u6210\u4ea4\u59d4\u8a17\u3002",
+      "logs.operation.ui_paper_cancel_all": "\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4"
     },
     "registries": {
       "DEFAULT_LOCALE": "zh-TW",
@@ -1972,7 +1979,8 @@
         "ui_backup_restore": "logs.operation.ui_backup_restore",
         "demo": "logs.operation.demo",
         "backtest": "logs.operation.backtest",
-        "campaign": "logs.operation.campaign"
+        "campaign": "logs.operation.campaign",
+        "ui_paper_cancel_all": "logs.operation.ui_paper_cancel_all"
       },
       "LOG_EVENT_NAMES": {
         "started": "logs.event.started",
