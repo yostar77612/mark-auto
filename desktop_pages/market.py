@@ -22,7 +22,7 @@ class MarketPage(MarketDashboard):
                 self.workspace.configure_store(directory)
         mount = getattr(host, 'mount_market', None)
         if callable(mount):
-            mount(self, ui_text('ui._dashboard.text_1'))
+            mount(self, ui_text('ui.dashboard.title'))
         self.market = self
         self.state.market = self
         if not hasattr(self.state, '_section_toggles'):
@@ -45,10 +45,10 @@ class MarketPage(MarketDashboard):
 
     def refresh_market(self):
         if self.state.jobs.active:
-            raise ValidationError(ui_text('ui.refresh_market.text_1'))
+            raise ValidationError(ui_text('ui.refresh_market.job_busy'))
         answer = self.host.question(
-            ui_text('ui.refresh_market.text_2'),
-            ui_text('ui.refresh_market.text_3'),
+            ui_text('ui.refresh_market.confirmation_title'),
+            ui_text('ui.refresh_market.network_consent'),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -89,12 +89,12 @@ class MarketPage(MarketDashboard):
                 quotes.extend(loaded.series)
                 outcome = self.state._market_outcomes.get(provider)
                 if outcome and outcome.get('error'):
-                    errors.append(ui_text('ui.load_market_cache.text_1').format(provider.upper()))
+                    errors.append(ui_text('ui.load_market_cache.update_failed_cache_retained').format(provider.upper()))
             except ValueError:
                 if (self.state.root / 'market_cache' / (provider + '.json')).exists():
-                    errors.append(ui_text('ui.load_market_cache.text_2').format(provider.upper()))
+                    errors.append(ui_text('ui.load_market_cache.invalid_cache').format(provider.upper()))
                 if self.state._market_outcomes.get(provider, {}).get('error'):
-                    errors.append(ui_text('ui.load_market_cache.text_3').format(provider.upper()))
+                    errors.append(ui_text('ui.load_market_cache.update_failed_no_cache').format(provider.upper()))
         dataset_path, calendar_path = self.state.root / 'dataset.json', self.state.root / 'dataset_calendar.json'
         if dataset_path.exists() and calendar_path.exists():
             try:
@@ -119,14 +119,14 @@ class MarketPage(MarketDashboard):
         except (ValueError, OSError) as exc:
             errors.append(error_message(exception_code(exc)))
         self.market.set_quote_series(self.host.latest_market_observations(quotes), stale=True)
-        self.market.set_market_series(tuple(series.values()), stale=True, error=ui_text('ui.load_market_cache.text_4').join(errors))
+        self.market.set_market_series(tuple(series.values()), stale=True, error=ui_text('ui.load_market_cache.warning_separator').join(errors))
         selection = self.state.root / 'selection.json'
-        strategy = ui_text('ui.load_market_cache.text_5')
+        strategy = ui_text('ui.load_market_cache.inactive')
         if selection.exists():
             try:
-                strategy = ui_text('ui.load_market_cache.text_6').format(load_selection(selection)['strategy_hash'][:16])
+                strategy = ui_text('ui.load_market_cache.active_version').format(load_selection(selection)['strategy_hash'][:16])
             except (ValueError, KeyError):
-                strategy = ui_text('ui.load_market_cache.text_7')
+                strategy = ui_text('ui.load_market_cache.invalid_version')
         self.market.set_trading_status(strategy=strategy)
         if (self.state.root / 'paper.sqlite3').exists() and (self.state.root / 'paper_policy.json').exists():
             try:
@@ -136,7 +136,9 @@ class MarketPage(MarketDashboard):
                 self.host.show_account(PaperBroker.read_snapshot(self.state.root / 'paper.sqlite3'), strategy=strategy)
             except Exception:
                 self.market.chart.set_paper_snapshot(None, mode=None)
-                self.market.set_trading_status(strategy=strategy, paper=ui_text('ui.load_market_cache.text_8'), risk=ui_text('ui.load_market_cache.text_9'))
+                self.market.set_trading_status(
+                    strategy=strategy, paper=ui_text('ui.load_market_cache.account_read_failed'), risk=ui_text('ui.load_market_cache.stop_check_records')
+                )
                 self.market.set_account_tables()
 
     def bind_result_layers(self, result=None):
@@ -170,7 +172,7 @@ class MarketPage(MarketDashboard):
             return
         if item != self.state._market_research_series.get(selected):
             return
-        trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], ui_text('ui.bind_result_layers.text_1'))
+        trace = ChartTrace(selected, content_hash(bars), result.manifest['spec_hash'], ui_text('ui.bind_result_layers.backtest'))
         markers = []
         # Load this operation-specific dependency only when requested.
         from bisect import bisect_left, bisect_right
@@ -194,7 +196,7 @@ class MarketPage(MarketDashboard):
                     ChartMarker(
                         index,
                         'signal',
-                        ui_text('ui.bind_result_layers.text_2').format(str(signal.target_position)),
+                        ui_text('ui.bind_result_layers.target_position').format(str(signal.target_position)),
                         reason=signal.reason,
                         timestamp=signal.timestamp,
                         target_position=signal.target_position,
@@ -210,7 +212,7 @@ class MarketPage(MarketDashboard):
                     ChartMarker(
                         index,
                         'fill',
-                        ui_text('ui.bind_result_layers.text_3') if fill.side == 'buy' else ui_text('ui.bind_result_layers.text_4'),
+                        ui_text('ui.bind_result_layers.buy') if fill.side == 'buy' else ui_text('ui.bind_result_layers.sell'),
                         price=fill.price,
                         quantity=fill.quantity,
                         cost=fill.commission + fill.tax,
@@ -218,7 +220,7 @@ class MarketPage(MarketDashboard):
                         timestamp=fill.timestamp,
                     )
                 )
-        chart.set_series(bars, trace=trace, source_label=source, status_label=ui_text('ui.bind_result_layers.text_5').format(status))
+        chart.set_series(bars, trace=trace, source_label=source, status_label=ui_text('ui.bind_result_layers.backtest_layer_hint').format(status))
         chart.set_overlays(old_overlays, panes=old_panes, pane_styles=styles)
         chart.set_markers(markers, trace=trace)
         chart.set_reference_lines(self.host.result_snapshot_lines(result, bars, selected), trace=trace)

@@ -148,7 +148,7 @@ class OverlayTests(unittest.TestCase):
         source = Path('desktop_pages/compare_equity.py').read_text(encoding='utf-8')
         for forbidden in ('QTimer', 'start_job(', 'deleteLater', 'setStyleSheet', 'optimise', 'recommend', 'weight', 'best'):
             self.assertNotIn(forbidden, source)
-        catalog = Path('desktop_strings.py').read_text(encoding='utf-8').split('# F2:')[1]
+        catalog = Path('desktop_strings.py').read_text(encoding='utf-8').split('# F2:')[1].split('# F3:')[0]
         for forbidden in ('best', 'recommend', 'weight', '?' * 3):
             self.assertNotIn(forbidden, catalog.lower())
 

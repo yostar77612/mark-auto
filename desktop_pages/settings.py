@@ -14,7 +14,7 @@ class SettingsPage(PageContext, QWidget):
     def __init__(self, host):
         super().__init__()
         self.setup_context(host)
-        layout = self.host.mount_page(self, ui_text('ui._settings_page.text_1'))
+        layout = self.host.mount_page(self, ui_text('ui.settings_page.title'))
         from .settings_layout import build_settings
 
         build_settings(self, layout)
@@ -41,10 +41,10 @@ class SettingsPage(PageContext, QWidget):
                 # consent disclosure, rather than centering a clipped widget.
                 page.verticalScrollBar().setValue(self.chatgpt_panel.mapTo(page.widget(), self.chatgpt_panel.rect().topLeft()).y())
                 page.horizontalScrollBar().setValue(0)
-                self.status.setText(ui_text('ui.show_chatgpt_sign_in.text_1'))
+                self.status.setText(ui_text('ui.show_chatgpt_sign_in.checking_connection'))
                 self.chatgpt_panel.primary_sign_in.click()
                 return
-        raise ValidationError(ui_text('ui.show_chatgpt_sign_in.text_2'))
+        raise ValidationError(ui_text('ui.show_chatgpt_sign_in.connection_panel_missing'))
 
     def _chatgpt_quiesce(self, request):
         try:
@@ -56,7 +56,7 @@ class SettingsPage(PageContext, QWidget):
                 # dispatched: fail it explicitly rather than strand or queue it.
                 self.chatgpt_panel.abandon_primary_sign_in()
                 self.chatgpt_controller.worker_joined(request.request_id, joined=True, terminal_received=False)
-                self.status.setText(ui_text('ui._chatgpt_quiesce.text_1'))
+                self.status.setText(ui_text('ui.chatgpt_quiesce.stop_record_checking'))
                 return
             self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=not self.jobs.active)
         except Exception:
@@ -74,14 +74,14 @@ class SettingsPage(PageContext, QWidget):
                 self.chatgpt_controller.worker_joined(request.request_id, joined=True, terminal_received=False)
                 self._chatgpt_job_request = None
                 self._chatgpt_job_id = None
-                self.status.setText(ui_text('ui._chatgpt_dispatch.text_1'))
+                self.status.setText(ui_text('ui.chatgpt_dispatch.stop_record_checking'))
                 return
             self._chatgpt_job_request = request
             self._chatgpt_job_id = self.start_job('ui_chatgpt_auth', {'request': request.payload()})
         except Exception:
             self.chatgpt_controller.worker_joined(request.request_id, joined=not self.jobs.active, terminal_received=False)
             self._chatgpt_job_request = None
-            self.status.setText(ui_text('ui._chatgpt_dispatch.text_2'))
+            self.status.setText(ui_text('ui.chatgpt_dispatch.connection_start_failed'))
 
     def _chatgpt_cancel(self, request_id):
         self.chatgpt_panel.abandon_primary_sign_in()
@@ -105,13 +105,13 @@ class SettingsPage(PageContext, QWidget):
         from PySide6.QtGui import QDesktopServices
 
         if not QDesktopServices.openUrl(QUrl(official_authorization_url(url))):
-            self.status.setText(ui_text('ui._chatgpt_open_browser.text_1'))
+            self.status.setText(ui_text('ui.chatgpt_open_browser.authorization_page_failed'))
 
     def _plan_usage_request(self):
         c = self.chatgpt_controller
         panel = self.chatgpt_panel
         if c.state != 'plan_ready' or not c.active_registration or panel.model.currentData() not in c.models:
-            raise ValidationError(ui_text('ui._plan_usage_request.text_1'))
+            raise ValidationError(ui_text('ui.plan_usage_request.connection_models_required'))
         options = {
             'mode': 'chatgpt_plan',
             'registration': c.active_registration,
@@ -136,7 +136,7 @@ class SettingsPage(PageContext, QWidget):
     def inspect_plan_usage(self):
         self._invalidate_analysis_preview()
         if self.chatgpt_controller.busy:
-            raise ValidationError(ui_text('ui.inspect_plan_usage.text_1'))
+            raise ValidationError(ui_text('ui.inspect_plan_usage.connection_job_busy'))
         payload = self._plan_usage_request()
         self.chatgpt_controller.invalidate_campaign_usage()
         self._plan_usage_binding = None
@@ -159,7 +159,7 @@ class SettingsPage(PageContext, QWidget):
                 self.chatgpt_controller.account_status_known = False
                 self.chatgpt_controller.invalidate_campaign_usage()
                 self._pending_usage_refresh = True
-                self.status.setText(ui_text('ui._chatgpt_event.text_1') if kind == 'result' else ui_text('ui._chatgpt_event.text_2'))
+                self.status.setText(ui_text('ui.chatgpt_event.recovery_checked') if kind == 'result' else ui_text('ui.chatgpt_event.recovery_failed'))
             return True
         if operation == 'ui_chatgpt_auth':
             request = self._chatgpt_job_request
@@ -196,20 +196,20 @@ class SettingsPage(PageContext, QWidget):
                 if result.get('binding') != self._current_plan_binding():
                     c.invalidate_campaign_usage()
                     self._plan_usage_binding = None
-                    self.status.setText(ui_text('ui._chatgpt_event.text_3'))
+                    self.status.setText(ui_text('ui.chatgpt_event.settings_changed'))
                 else:
                     c.set_usage(result['registration'], result['receipts'], account_status=result['account_status'])
                     self._plan_usage_binding = result['binding']
-                    self.status.setText(ui_text('ui._chatgpt_event.text_4'))
+                    self.status.setText(ui_text('ui.chatgpt_event.request_record_checked'))
         elif kind in ('error', 'failed', 'cancelled', 'canceled'):
             self.chatgpt_controller.account_status_known = False
             self.chatgpt_controller.invalidate_campaign_usage()
-            self.status.setText(ui_text('ui._chatgpt_event.text_5'))
+            self.status.setText(ui_text('ui.chatgpt_event.request_record_unknown'))
         return True
 
     def save_settings(self):
         if self.settings is None:
-            raise ValidationError(ui_text('ui.save_settings.text_1'))
+            raise ValidationError(ui_text('ui.save_settings.service_unavailable'))
         value = load_store(self.settings)
         # Preserve legacy provider settings as inert historical data. They are
         # never read into executable provider options or overwritten on save.
@@ -221,7 +221,7 @@ class SettingsPage(PageContext, QWidget):
         self.settings.save(value)
         self.jobs.logging_enabled = self.persist_logs.isChecked()
         self.chatgpt_panel.consent.setChecked(False)
-        self.status.setText(ui_text('ui.save_settings.text_2'))
+        self.status.setText(ui_text('ui.save_settings.preferences_saved'))
 
     def load_settings(self):
         if self.settings is None:
@@ -259,7 +259,7 @@ class SettingsPage(PageContext, QWidget):
                 max(screen.top(), min(y, screen.bottom() - self.host.window_geometry().height() + 1)),
             )
         except (ValueError, TypeError, KeyError, OverflowError):
-            self.status.setText(ui_text('ui.load_settings.text_1'))
+            self.status.setText(ui_text('ui.load_settings.invalid_market_preferences'))
         restore_preferences(self, value)
         self.read_logs()
 
@@ -268,19 +268,19 @@ class SettingsPage(PageContext, QWidget):
         from quantlab.desktop_runtime import WorkspaceLocator
 
         if self.jobs.active:
-            raise ValidationError(ui_text('ui.configure_workspace.text_1'))
+            raise ValidationError(ui_text('ui.configure_workspace.job_busy'))
         self.chatgpt_panel.consent.setChecked(False)
         self._invalidate_analysis_preview()
         self.chatgpt_controller.invalidate_campaign_usage()
         self._plan_usage_binding = None
         root = WorkspaceLocator(getattr(self.paths, 'bootstrap', None) or self.paths.root).configure(Path(self.workspace_path.text().strip()))
-        self.status.setText(ui_text('ui.configure_workspace.text_2').format(str(root)))
+        self.status.setText(ui_text('ui.configure_workspace.next_workspace').format(str(root)))
 
     def open_releases(self):
         # Verified repository Releases destination; never invent latest version or assets.
         if not QDesktopServices.openUrl(QUrl('https://github.com/yostar77612/mark-auto/releases')):
-            raise ValidationError(ui_text('ui.open_releases.text_1'))
-        self.status.setText(ui_text('ui.open_releases.text_2'))
+            raise ValidationError(ui_text('ui.open_releases.browser_failed'))
+        self.status.setText(ui_text('ui.open_releases.browser_requested'))
 
     def record_event(self, operation, kind):
         # Runtime owns persistence. Re-read its redacted API, never event payloads.
@@ -294,14 +294,14 @@ class SettingsPage(PageContext, QWidget):
     def backup(self, restore):
         self.chatgpt_panel.abandon_primary_sign_in()
         if self.backups is None:
-            raise ValidationError(ui_text('ui.backup.text_1'))
+            raise ValidationError(ui_text('ui.backup.service_unavailable'))
         if not self.backup_path.text().strip():
-            raise ValidationError(ui_text('ui.backup.text_2'))
+            raise ValidationError(ui_text('ui.backup.path_required'))
         if restore and not self.restore_confirm.isChecked():
-            raise ValidationError(ui_text('ui.backup.text_3'))
+            raise ValidationError(ui_text('ui.backup.restore_consent_required'))
         panel = getattr(self, 'backup_inspection_panel', None)
         if self.jobs.active:
-            raise ValidationError(ui_text('ui.backup.text_4'))
+            raise ValidationError(ui_text('ui.backup.job_busy'))
         self.start_job('ui_backup_restore' if restore else 'ui_backup_create', {'path': self.backup_path.text()})
         self.restore_confirm.setChecked(False)
         if panel is not None:

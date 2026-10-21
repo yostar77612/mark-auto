@@ -61,26 +61,28 @@ def _offer_workspace_after_recovery_block(locator):
 
     box = QMessageBox(
         QMessageBox.Icon.Warning,
-        ui_text('desktop._offer_workspace_after_recovery_block.text_1'),
-        ui_text('desktop._offer_workspace_after_recovery_block.text_2'),
+        ui_text('desktop.offer_workspace_after_recovery_block.reconciliation_title'),
+        ui_text('desktop.offer_workspace_after_recovery_block.recovery_blocked'),
         QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Cancel,
     )
-    box.button(QMessageBox.StandardButton.Open).setText(ui_text('desktop._offer_workspace_after_recovery_block.text_3'))
+    box.button(QMessageBox.StandardButton.Open).setText(ui_text('desktop.offer_workspace_after_recovery_block.choose_workspace'))
     box.setDefaultButton(QMessageBox.StandardButton.Cancel)
     if box.exec() != QMessageBox.StandardButton.Open:
         return
-    selected = QFileDialog.getExistingDirectory(None, ui_text('desktop._offer_workspace_after_recovery_block.text_4'))
+    selected = QFileDialog.getExistingDirectory(None, ui_text('desktop.offer_workspace_after_recovery_block.dialog_title'))
     if not selected:
         return
     try:
         locator.configure(Path(selected))
     except (OSError, ValueError):
         QMessageBox.warning(
-            None, ui_text('desktop._offer_workspace_after_recovery_block.text_5'), ui_text('desktop._offer_workspace_after_recovery_block.text_6')
+            None,
+            ui_text('desktop.offer_workspace_after_recovery_block.unchanged_title'),
+            ui_text('desktop.offer_workspace_after_recovery_block.invalid_directory'),
         )
         return
     QMessageBox.information(
-        None, ui_text('desktop._offer_workspace_after_recovery_block.text_7'), ui_text('desktop._offer_workspace_after_recovery_block.text_8')
+        None, ui_text('desktop.offer_workspace_after_recovery_block.configured_title'), ui_text('desktop.offer_workspace_after_recovery_block.restart_hint')
     )
 
 
@@ -104,7 +106,7 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
     lock = QLockFile(str(locator.lock_path))
     lock.setStaleLockTime(0)  # Qt checks process liveness; never steal a live lock by age.
     if not lock.tryLock(0):
-        QMessageBox.information(None, ui_text('desktop.main.text_1'), error_message('startup_workspace_busy'))
+        QMessageBox.information(None, ui_text('desktop.main.startup_failed'), error_message('startup_workspace_busy'))
         if smoke_startup_directory is not None:
             smoke_startup_directory.cleanup()
         return None
@@ -284,7 +286,7 @@ def run_gui(args):
             )
             state.smoke_report.update(status='failed', error_type=type(exc).__name__)
             return 1
-        QMessageBox.critical(None, ui_text('desktop.main.text_2'), error_message(startup_error_code(exc)))
+        QMessageBox.critical(None, ui_text('desktop.main.startup_failed'), error_message(startup_error_code(exc)))
         return 1
     finally:
         if state.args.smoke_test:

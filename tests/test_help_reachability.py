@@ -26,8 +26,8 @@ class HelpReachabilityTests(unittest.TestCase):
             self.assertLessEqual(page['label_char_count'], limits['merged_t8'], name)
             if limits.get('half_required'):
                 self.assertLessEqual(page['label_char_count'], limits['section_2'] // 2, name)
-        self.assertLessEqual(self.metrics['pages'][ui_text('ui._compare_page.text_1')]['page_height'], 768)
-        for name, height in self.metrics['pages'][ui_text('ui._strategy_page.text_1')]['subpages'].items():
+        self.assertLessEqual(self.metrics['pages'][ui_text('ui.compare_page.title')]['page_height'], 768)
+        for name, height in self.metrics['pages'][ui_text('ui.strategy_page.title')]['subpages'].items():
             self.assertLessEqual(height, 1100, name)
 
     def test_full_explanations_hints_and_help_accessibility(self):
@@ -81,7 +81,7 @@ class HelpReachabilityTests(unittest.TestCase):
                 toggle.setChecked(True)
                 self.assertFalse(details.isHidden())
             self.assertTrue(window.settings_page.settings_sections[3].isAncestorOf(window.log_view))
-            for key in ('market.__init__.text_42', 'market.__init__.text_53'):
+            for key in ('market.init.research_paper', 'market.init.vwap_hint'):
                 self.assertTrue(any(label.text() == ui_text(key) for label in window.findChild(QWidget, 'market_help_details').findChildren(QLabel)), key)
         finally:
             harness.doCleanups()

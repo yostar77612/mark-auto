@@ -384,7 +384,7 @@ class OrderChartTests(unittest.TestCase):
         self.snapshot['orders']['a']['intent']['limit_price'] = str(callback.call_args.args[1])
         self.chart.set_paper_snapshot(self.snapshot, request=callback)
         self.assertEqual(self.chart.paper_orders.lines(CID)[0][3], callback.call_args.args[1])
-        self.chart.set_series(self.chart.bars, trace=ChartTrace(CID, 'a' * 64, 'b' * 64, ui_text('charts.__post_init__.text_1')))
+        self.chart.set_series(self.chart.bars, trace=ChartTrace(CID, 'a' * 64, 'b' * 64, ui_text('charts.post_init.backtest')))
         self.paint()
         self.assertFalse(self.chart.paper_orders.hits)
 

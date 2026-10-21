@@ -277,7 +277,7 @@ class NotificationTests(unittest.TestCase):
         host.local_notifications.setChecked(True)
         message = ui_text('notifications.error') + '<script>x</script><b>y</b>'
         MainWindow.notify_local(host, message, error=True, completion=True)
-        self.assertEqual(host.notification.text(), ui_text('ui.notify_local.text_1').format(escape(message)))
+        self.assertEqual(host.notification.text(), ui_text('ui.notify_local.result_close_links').format(escape(message)))
         self.assertEqual(host.notification.property('status'), 'danger')
         self.assertFalse(host.notification_timer.isActive())
         self.assertEqual(host._notification_operation, 'ui_import')
@@ -300,9 +300,9 @@ class NotificationTests(unittest.TestCase):
         center = host.notification_center
         host.local_notifications = QCheckBox()
         host.local_notifications.setChecked(True)
-        message = ui_text('ui.poll_jobs.text_4')
+        message = ui_text('ui.poll_jobs.restore_incomplete')
         MainWindow.notify_local(host, message, error=True, completion=True)
-        self.assertEqual(host.notification.text(), ui_text('ui.notify_local.text_1').format(message))
+        self.assertEqual(host.notification.text(), ui_text('ui.notify_local.result_close_links').format(message))
         self.assertIsNot(host.notification, center.toasts[0])
         self.assertIs(host.notification_fade.targetObject(), host.notification_opacity)
         self.assertEqual(len(center.log.entries), 1)

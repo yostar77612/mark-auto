@@ -101,8 +101,8 @@ class WidgetTools(PageContext):
     def _confirm_button(self, button, callback):
         if button.property('role') == 'danger':
             answer = self.host.question(
-                ui_text('ui._confirm_button.text_1'),
-                ui_text('ui._confirm_button.text_2').format(button.text()),
+                ui_text('ui.confirm_button.danger_title'),
+                ui_text('ui.confirm_button.confirmation_question').format(button.text()),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
@@ -119,7 +119,7 @@ class WidgetTools(PageContext):
         return field
 
     def _advanced(self, layout, title=ui_text('ui.advanced.default_title')):
-        title = title if title.startswith(ui_text('ui._advanced.text_1')) else ui_text('ui._advanced.text_2').format(title)
+        title = title if title.startswith(ui_text('ui.advanced.title')) else ui_text('ui.advanced.named_title').format(title)
         key = str(self.stack.count()) + ':' + title
         toggle = QCheckBox(title)
         toggle.setObjectName('advanced_' + str(len(self._section_toggles)))
@@ -151,7 +151,7 @@ class WidgetTools(PageContext):
         self._advanced_values[editor] = editor.toPlainText()
 
     def _browse(self, target):
-        name, _ = self.host.open_file(ui_text('ui._browse.text_1'))
+        name, _ = self.host.open_file(ui_text('ui.browse.dialog_title'))
         if name:
             target.setText(name)
-            self.form_feedback(target, ui_text('ui._browse.text_2'))
+            self.form_feedback(target, ui_text('ui.browse.selected_file_hint'))

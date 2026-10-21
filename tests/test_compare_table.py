@@ -73,9 +73,9 @@ class CompareTableTests(unittest.TestCase):
         self.assertEqual(self.table.item(1, 0).checkState(), Qt.CheckState.Unchecked)
 
     def test_missing_undefined_zero_and_source_unchanged(self):
-        self.assertEqual(self.table.item(0, 6).text(), ui_text('forms.metric.text_1'))
+        self.assertEqual(self.table.item(0, 6).text(), ui_text('forms.metric.undefined'))
         self.assertEqual(self.table.item(1, 6).text(), '0')
-        self.assertEqual(self.table.item(2, 6).text(), ui_text('forms.metric.text_2'))
+        self.assertEqual(self.table.item(2, 6).text(), ui_text('forms.metric.not_provided'))
         self.assertEqual(self.table.item(1, 9).text(), '0')
         source = report({'sharpe': None})
         before = copy.deepcopy(source)
@@ -88,9 +88,9 @@ class CompareTableTests(unittest.TestCase):
         self.assertEqual(table.columnCount(), 3)
         self.assertEqual(table.rowCount(), 5)
         self.assertIn('趨勢', table.horizontalHeaderItem(1).text())
-        self.assertEqual(table.item(1, 1).text(), ui_text('forms.metric.text_1'))
+        self.assertEqual(table.item(1, 1).text(), ui_text('forms.metric.undefined'))
         self.assertIn('no closed lots', table.item(1, 1).toolTip())
-        self.assertEqual(table.item(1, 2).text(), ui_text('forms.metric.text_2'))
+        self.assertEqual(table.item(1, 2).text(), ui_text('forms.metric.not_provided'))
         self.assertEqual(table.item(0, 2).text(), '0 TWD')
         table.close()
 

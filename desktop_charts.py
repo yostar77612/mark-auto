@@ -55,15 +55,15 @@ def _paint_drawings(painter, drawings, bars, rect, x, y):
 def _display_time(value, date_only=''):
     """Presentation only; no timezone inference for unverified naive values."""
     if value is None:
-        return date_only or ui_text('charts._display_time.text_1')
+        return date_only or ui_text('charts.display_time.time_unverified')
     if isinstance(value, str):
         try:
             value = datetime.fromisoformat(value.replace('Z', '+00:00'))
         except ValueError:
-            return ui_text('charts._display_time.text_2')
+            return ui_text('charts.display_time.time_unverified')
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
-        return ui_text('charts._display_time.text_3')
-    return ui_text('charts._display_time.text_4').format(value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%Y/%m/%d %H:%M'))
+        return ui_text('charts.display_time.time_unverified')
+    return ui_text('charts.display_time.taipei_time').format(value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%Y/%m/%d %H:%M'))
 
 
 def _footer_items(width, metrics, first_time, last_time, trace=None):
@@ -72,7 +72,7 @@ def _footer_items(width, metrics, first_time, last_time, trace=None):
     gap = 8
     first_width = metrics.horizontalAdvance(first_time)
     last_width = metrics.horizontalAdvance(last_time)
-    trace_text = ui_text('charts._footer_items.text_1').format(trace.mode, trace.data_hash[:8], trace.strategy_hash[:8]) if trace else ''
+    trace_text = ui_text('charts.footer_items.trace_hashes').format(trace.mode, trace.data_hash[:8], trace.strategy_hash[:8]) if trace else ''
     trace_width = metrics.horizontalAdvance(trace_text)
     if first_width + last_width + trace_width + gap * (2 if trace else 1) <= width:
         items = [(0, first_width, first_time), (width - last_width, last_width, last_time)]
@@ -101,15 +101,15 @@ class ChartTrace:
     mode: str
 
     def __post_init__(self):
-        if not self.contract_id or self.mode not in (ui_text('charts.__post_init__.text_1'), ui_text('charts.__post_init__.text_2')):
-            raise ValueError(ui_text('charts.__post_init__.text_3'))
+        if not self.contract_id or self.mode not in (ui_text('charts.post_init.backtest'), ui_text('charts.post_init.paper')):
+            raise ValueError(ui_text('charts.post_init.contract_mode_required'))
         if any(not re.fullmatch('[0-9a-f]{64}', x) for x in (self.data_hash, self.strategy_hash)):
-            raise ValueError(ui_text('charts.__post_init__.text_4'))
+            raise ValueError(ui_text('charts.post_init.data_strategy_hash_required'))
 
 
 def _number(value):
     if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)) or not math.isfinite(float(value)):
-        raise ValueError(ui_text('charts._number.text_1'))
+        raise ValueError(ui_text('charts.number.finite_number_required'))
     return float(value)
 
 
@@ -127,20 +127,20 @@ class ChartMarker:
 
     def __post_init__(self):
         if type(self.index) is not int or self.index < 0 or self.kind not in ('signal', 'fill'):
-            raise ValueError(ui_text('charts.__post_init__.text_5'))
+            raise ValueError(ui_text('charts.post_init.invalid_marker'))
         if not self.label:
-            raise ValueError(ui_text('charts.__post_init__.text_6'))
+            raise ValueError(ui_text('charts.post_init.label_required'))
         if self.target_position is not None and type(self.target_position) is not int:
-            raise ValueError(ui_text('charts.__post_init__.text_7'))
+            raise ValueError(ui_text('charts.post_init.integer_target_required'))
         if self.kind == 'signal' and self.price is not None:
-            raise ValueError(ui_text('charts.__post_init__.text_8'))
+            raise ValueError(ui_text('charts.post_init.signal_price_forbidden'))
         if self.kind == 'fill' and (self.price is None or type(self.quantity) is not int or self.quantity <= 0):
-            raise ValueError(ui_text('charts.__post_init__.text_9'))
+            raise ValueError(ui_text('charts.post_init.fill_price_quantity_required'))
         for value in (self.price, self.cost):
             if value is not None:
                 _number(value)
         if self.cost is not None and self.cost < 0:
-            raise ValueError(ui_text('charts.__post_init__.text_10'))
+            raise ValueError(ui_text('charts.post_init.negative_cost'))
 
 
 @dataclass(frozen=True)
@@ -152,15 +152,15 @@ class ReferenceLine:
 
     def __post_init__(self):
         if not self.label:
-            raise ValueError(ui_text('charts.__post_init__.text_11'))
+            raise ValueError(ui_text('charts.post_init.reference_label_required'))
         _number(self.price)
         if (self.snapshot_index is None) != (self.as_of is None):
-            raise ValueError(ui_text('charts.__post_init__.text_12'))
+            raise ValueError(ui_text('charts.post_init.snapshot_pair_required'))
         if self.snapshot_index is not None:
             if type(self.snapshot_index) is not int or self.snapshot_index < 0:
-                raise ValueError(ui_text('charts.__post_init__.text_13'))
+                raise ValueError(ui_text('charts.post_init.invalid_snapshot_index'))
             if not isinstance(self.as_of, datetime) or self.as_of.utcoffset() != timedelta(0):
-                raise ValueError(ui_text('charts.__post_init__.text_14'))
+                raise ValueError(ui_text('charts.post_init.snapshot_utc_required'))
 
 
 class _ChartAnnotationMixin:
@@ -172,10 +172,10 @@ class _ChartAnnotationMixin:
 
     def set_markers(self, markers, *, trace):
         if self.trace is None or trace != self.trace:
-            raise ValueError(ui_text('charts.set_markers.text_1'))
+            raise ValueError(ui_text('charts.set_markers.identity_mismatch'))
         markers = tuple(markers)
         if len(markers) > 100000 or any(not isinstance(m, ChartMarker) or m.index >= len(self.bars) for m in markers):
-            raise ValueError(ui_text('charts.set_markers.text_2'))
+            raise ValueError(ui_text('charts.set_markers.marker_outside_data'))
         self.markers = markers
         indexed = {}
         for m in markers:
@@ -186,16 +186,16 @@ class _ChartAnnotationMixin:
     def set_reference_lines(self, lines, *, trace=None):
         lines = tuple(lines)
         if len(lines) > 16 or any(not isinstance(x, ReferenceLine) for x in lines):
-            raise ValueError(ui_text('charts.set_reference_lines.text_1'))
+            raise ValueError(ui_text('charts.set_reference_lines.invalid_reference'))
         snapshots = [line for line in lines if line.snapshot_index is not None]
         if snapshots:
             if self.trace is None or trace != self.trace:
-                raise ValueError(ui_text('charts.set_reference_lines.text_2'))
+                raise ValueError(ui_text('charts.set_reference_lines.snapshot_identity_mismatch'))
             if len(snapshots) > 6:
-                raise ValueError(ui_text('charts.set_reference_lines.text_3'))
+                raise ValueError(ui_text('charts.set_reference_lines.reference_limit'))
             for line in snapshots:
                 if line.snapshot_index >= len(self.bars) or self.bars[line.snapshot_index].end != line.as_of:
-                    raise ValueError(ui_text('charts.set_reference_lines.text_4'))
+                    raise ValueError(ui_text('charts.set_reference_lines.snapshot_time_mismatch'))
         self.reference_lines = lines
         self.update()
 
@@ -242,7 +242,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumSize(360, 280)
-        self.setAccessibleName(ui_text('charts.__init__.text_1'))
+        self.setAccessibleName(ui_text('charts.init.accessible_name'))
         self.bars = ()
         self.trace = None
         self.overlays = MappingProxyType({})
@@ -254,7 +254,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.reference_lines = ()
         self.drawings = ()
         self.layer_visibility = {'signal': True, 'fill': True}
-        self.source_label = ui_text('charts.__init__.text_2')
+        self.source_label = ui_text('charts.init.no_data')
         self.status_label = ''
         self.error = ''
         self.timeframe = '1d'
@@ -277,18 +277,18 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     def set_series(self, series, *, trace=None, source_label='', status_label=''):
         bars = tuple(getattr(series, 'bars', series))
         if len(bars) > 100000:
-            raise ValueError(ui_text('charts.set_series.text_1'))
+            raise ValueError(ui_text('charts.set_series.bar_limit'))
         contracts = {b.contract_id for b in bars}
         if len(contracts) > 1 or (trace and contracts and contracts != {trace.contract_id}):
-            raise ValueError(ui_text('charts.set_series.text_2'))
+            raise ValueError(ui_text('charts.set_series.contract_mismatch'))
         if len({getattr(b, 'interval', None) for b in bars}) > 1:
-            raise ValueError(ui_text('charts.set_series.text_3'))
+            raise ValueError(ui_text('charts.set_series.mixed_timeframes'))
         for b in bars:
             o, h, l, c = map(_number, (b.open, b.high, b.low, b.close))
             if not l <= min(o, c) <= max(o, c) <= h:
-                raise ValueError(ui_text('charts.set_series.text_4'))
+                raise ValueError(ui_text('charts.set_series.invalid_ohlc'))
             if b.volume is not None and (type(b.volume) is not int or b.volume < 0):
-                raise ValueError(ui_text('charts.set_series.text_5'))
+                raise ValueError(ui_text('charts.set_series.invalid_volume'))
         self.bars = bars
         self.paper_orders.drag, self.paper_orders.hits = None, ()
         if trace is not None:
@@ -296,9 +296,11 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.trace = trace
         provenance = getattr(series, 'provenance', None)
         self.source_label = source_label or (
-            ui_text('charts.set_series.text_6').format(provenance.attribution, provenance.as_of) if provenance else ui_text('charts.set_series.text_7')
+            ui_text('charts.set_series.source_title').format(provenance.attribution, provenance.as_of)
+            if provenance
+            else ui_text('charts.set_series.host_source')
         )
-        self.status_label = status_label or (provenance.mode if provenance else ui_text('charts.set_series.text_8'))
+        self.status_label = status_label or (provenance.mode if provenance else ui_text('charts.set_series.status_unknown'))
         self.overlays = MappingProxyType({})
         self.panes = MappingProxyType({})
         self.markers = ()
@@ -323,7 +325,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 
     def set_timeframe(self, timeframe):
         if timeframe not in self.timeframes:
-            raise ValueError(ui_text('charts.set_timeframe.text_1'))
+            raise ValueError(ui_text('charts.set_timeframe.unsupported_timeframe'))
         if timeframe != self.timeframe:
             self.timeframe = timeframe
             self.timeframe_changed.emit(timeframe)
@@ -343,7 +345,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             for label, sequence in mapping.items():
                 sequence = tuple(sequence)
                 if not label or len(sequence) != len(self.bars):
-                    raise ValueError(ui_text('charts.checked.text_1'))
+                    raise ValueError(ui_text('charts.checked.indicator_name_length_required'))
                 for v in sequence:
                     if v is not None:
                         _number(v)
@@ -353,10 +355,10 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         overlays = checked(values)
         extra = checked(panes or {})
         if len(overlays) > 16 or len(extra) > 8:
-            raise ValueError(ui_text('charts.set_overlays.text_1'))
+            raise ValueError(ui_text('charts.set_overlays.indicator_limit'))
         styles = dict(pane_styles or {})
         if any(label not in extra or style not in ('line', 'histogram') for label, style in styles.items()):
-            raise ValueError(ui_text('charts.set_overlays.text_2'))
+            raise ValueError(ui_text('charts.set_overlays.invalid_panel_style'))
         self.overlays = overlays
         self.panes = extra
         self.pane_styles = styles
@@ -369,11 +371,11 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 
     def _legend_label(self, label, *, pane=False):
         unavailable = self._unavailable_panes if pane else self._unavailable_overlays
-        return ui_text('charts._legend_label.text_1').format(label) if label in unavailable else label
+        return ui_text('charts.legend_label.insufficient_data').format(label) if label in unavailable else label
 
     def set_layer_visible(self, kind, visible):
         if kind not in self.layer_visibility:
-            raise ValueError(ui_text('charts.set_layer_visible.text_1'))
+            raise ValueError(ui_text('charts.set_layer_visible.unsupported_layer'))
         self.layer_visibility[kind] = bool(visible)
         self.update()
 
@@ -478,7 +480,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         text(
             12,
             22,
-            fm.elidedText(ui_text('charts.paintEvent.text_1').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
+            fm.elidedText(ui_text('charts.paint_event.title').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
         )
         text(12, 43, _theme.chart_legend(self))
         if self.paper_orders.notice:
@@ -486,7 +488,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.error or ui_text('charts.paintEvent.text_3'))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.error or ui_text('charts.paint_event.no_data'))
             p.end()
             return
         start, end = self.visible_range
@@ -524,15 +526,15 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 def _prepare_chart_geometry(self, p, fm, text, start, end, visible, r):
     idx = self.crosshair_index if self.crosshair_index is not None else end - 1
     d = self.bar_details(idx)
-    detail = ui_text('charts.paintEvent.text_5').format(
+    detail = ui_text('charts.paint_event.ohlcv').format(
         d['time'],
         self.price_text(d['open']),
         self.price_text(d['high']),
         self.price_text(d['low']),
         self.price_text(d['close']),
         self.price_text(d['change_text']),
-        d['volume'] if d['volume'] is not None else ui_text('charts.paintEvent.text_4'),
-    ) + (ui_text('charts.paintEvent.text_6') if d['partial'] else '')
+        d['volume'] if d['volume'] is not None else ui_text('charts.paint_event.unknown'),
+    ) + (ui_text('charts.paint_event.incomplete') if d['partial'] else '')
     text(12, 65, fm.elidedText(detail, Qt.TextElideMode.ElideRight, self.width() - 24))
     low = min(float(b.low) for b in visible)
     high = max(float(b.high) for b in visible)
@@ -576,7 +578,7 @@ def _paint_chart_bars(self, p, text, start, end, visible, r, low, high, x, y, st
             vh = (volume_bottom - volume_top) * b.volume / volume_max
             p.fillRect(QRectF(x(i) - step * 0.3, volume_bottom - vh, max(1, step * 0.6), vh), color)
     p.setPen(self.TEXT)
-    text(12, volume_top - 5, ui_text('charts.paintEvent.text_7'))
+    text(12, volume_top - 5, ui_text('charts.paint_event.volume'))
     self._draw_lines(p, self.overlays, start, end, x, y, r)
     _paint_drawings(p, self.drawings, self.bars, r, x, y)
     self.paper_orders.paint(p, r, visible[0].contract_id, y, low, high)
@@ -605,13 +607,13 @@ def _paint_chart_references(self, p, fm, text, references, r, x, y, step):
     snapshots = [line for line in references if line.snapshot_index is not None]
     labels = []
     if snapshots:
-        caption = ui_text('charts.paintEvent.text_8').format(_display_time(snapshots[0].as_of))
-        policy = ui_text('charts.paintEvent.text_9')
+        caption = ui_text('charts.paint_event.snapshot_summary').format(_display_time(snapshots[0].as_of))
+        policy = ui_text('charts.paint_event.protective_threshold')
         labels = [caption] + [
-            (self.price_text(line.price) if _privacy.enabled(self) else ui_text('charts.paintEvent.text_10').format(line.label, float(line.price)))
+            (self.price_text(line.price) if _privacy.enabled(self) else ui_text('charts.paint_event.named_price').format(line.label, float(line.price)))
             for line in snapshots
         ]
-        if any(ui_text('charts.paintEvent.text_11') in line.label for line in snapshots):
+        if any(ui_text('charts.paint_event.threshold') in line.label for line in snapshots):
             labels.append(policy)
         width = min(r.width(), max(fm.horizontalAdvance(label) for label in labels) + 12)
         panel = QRectF(r.left() + 4, r.top() + 4, width, (fm.height() + 2) * len(labels) + 8)
@@ -683,9 +685,9 @@ def _paint_chart_markers_and_panes(self, p, text, start, end, marker_index, r, x
 def _paint_chart_footer(self, p, fm, text, start, end, r, x, y, volume_bottom, marker_index, detail, snapshots, labels):
     first_time = self.bar_details(start)['time']
     last_time = self.bar_details(end - 1)['time']
-    footer_detail = ui_text('charts.paintEvent.text_12').format(first_time, last_time)
+    footer_detail = ui_text('charts.paint_event.visible_range').format(first_time, last_time)
     if self.trace:
-        footer_detail += ui_text('charts.paintEvent.text_13').format(self.trace.mode, self.trace.data_hash, self.trace.strategy_hash)
+        footer_detail += ui_text('charts.paint_event.trace_hashes').format(self.trace.mode, self.trace.data_hash, self.trace.strategy_hash)
     if self.crosshair_index is not None and start <= self.crosshair_index < end:
         xx = x(self.crosshair_index)
         yy = y(self.bars[self.crosshair_index].close)
@@ -693,17 +695,23 @@ def _paint_chart_footer(self, p, fm, text, start, end, r, x, y, volume_bottom, m
         p.drawLine(QPointF(xx, r.top()), QPointF(xx, volume_bottom))
         p.drawLine(QPointF(r.left(), yy), QPointF(r.right(), yy))
         marker_text = ' / '.join(
-            ui_text('charts.paintEvent.text_16').format(
-                ui_text('charts.paintEvent.text_14') if m.kind == 'signal' else ui_text('charts.paintEvent.text_15'), m.label, m.reason
+            ui_text('charts.paint_event.marker_summary').format(
+                ui_text('charts.paint_event.signal') if m.kind == 'signal' else ui_text('charts.paint_event.fill'), m.label, m.reason
             )
             + (
-                ui_text('charts.paintEvent.text_18').format(
-                    self.price_text(m.price), m.quantity, self.price_text(m.cost) if m.cost is not None else ui_text('charts.paintEvent.text_17')
+                ui_text('charts.paint_event.fill_details').format(
+                    self.price_text(m.price), m.quantity, self.price_text(m.cost) if m.cost is not None else ui_text('charts.paint_event.not_provided')
                 )
                 if m.kind == 'fill'
-                else ui_text('charts.paintEvent.text_20').format(m.target_position if m.target_position is not None else ui_text('charts.paintEvent.text_19'))
+                else ui_text('charts.paint_event.target_position').format(
+                    m.target_position if m.target_position is not None else ui_text('charts.paint_event.not_provided')
+                )
             )
-            + (ui_text('charts.paintEvent.text_21').format(_display_time(m.timestamp)) if m.timestamp is not None else ui_text('charts.paintEvent.text_22'))
+            + (
+                ui_text('charts.paint_event.event_time').format(_display_time(m.timestamp))
+                if m.timestamp is not None
+                else ui_text('charts.paint_event.time_missing')
+            )
             for m in marker_index.get(self.crosshair_index, ())
         )
         snapshot_text = '\n'.join(labels) if snapshots else ''

@@ -28,7 +28,7 @@ def strategy_tabs(layout):
 
 
 def candidate_analysis_layout(layout):
-    toggle = QCheckBox(ui_text('ui._analysis_section.text_1'))
+    toggle = QCheckBox(ui_text('ui.analysis_section.title'))
     toggle.setObjectName('candidate_analysis_toggle')
     layout.addWidget(toggle)
     content = QWidget()

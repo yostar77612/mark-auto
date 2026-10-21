@@ -35,7 +35,7 @@ class IdleHintTests(unittest.TestCase):
         try:
             button.setObjectName('cancel_job')
             button.setEnabled(False)
-            hint = DisabledHint(button, label, ui_text('ui_polish.install_polish.text_28'))
+            hint = DisabledHint(button, label, ui_text('ui_polish.install_polish.cancellable_job_prerequisite'))
             self.assertEqual(header.job.text(), ui_text('header.idle'))
             self.assertEqual(label.text(), ui_text('job.idle_hint'))
             self.assertEqual(button.toolTip(), label.text())
@@ -93,13 +93,13 @@ class IdleHintTests(unittest.TestCase):
         label = QLabel(window)
         button.setObjectName('run_backtest')
         button.setEnabled(False)
-        prerequisite = ui_text('ui_polish.install_polish.text_21')
+        prerequisite = ui_text('ui_polish.install_polish.import_prerequisite')
         hint = DisabledHint(button, label, prerequisite)
         try:
-            self.assertEqual(label.text(), ui_text('ui_polish.update.text_2').format(prerequisite))
+            self.assertEqual(label.text(), ui_text('ui_polish.update.prerequisite_required').format(prerequisite))
             window.jobs.active = True
             hint.update()
-            self.assertEqual(label.text(), ui_text('ui_polish.update.text_2').format(ui_text('ui_polish.update.text_1')))
+            self.assertEqual(label.text(), ui_text('ui_polish.update.prerequisite_required').format(ui_text('ui_polish.update.job_busy')))
         finally:
             window.close()
 
@@ -119,16 +119,16 @@ class IdleHintTests(unittest.TestCase):
                     self.assertEqual(hint.prerequisite, ui_text('job.idle_hint'))
                     self.assertEqual(hint.label.text(), ui_text('job.idle_hint'))
                     self.assertEqual(window.app_header.job.text(), ui_text('header.idle'))
-                    self.assertEqual(window.status.text(), ui_text('ui.__init__.text_5'))
+                    self.assertEqual(window.status.text(), ui_text('ui.init.ready'))
                     self.assertFalse(hint.button.isEnabled())
                     self.assertTrue(hint.button.accessibleName())
                     self.assertTrue(hint.button.toolTip())
                     labels = [*window.app_header.findChildren(QLabel), window.status, hint.label]
                     text = '\n'.join(label.text() for label in labels if not label.isHidden())
-                    self.assertIn(ui_text('ui.__init__.text_5'), text)
-                    prefix = ui_text('ui_polish.update.text_2').split('{0}')[0]
+                    self.assertIn(ui_text('ui.init.ready'), text)
+                    prefix = ui_text('ui_polish.update.prerequisite_required').split('{0}')[0]
                     self.assertNotIn(prefix, text)
-                    self.assertNotIn(ui_text('ui_polish.install_polish.text_28'), text)
+                    self.assertNotIn(ui_text('ui_polish.install_polish.cancellable_job_prerequisite'), text)
                 palette = CommandPalette(window)
                 command = next(command for command in palette.commands() if command.id == 'cancel_job')
                 self.assertFalse(palette.available(command))

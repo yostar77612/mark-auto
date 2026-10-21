@@ -252,7 +252,7 @@ class RealWindowTests(unittest.TestCase):
                         self.assertTrue(jobs.active)
                         with self.assertRaises(ValidationError) as refused:
                             second('ui_demo', {'bars': 100})
-                        self.assertEqual(str(refused.exception), ui.ui_text('ui.start_job.text_1'))
+                        self.assertEqual(str(refused.exception), ui.ui_text('ui.start_job.job_busy'))
                         start.assert_called_once_with('ui_demo', {'bars': 100})
                         self.assertEqual(launcher.call_count, 1)
                     finally:

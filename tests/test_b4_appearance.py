@@ -96,7 +96,7 @@ class AppearanceTests(unittest.TestCase):
                     theme.up_down_colors(convention, theme=name, context='status')[0],
                 )
                 self.assertEqual(
-                    theme.chart_legend(chart), theme.ui_text('charts.paintEvent.text_2' if convention == 'red_up' else 'appearance.legend.green_up')
+                    theme.chart_legend(chart), theme.ui_text('charts.paint_event.legend' if convention == 'red_up' else 'appearance.legend.green_up')
                 )
 
     def test_chart_offscreen_background_and_palette(self):

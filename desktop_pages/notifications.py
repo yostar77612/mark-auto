@@ -33,7 +33,7 @@ class Toast(QLabel):
     def present(self, entry):
         self.timer.stop()
         self.entry = entry
-        self.setText(ui_text('ui.notify_local.text_1').format(escape(entry.message)))
+        self.setText(ui_text('ui.notify_local.result_close_links').format(escape(entry.message)))
         self.setAccessibleName(entry.message)
         set_status(self, 'danger' if entry.severity == 'error' else 'neutral')
         self.show()
@@ -308,7 +308,7 @@ def notify_local(host, message, *, error=False, completion=False):
     host._notification_operation = getattr(host, 'last_operation', None)
     # Existing callers supply presentation text; never stringify exceptions.
     text = message if type(message) is str else ui_text('notifications.error')
-    banner.setText(ui_text('ui.notify_local.text_1').format(escape(text)))
+    banner.setText(ui_text('ui.notify_local.result_close_links').format(escape(text)))
     set_status(banner, 'danger' if error else 'neutral')
     banner.show()
     timer = getattr(host, 'notification_timer', None)

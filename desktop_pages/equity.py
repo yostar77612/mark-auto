@@ -19,7 +19,7 @@ class EquityPlot(QWidget):
         self.cursor_x = None
         self.setMinimumHeight(300)
         self.setMouseTracking(True)
-        self.setAccessibleName(ui_text('ui.__init__.text_1'))
+        self.setAccessibleName(ui_text('ui.init.equity_accessible_name'))
 
     def set_values(self, rows):
         self.values, self.times, self.coordinates = [], [], []
@@ -71,13 +71,13 @@ class EquityPlot(QWidget):
     def axis_labels(self):
         if not self.values:
             return {'time': [], 'value': [], 'drawdown': []}
-        dates = [taipei_time(value) if 'T' in str(value) else str(value or ui_text('forms.metric.text_2')) for value in (self.times[0], self.times[-1])]
+        dates = [taipei_time(value) if 'T' in str(value) else str(value or ui_text('forms.metric.not_provided')) for value in (self.times[0], self.times[-1])]
         lo, hi = min(self.values), max(self.values)
         dd = [value for value in self.drawdowns if value is not None]
         return {
             'time': dates,
             'value': [_privacy.display(self, display_number(v, 'cash'), 'cash') for v in (lo, (lo + hi) / 2, hi)],
-            'drawdown': [display_number(min(dd), 'max_drawdown_pct'), display_number(0, 'max_drawdown_pct')] if dd else [ui_text('forms.metric.text_1')],
+            'drawdown': [display_number(min(dd), 'max_drawdown_pct'), display_number(0, 'max_drawdown_pct')] if dd else [ui_text('forms.metric.undefined')],
         }
 
     def mouseMoveEvent(self, event):
@@ -99,7 +99,7 @@ class EquityPlot(QWidget):
         painter.fillRect(self.rect(), QColor(theme_colors(self)['background']))
         painter.setPen(QColor(theme_colors(self)['text']))
         if not self.values:
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, ui_text('ui.paintEvent.text_1'))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, ui_text('ui.paint_event.no_equity'))
             return
         labels = self.axis_labels()
         xs = self.x_positions()

@@ -69,24 +69,24 @@ def _identity(value):
 
 def _friendly_contract(key):
     if key == 'TWSE:TAIEX':
-        return ui_text('market._friendly_contract.text_1')
+        return ui_text('market.friendly_contract.weighted_index')
     parts = key.split(':')
     if len(parts) != 3:
         return key
     product = {
-        'TX': ui_text('market._friendly_contract.text_2'),
-        'MTX': ui_text('market._friendly_contract.text_3'),
-        'TMF': ui_text('market._friendly_contract.text_4'),
+        'TX': ui_text('market.friendly_contract.index_futures'),
+        'MTX': ui_text('market.friendly_contract.mini_futures'),
+        'TMF': ui_text('market.friendly_contract.micro_futures'),
     }.get(parts[1], parts[1])
     expiry = parts[2]
     month = expiry[:4] + '/' + expiry[4:6]
     if len(expiry) > 6:
-        month += ui_text('market._friendly_contract.text_5').format(expiry[-1])
+        month += ui_text('market.friendly_contract.week_number').format(expiry[-1])
     return product + ' ' + month
 
 
 def _friendly_source(instrument):
-    return ui_text('market._friendly_source.text_1') if instrument.exchange == 'TWSE' else ui_text('market._friendly_source.text_2')
+    return ui_text('market.friendly_source.twse') if instrument.exchange == 'TWSE' else ui_text('market.friendly_source.taifex')
 
 
 def _label(text, name):
@@ -209,7 +209,7 @@ class MarketDashboard(QWidget):
 
     def _toggle_diagnostics(self, visible):
         self.diagnostics.setVisible(visible)
-        self.diagnostics_button.setText(ui_text('market._toggle_diagnostics.text_1') if visible else ui_text('market._toggle_diagnostics.text_2'))
+        self.diagnostics_button.setText(ui_text('market.toggle_diagnostics.expanded') if visible else ui_text('market.toggle_diagnostics.collapsed'))
 
     def _table(self, headers, name):
         label = {
@@ -271,7 +271,7 @@ class MarketDashboard(QWidget):
         if type(loading) is not bool:
             raise ValueError('loading must be boolean')
         self.refresh_button.setEnabled(not loading)
-        self.refresh_button.setText(ui_text('market.set_loading.text_1') if loading else ui_text('market.set_loading.text_2'))
+        self.refresh_button.setText(ui_text('market.set_loading.updating') if loading else ui_text('market.set_loading.update_official'))
 
     def _fill_contracts(self):
         self.contract_combo.blockSignals(True)
@@ -295,7 +295,7 @@ class MarketDashboard(QWidget):
         self.watchlist.blockSignals(True)
         self.watchlist.clear()
         for key in self._watch:
-            text = _friendly_contract(key) + (ui_text('market._render_watch.text_1') if key not in self._series else '')
+            text = _friendly_contract(key) + (ui_text('market.render_watch.no_data_suffix') if key not in self._series else '')
             item = QListWidgetItem(text)
             item.setToolTip(key)
             item.setData(Qt.ItemDataRole.UserRole, key)
@@ -333,7 +333,7 @@ class MarketDashboard(QWidget):
             if key in self._series:
                 self.contract_combo.setCurrentIndex(self.contract_combo.findData(key))
             else:
-                self.message.setText(ui_text('market._watch_selected.text_1'))
+                self.message.setText(ui_text('market.watch_selected.contract_unavailable'))
 
     def _contract_changed(self, index):
         key = self.contract_combo.itemData(index)
@@ -352,7 +352,7 @@ class MarketDashboard(QWidget):
             self.timeframe_combo.blockSignals(True)
             self.timeframe_combo.setCurrentIndex(self.timeframe_combo.findData(self._timeframe))
             self.timeframe_combo.blockSignals(False)
-            self.message.setText(ui_text('market._timeframe_changed.text_1'))
+            self.message.setText(ui_text('market.timeframe_changed.minute_data_required'))
             return
         self._prepare_chart_memory().capture(self, switching=True)
         self._timeframe = value
@@ -366,16 +366,16 @@ class MarketDashboard(QWidget):
             choices = [x for x in sources.values() if x.instrument.symbol == symbol]
             item = next((x for x in choices if x.instrument.contract_id == self._selected), choices[0] if choices else None)
             if not item:
-                label.setText(ui_text('market._render_cards.text_1'))
+                label.setText(ui_text('market.render_cards.no_data'))
                 set_financial_label(label, None)
                 label.setToolTip('')
                 continue
             quote = QuoteSnapshot.from_series(item, stale=stale)
             change = quote.change
-            delta = ui_text('market._render_cards.text_2') if change is None else f'{change:+f}'
+            delta = ui_text('market.render_cards.previous_close_missing') if change is None else f'{change:+f}'
             raw = (
                 f'{_friendly_contract(item.instrument.contract_id)}\n{quote.last:,.2f}  {delta}\n{quote.trade_date} · '
-                + (ui_text('market._render_cards.text_3') if stale else ui_text('market._render_cards.text_4'))
+                + (ui_text('market.render_cards.stale_cache') if stale else ui_text('market.render_cards.historical_snapshot'))
                 + ' · '
                 + ui_text('market.not_realtime')
                 + (' · ' + ui_text('market.sample_label') if item.provenance.source_url == 'sample:synthetic-v1' else '')
@@ -387,7 +387,7 @@ class MarketDashboard(QWidget):
                 ),
             )
             label.setToolTip(
-                ui_text('market._render_cards.text_5').format(
+                ui_text('market.render_cards.source_details').format(
                     item.instrument.contract_id,
                     item.instrument.symbol,
                     item.provenance.attribution,
@@ -409,19 +409,19 @@ class MarketDashboard(QWidget):
             self.chart.set_series(())
             self._display_bars = ()
             self._apply_indicators()
-            self.source_status.setText(ui_text('market._render_chart.text_1').format(' · ' + self._error if self._error else ''))
+            self.source_status.setText(ui_text('market.render_chart.offline').format(' · ' + self._error if self._error else ''))
             self.chart.display_changed.emit()
             return
         provenance = item.provenance
         # This dashboard consumes historical bar snapshots, never a streaming quote entitlement.
         status = (
-            ui_text('market._render_chart.text_2')
+            ui_text('market.render_chart.stale_cache')
             if self._stale
-            else ui_text('market._render_chart.text_3')
+            else ui_text('market.render_chart.historical')
             if provenance.mode == 'history'
-            else ui_text('market._render_chart.text_4')
+            else ui_text('market.render_chart.post_session')
             if provenance.mode == 'eod'
-            else ui_text('market._render_chart.text_5')
+            else ui_text('market.render_chart.historical_snapshot')
         )
         self.source_status.setText(ui_text('market.data_date').format(_series_source(item), provenance.as_of, ui_text('market.not_realtime')))
         try:
@@ -437,10 +437,10 @@ class MarketDashboard(QWidget):
         memory.restore(self)
         warnings = list(provenance.warnings) + list(result.warnings)
         if any(bar.partial for bar in result.bars):
-            warnings.insert(0, ui_text('market._render_chart.text_7'))
+            warnings.insert(0, ui_text('market.render_chart.incomplete_bars'))
         if self._error:
             warnings.insert(0, self._error)
-        details = ui_text('market._render_chart.text_8').format(
+        details = ui_text('market.render_chart.source_details').format(
             item.instrument.contract_id,
             item.instrument.symbol,
             provenance.attribution,
@@ -454,11 +454,11 @@ class MarketDashboard(QWidget):
         self.diagnostics.setPlainText(details)
         self.source_status.setToolTip(details)
         self.message.setToolTip('\n'.join(warnings))
-        message = ui_text('market._render_chart.text_9') if warnings else ui_text('market._render_chart.text_10')
-        if provenance.mode == 'history' and ui_text('market._render_chart.text_11') in provenance.timestamp_basis:
-            message = ui_text('market._render_chart.text_12').format(message)
+        message = ui_text('market.render_chart.integrity_warning') if warnings else ui_text('market.render_chart.historical_not_live')
+        if provenance.mode == 'history' and ui_text('market.render_chart.policy_hash_prefix') in provenance.timestamp_basis:
+            message = ui_text('market.render_chart.local_sessions_unverified').format(message)
         if self._error:
-            message = ui_text('market._render_chart.text_13').format(message)
+            message = ui_text('market.render_chart.update_failed').format(message)
         self.message.setText(message)
         self._indicator_message_base = message
         self._apply_indicators()
@@ -481,13 +481,13 @@ class MarketDashboard(QWidget):
             return
         if config['MACD']['fast'] >= config['MACD']['slow']:
             self._restore_indicator_controls()
-            self.message.setText(ui_text('market._indicators_changed.text_1'))
+            self.message.setText(ui_text('market.indicators_changed.invalid_macd'))
             return
         changed = {key for key in config if config[key] != self._indicator_config[key]}
         failures = self._apply_indicators(config, reject_failures=changed)
         if failures:
             self._restore_indicator_controls()
-            self.message.setText(ui_text('market._indicators_changed.text_2').format(self._indicator_failure_text(failures)))
+            self.message.setText(ui_text('market.indicators_changed.restored_parameters').format(self._indicator_failure_text(failures)))
             return
         self._prepare_chart_memory().indicators_edited(config, self._indicator_config)
         self._indicator_config = config
@@ -509,7 +509,7 @@ class MarketDashboard(QWidget):
 
     @staticmethod
     def _indicator_failure_text(failures):
-        return ui_text('market._indicator_failure_text.text_2').format(ui_text('market._indicator_failure_text.text_1').join(failures))
+        return ui_text('market.indicator_failure_text.calculation_limit').format(ui_text('market.indicator_failure_text.indicator_separator').join(failures))
 
     def _apply_indicators(self, config=None, *, reject_failures=()):
         bars = getattr(self, '_display_bars', ())
@@ -577,23 +577,27 @@ class MarketDashboard(QWidget):
                     for band, values in indicators.ma_channel(closes, **kwargs).items():
                         overlays[ui_text('market.indicator.band').format(label, band)] = values
                 elif key == 'VWAP':
-                    overlays[ui_text('market._apply_indicators.text_1')] = indicators.session_vwap(bars)
+                    overlays[ui_text('market.apply_indicators.vwap_estimate')] = indicators.session_vwap(bars)
             except indicators.IndicatorResourceLimitError:
                 failures.append(key)
         rejected = tuple(key for key in failures if key in reject_failures)
         if rejected:
             return rejected
-        summary = ' / '.join(label + (ui_text('market._apply_indicators.text_2') if key in failures else '') for key, label in names) or ui_text(
-            'market._apply_indicators.text_3'
+        summary = ' / '.join(label + (ui_text('market.apply_indicators.calculation_failed') if key in failures else '') for key, label in names) or ui_text(
+            'market.apply_indicators.indicators_disabled'
         )
-        self.indicator_summary.setText(ui_text('market._apply_indicators.text_4').format(summary))
-        overlays = {name: values if name == ui_text('market._apply_indicators.text_5') else tuple(values[i] for i in keep) for name, values in overlays.items()}
+        self.indicator_summary.setText(ui_text('market.apply_indicators.warmup_hint').format(summary))
+        overlays = {
+            name: values if name == ui_text('market.apply_indicators.vwap_estimate') else tuple(values[i] for i in keep) for name, values in overlays.items()
+        }
         panes = {f'{panel} {key}'.rstrip(): tuple(values[i] for i in keep) for panel, entries in panels.items() for key, values in entries.items()}
         if 'MACD histogram' in panes:
             panes['MACD histogram 1×'] = panes.pop('MACD histogram')
         self.chart.set_overlays(overlays, panes=panes, pane_styles={'MACD histogram 1×': 'histogram'} if 'MACD histogram 1×' in panes else {})
-        message = getattr(self, '_indicator_message_base', ui_text('market._apply_indicators.text_6'))
-        self.message.setText(message + (ui_text('market._apply_indicators.text_7').format(self._indicator_failure_text(failures)) if failures else ''))
+        message = getattr(self, '_indicator_message_base', ui_text('market.apply_indicators.historical_not_live'))
+        self.message.setText(
+            message + (ui_text('market.apply_indicators.omitted_indicators').format(self._indicator_failure_text(failures)) if failures else '')
+        )
         self.chart.display_changed.emit()
         return ()
 
@@ -701,13 +705,13 @@ class MarketDashboard(QWidget):
         if any(value is not None and (not isinstance(value, str) or len(value) > 500) for value in values.values()):
             raise ValueError('invalid host status')
         for key, title in [
-            ('strategy', ui_text('market.set_trading_status.text_1')),
-            ('paper', ui_text('market.set_trading_status.text_2')),
-            ('risk', ui_text('market.set_trading_status.text_3')),
+            ('strategy', ui_text('market.set_trading_status.strategy')),
+            ('paper', ui_text('market.set_trading_status.paper')),
+            ('risk', ui_text('market.set_trading_status.risk')),
         ]:
             label = self.trading_labels[key]
-            raw = ui_text('market.set_trading_status.text_5').format(
-                title, values[key] if values[key] is not None else ui_text('market.set_trading_status.text_4')
+            raw = ui_text('market.set_trading_status.named_value').format(
+                title, values[key] if values[key] is not None else ui_text('market.set_trading_status.unknown_status')
             )
             field = 'cash' if key == 'paper' else key
             _privacy.bind_text(label, lambda label=label, raw=raw, field=field: label.setText(_privacy.display(label, raw, field)))
@@ -772,89 +776,89 @@ class MarketHistoryDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(ui_text('market.__init__.text_70'))
+        self.setWindowTitle(ui_text('market.init.import_history'))
         self.resize(800, 720)
         self.sessions = []
         self._payload = None
         layout = QVBoxLayout(self)
-        layout.addWidget(_label(ui_text('market.__init__.text_71'), 'history_disclosure'))
-        self.path = _named(QLineEdit(), 'history_path', ui_text('market.__init__.text_72'))
-        self.path.setPlaceholderText(ui_text('market.__init__.text_73'))
+        layout.addWidget(_label(ui_text('market.init.history_source_hint'), 'history_disclosure'))
+        self.path = _named(QLineEdit(), 'history_path', ui_text('market.init.file_path'))
+        self.path.setPlaceholderText(ui_text('market.init.browse_history'))
         file_row = QHBoxLayout()
         file_row.addWidget(self.path)
-        self.browse = _named(QPushButton(ui_text('market.__init__.text_74')), 'history_browse', ui_text('market.__init__.text_75'))
+        self.browse = _named(QPushButton(ui_text('market.init.browse_file')), 'history_browse', ui_text('market.init.history_file_accessible_name'))
         self.browse.clicked.connect(self.choose_file)
         file_row.addWidget(self.browse)
         layout.addLayout(file_row)
         form = QFormLayout()
         layout.addLayout(form)
-        self.product = _named(QComboBox(), 'history_product', ui_text('market.__init__.text_76'))
+        self.product = _named(QComboBox(), 'history_product', ui_text('market.init.product'))
         for label, value in [
-            (ui_text('market.__init__.text_77'), 'TX'),
-            (ui_text('market.__init__.text_78'), 'MTX'),
-            (ui_text('market.__init__.text_79'), 'TMF'),
+            (ui_text('market.init.index_futures'), 'TX'),
+            (ui_text('market.init.mini_futures'), 'MTX'),
+            (ui_text('market.init.micro_futures'), 'TMF'),
         ]:
             self.product.addItem(label, value)
-        form.addRow(ui_text('market.__init__.text_80'), self.product)
-        self.month = _named(QLineEdit(), 'history_month', ui_text('market.__init__.text_81'))
-        self.month.setPlaceholderText(ui_text('market.__init__.text_82'))
-        form.addRow(ui_text('market.__init__.text_83'), self.month)
-        self.expiry_type = _named(QComboBox(), 'history_expiry_type', ui_text('market.__init__.text_84'))
-        self.expiry_type.addItem(ui_text('market.__init__.text_85'), 'monthly')
-        self.expiry_type.addItem(ui_text('market.__init__.text_86'), 'weekly')
-        self.week = _named(QSpinBox(), 'history_week', ui_text('market.__init__.text_87'))
+        form.addRow(ui_text('market.init.product_caption'), self.product)
+        self.month = _named(QLineEdit(), 'history_month', ui_text('market.init.expiry_month'))
+        self.month.setPlaceholderText(ui_text('market.init.expiry_month_placeholder'))
+        form.addRow(ui_text('market.init.expiry_month_required'), self.month)
+        self.expiry_type = _named(QComboBox(), 'history_expiry_type', ui_text('market.init.contract_type'))
+        self.expiry_type.addItem(ui_text('market.init.monthly_contract'), 'monthly')
+        self.expiry_type.addItem(ui_text('market.init.weekly_contract'), 'weekly')
+        self.week = _named(QSpinBox(), 'history_week', ui_text('market.init.expiry_week'))
         self.week.setRange(1, 5)
         self.week.setEnabled(False)
         expiry_row = QHBoxLayout()
         expiry_row.addWidget(self.expiry_type)
         expiry_row.addWidget(self.week)
-        form.addRow(ui_text('market.__init__.text_88'), expiry_row)
-        self.trade_date = _named(DateInput(), 'history_trade_date', ui_text('market.__init__.text_89'))
-        self.trade_date.setPlaceholderText(ui_text('market.__init__.text_90'))
-        form.addRow(ui_text('market.__init__.text_91'), self.trade_date)
-        self.session = _named(QComboBox(), 'history_session', ui_text('market.__init__.text_92'))
-        self.session.addItem(ui_text('market.__init__.text_93'), 'day')
-        self.session.addItem(ui_text('market.__init__.text_94'), 'night')
-        form.addRow(ui_text('market.__init__.text_95'), self.session)
-        self.open_date = _named(DateInput(), 'history_open_date', ui_text('market.__init__.text_96'))
+        form.addRow(ui_text('market.init.contract_type_caption'), expiry_row)
+        self.trade_date = _named(DateInput(), 'history_trade_date', ui_text('market.init.trading_day'))
+        self.trade_date.setPlaceholderText(ui_text('market.init.trading_day_hint'))
+        form.addRow(ui_text('market.init.trading_day_required'), self.trade_date)
+        self.session = _named(QComboBox(), 'history_session', ui_text('market.init.session_kind'))
+        self.session.addItem(ui_text('market.init.day_session'), 'day')
+        self.session.addItem(ui_text('market.init.night_session'), 'night')
+        form.addRow(ui_text('market.init.session_caption'), self.session)
+        self.open_date = _named(DateInput(), 'history_open_date', ui_text('market.init.open_date'))
         self.open_date.setPlaceholderText('YYYY-MM-DD')
-        self.end_date = _named(DateInput(), 'history_end_date', ui_text('market.__init__.text_97'))
-        self.end_date.setPlaceholderText(ui_text('market.__init__.text_98'))
-        self.open_time = _named(QTimeEdit(QTime(8, 45)), 'history_open_time', ui_text('market.__init__.text_99'))
-        self.end_time = _named(QTimeEdit(QTime(13, 45)), 'history_end_time', ui_text('market.__init__.text_100'))
+        self.end_date = _named(DateInput(), 'history_end_date', ui_text('market.init.close_date'))
+        self.end_date.setPlaceholderText(ui_text('market.init.date_hint'))
+        self.open_time = _named(QTimeEdit(QTime(8, 45)), 'history_open_time', ui_text('market.init.open_time'))
+        self.end_time = _named(QTimeEdit(QTime(13, 45)), 'history_end_time', ui_text('market.init.close_time'))
         for widget in (self.open_time, self.end_time):
             widget.setDisplayFormat('HH:mm')
         for title, date_widget, time_widget in [
-            (ui_text('market.__init__.text_101'), self.open_date, self.open_time),
-            (ui_text('market.__init__.text_102'), self.end_date, self.end_time),
+            (ui_text('market.init.open_time_caption'), self.open_date, self.open_time),
+            (ui_text('market.init.close_time_caption'), self.end_date, self.end_time),
         ]:
             row = QHBoxLayout()
             row.addWidget(date_widget)
             row.addWidget(time_widget)
             row.addWidget(history_utc_hint(date_widget, time_widget, self))
             form.addRow(title, row)
-        self.include_end = _named(QCheckBox(ui_text('market.__init__.text_103')), 'history_include_end', ui_text('market.__init__.text_104'))
+        self.include_end = _named(QCheckBox(ui_text('market.init.include_close')), 'history_include_end', ui_text('market.init.include_close_caption'))
         form.addRow(self.include_end)
         self.source = _label('', 'history_product_source')
         layout.addWidget(self.source)
-        layout.addWidget(_label(ui_text('market.__init__.text_105'), 'history_policy_disclosure'))
-        self.confirm = _named(QCheckBox(ui_text('market.__init__.text_106')), 'history_confirm', ui_text('market.__init__.text_107'))
+        layout.addWidget(_label(ui_text('market.init.session_defaults_hint'), 'history_policy_disclosure'))
+        self.confirm = _named(QCheckBox(ui_text('market.init.session_consent')), 'history_confirm', ui_text('market.init.confirm_session'))
         layout.addWidget(self.confirm)
         row = QHBoxLayout()
-        self.add = _named(QPushButton(ui_text('market.__init__.text_108')), 'history_add_session', ui_text('market.__init__.text_109'))
+        self.add = _named(QPushButton(ui_text('market.init.add_confirmed_session')), 'history_add_session', ui_text('market.init.add_session'))
         self.add.clicked.connect(self.add_session)
         row.addWidget(self.add)
-        self.remove = _named(QPushButton(ui_text('market.__init__.text_110')), 'history_remove_session', ui_text('market.__init__.text_111'))
+        self.remove = _named(QPushButton(ui_text('market.init.remove_selected_session')), 'history_remove_session', ui_text('market.init.remove_session'))
         self.remove.clicked.connect(self.remove_session)
         row.addWidget(self.remove)
         layout.addLayout(row)
-        self.session_list = _named(QListWidget(), 'history_sessions', ui_text('market.__init__.text_112'))
+        self.session_list = _named(QListWidget(), 'history_sessions', ui_text('market.init.confirmed_sessions'))
         layout.addWidget(self.session_list)
         self.error = _label('', 'history_error')
         layout.addWidget(self.error)
         self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(ui_text('market.__init__.text_113'))
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(ui_text('market.__init__.text_114'))
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(ui_text('market.init.import_confirmed_sessions'))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(ui_text('market.init.cancel'))
         self.buttons.accepted.connect(self.accept_import)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
@@ -882,7 +886,7 @@ class MarketHistoryDialog(QDialog):
         # Load this operation-specific dependency only when requested.
         from quantlab.market_history import PRODUCT_SOURCES
 
-        self.source.setText(ui_text('market._source_label.text_1').format(PRODUCT_SOURCES[self.product.currentData()]))
+        self.source.setText(ui_text('market.source_label.session_rule_reference').format(PRODUCT_SOURCES[self.product.currentData()]))
 
     def _session_defaults(self, *args):
         night = self.session.currentData() == 'night'
@@ -891,7 +895,7 @@ class MarketHistoryDialog(QDialog):
         self._unconfirm()
 
     def choose_file(self):
-        name, _ = QFileDialog.getOpenFileName(self, ui_text('market.choose_file.text_1'), '', 'TAIFEX CSV / RPT (*.csv *.rpt *.CSV *.RPT)')
+        name, _ = QFileDialog.getOpenFileName(self, ui_text('market.choose_file.dialog_title'), '', 'TAIFEX CSV / RPT (*.csv *.rpt *.CSV *.RPT)')
         if name:
             self.path.setText(name)
 
@@ -959,7 +963,7 @@ class MarketHistoryDialog(QDialog):
                 if max(a, c) < min(b, d) or (b == c and existing['include_end']) or (d == a and value['include_end']):
                     raise ValueError('history_session_overlap')
             self.sessions.append(value)
-            label = ui_text('market.add_session.text_3').format(
+            label = ui_text('market.add_session.session_summary').format(
                 value['contract_id'],
                 value['trade_date'],
                 value['session'],
@@ -967,7 +971,7 @@ class MarketHistoryDialog(QDialog):
                 self.open_time.text(),
                 self.end_date.text(),
                 self.end_time.text(),
-                ui_text('market.add_session.text_1') if value['include_end'] else ui_text('market.add_session.text_2'),
+                ui_text('market.add_session.included') if value['include_end'] else ui_text('market.add_session.excluded'),
             )
             self.session_list.addItem(label)
             self.confirm.setChecked(False)
@@ -1002,18 +1006,18 @@ class MarketHistoryDialog(QDialog):
 
     def payload(self):
         if self._payload is None:
-            raise ValueError(ui_text('market.payload.text_1'))
+            raise ValueError(ui_text('market.payload.confirmation_required'))
         return deepcopy(self._payload)
 
 
 def _build_market_header(self, root):
     header = QHBoxLayout()
-    title = _label(ui_text('market.__init__.text_1'), 'market_title')
+    title = _label(ui_text('market.init.title'), 'market_title')
     header.addWidget(title)
     header.addStretch()
-    header.addWidget(_label(ui_text('market.__init__.text_2'), 'market_safety'))
-    self.refresh_button = _named(QPushButton(ui_text('market.__init__.text_3')), 'market_refresh', ui_text('market.__init__.text_4'))
-    self.refresh_button.setToolTip(ui_text('market.__init__.text_5'))
+    header.addWidget(_label(ui_text('market.init.historical_market'), 'market_safety'))
+    self.refresh_button = _named(QPushButton(ui_text('market.init.update_official')), 'market_refresh', ui_text('market.init.update_official'))
+    self.refresh_button.setToolTip(ui_text('market.init.consent_hint'))
     self.refresh_button.clicked.connect(self.refresh_requested.emit)
     header.addWidget(self.refresh_button)
     root.addLayout(header)
@@ -1029,15 +1033,15 @@ def _build_market_cards(self, root, PanelCard):
     cards.setContentsMargins(0, 0, 0, 0)
     self.cards = {}
     for key, title in [
-        ('TAIEX', ui_text('market.__init__.text_6')),
-        ('TX', ui_text('market.__init__.text_7')),
-        ('MXF', ui_text('market.__init__.text_8')),
-        ('TMF', ui_text('market.__init__.text_9')),
+        ('TAIEX', ui_text('market.init.weighted_index')),
+        ('TX', ui_text('market.init.index_futures')),
+        ('MXF', ui_text('market.init.mini_futures')),
+        ('TMF', ui_text('market.init.micro_futures')),
     ]:
         group = PanelCard(title)
         layout = group.content_layout()
         layout.setContentsMargins(8, 8, 8, 6)
-        value = _label(ui_text('market.__init__.text_10'), 'market_card_' + key)
+        value = _label(ui_text('market.init.no_data'), 'market_card_' + key)
         layout.addWidget(value)
         cards.addWidget(group)
         self.cards[key] = value
@@ -1046,14 +1050,16 @@ def _build_market_cards(self, root, PanelCard):
 
 
 def _build_market_diagnostics(self, root):
-    self.source_status = _label(ui_text('market.__init__.text_11'), 'market_source_status')
+    self.source_status = _label(ui_text('market.init.offline'), 'market_source_status')
     source_row = QHBoxLayout()
     source_row.addWidget(self.source_status, 1)
-    self.diagnostics_button = _named(QPushButton(ui_text('market.__init__.text_12')), 'market_diagnostics_toggle', ui_text('market.__init__.text_13'))
+    self.diagnostics_button = _named(
+        QPushButton(ui_text('market.init.diagnostics_collapsed')), 'market_diagnostics_toggle', ui_text('market.init.expand_diagnostics')
+    )
     self.diagnostics_button.setCheckable(True)
     source_row.addWidget(self.diagnostics_button)
     root.addLayout(source_row)
-    self.diagnostics = _named(QPlainTextEdit(), 'market_diagnostics', ui_text('market.__init__.text_14'))
+    self.diagnostics = _named(QPlainTextEdit(), 'market_diagnostics', ui_text('market.init.full_diagnostics'))
     self.diagnostics.setReadOnly(True)
     self.diagnostics.setMaximumHeight(160)
     self.diagnostics.hide()
@@ -1071,7 +1077,7 @@ def _build_market_diagnostics(self, root):
 
 
 def _build_market_empty_actions(self, root):
-    self.message = _label(ui_text('market.__init__.text_15'), 'market_message')
+    self.message = _label(ui_text('market.init.contract_hint'), 'market_message')
     set_status(self.message, 'warning')
     root.addWidget(self.message)
     self.empty_actions = QWidget()
@@ -1095,25 +1101,27 @@ def _build_market_watchlist(self, root):
     left = QWidget()
     left_layout = QVBoxLayout(left)
     left_layout.setContentsMargins(0, 0, 4, 0)
-    left_layout.addWidget(_label(ui_text('market.__init__.text_16'), 'market_watch_title'))
-    self.search = _named(QLineEdit(), 'market_search', ui_text('market.__init__.text_17'))
-    self.search.setPlaceholderText(ui_text('market.__init__.text_18'))
+    left_layout.addWidget(_label(ui_text('market.init.watch_title'), 'market_watch_title'))
+    self.search = _named(QLineEdit(), 'market_search', ui_text('market.init.search_accessible_name'))
+    self.search.setPlaceholderText(ui_text('market.init.search_placeholder'))
     self.search.textChanged.connect(self._filter_catalog)
     left_layout.addWidget(self.search)
-    self.catalog_combo = _named(QComboBox(), 'market_catalog', ui_text('market.__init__.text_19'))
+    self.catalog_combo = _named(QComboBox(), 'market_catalog', ui_text('market.init.available_contracts'))
     left_layout.addWidget(self.catalog_combo)
-    self.add_button = _named(QPushButton(ui_text('market.__init__.text_20')), 'market_add', ui_text('market.__init__.text_21'))
+    self.add_button = _named(QPushButton(ui_text('market.init.add_watch')), 'market_add', ui_text('market.init.add_watch_accessible_name'))
     self.add_button.clicked.connect(self._add_watch)
     left_layout.addWidget(self.add_button)
-    self.watchlist = _named(QListWidget(), 'market_watchlist', ui_text('market.__init__.text_22'))
+    self.watchlist = _named(QListWidget(), 'market_watchlist', ui_text('market.init.watchlist'))
     self.watchlist.currentItemChanged.connect(self._watch_selected)
     left_layout.addWidget(self.watchlist, 1)
     row = QHBoxLayout()
-    self.remove_button = _named(QPushButton(ui_text('market.__init__.text_23')), 'market_remove', ui_text('market.__init__.text_24'))
+    self.remove_button = _named(QPushButton(ui_text('market.init.remove_watch')), 'market_remove', ui_text('market.init.remove_watch_accessible_name'))
     self.remove_button.clicked.connect(self._remove_watch)
     row.addWidget(self.remove_button)
     for text, delta, name in [('↑', -1, 'up'), ('↓', 1, 'down')]:
-        button = _named(QPushButton(text), 'market_watch_' + name, ui_text('market.__init__.text_25') if delta < 0 else ui_text('market.__init__.text_26'))
+        button = _named(
+            QPushButton(text), 'market_watch_' + name, ui_text('market.init.move_watch_up') if delta < 0 else ui_text('market.init.move_watch_down')
+        )
         button.clicked.connect(lambda checked=False, d=delta: self._move_watch(d))
         row.addWidget(button)
     left_layout.addLayout(row)
@@ -1126,20 +1134,20 @@ def _build_market_chart(self):
     center_layout = QVBoxLayout(center)
     center_layout.setContentsMargins(4, 0, 4, 0)
     control = QHBoxLayout()
-    self.contract_combo = _named(QComboBox(), 'market_contract', ui_text('market.__init__.text_27'))
+    self.contract_combo = _named(QComboBox(), 'market_contract', ui_text('market.init.chart_contract'))
     self.contract_combo.currentIndexChanged.connect(self._contract_changed)
     control.addWidget(self.contract_combo, 1)
-    self.timeframe_combo = _named(QComboBox(), 'market_timeframe', ui_text('market.__init__.text_28'))
+    self.timeframe_combo = _named(QComboBox(), 'market_timeframe', ui_text('market.init.timeframe'))
     for text, value in zip(
         (
-            ui_text('market.__init__.text_29'),
-            ui_text('market.__init__.text_30'),
-            ui_text('market.__init__.text_31'),
-            ui_text('market.__init__.text_32'),
-            ui_text('market.__init__.text_33'),
-            ui_text('market.__init__.text_34'),
-            ui_text('market.__init__.text_35'),
-            ui_text('market.__init__.text_36'),
+            ui_text('market.init.minute_one'),
+            ui_text('market.init.minute_three'),
+            ui_text('market.init.minute_five'),
+            ui_text('market.init.minute_fifteen'),
+            ui_text('market.init.minute_thirty'),
+            ui_text('market.init.minute_sixty'),
+            ui_text('market.init.daily'),
+            ui_text('market.init.weekly'),
         ),
         TIMEFRAMES,
     ):
@@ -1164,30 +1172,30 @@ def _build_market_trading_status(self, source_row, PanelCard):
     right = QWidget()
     right_layout = QVBoxLayout(right)
     self.trading_labels = {}
-    state = PanelCard(ui_text('market.__init__.text_37'))
+    state = PanelCard(ui_text('market.init.trading_title'))
     state_layout = state.content_layout()
     for key, title in [
-        ('strategy', ui_text('market.__init__.text_38')),
-        ('paper', ui_text('market.__init__.text_39')),
-        ('risk', ui_text('market.__init__.text_40')),
+        ('strategy', ui_text('market.init.strategy')),
+        ('paper', ui_text('market.init.paper')),
+        ('risk', ui_text('market.init.risk')),
     ]:
-        label = _label(ui_text('market.__init__.text_41').format(title), 'market_state_' + key)
+        label = _label(ui_text('market.init.unknown_status').format(title), 'market_state_' + key)
         state_layout.addWidget(label)
         self.trading_labels[key] = label
-    source_row.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled'))
+    source_row.addWidget(_label(ui_text('market.init.research_paper'), 'market_live_disabled'))
     # The help details keep their own copy of the notice (existing help-reachability contract).
-    state_layout.addWidget(_label(ui_text('market.__init__.text_42'), 'market_live_disabled_detail'))
+    state_layout.addWidget(_label(ui_text('market.init.research_paper'), 'market_live_disabled_detail'))
     right_layout.addWidget(state)
     return right_scroll, right, right_layout
 
 
 def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard):
-    group = PanelCard(ui_text('market.__init__.text_43'))
+    group = PanelCard(ui_text('market.init.indicators_title'))
     grid = QGridLayout()
     group.content_layout().addLayout(grid)
     row = 0
     for key, config in DEFAULT_INDICATORS.items():
-        check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.__init__.text_44').format(key))
+        check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.init.indicator_name').format(key))
         check.setChecked(config['enabled'])
         grid.addWidget(check, row, 0, 1, 2)
         row += 1
@@ -1208,20 +1216,20 @@ def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
                 _named(spin, f'market_{key}_{field}', ui_text('access.indicator_parameter').format(key, field))
                 grid.addWidget(
                     _label(
-                        (ui_text('market.__init__.text_45').format(str(index + 1)))
+                        (ui_text('market.init.moving_average').format(str(index + 1)))
                         if param == 'periods'
                         else {
                             'multiplier': ui_text('market.indicator.multiplier'),
                             'step': ui_text('market.indicator.step'),
                             'maximum': ui_text('market.indicator.maximum'),
                             'percent': ui_text('market.indicator.percent'),
-                            'period': ui_text('market.__init__.text_46'),
-                            'fast': ui_text('market.__init__.text_47'),
-                            'slow': ui_text('market.__init__.text_48'),
-                            'signal': ui_text('market.__init__.text_49'),
-                            'k_period': ui_text('market.__init__.text_50'),
-                            'd_period': ui_text('market.__init__.text_51'),
-                            'deviations': ui_text('market.__init__.text_52'),
+                            'period': ui_text('market.init.periods'),
+                            'fast': ui_text('market.init.fast'),
+                            'slow': ui_text('market.init.slow'),
+                            'signal': ui_text('market.init.signal'),
+                            'k_period': ui_text('market.init.k_smoothing'),
+                            'd_period': ui_text('market.init.d_smoothing'),
+                            'deviations': ui_text('market.init.standard_deviations'),
                         }[param],
                         'label_' + key + field,
                     ),
@@ -1234,7 +1242,7 @@ def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
                 spin.valueChanged.connect(self._indicators_changed)
         check.toggled.connect(self._indicators_changed)
     right_layout.addWidget(group)
-    right_layout.addWidget(_label(ui_text('market.__init__.text_53'), 'market_vwap_disclosure'))
+    right_layout.addWidget(_label(ui_text('market.init.vwap_hint'), 'market_vwap_disclosure'))
     right_layout.addStretch()
     right_scroll.setWidget(right)
     self.main_splitter.addWidget(right_scroll)
@@ -1263,32 +1271,32 @@ def _build_market_tables(self, root):
     self.tables.setMaximumHeight(180)
     self.tables.setMinimumHeight(95)
     self.positions_table = self._table(
-        (ui_text('market.__init__.text_54'), ui_text('market.__init__.text_55'), ui_text('market.__init__.text_56')), 'market_positions'
+        (ui_text('market.init.position_contract'), ui_text('market.init.position_quantity'), ui_text('market.init.average_price')), 'market_positions'
     )
     self.orders_table = self._table(
         (
-            ui_text('market.__init__.text_57'),
-            ui_text('market.__init__.text_58'),
-            ui_text('market.__init__.text_59'),
-            ui_text('market.__init__.text_60'),
-            ui_text('market.__init__.text_61'),
+            ui_text('market.init.order_id'),
+            ui_text('market.init.order_contract'),
+            ui_text('market.init.order_side'),
+            ui_text('market.init.order_quantity'),
+            ui_text('market.init.order_status'),
         ),
         'market_orders',
     )
     self.fills_table = self._table(
         (
-            ui_text('market.__init__.text_62'),
-            ui_text('market.__init__.text_63'),
-            ui_text('market.__init__.text_64'),
-            ui_text('market.__init__.text_65'),
-            ui_text('market.__init__.text_66'),
+            ui_text('market.init.fill_id'),
+            ui_text('market.init.fill_contract'),
+            ui_text('market.init.fill_side'),
+            ui_text('market.init.fill_quantity'),
+            ui_text('market.init.fill_price'),
         ),
         'market_fills',
     )
     for title, table in [
-        (ui_text('market.__init__.text_67'), self.positions_table),
-        (ui_text('market.__init__.text_68'), self.orders_table),
-        (ui_text('market.__init__.text_69'), self.fills_table),
+        (ui_text('market.init.positions'), self.positions_table),
+        (ui_text('market.init.orders'), self.orders_table),
+        (ui_text('market.init.fills'), self.fills_table),
     ]:
         self.tables.addTab(table, title)
     root.addWidget(self.tables)

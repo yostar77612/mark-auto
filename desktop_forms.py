@@ -40,25 +40,25 @@ FAMILY_LABELS = dict(
     zip(
         FAMILIES,
         (
-            ui_text('forms.labels.text_1'),
-            ui_text('forms.labels.text_2'),
-            ui_text('forms.labels.text_3'),
-            ui_text('forms.labels.text_4'),
-            ui_text('forms.labels.text_5'),
+            ui_text('forms.labels.trend'),
+            ui_text('forms.labels.mean_reversion'),
+            ui_text('forms.labels.breakout'),
+            ui_text('forms.labels.momentum'),
+            ui_text('forms.labels.volatility'),
         ),
     )
 )
 PARAM_LABELS = {
-    'fast': ui_text('forms.labels.text_6'),
-    'slow': ui_text('forms.labels.text_7'),
-    'lookback': ui_text('forms.labels.text_8'),
-    'entry_bps': ui_text('forms.labels.text_9'),
-    'threshold_bps': ui_text('forms.labels.text_10'),
-    'max_holding_bars': ui_text('forms.labels.text_11'),
-    'max_range_bps': ui_text('forms.labels.text_12'),
-    'quantity': ui_text('forms.labels.text_13'),
-    'stop_ticks': ui_text('forms.labels.text_14'),
-    'target_ticks': ui_text('forms.labels.text_15'),
+    'fast': ui_text('forms.labels.fast_bars'),
+    'slow': ui_text('forms.labels.slow_bars'),
+    'lookback': ui_text('forms.labels.lookback_bars'),
+    'entry_bps': ui_text('forms.labels.entry_bps'),
+    'threshold_bps': ui_text('forms.labels.threshold_bps'),
+    'max_holding_bars': ui_text('forms.labels.max_holding_bars'),
+    'max_range_bps': ui_text('forms.labels.max_range_bps'),
+    'quantity': ui_text('forms.labels.optional_quantity'),
+    'stop_ticks': ui_text('forms.labels.optional_stop'),
+    'target_ticks': ui_text('forms.labels.optional_target'),
 }
 
 
@@ -68,7 +68,7 @@ def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=Fa
     if not text and optional:
         return None
     if len(text) > 128 or not text:
-        raise ValidationError(ui_text('forms.number.text_1').format(label))
+        raise ValidationError(ui_text('forms.number.valid_number_required').format(label))
     try:
         value = Decimal(text)
         if not value.is_finite() or value < Decimal(str(minimum)) or value > Decimal(str(maximum)):
@@ -80,7 +80,8 @@ def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=Fa
             raise ValueError()
     except (InvalidOperation, ValueError, OverflowError):
         raise ValidationError(
-            ui_text('forms.number.text_2').format(label, minimum, maximum) + (ui_text('forms.number.text_3') if integer else ui_text('forms.number.text_4'))
+            ui_text('forms.number.range_prefix').format(label, minimum, maximum)
+            + (ui_text('forms.number.integer') if integer else ui_text('forms.number.finite_number'))
         ) from None
     return int(value) if integer else format(value, 'f')
 
@@ -88,7 +89,7 @@ def number(text, label, minimum=0, maximum='1e12', *, integer=False, optional=Fa
 def required(text, label):
     text = text.strip()
     if not text or len(text) > 256:
-        raise ValidationError(ui_text('forms.required.text_1').format(label))
+        raise ValidationError(ui_text('forms.required.bounded_length_required').format(label))
     return text
 
 
@@ -99,7 +100,7 @@ def utc(text, label):
     try:
         _time(value, label)
     except ValidationError:
-        raise ValidationError(ui_text('forms.utc.text_1').format(label)) from None
+        raise ValidationError(ui_text('forms.utc.utc_required').format(label)) from None
     return value
 
 
@@ -150,7 +151,7 @@ class _Form(QWidget):
             if isinstance(field, QComboBox):
                 index = field.findData(value)
                 if index < 0:
-                    raise ValidationError(ui_text('forms.load.text_1').format(field.accessibleName()))
+                    raise ValidationError(ui_text('forms.load.unsupported_option').format(field.accessibleName()))
                 field.setCurrentIndex(index)
             else:
                 field.setText('' if value is None else str(value))
@@ -160,7 +161,7 @@ class _Form(QWidget):
 class StrategyForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.family = self.field('family', ui_text('forms.__init__.text_1'), choices=[(FAMILY_LABELS[f], f) for f in FAMILIES])
+        self.family = self.field('family', ui_text('forms.init.strategy_family'), choices=[(FAMILY_LABELS[f], f) for f in FAMILIES])
         self.family.setToolTip(ui_text('tooltip.family'))
         self.parameter_form = QFormLayout()
         self.outer.addLayout(self.parameter_form)
@@ -168,7 +169,7 @@ class StrategyForm(_Form):
         self._family_preferences = {}
         self.family.currentIndexChanged.connect(self._family_changed)
         self._family_changed()
-        self.note(ui_text('forms.__init__.text_2'))
+        self.note(ui_text('forms.init.bounded_families_hint'))
 
     def _family_changed(self):
         self._remember_parameters()
@@ -248,7 +249,7 @@ class StrategyForm(_Form):
         spec = StrategySpec(**deepcopy(payload))
         validate_strategy(spec)
         if spec.rules:
-            raise ValidationError(ui_text('forms.from_payload.text_1'))
+            raise ValidationError(ui_text('forms.from_payload.readonly_dsl_required'))
         self.family.setCurrentIndex(self.family.findData(spec.family))
         self._family_changed()
         self._spec = to_dict(spec)
@@ -280,41 +281,41 @@ class BacktestForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         for key, label in (
-            ('initial_cash', ui_text('forms.__init__.text_3')),
-            ('max_position', ui_text('forms.__init__.text_4')),
-            ('commission_per_side', ui_text('forms.__init__.text_5')),
-            ('tax_rate', ui_text('forms.__init__.text_6')),
-            ('slippage_ticks', ui_text('forms.__init__.text_7')),
-            ('effective_from', ui_text('forms.__init__.text_8')),
-            ('version', ui_text('forms.__init__.text_9')),
-            ('initial_margin_per_contract', ui_text('forms.__init__.text_10')),
-            ('maintenance_margin_per_contract', ui_text('forms.__init__.text_11')),
-            ('margin_version', ui_text('forms.__init__.text_12')),
-            ('seed', ui_text('forms.__init__.text_13')),
-            ('start_date', ui_text('forms.__init__.text_14')),
-            ('end_date', ui_text('forms.__init__.text_15')),
+            ('initial_cash', ui_text('forms.init.initial_cash')),
+            ('max_position', ui_text('forms.init.max_position')),
+            ('commission_per_side', ui_text('forms.init.commission')),
+            ('tax_rate', ui_text('forms.init.tax_rate')),
+            ('slippage_ticks', ui_text('forms.init.slippage')),
+            ('effective_from', ui_text('forms.init.fee_date')),
+            ('version', ui_text('forms.init.fee_source')),
+            ('initial_margin_per_contract', ui_text('forms.init.initial_margin')),
+            ('maintenance_margin_per_contract', ui_text('forms.init.maintenance_margin')),
+            ('margin_version', ui_text('forms.init.margin_source')),
+            ('seed', ui_text('forms.init.seed')),
+            ('start_date', ui_text('forms.init.start_date')),
+            ('end_date', ui_text('forms.init.end_date')),
         ):
             self.field(key, label)
         self.field(
             'tax_rounding',
-            ui_text('forms.__init__.text_16'),
+            ui_text('forms.init.tax_rounding'),
             choices=[
-                (ui_text('forms.__init__.text_17'), 'half_up_twd'),
-                (ui_text('forms.__init__.text_18'), 'floor_twd'),
-                (ui_text('forms.__init__.text_19'), 'ceiling_twd'),
-                (ui_text('forms.__init__.text_20'), 'none'),
+                (ui_text('forms.init.round_half_up'), 'half_up_twd'),
+                (ui_text('forms.init.round_down'), 'floor_twd'),
+                (ui_text('forms.init.round_up'), 'ceiling_twd'),
+                (ui_text('forms.init.no_rounding'), 'none'),
             ],
         )
-        self.note(ui_text('forms.__init__.text_21'))
-        self.expiry_note = self.note(ui_text('forms.__init__.text_22'))
+        self.note(ui_text('forms.init.synthetic_cost_hint'))
+        self.expiry_note = self.note(ui_text('forms.init.expiry_source_hint'))
         self.expiry_note.setObjectName('instrument_expiries_note')
         self.expiry_note.setTextFormat(Qt.TextFormat.PlainText)
         self.expiry_note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
-        self.expiries = _Rows('instrument_expiries', [('contract_id', ui_text('forms.__init__.text_23')), ('expiry_date', ui_text('forms.__init__.text_24'))])
-        self.expiries.table.horizontalHeaderItem(0).setToolTip(ui_text('forms.__init__.text_25'))
-        self.expiries.table.horizontalHeaderItem(1).setToolTip(ui_text('forms.__init__.text_26'))
+        self.expiries = _Rows('instrument_expiries', [('contract_id', ui_text('forms.init.contract_code')), ('expiry_date', ui_text('forms.init.expiry_date'))])
+        self.expiries.table.horizontalHeaderItem(0).setToolTip(ui_text('forms.init.explicit_contract'))
+        self.expiries.table.horizontalHeaderItem(1).setToolTip(ui_text('forms.init.last_trading_date'))
         self.expiries.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.expiries.table.setAccessibleName(ui_text('forms.__init__.text_27'))
+        self.expiries.table.setAccessibleName(ui_text('forms.init.expiry_title'))
         self.outer.addWidget(self.expiries)
         from desktop_expiry_inputs import attach_expiry_table
 
@@ -345,9 +346,9 @@ class BacktestForm(_Form):
                 validate_contract(contract)
                 validate_date(expiry)
             except ValidationError:
-                raise ValidationError(ui_text('forms.build_payload.text_1').format(index)) from None
+                raise ValidationError(ui_text('forms.build_payload.invalid_expiry_row').format(index)) from None
             if contract in expiries:
-                raise ValidationError(ui_text('forms.build_payload.text_2').format(index, contract))
+                raise ValidationError(ui_text('forms.build_payload.duplicate_expiry').format(index, contract))
             expiries[contract] = expiry
         config['instrument_expiries'] = expiries
         config['initial_cash'] = self.num('initial_cash')
@@ -362,7 +363,7 @@ class BacktestForm(_Form):
             tax_rate=self.num('tax_rate', 0, 1),
             slippage_ticks=self.num('slippage_ticks', 0, 100000, integer=True),
             effective_from=self.text('effective_from'),
-            version=required(self.text('version'), ui_text('forms.build_payload.text_3')),
+            version=required(self.text('version'), ui_text('forms.build_payload.fee_version')),
             tax_rounding=self.fields['tax_rounding'].currentData(),
         )
         config['costs'] = costs
@@ -372,9 +373,9 @@ class BacktestForm(_Form):
         start, end = self.text('start_date'), self.text('end_date')
         for value in (start, end):
             if value:
-                validate_date(value, ui_text('forms.build_payload.text_4'))
+                validate_date(value, ui_text('forms.build_payload.trading_day'))
         if start and end and start > end:
-            raise ValidationError(ui_text('forms.build_payload.text_5'))
+            raise ValidationError(ui_text('forms.build_payload.reversed_dates'))
         return dict(config=config, start_date=start, end_date=end)
 
 
@@ -382,24 +383,24 @@ class CampaignForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._config = None
-        self.note(ui_text('forms.__init__.text_28'))
+        self.note(ui_text('forms.init.split_hint'))
         for split, label in (
-            ('train', ui_text('forms.__init__.text_29')),
-            ('validation', ui_text('forms.__init__.text_30')),
-            ('oos', ui_text('forms.__init__.text_31')),
-            ('holdout', ui_text('forms.__init__.text_32')),
+            ('train', ui_text('forms.init.training')),
+            ('validation', ui_text('forms.init.validation')),
+            ('oos', ui_text('forms.init.out_of_sample')),
+            ('holdout', ui_text('forms.init.final_holdout')),
         ):
-            self.field(split + '_start', ui_text('forms.__init__.text_33').format(label))
-            self.field(split + '_end', ui_text('forms.__init__.text_34').format(label))
+            self.field(split + '_start', ui_text('forms.init.range_start').format(label))
+            self.field(split + '_end', ui_text('forms.init.range_end').format(label))
         for key, label, value in (
-            ('max_trials', ui_text('forms.__init__.text_35'), 15),
-            ('max_improvements', ui_text('forms.__init__.text_36'), 2),
-            ('seed', ui_text('forms.__init__.text_37'), 0),
-            ('max_runtime_seconds', ui_text('forms.__init__.text_38'), 300),
-            ('max_bars', ui_text('forms.__init__.text_39'), 100000),
-            ('purge_bars', ui_text('forms.__init__.text_40'), 0),
-            ('minimum', ui_text('forms.__init__.text_41'), 0),
-            ('min_trades', ui_text('forms.__init__.text_42'), 0),
+            ('max_trials', ui_text('forms.init.max_attempts'), 15),
+            ('max_improvements', ui_text('forms.init.max_refinements'), 2),
+            ('seed', ui_text('forms.init.research_seed'), 0),
+            ('max_runtime_seconds', ui_text('forms.init.research_seconds'), 300),
+            ('max_bars', ui_text('forms.init.max_bars'), 100000),
+            ('purge_bars', ui_text('forms.init.purge_bars'), 0),
+            ('minimum', ui_text('forms.init.minimum_pnl'), 0),
+            ('min_trades', ui_text('forms.init.minimum_fills'), 0),
         ):
             self.field(key, label, value)
         self.families = {}
@@ -407,14 +408,14 @@ class CampaignForm(_Form):
             box = QCheckBox(FAMILY_LABELS[family])
             box.setObjectName('campaign_' + family)
             box.setChecked(True)
-            box.setAccessibleName(ui_text('forms.__init__.text_43').format(FAMILY_LABELS[family]))
+            box.setAccessibleName(ui_text('forms.init.research_family').format(FAMILY_LABELS[family]))
             self.outer.addWidget(box)
             self.families[family] = box
 
     def from_payload(self, payload):
         families = payload.get('families')
         if not isinstance(families, list) or not families or len(set(families)) != len(families) or any(f not in FAMILIES for f in families):
-            raise ValidationError(ui_text('forms.from_payload.text_2'))
+            raise ValidationError(ui_text('forms.from_payload.invalid_research_families'))
         self._config = deepcopy(payload)
         self.load(payload)
         self.load(payload['ranking'])
@@ -426,7 +427,7 @@ class CampaignForm(_Form):
 
     def build_payload(self, backtest_config=None):
         if self._config is None and backtest_config is None:
-            raise ValidationError(ui_text('forms.build_payload.text_6'))
+            raise ValidationError(ui_text('forms.build_payload.data_cost_required'))
         config = deepcopy(self._config or {})
         if backtest_config is not None:
             config['backtest_config'] = deepcopy(backtest_config)
@@ -446,12 +447,12 @@ class CampaignForm(_Form):
             start = self.num(split + '_start', 0, config['max_bars'], integer=True)
             end = self.num(split + '_end', 0, config['max_bars'], integer=True)
             if start < previous or end <= start + config['purge_bars']:
-                raise ValidationError(ui_text('forms.build_payload.text_7'))
+                raise ValidationError(ui_text('forms.build_payload.invalid_splits'))
             config['splits'][split] = [start, end]
             previous = end
         config['families'] = [f for f, b in self.families.items() if b.isChecked()]
         if not config['families']:
-            raise ValidationError(ui_text('forms.build_payload.text_8'))
+            raise ValidationError(ui_text('forms.build_payload.family_required'))
         config['ranking'] = dict(metric='net_pnl', minimum=self.num('minimum', '-1e12'), min_trades=self.num('min_trades', 0, 1000000, integer=True))
         from quantlab.__main__ import config_from_json
 
@@ -466,52 +467,52 @@ class WalkForwardForm(_Form):
         super().__init__(parent)
         self.field(
             'pool_origin',
-            ui_text('forms.__init__.text_44'),
-            choices=[(ui_text('forms.__init__.text_45'), 'exact_builtin_pool'), (ui_text('forms.__init__.text_46'), 'saved_campaign_pool')],
+            ui_text('forms.init.pool_source'),
+            choices=[(ui_text('forms.init.builtin_pool'), 'exact_builtin_pool'), (ui_text('forms.init.saved_pool'), 'saved_campaign_pool')],
         )
         self.field(
             'mode',
-            ui_text('forms.__init__.text_47'),
-            choices=[(ui_text('forms.__init__.text_48'), 'rolling'), (ui_text('forms.__init__.text_49'), 'expanding')],
+            ui_text('forms.init.training_window'),
+            choices=[(ui_text('forms.init.rolling_window'), 'rolling'), (ui_text('forms.init.anchored_window'), 'expanding')],
         )
         self.field(
             'evidence_mode',
-            ui_text('forms.__init__.text_50'),
-            choices=[(ui_text('forms.__init__.text_51'), 'synthetic_validation'), (ui_text('forms.__init__.text_52'), 'historical_replay')],
+            ui_text('forms.init.evidence_mode'),
+            choices=[(ui_text('forms.init.synthetic_evidence'), 'synthetic_validation'), (ui_text('forms.init.historical_replay'), 'historical_replay')],
         )
         for key, label, value in (
-            ('start', ui_text('forms.__init__.text_53'), 0),
-            ('train_bars', ui_text('forms.__init__.text_54'), 240),
-            ('validation_bars', ui_text('forms.__init__.text_55'), 120),
-            ('oos_bars', ui_text('forms.__init__.text_56'), 120),
-            ('fold_count', ui_text('forms.__init__.text_57'), 3),
-            ('step_bars', ui_text('forms.__init__.text_58'), 120),
-            ('gap_bars', ui_text('forms.__init__.text_59'), 0),
-            ('final_holdout_start', ui_text('forms.__init__.text_60'), 720),
-            ('final_holdout_end', ui_text('forms.__init__.text_61'), 960),
-            ('max_evaluations', ui_text('forms.__init__.text_62'), 33),
-            ('max_runtime_seconds', ui_text('forms.__init__.text_63'), 300),
-            ('minimum', ui_text('forms.__init__.text_64'), '0'),
-            ('min_trades', ui_text('forms.__init__.text_65'), 1),
-            ('max_drawdown_percent', ui_text('forms.__init__.text_66'), '10.00'),
+            ('start', ui_text('forms.init.first_start'), 0),
+            ('train_bars', ui_text('forms.init.training_bars'), 240),
+            ('validation_bars', ui_text('forms.init.validation_bars'), 120),
+            ('oos_bars', ui_text('forms.init.forward_bars'), 120),
+            ('fold_count', ui_text('forms.init.fold_count'), 3),
+            ('step_bars', ui_text('forms.init.step_bars'), 120),
+            ('gap_bars', ui_text('forms.init.gap_bars'), 0),
+            ('final_holdout_start', ui_text('forms.init.holdout_start'), 720),
+            ('final_holdout_end', ui_text('forms.init.holdout_end'), 960),
+            ('max_evaluations', ui_text('forms.init.evaluation_budget'), 33),
+            ('max_runtime_seconds', ui_text('forms.init.experiment_seconds'), 300),
+            ('minimum', ui_text('forms.init.validation_pnl'), '0'),
+            ('min_trades', ui_text('forms.init.validation_closed_lots'), 1),
+            ('max_drawdown_percent', ui_text('forms.init.validation_drawdown'), '10.00'),
         ):
             self.field(key, label, value)
         self._plan = None
         self.fields['pool_origin'].currentIndexChanged.connect(self._pool_origin_changed)
         self._pool_origin_changed()
-        self.note(ui_text('forms.__init__.text_67'))
-        self.note(ui_text('forms.__init__.text_68'))
+        self.note(ui_text('forms.init.pool_selection_hint'))
+        self.note(ui_text('forms.init.shared_policy_hint'))
 
     def _pool_origin_changed(self):
         saved = self.fields['pool_origin'].currentData() == 'saved_campaign_pool'
         cap = 620 if saved else 220
-        label = ui_text('forms._pool_origin_changed.text_1').format(cap)
+        label = ui_text('forms.pool_origin_changed.evaluation_budget_limit').format(cap)
         self.form.labelForField(self.fields['max_evaluations']).setText(label)
         self.fields['max_evaluations'].setAccessibleName(label)
 
     def defaults_for_bars(self, count):
         if type(count) is not int or count < 8:
-            raise ValidationError(ui_text('forms.defaults_for_bars.text_1'))
+            raise ValidationError(ui_text('forms.defaults_for_bars.minimum_bars'))
         train, width = max(1, count // 4), max(1, count // 8)
         values = dict(
             start=0,
@@ -535,7 +536,7 @@ class WalkForwardForm(_Form):
 
         plan = walk_forward_plan_from_dict(deepcopy(payload))
         if plan.pool_origin != 'exact_builtin_pool':
-            raise ValidationError(ui_text('forms.from_payload.text_3'))
+            raise ValidationError(ui_text('forms.from_payload.saved_pool_picker_required'))
         self._plan = to_dict(plan)
         first, second = plan.folds[:2]
         values = dict(
@@ -563,7 +564,7 @@ class WalkForwardForm(_Form):
         # This editor promises a uniform step. Reject arbitrary variable-step
         # imported plans rather than silently changing their declared chronology.
         if to_dict(walk_forward_plan_from_dict(self.build_payload())) != self._plan:
-            raise ValidationError(ui_text('forms.from_payload.text_4'))
+            raise ValidationError(ui_text('forms.from_payload.fixed_step_only'))
         return self
 
     def build_payload(self, backtest_config=None):
@@ -574,7 +575,7 @@ class WalkForwardForm(_Form):
         stored = deepcopy(self._plan or {})
         config = backtest_config if backtest_config is not None else stored.get('backtest_config')
         if config is None:
-            raise ValidationError(ui_text('forms.build_payload.text_9'))
+            raise ValidationError(ui_text('forms.build_payload.shared_cost_required'))
         values = {}
         for key in ('start', 'train_bars', 'validation_bars', 'oos_bars', 'step_bars'):
             values[key] = self.num(key, 0 if key == 'start' else 1, 100000, integer=True)
@@ -611,26 +612,26 @@ class PaperIntentForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         for key, label in (
-            ('client_order_id', ui_text('forms.__init__.text_69')),
-            ('strategy_hash', ui_text('forms.__init__.text_70')),
-            ('contract_id', ui_text('forms.__init__.text_71')),
-            ('quantity', ui_text('forms.__init__.text_72')),
-            ('created_at', ui_text('forms.__init__.text_73')),
-            ('limit_price', ui_text('forms.__init__.text_74')),
+            ('client_order_id', ui_text('forms.init.order_id')),
+            ('strategy_hash', ui_text('forms.init.strategy_hash')),
+            ('contract_id', ui_text('forms.init.intent_contract')),
+            ('quantity', ui_text('forms.init.order_quantity')),
+            ('created_at', ui_text('forms.init.created_at')),
+            ('limit_price', ui_text('forms.init.limit_price')),
         ):
             self.field(key, label)
-        self.field('side', ui_text('forms.__init__.text_75'), choices=[(ui_text('forms.__init__.text_76'), 'buy'), (ui_text('forms.__init__.text_77'), 'sell')])
+        self.field('side', ui_text('forms.init.side'), choices=[(ui_text('forms.init.buy'), 'buy'), (ui_text('forms.init.sell'), 'sell')])
         self.field(
             'order_type',
-            ui_text('forms.__init__.text_78'),
-            choices=[(ui_text('forms.__init__.text_79'), 'market'), (ui_text('forms.__init__.text_80'), 'limit')],
+            ui_text('forms.init.order_kind'),
+            choices=[(ui_text('forms.init.market'), 'market'), (ui_text('forms.init.limit'), 'limit')],
         )
-        self.note(ui_text('forms.__init__.text_81'))
+        self.note(ui_text('forms.init.intent_only_hint'))
 
     def from_payload(self, payload):
         allowed = {'client_order_id', 'strategy_hash', 'contract_id', 'quantity', 'created_at', 'limit_price', 'side', 'order_type'}
         if set(payload) - allowed:
-            raise ValidationError(ui_text('forms.from_payload.text_5'))
+            raise ValidationError(ui_text('forms.from_payload.unsupported_intent_fields'))
         for field in self.fields.values():
             if isinstance(field, (QLineEdit, DateInput)):
                 field.clear()
@@ -640,17 +641,17 @@ class PaperIntentForm(_Form):
         p = {key: required(self.text(key), self.fields[key].accessibleName()) for key in ('client_order_id', 'strategy_hash', 'contract_id')}
         validate_contract(p['contract_id'])
         if not re.fullmatch('[0-9a-f]{64}', p['strategy_hash']):
-            raise ValidationError(ui_text('forms.build_payload.text_10'))
+            raise ValidationError(ui_text('forms.build_payload.invalid_strategy_hash'))
         p.update(
             quantity=self.num('quantity', 1, 1000000, integer=True),
-            created_at=utc(self.text('created_at'), ui_text('forms.build_payload.text_11')),
+            created_at=utc(self.text('created_at'), ui_text('forms.build_payload.created_at')),
             side=self.fields['side'].currentData(),
             order_type=self.fields['order_type'].currentData(),
         )
         if p['order_type'] == 'limit':
             p['limit_price'] = str(self.num('limit_price', 1, 1000000000, integer=True))
         elif self.text('limit_price'):
-            raise ValidationError(ui_text('forms.build_payload.text_12'))
+            raise ValidationError(ui_text('forms.build_payload.market_limit_forbidden'))
         return p
 
 
@@ -658,33 +659,33 @@ class PaperQuoteForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
         for key, label in (
-            ('account_id', ui_text('forms.__init__.text_82')),
-            ('contract_id', ui_text('forms.__init__.text_83')),
-            ('price', ui_text('forms.__init__.text_84')),
-            ('timestamp', ui_text('forms.__init__.text_85')),
-            ('trade_date', ui_text('forms.__init__.text_86')),
-            ('session_open', ui_text('forms.__init__.text_87')),
-            ('session_end', ui_text('forms.__init__.text_88')),
-            ('margin_per_contract', ui_text('forms.__init__.text_89')),
+            ('account_id', ui_text('forms.init.account_id')),
+            ('contract_id', ui_text('forms.init.quote_contract')),
+            ('price', ui_text('forms.init.quote_price')),
+            ('timestamp', ui_text('forms.init.quote_time')),
+            ('trade_date', ui_text('forms.init.trading_day')),
+            ('session_open', ui_text('forms.init.session_start')),
+            ('session_end', ui_text('forms.init.session_end')),
+            ('margin_per_contract', ui_text('forms.init.locked_initial_margin')),
         ):
             self.field(key, label)
-        self.note(ui_text('forms.__init__.text_90'))
+        self.note(ui_text('forms.init.quote_source_hint'))
 
     def from_payload(self, payload):
         if set(payload) != set(self.fields):
-            raise ValidationError(ui_text('forms.from_payload.text_6'))
+            raise ValidationError(ui_text('forms.from_payload.invalid_quote_fields'))
         return self.load(deepcopy(payload))
 
     def build_payload(self):
         p = {key: required(self.text(key), self.fields[key].accessibleName()) for key in ('account_id', 'contract_id', 'trade_date')}
         validate_contract(p['contract_id'])
-        validate_date(p['trade_date'], ui_text('forms.build_payload.text_13'))
+        validate_date(p['trade_date'], ui_text('forms.build_payload.trading_day'))
         for key in ('timestamp', 'session_open', 'session_end'):
             p[key] = utc(self.text(key), self.fields[key].accessibleName())
         from quantlab.paper import _time
 
         if not _time(p['session_open']) <= _time(p['timestamp']) < _time(p['session_end']):
-            raise ValidationError(ui_text('forms.build_payload.text_14'))
+            raise ValidationError(ui_text('forms.build_payload.quote_outside_session'))
         p['price'] = str(self.num('price', 1, 1000000000, integer=True))
         p['margin_per_contract'] = self.num('margin_per_contract', '0.000000000001')
         return p
@@ -699,40 +700,40 @@ class PaperSnapshotForm(_Form):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.field('account_id', ui_text('forms.__init__.text_91'))
-        self.field('cash', ui_text('forms.__init__.text_92'))
+        self.field('account_id', ui_text('forms.init.reference_account'))
+        self.field('cash', ui_text('forms.init.reference_cash'))
         self._snapshot = {'positions': {}, 'orders': {}, 'fills': {}}
         self.records = SummaryCard()
         self.outer.addWidget(self.records)
         self.record_tables = {}
         for key, label in (
-            ('positions', ui_text('forms.__init__.text_93')),
-            ('orders', ui_text('forms.__init__.text_94')),
-            ('fills', ui_text('forms.__init__.text_95')),
+            ('positions', ui_text('forms.init.reference_positions')),
+            ('orders', ui_text('forms.init.reference_orders')),
+            ('fills', ui_text('forms.init.reference_fills')),
         ):
-            self.note(ui_text('forms.__init__.text_96').format(label))
+            self.note(ui_text('forms.init.readonly_value').format(label))
             table = ResultTable()
             table.setObjectName('snapshot_' + key)
             table.setMaximumHeight(160)
             self.record_tables[key] = table
             self.outer.addWidget(table)
-        self.note(ui_text('forms.__init__.text_97'))
+        self.note(ui_text('forms.init.reconciliation_hint'))
         self._show_records()
 
     def _show_records(self):
         self.records.set_values(
             {
-                ui_text('forms._show_records.text_1'): len(self._snapshot['positions']),
-                ui_text('forms._show_records.text_2'): len(self._snapshot['orders']),
-                ui_text('forms._show_records.text_3'): len(self._snapshot['fills']),
+                ui_text('forms.show_records.position_items'): len(self._snapshot['positions']),
+                ui_text('forms.show_records.order_count'): len(self._snapshot['orders']),
+                ui_text('forms.show_records.fill_count'): len(self._snapshot['fills']),
             }
         )
         for key, table in self.record_tables.items():
             table.set_rows(
                 [
                     {
-                        ui_text('forms._show_records.text_4'): identifier,
-                        **(value if isinstance(value, dict) else {ui_text('forms._show_records.text_5'): value}),
+                        ui_text('forms.show_records.identifier'): identifier,
+                        **(value if isinstance(value, dict) else {ui_text('forms.show_records.quantity'): value}),
                     }
                     for identifier, value in self._snapshot[key].items()
                 ]
@@ -741,7 +742,7 @@ class PaperSnapshotForm(_Form):
     def from_payload(self, payload):
         for key in ('positions', 'orders', 'fills'):
             if not isinstance(payload.get(key), dict):
-                raise ValidationError(ui_text('forms.from_payload.text_7'))
+                raise ValidationError(ui_text('forms.from_payload.complete_snapshot_required'))
         self._snapshot = deepcopy(payload)
         self.load(payload)
         self._show_records()
@@ -749,7 +750,7 @@ class PaperSnapshotForm(_Form):
 
     def build_payload(self):
         p = deepcopy(self._snapshot)
-        p.update(account_id=required(self.text('account_id'), ui_text('forms.build_payload.text_15')), cash=self.num('cash'))
+        p.update(account_id=required(self.text('account_id'), ui_text('forms.build_payload.account_id')), cash=self.num('cash'))
         return p
 
 
@@ -758,13 +759,13 @@ class PaperActionForm(_Form):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.field('now', ui_text('forms.__init__.text_98'))
-        self.field('order_id', ui_text('forms.__init__.text_99'))
-        self.field('max_bars', ui_text('forms.__init__.text_100'), '100')
-        self.confirm = QCheckBox(ui_text('forms.__init__.text_101'))
+        self.field('now', ui_text('forms.init.event_time'))
+        self.field('order_id', ui_text('forms.init.cancel_order_id'))
+        self.field('max_bars', ui_text('forms.init.replay_limit'), '100')
+        self.confirm = QCheckBox(ui_text('forms.init.snapshot_consent'))
         self.confirm.setObjectName('paper_action_confirm')
         self.outer.addWidget(self.confirm)
-        self.note(ui_text('forms.__init__.text_102'))
+        self.note(ui_text('forms.init.fixed_risk_limits'))
 
     def from_payload(self, payload):
         self.load(payload)
@@ -776,19 +777,19 @@ class PaperActionForm(_Form):
 
     def build_payload(self, action):
         if action not in ('snapshot', 'reconcile', 'submit', 'replay', 'cancel', 'kill'):
-            raise ValidationError(ui_text('forms.build_payload.text_16'))
+            raise ValidationError(ui_text('forms.build_payload.unknown_operation'))
         if action in ('snapshot', 'kill'):
             return {}
         if action == 'cancel':
             return {
-                'now': utc(self.text('now'), ui_text('forms.build_payload.text_17')),
-                'order_id': required(self.text('order_id'), ui_text('forms.build_payload.text_18')),
+                'now': utc(self.text('now'), ui_text('forms.build_payload.cancel_time')),
+                'order_id': required(self.text('order_id'), ui_text('forms.build_payload.order_id')),
             }
         if not self.confirm.isChecked():
-            raise ValidationError(ui_text('forms.build_payload.text_19'))
+            raise ValidationError(ui_text('forms.build_payload.snapshot_consent_required'))
         p = {'reconcile_confirmed': True}
         if action == 'submit':
-            p['now'] = utc(self.text('now'), ui_text('forms.build_payload.text_20'))
+            p['now'] = utc(self.text('now'), ui_text('forms.build_payload.event_time'))
         if action == 'replay':
             p['max_bars'] = self.num('max_bars', 1, 1000, integer=True)
         return p
@@ -813,10 +814,10 @@ class _Rows(QWidget):
             self.table.horizontalHeaderItem(index).setToolTip(label)
         buttons = QHBoxLayout()
         layout.addLayout(buttons)
-        add = QPushButton(ui_text('forms.__init__.text_103'))
+        add = QPushButton(ui_text('forms.init.add_row'))
         add.setObjectName(name + '_add')
         add.clicked.connect(self.add_row)
-        remove = QPushButton(ui_text('forms.__init__.text_104'))
+        remove = QPushButton(ui_text('forms.init.remove_row'))
         remove.setObjectName(name + '_remove')
         remove.setProperty('role', 'danger')
         remove.clicked.connect(self.remove_row)
@@ -835,8 +836,8 @@ class _Rows(QWidget):
             row >= 0
             and QMessageBox.question(
                 self,
-                ui_text('forms.remove_row.text_1'),
-                ui_text('forms.remove_row.text_2'),
+                ui_text('forms.remove_row.confirm_title'),
+                ui_text('forms.remove_row.confirm_question'),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
@@ -865,32 +866,32 @@ class _Rows(QWidget):
 class PaperPolicyForm(_Form):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.field('contract_id', ui_text('forms.__init__.text_105'))
-        self.note(ui_text('forms.__init__.text_106'))
+        self.field('contract_id', ui_text('forms.init.locked_contract'))
+        self.note(ui_text('forms.init.policy_source_hint'))
         self.sessions = _Rows(
             'risk_sessions',
             [
-                ('open', ui_text('forms.__init__.text_107')),
-                ('end', ui_text('forms.__init__.text_108')),
-                ('trade_date', ui_text('forms.__init__.text_109')),
-                ('source', ui_text('forms.__init__.text_110')),
-                ('session', ui_text('forms.__init__.text_111')),
+                ('open', ui_text('forms.init.policy_session_start')),
+                ('end', ui_text('forms.init.policy_session_end')),
+                ('trade_date', ui_text('forms.init.policy_trading_day')),
+                ('source', ui_text('forms.init.policy_source')),
+                ('session', ui_text('forms.init.session_kind')),
             ],
         )
         self.outer.addWidget(self.sessions)
         self.margins = _Rows(
             'margin_schedule',
             [
-                ('effective_from', ui_text('forms.__init__.text_112')),
-                ('margin_per_contract', ui_text('forms.__init__.text_113')),
-                ('version', ui_text('forms.__init__.text_114')),
+                ('effective_from', ui_text('forms.init.margin_effective_day')),
+                ('margin_per_contract', ui_text('forms.init.margin_amount')),
+                ('version', ui_text('forms.init.margin_version')),
             ],
         )
         self.outer.addWidget(self.margins)
 
     def from_payload(self, payload):
         if set(payload) != {'contract_id', 'risk_sessions', 'margin_schedule'}:
-            raise ValidationError(ui_text('forms.from_payload.text_8'))
+            raise ValidationError(ui_text('forms.from_payload.invalid_policy_fields'))
         self.load(payload)
         self.sessions.load(payload['risk_sessions'])
         self.margins.load(payload['margin_schedule'])
@@ -901,13 +902,13 @@ class PaperPolicyForm(_Form):
         validate_contract(contract)
         sessions, margins = self.sessions.values(), self.margins.values()
         if not sessions or not margins:
-            raise ValidationError(ui_text('forms.build_payload.text_21'))
+            raise ValidationError(ui_text('forms.build_payload.explicit_policy_required'))
         for row in sessions:
-            utc(row['open'], ui_text('forms.build_payload.text_22'))
-            utc(row['end'], ui_text('forms.build_payload.text_23'))
-            validate_date(row['trade_date'], ui_text('forms.build_payload.text_24'))
+            utc(row['open'], ui_text('forms.build_payload.session_start'))
+            utc(row['end'], ui_text('forms.build_payload.session_end'))
+            validate_date(row['trade_date'], ui_text('forms.build_payload.trading_day'))
         for row in margins:
-            row['margin_per_contract'] = number(row['margin_per_contract'], ui_text('forms.build_payload.text_25'), '0.000000000001')
+            row['margin_per_contract'] = number(row['margin_per_contract'], ui_text('forms.build_payload.margin'), '0.000000000001')
         # Invoke the existing pure policy validator without opening a journal.
         from quantlab.paper import PaperBroker
         from quantlab.core import Instrument
@@ -924,73 +925,75 @@ from desktop_presentation import display_value, display_number, STATUS_LABELS
 
 
 RESULT_LABELS = {
-    'net_pnl': ui_text('forms.labels.text_16'),
-    'gross_pnl': ui_text('forms.labels.text_17'),
-    'trade_count': ui_text('forms.labels.text_18'),
-    'closed_trades': ui_text('forms.labels.text_19'),
-    'fill_count': ui_text('forms.labels.text_20'),
-    'max_drawdown': ui_text('forms.labels.text_21'),
-    'max_drawdown_pct': ui_text('forms.labels.text_22'),
-    'win_rate': ui_text('forms.labels.text_23'),
-    'profit_factor': ui_text('forms.labels.text_24'),
-    'source_type': ui_text('forms.labels.text_25'),
-    'strategy_hash': ui_text('forms.labels.text_26'),
-    'result_hash': ui_text('forms.labels.text_27'),
-    'warnings': ui_text('forms.labels.text_28'),
-    'equity_samples': ui_text('forms.labels.text_29'),
-    'status': ui_text('forms.labels.text_30'),
-    'family': ui_text('forms.labels.text_31'),
-    'sequence': ui_text('forms.labels.text_32'),
-    'strategy_id': ui_text('forms.labels.text_33'),
-    'account_id': ui_text('forms.labels.text_34'),
-    'cash': ui_text('forms.labels.text_35'),
-    'reconciliation_required': ui_text('forms.labels.text_36'),
-    'kill_switch': ui_text('forms.labels.text_37'),
-    'initial_cash': ui_text('forms.labels.text_38'),
-    'final_equity': ui_text('forms.labels.text_39'),
-    'realized_gross_pnl': ui_text('forms.labels.text_40'),
-    'unrealized_pnl': ui_text('forms.labels.text_41'),
-    'total_costs': ui_text('forms.labels.text_42'),
-    'slippage_cost': ui_text('forms.labels.text_43'),
-    'return': ui_text('forms.labels.text_44'),
-    'closed_lots': ui_text('forms.labels.text_45'),
-    'open_position': ui_text('forms.labels.text_46'),
-    'sharpe': ui_text('forms.labels.text_47'),
-    'sharpe_reason': ui_text('forms.labels.text_48'),
-    'win_rate_reason': ui_text('forms.labels.text_49'),
-    'annualization': ui_text('forms.labels.text_50'),
-    'profit_factor_reason': ui_text('forms.labels.text_51'),
-    'profit_factor_basis': ui_text('forms.labels.text_52'),
-    'sharpe_observations': ui_text('forms.labels.text_53'),
-    'sharpe_note': ui_text('forms.labels.text_54'),
-    'sharpe_sample_count': ui_text('forms.labels.text_55'),
-    'periods_per_year': ui_text('forms.labels.text_56'),
-    'annual_risk_free_rate': ui_text('forms.labels.text_57'),
-    'return_frequency': ui_text('forms.labels.text_58'),
-    'first_return': ui_text('forms.labels.text_59'),
-    'missing_dates': ui_text('forms.labels.text_60'),
-    'standard_deviation': ui_text('forms.labels.text_61'),
-    'minimum_observations': ui_text('forms.labels.text_62'),
-    'created_at': ui_text('forms.labels.text_63'),
-    'side': ui_text('forms.labels.text_64'),
-    'quantity': ui_text('forms.labels.text_65'),
-    'price': ui_text('forms.labels.text_66'),
-    'order_type': ui_text('forms.labels.text_67'),
-    'filled_quantity': ui_text('forms.labels.text_68'),
-    'commission': ui_text('forms.labels.text_69'),
-    'tax': ui_text('forms.labels.text_70'),
+    'net_pnl': ui_text('forms.labels.net_pnl'),
+    'gross_pnl': ui_text('forms.labels.gross_pnl'),
+    'trade_count': ui_text('forms.labels.trade_count'),
+    'closed_trades': ui_text('forms.labels.closed_trades'),
+    'fill_count': ui_text('forms.labels.fill_count'),
+    'max_drawdown': ui_text('forms.labels.max_drawdown'),
+    'max_drawdown_pct': ui_text('forms.labels.max_drawdown_percent'),
+    'win_rate': ui_text('forms.labels.win_rate'),
+    'profit_factor': ui_text('forms.labels.profit_factor'),
+    'source_type': ui_text('forms.labels.data_source'),
+    'strategy_hash': ui_text('forms.labels.strategy_hash'),
+    'result_hash': ui_text('forms.labels.result_hash'),
+    'warnings': ui_text('forms.labels.warnings'),
+    'equity_samples': ui_text('forms.labels.equity_points'),
+    'status': ui_text('forms.labels.status'),
+    'family': ui_text('forms.labels.strategy_family'),
+    'sequence': ui_text('forms.labels.candidate_version'),
+    'strategy_id': ui_text('forms.labels.strategy_id'),
+    'account_id': ui_text('forms.labels.account'),
+    'cash': ui_text('forms.labels.cash'),
+    'reconciliation_required': ui_text('forms.labels.reconciliation_required'),
+    'kill_switch': ui_text('forms.labels.stopped'),
+    'initial_cash': ui_text('forms.labels.initial_cash'),
+    'final_equity': ui_text('forms.labels.ending_equity'),
+    'realized_gross_pnl': ui_text('forms.labels.realized_gross_pnl'),
+    'unrealized_pnl': ui_text('forms.labels.unrealized_pnl'),
+    'total_costs': ui_text('forms.labels.total_cost'),
+    'slippage_cost': ui_text('forms.labels.slippage_cost'),
+    'return': ui_text('forms.labels.return_percent'),
+    'closed_lots': ui_text('forms.labels.closed_lots'),
+    'open_position': ui_text('forms.labels.open_quantity'),
+    'sharpe': ui_text('forms.labels.sharpe'),
+    'sharpe_reason': ui_text('forms.labels.sharpe_reason'),
+    'win_rate_reason': ui_text('forms.labels.win_rate_basis'),
+    'annualization': ui_text('forms.labels.annualization'),
+    'profit_factor_reason': ui_text('forms.labels.profit_factor_reason'),
+    'profit_factor_basis': ui_text('forms.labels.profit_factor_basis'),
+    'sharpe_observations': ui_text('forms.labels.sharpe_observations'),
+    'sharpe_note': ui_text('forms.labels.sharpe_limitations'),
+    'sharpe_sample_count': ui_text('forms.labels.valid_return_periods'),
+    'periods_per_year': ui_text('forms.labels.annual_periods'),
+    'annual_risk_free_rate': ui_text('forms.labels.risk_free_rate'),
+    'return_frequency': ui_text('forms.labels.return_frequency'),
+    'first_return': ui_text('forms.labels.first_return'),
+    'missing_dates': ui_text('forms.labels.missing_dates'),
+    'standard_deviation': ui_text('forms.labels.standard_deviation'),
+    'minimum_observations': ui_text('forms.labels.minimum_observations'),
+    'created_at': ui_text('forms.labels.created_at'),
+    'side': ui_text('forms.labels.side'),
+    'quantity': ui_text('forms.labels.quantity'),
+    'price': ui_text('forms.labels.price'),
+    'order_type': ui_text('forms.labels.kind'),
+    'filled_quantity': ui_text('forms.labels.filled_quantity'),
+    'commission': ui_text('forms.labels.commission'),
+    'tax': ui_text('forms.labels.tax'),
 }
 
 
 def readable(value, key=""):
     if value is None:
-        return ui_text('forms.readable.text_1')
+        return ui_text('forms.readable.not_provided')
     if isinstance(value, bool):
-        return ui_text('forms.readable.text_2') if value else ui_text('forms.readable.text_3')
+        return ui_text('forms.readable.yes') if value else ui_text('forms.readable.no')
     if isinstance(value, dict):
-        return ui_text('forms.readable.text_4').join(ui_text('forms.readable.text_5').format(RESULT_LABELS.get(k, k), readable(v, k)) for k, v in value.items())
+        return ui_text('forms.readable.item_separator').join(
+            ui_text('forms.readable.named_value').format(RESULT_LABELS.get(k, k), readable(v, k)) for k, v in value.items()
+        )
     if isinstance(value, (list, tuple)):
-        return ui_text('forms.readable.text_6').join(readable(v) for v in value) or ui_text('forms.readable.text_7')
+        return ui_text('forms.readable.item_separator').join(readable(v) for v in value) or ui_text('forms.readable.none')
     return display_value(value, key)
 
 
@@ -998,7 +1001,7 @@ class ResultTable(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName('result_table')
-        self.setAccessibleName(ui_text('forms.__init__.text_115'))
+        self.setAccessibleName(ui_text('forms.init.results_accessible_name'))
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setAlternatingRowColors(True)
@@ -1041,7 +1044,7 @@ class SummaryCard(QWidget):
             self.label,
             lambda: self.label.setText(
                 '\n'.join(
-                    ui_text('forms.set_values.text_1').format(
+                    ui_text('forms.set_values.named_value').format(
                         RESULT_LABELS.get(k, k),
                         (
                             _privacy.mask_money(v)
@@ -1058,40 +1061,44 @@ class SummaryCard(QWidget):
 # These adapters only present verified report fields. Raw records remain in the
 # host's existing advanced result_detail; no metric or report identity is changed.
 _REPORT_TEXT = {
-    'no closed lots': ui_text('forms.labels.text_71'),
-    'no losing closed lots': ui_text('forms.labels.text_72'),
-    'closed FIFO lot net PnL after allocated entry/exit costs; open lots excluded': ui_text('forms.labels.text_73'),
-    'missing or nonpositive daily equity; no observations discarded': ui_text('forms.labels.text_74'),
-    'at least 2 daily returns required for sample standard deviation': ui_text('forms.labels.text_75'),
-    'zero daily-return sample variance': ui_text('forms.labels.text_76'),
-    'between last supplied equity per exchange trading date; gaps may span multiple days': ui_text('forms.labels.text_77'),
-    'initial cash to first supplied trading-date equity': ui_text('forms.labels.text_78'),
-    'supplied trading dates only; no imputation': ui_text('forms.labels.text_79'),
-    'sample (ddof=1)': ui_text('forms.labels.text_80'),
+    'no closed lots': ui_text('forms.labels.no_closed_lots'),
+    'no losing closed lots': ui_text('forms.labels.zero_loss_denominator'),
+    'closed FIFO lot net PnL after allocated entry/exit costs; open lots excluded': ui_text('forms.labels.fifo_net_basis'),
+    'missing or nonpositive daily equity; no observations discarded': ui_text('forms.labels.invalid_daily_equity'),
+    'at least 2 daily returns required for sample standard deviation': ui_text('forms.labels.insufficient_returns'),
+    'zero daily-return sample variance': ui_text('forms.labels.zero_return_variance'),
+    'between last supplied equity per exchange trading date; gaps may span multiple days': ui_text('forms.labels.daily_equity_frequency'),
+    'initial cash to first supplied trading-date equity': ui_text('forms.labels.initial_cash_basis'),
+    'supplied trading dates only; no imputation': ui_text('forms.labels.provided_dates_only'),
+    'sample (ddof=1)': ui_text('forms.labels.sample_standard_deviation'),
     'Descriptive only. Two returns is a mathematical minimum, not evidence of reliability; short samples do not establish strategy quality. The 252-period convention is assumed, not a validated annual trading calendar; gaps may span multiple days.': ui_text(
-        'forms.labels.text_81'
+        'forms.labels.descriptive_sharpe_warning'
     ),
 }
 
 
 def _report_text(value):
     if value is None:
-        return ui_text('forms._report_text.text_1')
-    return _REPORT_TEXT.get(value, ui_text('forms._report_text.text_2')) if isinstance(value, str) else ui_text('forms._report_text.text_3')
+        return ui_text('forms.report_text.not_provided')
+    return (
+        _REPORT_TEXT.get(value, ui_text('forms.report_text.unknown_explanation'))
+        if isinstance(value, str)
+        else ui_text('forms.report_text.unknown_explanation')
+    )
 
 
 def _report_number(value, key=""):
     if value is None:
-        return ui_text('forms._report_number.text_1')
+        return ui_text('forms.report_number.not_provided')
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
-        return ui_text('forms._report_number.text_2')
+        return ui_text('forms.report_number.diagnostics_required')
     if len(str(value)) > 128:
-        return ui_text('forms._report_number.text_3')
+        return ui_text('forms.report_number.diagnostics_required')
     try:
         if not Decimal(str(value)).is_finite():
-            return ui_text('forms._report_number.text_4')
+            return ui_text('forms.report_number.diagnostics_required')
     except (InvalidOperation, ValueError):
-        return ui_text('forms._report_number.text_5')
+        return ui_text('forms.report_number.diagnostics_required')
     return display_number(value, key)
 
 
@@ -1103,20 +1110,22 @@ def backtest_summary_text(values, *, private=False):
             return _privacy.mask_money(None)
         value = values.get(key)
         if value is None:
-            return ui_text('forms.metric.text_1') if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else ui_text('forms.metric.text_2')
+            return (
+                ui_text('forms.metric.undefined') if key in values and key in ('profit_factor', 'sharpe', 'win_rate') else ui_text('forms.metric.not_provided')
+            )
         return _report_number(value, key)
 
     def fields(*keys):
-        return ui_text('forms.fields.text_1').join(ui_text('forms.fields.text_2').format(RESULT_LABELS[key], metric(key)) for key in keys)
+        return ui_text('forms.fields.field_separator').join(ui_text('forms.fields.named_value').format(RESULT_LABELS[key], metric(key)) for key in keys)
 
     def reason(key, metric_key):
         value = values.get(key)
         metric_value = values.get(metric_key)
-        if metric_value is not None and _report_number(metric_value) == ui_text('forms.reason.text_1'):
-            text = ui_text('forms.reason.text_2')
+        if metric_value is not None and _report_number(metric_value) == ui_text('forms.reason.diagnostics_required'):
+            text = ui_text('forms.reason.unknown_metric')
         else:
-            text = ui_text('forms.reason.text_3') if value is None and metric_value is not None else _report_text(value)
-        return ui_text('forms.reason.text_4').format(RESULT_LABELS[key], text)
+            text = ui_text('forms.reason.not_applicable') if value is None and metric_value is not None else _report_text(value)
+        return ui_text('forms.reason.named_value').format(RESULT_LABELS[key], text)
 
     lines = [
         fields('net_pnl', 'return'),
@@ -1130,7 +1139,7 @@ def backtest_summary_text(values, *, private=False):
         '',
         fields('profit_factor'),
         reason('profit_factor_reason', 'profit_factor'),
-        ui_text('forms.backtest_summary_text.text_1').format(_report_text(values.get('profit_factor_basis'))),
+        ui_text('forms.backtest_summary_text.profit_factor_basis').format(_report_text(values.get('profit_factor_basis'))),
         '',
         fields('sharpe'),
         reason('sharpe_reason', 'sharpe'),
@@ -1145,8 +1154,8 @@ def backtest_summary_text(values, *, private=False):
             ('missing_dates', 'standard_deviation'),
         ):
             lines.append(
-                ui_text('forms.backtest_summary_text.text_2').join(
-                    ui_text('forms.backtest_summary_text.text_3').format(
+                ui_text('forms.backtest_summary_text.field_separator').join(
+                    ui_text('forms.backtest_summary_text.named_value').format(
                         RESULT_LABELS[key],
                         _report_number(assumptions.get(key), key)
                         if key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
@@ -1156,8 +1165,13 @@ def backtest_summary_text(values, *, private=False):
                 )
             )
     else:
-        lines.append(ui_text('forms.backtest_summary_text.text_4'))
-    lines.extend((ui_text('forms.backtest_summary_text.text_5').format(_report_text(values.get('sharpe_note'))), ui_text('forms.backtest_summary_text.text_6')))
+        lines.append(ui_text('forms.backtest_summary_text.annualization_missing'))
+    lines.extend(
+        (
+            ui_text('forms.backtest_summary_text.sharpe_limitations').format(_report_text(values.get('sharpe_note'))),
+            ui_text('forms.backtest_summary_text.advanced_hint'),
+        )
+    )
     return '\n'.join(lines)
 
 
@@ -1169,16 +1183,16 @@ class BacktestSummaryCard(SummaryCard):
 
 
 _FILL_REASONS = {
-    'target_open': ui_text('forms.labels.text_82'),
-    'target_close': ui_text('forms.labels.text_83'),
-    'gap_stop': ui_text('forms.labels.text_84'),
-    'gap_target': ui_text('forms.labels.text_85'),
-    'stop': ui_text('forms.labels.text_86'),
-    'target': ui_text('forms.labels.text_87'),
-    'maintenance_liquidation': ui_text('forms.labels.text_88'),
-    'roll_close': ui_text('forms.labels.text_89'),
-    'roll_open': ui_text('forms.labels.text_90'),
-    'final_settlement': ui_text('forms.labels.text_91'),
+    'target_open': ui_text('forms.labels.target_entry'),
+    'target_close': ui_text('forms.labels.target_exit'),
+    'gap_stop': ui_text('forms.labels.gap_stop'),
+    'gap_target': ui_text('forms.labels.gap_target'),
+    'stop': ui_text('forms.labels.stop_hit'),
+    'target': ui_text('forms.labels.target_hit'),
+    'maintenance_liquidation': ui_text('forms.labels.maintenance_liquidation'),
+    'roll_close': ui_text('forms.labels.roll_close'),
+    'roll_open': ui_text('forms.labels.roll_open'),
+    'final_settlement': ui_text('forms.labels.expiry_settlement'),
 }
 
 
@@ -1187,14 +1201,14 @@ class BacktestFillsTable(ResultTable):
 
     _columns = ('timestamp', 'contract_id', 'side', 'quantity', 'price', 'commission', 'tax', 'reason')
     _labels = (
-        ui_text('forms.labels.text_92'),
-        ui_text('forms.labels.text_93'),
-        ui_text('forms.labels.text_94'),
-        ui_text('forms.labels.text_95'),
-        ui_text('forms.labels.text_96'),
-        ui_text('forms.labels.text_97'),
-        ui_text('forms.labels.text_98'),
-        ui_text('forms.labels.text_99'),
+        ui_text('forms.labels.fill_time'),
+        ui_text('forms.labels.contract'),
+        ui_text('forms.labels.side'),
+        ui_text('forms.labels.quantity'),
+        ui_text('forms.labels.price'),
+        ui_text('forms.labels.commission'),
+        ui_text('forms.labels.tax'),
+        ui_text('forms.labels.fill_reason'),
     )
 
     def set_rows(self, rows, columns=None):
@@ -1204,13 +1218,13 @@ class BacktestFillsTable(ResultTable):
         for row in rows:
             shown = {key: row.get(key) for key in self._columns}
             side, reason = row.get('side'), row.get('reason')
-            shown['side'] = display_value(side, 'side') if side in ('buy', 'sell') else ui_text('forms.set_rows.text_1')
+            shown['side'] = display_value(side, 'side') if side in ('buy', 'sell') else ui_text('forms.set_rows.unknown_value')
             shown['reason'] = (
-                _FILL_REASONS.get(reason, ui_text('forms.set_rows.text_2'))
+                _FILL_REASONS.get(reason, ui_text('forms.set_rows.other_value'))
                 if isinstance(reason, str) and reason
-                else ui_text('forms.set_rows.text_3')
+                else ui_text('forms.set_rows.not_provided')
                 if reason is None or reason == ''
-                else ui_text('forms.set_rows.text_4')
+                else ui_text('forms.set_rows.other_value')
             )
             timestamp = row.get('timestamp')
             try:
@@ -1219,17 +1233,17 @@ class BacktestFillsTable(ResultTable):
                     raise ValueError('timezone required')
                 shown['timestamp'] = parsed.astimezone(timezone.utc).isoformat(sep=' ', timespec='seconds').removesuffix('+00:00')
             except (ValueError, TypeError, AttributeError):
-                shown['timestamp'] = ui_text('forms.set_rows.text_5')
+                shown['timestamp'] = ui_text('forms.set_rows.time_missing')
             display.append(shown)
         super().set_rows(display, self._columns)
         self.setHorizontalHeaderLabels(self._labels)
         for index, row in enumerate(rows):
-            detail = ui_text('forms.set_rows.text_8').format(
-                str(row.get('fill_id', ui_text('forms.set_rows.text_6'))), str(row.get('order_id', ui_text('forms.set_rows.text_7')))
+            detail = ui_text('forms.set_rows.fill_order_ids').format(
+                str(row.get('fill_id', ui_text('forms.set_rows.not_provided'))), str(row.get('order_id', ui_text('forms.set_rows.not_provided')))
             )
             for column in range(self.columnCount()):
                 item = self.item(index, column)
-                _privacy.item_tooltip(self, item, str(row.get(self._columns[column], ui_text('forms.set_rows.text_9'))) + '\n' + detail)
+                _privacy.item_tooltip(self, item, str(row.get(self._columns[column], ui_text('forms.set_rows.not_provided'))) + '\n' + detail)
         self.resizeColumnsToContents()
         for column in range(self.columnCount()):
             self.setColumnWidth(column, min(self.columnWidth(column), 340))
@@ -1243,11 +1257,11 @@ def candidate_summary_text(values, *, private=False):
 
     def eligibility(value):
         return (
-            ui_text('forms.eligibility.text_1')
+            ui_text('forms.eligibility.passed')
             if value is True
-            else ui_text('forms.eligibility.text_2')
+            else ui_text('forms.eligibility.failed')
             if value is False
-            else ui_text('forms.eligibility.text_3')
+            else ui_text('forms.eligibility.not_provided')
         )
 
     def metric(metrics, key):
@@ -1255,43 +1269,43 @@ def candidate_summary_text(values, *, private=False):
             return _privacy.mask_money(None)
         value = metrics.get(key)
         if value is None:
-            return ui_text('forms.metric.text_3') if key in metrics and key in ('profit_factor', 'sharpe') else ui_text('forms.metric.text_4')
+            return ui_text('forms.metric.undefined') if key in metrics and key in ('profit_factor', 'sharpe') else ui_text('forms.metric.not_provided')
         return _report_number(value, key)
 
     def reason(metrics, key):
         value, explanation = metrics.get(key), metrics.get(key + '_reason')
-        if value is not None and _report_number(value) == ui_text('forms.reason.text_5'):
-            return ui_text('forms.reason.text_6')
-        return ui_text('forms.reason.text_7') if explanation is None and value is not None else _report_text(explanation)
+        if value is not None and _report_number(value) == ui_text('forms.reason.diagnostics_required'):
+            return ui_text('forms.reason.unknown_metric')
+        return ui_text('forms.reason.not_applicable') if explanation is None and value is not None else _report_text(explanation)
 
-    name = values.get(ui_text('forms.candidate_summary_text.text_1'))
+    name = values.get(ui_text('forms.candidate_summary_text.strategy'))
     if not isinstance(name, str):
-        name = ui_text('forms.candidate_summary_text.text_2')
+        name = ui_text('forms.candidate_summary_text.not_provided')
     elif re.fullmatch('[0-9a-fA-F]{64}', name):
-        name = ui_text('forms.candidate_summary_text.text_3').format(name[:12])
+        name = ui_text('forms.candidate_summary_text.abbreviated_id').format(name[:12])
     else:
-        name = ' '.join(name.split())[:80] + (ui_text('forms.candidate_summary_text.text_4') if len(name) > 80 else '')
+        name = ' '.join(name.split())[:80] + (ui_text('forms.candidate_summary_text.truncated_name') if len(name) > 80 else '')
     lines = [
-        ui_text('forms.candidate_summary_text.text_5').format(name),
-        ui_text('forms.candidate_summary_text.text_7').format(eligibility(values.get(ui_text('forms.candidate_summary_text.text_6')))),
-        ui_text('forms.candidate_summary_text.text_8'),
+        ui_text('forms.candidate_summary_text.candidate_strategy').format(name),
+        ui_text('forms.candidate_summary_text.saved_paper_gate').format(eligibility(values.get(ui_text('forms.candidate_summary_text.paper_eligibility')))),
+        ui_text('forms.candidate_summary_text.eligibility_disclaimer'),
     ]
-    evaluations = values.get(ui_text('forms.candidate_summary_text.text_9'))
+    evaluations = values.get(ui_text('forms.candidate_summary_text.oos_holdout'))
     evaluations = evaluations if isinstance(evaluations, dict) else {}
-    for split, title in (('oos', ui_text('forms.candidate_summary_text.text_10')), ('holdout', ui_text('forms.candidate_summary_text.text_11'))):
+    for split, title in (('oos', ui_text('forms.candidate_summary_text.out_of_sample')), ('holdout', ui_text('forms.candidate_summary_text.final_holdout'))):
         saved = evaluations.get(split)
         saved = saved if isinstance(saved, dict) else {}
         row = saved.get('evaluation')
         row = row if isinstance(row, dict) else {}
         state = row.get('status')
         status = (
-            ui_text('forms.candidate_summary_text.text_12')
+            ui_text('forms.candidate_summary_text.no_saved_evaluation')
             if not row
-            else ui_text('forms.candidate_summary_text.text_13')
+            else ui_text('forms.candidate_summary_text.not_provided')
             if state is None
-            else _CANDIDATE_EVALUATION_LABELS.get(state, ui_text('forms.candidate_summary_text.text_14'))
+            else _CANDIDATE_EVALUATION_LABELS.get(state, ui_text('forms.candidate_summary_text.unknown_status'))
             if isinstance(state, str)
-            else ui_text('forms.candidate_summary_text.text_15')
+            else ui_text('forms.candidate_summary_text.unknown_status')
         )
         metrics = row.get('metrics')
         metrics = metrics if isinstance(metrics, dict) else {}
@@ -1300,43 +1314,43 @@ def candidate_summary_text(values, *, private=False):
         lines.extend(
             (
                 '',
-                ui_text('forms.candidate_summary_text.text_16').format(title, status, eligibility(saved.get("qualified"))),
-                ui_text('forms.candidate_summary_text.text_17').join(
-                    ui_text('forms.candidate_summary_text.text_18').format(RESULT_LABELS[key], metric(metrics, key)) for key in headline
+                ui_text('forms.candidate_summary_text.segment_status').format(title, status, eligibility(saved.get("qualified"))),
+                ui_text('forms.candidate_summary_text.field_separator').join(
+                    ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key], metric(metrics, key)) for key in headline
                 ),
             )
         )
         for key in ('profit_factor', 'sharpe'):
-            lines.append(ui_text('forms.candidate_summary_text.text_19').format(RESULT_LABELS[key], metric(metrics, key)))
+            lines.append(ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key], metric(metrics, key)))
             if key in metrics or key + '_reason' in metrics:
-                lines.append(ui_text('forms.candidate_summary_text.text_20').format(RESULT_LABELS[key + '_reason'], reason(metrics, key)))
+                lines.append(ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key + '_reason'], reason(metrics, key)))
             if key == 'profit_factor' and key in metrics:
-                lines.append(ui_text('forms.candidate_summary_text.text_21').format(_report_text(metrics.get('profit_factor_basis'))))
+                lines.append(ui_text('forms.candidate_summary_text.profit_factor_basis').format(_report_text(metrics.get('profit_factor_basis'))))
         if 'sharpe' in metrics:
             lines.append(
-                ui_text('forms.candidate_summary_text.text_22').join(
-                    ui_text('forms.candidate_summary_text.text_23').format(RESULT_LABELS[key], _report_number(metrics.get(key)))
+                ui_text('forms.candidate_summary_text.field_separator').join(
+                    ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key], _report_number(metrics.get(key)))
                     for key in ('sharpe_observations', 'sharpe_sample_count')
                 )
             )
             assumptions = metrics.get('annualization')
             if isinstance(assumptions, dict):
                 lines.append(
-                    ui_text('forms.candidate_summary_text.text_24').join(
-                        ui_text('forms.candidate_summary_text.text_25').format(RESULT_LABELS[key], _report_number(assumptions.get(key), key))
+                    ui_text('forms.candidate_summary_text.field_separator').join(
+                        ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key], _report_number(assumptions.get(key), key))
                         for key in ('periods_per_year', 'annual_risk_free_rate', 'minimum_observations')
                     )
                 )
                 lines.append(
-                    ui_text('forms.candidate_summary_text.text_26').join(
-                        ui_text('forms.candidate_summary_text.text_27').format(RESULT_LABELS[key], _report_text(assumptions.get(key)))
+                    ui_text('forms.candidate_summary_text.item_separator').join(
+                        ui_text('forms.candidate_summary_text.named_value').format(RESULT_LABELS[key], _report_text(assumptions.get(key)))
                         for key in ('return_frequency', 'first_return', 'missing_dates', 'standard_deviation')
                     )
                 )
             else:
-                lines.append(ui_text('forms.candidate_summary_text.text_28'))
-            lines.append(ui_text('forms.candidate_summary_text.text_29').format(_report_text(metrics.get('sharpe_note'))))
-    lines.append(ui_text('forms.candidate_summary_text.text_30'))
+                lines.append(ui_text('forms.candidate_summary_text.annualization_missing'))
+            lines.append(ui_text('forms.candidate_summary_text.sharpe_limitations').format(_report_text(metrics.get('sharpe_note'))))
+    lines.append(ui_text('forms.candidate_summary_text.advanced_hint'))
     return '\n'.join(lines)
 
 

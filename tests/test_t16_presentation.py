@@ -197,7 +197,7 @@ class PresentationWidgetTests(unittest.TestCase):
                     host.notify_local.assert_called_once()
                     self.assertFalse(host.job_progress.cancel_button.isEnabled())
                     if terminal == 'cancelled' and operation != 'ui_walk_forward_run':
-                        host.freeze_paper.assert_called_once_with(ui_text('ui.poll_jobs.text_5'))
+                        host.freeze_paper.assert_called_once_with(ui_text('ui.poll_jobs.cancelled_title'))
                     else:
                         host.freeze_paper.assert_not_called()
                     host.freeze_paper.reset_mock()
@@ -208,7 +208,7 @@ class PresentationWidgetTests(unittest.TestCase):
         host = self.host('ui_backtest')
         host.job_progress.request_cancel(lambda: MainWindow.cancel_job(host))
         host.job_progress.request_cancel(lambda: MainWindow.cancel_job(host))
-        host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.text_1'))
+        host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.user_cancel'))
         self.assertEqual(host.status.text(), ui_text('job.cancel_notice'))
         self.assertFalse(host.job_progress.cancel_button.isEnabled())
         host.notify_local.assert_not_called()
@@ -235,11 +235,11 @@ class PresentationWidgetTests(unittest.TestCase):
         host.job_feedback.terminal = True
         host.chatgpt_panel = SimpleNamespace(primary_sign_in_pending=True)
         MainWindow.cancel_job(host)
-        host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.text_1'))
+        host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.user_cancel'))
 
     def test_fixed_import_progress_notice_is_preserved_beside_stage(self):
         host = self.host('ui_market_refresh')
-        message = ui_text('ui.execute_ui_operation.text_25')
+        message = ui_text('ui.execute_ui_operation.importing_local_history')
         self.poll(host, {'type': 'progress', 'stage': 'load_data', 'message': message})
         self.assertEqual(host.status.text(), message)
         self.assertEqual(host.job_progress.stage.text(), ui_text('job.stage.load_data'))
@@ -262,7 +262,7 @@ class PresentationWidgetTests(unittest.TestCase):
                     self.assertNotRegex(FIXED_TERMS.sub('', panel.status.text()), r'[A-Z_]{3,}|[a-f0-9]{16,}|private|/secret')
                     self.assertEqual(
                         panel.primary_sign_in.text(),
-                        ui_text('outcome.auth_expired.action') if code == 'credential_diagnosis' else ui_text('chatgpt_ui.__init__.text_8'),
+                        ui_text('outcome.auth_expired.action') if code == 'credential_diagnosis' else ui_text('chatgpt_ui.init.primary_sign_in'),
                     )
 
     def test_refresh_worker_results_all_p0_codes_and_reauthorization_action(self):

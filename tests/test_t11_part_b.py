@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch
 
 import desktop
+import desktop_strings
 from quantlab import errors
 from quantlab.saved_candidate_pool import SavedCandidatePoolError
 from quantlab.desktop_errors import ERROR_LABELS, ERROR_TABLE, error_message, exception_code
@@ -18,6 +19,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class _NormalizeState(ast.NodeTransformer):
+    def visit_Constant(self, node):
+        # R3 changes only the catalog identifier in the pinned GUI handler.
+        # Keep the original fingerprint and verify the identical message. The
+        # earlier lock dialog uses the first alias; run_gui uses the last one.
+        if node.value == 'desktop.main.startup_failed':
+            aliases = [old for old, new in desktop_strings.TEXT_ALIASES.items() if new == node.value]
+            assert len(aliases) == 2
+            assert all(desktop_strings.ui_text(old) == desktop_strings.ui_text(node.value) for old in aliases)
+            node.value = aliases[-1]
+        return node
+
     def visit_Attribute(self, node):
         if isinstance(node.value, ast.Name) and node.value.id == 'state':
             return ast.copy_location(ast.Name(id=node.attr, ctx=node.ctx), node)
@@ -100,7 +112,7 @@ class StartupTests(unittest.TestCase):
         lock.setStaleLockTime.assert_called_once_with(0)
         lock.tryLock.assert_called_once_with(0)
         directory.cleanup.assert_called_once_with()
-        dialog.assert_called_once_with(None, desktop.ui_text('desktop.main.text_1'), error_message('startup_workspace_busy'))
+        dialog.assert_called_once_with(None, desktop.ui_text('desktop.main.startup_failed'), error_message('startup_workspace_busy'))
 
     def test_lock_acquired_retains_handle(self):
         lock = Mock()

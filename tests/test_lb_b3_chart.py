@@ -77,7 +77,7 @@ class ChartExpansionTests(unittest.TestCase):
                 self.assertNotIn(label, p.chart.overlays | p.chart.panes)
                 self.assertIn('MA5', p.chart.overlays)
                 self.assertIn(p._indicator_failure_text([key]), p.message.text())
-                self.assertIn(ui_text('market._apply_indicators.text_2'), p.indicator_summary.text())
+                self.assertIn(ui_text('market.apply_indicators.calculation_failed'), p.indicator_summary.text())
                 self.assertEqual(len(p.chart.panes) + len(p.chart.overlays), 11 - (3 if key == 'MA channel' else 1))
 
     def test_new_widget_names_are_registered(self):

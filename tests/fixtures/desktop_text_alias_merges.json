@@ -1,0 +1,179 @@
+{
+  "ui.execute_ui_operation.official_file_too_large": [
+    "ui.execute_ui_operation.text_28",
+    "ui.execute_ui_operation.text_29"
+  ],
+  "ui_polish.install_polish.bars_suffix": [
+    "ui_polish.install_polish.text_14",
+    "ui_polish.install_polish.text_16",
+    "ui_polish.install_polish.text_20"
+  ],
+  "forms.labels.side": [
+    "forms.labels.text_64",
+    "forms.labels.text_94"
+  ],
+  "forms.labels.quantity": [
+    "forms.labels.text_65",
+    "forms.labels.text_95"
+  ],
+  "forms.labels.price": [
+    "forms.labels.text_66",
+    "forms.labels.text_96"
+  ],
+  "forms.labels.commission": [
+    "forms.labels.text_69",
+    "forms.labels.text_97"
+  ],
+  "forms.labels.tax": [
+    "forms.labels.text_70",
+    "forms.labels.text_98"
+  ],
+  "forms.build_payload.trading_day": [
+    "forms.build_payload.text_4",
+    "forms.build_payload.text_13",
+    "forms.build_payload.text_24"
+  ],
+  "forms.readable.item_separator": [
+    "forms.readable.text_4",
+    "forms.readable.text_6"
+  ],
+  "forms.report_text.unknown_explanation": [
+    "forms._report_text.text_2",
+    "forms._report_text.text_3"
+  ],
+  "forms.report_number.diagnostics_required": [
+    "forms._report_number.text_2",
+    "forms._report_number.text_3",
+    "forms._report_number.text_4",
+    "forms._report_number.text_5"
+  ],
+  "forms.metric.undefined": [
+    "forms.metric.text_1",
+    "forms.metric.text_3"
+  ],
+  "forms.metric.not_provided": [
+    "forms.metric.text_2",
+    "forms.metric.text_4"
+  ],
+  "forms.reason.diagnostics_required": [
+    "forms.reason.text_1",
+    "forms.reason.text_5"
+  ],
+  "forms.reason.unknown_metric": [
+    "forms.reason.text_2",
+    "forms.reason.text_6"
+  ],
+  "forms.reason.not_applicable": [
+    "forms.reason.text_3",
+    "forms.reason.text_7"
+  ],
+  "forms.set_rows.other_value": [
+    "forms.set_rows.text_2",
+    "forms.set_rows.text_4"
+  ],
+  "forms.set_rows.not_provided": [
+    "forms.set_rows.text_3",
+    "forms.set_rows.text_6",
+    "forms.set_rows.text_7",
+    "forms.set_rows.text_9"
+  ],
+  "forms.candidate_summary_text.not_provided": [
+    "forms.candidate_summary_text.text_2",
+    "forms.candidate_summary_text.text_13"
+  ],
+  "forms.candidate_summary_text.unknown_status": [
+    "forms.candidate_summary_text.text_14",
+    "forms.candidate_summary_text.text_15"
+  ],
+  "forms.candidate_summary_text.field_separator": [
+    "forms.candidate_summary_text.text_17",
+    "forms.candidate_summary_text.text_22",
+    "forms.candidate_summary_text.text_24"
+  ],
+  "forms.candidate_summary_text.named_value": [
+    "forms.candidate_summary_text.text_18",
+    "forms.candidate_summary_text.text_19",
+    "forms.candidate_summary_text.text_20",
+    "forms.candidate_summary_text.text_23",
+    "forms.candidate_summary_text.text_25",
+    "forms.candidate_summary_text.text_27"
+  ],
+  "market.init.update_official": [
+    "market.__init__.text_3",
+    "market.__init__.text_4"
+  ],
+  "market.init.index_futures": [
+    "market.__init__.text_7",
+    "market.__init__.text_77"
+  ],
+  "market.init.mini_futures": [
+    "market.__init__.text_8",
+    "market.__init__.text_78"
+  ],
+  "market.init.micro_futures": [
+    "market.__init__.text_9",
+    "market.__init__.text_79"
+  ],
+  "market.apply_indicators.vwap_estimate": [
+    "market._apply_indicators.text_1",
+    "market._apply_indicators.text_5"
+  ],
+  "walk_forward.labels.evaluation_failed": [
+    "walk_forward.labels.text_41",
+    "walk_forward.labels.text_42"
+  ],
+  "walk_forward.labels.unverified": [
+    "walk_forward.labels.text_52",
+    "walk_forward.labels.text_53"
+  ],
+  "walk_forward.preview_text.failed_candidate": [
+    "walk_forward.preview_text.text_37",
+    "walk_forward.preview_text.text_38"
+  ],
+  "walk_forward.preview_text.cost_separator": [
+    "walk_forward.preview_text.text_44",
+    "walk_forward.preview_text.text_48",
+    "walk_forward.preview_text.text_53"
+  ],
+  "walk_forward.result_rows.none": [
+    "walk_forward.result_rows.text_3",
+    "walk_forward.result_rows.text_30"
+  ],
+  "walk_forward.result_rows.fold": [
+    "walk_forward.result_rows.text_4",
+    "walk_forward.result_rows.text_27"
+  ],
+  "walk_forward.result_rows.status": [
+    "walk_forward.result_rows.text_5",
+    "walk_forward.result_rows.text_28"
+  ],
+  "walk_forward.result_rows.winner": [
+    "walk_forward.result_rows.text_6",
+    "walk_forward.result_rows.text_29"
+  ],
+  "walk_forward.result_rows.net_pnl": [
+    "walk_forward.result_rows.text_13",
+    "walk_forward.result_rows.text_17"
+  ],
+  "walk_forward.result_rows.closed_lots": [
+    "walk_forward.result_rows.text_14",
+    "walk_forward.result_rows.text_18"
+  ],
+  "walk_forward.result_rows.max_drawdown_ratio": [
+    "walk_forward.result_rows.text_15",
+    "walk_forward.result_rows.text_19"
+  ],
+  "charts.display_time.time_unverified": [
+    "charts._display_time.text_1",
+    "charts._display_time.text_2",
+    "charts._display_time.text_3"
+  ],
+  "charts.paint_event.not_provided": [
+    "charts.paintEvent.text_17",
+    "charts.paintEvent.text_19"
+  ],
+  "desktop.main.startup_failed": [
+    "desktop.main.text_1",
+    "desktop.main.text_2"
+  ]
+}

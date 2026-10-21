@@ -176,15 +176,17 @@ def _collect_snapshot_lots(lots, selected, side, position, opening, remaining, c
 def _build_snapshot_lines(result, entries, bases, quantities, position, side, index, as_of, reference_line):
     lines = [
         reference_line(
-            ui_text('ui._result_snapshot_lines.text_1'), sum((p * q for p, q in zip(entries, quantities)), Decimal(0)) / abs(position), index, as_of
+            ui_text('ui.result_snapshot_lines.average_fill_price'), sum((p * q for p, q in zip(entries, quantities)), Decimal(0)) / abs(position), index, as_of
         ),
-        reference_line(ui_text('ui._result_snapshot_lines.text_2'), sum((p * q for p, q in zip(bases, quantities)), Decimal(0)) / abs(position), index, as_of),
+        reference_line(
+            ui_text('ui.result_snapshot_lines.mtm_basis'), sum((p * q for p, q in zip(bases, quantities)), Decimal(0)) / abs(position), index, as_of
+        ),
     ]
     if result.manifest.get('protective_scope') == 'whole position at most adverse triggered original-entry lot level':
         parameters = result.manifest['strategy']['parameters']
         for key, label, direction in (
-            ('stop_ticks', ui_text('ui._result_snapshot_lines.text_3'), -side),
-            ('target_ticks', ui_text('ui._result_snapshot_lines.text_4'), side),
+            ('stop_ticks', ui_text('ui.result_snapshot_lines.stop_loss'), -side),
+            ('target_ticks', ui_text('ui.result_snapshot_lines.take_profit'), side),
         ):
             if key not in parameters:
                 continue
@@ -193,7 +195,7 @@ def _build_snapshot_lines(result, entries, bases, quantities, position, side, in
                 return ()
             levels = [price + direction * offset for price in entries]
             lower, upper = min(levels), max(levels)
-            lines.append(reference_line(label + (ui_text('ui._result_snapshot_lines.text_5') if lower != upper else ''), lower, index, as_of))
+            lines.append(reference_line(label + (ui_text('ui.result_snapshot_lines.lower_bound') if lower != upper else ''), lower, index, as_of))
             if lower != upper:
-                lines.append(reference_line(ui_text('ui._result_snapshot_lines.text_6').format(label), upper, index, as_of))
+                lines.append(reference_line(ui_text('ui.result_snapshot_lines.upper_bound').format(label), upper, index, as_of))
     return tuple(lines)

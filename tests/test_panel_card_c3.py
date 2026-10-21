@@ -44,7 +44,7 @@ class PanelCardTests(unittest.TestCase):
         return widget
 
     def test_controls_keep_order_and_right_edge_at_two_widths(self):
-        panel = self.keep(PanelCard(ui_text('ui._paper_page.text_9')))
+        panel = self.keep(PanelCard(ui_text('ui.paper_page.snapshot_advanced')))
         controls = [QPushButton(ui_text('async.retry')), QPushButton(ui_text('async.refresh'))]
         for control in controls:
             control.setFixedSize(40, 22)
@@ -65,12 +65,12 @@ class PanelCardTests(unittest.TestCase):
         self.assertEqual(empty.title_label.title(), '')
         self.assertTrue(empty.title_bar.accessibleName())
         self.assertTrue(empty.controls.accessibleName())
-        label = QLabel(ui_text('ui._paper_page.text_4'))
+        label = QLabel(ui_text('ui.paper_page.policy_advanced'))
         empty.content_layout().addWidget(label)
         self.assertIs(label.parentWidget(), empty.content)
 
     def test_theme_switch_resolves_selectors_and_preserves_group_title_contrast(self):
-        panel = self.keep(PanelCard(ui_text('ui._paper_page.text_4')))
+        panel = self.keep(PanelCard(ui_text('ui.paper_page.policy_advanced')))
         observer = PolishCounter()
         panel.installEventFilter(observer)
         for theme in ('dark', 'light', 'dark'):

@@ -101,7 +101,7 @@ class MarketEmptyTests(unittest.TestCase):
         self.assertIn('7.9825', cells)
         for cell in cells:
             self.assertNotRegex(cell, r'\d+\.\d{5,}|(?i:nan|inf)|Decimal\(')
-        self.assertEqual(cells.count(ui_text('presentation.display_number.text_1')), 4)
+        self.assertEqual(cells.count(ui_text('presentation.display_number.diagnostics_required')), 4)
         for value in (Decimal('0.123456789012345678901234567890'), float('nan'), float('inf'), -float('inf')):
             self.assertNotRegex(display_number(value), r'\d+\.\d{5,}|(?i:nan|inf)')
         timeline = WindowTimeline()

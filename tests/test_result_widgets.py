@@ -37,7 +37,7 @@ class ResultWidgetTests(unittest.TestCase):
         table.show()
         table.setFocus()
         self.app.processEvents()
-        expected = 'a\tb\n2\t' + ui_text('forms.metric.text_1') + '\n10\t0.125'
+        expected = 'a\tb\n2\t' + ui_text('forms.metric.undefined') + '\n10\t0.125'
         self.assertEqual(table.copy_text(), expected)
         QApplication.clipboard().clear()
         QTest.keyClick(table, Qt.Key.Key_C, Qt.KeyboardModifier.ControlModifier)
@@ -48,18 +48,18 @@ class ResultWidgetTests(unittest.TestCase):
         table.close()
 
     def test_none_missing_zero_and_bounded_formatting(self):
-        self.assertEqual(shown(), ui_text('forms.metric.text_2'))
-        self.assertEqual(shown(None), ui_text('forms.metric.text_1'))
+        self.assertEqual(shown(), ui_text('forms.metric.not_provided'))
+        self.assertEqual(shown(None), ui_text('forms.metric.undefined'))
         self.assertEqual(shown(0.0), '0')
         self.assertEqual(shown('1234567.123456'), '1,234,567.1235')
         self.assertEqual(shown('0.125', 'return'), '12.50%')
         self.assertEqual(shown('1000000', 'cash'), '1,000,000 TWD')
         self.assertEqual(shown('00123', 'order_id'), '00123')
-        self.assertEqual(shown('1e101'), ui_text('presentation.display_number.text_1'))
-        self.assertEqual(shown('internal_code', 'profit_factor'), ui_text('presentation.display_number.text_1'))
+        self.assertEqual(shown('1e101'), ui_text('presentation.display_number.diagnostics_required'))
+        self.assertEqual(shown('internal_code', 'profit_factor'), ui_text('presentation.display_number.diagnostics_required'))
         table = ResultTable()
         table.set_rows([{'x': None}, {}, {'x': 0.0}])
-        self.assertEqual([table.item(i, 0).text() for i in range(3)], [ui_text('forms.metric.text_1'), ui_text('forms.metric.text_2'), '0'])
+        self.assertEqual([table.item(i, 0).text() for i in range(3)], [ui_text('forms.metric.undefined'), ui_text('forms.metric.not_provided'), '0'])
         table.close()
 
     def test_header_click_sorts_numbers(self):
@@ -86,7 +86,7 @@ class ResultWidgetTests(unittest.TestCase):
         self.assertEqual(values, before)
         card.set_values({})
         self.assertTrue(card.reasons['profit_factor'].isHidden())
-        self.assertEqual(card.labels['profit_factor'].text(), ui_text('forms.metric.text_2'))
+        self.assertEqual(card.labels['profit_factor'].text(), ui_text('forms.metric.not_provided'))
         card.close()
 
     def test_positions_and_taipei_fill_adapter(self):
@@ -94,7 +94,7 @@ class ResultWidgetTests(unittest.TestCase):
         self.assertEqual(position_text(3), '多單 3 口')
         self.assertEqual(position_text(0), '空手（無持倉）')
         self.assertEqual(taipei_time('2024-01-01T00:00:00Z'), '2024-01-01 08:00:00')
-        self.assertEqual(taipei_time('2024-01-01T00:00:00'), ui_text('forms.set_rows.text_5'))
+        self.assertEqual(taipei_time('2024-01-01T00:00:00'), ui_text('forms.set_rows.time_missing'))
         table = TaipeiFillsTable()
         rows = [{'timestamp': '2024-01-01T00:00:00Z', 'price': '10000', 'quantity': 10, 'fill_id': 'f'}, {'quantity': 2}]
         before = copy.deepcopy(rows)
@@ -156,8 +156,8 @@ class ResultWidgetTests(unittest.TestCase):
         self.assertEqual(panel.table.rowCount(), 2)
         self.assertEqual(panel.table.item(0, 2).text(), '0 TWD')
         self.assertEqual(panel.table.item(0, 3).text(), '12.50%')
-        self.assertEqual(panel.table.item(0, 4).text(), ui_text('forms.metric.text_1'))
-        self.assertEqual(panel.table.item(1, 2).text(), ui_text('forms.metric.text_2'))
+        self.assertEqual(panel.table.item(0, 4).text(), ui_text('forms.metric.undefined'))
+        self.assertEqual(panel.table.item(1, 2).text(), ui_text('forms.metric.not_provided'))
         panel.close()
 
 
@@ -216,7 +216,7 @@ class BacktestResultHostTests(unittest.TestCase):
         w = self.window
         before = canonical_json(result)
         self.assertEqual(w.backtest_page.kpis.labels['net_pnl'].text(), shown(result.metrics['net_pnl'], 'net_pnl'))
-        self.assertEqual(w.backtest_page.kpis.labels['profit_factor'].text(), ui_text('forms.metric.text_1'))
+        self.assertEqual(w.backtest_page.kpis.labels['profit_factor'].text(), ui_text('forms.metric.undefined'))
         self.assertEqual(w.fills_table.item(0, 0).text(), taipei_time(result.fills[0].timestamp))
         self.assertEqual(w.fills_table.rowCount(), len(result.fills))
         self.assertEqual(len(w.plot.values), len(result.equity))

@@ -30,17 +30,17 @@ class ViewCoordinator(PageContext):
         if path.exists():
             try:
                 data = self.host.callbacks['load_dataset'](path)
-                self.overview.setText(ui_text('ui.refresh_views.text_1').format(display_status(data.manifest['source_type']), len(data.bars)))
+                self.overview.setText(ui_text('ui.refresh_views.source_summary').format(display_status(data.manifest['source_type']), len(data.bars)))
                 self.data_card.setText(
-                    ui_text('ui.refresh_views.text_3').format(
-                        display_status(data.manifest['source_type']), ui_text('ui.refresh_views.text_2').format(len(data.bars))
+                    ui_text('ui.refresh_views.source_details').format(
+                        display_status(data.manifest['source_type']), ui_text('ui.refresh_views.bar_count').format(len(data.bars))
                     )
                 )
                 self.data_detail.setPlainText(canonical_json({'manifest': data.manifest, 'quality': data.quality}))
             except (ValueError, KeyError, TypeError, OSError) as exc:
                 self.overview.setText(error_message(exception_code(exc)))
         else:
-            self.overview.setText(ui_text('ui.refresh_views.text_4'))
+            self.overview.setText(ui_text('ui.refresh_views.no_data'))
         stamp = content_hash(to_dict(data.manifest)) if data is not None else None
         if stamp != self._wf_source_stamp:
             first_source = self._wf_source_stamp is None
@@ -78,11 +78,11 @@ class ViewCoordinator(PageContext):
                 label = self.host.callbacks['result_name'](loaded, created)
                 comparison_records.append((str(result_path), saved_row(loaded, created)))
             except (ValueError, KeyError, TypeError, OSError):
-                label = ui_text('ui.refresh_views.text_5')
+                label = ui_text('ui.refresh_views.unreadable_result')
                 comparison_records.append((str(result_path), {'name': label}))
             names[label] = names.get(label, 0) + 1
             if names[label] > 1:
-                label += ui_text('ui.refresh_views.text_6').format(names[label])
+                label += ui_text('ui.refresh_views.parenthesized_value').format(names[label])
             comparison_records[-1][1]['name'] = label
             self.result_choice.addItem(label, str(result_path))
             self.result_choice.setItemData(self.result_choice.count() - 1, result_path.parent.name, Qt.ItemDataRole.ToolTipRole)
@@ -99,7 +99,9 @@ class ViewCoordinator(PageContext):
 
     def _refresh_saved_history(self):
         selection = self.root / 'selection.json'
-        self.selection_status.setText(ui_text('ui.refresh_views.text_7') if selection.exists() else ui_text('ui.refresh_views.text_8'))
+        self.selection_status.setText(
+            ui_text('ui.refresh_views.active_candidate_hint') if selection.exists() else ui_text('ui.refresh_views.no_active_strategy')
+        )
         self.selection_status.setToolTip(load_selection(selection)['strategy_hash'] if selection.exists() else '')
         policy = self.root / 'paper_policy.json'
         if policy.exists():
@@ -110,7 +112,7 @@ class ViewCoordinator(PageContext):
         history = []
         for p in sorted((self.root / 'campaigns').glob('*/*.json'))[:100]:
             history.append({'file': str(p), 'content': self.host.callbacks['read_json'](p)})
-        self.history.setPlainText(canonical_json(history) if history else ui_text('ui.refresh_views.text_9'))
+        self.history.setPlainText(canonical_json(history) if history else ui_text('ui.refresh_views.no_research'))
         self.history_table.set_rows(
             [
                 {'family': a.get('family'), 'sequence': a.get('sequence'), 'status': a.get('status'), 'strategy_hash': a.get('strategy_hash')}
@@ -120,7 +122,12 @@ class ViewCoordinator(PageContext):
         )
         self.evaluation_table.set_rows(
             [
-                {ui_text('ui.refresh_views.text_10'): split, 'status': row.get('status'), 'strategy_hash': row.get('strategy_hash'), **row.get('metrics', {})}
+                {
+                    ui_text('ui.refresh_views.evaluation_segment'): split,
+                    'status': row.get('status'),
+                    'strategy_hash': row.get('strategy_hash'),
+                    **row.get('metrics', {}),
+                }
                 for entry in history
                 for split, rows in entry['content'].get('evaluations', {}).items()
                 for row in rows
@@ -148,16 +155,18 @@ class ViewCoordinator(PageContext):
                 label = f"{state.get('campaign_id', '')[:10]} · {display_status(attempt.get('family', '?'))} · v{attempt.get('sequence', '?')} · {display_status(attempt.get('status', '?'))}"
                 self.candidate_choice.addItem(label, ref)
                 if attempt.get('status') == 'evaluated' and Path(entry['file']).name == 'campaign.json':
-                    family = attempt.get('spec', {}).get('family', attempt.get('family', ui_text('ui.refresh_views.text_11')))
+                    family = attempt.get('spec', {}).get('family', attempt.get('family', ui_text('ui.refresh_views.candidate')))
                     family = {
-                        'trend': ui_text('ui.refresh_views.text_12'),
-                        'mean_reversion': ui_text('ui.refresh_views.text_13'),
-                        'breakout': ui_text('ui.refresh_views.text_14'),
-                        'momentum': ui_text('ui.refresh_views.text_15'),
-                        'volatility': ui_text('ui.refresh_views.text_16'),
+                        'trend': ui_text('ui.refresh_views.trend'),
+                        'mean_reversion': ui_text('ui.refresh_views.mean_reversion'),
+                        'breakout': ui_text('ui.refresh_views.breakout'),
+                        'momentum': ui_text('ui.refresh_views.momentum'),
+                        'volatility': ui_text('ui.refresh_views.volatility'),
                     }.get(family, family)
                     self.analysis_candidates.addItem(
-                        ui_text('ui.refresh_views.text_17').format(state.get('campaign_id', '')[:10], family, str(attempt.get('strategy_hash', ''))[:12])
+                        ui_text('ui.refresh_views.evaluated_result').format(
+                            state.get('campaign_id', '')[:10], family, str(attempt.get('strategy_hash', ''))[:12]
+                        )
                     )
                     item = self.analysis_candidates.item(self.analysis_candidates.count() - 1)
                     item.setData(Qt.ItemDataRole.UserRole, ref)
@@ -191,7 +200,7 @@ class ViewCoordinator(PageContext):
             self.comparison.setPlainText(text)
             self.comparison_table.set_rows(result.get('rows', []))
         if result.get('manual_export'):
-            self.status.setText(ui_text('ui.poll_jobs.text_1'))
+            self.status.setText(ui_text('ui.poll_jobs.manual_request_exported'))
         if self.last_operation == 'ui_market_refresh':
             self._market_outcomes = result.get('providers', {})
         if self.last_operation and self.last_operation.startswith('ui_paper_'):
@@ -201,7 +210,7 @@ class ViewCoordinator(PageContext):
         if self.last_operation == 'ui_paper_replay' and 'replay' in result:
             self.page_state.replay_controls.result(result)
         if self.last_operation == 'ui_backup_restore':
-            self.freeze_paper(ui_text('ui.poll_jobs.text_2'))
+            self.freeze_paper(ui_text('ui.poll_jobs.backup_restored'))
         if self.last_operation in ('ui_paper_replay', 'ui_paper_kill') and 'account' in result:
             self._remember_stop(result['account'], 'replay' if self.last_operation == 'ui_paper_replay' else 'user')
         self.refresh_views()

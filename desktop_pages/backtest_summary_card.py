@@ -42,7 +42,7 @@ class ReportSummaryCard(SummaryCard):
             self.label,
             lambda: self.label.setText(
                 '\n'.join(
-                    ui_text('forms.set_values.text_1').format(RESULT_LABELS[key], _privacy.display(self.label, shown(metrics.get(key, MISSING), key), key))
+                    ui_text('forms.set_values.named_value').format(RESULT_LABELS[key], _privacy.display(self.label, shown(metrics.get(key, MISSING), key), key))
                     for key in ('net_pnl', 'max_drawdown', 'closed_lots')
                 )
                 if metrics
