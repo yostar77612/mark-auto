@@ -98,7 +98,7 @@ class RuffConfigTests(unittest.TestCase):
 
     def test_aggregate_audit_and_publication_require_ruff(self):
         aggregate = self.job("core-coverage")
-        self.assertIn("needs: [offline, ruff]", aggregate)
+        self.assertIn("needs: [changes, offline, ruff]", aggregate)
         self.assertIn("sys.exit(0 if '${{ needs.ruff.result }}' == 'success' else 1)", aggregate)
         self.assertNotIn("continue-on-error", aggregate)
         security = self.job("security")

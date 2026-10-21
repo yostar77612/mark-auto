@@ -7,9 +7,26 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: quantlab-${{ github.ref }}
-  cancel-in-progress: true
+  # Only superseded pull_request runs are cancelled; main and tag runs (which
+  # release gating reads) always finish.
+  group: quantlab-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  changes:
+    # Documentation-only pull requests (prose no test or tool reads) skip the
+    # heavy groups; push, tag and dispatch runs always run everything.
+    name: Detect documentation-only change
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: detect
+        run: python3 tools/ci_changes.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"
   ruff:
     name: Ruff lint and format
     runs-on: ubuntu-latest
@@ -25,6 +42,8 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
   offline:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: ${{ matrix.shard && format('offline core {0}', matrix.shard) || (matrix.group == 'research' && 'offline research' || 'offline') }} (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -102,8 +121,8 @@ jobs:
     # Existing mandatory publication check names belong to complete coverage,
     # never to one subset. A failed/cancelled dependency cannot yield success.
     name: offline (windows-latest, ${{ matrix.python }})
-    needs: [offline, ruff]
-    if: always()
+    needs: [changes, offline, ruff]
+    if: always() && needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     timeout-minutes: 15
     env:
@@ -156,6 +175,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   ui:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -237,6 +258,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
   security:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: Dependency audit (${{ matrix.profile }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -335,6 +358,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
   wfo-storage-diagnostic:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: WFO storage diagnostic (Windows 3.12; observation only)
     runs-on: windows-latest
     timeout-minutes: 6
@@ -370,6 +395,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   research-phase-diagnostic:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: Research phases (Windows 3.11; observation only)
     runs-on: windows-latest
     timeout-minutes: 6
@@ -402,6 +429,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   wfo-wal-storage-observation:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: WFO storage ABBA (Windows 3.11; observation only)
     runs-on: windows-latest
     timeout-minutes: 6
@@ -430,3 +459,32 @@ jobs:
             dist/validation/sqlite-runtime.json
           if-no-files-found: error
           retention-days: 7
+  gate:
+    # Stable aggregate for branch protection. Same run attempt only (G8): it
+    # reads this run's job results, never an earlier attempt's artifacts.
+    name: Quantlab gates complete
+    needs: [changes, ruff, quality, offline, core-coverage, ui, security, wfo-storage-diagnostic, research-phase-diagnostic, wfo-wal-storage-observation]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Require every applicable gate to have succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ['NEEDS'])
+          docs_only = needs['changes']['outputs'].get('code') == 'false'
+          always = {'changes', 'ruff', 'quality'}
+          bad = []
+          for name, item in needs.items():
+              result = item['result']
+              if result == 'success' or (docs_only and result == 'skipped' and name not in always):
+                  continue
+              bad.append(f'{name}={result}')
+          print('documentation-only PR:', docs_only)
+          if bad:
+              print('Failing or missing gates: ' + ', '.join(bad))
+              sys.exit(1)
+          PY

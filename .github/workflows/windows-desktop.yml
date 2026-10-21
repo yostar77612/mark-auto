@@ -1,6 +1,17 @@
 name: Windows desktop installer
 on:
   pull_request:
+    # Installer build and packaging gates run on PRs only when packaging inputs
+    # change. Every push to main, desktop tag and manual dispatch always runs.
+    paths:
+      - 'packaging/**'
+      - 'requirements*.lock'
+      - 'requirements*.txt'
+      - 'desktop_chatgpt_dependency_manifest.json'
+      - '*.spec'
+      - '*.iss'
+      - 'tools/make_icon.py'
+      - '.github/workflows/windows-desktop.yml'
   push:
     branches: [main]
     tags: ['desktop-v*']
@@ -8,8 +19,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: desktop-${{ github.ref }}
-  cancel-in-progress: true
+  group: desktop-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   quality:
     name: Desktop static and dependency security gates
