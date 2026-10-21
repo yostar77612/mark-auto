@@ -2145,8 +2145,107 @@ ZH_TW.update(
 )
 LOG_OPERATION_NAMES['ui_paper_cancel_all'] = 'logs.operation.ui_paper_cancel_all'
 
+# Lane R
+ZH_TW.update(
+    {
+        'trade_structure.title': '\u4ea4\u6613\u7d50\u69cb\uff1a\u56de\u6e2c\u6a23\u672c\uff08\u53c3\u6578\u7d93\u6311\u9078\uff09\uff0c\u50c5\u4f9b\u63cf\u8ff0',
+        'trade_structure.n': '\u5df2\u5e73\u5009\u6279\u6b21\u6578',
+        'trade_structure.wins': '\u7372\u5229\u6279\u6b21',
+        'trade_structure.losses': '\u8667\u640d\u6279\u6b21',
+        'trade_structure.ties': '\u6253\u5e73\u6279\u6b21',
+        'trade_structure.expectancy': '\u671f\u671b\u503c\uff08TWD\uff09',
+        'trade_structure.avg_win': '\u5e73\u5747\u7372\u5229\uff08TWD\uff09',
+        'trade_structure.avg_loss': '\u5e73\u5747\u8667\u640d\uff08\u6b63\u503c\uff0cTWD\uff09',
+        'trade_structure.payoff_ratio': '\u76c8\u8667\u6bd4',
+        'trade_structure.win_rate': '\u52dd\u7387',
+        'trade_structure.max_losing_streak': '\u6700\u9577\u9023\u8667\u6279\u6b21',
+        'trade_structure.largest_win': '\u6700\u5927\u55ae\u7b46\u7372\u5229\uff08TWD\uff09',
+        'trade_structure.largest_win_share': '\u6700\u5927\u55ae\u7b46\u5360\u7e3d\u7372\u5229\u6bd4\u4f8b',
+        'trade_structure.breakeven_payoff_ratio': '\u6253\u5e73\u76c8\u8667\u6bd4',
+        'trade_structure.breakeven_win_rate': '\u6253\u5e73\u52dd\u7387',
+        'trade_structure.reason.no_closed_lots': '\u5c1a\u7121\u5df2\u5e73\u5009\u6279\u6b21',
+        'trade_structure.reason.no_wins': '\u6c92\u6709\u7372\u5229\u6279\u6b21',
+        'trade_structure.reason.no_losses': '\u6c92\u6709\u8667\u640d\u6279\u6b21',
+        'trade_structure.reason.tie_lots': '\u542b\u6253\u5e73\u6279\u6b21',
+        'trade_structure.severity.high': '\u9ad8\u56b4\u91cd\u5ea6',
+        'trade_structure.severity.medium': '\u4e2d\u56b4\u91cd\u5ea6',
+        'trade_structure.flag_line': '{0}\uff1a{1}',
+        'trade_structure.flag.negative_expectancy': '\u671f\u671b\u503c\u70ba\u8ca0',
+        'trade_structure.flag.single_trade_dominance': '\u55ae\u7b46\u7372\u5229\u5360\u6bd4\u904e\u534a',
+        'trade_structure.flag.small_wins_big_losses': '\u9ad8\u52dd\u7387\u4f34\u96a8\u5c0f\u8cfa\u5927\u8ce0',
+        'trade_structure.flag.thin_edge_margin': '\u76c8\u8667\u6bd4\u50c5\u7565\u9ad8\u65bc\u6253\u5e73\u76c8\u8667\u6bd4',
+        'trade_structure.flag.severe_drawdown': '\u6700\u5927\u56de\u64a4\u6bd4\u7387\u8d85\u904e\u4e00\u534a',
+        'trade_structure.flag.long_losing_streak': '\u9023\u8667\u81f3\u5c11\u516b\u6279\u6b21',
+        'trade_structure.flag.marginal_profit_factor': '\u7372\u5229\u56e0\u5b50\u4f4e\u65bc 1.1\uff08\u81f3\u5c11 20 \u6279\u6b21\uff09',
+    }
+)
+
+# Lane R
+ZH_TW.update(
+    {
+        'walk_forward.statistics.title': '\u6a23\u672c\u5916\u7d71\u8a08',
+        'walk_forward.statistics.source': '\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\uff1b\u4e0d\u540c fold \u7684 OOS \u671f\u9593\u4e0d\u91cd\u758a',
+        'walk_forward.statistics.days': '\u89c0\u6e2c\u5929\u6578\uff1a{0}',
+        'walk_forward.statistics.mean': '\u5e73\u5747\u65e5\u5831\u916c\uff08\u6bd4\u503c\uff09\uff1a{0}',
+        'walk_forward.statistics.p_values': '\u55ae\u5c3e p \u503c\uff1aStudent t = {0}\uff1b\u5e73\u79fb\u91cd\u62bd = {1}',
+        'walk_forward.statistics.interval': '95% \u767e\u5206\u4f4d\u4fe1\u8cf4\u5340\u9593\uff1a[{0}, {1}]',
+        'walk_forward.statistics.required': '\u76ee\u524d {0} \u5929\uff0c\u5efa\u8b70\u81f3\u5c11 {1} \u5929',
+        'walk_forward.statistics.draws': '\u5be6\u969b\u91cd\u62bd\uff1a{0}\uff1b\u7565\u904e\u672a\u6210\u529f\u8a55\u4f30\u7684 fold\uff1a{1}',
+        'walk_forward.statistics.explanation': '\u5047\u8a2d\u6c92\u6709\u512a\u52e2\u6642\uff0c\u51fa\u73fe\u81f3\u5c11\u9019\u9ebc\u597d\u7d50\u679c\u7684\u6a5f\u7387',
+        'walk_forward.statistics.holdout_unconfirmed': '\u6700\u7d42\u4fdd\u7559\u96c6\u6392\u9664\u72c0\u614b\u672a\u78ba\u8a8d\uff0c\u62d2\u7d55\u7d71\u8a08',
+        'walk_forward.statistics.fold_limit': 'fold \u6578\u8d85\u904e 20\uff0c\u62d2\u7d55\u7d71\u8a08',
+        'walk_forward.statistics.fold_index': 'fold \u7d22\u5f15\u7121\u6548\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.missing': '\u7f3a\u5c11\u6bcf\u65e5\u5831\u916c\u6e05\u55ae\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.invalid': '\u6bcf\u65e5\u5831\u916c\u6216\u65e5\u671f\u7121\u6548\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.overlap': '\u6bcf\u65e5\u5831\u916c\u65e5\u671f\u91cd\u758a\u6216\u672a\u905e\u589e\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.no_folds': '\u5c1a\u7121\u6210\u529f\u8a55\u4f30\u7684\u6a23\u672c\u5916 fold',
+        'walk_forward.statistics.missing_value': '\u6bcf\u65e5\u5831\u916c\u6709\u7f3a\u503c\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.nonfinite': '\u6bcf\u65e5\u5831\u916c\u6709\u7f3a\u503c\u6216\u975e\u6709\u9650\u503c\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.range': '\u6bcf\u65e5\u5831\u916c\u8d85\u51fa\u8a08\u7b97\u7bc4\u570d\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.too_few': '\u89c0\u6e2c\u6578\u5c11\u65bc 2',
+        'walk_forward.statistics.zero_variance': '\u8b8a\u7570\u6578\u70ba 0',
+        'walk_forward.statistics.test_range': '\u6aa2\u5b9a\u8d85\u51fa\u8a08\u7b97\u7bc4\u570d',
+        'walk_forward.statistics.bootstrap_invalid': '\u91cd\u62bd\u8a2d\u5b9a\u7121\u6548',
+        'walk_forward.statistics.nonpositive': '\u5e73\u5747\u65e5\u5831\u916c\u4e0d\u5927\u65bc 0',
+        'walk_forward.statistics.required_cap': '\u6240\u9700\u6a23\u672c\u6578\u8d85\u904e\u4e0a\u9650 1000000000',
+    }
+)
+
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
+# Lane R
+ZH_TW.update(
+    {
+        'walk_forward.decline.line': '\u512a\u52e2\u8870\u6e1b\u6aa2\u5b9a\uff1a{0}',
+        'walk_forward.decline.significant_decline': '\u986f\u8457\u4e0b\u964d',
+        'walk_forward.decline.significant_increase': '\u986f\u8457\u4e0a\u5347\uff08\u975e\u672a\u4f86\u4fdd\u8b49\uff09',
+        'walk_forward.decline.no_significant_difference': '\u770b\u4e0d\u51fa\u986f\u8457\u5dee\u7570\uff08\u4e0d\u7b49\u65bc\u6c92\u6709\u8b8a\u5316\uff09',
+        'walk_forward.decline.too_few_folds': '\u6210\u529f\u8a55\u4f30\u7684\u6a23\u672c\u5916 fold \u5c11\u65bc 2',
+    }
+)
+
+# Lane R
+ZH_TW.update(
+    {
+        "walk_forward.verdict.insufficient.name": "\u6a23\u672c\u4e0d\u8db3",
+        "walk_forward.verdict.insufficient.explanation": "\u89c0\u6e2c\u5c11\u65bc 30 \u5929\u6216\u7d71\u8a08\u672a\u5b9a\u7fa9\uff0c\u5c1a\u4e0d\u8db3\u4ee5\u5224\u8b80\u3002",
+        "walk_forward.verdict.negative_expectancy.name": "\u8ca0\u671f\u671b\uff08\u4e0d\u5efa\u8b70\u9032\u5165\u7d19\u4e0a\u9a57\u8b49\uff09",
+        "walk_forward.verdict.negative_expectancy.explanation": "\u5e73\u5747\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\u70ba\u8ca0\uff1b\u6b64\u63d0\u793a\u50c5\u4f9b\u986f\u793a\u3002",
+        "walk_forward.verdict.luck_suspected.name": "\u7591\u4f3c\u904b\u6c23",
+        "walk_forward.verdict.luck_suspected.explanation": "\u81f3\u5c11\u4e00\u9805\u55ae\u5c3e p \u503c\u672a\u4f4e\u65bc 0.05\u3002",
+        "walk_forward.verdict.fragile_edge.name": "\u8106\u5f31\u512a\u52e2",
+        "walk_forward.verdict.fragile_edge.explanation": "\u6aa2\u5b9a\u986f\u8457\uff0c\u4f46\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\u3002",
+        "walk_forward.verdict.statistical_edge.name": "\u5177\u7d71\u8a08\u512a\u52e2\uff08\u4ecd\u975e\u4fdd\u8b49\uff09",
+        "walk_forward.verdict.statistical_edge.explanation": "\u5169\u9805\u6aa2\u5b9a\u986f\u8457\u4e14\u6c92\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\uff0c\u4ecd\u975e\u672a\u4f86\u7372\u5229\u4fdd\u8b49\u3002",
+        "walk_forward.verdict.line": "\u88c1\u6c7a\uff1a{0}\uff1b{1}",
+        "walk_forward.verdict.scope": "\u9019\u662f\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\u7684\u7d71\u8a08\u7d50\u8ad6\uff0c\u4e0d\u662f\u4ea4\u6613\u8a31\u53ef\uff1b\u4e0d\u5f71\u97ff\u7814\u7a76\u8cc7\u683c\u3001\u5019\u9078\u9078\u64c7\u6216\u7d19\u4e0a\u8cc7\u683c\u3002",
+        "walk_forward.verdict.recommended": "\u5efa\u8b70\u89c0\u6e2c\u6578\uff1a{0} \u5929\u3002",
+        "walk_forward.verdict.required_unavailable": "\u5efa\u8b70\u89c0\u6e2c\u6578\u7121\u6cd5\u4f30\u8a08\uff1b\u8acb\u53c3\u95b1\u4e0b\u65b9\u6240\u9700\u6a23\u672c\u6578\u539f\u56e0\u3002",
+        "walk_forward.verdict.severe_drawdown": "\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a severe_drawdown\uff1a\u6a23\u672c\u5916\u8907\u5229\u6b0a\u76ca\u5cf0\u8c37\u56de\u64a4\u5927\u65bc 50%\u3002",
+        "walk_forward.verdict.run_unavailable": "\u57f7\u884c\u672a\u5b8c\u6210\u6216\u5df2\u5931\u6557\u3001\u4e2d\u65b7\uff0c\u7121\u53ef\u7528\u88c1\u6c7a\u3002",
+    }
+)
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')
 
 # Compatibility only: historical positional keys never store rendered text.

@@ -107,7 +107,7 @@ class BacktestPage(QWidget):
             self.result_empty.setVisible(False)
             self.plot.set_values(result.equity)
             self.result_card.set_values(dict(result.metrics))
-            self.summary_card.set_values(dict(result.metrics), bar_count=len(result.equity))
+            self.summary_card.set_values(dict(result.metrics), bar_count=len(result.equity), ledger=getattr(result, 'ledger', None))
             self.kpis.set_values(dict(result.metrics))
             self.fills_table.set_rows([to_dict(x) for x in result.fills])
             self.host.bind_result_layers(result)

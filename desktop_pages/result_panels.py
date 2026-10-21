@@ -1,6 +1,6 @@
 """Report projections shared by the walk-forward wizard and saved results."""
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from desktop_strings import ui_text
 from desktop_walk_forward import status_label
 from .result_widgets import KpiCards, ResultTable
@@ -18,6 +18,15 @@ class WalkForwardResults(QWidget):
         self.set_result({})
 
     def set_result(self, result):
+        text = result.get('oos_statistics_text', '')
+        if text and not hasattr(self, '_oos_statistics'):
+            self._oos_statistics = QLabel(self)
+            self._oos_statistics.setWordWrap(True)
+            self._oos_statistics.setAccessibleName(ui_text('walk_forward.statistics.title'))
+            self.layout().addWidget(self._oos_statistics)
+        if hasattr(self, '_oos_statistics'):
+            self._oos_statistics.setText(text)
+            self._oos_statistics.setVisible(bool(text))
         summary = result.get('summary', {})
         values = dict(summary.get('metrics', {}))
         values.update({key: summary[key] for key in ('evaluated_oos_folds', 'evaluations_reserved', 'evaluation_limit') if key in summary})

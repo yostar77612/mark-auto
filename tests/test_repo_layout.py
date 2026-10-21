@@ -90,8 +90,21 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_b3_verdict_in_quantlab_package(self):
+        for path in ('quantlab/verdict.py', 'tests/test_verdict_b3.py'):
+            self.assertTrue((ROOT / path).is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_a3_strict_json_stays_in_quantlab(self):
         self.assertTrue((ROOT / 'quantlab/strict_json.py').is_file())
+
+    def test_b4_extends_registered_significance_module(self):
+        for path in ('quantlab/significance.py', 'tests/test_significance_b4.py', 'tools/generate_welch_goldens.py'):
+            self.assertTrue((ROOT / path).is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
+    def test_b2_significance_in_quantlab_package(self):
+        self.assertTrue((ROOT / 'quantlab/significance.py').is_file())
         self.assertIn('quantlab', ALLOWED_DIRECTORIES)
 
     def test_r7_characterization_stays_in_existing_test_package(self):
@@ -127,6 +140,10 @@ class RepoLayoutTests(unittest.TestCase):
         for name in ('desktop_pages/backtest_summary_card.py', 'quantlab/backtest_summary.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
+
+    def test_b1_statistics_in_quantlab_package(self):
+        self.assertTrue((ROOT / 'quantlab/trade_statistics.py').is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
 
     def test_f6_memory_in_existing_package(self):
         self.assertTrue((ROOT / 'desktop_chart_memory.py').is_file())

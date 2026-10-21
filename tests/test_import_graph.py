@@ -11,6 +11,13 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TOUCHED = (
+    'quantlab/verdict.py',
+    'tests/test_verdict_b3.py',
+    'tests/test_significance_b4.py',
+    'quantlab/significance.py',
+    'tests/test_significance_b2.py',
+    'quantlab/trade_statistics.py',
+    'tests/test_trade_statistics_b1.py',
     'desktop_pages/host.py',
     'tests/page_services_inventory.py',
     'tests/test_page_services_r1.py',
@@ -203,6 +210,9 @@ class ImportGraphTests(unittest.TestCase):
             {'quantlab.core', 'quantlab.strict_json', 'quantlab.research_analysis', 'quantlab.configuration', 'quantlab.strategies', 'quantlab.data'},
         )
         self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'pathlib', 'quantlab.core'})
+
+    def test_b2_significance_has_no_application_dependencies(self):
+        self.assertEqual(import_graph(self.sources)['quantlab.significance'], set())
 
     def test_f5_inspection_uses_reader_without_shell_dependency(self):
         graph = import_graph(self.sources)

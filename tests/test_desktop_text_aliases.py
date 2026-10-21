@@ -53,6 +53,36 @@ def source_paths():
                 yield path
 
 
+def lane_catalog_additions():
+    """Read literal Lane updates after the R3 catalog, before retained keys."""
+    source = (ROOT / 'desktop_strings.py').read_text(encoding='utf-8-sig')
+    lines, tree = source.splitlines(), ast.parse(source)
+    retained = next(
+        node.lineno
+        for node in tree.body
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'RETAINED_CATALOG_KEYS' for target in node.targets)
+    )
+    lane_lines = [index + 1 for index, line in enumerate(lines[: retained - 1]) if line.startswith('# Lane ')]
+    assert lane_lines, 'Expected trailing Lane catalog blocks'
+    additions = {}
+    for node in tree.body:
+        if not lane_lines[0] < node.lineno < retained:
+            continue
+        # Lane blocks may be followed by registry assignments (for example operation names); only updates add text.
+        if not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)):
+            continue
+        call = node.value
+        assert isinstance(call.func, ast.Attribute) and isinstance(call.func.value, ast.Name)
+        assert (call.func.value.id, call.func.attr) == ('ZH_TW', 'update')
+        assert lines[node.lineno - 2].startswith('# Lane '), 'Every trailing update needs its Lane marker'
+        assert len(call.args) == 1 and not call.keywords and isinstance(call.args[0], ast.Dict)
+        block = ast.literal_eval(call.args[0])
+        assert all(isinstance(key, str) and isinstance(value, str) for key, value in block.items())
+        assert not additions.keys() & block.keys(), 'Duplicate Lane catalog keys'
+        additions.update(block)
+    return additions
+
+
 class DesktopTextAliasTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -106,7 +136,16 @@ class DesktopTextAliasTests(unittest.TestCase):
         self.assertEqual({key: strings.ZH_TW[key] for key in previous['catalog']}, previous['catalog'])
         for name, value in previous['registries'].items():
             self.assertEqual(json.loads(json.dumps(getattr(strings, name))), value, name)
-        self.assertEqual(set(strings.ZH_TW), set(previous['catalog']) | set(strings.TEXT_ALIASES.values()))
+        # New catalog entries belong only to trailing, explicitly marked Lane
+        # updates. Historical catalog and alias text remain pinned above.
+        historical = set(previous['catalog']) | set(strings.TEXT_ALIASES.values())
+        additions = lane_catalog_additions()
+        # A lane may restate a historical key with new wording (the pinned snapshot then records it); every other new key is a lane key.
+        self.assertEqual(set(strings.ZH_TW) - historical, set(additions) - historical)
+        for key, value in additions.items():
+            self.assertIsNone(GENERIC.search(key), key)
+            self.assertRegex(key, r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$')
+            self.assertEqual(strings.ZH_TW[key], value)
         self.assertFalse(set(strings.ZH_TW) & set(self.old))
         self.assertIs(strings.LOCALES[strings.DEFAULT_LOCALE], strings.ZH_TW)
 

@@ -4687,3 +4687,209 @@ failure clears the pending chart notice. tests/test_paper_cancel_all_a2.py pins
 snapshot authority, deterministic attempts, failure isolation, idempotency,
 privacy, confirmation defaults and lock preservation with offline evidence.
 Live trading remains permanently disabled. This item is a single commit.
+### Lane R — B1: descriptive closed-lot trade structure
+
+`quantlab.trade_statistics.describe` consumes a list or tuple of closed FIFO lot
+mappings from `BacktestResult.ledger`, accepting Decimal net P&L and numeric
+strings from `load_result`. Invalid shapes, missing/nonfinite/nonnumeric P&L or
+malformed exit timestamps raise `ValidationError` (existing `validation_failed`
+error code). Exits sort chronologically in UTC, stably for equal timestamps;
+absent timestamps retain input order before dated rows. ISO strings and datetime
+values are supported. Inputs are never mutated. No reference-project formula or
+flow was adapted; this implementation follows the supplied B1 formulas independently.
+
+Counts are integers for nonempty samples. Empty samples have every statistic None
+with a nonempty semantic catalog reason; defined values have a None reason.
+Every non-count numeric output is exactly Decimal, quantized to eight fractional
+digits with ROUND_HALF_UP inside an isolated local context. Expectancy is total
+net P&L / all lots (including ties); average loss is positive; payoff is average
+win / average loss; win rate is wins / all lots. Largest-win share uses the sum
+of positive P&L as denominator. Profit factor uses total wins / absolute total
+losses. Ties reset the losing streak. Break-even payoff is losses / wins;
+break-even win rate is 1 / (1 + payoff), undefined when ties exist. Missing
+winning/losing denominators produce None with reasons, never infinity.
+
+The immutable `THRESHOLDS` table is the single threshold source. Its order is the
+flag order. These values are asserted against code by the B1 test. Negative
+expectancy, dominance, high-win-rate and drawdown comparisons are strict; small
+payoff is strictly below 0.40. Thin margin is the open interval
+`0 < payoff - breakeven < 0.25 * breakeven`; exactly 25% is excluded. Long streak
+and minimum sample counts are inclusive. Profit factor is strictly between 0
+and 1.1 and requires at least 20 lots.
+
+| Code | Constants in table order (including severity) |
+| --- | --- |
+| negative_expectancy | 0, high |
+| single_trade_dominance | 0.50, high |
+| small_wins_big_losses | 0.70, 0.40, medium |
+| thin_edge_margin | 0, 0.25, medium |
+| severe_drawdown | 0.50, high |
+| long_losing_streak | 8, medium |
+| marginal_profit_factor | 20, 0, 1.1, medium |
+
+`ReportSummaryCard.set_values` accepts an optional ledger separately from metrics.
+The trade-structure label is created only on result display and hidden/cleared
+when no result exists. Its title states backtest samples with selected parameters,
+descriptive only. Catalog text names severities explicitly; the label has an
+accessible name. Money uses the existing privacy display adapter. The default
+card and page presentation stay unchanged. These are derived display data only:
+nothing is written back to results, metrics, manifests, content_hash,
+reproducibility_hash or any file. Eligibility, selection, ranking, paper permission,
+budgets, timeouts and permanently disabled live trading stay unchanged. No order
+path is added. B1 is a single commit of the lane. Evidence:
+`tests/test_trade_statistics_b1.py` covers formulas, precision, flag boundaries,
+threshold-contract parity, invalid input, ordering, privacy and read-only real
+synthetic backtest results. The user's final visual check remains pending.
+
+### Lane R B2: read-only OOS daily-return inference
+
+B2 is a single commit of the lane. `quantlab/significance.py` is a pure stdlib
+module, independently implemented without adapting reference-project code or
+flow. `merge_oos_daily_returns(state)` accepts the state returned by
+`read_walk_forward_state(output_dir)`. It checks the excluded holdout status
+before inspecting folds, never accesses a holdout record, and concatenates only
+folds whose own status and OOS status are both evaluated, in fold-index order.
+Other folds are counted and skipped. At most 20 folds are accepted. Duplicate
+indices, missing/non-list/empty daily-return lists, invalid dates, or any date
+that does not strictly increase reject the entire merge, without a partial
+sample. Missing or non-finite returns invalidate all inference; no row is
+discarded or imputed. Fewer than two observations produce None with reasons;
+zero variance leaves descriptive moments defined but inference undefined.
+
+`mean_positive_test` reports a one-sided Student t tail using the regularized
+incomplete beta continued fraction. The bootstrap shifts the sample to zero
+mean and counts resampled means at least as large as the observed mean. Its p
+value is count / actual resamples, without add-one correction. The confidence
+interval uses the original empirical distribution and linearly interpolated
+percentiles at alpha/2 and 1-alpha/2. Repeated-value large samples use exact
+multinomial counts via beta order-statistic binomial splitting, with the same
+empirical resampling distribution. A private `random.Random(seed)` never changes
+global random state. All non-count statistics, including t and CI bounds, are
+Decimal with exponent -12, ROUND_HALF_EVEN under an isolated precision context;
+float is confined to internal statistical computation. Counts are integers.
+
+| Rule | Fixed value |
+| --- | --- |
+| Default seed | 20261021 |
+| Default resamples / alpha | 5000 / Decimal('0.05') |
+| Bootstrap work target | n * actual <= 50,000,000 |
+| Reduced-resample floor | 1000; this floor takes precedence for n > 50,000, with a note |
+| Requests already under target | unchanged, including requests below 1000 |
+| Planning alpha / power | 0.05 / 0.8 only |
+| Planning z constants | 1.6449 and 0.8416 |
+| Required days | max(30, ceil(((1.6449 + 0.8416) * sd / mean)^2)) |
+| Required-days cap | 1,000,000,000; larger estimates are None with a reason |
+| Invalid planning moments | mean <= 0 or sd == 0 are None with reasons |
+
+`desktop_walk_forward.oos_statistics_text` builds the catalog-based statistics
+block during worker compaction. The compact IPC object includes only bounded
+derived display text, never raw daily-return arrays. The existing result panel
+displays the precomputed text without recomputing on refresh or paint. Its label
+is created only after a result arrives, preserving the default page layout.
+The explanation is fixed: 假設沒有優勢時，出現至少這麼好結果的機率。
+These are derived display data: nothing is written back to results, metrics,
+journals, manifests, content_hash, reproducibility_hash, state_hash or any file.
+There is no effect on eligibility, candidate selection, ranking or paper
+permission. Frozen sources, OOS consumption, budgets and timeouts remain
+unchanged. Live trading remains permanently disabled; no order path is added.
+
+`tests/fixtures/significance_goldens.json` contains literal offline SciPy 1.16.3
+one-sided t-test oracles for n=2, 5, 30, 60 and 500, including the generating
+script text. `tools/generate_significance_goldens.py` is a development-only
+regenerator; neither tests nor product imports SciPy. `tests/test_significance_b2.py`
+covers numeric goldens, precision, deterministic bootstrap, the independent
+small-case resampling reference, caps, zero variance, missing data, strict date
+merging, holdout refusal, bounded compaction and unchanged synthetic journal
+bytes and hashes. The user's final visual check remains pending.
+
+### R-B4 — fixed-fold Welch decline display
+
+R-B4 is a single item commit. `quantlab.significance.welch_decline_test(early,
+recent)` computes Welch's unequal-variance t statistic as early mean minus recent
+mean, with Welch–Satterthwaite degrees of freedom. It reuses B2's `_t_tail` and
+regularized incomplete-beta implementation. Nothing was adapted from the reference
+project. The fixed decline check uses p(early > recent) < 0.05; the mirrored
+increase check uses p(recent > early) < 0.05. Otherwise the classification is
+`no_significant_difference`. These are descriptive directional checks, without a
+claim of familywise error control or a future-performance guarantee.
+
+| Rule | Fixed value |
+| --- | --- |
+| Directional significance threshold | p < 0.05 |
+| Fold split | sort evaluated fold indices; first floor(k/2) early, remainder recent |
+| Minimum | 2 evaluated folds and 2 daily observations per half |
+| Precision | Decimal exponent -12, ROUND_HALF_EVEN, isolated context; floats internal only |
+| Randomness | none |
+
+`split_oos_daily_returns` first applies B2's complete merge validation, including
+strictly increasing disjoint dates and the 20-fold bound. It reads only evaluated
+OOS results from the `read_walk_forward_state` shape; holdout payloads are never
+read. Invalid input, missing returns, insufficient observations and zero variance
+in both halves produce None statistics plus reasons, with no partial result.
+The cut has no configurable parameter. One constant half is valid when the other
+half has positive variance.
+
+`desktop_walk_forward.oos_statistics_text` adds exactly one catalog-based line
+for decline, increase (非未來保證), no detectable difference (不等於沒有變化), or
+the reason. It creates no widgets or UI operations. These derived display data
+are not written back to results, metrics, journals, manifests or any file and
+are excluded from content_hash and reproducibility_hash. They have no effect on
+eligibility, selection, ranking, B3 verdict or paper permission. Live trading
+remains permanently disabled and no order path is added.
+
+`tests/test_significance_b4.py` covers the offline SciPy 1.16.3 golden, its mirrored
+tail and degrees of freedom, deterministic effects, split membership for k=2–5,
+shuffled-input invariance, invalid inputs, no mutation, Decimal precision and
+the display states. `tools/generate_welch_goldens.py` regenerates the synthetic
+fixture; SciPy is development-only and is not a product or test dependency.
+The user's final visual check remains pending.
+
+### R-B3 — five display-only OOS verdicts
+
+R-B3 is a single item commit. `quantlab/verdict.py` was independently implemented;
+no formula, code or flow was adapted from the reference project. `judge(oos_test,
+oos_required, oos_returns, flags)` reads B2's statistics and planning dictionaries,
+the validated merged OOS daily-return list and B1-shaped code/severity flags. Its
+only output fields are `level`, `display_name`, ordered deterministic `reasons`
+and integer-or-None `recommended_observations`. Empty samples return no level or
+name and the reason `no evaluated OOS fold`; malformed inputs fail closed to
+insufficient. Undefined planning includes its reason instead of an invented count.
+
+| Priority | Condition | Level |
+| --- | --- | --- |
+| 1 | n < 30, undefined/invalid B2 statistics or invalid return sample | insufficient |
+| 2 | mean < 0 | negative_expectancy |
+| 3 | either p >= 0.05 | luck_suspected |
+| 4 | any high flag, including OOS severe_drawdown | fragile_edge |
+| 5 | otherwise | statistical_edge |
+
+`compounded_drawdown` starts equity and its peak at Decimal(1), compounds each
+merged evaluated OOS return and takes the maximum `(peak - equity) / peak`,
+including the initial peak. It uses an isolated precision-400 Decimal context
+without intermediate quantization. The threshold is strictly greater than 0.50;
+exactly 0.50 does not trigger. Missing/nonfinite returns and returns below -1
+are invalid. A total loss yields drawdown 1. Per-fold drawdown metrics and
+external severe_drawdown flags are not substituted for this holdout-free source.
+Other high flags are sorted by code; duplicate flags are removed. Medium flags
+are sorted notes only for statistical_edge. B2 owns the bootstrap seed, cap and
+12-place inference precision; B3 adds no randomness or resampling.
+
+`desktop_walk_forward` renders catalog names and explanations at the top of the
+existing OOS statistics block, separately from stage codes. Only
+completed runs with evaluated folds receive a level. Failed/interrupted runs
+and runs without evaluated folds display reasons without a level. The text
+explicitly describes an OOS daily-return statistical conclusion, not trading
+permission. No widget, objectName, button, UI operation or default-view layout
+was added. B4's line-count assertions were updated for the verdict text.
+
+These are derived display data, computed in memory during worker compaction;
+inputs are not mutated. Nothing is written back into results, metrics,
+manifests, journals or files, or included in content_hash, experiment_id,
+reproducibility_hash or state_hash. There is no effect on eligibility, candidate
+selection, ranking, paper permission, start/cancel or run/fold status labels.
+Frozen sources, holdout exclusion, OOS consumption, budgets and timeouts remain
+unchanged. Live trading remains permanently disabled; no order path was added.
+`tests/test_verdict_b3.py` exercises priority overlaps, real B2 synthetic samples,
+strict compounded drawdown, malformed inputs, purity, stdlib-only imports,
+unchanged state hashes and the real walk-forward selection loop with and without
+verdict calls. The user's final visual check remains pending.
