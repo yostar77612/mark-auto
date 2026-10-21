@@ -111,9 +111,11 @@ heuristics were not carried over. No Blave code, icons, fonts or images are incl
 Blave Agent NOTICE (relevant part):
 
 > Blave Agent
-> Copyright 2025-2026 吾集科技股份有限公司 (WuChi Technology Company Limited)
+> Copyright 2025-2026 WuChi Technology Company Limited (Chinese legal name as
+> stated in the upstream NOTICE file)
 >
 > This product includes software developed at Blave (https://blave.org).
 >
 > "Blave" and the Blave logo are trademarks of Blave. Mark Auto is not Blave and
-> is not endorsed by Blave; the feature is named "上網找策略點子", not after Blave.
+> is not endorsed by Blave; the feature is named for its function (web strategy
+> idea research), not after Blave.
