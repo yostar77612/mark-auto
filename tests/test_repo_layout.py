@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'archives/legacy_autotrading'
 # Derived from the post-move git ls-files top level; additions need review.
 ALLOWED_FILES = {
+    'desktop_capital_scenario.py',
     'desktop_privacy.py',
     '.gitattributes',
     '.gitignore',

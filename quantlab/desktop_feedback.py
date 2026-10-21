@@ -19,6 +19,7 @@ OPERATION_LABELS = dict(
             'paper_submit',
             'paper_cancel',
             'paper_cancel_all',
+            'capital_scenario',
             'backup_create',
             'backup_restore',
             'analysis_preview',
@@ -50,6 +51,7 @@ OPERATION_LABELS = dict(
             '紙上委託',
             '委託取消',
             '\u64a4\u92b7\u5168\u90e8\u672a\u6210\u4ea4',
+            '\u8cc7\u91d1\u60c5\u5883',
             '備份建立',
             '備份還原',
             '分析預覽',
@@ -95,6 +97,13 @@ def stop_presentation(account, reason=None, *, manual_lock_text='manual_order_lo
 
 def completion_summary(operation, result):
     op = (operation or '').removeprefix('ui_')
+    if op == 'capital_scenario':
+        status = result.get('status')
+        return {
+            'completed': '\u8cc7\u91d1\u60c5\u5883\u5df2\u5b8c\u6210\u3002',
+            'cancelled': '\u8cc7\u91d1\u60c5\u5883\u5df2\u53d6\u6d88\uff1b\u4e0d\u986f\u793a\u90e8\u5206\u7d71\u8a08\u3002',
+            'timed_out': '\u8cc7\u91d1\u60c5\u5883\u5df2\u903e\u6642\uff1b\u4e0d\u986f\u793a\u90e8\u5206\u7d71\u8a08\u3002',
+        }.get(status, '\u8cc7\u91d1\u60c5\u5883\u7121\u6cd5\u8a08\u7b97\uff1b\u8acb\u6838\u5c0d\u8f38\u5165\u8207\u6a23\u672c\u3002')
     label = OPERATION_LABELS.get(op, '本機作業')
     account = result.get('account', {})
     if op.startswith('paper_'):

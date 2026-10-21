@@ -37,7 +37,7 @@ def golden_observations():
     return {
         name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}}
         for name, entry in observations.items()
-        if name != 'ui_paper_cancel_all'
+        if name not in ('ui_paper_cancel_all', 'ui_capital_scenario')
     }
 
 
@@ -345,6 +345,18 @@ def exercise(execute):
             with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker):
                 call('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': preview['preview_identity']})
             call('ui_walk_forward_read', {'reference': preview['preview_identity']})
+            if 'ui_capital_scenario' in getattr(sys.modules.get(execute.__module__), 'UI_OPERATIONS', ()):
+                call(
+                    'ui_capital_scenario',
+                    {
+                        'reference': preview['preview_identity'],
+                        'start_equity': '1000000',
+                        'threshold': '900000',
+                        'horizon_days': 60,
+                        'paths': 1000,
+                        'seed': 1729,
+                    },
+                )
             call('ui_walk_forward_reconcile', {'reference': preview['preview_identity'], 'stopped_job_id': 'offline'}, descendants_stopped=True)
         paths = original_paths
         backup = paths.root.parent / 'offline.zip'
@@ -392,7 +404,7 @@ class RegistryTests(unittest.TestCase):
                     for execute in (old.execute_ui_operation, ui.execute_ui_operation):
                         results.append(exercise(execute))
                         self.assertEqual({key: os.environ[key] for key in host_environment}, host_environment)
-                    self.assertEqual({k: v for k, v in results[1].items() if k != 'ui_paper_cancel_all'}, results[0])
+                    self.assertEqual({k: v for k, v in results[1].items() if k not in ('ui_paper_cancel_all', 'ui_capital_scenario')}, results[0])
                     if sys.platform == 'win32':
                         # The golden (hashes of CRLF working-copy sources, Windows path spellings) was
                         # recorded on Windows; other platforms rely on the live old-vs-new equality above.
@@ -436,13 +448,15 @@ class RegistryTests(unittest.TestCase):
         expected['observations'] = portable_paths(golden_observations())
         new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']['ui_paper_cancel_all']
         expected['observations']['ui_paper_cancel_all'] = portable_paths({k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}})
+        new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']['ui_capital_scenario']
+        expected['observations']['ui_capital_scenario'] = {k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}}
         self.assertEqual(set(expected['offline_limits']), {'ui_refresh'})
         with old_module() as old:
             legacy = exercise(old.execute_ui_operation)
         self.assertEqual(set(observed), set(expected['observations']))
         for operation in observed:
             with self.subTest(operation=operation):
-                if operation == 'ui_paper_cancel_all':
+                if operation in ('ui_paper_cancel_all', 'ui_capital_scenario'):
                     self.assertIn('result', observed[operation], 'Offline operation must succeed')
                     self.assertEqual(observed[operation], expected['observations'][operation])
                     continue

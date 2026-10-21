@@ -147,6 +147,8 @@ class StrategyPage(QWidget):
         self.walk_forward_results = SortableResultTable()
         content.addWidget(self.walk_forward_results)
         self.result_panel = WalkForwardResults()
+        self.result_panel.scenario_host = self.host
+        self.result_panel.scenario_state = self.state
         from .wf_wizard import WalkForwardWizard
 
         self.wf_wizard = WalkForwardWizard(self, content)

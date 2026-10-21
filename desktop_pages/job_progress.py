@@ -155,6 +155,10 @@ def failure_notice(shell, event):
 
 
 def cancel_allowed(shell):
+    if getattr(shell, 'last_operation', None) == 'ui_capital_scenario' and shell.jobs.active and not shell.job_feedback.terminal:
+        shell.jobs.cancel()
+        shell.status.setText(ui_text('job.cancel_notice'))
+        return False
     quick = getattr(shell, 'quick_start', None)
     if quick is not None and quick.chain.stage is not None:
         quick.chain.stop()

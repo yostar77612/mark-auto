@@ -4893,3 +4893,53 @@ unchanged. Live trading remains permanently disabled; no order path was added.
 strict compounded drawdown, malformed inputs, purity, stdlib-only imports,
 unchanged state hashes and the real walk-forward selection loop with and without
 verdict calls. The user's final visual check remains pending.
+
+## B5 — capital warning-threshold scenarios
+
+`quantlab/capital_scenario.py` provides a stdlib-only, in-memory IID bootstrap.
+Each draw is uniform with replacement through a private `random.Random(seed)`.
+Daily PnL is initial capital times the drawn daily return; capital does not
+compound. A path stops on its first equity strictly below the threshold and
+retains the crossing equity. Touching the threshold does not stop a path.
+The five final-equity percentiles (5, 25, 50, 75, 95) use type-7 inclusive linear
+interpolation at `(paths - 1) * p / 100`. Arithmetic uses an isolated Decimal
+precision of 50 and ROUND_HALF_EVEN; output Decimals have 12 fractional places.
+Initial capital and threshold are positive finite Decimal values or exact
+decimal strings, with threshold strictly below initial capital. Missing,
+nonfinite or at-most-minus-one returns reject the entire sample.
+
+Positive integer paths and days have a product cap of 1,000,000, validated
+before simulation allocation or control callbacks. Seeds are integers (booleans
+are rejected); the UI fixes seed 1729. Cancellation is checked on every draw
+and before publication, before the absolute monotonic deadline check, so cancel
+wins when both trip. The clock is injectable by replacing the module's
+`monotonic` function. Cancelled, timed-out and rejected results contain no
+statistics or partial counts. The worker uses a 45-second compute deadline
+within the existing job deadline; process cancellation and DeadlineExceeded
+also clear the scenario display. Window close uses the existing worker stop
+flow without a scenario journal or scenario reconciliation operation.
+
+`desktop_capital_scenario.py` accepts exactly reference, start_equity, threshold,
+horizon_days, paths and seed. The reference uses the existing `_folder` guard.
+Only `read_walk_forward_state` followed by `merge_oos_daily_returns` supplies
+inputs inside the worker. Evaluated OOS folds are concatenated in index order;
+skipped folds and final holdout values are excluded. Unconfirmed holdout status,
+no evaluated folds or any missing return yields no statistics. Raw daily-return
+lists never enter the UI payload or IPC result. The operation is SAFE_OPERATIONS
+and has no source-writer, analysis-start or workspace-mutation permission.
+
+The result is derived display data: no result files or journal updates, no
+content_hash/state_hash changes, and no effect on eligibility, selection or
+paper permission. SQLite's existing read-only reader may create WAL sidecars;
+authoritative journal bytes remain identical. The lazy WalkForwardResults
+controls appear only for saved results with evaluated folds, keep default page
+snapshots unchanged, validate before submission and disable during any job.
+Loading another result clears the previous scenario. Results contain only the
+breach fraction/count, percentiles, actual paths, input echo and fixed status.
+No suggested position sizes or real order paths are provided.
+
+The fixed disclaimer is: 假設每日獨立同分布、不複利、不代表市場預測、不是強制平倉模型.
+`tests/test_capital_scenario_b5.py` covers reproducibility, validation, cap,
+uniform draws, additive capital, threshold crossing, percentiles, cancellation,
+deadlines, read-only journal access, operation registration and lazy UI behavior.
+The user's final visual check remains pending.

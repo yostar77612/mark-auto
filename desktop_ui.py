@@ -60,6 +60,7 @@ UI_OPERATIONS = frozenset(
         'paper_submit',
         'paper_cancel',
         'paper_cancel_all',
+        'capital_scenario',
         'backup_create',
         'backup_restore',
     )
@@ -1056,6 +1057,13 @@ def _handle_ui_select(payload, paths, root, *, emit=None, descendants_stopped=Fa
     return save_selection(read_json(folder / 'strategy.json'), result, root / 'selection.json')
 
 
+def _handle_ui_capital_scenario(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep the derived-data reader out of startup.
+    import desktop_capital_scenario as _capital
+
+    return _capital.execute(payload, paths)
+
+
 def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
@@ -1085,6 +1093,7 @@ def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_
 
 
 _UI_OPERATION_HANDLERS = {
+    'ui_capital_scenario': _handle_ui_capital_scenario,
     'ui_analysis_preview': _handle_ui_analysis_preview,
     'ui_analysis_read': _handle_ui_analysis_read,
     'ui_analysis_reconcile': _handle_ui_analysis_reconcile,
@@ -1121,6 +1130,8 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
     """Allowlisted process-worker adapter; no Qt objects are created here."""
     if operation not in UI_OPERATIONS:
         raise ValidationError(ui_text('ui.execute_ui_operation.unknown_operation'))
+    if operation == 'ui_capital_scenario' and type(payload) is not dict:
+        raise ValidationError(ui_text('capital.invalid'))
     if operation == 'ui_campaign' and (
         not isinstance(payload.get('provider'), dict) or payload['provider'].get('mode') not in ('fixture', 'manual', 'chatgpt_plan')
     ):
@@ -1499,6 +1510,8 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def _busy(self, active, *, refresh_recovery=False):
+        panel = getattr(getattr(self, 'strategy_page', None), 'result_panel', None)
+        if panel is not None: panel.set_scenario_busy(active)
         for button in self.actions: button.setEnabled(not active)
         self.market.set_loading(active)
         self.kill_button.setEnabled(True)
@@ -1533,6 +1546,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 _notifications.record_event(self, event)
                 recovery_changed = recovery_changed or event.get('type') in ('result','error','failed','cancelled','canceled')
                 self.automatic_backup_panel.handle_job_event(event)
+                # Keep operation-specific presentation out of the shell.
+                import desktop_capital_scenario as _capital
+                if _capital.event(self, event): continue
                 if self._walk_forward_event(event): continue
                 if self._analysis_event(event): continue
                 kind = event.get('type', '')

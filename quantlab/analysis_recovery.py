@@ -68,6 +68,7 @@ SAFE_OPERATIONS = frozenset(
         'ui_paper_submit',
         'ui_paper_cancel',
         'ui_paper_cancel_all',
+        'ui_capital_scenario',
         'ui_paper_replay',
     }
 )
