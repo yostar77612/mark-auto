@@ -84,3 +84,6 @@ This documentation task does not publish a GitHub Release or create a git tag.
 The developer-only workspace runs from the repository root with
 `streamlit run tools/research_app.py`; this retains the repository-local
 `.streamlit/config.toml` server/privacy settings. It is excluded from the installer.
+Install it with `python -m pip install -r requirements-ui.lock` followed by
+`python -m pip install --no-deps -r requirements-ui-pillow.lock`; the second step is a
+deliberate Pillow 13 override of Streamlit's `pillow<13` metadata (see that file).

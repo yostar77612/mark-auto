@@ -1,0 +1,7 @@
+# Deliberate override of Streamlit 1.65.0 metadata (pillow<13). Install AFTER requirements-ui.lock:
+#   python -m pip install --no-deps -r requirements-ui-pillow.lock
+# Pillow 12.3.0 has 8 advisories (CVE-2026-112395, -112397, -112400, -112404,
+# -112895, -112896, -112897, -112899) whose only fixed version is 13.0.0, and no Streamlit
+# release allows Pillow 13. tests/test_ui_pillow_compat.py exercises Streamlit image paths on it.
+# Remove this file and restore the pin in requirements-ui.lock once Streamlit allows Pillow 13.
+pillow==13.0.0

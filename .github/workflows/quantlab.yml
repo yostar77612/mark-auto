@@ -170,6 +170,8 @@ jobs:
       - name: Provision pinned private SQLite without changing the Python profile
         run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
       - run: python -m pip install -r requirements-ui.lock
+      - name: Apply documented Pillow 13 override (Streamlit metadata says pillow<13)
+        run: python -m pip install --no-deps -r requirements-ui-pillow.lock
       - name: Install Linux Qt system runtime
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
@@ -268,6 +270,9 @@ jobs:
       - name: Resolve complete UI runtime dependency closure
         if: matrix.profile == 'ui'
         run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}
+      - name: Apply documented Pillow 13 override to the audited UI closure
+        if: matrix.profile == 'ui'
+        run: python -m pip install --no-deps --target audit-runtime -r requirements-ui-pillow.lock
       - name: Resolve hash-locked Linux CP311 Qt compatibility closure
         if: matrix.profile == 'qt-linux311'
         run: 'python -m pip --isolated install --index-url https://pypi.org/simple --ignore-installed --target audit-runtime --require-hashes --only-binary=:all: --no-cache-dir -r requirements-qt-ci.lock'
