@@ -50,7 +50,7 @@ class StopTests(unittest.TestCase):
         self.assertEqual(self.state.status.text(), '')
         self.dialog.exec.assert_called_once_with()
 
-    def test_confirm_uses_original_reason_status_and_never_closes(self):
+    def test_confirm_without_policy_uses_original_reason_status_and_never_constructs_broker(self):
         self.dialog.clickedButton.return_value = self.dialog.confirm_button
         self.dialog.exec.side_effect = lambda: self.freeze.assert_not_called()
         self.page.kill_paper()
@@ -61,7 +61,7 @@ class StopTests(unittest.TestCase):
         self.assertEqual(self.broker.mock_calls, [])
         self.assertFalse(self.state.manual_order_lock)
 
-    def test_real_freeze_only_sets_kill_switch_and_preserves_quantities(self):
+    def test_real_freeze_then_confirm_locks_and_preserves_quantities(self):
         self.page.freeze_paper = lambda reason: PaperPage.freeze_paper(self.page, reason)
         self.page._show_account = Mock()
         self.page._remember_stop = Mock()
@@ -74,10 +74,11 @@ class StopTests(unittest.TestCase):
         self.broker.snapshot.return_value = self.account
         self.dialog.clickedButton.return_value = self.dialog.confirm_button
         before = deepcopy(self.account['positions'])
-        with patch.object(Path, 'exists', side_effect=[False, True]):
+        with patch.object(Path, 'exists', side_effect=[False, True, True]):
             self.page.kill_paper()
         self.broker.set_kill_switch.assert_called_once_with(True)
-        self.assertEqual([call[0] for call in self.broker.mock_calls], ['set_kill_switch', 'snapshot', 'snapshot'])
+        self.broker.set_manual_order_lock.assert_called_once_with(True)
+        self.assertEqual([call[0] for call in self.broker.mock_calls], ['set_kill_switch', 'snapshot', 'snapshot', 'set_manual_order_lock', 'snapshot'])
         self.assertEqual(self.account['positions'], before)
         self.state.paper_confirm.setChecked.assert_called_once_with(False)
 
@@ -85,12 +86,13 @@ class StopTests(unittest.TestCase):
         self.dialog.clickedButton.return_value = self.dialog.observe_button
         self.page.kill_paper()
         self.assertTrue(self.state.manual_order_lock)
-        self.assertFalse(self.page.isEnabled())
+        self.assertTrue(self.page.isEnabled())
         self.freeze.assert_not_called()
         self.page.replay_controls.cancel.assert_called_once_with()
         for op in ('submit', 'replay', 'cancel', 'reconcile', 'kill'):
-            with self.assertRaisesRegex(ValidationError, '^validation_failed$'):
+            with self.assertRaises(ValidationError) as caught:
                 self.page.paper_job(op)
+            self.assertEqual(str(caught.exception), ui_text('paper.lock.rejected'))
         self.assertEqual(self.page._stop_account, self.account)
 
     def test_observe_sets_persistent_manual_lock_without_starting_job(self):
@@ -169,6 +171,20 @@ class StopTests(unittest.TestCase):
                     freeze.assert_not_called()
                 self.assertFalse(window.paper_confirm.isChecked())
                 self.assertFalse(window.jobs.active)
+                self.dialog.clickedButton.return_value = self.dialog.observe_button
+                window.paper_page.kill_paper()
+                window._busy(False)
+                self.assertTrue(window.paper_page.isEnabled())
+                from PySide6.QtWidgets import QPushButton
+
+                for name in ('paper_submit', 'paper_replay', 'paper_cancel', 'paper_reconcile', 'paper_manual_unlock'):
+                    button = window.paper_page.findChild(QPushButton, name)
+                    self.assertIsNotNone(button, name)
+                    self.assertEqual(button.isEnabled(), name in ('paper_reconcile', 'paper_manual_unlock'), name)
+                    self.assertTrue(button.accessibleName())
+                self.assertEqual(window.paper_page.findChild(QPushButton, 'paper_manual_unlock').text(), ui_text('paper.manual_unlock'))
+                window._safe(lambda: window.paper_page.paper_job('submit'))
+                self.assertIn(ui_text('paper.lock.rejected'), window.status.text())
             finally:
                 window.close()
 

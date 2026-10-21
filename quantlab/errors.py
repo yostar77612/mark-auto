@@ -58,6 +58,10 @@ class ErrorText:
 
 # Define each code exactly once; labels below are a compatibility projection.
 ERROR_TABLE = {
+    'paper_manual_order_lock': ErrorText(
+        '\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d',
+        '\u8acb\u5148\u6838\u5c0d\u5b8c\u6574\u53c3\u8003\u5feb\u7167\u4e26\u5c0d\u5e33\u3002',
+    ),
     'agent_reference_not_found': ErrorText('找不到唯一且有效的訓練引用。', '請重新從 @ 清單選擇。'),
     'agent_tool_refused': ErrorText('AI 工具請求被拒絕：工具未註冊、未宣告能力或輸入格式不符。', '請改用已註冊的唯讀工具、明確的能力宣告與有效的 JSON 輸入。'),
     'explicit_host_recovery_required': ErrorText(

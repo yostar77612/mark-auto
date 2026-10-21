@@ -94,9 +94,10 @@ class ErrorCatalogTests(unittest.TestCase):
                 '\u8acb\u91cd\u65b0\u5f9e @ \u6e05\u55ae\u9078\u64c7\u3002',
             ],
         )
-        # A1-D1 adds one B1 registry entry; all 64 historical bytes stay locked.
-        self.assertEqual(len(payload), BASELINE_COUNT + 1)
+        # A1-D1 and the paper stop lock (A1) each add one B1 registry entry; all 64 historical bytes stay locked.
+        self.assertEqual(len(payload), BASELINE_COUNT + 2)
         payload.pop('agent_tool_refused')
+        payload.pop('paper_manual_order_lock')
         self.assertEqual(len(payload), BASELINE_COUNT)
         self.assertEqual(hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest(), BASELINE_SHA256)
 

@@ -236,6 +236,10 @@ class OrderEntryScanTests(unittest.TestCase):
             {(n.args[0].value, next(k.value.value for k in n.keywords if k.arg == 'manual_order_lock')) for n in lock_jobs},
             {('kill', True), ('reconcile', False)},
         )
+        # Confirm/Observe persist the same explicit lock outside the job route.
+        kill = next(n for n in ast.walk(page) if isinstance(n, ast.FunctionDef) and n.name == 'kill_paper')
+        writes = [n for n in ast.walk(kill) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == 'set_manual_order_lock']
+        self.assertEqual([n.args[0].value for n in writes], [True, True])
 
     def test_all_submit_callers_and_intent_writers_are_enumerated(self):
         paths = sorted((ROOT / 'quantlab').rglob('*.py')) + sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').rglob('*.py'))

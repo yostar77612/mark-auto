@@ -2967,6 +2967,13 @@
       "receiver": "host"
     },
     {
+      "file": "tests/test_paper_stop_a1.py",
+      "line": 224,
+      "name": "_dataset",
+      "kind": "patch.object",
+      "receiver": "ui"
+    },
+    {
       "file": "tests/test_paper_stop_u6.py",
       "line": 29,
       "name": "freeze_paper",
@@ -2996,7 +3003,7 @@
     },
     {
       "file": "tests/test_paper_stop_u6.py",
-      "line": 166,
+      "line": 168,
       "name": "freeze_paper",
       "kind": "patch.object",
       "receiver": "window.paper_page"

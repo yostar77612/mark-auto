@@ -953,6 +953,10 @@ def _handle_ui_paper_replay(payload, paths, root, *, emit=None, descendants_stop
     if payload.get('reconcile_confirmed') is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.replay_confirmation_required'))
     broker.reconcile(payload['snapshot'])
+    if broker.snapshot().get('manual_order_lock', False):
+        error = ValidationError(ui_text('paper.lock.rejected'))
+        error.code = 'paper_manual_order_lock'
+        raise error
     # Keep operation-specific dependencies out of module startup.
     from quantlab.paper_replay import PaperReplay
 
@@ -1486,6 +1490,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             self.select_button.setEnabled(bool(getattr(self, '_selection_allowed', False)))
             self.walk_forward_start.setEnabled(self._wf_preview is not None and self.walk_forward_consent.isChecked())
             self.analysis_start.setEnabled(self._analysis_preview is not None and not self._analysis_preview['receipt_snapshot']['receipts'])
+            if getattr(self, 'paper_page', None) is not None: self.paper_page._apply_order_lock()
         self._refresh_recovery_controls(force=active or refresh_recovery)
 
 

@@ -12,7 +12,7 @@ from quantlab import strict_json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json as read_json, write_json as write_json, load_dataset as load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog as QFileDialog, QMessageBox
+from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog as QFileDialog, QMessageBox, QAbstractButton
 from desktop_presentation import display_number
 from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
@@ -230,8 +230,13 @@ class PaperPage(PageContext, QWidget):
         self.form_feedback(self.policy_form.sessions, ui_text('ui.demo_paper_policy.policy_filled').format(len(sessions)))
 
     def paper_job(self, op, **payload):
-        if getattr(self.page_state, 'manual_order_lock', False):
-            raise ValidationError('validation_failed')
+        if getattr(self.page_state, 'manual_order_lock', False) and not (
+            (op == 'reconcile' and payload.get('manual_order_lock') is False and 'snapshot' in payload)
+            or (op == 'kill' and payload.get('manual_order_lock') is True)
+        ):
+            error = ValidationError(ui_text('paper.lock.rejected'))
+            error.code = 'paper_manual_order_lock'
+            raise error
         if op in ('submit', 'replay'):
             if not self.paper_confirm.isChecked():
                 raise ValidationError(ui_text('ui.paper_job.snapshot_consent_required'))
@@ -243,15 +248,28 @@ class PaperPage(PageContext, QWidget):
             self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
 
+    def _apply_order_lock(self):
+        locked = getattr(self.page_state, 'manual_order_lock', False)
+        for name in ('paper_submit', 'paper_replay', 'paper_cancel'):
+            button = self.findChild(QAbstractButton, name)
+            if button is not None:
+                button.setEnabled(not locked)
+        market = getattr(self, 'market', None)
+        orders = getattr(getattr(market, 'chart', None), 'paper_orders', None)
+        if locked and orders is not None:
+            orders.request = None
+
     def kill_paper(self):
         # Snapshot inspection is read-only and does not construct a broker.
         from quantlab.paper import PaperBroker
 
         journal = self.root / 'paper.sqlite3'
+        self._stop_journal_unreadable = False
         try:
             account = PaperBroker.read_snapshot(journal) if journal.exists() else getattr(self, '_stop_account', {})
         except Exception:
             # Journal inspection must never prevent the safety-file freeze path.
+            self._stop_journal_unreadable = True
             account = getattr(self, '_stop_account', None)
         text = (
             stop_exposure_text(account, privacy.enabled(self))
@@ -263,19 +281,27 @@ class PaperPage(PageContext, QWidget):
         choice = dialog.clickedButton()
         if choice is dialog.observe_button:
             self.replay_controls.cancel()
-            if (self.root / 'paper_policy.json').exists():
+            if not self._stop_journal_unreadable and (self.root / 'paper_policy.json').exists():
                 self.host.callbacks['_paper'](self.root).set_manual_order_lock(True)
             self.page_state.manual_order_lock = True
-            self.setEnabled(False)
+            self._apply_order_lock()
             self.status.setText(ui_text('paper.stop.observing'))
             return
         if choice is not dialog.confirm_button:
             return
         self.replay_controls.cancel()
         self.freeze_paper(ui_text('ui.kill_paper.user_emergency_stop'))
+        if not self._stop_journal_unreadable and (self.root / 'paper_policy.json').exists():
+            broker = self.host.callbacks['_paper'](self.root)
+            broker.set_manual_order_lock(True)
+            self._show_account(broker.snapshot())
         self.status.setText(ui_text('ui.kill_paper.stopped_frozen'))
 
     def _amend_order(self, order_id, price):
+        if getattr(self.page_state, 'manual_order_lock', False):
+            error = ValidationError(ui_text('paper.lock.rejected'))
+            error.code = 'paper_manual_order_lock'
+            raise error
         if self.jobs.active or not self.paper_confirm.isChecked():
             raise ValidationError(ui_text('ui.paper_job.snapshot_consent_required'))
         self.paper_job(
@@ -293,6 +319,11 @@ class PaperPage(PageContext, QWidget):
 
     def _show_account(self, account, strategy=None):
         account = dict(account or {})
+        page_state = getattr(self, 'page_state', self)
+        page_state.manual_order_lock = bool(account.get('manual_order_lock', False))
+        apply_lock = getattr(self, '_apply_order_lock', None)
+        if apply_lock is not None:
+            apply_lock()
         self._stop_account = account
         for key in ('positions', 'orders', 'fills'):
             if key in account and account[key] is None:
@@ -306,7 +337,7 @@ class PaperPage(PageContext, QWidget):
             and getattr(self, 'last_operation', None) != 'ui_paper_replay'
             else None
         )
-        chart.set_paper_snapshot(account, mode=mode, request=self._amend_order)
+        chart.set_paper_snapshot(account, mode=mode, request=None if page_state.manual_order_lock else self._amend_order)
         values = {k: account.get(k) for k in ('account_id', 'cash', 'reconciliation_required')}
         if not account.get('account_id'):
             values['cash'] = None
@@ -383,7 +414,7 @@ class PaperPage(PageContext, QWidget):
         if self.guard is not None:
             self.guard.reconciliation_required = True
         self.host.callbacks['write_json'](self.root / 'desktop_safety.json', {'reconciliation_required': True, 'reason': str(reason)})
-        if (self.root / 'paper_policy.json').exists():
+        if not getattr(self, '_stop_journal_unreadable', False) and (self.root / 'paper_policy.json').exists():
             broker = self.host.callbacks['_paper'](self.root)
             broker.set_kill_switch(True)
             self._remember_stop(broker.snapshot(), 'user' if ui_text('ui.freeze_paper.emergency_stop') in str(reason) else 'freeze')

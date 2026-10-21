@@ -2122,6 +2122,14 @@ ZH_TW.update(
 )
 
 
+# Lane P
+ZH_TW.update(
+    {
+        'paper.manual_unlock': '\u6062\u5fa9\u65b0\u59d4\u8a17\uff08\u9700\u5148\u5c0d\u5e33\uff09',
+        'paper.lock.rejected': '\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d',
+    }
+)
+
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')

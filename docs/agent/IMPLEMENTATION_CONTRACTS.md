@@ -4616,3 +4616,43 @@ remain unchanged.
 The UI-operation golden observation includes the normalized `SOURCE.txt` path
 in the `ui_backtest` report dictionary. All other observations and existing
 registry assertions retain their values and contracts.
+## Lane P A1: persistent stop-new-orders and explicit resume-new-orders
+
+Confirm stop freezes the desktop safety state and sets the existing kill switch
+once, then journals `manual_order_lock(active=True)` when the policy and readable
+journal are available. Observe cancels replay once and journals the same manual
+lock without starting a job or changing consent. Neither action closes positions
+or cancels existing orders. An absent policy or unreadable journal never constructs
+a broker on the confirmation path; the desktop safety file still records the stop.
+
+The account journal is authoritative. Every `_show_account` synchronizes the page
+lock from the snapshot, defaulting missing/empty legacy snapshots to unlocked.
+Locked pages disable submit, replay and cancel controls and chart amend requests,
+while reconciliation and the accessible advanced resume button remain reachable.
+The idle transition reapplies the lock after generic action enabling. Rejected
+requests use `paper.lock.rejected` and the single B1 error catalogue code
+`paper_manual_order_lock`; exception values are never rendered as error text.
+
+The locked job gate permits only explicit reconcile-with-snapshot/unlock and
+kill/lock-on requests. Resume sends `manual_order_lock=False` with the complete
+reference snapshot. The existing handler reconciles before unlocking; unknown
+orders and unresolved reconciliation still fail closed. The successful account
+result clears the page lock in the same process. Consent is never granted by
+stopping, observing or resuming and remains necessary for each submit/replay.
+
+The replay handler refuses a manual lock before constructing or starting replay,
+so no cursor or fills advance. Normal batch stops retain the kill-switch-only
+behavior and create no manual lock events; subsequent batches need no unlock.
+Broker risk, cancel, persistence and replay engine code remain unchanged, including
+submit's automatic kill-switch reset. The lock survives that reset and restart.
+Live trading remains permanently disabled; money math, qualification, timeouts,
+research results and hashes, consumed guards and irreversible budgets are unchanged.
+
+Evidence: `tests/test_paper_stop_a1.py` covers real journals and desktop handlers,
+same-process resume, restart display, all five operation gates, batch boundaries,
+and a counter-test omitting the lock write that reproduces accepted submission.
+`tests/test_paper_stop_u6.py` retains privacy, consent, safety-file and quantity
+assertions with the persistent-confirm/reachable-observe behavior.
+`tests/test_paper_lock_b2.py` retains backend safety assertions and enumerates both
+direct stop lock writes plus the explicit kill/unlock job payloads. This item is
+a single commit; protected sources, PROJECT_STATE and acceptance scores are unchanged.
