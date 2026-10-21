@@ -9,6 +9,7 @@ from pathlib import Path
 import json
 import re
 from quantlab import significance as _significance
+from quantlab import verdict as _verdict
 
 from quantlab.core import ValidationError, canonical_json, content_hash, to_dict
 from quantlab.walk_forward import (
@@ -349,8 +350,10 @@ def status_label(value):
 
 def oos_statistics_text(state):
     """Qt-free, worker-only derived text; never project raw daily returns to IPC."""
-    merged = _significance.merge_oos_daily_returns(state)
     title = ui_text('walk_forward.statistics.title')
+    if state.get('status') != 'completed':
+        return title + '\n' + ui_text('walk_forward.verdict.run_unavailable')
+    merged = _significance.merge_oos_daily_returns(state)
     if merged['reason']:
         reasons = {
             'holdout_status_unconfirmed': ui_text('walk_forward.statistics.holdout_unconfirmed'),
@@ -361,6 +364,8 @@ def oos_statistics_text(state):
             'dates_not_strictly_increasing': ui_text('walk_forward.statistics.overlap'),
             'no_evaluated_folds': ui_text('walk_forward.statistics.no_folds'),
         }
+        if merged['reason'] == 'no_evaluated_folds':
+            return title + '\n' + reasons[merged['reason']]
         return title + '\n' + reasons[merged['reason']] + '\n' + ui_text('walk_forward.decline.line').format(reasons[merged['reason']])
     stats = _significance.mean_positive_test(merged['returns'])
     required = _significance.required_observations(merged['returns'])
@@ -390,6 +395,7 @@ def oos_statistics_text(state):
     return '\n'.join(
         (
             title,
+            _verdict_text(stats, required, merged['returns']),
             ui_text('walk_forward.statistics.source'),
             ui_text('walk_forward.statistics.days').format(value('n')),
             ui_text('walk_forward.statistics.mean').format(value('mean')),
@@ -403,6 +409,29 @@ def oos_statistics_text(state):
             ui_text('walk_forward.decline.line').format(decline_text),
         )
     )
+
+
+def _verdict_text(stats, required, returns):
+    conclusion = _verdict.judge(stats, required, returns, ())
+    names = {
+        _verdict.INSUFFICIENT: (ui_text('walk_forward.verdict.insufficient.name'), ui_text('walk_forward.verdict.insufficient.explanation')),
+        _verdict.NEGATIVE_EXPECTANCY: (
+            ui_text('walk_forward.verdict.negative_expectancy.name'),
+            ui_text('walk_forward.verdict.negative_expectancy.explanation'),
+        ),
+        _verdict.LUCK_SUSPECTED: (ui_text('walk_forward.verdict.luck_suspected.name'), ui_text('walk_forward.verdict.luck_suspected.explanation')),
+        _verdict.FRAGILE_EDGE: (ui_text('walk_forward.verdict.fragile_edge.name'), ui_text('walk_forward.verdict.fragile_edge.explanation')),
+        _verdict.STATISTICAL_EDGE: (ui_text('walk_forward.verdict.statistical_edge.name'), ui_text('walk_forward.verdict.statistical_edge.explanation')),
+    }
+    name, explanation = names[conclusion['level']]
+    lines = [ui_text('walk_forward.verdict.line').format(name, explanation), ui_text('walk_forward.verdict.scope')]
+    if conclusion['recommended_observations'] is not None:
+        lines.append(ui_text('walk_forward.verdict.recommended').format(conclusion['recommended_observations']))
+    elif conclusion['level'] == _verdict.INSUFFICIENT:
+        lines.append(ui_text('walk_forward.verdict.required_unavailable'))
+    if 'severe_drawdown' in conclusion['reasons']:
+        lines.append(ui_text('walk_forward.verdict.severe_drawdown'))
+    return '\n'.join(lines)
 
 
 def preview_text(preview, *, advanced=False):

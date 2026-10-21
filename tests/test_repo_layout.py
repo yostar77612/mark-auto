@@ -90,6 +90,11 @@ AGENT_TOOL_SCHEMA = 'docs/agent-app-tools-v1.schema.json'
 
 
 class RepoLayoutTests(unittest.TestCase):
+    def test_b3_verdict_in_quantlab_package(self):
+        for path in ('quantlab/verdict.py', 'tests/test_verdict_b3.py'):
+            self.assertTrue((ROOT / path).is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_a3_strict_json_stays_in_quantlab(self):
         self.assertTrue((ROOT / 'quantlab/strict_json.py').is_file())
 

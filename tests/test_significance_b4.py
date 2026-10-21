@@ -48,7 +48,7 @@ class WelchDeclineTests(unittest.TestCase):
             source = state([fold(0, 0, left), fold(1, 40, right)])
             text = oos_statistics_text(source)
             self.assertIn(phrase, text)
-            self.assertEqual(len(text.splitlines()), 10)
+            self.assertEqual(len(text.splitlines()), 12)
             self.assertEqual(text.count(ui_text('walk_forward.decline.line').split('{0}')[0]), 1)
             if classification == 'significant_decline':
                 self.assertLess(result['p_value'], Decimal('.05'))
@@ -113,7 +113,7 @@ class WelchDeclineTests(unittest.TestCase):
             result = sig.oos_decline_test(state(folds))
             self.assertIsNone(result['classification'])
             self.assertTrue(result['reason'])
-            self.assertEqual(len(oos_statistics_text(state(folds)).splitlines()), 3 if not folds else 10)
+            self.assertEqual(len(oos_statistics_text(state(folds)).splitlines()), 2 if not folds else 13)
 
 
 if __name__ == '__main__':

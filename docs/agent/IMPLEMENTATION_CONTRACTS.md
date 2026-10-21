@@ -4843,3 +4843,53 @@ shuffled-input invariance, invalid inputs, no mutation, Decimal precision and
 the display states. `tools/generate_welch_goldens.py` regenerates the synthetic
 fixture; SciPy is development-only and is not a product or test dependency.
 The user's final visual check remains pending.
+
+### R-B3 — five display-only OOS verdicts
+
+R-B3 is a single item commit. `quantlab/verdict.py` was independently implemented;
+no formula, code or flow was adapted from the reference project. `judge(oos_test,
+oos_required, oos_returns, flags)` reads B2's statistics and planning dictionaries,
+the validated merged OOS daily-return list and B1-shaped code/severity flags. Its
+only output fields are `level`, `display_name`, ordered deterministic `reasons`
+and integer-or-None `recommended_observations`. Empty samples return no level or
+name and the reason `no evaluated OOS fold`; malformed inputs fail closed to
+insufficient. Undefined planning includes its reason instead of an invented count.
+
+| Priority | Condition | Level |
+| --- | --- | --- |
+| 1 | n < 30, undefined/invalid B2 statistics or invalid return sample | insufficient |
+| 2 | mean < 0 | negative_expectancy |
+| 3 | either p >= 0.05 | luck_suspected |
+| 4 | any high flag, including OOS severe_drawdown | fragile_edge |
+| 5 | otherwise | statistical_edge |
+
+`compounded_drawdown` starts equity and its peak at Decimal(1), compounds each
+merged evaluated OOS return and takes the maximum `(peak - equity) / peak`,
+including the initial peak. It uses an isolated precision-400 Decimal context
+without intermediate quantization. The threshold is strictly greater than 0.50;
+exactly 0.50 does not trigger. Missing/nonfinite returns and returns below -1
+are invalid. A total loss yields drawdown 1. Per-fold drawdown metrics and
+external severe_drawdown flags are not substituted for this holdout-free source.
+Other high flags are sorted by code; duplicate flags are removed. Medium flags
+are sorted notes only for statistical_edge. B2 owns the bootstrap seed, cap and
+12-place inference precision; B3 adds no randomness or resampling.
+
+`desktop_walk_forward` renders catalog names and explanations at the top of the
+existing OOS statistics block, separately from stage codes. Only
+completed runs with evaluated folds receive a level. Failed/interrupted runs
+and runs without evaluated folds display reasons without a level. The text
+explicitly describes an OOS daily-return statistical conclusion, not trading
+permission. No widget, objectName, button, UI operation or default-view layout
+was added. B4's line-count assertions were updated for the verdict text.
+
+These are derived display data, computed in memory during worker compaction;
+inputs are not mutated. Nothing is written back into results, metrics,
+manifests, journals or files, or included in content_hash, experiment_id,
+reproducibility_hash or state_hash. There is no effect on eligibility, candidate
+selection, ranking, paper permission, start/cancel or run/fold status labels.
+Frozen sources, holdout exclusion, OOS consumption, budgets and timeouts remain
+unchanged. Live trading remains permanently disabled; no order path was added.
+`tests/test_verdict_b3.py` exercises priority overlaps, real B2 synthetic samples,
+strict compounded drawdown, malformed inputs, purity, stdlib-only imports,
+unchanged state hashes and the real walk-forward selection loop with and without
+verdict calls. The user's final visual check remains pending.

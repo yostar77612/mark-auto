@@ -2224,6 +2224,28 @@ ZH_TW.update(
     }
 )
 
+# Lane R
+ZH_TW.update(
+    {
+        "walk_forward.verdict.insufficient.name": "\u6a23\u672c\u4e0d\u8db3",
+        "walk_forward.verdict.insufficient.explanation": "\u89c0\u6e2c\u5c11\u65bc 30 \u5929\u6216\u7d71\u8a08\u672a\u5b9a\u7fa9\uff0c\u5c1a\u4e0d\u8db3\u4ee5\u5224\u8b80\u3002",
+        "walk_forward.verdict.negative_expectancy.name": "\u8ca0\u671f\u671b\uff08\u4e0d\u5efa\u8b70\u9032\u5165\u7d19\u4e0a\u9a57\u8b49\uff09",
+        "walk_forward.verdict.negative_expectancy.explanation": "\u5e73\u5747\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\u70ba\u8ca0\uff1b\u6b64\u63d0\u793a\u50c5\u4f9b\u986f\u793a\u3002",
+        "walk_forward.verdict.luck_suspected.name": "\u7591\u4f3c\u904b\u6c23",
+        "walk_forward.verdict.luck_suspected.explanation": "\u81f3\u5c11\u4e00\u9805\u55ae\u5c3e p \u503c\u672a\u4f4e\u65bc 0.05\u3002",
+        "walk_forward.verdict.fragile_edge.name": "\u8106\u5f31\u512a\u52e2",
+        "walk_forward.verdict.fragile_edge.explanation": "\u6aa2\u5b9a\u986f\u8457\uff0c\u4f46\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\u3002",
+        "walk_forward.verdict.statistical_edge.name": "\u5177\u7d71\u8a08\u512a\u52e2\uff08\u4ecd\u975e\u4fdd\u8b49\uff09",
+        "walk_forward.verdict.statistical_edge.explanation": "\u5169\u9805\u6aa2\u5b9a\u986f\u8457\u4e14\u6c92\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\uff0c\u4ecd\u975e\u672a\u4f86\u7372\u5229\u4fdd\u8b49\u3002",
+        "walk_forward.verdict.line": "\u88c1\u6c7a\uff1a{0}\uff1b{1}",
+        "walk_forward.verdict.scope": "\u9019\u662f\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\u7684\u7d71\u8a08\u7d50\u8ad6\uff0c\u4e0d\u662f\u4ea4\u6613\u8a31\u53ef\uff1b\u4e0d\u5f71\u97ff\u7814\u7a76\u8cc7\u683c\u3001\u5019\u9078\u9078\u64c7\u6216\u7d19\u4e0a\u8cc7\u683c\u3002",
+        "walk_forward.verdict.recommended": "\u5efa\u8b70\u89c0\u6e2c\u6578\uff1a{0} \u5929\u3002",
+        "walk_forward.verdict.required_unavailable": "\u5efa\u8b70\u89c0\u6e2c\u6578\u7121\u6cd5\u4f30\u8a08\uff1b\u8acb\u53c3\u95b1\u4e0b\u65b9\u6240\u9700\u6a23\u672c\u6578\u539f\u56e0\u3002",
+        "walk_forward.verdict.severe_drawdown": "\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a severe_drawdown\uff1a\u6a23\u672c\u5916\u8907\u5229\u6b0a\u76ca\u5cf0\u8c37\u56de\u64a4\u5927\u65bc 50%\u3002",
+        "walk_forward.verdict.run_unavailable": "\u57f7\u884c\u672a\u5b8c\u6210\u6216\u5df2\u5931\u6557\u3001\u4e2d\u65b7\uff0c\u7121\u53ef\u7528\u88c1\u6c7a\u3002",
+    }
+)
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')
 
 # Compatibility only: historical positional keys never store rendered text.
