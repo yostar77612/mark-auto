@@ -2145,6 +2145,41 @@ ZH_TW.update(
 )
 LOG_OPERATION_NAMES['ui_paper_cancel_all'] = 'logs.operation.ui_paper_cancel_all'
 
+# Lane R
+ZH_TW.update(
+    {
+        'trade_structure.title': '\u4ea4\u6613\u7d50\u69cb\uff1a\u56de\u6e2c\u6a23\u672c\uff08\u53c3\u6578\u7d93\u6311\u9078\uff09\uff0c\u50c5\u4f9b\u63cf\u8ff0',
+        'trade_structure.n': '\u5df2\u5e73\u5009\u6279\u6b21\u6578',
+        'trade_structure.wins': '\u7372\u5229\u6279\u6b21',
+        'trade_structure.losses': '\u8667\u640d\u6279\u6b21',
+        'trade_structure.ties': '\u6253\u5e73\u6279\u6b21',
+        'trade_structure.expectancy': '\u671f\u671b\u503c\uff08TWD\uff09',
+        'trade_structure.avg_win': '\u5e73\u5747\u7372\u5229\uff08TWD\uff09',
+        'trade_structure.avg_loss': '\u5e73\u5747\u8667\u640d\uff08\u6b63\u503c\uff0cTWD\uff09',
+        'trade_structure.payoff_ratio': '\u76c8\u8667\u6bd4',
+        'trade_structure.win_rate': '\u52dd\u7387',
+        'trade_structure.max_losing_streak': '\u6700\u9577\u9023\u8667\u6279\u6b21',
+        'trade_structure.largest_win': '\u6700\u5927\u55ae\u7b46\u7372\u5229\uff08TWD\uff09',
+        'trade_structure.largest_win_share': '\u6700\u5927\u55ae\u7b46\u5360\u7e3d\u7372\u5229\u6bd4\u4f8b',
+        'trade_structure.breakeven_payoff_ratio': '\u6253\u5e73\u76c8\u8667\u6bd4',
+        'trade_structure.breakeven_win_rate': '\u6253\u5e73\u52dd\u7387',
+        'trade_structure.reason.no_closed_lots': '\u5c1a\u7121\u5df2\u5e73\u5009\u6279\u6b21',
+        'trade_structure.reason.no_wins': '\u6c92\u6709\u7372\u5229\u6279\u6b21',
+        'trade_structure.reason.no_losses': '\u6c92\u6709\u8667\u640d\u6279\u6b21',
+        'trade_structure.reason.tie_lots': '\u542b\u6253\u5e73\u6279\u6b21',
+        'trade_structure.severity.high': '\u9ad8\u56b4\u91cd\u5ea6',
+        'trade_structure.severity.medium': '\u4e2d\u56b4\u91cd\u5ea6',
+        'trade_structure.flag_line': '{0}\uff1a{1}',
+        'trade_structure.flag.negative_expectancy': '\u671f\u671b\u503c\u70ba\u8ca0',
+        'trade_structure.flag.single_trade_dominance': '\u55ae\u7b46\u7372\u5229\u5360\u6bd4\u904e\u534a',
+        'trade_structure.flag.small_wins_big_losses': '\u9ad8\u52dd\u7387\u4f34\u96a8\u5c0f\u8cfa\u5927\u8ce0',
+        'trade_structure.flag.thin_edge_margin': '\u76c8\u8667\u6bd4\u50c5\u7565\u9ad8\u65bc\u6253\u5e73\u76c8\u8667\u6bd4',
+        'trade_structure.flag.severe_drawdown': '\u6700\u5927\u56de\u64a4\u6bd4\u7387\u8d85\u904e\u4e00\u534a',
+        'trade_structure.flag.long_losing_streak': '\u9023\u8667\u81f3\u5c11\u516b\u6279\u6b21',
+        'trade_structure.flag.marginal_profit_factor': '\u7372\u5229\u56e0\u5b50\u4f4e\u65bc 1.1\uff08\u81f3\u5c11 20 \u6279\u6b21\uff09',
+    }
+)
+
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')

@@ -128,6 +128,10 @@ class RepoLayoutTests(unittest.TestCase):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
+    def test_b1_statistics_in_quantlab_package(self):
+        self.assertTrue((ROOT / 'quantlab/trade_statistics.py').is_file())
+        self.assertIn('quantlab', ALLOWED_DIRECTORIES)
+
     def test_f6_memory_in_existing_package(self):
         self.assertTrue((ROOT / 'desktop_chart_memory.py').is_file())
 

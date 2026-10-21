@@ -106,7 +106,40 @@ class DesktopTextAliasTests(unittest.TestCase):
         self.assertEqual({key: strings.ZH_TW[key] for key in previous['catalog']}, previous['catalog'])
         for name, value in previous['registries'].items():
             self.assertEqual(json.loads(json.dumps(getattr(strings, name))), value, name)
-        self.assertEqual(set(strings.ZH_TW), set(previous['catalog']) | set(strings.TEXT_ALIASES.values()))
+        # B1 adds display text; the historical catalog and alias values above
+        # remain byte-for-byte pinned by the original fixture.
+        b1_keys = {
+            'trade_structure.title',
+            'trade_structure.n',
+            'trade_structure.wins',
+            'trade_structure.losses',
+            'trade_structure.ties',
+            'trade_structure.expectancy',
+            'trade_structure.avg_win',
+            'trade_structure.avg_loss',
+            'trade_structure.payoff_ratio',
+            'trade_structure.win_rate',
+            'trade_structure.max_losing_streak',
+            'trade_structure.largest_win',
+            'trade_structure.largest_win_share',
+            'trade_structure.breakeven_payoff_ratio',
+            'trade_structure.breakeven_win_rate',
+            'trade_structure.reason.no_closed_lots',
+            'trade_structure.reason.no_wins',
+            'trade_structure.reason.no_losses',
+            'trade_structure.reason.tie_lots',
+            'trade_structure.severity.high',
+            'trade_structure.severity.medium',
+            'trade_structure.flag_line',
+            'trade_structure.flag.negative_expectancy',
+            'trade_structure.flag.single_trade_dominance',
+            'trade_structure.flag.small_wins_big_losses',
+            'trade_structure.flag.thin_edge_margin',
+            'trade_structure.flag.severe_drawdown',
+            'trade_structure.flag.long_losing_streak',
+            'trade_structure.flag.marginal_profit_factor',
+        }
+        self.assertEqual(set(strings.ZH_TW), set(previous['catalog']) | set(strings.TEXT_ALIASES.values()) | b1_keys)
         self.assertFalse(set(strings.ZH_TW) & set(self.old))
         self.assertIs(strings.LOCALES[strings.DEFAULT_LOCALE], strings.ZH_TW)
 

@@ -4687,3 +4687,56 @@ failure clears the pending chart notice. tests/test_paper_cancel_all_a2.py pins
 snapshot authority, deterministic attempts, failure isolation, idempotency,
 privacy, confirmation defaults and lock preservation with offline evidence.
 Live trading remains permanently disabled. This item is a single commit.
+### Lane R — B1: descriptive closed-lot trade structure
+
+`quantlab.trade_statistics.describe` consumes a list or tuple of closed FIFO lot
+mappings from `BacktestResult.ledger`, accepting Decimal net P&L and numeric
+strings from `load_result`. Invalid shapes, missing/nonfinite/nonnumeric P&L or
+malformed exit timestamps raise `ValidationError` (existing `validation_failed`
+error code). Exits sort chronologically in UTC, stably for equal timestamps;
+absent timestamps retain input order before dated rows. ISO strings and datetime
+values are supported. Inputs are never mutated. No reference-project formula or
+flow was adapted; this implementation follows the supplied B1 formulas independently.
+
+Counts are integers for nonempty samples. Empty samples have every statistic None
+with a nonempty semantic catalog reason; defined values have a None reason.
+Every non-count numeric output is exactly Decimal, quantized to eight fractional
+digits with ROUND_HALF_UP inside an isolated local context. Expectancy is total
+net P&L / all lots (including ties); average loss is positive; payoff is average
+win / average loss; win rate is wins / all lots. Largest-win share uses the sum
+of positive P&L as denominator. Profit factor uses total wins / absolute total
+losses. Ties reset the losing streak. Break-even payoff is losses / wins;
+break-even win rate is 1 / (1 + payoff), undefined when ties exist. Missing
+winning/losing denominators produce None with reasons, never infinity.
+
+The immutable `THRESHOLDS` table is the single threshold source. Its order is the
+flag order. These values are asserted against code by the B1 test. Negative
+expectancy, dominance, high-win-rate and drawdown comparisons are strict; small
+payoff is strictly below 0.40. Thin margin is the open interval
+`0 < payoff - breakeven < 0.25 * breakeven`; exactly 25% is excluded. Long streak
+and minimum sample counts are inclusive. Profit factor is strictly between 0
+and 1.1 and requires at least 20 lots.
+
+| Code | Constants in table order (including severity) |
+| --- | --- |
+| negative_expectancy | 0, high |
+| single_trade_dominance | 0.50, high |
+| small_wins_big_losses | 0.70, 0.40, medium |
+| thin_edge_margin | 0, 0.25, medium |
+| severe_drawdown | 0.50, high |
+| long_losing_streak | 8, medium |
+| marginal_profit_factor | 20, 0, 1.1, medium |
+
+`ReportSummaryCard.set_values` accepts an optional ledger separately from metrics.
+The trade-structure label is created only on result display and hidden/cleared
+when no result exists. Its title states backtest samples with selected parameters,
+descriptive only. Catalog text names severities explicitly; the label has an
+accessible name. Money uses the existing privacy display adapter. The default
+card and page presentation stay unchanged. These are derived display data only:
+nothing is written back to results, metrics, manifests, content_hash,
+reproducibility_hash or any file. Eligibility, selection, ranking, paper permission,
+budgets, timeouts and permanently disabled live trading stay unchanged. No order
+path is added. B1 is a single commit of the lane. Evidence:
+`tests/test_trade_statistics_b1.py` covers formulas, precision, flag boundaries,
+threshold-contract parity, invalid input, ordering, privacy and read-only real
+synthetic backtest results. The user's final visual check remains pending.
