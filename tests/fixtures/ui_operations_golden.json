@@ -14342,6 +14342,21 @@
       "source": "existing-behaviour",
       "review": "unreviewed",
       "precision": "exact after documented normalisations; Decimal-exact money"
+    },
+    "ui_capital_scenario": {
+      "events": [],
+      "result": {
+        "actual_paths": null,
+        "breach_fraction": null,
+        "breached_paths": null,
+        "inputs": null,
+        "percentiles": null,
+        "reason": "daily_returns_missing",
+        "status": "rejected"
+      },
+      "source": "existing-behaviour",
+      "review": "unreviewed",
+      "precision": "exact after documented normalisations; Decimal-exact money"
     }
   },
   "offline_limits": {

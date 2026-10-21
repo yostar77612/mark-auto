@@ -48,6 +48,8 @@ class GoldenMetadataTests(unittest.TestCase):
                 # A2 adds one separately asserted operation; retain the original-value digest.
                 self.assertIn('cancel_all_report', document[collection]['ui_paper_cancel_all']['result'])
                 del document[collection]['ui_paper_cancel_all']
+                self.assertIn(document[collection]['ui_capital_scenario']['result']['status'], ('completed', 'rejected'))
+                del document[collection]['ui_capital_scenario']
             canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
             self.assertEqual(hashlib.sha256(canonical).hexdigest(), BASELINE[name])
         report = inventory.count_unverified(FIXTURES)
