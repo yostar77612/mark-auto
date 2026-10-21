@@ -23,6 +23,7 @@ ALLOWED_FILES = {
     'requirements-desktop.txt',
     'requirements-qt-ci.lock',
     'requirements-ui.lock',
+    'requirements-ui-pillow.lock',
     'requirements-ui.txt',
     'requirements-ruff.lock',
     'desktop.py',

@@ -1,8 +1,9 @@
 # Resolved on Python 3.12 Linux, 2026-10-09. No broker SDK.
+# Install this file first (resolver-checked), then requirements-ui-pillow.lock with --no-deps.
 altair==6.3.0
 anyio==4.15.1
 attrs==26.1.0
-certifi==2026.7.22
+certifi==2026.10.19
 charset-normalizer==3.5.2
 click==8.5.0
 h11==0.16.0
@@ -17,7 +18,7 @@ narwhals==2.26.0
 numpy==2.5.3
 packaging==26.3
 pandas==3.0.6
-pillow==12.3.0
+# pillow is intentionally NOT pinned here: see requirements-ui-pillow.lock.
 protobuf==7.36.2
 pyarrow==25.0.1
 pydeck==0.9.3
