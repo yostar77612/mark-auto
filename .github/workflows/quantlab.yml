@@ -272,7 +272,7 @@ jobs:
         run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}
       - name: Apply documented Pillow 13 override to the audited UI closure
         if: matrix.profile == 'ui'
-        run: python -m pip install --no-deps --target audit-runtime -r requirements-ui-pillow.lock
+        run: python -m pip install --no-deps --upgrade --target audit-runtime -r requirements-ui-pillow.lock
       - name: Resolve hash-locked Linux CP311 Qt compatibility closure
         if: matrix.profile == 'qt-linux311'
         run: 'python -m pip --isolated install --index-url https://pypi.org/simple --ignore-installed --target audit-runtime --require-hashes --only-binary=:all: --no-cache-dir -r requirements-qt-ci.lock'
