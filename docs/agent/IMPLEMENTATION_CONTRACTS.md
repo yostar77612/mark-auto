@@ -4508,3 +4508,41 @@ data boundary or timeout changes: Paper 30 seconds, smoke 40 seconds, and the
 `quantlab/saved_candidate_pool.py` retain their bytes. Widget names, page metrics,
 PNG snapshots, acceptance scores, PROJECT_STATE and the optimization plan are
 unchanged; no baseline fixture refresh is required.
+
+## U11 — context-aware canonical glossary checks
+
+`tests/test_glossary_terms.py` parses the twelve bilingual canonical labels in
+`docs/GLOSSARY.md`. A data-driven rule table covers exactly those defined
+concepts: Backtest, Paper, Replay, Research eligibility, Paper eligibility, OOS,
+Holdout, Consumed guard, Irreversible budget, Strategy artifact, Strategy
+revision and Live trading. Semantic catalog-key scopes select the relevant
+concept; label keys require a canonical English or Traditional Chinese label.
+Action and status messages do not have to repeat a concept name. Variant checks
+apply within the declared concept scopes, never as a global synonym ban.
+
+Exact `(key, phrase)` exceptions carry individual reasons for synthetic-account
+captions, stable operation-log labels and the walk-forward wizard's forward-fold
+caption. The latter describes a forward fold rather than independent OOS
+eligibility. Tests require every exception to be exercised and demonstrate its
+failure when the exception is removed. No entire key or prefix is exempted.
+
+Synthetic fixtures reject Paper, OOS and eligibility variants, swapped research
+and paper eligibility labels, and every declared variant for all twelve terms.
+They accept separate Backtest/Paper and research/paper eligibility concepts in
+one string, unknown vocabulary and unrelated contexts. Diagnostics identify the
+semantic key and canonical term. Checks use deterministic string processing,
+without Qt, network access, subprocesses or market datasets.
+
+Independent pre-U11 UTF-8 SHA-256 expectations pin all four catalog messages
+mentioning disabled live trading, including complete consent and usage text.
+The U11 test/documentation change is separate from the R3 key refactor and
+contains no wording fixes. Catalog wording, English quick-start safeguards,
+historical-key fixtures, UI baselines and existing tests remain unchanged.
+The glossary already defines all twelve required canonical terms; no additional
+definition is needed. No baseline fixture refresh is required.
+
+Live trading remains permanently disabled. No order path, consent rule,
+fail-closed gate, threshold, consumed guard, irreversible budget, OOS/Holdout
+warning or data boundary changes. Paper 30 s, smoke 40 s and the 15-minute job
+cap retain their limits. Protected engine/provider sources, saved-candidate
+profiles, PROJECT_STATE and acceptance scores remain unchanged.
