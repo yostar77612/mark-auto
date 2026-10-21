@@ -891,6 +891,8 @@ UI_OPERATIONS = frozenset(
         'ui_paper_cancel',
         'ui_paper_cancel_all',
         'ui_capital_scenario',
+        'ui_idea_research',
+        'ui_idea_adopt',
         'ui_backup_create',
         'ui_backup_restore',
     }
@@ -905,6 +907,22 @@ WALK_FORWARD_OPERATIONS = frozenset(
         'ui_walk_forward_reconcile',
     }
 )
+
+
+def _validate_idea_research_payload(payload):
+    """Explicit per-run network and plan-usage consent; only bounded identity fields."""
+    retry = 'retry_task_id' in payload
+    if set(payload) != ({'retry_task_id', 'consent', 'registration', 'model'} if retry else {'request', 'registration', 'model'}):
+        raise RuntimeSafetyError('Invalid idea research request')
+    consent = payload['consent'] if retry else payload['request'].get('consent') if isinstance(payload['request'], dict) else None
+    if consent != {'network': True, 'plan_usage': True}:
+        raise RuntimeSafetyError('Explicit network and plan-usage consent required')
+    if retry and (type(payload['retry_task_id']) is not str or not re.fullmatch(r'idea-[0-9a-f]{32}', payload['retry_task_id'])):
+        raise RuntimeSafetyError('Invalid idea research request')
+    if type(payload['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', payload['model']):
+        raise RuntimeSafetyError('Invalid idea research request')
+    if type(payload['registration']) is not str or not re.fullmatch(r'[a-f0-9]{32}', payload['registration']):
+        raise RuntimeSafetyError('Invalid idea research request')
 
 
 @contextmanager
@@ -1421,6 +1439,17 @@ class JobManager:
                 raise RuntimeSafetyError('Subscription subtree stop proof required')
             reconciliation_admitted = operation == 'ui_chatgpt_reconcile'
             deadline = time.monotonic() + 60
+        elif operation == 'ui_idea_research':
+            _validate_idea_research_payload(payload)
+            # 150 s research budget plus the same 10 s worker margin as other plan calls.
+            deadline = time.monotonic() + 150 + 10
+        elif operation == 'ui_idea_adopt':
+            if set(payload) != {'task_id', 'candidate_id', 'config'} or not isinstance(payload['config'], dict):
+                raise RuntimeSafetyError('Invalid idea adoption request')
+            if type(payload['task_id']) is not str or not re.fullmatch(r'idea-[0-9a-f]{32}', payload['task_id']):
+                raise RuntimeSafetyError('Invalid idea adoption request')
+            if type(payload['candidate_id']) is not str or not re.fullmatch(r'c[1-3]', payload['candidate_id']):
+                raise RuntimeSafetyError('Invalid idea adoption request')
         elif operation == 'ui_campaign' and payload.get('provider', {}).get('mode') == 'chatgpt_plan':
             seconds = payload.get('config', {}).get('max_runtime_seconds')
             if type(seconds) is not int or not 1 <= seconds <= 7200:
@@ -1533,7 +1562,7 @@ class JobManager:
         self._requires_tree_quiescence = (
             operation in WALK_FORWARD_OPERATIONS
             or operation in ANALYSIS_OPERATIONS
-            or operation in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile')
+            or operation in ('ui_chatgpt_auth', 'ui_chatgpt_usage', 'ui_chatgpt_reconcile', 'ui_idea_research')
             or self._subscription_job
         )
         self._operation = operation

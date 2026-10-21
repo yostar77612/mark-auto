@@ -20,6 +20,8 @@ class StrategyPage(QWidget):
         layout = self.host.mount_page(self, ui_text('ui.strategy_page.title'))
         self.tabs, (layout, research, walk_forward) = strategy_tabs(layout)
         self.chatgpt_sign_in_entry = self.host.button(layout, ui_text('ui.strategy_page.chatgpt_sign_in'), 'chatgpt_sign_in_entry', self.host.show_sign_in)
+        self.idea_dialog = None
+        self.idea_research_entry = self.host.button(layout, ui_text('idea.entry_button'), 'idea_research_entry', self.open_idea_research)
         self.connection_status = QLabel(ui_text('settings.connection_hint'))
         layout.addWidget(self.connection_status)
         self.state.chatgpt_connection_status = self.connection_status
@@ -395,6 +397,15 @@ class StrategyPage(QWidget):
             self.strategy_form.family.blockSignals(False)
         self.strategy_form.setEnabled(True)
         self.strategy_detail.setPlainText(canonical_json({'strategy': spec, 'sha256': content_hash(spec), 'scope': 'research_and_paper_only'}))
+
+    def open_idea_research(self):
+        if self.idea_dialog is None:
+            from .idea_research import IdeaResearchDialog
+
+            self.idea_dialog = IdeaResearchDialog(self.host, self)
+        self.idea_dialog.show()
+        self.idea_dialog.raise_()
+        return self.idea_dialog
 
     def run_campaign(self):
         config = self.host.payload(self.campaign_config, lambda: self.campaign_form.build_payload(self.state.backtest_form.build_payload()['config']))

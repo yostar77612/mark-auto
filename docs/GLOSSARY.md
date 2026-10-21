@@ -40,3 +40,9 @@
 - **Confidence interval（信賴區間）**：以樣本重抽分布的百分位估計平均日報酬的不確定範圍；此處預設為 95%。
 - **Required observations（所需樣本數）**：在單尾 alpha 0.05、power 0.8 假設下，以平均日報酬與樣本標準差估算的觀測天數，下限 30 天；不授予研究或紙上資格。
 - **Centered bootstrap（平移重抽）**：每日報酬先扣除樣本平均，再以固定種子重抽，估計沒有優勢時的單尾 p 值。
+
+- **Strategy idea research（上網找策略點子）**：GPT 以網頁搜尋找來源、App 自行抓取並查證後產生最多 3 個策略候選的研究輔助；候選只是研究輸入，不是績效證據或推薦。
+- **Search source（搜尋來源）**：出現在 `web_search_call.action.sources` 或 `url_citation` 中的網址；只有這些網址可進入抓取。
+- **Read source（已讀來源）**：App 自己抓取並擷取到文字的來源（`read`／`partial`）；模型自稱已讀不算。
+- **Verbatim evidence（逐字證據）**：候選引用的原文片段，空白正規化後必須逐字出現在 App 擷取的來源文字中。
+- **Backtestable idea（可回測點子）**：通過來源、逐字證據、內建家族整數參數與僅需 OHLCV 檢查的候選；只能交給既有手動交換與研究流程。

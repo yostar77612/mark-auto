@@ -97,3 +97,23 @@ https://github.com/jrsoftware/issrc/blob/is-6_4_3/license.txt .
 Translator credits remain in the file header (Enfeng Tsao; based on Samuel Lee).
 The language is compiled into the installer, not copied into the installed app
 payload. The build manifest records it as an input; no new download is needed.
+
+## Blave Agent (strategy idea research domain lists)
+
+`quantlab/idea_sources.py` adapts the exchange, broker, bank and payment domain
+lists from Blave Agent `shell/browser/policy.js`
+(https://github.com/Blave-TW/blave-agent, commit
+`c148e83e00d23387bc89a95fde4888989e6b31e1`), licensed under the Apache License 2.0.
+The lists were rewritten in Python and modified: whole domains are blocked
+(including exchange domains), and the lookalike, advertising and exfiltration
+heuristics were not carried over. No Blave code, icons, fonts or images are included.
+
+Blave Agent NOTICE (relevant part):
+
+> Blave Agent
+> Copyright 2025-2026 吾集科技股份有限公司 (WuChi Technology Company Limited)
+>
+> This product includes software developed at Blave (https://blave.org).
+>
+> "Blave" and the Blave logo are trademarks of Blave. Mark Auto is not Blave and
+> is not endorsed by Blave; the feature is named "上網找策略點子", not after Blave.

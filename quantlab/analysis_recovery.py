@@ -46,6 +46,7 @@ SOURCE_WRITERS = frozenset(
         'ui_refresh',
         'ui_market_refresh',
         'ui_campaign',
+        'ui_idea_adopt',
         'ui_walk_forward_run',
         'ui_backup_restore',
         'restore_recovery',
