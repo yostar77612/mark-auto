@@ -2180,6 +2180,37 @@ ZH_TW.update(
     }
 )
 
+# Lane R
+ZH_TW.update(
+    {
+        'walk_forward.statistics.title': '\u6a23\u672c\u5916\u7d71\u8a08',
+        'walk_forward.statistics.source': '\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\uff1b\u4e0d\u540c fold \u7684 OOS \u671f\u9593\u4e0d\u91cd\u758a',
+        'walk_forward.statistics.days': '\u89c0\u6e2c\u5929\u6578\uff1a{0}',
+        'walk_forward.statistics.mean': '\u5e73\u5747\u65e5\u5831\u916c\uff08\u6bd4\u503c\uff09\uff1a{0}',
+        'walk_forward.statistics.p_values': '\u55ae\u5c3e p \u503c\uff1aStudent t = {0}\uff1b\u5e73\u79fb\u91cd\u62bd = {1}',
+        'walk_forward.statistics.interval': '95% \u767e\u5206\u4f4d\u4fe1\u8cf4\u5340\u9593\uff1a[{0}, {1}]',
+        'walk_forward.statistics.required': '\u76ee\u524d {0} \u5929\uff0c\u5efa\u8b70\u81f3\u5c11 {1} \u5929',
+        'walk_forward.statistics.draws': '\u5be6\u969b\u91cd\u62bd\uff1a{0}\uff1b\u7565\u904e\u672a\u6210\u529f\u8a55\u4f30\u7684 fold\uff1a{1}',
+        'walk_forward.statistics.explanation': '\u5047\u8a2d\u6c92\u6709\u512a\u52e2\u6642\uff0c\u51fa\u73fe\u81f3\u5c11\u9019\u9ebc\u597d\u7d50\u679c\u7684\u6a5f\u7387',
+        'walk_forward.statistics.holdout_unconfirmed': '\u6700\u7d42\u4fdd\u7559\u96c6\u6392\u9664\u72c0\u614b\u672a\u78ba\u8a8d\uff0c\u62d2\u7d55\u7d71\u8a08',
+        'walk_forward.statistics.fold_limit': 'fold \u6578\u8d85\u904e 20\uff0c\u62d2\u7d55\u7d71\u8a08',
+        'walk_forward.statistics.fold_index': 'fold \u7d22\u5f15\u7121\u6548\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.missing': '\u7f3a\u5c11\u6bcf\u65e5\u5831\u916c\u6e05\u55ae\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.invalid': '\u6bcf\u65e5\u5831\u916c\u6216\u65e5\u671f\u7121\u6548\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.overlap': '\u6bcf\u65e5\u5831\u916c\u65e5\u671f\u91cd\u758a\u6216\u672a\u905e\u589e\uff0c\u62d2\u7d55\u5408\u4f75',
+        'walk_forward.statistics.no_folds': '\u5c1a\u7121\u6210\u529f\u8a55\u4f30\u7684\u6a23\u672c\u5916 fold',
+        'walk_forward.statistics.missing_value': '\u6bcf\u65e5\u5831\u916c\u6709\u7f3a\u503c\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.nonfinite': '\u6bcf\u65e5\u5831\u916c\u6709\u7f3a\u503c\u6216\u975e\u6709\u9650\u503c\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.range': '\u6bcf\u65e5\u5831\u916c\u8d85\u51fa\u8a08\u7b97\u7bc4\u570d\uff0c\u4e0d\u88dc\u503c',
+        'walk_forward.statistics.too_few': '\u89c0\u6e2c\u6578\u5c11\u65bc 2',
+        'walk_forward.statistics.zero_variance': '\u8b8a\u7570\u6578\u70ba 0',
+        'walk_forward.statistics.test_range': '\u6aa2\u5b9a\u8d85\u51fa\u8a08\u7b97\u7bc4\u570d',
+        'walk_forward.statistics.bootstrap_invalid': '\u91cd\u62bd\u8a2d\u5b9a\u7121\u6548',
+        'walk_forward.statistics.nonpositive': '\u5e73\u5747\u65e5\u5831\u916c\u4e0d\u5927\u65bc 0',
+        'walk_forward.statistics.required_cap': '\u6240\u9700\u6a23\u672c\u6578\u8d85\u904e\u4e0a\u9650 1000000000',
+    }
+)
+
 # Retained non-generic catalog API entries from earlier UI implementations.
 # Current pages use AsyncStatus / the explicit restore-consent message instead.
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required')

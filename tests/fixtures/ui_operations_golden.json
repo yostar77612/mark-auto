@@ -13284,7 +13284,8 @@
           "portfolio_return_reason": "independent_flat_start_folds_not_a_continuous_portfolio",
           "ranking_eligible": false,
           "strategy_qualification": "not_assessed"
-        }
+        },
+        "oos_statistics_text": "樣本外統計\n缺少每日報酬清單，拒絕合併"
       }
     },
     "ui_walk_forward_reconcile": {
@@ -13707,7 +13708,8 @@
           "portfolio_return_reason": "independent_flat_start_folds_not_a_continuous_portfolio",
           "ranking_eligible": false,
           "strategy_qualification": "not_assessed"
-        }
+        },
+        "oos_statistics_text": "樣本外統計\n缺少每日報酬清單，拒絕合併"
       }
     },
     "ui_walk_forward_run": {
@@ -14130,7 +14132,8 @@
           "portfolio_return_reason": "independent_flat_start_folds_not_a_continuous_portfolio",
           "ranking_eligible": false,
           "strategy_qualification": "not_assessed"
-        }
+        },
+        "oos_statistics_text": "樣本外統計\n缺少每日報酬清單，拒絕合併"
       }
     },
     "ui_paper_cancel_all": {

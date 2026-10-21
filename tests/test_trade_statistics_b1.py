@@ -137,7 +137,7 @@ class TradeStatisticsTests(unittest.TestCase):
 
     def test_contract_thresholds_equal_constants(self):
         text = (ROOT / 'docs/agent/IMPLEMENTATION_CONTRACTS.md').read_text(encoding='utf-8')
-        section = text.split('### Lane R \u2014 B1:', 1)[1]
+        section = text.split('### Lane R \u2014 B1:', 1)[1].split('\n### ', 1)[0].split('\n## ', 1)[0]
         rows = [line.split('|')[1:3] for line in section.splitlines() if line.startswith('| ')][2:]
         documented = {code.strip(): constants.strip() for code, constants in rows}
         self.assertEqual(documented, {code: ', '.join(str(v) for v in values) for code, values in THRESHOLDS.items()})

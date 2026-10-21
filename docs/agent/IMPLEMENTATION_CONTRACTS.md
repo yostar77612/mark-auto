@@ -4740,3 +4740,64 @@ path is added. B1 is a single commit of the lane. Evidence:
 `tests/test_trade_statistics_b1.py` covers formulas, precision, flag boundaries,
 threshold-contract parity, invalid input, ordering, privacy and read-only real
 synthetic backtest results. The user's final visual check remains pending.
+
+### Lane R B2: read-only OOS daily-return inference
+
+B2 is a single commit of the lane. `quantlab/significance.py` is a pure stdlib
+module, independently implemented without adapting reference-project code or
+flow. `merge_oos_daily_returns(state)` accepts the state returned by
+`read_walk_forward_state(output_dir)`. It checks the excluded holdout status
+before inspecting folds, never accesses a holdout record, and concatenates only
+folds whose own status and OOS status are both evaluated, in fold-index order.
+Other folds are counted and skipped. At most 20 folds are accepted. Duplicate
+indices, missing/non-list/empty daily-return lists, invalid dates, or any date
+that does not strictly increase reject the entire merge, without a partial
+sample. Missing or non-finite returns invalidate all inference; no row is
+discarded or imputed. Fewer than two observations produce None with reasons;
+zero variance leaves descriptive moments defined but inference undefined.
+
+`mean_positive_test` reports a one-sided Student t tail using the regularized
+incomplete beta continued fraction. The bootstrap shifts the sample to zero
+mean and counts resampled means at least as large as the observed mean. Its p
+value is count / actual resamples, without add-one correction. The confidence
+interval uses the original empirical distribution and linearly interpolated
+percentiles at alpha/2 and 1-alpha/2. Repeated-value large samples use exact
+multinomial counts via beta order-statistic binomial splitting, with the same
+empirical resampling distribution. A private `random.Random(seed)` never changes
+global random state. All non-count statistics, including t and CI bounds, are
+Decimal with exponent -12, ROUND_HALF_EVEN under an isolated precision context;
+float is confined to internal statistical computation. Counts are integers.
+
+| Rule | Fixed value |
+| --- | --- |
+| Default seed | 20261021 |
+| Default resamples / alpha | 5000 / Decimal('0.05') |
+| Bootstrap work target | n * actual <= 50,000,000 |
+| Reduced-resample floor | 1000; this floor takes precedence for n > 50,000, with a note |
+| Requests already under target | unchanged, including requests below 1000 |
+| Planning alpha / power | 0.05 / 0.8 only |
+| Planning z constants | 1.6449 and 0.8416 |
+| Required days | max(30, ceil(((1.6449 + 0.8416) * sd / mean)^2)) |
+| Required-days cap | 1,000,000,000; larger estimates are None with a reason |
+| Invalid planning moments | mean <= 0 or sd == 0 are None with reasons |
+
+`desktop_walk_forward.oos_statistics_text` builds the catalog-based statistics
+block during worker compaction. The compact IPC object includes only bounded
+derived display text, never raw daily-return arrays. The existing result panel
+displays the precomputed text without recomputing on refresh or paint. Its label
+is created only after a result arrives, preserving the default page layout.
+The explanation is fixed: 假設沒有優勢時，出現至少這麼好結果的機率。
+These are derived display data: nothing is written back to results, metrics,
+journals, manifests, content_hash, reproducibility_hash, state_hash or any file.
+There is no effect on eligibility, candidate selection, ranking or paper
+permission. Frozen sources, OOS consumption, budgets and timeouts remain
+unchanged. Live trading remains permanently disabled; no order path is added.
+
+`tests/fixtures/significance_goldens.json` contains literal offline SciPy 1.16.3
+one-sided t-test oracles for n=2, 5, 30, 60 and 500, including the generating
+script text. `tools/generate_significance_goldens.py` is a development-only
+regenerator; neither tests nor product imports SciPy. `tests/test_significance_b2.py`
+covers numeric goldens, precision, deterministic bootstrap, the independent
+small-case resampling reference, caps, zero variance, missing data, strict date
+merging, holdout refusal, bounded compaction and unchanged synthetic journal
+bytes and hashes. The user's final visual check remains pending.

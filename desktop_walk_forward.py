@@ -8,6 +8,7 @@ from desktop_strings import ui_text
 from pathlib import Path
 import json
 import re
+from quantlab import significance as _significance
 
 from quantlab.core import ValidationError, canonical_json, content_hash, to_dict
 from quantlab.walk_forward import (
@@ -206,6 +207,7 @@ def compact_walk_forward(state, reference):
         'folds': folds,
         'elapsed_seconds': state['elapsed_seconds'],
         'journal': 'walk_forward/' + reference + '/walk_forward.sqlite3',
+        'oos_statistics_text': oos_statistics_text(state),
     }
 
 
@@ -343,6 +345,55 @@ STATUS_LABELS = {
 def status_label(value):
     """Display translation only; exact machine values stay in saved evidence."""
     return STATUS_LABELS.get(value, ui_text('walk_forward.status_label.no_confirmed_record'))
+
+
+def oos_statistics_text(state):
+    """Qt-free, worker-only derived text; never project raw daily returns to IPC."""
+    merged = _significance.merge_oos_daily_returns(state)
+    title = ui_text('walk_forward.statistics.title')
+    if merged['reason']:
+        reasons = {
+            'holdout_status_unconfirmed': ui_text('walk_forward.statistics.holdout_unconfirmed'),
+            'fold_limit_exceeded': ui_text('walk_forward.statistics.fold_limit'),
+            'fold_index_invalid': ui_text('walk_forward.statistics.fold_index'),
+            'daily_returns_missing': ui_text('walk_forward.statistics.missing'),
+            'daily_returns_invalid': ui_text('walk_forward.statistics.invalid'),
+            'dates_not_strictly_increasing': ui_text('walk_forward.statistics.overlap'),
+            'no_evaluated_folds': ui_text('walk_forward.statistics.no_folds'),
+        }
+        return title + '\n' + reasons[merged['reason']]
+    stats = _significance.mean_positive_test(merged['returns'])
+    required = _significance.required_observations(merged['returns'])
+    reasons = {
+        _significance.MISSING: ui_text('walk_forward.statistics.missing_value'),
+        _significance.NONFINITE: ui_text('walk_forward.statistics.nonfinite'),
+        _significance.OUT_OF_RANGE: ui_text('walk_forward.statistics.range'),
+        _significance.TOO_FEW: ui_text('walk_forward.statistics.too_few'),
+        _significance.ZERO_VARIANCE: ui_text('walk_forward.statistics.zero_variance'),
+        _significance.TEST_RANGE: ui_text('walk_forward.statistics.test_range'),
+        _significance.BOOTSTRAP_INVALID: ui_text('walk_forward.statistics.bootstrap_invalid'),
+        _significance.NONPOSITIVE: ui_text('walk_forward.statistics.nonpositive'),
+        _significance.REQUIRED_CAP: ui_text('walk_forward.statistics.required_cap'),
+    }
+
+    def value(key):
+        return str(stats[key]) if stats[key] is not None else reasons[stats[key + '_reason']]
+
+    return '\n'.join(
+        (
+            title,
+            ui_text('walk_forward.statistics.source'),
+            ui_text('walk_forward.statistics.days').format(value('n')),
+            ui_text('walk_forward.statistics.mean').format(value('mean')),
+            ui_text('walk_forward.statistics.p_values').format(value('p_value_t'), value('p_value_bootstrap')),
+            ui_text('walk_forward.statistics.interval').format(value('ci_lower'), value('ci_upper')),
+            ui_text('walk_forward.statistics.required').format(
+                value('n'), required['required_observations'] or reasons[required['required_observations_reason']]
+            ),
+            ui_text('walk_forward.statistics.draws').format(value('n_bootstrap_actual'), merged['skipped_folds']),
+            ui_text('walk_forward.statistics.explanation'),
+        )
+    )
 
 
 def preview_text(preview, *, advanced=False):
