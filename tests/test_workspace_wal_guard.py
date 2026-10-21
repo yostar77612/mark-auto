@@ -198,7 +198,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
             for node in tree.body
             if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == '_UI_OPERATION_HANDLERS' for target in node.targets)
         )
-        broker = types.SimpleNamespace(reconcile=lambda snapshot: None, _margin_schedule=())
+        broker = types.SimpleNamespace(reconcile=lambda snapshot: None, snapshot=lambda: {}, _margin_schedule=())
         namespace = {
             'UI_OPERATIONS': {'ui_paper_replay'},
             '_root': lambda paths: paths.state,

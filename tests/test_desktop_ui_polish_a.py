@@ -42,7 +42,15 @@ class DesktopPolishATests(unittest.TestCase):
 
     def test_p0_02_roles_names_and_confirmation(self):
         w = self.window
-        expected = {'paper_kill', 'paper_cancel', 'restore_backup', 'instrument_expiries_remove', 'risk_sessions_remove', 'margin_schedule_remove'}
+        expected = {
+            'paper_kill',
+            'paper_cancel',
+            'paper_cancel_all',
+            'restore_backup',
+            'instrument_expiries_remove',
+            'risk_sessions_remove',
+            'margin_schedule_remove',
+        }
         danger = {b.objectName() for b in w.findChildren(QPushButton) if b.property('role') == 'danger'}
         self.assertEqual(danger, expected)
         for i in range(w.stack.count()):
