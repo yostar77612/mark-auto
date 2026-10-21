@@ -4943,3 +4943,74 @@ The fixed disclaimer is: 假設每日獨立同分布、不複利、不代表市�
 uniform draws, additive capital, threshold crossing, percentiles, cancellation,
 deadlines, read-only journal access, operation registration and lazy UI behavior.
 The user's final visual check remains pending.
+
+## Strategy idea research (web search, application-verified)
+
+Operations `ui_idea_research` and `ui_idea_adopt` are registered in both
+`UI_OPERATIONS` sets. `ui_idea_research` belongs to no recovery family (like
+`ui_chatgpt_usage`); `ui_idea_adopt` is in `SOURCE_WRITERS` because it writes a
+campaign through the existing manual path. The research job deadline is
+150 s plus the existing 10 s worker margin.
+
+Payload allowlists: `{request, registration, model}` or
+`{retry_task_id, consent, registration, model}`; consent must equal
+`{"network": true, "plan_usage": true}` on every run and the dialog clears
+both boxes after each launch. Registration is a 32-hex opaque reference; the
+worker requires `read_account_status == ready` before any request. Adoption
+accepts exactly `{task_id, candidate_id, config}`.
+
+Stage 1 is one streamed Responses call reusing `PlanHTTPTransport` by import
+(`store:false`, `stream:true`, instructions plus one user message, no system
+role, no function tools, no `max_tool_calls`/`temperature`/`max_output_tokens`).
+The only tool is `{"type":"web_search"}` with `filters.blocked_domains`
+(at most 100, from `quantlab/idea_sources.py`), `user_location`
+(approximate, TW, Asia/Taipei) and `include:["web_search_call.action.sources"]`.
+The input contains only market, timeframe, family hint and direction text.
+The application counts `web_search_call` items and closes the stream on the
+seventh item or after 90 s, continuing with what it received
+(`stop_reason=search_limit|search_timeout`). The search log is written only
+from `web_search_call` events.
+
+Only URLs present in returned sources or `url_citation` are fetched
+(`not_in_search_results` otherwise); then the URL policy, at most 2 per site and
+8 in total. Unsupported capability, HTTP 400 or a tool-refusal code ends as
+`search_unavailable`; the dialog offers the fixed source list or pasted URLs,
+never a paid API. Usage-limit codes end as `quota_paused` and persist the
+existing account pause.
+
+Stage 2 (`quantlab/web_fetch.py`) fetches with no proxy (any detected system
+proxy refuses), no cookies or credentials, `https` port 443 only, no automatic
+redirects (at most 3 manual hops, each re-checked), every resolved address and
+the connected peer public (checked before any byte is sent), blocked exchange,
+broker, bank and payment domains, 2 MiB and 15 s per page (`partial` when cut),
+3 concurrent pages, 15,000 characters per page and 60,000 in total, and no
+automatic retry. 401/403/407/451, password forms and paywall markers are
+`blocked`. Text is sanitized (control/format characters and chat-role markers
+removed). Source states are pending, loading, read, partial, failed, blocked or
+cancelled, emitted only by the worker. Successful pages are cached for 24 h;
+page texts and cache entries are deleted after 7 days or by
+「清除研究暫存」. Records store titles, URLs, text SHA-256 and quotes only.
+
+Stage 3 is one tool-free call whose user message is a JSON document with each
+source as `untrusted_text`. Stage 4 keeps at most 3 candidates and never pads:
+`unknown_source`, `quote_not_found`, `data_unavailable`, `needs_custom_rules`,
+`invalid_parameters`, `duplicate_candidate` or `invalid_candidate`. Only the 5
+built-in families, `rules={}` and integer parameters within
+`registry_json_schema` bounds can be backtestable. Model calls per job are at
+most 2; there is no extraction retry. A cancelled job never calls the model again.
+
+Adoption builds a manual exchange v1 response for a single-family config
+(`families=[family]`, `max_improvements=0`, `max_trials=1`, other settings
+unchanged) and calls the existing `ui_campaign` manual handler; the result then
+uses the existing `ui_backtest` candidate path. Adopting the same idea twice
+reopens the same content-addressed campaign without rewriting it. Cancelling uses
+the existing process-tree stop; the dialog then shows unfinished sources as
+cancelled. Results open in the system browser (https only); all web text is
+plain text. `tools/validate_web_search.py --model <slug> --i-consent` sends one
+request and prints only codes, counts, parameter acceptance and elapsed time;
+`--list-models --i-consent` reads only the model catalog (display name and
+model value), with no search or inference.
+Tests: `tests/test_web_fetch.py`, `tests/test_idea_search.py`,
+`tests/test_idea_research.py`, `tests/test_idea_research_ui.py` (T1-T19, offline).
+Plan/model availability of web search, usage accounting and the real dialog
+remain unverified until the owner runs the documented account checks.

@@ -1950,6 +1950,8 @@
       ],
       "LOG_OPERATION_NAMES": {
         "ui_capital_scenario": "logs.operation.ui_capital_scenario",
+        "ui_idea_research": "logs.operation.ui_idea_research",
+        "ui_idea_adopt": "logs.operation.ui_idea_adopt",
         "ui_demo": "logs.operation.ui_demo",
         "ui_import": "logs.operation.ui_import",
         "ui_refresh": "logs.operation.ui_refresh",

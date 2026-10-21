@@ -18,6 +18,7 @@ from pathlib import Path
 import tempfile
 import sys
 import unittest
+import uuid
 from unittest.mock import patch
 
 import desktop_ui as ui
@@ -29,6 +30,8 @@ from tests.test_walk_forward import inputs, fake_worker
 
 
 FIXTURES = Path(__file__).parent / 'fixtures'
+# Operations added after the committed pre-refactor module; asserted against their own golden entries.
+NEW_OPERATIONS = ('ui_paper_cancel_all', 'ui_capital_scenario', 'ui_idea_research', 'ui_idea_adopt')
 
 
 def golden_observations():
@@ -37,7 +40,7 @@ def golden_observations():
     return {
         name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}}
         for name, entry in observations.items()
-        if name not in ('ui_paper_cancel_all', 'ui_capital_scenario')
+        if name not in NEW_OPERATIONS
     }
 
 
@@ -362,6 +365,28 @@ def exercise(execute):
         backup = paths.root.parent / 'offline.zip'
         call('ui_backup_create', {'path': str(backup)})
         call('ui_backup_restore', {'path': str(backup)})
+        if 'ui_idea_research' in getattr(sys.modules.get(execute.__module__), 'UI_OPERATIONS', ()):
+            # Offline: the fixture transport reports that the plan cannot use web search.
+            from desktop_chatgpt_provider import PlanError
+
+            class Unsupported:
+                def stream(self, *args, **kwargs):
+                    raise PlanError('invalid_request', http_status=400, remote_code='subscription_sharing_unsupported_capability')
+
+            request = {
+                'instrument': 'TMF',
+                'timeframe': '1d',
+                'direction': {'family_hint': 'channel_breakout', 'text': ''},
+                'discovery': 'web_search',
+                'consent': {'network': True, 'plan_usage': True},
+            }
+            with (
+                patch('desktop_chatgpt_provider.PlanHTTPTransport', Unsupported),
+                patch('quantlab.idea_research.uuid.uuid4', return_value=uuid.UUID(int=1)),
+                patch('quantlab.idea_research.time.strftime', return_value='2026-01-05T00:00:00Z'),
+            ):
+                call('ui_idea_research', {'request': request, 'registration': 'a' * 32, 'model': 'gpt-fixture'})
+            call('ui_idea_adopt', {'task_id': 'idea-' + uuid.UUID(int=1).hex, 'candidate_id': 'c1', 'config': {}})
         # The prefix includes both workspace and bootstrap, in native and JSON paths.
         raw = json.dumps(observations, ensure_ascii=False, sort_keys=True)
         # CI runners expose the same temp directory as a short (8.3) name and as the resolved long name;
@@ -404,7 +429,7 @@ class RegistryTests(unittest.TestCase):
                     for execute in (old.execute_ui_operation, ui.execute_ui_operation):
                         results.append(exercise(execute))
                         self.assertEqual({key: os.environ[key] for key in host_environment}, host_environment)
-                    self.assertEqual({k: v for k, v in results[1].items() if k not in ('ui_paper_cancel_all', 'ui_capital_scenario')}, results[0])
+                    self.assertEqual({k: v for k, v in results[1].items() if k not in NEW_OPERATIONS}, results[0])
                     if sys.platform == 'win32':
                         # The golden (hashes of CRLF working-copy sources, Windows path spellings) was
                         # recorded on Windows; other platforms rely on the live old-vs-new equality above.
@@ -448,15 +473,21 @@ class RegistryTests(unittest.TestCase):
         expected['observations'] = portable_paths(golden_observations())
         new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']['ui_paper_cancel_all']
         expected['observations']['ui_paper_cancel_all'] = portable_paths({k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}})
-        new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']['ui_capital_scenario']
-        expected['observations']['ui_capital_scenario'] = {k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}}
+        for name in ('ui_capital_scenario', 'ui_idea_research', 'ui_idea_adopt'):
+            new_entry = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations'][name]
+            expected['observations'][name] = {k: v for k, v in new_entry.items() if k not in {'source', 'review', 'precision'}}
         self.assertEqual(set(expected['offline_limits']), {'ui_refresh'})
         with old_module() as old:
             legacy = exercise(old.execute_ui_operation)
         self.assertEqual(set(observed), set(expected['observations']))
         for operation in observed:
             with self.subTest(operation=operation):
-                if operation in ('ui_paper_cancel_all', 'ui_capital_scenario'):
+                if operation == 'ui_idea_adopt':
+                    # Adoption of an unfinished idea must fail closed before any campaign is written.
+                    self.assertNotIn('result', observed[operation])
+                    self.assertEqual(observed[operation], expected['observations'][operation])
+                    continue
+                if operation in NEW_OPERATIONS:
                     self.assertIn('result', observed[operation], 'Offline operation must succeed')
                     self.assertEqual(observed[operation], expected['observations'][operation])
                     continue

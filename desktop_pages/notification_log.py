@@ -29,6 +29,9 @@ def safe_summary(operation, result):
     if operation == 'ui_capital_scenario':
         status = result.get('status')
         safe['status'] = status if status in ('completed', 'cancelled', 'timed_out', 'rejected') else 'rejected'
+    if operation == 'ui_idea_research':
+        status = result.get('status')
+        safe['status'] = status if status in ('completed', 'cancelled', 'search_unavailable', 'quota_paused', 'no_sources', 'failed') else 'failed'
     for field in ('reports', 'rows', 'downloads', 'attempts', 'selected', 'receipts'):
         value = result.get(field)
         if type(value) in (list, tuple, dict):

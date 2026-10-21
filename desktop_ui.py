@@ -61,6 +61,8 @@ UI_OPERATIONS = frozenset(
         'paper_cancel',
         'paper_cancel_all',
         'capital_scenario',
+        'idea_research',
+        'idea_adopt',
         'backup_create',
         'backup_restore',
     )
@@ -1064,6 +1066,102 @@ def _handle_ui_capital_scenario(payload, paths, root, *, emit=None, descendants_
     return _capital.execute(payload, paths)
 
 
+def _idea_event_caller(reference, transport):
+    """Stream one Responses call through the shared transport; yield parsed SSE events."""
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_chatgpt_provider import SSEParser
+
+    def call(request, limits, cancelled):
+        # Search events carry source lists; allow larger single events than candidate calls.
+        parser = SSEParser(max_bytes=limits['max_response_bytes'], max_event_bytes=1048576, max_events=8192)
+        stream = transport.stream(reference, request, limits, cancelled)
+        try:
+            for chunk in stream:
+                yield from parser.feed(chunk)
+            parser.finish()
+        finally:
+            stream.close()
+
+    return call
+
+
+def _handle_ui_idea_research(payload, paths, root, *, emit=None, descendants_stopped=False, transport=None, fetcher=None):
+    # Keep operation-specific dependencies out of module startup.
+    from quantlab.idea_research import IdeaResearch, IdeaStore, new_task
+
+    # Load the optional UI adapter only when this operation is requested.
+    from desktop_chatgpt_auth import OAuthCredentialReference
+
+    # Reuse the existing verified-TLS, no-redirect, bounded transport by import only.
+    from desktop_chatgpt_provider import PlanHTTPTransport, _persist_account_pause, read_account_status
+
+    retry = 'retry_task_id' in payload
+    if set(payload) != ({'retry_task_id', 'consent', 'registration', 'model'} if retry else {'request', 'registration', 'model'}):
+        raise ValidationError(ui_text('idea.invalid_request'))
+    if (payload['consent'] if retry else payload['request'].get('consent')) != {'network': True, 'plan_usage': True}:
+        raise ValidationError(ui_text('idea.consent_required'))
+    bootstrap = str(getattr(paths, 'bootstrap', None) or paths.root)
+    reference = OAuthCredentialReference(bootstrap, payload['registration'])
+    if transport is None:
+        if read_account_status(reference, Path(bootstrap) / 'control-v1') != {'state': 'ready', 'pending': False}:
+            raise ValidationError(ui_text('idea.account_not_ready'))
+        transport = PlanHTTPTransport()
+    store = IdeaStore(root)
+    task = store.load(payload['retry_task_id']) if retry else new_task(payload['request'])
+
+    messages = {
+        'task': ui_text('idea.progress.task'),
+        'search': ui_text('idea.progress.search'),
+        'urls': ui_text('idea.progress.urls'),
+        'source': ui_text('idea.progress.source'),
+        'extracting': ui_text('idea.progress.extracting'),
+        'candidates': ui_text('idea.progress.candidates'),
+        'status': ui_text('idea.progress.status'),
+    }
+
+    def progress(kind, **values):
+        if emit is not None:
+            event = values.get('idea_event') or {}
+            emit(kind, **{**values, 'message': messages.get(event.get('kind'), messages['status'])})
+
+    research = IdeaResearch(task, caller=_idea_event_caller(reference, transport), model=payload['model'], root=root, emit=progress, fetcher=fetcher)
+    record = research.retry_failed() if retry else research.run()
+    if record['status'] == 'quota_paused':
+        _persist_account_pause(reference, 'quota_paused')
+    return {
+        'task_id': record['task_id'],
+        'status': record['status'],
+        'stop_reason': record['stop_reason'],
+        'searches': len(record['searches']),
+        'sources': len(record['sources']),
+        'candidates': len(record['candidates']),
+        'backtestable': sum(1 for c in record['candidates'] if c.get('backtestable')),
+    }
+
+
+def _handle_ui_idea_adopt(payload, paths, root, *, emit=None, descendants_stopped=False):
+    # Keep operation-specific dependencies out of module startup.
+    from quantlab.idea_research import IdeaStore, adoption_candidate, adoption_config, manual_response
+
+    # Keep operation-specific dependencies out of module startup.
+    from quantlab.manual_exchange import export_request
+
+    # Keep operation-specific dependencies out of module startup.
+    from quantlab.__main__ import config_from_json
+
+    if set(payload) != {'task_id', 'candidate_id', 'config'}:
+        raise ValidationError(ui_text('idea.invalid_request'))
+    candidate = adoption_candidate(IdeaStore(root).load(payload['task_id']), payload['candidate_id'])
+    config = adoption_config(payload['config'], candidate['family'])
+    checked = dict(config)
+    if isinstance(checked.get('backtest_config'), dict):
+        checked['backtest_config'] = config_from_json(checked['backtest_config'])
+    response = manual_response(export_request(_dataset(root, {}), checked), candidate)
+    # The existing manual campaign path seals, evaluates and saves; nothing existing is replaced.
+    state = _handle_ui_campaign({'config': config, 'provider': {'mode': 'manual', 'response_text': response}}, paths, root, emit=emit)
+    return state
+
+
 def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
     from desktop_walk_forward import execute_walk_forward
@@ -1094,6 +1192,8 @@ def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_
 
 _UI_OPERATION_HANDLERS = {
     'ui_capital_scenario': _handle_ui_capital_scenario,
+    'ui_idea_research': _handle_ui_idea_research,
+    'ui_idea_adopt': _handle_ui_idea_adopt,
     'ui_analysis_preview': _handle_ui_analysis_preview,
     'ui_analysis_read': _handle_ui_analysis_read,
     'ui_analysis_reconcile': _handle_ui_analysis_reconcile,
@@ -1549,6 +1649,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 # Keep operation-specific presentation out of the shell.
                 import desktop_capital_scenario as _capital
                 if _capital.event(self, event): continue
+                # Keep operation-specific presentation out of the shell.
+                import desktop_pages.idea_research as _ideas
+                if _ideas.event(self, event): continue
                 if self._walk_forward_event(event): continue
                 if self._analysis_event(event): continue
                 kind = event.get('type', '')

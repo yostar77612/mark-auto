@@ -50,6 +50,10 @@ class GoldenMetadataTests(unittest.TestCase):
                 del document[collection]['ui_paper_cancel_all']
                 self.assertIn(document[collection]['ui_capital_scenario']['result']['status'], ('completed', 'rejected'))
                 del document[collection]['ui_capital_scenario']
+                self.assertEqual(document[collection]['ui_idea_research']['result']['status'], 'search_unavailable')
+                self.assertEqual(document[collection]['ui_idea_adopt']['exception'], 'ValidationError')
+                del document[collection]['ui_idea_research']
+                del document[collection]['ui_idea_adopt']
             canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
             self.assertEqual(hashlib.sha256(canonical).hexdigest(), BASELINE[name])
         report = inventory.count_unverified(FIXTURES)

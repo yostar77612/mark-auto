@@ -60,11 +60,12 @@
     "AI 策略中心": {
       "page_height": 828,
       "visible_input_count": 7,
-      "button_count": 3,
+      "button_count": 4,
       "label_char_count": 119,
       "visible_text": [
         "AI 策略中心",
         "使用 ChatGPT 帳戶登入",
+        "上網找策略點子",
         "尚未核對本機連線；沒有自動登入或網路請求。",
         "策略家族",
         "均線趨勢",
@@ -96,7 +97,7 @@
       "disabled_buttons": [],
       "primary_button_count": 0,
       "subpages": {
-        "策略設定": 547,
+        "策略設定": 593,
         "AI 研究": 502,
         "Walk-forward 驗證": 867
       },
