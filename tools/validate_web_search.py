@@ -58,10 +58,12 @@ def _reference(registration, bootstrap):
     root = Path(bootstrap) if bootstrap else AppPaths.discover().root
     registration = registration or AuthSession(DPAPIVault(str(root))).status_summary()['active_registration']
     if not registration:
-        return None, 'not_signed_in'
+        return None, {'error_code': 'not_signed_in'}
     reference = OAuthCredentialReference(str(root), registration)
-    if read_account_status(reference, root / 'control-v1') != {'state': 'ready', 'pending': False}:
-        return None, 'account_not_ready'
+    status = read_account_status(reference, root / 'control-v1')
+    if status != {'state': 'ready', 'pending': False}:
+        # Fixed local status codes only (for example quota_paused or reserved_unknown).
+        return None, {'error_code': 'account_not_ready', 'account_state': status.get('state'), 'pending_request': status.get('pending')}
     return reference, None
 
 
@@ -72,7 +74,7 @@ def list_models(*, registration=None, bootstrap=None, reference=None, discover=N
     if reference is None:
         reference, error = _reference(registration, bootstrap)
         if error:
-            return {'status': 'error', 'error_code': error, 'models': []}
+            return {'status': 'error', **error, 'models': []}
     try:
         models = (discover or discover_models)(reference, network_opt_in=True)
     except PlanError as exc:
@@ -93,7 +95,7 @@ def run(model, *, registration=None, bootstrap=None, transport=None, reference=N
     if reference is None:
         reference, error = _reference(registration, bootstrap)
         if error:
-            return summarize(None, ok=False, error=error, elapsed=0, include_seen=False)
+            return {**summarize(None, ok=False, error=error['error_code'], elapsed=0, include_seen=False), **error}
     request = build_search_request(model, TOPIC_TASK)
     session = SearchSession(clock=clock)
     started = clock()

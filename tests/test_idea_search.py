@@ -210,3 +210,27 @@ class ListModelsTests(unittest.TestCase):
         self.assertEqual(tool.list_models(reference=object(), discover=failing)['error_code'], 'account_paused')
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             tool.main(['--i-consent'])
+
+
+class AccountStatusTests(unittest.TestCase):
+    def test_not_ready_reports_fixed_state_codes_without_network(self):
+        # Import the developer tool only in the tests that exercise it.
+        from tools import validate_web_search as tool
+
+        status = {'state': 'reserved_unknown', 'pending': True}
+        with (
+            patch('desktop_chatgpt_auth.AuthSession') as session,
+            patch('desktop_chatgpt_auth.DPAPIVault'),
+            patch('desktop_chatgpt_provider.read_account_status', return_value=status),
+            patch('desktop_chatgpt_provider.discover_models', side_effect=AssertionError('no network')),
+            patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('no network')),
+        ):
+            session.return_value.status_summary.return_value = {'active_registration': 'a' * 32}
+            listed = tool.list_models(bootstrap=str(Path.home()))
+            searched = tool.run('gpt-fixture', bootstrap=str(Path.home()))
+        for result in (listed, searched):
+            self.assertEqual(
+                (result['status'], result['error_code'], result['account_state'], result['pending_request']),
+                ('error', 'account_not_ready', 'reserved_unknown', True),
+            )
+            self.assertNotIn('a' * 32, json.dumps(result))
