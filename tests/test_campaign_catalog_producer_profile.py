@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class CampaignCatalogProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 19)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 21)
         self.assertEqual(content_hash(PREVIOUS), '797b5bcfcf94f111144eda6cb6cc01a0c9cc6b24ec9aa2d9d9dec3b34d78c729')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[17], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[18], PROFILE)
@@ -30,7 +30,8 @@ class CampaignCatalogProducerProfileTests(unittest.TestCase):
         self.assertEqual(restored, PREVIOUS)
 
     def test_pins_match_reviewed_lf_and_crlf_bytes(self):
-        for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
+        latest = pools.UNKNOWN_RECONCILIATION_SIWC_PROFILE_V1
+        for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
