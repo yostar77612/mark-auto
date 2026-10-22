@@ -41,12 +41,19 @@ class ViewCoordinator(PageContext):
                 self.overview.setText(error_message(exception_code(exc)))
         else:
             self.overview.setText(ui_text('ui.refresh_views.no_data'))
+        # Keep the module's public names unchanged; only this refresh needs the error type.
+        from quantlab.core import ValidationError
+
         stamp = content_hash(to_dict(data.manifest)) if data is not None else None
         if stamp != self._wf_source_stamp:
             first_source = self._wf_source_stamp is None
             self._wf_source_stamp = stamp
             if data is not None and first_source:
-                self.walk_forward_form.defaults_for_bars(len(data.bars))
+                try:
+                    self.walk_forward_form.defaults_for_bars(len(data.bars))
+                except ValidationError:
+                    # Too few bars for walk-forward defaults; the run itself still validates.
+                    pass
             self._invalidate_walk_forward_preview()
         self._dataset_ready = data is not None
         self.load_market_cache()
@@ -54,8 +61,12 @@ class ViewCoordinator(PageContext):
             # Keep this dependency local to the stage that uses it.
             from quantlab.research import demo_campaign_config
 
-            self.campaign_form.from_payload(to_dict(demo_campaign_config(data, demo_config())))
-            self._campaign_data_hash = data.manifest['data_hash']
+            try:
+                self.campaign_form.from_payload(to_dict(demo_campaign_config(data, demo_config())))
+                self._campaign_data_hash = data.manifest['data_hash']
+            except ValidationError:
+                # Too few bars for demo research defaults; keep the form and let research validate.
+                pass
         self.run_button.setEnabled(data is not None and not self.jobs.active)
 
     def _refresh_result_choices(self):
