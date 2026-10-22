@@ -1,6 +1,6 @@
 # 全功能測試與發布：交接進度
 
-最後更新：2026-10-22（UTC 13:0x）。這份檔案在每個段落結束時更新，讓接手者（人或其他代理）知道目前狀態。
+最後更新：2026-10-22（UTC 13:1x）。這份檔案在每個段落結束時更新，讓接手者（人或其他代理）知道目前狀態。
 
 ## 任務來源
 
@@ -28,6 +28,12 @@
 3. 在乾淨 main（`8c4c870`）跑 core（desktop、paper、remaining）與 research 分片；以臨時工作區與 bootstrap 逐頁操作（4 組功能區，Sonnet 代理），並以 `tools/ui_readability_audit.py`（offscreen 與真實視窗）驗證深色／淺色可讀性。
 4. 修正可修的問題（各自分支與 PR），寫 `docs/qa/` 測試報告並開 PR。
 
+## 下一步（目前）
+
+1. main `8c4c870` 離線測試依 G8 重跑中；通過後重跑安裝檔工作流程的 release 步驟，取得新 preview。
+2. PR #79 CI 全綠後 squash 合併。
+3. 本 QA 分支開 PR（報告 `docs/qa/full-function-test-2026-10-22.md`、稽核工具、本檔），CI 全綠後合併；合併後更新報告的發布紀錄。
+
 ## 已知問題
 
 - 本機（Windows、無 symlink 權限）既有測試錯誤：`test_analysis_recovery`、`test_automatic_backup`、`test_chatgpt_auth`、`test_downloads`、`test_market`、`test_market_history`、`test_notice_collector`、`test_qt_licenses`、`test_reporting` 的 symlink／hardlink 測試（WinError 1314），以及 `test_windows_recovery_feasibility`、`test_test_group` 的原生程序測試；在乾淨 main 上同樣失敗。
@@ -49,8 +55,8 @@
 
 ### 已驗證的問題
 
-1. （中）匯入少於 16 根 K 棒的有效資料後，`desktop_pages/views.py` `_refresh_dataset_views` 無最小根數檢查，`defaults_for_bars`（需 8 根）拋錯，被 `poll_jobs` 當成失敗，顯示「驗證失敗」且無完成通知；重開程式仍出現。→ 修正中。
-2. （輕）手動交換驗證錯誤只顯示「作業執行失敗」，因 `desktop_pages/job_progress.py` `failure_notice` 忽略 `error_code`。
+1. （中，PR #79 修正中）匯入少於 16 根 K 棒的有效資料後，`desktop_pages/views.py` `_refresh_dataset_views` 無最小根數檢查，`defaults_for_bars`（需 8 根）拋錯，被 `poll_jobs` 當成失敗，顯示「驗證失敗」且無完成通知；重開程式仍出現。→ PR #79（`fix/short-dataset-refresh`），CI 執行中。
+2. （輕，未修，待擁有者決定訊息規則）手動交換驗證錯誤只顯示「作業執行失敗」，因 `desktop_pages/job_progress.py` `failure_notice` 忽略 `error_code`。
 
 ## 尚未測試的功能
 
