@@ -562,6 +562,58 @@ class PlanTests(unittest.TestCase):
                     pass
         assert b'fixture-oauth-secret' not in pickle.dumps(provider(self.tmp_path))
 
+    def test_p1_missing_stream_content_type_still_requires_a_valid_completed_stream(self):
+        # Owner-approved 2026-10-23: the official streamed reply can omit Content-Type entirely.
+        import time
+
+        p = provider(self.tmp_path)
+        reference = p.credential_reference
+        limits = dict(deadline=time.monotonic() + 30, stall_seconds=10, max_request_bytes=65536, max_response_bytes=262144)
+        request = {'model': 'fixture-model', 'input': [], 'instructions': 'mock', 'stream': True, 'store': False}
+        with patch('http.client.HTTPSConnection', FakeHTTPS), patch.object(OAuthCredentialReference, '__call__', return_value='fixture-oauth-secret'):
+            FakeResponse.status = 200
+            FakeResponse.headers = {}
+            FakeResponse.chunks = [frame(terminal())]
+            self.assertEqual(list(RealTransport().stream(reference, request, limits)), [frame(terminal())])
+
+            class RealStream(RealTransport):
+                # Only the catalog GET uses the fixture; the streamed POST uses the real wire checks.
+                def models(self, reference, limits, cancelled):
+                    return MockTransport().models(reference, limits, cancelled)
+
+            with patch('desktop_chatgpt_provider.PlanHTTPTransport', RealStream):
+                # The full provider path still parses strictly and records a completed receipt.
+                FakeResponse.chunks = [frame(terminal())]
+                self.assertEqual(p.generate({'family': 'trend'}), CANDIDATE)
+                self.assertEqual([row['status'] for row in p.read_receipts()], ['completed'])
+                for name, chunks in (('garbage', [b'<html>not a stream</html>']), ('no_completion', [frame({'type': 'response.created'})])):
+                    with self.subTest(body=name):
+                        q = provider(self.tmp_path / name)
+                        FakeResponse.headers = {}
+                        FakeResponse.chunks = list(chunks)
+                        with self.assertRaises(PlanError):
+                            q.generate({'family': 'trend'})
+                        self.assertNotEqual(q.read_receipts()[-1]['status'], 'completed')
+            # A present but different (or empty) type is still refused, and GET always needs JSON.
+            for headers in (
+                {'Content-Type': ''},
+                {'Content-Type': 'application/json'},
+                {'Content-Type': 'text/html; charset=utf-8'},
+                {'Content-Type': 'text/plain'},
+            ):
+                with self.subTest(headers=headers):
+                    FakeResponse.headers = headers
+                    FakeResponse.chunks = [frame(terminal())]
+                    with self.assertRaises(PlanError) as caught:
+                        list(RealTransport().stream(reference, request, limits))
+                    self.assertEqual(caught.exception.code, 'invalid_content_type')
+            FakeResponse.headers = {}
+            FakeResponse.chunks = [b'{"models":[]}']
+            with self.assertRaises(PlanError) as caught:
+                RealTransport().models(reference, limits, None)
+            self.assertEqual(caught.exception.code, 'invalid_content_type')
+            FakeResponse.headers = {'Content-Type': 'text/event-stream'}
+
     def test_p5_multiprocess_atomic_pending_barrier(self):
         context = multiprocessing.get_context('spawn')
         queue = context.Queue()
