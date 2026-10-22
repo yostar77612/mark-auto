@@ -1053,3 +1053,661 @@ class PlanTests(unittest.TestCase):
                     self.assertEqual(metadata.call_count, 2)
                 self.assertEqual(a.read_receipts(), [])
                 self.assertEqual(b.read_receipts(), [])
+
+
+def competing_unknown_resolution(path, ready, release, results):
+    """Two fresh workers contend for one synthetic, already-aged receipt."""
+    from desktop_chatgpt_provider import ACKNOWLEDGEMENT_VERSION, resolve_unknown_request
+
+    root = Path(path)
+    reference = OAuthCredentialReference(str(root / 'auth'), 'a' * 32)
+    with (
+        patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+        patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP')),
+        patch.object(OAuthCredentialReference, '__call__', side_effect=AssertionError('No credential access')),
+    ):
+        ready.put(True)
+        if not release.wait(10):
+            raise AssertionError('Fixture synchronization failed')
+        try:
+            resolve_unknown_request(reference, root / 'auth' / 'control-v1', user_confirmed=True, acknowledgement_version=ACKNOWLEDGEMENT_VERSION)
+        except PlanError as exc:
+            results.put(exc.code)
+        else:
+            results.put('resolved')
+
+
+class UnknownRequestResolutionTests(unittest.TestCase):
+    """R1 offline reconciliation, including durable refusal and tamper checks."""
+
+    def setUp(self):
+        import desktop_chatgpt_provider as module
+
+        self.module = module
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.tmp_path = Path(self.temp.name)
+        for patcher in (
+            patch.dict(os.environ, {'LOCALAPPDATA': str(self.tmp_path / 'local-appdata'), 'APPDATA': str(self.tmp_path / 'appdata')}),
+            patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+            patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP')),
+            patch.object(OAuthCredentialReference, '__call__', side_effect=AssertionError('No credential access')),
+            patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        MockTransport.requests = []
+        MockTransport.events = None
+
+    def aged_pending(self, root=None, **kwargs):
+        p = provider(root or self.tmp_path, **kwargs)
+        p._reserve('a' * 64, 123)
+        self.age(p)
+        return p
+
+    def age(self, p, seconds=301):
+        import time
+
+        stamp = time.time() - seconds
+        os.utime(p.path, (stamp, stamp))
+
+    def resolve(self, p, **kwargs):
+        options = {'user_confirmed': True, 'acknowledgement_version': self.module.ACKNOWLEDGEMENT_VERSION}
+        options.update(kwargs)
+        return self.module.resolve_unknown_request(p.credential_reference, p.path.parent, **options)
+
+    def inspect(self, p):
+        return self.module.inspect_unknown_request(p.credential_reference, p.path.parent)
+
+    def files(self):
+        return {str(path.relative_to(self.tmp_path)): path.read_bytes() for path in self.tmp_path.rglob('*') if path.is_file()}
+
+    def unchanged_refusal(self, operation, code):
+        before = self.files()
+        with self.assertRaises(PlanError) as caught:
+            operation()
+        self.assertEqual(caught.exception.code, code)
+        self.assertEqual(self.files(), before, 'A refused operation must leave every control/ledger byte unchanged')
+        self.assertEqual(MockTransport.requests, [])
+
+    def rows(self, path, statement, parameters=()):
+        import sqlite3
+
+        with closing(sqlite3.connect(path)) as db:
+            return db.execute(statement, parameters).fetchall()
+
+    def mutate(self, path, statement, parameters=()):
+        import sqlite3
+
+        with closing(sqlite3.connect(path)) as db, db:
+            db.execute(statement, parameters)
+
+    def test_k1_resolution_preserves_receipt_evidence_counts_and_known_pause(self):
+        from datetime import datetime
+        from quantlab.core import content_hash
+
+        p = self.aged_pending()
+        original = p.read_receipts()[0]
+        self.assertIsNone(self.resolve(p))
+        receipt = p.read_receipts()[0]
+        self.assertEqual(receipt, {**original, 'status': 'user_confirmed_consumed'})
+        self.assertEqual(self.rows(p.path, 'SELECT calls,blocked FROM plan_budget'), [(1, 'user_confirmed_consumed')])
+        self.assertEqual(self.rows(p.account_path, 'SELECT calls FROM plan_ledgers'), [(1,)])
+        self.assertEqual(self.rows(p.account_path, 'SELECT state,owner FROM plan_accounts'), [('user_confirmed_consumed', None)])
+        self.assertEqual(self.rows(p.account_path, 'SELECT version FROM control_identity'), [(1,)])
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        columns = [row[1] for row in self.rows(p.account_path, 'PRAGMA table_info(plan_resolutions)')]
+        audit = dict(zip(columns, self.rows(p.account_path, 'SELECT * FROM plan_resolutions')[0]))
+        timestamp = audit.pop('confirmed_at_utc')
+        self.assertEqual(datetime.fromisoformat(timestamp.replace('Z', '+00:00')).utcoffset().total_seconds(), 0)
+        self.assertEqual(
+            audit,
+            {
+                'id': 1,
+                'filename': p.path.name,
+                'sequence': 1,
+                'request_hash': 'a' * 64,
+                'registration': p.credential_reference.registration,
+                'previous_status': 'reserved_unknown',
+                'new_status': 'user_confirmed_consumed',
+                'acknowledgement_version': self.module.ACKNOWLEDGEMENT_VERSION,
+                'official_usage_checked': 1,
+                'no_refund_acknowledged': 1,
+                'no_other_tool_acknowledged': 1,
+                'implementation_hash': content_hash(SYNTHETIC_PROVENANCE),
+            },
+        )
+        for path in (p.path, p.account_path):
+            self.assertEqual(self.rows(path, 'PRAGMA journal_mode'), [('delete',)])
+        with patch.object(MockTransport, 'models') as models:
+            self.unchanged_refusal(lambda: p._reserve('b' * 64, 100), 'account_paused')
+            self.unchanged_refusal(lambda: p.generate({'family': 'trend'}), 'account_paused')
+            self.unchanged_refusal(lambda: discover_models(p.credential_reference, network_opt_in=True), 'account_paused')
+            models.assert_not_called()
+
+    def test_two_step_recovery_allows_new_campaign_but_never_refunds_old_one(self):
+        p = self.aged_pending()
+        self.resolve(p)
+        self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent), 'explicit_recovery_confirmation_required')
+        other_reference = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
+        self.unchanged_refusal(lambda: clear_account_pause(other_reference, p.path.parent, user_confirmed=True), 'pause_owned_by_another_registration')
+        clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True)
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'ready', 'pending': False})
+        self.unchanged_refusal(lambda: p.generate({'family': 'trend'}), 'campaign_paused')
+        self.unchanged_refusal(lambda: p._reserve('b' * 64, 100), 'campaign_paused')
+        fresh = provider(self.tmp_path, budget_path=p.path.parent / 'new.sqlite', campaign_id='new')
+        self.assertEqual(fresh.generate({'family': 'trend'}), CANDIDATE)
+        self.assertEqual(len(MockTransport.requests), 1)
+        self.assertEqual(self.rows(p.path, 'SELECT calls,blocked FROM plan_budget'), [(1, 'user_confirmed_consumed')])
+        self.assertEqual(self.rows(p.account_path, 'SELECT calls FROM plan_ledgers WHERE filename=?', (p.path.name,)), [(1,)])
+        self.assertEqual(self.rows(p.account_path, 'SELECT COUNT(*) FROM plan_resolutions'), [(1,)])
+
+    def test_inspection_is_readonly_sanitized_and_never_initializes_controls(self):
+        import sqlite3
+
+        unused = provider(self.tmp_path)
+        before = self.files()
+        self.assertEqual(self.inspect(unused), {'kind': 'none', 'sequence': None, 'calls': None, 'max_age_ok': False})
+        self.assertEqual(self.files(), before)
+        p = self.aged_pending()
+        before = self.files()
+        connections = []
+        writes = []
+        original = sqlite3.connect
+        forbidden = {
+            sqlite3.SQLITE_INSERT,
+            sqlite3.SQLITE_UPDATE,
+            sqlite3.SQLITE_DELETE,
+            sqlite3.SQLITE_CREATE_TABLE,
+            sqlite3.SQLITE_CREATE_TRIGGER,
+            sqlite3.SQLITE_DROP_TABLE,
+            sqlite3.SQLITE_DROP_TRIGGER,
+            sqlite3.SQLITE_ALTER_TABLE,
+        }
+
+        def authorizer(action, name, column, database, source):
+            if action in forbidden:
+                writes.append((action, name))
+                return sqlite3.SQLITE_DENY
+            return sqlite3.SQLITE_OK
+
+        def connect(*args, **kwargs):
+            connections.append(args[0])
+            db = original(*args, **kwargs)
+            db.set_authorizer(authorizer)
+            return db
+
+        with patch('desktop_chatgpt_provider.sqlite3.connect', connect):
+            self.assertEqual(self.inspect(p), {'kind': 'k1_resolvable', 'sequence': 1, 'calls': 1, 'max_age_ok': True})
+            reference = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
+            result = self.module.inspect_unknown_request(reference, p.path.parent)
+            self.assertEqual(result, {'kind': 'k1_other_registration', 'sequence': None, 'calls': None, 'max_age_ok': False})
+        self.assertTrue(connections)
+        self.assertTrue(all('?mode=ro' in str(path) for path in connections))
+        self.assertEqual(writes, [])
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.rows(p.account_path, "SELECT name FROM sqlite_master WHERE name='plan_resolutions'"), [])
+        self.assertEqual(MockTransport.requests, [])
+
+    def test_inspection_does_not_convert_recent_old_or_restarted_unknown(self):
+        p = self.aged_pending()
+        self.age(p, 299)
+        before = self.files()
+        self.assertFalse(self.inspect(p)['max_age_ok'])
+        self.age(p, 86400)
+        restarted = provider(self.tmp_path)
+        self.assertTrue(self.inspect(restarted)['max_age_ok'])
+        self.assertEqual(read_account_status(restarted.credential_reference, restarted.path.parent), {'state': 'reserved_unknown', 'pending': True})
+        self.assertEqual(self.files(), before)
+        self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True), 'active_or_unknown_request')
+
+    def test_confirmation_and_version_are_exact_and_required(self):
+        p = self.aged_pending()
+        self.assertEqual(self.module.ACKNOWLEDGEMENT_VERSION, 1)
+        for options in (
+            {},
+            {'user_confirmed': True},
+            {'acknowledgement_version': 1},
+            {'user_confirmed': 1, 'acknowledgement_version': 1},
+            {'user_confirmed': 'true', 'acknowledgement_version': 1},
+            {'user_confirmed': True, 'acknowledgement_version': True},
+            {'user_confirmed': True, 'acknowledgement_version': 1.0},
+            {'user_confirmed': True, 'acknowledgement_version': '1'},
+            {'user_confirmed': True, 'acknowledgement_version': 2},
+        ):
+            with self.subTest(options=options):
+                self.unchanged_refusal(
+                    lambda: self.module.resolve_unknown_request(p.credential_reference, p.path.parent, **options), 'resolution_confirmation_required'
+                )
+
+    def test_recent_or_future_ledger_cannot_be_resolved(self):
+        p = self.aged_pending()
+        for seconds in (299, 0, -600):
+            with self.subTest(seconds=seconds):
+                self.age(p, seconds)
+                self.unchanged_refusal(lambda: self.resolve(p), 'unknown_request_too_recent')
+
+    def test_other_registration_and_k2_cannot_be_resolved(self):
+        p = self.aged_pending()
+        reference = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
+        self.unchanged_refusal(
+            lambda: self.module.resolve_unknown_request(
+                reference, p.path.parent, user_confirmed=True, acknowledgement_version=self.module.ACKNOWLEDGEMENT_VERSION
+            ),
+            'unknown_request_owned_by_another_registration',
+        )
+        for status in ('failed_or_interrupted', 'cancelled', 'deadline_exceeded', 'eof_without_completion'):
+            with self.subTest(status=status):
+                k2 = self.aged_pending(self.tmp_path / status)
+                k2._finish(1, status, received_bytes=7, elapsed_seconds=1.0)
+                self.age(k2)
+                before = self.files()
+                self.assertEqual(self.inspect(k2), {'kind': 'k2_unresolvable', 'sequence': None, 'calls': None, 'max_age_ok': False})
+                self.assertEqual(self.files(), before)
+                self.unchanged_refusal(lambda: self.resolve(k2), 'no_resolvable_unknown_request')
+                self.assertTrue(read_account_status(k2.credential_reference, k2.path.parent)['pending'])
+
+    def test_no_unknown_request_is_an_inert_refusal(self):
+        p = provider(self.tmp_path)
+        self.unchanged_refusal(lambda: self.resolve(p), 'no_resolvable_unknown_request')
+        self.assertFalse(p.path.parent.exists())
+        p._reserve('a' * 64, 100)
+        p._finish(1, 'completed')
+        self.unchanged_refusal(lambda: self.resolve(p), 'no_resolvable_unknown_request')
+
+    def test_invalid_reference_and_controls_path_leave_all_bytes_unchanged(self):
+        p = self.aged_pending()
+        arguments = {'user_confirmed': True, 'acknowledgement_version': self.module.ACKNOWLEDGEMENT_VERSION}
+        for reference in (None, 'opaque', object()):
+            self.unchanged_refusal(lambda: self.module.resolve_unknown_request(reference, p.path.parent, **arguments), 'oauth_reference_required')
+        for path in (self.tmp_path / 'workspace', 'relative', p.account_path, None, 1):
+            with self.subTest(path=path):
+                self.unchanged_refusal(
+                    lambda: self.module.resolve_unknown_request(p.credential_reference, path, **arguments), 'installation_controls_path_required'
+                )
+
+    def test_missing_and_inconsistent_ledger_are_not_repaired(self):
+        for damage, code in (
+            ('missing', 'campaign_controls_missing'),
+            ('count', 'campaign_controls_inconsistent'),
+            ('sequence', 'campaign_controls_inconsistent'),
+            ('binding', 'campaign_controls_inconsistent'),
+        ):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                if damage == 'missing':
+                    p.path.unlink()
+                elif damage == 'count':
+                    self.mutate(p.path, 'UPDATE plan_budget SET calls=2')
+                elif damage == 'sequence':
+                    self.mutate(p.path, 'UPDATE plan_calls SET sequence=2')
+                else:
+                    self.mutate(p.path, 'UPDATE plan_budget SET binding=?', ('b' * 64,))
+                if p.path.exists():
+                    self.age(p)
+                self.unchanged_refusal(lambda: self.resolve(p), code)
+
+    def test_missing_or_ambiguous_owner_binding_cannot_select_a_ledger(self):
+        for damage in ('missing_binding', 'duplicate_binding'):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                if damage == 'missing_binding':
+                    self.mutate(p.account_path, 'UPDATE plan_accounts SET owner=?', ('b' * 64,))
+                else:
+                    (p.path.parent / 'duplicate.sqlite').write_bytes(p.path.read_bytes())
+                    self.mutate(p.account_path, "INSERT INTO plan_ledgers SELECT 'duplicate.sqlite',binding,calls FROM plan_ledgers")
+                self.unchanged_refusal(lambda: self.resolve(p), 'campaign_controls_inconsistent')
+
+    def test_other_unknown_receipt_or_account_owner_blocks_resolution(self):
+        for damage in ('second_ledger', 'prior_unknown', 'other_owner'):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                if damage == 'second_ledger':
+                    second = p.path.parent / 'other.sqlite'
+                    second.write_bytes(p.path.read_bytes())
+                    self.mutate(second, 'UPDATE plan_budget SET binding=?', ('b' * 64,))
+                    self.mutate(p.account_path, 'INSERT INTO plan_ledgers VALUES (?,?,?)', ('other.sqlite', 'b' * 64, 1))
+                elif damage == 'prior_unknown':
+                    self.mutate(
+                        p.path,
+                        "INSERT INTO plan_calls SELECT 2,request_hash,request_bytes,status,response_hash,usage,received_bytes,elapsed_seconds FROM plan_calls",
+                    )
+                    self.mutate(p.path, 'UPDATE plan_budget SET calls=2')
+                    self.mutate(p.account_path, 'UPDATE plan_ledgers SET calls=2')
+                    self.age(p)
+                else:
+                    self.mutate(p.account_path, 'INSERT INTO plan_accounts VALUES (?,?,?)', ('b' * 32, 'reserved_unknown', 'b' * 64))
+                self.unchanged_refusal(lambda: self.resolve(p), 'active_or_unknown_request')
+
+    def test_link_and_windows_reparse_controls_are_rejected_without_skip(self):
+        from types import SimpleNamespace
+
+        p = self.aged_pending()
+        original_lstat = Path.lstat
+        original_is_symlink = Path.is_symlink
+        for target in (p.path, p.account_path, p.path.parent):
+            for kind in ('symlink', 'reparse'):
+                with self.subTest(target=target.name, kind=kind):
+
+                    def is_symlink(path):
+                        return (kind == 'symlink' and path == target) or original_is_symlink(path)
+
+                    def lstat(path, *args, **kwargs):
+                        if kind == 'reparse' and path == target:
+                            return SimpleNamespace(st_file_attributes=0x400, st_mode=original_lstat(path).st_mode)
+                        return original_lstat(path, *args, **kwargs)
+
+                    before = self.files()
+                    with patch.object(Path, 'is_symlink', is_symlink), patch.object(Path, 'lstat', lstat):
+                        with self.assertRaises(PlanError) as caught:
+                            self.resolve(p)
+                        self.assertEqual(caught.exception.code, 'linked_controls_path_rejected')
+                    self.assertEqual(self.files(), before)
+
+    def test_forged_confirmed_receipt_or_account_without_audit_stays_pending(self):
+        for damage in ('receipt', 'account', 'both'):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                if damage in ('receipt', 'both'):
+                    self.mutate(p.path, "UPDATE plan_calls SET status='user_confirmed_consumed'")
+                if damage in ('account', 'both'):
+                    self.mutate(p.account_path, "UPDATE plan_accounts SET state='user_confirmed_consumed',owner=NULL")
+                before = self.files()
+                self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+                self.assertEqual(self.files(), before)
+                self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True), 'active_or_unknown_request')
+
+    def test_resolution_audit_update_and_delete_abort_without_mutation(self):
+        import sqlite3
+
+        p = self.aged_pending()
+        self.resolve(p)
+        for statement in ('UPDATE plan_resolutions SET acknowledgement_version=99', 'DELETE FROM plan_resolutions'):
+            with self.subTest(statement=statement):
+                before = self.files()
+                with self.assertRaisesRegex(sqlite3.IntegrityError, 'append_only'):
+                    self.mutate(p.account_path, statement)
+                self.assertEqual(self.files(), before)
+        self.unchanged_refusal(lambda: self.resolve(p), 'no_resolvable_unknown_request')
+
+    def test_audit_must_match_receipt_and_registration(self):
+        for damage in ('request_hash', 'filename', 'sequence', 'registration', 'missing_audit'):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                self.resolve(p)
+                # Deliberate local tampering bypasses triggers solely to test
+                # the read barrier's independent receipt/audit cross-check.
+                trigger = self.rows(p.account_path, "SELECT sql FROM sqlite_master WHERE name='plan_resolutions_no_update'")[0][0]
+                self.mutate(p.account_path, 'DROP TRIGGER plan_resolutions_no_update')
+                if damage == 'missing_audit':
+                    self.mutate(p.account_path, 'DROP TABLE plan_resolutions')
+                else:
+                    value = {'request_hash': 'b' * 64, 'filename': 'other.sqlite', 'sequence': 2, 'registration': 'b' * 32}[damage]
+                    self.mutate(p.account_path, 'UPDATE plan_resolutions SET ' + damage + '=?', (value,))
+                    self.mutate(p.account_path, trigger)
+                before = self.files()
+                self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+                self.assertEqual(self.files(), before)
+                self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True), 'active_or_unknown_request')
+
+    def test_stale_finish_cannot_overwrite_reconciled_receipt_or_account(self):
+        p = self.aged_pending()
+        self.resolve(p)
+        self.unchanged_refusal(lambda: p._finish(1, 'completed', 'b' * 64, {'total_tokens': 3}, 12, 0.5), 'invalid_receipt_transition')
+        self.unchanged_refusal(lambda: p._finish(1, 'failed_or_interrupted'), 'invalid_receipt_transition')
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+
+    def test_each_transaction_write_failure_rolls_back_all_attached_databases(self):
+        import sqlite3
+
+        original = sqlite3.connect
+        for action, table in (
+            (sqlite3.SQLITE_UPDATE, 'plan_calls'),
+            (sqlite3.SQLITE_UPDATE, 'plan_budget'),
+            (sqlite3.SQLITE_UPDATE, 'plan_accounts'),
+            (sqlite3.SQLITE_INSERT, 'plan_resolutions'),
+        ):
+            with self.subTest(table=table):
+                p = self.aged_pending(self.tmp_path / table)
+                denied = []
+
+                def authorizer(operation, name, column, database, source):
+                    if operation == action and name == table:
+                        denied.append(name)
+                        return sqlite3.SQLITE_DENY
+                    return sqlite3.SQLITE_OK
+
+                def connect(*args, **kwargs):
+                    db = original(*args, **kwargs)
+                    db.set_authorizer(authorizer)
+                    return db
+
+                before = self.files()
+                with patch('desktop_chatgpt_provider.sqlite3.connect', connect), self.assertRaises(PlanError):
+                    self.resolve(p)
+                self.assertTrue(denied, 'Fixture must reach the requested write failure')
+                self.assertEqual(self.files(), before)
+                self.assertEqual(p.read_receipts()[0]['status'], 'reserved_unknown')
+                self.assertEqual(self.rows(p.account_path, "SELECT name FROM sqlite_master WHERE name='plan_resolutions'"), [])
+                self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+
+    def test_restart_registration_and_workspace_changes_cannot_bypass_unknown(self):
+        p = self.aged_pending()
+        for letter in ('a', 'b', 'c'):
+            with self.subTest(registration=letter):
+                reference = OAuthCredentialReference(p.credential_reference.bootstrap, letter * 32)
+                reconstructed = provider(self.tmp_path, credential_reference=reference)
+                self.assertTrue(read_account_status(reference, p.path.parent)['pending'])
+                with patch.object(MockTransport, 'models') as models:
+                    self.unchanged_refusal(lambda: reconstructed.generate({'family': 'trend'}), 'account_paused')
+                    self.unchanged_refusal(lambda: discover_models(reference, network_opt_in=True), 'account_paused')
+                    models.assert_not_called()
+        for workspace in ('restored-workspace', 'new-workspace'):
+            target = self.tmp_path / workspace / p.path.name
+            self.unchanged_refusal(lambda: provider(self.tmp_path, budget_path=target), 'installation_controls_path_required')
+            self.unchanged_refusal(
+                lambda: self.module.resolve_unknown_request(
+                    p.credential_reference, target.parent, user_confirmed=True, acknowledgement_version=self.module.ACKNOWLEDGEMENT_VERSION
+                ),
+                'installation_controls_path_required',
+            )
+
+    def test_restored_controls_never_turn_resolved_or_new_unknown_work_ready(self):
+        p = provider(self.tmp_path, max_calls=3)
+        p._reserve('a' * 64, 100)
+        p._finish(1, 'completed')
+        old_controls = p.account_path.read_bytes()
+        p._reserve('b' * 64, 100)
+        self.age(p)
+        before_resolution = p.account_path.read_bytes()
+        self.resolve(p)
+        for restored, code in ((before_resolution, None), (old_controls, 'campaign_controls_inconsistent')):
+            with self.subTest(old_count=code is not None):
+                p.account_path.write_bytes(restored)
+                before = self.files()
+                if code:
+                    self.unchanged_refusal(lambda: read_account_status(p.credential_reference, p.path.parent), code)
+                    self.unchanged_refusal(lambda: self.resolve(p), code)
+                else:
+                    self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+                    self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True), 'active_or_unknown_request')
+                self.assertEqual(self.files(), before)
+
+    def test_multiprocess_simultaneous_resolution_has_exactly_one_commit(self):
+        p = self.aged_pending()
+        context = multiprocessing.get_context('spawn')
+        ready, results, release = context.Queue(), context.Queue(), context.Event()
+        processes = [context.Process(target=competing_unknown_resolution, args=(str(self.tmp_path), ready, release, results)) for _ in range(2)]
+        try:
+            for process in processes:
+                process.start()
+            for _ in processes:
+                self.assertTrue(ready.get(timeout=10))
+            release.set()
+            outcomes = [results.get(timeout=15) for _ in processes]
+            for process in processes:
+                process.join(10)
+                self.assertEqual(process.exitcode, 0)
+            self.assertCountEqual(outcomes, ['resolved', 'no_resolvable_unknown_request'])
+            self.assertEqual(self.rows(p.account_path, 'SELECT COUNT(*) FROM plan_resolutions'), [(1,)])
+            self.assertEqual(self.rows(p.account_path, 'SELECT calls FROM plan_ledgers'), [(1,)])
+            self.assertEqual(self.rows(p.path, 'SELECT calls,blocked FROM plan_budget'), [(1, 'user_confirmed_consumed')])
+            self.assertEqual(p.read_receipts()[0]['status'], 'user_confirmed_consumed')
+            self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        finally:
+            release.set()
+            for process in processes:
+                if process.is_alive():
+                    process.kill()
+                    process.join()
+                process.close()
+            for queue in (ready, results):
+                queue.close()
+                queue.join_thread()
+
+    def test_exact_300_second_boundary_is_eligible_without_automatic_transition(self):
+        p = self.aged_pending()
+        boundary = p.path.stat().st_mtime + 300
+        before = self.files()
+        with patch('desktop_chatgpt_provider.time.time', return_value=boundary):
+            self.assertTrue(self.inspect(p)['max_age_ok'])
+            self.assertEqual(self.files(), before)
+            self.resolve(p)
+        self.assertEqual(p.read_receipts()[0]['status'], 'user_confirmed_consumed')
+
+    def test_ineligible_target_budget_and_final_receipt_are_inert_refusals(self):
+        for damage in ('blocked_budget', 'empty_blocked_budget', 'final_receipt'):
+            with self.subTest(damage=damage):
+                p = self.aged_pending(self.tmp_path / damage)
+                if damage == 'final_receipt':
+                    self.mutate(p.path, "UPDATE plan_calls SET status='quota_paused'")
+                else:
+                    self.mutate(p.path, 'UPDATE plan_budget SET blocked=?', ('' if damage == 'empty_blocked_budget' else 'quota_paused',))
+                self.age(p)
+                self.unchanged_refusal(lambda: self.resolve(p), 'no_resolvable_unknown_request')
+
+    def test_corrupt_ledger_is_an_inert_refusal(self):
+        p = self.aged_pending()
+        p.path.write_bytes(b'synthetic invalid sqlite ledger')
+        self.age(p)
+        self.unchanged_refusal(lambda: self.resolve(p), 'campaign_controls_unavailable')
+        self.unchanged_refusal(lambda: self.inspect(p), 'campaign_controls_unavailable')
+
+    def test_inspect_preserves_all_file_modification_timestamps(self):
+        p = self.aged_pending()
+        before = {str(path): (path.read_bytes(), path.stat().st_mtime_ns) for path in self.tmp_path.rglob('*') if path.is_file()}
+        self.inspect(p)
+        reference = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
+        self.module.inspect_unknown_request(reference, p.path.parent)
+        after = {str(path): (path.read_bytes(), path.stat().st_mtime_ns) for path in self.tmp_path.rglob('*') if path.is_file()}
+        self.assertEqual(after, before)
+
+    def test_new_implementation_resolves_historical_binding_without_reconstructing_it(self):
+        from quantlab.core import content_hash
+
+        p = self.aged_pending()
+        original_binding = self.rows(p.account_path, 'SELECT binding FROM plan_ledgers')
+        new_provenance = {'source_sha256': {'offline_fixture': 'b' * 64}}
+        with patch('desktop_chatgpt_provider.implementation_provenance', return_value=new_provenance):
+            self.assertEqual(self.inspect(p)['kind'], 'k1_resolvable')
+            self.resolve(p)
+            self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        self.assertEqual(self.rows(p.account_path, 'SELECT binding FROM plan_ledgers'), original_binding)
+        self.assertEqual(self.rows(p.account_path, 'SELECT implementation_hash FROM plan_resolutions'), [(content_hash(new_provenance),)])
+        self.assertEqual(p.read_receipts()[0]['status'], 'user_confirmed_consumed')
+
+    def test_provenance_failure_or_incompatible_audit_schema_cannot_partially_resolve(self):
+        p = self.aged_pending()
+        with patch('desktop_chatgpt_provider.implementation_provenance', side_effect=PlanError('implementation_provenance_unavailable')):
+            self.unchanged_refusal(lambda: self.resolve(p), 'implementation_provenance_unavailable')
+        self.mutate(p.account_path, 'CREATE TABLE plan_resolutions (incompatible TEXT)')
+        self.unchanged_refusal(lambda: self.resolve(p), 'account_controls_unavailable')
+
+    def test_resolution_writes_use_delete_journals_and_full_synchronization(self):
+        import sqlite3
+
+        p = self.aged_pending()
+        original = sqlite3.connect
+        modes = []
+
+        class RecordWriteModes(sqlite3.Connection):
+            def execute(self, statement, *args, **kwargs):
+                if statement.startswith('INSERT INTO plan_resolutions'):
+                    databases = super().execute('PRAGMA database_list').fetchall()
+                    for _, schema, _ in databases:
+                        if schema == 'temp':
+                            continue
+                        modes.append(
+                            (
+                                super().execute('PRAGMA ' + schema + '.journal_mode').fetchone()[0],
+                                super().execute('PRAGMA ' + schema + '.synchronous').fetchone()[0],
+                            )
+                        )
+                return super().execute(statement, *args, **kwargs)
+
+        def connect(*args, **kwargs):
+            return original(*args, **kwargs, factory=RecordWriteModes)
+
+        with patch('desktop_chatgpt_provider.sqlite3.connect', connect):
+            self.resolve(p)
+        self.assertEqual(modes, [('delete', 2), ('delete', 2)])
+
+    def test_unsupported_journal_mode_refusal_does_not_reconfigure_or_write(self):
+        for target in ('account', 'ledger'):
+            with self.subTest(target=target):
+                p = self.aged_pending(self.tmp_path / target)
+                path = p.account_path if target == 'account' else p.path
+                self.assertEqual(self.rows(path, 'PRAGMA journal_mode=WAL'), [('wal',)])
+                self.age(p)
+                self.unchanged_refusal(lambda: self.resolve(p), 'unsupported_control_journal_mode')
+
+    def test_delayed_known_metadata_pause_cannot_replace_manual_consumption(self):
+        p = self.aged_pending()
+        self.resolve(p)
+        before = self.files()
+        self.module._persist_account_pause(p.credential_reference, 'quota_paused')
+        self.assertEqual(self.files(), before)
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        self.unchanged_refusal(lambda: self.module._persist_account_pause(p.credential_reference, 'user_confirmed_consumed'), 'invalid_pause_state')
+
+    def test_missing_or_noop_audit_guards_leave_confirmed_status_pending(self):
+        for operation in ('UPDATE', 'DELETE'):
+            for damage in ('missing', 'noop'):
+                with self.subTest(operation=operation, damage=damage):
+                    p = self.aged_pending(self.tmp_path / (operation + damage))
+                    self.resolve(p)
+                    name = 'plan_resolutions_no_' + operation.lower()
+                    self.mutate(p.account_path, 'DROP TRIGGER ' + name)
+                    if damage == 'noop':
+                        self.mutate(p.account_path, 'CREATE TRIGGER ' + name + ' BEFORE ' + operation + ' ON plan_resolutions BEGIN SELECT 1; END')
+                    before = self.files()
+                    self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+                    self.assertEqual(self.files(), before)
+                    self.unchanged_refusal(lambda: clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True), 'active_or_unknown_request')
+
+    def test_existing_noop_audit_guard_cannot_be_adopted_during_resolution(self):
+        p = self.aged_pending()
+        self.mutate(p.account_path, 'CREATE TABLE plan_resolutions (id INTEGER)')
+        self.mutate(p.account_path, 'CREATE TRIGGER plan_resolutions_no_update BEFORE UPDATE ON plan_resolutions BEGIN SELECT 1; END')
+        self.unchanged_refusal(lambda: self.resolve(p), 'account_controls_invalid')
+
+    def test_malformed_or_remote_controls_path_is_rejected_before_filesystem_probe(self):
+        p = self.aged_pending()
+        original_lstat = Path.lstat
+        for supplied in ('\0', r'\\offline-invalid.example\share\controls'):
+            with self.subTest(supplied=supplied):
+                forbidden = Path(supplied)
+
+                def lstat(path, *args, **kwargs):
+                    if path == forbidden or path in forbidden.parents:
+                        raise AssertionError('Do not probe an untrusted controls path')
+                    return original_lstat(path, *args, **kwargs)
+
+                with patch.object(Path, 'lstat', lstat):
+                    self.unchanged_refusal(lambda: self.module.inspect_unknown_request(p.credential_reference, supplied), 'installation_controls_path_required')
+                    self.unchanged_refusal(
+                        lambda: self.module.resolve_unknown_request(
+                            p.credential_reference, supplied, user_confirmed=True, acknowledgement_version=self.module.ACKNOWLEDGEMENT_VERSION
+                        ),
+                        'installation_controls_path_required',
+                    )

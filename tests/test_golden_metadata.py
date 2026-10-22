@@ -22,7 +22,9 @@ FIXTURES = Path(__file__).parent / 'fixtures'
 BASELINE = {
     'engine_golden.json': 'dc25575a34ab7847bdf64cf6ea13dd439e2afe471a07076dc57f864ed14f94a9',
     # B2/B4 regenerated only the walk-forward oos_statistics_text observations (statistics and Welch decay lines).
-    'ui_operations_golden.json': 'f652e443f78693bc046b88cf42a24266ffaec156b958017f45c5b557d88ebcfc',
+    # R1 (PR #76 approved) refreshed only provider/research source and derived SHA-256 values after the
+    # approved desktop_chatgpt_provider.py and quantlab/research.py edits; operation results are unchanged.
+    'ui_operations_golden.json': 'd0a475bfd6af9d0dec0463cb820089737453efa91f63ee9c432e8e7ee4384adf',
 }
 
 

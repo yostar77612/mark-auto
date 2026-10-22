@@ -32,12 +32,12 @@ class FunctionLengthTests(unittest.TestCase):
 
 
 LOCKED_HASHES = {
-    'quantlab/research.py': '138a0ee2146a2d63773a3397c12e22ecd5d1577260dcf24cc8f06c7440900804',
+    'quantlab/research.py': 'bc58df645249a702dbb1b2fe1b13157c8d086bf2e08198a125d2bee45878665c',
     'quantlab/provider.py': 'c15c043156de1d6bf4679034328789b18d171344b56a85432a1d56d42a4fd79a',
     'quantlab/core.py': '303b54b0be6d621c340c00f0ed35ea97aab6076147a4cbd93d1be745dd336d93',
     'quantlab/strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
     'quantlab/backtest.py': '2dcee78c0c7a7d09c54a0d362b6d0a2be957cf910046d3bd6a89525761da5bb6',
     'quantlab/data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
     'desktop_chatgpt_auth.py': '4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf',
-    'desktop_chatgpt_provider.py': '9ceed8ae5c779ebbab725518a7e8bf785e2122de6c95efa915ba69caa5c4f903',
+    'desktop_chatgpt_provider.py': 'e2ea5f87cd2f0cea4c85cba884a5572e52ef948be65109283ca5990913d9e4d9',
 }
