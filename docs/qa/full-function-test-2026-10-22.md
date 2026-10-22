@@ -110,12 +110,16 @@ CI（GitHub Actions）上相同的分片在 #77、#78 合併前都已全綠。
 
 - #77：CI 共 4 輪。第 1 到 3 輪都是逾時：`ui` 跑滿 15 分鐘被取消、smoke 40 秒、PowerShell 8 秒、Walk-forward smoke 清理、Ubuntu 3.12 跑滿 15 分鐘，沒有任何測試斷言失敗。第 4 輪 24 項全綠，以 head `37fa05d` squash 合併為 `41fb0d0`。
 - #78：第 1 輪逾時，第 2 輪 24 項全綠，以 head `344c369` squash 合併為 `8c4c870`。
-- main `8c4c870` 的 Windows 安裝檔建置成功，但同一 commit 的離線測試又有兩項跑滿 15 分鐘被取消，因此發布被拒；已依 G8 重跑（結果見下方發布紀錄）。
+- main `8c4c870` 的 Windows 安裝檔建置成功，但同一 commit 的離線測試又有兩項跑滿 15 分鐘被取消，因此發布被拒；依 G8 重跑後發布成功（見發布紀錄）。
 - `ui` 與 Ubuntu 的離線測試工作長期跑 12 到 15 分鐘，貼近 15 分鐘上限，在 #75 之前就是如此，會隨機擋住無關的 PR，建議另案處理（已提出任務卡）。
 
 ## 發布紀錄
 
-- main `8c4c870`：安裝檔建置成功；發布因同一 commit 的離線測試逾時被拒，已依 G8 重跑離線測試，通過後重跑發布步驟。（狀態：進行中，完成後更新此段。）
+- main `8c4c870`（#77 + #78）：Windows 安裝檔建置成功；第一次發布因同一 commit 的離線測試有兩項跑滿 15 分鐘被取消而被拒。依 G8 整輪重跑離線測試（第 2 次）全綠後，重跑發布步驟成功。
+- 下載頁：https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-39775999074-2
+- 安裝檔：`MarkAuto-0.2.2-windows-x64-setup.exe`（約 40 MB）：https://github.com/yostar77612/mark-auto/releases/download/desktop-preview-39775999074-2/MarkAuto-0.2.2-windows-x64-setup.exe
+- 檢查碼：`SHA256SUMS.txt`：https://github.com/yostar77612/mark-auto/releases/download/desktop-preview-39775999074-2/SHA256SUMS.txt
+- 這個 preview 不含 PR #79（短資料誤報修正）；#79 合併後的 main 會另外產生新的 preview。
 
 ## 仍需擁有者親自驗證
 
