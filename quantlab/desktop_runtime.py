@@ -1424,8 +1424,11 @@ class JobManager:
             if set(payload) != {'request'} or not isinstance(request, dict):
                 raise RuntimeSafetyError('Invalid authentication request')
             allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
+            # ConnectionRequest always serializes the connection-test model (None for other actions).
             if (
-                set(request) != allowed
+                set(request) not in (allowed, allowed | {'model'})
+                or request.get('model') is not None
+                and (type(request['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request['model']))
                 or type(request['request_id']) is not int
                 or request['request_id'] < 1
                 or type(request['max_runtime_seconds']) is not int
