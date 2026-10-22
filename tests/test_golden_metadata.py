@@ -24,7 +24,9 @@ BASELINE = {
     # B2/B4 regenerated only the walk-forward oos_statistics_text observations (statistics and Welch decay lines).
     # R1 (PR #76 approved) refreshed only provider/research source and derived SHA-256 values after the
     # approved desktop_chatgpt_provider.py and quantlab/research.py edits; operation results are unchanged.
-    'ui_operations_golden.json': 'd0a475bfd6af9d0dec0463cb820089737453efa91f63ee9c432e8e7ee4384adf',
+    # R2 (PR #83 approved) refreshed only 5 provider-derived SHA-256 values after the approved
+    # desktop_chatgpt_provider.py edit; every non-digest observation is unchanged.
+    'ui_operations_golden.json': '1851927cb83775d56100c6ab9bea5d65954c94ebc4eb75caa741d5c57c29c7dd',
 }
 
 
