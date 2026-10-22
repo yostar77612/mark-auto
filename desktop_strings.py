@@ -2385,7 +2385,6 @@ ZH_TW.update(
         'chatgpt_reconciliation.confirm': '記錄為已消耗',
         'chatgpt_reconciliation.cancel': '取消',
         'chatgpt_reconciliation.other_registration': '未知請求屬於另一個已登入的帳號，請切換到該帳號再核對。',
-        'chatgpt_reconciliation.k2': '這筆請求已經結束，但結果未知，目前版本無法人工核對。',
         'chatgpt_reconciliation.too_recent': '請求剛送出不久，請至少等待 5 分鐘，並確認沒有其他工具正在執行。',
         'chatgpt_reconciliation.none': '目前沒有可以人工核對的未知請求。',
         'chatgpt_reconciliation.resolved': '已記錄為使用者確認消耗。帳號目前處於已知暫停。請核對額度後，再到「進階連線管理」按「核對額度後申請解除已知暫停」。',
@@ -2396,6 +2395,18 @@ ZH_TW.update(
         'chatgpt_reconciliation.changed': '帳號或本機狀態已變更，請重新核對未知請求。',
         'chatgpt_reconciliation.resolved_unverified': '已記錄為使用者確認消耗，但目前無法確認本機暫停狀態。請重新核對本機紀錄。',
         'chatgpt_reconciliation.resolved_ready': '已記錄為使用者確認消耗。帳號目前沒有本機暫停，原本的研究批次仍會永久停止。',
+    }
+)
+
+# Lane R2: ChatGPT finished-unknown (K2) reconciliation (PR #83, owner approved)
+ZH_TW.update(
+    {
+        'chatgpt_reconciliation_k2.summary': '第 {0}／{1} 次請求已經結束，但沒有正常完成。App 無法判斷它是否已送達或已計入官方用量。（App 內部結果代碼：{2}，可提供給維護者；你不需要看懂它）',
+        'chatgpt_reconciliation_k2.not_sent_notice': '即使這次可能沒有送達伺服器，也會記錄為已消耗。',
+        'chatgpt_reconciliation_k2.other_usage': '我了解官方用量頁也包含 App 以外工具（例如命令列程式）送出的請求，App 無法替我分辨',
+        'chatgpt_reconciliation_k2.too_recent': '這筆請求剛結束不久，請至少等待 5 分鐘，讓官方用量頁有時間更新後再核對。',
+        'chatgpt_reconciliation_k2.other_registration': '這筆請求是用另一個本機連線送出的。請在上方連線選單切換到那個連線後再核對；如果選單裡找不到它，目前版本無法人工核對。',
+        'chatgpt_reconciliation_k2.unmappable': '這筆請求已經結束但結果未知，而且本機紀錄無法唯一對應到一個帳號，目前版本無法人工核對。請保留本機紀錄，不要手動修改，等待後續版本處理。',
     }
 )
 

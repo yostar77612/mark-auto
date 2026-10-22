@@ -497,5 +497,218 @@ class ReconciliationWidgetTests(unittest.TestCase):
         self.assertEqual(self.cancel, [])
 
 
+def finished_inspection_event(request, inspection=('k2_resolvable', 1, 1, True), outcome='invalid_content_type', **kwargs):
+    return ui.ReconciliationEvent(
+        request.request_id,
+        'result',
+        reconciliation_action=request.action,
+        reconciliation_registration=request.registration,
+        inspection=inspection,
+        inspection_outcome=outcome,
+        **kwargs,
+    )
+
+
+class FinishedReconciliationPayloadTests(unittest.TestCase):
+    """R2: the finished-unknown action, its bound target and the fixed outcome display."""
+
+    def prepare(self, payload):
+        return JobManager.__new__(JobManager)._prepare_other_job('ui_chatgpt_auth', {'request': payload})
+
+    def finished(self, **kwargs):
+        values = dict(user_confirmed=True, acknowledgement_version=1, expected_sequence=1, expected_calls=1, expected_outcome='invalid_content_type')
+        values.update(kwargs)
+        return ui.ConnectionRequest(9, 'resolve_finished_unknown', REF, **values)
+
+    def test_finished_request_round_trips_and_every_payload_carries_the_null_target(self):
+        request = self.finished()
+        payload = json.loads(json.dumps(request.payload()))
+        self.assertEqual(ui.ConnectionRequest(**payload), request)
+        self.assertEqual(self.prepare(payload)[1:], (9, False))
+        for other in (ui.ConnectionRequest(1, 'list'), ui.ConnectionRequest(2, 'inspect_unknown', REF)):
+            payload = other.payload()
+            self.assertEqual((payload['expected_sequence'], payload['expected_calls'], payload['expected_outcome']), (None, None, None))
+            self.assertEqual(self.prepare(payload)[1], other.request_id)
+
+    def test_finished_confirmation_and_target_fail_closed_at_both_boundaries(self):
+        base = self.finished().payload()
+        for change in (
+            *({'acknowledgement_version': value} for value in (None, True, 0, 2, 1.0, '1')),
+            {'user_confirmed': False},
+            *({'expected_sequence': value} for value in (None, 0, 101, True, '1')),
+            *({'expected_calls': value} for value in (None, 0, 1.0)),
+            *({'expected_outcome': value} for value in (None, '', 'Invalid Content', 1)),
+            {'registration': None},
+        ):
+            payload = {**base, **change}
+            with self.subTest(change=change):
+                with self.assertRaises((TypeError, ValueError)):
+                    ui.ConnectionRequest(**payload)
+                with self.assertRaises(RuntimeSafetyError):
+                    self.prepare(payload)
+        for action in ('list', 'inspect_unknown', 'resolve_unknown'):
+            for key, value in (('expected_sequence', 1), ('expected_calls', 1), ('expected_outcome', 'cancelled')):
+                confirmation = {'user_confirmed': True, 'acknowledgement_version': 1} if action == 'resolve_unknown' else {}
+                payload = ui.ConnectionRequest(3, action, REF if action != 'list' else None, **confirmation).payload()
+                payload[key] = value
+                with self.subTest(action=action, key=key):
+                    with self.assertRaises((TypeError, ValueError)):
+                        ui.ConnectionRequest(**payload)
+                    with self.assertRaises(RuntimeSafetyError):
+                        self.prepare(payload)
+        # A code outside the UI's frozen set is rejected by the typed request.
+        with self.assertRaises(ValueError):
+            self.finished(expected_outcome='quota_paused')
+
+    def test_finished_outcomes_match_the_provider_set(self):
+        import desktop_chatgpt_provider
+
+        self.assertEqual(ui.FINISHED_OUTCOMES, desktop_chatgpt_provider._FINISHED_UNKNOWN_STATUSES)
+
+    def test_finished_events_round_trip_and_outcome_is_only_for_k2_resolvable(self):
+        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        event = finished_inspection_event(request)
+        self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
+        other = finished_inspection_event(request, ('k2_other_registration', None, None, False), None)
+        self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(other)))), other)
+        for inspection, outcome in (
+            (('k2_resolvable', 1, 1, True), None),
+            (('k2_resolvable', 1, 1, True), 'quota_paused'),
+            (('k2_resolvable', 1, 2, True), 'cancelled'),
+            (('k2_other_registration', 1, 1, False), None),
+            (('k2_other_registration', None, None, False), 'cancelled'),
+            (('k1_resolvable', 1, 1, True), 'cancelled'),
+            (('k2_unresolvable', None, None, False), 'cancelled'),
+        ):
+            with self.subTest(inspection=inspection, outcome=outcome), self.assertRaises(ValueError):
+                finished_inspection_event(request, inspection, outcome)
+
+    def test_worker_consults_the_finished_inspector_only_after_an_r1_k2_refusal(self):
+        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        finished = {'kind': 'k2_resolvable', 'sequence': 1, 'calls': 1, 'max_age_ok': True, 'outcome': 'invalid_content_type'}
+        with ExitStack() as stack:
+            forbidden = [
+                stack.enter_context(patch(target, side_effect=AssertionError('unexpected external operation')))
+                for target in ('desktop_chatgpt_auth.AuthSession', 'desktop_chatgpt_auth.DPAPIVault', 'socket.socket', 'socket.create_connection')
+            ]
+            r1 = stack.enter_context(patch('desktop_chatgpt_provider.inspect_unknown_request'))
+            k2 = stack.enter_context(patch('desktop_chatgpt_provider.inspect_finished_unknown_request', return_value=finished))
+            for kind in ('k1_resolvable', 'k1_other_registration', 'none'):
+                r1.return_value = {'kind': kind, 'sequence': 1 if kind == 'k1_resolvable' else None, 'calls': 1 if kind == 'k1_resolvable' else None,
+                                   'max_age_ok': kind == 'k1_resolvable'}  # fmt: skip
+                result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+                self.assertEqual(result.inspection[0], kind)
+                self.assertIsNone(result.inspection_outcome)
+            k2.assert_not_called()
+            r1.return_value = {'kind': 'k2_unresolvable', 'sequence': None, 'calls': None, 'max_age_ok': False}
+            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            self.assertEqual((result.inspection, result.inspection_outcome), (('k2_resolvable', 1, 1, True), 'invalid_content_type'))
+            k2.side_effect = ValueError('private path C:/secret')
+            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            self.assertEqual(result.kind, 'error')
+            self.assertNotIn('secret', json.dumps(asdict(result)))
+            for guard in forbidden:
+                guard.assert_not_called()
+
+    def test_worker_resolution_passes_the_bound_target(self):
+        with (
+            patch('desktop_chatgpt_provider.resolve_finished_unknown_request') as resolve,
+            patch('desktop_chatgpt_provider.resolve_unknown_request') as r1,
+            patch('desktop_chatgpt_provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
+        ):
+            result = ui.run_connection_request(self.finished(), bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+        r1.assert_not_called()
+        self.assertEqual(result.account_status, ('user_confirmed_consumed', False))
+        self.assertEqual(
+            resolve.call_args.kwargs,
+            {'user_confirmed': True, 'acknowledgement_version': 1, 'expected_sequence': 1, 'expected_calls': 1, 'expected_outcome': 'invalid_content_type'},
+        )
+
+    def test_r2_refusal_codes_have_fixed_b1_text(self):
+        from quantlab.errors import ERROR_LABELS
+
+        for code in (
+            'resolution_confirmation_required',
+            'no_resolvable_unknown_request',
+            'unknown_request_owned_by_another_registration',
+            'finished_request_unmappable',
+            'unknown_request_too_recent',
+        ):
+            self.assertIn(code, ERROR_LABELS)
+
+
+class FinishedReconciliationWidgetTests(unittest.TestCase):
+    """R2 reuses the R1 panel and dialog; only the copy and the sent action differ."""
+
+    setUpClass = classmethod(ReconciliationWidgetTests.setUpClass.__func__)
+    setUp = ReconciliationWidgetTests.setUp
+    cleanup_panel = ReconciliationWidgetTests.cleanup_panel
+    pending = ReconciliationWidgetTests.pending
+    start = ReconciliationWidgetTests.start
+    complete_inspection = ReconciliationWidgetTests.complete_inspection
+
+    def complete_finished(self, inspection=('k2_resolvable', 1, 1, True), outcome='invalid_content_type'):
+        request = self.start()
+        self.controller.apply_event(finished_inspection_event(request, inspection, outcome))
+        self.controller.worker_joined(request.request_id, joined=True)
+        self.app.processEvents()
+        return self.panel.reconciliation.dialog
+
+    def test_k2_dialog_reuses_widgets_with_finished_copy_and_sends_the_bound_action(self):
+        self.pending()
+        k1 = self.complete_inspection()
+        names = {child.objectName() for child in k1.findChildren(QWidget) if child.objectName()}
+        k1.cancel.click()
+        self.app.processEvents()
+        self.requests.clear()
+        dialog = self.complete_finished()
+        self.assertEqual({child.objectName() for child in dialog.findChildren(QWidget) if child.objectName()}, names)
+        summary = dialog.findChild(QWidget, 'chatgpt_reconciliation_summary').text()
+        self.assertIn('invalid_content_type', summary)
+        self.assertEqual(summary, ui.ui_text('chatgpt_reconciliation_k2.summary').format(1, 1, 'invalid_content_type'))
+        self.assertTrue(
+            dialog.findChild(QWidget, 'chatgpt_reconciliation_explanation').text().endswith(ui.ui_text('chatgpt_reconciliation_k2.not_sent_notice'))
+        )
+        self.assertEqual(dialog.acknowledgements[2].text(), ui.ui_text('chatgpt_reconciliation_k2.other_usage'))
+        self.assertFalse(any(check.isChecked() for check in dialog.acknowledgements))
+        self.assertTrue(dialog.cancel.isDefault())
+        self.assertFalse(dialog.confirm.isEnabled())
+        for check in dialog.acknowledgements:
+            check.setChecked(True)
+        dialog.confirm.click()
+        resolve = self.requests[-1]
+        self.assertEqual(resolve.action, 'resolve_finished_unknown')
+        self.assertEqual((resolve.expected_sequence, resolve.expected_calls, resolve.expected_outcome), (1, 1, 'invalid_content_type'))
+        self.assertIs(resolve.user_confirmed, True)
+        self.assertEqual(resolve.acknowledgement_version, 1)
+        c = self.controller
+        c.apply_event(
+            ui.ReconciliationEvent(
+                resolve.request_id,
+                'result',
+                reconciliation_action=resolve.action,
+                reconciliation_registration=REF,
+                account_status=('user_confirmed_consumed', False),
+            )
+        )
+        c.worker_joined(resolve.request_id, joined=True)
+        self.assertTrue(c.account_paused)
+        self.assertEqual(c.message.split(ui.ui_text('chatgpt_ui.apply_event.wait_for_host'))[0], ui.ui_text('chatgpt_reconciliation.resolved'))
+
+    def test_recent_other_and_unmappable_k2_never_open_confirmation(self):
+        cases = (
+            (('k2_resolvable', 1, 1, False), 'invalid_content_type', 'chatgpt_reconciliation_k2.too_recent'),
+            (('k2_other_registration', None, None, False), None, 'chatgpt_reconciliation_k2.other_registration'),
+            (('k2_unresolvable', None, None, False), None, 'chatgpt_reconciliation_k2.unmappable'),
+        )
+        self.pending()
+        for inspection, outcome, key in cases:
+            with self.subTest(kind=inspection[0]):
+                self.requests.clear()
+                self.assertIsNone(self.complete_finished(inspection, outcome))
+                self.assertEqual(self.requests[-1].action, 'inspect_unknown')
+                self.assertTrue(self.controller.message.startswith(ui.ui_text(key)))
+
+
 if __name__ == '__main__':
     unittest.main()

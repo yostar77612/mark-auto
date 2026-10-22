@@ -5146,3 +5146,35 @@ SIWC profile only in its protocol and the provider LF/CRLF source pins. All 21
 earlier profiles keep their exact identity, and consumed receipts are never
 admitted as completed research evidence. Acceptance scores, PROJECT_STATE, other
 G3 files, trading paths and all product deadlines remain unchanged.
+
+## R2-B: explicit local reconciliation UI for finished-unknown receipts
+
+The existing settings panel button, dialog widgets, objectNames, focus order and
+idle-host rules are reused; no widget is added. The worker first runs the R1
+inspection and consults the R2 finished-unknown inspector only when R1 reports
+k2_unresolvable; R2 inspector errors are reported, never swallowed. Neither path
+constructs AuthSession or DPAPIVault, refreshes a token, opens a browser or
+reads official usage.
+
+ReconciliationEvent accepts the kinds k2_resolvable (counts as for K1) and
+k2_other_registration (no details), plus an optional inspection_outcome that is
+valid only with k2_resolvable and only from a frozen UI copy of the provider's
+40 codes, pinned by a drift test. A resolvable, old-enough K2 opens the same
+three-acknowledgement dialog with K2 copy: the outcome code is shown as an
+internal code for maintainers, the explanation adds that the request is
+recorded as consumed even if it may never have reached the server, and the third
+acknowledgement states that the official usage page also counts other tools.
+Confirming sends resolve_finished_unknown with acknowledgement version 1 and the
+sequence, calls and outcome shown; it never falls back to the R1 action.
+ConnectionRequest appends three optional target fields after
+acknowledgement_version. Every payload carries them; they are null for every
+other action, and the UI and the runtime admission both reject them elsewhere.
+
+Recent, other-registration and unmappable K2 results never open the dialog
+and show fixed R2 text. Resolution and clear-pause stay separate. Strings live in
+a trailing Lane R2 block; the R1 key chatgpt_reconciliation.k2 became unused and
+is removed without rewriting other R1 text. The B1 catalogue adds
+finished_request_unmappable and shortens the no_resolvable_unknown_request
+action; all other entries keep their bytes. Shared infrastructure failures
+without a B1 entry still fall back to the generic plan message, as in R1.
+Real-account acceptance is untested.
