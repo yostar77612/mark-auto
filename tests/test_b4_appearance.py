@@ -34,10 +34,10 @@ class AppearanceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    # Re-pinned for U2 compact help-button rules; all exact equality assertions remain.
+    # Re-pinned for U2 compact help-button rules and the shared dark/light tab styles; all exact equality assertions remain.
     def test_default_stylesheets_are_17b5b1b_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, 'e9f50cfe203ec4efe1306afe8f12e1adbc4599af17f2fac430f9ed725093c10a'),
+            (theme.build_app_stylesheet, '1e7ec678722d9f2f0808d2eaeef96f5b03ae691e9547cc3328fb865aa4cb84bb'),
             (theme.build_market_stylesheet, '7ce3a6cb5bc9c2c0eab3fdffc4fc4139327db3a3e9c546661f1b0ef5cde205cf'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)

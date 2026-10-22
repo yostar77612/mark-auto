@@ -301,6 +301,11 @@ QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: @input_background@;
 QCheckBox { padding: 7px 0; }
 QTableWidget { background:@input_background@; alternate-background-color:@table_alternate@; gridline-color:@table_grid@; selection-background-color:@market_selection@; }
 QHeaderView::section { background:@muted_background@; color:@header_text@; padding:6px; border:0; }
+QTabWidget::pane { background:@background@; border:1px solid @table_grid@; }
+QTabBar::tab { background:@muted_background@; color:@header_text@; padding:7px 12px; border:1px solid @table_grid@; }
+QTabBar::tab:selected { background:@tab_selection@; color:@header_text@; }
+QTabBar::tab:hover { background:@button_hover@; }
+QTabBar::tab:disabled { color:@disabled_text@; }
 QProgressBar { border: 1px solid @input_border@; border-radius: 4px; background: @input_background@; text-align: center; }
 QProgressBar::chunk { background: @primary@; }
 
