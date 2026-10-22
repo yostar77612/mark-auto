@@ -91,7 +91,7 @@ def campaign_generator(paths, options):
 
 def connection_event_from_payload(payload):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_chatgpt_ui import ConnectionEvent, TestConnectionEvent
+    from desktop_chatgpt_ui import ConnectionEvent, TestConnectionEvent, ReconciliationEvent
 
     if not isinstance(payload, dict):
         raise ValidationError(ui_text('ui.connection_event_from_payload.invalid_event_format'))
@@ -103,6 +103,11 @@ def connection_event_from_payload(payload):
     for key in ('model_labels', 'account_labels'):
         if key in value:
             value[key] = tuple(tuple(row) for row in value[key])
+    if 'reconciliation_action' in value:
+        for key in ('inspection', 'account_status'):
+            if value.get(key) is not None:
+                value[key] = tuple(value[key])
+        return ReconciliationEvent(**value)
     if 'test_usage' in value:
         return TestConnectionEvent(**value)
     return ConnectionEvent(**value)
@@ -1610,6 +1615,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
 
 
     def _busy(self, active, *, refresh_recovery=False):
+        controller = getattr(self, 'chatgpt_controller', None)
+        if controller is not None:
+            controller.set_background_busy(bool(active))
         panel = getattr(getattr(self, 'strategy_page', None), 'result_panel', None)
         if panel is not None: panel.set_scenario_busy(active)
         for button in self.actions: button.setEnabled(not active)

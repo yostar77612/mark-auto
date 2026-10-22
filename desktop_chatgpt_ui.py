@@ -18,12 +18,30 @@ from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QPushButton, QComboBox, QCheckBox, QSpinBox, QMessageBox
 
 USAGE_SETTINGS_URL = 'https://chatgpt.com/settings/usage'
+# Version of the three acknowledgements displayed by this UI.
+RECONCILIATION_ACKNOWLEDGEMENT_VERSION = 1
+RECONCILIATION_ACTIONS = frozenset(('inspect_unknown', 'resolve_unknown'))
 
 ACTIONS = frozenset(
-    ('initialize', 'begin', 'first_sign_in', 'enable_plan', 'list', 'restore', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test')
+    (
+        'initialize',
+        'begin',
+        'first_sign_in',
+        'enable_plan',
+        'list',
+        'restore',
+        'select',
+        'sign_out',
+        'refresh',
+        'models',
+        'clear_pause',
+        'test',
+        'inspect_unknown',
+        'resolve_unknown',
+    )
 )
-# Local-only reads that never need the host to stop background work first.
-LOCAL_ACTIONS = frozenset(('list',))
+# Local actions never stop background work; reconciliation requires an idle host.
+LOCAL_ACTIONS = frozenset(('list',)) | RECONCILIATION_ACTIONS
 # Startup-only restore may refresh over the network; host scheduling ensures idle workers.
 STARTUP_ACTIONS = frozenset(('restore',))
 # A saved, unexpired login: the sign-in button is hidden in these states.
@@ -69,7 +87,16 @@ STATE_LABELS = {
 from quantlab.desktop_errors import ERROR_LABELS, exception_code
 
 RECOVERABLE_PAUSES = frozenset(
-    ('eligibility_blocked', 'quota_paused', 'transient_blocked', 'invalid_request', 'configuration_blocked', 'credential_diagnosis', 'grant_blocked')
+    (
+        'eligibility_blocked',
+        'quota_paused',
+        'transient_blocked',
+        'invalid_request',
+        'configuration_blocked',
+        'credential_diagnosis',
+        'grant_blocked',
+        'user_confirmed_consumed',
+    )
 )
 REF = r'[a-f0-9]{32}'
 MODEL = r'[A-Za-z0-9._:-]{1,128}'
@@ -143,6 +170,7 @@ class ConnectionRequest:
     max_runtime_seconds: int = 120
     user_confirmed: bool = False
     model: str | None = None
+    acknowledgement_version: int | None = None
 
     def __post_init__(self):
         if type(self.request_id) is not int or self.request_id < 1 or self.action not in ACTIONS:
@@ -150,13 +178,25 @@ class ConnectionRequest:
         _ref(self.registration, optional=True)
         if self.action == 'first_sign_in' and self.registration is not None:
             raise ValueError('first sign-in cannot select an existing account')
-        if self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test') and self.registration is None:
+        if (
+            self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test', 'inspect_unknown', 'resolve_unknown')
+            and self.registration is None
+        ):
             raise ValueError('registration required')
         if self.action == 'test':
             if type(self.model) is not str or not re.fullmatch(MODEL, self.model):
                 raise ValueError('discovered model required')
         elif self.model is not None:
             raise ValueError('model only for connection test')
+        if self.action == 'resolve_unknown':
+            if (
+                self.user_confirmed is not True
+                or type(self.acknowledgement_version) is not int
+                or self.acknowledgement_version != RECONCILIATION_ACKNOWLEDGEMENT_VERSION
+            ):
+                raise ValueError('resolution_confirmation_required')
+        elif self.acknowledgement_version is not None:
+            raise ValueError('acknowledgement only for resolution')
         if type(self.max_runtime_seconds) is not int or not 1 <= self.max_runtime_seconds <= 600:
             raise ValueError('bounded runtime required')
         if type(self.user_confirmed) is not bool or (self.action not in LOCAL_ACTIONS | STARTUP_ACTIONS and not self.user_confirmed):
@@ -264,6 +304,61 @@ class TestConnectionEvent(ConnectionEvent):
 
 
 @dataclass(frozen=True)
+class ReconciliationEvent(ConnectionEvent):
+    """Fixed local-control evidence, without loading or projecting the auth vault."""
+
+    reconciliation_action: str = ''
+    reconciliation_registration: str | None = None
+    inspection: tuple | None = None
+    account_status: tuple | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        _ref(self.reconciliation_registration)
+        if (
+            self.reconciliation_action not in RECONCILIATION_ACTIONS
+            or self.kind not in ('result', 'error')
+            or self.state != 'unknown'
+            or self.registrations
+            or self.active_registration is not None
+            or self.authorization_url is not None
+            or self.models
+            or self.model_labels
+            or self.account_labels
+            or self.revocation_confirmed is not None
+        ):
+            raise ValueError('invalid local reconciliation event')
+        if self.kind == 'error':
+            if self.inspection is not None or self.account_status is not None or not self.error_code:
+                raise ValueError('invalid reconciliation error')
+            return
+        if self.error_code:
+            raise ValueError('invalid reconciliation result')
+        if self.reconciliation_action == 'inspect_unknown':
+            if type(self.inspection) is not tuple or len(self.inspection) != 4 or self.account_status is not None:
+                raise ValueError('invalid bounded inspection')
+            kind, sequence, calls, old_enough = self.inspection
+            if kind not in ('k1_resolvable', 'k1_other_registration', 'k2_unresolvable', 'none') or type(old_enough) is not bool:
+                raise ValueError('invalid inspection kind')
+            if kind == 'k1_resolvable':
+                if any(type(value) is not int or not 1 <= value <= 100 for value in (sequence, calls)) or sequence != calls:
+                    raise ValueError('invalid inspection counts')
+            elif sequence is not None or calls is not None or old_enough:
+                raise ValueError('unexpected inspection details')
+        elif (
+            self.inspection is not None
+            or self.account_status is not None
+            and (
+                type(self.account_status) is not tuple
+                or len(self.account_status) != 2
+                or self.account_status[0] not in RECOVERABLE_PAUSES | {'ready', 'reserved_unknown', 'blocked'}
+                or type(self.account_status[1]) is not bool
+            )
+        ):
+            raise ValueError('invalid resolved account status')
+
+
+@dataclass(frozen=True)
 class SubscriptionOptions:
     registration: str
     model: str
@@ -311,6 +406,8 @@ class ConnectionController(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.host_available = False
+        self.background_busy = False
+        self.reconciliation_inspection = None
         self.busy = False
         self.stopping = False
         self.outcome = None
@@ -342,9 +439,25 @@ class ConnectionController(QObject):
         self.host_available = available
         self.changed.emit()
 
-    def request(self, action, registration=None, *, confirmed=False, model=None):
+    def set_background_busy(self, active):
+        if type(active) is not bool:
+            raise ValueError('background status must be explicit')
+        if self.background_busy != active:
+            self.background_busy = active
+            self.changed.emit()
+
+    def request(self, action, registration=None, *, confirmed=False, model=None, acknowledgement_version=None):
         if not self.host_available or self.busy:
             raise ValueError(ui_text('chatgpt_ui.request.host_busy'))
+        if action in RECONCILIATION_ACTIONS and (
+            self.background_busy
+            or registration != self.active_registration
+            or not self.account_status_known
+            or not self.account_pending
+            or self.account_state != 'reserved_unknown'
+            or dict(self.registrations).get(registration) == 'registration_retry_required'
+        ):
+            raise ValueError('active_or_unknown_request')
         if action == 'test' and (
             registration != self.active_registration
             or self.state != 'plan_ready'
@@ -386,11 +499,13 @@ class ConnectionController(QObject):
             600 if action in ('begin', 'first_sign_in', 'enable_plan') else 30 if action == 'test' else 120,
             confirmed,
             model,
+            acknowledgement_version,
         )
         if action in ('test', 'select', 'sign_out'):
             self.test_message = ui_text('connection_test.untested')
             if action == 'test':
                 self.test_message += '\n' + ui_text('connection_test.usage_unknown')
+        self.reconciliation_inspection = None
         self.busy = True
         self.outcome = None
         self.stopping = False
@@ -404,6 +519,8 @@ class ConnectionController(QObject):
             if self._awaiting_join
             else (ui_text('chatgpt_ui.request.restoring_login') if action == 'restore' else ui_text('chatgpt_ui.request.reading_local_state'))
         )
+        if action in RECONCILIATION_ACTIONS:
+            self.message = ui_text('chatgpt_reconciliation.inspecting') if action == 'inspect_unknown' else ui_text('chatgpt_reconciliation.resolving')
         self.changed.emit()
         (self.quiesce_requested if self._awaiting_join else self.request_ready).emit(request)
         return request
@@ -428,6 +545,10 @@ class ConnectionController(QObject):
             raise ValueError('typed sanitized event required')
         if not self._request or event.request_id != self._request.request_id or self._awaiting_join or self.stopping:
             return False
+        if self._request.action in RECONCILIATION_ACTIONS:
+            return self._apply_reconciliation_event(event)
+        if isinstance(event, ReconciliationEvent):
+            raise ValueError('unexpected reconciliation event')
         if event.kind == 'authorization':
             self._authorization_url = event.authorization_url
             self.state = 'authorizing'
@@ -489,6 +610,52 @@ class ConnectionController(QObject):
         self.changed.emit()
         return True
 
+    def _apply_reconciliation_event(self, event):
+        if (
+            not isinstance(event, ReconciliationEvent)
+            or event.reconciliation_action != self._request.action
+            or event.reconciliation_registration != self._request.registration
+            or self.active_registration != self._request.registration
+        ):
+            raise ValueError('reconciliation account/request mismatch')
+        self._terminal_received = True
+        self._terminal_ok = event.kind == 'result'
+        self.stopping = True
+        self.reconciliation_inspection = event.inspection
+        if event.kind == 'error':
+            from quantlab.desktop_errors import error_message
+
+            self.message = error_message(event.error_code)
+        elif event.inspection is not None:
+            kind, sequence, calls, old_enough = event.inspection
+            messages = {
+                'k1_resolvable': ui_text('chatgpt_reconciliation.summary').format(sequence, calls)
+                if old_enough
+                else ui_text('chatgpt_reconciliation.too_recent'),
+                'k1_other_registration': ui_text('chatgpt_reconciliation.other_registration'),
+                'k2_unresolvable': ui_text('chatgpt_reconciliation.k2'),
+                'none': ui_text('chatgpt_reconciliation.none'),
+            }
+            self.message = messages[kind]
+        else:
+            if event.account_status is None:
+                self.account_status_known = False
+                self.message = ui_text('chatgpt_reconciliation.resolved_unverified')
+            else:
+                state, pending = event.account_status
+                self.set_account_status(self._request.registration, {'state': state, 'pending': pending})
+                self.message = (
+                    ui_text('chatgpt_reconciliation.pending')
+                    if pending
+                    else ui_text('chatgpt_reconciliation.resolved_ready')
+                    if state == 'ready'
+                    else ui_text('chatgpt_reconciliation.resolved')
+                )
+            self.invalidate_campaign_usage()
+        self.message += ui_text('chatgpt_ui.apply_event.wait_for_host')
+        self.changed.emit()
+        return True
+
     def show_outcome(self, code):
         self.outcome = outcome_state(code)
         self.message = outcome_message(code)
@@ -509,7 +676,11 @@ class ConnectionController(QObject):
         self._authorization_url = None
         self._terminal_received = False
         self._terminal_ok = False
-        self.message = ui_text('chatgpt_ui.cancel.stopping_remote_unknown')
+        self.message = (
+            ui_text('chatgpt_reconciliation.changed')
+            if self._request.action in RECONCILIATION_ACTIONS
+            else ui_text('chatgpt_ui.cancel.stopping_remote_unknown')
+        )
         self.changed.emit()
         self.cancel_requested.emit(self._request.request_id)
 
@@ -519,8 +690,14 @@ class ConnectionController(QObject):
         finished = self._request
         succeeded = terminal_received is True and self._terminal_received and self._terminal_ok
         if terminal_received is not True or not self._terminal_received:
-            self.state = 'unknown'
-            self.message = ui_text('chatgpt_ui.worker_joined.remote_outcome_unknown')
+            if finished.action not in RECONCILIATION_ACTIONS:
+                self.state = 'unknown'
+            self.reconciliation_inspection = None
+            self.message = (
+                ui_text('chatgpt_reconciliation.changed')
+                if finished.action in RECONCILIATION_ACTIONS
+                else ui_text('chatgpt_ui.worker_joined.remote_outcome_unknown')
+            )
             self.usage_known = False
             self.unknown_count = None
             self.account_status_known = False
@@ -568,6 +745,7 @@ class ConnectionController(QObject):
             'configuration_blocked',
             'credential_diagnosis',
             'grant_blocked',
+            'user_confirmed_consumed',
             'blocked',
         }
         if (
@@ -661,10 +839,11 @@ class ChatGPTConnectionPanel(QWidget):
             ('models', ui_text('chatgpt_ui.init.fetch_models')),
             ('sign_out', ui_text('chatgpt_ui.init.logout')),
             ('clear_pause', ui_text('chatgpt_ui.init.resume_known_pause')),
+            ('inspect_unknown', ui_text('chatgpt_reconciliation.inspect')),
         ]:
             button = QPushButton(label)
             button.setObjectName('chatgpt_' + action)
-            (layout if action in ('select', 'models', 'sign_out', 'enable_plan') else advanced_layout).addWidget(button)
+            (layout if action in ('select', 'models', 'sign_out', 'enable_plan', 'inspect_unknown') else advanced_layout).addWidget(button)
             self.buttons[action] = button
             button.clicked.connect(lambda checked=False, a=action: self._act(a))
         self.open_button = QPushButton(ui_text('chatgpt_ui.init.continue_authorization'))
@@ -707,6 +886,9 @@ class ChatGPTConnectionPanel(QWidget):
         from desktop_pages.connection_test import ConnectionTest
 
         self.connection_test = ConnectionTest(self)
+        from desktop_pages.chatgpt_reconciliation import ReconciliationFlow
+
+        self.reconciliation = ReconciliationFlow(self)
 
     def _start_primary_sign_in(self):
         c = self.controller
@@ -827,6 +1009,9 @@ class ChatGPTConnectionPanel(QWidget):
         # queued post-join step cannot start another authentication worker.
         self._primary_flow = None
         self._restore_flow = None
+        reconciliation = getattr(self, 'reconciliation', None)
+        if reconciliation is not None:
+            reconciliation.abandon()
 
     def _cancel_primary(self):
         self.abandon_primary_sign_in()
@@ -862,7 +1047,9 @@ class ChatGPTConnectionPanel(QWidget):
             self.controller.show_outcome(exception_code(exc))
 
     def _act(self, action):
-        self._primary_flow = None
+        self.abandon_primary_sign_in()
+        if action == 'inspect_unknown':
+            return self._safe(self.reconciliation.start)
 
         def run():
             if action != 'list' and not self.consent.isChecked():
@@ -949,6 +1136,12 @@ class ChatGPTConnectionPanel(QWidget):
         self.buttons['enable_plan'].setEnabled(ready and c.state == 'identity_only' and c.active_registration is not None)
         self.included_usage_only.setEnabled(ready and c.state == 'plan_ready' and c.active_registration is not None)
         self.buttons['models'].setEnabled(ready and c.state == 'plan_ready' and c.account_status_known and not c.account_paused and not c.account_pending)
+        inspection_visible = c.account_status_known and c.account_state == 'reserved_unknown' and c.account_pending
+        self.buttons['inspect_unknown'].setVisible(inspection_visible)
+        self.buttons['inspect_unknown'].setEnabled(
+            ready and not c.background_busy and inspection_visible and self.account.currentData() == c.active_registration
+        )
+        self.buttons['inspect_unknown'].setToolTip(ui_text('chatgpt_reconciliation.disabled'))
         self.buttons['clear_pause'].setEnabled(
             ready
             and self.account.count() > 0
@@ -1066,6 +1259,32 @@ def run_connection_request(request, *, bootstrap, emit, cancelled, session_facto
     """
     if not isinstance(request, ConnectionRequest):
         raise ValueError('typed connection request required')
+    if request.action in RECONCILIATION_ACTIONS:
+        # Control-file access only: never construct AuthSession or enter a vault lock.
+        from pathlib import Path
+        from desktop_chatgpt_auth import OAuthCredentialReference
+        from desktop_chatgpt_provider import inspect_unknown_request, resolve_unknown_request, read_account_status
+
+        event_fields = {'reconciliation_action': request.action, 'reconciliation_registration': request.registration}
+        try:
+            if cancelled():
+                raise ValueError('active_or_unknown_request')
+            reference = OAuthCredentialReference(str(bootstrap), request.registration)
+            controls = Path(bootstrap) / 'control-v1'
+            if request.action == 'inspect_unknown':
+                result = inspect_unknown_request(reference, controls)
+                return ReconciliationEvent(
+                    request.request_id, 'result', inspection=tuple(result[key] for key in ('kind', 'sequence', 'calls', 'max_age_ok')), **event_fields
+                )
+            resolve_unknown_request(reference, controls, user_confirmed=request.user_confirmed, acknowledgement_version=request.acknowledgement_version)
+            try:
+                status = read_account_status(reference, controls)
+            except Exception:
+                # Resolution committed. A later status-read failure cannot undo that fact.
+                return ReconciliationEvent(request.request_id, 'result', **event_fields)
+            return ReconciliationEvent(request.request_id, 'result', account_status=(status['state'], status['pending']), **event_fields)
+        except Exception as exc:
+            return ReconciliationEvent(request.request_id, 'error', error_code=_safe_error_code(exc), **event_fields)
     if request.action == 'test':
         # Load the probe only inside the allowlisted bounded job.
         from desktop_pages.connection_test import run_probe

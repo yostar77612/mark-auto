@@ -63,6 +63,11 @@ class SettingsPage(PageContext, QWidget):
             self.chatgpt_controller.acknowledge_quiescence(request.request_id, joined=False)
 
     def _chatgpt_dispatch(self, request):
+        if request.action in ('inspect_unknown', 'resolve_unknown') and (self.jobs.active or getattr(self, '_closing', False)):
+            # A local manual action must never cancel an unrelated job to obtain the slot.
+            self.chatgpt_controller.worker_joined(request.request_id, joined=True, terminal_received=False)
+            self.status.setText(ui_text('chatgpt_reconciliation.disabled'))
+            return
         try:
             if self.jobs.active:
                 self._quiesce_and_recover(preserve_primary_sign_in=True)
@@ -184,7 +189,9 @@ class SettingsPage(PageContext, QWidget):
                 if joined:
                     self._chatgpt_job_request = None
                     self._chatgpt_job_id = None
-                    self._pending_usage_refresh = bool(received and self.chatgpt_controller.active_registration)
+                    self._pending_usage_refresh = bool(
+                        received and self.chatgpt_controller.active_registration and request.action not in ('inspect_unknown', 'resolve_unknown')
+                    )
             return True
         if kind in ('result', 'completed', 'success'):
             result = event['result']

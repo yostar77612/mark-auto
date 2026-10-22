@@ -63,7 +63,12 @@ def _reference(registration, bootstrap):
     status = read_account_status(reference, root / 'control-v1')
     if status != {'state': 'ready', 'pending': False}:
         # Fixed local status codes only (for example quota_paused or reserved_unknown).
-        return None, {'error_code': 'account_not_ready', 'account_state': status.get('state'), 'pending_request': status.get('pending')}
+        error = {'error_code': 'account_not_ready', 'account_state': status.get('state'), 'pending_request': status.get('pending')}
+        if status == {'state': 'user_confirmed_consumed', 'pending': False}:
+            from quantlab.desktop_errors import error_message
+
+            error['message'] = error_message('user_confirmed_consumed')
+        return None, error
     return reference, None
 
 
