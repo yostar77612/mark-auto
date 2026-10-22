@@ -11,6 +11,7 @@ from __future__ import annotations
 import codecs
 from contextlib import closing, contextmanager
 import copy
+from datetime import datetime, timezone
 import http.client
 import hashlib
 import importlib.metadata
@@ -34,6 +35,9 @@ from quantlab.research import PROMPT, PARAMETER_CONTRACTS, validate_dsl, _valida
 MODELS_URL = 'https://api.openai.com/v1/models'
 MODELS_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 RESPONSES_URL = 'https://api.openai.com/v1/responses'
+ACKNOWLEDGEMENT_VERSION = 1
+_CONFIRMED_CONSUMED = 'user_confirmed_consumed'
+_RESOLUTION_MIN_AGE_SECONDS = 300
 ERROR_STATES = {
     'subscription_sharing_user_not_eligible': 'eligibility_blocked',
     'subscription_sharing_usage_limit_exceeded': 'quota_paused',
@@ -470,6 +474,7 @@ def _installation_barrier(db, controls, schema='main'):
         expectations=db.execute('SELECT filename,binding,calls FROM '+schema+'.plan_ledgers LIMIT 1025').fetchall()
         if len(expectations)>1024:_fail('account_controls_invalid')
         unknown_receipt=False
+        resolved_registrations=set()
         deadline=time.monotonic()+5
         seen=set()
         for filename,binding,calls in expectations:
@@ -489,24 +494,241 @@ def _installation_barrier(db, controls, schema='main'):
             with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=min(1,max(.001,deadline-time.monotonic())))) as ledger:
                 ledger.execute('BEGIN')
                 _,receipts=_checked_campaign_rows(ledger,'main',(binding,calls))
-                if any(row[3]!='completed' and row[3] not in set(ERROR_STATES.values()) for row in receipts):
-                    unknown_receipt=True
+                for row in receipts:
+                    if row[3]==_CONFIRMED_CONSUMED:
+                        registration=_resolution_registration(db,schema,filename,row)
+                        if registration is None:unknown_receipt=True
+                        else:resolved_registrations.add(registration)
+                    elif row[3]!='completed' and row[3] not in set(ERROR_STATES.values()):
+                        unknown_receipt=True
             if time.monotonic()>=deadline:_fail('account_controls_unavailable')
-        rows=db.execute('SELECT state,owner FROM '+schema+'.plan_accounts '
+        rows=db.execute('SELECT registration,state,owner FROM '+schema+'.plan_accounts '
                         'WHERE state IS NOT NULL OR owner IS NOT NULL LIMIT 1025').fetchall()
     except sqlite3.Error:
         raise PlanError('account_controls_unavailable') from None
     if unknown_receipt:return {'state':'reserved_unknown','pending':True}
     if not rows:return {'state':'ready','pending':False}
     if len(rows)>1024:return {'state':'blocked','pending':True}
-    if any(owner is not None or state=='reserved_unknown' for state,owner in rows):
+    if any(owner is not None or state=='reserved_unknown' for _,state,owner in rows):
         return {'state':'reserved_unknown','pending':True}
     known=set(ERROR_STATES.values())
-    if any(type(state) is not str or state not in known for state,_ in rows):
+    if any(state==_CONFIRMED_CONSUMED and registration not in resolved_registrations for registration,state,_ in rows):
+        return {'state':'blocked','pending':True}
+    known.add(_CONFIRMED_CONSUMED)
+    if any(type(state) is not str or state not in known for _,state,_ in rows):
         return {'state':'blocked','pending':True}
     # A deterministic known state is sufficient for admission; no identities or
     # details about other account registrations are returned to the UI.
-    return {'state':sorted(state for state,_ in rows)[0],'pending':False}
+    return {'state':sorted(state for _,state,_ in rows)[0],'pending':False}
+
+
+def _resolution_registration(db, schema, filename, receipt):
+    """Only complete, matching local audit evidence makes a receipt final."""
+    if schema not in ('main', 'account_controls'):
+        _fail('account_controls_invalid')
+    if not _resolution_audit_triggers(db, schema):
+        return None
+    try:
+        rows = db.execute(
+            'SELECT request_hash,registration,previous_status,new_status,acknowledgement_version,'
+            'official_usage_checked,no_refund_acknowledged,no_other_tool_acknowledged,confirmed_at_utc,implementation_hash '
+            'FROM ' + schema + '.plan_resolutions WHERE filename=? AND sequence=? LIMIT 2',
+            (filename, receipt[0]),
+        ).fetchall()
+    except sqlite3.Error:
+        return None
+    if len(rows) != 1:
+        return None
+    row = rows[0]
+    if (
+        row[0] != receipt[1]
+        or type(row[1]) is not str
+        or not re.fullmatch('[a-f0-9]{32}', row[1])
+        or row[2:4] != ('reserved_unknown', _CONFIRMED_CONSUMED)
+        or type(row[4]) is not int
+        or row[4] != ACKNOWLEDGEMENT_VERSION
+        or any(type(value) is not int or value != 1 for value in row[5:8])
+        or type(row[8]) is not str
+        or type(row[9]) is not str
+        or not re.fullmatch('[a-f0-9]{64}', row[9])
+    ):
+        return None
+    try:
+        recorded = datetime.fromisoformat(row[8])
+        if recorded.utcoffset() != timezone.utc.utcoffset(recorded):
+            return None
+    except ValueError:
+        return None
+    return row[1]
+
+
+def _resolution_audit_triggers(db, schema='main'):
+    """Require the append-only guards, including for an existing audit table."""
+    if schema not in ('main', 'account_controls'):
+        _fail('account_controls_invalid')
+    expected = {
+        'plan_resolutions_no_' + operation.lower():
+        'CREATE TRIGGER plan_resolutions_no_' + operation.lower() + ' BEFORE ' + operation
+        + " ON plan_resolutions BEGIN SELECT RAISE(ABORT,'append_only'); END"
+        for operation in ('UPDATE', 'DELETE')
+    }
+    normalize = lambda sql: re.sub(r'\s+', '', sql).lower().replace('ifnotexists', '').rstrip(';')
+    try:
+        rows = db.execute(
+            'SELECT name,sql FROM ' + schema + ".sqlite_master WHERE type='trigger' AND tbl_name='plan_resolutions' "
+            "AND name IN ('plan_resolutions_no_update','plan_resolutions_no_delete')"
+        ).fetchall()
+        return len(rows) == 2 and all(type(sql) is str and normalize(sql) == normalize(expected[name]) for name, sql in rows)
+    except sqlite3.Error:
+        return False
+
+
+def _resolution_controls(credential_reference, controls_path):
+    if type(credential_reference) is not OAuthCredentialReference:
+        _fail('oauth_reference_required')
+    controls = _controls_for(credential_reference)
+    try:
+        supplied = Path(controls_path)
+    except (TypeError, ValueError):
+        _fail('installation_controls_path_required')
+    if supplied != controls:
+        _fail('installation_controls_path_required')
+    _reject_links(supplied)
+    return controls
+
+
+def _unknown_request_snapshot(db, controls, registration):
+    """Read under the installation transaction; never regenerate old bindings."""
+    barrier = _installation_barrier(db, controls)
+    accounts = db.execute('SELECT registration,state,owner FROM plan_accounts LIMIT 1025').fetchall()
+    if len(accounts) > 1024:
+        _fail('account_controls_invalid')
+    own = next((row for row in accounts if row[0] == registration and row[1] == 'reserved_unknown' and row[2] is not None), None)
+    if own is None:
+        other = any(state == 'reserved_unknown' and owner is not None for _, state, owner in accounts)
+        kind = 'k1_other_registration' if other else 'k2_unresolvable' if barrier['pending'] else 'none'
+        return kind, None
+    matches = db.execute('SELECT filename,binding,calls FROM plan_ledgers WHERE binding=? LIMIT 2', (own[2],)).fetchall()
+    if len(matches) != 1:
+        _fail('campaign_controls_inconsistent')
+    filename, binding, calls = matches[0]
+    path = controls / filename
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as ledger:
+        ledger.execute('BEGIN')
+        budget, receipts = _checked_campaign_rows(ledger, 'main', (binding, calls))
+    if budget[2] is not None or receipts[-1][0] != calls or receipts[-1][3] != 'reserved_unknown':
+        _fail('no_resolvable_unknown_request')
+    resolved_registrations = set()
+    deadline = time.monotonic() + 5
+    for other_filename, other_binding, other_calls in db.execute('SELECT filename,binding,calls FROM plan_ledgers').fetchall():
+        if time.monotonic() >= deadline:
+            _fail('account_controls_unavailable')
+        with closing(sqlite3.connect((controls / other_filename).as_uri() + '?mode=ro', uri=True, timeout=1)) as ledger:
+            ledger.execute('BEGIN')
+            _, rows = _checked_campaign_rows(ledger, 'main', (other_binding, other_calls))
+        for row in rows:
+            if other_filename == filename and row[0] == calls:
+                continue
+            if row[3] == _CONFIRMED_CONSUMED:
+                resolved = _resolution_registration(db, 'main', other_filename, row)
+                if resolved is None:
+                    _fail('active_or_unknown_request')
+                resolved_registrations.add(resolved)
+            elif row[3] != 'completed' and row[3] not in set(ERROR_STATES.values()):
+                _fail('active_or_unknown_request')
+    for account_registration, state, owner in accounts:
+        if account_registration == registration:
+            continue
+        if owner is not None or state not in set(ERROR_STATES.values()) | {None, _CONFIRMED_CONSUMED}:
+            _fail('active_or_unknown_request')
+        if state == _CONFIRMED_CONSUMED and account_registration not in resolved_registrations:
+            _fail('active_or_unknown_request')
+    return 'k1_resolvable', (path, binding, calls, receipts[-1])
+
+
+def inspect_unknown_request(credential_reference, controls_path):
+    """Host-only offline diagnosis; expose no identities, filenames or hashes."""
+    controls = _resolution_controls(credential_reference, controls_path)
+    result = {'kind': 'none', 'sequence': None, 'calls': None, 'max_age_ok': False}
+    db = _open_account_controls(credential_reference)
+    if db is None:
+        return result
+    try:
+        with closing(db):
+            kind, target = _unknown_request_snapshot(db, controls, credential_reference.registration)
+            result['kind'] = kind
+            if target is not None:
+                path, _, calls, receipt = target
+                result.update(sequence=receipt[0], calls=calls, max_age_ok=time.time() - path.stat().st_mtime >= _RESOLUTION_MIN_AGE_SECONDS)
+        return result
+    except (sqlite3.Error, OSError):
+        raise PlanError('account_controls_unavailable') from None
+
+
+def _create_resolution_audit(db):
+    # execute (not executescript) preserves the caller's cross-database transaction.
+    db.execute(
+        'CREATE TABLE IF NOT EXISTS plan_resolutions ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL, sequence INTEGER NOT NULL, request_hash TEXT NOT NULL,'
+        'registration TEXT NOT NULL, previous_status TEXT NOT NULL CHECK(previous_status=\'reserved_unknown\'),'
+        'new_status TEXT NOT NULL CHECK(new_status=\'user_confirmed_consumed\'), acknowledgement_version INTEGER NOT NULL,'
+        'official_usage_checked INTEGER NOT NULL CHECK(official_usage_checked=1),'
+        'no_refund_acknowledged INTEGER NOT NULL CHECK(no_refund_acknowledged=1),'
+        'no_other_tool_acknowledged INTEGER NOT NULL CHECK(no_other_tool_acknowledged=1),'
+        'confirmed_at_utc TEXT NOT NULL, implementation_hash TEXT NOT NULL, UNIQUE(filename,sequence))'
+    )
+    for operation in ('UPDATE', 'DELETE'):
+        db.execute(
+            'CREATE TRIGGER IF NOT EXISTS plan_resolutions_no_' + operation.lower() + ' BEFORE ' + operation
+            + ' ON plan_resolutions BEGIN SELECT RAISE(ABORT,\'append_only\'); END'
+        )
+    if not _resolution_audit_triggers(db):
+        _fail('account_controls_invalid')
+
+
+def resolve_unknown_request(credential_reference, controls_path, *, user_confirmed=False, acknowledgement_version=None):
+    """Manually consume one old K1 receipt atomically, retaining a known pause."""
+    if user_confirmed is not True or type(acknowledgement_version) is not int or acknowledgement_version != ACKNOWLEDGEMENT_VERSION:
+        _fail('resolution_confirmation_required')
+    controls = _resolution_controls(credential_reference, controls_path)
+    db = _open_account_controls(credential_reference, readonly=False)
+    if db is None:
+        _fail('no_resolvable_unknown_request')
+    try:
+        with closing(db), db:
+            if db.execute('PRAGMA main.journal_mode').fetchone() != ('delete',):
+                _fail('unsupported_control_journal_mode')
+            db.execute('PRAGMA main.synchronous=FULL')
+            db.execute('BEGIN IMMEDIATE')
+            kind, target = _unknown_request_snapshot(db, controls, credential_reference.registration)
+            if target is None:
+                _fail('unknown_request_owned_by_another_registration' if kind == 'k1_other_registration' else 'no_resolvable_unknown_request')
+            path, binding, calls, receipt = target
+            _reject_links(path)
+            if time.time() - path.stat().st_mtime < _RESOLUTION_MIN_AGE_SECONDS:
+                _fail('unknown_request_too_recent')
+            db.execute('ATTACH DATABASE ? AS resolution_ledger', (path.as_uri() + '?mode=rw',))
+            if db.execute('PRAGMA resolution_ledger.journal_mode').fetchone() != ('delete',):
+                _fail('unsupported_control_journal_mode')
+            if db.execute('PRAGMA resolution_ledger.synchronous').fetchone() != (2,):
+                _fail('unsupported_control_synchronous_mode')
+            budget, rows = _checked_campaign_rows(db, 'resolution_ledger', (binding, calls))
+            if budget[2] is not None or rows[-1] != receipt or receipt[3] != 'reserved_unknown':
+                _fail('campaign_controls_inconsistent')
+            provenance_hash = content_hash(implementation_provenance())
+            _create_resolution_audit(db)
+            db.execute(
+                'INSERT INTO plan_resolutions (filename,sequence,request_hash,registration,previous_status,new_status,'
+                'acknowledgement_version,official_usage_checked,no_refund_acknowledged,no_other_tool_acknowledged,confirmed_at_utc,implementation_hash) '
+                'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                (path.name, calls, receipt[1], credential_reference.registration, 'reserved_unknown', _CONFIRMED_CONSUMED,
+                 ACKNOWLEDGEMENT_VERSION, 1, 1, 1, datetime.now(timezone.utc).isoformat(), provenance_hash),
+            )
+            db.execute('UPDATE resolution_ledger.plan_calls SET status=? WHERE sequence=?', (_CONFIRMED_CONSUMED, calls))
+            db.execute('UPDATE resolution_ledger.plan_budget SET blocked=? WHERE id=1', (_CONFIRMED_CONSUMED,))
+            db.execute('UPDATE plan_accounts SET state=?,owner=NULL WHERE registration=?', (_CONFIRMED_CONSUMED, credential_reference.registration))
+    except (sqlite3.Error, OSError):
+        raise PlanError('account_controls_unavailable') from None
 
 
 def _checked_campaign_rows(db, schema, expected):
@@ -854,7 +1076,7 @@ def clear_account_pause(credential_reference, controls_path, *, user_confirmed=F
                        (credential_reference.registration,)).fetchone()
         if row and row[0]:
             if row[1] is not None:_fail('active_or_unknown_request')
-            if row[0] not in set(ERROR_STATES.values()):_fail('unknown_outcome_requires_manual_resolution')
+            if row[0] not in set(ERROR_STATES.values())|{_CONFIRMED_CONSUMED}:_fail('unknown_outcome_requires_manual_resolution')
             db.execute('UPDATE plan_accounts SET state=NULL WHERE registration=?',(credential_reference.registration,))
         elif barrier['state']!='ready':
             _fail('pause_owned_by_another_registration')

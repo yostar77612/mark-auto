@@ -5014,3 +5014,58 @@ Tests: `tests/test_web_fetch.py`, `tests/test_idea_search.py`,
 `tests/test_idea_research.py`, `tests/test_idea_research_ui.py` (T1-T19, offline).
 Plan/model availability of web search, usage accounting and the real dialog
 remain unverified until the owner runs the documented account checks.
+
+## R1-A: explicit reconciliation of an orphaned ChatGPT reservation
+
+Owner approval (2026-10-22) permits changes only to the G3 files
+`desktop_chatgpt_provider.py` and `quantlab/research.py` for PR #76's D1=K1,
+D2=two-step recovery, D3=300 seconds and D4=`user_confirmed_consumed` design.
+No real account call, OAuth interaction or official usage-page read is part of
+implementation or automated verification.
+
+The host-only `inspect_unknown_request` is read-only, does not initialize
+controls and exposes only kind, sequence, calls and max_age_ok. Other opaque
+registrations never disclose their sequence, count, filename or binding.
+`resolve_unknown_request` requires literal True confirmation and the current
+integer acknowledgement version. It accepts only the selected registration's
+sole K1 owner/binding, a consistent ledger whose final reserved_unknown receipt
+is sequence=calls, no other unknown receipt or owner anywhere in the installation,
+and a ledger mtime at least 300 seconds old. Time alone never performs recovery.
+
+One global BEGIN IMMEDIATE transaction attaches the existing ledger read/write,
+keeps delete journals and FULL synchronous durability, inserts an append-only
+plan_resolutions audit row, marks the receipt and campaign blocked state
+user_confirmed_consumed, and clears only that registration's owner while setting
+its known pause. Schema identity remains version 1. Failures roll back all state;
+neither inspection nor refused resolution creates or repairs missing controls.
+Calls in both ledgers, request/response digests, request bytes, usage, received
+bytes and elapsed time remain unchanged. Audit rows contain only local opaque
+identifiers, acknowledgement flags/version, UTC time and implementation hash;
+UPDATE and DELETE abort. No remote content or credentials are recorded.
+
+The installation barrier accepts a consumed receipt only with its matching
+filename/sequence/request_hash audit, and accepts a consumed account pause only
+with that registration's audit. Missing or inconsistent evidence remains pending.
+Historical K2 and unknown states are unchanged. Resolution itself never produces
+ready: the user must separately invoke existing clear_account_pause, whose
+global pending and selected-registration restrictions remain. Original campaigns
+stay blocked permanently, even after clearing the installation pause. Research
+accepts the new receipt spelling but every non-completed receipt still blocks
+selection, OOS, holdout and automatic restart. An in-flight stale completion after
+resolution still fails invalid_receipt_transition; no budget is refunded.
+
+The controls remain bootstrap-local, outside workspace backup/restore. Signout,
+new registrations, workspace changes, restart and elapsed time never reconcile
+anything. UI delivery and its fresh three-part acknowledgement are a separate
+dependent PR. Automated evidence is recorded with the PR; live-account behavior
+remains unverified. Acceptance scores, PROJECT_STATE, other G3 files, trading
+paths and all product deadlines remain unchanged.
+
+The owner additionally approved the narrow saved-candidate compatibility
+exception on 2026-10-22: append two frozen producer profiles, their
+SUPPORTED_PRODUCERS entries and the exact transport selector member, with
+necessary tests; preserve all 19 historical profiles and safety checks.
+The new profiles record the changed research source and provider LF/CRLF
+descriptor hashes. They do not accept manually consumed receipts as completed
+research evidence or reopen the interrupted campaign. Existing unsupported or
+mixed provenance tuples remain rejected.

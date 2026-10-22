@@ -734,7 +734,7 @@ def _validated_receipt_snapshot(snapshot, expected_descriptor):
               'request_hash', 'request_bytes', 'status', 'response_hash', 'token_usage',
               'received_bytes', 'elapsed_seconds'}
     statuses = {
-        'completed', 'reserved_unknown', 'failed_or_interrupted', 'eligibility_blocked',
+        'completed', 'reserved_unknown', 'user_confirmed_consumed', 'failed_or_interrupted', 'eligibility_blocked',
         'quota_paused', 'transient_blocked', 'invalid_request', 'configuration_blocked',
         'credential_diagnosis', 'grant_blocked', 'remote_error', 'cancelled',
         'deadline_exceeded', 'http_transport_failed', 'invalid_json', 'duplicate_json_key',

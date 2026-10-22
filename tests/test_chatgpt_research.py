@@ -48,6 +48,83 @@ class SyntheticProvider(r.FixtureGenerator):
         }
 
 
+class UserConfirmedConsumedResearchTests(unittest.TestCase):
+    def test_confirmed_receipt_is_valid_but_never_a_completed_generation(self):
+        provider = SyntheticProvider()
+        provider.rows = [receipt(1, 'user_confirmed_consumed')]
+        snapshot = provider.read_receipt_snapshot()
+        accepted = r._validated_receipt_snapshot(snapshot, provider.provider_descriptor())
+        self.assertEqual(accepted, provider.rows)
+        accepted[0]['status'] = 'completed'
+        self.assertEqual(snapshot['receipts'][0]['status'], 'user_confirmed_consumed')
+        for generation_finished in (False, True):
+            with self.subTest(generation_finished=generation_finished):
+                state = {'provider_receipts': [], 'status': 'running'}
+                attempt = {'warnings': []}
+                r._reconcile_provider_receipts(provider, r._provider_identity(provider), state, attempt, generation_finished)
+                self.assertEqual(state['status'], 'blocked_provider_outcome')
+                self.assertEqual(state['provider_receipts'], provider.rows)
+                self.assertEqual(attempt['warnings'], [])
+
+    def test_confirmed_outcome_cannot_advance_selection_or_restart_campaign(self):
+        data, config = inputs()
+        config.update(families=['trend'], max_improvements=0, max_trials=1)
+        provider = SyntheticProvider()
+        provider.rows = [receipt(1, 'user_confirmed_consumed')]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'campaign'
+            with (
+                patch.object(r, '_run_bounded', side_effect=r.ResourceTimeout('offline interrupted request')),
+                patch.object(r, '_reserve_holdout', side_effect=AssertionError('No holdout consumption')),
+            ):
+                state = r.run_campaign(data, config=config, generator=provider, output_dir=output)
+            self.assertEqual(state['status'], 'blocked_provider_outcome')
+            self.assertEqual(state['provider_receipts'], provider.rows)
+            self.assertFalse(state['holdout_consumed'])
+            self.assertEqual(state['selected'], [])
+            self.assertEqual(state['evaluations'], {'oos': [], 'holdout': []})
+            before = {path.name: path.read_bytes() for path in output.iterdir() if path.is_file()}
+            with (
+                patch.object(r, '_run_bounded', side_effect=AssertionError('No new research work')),
+                patch.object(r, '_reserve_holdout', side_effect=AssertionError('No holdout consumption')),
+            ):
+                reconciled = r.reconcile_interrupted_campaign(output_dir=output, generator=provider, descendants_stopped=True)
+                restarted = r.run_campaign(data, config=config, generator=provider, output_dir=output)
+            self.assertEqual(reconciled, state)
+            self.assertEqual(restarted, state)
+            self.assertEqual(before, {path.name: path.read_bytes() for path in output.iterdir() if path.is_file()})
+
+    def test_running_campaign_with_confirmed_receipt_still_becomes_interrupted(self):
+        import json
+        import sqlite3
+
+        data, config = inputs()
+        config.update(families=['trend'], max_improvements=0, max_trials=1)
+        provider = SyntheticProvider()
+        provider.rows = [receipt(1, 'user_confirmed_consumed')]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'campaign'
+            with patch.object(r, '_run_bounded', side_effect=r.ResourceTimeout('offline fixture')):
+                state = r.run_campaign(data, config=config, generator=provider, output_dir=output)
+            # Recreate the persisted parent state at an outer-worker crash.
+            state['status'] = 'running'
+            state['attempts'][0]['status'] = 'running'
+            state['provider_receipts'] = []
+            with closing(sqlite3.connect(output / 'campaign.sqlite3')) as db, db:
+                db.execute('UPDATE state SET payload=? WHERE id=1', (json.dumps(state),))
+            with (
+                patch.object(r, '_run_bounded', side_effect=AssertionError('No worker restart')),
+                patch.object(r, '_reserve_holdout', side_effect=AssertionError('No holdout consumption')),
+            ):
+                reconciled = r.reconcile_interrupted_campaign(output_dir=output, generator=provider, descendants_stopped=True)
+            self.assertEqual(reconciled['status'], 'blocked_interrupted')
+            self.assertEqual(reconciled['attempts'][0]['status'], 'interrupted')
+            self.assertEqual(reconciled['provider_receipts'], provider.rows)
+            for key in ('holdout_consumed', 'evaluations', 'selected', 'trials_used'):
+                if key in state:
+                    self.assertEqual(reconciled[key], state[key])
+
+
 class Tests(unittest.TestCase):
     def setUp(self):
         mock = patch.object(pmod, 'implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}})
