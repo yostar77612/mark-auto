@@ -2388,7 +2388,7 @@ ZH_TW.update(
         'chatgpt_reconciliation.k2': '這筆請求已經結束，但結果未知，目前版本無法人工核對。',
         'chatgpt_reconciliation.too_recent': '請求剛送出不久，請至少等待 5 分鐘，並確認沒有其他工具正在執行。',
         'chatgpt_reconciliation.none': '目前沒有可以人工核對的未知請求。',
-        'chatgpt_reconciliation.resolved': '已記錄為使用者確認消耗。帳號目前處於已知暫停。請核對額度後，再按「核對額度後申請解除已知暫停」。',
+        'chatgpt_reconciliation.resolved': '已記錄為使用者確認消耗。帳號目前處於已知暫停。請核對額度後，再到「進階連線管理」按「核對額度後申請解除已知暫停」。',
         'chatgpt_reconciliation.pending': '已記錄為使用者確認消耗，但仍有未知請求。請重新核對本機紀錄。',
         'chatgpt_reconciliation.disabled': '請先選取目前登入帳號，並等待所有背景工作停止。',
         'chatgpt_reconciliation.inspecting': '正在核對本機未知請求紀錄；不會連網。',

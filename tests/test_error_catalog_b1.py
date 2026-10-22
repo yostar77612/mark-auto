@@ -105,7 +105,10 @@ class ErrorCatalogTests(unittest.TestCase):
             ),
             'unknown_request_too_recent': ('這筆未知請求距離最後紀錄尚未滿五分鐘。', '請等待至少五分鐘，確認其他工具已停止，再重新核對。'),
             'unsupported_control_synchronous_mode': ('本機請求紀錄未使用必要的完整同步模式。', '請保留本機紀錄並檢查環境；這次人工核對未完成。'),
-            'user_confirmed_consumed': ('已由使用者確認消耗；帳號目前處於已知暫停。', '請先在 App 核對額度，再按「核對額度後申請解除已知暫停」。'),
+            'user_confirmed_consumed': (
+                '已由使用者確認消耗；帳號目前處於已知暫停。',
+                '請先在 App 核對額度，再到「進階連線管理」按「核對額度後申請解除已知暫停」。',
+            ),
         }
         for code, expected in additions.items():
             self.assertEqual(payload.pop(code)[:2], list(expected))

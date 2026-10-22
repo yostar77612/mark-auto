@@ -93,7 +93,9 @@ ERROR_TABLE = {
     ),
     'unknown_request_too_recent': ErrorText('這筆未知請求距離最後紀錄尚未滿五分鐘。', '請等待至少五分鐘，確認其他工具已停止，再重新核對。'),
     'unsupported_control_synchronous_mode': ErrorText('本機請求紀錄未使用必要的完整同步模式。', '請保留本機紀錄並檢查環境；這次人工核對未完成。'),
-    'user_confirmed_consumed': ErrorText('已由使用者確認消耗；帳號目前處於已知暫停。', '請先在 App 核對額度，再按「核對額度後申請解除已知暫停」。'),
+    'user_confirmed_consumed': ErrorText(
+        '已由使用者確認消耗；帳號目前處於已知暫停。', '請先在 App 核對額度，再到「進階連線管理」按「核對額度後申請解除已知暫停」。'
+    ),
     'local_signout_persistence_failed': ErrorText('本機登出保存失敗，請勿假設已登出。', '請核對官方連線與本機紀錄後再操作。'),
     'network_disabled': ErrorText('尚未同意本次連線。', '請核對官方連線與本機紀錄後再操作。'),
     'plan_scope_missing': ErrorText('此連線沒有訂閱推論權限。', '請核對官方連線與本機紀錄後再操作。'),
