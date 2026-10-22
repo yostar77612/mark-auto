@@ -26,7 +26,8 @@ BASELINE = {
     # approved desktop_chatgpt_provider.py and quantlab/research.py edits; operation results are unchanged.
     # R2 (PR #83 approved) refreshed only 5 provider-derived SHA-256 values after the approved
     # desktop_chatgpt_provider.py edit; every non-digest observation is unchanged.
-    'ui_operations_golden.json': '1851927cb83775d56100c6ab9bea5d65954c94ebc4eb75caa741d5c57c29c7dd',
+    # Headerless-stream fix (owner approved 2026-10-23) refreshed the same 5 provider-derived digests.
+    'ui_operations_golden.json': '43919252cf20c9a3e9a2888629656cfc10315fdf0db530ebeaf6268154e0b050',
 }
 
 
