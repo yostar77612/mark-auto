@@ -7,16 +7,25 @@ from desktop_strings import ui_text
 
 
 class ReconciliationDialog(QDialog):
-    def __init__(self, sequence, calls, parent=None):
+    def __init__(self, sequence, calls, parent=None, *, finished=False, outcome=None):
         super().__init__(parent)
         self.setObjectName('chatgpt_reconciliation_dialog')
         self.setWindowTitle(ui_text('chatgpt_reconciliation.title'))
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setAccessibleName(ui_text('chatgpt_reconciliation.title'))
         layout = QVBoxLayout(self)
+        # R2 (K2) reuses every widget and objectName; only the copy differs.
+        summary = (
+            ui_text('chatgpt_reconciliation_k2.summary').format(sequence, calls, outcome)
+            if finished
+            else ui_text('chatgpt_reconciliation.summary').format(sequence, calls)
+        )
+        explanation = ui_text('chatgpt_reconciliation.explanation')
+        if finished:
+            explanation += ui_text('chatgpt_reconciliation_k2.not_sent_notice')
         for key, text in (
-            ('summary', ui_text('chatgpt_reconciliation.summary').format(sequence, calls)),
-            ('explanation', ui_text('chatgpt_reconciliation.explanation')),
+            ('summary', summary),
+            ('explanation', explanation),
         ):
             label = QLabel(text, self)
             label.setObjectName('chatgpt_reconciliation_' + key)
@@ -27,7 +36,10 @@ class ReconciliationDialog(QDialog):
         for key, text in (
             ('usage_checked', ui_text('chatgpt_reconciliation.usage_checked')),
             ('no_refund', ui_text('chatgpt_reconciliation.no_refund')),
-            ('no_other_tool', ui_text('chatgpt_reconciliation.no_other_tool')),
+            (
+                'no_other_tool',
+                ui_text('chatgpt_reconciliation_k2.other_usage') if finished else ui_text('chatgpt_reconciliation.no_other_tool'),
+            ),
         ):
             check = QCheckBox(text, self)
             check.setObjectName('chatgpt_reconciliation_' + key)
@@ -143,26 +155,40 @@ class ReconciliationFlow:
             self.abandon()
             return
         inspection = c.reconciliation_inspection
-        if inspection is None or inspection[0] != 'k1_resolvable' or inspection[3] is not True:
+        if inspection is None or inspection[0] not in ('k1_resolvable', 'k2_resolvable') or inspection[3] is not True:
             self.abandon()
             return
-        dialog = ReconciliationDialog(inspection[1], inspection[2], self.panel)
+        finished = inspection[0] == 'k2_resolvable'
+        self.flow['target'] = (inspection[1], inspection[2], c.reconciliation_outcome) if finished else None
+        dialog = ReconciliationDialog(inspection[1], inspection[2], self.panel, finished=finished, outcome=c.reconciliation_outcome)
         self.dialog = dialog
         dialog.finished.connect(lambda result: self._submit(request_id, dialog, result))
         dialog.open()
 
     def _submit(self, request_id, dialog, result):
-        from desktop_chatgpt_ui import RECONCILIATION_ACKNOWLEDGEMENT_VERSION
+        from desktop_chatgpt_ui import FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION, RECONCILIATION_ACKNOWLEDGEMENT_VERSION
 
         if self.dialog is not dialog:
             dialog.deleteLater()
             return
         valid = result == QDialog.DialogCode.Accepted and self._eligible(request_id) and all(check.isChecked() for check in dialog.acknowledgements)
         registration = self.flow['registration'] if self.flow is not None else None
+        target = self.flow.get('target') if self.flow is not None else None
         self.dialog = None
         self.flow = None
         dialog.deleteLater()
-        if valid:
+        if valid and target is not None:
+            # K2: bind the resolution to the receipt shown; never fall back to the R1 action.
+            self.panel._safe(
+                lambda: self.panel.controller.request(
+                    'resolve_finished_unknown',
+                    registration,
+                    confirmed=True,
+                    acknowledgement_version=FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION,
+                    expected=target,
+                )
+            )
+        elif valid:
             self.panel._safe(
                 lambda: self.panel.controller.request(
                     'resolve_unknown',

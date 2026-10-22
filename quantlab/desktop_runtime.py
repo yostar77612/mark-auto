@@ -1426,7 +1426,7 @@ class JobManager:
             allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
             # ConnectionRequest always serializes the connection-test model (None for other actions).
             if (
-                not allowed <= set(request) <= allowed | {'model', 'acknowledgement_version'}
+                not allowed <= set(request) <= allowed | {'model', 'acknowledgement_version', 'expected_sequence', 'expected_calls', 'expected_outcome'}
                 or request.get('model') is not None
                 and (type(request['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request['model']))
                 or type(request['request_id']) is not int
@@ -1436,12 +1436,22 @@ class JobManager:
             ):
                 raise RuntimeSafetyError('Invalid bounded authentication request')
             version = request.get('acknowledgement_version')
-            if request.get('action') == 'resolve_unknown':
+            if request.get('action') in ('resolve_unknown', 'resolve_finished_unknown'):
                 if type(version) is not int or version != 1 or request.get('user_confirmed') is not True:
                     raise RuntimeSafetyError('Invalid resolution acknowledgement')
             elif version is not None:
                 raise RuntimeSafetyError('Unexpected resolution acknowledgement')
-            if request.get('action') in ('inspect_unknown', 'resolve_unknown') and (
+            expected = tuple(request.get(key) for key in ('expected_sequence', 'expected_calls', 'expected_outcome'))
+            if request.get('action') == 'resolve_finished_unknown':
+                if (
+                    any(type(value) is not int or not 1 <= value <= 100 for value in expected[:2])
+                    or type(expected[2]) is not str
+                    or not re.fullmatch(r'[a-z_]{1,64}', expected[2])
+                ):
+                    raise RuntimeSafetyError('Invalid finished resolution target')
+            elif expected != (None, None, None):
+                raise RuntimeSafetyError('Unexpected finished resolution target')
+            if request.get('action') in ('inspect_unknown', 'resolve_unknown', 'resolve_finished_unknown') and (
                 type(request.get('registration')) is not str or not re.fullmatch(r'[a-f0-9]{32}', request['registration'])
             ):
                 raise RuntimeSafetyError('Invalid reconciliation registration')

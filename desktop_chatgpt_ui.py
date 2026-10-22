@@ -20,7 +20,20 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QPushBu
 USAGE_SETTINGS_URL = 'https://chatgpt.com/settings/usage'
 # Version of the three acknowledgements displayed by this UI.
 RECONCILIATION_ACKNOWLEDGEMENT_VERSION = 1
-RECONCILIATION_ACTIONS = frozenset(('inspect_unknown', 'resolve_unknown'))
+# R2: version of the finished-unknown (K2) acknowledgements, fixed independently of R1.
+FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION = 1
+RECONCILIATION_ACTIONS = frozenset(('inspect_unknown', 'resolve_unknown', 'resolve_finished_unknown'))
+# Fixed local K2 outcome codes the UI may display; a drift test pins them to the provider.
+FINISHED_OUTCOMES = frozenset((
+    'ambiguous_candidate', 'ambiguous_event_type', 'ambiguous_terminal', 'cancelled', 'candidate_byte_limit',
+    'candidate_family_mismatch', 'compressed_response', 'deadline_exceeded', 'done_without_completion',
+    'duplicate_event_type', 'duplicate_json_key', 'eof_without_completion', 'event_byte_limit', 'event_count',
+    'failed_or_interrupted', 'http_transport_failed', 'incomplete_message', 'invalid_content_type', 'invalid_credential',
+    'invalid_event', 'invalid_json', 'invalid_output', 'invalid_response_id', 'invalid_stream_chunk',
+    'invalid_terminal_status', 'invalid_utf8', 'json_depth', 'json_object_required', 'missing_output', 'nonfinite_json',
+    'redirect_rejected', 'refusal_or_tool_event', 'refusal_or_unknown_content', 'remote_error', 'request_byte_limit',
+    'response_id_mismatch', 'response_incomplete', 'stream_byte_limit', 'tools_or_unknown_output', 'truncated_event',
+))  # fmt: skip
 
 ACTIONS = frozenset(
     (
@@ -38,6 +51,7 @@ ACTIONS = frozenset(
         'test',
         'inspect_unknown',
         'resolve_unknown',
+        'resolve_finished_unknown',
     )
 )
 # Local actions never stop background work; reconciliation requires an idle host.
@@ -171,6 +185,10 @@ class ConnectionRequest:
     user_confirmed: bool = False
     model: str | None = None
     acknowledgement_version: int | None = None
+    # R2: the K2 receipt the user saw; only for resolve_finished_unknown.
+    expected_sequence: int | None = None
+    expected_calls: int | None = None
+    expected_outcome: str | None = None
 
     def __post_init__(self):
         if type(self.request_id) is not int or self.request_id < 1 or self.action not in ACTIONS:
@@ -179,21 +197,30 @@ class ConnectionRequest:
         if self.action == 'first_sign_in' and self.registration is not None:
             raise ValueError('first sign-in cannot select an existing account')
         if (
-            self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test', 'inspect_unknown', 'resolve_unknown')
-            and self.registration is None
-        ):
+            self.action in ('enable_plan', 'select', 'sign_out', 'refresh', 'models', 'clear_pause', 'test') or self.action in RECONCILIATION_ACTIONS
+        ) and self.registration is None:
             raise ValueError('registration required')
+        expected = (self.expected_sequence, self.expected_calls, self.expected_outcome)
+        if self.action == 'resolve_finished_unknown':
+            if (
+                any(type(value) is not int or not 1 <= value <= 100 for value in expected[:2])
+                or type(self.expected_outcome) is not str
+                or self.expected_outcome not in FINISHED_OUTCOMES
+            ):
+                raise ValueError('resolution_confirmation_required')
+        elif expected != (None, None, None):
+            raise ValueError('expected receipt only for finished resolution')
         if self.action == 'test':
             if type(self.model) is not str or not re.fullmatch(MODEL, self.model):
                 raise ValueError('discovered model required')
         elif self.model is not None:
             raise ValueError('model only for connection test')
-        if self.action == 'resolve_unknown':
-            if (
-                self.user_confirmed is not True
-                or type(self.acknowledgement_version) is not int
-                or self.acknowledgement_version != RECONCILIATION_ACKNOWLEDGEMENT_VERSION
-            ):
+        versions = {
+            'resolve_unknown': RECONCILIATION_ACKNOWLEDGEMENT_VERSION,
+            'resolve_finished_unknown': FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION,
+        }
+        if self.action in versions:
+            if self.user_confirmed is not True or type(self.acknowledgement_version) is not int or self.acknowledgement_version != versions[self.action]:
                 raise ValueError('resolution_confirmation_required')
         elif self.acknowledgement_version is not None:
             raise ValueError('acknowledgement only for resolution')
@@ -311,10 +338,16 @@ class ReconciliationEvent(ConnectionEvent):
     reconciliation_registration: str | None = None
     inspection: tuple | None = None
     account_status: tuple | None = None
+    # R2: the fixed local outcome code of a resolvable K2 receipt only.
+    inspection_outcome: str | None = None
 
     def __post_init__(self):
         super().__post_init__()
         _ref(self.reconciliation_registration)
+        if self.inspection_outcome is not None and (
+            self.inspection is None or self.inspection[0] != 'k2_resolvable' or self.inspection_outcome not in FINISHED_OUTCOMES
+        ):
+            raise ValueError('invalid inspection outcome')
         if (
             self.reconciliation_action not in RECONCILIATION_ACTIONS
             or self.kind not in ('result', 'error')
@@ -338,9 +371,14 @@ class ReconciliationEvent(ConnectionEvent):
             if type(self.inspection) is not tuple or len(self.inspection) != 4 or self.account_status is not None:
                 raise ValueError('invalid bounded inspection')
             kind, sequence, calls, old_enough = self.inspection
-            if kind not in ('k1_resolvable', 'k1_other_registration', 'k2_unresolvable', 'none') or type(old_enough) is not bool:
+            if (
+                kind not in ('k1_resolvable', 'k1_other_registration', 'k2_resolvable', 'k2_other_registration', 'k2_unresolvable', 'none')
+                or type(old_enough) is not bool
+            ):
                 raise ValueError('invalid inspection kind')
-            if kind == 'k1_resolvable':
+            if (kind == 'k2_resolvable') != (self.inspection_outcome is not None):
+                raise ValueError('invalid inspection outcome')
+            if kind in ('k1_resolvable', 'k2_resolvable'):
                 if any(type(value) is not int or not 1 <= value <= 100 for value in (sequence, calls)) or sequence != calls:
                     raise ValueError('invalid inspection counts')
             elif sequence is not None or calls is not None or old_enough:
@@ -408,6 +446,7 @@ class ConnectionController(QObject):
         self.host_available = False
         self.background_busy = False
         self.reconciliation_inspection = None
+        self.reconciliation_outcome = None
         self.busy = False
         self.stopping = False
         self.outcome = None
@@ -446,7 +485,7 @@ class ConnectionController(QObject):
             self.background_busy = active
             self.changed.emit()
 
-    def request(self, action, registration=None, *, confirmed=False, model=None, acknowledgement_version=None):
+    def request(self, action, registration=None, *, confirmed=False, model=None, acknowledgement_version=None, expected=(None, None, None)):
         if not self.host_available or self.busy:
             raise ValueError(ui_text('chatgpt_ui.request.host_busy'))
         if action in RECONCILIATION_ACTIONS and (
@@ -500,12 +539,14 @@ class ConnectionController(QObject):
             confirmed,
             model,
             acknowledgement_version,
+            *expected,
         )
         if action in ('test', 'select', 'sign_out'):
             self.test_message = ui_text('connection_test.untested')
             if action == 'test':
                 self.test_message += '\n' + ui_text('connection_test.usage_unknown')
         self.reconciliation_inspection = None
+        self.reconciliation_outcome = None
         self.busy = True
         self.outcome = None
         self.stopping = False
@@ -622,6 +663,7 @@ class ConnectionController(QObject):
         self._terminal_ok = event.kind == 'result'
         self.stopping = True
         self.reconciliation_inspection = event.inspection
+        self.reconciliation_outcome = event.inspection_outcome
         if event.kind == 'error':
             from quantlab.desktop_errors import error_message
 
@@ -633,7 +675,11 @@ class ConnectionController(QObject):
                 if old_enough
                 else ui_text('chatgpt_reconciliation.too_recent'),
                 'k1_other_registration': ui_text('chatgpt_reconciliation.other_registration'),
-                'k2_unresolvable': ui_text('chatgpt_reconciliation.k2'),
+                'k2_resolvable': ui_text('chatgpt_reconciliation_k2.summary').format(sequence, calls, event.inspection_outcome)
+                if old_enough
+                else ui_text('chatgpt_reconciliation_k2.too_recent'),
+                'k2_other_registration': ui_text('chatgpt_reconciliation_k2.other_registration'),
+                'k2_unresolvable': ui_text('chatgpt_reconciliation_k2.unmappable'),
                 'none': ui_text('chatgpt_reconciliation.none'),
             }
             self.message = messages[kind]
@@ -693,6 +739,7 @@ class ConnectionController(QObject):
             if finished.action not in RECONCILIATION_ACTIONS:
                 self.state = 'unknown'
             self.reconciliation_inspection = None
+            self.reconciliation_outcome = None
             self.message = (
                 ui_text('chatgpt_reconciliation.changed')
                 if finished.action in RECONCILIATION_ACTIONS
@@ -1263,7 +1310,13 @@ def run_connection_request(request, *, bootstrap, emit, cancelled, session_facto
         # Control-file access only: never construct AuthSession or enter a vault lock.
         from pathlib import Path
         from desktop_chatgpt_auth import OAuthCredentialReference
-        from desktop_chatgpt_provider import inspect_unknown_request, resolve_unknown_request, read_account_status
+        from desktop_chatgpt_provider import (
+            inspect_unknown_request,
+            resolve_unknown_request,
+            inspect_finished_unknown_request,
+            resolve_finished_unknown_request,
+            read_account_status,
+        )
 
         event_fields = {'reconciliation_action': request.action, 'reconciliation_registration': request.registration}
         try:
@@ -1273,10 +1326,30 @@ def run_connection_request(request, *, bootstrap, emit, cancelled, session_facto
             controls = Path(bootstrap) / 'control-v1'
             if request.action == 'inspect_unknown':
                 result = inspect_unknown_request(reference, controls)
+                outcome = None
+                if result['kind'] == 'k2_unresolvable':
+                    # R2: only an R1 K2 refusal consults the finished-unknown inspector; its errors are not swallowed.
+                    result = inspect_finished_unknown_request(reference, controls)
+                    outcome = result['outcome']
                 return ReconciliationEvent(
-                    request.request_id, 'result', inspection=tuple(result[key] for key in ('kind', 'sequence', 'calls', 'max_age_ok')), **event_fields
+                    request.request_id,
+                    'result',
+                    inspection=tuple(result[key] for key in ('kind', 'sequence', 'calls', 'max_age_ok')),
+                    inspection_outcome=outcome,
+                    **event_fields,
                 )
-            resolve_unknown_request(reference, controls, user_confirmed=request.user_confirmed, acknowledgement_version=request.acknowledgement_version)
+            if request.action == 'resolve_finished_unknown':
+                resolve_finished_unknown_request(
+                    reference,
+                    controls,
+                    user_confirmed=request.user_confirmed,
+                    acknowledgement_version=request.acknowledgement_version,
+                    expected_sequence=request.expected_sequence,
+                    expected_calls=request.expected_calls,
+                    expected_outcome=request.expected_outcome,
+                )
+            else:
+                resolve_unknown_request(reference, controls, user_confirmed=request.user_confirmed, acknowledgement_version=request.acknowledgement_version)
             try:
                 status = read_account_status(reference, controls)
             except Exception:
