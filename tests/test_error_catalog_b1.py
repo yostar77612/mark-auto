@@ -94,6 +94,31 @@ class ErrorCatalogTests(unittest.TestCase):
                 '\u8acb\u91cd\u65b0\u5f9e @ \u6e05\u55ae\u9078\u64c7\u3002',
             ],
         )
+        # R1 adds six fixed messages and intentionally points one existing action to the new UI.
+        # Assert those approved bytes, then restore only that action for the original 64-entry digest.
+        additions = {
+            'resolution_confirmation_required': ('尚未完成這次人工核對的全部確認。', '請重新開啟「核對未知請求…」，閱讀說明並逐項確認。'),
+            'unknown_request_owned_by_another_registration': ('未知請求屬於另一個已登入的帳號。', '請切換到原本送出請求的帳號，再按「核對未知請求…」。'),
+            'no_resolvable_unknown_request': (
+                '目前沒有可以人工核對的未知請求，或本機狀態已變更。',
+                '請重新按「核對未知請求…」；已結束但結果未知的請求目前不支援人工核對。',
+            ),
+            'unknown_request_too_recent': ('這筆未知請求距離最後紀錄尚未滿五分鐘。', '請等待至少五分鐘，確認其他工具已停止，再重新核對。'),
+            'unsupported_control_synchronous_mode': ('本機請求紀錄未使用必要的完整同步模式。', '請保留本機紀錄並檢查環境；這次人工核對未完成。'),
+            'user_confirmed_consumed': (
+                '已由使用者確認消耗；帳號目前處於已知暫停。',
+                '請先在 App 核對額度，再到「進階連線管理」按「核對額度後申請解除已知暫停」。',
+            ),
+        }
+        for code, expected in additions.items():
+            self.assertEqual(payload.pop(code)[:2], list(expected))
+        code = 'unknown_outcome_requires_manual_resolution'
+        old_action = '請核對官方連線與本機紀錄後再操作。'
+        new_action = '請到設定頁按「核對未知請求…」，自行核對官方用量並完成確認。'
+        self.assertEqual(payload[code][1], new_action)
+        self.assertEqual(payload[code][2], f'{payload[code][0]} {new_action}（錯誤代碼：{code}）')
+        payload[code][1] = old_action
+        payload[code][2] = f'{payload[code][0]} {old_action}（錯誤代碼：{code}）'
         # A1-D1 and the paper stop lock (A1) each add one B1 registry entry; all 64 historical bytes stay locked.
         self.assertEqual(len(payload), BASELINE_COUNT + 2)
         payload.pop('agent_tool_refused')

@@ -1426,7 +1426,7 @@ class JobManager:
             allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
             # ConnectionRequest always serializes the connection-test model (None for other actions).
             if (
-                set(request) not in (allowed, allowed | {'model'})
+                not allowed <= set(request) <= allowed | {'model', 'acknowledgement_version'}
                 or request.get('model') is not None
                 and (type(request['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request['model']))
                 or type(request['request_id']) is not int
@@ -1435,6 +1435,16 @@ class JobManager:
                 or not 1 <= request['max_runtime_seconds'] <= 600
             ):
                 raise RuntimeSafetyError('Invalid bounded authentication request')
+            version = request.get('acknowledgement_version')
+            if request.get('action') == 'resolve_unknown':
+                if type(version) is not int or version != 1 or request.get('user_confirmed') is not True:
+                    raise RuntimeSafetyError('Invalid resolution acknowledgement')
+            elif version is not None:
+                raise RuntimeSafetyError('Unexpected resolution acknowledgement')
+            if request.get('action') in ('inspect_unknown', 'resolve_unknown') and (
+                type(request.get('registration')) is not str or not re.fullmatch(r'[a-f0-9]{32}', request['registration'])
+            ):
+                raise RuntimeSafetyError('Invalid reconciliation registration')
             auth_request_id = request['request_id']
             deadline = time.monotonic() + request['max_runtime_seconds'] + 5
         elif operation in ('ui_chatgpt_usage', 'ui_chatgpt_reconcile'):

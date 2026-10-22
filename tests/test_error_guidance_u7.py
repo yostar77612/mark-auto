@@ -80,8 +80,11 @@ class ErrorGuidanceTests(unittest.TestCase):
 
     def test_catalog_source_is_unchanged(self):
         # Re-pinned after A1: the only catalogue change is the added paper_manual_order_lock entry.
+        # Re-pinned for R1 (PR #76, owner approved): five reconciliation errors and the user_confirmed_consumed
+        # entry were added, and unknown_outcome_requires_manual_resolution now points to the new dialog.
+        # Re-pinned again (owner approved): the user_confirmed_consumed action names the 進階連線管理 section.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '49a53d71e356110a0b4506296b1948f1bc38f684376c64a9e327424773023ecc')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '514ef06e169776c6d7d75252d36382ee64dba8b51f7cd523d95f9de48de2a607')
 
     def test_form_failure_is_inline_without_message_box_then_clears(self):
         page = QWidget()

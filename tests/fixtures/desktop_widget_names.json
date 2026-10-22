@@ -73,6 +73,8 @@
   "chatgpt_included_usage_only",
   "chatgpt_initialize",
   "chatgpt_initialize_prerequisite",
+  "chatgpt_inspect_unknown",
+  "chatgpt_inspect_unknown_prerequisite",
   "chatgpt_list",
   "chatgpt_list_prerequisite",
   "chatgpt_models",

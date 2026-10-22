@@ -5069,3 +5069,29 @@ The new profiles record the changed research source and provider LF/CRLF
 descriptor hashes. They do not accept manually consumed receipts as completed
 research evidence or reopen the interrupted campaign. Existing unsupported or
 mixed provenance tuples remain rejected.
+
+## R1-B: explicit local reconciliation UI
+
+The settings connection panel offers unknown-request inspection only for the
+selected active registration while all background work is idle. Both controller
+and host dispatch enforce the idle condition. The local inspection/resolution
+worker never constructs AuthSession or DPAPIVault, refreshes a token, opens a
+browser, or reads official usage. A separate bounded ReconciliationEvent carries
+only the local inspection or account-status result, preserving ordinary auth
+event serialization and login/model state.
+
+After the inspection worker has joined, a fresh dialog requires all three
+acknowledgements: official usage checked, no refund/permanent campaign stop
+understood, and no other tool currently sending requests. Cancel is the default;
+selection changes, cancellation, closing and background activity invalidate the
+dialog. The UI's acknowledged-copy version is fixed at 1 and strictly validated
+at request and provider boundaries. No checkbox state is persisted.
+
+Resolution and clear-pause remain separate actions. A successful commit is still
+reported as recorded if its subsequent status read fails; status remains unknown
+and no recovery is automatically enabled. Other installation-wide known pauses
+are preserved. The owner-run web-search diagnostic reports fixed App recovery
+guidance for the new known pause and still sends no request while paused.
+New strings use literal ui_text keys, and new error messages use the shared B1
+catalogue. Only the approved existing unknown-outcome action changes; the other
+historical catalogue bytes remain locked. Real-account acceptance is untested.

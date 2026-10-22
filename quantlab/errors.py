@@ -83,7 +83,19 @@ ERROR_TABLE = {
     'previous_completion_unknown': ErrorText('先前請求完成狀態未知，禁止重送或退還次數。', '請核對官方連線與本機紀錄後再操作。'),
     'account_paused': ErrorText('此帳戶已暫停；新研究或模型不會解除限制。', '請核對官方連線與本機紀錄後再操作。'),
     'active_or_unknown_request': ErrorText('仍有執行中或結果未知的請求，無法解除暫停。', '請核對官方連線與本機紀錄後再操作。'),
-    'unknown_outcome_requires_manual_resolution': ErrorText('完成狀態未知，須另行核對；不能重設或退還次數。', '請核對官方連線與本機紀錄後再操作。'),
+    'unknown_outcome_requires_manual_resolution': ErrorText(
+        '完成狀態未知，須另行核對；不能重設或退還次數。', '請到設定頁按「核對未知請求…」，自行核對官方用量並完成確認。'
+    ),
+    'resolution_confirmation_required': ErrorText('尚未完成這次人工核對的全部確認。', '請重新開啟「核對未知請求…」，閱讀說明並逐項確認。'),
+    'unknown_request_owned_by_another_registration': ErrorText('未知請求屬於另一個已登入的帳號。', '請切換到原本送出請求的帳號，再按「核對未知請求…」。'),
+    'no_resolvable_unknown_request': ErrorText(
+        '目前沒有可以人工核對的未知請求，或本機狀態已變更。', '請重新按「核對未知請求…」；已結束但結果未知的請求目前不支援人工核對。'
+    ),
+    'unknown_request_too_recent': ErrorText('這筆未知請求距離最後紀錄尚未滿五分鐘。', '請等待至少五分鐘，確認其他工具已停止，再重新核對。'),
+    'unsupported_control_synchronous_mode': ErrorText('本機請求紀錄未使用必要的完整同步模式。', '請保留本機紀錄並檢查環境；這次人工核對未完成。'),
+    'user_confirmed_consumed': ErrorText(
+        '已由使用者確認消耗；帳號目前處於已知暫停。', '請先在 App 核對額度，再到「進階連線管理」按「核對額度後申請解除已知暫停」。'
+    ),
     'local_signout_persistence_failed': ErrorText('本機登出保存失敗，請勿假設已登出。', '請核對官方連線與本機紀錄後再操作。'),
     'network_disabled': ErrorText('尚未同意本次連線。', '請核對官方連線與本機紀錄後再操作。'),
     'plan_scope_missing': ErrorText('此連線沒有訂閱推論權限。', '請核對官方連線與本機紀錄後再操作。'),
