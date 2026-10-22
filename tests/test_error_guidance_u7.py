@@ -83,8 +83,10 @@ class ErrorGuidanceTests(unittest.TestCase):
         # Re-pinned for R1 (PR #76, owner approved): five reconciliation errors and the user_confirmed_consumed
         # entry were added, and unknown_outcome_requires_manual_resolution now points to the new dialog.
         # Re-pinned again (owner approved): the user_confirmed_consumed action names the 進階連線管理 section.
+        # Re-pinned for R2 (PR #83 D8, owner approved): finished_request_unmappable is added and the
+        # no_resolvable_unknown_request action is shortened; no other entry changes.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '514ef06e169776c6d7d75252d36382ee64dba8b51f7cd523d95f9de48de2a607')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '1435123a80307204840bbe4d496222fb61db764e7b112ce1ba2da3a94491fdb6')
 
     def test_form_failure_is_inline_without_message_box_then_clears(self):
         page = QWidget()

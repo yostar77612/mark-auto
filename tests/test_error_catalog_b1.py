@@ -99,9 +99,12 @@ class ErrorCatalogTests(unittest.TestCase):
         additions = {
             'resolution_confirmation_required': ('尚未完成這次人工核對的全部確認。', '請重新開啟「核對未知請求…」，閱讀說明並逐項確認。'),
             'unknown_request_owned_by_another_registration': ('未知請求屬於另一個已登入的帳號。', '請切換到原本送出請求的帳號，再按「核對未知請求…」。'),
-            'no_resolvable_unknown_request': (
-                '目前沒有可以人工核對的未知請求，或本機狀態已變更。',
-                '請重新按「核對未知請求…」；已結束但結果未知的請求目前不支援人工核對。',
+            # R2 (PR #83 D8, owner approved) shortens this action now that K2 reconciliation exists.
+            'no_resolvable_unknown_request': ('目前沒有可以人工核對的未知請求，或本機狀態已變更。', '請重新按「核對未知請求…」。'),
+            # R2 adds one fixed message for refused, ambiguous K2 records.
+            'finished_request_unmappable': (
+                '已結束但結果未知的請求，無法從本機紀錄唯一對應到一個帳號。',
+                '請保留本機紀錄，不要手動修改；這個情況需要後續版本處理。',
             ),
             'unknown_request_too_recent': ('這筆未知請求距離最後紀錄尚未滿五分鐘。', '請等待至少五分鐘，確認其他工具已停止，再重新核對。'),
             'unsupported_control_synchronous_mode': ('本機請求紀錄未使用必要的完整同步模式。', '請保留本機紀錄並檢查環境；這次人工核對未完成。'),
