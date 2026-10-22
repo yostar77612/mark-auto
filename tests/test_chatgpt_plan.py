@@ -2047,6 +2047,22 @@ class FinishedRequestResolutionTests(unittest.TestCase):
                 self.age(p)
                 self.unchanged_refusal(lambda: self.resolve(p), 'unsupported_control_journal_mode')
 
+    def test_finish_never_persists_an_outcome_outside_the_research_allowlist(self):
+        for status in ('campaign_controls_unavailable', 'unsupported_control_journal_mode', 'not_a_code'):
+            with self.subTest(status=status):
+                p = provider(self.tmp_path / status)
+                p._reserve('a' * 64, 123)
+                p._finish(1, status)
+                self.assertEqual(p.read_receipts()[0]['status'], 'failed_or_interrupted')
+                self.assertEqual(self.rows(p.path, 'SELECT blocked FROM plan_budget'), [('failed_or_interrupted',)])
+                self.assertEqual(self.rows(p.account_path, 'SELECT state,owner FROM plan_accounts'), [('failed_or_interrupted', None)])
+        for status in ('invalid_content_type', 'quota_paused'):
+            with self.subTest(status=status):
+                p = provider(self.tmp_path / status)
+                p._reserve('a' * 64, 123)
+                p._finish(1, status)
+                self.assertEqual(p.read_receipts()[0]['status'], status)
+
     def test_k1_resolution_still_works_after_a_finished_unknown_resolution(self):
         p = self.k2()
         self.resolve(p)

@@ -1192,6 +1192,9 @@ class ChatGPTPlanProvider:
         return sequence
 
     def _finish(self,sequence,status,response_hash=None,usage='unknown',received_bytes=None,elapsed_seconds=None):
+        # R2/D7: never persist an outcome outside the research receipt allowlist.
+        if status!='completed' and status not in _FINISHED_UNKNOWN_STATUSES and status not in set(ERROR_STATES.values()):
+            status='failed_or_interrupted'
         with closing(self._db()) as db,db:
             db.execute('BEGIN IMMEDIATE')
             binding=content_hash(self.provider_descriptor())
