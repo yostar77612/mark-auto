@@ -5178,3 +5178,18 @@ finished_request_unmappable and shortens the no_resolvable_unknown_request
 action; all other entries keep their bytes. Shared infrastructure failures
 without a B1 entry still fall back to the generic plan message, as in R1.
 Real-account acceptance is untested.
+
+## Headerless official stream: Content-Type exception
+
+Owner approval (2026-10-23) permits one narrow change to the G3 file
+`desktop_chatgpt_provider.py`, one appended saved-candidate SIWC profile and the
+necessary fixture re-pins. A diagnostic with the owner's sign-in showed that the
+official streamed POST /v1/responses reply carries no Content-Type header while
+its body is a valid event stream ending in response.completed. The transport now
+reads a POST reply whose Content-Type header is entirely absent as a stream. A
+present but different or empty type is still refused, and the GET model catalog
+still requires application/json. Every consumer keeps strict SSE parsing, byte,
+event and deadline limits, and requires response.completed; a headerless garbage
+or incomplete body still records a non-completed receipt. No other check,
+budget or timeout changes. STREAM_CONTENT_TYPE_SIWC_PROFILE_V1 differs from the
+previous SIWC profile only in its protocol and provider LF/CRLF source pins.

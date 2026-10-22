@@ -39,5 +39,5 @@ LOCKED_HASHES = {
     'quantlab/backtest.py': '2dcee78c0c7a7d09c54a0d362b6d0a2be957cf910046d3bd6a89525761da5bb6',
     'quantlab/data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
     'desktop_chatgpt_auth.py': '4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf',
-    'desktop_chatgpt_provider.py': '263317fb54bd0213bbe4233505df57fd264ca830ae5b8e9cfc270ccf3163b1fd',
+    'desktop_chatgpt_provider.py': '63b0d42b0535e94c78bec4bcab9c1a844d7f4cb28e381da1d3e7e29dd0c0e45f',
 }

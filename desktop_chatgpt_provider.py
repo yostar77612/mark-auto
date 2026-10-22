@@ -307,7 +307,13 @@ class PlanHTTPTransport:
                 except PlanError:value={}
                 _remote_error(value,http_status=response.status)
             expected='text/event-stream' if method=='POST' else 'application/json'
-            if response.getheader('Content-Type','').split(';',1)[0].strip().lower()!=expected:_fail('invalid_content_type')
+            # Owner-approved (2026-10-23): the official streamed Responses reply can omit the
+            # header entirely. Only a POST with no Content-Type header at all is read as a
+            # stream; any present but different type is still refused, and the consumer's
+            # strict SSE parsing and response.completed requirement remain the gate.
+            content_type=response.getheader('Content-Type')  # None only when the header is absent
+            if not (method=='POST' and content_type is None) and (
+                    (content_type or '').split(';',1)[0].strip().lower()!=expected):_fail('invalid_content_type')
             yield chunks()
         except (OSError,http.client.HTTPException):
             _check(deadline,cancelled)
