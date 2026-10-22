@@ -5095,3 +5095,54 @@ guidance for the new known pause and still sends no request while paused.
 New strings use literal ui_text keys, and new error messages use the shared B1
 catalogue. Only the approved existing unknown-outcome action changes; the other
 historical catalogue bytes remain locked. Real-account acceptance is untested.
+
+## R2-A: explicit reconciliation of a uniquely mapped finished-unknown ChatGPT receipt
+
+Owner approval (2026-10-23, PR #83, D0-D10 as recommended) permits changes only to
+the G3 file `desktop_chatgpt_provider.py`, one appended saved-candidate SIWC
+profile and the listed fixture re-pins. `quantlab/research.py` is unchanged. No
+real account call, OAuth interaction or official usage-page read is part of
+implementation or automated verification.
+
+A K2 receipt finished in-process with an outcome code from the frozen 40-code set
+(the research allowlist minus completed, reserved_unknown, user_confirmed_consumed
+and the known pause states). The host-only `inspect_finished_unknown_request` is
+read-only, never initializes controls, and exposes only kind, sequence, calls,
+max_age_ok and the fixed local outcome code for the selected registration's own
+resolvable receipt. Other registrations disclose nothing.
+`resolve_finished_unknown_request` requires literal True confirmation, the integer
+finished acknowledgement version 1, and the expected sequence, calls and outcome
+code shown to the user. It accepts only when existing data maps the receipt to
+exactly one registration: the installation barrier is pending; no K1 owner or
+reserved_unknown row exists; every other receipt is completed, a known pause or
+audited consumed; there is exactly one K2 receipt and it is its ledger's last one
+with every earlier receipt completed, blocked equal to its code, a NULL response
+hash and unknown usage; exactly one unresolved account row exists, ownerless, with
+the same code, and it is the selected registration; the ledger mtime is at least
+300 seconds old. Every ambiguous shape is refused with all bytes unchanged.
+
+One global BEGIN IMMEDIATE transaction attaches the ledger read/write, keeps
+delete journals and FULL synchronous durability, verifies the exact table SQL and
+append-only triggers of plan_finished_resolutions (a permissive pre-created table
+is never adopted), inserts one audit row with a digest of the original 8-column
+receipt, and changes only the receipt status and that account row's state to
+user_confirmed_consumed, each requiring exactly one updated row. plan_budget.blocked
+keeps the original code; calls, digests, bytes, usage and elapsed time are
+unchanged; nothing is refunded. Failures roll back every database, including a
+first CREATE TABLE. Schema identity and the R1 acknowledgement version stay 1.
+
+The barrier and the R1 snapshot accept a consumed receipt only with exactly one
+valid, schema-qualified R1 or R2 audit row. An R1 row additionally requires
+blocked=user_confirmed_consumed; an R2 row requires its previous status to equal
+blocked and its receipt digest to match. Unaudited, torn, tampered or forged
+evidence stays pending. Builds without R2 see no R1 audit and stay pending.
+Resolution never produces ready; the existing clear_account_pause remains a
+separate step, and the original campaign stays blocked permanently. Separately
+(D7), _finish records any non-completed code outside the allowlisted set as
+failed_or_interrupted.
+
+The appended FINISHED_UNKNOWN_RECONCILIATION_SIWC_PROFILE_V1 differs from the R1
+SIWC profile only in its protocol and the provider LF/CRLF source pins. All 21
+earlier profiles keep their exact identity, and consumed receipts are never
+admitted as completed research evidence. Acceptance scores, PROJECT_STATE, other
+G3 files, trading paths and all product deadlines remain unchanged.
