@@ -1,6 +1,6 @@
 # 全功能測試與發布：交接進度
 
-最後更新：2026-10-22（UTC 13:3x）。這份檔案在每個段落結束時更新，讓接手者（人或其他代理）知道目前狀態。
+最後更新：2026-10-22（UTC 13:4x，用量交接）。這份檔案在每個段落結束時更新，讓接手者（人或其他代理）知道目前狀態。
 
 ## 任務來源
 
@@ -28,11 +28,13 @@
 3. 在乾淨 main（`8c4c870`）跑 core（desktop、paper、remaining）與 research 分片；以臨時工作區與 bootstrap 逐頁操作（4 組功能區，Sonnet 代理），並以 `tools/ui_readability_audit.py`（offscreen 與真實視窗）驗證深色／淺色可讀性。
 4. 修正可修的問題（各自分支與 PR），寫 `docs/qa/` 測試報告並開 PR。
 
-## 下一步（目前）
+## 下一步（目前，交接時）
 
-1. 已完成：main `8c4c870` 的 preview `desktop-preview-39775999074-2` 已發布（安裝檔 `MarkAuto-0.2.2-windows-x64-setup.exe`，同頁 `SHA256SUMS.txt`）。
-2. PR #79 CI 全綠後 squash 合併。
-3. 本 QA 分支開 PR（報告 `docs/qa/full-function-test-2026-10-22.md`、稽核工具、本檔），CI 全綠後合併；合併後更新報告的發布紀錄。
+1. PR #79（`fix/short-dataset-refresh`，head `5761547`）：Quantlab 整輪成功；只有觀察用的「WFO storage diagnostic (Windows 3.12)」卡在 in_progress（所有步驟已完成，超過 6 分鐘上限，GitHub 狀態異常）。確認 head 未變、其餘檢查全綠後 squash 合併；卡住的觀察項目在報告註明。
+2. PR #80（`qa/full-function-test`）：CI 執行中；全綠後 squash 合併（#79 之後）。
+3. 擁有者已在對話中核准 PR #76 的建議方案（2026-10-22），原文：「核准 PR #76 的建議方案（D1 只做 K1、D2 兩步恢復、D3 300 秒、D4 user_confirmed_consumed／已由使用者確認消耗），允許為這個功能修改 desktop_chatgpt_provider.py 和 quantlab/research.py。照設計分兩個 PR 實作，CI 全綠後先給我看，不要自行合併。」→ 尚未開始實作。設計文件在 PR #76 分支 `docs/chatgpt-unknown-request-reconciliation-design` 的 `docs/design/chatgpt-unknown-request-reconciliation.md`。
+4. 擁有者已安裝 `desktop-preview-39775999074-2`，ChatGPT 登入成功（#77 修正有效）；「取得此連線可用模型」仍被 `reserved_unknown` 擋住，等第 3 項完成。
+5. 第 3 步帳號實測：等第 3 項完成、擁有者用人工核對解除後，帳戶 ready 才可執行。
 
 ## 已知問題
 
