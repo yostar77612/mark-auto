@@ -1711,3 +1711,369 @@ class UnknownRequestResolutionTests(unittest.TestCase):
                         ),
                         'installation_controls_path_required',
                     )
+
+
+class FinishedRequestResolutionTests(unittest.TestCase):
+    """R2 offline reconciliation of a uniquely mapped finished-unknown (K2) receipt."""
+
+    files = UnknownRequestResolutionTests.files
+    rows = UnknownRequestResolutionTests.rows
+    mutate = UnknownRequestResolutionTests.mutate
+    age = UnknownRequestResolutionTests.age
+
+    def setUp(self):
+        UnknownRequestResolutionTests.setUp(self)
+
+    def k2(self, root=None, status='invalid_content_type', **kwargs):
+        p = provider(root or self.tmp_path, **kwargs)
+        p._reserve('a' * 64, 123)
+        p._finish(1, status, received_bytes=0, elapsed_seconds=3.1)
+        self.age(p)
+        return p
+
+    def inspect(self, p, reference=None):
+        return self.module.inspect_finished_unknown_request(reference or p.credential_reference, p.path.parent)
+
+    def resolve(self, p, reference=None, **kwargs):
+        options = {
+            'user_confirmed': True,
+            'acknowledgement_version': self.module.FINISHED_ACKNOWLEDGEMENT_VERSION,
+            'expected_sequence': 1,
+            'expected_calls': 1,
+            'expected_outcome': 'invalid_content_type',
+        }
+        options.update(kwargs)
+        return self.module.resolve_finished_unknown_request(reference or p.credential_reference, p.path.parent, **options)
+
+    def unchanged_refusal(self, operation, code):
+        before = self.files()
+        with self.assertRaises(PlanError) as caught:
+            operation()
+        self.assertEqual(caught.exception.code, code)
+        self.assertEqual(self.files(), before, 'A refused operation must leave every control/ledger byte unchanged')
+        self.assertEqual(MockTransport.requests, [])
+
+    def unresolvable(self, p, code='finished_request_unmappable'):
+        before = self.files()
+        self.assertEqual(self.inspect(p)['kind'], 'k2_unresolvable')
+        self.assertEqual(self.files(), before)
+        self.unchanged_refusal(lambda: self.resolve(p), code)
+        self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+
+    def r1_registration(self, p):
+        import sqlite3
+
+        with closing(sqlite3.connect(p.account_path)) as db:
+            return self.module._resolution_registration(db, 'main', p.path.name, self.rows(p.path, 'SELECT * FROM plan_calls')[0])
+
+    def add_r1_audit(self, p):
+        import sqlite3
+
+        with closing(sqlite3.connect(p.account_path)) as db, db:
+            self.module._create_resolution_audit(db)
+            db.execute(
+                'INSERT INTO plan_resolutions (filename,sequence,request_hash,registration,previous_status,new_status,'
+                'acknowledgement_version,official_usage_checked,no_refund_acknowledged,no_other_tool_acknowledged,confirmed_at_utc,'
+                "implementation_hash) VALUES (?,1,?,?,'reserved_unknown','user_confirmed_consumed',1,1,1,1,'2026-10-23T00:00:00+00:00',?)",
+                (p.path.name, 'a' * 64, 'a' * 32, 'c' * 64),
+            )
+
+    def test_owner_shape_is_inspected_read_only_and_r1_still_refuses(self):
+        p = self.k2()
+        before = self.files()
+        self.assertEqual(self.inspect(p), {'kind': 'k2_resolvable', 'sequence': 1, 'calls': 1, 'max_age_ok': True, 'outcome': 'invalid_content_type'})
+        self.assertEqual(self.files(), before)
+        self.assertEqual(
+            self.module.inspect_unknown_request(p.credential_reference, p.path.parent),
+            {'kind': 'k2_unresolvable', 'sequence': None, 'calls': None, 'max_age_ok': False},
+        )
+        self.assertEqual(self.rows(p.account_path, "SELECT name FROM sqlite_master WHERE name LIKE 'plan_%resolutions'"), [])
+
+    def test_resolution_preserves_evidence_and_requires_the_existing_clear_pause(self):
+        from datetime import datetime
+        from quantlab.core import content_hash
+
+        p = self.k2()
+        original = p.read_receipts()[0]
+        raw = self.rows(p.path, 'SELECT * FROM plan_calls')[0]
+        self.assertIsNone(self.resolve(p))
+        self.assertEqual(p.read_receipts()[0], {**original, 'status': 'user_confirmed_consumed'})
+        self.assertEqual(self.rows(p.path, 'SELECT calls,blocked FROM plan_budget'), [(1, 'invalid_content_type')])
+        self.assertEqual(self.rows(p.account_path, 'SELECT calls FROM plan_ledgers'), [(1,)])
+        self.assertEqual(self.rows(p.account_path, 'SELECT state,owner FROM plan_accounts'), [('user_confirmed_consumed', None)])
+        self.assertEqual(self.rows(p.account_path, "SELECT name FROM sqlite_master WHERE name='plan_resolutions'"), [])
+        columns = [row[1] for row in self.rows(p.account_path, 'PRAGMA table_info(plan_finished_resolutions)')]
+        audit = dict(zip(columns, self.rows(p.account_path, 'SELECT * FROM plan_finished_resolutions')[0]))
+        timestamp = audit.pop('confirmed_at_utc')
+        self.assertEqual(datetime.fromisoformat(timestamp).utcoffset().total_seconds(), 0)
+        self.assertEqual(
+            audit,
+            {
+                'id': 1,
+                'filename': p.path.name,
+                'sequence': 1,
+                'request_hash': 'a' * 64,
+                'receipt_hash': content_hash(list(raw)),
+                'registration': p.credential_reference.registration,
+                'previous_status': 'invalid_content_type',
+                'new_status': 'user_confirmed_consumed',
+                'acknowledgement_version': 1,
+                'official_usage_checked': 1,
+                'no_refund_acknowledged': 1,
+                'other_usage_acknowledged': 1,
+                'implementation_hash': content_hash(SYNTHETIC_PROVENANCE),
+            },
+        )
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        fresh = provider(self.tmp_path, budget_path=p.path.parent / 'fresh.sqlite3', campaign_id='fresh')
+        with self.assertRaises(PlanError) as caught:
+            fresh._reserve('b' * 64, 10)
+        self.assertEqual(caught.exception.code, 'account_paused')
+        self.assertEqual(self.inspect(p)['kind'], 'none')
+        clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True)
+        self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'ready', 'pending': False})
+        with self.assertRaises(PlanError) as caught:
+            p._preflight()
+        self.assertEqual(caught.exception.code, 'campaign_paused')
+        # The barrier also runs inside _reserve, where the controls are attached as account_controls.
+        self.assertEqual(fresh._reserve('b' * 64, 10), 1)
+        self.assertEqual(MockTransport.requests, [])
+
+    def test_literal_statuses_equal_the_research_allowlist_minus_known_outcomes(self):
+        import ast
+
+        source = (Path(__file__).resolve().parents[1] / 'quantlab/research.py').read_text(encoding='utf-8')
+        sets = [
+            node.value
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Assign) and getattr(node.targets[0], 'id', None) == 'statuses' and isinstance(node.value, ast.Set)
+        ]
+        self.assertEqual(len(sets), 1)
+        allowed = {element.value for element in sets[0].elts}
+        expected = allowed - {'completed', 'reserved_unknown', 'user_confirmed_consumed'} - set(ERROR_STATES.values())
+        self.assertEqual(set(self.module._FINISHED_UNKNOWN_STATUSES), expected)
+        self.assertEqual(len(expected), 40)
+
+    def test_every_finished_unknown_code_is_resolvable_when_uniquely_mapped(self):
+        for status in sorted(self.module._FINISHED_UNKNOWN_STATUSES):
+            with self.subTest(status=status):
+                p = self.k2(self.tmp_path / status, status=status)
+                self.assertEqual(self.inspect(p)['outcome'], status)
+                self.resolve(p, expected_outcome=status)
+                self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+
+    def test_confirmation_and_expected_target_must_match_exactly(self):
+        p = self.k2()
+        for change in (
+            {'user_confirmed': False},
+            {'user_confirmed': 1},
+            {'acknowledgement_version': True},
+            {'acknowledgement_version': 1.0},
+            {'acknowledgement_version': '1'},
+            {'acknowledgement_version': 2},
+            {'expected_sequence': None},
+            {'expected_sequence': 0},
+            {'expected_calls': True},
+            {'expected_outcome': None},
+            {'expected_outcome': 'completed'},
+            {'expected_outcome': 'quota_paused'},
+        ):
+            with self.subTest(change=change):
+                self.unchanged_refusal(lambda: self.resolve(p, **change), 'resolution_confirmation_required')
+        for change in ({'expected_sequence': 2}, {'expected_calls': 2}, {'expected_outcome': 'cancelled'}):
+            with self.subTest(change=change):
+                self.unchanged_refusal(lambda: self.resolve(p, **change), 'no_resolvable_unknown_request')
+
+    def test_recent_other_registration_and_missing_controls_are_refused(self):
+        p = self.k2()
+        for seconds in (299, 0, -600):
+            with self.subTest(seconds=seconds):
+                self.age(p, seconds)
+                self.assertFalse(self.inspect(p)['max_age_ok'])
+                self.unchanged_refusal(lambda: self.resolve(p), 'unknown_request_too_recent')
+        self.age(p)
+        other = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
+        self.assertEqual(self.inspect(p, other), {'kind': 'k2_other_registration', 'sequence': None, 'calls': None, 'max_age_ok': False, 'outcome': None})
+        self.unchanged_refusal(lambda: self.resolve(p, other), 'unknown_request_owned_by_another_registration')
+        empty = provider(self.tmp_path / 'empty')
+        self.assertEqual(self.inspect(empty)['kind'], 'none')
+        self.unchanged_refusal(lambda: self.resolve(empty), 'no_resolvable_unknown_request')
+        self.assertFalse(empty.path.parent.exists())
+
+    def test_ambiguous_shapes_stay_blocked(self):
+        cases = {
+            'blocked_mismatch': lambda p: self.mutate(p.path, "UPDATE plan_budget SET blocked='cancelled'"),
+            'usage_shape': lambda p: self.mutate(p.path, 'UPDATE plan_calls SET usage=?', ('{"input_tokens":1,"output_tokens":1,"total_tokens":2}',)),
+            'response_hash': lambda p: self.mutate(p.path, 'UPDATE plan_calls SET response_hash=?', ('c' * 64,)),
+            'account_code_mismatch': lambda p: self.mutate(p.account_path, "UPDATE plan_accounts SET state='cancelled'"),
+            'no_account_row': lambda p: self.mutate(p.account_path, 'DELETE FROM plan_accounts'),
+            'overwritten_known_pause': lambda p: self.mutate(p.account_path, "UPDATE plan_accounts SET state='quota_paused'"),
+            'cleared_row': lambda p: self.mutate(p.account_path, 'UPDATE plan_accounts SET state=NULL'),
+            'second_k2_account': lambda p: self.mutate(p.account_path, 'INSERT INTO plan_accounts VALUES (?,?,NULL)', ('b' * 32, 'invalid_content_type')),
+            'k1_present': lambda p: self.mutate(p.account_path, 'INSERT INTO plan_accounts VALUES (?,?,?)', ('b' * 32, 'reserved_unknown', 'b' * 64)),
+            'unaudited_consumed_account': lambda p: self.mutate(
+                p.account_path, 'INSERT INTO plan_accounts VALUES (?,?,NULL)', ('b' * 32, 'user_confirmed_consumed')
+            ),
+        }
+        for name, damage in cases.items():
+            with self.subTest(case=name):
+                p = self.k2(self.tmp_path / name)
+                damage(p)
+                self.age(p)
+                self.unresolvable(p)
+
+    def hide_k2(self, p):
+        # Simulate f985f91-era admission, which ignored other ledgers and overwritable rows.
+        self.mutate(p.path, "UPDATE plan_calls SET status='completed'")
+        self.mutate(p.path, 'UPDATE plan_budget SET blocked=NULL')
+        self.mutate(p.account_path, 'UPDATE plan_accounts SET state=NULL')
+
+    def restore_k2(self, p):
+        self.mutate(p.path, "UPDATE plan_calls SET status='invalid_content_type'")
+        self.mutate(p.path, "UPDATE plan_budget SET blocked='invalid_content_type'")
+        self.mutate(p.account_path, "UPDATE plan_accounts SET state='invalid_content_type' WHERE registration=?", ('a' * 32,))
+
+    def test_two_finished_unknown_ledgers_are_ambiguous(self):
+        p = self.k2()
+        self.hide_k2(p)
+        second = provider(self.tmp_path, budget_path=p.path.parent / 'second.sqlite3', campaign_id='second')
+        second._reserve('b' * 64, 5)
+        second._finish(1, 'invalid_content_type', received_bytes=0, elapsed_seconds=1.0)
+        self.restore_k2(p)
+        self.age(second)
+        self.age(p)
+        self.unresolvable(p)
+
+    def test_k2_with_k1_on_another_registration_is_refused_by_both_entry_points(self):
+        p = self.k2()
+        self.hide_k2(p)
+        other = provider(
+            self.tmp_path,
+            credential_reference=OAuthCredentialReference(str(self.tmp_path / 'auth'), 'b' * 32),
+            budget_path=p.path.parent / 'other.sqlite3',
+            campaign_id='other',
+        )
+        other._reserve('b' * 64, 5)
+        self.restore_k2(p)
+        self.age(other)
+        self.age(p)
+        self.unresolvable(p)
+        before = self.files()
+        with self.assertRaises(PlanError):
+            self.module.resolve_unknown_request(
+                other.credential_reference, p.path.parent, user_confirmed=True, acknowledgement_version=self.module.ACKNOWLEDGEMENT_VERSION
+            )
+        self.assertEqual(self.files(), before)
+
+    def test_unaudited_partial_and_tampered_resolutions_stay_pending(self):
+        p = self.k2(self.tmp_path / 'receipt_only')
+        self.mutate(p.path, "UPDATE plan_calls SET status='user_confirmed_consumed'")
+        self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+        self.assertEqual(self.inspect(p)['kind'], 'k2_unresolvable')
+        # Torn commit: audit and account row written, receipt still at its outcome code.
+        p = self.k2(self.tmp_path / 'torn')
+        self.resolve(p)
+        self.mutate(p.path, "UPDATE plan_calls SET status='invalid_content_type'")
+        self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+        self.assertEqual(self.inspect(p)['kind'], 'k2_unresolvable')
+        for name, tamper in (
+            ('received_bytes', lambda p: self.mutate(p.path, 'UPDATE plan_calls SET received_bytes=99')),
+            ('elapsed', lambda p: self.mutate(p.path, 'UPDATE plan_calls SET elapsed_seconds=4.0')),
+            ('blocked', lambda p: self.mutate(p.path, "UPDATE plan_budget SET blocked='cancelled'")),
+            ('no_trigger', lambda p: self.mutate(p.account_path, 'DROP TRIGGER plan_finished_resolutions_no_update')),
+            ('duplicate_r1_row', self.add_r1_audit),
+        ):
+            with self.subTest(tamper=name):
+                p = self.k2(self.tmp_path / name)
+                self.resolve(p)
+                tamper(p)
+                self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+
+    def test_r1_shaped_audit_cannot_finalize_a_finished_unknown_receipt(self):
+        p = self.k2()
+        self.mutate(p.path, "UPDATE plan_calls SET status='user_confirmed_consumed'")
+        self.mutate(p.account_path, "UPDATE plan_accounts SET state='user_confirmed_consumed'")
+        self.add_r1_audit(p)
+        # The R1 verifier alone would accept this row; R2 also requires blocked=user_confirmed_consumed.
+        self.assertEqual(self.r1_registration(p), 'a' * 32)
+        self.assertTrue(read_account_status(p.credential_reference, p.path.parent)['pending'])
+
+    def test_permissive_precreated_table_is_not_adopted_and_audit_is_append_only(self):
+        import sqlite3
+
+        p = self.k2(self.tmp_path / 'permissive')
+        self.mutate(p.account_path, 'CREATE TABLE plan_finished_resolutions (id INTEGER PRIMARY KEY, filename TEXT, sequence INTEGER)')
+        self.unchanged_refusal(lambda: self.resolve(p), 'account_controls_invalid')
+        p = self.k2(self.tmp_path / 'append_only')
+        self.resolve(p)
+        for statement in ('UPDATE plan_finished_resolutions SET sequence=2', 'DELETE FROM plan_finished_resolutions'):
+            with self.subTest(statement=statement):
+                with self.assertRaises(sqlite3.DatabaseError) as caught:
+                    self.mutate(p.account_path, statement)
+                self.assertIn('append_only', str(caught.exception))
+        before = self.files()
+        with self.assertRaises(PlanError):
+            self.resolve(p)
+        self.assertEqual(self.files(), before)
+
+    def test_failed_first_write_rolls_back_every_database_including_the_new_table(self):
+        import sqlite3
+
+        p = self.k2()
+        before = self.files()
+        with patch('desktop_chatgpt_provider.implementation_provenance', side_effect=OSError('private')):
+            with self.assertRaises(PlanError):
+                self.resolve(p)
+        self.assertEqual(self.files(), before)
+        original = self.module._create_finished_resolution_audit
+
+        def create_then_fail(db):
+            original(db)
+            raise sqlite3.OperationalError('private')
+
+        with patch('desktop_chatgpt_provider._create_finished_resolution_audit', create_then_fail):
+            with self.assertRaises(PlanError) as caught:
+                self.resolve(p)
+        self.assertEqual(caught.exception.code, 'account_controls_unavailable')
+        self.assertEqual(self.files(), before)
+        self.assertEqual(self.rows(p.account_path, "SELECT name FROM sqlite_master WHERE name='plan_finished_resolutions'"), [])
+
+    def test_wal_journals_are_refused_without_reconfiguration(self):
+        for target in ('account', 'ledger'):
+            with self.subTest(target=target):
+                p = self.k2(self.tmp_path / target)
+                path = p.account_path if target == 'account' else p.path
+                self.assertEqual(self.rows(path, 'PRAGMA journal_mode=WAL'), [('wal',)])
+                self.age(p)
+                self.unchanged_refusal(lambda: self.resolve(p), 'unsupported_control_journal_mode')
+
+    def test_finish_never_persists_an_outcome_outside_the_research_allowlist(self):
+        for status in ('campaign_controls_unavailable', 'unsupported_control_journal_mode', 'not_a_code'):
+            with self.subTest(status=status):
+                p = provider(self.tmp_path / status)
+                p._reserve('a' * 64, 123)
+                p._finish(1, status)
+                self.assertEqual(p.read_receipts()[0]['status'], 'failed_or_interrupted')
+                self.assertEqual(self.rows(p.path, 'SELECT blocked FROM plan_budget'), [('failed_or_interrupted',)])
+                self.assertEqual(self.rows(p.account_path, 'SELECT state,owner FROM plan_accounts'), [('failed_or_interrupted', None)])
+        for status in ('invalid_content_type', 'quota_paused'):
+            with self.subTest(status=status):
+                p = provider(self.tmp_path / status)
+                p._reserve('a' * 64, 123)
+                p._finish(1, status)
+                self.assertEqual(p.read_receipts()[0]['status'], status)
+
+    def test_k1_resolution_still_works_after_a_finished_unknown_resolution(self):
+        p = self.k2()
+        self.resolve(p)
+        clear_account_pause(p.credential_reference, p.path.parent, user_confirmed=True)
+        k1 = provider(self.tmp_path, budget_path=p.path.parent / 'k1.sqlite3', campaign_id='k1')
+        k1._reserve('d' * 64, 7)
+        self.age(k1)
+        self.assertEqual(self.module.inspect_unknown_request(k1.credential_reference, k1.path.parent)['kind'], 'k1_resolvable')
+        self.module.resolve_unknown_request(
+            k1.credential_reference, k1.path.parent, user_confirmed=True, acknowledgement_version=self.module.ACKNOWLEDGEMENT_VERSION
+        )
+        self.assertEqual(read_account_status(k1.credential_reference, k1.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
+        # An R1-only verifier finds no R1 audit for the K2 receipt, so older builds fail closed.
+        self.assertIsNone(self.r1_registration(p))

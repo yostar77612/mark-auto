@@ -38,7 +38,7 @@ NEW_HASHES = ['10edb26c0161f79567532707d67fc86461459b980d6ab44c980247b60e9c9a13'
 class UnknownReconciliationProducerProfileTests(unittest.TestCase):
     def test_all_nineteen_historical_profiles_keep_exact_identity(self):
         self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:19]], HISTORICAL_HASHES)
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[19:], (TRANSPORT, SIWC))
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[19:21], (TRANSPORT, SIWC))
         self.assertEqual([content_hash(p) for p in (TRANSPORT, SIWC)], NEW_HASHES)
         for profile in pools.SUPPORTED_PRODUCERS:
             with self.assertRaises(TypeError):
@@ -60,7 +60,10 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
                 {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in profile['engine_source_hashes']},
                 profile['engine_source_hashes'],
             )
-        for index, implementation in enumerate(SIWC['chatgpt_plan_implementations']):
+        # R2 re-pin: current provider bytes now match the appended R2 profile; this
+        # profile's own literals stay pinned by NEW_HASHES above.
+        latest = pools.FINISHED_UNKNOWN_RECONCILIATION_SIWC_PROFILE_V1
+        for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:

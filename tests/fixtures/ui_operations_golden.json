@@ -4542,7 +4542,7 @@
       "result": {
         "attempts": [
           {
-            "attempt_id": "951a2d9b0503b3af02da9e55b87dcdda4d25dc4ebae19340dfe5604a9d910117",
+            "attempt_id": "1fc3f3c8345b44f203546feaf5aaf83b72054ed579d3453b9ec6f19b1423e068",
             "candidate_fingerprint": "083f0848715575b923f4bb24e423378aa2e035abe3780ba8bc308587dbb59576",
             "cost": null,
             "elapsed_seconds": "<ELAPSED>",
@@ -4908,7 +4908,7 @@
               "descriptor": {
                 "account_credit_policy": "unverified_user_setting",
                 "billing_route": "chatgpt_plan",
-                "campaign_id": "2dc54180ea908c3a5cbd005bb00c67e06de94dab98dd5efe974e0585cd6adb5d",
+                "campaign_id": "12fff9b79444bf5af3e4c3df41f67a53e88ce35f3f168b7904b38494d656c67c",
                 "endpoint": "https://api.openai.com/v1/responses",
                 "included_usage_policy_ack_required": true,
                 "max_calls": 1,
@@ -5026,7 +5026,7 @@
             "descriptor": {
               "account_credit_policy": "unverified_user_setting",
               "billing_route": "chatgpt_plan",
-              "campaign_id": "2dc54180ea908c3a5cbd005bb00c67e06de94dab98dd5efe974e0585cd6adb5d",
+              "campaign_id": "12fff9b79444bf5af3e4c3df41f67a53e88ce35f3f168b7904b38494d656c67c",
               "endpoint": "https://api.openai.com/v1/responses",
               "included_usage_policy_ack_required": true,
               "max_calls": 1,
@@ -5059,7 +5059,7 @@
             "validation": "26676ac082773534eacf11f76e6f60e8da32587957960f30ba4766febb5fbd71"
           }
         },
-        "campaign_id": "b8623ede0c20f5e49281e1f7f7d582b3a8ee47e1a9c32226037cd4ef92d48170",
+        "campaign_id": "86ea7ffaf3337ffa2069327a26b941fae7d2147c6b5a1399f139223798b80e54",
         "elapsed_seconds": "<ELAPSED>",
         "evaluations": {
           "holdout": [
@@ -5392,7 +5392,7 @@
           "reservation_id": "cab9ca49f83b2e365c5fe041f7b32b4aeb6be938ebaf3628aa2703e1928495d8",
           "status": "reserved_consumed"
         },
-        "holdout_selection_hash": "5f60778ff7b5fe3adb60032f1b20bef663c95217f0979be6dda2316446212f53",
+        "holdout_selection_hash": "80eaddfe65c1c9535987c6752189fc763b0186f6367e6fcc1498d9875c0d86ab",
         "holdout_status": "reserved_consumed",
         "provider_receipts": [
           {
@@ -5424,7 +5424,7 @@
         },
         "selected": [
           {
-            "attempt_id": "951a2d9b0503b3af02da9e55b87dcdda4d25dc4ebae19340dfe5604a9d910117",
+            "attempt_id": "1fc3f3c8345b44f203546feaf5aaf83b72054ed579d3453b9ec6f19b1423e068",
             "spec": {
               "family": "trend",
               "parameters": {
@@ -5592,7 +5592,7 @@
             }
           }
         ],
-        "selection_hash": "5f60778ff7b5fe3adb60032f1b20bef663c95217f0979be6dda2316446212f53",
+        "selection_hash": "80eaddfe65c1c9535987c6752189fc763b0186f6367e6fcc1498d9875c0d86ab",
         "source_manifest": {
           "aggregation_version": "synthetic-v1",
           "calendar_hash": "00e595ec8ab39b9fa284c3684853c7fe44a938df59a01b9452e812f988cc1d47",
@@ -11680,7 +11680,7 @@
       "precision": "exact after documented normalisations; Decimal-exact money",
       "events": [],
       "result": {
-        "binding": "2dc54180ea908c3a5cbd005bb00c67e06de94dab98dd5efe974e0585cd6adb5d",
+        "binding": "12fff9b79444bf5af3e4c3df41f67a53e88ce35f3f168b7904b38494d656c67c",
         "state": "completed"
       }
     },
@@ -12856,7 +12856,7 @@
           "core.py": "d26b350fb4ee83ee45e21c82b5e72e0d72ec38d69b66d19821bf51ac6b9eb17a",
           "data.py": "ac589ad067c4b27fce3844d56e80b4504531b33b479285c1a6dd0de897e55103",
           "research.py": "9895a96e026dede9c511facb094e6b6a6f2d95361207829086048c166b5fa88d",
-          "saved_candidate_pool.py": "e49b049d1f5691f4172e4041718686a0d39c4e0f025eca38e3e85a854eaac615",
+          "saved_candidate_pool.py": "a34c1ade0f2183e8ac37fac40c8575e7fb8c697ba4301b37c2ddd57e7b591b4e",
           "strategies.py": "7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0",
           "walk_forward.py": "0320356b07c982c24b99e546f53510b5a83d272922be326a72221b7dd01c414e"
         },
