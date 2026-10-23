@@ -89,8 +89,21 @@ class AppHeader(QWidget):
         self.timer.timeout.connect(self._tick)
         self.timer.start(1000)
         if isinstance(host, QWidget):
-            self._close_watcher = _CloseWatcher(host, self.timer.stop)
+            self._close_watcher = _CloseWatcher(host, self._host_closing)
         self.refresh()
+
+    def _host_closing(self):
+        was_active = self.timer.isActive()
+        self.timer.stop()
+        if was_active:
+            QTimer.singleShot(0, self, self._resume_if_open)
+
+    def _resume_if_open(self):
+        try:
+            if self.host.isVisible() and not getattr(self.host, '_closing', False):
+                self.timer.start()
+        except RuntimeError:  # The host may have been destroyed before the queued check.
+            pass
 
     def _labels(self):
         notice = getattr(getattr(self.host, 'privacy', None), 'notice', None)

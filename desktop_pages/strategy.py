@@ -474,6 +474,7 @@ class StrategyPage(QWidget):
         self.parameters.setPlainText(canonical_json(spec.parameters))
         self.parameters.setReadOnly(True)
         self.strategy_detail.setPlainText(canonical_json({'strategy': spec, **provenance}))
+        self.strategy_form.load({key: spec.parameters.get(key, '') for key in self.strategy_form.fields if key != 'family'})
         self.strategy_form.setEnabled(False)
         self.state.batch.setChecked(False)
         self.host.form_feedback(self.strategy_form, ui_text('ui.use_candidate.immutable_candidate_applied'))

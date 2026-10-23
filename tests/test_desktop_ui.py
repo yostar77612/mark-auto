@@ -340,12 +340,17 @@ class NativeDesktopTests(unittest.TestCase):
         self.demo()
         self.campaign()
         self.assertGreater(self.window.candidate_choice.count(), 0)
+        self.window.strategy_form.fields['fast'].setText('7')
+        self.window.strategy_form.fields['slow'].setText('31')
         self.click('use_candidate')
         reference = self.window.active_candidate
         self.assertIsNotNone(reference)
         spec, meta = candidate_record(self.paths.state, reference)
         self.assertTrue(meta['paper_qualified'])
         self.assertTrue(self.window.parameters.isReadOnly())
+        self.assertFalse(self.window.strategy_form.isEnabled())
+        for key, value in spec.parameters.items():
+            self.assertEqual(self.window.strategy_form.fields[key].text(), str(value))
         self.click('run_backtest')
         self.wait_job()
         result = load_result(self.window.result_choice.currentData())
@@ -356,8 +361,12 @@ class NativeDesktopTests(unittest.TestCase):
         selection = json.loads((self.paths.state / 'selection.json').read_text())
         self.assertEqual(selection['strategy_hash'], reference['strategy_hash'])
         self.window.active_candidate = None
+        self.window.strategy_form.fields['fast'].setText('9')
+        self.window.strategy_form.fields['slow'].setText('43')
         self.window.refresh_views()
         self.assertEqual(self.window.active_candidate, reference)
+        for key, value in spec.parameters.items():
+            self.assertEqual(self.window.strategy_form.fields[key].text(), str(value))
         self.click('use_builtin')
         self.assertIsNone(self.window.active_candidate)
         self.assertFalse((self.paths.state / 'active_candidate.json').exists())
@@ -376,6 +385,59 @@ class NativeDesktopTests(unittest.TestCase):
             execute_ui_operation('ui_select', {'result': self.window.result_choice.currentData()}, self.paths)
         self.assertFalse((self.paths.state / 'selection.json').exists())
         self.assertIn('false', self.window.candidate_detail.toPlainText())
+
+    def test_adopted_candidate_form_matches_immutable_parameters(self):
+        from quantlab.core import StrategySpec, canonical_json, content_hash, to_dict
+        from quantlab.strategies import validate_strategy
+
+        rule = {'op': 'gt', 'left': {'op': 'field', 'name': 'close'}, 'right': {'op': 'const', 'value': '20000'}}
+        cases = [
+            ('trend', {'fast': 7, 'slow': 31, 'quantity': 2, 'stop_ticks': 12, 'target_ticks': 24}, {}),
+            ('trend', {'fast': 9, 'slow': 43}, {'long': rule, 'short': {'op': 'not', 'arg': rule}}),
+            ('momentum', {'lookback': 8, 'threshold_bps': '25', 'max_holding_bars': 7}, {}),
+            ('mean_reversion', {'lookback': 13, 'entry_bps': '70'}, {}),
+            ('channel_breakout', {'lookback': 17}, {}),
+            ('volatility_compression', {'lookback': 12, 'max_range_bps': '55'}, {}),
+        ]
+        provenance = {'paper_qualified': False, 'evaluations': {}, 'source_type': 'synthetic'}
+        for index, (family, parameters, rules) in enumerate(cases):
+            with self.subTest(family=family, index=index):
+                spec = StrategySpec(f'form-sync-{index}', family, parameters, rules)
+                validate_strategy(spec)
+                original = canonical_json(spec)
+                reference = {'campaign_folder': 'a' * 64, 'attempt_id': 'b' * 64, 'strategy_hash': content_hash(spec)}
+                self.window.candidate_choice.blockSignals(True)
+                self.window.candidate_choice.clear()
+                self.window.candidate_choice.addItem('synthetic form-sync fixture', reference)
+                self.window.candidate_choice.blockSignals(False)
+                with patch.object(self.window.strategy_page.host, 'candidate_record', return_value=(spec, provenance)):
+                    self.window.strategy_page.use_candidate()
+                self.assertEqual(self.window.active_candidate, reference)
+                self.assertFalse(self.window.strategy_form.isEnabled())
+                self.assertTrue(self.window.parameters.isReadOnly())
+                for key, field in self.window.strategy_form.fields.items():
+                    if key != 'family':
+                        self.assertEqual(field.text(), str(parameters.get(key, '')), key)
+                detail = json.loads(self.window.strategy_detail.toPlainText())
+                self.assertEqual(detail['strategy'], to_dict(spec))
+                self.assertEqual(canonical_json(spec), original)
+
+    def test_declining_busy_close_preserves_header_and_job_polling(self):
+        from unittest.mock import PropertyMock
+        from PySide6.QtWidgets import QMessageBox
+
+        self.assertTrue(self.window.app_header.timer.isActive())
+        with (
+            patch.object(type(self.jobs), 'active', new_callable=PropertyMock, return_value=True),
+            patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.No),
+            patch.object(self.jobs, 'close') as stop,
+        ):
+            self.assertFalse(self.window.close())
+            stop.assert_not_called()
+        self.app.processEvents()
+        self.assertTrue(self.window.isVisible())
+        self.assertTrue(self.window.app_header.timer.isActive())
+        self.assertTrue(self.window.timer.isActive())
 
     def test_update_notifications_logs_and_persistent_preferences(self):
         from PySide6.QtGui import QDesktopServices

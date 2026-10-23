@@ -5240,6 +5240,32 @@ checks still run. Only COMPLETED_ITEMS_SIWC_PROFILE_V1 is appended; all 23 earli
 profiles retain exact identities. Compatibility goldens change exactly nine
 digest leaves (five unique identities), with every other leaf preserved.
 
+## Adopted candidate form: immutable parameter display
+
+The owner-requested live acceptance found that an adopted candidate's immutable
+reference and backtest were correct while the disabled primary strategy form
+still displayed builtin defaults. Initial adoption and disk restoration now load
+the verified candidate's parameters into those existing fields and clear absent
+optional values. The form remains disabled; the existing immutable reference,
+rules, qualification checks, budgets, source profiles and execution path stay
+unchanged. Rule-backed candidates retain their complete rules without passing
+through the editable form decoder, which still rejects rule-backed payloads.
+Offline regressions cover every family, optional-value clearing, unchanged rules,
+the existing journal-backed backtest/selection path and disk restoration.
+
+## Rejected close: preserve an active application-header timer
+
+Live cancellation acceptance found that the header's host-close watcher stopped
+its clock and job-summary timer even when the user declined closing a busy
+window. The header still stops immediately on the close event, preserving the
+existing accepted-close contract. A context-owned queued check resumes a
+previously active timer only while the host remains visible and is not closing.
+An already stopped timer stays stopped; destroyed hosts are tolerated. Worker
+polling, cancellation, confirmations, reconciliation and the shared close watcher
+used by notifications are unchanged. Offline tests cover an ignored generic
+close, an actual busy-window No path, preserved polling, accepted closes and
+an intentionally stopped timer. Installed acceptance remains a separate gate.
+
 Idea HTTP diagnostics use letter/underscore fixed codes, matching the unchanged
 connection-event boundary, and plain localized labels matching the existing
 privacy presentation checks. Neither boundary is relaxed.

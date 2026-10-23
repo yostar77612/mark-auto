@@ -59,3 +59,59 @@
 安裝版 Walk-forward fixture 實際完成 2 折、22 次評估，兩折各有 3 筆樣本外平倉；重新讀取驗證成功，零成交候選仍排除，最終保留集維持 excluded_not_evaluated，模型呼叫 0、paper_eligible false。這是工程合成案例，並非真實研究候選或市場績效。另 5 項窄範圍原始碼回歸通過，包含巢狀 spawn 正向 OOS、唯讀 journal、損壞／缺失 journal 拒絕及無候選判定。
 
 完整本機報告：`.tmp-acceptance/installed-short-smoke-report.json`（保留在 repo 內、未提交）；SHA256 `47e7d80e4c73c7c1b41498dd035e064d4a7fe00b94392c5bbdcace27dc784f0c`。先前失敗報告也保留。真實候選入選／OOS／holdout 的正向路徑與安裝版所有取消競態仍未逐項實測，不宣稱這些項目全數通過。實盤永久停用。
+
+## 續驗：真實生成候選的正向資格與主表單同步
+
+本節記錄本次提交時點；程式仍為使用者已安裝的 a1bfe92／0.2.2。下列
+官方呼叫均透過 App，沒有直接擷取憑證或修改帳號控制紀錄。測試輸入、
+研究、回測與診斷位於 repo 的 `.t/p` 與 `.tmp-acceptance`；沒有操作 Sitecore
+或其他專案。這些都是 synthetic 工程資料，不代表真實市場績效。
+
+- 第一個固定協定：5760 根單向合成資料，均線趨勢家族、1 次生成、0 次改進、
+  1 次請求／30 秒，最低淨損益 0、最少成交 1。真實生成 completed，但
+  train／validation 都沒有訊號或成交；正確不入選、holdout not_accessed。
+  離線確認該家族要求均線交叉，單向資料不會觸發。候選、收據與失敗紀錄保留，
+  沒有退款、改寫模型輸出或降低門檻。這個候選已在 App 成功採用供研究。
+- 第二個協定先固定資料與雜湊，再僅以訓練段離線驗證交叉訊號覆蓋。8000 根
+  合成資料切為四段各 2000 根；每段包含平盤、上升與下降，明確標示工程用途。
+  維持前述門檻與請求上限，另一次真實生成完成；1 個候選入選，OOS 與 holdout
+  各 evaluated 1 次、各有 1 筆平倉，淨損益均為合成數字 186676。
+  selection_hash 與 holdout_selection_hash 相同；holdout reserved_consumed。
+  收據 1 筆 completed，沒有重新產生或改善。兩次真實生成各自保留其消耗。
+- 原有 candidate_record 驗證 paper_qualified／oos qualified／holdout qualified
+  均為 true，source_type 仍為 synthetic。產品的 real_model_status 仍是
+  not_verified，沒有更改此欄位或正式模型／投資接受分數。
+- App 採用第二個真實候選，在 2026-07-01～2026-07-08 的訓練日期內回測保存，
+  1 筆平倉、合成淨損益 170676；通過原資格檢查啟用為 research_and_paper_only。
+  完成後按 Esc、正常關閉與重開，active candidate、selection、campaign JSON
+  與 authoritative SQLite 四個檔案 SHA256 不變，沒有自動增加模型收據。
+- 離線取消回歸 9 項通過，包括真實 Windows 子程序樹清理、完成／取消競態、
+  中斷收據保留、WFO 不重跑與點子來源取消。安裝版離線研究在已保留嘗試後
+  按 Esc 成功停止；重開同一研究回報 blocked_interrupted，保留 4 次嘗試
+  （3 evaluated、1 interrupted）、不新增嘗試、不消耗 holdout、無帳號請求。
+
+續驗也確認一個顯示錯誤：不可變參考與回測結果正確，但採用／重開後，停用的
+策略主表單仍顯示內建預設參數。新增離線測試在五個家族及自訂規則共六個情境
+都於修復前失敗。修復只同步已驗證候選的欄位並清空缺少的選填值；不修改候選、
+規則、歷史、來源驗證或資格。修復後六個情境、既有完整採用／回測／保存恢復與
+不合格候選拒絕三項測試通過；另 49 項表單、候選呈現、恢復與紙上停止回歸通過。
+新版安裝版的參數同步驗證，以及進行中關閉、WFO／Paper 的後續實機取消驗證，
+在此提交時仍待完成，不以原始碼測試代替。
+
+第二個協定 SHA256：`e36e534183491906869c7ee952075e04dee19541481483f7e0762126d8b90f9f`；
+資料檔 SHA256：`3e11444dbe1a9a46339f88cb4a777271ff034c14ba58e2f6a82a2cd80dc364cc`。
+本機證據為 `.tmp-acceptance/positive-v2-train-only.json`、
+`positive-checkpoint-before-reopen.json`、`positive-reopen-verification.json`；均未提交。
+
+取消關閉續驗另重現頂列凍結：CloseWatcher 在 MainWindow 決定接受或拒絕關閉前
+便停止 header timer，因此按 No 留下視窗時，時鐘、作業摘要與頂列時間提示不再更新。
+主工作輪詢與持久研究結果仍正常；等待確認時已完成的離線研究，其正式結果保留。
+新增 generic rejected-close 與真實 MainWindow busy-close No 兩個離線案例，修復前
+都失敗。修復僅在原計時器曾啟用、視窗仍可見且非關閉流程時恢復 header timer；
+原本停用者不會自動啟用，接受關閉仍立即停止。通知共用的 CloseWatcher、背景工作、
+確認、清理、對帳與時限均不變。修復後 header 全套及新增整合共 8 項通過；參數同步
+修改後的完整 NativeDesktopTests 另 27 項通過。頂列修復的新版安裝版實測仍待完成。
+
+安裝版確認關閉的獨立離線案例（seed 44003）在背景工作中按 Yes，視窗已正常關閉；
+保留 7／15 次嘗試（6 evaluated、1 running），未消耗 holdout、無模型請求。
+其恢復與禁止續跑，以及 WFO／Paper 的後續實機取消結果，仍待下一階段核對。
