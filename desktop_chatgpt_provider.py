@@ -30,6 +30,7 @@ import time
 
 from desktop_chatgpt_auth import OAuthCredentialReference, official_tls_context
 from quantlab.core import ValidationError, canonical_json, content_hash
+from quantlab.windows_paths import sqlite_uri
 from quantlab.research import PROMPT, PARAMETER_CONTRACTS, validate_dsl, _validated_receipt_snapshot
 
 MODELS_URL = 'https://api.openai.com/v1/models'
@@ -478,7 +479,7 @@ def _open_account_controls(reference, *, initialize=False, readonly=True):
                 directory=os.open(marker.parent,os.O_RDONLY|getattr(os,'O_DIRECTORY',0))
                 try:os.fsync(directory)
                 finally:os.close(directory)
-            db=sqlite3.connect(account.as_uri()+'?mode=rwc',uri=True,timeout=30)
+            db=sqlite3.connect(sqlite_uri(account)+'?mode=rwc',uri=True,timeout=30)
             db.execute('PRAGMA synchronous=FULL')
             with db:
                 db.execute('CREATE TABLE control_identity (id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER)')
@@ -489,7 +490,7 @@ def _open_account_controls(reference, *, initialize=False, readonly=True):
         with marker.open('rb') as source:
             if source.read(len(_CONTROL_MARKER)+1)!=_CONTROL_MARKER:_fail('account_control_marker_invalid')
         if not account.is_file():_fail('account_controls_missing')
-        db=sqlite3.connect(account.as_uri()+('?mode=ro' if readonly else '?mode=rw'),uri=True,timeout=5)
+        db=sqlite3.connect(sqlite_uri(account)+('?mode=ro' if readonly else '?mode=rw'),uri=True,timeout=5)
         if readonly:db.execute('BEGIN')
         if db.execute('SELECT version FROM control_identity WHERE id=1').fetchall()!=[(1,)]:
             _fail('account_controls_invalid')
@@ -549,7 +550,7 @@ def _installation_barrier(db, controls, schema='main'):
             # The caller retains the global read/write transaction while each
             # indexed ledger is inspected. Every legitimate ledger mutation also
             # needs that global write transaction. No directory scan/identities.
-            with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=min(1,max(.001,deadline-time.monotonic())))) as ledger:
+            with closing(sqlite3.connect(sqlite_uri(path)+'?mode=ro',uri=True,timeout=min(1,max(.001,deadline-time.monotonic())))) as ledger:
                 ledger.execute('BEGIN')
                 budget,receipts=_checked_campaign_rows(ledger,'main',(binding,calls))
                 for row in receipts:
@@ -671,7 +672,7 @@ def _unknown_request_snapshot(db, controls, registration):
         _fail('campaign_controls_inconsistent')
     filename, binding, calls = matches[0]
     path = controls / filename
-    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as ledger:
+    with closing(sqlite3.connect(sqlite_uri(path) + '?mode=ro', uri=True, timeout=5)) as ledger:
         ledger.execute('BEGIN')
         budget, receipts = _checked_campaign_rows(ledger, 'main', (binding, calls))
     if budget[2] is not None or receipts[-1][0] != calls or receipts[-1][3] != 'reserved_unknown':
@@ -681,7 +682,7 @@ def _unknown_request_snapshot(db, controls, registration):
     for other_filename, other_binding, other_calls in db.execute('SELECT filename,binding,calls FROM plan_ledgers').fetchall():
         if time.monotonic() >= deadline:
             _fail('account_controls_unavailable')
-        with closing(sqlite3.connect((controls / other_filename).as_uri() + '?mode=ro', uri=True, timeout=1)) as ledger:
+        with closing(sqlite3.connect(sqlite_uri(controls / other_filename) + '?mode=ro', uri=True, timeout=1)) as ledger:
             ledger.execute('BEGIN')
             other_budget, rows = _checked_campaign_rows(ledger, 'main', (other_binding, other_calls))
         for row in rows:
@@ -765,7 +766,7 @@ def resolve_unknown_request(credential_reference, controls_path, *, user_confirm
             _reject_links(path)
             if time.time() - path.stat().st_mtime < _RESOLUTION_MIN_AGE_SECONDS:
                 _fail('unknown_request_too_recent')
-            db.execute('ATTACH DATABASE ? AS resolution_ledger', (path.as_uri() + '?mode=rw',))
+            db.execute('ATTACH DATABASE ? AS resolution_ledger', (sqlite_uri(path) + '?mode=rw',))
             if db.execute('PRAGMA resolution_ledger.journal_mode').fetchone() != ('delete',):
                 _fail('unsupported_control_journal_mode')
             if db.execute('PRAGMA resolution_ledger.synchronous').fetchone() != (2,):
@@ -925,7 +926,7 @@ def _finished_request_snapshot(db, controls, registration):
         if time.monotonic() >= deadline:
             _fail('account_controls_unavailable')
         path = controls / filename
-        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=1)) as ledger:
+        with closing(sqlite3.connect(sqlite_uri(path) + '?mode=ro', uri=True, timeout=1)) as ledger:
             ledger.execute('BEGIN')
             budget, rows = _checked_campaign_rows(ledger, 'main', (binding, calls))
         for row in rows:
@@ -1045,7 +1046,7 @@ def resolve_finished_unknown_request(
             _reject_links(path)
             if time.time() - path.stat().st_mtime < _RESOLUTION_MIN_AGE_SECONDS:
                 _fail('unknown_request_too_recent')
-            db.execute('ATTACH DATABASE ? AS resolution_ledger', (path.as_uri() + '?mode=rw',))
+            db.execute('ATTACH DATABASE ? AS resolution_ledger', (sqlite_uri(path) + '?mode=rw',))
             if db.execute('PRAGMA resolution_ledger.journal_mode').fetchone() != ('delete',):
                 _fail('unsupported_control_journal_mode')
             if db.execute('PRAGMA resolution_ledger.synchronous').fetchone() != (2,):
@@ -1184,8 +1185,8 @@ class ChatGPTPlanProvider:
         finally:account.close()
         db=None
         try:
-            db=sqlite3.connect(self.path.as_uri()+'?mode='+mode,uri=True,timeout=30)
-            db.execute('ATTACH DATABASE ? AS account_controls',(self.account_path.as_uri()+'?mode=rw',))
+            db=sqlite3.connect(sqlite_uri(self.path)+'?mode='+mode,uri=True,timeout=30)
+            db.execute('ATTACH DATABASE ? AS account_controls',(sqlite_uri(self.account_path)+'?mode=rw',))
             for schema in ('main','account_controls'):
                 if db.execute('PRAGMA '+schema+'.journal_mode').fetchone()[0]!='delete':
                     _fail('unsupported_control_journal_mode')
@@ -1274,13 +1275,13 @@ class ChatGPTPlanProvider:
                         if expected[0]!=binding:_fail('immutable_budget_binding')
                         _reject_links(self.path)
                         if not self.path.is_file():_fail('campaign_controls_missing')
-                        db.execute('ATTACH DATABASE ? AS campaign',(self.path.as_uri()+'?mode=ro',))
+                        db.execute('ATTACH DATABASE ? AS campaign',(sqlite_uri(self.path)+'?mode=ro',))
                         _,rows=_checked_campaign_rows(db,'campaign',expected)
                     elif self.path.exists():
                         # A failed pre-reservation operation may leave an empty
                         # never-used file; no tables/rows are accepted as first use.
                         _reject_links(self.path)
-                        db.execute('ATTACH DATABASE ? AS campaign',(self.path.as_uri()+'?mode=ro',))
+                        db.execute('ATTACH DATABASE ? AS campaign',(sqlite_uri(self.path)+'?mode=ro',))
                         if db.execute("SELECT 1 FROM campaign.sqlite_master WHERE type='table'").fetchone():
                             _fail('unexpected_campaign_controls')
                 except sqlite3.Error:

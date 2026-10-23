@@ -15,6 +15,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from quantlab.core import Dataset, StrategySpec, Instrument, ValidationError, canonical_json, content_hash, to_dict
+from quantlab.windows_paths import canonical_path as _canonical_path, native_path as _native_path, sqlite_uri as _sqlite_uri
 from quantlab.reporting import (
     read_json,
     write_json,
@@ -186,12 +187,12 @@ def candidate_record(root, reference):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research import validate_dsl
 
-    campaigns = (Path(root) / 'campaigns').resolve()
+    campaigns = _native_path(Path(root) / 'campaigns').resolve()
     folder = str(reference.get('campaign_folder', ''))
     if len(folder) != 64 or any(c not in '0123456789abcdef' for c in folder):
         raise ValidationError(ui_text('ui.candidate_record.invalid_version_id'))
-    path = campaigns / folder / 'campaign.json'
-    if not path.resolve().is_relative_to(campaigns):
+    path = _native_path(campaigns / folder / 'campaign.json')
+    if not _canonical_path(path.resolve()).is_relative_to(_canonical_path(campaigns)):
         raise ValidationError(ui_text('ui.candidate_record.invalid_version_path'))
     state = read_json(path)
     # JSON is a review export; qualify only if it equals the authoritative journal.
@@ -201,9 +202,9 @@ def candidate_record(root, reference):
     from contextlib import closing
 
     journal = path.with_name('campaign.sqlite3')
-    if not journal.resolve().is_relative_to(campaigns) or not journal.is_file():
+    if not _canonical_path(journal.resolve()).is_relative_to(_canonical_path(campaigns)) or not journal.is_file():
         raise ValidationError(ui_text('ui.candidate_record.transaction_missing'))
-    with closing(sqlite3.connect(journal.resolve().as_uri() + '?mode=ro', uri=True, timeout=1)) as database:
+    with closing(sqlite3.connect(_sqlite_uri(journal.resolve()) + '?mode=ro', uri=True, timeout=1)) as database:
         row = database.execute('SELECT payload FROM state WHERE id=1').fetchone()
     if not row or canonical_json(json.loads(row[0])) != canonical_json(state):
         raise ValidationError(ui_text('ui.candidate_record.export_transaction_mismatch'))

@@ -5,6 +5,8 @@ its audit history; it does not make a previously examined holdout unseen again.
 """
 from __future__ import annotations
 
+from .windows_paths import canonical_path, native_path, sqlite_uri
+
 import copy
 import json
 import math
@@ -295,7 +297,7 @@ class CompatibleProvider:
         self.max_spend, self.cost_per_token = _number(max_spend), _number(cost_per_token)
         if self.max_spend < 0 or self.cost_per_token < 0:
             raise ValidationError('Negative spend budget')
-        self.path = Path(budget_path)
+        self.path = native_path(budget_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.receipts = []
         if not callable(transport):
@@ -607,7 +609,7 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
             checked_coverage[contract] = (start, end)
     holdout_hash = content_hash(dataset.bars)
     reservation_id = content_hash({'bars_hash': holdout_hash, 'coverage': coverage})
-    registry_path = Path(registry_path)
+    registry_path = native_path(registry_path)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     timeout = 10 if deadline is None else max(0, min(10, deadline - time.monotonic()))
     if deadline is not None and timeout <= 0:
@@ -643,17 +645,18 @@ def _reserve_holdout(dataset, *, registry_path, campaign_id, selection_hash, out
         if conflicts:
             return {'status': 'previously_consumed', 'holdout_hash': holdout_hash,
                     'reservation_id': reservation_id, 'conflicts': sorted(conflicts),
-                    'registry_path': str(registry_path.resolve())}
+                    'registry_path': str(canonical_path(registry_path.resolve()))}
         if deadline is not None and time.monotonic() >= deadline:
             raise ResourceTimeout('Range reservation exceeded experiment deadline')
+        output_identity = str(canonical_path(Path(output_dir).resolve()))
         registry.execute('INSERT INTO reservations VALUES (?,?,?,?,?)',
-            (reservation_id, holdout_hash, campaign_id, selection_hash, str(Path(output_dir).resolve())))
+            (reservation_id, holdout_hash, campaign_id, selection_hash, output_identity))
         registry.executemany('INSERT INTO coverage VALUES (?,?,?,?)',
             [(reservation_id, contract, start, end) for contract, (start, end) in coverage.items()])
         # Context manager commits before returning the consumed marker to caller.
     return {'status': 'reserved_consumed', 'holdout_hash': holdout_hash,
             'reservation_id': reservation_id, 'conflicts': [],
-            'registry_path': str(registry_path.resolve())}
+            'registry_path': str(canonical_path(registry_path.resolve()))}
 
 
 def _validated_provider_descriptor(value):
@@ -809,9 +812,9 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
     started = time.monotonic()
     dataset, config = copy.deepcopy(dataset), copy.deepcopy(config)
     splits = _campaign_config(dataset, config)
-    output_dir = Path(output_dir)
+    output_dir = native_path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    registry_path = Path(holdout_registry_path) if holdout_registry_path is not None else output_dir.parent / '.holdout_registry.sqlite3'
+    registry_path = native_path(holdout_registry_path) if holdout_registry_path is not None else output_dir.parent / '.holdout_registry.sqlite3'
     mode = getattr(generator, 'mode', 'custom_unverified')
     provider = _provider_identity(generator)
     binding = {'config': to_dict(config), 'data_hash': _dataset_identity(dataset),
@@ -1028,16 +1031,16 @@ def reconcile_interrupted_campaign(*, output_dir: Path, generator: Generator,
     """
     if descendants_stopped is not True:
         raise ValidationError('Campaign descendants must be stopped before reconciliation')
-    output_dir = Path(output_dir)
+    output_dir = native_path(output_dir)
     db_path = output_dir / 'campaign.sqlite3'
     lock_path = output_dir / 'campaign.lock.sqlite3'
     if not db_path.is_file() or not lock_path.is_file():
         raise ValidationError('Existing campaign audit databases are required')
     lock = db = None
     try:
-        lock = sqlite3.connect(lock_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)
+        lock = sqlite3.connect(sqlite_uri(lock_path.resolve()) + '?mode=rw', uri=True, timeout=0)
         lock.execute('BEGIN EXCLUSIVE')
-        db = sqlite3.connect(db_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)
+        db = sqlite3.connect(sqlite_uri(db_path.resolve()) + '?mode=rw', uri=True, timeout=0)
         db.execute('BEGIN IMMEDIATE')
         row = db.execute('SELECT payload FROM state WHERE id=1').fetchone()
         if not row or type(row[0]) is not str or len(row[0].encode('utf-8')) > 16777216:

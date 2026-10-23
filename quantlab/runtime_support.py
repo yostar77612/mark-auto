@@ -7,6 +7,8 @@ import re
 import sys
 import tempfile
 
+from .windows_paths import native_path
+
 
 class RuntimeSafetyError(ValueError):
     pass
@@ -39,7 +41,7 @@ class WindowsAppMutex:
 
 
 def atomic_write(path, raw, *, durable=False):
-    path = Path(path)
+    path = native_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix='.' + path.name, suffix='.tmp', dir=path.parent)
     try:
@@ -67,6 +69,7 @@ def _sync_directory(path):
 
 def _durable_replace(source, destination):
     if sys.platform == 'win32':
+        source, destination = native_path(source), native_path(destination)
         # Load this platform-specific API only on its supported execution path.
         from ctypes import wintypes
 

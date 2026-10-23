@@ -1,9 +1,9 @@
 """Shared JSON input boundary: unique keys, standard constants and bounded files."""
 
 import json
-from pathlib import Path
 
 from .core import ValidationError
+from .windows_paths import native_path
 
 
 def _unique_keys(pairs):
@@ -35,7 +35,7 @@ def read(path, max_bytes):
     """Check the byte limit before decoding UTF-8 or parsing the document."""
     if type(max_bytes) is not int or max_bytes < 0:
         raise ValidationError('JSON byte limit must be a nonnegative integer')
-    path = Path(path)
+    path = native_path(path)
     limit = f'{max_bytes // (1024 * 1024)} MiB' if max_bytes and max_bytes % (1024 * 1024) == 0 else f'{max_bytes} bytes'
     if path.stat().st_size > max_bytes:
         raise ValidationError(f'JSON file exceeds {limit} limit')

@@ -89,6 +89,7 @@ def _offer_workspace_after_recovery_block(locator):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='MarkAuto native desktop research and paper trading')
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
+    parser.add_argument('--smoke-isolated', action='store_true', help='Smoke only: do not discover or read the user bootstrap/settings')
     parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
     args = parser.parse_args(argv)
     if args.tls_smoke is not None:
@@ -96,6 +97,8 @@ def parse_args(argv=None):
             parser.error('--tls-smoke requires an absolute report path and cannot combine with --smoke-test')
     if args.smoke_test is not None and not args.smoke_test.is_absolute():
         parser.error('--smoke-test requires an absolute report path')
+    if args.smoke_isolated and args.smoke_test is None:
+        parser.error('--smoke-isolated requires --smoke-test')
     return args
 
 
@@ -130,7 +133,8 @@ def prepare_workspace(state):
         return False
     state.guard = RuntimeGuard(state.paths)
     state.previous_unclean = state.guard.start()
-    state.settings_paths = WorkspaceLocator(state.user_bootstrap).load(probe=False) if state.args.smoke_test else state.paths
+    use_user_snapshot = state.args.smoke_test and not getattr(state.args, 'smoke_isolated', False)
+    state.settings_paths = WorkspaceLocator(state.user_bootstrap).load(probe=False) if use_user_snapshot else state.paths
     state.settings = SettingsStore(state.settings_paths.state / 'settings.json')
     state.validated_settings = state.settings.load()  # Fail closed on incompatible/corrupt state.
     if state.args.smoke_test:
@@ -171,14 +175,19 @@ def run_gui(args):
     state.app.setOrganizationName('MarkAuto')
     state.app.setApplicationVersion(__version__)
     state.startup_timing.mark('application')
-    state.user_bootstrap = AppPaths.discover().root
+    isolated_smoke = bool(state.args.smoke_test and getattr(state.args, 'smoke_isolated', False))
+    state.user_bootstrap = None if isolated_smoke else AppPaths.discover().root
     state.smoke_startup_directory = None
     if state.args.smoke_test:
         import tempfile
 
         # Isolate even GUI startup, recovery, guards and paper freeze. Only the
         # validated user settings snapshot is read from the configured workspace.
-        state.smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-')
+        from quantlab.windows_paths import native_path
+
+        # The extended spelling propagates through recursive fixture cleanup.
+        temporary_root = native_path(tempfile.gettempdir(), force=True) if isolated_smoke else None
+        state.smoke_startup_directory = tempfile.TemporaryDirectory(prefix='markauto-smoke-startup-', dir=temporary_root)
     state.bootstrap = Path(state.smoke_startup_directory.name) if state.smoke_startup_directory else state.user_bootstrap
     state.bootstrap.mkdir(parents=True, exist_ok=True)
     state.locator = WorkspaceLocator(state.bootstrap)
@@ -257,6 +266,7 @@ def run_gui(args):
                     'data_dir': str(state.settings_paths.root) if state.settings_paths else None,
                     'smoke_data_dir': str(state.bootstrap),
                     'user_state_read_only': True,
+                    'user_state_access': 'none' if getattr(state.args, 'smoke_isolated', False) else 'read_only',
                     'steps': [],
                     'source_type': 'synthetic',
                     'generator': 'fixture',
