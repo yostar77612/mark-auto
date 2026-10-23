@@ -97,6 +97,16 @@ class ErrorCatalogTests(unittest.TestCase):
         # R1 adds six fixed messages and intentionally points one existing action to the new UI.
         # Assert those approved bytes, then restore only that action for the original 64-entry digest.
         additions = {
+            'idea_auth_refresh_required': ('策略點子的登入授權需要更新。', '請在設定頁明確更新選定連線；若要求重新登入，請由您本人操作。'),
+            'idea_auth_unavailable': ('策略點子無法使用目前的登入授權。', '請在設定頁檢查連線狀態；不要重複送出研究。'),
+            'idea_stream_failed_uncoded': ('策略點子串流回報失敗，但未附錯誤碼。', '本次研究未完成；請稍後檢查官方服務狀態。'),
+            'idea_stream_incomplete': ('策略點子串流回報未完成。', '本次研究未完成；不會採用部分候選。'),
+            'idea_stream_error_uncoded': ('策略點子串流回報錯誤，但未附錯誤碼。', '本次研究未完成；請稍後檢查官方服務狀態。'),
+            'idea_http_408': ('策略點子服務回覆 HTTP 408。', '本次研究未完成；請稍後再由您決定重試。'),
+            'idea_http_429': ('策略點子服務回覆 HTTP 429。', '請核對官方用量；不要連續重試。'),
+            'idea_http_500': ('策略點子服務回覆 HTTP 500。', '本次研究未完成；請稍後再由您決定重試。'),
+            'idea_http_502': ('策略點子服務回覆 HTTP 502。', '本次研究未完成；請稍後再由您決定重試。'),
+            'idea_http_504': ('策略點子服務回覆 HTTP 504。', '本次研究未完成；請稍後再由您決定重試。'),
             'extraction_output_missing': ('候選回應沒有文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
             'extraction_output_multiple': ('候選回應包含多個文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
             'extraction_output_too_large': ('候選回應超過既定大小上限。', '請縮小研究範圍；大小限制不變。'),

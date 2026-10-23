@@ -5218,3 +5218,15 @@ existing one-text, UTF-8 byte cap, tool/refusal rejection, JSON and source/candi
 validation still apply. No raw events are logged or persisted by this adapter.
 Offline regression fails on f9aa397 and passes with the adapter. This is not a
 claim of successful installer or full-product acceptance.
+
+An additional real App check reported that the selected connection requires an
+explicit refresh. AuthError has no code attribute, so the generic research
+exception mapper previously hid refresh_required as remote_error. The idea-only
+transport adapter now maps that exact fixed AuthError argument to
+idea_auth_refresh_required and all other AuthError instances to
+idea_auth_unavailable without exposing exception text. Refresh remains an
+explicit settings action, never an automatic retry. Existing top-level SSE quota
+codes remain untouched. Uncoded failed/incomplete/error stream events and common
+HTTP error statuses have bounded fixed diagnostics; they do not grant success or
+alter pause/cancellation handling. The original 64-entry error text digest stays
+unchanged; only the new entries and source-file pin are appended/re-pinned.

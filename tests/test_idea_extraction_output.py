@@ -1,6 +1,12 @@
 """Content-free diagnostics preserve the extraction admission boundary."""
 
+import json
 import unittest
+from unittest.mock import Mock
+
+from desktop_chatgpt_provider import PlanError
+from desktop_chatgpt_auth import AuthError
+from desktop_ui import _idea_event_caller
 
 from quantlab.idea_research import _extraction_output, run_extraction
 from quantlab.idea_search import RemoteFailure
@@ -14,6 +20,52 @@ def response(*texts):
 
 
 class ExtractionOutputTests(unittest.TestCase):
+    def test_authentication_failures_use_fixed_codes_without_exception_text(self):
+        for reason, expected in (('refresh_required', 'idea_auth_refresh_required'), ('private', 'idea_auth_unavailable')):
+
+            def stream(*args):
+                raise AuthError(reason)
+                yield b''
+
+            with self.subTest(reason=reason), self.assertRaises(RemoteFailure) as caught:
+                list(_idea_event_caller(None, Mock(stream=stream))({}, {'max_response_bytes': 1024}, None))
+            self.assertEqual(str(caught.exception), expected)
+
+    def test_top_level_stream_quota_code_is_preserved(self):
+        event = {'type': 'error', 'code': 'subscription_sharing_usage_limit_exceeded'}
+        transport = Mock(stream=lambda *args: (raw for raw in [b'data: ' + json.dumps(event).encode() + b'\n\n']))
+        self.assertEqual(list(_idea_event_caller(None, transport)({}, {'max_response_bytes': 1024}, None)), [event])
+
+    def test_uncoded_stream_failures_emit_only_fixed_diagnostics(self):
+        for kind, expected in (
+            ('response.failed', 'idea_stream_failed_uncoded'),
+            ('response.incomplete', 'idea_stream_incomplete'),
+            ('error', 'idea_stream_error_uncoded'),
+        ):
+            event = {'type': kind, 'response': {'error': {'message': 'private'}}, 'error': {'message': 'private'}}
+            transport = Mock(stream=lambda *args: (raw for raw in [b'data: ' + json.dumps(event).encode() + b'\n\n']))
+            call = _idea_event_caller(None, transport)
+            with self.subTest(kind=kind), self.assertRaises(RemoteFailure) as caught:
+                list(call({}, {'max_response_bytes': 1024}, None))
+            self.assertEqual(str(caught.exception), expected)
+
+    def test_transport_status_diagnostics_preserve_pause_and_other_codes(self):
+        for code, status, expected in (
+            ('remote_error', 429, 'idea_http_429'),
+            ('remote_error', 500, 'idea_http_500'),
+            ('quota_paused', 429, 'quota_paused'),
+            ('grant_blocked', 403, 'grant_blocked'),
+        ):
+
+            def stream(*args):
+                raise PlanError(code, http_status=status)
+                yield b''
+
+            call = _idea_event_caller(None, Mock(stream=stream))
+            with self.subTest(code=code, status=status), self.assertRaises((RemoteFailure, PlanError)) as caught:
+                list(call({}, {'max_response_bytes': 1024}, None))
+            self.assertEqual(caught.exception.code, expected)
+
     def test_text_events_with_empty_terminal_are_diagnosed_without_acceptance(self):
         events = [
             {'type': 'response.output_text.delta', 'delta': 'private'},

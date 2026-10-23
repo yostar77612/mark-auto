@@ -22,3 +22,9 @@
 目前已安裝的 preview 為 f9aa397；修復後安裝版尚未驗收。診斷只容許固定錯誤碼、型別、數量及大小，不記錄帳號、憑證、原始請求或回應。
 
 離線證據：研究流程 21 項、搜尋 14 項、點子介面 9 項通過；空 terminal 的離線案例在 main 基準失敗（ambiguous_output），修復後通過。操作清單測試在 main 基準與修改版均出現 PermissionError／時序失敗，未改寫 golden。Ruff check 通過；format check 僅 ADR 0006 既有例外，保留原檔。
+
+第二個已確認問題：App 的「讀取本機連線（不連網）」顯示「需要明確更新連線」。AuthError 的 refresh_required 沒有 code 屬性，舊研究流程會顯示 remote_error；以離線例外重現並補上固定、不含原始文字的錯誤分類。已透過 App 明確更新連線成功，沒有自動重試或直接讀取憑證。
+
+隔離原生 source App smoke：第一次 ui_backtest 遭 PermissionError，清理已證明完成；第二次全新隔離目錄通過（既定 40 秒限制不變），包含 ui_demo、ui_backtest、ui_select、fixture ui_campaign、ui_paper_reconcile、ui_paper_replay、ui_paper_kill，以及 history、market、Walk-forward preview/run/read。資料為 synthetic，不是市場資格或績效證據。smoke 終止／取消／清理 9 項測試亦通過。修復後安裝版尚未實測。
+
+PR：#87，未合併。第一輪 CI 的錯誤表來源 hash 未重新釘選，屬本次漏項，已補上；不是 Windows 偶發失敗，未以重跑掩蓋。新的來源 pin 保留原有 64 筆訊息 digest。
