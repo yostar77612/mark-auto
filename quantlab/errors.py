@@ -58,6 +58,10 @@ class ErrorText:
 
 # Define each code exactly once; labels below are a compatibility projection.
 ERROR_TABLE = {
+    'extraction_terminal_missing_event_text': ErrorText('串流曾有文字，但結束回應未附候選文字。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_missing': ErrorText('候選回應沒有文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_multiple': ErrorText('候選回應包含多個文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_too_large': ErrorText('候選回應超過既定大小上限。', '請縮小研究範圍；大小限制不變。'),
     'paper_manual_order_lock': ErrorText(
         '\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d',
         '\u8acb\u5148\u6838\u5c0d\u5b8c\u6574\u53c3\u8003\u5feb\u7167\u4e26\u5c0d\u5e33\u3002',

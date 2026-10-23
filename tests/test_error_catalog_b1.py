@@ -97,6 +97,10 @@ class ErrorCatalogTests(unittest.TestCase):
         # R1 adds six fixed messages and intentionally points one existing action to the new UI.
         # Assert those approved bytes, then restore only that action for the original 64-entry digest.
         additions = {
+            'extraction_output_missing': ('候選回應沒有文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+            'extraction_output_multiple': ('候選回應包含多個文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+            'extraction_output_too_large': ('候選回應超過既定大小上限。', '請縮小研究範圍；大小限制不變。'),
+            'extraction_terminal_missing_event_text': ('串流曾有文字，但結束回應未附候選文字。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
             'resolution_confirmation_required': ('尚未完成這次人工核對的全部確認。', '請重新開啟「核對未知請求…」，閱讀說明並逐項確認。'),
             'unknown_request_owned_by_another_registration': ('未知請求屬於另一個已登入的帳號。', '請切換到原本送出請求的帳號，再按「核對未知請求…」。'),
             # R2 (PR #83 D8, owner approved) shortens this action now that K2 reconciliation exists.

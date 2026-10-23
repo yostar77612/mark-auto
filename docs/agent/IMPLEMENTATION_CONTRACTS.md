@@ -5193,3 +5193,28 @@ event and deadline limits, and requires response.completed; a headerless garbage
 or incomplete body still records a non-completed receipt. No other check,
 budget or timeout changes. STREAM_CONTENT_TYPE_SIWC_PROFILE_V1 differs from the
 previous SIWC profile only in its protocol and provider LF/CRLF source pins.
+
+## Idea extraction: bounded shape diagnostics
+
+Owner authorization (2026-10-23) permits minimal content-free diagnostics for
+the real TMF / 5-minute / unspecified-direction extraction failure. The same
+admission conditions now distinguish extraction_output_missing,
+extraction_output_multiple and extraction_output_too_large. These fixed codes
+contain no account, credential, request, response text or source content. The
+single-text requirement, 262144-byte UTF-8 cap, terminal completion, tool/refusal
+rejection, JSON and candidate validation remain unchanged. No automatic retry,
+budget refund, deadline increase or production acceptance is implied. Real App
+verification and the broader functional checklist are recorded separately in
+docs/qa/functional-acceptance-2026-10-23.md.
+
+The real App then confirmed extraction_terminal_missing_event_text: text events
+precede a completed response that omits its output. Extraction now retains only
+response.output_item.done items in memory. An omitted/empty terminal output may
+be reconstructed only after response.completed, with one consistent response ID,
+unique bounded item IDs, contiguous bounded output indices and completed message
+status. Duplicate/invalid items never supply a fallback; deltas never supply
+candidate text. A supplied nonempty terminal output remains authoritative. The
+existing one-text, UTF-8 byte cap, tool/refusal rejection, JSON and source/candidate
+validation still apply. No raw events are logged or persisted by this adapter.
+Offline regression fails on f9aa397 and passes with the adapter. This is not a
+claim of successful installer or full-product acceptance.
