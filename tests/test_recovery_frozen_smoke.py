@@ -95,6 +95,40 @@ class RecoveryFrozenSmokeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 smoke._prepare_plan(paths, {'status': 'completed', 'real_model_status': 'verified'}, time.monotonic() + 10)
 
+    def test_long_fixture_uses_canonical_reference_without_relaxing_admission(self):
+        from quantlab.desktop_runtime import RuntimeSafetyError, validate_analysis_request
+        from quantlab.windows_paths import canonical_path, native_path
+
+        with tempfile.TemporaryDirectory(dir=native_path(tempfile.gettempdir(), force=True)) as folder:
+            root = Path(folder)
+            while len(str(root).encode('utf-16-le')) // 2 < 400:
+                root /= 'SYNTHETIC-long-recovery-0123456789'
+            paths = AppPaths(native_path(root)).ensure()
+            data, state, campaign = source(paths.state / 'campaigns', synthetic_dataset(120))
+            state['real_model_status'] = 'not_verified'
+            write_source(campaign, state)
+            dataset_path = paths.state / 'dataset.json'
+            save_dataset(data, dataset_path)
+            with (
+                patch('socket.create_connection', side_effect=AssertionError('No network')),
+                patch('desktop_chatgpt_provider.analysis_provider', side_effect=AssertionError('No provider')),
+                patch('desktop_chatgpt_auth.OAuthCredentialReference', side_effect=AssertionError('No credentials')),
+            ):
+                plan, request = smoke._prepare_plan(paths, state, time.monotonic() + 10)
+                self.assertEqual(validate_analysis_plan(plan), plan)
+                self.assertEqual(validate_analysis_request(request), request)
+                self.assertEqual(request['original_dataset']['path'], str(canonical_path(dataset_path)))
+                self.assertEqual(request['campaign_reference'], campaign.name)
+                with admission(paths) as owner:
+                    launch = register_launch(paths, job_id='d' * 32, helper_nonce='e' * 32, approved_plan=plan, request=request, admission=owner)
+                self.assertEqual(read_launch(paths, 'd' * 32), launch)
+                if dataset_path != canonical_path(dataset_path):
+                    with self.assertRaises(RuntimeSafetyError):
+                        validate_analysis_request({**request, 'original_dataset': {'kind': 'local_dataset_file', 'path': str(dataset_path)}})
+                for refused in ('//server/share/dataset.json', '\\\\?\\UNC\\server\\share\\dataset.json', '\\\\.\\C:\\dataset.json'):
+                    with self.subTest(refused=refused), self.assertRaises(RuntimeSafetyError):
+                        validate_analysis_request({**request, 'original_dataset': {'kind': 'local_dataset_file', 'path': refused}})
+
     def test_spawn_targets_static_and_no_test_imports_or_pid_reopen(self):
         text = Path(smoke.__file__).read_text()
         tree = ast.parse(text)

@@ -5316,3 +5316,15 @@ reads and writes and require every existing smoke phase. Paper 30 seconds,
 smoke-worker 40 seconds and research-job 15 minutes remain unchanged. Source,
 CI and installed native evidence remain distinct; synthetic cases do not change
 formal acceptance, model verification or permanently disabled live trading.
+
+### Frozen recovery smoke: canonical original-data reference
+
+Installed long-TEMP verification found that the disposable extended local-drive
+dataset filename reached `validate_analysis_request` as an external reference.
+`desktop_recovery_smoke._prepare_plan` now uses `canonical_path` only when
+serializing that already verified synthetic dataset reference. Native file I/O
+keeps its extended spelling. The request validator, source identity, admission,
+launch commit, original-handle containment and strict stop receipt remain
+unchanged. Offline regression exercises a 400-plus-character real filesystem
+fixture and control journal; raw extended/device and UNC references still reject.
+No provider, credentials, network, budget, deadline or producer profile changes.

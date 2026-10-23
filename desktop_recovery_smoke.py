@@ -60,6 +60,7 @@ def _prepare_plan(fixture_paths, campaign_state, deadline):
     from quantlab.core import content_hash
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
     from quantlab.saved_candidate_pool import _read_campaign, load_original_dataset
+    from quantlab.windows_paths import canonical_path
 
     root = fixture_paths.state
     dataset_path = root / 'dataset.json'
@@ -105,7 +106,7 @@ def _prepare_plan(fixture_paths, campaign_state, deadline):
     )
     request = {
         'campaign_reference': matches[0].name,
-        'original_dataset': {'kind': 'local_dataset_file', 'path': str(dataset_path)},
+        'original_dataset': {'kind': 'local_dataset_file', 'path': str(canonical_path(dataset_path))},
         'attempt_ids': [attempt],
         'task': 'critique',
         'model': plan['binding']['model'],
