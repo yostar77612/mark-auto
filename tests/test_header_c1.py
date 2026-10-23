@@ -46,6 +46,32 @@ class HeaderTests(unittest.TestCase):
         header.close()
         self.assertFalse(header.timer.isActive())
 
+    def test_rejected_host_close_preserves_header_timer_state(self):
+        class RefusingHost(QWidget):
+            def closeEvent(self, event):
+                event.ignore()
+
+        for initially_active in (True, False):
+            with self.subTest(initially_active=initially_active):
+                host = RefusingHost()
+                self.addCleanup(host.deleteLater)
+                self.addCleanup(host.hide)
+                layout = QVBoxLayout(host)
+                header = self.header(host, parent=host)
+                layout.addWidget(header)
+                host.show()
+                self.app.processEvents()
+                if not initially_active:
+                    header.timer.stop()
+                self.assertFalse(host.close())
+                self.app.processEvents()
+                self.assertTrue(host.isVisible())
+                self.assertEqual(header.timer.isActive(), initially_active)
+                if initially_active:
+                    header.clock = lambda: NOW + timedelta(seconds=3)
+                    header.timer.timeout.emit()
+                    self.assertEqual(header.time.text(), '03:04:08')
+
     def test_existing_quote_state_boundary_cache_future_and_dataset(self):
         limit = paper_risk_limits().max_quote_age_seconds
         provenance = SimpleNamespace(received_at=NOW - timedelta(seconds=limit), as_of='2026-10-20', attribution='official')

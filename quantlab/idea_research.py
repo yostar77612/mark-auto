@@ -34,6 +34,7 @@ from .idea_search import (
 )
 from .idea_sources import FIXED_SOURCES
 from .reporting import read_json, write_json
+from .response_output import CompletedOutput
 from .research import FAMILIES, registry_json_schema, validate_dsl
 from .web_fetch import FetchBlocked, Fetcher, canonical_url
 
@@ -272,8 +273,12 @@ def _extraction_output(response):
             if not isinstance(part, dict) or part.get('type') != 'output_text' or type(part.get('text')) is not str:
                 raise RemoteFailure('refusal_or_unknown_content')
             texts.append(part['text'])
-    if len(texts) != 1 or len(texts[0].encode('utf-8')) > 262144:
-        raise RemoteFailure('ambiguous_output')
+    if not texts:
+        raise RemoteFailure('extraction_output_missing')
+    if len(texts) != 1:
+        raise RemoteFailure('extraction_output_multiple')
+    if len(texts[0].encode('utf-8')) > 262144:
+        raise RemoteFailure('extraction_output_too_large')
     text = texts[0].strip()
     fenced = re.fullmatch(r'```(?:json)?\s*(.*?)\s*```', text, re.DOTALL)
     try:
@@ -286,18 +291,33 @@ def run_extraction(caller, request, *, deadline, cancelled=None):
     limits = {**EXTRACT_LIMITS, 'deadline': deadline}
     events = caller(request, limits, cancelled)
     completed = None
+    text_event_seen = False
+    output = CompletedOutput()
     try:
         for event in events:
             if cancelled is not None and cancelled():
                 raise Cancelled()
             kind = event.get('type') if isinstance(event, dict) else None
+            if isinstance(event, dict):
+                output.observe(event)
+            if kind == 'response.output_text.delta' and isinstance(event.get('delta'), str) and event['delta']:
+                text_event_seen = True
+            if kind == 'response.output_item.done':
+                item = event.get('item')
+                if isinstance(item, dict) and item.get('type') == 'message':
+                    text_event_seen |= any(
+                        isinstance(part, dict) and part.get('type') == 'output_text' and isinstance(part.get('text'), str) and bool(part['text'])
+                        for part in item.get('content') or []
+                    )
             if kind in ('response.failed', 'response.incomplete', 'error'):
                 error = event.get('error') if kind == 'error' else (event.get('response') or {}).get('error')
                 classify_error((error or event).get('code') if isinstance(error or event, dict) else None, phase='extract')
             if kind and ('function_call' in kind or 'web_search_call' in kind):
                 raise RemoteFailure('unexpected_tool_event')
             if kind == 'response.completed':
-                completed = event.get('response')
+                if completed is not None:
+                    raise RemoteFailure('ambiguous_terminal')
+                completed = output.complete(event.get('response'))
     except (AccountPaused, Cancelled, RemoteFailure):
         raise
     except Exception as exc:
@@ -310,7 +330,12 @@ def run_extraction(caller, request, *, deadline, cancelled=None):
         close = getattr(events, 'close', None)
         if close is not None:
             close()
-    return _extraction_output(completed)
+    try:
+        return _extraction_output(completed)
+    except RemoteFailure as exc:
+        if exc.code == 'extraction_output_missing' and text_event_seen:
+            raise RemoteFailure('extraction_terminal_missing_event_text') from None
+        raise
 
 
 class IdeaStore:

@@ -62,7 +62,7 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
             )
         # R2 re-pin: current provider bytes now match the appended R2 profile; this
         # profile's own literals stay pinned by NEW_HASHES above.
-        latest = pools.STREAM_CONTENT_TYPE_SIWC_PROFILE_V1
+        latest = pools.COMPLETED_ITEMS_SIWC_PROFILE_V1
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')

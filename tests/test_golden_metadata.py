@@ -27,7 +27,8 @@ BASELINE = {
     # R2 (PR #83 approved) refreshed only 5 provider-derived SHA-256 values after the approved
     # desktop_chatgpt_provider.py edit; every non-digest observation is unchanged.
     # Headerless-stream fix (owner approved 2026-10-23) refreshed the same 5 provider-derived digests.
-    'ui_operations_golden.json': '43919252cf20c9a3e9a2888629656cfc10315fdf0db530ebeaf6268154e0b050',
+    # Completed-items compatibility: exactly 9 digest leaves (5 identities); no other fixture leaf changed.
+    'ui_operations_golden.json': '356ac48d604ad1a941df0a24c5d710665460c6fc60138786b00b443b8dbd8ac8',
 }
 
 

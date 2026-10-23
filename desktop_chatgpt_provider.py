@@ -215,6 +215,44 @@ class SSEParser:
         if self.pending or self.data:_fail('truncated_event')
 
 
+class _CompletedItems:
+    """Pinned recovery from completed items; deltas never supply candidate text."""
+
+    def __init__(self):
+        self.items = {}
+        self.invalid = False
+
+    def observe(self, event):
+        if event.get('type') != 'response.output_item.done':
+            return
+        index, item = event.get('output_index'), event.get('item')
+        if type(index) is not int or not 0 <= index < 64 or not isinstance(item, dict) or index in self.items:
+            self.invalid = True
+        else:
+            self.items[index] = copy.deepcopy(item)
+
+    def complete(self, response, response_id):
+        if not isinstance(response, dict) or response.get('output') not in (None, []):
+            return response
+        if response.get('status') != 'completed' or response.get('error') or response.get('incomplete_details'):
+            return response
+        if not self.items or self.invalid:
+            return response
+        if response_id is None or response.get('id') != response_id:
+            _fail('invalid_response_id')
+        if sorted(self.items) != list(range(len(self.items))):
+            _fail('ambiguous_output')
+        identities = set()
+        for item in self.items.values():
+            identity = item.get('id')
+            if not isinstance(identity, str) or not 1 <= len(identity) <= 256 or identity in identities:
+                _fail('ambiguous_output')
+            identities.add(identity)
+            if item.get('type') != 'reasoning' and item.get('status') != 'completed':
+                _fail('incomplete_message')
+        return {**response, 'output': [self.items[index] for index in sorted(self.items)]}
+
+
 def _completed_payload(response):
     if not isinstance(response,dict) or response.get('status')!='completed':_fail('invalid_terminal_status')
     if response.get('error') or response.get('incomplete_details'): _fail('ambiguous_terminal')
@@ -1306,6 +1344,7 @@ class ChatGPTPlanProvider:
         _check(limits['deadline'],cancelled)
         sequence=self._reserve(content_hash(request),len(raw))
         parser=SSEParser(max_bytes=self.max_response_bytes);response_id=None;completed=None
+        completed_items=_CompletedItems()
         stream=None
         try:
             stream=transport.stream(self.credential_reference,request,limits,cancelled)
@@ -1327,10 +1366,12 @@ class ChatGPTPlanProvider:
                         if not isinstance(rid,str) or not 1<=len(rid)<=256:_fail('invalid_response_id')
                         if response_id is not None and response_id!=rid:_fail('response_id_mismatch')
                         response_id=rid
+                    completed_items.observe(event)
                     if kind in ('response.failed','error'):_remote_error(response if kind=='response.failed' else event)
                     if kind=='response.incomplete':_fail('response_incomplete')
                     if 'refusal' in kind or 'function_call' in kind or 'tool_call' in kind:_fail('refusal_or_tool_event')
                     if kind=='response.completed':
+                        response=completed_items.complete(response,response_id)
                         if analysis:
                             from quantlab.research_analysis import validate_analysis_response
                             value,usage=_completed_payload(response)

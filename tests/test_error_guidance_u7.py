@@ -85,8 +85,10 @@ class ErrorGuidanceTests(unittest.TestCase):
         # Re-pinned again (owner approved): the user_confirmed_consumed action names the 進階連線管理 section.
         # Re-pinned for R2 (PR #83 D8, owner approved): finished_request_unmappable is added and the
         # no_resolvable_unknown_request action is shortened; no other entry changes.
+        # Owner-approved idea diagnostics append fourteen fixed entries; historical text
+        # remains byte-locked by test_error_catalog_b1's original 64-entry digest.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), '1435123a80307204840bbe4d496222fb61db764e7b112ce1ba2da3a94491fdb6')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), 'a4b2dd8ccefab7cef2fe9c4ec34ccd7613a10f774c7c89825569a2ddca8c2f4c')
 
     def test_form_failure_is_inline_without_message_box_then_clears(self):
         page = QWidget()

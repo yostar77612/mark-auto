@@ -5193,3 +5193,79 @@ event and deadline limits, and requires response.completed; a headerless garbage
 or incomplete body still records a non-completed receipt. No other check,
 budget or timeout changes. STREAM_CONTENT_TYPE_SIWC_PROFILE_V1 differs from the
 previous SIWC profile only in its protocol and provider LF/CRLF source pins.
+
+## Idea extraction: bounded shape diagnostics
+
+Owner authorization (2026-10-23) permits minimal content-free diagnostics for
+the real TMF / 5-minute / unspecified-direction extraction failure. The same
+admission conditions now distinguish extraction_output_missing,
+extraction_output_multiple and extraction_output_too_large. These fixed codes
+contain no account, credential, request, response text or source content. The
+single-text requirement, 262144-byte UTF-8 cap, terminal completion, tool/refusal
+rejection, JSON and candidate validation remain unchanged. No automatic retry,
+budget refund, deadline increase or production acceptance is implied. Real App
+verification and the broader functional checklist are recorded separately in
+docs/qa/functional-acceptance-2026-10-23.md.
+
+The real App then confirmed extraction_terminal_missing_event_text: text events
+precede a completed response that omits its output. Extraction now retains only
+response.output_item.done items in memory. An omitted/empty terminal output may
+be reconstructed only after response.completed, with one consistent response ID,
+unique bounded item IDs, contiguous bounded output indices and completed message
+status. Duplicate/invalid items never supply a fallback; deltas never supply
+candidate text. A supplied nonempty terminal output remains authoritative. The
+existing one-text, UTF-8 byte cap, tool/refusal rejection, JSON and source/candidate
+validation still apply. No raw events are logged or persisted by this adapter.
+Offline regression fails on f9aa397 and passes with the adapter. This is not a
+claim of successful installer or full-product acceptance.
+
+An additional real App check reported that the selected connection requires an
+explicit refresh. AuthError has no code attribute, so the generic research
+exception mapper previously hid refresh_required as remote_error. The idea-only
+transport adapter now maps that exact fixed AuthError argument to
+idea_auth_refresh_required and all other AuthError instances to
+idea_auth_unavailable without exposing exception text. Refresh remains an
+explicit settings action, never an automatic retry. Existing top-level SSE quota
+codes remain untouched. Uncoded failed/incomplete/error stream events and common
+HTTP error statuses have bounded fixed diagnostics; they do not grant success or
+alter pause/cancellation handling. The original 64-entry error text digest stays
+unchanged; only the new entries and source-file pin are appended/re-pinned.
+
+The owner-authorized completed-item adapter also applies inside the pinned
+ChatGPTPlanProvider execution path, covering campaigns and analysis without
+changing SSEParser. A plan-path offline reproduction fails with missing_output
+before this change and passes afterward. Identity checks precede item collection;
+the original completed payload, DSL, analysis, usage, pause, budget and deadline
+checks still run. Only COMPLETED_ITEMS_SIWC_PROFILE_V1 is appended; all 23 earlier
+profiles retain exact identities. Compatibility goldens change exactly nine
+digest leaves (five unique identities), with every other leaf preserved.
+
+## Adopted candidate form: immutable parameter display
+
+The owner-requested live acceptance found that an adopted candidate's immutable
+reference and backtest were correct while the disabled primary strategy form
+still displayed builtin defaults. Initial adoption and disk restoration now load
+the verified candidate's parameters into those existing fields and clear absent
+optional values. The form remains disabled; the existing immutable reference,
+rules, qualification checks, budgets, source profiles and execution path stay
+unchanged. Rule-backed candidates retain their complete rules without passing
+through the editable form decoder, which still rejects rule-backed payloads.
+Offline regressions cover every family, optional-value clearing, unchanged rules,
+the existing journal-backed backtest/selection path and disk restoration.
+
+## Rejected close: preserve an active application-header timer
+
+Live cancellation acceptance found that the header's host-close watcher stopped
+its clock and job-summary timer even when the user declined closing a busy
+window. The header still stops immediately on the close event, preserving the
+existing accepted-close contract. A context-owned queued check resumes a
+previously active timer only while the host remains visible and is not closing.
+An already stopped timer stays stopped; destroyed hosts are tolerated. Worker
+polling, cancellation, confirmations, reconciliation and the shared close watcher
+used by notifications are unchanged. Offline tests cover an ignored generic
+close, an actual busy-window No path, preserved polling, accepted closes and
+an intentionally stopped timer. Installed acceptance remains a separate gate.
+
+Idea HTTP diagnostics use letter/underscore fixed codes, matching the unchanged
+connection-event boundary, and plain localized labels matching the existing
+privacy presentation checks. Neither boundary is relaxed.

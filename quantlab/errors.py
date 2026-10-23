@@ -58,6 +58,20 @@ class ErrorText:
 
 # Define each code exactly once; labels below are a compatibility projection.
 ERROR_TABLE = {
+    'idea_auth_refresh_required': ErrorText('策略點子的登入授權需要更新。', '請在設定頁明確更新選定連線；若要求重新登入，請由您本人操作。'),
+    'idea_auth_unavailable': ErrorText('策略點子無法使用目前的登入授權。', '請在設定頁檢查連線狀態；不要重複送出研究。'),
+    'idea_stream_failed_uncoded': ErrorText('策略點子串流回報失敗，但未附錯誤碼。', '本次研究未完成；請稍後檢查官方服務狀態。'),
+    'idea_stream_incomplete': ErrorText('策略點子串流回報未完成。', '本次研究未完成；不會採用部分候選。'),
+    'idea_stream_error_uncoded': ErrorText('策略點子串流回報錯誤，但未附錯誤碼。', '本次研究未完成；請稍後檢查官方服務狀態。'),
+    'idea_http_timeout': ErrorText('策略點子服務回覆通訊狀態 408。', '本次研究未完成；請稍後再由您決定重試。'),
+    'idea_http_rate_limited': ErrorText('策略點子服務回覆通訊狀態 429。', '請核對官方用量；不要連續重試。'),
+    'idea_http_server_error': ErrorText('策略點子服務回覆通訊狀態 500。', '本次研究未完成；請稍後再由您決定重試。'),
+    'idea_http_bad_gateway': ErrorText('策略點子服務回覆通訊狀態 502。', '本次研究未完成；請稍後再由您決定重試。'),
+    'idea_http_gateway_timeout': ErrorText('策略點子服務回覆通訊狀態 504。', '本次研究未完成；請稍後再由您決定重試。'),
+    'extraction_terminal_missing_event_text': ErrorText('串流曾有文字，但結束回應未附候選文字。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_missing': ErrorText('候選回應沒有文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_multiple': ErrorText('候選回應包含多個文字區塊。', '請保留研究狀態供維護人員檢查；不要自動重試。'),
+    'extraction_output_too_large': ErrorText('候選回應超過既定大小上限。', '請縮小研究範圍；大小限制不變。'),
     'paper_manual_order_lock': ErrorText(
         '\u5df2\u505c\u6b62\u65b0\u59d4\u8a17\uff1b\u8acb\u5148\u6309\u300c\u6062\u5fa9\u65b0\u59d4\u8a17\u300d',
         '\u8acb\u5148\u6838\u5c0d\u5b8c\u6574\u53c3\u8003\u5feb\u7167\u4e26\u5c0d\u5e33\u3002',
