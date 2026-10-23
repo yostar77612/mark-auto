@@ -20,6 +20,7 @@ import stat
 import tempfile
 import time
 from .market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance, MarketValidationError, bar_key, utc, day
+from .windows_paths import canonical_path, native_path
 
 MAX_FILE_BYTES = 64 * 1024 * 1024
 MAX_ROWS = 1_000_000
@@ -192,6 +193,7 @@ def _safe(path, *, directory=False, create=False):
         _windows_local_drive(path)
     if '..' in path.parts:
         _fail('path traversal refused')
+    path = native_path(path)
     for item in (*reversed(path.parents), path):
         try:
             info = item.lstat()
@@ -426,8 +428,8 @@ def _pairs(pairs):
 def load_history(root, cache_id):
     if not isinstance(cache_id, str) or not re.fullmatch('[a-f0-9]{64}', cache_id):
         _fail('invalid history cache identity')
-    root = _safe(root, directory=True)
-    path = _safe(root / (cache_id + '.json'))
+    root = _safe(canonical_path(root), directory=True)
+    path = _safe(canonical_path(root / (cache_id + '.json')))
     try:
         with path.open('rb') as stream:
             raw = stream.read(MAX_CACHE_BYTES + 1)
@@ -518,7 +520,7 @@ def _entries(root, *, lock_held=False):
             _fail('history directory entry limit')
         temporary = bool(re.fullmatch(r'\.history-[a-zA-Z0-9_-]+\.tmp', p.name))
         try:
-            _safe(p)
+            _safe(canonical_path(p))
             info = p.stat()
             size = info.st_size
             identity = (info.st_dev, info.st_ino)
@@ -560,7 +562,7 @@ def _entries(root, *, lock_held=False):
 @contextmanager
 def _cache_lock(root):
     """OS advisory lock is released on cancellation/process death, unlike sentinels."""
-    path = _safe(root / '.history.lock')
+    path = _safe(canonical_path(root / '.history.lock'))
     try:
         fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:
@@ -603,7 +605,7 @@ def _cache_lock(root):
 
 
 def list_history(root):
-    root = _safe(root, directory=True)
+    root = _safe(canonical_path(root), directory=True)
     if not root.exists():
         return ()
     paths, _ = _entries(root)
@@ -624,12 +626,12 @@ def import_history(path, root, *, sessions, received_at=None, cancelled=None):
     path = _safe(path)
     if path.suffix.lower() not in ('.csv', '.rpt'):
         _fail('local native CSV or comma-delimited RPT required')
-    root = _safe(root, directory=True, create=True)
+    root = _safe(canonical_path(root), directory=True, create=True)
     received_at = received_at or datetime.now(UTC)
     utc(received_at)
     bars, source_hash, counters = _decode(path, sessions, deadline, cancelled)
     result = _result(bars, sessions, source_hash, counters, received_at)
-    target = _safe(root / (result.cache_id + '.json'))
+    target = _safe(canonical_path(root / (result.cache_id + '.json')))
     _check(deadline, cancelled)
     payload = dict(
         version=VERSION,
@@ -643,8 +645,8 @@ def import_history(path, root, *, sessions, received_at=None, cancelled=None):
     content = _canonical(dict(payload=payload, sha256=_hash(payload))).encode('utf-8')
     if len(content) > MAX_CACHE_BYTES:
         _fail('normalized history cache byte limit')
-    _safe(root, directory=True)
-    _safe(target)
+    _safe(canonical_path(root), directory=True)
+    _safe(canonical_path(target))
     _check(deadline, cancelled)
     with _cache_lock(root):
         paths, total_bytes = _entries(root, lock_held=True)
@@ -659,8 +661,8 @@ def import_history(path, root, *, sessions, received_at=None, cancelled=None):
                 stream.write(content)
                 stream.flush()
                 os.fsync(stream.fileno())
-            _safe(root, directory=True)
-            _safe(target)
+            _safe(canonical_path(root), directory=True)
+            _safe(canonical_path(target))
             _check(deadline, cancelled)
             # Exclusive hard-link publication is atomic and never overwrites another file.
             try:

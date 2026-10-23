@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 from . import __version__
+from .windows_paths import canonical_path, native_path
 from .job_stages import normalize_stage, stage_from_traceback
 from .runtime_support import (
     RuntimeSafetyError,
@@ -153,6 +154,7 @@ def _verify_replay_runtime(value):
 
 
 def _marker_stream(marker):
+    marker = native_path(marker)
     if sys.platform != 'win32':
         return marker.open('wb')
     # WRITE_THROUGH also flushes NTFS metadata for a newly created marker.
@@ -197,7 +199,7 @@ def _write_workspace_format(root, value):
 
 
 def _read_json(path):
-    path = Path(path)
+    path = native_path(path)
     if path.stat().st_size > MAX_JSON:
         raise RuntimeSafetyError('JSON size limit exceeded')
     try:
@@ -211,6 +213,11 @@ class AppPaths:
     root: Path
     bootstrap: Path | None = None
 
+    def __post_init__(self):
+        object.__setattr__(self, 'root', native_path(self.root))
+        if self.bootstrap is not None:
+            object.__setattr__(self, 'bootstrap', native_path(self.bootstrap))
+
     @classmethod
     def discover(cls):
         if sys.platform == 'win32':
@@ -223,11 +230,11 @@ class AppPaths:
 
     @property
     def state(self):
-        return self.root / 'state-v1'
+        return native_path(self.root / 'state-v1')
 
     @property
     def cache(self):
-        return self.root / 'cache'
+        return native_path(self.root / 'cache')
 
     @property
     def logs(self):
@@ -305,12 +312,13 @@ class WorkspaceLocator:
         path = Path(value)
         if not path.is_absolute() or text.startswith(('\\', '//')) or path == Path(path.anchor):
             raise RuntimeSafetyError('Choose an absolute local folder, not a drive root or network share')
+        path = native_path(path)
         for ancestor in (path, *path.parents):
             if ancestor.exists() or ancestor.is_symlink():
                 info = ancestor.lstat()
                 if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
                     raise RuntimeSafetyError('Workspace path cannot contain symlinks or reparse points')
-        resolved = path.resolve()
+        resolved = canonical_path(path.resolve())
         if sys.platform == 'win32':
             drive_type = ctypes.windll.kernel32.GetDriveTypeW(str(resolved.anchor))
             if drive_type in (0, 1, 4):
@@ -321,7 +329,8 @@ class WorkspaceLocator:
             if resolved.is_relative_to(protected.resolve()):
                 raise RuntimeSafetyError('Workspace cannot use a system or Program Files directory')
         # Do not let a new workspace enclose the fixed bootstrap/vault.
-        if resolved != self.bootstrap.resolve() and self.bootstrap.resolve().is_relative_to(resolved):
+        bootstrap = canonical_path(self.bootstrap.resolve())
+        if resolved != bootstrap and bootstrap.is_relative_to(resolved):
             raise RuntimeSafetyError('Workspace cannot contain the fixed application bootstrap')
         for protected in (
             self.bootstrap / 'credentials',
@@ -330,7 +339,7 @@ class WorkspaceLocator:
             self.bootstrap / 'logs',
             self.bootstrap / 'control-v1',
         ):
-            if resolved.is_relative_to(protected.resolve()):
+            if resolved.is_relative_to(canonical_path(protected.resolve())):
                 raise RuntimeSafetyError('Choose a standalone workspace, not an internal application directory')
         if path.exists():
             if not path.is_dir():
@@ -341,7 +350,7 @@ class WorkspaceLocator:
                     BackupManager._check_regular_path(child)
             contents = list(path.iterdir())
             marker = path / 'workspace-format.json'
-            if contents and resolved != self.bootstrap.resolve():
+            if contents and resolved != bootstrap:
                 if not marker.is_file():
                     raise RuntimeSafetyError('Choose an empty folder or a compatible MarkAuto workspace')
             if marker.exists():
@@ -703,7 +712,7 @@ class BackupManager:
 
     @staticmethod
     def _check_regular_path(path):
-        info = Path(path).lstat()
+        info = native_path(path).lstat()
         if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
             raise RuntimeSafetyError('Symlinks and Windows reparse points cannot be backed up')
         if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
@@ -721,13 +730,13 @@ class BackupManager:
         import zipfile
 
         self._quiescent()
-        destination = Path(destination).resolve()
+        destination = native_path(destination).resolve()
         # Validate before recovery/ensure: even a rejected destination must not
         # alter journals, locks, vaults or irreversible accounting controls.
         # Keep archives outside both the active workspace and fixed bootstrap;
         # this also protects future internal files without a brittle allowlist.
         for root in (self.paths.root, self.paths.bootstrap or self.paths.root):
-            if destination.is_relative_to(Path(root).resolve()):
+            if canonical_path(destination).is_relative_to(canonical_path(Path(root).resolve())):
                 raise RuntimeSafetyError('Backup must be outside workspace and application bootstrap directories')
         self.recover()
         self.paths.ensure()

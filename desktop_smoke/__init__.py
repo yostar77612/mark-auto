@@ -313,6 +313,8 @@ def _check_market_worker_result(phase, result, export_path):
 
 
 def _history_smoke_fixture(workspace):
+    from quantlab.windows_paths import canonical_path
+
     """Tiny invented native-schema CSV and explicit synthetic dated session policy."""
     from datetime import datetime, timedelta
     import hashlib
@@ -340,7 +342,7 @@ def _history_smoke_fixture(workspace):
     raw = (header + '\n'.join(rows) + '\n').encode('utf-8')
     path = Path(workspace) / 'SYNTHETIC-packaging-fixture-not-exchange-data.csv'
     path.write_bytes(raw)
-    payload = {'history_import': True, 'local_path': str(path), 'sessions': sessions, 'dated_policy_confirmed': True}
+    payload = {'history_import': True, 'local_path': str(canonical_path(path)), 'sessions': sessions, 'dated_policy_confirmed': True}
     return {
         'status': 'pending',
         'source_type': 'synthetic',
@@ -359,12 +361,13 @@ def _history_smoke_fixture(workspace):
 def _check_history_worker_result(result, paths, payload, fixture_sha256):
     """Reload the worker's bounded cache; never accept an IPC-only success claim."""
     import hashlib
+    from quantlab.windows_paths import native_path
     import json
     from datetime import datetime, timedelta, timezone
     from decimal import Decimal
     from quantlab.market_history import load_history, list_history
 
-    with Path(payload['local_path']).open('rb') as stream:
+    with native_path(payload['local_path']).open('rb') as stream:
         source = stream.read(2049)  # This fixed fixture is smaller than 2 KiB.
     if len(source) > 2048 or hashlib.sha256(source).hexdigest() != fixture_sha256:
         raise ValueError('Synthetic history source changed')
@@ -893,6 +896,7 @@ def run_smoke(state):
             'data_dir': str(state.settings_paths.root),
             'smoke_data_dir': str(state.paths.root),
             'user_state_read_only': True,
+            'user_state_access': 'none' if getattr(state.args, 'smoke_isolated', False) else 'read_only',
             'version': __version__,
             'native_window_visible': state.window.isVisible(),
             'worker_completed': completed,
@@ -934,6 +938,7 @@ def run_smoke(state):
                 'data_dir': str(state.settings_paths.root),
                 'smoke_data_dir': str(state.paths.root),
                 'user_state_read_only': True,
+                'user_state_access': 'none' if getattr(state.args, 'smoke_isolated', False) else 'read_only',
                 'source_type': 'synthetic',
                 'generator': 'fixture',
                 'live_status': 'disabled',

@@ -29,6 +29,8 @@ Default limits: 3 consecutive losses, 20 orders per 60 seconds.
 
 from __future__ import annotations
 
+from .windows_paths import native_path, sqlite_uri
+
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
@@ -320,7 +322,7 @@ class PaperBroker:
         self._risk_sessions = freeze(_json(risk_sessions))
         self._margin_schedule = freeze(_json(margin_schedule))
         self._validate_policy()
-        self.path = Path(journal_path)
+        self.path = native_path(journal_path)
         self._storage_uncertain = False
         self._verified_restore = None
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -494,11 +496,11 @@ class PaperBroker:
         Missing/corrupt journals fail closed; display reads never create them.
         """
         reader = cls.__new__(cls)
-        reader.path = Path(journal_path)
+        reader.path = native_path(journal_path)
         reader._storage_uncertain = False
         reader._verified_restore = None
         with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
-            db = sqlite3.connect(reader.path.resolve().as_uri() + '?mode=ro', uri=True)
+            db = sqlite3.connect(sqlite_uri(reader.path.resolve()) + '?mode=ro', uri=True)
             try:
                 db.execute('PRAGMA query_only=ON')
                 db.execute('BEGIN')

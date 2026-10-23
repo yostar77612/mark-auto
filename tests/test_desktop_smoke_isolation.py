@@ -93,7 +93,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 
 @unittest.skipUnless(HAS_QT, 'Pinned Qt required for isolated desktop launch')
 class SmokeUserStateIsolationTests(unittest.TestCase):
-    def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True):
+    def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
         from desktop import _smoke_steps
         from desktop_ui import _paper
         from quantlab.desktop_runtime import AppPaths
@@ -135,10 +135,11 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
             code = "import sys, os\nfrom pathlib import Path\n"
             code += "roots = [Path(p) for p in " + repr([str(p) for p in roots]) + "]\n"
             code += "attempts = Path(" + repr(str(attempted_writes)) + ")\n"
+            code += 'allow_reads = ' + repr(not isolated) + '\n'
             code += '''def audit(event, args):
  if event == 'open':
   mode, flags = args[1], args[2]
-  if not ((isinstance(mode, str) and any(c in mode for c in 'wax+')) or (isinstance(flags, int) and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND))): return
+  if allow_reads and not ((isinstance(mode, str) and any(c in mode for c in 'wax+')) or (isinstance(flags, int) and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND))): return
   values = args[:1]
  elif event in ('os.mkdir', 'os.remove', 'os.rmdir', 'os.chmod', 'os.truncate', 'os.utime'):
   values = args[:1]
@@ -162,7 +163,8 @@ if sys.platform == 'win32':
 from PySide6.QtWidgets import QMessageBox
 QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).throw(AssertionError('Unexpected smoke modal'))
 '''
-            code += injected + "\nraise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))\n"
+            arguments = ['--smoke-test', str(report)] + (['--smoke-isolated'] if isolated else [])
+            code += injected + '\nraise SystemExit(desktop.main(' + repr(arguments) + '))\n'
             env = dict(
                 os.environ,
                 HOME=str(home),
@@ -172,6 +174,12 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
                 QT_QPA_PLATFORM='offscreen',
                 XDG_CACHE_HOME=str(home / 'qt-cache'),
             )
+            if long_temp:
+                temp_root = home
+                while len(str(temp_root)) < 160:
+                    temp_root /= 'SYNTHETIC-long-temp-0123456789'
+                temp_root.mkdir(parents=True)
+                env.update(TEMP=str(temp_root), TMP=str(temp_root))
             result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=150)
             self.assertEqual([snapshot(root) for root in roots], before, 'All real user files and directories must be unchanged')
             self.assertFalse(attempted_writes.exists(), attempted_writes.read_text() if attempted_writes.exists() else '')
@@ -179,7 +187,9 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
             evidence = json.loads(report.read_text())
             self.assertEqual(evidence['status'], expected_status, result.stderr[-3000:] + str(evidence))
             self.assertEqual(result.returncode, 0 if expected_status == 'passed' else 1, result.stderr[-3000:])
-            self.assertEqual(evidence['data_dir'], str(workspace))
+            self.assertEqual(evidence['data_dir'], evidence['smoke_data_dir'] if isolated else str(workspace))
+            if isolated:
+                self.assertEqual(evidence['user_state_access'], 'none')
             self.assertIs(evidence['user_state_read_only'], True)
             execution_root = Path(evidence['smoke_data_dir'])
             self.assertNotIn(execution_root, roots)
@@ -208,6 +218,13 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
 
     def test_smoke_does_not_create_an_absent_user_workspace(self):
         self.smoke(seeded=False, injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
+
+    def test_isolated_long_temp_smoke_cannot_discover_or_read_user_state(self):
+        self.smoke(
+            isolated=True,
+            long_temp=True,
+            injected="def forbidden_discovery(cls):\n raise AssertionError('Original bootstrap discovery forbidden')\nAppPaths.discover = classmethod(forbidden_discovery)",
+        )
 
 
 if __name__ == '__main__':

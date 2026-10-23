@@ -66,6 +66,28 @@ def _digest(nodes):
 
 
 class StartupTests(unittest.TestCase):
+    def _without_reviewed_access_metadata(self, nodes, *, expected_count):
+        # Review the added evidence field independently; keep all original
+        # control flow, time limits and cleanup under their historical hashes.
+        tree = copy.deepcopy(ast.Module(body=nodes, type_ignores=[]))
+        expected = ast.parse("'none' if getattr(state.args, 'smoke_isolated', False) else 'read_only'", mode='eval').body
+        count = 0
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Dict):
+                continue
+            indexes = [i for i, key in enumerate(node.keys) if isinstance(key, ast.Constant) and key.value == 'user_state_access']
+            self.assertLessEqual(len(indexes), 1, 'Duplicate smoke access metadata')
+            if indexes:
+                index = indexes[0]
+                self.assertEqual(_canonical(node.values[index]), _canonical(expected))
+                paired = [value for key, value in zip(node.keys, node.values) if isinstance(key, ast.Constant) and key.value == 'user_state_read_only']
+                self.assertEqual([_canonical(value) for value in paired], [_canonical(ast.Constant(value=True))])
+                del node.keys[index]
+                del node.values[index]
+                count += 1
+        self.assertEqual(count, expected_count)
+        return tree.body
+
     def test_main_budget_and_named_seams(self):
         functions = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body if isinstance(node, ast.FunctionDef)}
         main = functions['main']
@@ -74,8 +96,8 @@ class StartupTests(unittest.TestCase):
             self.assertTrue(callable(getattr(desktop, name)))
 
     def test_baseline_smoke_and_terminal_cleanup(self):
-        # Original main AST fingerprints, normalizing only the state carrier
-        # and the corresponding closure declarations. Dict order is retained.
+        # Original fingerprints retain control flow and cleanup. Only the exact
+        # added access evidence is independently reviewed before comparison.
         functions = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8-sig')).body if isinstance(node, ast.FunctionDef)}
         lifecycle = next(node for node in functions['run_gui'].body if isinstance(node, ast.Try))
         functions.update(
@@ -85,8 +107,8 @@ class StartupTests(unittest.TestCase):
                 if isinstance(node, ast.FunctionDef)
             }
         )
-        self.assertEqual(_digest(functions['run_smoke'].body[3:]), SMOKE_DIGEST)
-        self.assertEqual(_digest(lifecycle.handlers), HANDLERS_DIGEST)
+        self.assertEqual(_digest(self._without_reviewed_access_metadata(functions['run_smoke'].body[3:], expected_count=2)), SMOKE_DIGEST)
+        self.assertEqual(_digest(self._without_reviewed_access_metadata(lifecycle.handlers, expected_count=1)), HANDLERS_DIGEST)
         self.assertEqual(_digest(lifecycle.finalbody), FINALLY_DIGEST)
 
     def test_main_routes_tls_without_gui(self):
