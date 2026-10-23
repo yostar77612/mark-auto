@@ -51,8 +51,8 @@ class ExtractionOutputTests(unittest.TestCase):
 
     def test_transport_status_diagnostics_preserve_pause_and_other_codes(self):
         for code, status, expected in (
-            ('remote_error', 429, 'idea_http_429'),
-            ('remote_error', 500, 'idea_http_500'),
+            ('remote_error', 429, 'idea_http_rate_limited'),
+            ('remote_error', 500, 'idea_http_server_error'),
             ('quota_paused', 429, 'quota_paused'),
             ('grant_blocked', 403, 'grant_blocked'),
         ):

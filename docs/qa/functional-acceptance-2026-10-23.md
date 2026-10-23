@@ -28,3 +28,9 @@
 隔離原生 source App smoke：第一次 ui_backtest 遭 PermissionError，清理已證明完成；第二次全新隔離目錄通過（既定 40 秒限制不變），包含 ui_demo、ui_backtest、ui_select、fixture ui_campaign、ui_paper_reconcile、ui_paper_replay、ui_paper_kill，以及 history、market、Walk-forward preview/run/read。資料為 synthetic，不是市場資格或績效證據。smoke 終止／取消／清理 9 項測試亦通過。修復後安裝版尚未實測。
 
 PR：#87，未合併。第一輪 CI 的錯誤表來源 hash 未重新釘選，屬本次漏項，已補上；不是 Windows 偶發失敗，未以重跑掩蓋。新的來源 pin 保留原有 64 筆訊息 digest。
+
+原始碼版 App 實測：TMF／5 分鐘／不指定方向／GPT 網頁搜尋顯示「研究完成」，兩個候選均不可回測；固定來源模式亦顯示「研究完成」，搜尋查詢數為零，兩個候選不可回測。選取候選後讀到固定原因 needs_custom_rules，採用按鈕停用屬預期保護。這些成功不等於可採用或完整研究已通過，也不是修復後安裝版驗收。
+
+完整研究的離線傳輸案例重現 missing_output，修復前失敗、修復後通過；安全反例繼續拒絕。67 項 producer profile 測試通過，107 項傳輸／帳號保護／來源測試通過（含主機無法建立合成 symlink 的既有跳過一項）。新 profile 只追加，未改寫歷史資料。操作 golden 僅九個 digest 欄位變動，三項 metadata 保護測試通過。
+
+0cd25b9 的 CI 發現新增診斷碼含數字不符合既有事件邊界、大寫 HTTP 不符既有隱私文字檢查，以及兩處延遲載入缺少相鄰說明。修復程式及文字以符合原規則，未修改這些測試或放寬檢查；不以時序偶發問題處理。

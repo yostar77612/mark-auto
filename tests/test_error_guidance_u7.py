@@ -88,7 +88,7 @@ class ErrorGuidanceTests(unittest.TestCase):
         # Owner-approved idea diagnostics append fourteen fixed entries; historical text
         # remains byte-locked by test_error_catalog_b1's original 64-entry digest.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), 'bd65430da239c8bcb3de023e78023ef9fe6f3bb79d4d650bc5038d84dfa0ddd7')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), 'a4b2dd8ccefab7cef2fe9c4ec34ccd7613a10f774c7c89825569a2ddca8c2f4c')
 
     def test_form_failure_is_inline_without_message_box_then_clears(self):
         page = QWidget()

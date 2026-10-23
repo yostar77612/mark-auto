@@ -1075,7 +1075,11 @@ def _idea_event_caller(reference, transport):
     """Stream one Responses call through the shared transport; yield parsed SSE events."""
     # Load the optional UI adapter only when this operation is requested.
     from desktop_chatgpt_provider import PlanError, SSEParser
+
+    # Keep authentication exception handling local to this network operation.
     from desktop_chatgpt_auth import AuthError
+
+    # Translate only fixed diagnostics into the research domain boundary.
     from quantlab.idea_search import RemoteFailure
 
     def call(request, limits, cancelled):
@@ -1103,8 +1107,15 @@ def _idea_event_caller(reference, transport):
             code = 'idea_auth_refresh_required' if exc.args == ('refresh_required',) else 'idea_auth_unavailable'
             raise RemoteFailure(code) from None
         except PlanError as exc:
-            if exc.code == 'remote_error' and exc.http_status in (408, 429, 500, 502, 504):
-                raise RemoteFailure('idea_http_' + str(exc.http_status)) from None
+            codes = {
+                408: 'idea_http_timeout',
+                429: 'idea_http_rate_limited',
+                500: 'idea_http_server_error',
+                502: 'idea_http_bad_gateway',
+                504: 'idea_http_gateway_timeout',
+            }
+            if exc.code == 'remote_error' and exc.http_status in codes:
+                raise RemoteFailure(codes[exc.http_status]) from None
             raise
         finally:
             stream.close()

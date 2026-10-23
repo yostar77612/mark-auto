@@ -5230,3 +5230,16 @@ codes remain untouched. Uncoded failed/incomplete/error stream events and common
 HTTP error statuses have bounded fixed diagnostics; they do not grant success or
 alter pause/cancellation handling. The original 64-entry error text digest stays
 unchanged; only the new entries and source-file pin are appended/re-pinned.
+
+The owner-authorized completed-item adapter also applies inside the pinned
+ChatGPTPlanProvider execution path, covering campaigns and analysis without
+changing SSEParser. A plan-path offline reproduction fails with missing_output
+before this change and passes afterward. Identity checks precede item collection;
+the original completed payload, DSL, analysis, usage, pause, budget and deadline
+checks still run. Only COMPLETED_ITEMS_SIWC_PROFILE_V1 is appended; all 23 earlier
+profiles retain exact identities. Compatibility goldens change exactly nine
+digest leaves (five unique identities), with every other leaf preserved.
+
+Idea HTTP diagnostics use letter/underscore fixed codes, matching the unchanged
+connection-event boundary, and plain localized labels matching the existing
+privacy presentation checks. Neither boundary is relaxed.

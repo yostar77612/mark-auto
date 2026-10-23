@@ -19,7 +19,7 @@ NEW_HASH = '1d2c8d049113a97895710e41e180c6ac28f0a2307f45688a1a938508d43465a3'
 class StreamContentTypeProducerProfileTests(unittest.TestCase):
     def test_all_twenty_two_earlier_profiles_keep_exact_identity(self):
         self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:22]], HISTORICAL_HASHES + R1_HASHES + [R2_HASH])
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[22:], (SIWC,))
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[22:23], (SIWC,))
         self.assertEqual(content_hash(SIWC), NEW_HASH)
         with self.assertRaises(TypeError):
             SIWC['protocol'] = 'rewritten'
@@ -37,7 +37,7 @@ class StreamContentTypeProducerProfileTests(unittest.TestCase):
             {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in SIWC['engine_source_hashes']},
             SIWC['engine_source_hashes'],
         )
-        for index, implementation in enumerate(SIWC['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.COMPLETED_ITEMS_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:
