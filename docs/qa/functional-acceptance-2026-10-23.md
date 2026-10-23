@@ -115,3 +115,31 @@
 安裝版確認關閉的獨立離線案例（seed 44003）在背景工作中按 Yes，視窗已正常關閉；
 保留 7／15 次嘗試（6 evaluated、1 running），未消耗 holdout、無模型請求。
 其恢復與禁止續跑，以及 WFO／Paper 的後續實機取消結果，仍待下一階段核對。
+
+## 續驗：WFO 中止、紙上受控重播與 CI 盤點相容性
+
+以下仍是安裝版 a1bfe92／0.2.2 的離線 synthetic 驗證，沒有新增模型請求。
+第一個 WFO 案例在取消生效前已完成，保留 completed／30 次評估，不誤報為取消。
+另一組日期因共用登錄已有消耗而正確 blocked_previously_consumed_range，零評估。
+再以獨立的 2027 年合成工程合約測試中途 Esc：9d270495a8b9 保存為
+blocked_interrupted，8／33 次評估（7 evaluated、1 interrupted），範圍
+reserved_consumed，最終保留集 excluded_not_evaluated、model_calls 0。
+App 選取並重開同一保存結果後 JSON SHA256 不變，沒有續跑或退還消耗。
+
+紙上驗證使用第二個正向協定的前 960 根訓練資料，保留 parent_data_hash，
+四個合成交易時段與明示保證金政策。沿用真實生成且通過原資格的選定候選；
+新隔離空帳戶以明確的 paper-demo／1000000／零部位、委託與成交參考快照對帳。
+1x 受控重播在游標 11 暫停，過後唯讀核對仍是 11／paused；明確繼續後游標
+前進，停止於 17／active 0，kill_switch true、無 pending plan、零委託與成交。
+正常關閉／重開後游標仍 17、不自動續播，頁面顯示需要對帳且禁止新委託。
+真實正向候選的四個核心檔案 SHA256 全部不變；沒有改政策覆蓋、資格或時限。
+證據為未提交的 wfo-cancel-checkpoint.json、paper-paused-checkpoint.json、
+paper-stopped-checkpoint.json 與 paper-reopen-verification.json。
+
+c9dbf04 的 CI run 39959003483 在 Windows 與 Linux 同時重現服務盤點比對失敗，
+不是已知 Windows 時序偶發。離線原測試同樣失敗；完整生成盤點比對證明僅一個
+行號需要同步：tests/test_header_c1.py 的 market assignment 由 69 移至 95，
+源於前方新增的 26 行回歸測試。80 個服務、130 個別名、84 個狀態副本及所有
+其他盤點內容完全相同。只更新這一個 metadata 行號，保留生成器、測試與嚴格
+全等比對規則；沒有為了隱藏行為差異重寫基準。GitNexus fixture 節點無可解析
+呼叫邊（UNKNOWN），另直接核對其唯一讀取測試與生成器的完整資料結構。
