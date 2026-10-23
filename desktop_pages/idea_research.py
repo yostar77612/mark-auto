@@ -6,7 +6,7 @@ worker events; URLs open in the system browser and never load in this app.
 
 import urllib.parse
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -23,12 +23,16 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QRadioButton,
+    QScrollArea,
+    QTabWidget,
+    QWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
 
 from desktop_strings import ui_text
+from .design import section
 
 FAMILY_TEXT = {
     'trend': 'idea.family.trend',
@@ -97,9 +101,25 @@ class IdeaResearchDialog(QDialog):
         self.record = None
         self.setObjectName('idea_research_dialog')
         self.setWindowTitle(ui_text('idea.dialog_title'))
+        self.resize(980, 700)
         layout = QVBoxLayout(self)
+        self.workspaces = QTabWidget()
+        self.workspaces.setObjectName('idea_workspaces')
+        layout.addWidget(self.workspaces, 1)
+        contents = []
+        for key in ('redesign.strategy.idea_conditions', 'redesign.strategy.idea_results', 'redesign.strategy.idea_sources'):
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            body = QWidget()
+            inner = QVBoxLayout(body)
+            inner.setAlignment(Qt.AlignmentFlag.AlignTop)
+            scroll.setWidget(body)
+            self.workspaces.addTab(scroll, ui_text(key))
+            contents.append(inner)
+        conditions, results, source_layout = contents
         form = QFormLayout()
-        layout.addLayout(form)
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        conditions.addLayout(form)
         self.market = QComboBox()
         self.market.addItem(ui_text('idea.market_tmf'), 'TMF')
         form.addRow(ui_text('idea.market'), self.market)
@@ -136,36 +156,49 @@ class IdeaResearchDialog(QDialog):
         form.addRow(self.urls)
         self.discovery.buttonToggled.connect(lambda *_: self.urls.setVisible(self.discovery_mode() == 'user_urls'))
         self.urls.setVisible(False)
+        self.model_summary = QLabel()
+        self.model_summary.setTextFormat(Qt.TextFormat.PlainText)
+        self.model_summary.setWordWrap(True)
+        conditions.addWidget(self.model_summary)
+        self._refresh_model_summary()
+        panel = getattr(self.state, 'chatgpt_panel', None)
+        if panel is not None and hasattr(panel, 'model'):
+            panel.model.currentIndexChanged.connect(self._refresh_model_summary)
         self.consent_network = QCheckBox(ui_text('idea.consent_network'))
         self.consent_network.setObjectName('idea_consent_network')
         self.consent_plan = QCheckBox(ui_text('idea.consent_plan'))
         self.consent_plan.setObjectName('idea_consent_plan')
-        layout.addWidget(self.consent_network)
-        layout.addWidget(self.consent_plan)
+        conditions.addWidget(self.consent_network)
+        conditions.addWidget(self.consent_plan)
         actions = QHBoxLayout()
-        layout.addLayout(actions)
+        conditions.addLayout(actions)
         self.start_button = self._button(actions, 'idea.start', 'idea_start', self.start)
-        self.cancel_button = self._button(actions, 'idea.cancel', 'idea_cancel', self.cancel)
-        self.retry_button = self._button(actions, 'idea.retry_failed', 'idea_retry', self.retry)
-        self.clear_button = self._button(actions, 'idea.clear_temp', 'idea_clear_temp', self.clear_temp)
+        self.start_button.setProperty('role', 'primary')
+        persistent_actions = QHBoxLayout()
+        self.cancel_button = self._button(persistent_actions, 'idea.cancel', 'idea_cancel', self.cancel)
+        self.retry_button = self._button(persistent_actions, 'idea.retry_failed', 'idea_retry', self.retry)
+        tools = section(source_layout, 'redesign.strategy.idea_tools')
+        self.clear_button = self._button(tools, 'idea.clear_temp', 'idea_clear_temp', self.clear_temp)
         self.status = QLabel('')
+        self.status.setTextFormat(Qt.TextFormat.PlainText)
         self.status.setObjectName('idea_status')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        layout.addLayout(persistent_actions)
         self.fallback = QLabel(ui_text('idea.unavailable'))
         self.fallback.setWordWrap(True)
         fallback = QHBoxLayout()
         self.use_fixed = self._button(fallback, 'idea.use_fixed', 'idea_use_fixed', lambda: self._choose('fixed_sources'))
         self.use_urls = self._button(fallback, 'idea.use_urls', 'idea_use_urls', lambda: self._choose('user_urls'))
-        layout.addWidget(self.fallback)
-        layout.addLayout(fallback)
+        conditions.addWidget(self.fallback)
+        conditions.addLayout(fallback)
         self._set_fallback(False)
-        layout.addWidget(QLabel(ui_text('idea.search_log')))
+        tools.addWidget(QLabel(ui_text('idea.search_log')))
         self.search_log = QListWidget()
         self.search_log.setObjectName('idea_search_log')
         self.search_log.setMaximumHeight(110)
-        layout.addWidget(self.search_log)
-        layout.addWidget(QLabel(ui_text('idea.sources')))
+        tools.addWidget(self.search_log)
+        source_layout.addWidget(QLabel(ui_text('idea.sources')))
         self.sources = QTableWidget(0, len(COLUMNS))
         self.sources.setObjectName('idea_sources')
         self.sources.setHorizontalHeaderLabels([ui_text(COLUMN_TEXT[c]) for c in COLUMNS])
@@ -174,25 +207,44 @@ class IdeaResearchDialog(QDialog):
         self.sources.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.sources.itemSelectionChanged.connect(self.show_source)
         self.sources.cellDoubleClicked.connect(lambda row, column: column == COLUMNS.index('url') and open_url(self._row_url(row)))
-        layout.addWidget(self.sources)
-        layout.addWidget(QLabel(ui_text('idea.reader')))
+        self.sources.setMinimumHeight(180)
+        source_layout.addWidget(self.sources)
+        source_layout.addWidget(QLabel(ui_text('idea.reader')))
         self.reader = QPlainTextEdit()
         self.reader.setObjectName('idea_reader')
         self.reader.setReadOnly(True)
-        layout.addWidget(self.reader)
-        layout.addWidget(QLabel(ui_text('idea.candidates')))
+        self.reader.setMinimumHeight(180)
+        source_layout.addWidget(self.reader)
+        results.addWidget(QLabel(ui_text('idea.candidates')))
         self.candidates = QListWidget()
         self.candidates.setObjectName('idea_candidates')
         self.candidates.currentRowChanged.connect(self.show_candidate)
-        layout.addWidget(self.candidates)
+        self.candidates.setMaximumHeight(160)
+        results.addWidget(self.candidates)
+        self.candidate_summary = QLabel(ui_text('redesign.strategy.idea_empty'))
+        self.candidate_summary.setTextFormat(Qt.TextFormat.PlainText)
+        self.candidate_summary.setWordWrap(True)
+        results.addWidget(self.candidate_summary)
         self.candidate_detail = QPlainTextEdit()
         self.candidate_detail.setObjectName('idea_candidate_detail')
         self.candidate_detail.setReadOnly(True)
-        layout.addWidget(self.candidate_detail)
+        details = section(results, 'redesign.strategy.idea_detail')
+        self.candidate_detail.setMinimumHeight(180)
+        details.addWidget(self.candidate_detail)
         adopt = QHBoxLayout()
-        layout.addLayout(adopt)
+        results.addLayout(adopt)
         self.adopt_button = self._button(adopt, 'idea.adopt', 'idea_adopt', self.adopt)
+        self.adopt_button.setProperty('role', 'primary')
         self.refresh_controls()
+
+    def _refresh_model_summary(self):
+        panel = getattr(self.state, 'chatgpt_panel', None)
+        model = panel.model.currentText() if panel is not None and hasattr(panel, 'model') else ''
+        self.model_summary.setText(ui_text('redesign.strategy.model') + ': ' + (model or ui_text('redesign.strategy.model_missing')))
+
+    def showEvent(self, event):
+        self._refresh_model_summary()
+        super().showEvent(event)
 
     def _button(self, layout, key, name, callback):
         button = QPushButton(ui_text(key))
@@ -275,6 +327,7 @@ class IdeaResearchDialog(QDialog):
         self._reset_consent()
         self._set_fallback(False)
         self.status.setText(ui_text('idea.status.running'))
+        self.workspaces.setCurrentIndex(1)
         self.refresh_controls()
         return job
 
@@ -445,16 +498,21 @@ class IdeaResearchDialog(QDialog):
         self.reader.setPlainText(IdeaStore(self.state.root).read_text(self.record['task_id'], sources[row]['source_id']))
 
     def render_candidates(self):
+        selected = self.candidates.currentRow()
         self.candidates.clear()
         for candidate in (self.record or {}).get('candidates', []):
             mark = ui_text('idea.candidate.backtestable') if candidate.get('backtestable') else ui_text('idea.candidate.not_backtestable')
             self.candidates.addItem(QListWidgetItem('%s  [%s]' % (candidate.get('name') or candidate.get('candidate_id'), mark)))
         self.candidate_detail.clear()
+        self.candidate_summary.setText(ui_text('redesign.strategy.idea_empty'))
+        if self.candidates.count():
+            self.candidates.setCurrentRow(min(max(0, selected), self.candidates.count() - 1))
 
     def show_candidate(self, row):
         candidates = (self.record or {}).get('candidates', [])
         if not 0 <= row < len(candidates):
             self.candidate_detail.clear()
+            self.candidate_summary.setText(ui_text('redesign.strategy.idea_empty'))
             self.refresh_controls()
             return
         c = candidates[row]
@@ -473,6 +531,13 @@ class IdeaResearchDialog(QDialog):
         lines += [ui_text('idea.candidate.limitations') + '; '.join(c.get('limitations') or [])]
         if c.get('rejection_reason'):
             lines.append(ui_text('idea.candidate.reason') + c['rejection_reason'])
+        reason = c.get('rejection_reason') or ui_text('redesign.strategy.idea_pending')
+        eligibility = (
+            ui_text('redesign.strategy.idea_ready')
+            if c.get('backtestable') is True and self.record.get('status') == 'completed'
+            else ui_text('redesign.strategy.idea_blocked').format(reason)
+        )
+        self.candidate_summary.setText((c.get('idea') or c.get('name') or '') + '\n\n' + eligibility)
         self.candidate_detail.setPlainText('\n'.join(lines))
         self.refresh_controls()
 
@@ -490,6 +555,7 @@ class IdeaResearchDialog(QDialog):
             text += ' (' + str(record['error']) + ')'
         self.status.setText(text)
         self._set_fallback(status == 'search_unavailable')
+        self.show_candidate(self.candidates.currentRow())
 
 
 def dialog_for(shell):
@@ -499,6 +565,21 @@ def dialog_for(shell):
 
 def event(shell, packet):
     """Route ui_idea_research worker events to the dialog. Other operations pass through."""
+    if getattr(shell, 'last_operation', None) == 'ui_idea_adopt':
+        dialog = dialog_for(shell)
+        if dialog is not None:
+            kind = packet.get('type')
+            if kind == 'result':
+                dialog.status.setText(ui_text('redesign.strategy.idea_research_ready'))
+                shell.strategy_page.choose_mode('research')
+                dialog.hide()
+            elif kind in ('error', 'failed', 'cancelled', 'canceled'):
+                from quantlab.desktop_errors import error_message
+
+                dialog.status.setText(ui_text('job.cancel_notice') if kind in ('cancelled', 'canceled') else error_message('operation_failed'))
+                dialog.refresh_controls()
+        # The shared result path still refreshes candidates, logs and job state.
+        return False
     if getattr(shell, 'last_operation', None) != 'ui_idea_research':
         return False
     dialog = dialog_for(shell)

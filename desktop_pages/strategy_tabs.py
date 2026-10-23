@@ -9,7 +9,7 @@ def strategy_tabs(layout):
     tabs = QTabWidget()
     tabs.setObjectName('strategy_tabs')
     # Reserve a stable work area for previews/results when switching tabs.
-    tabs.setMinimumHeight(740)
+    tabs.setMinimumHeight(200)
     layout.addWidget(tabs)
     contents = []
     for name in ('settings', 'research', 'walk_forward'):

@@ -1,4 +1,4 @@
-"""Live P1-04 budgets, preserved explanations and T8 layout boundaries."""
+"""Live copy budgets, required task disclosures and preserved help access."""
 
 import json
 from pathlib import Path
@@ -19,13 +19,26 @@ class HelpReachabilityTests(unittest.TestCase):
         with onboarding.sandbox_ui(), tempfile.TemporaryDirectory(prefix='t9-help-snapshot-'):
             cls.metrics = default_metrics()
 
-    def test_live_label_budgets_and_t8_heights(self):
+    def test_live_label_budgets_and_task_layouts(self):
         baseline = json.loads((ROOT / 'docs/analysis/t9_label_baseline.json').read_text(encoding='utf-8'))
         for name, page in self.metrics['pages'].items():
             limits = baseline['pages'][name]
             self.assertLessEqual(page['label_char_count'], limits['merged_t8'], name)
             if limits.get('half_required'):
-                self.assertLessEqual(page['label_char_count'], limits['section_2'] // 2, name)
+                explanatory_chars = page['label_char_count']
+                if name == ui_text('ui.data_page.title'):
+                    # The redesigned import task adds a workflow and an explicit
+                    # mandatory-calendar disclosure. Keep both exactly once;
+                    # the historical half budget still caps every other label,
+                    # while the unchanged total cap above catches new clutter.
+                    for key in ('redesign.data.flow', 'redesign.data.calendar_hint'):
+                        text = ui_text(key)
+                        self.assertEqual(page['visible_text'].count(text), 1, key)
+                        explanatory_chars -= len(text)
+                    self.assertEqual(page['primary_button_count'], 1)
+                    self.assertIn(ui_text('redesign.data.synthetic'), page['visible_text'])
+                    self.assertEqual(page['unlabeled_inputs'], [])
+                self.assertLessEqual(explanatory_chars, limits['section_2'] // 2, name)
         self.assertLessEqual(self.metrics['pages'][ui_text('ui.compare_page.title')]['page_height'], 768)
         for name, height in self.metrics['pages'][ui_text('ui.strategy_page.title')]['subpages'].items():
             self.assertLessEqual(height, 1100, name)

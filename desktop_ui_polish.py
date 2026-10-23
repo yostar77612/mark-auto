@@ -28,10 +28,10 @@ class DisabledHint(QObject):
         self.button.setToolTip(text if disabled else self.original_tooltip)
         self.button.setProperty('disabled_hint', text)
         self.label.setText(text)
-        self.label.setVisible(disabled)
+        self.label.setVisible(disabled and not self.button.isHidden())
 
     def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.EnabledChange:
+        if event.type() in (QEvent.Type.EnabledChange, QEvent.Type.Show, QEvent.Type.Hide):
             self.update()
         return False
 

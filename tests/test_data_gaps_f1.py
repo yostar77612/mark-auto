@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication, QLineEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from desktop_pages.data import DataPage
 from desktop_pages.data_gaps import GapPanel, import_event, timeline_rows
@@ -164,10 +164,15 @@ class GapWidgetTests(unittest.TestCase):
         def mount(page, title):
             return QVBoxLayout(page)
 
+        def button(layout, text, *args, **kwargs):
+            widget = QPushButton(text)
+            layout.addWidget(widget)
+            return widget
+
         host = SimpleNamespace(
-            state=SimpleNamespace(),
+            state=SimpleNamespace(jobs=SimpleNamespace(active=False)),
             mount_page=mount,
-            button=lambda *a, **k: None,
+            button=button,
             text=lambda *a: QLineEdit(),
             advanced=lambda layout: layout,
             start_job=lambda *a: self.fail('unexpected job'),

@@ -14,6 +14,11 @@ DEFAULT_PAGE_ORDER = ('data', 'strategy', 'backtest', 'compare', 'paper', 'marke
 def register_pages(host, page_ids):
     """Capture actual stack widgets once, before any reorder, without owning them."""
     host._page_widgets = {page_id: _ref(host.stack.widget(index)) for page_id, index in zip(page_ids, range(host.stack.count()))}
+    state = getattr(host, 'page_state', None)
+    if state is not None:
+        state._page_widgets = host._page_widgets
+        state.navigation = host.navigation
+        state.stack = host.stack
 
 
 def page_widget(host, page_id):

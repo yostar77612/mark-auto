@@ -304,7 +304,7 @@ class ReplayUITests(unittest.TestCase):
         self.assertFalse(c.running)
         self.assertFalse(c.timer.isActive())
 
-    def test_real_page_defaults_to_original_worker_and_hides_controls(self):
+    def test_real_page_defaults_to_original_worker_and_shows_session_speed(self):
         root = ROOT / ('.tmp-b13-ui-' + uuid4().hex)
         root.mkdir()
         self.addCleanup(shutil.rmtree, root)
@@ -318,7 +318,8 @@ class ReplayUITests(unittest.TestCase):
             page = window.findChild(PaperPage)
             controls = page.replay_controls
             self.assertIsNone(controls.speed.currentData())
-            for widget in (controls.speed, controls.button, controls.stop_button, controls.label):
+            self.assertTrue(controls.speed.isVisibleTo(page))
+            for widget in (controls.button, controls.stop_button, controls.label):
                 self.assertFalse(widget.isVisibleTo(page))
             button = window.findChild(QPushButton, 'paper_replay')
             with patch.object(page, 'paper_job') as submit:

@@ -1379,6 +1379,7 @@ from PySide6.QtCore import Qt, QTimer, QPoint, QPointF, QUrl, QPropertyAnimation
 from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
 from PySide6.QtWidgets import (
     QMainWindow,
+    QFrame as _QFrame,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -1401,6 +1402,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QApplication,
     QGroupBox,
+    QSizePolicy as _QSizePolicy,
+    QLayout as _QLayout,
     QGraphicsOpacityEffect,
 )
 
@@ -1509,7 +1512,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         from desktop_pages.preferences import install_sidebar
         install_sidebar(self, horizontal)
         self.status = QLabel(ui_text('ui.init.ready')); self.status.setObjectName('status'); self.status.setWordWrap(True)
-        self.app_header.layout().insertWidget(self.app_header.layout().count() - 1, self.status)
+        outer.addWidget(self.status)
         _notifications.install_notifications(self, outer)
         _job_progress.install_progress(self, outer)
         self.setCentralWidget(body)
@@ -1554,7 +1557,9 @@ class MainWindow(SharedStateBindings, QMainWindow):
             window_position=lambda: QPoint(self.x(), self.y()),
             window_minimum_size=lambda: (self.minimumWidth(), self.minimumHeight()),
         )
+        self.page_state.save_sections = lambda: self.page_host.safe(self.page_host.save_sections)
         mount_pages(self)
+        self.strategy_page.bind_connection(self.chatgpt_controller, self.chatgpt_panel)
         self.app_header.bind_controls()
         self.privacy.attach_previews()
         # Load the optional UI adapter only when this operation is requested.
@@ -1570,7 +1575,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.onboarding.refresh()
         self.onboarding.restore_visibility()
         _install_window_support(self)
-
 
     def page_services(self):
         return {
@@ -1594,21 +1598,25 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.navigation.addItem(label)
         self.stack.addWidget(page)
 
-
     def _mount_page(self, page, label):
         self.navigation.addItem(label)
         layout = QVBoxLayout(page)
+        layout.setContentsMargins(28, 22, 28, 24)
+        layout.setSpacing(14)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         title = QLabel(label); title.setProperty('themePart', 'pageTitle'); layout.addWidget(title)
-        scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setWidget(page); self.stack.addWidget(scroll)
+        scroll = QScrollArea(); scroll.setFrameShape(_QFrame.Shape.NoFrame); scroll.setWidgetResizable(True); scroll.setWidget(page); self.stack.addWidget(scroll)
+        if type(page).__name__ == 'StrategyPage':
+            page.setSizePolicy(_QSizePolicy.Policy.Expanding, _QSizePolicy.Policy.Ignored)
+            layout.setSizeConstraint(_QLayout.SizeConstraint.SetNoConstraint)
+            layout.setAlignment(Qt.AlignmentFlag(0))
         return layout
-
 
     def _navigate_selected_page(self):
         # Accessibility selection may not update QListWidget's current item.
         selected = self.navigation.selectedItems()
         if len(selected) == 1:
             self.navigation.setCurrentRow(self.navigation.row(selected[0]))
-
 
     def _safe(self, callback):
         try:
@@ -1619,7 +1627,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
             self.notify_local(message, error=True, completion=True)
             return None
 
-
     def form_feedback(self, widget, message):
         self.status.setText(message)
         scroll = widget.parentWidget()
@@ -1629,7 +1636,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
         original = widget.property('feedback')
         set_theme_property(widget, 'feedback', True)
         QTimer.singleShot(1800, widget, lambda: set_theme_property(widget, 'feedback', original))
-
 
     def start_job(self, operation, payload):
         # Keep operation-specific dependencies out of module startup.
@@ -1646,7 +1652,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self._busy(True)
         return job_id
 
-
     def _busy(self, active, *, refresh_recovery=False):
         controller = getattr(self, 'chatgpt_controller', None)
         if controller is not None:
@@ -1654,6 +1659,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         panel = getattr(getattr(self, 'strategy_page', None), 'result_panel', None)
         if panel is not None: panel.set_scenario_busy(active)
         for button in self.actions: button.setEnabled(not active)
+        self.data_page.next_button.setEnabled(bool(getattr(self, '_dataset_ready', False)) and not active)
         self.market.set_loading(active)
         self.kill_button.setEnabled(True)
         self.job_progress.set_running(active and not self.job_feedback.terminal)
@@ -1667,14 +1673,12 @@ class MainWindow(SharedStateBindings, QMainWindow):
             if getattr(self, 'paper_page', None) is not None: self.paper_page._apply_order_lock()
         self._refresh_recovery_controls(force=active or refresh_recovery)
 
-
     def cancel_job(self):
         if not _job_progress.cancel_allowed(self): return
         def cancel_and_recover():
             self.freeze_paper(ui_text('ui.cancel_and_recover.user_cancel'))
             self.status.setText(ui_text('job.cancel_notice'))
         self._safe(cancel_and_recover)
-
 
     def poll_jobs(self):
         try:
@@ -1754,10 +1758,8 @@ class MainWindow(SharedStateBindings, QMainWindow):
         finally:
             _notifications.end_event(self)
 
-
     def notify_local(self, message, *, error=False, completion=False):
         _notifications.notify_local(self, message, error=error, completion=completion)
-
 
     def _notification_link(self, link):
         if link == 'close':
@@ -1768,7 +1770,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.navigation.setCurrentRow(page)
         target = self.paper_card if page == 4 else self.result_card if page == 2 and hasattr(self, 'result_card') else self.stack.widget(page).widget()
         self.stack.widget(page).ensureWidgetVisible(target)
-
 
     def _quiesce_and_recover(self, *, preserve_primary_sign_in=False):
         if getattr(self.page_state, 'replay_controls', None): self.page_state.replay_controls.cancel()
@@ -1797,7 +1798,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 # Load the optional UI adapter only when this operation is requested.
                 from quantlab.desktop_runtime import BackupManager
                 BackupManager(self.paths).recover()
-
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -1849,7 +1849,6 @@ class MainWindow(SharedStateBindings, QMainWindow):
         self.market.popout.close()
         self.chatgpt_controller.set_host_available(False)
         self.timer.stop(); self.app_header.timer.stop(); event.accept()
-
 
     _result_snapshot_lines = staticmethod(result_snapshot_lines)
 # fmt: on

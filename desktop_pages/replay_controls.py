@@ -5,10 +5,11 @@ from PySide6.QtWidgets import QComboBox, QLabel, QPushButton
 
 from desktop_strings import ui_text
 from quantlab.replay_pacing import ReplayPacer, SPEEDS
+from .paper_readiness import refresh_readiness
 
 
 class ReplayControls:
-    def __init__(self, page, layout, *, options_layout=None):
+    def __init__(self, page, layout, *, options_layout=None, session_layout=None):
         self.page = page
         self.pacer = ReplayPacer()
         self.running = False
@@ -28,6 +29,7 @@ class ReplayControls:
         self.speed.currentIndexChanged.connect(self.change_speed)
         layout = options_layout if options_layout is not None else layout
         layout.addWidget(self.speed)
+        layout = session_layout if session_layout is not None else layout
         self.button = QPushButton(ui_text('replay.pause'))
         self.button.setObjectName('paper_replay_pause')
         self.button.setAccessibleName(ui_text('replay.pause'))
@@ -52,7 +54,7 @@ class ReplayControls:
         self._show_session(False)
 
     def _show_session(self, visible):
-        # All controls live in the existing collapsed diagnostics area.
+        # Session controls stay beside the replay action while a paced run exists.
         for widget in (self.button, self.stop_button, self.label):
             widget.setVisible(visible)
 
@@ -71,6 +73,7 @@ class ReplayControls:
         self.pending = 'inspect'
         self.timer.start()
         self.tick()
+        refresh_readiness(self.page)
 
     def toggle(self):
         if not self.running:
@@ -126,6 +129,7 @@ class ReplayControls:
             self.button.setEnabled(True)
             self.stop_button.setEnabled(True)
             self.pacer.defer()
+        refresh_readiness(self.page)
 
     def cancel(self):
         self.timer.stop()
@@ -135,3 +139,4 @@ class ReplayControls:
         self.stop_button.setEnabled(False)
         self.label.setText(ui_text('replay.idle'))
         self._show_session(False)
+        refresh_readiness(self.page)

@@ -138,7 +138,10 @@ class WidgetTools(PageContext):
         if self.settings is None or getattr(self, '_restoring_sections', False):
             return
         value = self.settings.load()
-        value['advanced_sections'] = {key: toggle.isChecked() for key, toggle in self._section_toggles.items()}
+        stored = value.get('advanced_sections', {})
+        stored = dict(stored) if isinstance(stored, dict) else {}
+        stored.update({key: toggle.isChecked() for key, toggle in self._section_toggles.items()})
+        value['advanced_sections'] = stored
         self.settings.save(value)
 
     def _payload(self, editor, build):

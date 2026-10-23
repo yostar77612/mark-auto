@@ -7,7 +7,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QWidget, QApplication
 from .bindings import PageContext
-from .preferences import load_store, save_preferences, restore_preferences
+from .preferences import disclosure_value, load_store, save_preferences, restore_preferences
 
 
 class SettingsPage(PageContext, QWidget):
@@ -243,7 +243,7 @@ class SettingsPage(PageContext, QWidget):
         self._restoring_sections = True
         for key, toggle in self._section_toggles.items():
             toggle.blockSignals(True)
-            toggle.setChecked(value.get('advanced_sections', {}).get(key) is True)
+            toggle.setChecked(disclosure_value(key, toggle, value.get('advanced_sections')))
             toggle.blockSignals(False)
             # Visibility must follow restored state even while signals are blocked.
             toggle.toggled.emit(toggle.isChecked())

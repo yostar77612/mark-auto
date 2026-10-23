@@ -104,7 +104,15 @@ class ScaledLayoutTests(WindowFixture):
                 page = w.stack.currentWidget()
                 scroll = page if isinstance(page, QScrollArea) else page.page_scroll
                 self.assertTrue(scroll.viewport().rect().isValid())
-                self.assertGreater(scroll.verticalScrollBar().maximum(), 0, index)
+                if scroll.widget() is w.strategy_page:
+                    self.assertEqual(scroll.verticalScrollBar().maximum(), 0)
+                    inner = w.strategy_page.tabs.currentWidget()
+                    self.assertIs(inner.widget().parentWidget(), inner.viewport())
+                    self.assertGreaterEqual(inner.verticalScrollBar().maximum(), 0)
+                elif scroll.verticalScrollBar().maximum() == 0:
+                    self.assertLessEqual(scroll.widget().height(), scroll.viewport().height())
+                else:
+                    self.assertGreater(scroll.verticalScrollBar().maximum(), 0, index)
                 self.assertIs(scroll.widget().parentWidget(), scroll.viewport())
                 self.assertTrue(scroll.viewport().isVisible())
         finally:

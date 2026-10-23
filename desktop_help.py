@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QToolButton, QWidget, QVBoxLayout, QPushButton, QSizePolicy
 from desktop_strings import ui_text
 import desktop_strings as _strings
+from desktop_pages.preferences import disclosure_value, load_store
 
 
 # Every relocated static explanation is still attached to its original widget.
@@ -54,9 +55,9 @@ def advanced_section(shell, page, name):
     toggle.toggled.connect(box.setVisible)
     key = name + ':help'
     shell._section_toggles[key] = toggle
+    value = load_store(shell.settings)
+    toggle.setChecked(disclosure_value(key, toggle, value.get('advanced_sections')))
     toggle.toggled.connect(lambda checked: shell._safe(shell._save_section_preferences))
-    value = shell.settings.load() if shell.settings else {}
-    toggle.setChecked(value.get('advanced_sections', {}).get(key) is True)
     return inner
 
 
@@ -102,7 +103,7 @@ def install_page_help(shell):
     }
     hints = {
         'data': ui_text('help.hint.data'),
-        'strategy': ui_text('help.hint.strategy'),
+        'strategy': ui_text('redesign.strategy.page_hint'),
         'backtest': ui_text('help.hint.backtest'),
         'compare': ui_text('help.hint.compare'),
         'paper': ui_text('help.hint.paper'),
@@ -115,6 +116,8 @@ def install_page_help(shell):
         hint.setObjectName(name + '_page_hint')
         hint.setProperty('page_hint', True)
         layout.insertWidget(1, hint)
+        if name in ('strategy', 'data'):
+            hint.hide()  # The task selector already owns the visible introduction.
         for key in MOVED_STRINGS:
             template = texts[key]
             prefix = template.split('{')[0]
@@ -129,6 +132,10 @@ def install_page_help(shell):
                     button.setProperty('help_string_key', key)
                     label.hide()
                     shell.help_relocations.append((key, button))
+        for key in ('ui.strategy_page.bounded_families_hint',) if name == 'strategy' else ('ui.backtest_page.strategy_hint',) if name == 'backtest' else ():
+            button = help_button(layout, key, texts[key])
+            button.setProperty('help_string_key', key)
+            shell.help_relocations.append((key, button))
         # Compact field captions retain the complete previous caption on hover.
         for label in page.findChildren(QLabel):
             for key, short in CAPTIONS.get(name, ()):
@@ -144,9 +151,9 @@ def install_page_help(shell):
     settings = shell.settings_page
     # Settings now owns its path disclosure inside the General section.
     shell._section_toggles['settings:help'] = settings.paths_toggle
+    value = load_store(shell.settings)
+    settings.paths_toggle.setChecked(disclosure_value('settings:help', settings.paths_toggle, value.get('advanced_sections')))
     settings.paths_toggle.toggled.connect(lambda checked: shell._safe(shell._save_section_preferences))
-    value = shell.settings.load() if shell.settings else {}
-    settings.paths_toggle.setChecked(value.get('advanced_sections', {}).get('settings:help') is True)
     for label in settings.paths_advanced.findChildren(QLabel):
         if any(
             label.text().startswith(texts[key].split('{')[0])

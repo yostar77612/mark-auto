@@ -165,7 +165,20 @@ class CommandPalette(QWidget):
             target((combo.currentIndex() + 1) % combo.count())
         elif command.handler in ('focus_import', 'focus_backtest'):
             self.host.navigation.setCurrentRow(command_row(self.host, command))
+            page = getattr(self.host, 'data_page', None)
+            if command.handler == 'focus_import' and page is not None:
+                page.sources.setCurrentIndex(0)
+            if command.handler == 'focus_backtest':
+                page = getattr(self.host, 'backtest_page', None)
+                if page is not None:
+                    page.setup_toggle.setChecked(True)
             target()
+            scroll = self.host.stack.currentWidget()
+            ensure = getattr(scroll, 'ensureWidgetVisible', None)
+            if callable(ensure):
+                button = self.host.findChild(QPushButton, 'import_data' if command.handler == 'focus_import' else 'run_backtest')
+                if button is not None:
+                    ensure(button)
         else:
             target()
 

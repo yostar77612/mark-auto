@@ -46,7 +46,7 @@ class SettingsSectionsTests(unittest.TestCase):
         page.backup_path.setText(str(Path(self.temp.name) / 'private-backup.zip'))
         page.automatic_backup_panel.directory.setText(str(Path(self.temp.name) / 'private-backups'))
         self.assertEqual(
-            [group.title() for group in page.settings_sections], [ui_text('settings.' + key) for key in ('general', 'connection', 'backup', 'about')]
+            [group.title() for group in page.settings_sections], [ui_text('settings.' + key) for key in ('connection', 'general', 'backup', 'about')]
         )
         top_groups = [page.layout().itemAt(i).widget() for i in range(page.layout().count())]
         self.assertEqual([group for group in top_groups if isinstance(group, QGroupBox)], page.settings_sections)
@@ -75,7 +75,7 @@ class SettingsSectionsTests(unittest.TestCase):
 
         panels = self.window.findChildren(ChatGPTConnectionPanel)
         self.assertEqual(panels, [self.window.chatgpt_panel])
-        self.assertTrue(self.page.settings_sections[1].isAncestorOf(panels[0]))
+        self.assertTrue(self.page.settings_sections[0].isAncestorOf(panels[0]))
         self.assertFalse(panels[0].isVisibleTo(self.page))
         with patch.object(panels[0].primary_sign_in, 'click') as clicked:
             self.window.strategy_page.chatgpt_sign_in_entry.click()

@@ -72,4 +72,5 @@ class StrategyTabSnapshotTests(unittest.TestCase):
                     self.assertLessEqual(height, 1100)
             self.assertIn('page_height', page)
             self.assertIn('visible_input_count', page)
-            self.assertIn('策略設定', page['visible_text'])
+            self.assertIn('找策略點子', page['visible_text'])
+            self.assertIn('自行設定', page['visible_text'])

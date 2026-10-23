@@ -82,15 +82,26 @@ class BacktestSummaryTests(unittest.TestCase):
         self.assertTrue(card.isHidden())
         self.load()
         self.assertFalse(card.isHidden())
+        self.assertTrue(page._setup_panel.isHidden())
+        self.assertFalse(page.setup_toggle.isHidden())
+        page.setup_toggle.setChecked(True)
+        self.assertFalse(page._setup_panel.isHidden())
+        page.setup_toggle.setChecked(False)
         layout = page.layout()
-        for widget in (page.result_choice, page.plot, page.kpis, page.fills_table):
+        for widget in (page.result_choice, page.plot):
             self.assertLess(layout.indexOf(card), layout.indexOf(widget))
+        # Secondary statistics and fills remain mounted inside named disclosures.
+        # The summary itself stays outside every collapsed section.
+        for widget in (page.kpis, page.fills_table):
+            self.assertTrue(page.isAncestorOf(widget))
+            self.assertFalse(card.isAncestorOf(widget))
+            self.assertFalse(widget.isVisibleTo(page))
         self.assertEqual(page.findChildren(ReportSummaryCard), [card])
         self.assertEqual(page.findChildren(BacktestSummaryCard), [page.result_card])
         for widget in (card, card.label, card.hint, card.warning):
             self.assertTrue(widget.accessibleName())
         self.assertEqual(card.hint.text(), ui_text('backtest.summary.hint'))
-        self.assertFalse(card.hint.wordWrap())
+        self.assertTrue(card.hint.wordWrap())
         self.assertNotIn('\n', card.hint.text())
 
     def test_exact_three_metrics_match_existing_kpis_and_privacy_toggle(self):

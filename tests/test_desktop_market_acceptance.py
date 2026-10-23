@@ -13,7 +13,7 @@ class MarketAcceptanceLabels(unittest.TestCase):
 
     def test_actual_paper_page_visible_readonly_limits_match_enforced_broker(self):
         from desktop_ui import _paper, paper_risk_limits, write_json
-        from PySide6.QtWidgets import QLabel
+        from PySide6.QtWidgets import QLabel, QPushButton
 
         w = self.window
         label = w.findChild(QLabel, 'paper_fixed_risk_summary')
@@ -22,6 +22,10 @@ class MarketAcceptanceLabels(unittest.TestCase):
             if w.stack.widget(index).isAncestorOf(label):
                 w.navigation.setCurrentRow(index)
                 break
+        # The redesign puts the complete enforced limits in the preparation
+        # disclosure; opening it retains the original rendered-content checks.
+        w.paper_page.findChild(QPushButton, 'paper_prepare').click()
+        self.app.processEvents()
         self.app.processEvents()
         self.assertTrue(label.isVisible())
         self.assertFalse(label.visibleRegion().isEmpty())
