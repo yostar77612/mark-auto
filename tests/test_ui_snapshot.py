@@ -77,7 +77,16 @@ class UiSnapshotTests(unittest.TestCase):
             self.assertFalse(full.isNull())
             self.assertEqual((viewport.width(), viewport.height()), tuple(round(n * scale) for n in size))
             self.assertEqual((full.width(), full.height()), (round(page['full_width'] * scale), round(page['page_height'] * scale)))
-        self.assertGreater(metrics['pages']['AI 策略中心']['page_height'], size[1])  # P0-08 shortened this page to <=1600px
+        strategy = metrics['pages']['AI 策略中心']
+        # The default task now fits a desktop; long research and validation
+        # content stays in its named scrollable workspace and is measured too.
+        self.assertGreater(strategy['page_height'], 0)
+        self.assertLessEqual(strategy['page_height'], 768)
+        self.assertEqual(strategy['primary_button_count'], 1)
+        self.assertEqual(set(strategy['subpages']), {'策略設定', 'AI 研究', 'Walk-forward 驗證'})
+        for name, height in strategy['subpages'].items():
+            self.assertGreater(height, 0, name)
+            self.assertLessEqual(height, 1100, name)
         return metrics
 
     def test_cli_scale_size_and_schema(self):

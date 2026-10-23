@@ -1,6 +1,7 @@
 """Base literals for ordering, late dispatch, rendering and refresh behavior."""
 
 import json
+from collections import Counter
 import os
 from pathlib import Path
 import sys
@@ -23,6 +24,26 @@ from desktop_pages.views import ViewCoordinator
 from tests.r7_characterization import ROOT, capture, mount_capture, snapshot_cases
 
 BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf-8'))
+REDESIGN = json.loads((ROOT / 'tests/fixtures/ui_redesign_characterization_delta.json').read_text(encoding='utf-8'))
+
+
+def semantic_rows(rows):
+    """Retain exact row values and multiplicity independent of layout order."""
+    return Counter(json.dumps(row, ensure_ascii=False) for row in rows)
+
+
+def reviewed_ui_rows(rows, changes):
+    expected = semantic_rows(rows)
+    for change in changes['removed']:
+        key = json.dumps(change['row'], ensure_ascii=False)
+        if expected[key] < change['count']:
+            raise AssertionError('Reviewed UI delta removes a row absent from the historical fixture')
+        expected[key] -= change['count']
+        if not expected[key]:
+            del expected[key]
+    for change in changes['added']:
+        expected[json.dumps(change['row'], ensure_ascii=False)] += change['count']
+    return expected
 
 
 class CharacterizationTests(unittest.TestCase):
@@ -36,7 +57,7 @@ class CharacterizationTests(unittest.TestCase):
         self.assertEqual(self.actual['stub_callbacks'], STUB_CALLBACKS)
 
     def test_main_window_attribute_and_callback_sets(self):
-        self.assertEqual(self.actual['window']['attributes'], WINDOW_ATTRIBUTES)
+        self.assertEqual(self.actual['window']['attributes'], sorted(WINDOW_ATTRIBUTES + REDESIGN['added_window_attributes']))
         self.assertEqual(self.actual['window']['callbacks'], WINDOW_CALLBACKS)
 
     def test_mount_callbacks_dispatch_to_patched_shell(self):
@@ -63,11 +84,31 @@ class CharacterizationTests(unittest.TestCase):
         self.assertTrue(self.actual['snapshots'][2])
 
     def test_refresh_four_states_call_order_and_error_boundaries(self):
-        for name in ('states', 'calls', 'errors'):
+        # The coordinator's execution order and propagated errors remain exact.
+        for name in ('calls', 'errors'):
             self.assertEqual(self.actual['window'][name], BASE['window'][name], name)
+        self.assertEqual(len(self.actual['window']['states']), len(BASE['window']['states']))
+        for index, (actual, historical) in enumerate(zip(self.actual['window']['states'], BASE['window']['states'])):
+            self.assertEqual(semantic_rows(actual), reviewed_ui_rows(historical, REDESIGN['refresh_states']), index)
 
     def test_accessible_names_descriptions_and_focus_chain(self):
-        self.assertEqual(self.actual['window']['focus'], BASE['window']['focus'])
+        # Controls moved across task panels and into a guide dialog. Preserve
+        # every historical semantic row except the explicit UI-only delta;
+        # test_accessibility_walk checks the new real keyboard traversal order.
+        self.assertEqual(semantic_rows(self.actual['window']['focus']), reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus']))
+
+    def test_reviewed_refresh_delta_changes_only_layout_controls_and_captions(self):
+        changes = REDESIGN['refresh_states']
+        captions = {'idea_research_entry', 'use_candidate', 'strategy_page_hint'}
+        legacy_sections = {'advanced_1', 'advanced_7', 'advanced_8', 'advanced_9', 'advanced_10', 'advanced_11', 'advanced_12', 'advanced_13'}
+        self.assertEqual({change['row'][0] for change in changes['removed']}, captions | legacy_sections)
+        for change in changes['removed']:
+            if change['row'][0] not in captions:
+                continue
+            replacements = [item for item in changes['added'] if item['row'][0] == change['row'][0]]
+            self.assertEqual(len(replacements), 1)
+            self.assertEqual(replacements[0]['row'][2:], change['row'][2:])
+            self.assertEqual(replacements[0]['count'], change['count'])
 
     def test_mount_widget_tools_stage_in_isolation(self):
         events, _, shell = mount_capture(mount._mount_widget_tools)

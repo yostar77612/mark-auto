@@ -8,7 +8,7 @@ import time
 import unittest
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QPalette
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QWidget, QScrollArea
 
 import desktop_theme as theme
@@ -29,15 +29,27 @@ def contrast_ratio(first, second):
     return (high + 0.05) / (low + 0.05)
 
 
+def effective_background(widget):
+    """Composite transparent card labels over their rendered ancestor color."""
+    color = widget.palette().color(QPalette.ColorRole.Window)
+    if color.alpha() == 255:
+        return color
+    parent = widget.parentWidget()
+    behind = effective_background(parent) if parent is not None else QApplication.palette().color(QPalette.ColorRole.Window)
+    alpha = color.alphaF()
+    return QColor.fromRgbF(*(front * alpha + back * (1 - alpha) for front, back in zip(color.getRgbF()[:3], behind.getRgbF()[:3])))
+
+
 class AppearanceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    # Re-pinned for U2 compact help-button rules and the shared dark/light tab styles; all exact equality assertions remain.
-    def test_default_stylesheets_are_17b5b1b_bytes(self):
+    # The authorized redesign changes app cards, spacing, task selection and
+    # focus rules. Keep an exact new app pin and the unchanged market pin.
+    def test_default_stylesheets_match_reviewed_ui_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, '1e7ec678722d9f2f0808d2eaeef96f5b03ae691e9547cc3328fb865aa4cb84bb'),
+            (theme.build_app_stylesheet, 'f4bc1159f8d0113902449efb3a34e7340ba40a422037bbd379d82109cd053b2e'),
             (theme.build_market_stylesheet, '7ce3a6cb5bc9c2c0eab3fdffc4fc4139327db3a3e9c546661f1b0ef5cde205cf'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)
@@ -45,6 +57,15 @@ class AppearanceTests(unittest.TestCase):
             self.assertNotEqual(builder(), builder('light'))
         for palette in theme.THEMES.values():
             self.assertEqual(set(palette), set(theme.COLORS))
+        for name in theme.THEMES:
+            stylesheet = theme.build_app_stylesheet(name)
+            for selector in (
+                'QFrame[designCard="true"]',
+                'QToolButton[designDisclosure="true"]',
+                'QPushButton[role="taskChoice"]:checked',
+                'QPushButton:focus',
+            ):
+                self.assertIn(selector, stylesheet)
 
     def test_settings_roundtrip_unknown_and_corruption(self):
         with sandbox_ui(), tempfile.TemporaryDirectory() as folder:
@@ -65,6 +86,22 @@ class AppearanceTests(unittest.TestCase):
         self.assertEqual(theme.up_down_colors('green_up'), theme.up_down_colors()[::-1])
         with self.assertRaises(ValueError):
             theme.up_down_colors('unknown')
+
+    def test_transparent_label_contrast_uses_its_visible_card_background(self):
+        card = QWidget()
+        self.addCleanup(card.deleteLater)
+        palette = card.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor('white'))
+        card.setPalette(palette)
+        label = QLabel('Contrast fixture', card)
+        palette = label.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(0, 0, 0, 0))
+        label.setPalette(palette)
+        self.assertEqual(effective_background(label), QColor('white'))
+        self.assertAlmostEqual(contrast_ratio(QColor('black'), effective_background(label)), 21, places=4)
+        palette.setColor(QPalette.ColorRole.Window, QColor(0, 0, 0, 128))
+        label.setPalette(palette)
+        self.assertLessEqual(abs(effective_background(label).red() - 127), 1)
 
     def test_live_convention_candles_cells_pnl_market_and_legend(self):
         host = QWidget()
@@ -178,10 +215,20 @@ class AppearanceWindowTests(unittest.TestCase):
         self.assertEqual(len(metrics['pages']), 7)
         self.assertTrue(all(not p['unlabeled_inputs'] for p in metrics['pages'].values()))
         baseline = json.loads((ROOT / 'tests/fixtures/desktop_pages_before/metrics.json').read_text(encoding='utf-8'))
+        redesigned = json.loads((ROOT / 'tests/fixtures/ui_redesign_empty_presentation.json').read_text(encoding='utf-8'))
         # Heights and font metrics are platform-dependent (the archive is Windows); compare the platform-independent facts.
         self.assertEqual(list(metrics['pages']), list(baseline['pages']))
-        for page_name, expected in baseline['pages'].items():
-            for field in ('visible_input_count', 'button_count', 'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
+        self.assertEqual(list(metrics['pages']), list(redesigned['pages']))
+        for page_name, expected in redesigned['pages'].items():
+            for field in (
+                'visible_input_count',
+                'button_count',
+                'label_char_count',
+                'unlabeled_inputs',
+                'primary_button_count',
+                'combo_items',
+                'table_headers',
+            ):
                 self.assertEqual(metrics['pages'][page_name][field], expected[field], (page_name, field))
             self.assertEqual(
                 [t.replace(chr(92), '/') for t in metrics['pages'][page_name]['visible_text']],
@@ -210,7 +257,7 @@ class AppearanceWindowTests(unittest.TestCase):
                         control.ensurePolished()
                         palette = control.palette()
                         self.assertGreaterEqual(
-                            contrast_ratio(palette.color(QPalette.ColorRole.WindowText), palette.color(QPalette.ColorRole.Window)),
+                            contrast_ratio(palette.color(QPalette.ColorRole.WindowText), effective_background(control)),
                             4.5,
                             (name, index, control.objectName(), control.text()),
                         )

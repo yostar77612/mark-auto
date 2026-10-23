@@ -1,0 +1,1082 @@
+[
+  {
+    "view": "dark-1366x768-1-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "dark-1920x1080-1-data",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-strategy",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-backtest",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-compare",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-paper",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-market",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-settings",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-data-source-0",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-data-source-1",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-data-source-2",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-data-source-3",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-strategy-ideas",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-strategy-research",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-strategy-manual",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1920x1080-1-strategy-walk_forward",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "dark-1366x768-1.5-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-1.5-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "dark-1366x768-2-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "dark-1366x768-2-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "light-1366x768-1-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "light-1920x1080-1-data",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-strategy",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-backtest",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-compare",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-paper",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-market",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-settings",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-data-source-0",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-data-source-1",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-data-source-2",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-data-source-3",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-strategy-ideas",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-strategy-research",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-strategy-manual",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1920x1080-1-strategy-walk_forward",
+    "window_width": 1920,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "light-1366x768-1.5-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-1.5-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  },
+  {
+    "view": "light-1366x768-2-data",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-strategy",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-backtest",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-compare",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-paper",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-market",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-settings",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-data-source-0",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-data-source-1",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-data-source-2",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-data-source-3",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-strategy-ideas",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-strategy-research",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-strategy-manual",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 1
+  },
+  {
+    "view": "light-1366x768-2-strategy-walk_forward",
+    "window_width": 1366,
+    "scroll_max": 0,
+    "truncated": [],
+    "overlaps": [],
+    "unlabeled_inputs": [],
+    "primary_button_count": 0
+  }
+]

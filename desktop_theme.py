@@ -282,6 +282,17 @@ QWidget#market_dashboard QLabel[status="neutral"] { color:@text@; }
 _QSS = """
 QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
 QWidget { background: @background@; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: @font_body@px; color: @text@; }
+QScrollArea { border: none; }
+QWidget#app_header { border-bottom: 1px solid @table_grid@; padding-bottom: 6px; }
+QLabel#header_live_disabled { color: @hint_text@; border: 1px solid @table_grid@; border-radius: 5px; padding: 5px 9px; }
+QLabel#header_job_state, QLabel#status { color: @hint_text@; }
+QFrame[designCard="true"] { background: @input_background@; border: 1px solid @table_grid@; border-radius: 10px; }
+QFrame[designCard="true"] QLabel { background: transparent; }
+QLabel[designHeading="true"] { font-size: 17px; font-weight: 600; }
+QToolButton[designDisclosure="true"] { color: @hint_text@; border: none; padding: 8px 0; }
+QToolButton:focus, QPushButton:focus, QComboBox:focus, QLineEdit:focus { border: 2px solid @focus_border@; }
+QGroupBox { border: 1px solid @table_grid@; border-radius: 8px; margin-top: 14px; padding: 14px; }
+QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 5px; }
 QLabel { padding: @space_label@px 0; }
 QWidget[resultCard="true"] { background: @input_background@; border: 1px solid @input_border@; border-radius: 6px; }
 QLabel[kpiValue="true"] { font-size: 18px; font-weight: bold; }
@@ -290,6 +301,7 @@ QListWidget::item { padding: 12px 8px; border-radius: 5px; }
 QListWidget::item:selected { background: @navigation_selection@; color: white; }
 QPushButton { background: transparent; color: @text@; border: 1px solid @button_border@; border-radius: 6px; padding: @space_button_vertical@px @space_button_horizontal@px; min-height: 20px; }
 QPushButton[role="primary"] { background: @primary@; color: white; border: 1px solid @primary@; }
+QPushButton[role="taskChoice"]:checked { background: @primary@; color: white; border: 1px solid @primary@; }
 QPushButton[role="danger"] { background: @danger_background@; color: white; border: 1px solid @danger_border@; }
 QLabel[prerequisite="true"] { color: @hint_text@; font-size: @font_hint@px; }
 QPushButton:hover { background: @button_hover@; }
@@ -299,6 +311,9 @@ QToolButton[themePart="helpButton"]:hover { background: @button_hover@; }
 QToolButton[themePart="helpButton"]:focus { border-color: @focus_border@; }
 QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: @input_background@; border: 1px solid @input_border@; border-radius: 5px; padding: @space_input@px; selection-background-color: @primary@; }
 QCheckBox { padding: 7px 0; }
+QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid @input_border@; border-radius: 3px; background: @input_background@; }
+QCheckBox::indicator:checked { background: @primary@; border-color: @focus_border@; }
+QToolButton { border: 1px solid @table_grid@; border-radius: 5px; padding: 5px 8px; }
 QTableWidget { background:@input_background@; alternate-background-color:@table_alternate@; gridline-color:@table_grid@; selection-background-color:@market_selection@; }
 QHeaderView::section { background:@muted_background@; color:@header_text@; padding:6px; border:0; }
 QTabWidget::pane { background:@background@; border:1px solid @table_grid@; }

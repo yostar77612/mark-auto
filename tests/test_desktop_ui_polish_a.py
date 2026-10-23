@@ -56,7 +56,7 @@ class DesktopPolishATests(unittest.TestCase):
         for i in range(w.stack.count()):
             w.navigation.setCurrentRow(i)
             page = w.stack.widget(i)
-            primary = [b for b in page.findChildren(QPushButton) if b.property('role') == 'primary']
+            primary = [b for b in page.findChildren(QPushButton) if b.property('role') == 'primary' and b.isVisibleTo(page)]
             self.assertLessEqual(len(primary), 1)
         button = w.findChild(QPushButton, 'paper_kill')
         calls = []
@@ -107,7 +107,7 @@ class DesktopPolishATests(unittest.TestCase):
             self.assertTrue(button.property('disabled_hint'), button.objectName())
             hints = [x for x in w._disabled_hints if x.button is button]
             self.assertEqual(len(hints), 1, button.objectName())
-            self.assertFalse(hints[0].label.isHidden())
+            self.assertEqual(hints[0].label.isHidden(), button.isHidden())
             button.setEnabled(True)
             if button.isEnabled():
                 self.assertEqual(button.property('disabled_hint'), '')
@@ -115,7 +115,7 @@ class DesktopPolishATests(unittest.TestCase):
             else:
                 # A disabled ancestor still requires an explanation.
                 self.assertTrue(button.property('disabled_hint'))
-                self.assertFalse(hints[0].label.isHidden())
+                self.assertEqual(hints[0].label.isHidden(), button.isHidden())
 
     def test_snapshot_acceptance_1366x768(self):
         metrics = default_metrics()

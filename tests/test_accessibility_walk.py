@@ -249,16 +249,28 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
                 if not button.isEnabled():
                     continue
                 checkable, checked = button.isCheckable(), button.isChecked()
+                group = button.group()
+                exclusive = group.exclusive() if group is not None else False
                 button.setFocus()
                 with QSignalBlocker(button):
-                    button.setCheckable(True)
-                    for key in (Qt.Key.Key_Return, Qt.Key.Key_Space):
-                        before = button.isChecked()
-                        QTest.keyClick(button, key)
-                        if button.isChecked() == before:
-                            offenders.append((button.objectName(), button.accessibleName(), key))
-                    button.setChecked(checked)
-                    button.setCheckable(checkable)
+                    # Exclusive task selectors correctly keep their active task
+                    # selected. This synthetic toggle probe temporarily removes
+                    # exclusivity; the strategy keyboard test verifies real
+                    # exclusive activation without blocking its signals.
+                    if exclusive:
+                        group.setExclusive(False)
+                    try:
+                        button.setCheckable(True)
+                        for key in (Qt.Key.Key_Return, Qt.Key.Key_Space):
+                            before = button.isChecked()
+                            QTest.keyClick(button, key)
+                            if button.isChecked() == before:
+                                offenders.append((button.objectName(), button.accessibleName(), key))
+                        button.setChecked(checked)
+                        button.setCheckable(checkable)
+                    finally:
+                        if exclusive:
+                            group.setExclusive(True)
         self.assertEqual(offenders, [])
         self.assertFalse(self.window.jobs.active)
 

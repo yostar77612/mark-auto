@@ -5,22 +5,16 @@ import desktop_privacy as privacy
 from decimal import Decimal, DecimalException
 from PySide6.QtCore import Qt
 from desktop_strings import ui_text
-from desktop_timeinput import DateInput
 from pathlib import Path
 from quantlab.desktop_feedback import stop_presentation
-from quantlab import strict_json
 from uuid import uuid4
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import read_json as read_json, write_json as write_json, load_dataset as load_dataset, load_selection
-from PySide6.QtWidgets import QWidget, QLabel, QPlainTextEdit, QSpinBox, QCheckBox, QFileDialog as QFileDialog, QMessageBox, QAbstractButton
+from PySide6.QtWidgets import QWidget, QFileDialog as QFileDialog, QMessageBox, QAbstractButton
 from desktop_presentation import display_number
-from desktop_forms import PaperPolicyForm, PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
 from .bindings import PageContext
-from .result_widgets import KpiCards
 from quantlab.paper_tab_data import account_counts
-from .paper_tabs import build_tabs, refresh_tables
-from .replay_controls import ReplayControls
-from .widgets import PanelCard
+from .paper_tabs import refresh_tables
 
 
 def pending_orders(account):
@@ -115,120 +109,17 @@ class PaperPage(PageContext, QWidget):
         super().__init__()
         self.setup_context(host)
         layout = self.host.mount_page(self, ui_text('ui.paper_page.title'))
-        note = QLabel(ui_text('ui.paper_page.reconciliation_hint'))
-        note.setWordWrap(True)
-        layout.addWidget(note)
-        limits = self.host.callbacks['paper_risk_limits']()
-        self.paper_risk_summary = QLabel(
-            ui_text('ui.paper_page.fixed_risk_limits').format(
-                limits.max_position,
-                limits.max_order_quantity,
-                display_number(limits.max_daily_loss, "cash"),
-                limits.max_quote_age_seconds,
-                limits.max_consecutive_losses,
-                limits.window_seconds,
-                limits.max_orders_per_window,
-            )
-        )
-        self.paper_risk_summary.setObjectName('paper_fixed_risk_summary')
-        self.paper_risk_summary.setWordWrap(True)
-        layout.addWidget(self.paper_risk_summary)
-        advanced = self._advanced(layout)
-        policy_layout = self._advanced(layout, ui_text('ui.paper_page.policy_advanced'))
-        policy_panel = PanelCard(ui_text('ui.paper_page.policy_advanced'))
-        policy_layout.addWidget(policy_panel)
-        self.policy_form = PaperPolicyForm()
-        policy_panel.content_layout().addWidget(self.policy_form)
-        self.paper_policy = self._text(advanced, ui_text('ui.paper_page.policy_json'), '{}', True)
-        self._remember(self.paper_policy)
-        self._button(layout, ui_text('ui.paper_page.load_policy'), 'load_policy_file', lambda: self.load_form_file(self.policy_form, self.paper_policy))
-        self._button(layout, ui_text('ui.paper_page.synthetic_policy'), 'demo_policy', self.demo_paper_policy)
-        self._button(layout, ui_text('ui.paper_page.load_account'), 'paper_snapshot', lambda: self.paper_job('snapshot'))
-        snapshot_layout = self._advanced(layout, ui_text('ui.paper_page.snapshot_advanced'))
-        self.snapshot_form = PaperSnapshotForm()
-        snapshot_panel = PanelCard(ui_text('ui.paper_page.snapshot_advanced'))
-        snapshot_layout.addWidget(snapshot_panel)
-        snapshot_panel.content_layout().addWidget(self.snapshot_form)
-        self.snapshot = self._text(
-            advanced,
-            ui_text('ui.paper_page.snapshot_json'),
-            canonical_json({'account_id': 'paper-demo', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}}),
-            True,
-        )
-        self.snapshot_form.from_payload(strict_json.loads(self.snapshot.toPlainText()))
-        self._remember(self.snapshot)
-        self._button(layout, ui_text('ui.paper_page.load_snapshot'), 'load_snapshot_file', lambda: self.load_form_file(self.snapshot_form, self.snapshot))
-        self._button(
-            layout,
-            ui_text('ui.paper_page.reconcile'),
-            'paper_reconcile',
-            lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload)),
-        )
-        self.kill_button = self._button(layout, ui_text('ui.paper_page.emergency_stop'), 'paper_kill', self.kill_paper, role='danger')
-        self._button(advanced, ui_text('paper.manual_lock'), 'paper_manual_lock', lambda: self.paper_job('kill', manual_order_lock=True))
-        cancel_all = self._button(advanced, ui_text('paper.cancel_all.button'), 'paper_cancel_all', self.cancel_all_paper, role='danger')
-        cancel_all.setProperty('custom_confirmation', True)
-        self._button(
-            advanced,
-            ui_text('paper.manual_unlock'),
-            'paper_manual_unlock',
-            lambda: self.paper_job('reconcile', snapshot=self._payload(self.snapshot, self.snapshot_form.build_payload), manual_order_lock=False),
-        )
-        self.replay_bars = QSpinBox()
-        self.replay_bars.setRange(1, 1000)
-        self.replay_bars.setValue(100)
-        layout.addWidget(self.replay_bars)
-        self.paper_confirm = QCheckBox(ui_text('ui.paper_page.snapshot_consent'))
-        layout.addWidget(self.paper_confirm)
-        self.replay_controls = ReplayControls(self, layout, options_layout=advanced)
-        self.page_state.replay_controls = self.replay_controls
-        self._button(
-            layout,
-            ui_text('ui.paper_page.replay_history'),
-            'paper_replay',
-            lambda: self.paper_job('replay', max_bars=self.replay_bars.value(), _paced=self.replay_controls.speed.currentData() is not None),
-        )
-        order_layout = self._advanced(layout, ui_text('ui.paper_page.order_advanced'))
-        self.intent_form = PaperIntentForm()
-        order_layout.addWidget(self.intent_form)
-        self.quote_form = PaperQuoteForm()
-        order_layout.addWidget(self.quote_form)
-        self.intent = self._text(advanced, ui_text('ui.paper_page.intent_json'), '{}', True)
-        self.quote = self._text(advanced, ui_text('ui.paper_page.quote_json'), '{}', True)
-        self._remember(self.intent)
-        self._remember(self.quote)
-        layout.addWidget(QLabel(ui_text('timeinput.paper_clock')))
-        self.paper_time = DateInput('2026-01-05T01:00:00Z', timestamp=True)
-        self.paper_time.setAccessibleName(ui_text('timeinput.paper_clock'))
-        layout.addWidget(self.paper_time)
-        self._button(
-            layout,
-            ui_text('ui.paper_page.submit_order'),
-            'paper_submit',
-            lambda: self.paper_job(
-                'submit',
-                intent=self._payload(self.intent, self.intent_form.build_payload),
-                quote=self._payload(self.quote, self.quote_form.build_payload),
-                now=self.paper_time.text(),
-            ),
-            role='primary',
-        )
-        self.cancel_order = self._text(layout, ui_text('ui.paper_page.order_id'))
-        self._button(
-            layout,
-            ui_text('ui.paper_page.cancel_order'),
-            'paper_cancel',
-            lambda: self.paper_job('cancel', order_id=self.cancel_order.text(), now=self.paper_time.text()),
-            role='danger',
-        )
-        self.paper_detail = QPlainTextEdit()
-        self.paper_detail.setReadOnly(True)
-        advanced.addWidget(self.paper_detail)
-        self.paper_card = SummaryCard()
-        advanced.addWidget(self.paper_card)
-        self.kpis = KpiCards(('cash', 'positions', 'orders', 'fills', 'reconciliation_required', 'stop'))
-        layout.insertWidget(2, self.kpis)
-        build_tabs(self, layout)
+        # Load the optional form composition only when this page is mounted.
+        from .paper_layout import build_paper
+
+        build_paper(self, layout)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Load the display adapter only when a visible preparation hint is needed.
+        from .paper_readiness import refresh_readiness
+
+        refresh_readiness(self)
 
     def load_form_file(self, form, editor):
         name, _ = self.host.open_file(ui_text('ui.load_form_file.dialog_title'), '', 'JSON (*.json)')
@@ -290,6 +181,10 @@ class PaperPage(PageContext, QWidget):
         else:
             self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
+        # Load the display adapter after scheduling so it reads the current job state.
+        from .paper_readiness import refresh_readiness
+
+        refresh_readiness(self)
 
     def cancel_all_paper(self):
         # Snapshot inspection is read-only and does not construct a broker.
@@ -316,6 +211,10 @@ class PaperPage(PageContext, QWidget):
         orders = getattr(getattr(market, 'chart', None), 'paper_orders', None)
         if locked and orders is not None:
             orders.request = None
+        # Load the display adapter only after the persistent lock is projected.
+        from .paper_readiness import refresh_readiness
+
+        refresh_readiness(self)
 
     def kill_paper(self):
         # Snapshot inspection is read-only and does not construct a broker.
@@ -440,6 +339,10 @@ class PaperPage(PageContext, QWidget):
             }
         )
         refresh_tables(self, account, orders, fills)
+        # Load the display adapter after account projection without another broker read.
+        from .paper_readiness import refresh_readiness
+
+        refresh_readiness(self)
         if strategy is None:
             selection = self.root / 'selection.json'
             strategy = (

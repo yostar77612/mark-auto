@@ -68,6 +68,12 @@ class ViewCoordinator(PageContext):
                 # Too few bars for demo research defaults; keep the form and let research validate.
                 pass
         self.run_button.setEnabled(data is not None and not self.jobs.active)
+        page = getattr(self, 'data_page', None)
+        if page is not None:
+            page.set_dataset_summary(data)
+        backtest = getattr(self, 'backtest_page', None)
+        if backtest is not None:
+            backtest.refresh_run_summary()
 
     def _refresh_result_choices(self):
         old = self.result_choice.currentData()

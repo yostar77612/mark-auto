@@ -92,7 +92,7 @@ class PresentationTests(unittest.TestCase):
                     timer.stop()
                 window.show()
                 self.app.processEvents()
-                self.assertTrue(all(not toggle.isChecked() for toggle in window._section_toggles.values()))
+                self.assertTrue(all(toggle.isChecked() == (toggle.property('defaultExpanded') is True) for toggle in window._section_toggles.values()))
                 toggle = next(iter(window._section_toggles.values()))
                 toggle.setChecked(True)
                 self.assertTrue(next(iter(settings.load()['advanced_sections'].values())))

@@ -453,7 +453,7 @@
           "kind": "HostMethod"
         }
       ],
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "cancel_job",
@@ -778,7 +778,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper.py",
+          "module": "desktop_pages/paper_layout.py",
           "kind": "callbacks"
         }
       ],
@@ -1722,7 +1722,7 @@
       "name": "backup",
       "page": "settings_page",
       "attribute": "backup",
-      "patch_sensitive": false
+      "patch_sensitive": true
     },
     {
       "name": "refresh_views",
@@ -2625,91 +2625,91 @@
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 158,
+      "line": 156,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 169,
+      "line": 167,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 199,
+      "line": 197,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 224,
+      "line": 222,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 239,
+      "line": 237,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 262,
+      "line": 260,
       "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 263,
+      "line": 261,
       "name": "poll_jobs",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 277,
+      "line": 275,
       "name": "refresh_views",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 278,
+      "line": 276,
       "name": "notify_local",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 285,
+      "line": 283,
       "name": "saved_analysis_entries",
       "kind": "patch",
       "receiver": "desktop_ui"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 297,
+      "line": 295,
       "name": "_analysis_request",
       "kind": "patch.object",
       "receiver": "w.compare_page"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 299,
+      "line": 297,
       "name": "analysis_preview_text",
       "kind": "patch",
       "receiver": "desktop_ui"
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 305,
+      "line": 303,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
@@ -2870,28 +2870,28 @@
     },
     {
       "file": "tests/test_page_identity_r4.py",
-      "line": 85,
+      "line": 90,
       "name": "_safe",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_identity_r4.py",
-      "line": 86,
+      "line": 91,
       "name": "read_logs",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_identity_r4.py",
-      "line": 87,
+      "line": 92,
       "name": "refresh_market",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_identity_r4.py",
-      "line": 88,
+      "line": 93,
       "name": "refresh_views",
       "kind": "patch.object",
       "receiver": "window"
@@ -3094,14 +3094,14 @@
     },
     {
       "file": "tests/test_r7_characterization.py",
-      "line": 46,
+      "line": 67,
       "name": "_busy",
       "kind": "setattr",
       "receiver": "shell"
     },
     {
       "file": "tests/test_r7_characterization.py",
-      "line": 46,
+      "line": 67,
       "name": "_safe",
       "kind": "setattr",
       "receiver": "shell"
@@ -3122,14 +3122,14 @@
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 324,
+      "line": 325,
       "name": "paper_job",
       "kind": "patch.object",
       "receiver": "page"
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 332,
+      "line": 333,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "page"
@@ -3171,7 +3171,21 @@
     },
     {
       "file": "tests/test_t9_onboarding.py",
-      "line": 181,
+      "line": 185,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_t9_onboarding.py",
+      "line": 205,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_t9_onboarding.py",
+      "line": 215,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
@@ -3217,6 +3231,48 @@
       "name": "_text",
       "kind": "setattr",
       "receiver": "host"
+    },
+    {
+      "file": "tests/test_ui_redesign_data_results.py",
+      "line": 123,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_ui_redesign_data_results.py",
+      "line": 148,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_ui_redesign_data_results.py",
+      "line": 182,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "self.window"
+    },
+    {
+      "file": "tests/test_ui_redesign_data_results.py",
+      "line": 279,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_ui_redesign_paper_settings.py",
+      "line": 124,
+      "name": "backup",
+      "kind": "patch.object",
+      "receiver": "page"
+    },
+    {
+      "file": "tests/test_ui_redesign_paper_settings.py",
+      "line": 128,
+      "name": "backup",
+      "kind": "patch.object",
+      "receiver": "page"
     },
     {
       "file": "tests/test_wf_guidance_f3.py",

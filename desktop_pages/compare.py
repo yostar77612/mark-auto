@@ -6,9 +6,23 @@ from quantlab.desktop_errors import error_message
 from quantlab.core import ValidationError, canonical_json, content_hash
 from quantlab.reporting import saved_analysis_entries
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QLabel, QListWidget, QPushButton, QLineEdit, QPlainTextEdit, QComboBox, QCheckBox, QFileDialog, QAbstractItemView
+from PySide6.QtWidgets import (
+    QWidget,
+    QLabel,
+    QListWidget,
+    QPushButton,
+    QLineEdit,
+    QPlainTextEdit,
+    QComboBox,
+    QCheckBox,
+    QFileDialog,
+    QAbstractItemView,
+    QHBoxLayout,
+)
 from .compare_table import SavedResultsTable, SideBySideTable
 from .bindings import PageContext
+from .design import section
+from .palette_commands import page_index
 
 ANALYSIS_NOTICE = ui_text('ui.labels.recalculated_evidence')
 ANALYSIS_WARNING = ui_text('ui.labels.unverified_ai_advice')
@@ -21,35 +35,50 @@ class ComparePage(PageContext, QWidget):
         super().__init__()
         self.setup_context(host)
         layout = self.host.mount_page(self, ui_text('ui.compare_page.title'))
-        layout.addWidget(QLabel(ui_text('ui.compare_page.comparison_hint')))
+        hint = QLabel(ui_text('ui.compare_page.comparison_hint'))
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
         self.comparison_list = QListWidget(self)
         self.comparison_list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         self.comparison_list.hide()
         self.saved_results_table = SavedResultsTable(self.comparison_list)
+        self.saved_results_table.setMaximumHeight(180)
         layout.addWidget(self.saved_results_table)
+        actions = QHBoxLayout()
+        layout.addLayout(actions)
         self._button(
-            layout,
+            actions,
             ui_text('ui.compare_page.compare_selected'),
             'compare_results',
             lambda: self.start_job('ui_compare', {'results': [i.data(Qt.ItemDataRole.UserRole) for i in self.comparison_list.selectedItems()]}),
             role='primary',
         )
+        self._button(actions, ui_text('redesign.compare.back'), 'compare_to_backtest', self.return_to_results)
         self.comparison = QPlainTextEdit()
         self.comparison.setReadOnly(True)
-        comparison_details = self._advanced(layout)
+        comparison_details = section(layout, 'redesign.compare.details', key='redesign_compare_details', state=self.state)
         comparison_details.addWidget(self.comparison)
         self.comparison_table = SideBySideTable(self.saved_results_table)
+        self.comparison_table.setMaximumHeight(160)
         layout.addWidget(self.comparison_table)
         # Deferred to keep comparison presentation independent of canvas construction.
         from .compare_equity import attach_overlay
 
         attach_overlay(self, comparison_details)
-        self.select_button = self._button(layout, ui_text('ui.compare_page.activate_strategy'), 'select_strategy', self.select_strategy)
-        self._button(layout, ui_text('ui.compare_page.deactivate_strategy'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
+        selection = section(layout, 'redesign.compare.selection', expanded=True, key='redesign_compare_selection', state=self.state)
+        selection_actions = QHBoxLayout()
+        selection.addLayout(selection_actions)
+        self.select_button = self._button(selection_actions, ui_text('ui.compare_page.activate_strategy'), 'select_strategy', self.select_strategy)
+        self._button(selection_actions, ui_text('ui.compare_page.deactivate_strategy'), 'disable_strategy', lambda: self.start_job('ui_disable', {}))
         self.selection_status = QLabel()
         self.selection_status.setWordWrap(True)
-        layout.addWidget(self.selection_status)
+        selection.addWidget(self.selection_status)
         self._analysis_section(analysis_layout)
+
+    def return_to_results(self):
+        index = page_index(self.state, 'backtest')
+        if index >= 0:
+            self.state.navigation.setCurrentRow(index)
 
     def _analysis_section(self, layout):
         title = QLabel(ui_text('ui.analysis_section.title'))

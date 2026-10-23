@@ -227,7 +227,8 @@ class OrderEntryScanTests(unittest.TestCase):
                 if isinstance(node, ast.ClassDef) and node.name.endswith('Page'):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 500)
         page = ast.parse((ROOT / 'desktop_pages/paper.py').read_text(encoding='utf-8-sig'))
-        calls = [n for n in ast.walk(page) if isinstance(n, ast.Call)]
+        presentation = ast.parse((ROOT / 'desktop_pages/paper_layout.py').read_text(encoding='utf-8-sig'))
+        calls = [n for tree in (page, presentation) for n in ast.walk(tree) if isinstance(n, ast.Call)]
         self.assertTrue(any(isinstance(n.func, ast.Name) and n.func.id == 'ui_text' and n.args[0].value == 'paper.manual_locked' for n in calls))
         lock_jobs = [
             n for n in calls if isinstance(n.func, ast.Attribute) and n.func.attr == 'paper_job' and any(k.arg == 'manual_order_lock' for k in n.keywords)

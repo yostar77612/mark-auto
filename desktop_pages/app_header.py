@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from PySide6.QtCore import QEvent, QObject, QTimer, Qt
-from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QWidget
 
 from desktop_privacy import PrivacyState, enabled
 from desktop_strings import ui_text
@@ -43,16 +43,19 @@ class AppHeader(QWidget):
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
+        self.brand = QLabel('Mark Auto')
+        self.brand.setProperty('designHeading', True)
+        row.addWidget(self.brand)
         self.badge = QLabel(ui_text('header.live_disabled'))
         self.badge.setObjectName('header_live_disabled')
         self.badge.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.badge.setToolTip(ui_text('ui.init.research_only_disclaimer'))
-        self.source = QLabel()
+        self.source = QLabel(self)
         self.source.setObjectName('header_data_source')
         self.job = QLabel()
         self.job.setObjectName('header_job_state')
         self.job.setAccessibleName(ui_text('access.header_job'))
-        self.time = QLabel()
+        self.time = QLabel(self)
         self.time.setObjectName('header_clock')
         self.disclosure = QCheckBox(ui_text('header.help'))
         self.disclosure.setObjectName('research_mode_status')
@@ -74,8 +77,11 @@ class AppHeader(QWidget):
             self.privacy_toggle.setEnabled(getattr(host, 'privacy', None) is not None)
             self.privacy_toggle.toggled.connect(self._privacy_changed)
         self.privacy_toggle.setAccessibleName(ui_text('privacy.toggle'))
-        for label in (self.source, self.job, self.time):
+        self.privacy_toggle.setToolTip(ui_text('redesign.privacy_hint'))
+        for label in (self.job,):
             row.addWidget(label)
+        self.source.hide()
+        self.time.hide()
         row.addWidget(self.disclosure)
         self.theme = QComboBox()
         self.theme.setAccessibleName(ui_text('appearance.theme'))
@@ -85,6 +91,10 @@ class AppHeader(QWidget):
         self.theme.setEnabled(False)
         row.addWidget(self.theme)
         row.addStretch(1)
+        self.connection = QPushButton(ui_text('redesign.header.connection'))
+        self.connection.setObjectName('header_connection')
+        self.connection.clicked.connect(self._open_connection)
+        row.addWidget(self.connection)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._tick)
         self.timer.start(1000)
@@ -106,11 +116,7 @@ class AppHeader(QWidget):
             pass
 
     def _labels(self):
-        notice = getattr(getattr(self.host, 'privacy', None), 'notice', None)
-        status = getattr(self.host, 'status', None)
-        button = getattr(getattr(self.host, 'notification_center', None), 'button', None)
-        hints = [hint.label for hint in getattr(self.host, '_disabled_hints', ()) if hint.button is button]
-        return [x for x in (self.badge, self.source, self.job, self.time, notice, status, *hints) if isinstance(x, QLabel)]
+        return [self.brand, self.badge, self.source, self.job, self.time]
 
     def _tick(self):
         # Hidden strips (and windows that were never shown) have nothing to repaint.
@@ -123,7 +129,7 @@ class AppHeader(QWidget):
             state.set_enabled(value)
 
     def bind_controls(self):
-        """Move the actual B4 theme control, retaining its store and callback."""
+        """Keep the existing preference controls together in Settings."""
         combo = self.host.findChild(QComboBox, 'appearance_theme')
         if combo is not None:
             self.layout().removeWidget(self.theme)
@@ -131,11 +137,23 @@ class AppHeader(QWidget):
             self.theme.setParent(None)
             self._unused_theme = self.theme  # Python keeps sole ownership; no deferred C++ delete
             self.theme = combo
-            combo.setParent(self)
-            self.layout().insertWidget(self.layout().count() - 1, combo)
-            combo.show()
-        QWidget.setTabOrder(self.privacy_toggle, self.disclosure)
-        QWidget.setTabOrder(self.disclosure, self.theme)
+        layout = getattr(getattr(self.host, 'settings_page', None), 'appearance_layout', None)
+        if layout is not None:
+            layout.addWidget(self.privacy_toggle)
+            self.privacy_toggle.show()
+            notice = self.host.privacy.notice
+            layout.addWidget(notice)
+        controller = getattr(self.host, 'chatgpt_controller', None)
+        if controller is not None:
+            controller.changed.connect(self.refresh)
+
+    def _open_connection(self):
+        # Resolve page identity only when navigating, after all pages are mounted.
+        from .palette_commands import page_index
+
+        self.host.navigation.setCurrentRow(page_index(self.host, 'settings'))
+        self.host.settings_page.connection_toggle.setChecked(True)
+        self.host.settings_page.connection_status.setFocus()
 
     def refresh(self):
         for label in self._labels():
@@ -173,6 +191,11 @@ class AppHeader(QWidget):
         else:
             text = ui_text('header.idle')
         self.job.setText(text)
+        controller = getattr(self.host, 'chatgpt_controller', None)
+        connected = getattr(controller, 'state', None) == 'plan_ready'
+        self.connection.setText(ui_text('redesign.header.connected') if connected else ui_text('redesign.header.connection'))
+        self.connection.setToolTip(getattr(controller, 'message', '') or ui_text('settings.connection_hint'))
+        self.job.setToolTip(self.source.text())
         private = enabled(self) if isinstance(self.host, QWidget) else getattr(getattr(self.host, 'privacy', None), 'enabled', False)
         self.privacy_toggle.blockSignals(True)
         self.privacy_toggle.setChecked(private)

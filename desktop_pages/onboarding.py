@@ -1,10 +1,11 @@
 """Read-only workflow guidance; completion comes from persisted app state."""
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QWidget, QDialog, QBoxLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from desktop_strings import ui_text
 from .async_status import AsyncStatus
 from .quick_start import QuickStart
-from .palette_commands import MOUNT_PAGE_ORDER, register_pages
+from .preferences import load_store
+from .palette_commands import MOUNT_PAGE_ORDER, page_index, register_pages
 from desktop_theme import set_theme_property
 from quantlab.paper import PaperBroker
 import sqlite3
@@ -58,7 +59,7 @@ class GettingStarted(QWidget):
 
     def restore_visibility(self):
         settings = getattr(self.shell, 'settings', None)
-        value = settings.load() if settings else {}
+        value = load_store(settings)
         self._dismissed = value.get('onboarding_dismissed', self._dismissed)
         self.setVisible(not self._dismissed and not any(self.completed))
 
@@ -113,7 +114,13 @@ class GettingStarted(QWidget):
             widget.setVisible(visible)
             set_theme_property(widget.findChild(QPushButton), 'role', 'primary' if visible else 'secondary')
         # An empty result panel has one primary next action.
-        for name, is_empty in (('run_campaign', empty[1]), ('run_backtest', empty[2]), ('compare_results', empty[3]), ('paper_submit', empty[4])):
+        for name, is_empty in (
+            ('run_campaign', empty[1] or bool(getattr(shell, '_candidate_valid', False))),
+            ('run_backtest', empty[2]),
+            ('compare_results', empty[3]),
+            ('paper_submit', empty[4]),
+            ('paper_replay', empty[4]),
+        ):
             button = shell.findChild(QPushButton, name) if isinstance(shell, QWidget) else None
             if button is not None:
                 set_theme_property(button, 'role', 'secondary' if is_empty else 'primary')
@@ -140,18 +147,45 @@ def install_onboarding(shell):
         item.setToolTip(hints[old_index])
         shell.navigation.addItem(item)
         shell.stack.addWidget(pages[old_index])
+    # Comparison remains the same page/shortcut, reached from saved results.
+    # The primary sidebar follows data -> strategy -> backtest -> paper.
+    shell.navigation.item(page_index(shell, 'compare')).setHidden(True)
+    captions = {
+        'data': ui_text('redesign.nav.data'),
+        'strategy': ui_text('redesign.nav.strategy'),
+        'backtest': ui_text('redesign.nav.backtest'),
+        'compare': ui_text('redesign.nav.compare'),
+        'paper': ui_text('redesign.nav.paper'),
+        'market': ui_text('redesign.nav.market'),
+        'settings': ui_text('redesign.nav.settings'),
+    }
+    for page_id, caption in captions.items():
+        shell.navigation.item(page_index(shell, page_id)).setText(caption)
     shell.onboarding = GettingStarted(shell)
     shell.page_state.onboarding = shell.onboarding
     outer = shell.centralWidget().layout()
     quick_row = QWidget(shell)
     shell.quick_start = QuickStart(shell, QHBoxLayout(quick_row))
-    outer.insertWidget(1, quick_row)
     outer.insertWidget(1, shell.onboarding)
     help_button = QPushButton(ui_text('onboarding.help'))
     help_button.setObjectName('onboarding_help')
     help_button.setToolTip(ui_text('onboarding.glossary'))
-    help_button.clicked.connect(lambda: shell.onboarding.set_dismissed(False))
-    outer.insertWidget(1, help_button)
+    shell.guide_dialog = QDialog(shell)
+    shell.guide_dialog.setWindowTitle(ui_text('redesign.guide.title'))
+    shell.guide_dialog.resize(660, 220)
+    guide = QVBoxLayout(shell.guide_dialog)
+    description = QLabel(ui_text('redesign.guide.description'))
+    description.setWordWrap(True)
+    guide.addWidget(description)
+    guide.addWidget(quick_row)
+
+    def show_guide():
+        shell.onboarding.set_dismissed(False)
+        shell.guide_dialog.show()
+        shell.guide_dialog.raise_()
+
+    help_button.clicked.connect(show_guide)
+    shell.app_header.layout().addWidget(help_button)
     targets = (shell.market.page_scroll.widget(), shell.strategy_page.tabs.widget(1).widget(), shell.backtest_page, shell.compare_page, shell.paper_page)
     callbacks = (
         lambda: shell.navigation.setCurrentRow(0),
@@ -173,6 +207,9 @@ def install_onboarding(shell):
         box.setObjectName('empty_' + key)
         box.action.setObjectName('empty_' + key + '_action')
         box.set_state('empty', message=guidance[key][0], action_text=guidance[key][1], action=callback)
+        box.layout().setDirection(QBoxLayout.Direction.LeftToRight)
+        box.layout().setContentsMargins(0, 2, 0, 2)
+        box.layout().setStretch(0, 1)
         parent.layout().insertWidget(1, box)
         shell.onboarding.empty_states.append(box)
     shell.comparison_list.itemSelectionChanged.connect(shell.onboarding.refresh)

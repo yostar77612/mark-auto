@@ -4,14 +4,12 @@ import ast
 import json
 import os
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QWidget
 from desktop_pages import MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage, PageHost
 from desktop_ui import MainWindow
@@ -330,40 +328,32 @@ class PageInteractionTests(unittest.TestCase):
 
 
 class PageSnapshotTests(unittest.TestCase):
-    def test_all_seven_pages_match_pre_change_archive(self):
-        from tools.ui_snapshot import capture
+    def test_all_seven_workspaces_have_accessible_task_focused_defaults(self):
+        from tests.snapshot_cache import default_metrics
+        from desktop_strings import ui_text
 
-        with tempfile.TemporaryDirectory(prefix='markauto-pages-snapshot-') as temporary:
-            output = Path(temporary) / 'after'
-            baseline = ROOT / 'tests/fixtures/desktop_pages_before'
-            if sys.platform == 'win32':
-                capture(output, images=True)
-                actual = json.loads((output / 'metrics.json').read_text(encoding='utf-8'))
-            else:
-                # A full capture costs ~2 minutes on software-rendering Linux CI (fixed suite time cap); reuse the
-                # shared metrics-only capture, which is identical for the platform-independent facts compared here.
-                from tests.snapshot_cache import default_metrics
+        actual = default_metrics()
+        expected = json.loads((ROOT / 'tests/fixtures/desktop_pages_before/metrics.json').read_text(encoding='utf-8'))
+        self.assertEqual(list(actual['pages']), list(expected['pages']))
+        for name, page in actual['pages'].items():
+            with self.subTest(page=name):
+                self.assertEqual(page['unlabeled_inputs'], [])
+                self.assertLessEqual(page['primary_button_count'], 1)
+                for button in page['disabled_buttons']:
+                    self.assertTrue(button['tooltip'])
+                    self.assertTrue(button['hint'])
+                self.assertGreater(page['button_count'], 0)
+        data = actual['pages'][ui_text('ui.data_page.title')]
+        self.assertLess(data['visible_input_count'], expected['pages'][ui_text('ui.data_page.title')]['visible_input_count'])
+        self.assertIn(ui_text('redesign.data.local'), data['visible_text'])
+        strategy = actual['pages'][ui_text('ui.strategy_page.title')]
+        self.assertTrue(
+            {ui_text('redesign.strategy.ideas'), ui_text('redesign.strategy.research'), ui_text('redesign.strategy.manual')} <= set(strategy['visible_text'])
+        )
+        settings = actual['pages'][ui_text('ui.settings_page.title')]
+        self.assertNotIn(ui_text('ui.settings_page.read_logs'), settings['visible_text'])
+        self.assertIn(ui_text('appearance.theme'), settings['visible_text'])
 
-                actual = default_metrics()
-            expected = json.loads((baseline / 'metrics.json').read_text(encoding='utf-8'))
-            self.assertEqual(len(actual['pages']), 7)
-            self.assertEqual(list(actual['pages']), list(expected['pages']))
-            for name, page in expected['pages'].items():
-                for field in ('visible_text', 'visible_input_count', 'button_count', 'label_char_count', 'unlabeled_inputs', 'primary_button_count'):
-                    with self.subTest(page=name, field=field):
-                        got, want = actual['pages'][name][field], page[field]
-                        if field == 'visible_text' and sys.platform != 'win32':
-                            # The Windows archive renders workspace paths with backslashes.
-                            want = [text.replace(chr(92), '/') for text in want]
-                        self.assertEqual(got, want)
-            # The archive uses Windows fonts. Other platforms have different font
-            # metrics and rasterization; keep geometry and pixel parity exact on Windows.
-            # ObjectName parity remains exact on every platform in PageInteractionTests.
-            if sys.platform == 'win32':
-                self.assertEqual((output / 'metrics.json').read_bytes(), (baseline / 'metrics.json').read_bytes())
-                for path in baseline.glob('*.png'):
-                    before, after = QImage(str(path)), QImage(str(output / path.name))
-                    with self.subTest(image=path.name):
-                        self.assertFalse(before.isNull())
-                        self.assertEqual(after.size(), before.size())
-                        self.assertEqual(bytes(after.constBits()), bytes(before.constBits()))
+
+if __name__ == '__main__':
+    unittest.main()

@@ -60,6 +60,9 @@ class MaintenancePanel(QWidget):
         self.timer.timeout.connect(self.poll_update)
 
     def check_updates(self):
+        if self.property('offlinePreview') is True:
+            self.async_status.set_state('empty', message=ui_text('redesign.preview.network_disabled'))
+            return
         if not self.update_button.isEnabled():
             return
         self.update_button.setEnabled(False)

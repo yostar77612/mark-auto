@@ -78,7 +78,10 @@ class DesktopThemeTests(unittest.TestCase):
         self.assertTrue(buttons)
         for button in buttons:
             # UI-1 C2 adds the onboardingChip role (QSS rules in desktop_theme); every button still needs a known role.
-            self.assertIn(button.property('role'), ('primary', 'secondary', 'danger', 'onboardingChip'), button.objectName())
+            self.assertIn(button.property('role'), ('primary', 'secondary', 'danger', 'onboardingChip', 'taskChoice'), button.objectName())
+            if button.property('role') == 'taskChoice':
+                self.assertTrue(button.isCheckable())
+                self.assertIn(button, window.strategy_page.mode_buttons.values())
         previous = window.strategy_form.property('feedback')
         with patch('desktop_ui.QTimer.singleShot') as single_shot:
             window.form_feedback(window.strategy_form, 'synthetic')

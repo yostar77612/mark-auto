@@ -5270,6 +5270,58 @@ Idea HTTP diagnostics use letter/underscore fixed codes, matching the unchanged
 connection-event boundary, and plain localized labels matching the existing
 privacy presentation checks. Neither boundary is relaxed.
 
+## UI redesign: task-focused native desktop workspaces
+
+The UI branch starts at committed 567dbb2 in a separate worktree. No G3 source,
+saved-candidate profile, engine, acceptance score, budget, timeout, OOS/holdout or
+paper eligibility rule changes. Live trading remains permanently disabled.
+
+The compact header projects the existing job/connection state. Theme and privacy
+controls are the same instances hosted in Settings; the clock stays hidden for
+compatibility. Navigation uses short captions for data, strategy, results and
+paper. Comparison keeps its original page identity and Ctrl+4 shortcut and is
+reached from results. No page/controller is duplicated. Onboarding can be closed
+and reopened; synthetic quick start is in its help dialog.
+
+Data sources are grouped by local, official/history, download and synthetic.
+Required contract fields remain visible; optional standardized-data contract
+filtering is explicitly enabled rather than silently applying a hidden month.
+Summaries derive from the one loaded dataset. Backtest common fields are moved
+from the original BacktestForm, not copied. Research/backtest summaries use the
+same JSON-priority payload as execution; invalid JSON clears stale summaries.
+Loaded results present metrics/equity first, with execution conditions reopenable.
+Report-folder navigation validates the loaded result and workspace containment.
+
+Strategy task selection only changes presentation. Model/consent controls mirror
+the one connection panel, retaining build_plan_options, candidate_record and all
+validation. Candidate restoration does not navigate; explicit adoption navigates
+to backtest. Walk-forward retains its five-step wizard. Idea cancellation/retry
+remain accessible from either dialog tab while work is running.
+
+Paper readiness is derived from the selected version, account, existing locks,
+replay state and stored policy; it never grants qualification. Stop, observe,
+reconcile, resume-new-orders, cancel-all, replay pacing and journal semantics
+are unchanged. Busy/paused/locked/quarantined/loss-halt messages remain distinct.
+The full stop reason is retained when its KPI uses compact body typography.
+
+Disclosures restore defaults and legacy data/backtest/compare/paper settings
+without initial writes. Only user toggles persist; unknown/old keys survive.
+Malformed preference containers fall back without repairing the source file.
+Hidden buttons have no orphaned prerequisite label. Ctrl+K import reveals the
+local source before focusing its existing action. All new catalog entries are
+in one explicitly marked Lane block in desktop_strings.py; unused draft keys
+are removed and old superseded captions remain explicitly retained.
+
+Preview UI.cmd and tools/ui_redesign_preview.py create a disposable synthetic
+workspace and isolate profile/temp paths before runtime import. Network/model
+jobs are rejected before worker creation. Update checks and release links are
+disabled; the update handler also checks the preview flag. This is a developer
+review entry point, not an installer or a replacement for desktop.py.
+
+Evidence: tests/test_ui_redesign_*.py, existing desktop/paper/preferences/keyboard
+regressions, and docs/qa/ui-redesign/. No numeric golden is re-recorded. Widget
+inventory changes and source-line/consumer inventory changes are documented.
+
 ## Windows long paths: local I/O spelling and unchanged storage authority
 
 The owner authorized repairing the Windows long-path failures, necessary G3

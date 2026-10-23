@@ -167,6 +167,10 @@ class OnboardingTests(unittest.TestCase):
         w = self.window
         w.import_path.setText('input.json')
         w.calendar_path.setText('calendar.json')
+        # The old request included an explicitly selected contract. The new
+        # optional filter must be enabled before comparing those same bytes.
+        w.contract.setText('TAIFEX:TMF:202601')
+        w.data_page.contract_filter.setChecked(True)
         legacy = QComboBox()
         legacy.addItems(
             ['validated_dataset', 'ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json', 'synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks']
@@ -186,6 +190,31 @@ class OnboardingTests(unittest.TestCase):
             self.assertEqual(canonical_json(old), canonical_json(new))
             self.assertEqual(content_hash(old), content_hash(new))
             self.assertEqual(w.import_kind.itemData(index, 3), kind)
+
+    def test_import_blank_contract_never_infers_a_default(self):
+        from quantlab.core import canonical_json, content_hash
+
+        w = self.window
+        w.import_path.setText('input.json')
+        w.calendar_path.setText('calendar.json')
+        w.contract.clear()
+        w.data_page.contract_filter.setChecked(False)
+        for index in range(w.import_kind.count()):
+            w.import_kind.setCurrentIndex(index)
+            expected = {'path': 'input.json', 'calendar': 'calendar.json', 'kind': w.import_kind.currentData(), 'contract': ''}
+            with self.subTest(kind=expected['kind']), patch.object(w.page_host, 'start_job') as start:
+                w.import_data()
+                actual = start.call_args.args[1]
+                self.assertEqual(actual, expected)
+                self.assertEqual(canonical_json(actual), canonical_json(expected))
+                self.assertEqual(content_hash(actual), content_hash(expected))
+        # A remembered value is also ignored when normalized data is unfiltered.
+        w.contract.setText('TAIFEX:TMF:202601')
+        for kind in ('synthetic_bars', 'synthetic_ticks', 'proxy_bars', 'proxy_ticks'):
+            w.import_kind.setCurrentIndex(w.import_kind.findData(kind))
+            with self.subTest(unfiltered=kind), patch.object(w.page_host, 'start_job') as start:
+                w.import_data()
+                self.assertEqual(start.call_args.args[1]['contract'], '')
 
 
 if __name__ == '__main__':

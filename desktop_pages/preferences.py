@@ -3,6 +3,24 @@
 from PySide6.QtWidgets import QSplitter, QScrollArea
 from quantlab.runtime_support import RuntimeSafetyError
 from quantlab.ui_preferences import page_row, bounded_size, splitter_sizes
+from desktop_strings import ui_text
+
+
+def disclosure_value(key, toggle, stored):
+    """Read old disclosure preferences without rewriting their keys."""
+    stored = stored if isinstance(stored, dict) else {}
+    if type(stored.get(key)) is bool:
+        return stored[key]
+    legacy = {
+        'redesign_data_details': '2:' + ui_text('ui.advanced.default_title'),
+        'redesign_backtest_advanced': '4:' + ui_text('ui.advanced.default_title'),
+        'redesign_compare_details': '5:' + ui_text('ui.advanced.default_title'),
+    }.get(key)
+    if legacy and type(stored.get(legacy)) is bool:
+        return stored[legacy]
+    if key == 'paper_preparation' and any(name.startswith('6:') and value is True for name, value in stored.items() if isinstance(name, str)):
+        return True
+    return toggle.property('defaultExpanded') is True
 
 
 def load_store(store):

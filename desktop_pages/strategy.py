@@ -1,13 +1,13 @@
 from pathlib import Path
 import json
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QPlainTextEdit, QLineEdit, QCheckBox, QFormLayout, QGroupBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QPlainTextEdit, QLineEdit, QCheckBox, QFormLayout, QGroupBox
 from desktop_strings import ui_text
 from quantlab.core import ValidationError, canonical_json, content_hash, to_dict
 from quantlab.reporting import write_json
 from quantlab.desktop_errors import error_message
-from desktop_forms import StrategyForm, CampaignForm, WalkForwardForm, ResultTable, CandidateSummaryCard
+from desktop_forms import WalkForwardForm
 from .host import PageHost
-from .strategy_tabs import strategy_tabs, candidate_analysis_layout
+from .strategy_tabs import strategy_tabs
 
 
 class StrategyPage(QWidget):
@@ -15,80 +15,27 @@ class StrategyPage(QWidget):
         super().__init__()
         self.host = host
         self.state = host.state
-        from quantlab.strategies import builtin_strategies
+        from .redesign_strategy_layout import build_strategy
 
-        layout = self.host.mount_page(self, ui_text('ui.strategy_page.title'))
-        self.tabs, (layout, research, walk_forward) = strategy_tabs(layout)
-        self.chatgpt_sign_in_entry = self.host.button(layout, ui_text('ui.strategy_page.chatgpt_sign_in'), 'chatgpt_sign_in_entry', self.host.show_sign_in)
-        self.idea_dialog = None
-        self.idea_research_entry = self.host.button(layout, ui_text('idea.entry_button'), 'idea_research_entry', self.open_idea_research)
-        self.connection_status = QLabel(ui_text('settings.connection_hint'))
-        layout.addWidget(self.connection_status)
-        self.state.chatgpt_connection_status = self.connection_status
-        layout.addWidget(QLabel(ui_text('ui.strategy_page.bounded_families_hint')))
-        self.strategy_form = StrategyForm()
-        layout.addWidget(self.strategy_form)
-        advanced = self.host.advanced(layout)
-        self.family = QComboBox()
-        self.family.addItems([s.family for s in builtin_strategies()])
-        advanced.addWidget(self.family)
-        self.parameters = self.host.text(advanced, ui_text('ui.strategy_page.strategy_json'), '{}', True)
-        self.strategy_detail = QPlainTextEdit()
-        self.strategy_detail.setReadOnly(True)
-        advanced.addWidget(self.strategy_detail)
-        self.family.currentIndexChanged.connect(self._family_changed)
-        self._family_changed()
-        # Keep the legacy section toggle identity and preference key. The wizard
-        # is always available; expanding an outer section is no longer required.
-        self.host.advanced(walk_forward, ui_text('ui.strategy_page.walk_forward_advanced'))
-        list(self.state._section_toggles.values())[-1].hide()
-        self._walk_forward_section(walk_forward)
-        research.addWidget(QLabel(ui_text('ui.strategy_page.fixture_disclaimer')))
-        self.strategy_form.family.currentIndexChanged.connect(lambda: self.family.setCurrentIndex(self.strategy_form.family.currentIndex()))
-        research_parameters = self.host.advanced(research, ui_text('ui.strategy_page.research_advanced'))
-        self.campaign_form = CampaignForm()
-        research_parameters.addWidget(self.campaign_form)
-        self.campaign_config = self.host.text(research_parameters, ui_text('ui.strategy_page.research_json'), '', True)
-        self.host.remember(self.campaign_config)
-        self.provider_mode = QComboBox()
-        self.provider_mode.addItem(ui_text('ui.strategy_page.chatgpt_source'), 'chatgpt_plan')
-        self.provider_mode.addItem(ui_text('ui.strategy_page.fixture_source'), 'fixture')
-        self.provider_mode.addItem(ui_text('ui.strategy_page.manual_source'), 'manual')
-        research.addWidget(self.provider_mode)
-        manual = QWidget()
-        manual_layout = QVBoxLayout(manual)
-        research.addWidget(manual)
-        manual.hide()
-        self.provider_mode.currentIndexChanged.connect(lambda: manual.setVisible(self.provider_mode.currentData() == 'manual'))
-        self.manual_path = self.host.text(manual_layout, ui_text('ui.strategy_page.manual_response_path'))
-        self.host.button(
-            manual_layout, ui_text('ui.strategy_page.browse_manual_response'), 'browse_manual_response', lambda: self.host.browse(self.manual_path)
-        )
-        self.manual_response = self.host.text(manual_layout, ui_text('ui.strategy_page.paste_manual_response'), '', True)
-        self.host.button(manual_layout, ui_text('ui.strategy_page.export_manual_request'), 'export_manual_request', self.export_manual_request)
-        self.host.button(research, ui_text('ui.strategy_page.reconcile_request_record'), 'chatgpt_campaign_usage', self.host.inspect_plan_usage)
-        self.host.button(research, ui_text('ui.strategy_page.generate_reopen'), 'run_campaign', self.run_campaign, role='primary')
-        self.candidate_choice = QComboBox()
-        self.candidate_choice.setObjectName('candidate_choice')
-        self.candidate_choice.currentIndexChanged.connect(self.inspect_candidate)
-        research.addWidget(self.candidate_choice)
-        self.candidate_detail = QPlainTextEdit()
-        self.candidate_detail.setReadOnly(True)
-        research_parameters.addWidget(self.candidate_detail)
-        evidence = self.host.advanced(research, ui_text('ui.strategy_page.candidate_history_advanced'))
-        self.candidate_card = CandidateSummaryCard()
-        evidence.addWidget(self.candidate_card)
-        self.use_candidate_button = self.host.button(research, ui_text('ui.strategy_page.use_candidate'), 'use_candidate', self.use_candidate)
-        self.host.button(layout, ui_text('ui.strategy_page.use_builtin'), 'use_builtin', self.use_builtin)
-        self.history = QPlainTextEdit()
-        self.history.setReadOnly(True)
-        research_parameters.addWidget(self.history)
-        self.history_table = ResultTable()
-        evidence.addWidget(self.history_table)
-        evidence.addWidget(QLabel(ui_text('ui.strategy_page.saved_evaluations')))
-        self.evaluation_table = ResultTable()
-        evidence.addWidget(self.evaluation_table)
-        self.analysis_layout = candidate_analysis_layout(research)
+        outer = self.host.mount_page(self, ui_text('ui.strategy_page.title'))
+        self.tabs, (settings, research, walk_forward) = strategy_tabs(outer)
+        build_strategy(self, outer, settings, research, walk_forward)
+
+    def bind_connection(self, controller, panel):
+        from .redesign_strategy_layout import bind_connection
+
+        bind_connection(self, controller, panel)
+
+    def choose_mode(self, mode):
+        from .redesign_strategy_layout import choose_mode
+
+        choose_mode(self, mode)
+
+    def heightForWidth(self, width):
+        # The task body owns scrolling. Its natural tab content height must not
+        # make the surrounding shell scroll again when fonts are enlarged.
+        layout = self.layout()
+        return layout.minimumSize().height() if layout is not None else super().heightForWidth(width)
 
     def _walk_forward_section(self, layout):
         section = QGroupBox(ui_text('ui.walk_forward_section.title'))
@@ -117,7 +64,8 @@ class StrategyPage(QWidget):
         self.walk_forward_preview = QPlainTextEdit()
         self.walk_forward_preview.setReadOnly(True)
         self.walk_forward_preview.setObjectName('walk_forward_preview')
-        self.walk_forward_preview.setMinimumHeight(410)
+        self.walk_forward_preview.setMinimumHeight(140)
+        self.walk_forward_preview.setMaximumHeight(260)
         content.addWidget(self.walk_forward_preview)
         self.walk_forward_advanced_group = QGroupBox(ui_text('ui.walk_forward_section.advanced_evidence'))
         self.walk_forward_advanced_group.setCheckable(True)
@@ -449,6 +397,7 @@ class StrategyPage(QWidget):
         reference = self.candidate_choice.currentData()
         if not reference:
             self.candidate_detail.setPlainText(ui_text('ui.inspect_candidate.no_candidate'))
+            self.candidate_notice.setText(ui_text('redesign.strategy.candidate_empty'))
         else:
             try:
                 spec, provenance = self.host.candidate_record(self.state.root, reference)
@@ -461,9 +410,16 @@ class StrategyPage(QWidget):
                     }
                 )
                 self.state._candidate_valid = True
-            except Exception:
+                self.candidate_notice.setText(ui_text('redesign.strategy.candidate_ready'))
+            except Exception as exc:
                 self.candidate_detail.setPlainText(ui_text('ui.inspect_candidate.invalid_candidate'))
+                reason = str(exc) if isinstance(exc, ValidationError) else ui_text('redesign.strategy.candidate_unknown')
+                self.candidate_notice.setText(ui_text('redesign.strategy.candidate_rejected').format(reason))
+        self.candidate_card.setVisible(self.state._candidate_valid)
         self.use_candidate_button.setEnabled(self.state._candidate_valid and not self.state.jobs.active)
+        from desktop_theme import set_theme_property
+
+        set_theme_property(self.use_candidate_button, 'role', 'primary' if self.state._candidate_valid else 'secondary')
 
     def use_candidate(self):
         reference = self.candidate_choice.currentData()

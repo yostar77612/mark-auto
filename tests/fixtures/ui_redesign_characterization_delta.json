@@ -1,0 +1,1212 @@
+{
+  "scope": "UI-only deltas from r7_base.json for the authorized desktop redesign; engine, result snapshots, refresh calls and errors remain pinned to the historical fixture.",
+  "reviewed_changes": [
+    "Task navigation, explicit source controls, connection mirrors and readiness summaries add named controls.",
+    "Advanced section identifiers are replaced by semantic disclosures or renumbered after task grouping.",
+    "Candidate and idea action captions and the strategy hint change; their prior enabled/visible state is retained.",
+    "Synthetic quick start keeps its widgets but moves to a guide dialog with its own Qt focus chain.",
+    "Qt child traversal order follows the new layouts; exact semantic row multiplicity is preserved by the deltas, while test_accessibility_walk verifies the actual keyboard focus order."
+  ],
+  "added_window_attributes": [
+    "guide_dialog"
+  ],
+  "focus": {
+    "removed": [
+      {
+        "row": [
+          "advanced_1",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "idea_research_entry",
+          "上網找策略點子",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "use_candidate",
+          "使用此不可變候選版本進行研究回測",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_7",
+          "進階・回測費率與技術參數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_8",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_9",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_10",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 2
+      },
+      {
+        "row": [
+          "advanced_11",
+          "進階・政策與風控技術參數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_12",
+          "進階・外部參考快照完整證據",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_13",
+          "進階・手動委託與報價參數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "synthetic_quick_start",
+          "SYNTHETIC quick start",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "synthetic_quick_start_status",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "synthetic_quick_start_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": [
+          "header_connection",
+          "連接 ChatGPT",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "qt_tabwidget_stackedwidget",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "qt_tabwidget_tabbar",
+          "分頁選擇",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "ScrollLeftButton",
+          "前一組分頁",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "ScrollRightButton",
+          "下一組分頁",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_to_strategy",
+          "前往策略中心",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_sources",
+          "選擇來源 → 確認設定 → 檢查並匯入",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_contract_filter",
+          "啟用合約篩選",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_contract",
+          "合約（可留空）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_data_details",
+          "檢查結果、來源與匯入紀錄",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_ideas",
+          "找策略點子",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_research",
+          "AI 研究",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_manual",
+          "自行設定",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_walk_forward_entry",
+          "進階驗證 · Walk-forward",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "idea_research_entry",
+          "開啟點子工作區",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_to_backtest",
+          "設定回測",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_model",
+          "研究模型",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_usage",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_consent",
+          "我已核對官方帳戶，並同意本次連線動作。",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_usage_consent",
+          "我已在官方用量設定確認此連線不會使用 credits\n（已停用，或此應用程式上限低於 100%）；僅同意本次研究使用方案內用量。",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_conditions",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_candidate_notice",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "use_candidate",
+          "採用並設定回測",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_setup_toggle",
+          "回測條件與再次執行",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_strategy",
+          "調整策略",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_common",
+          "日期與常用成本",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_advanced",
+          "完整執行設定與 JSON",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_report",
+          "完整統計、來源與報告",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_fills",
+          "成交明細",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_compare",
+          "加入結果比較",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_open_report",
+          "開啟報告資料夾",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_paper",
+          "檢視紙上交易條件",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_layers",
+          "市場圖表標記",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "compare_to_backtest",
+          "返回回測結果",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_compare_details",
+          "比較原始報告與權益疊圖",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_compare_selection",
+          "策略啟用與資格",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_14",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_strategy",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_account",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_policy",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_next",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_prepare",
+          "開啟風控設定",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_preparation",
+          "風控政策與對帳快照",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_16",
+          "進階・政策與風控技術參數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_17",
+          "進階・外部參考快照完整證據",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_18",
+          "進階・手動委託與報價參數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_19",
+          "進階診斷 JSON（一般操作不需要）",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "header_connection_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_prepare_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "compare_to_backtest_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_strategy_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_compare_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_open_report_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_paper_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_to_backtest_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_ideas_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_research_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_manual_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_walk_forward_entry_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_to_strategy_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": {
+    "removed": [
+      {
+        "row": [
+          "advanced_10",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 2
+      },
+      {
+        "row": [
+          "advanced_11",
+          "進階・政策與風控技術參數",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_12",
+          "進階・外部參考快照完整證據",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_13",
+          "進階・手動委託與報價參數",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_9",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_7",
+          "進階・回測費率與技術參數",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_8",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "use_candidate",
+          "使用此不可變候選版本進行研究回測",
+          false,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "idea_research_entry",
+          "上網找策略點子",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_page_hint",
+          "設定策略後進行研究。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_1",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": [
+          "header_connection",
+          "連接 ChatGPT",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "header_connection_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "ScrollLeftButton",
+          "",
+          false,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "ScrollRightButton",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_strategy",
+          "策略資格：尚未選用固定策略",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_account",
+          "帳戶：尚未載入或仍需對帳",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_policy",
+          "風控與覆蓋：請載入風控政策；開始時檢查行情、時段及保證金覆蓋",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_readiness_next",
+          "先到回測結果選用固定策略，再載入風控政策與帳戶快照。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_prepare",
+          "開啟風控設定",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_prepare_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "paper_preparation",
+          "風控政策與對帳快照",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_16",
+          "進階・政策與風控技術參數",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_17",
+          "進階・外部參考快照完整證據",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_18",
+          "進階・手動委託與報價參數",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_19",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "compare_to_backtest",
+          "返回回測結果",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_compare_details",
+          "比較原始報告與權益疊圖",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_compare_selection",
+          "策略啟用與資格",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "compare_to_backtest_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_strategy",
+          "調整策略",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_common",
+          "日期與常用成本",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_advanced",
+          "完整執行設定與 JSON",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_strategy_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_setup_toggle",
+          "回測條件與再次執行",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_report",
+          "完整統計、來源與報告",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_fills",
+          "成交明細",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_compare",
+          "加入結果比較",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_open_report",
+          "開啟報告資料夾",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_paper",
+          "檢視紙上交易條件",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_backtest_layers",
+          "市場圖表標記",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_compare_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_open_report_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "backtest_to_paper_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_usage",
+          "本機請求紀錄尚未核對；不能視為已用 0 次。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_consent",
+          "我已核對官方帳戶，並同意本次連線動作。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_usage_consent",
+          "我已在官方用量設定確認此連線不會使用 credits\n（已停用，或此應用程式上限低於 100%）；僅同意本次研究使用方案內用量。",
+          false,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_research_conditions",
+          "訓練 —–— · 驗證 —–—\n樣本外 —–— · 最終保留 —–—（列，結束列不含）",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_candidate_notice",
+          "尚無候選。完成研究後，這裡會顯示候選摘要與採用狀態。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "use_candidate",
+          "採用並設定回測",
+          false,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "advanced_14",
+          "進階診斷 JSON（一般操作不需要）",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "idea_research_entry",
+          "開啟點子工作區",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_to_backtest",
+          "設定回測",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_to_backtest_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_ideas",
+          "找策略點子",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_research",
+          "AI 研究",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_manual",
+          "自行設定",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_walk_forward_entry",
+          "進階驗證 · Walk-forward",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_ideas_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_research_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_mode_manual_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_walk_forward_entry_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "strategy_page_hint",
+          "從一個想法開始，再用資料驗證。",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_to_strategy",
+          "前往策略中心",
+          false,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_to_strategy_prerequisite",
+          "需要先完成：等待目前背景作業或連線作業停止",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "data_contract_filter",
+          "啟用合約篩選",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "redesign_data_details",
+          "檢查結果、來源與匯入紀錄",
+          true,
+          false
+        ],
+        "count": 1
+      }
+    ]
+  }
+}

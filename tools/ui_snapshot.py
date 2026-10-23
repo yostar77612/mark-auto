@@ -153,6 +153,18 @@ def _save_png(widget, path, scale):
         raise OSError(f'Could not save snapshot: {path}')
 
 
+def workspace_title(page):
+    """Stable content title; compact navigation labels may differ."""
+    from PySide6.QtWidgets import QLabel
+
+    title = next((label for label in page.findChildren(QLabel) if label.property('themePart') == 'pageTitle'), None)
+    if title is None:
+        title = page.findChild(QLabel, 'market_title')
+    if title is None:
+        raise ValueError('Workspace has no semantic title')
+    return title.text()
+
+
 def tab_heights(page, app):
     """Measure every tab at its real viewport width, restoring selection afterward.
 
@@ -297,7 +309,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                             for step in range(wizard.stack.count())
                         }
                     metrics.update(viewport_png=f'{stem}_viewport.png', full_png=f'{stem}_full.png', full_width=page.width())
-                    result['pages'][window.navigation.item(index).text()] = metrics
+                    result['pages'][workspace_title(page)] = metrics
                     for child, minimum in nested:
                         child.setMinimumHeight(minimum)
                     scroll.setWidgetResizable(True)
@@ -342,7 +354,7 @@ def capture_layout_metrics(window, out, size, scale):
                 QApplication.processEvents()
             container = window.stack.widget(index)
             scroll = container if isinstance(container, QScrollArea) else window.market.page_scroll
-            result['pages'][window.navigation.item(index).text()] = page_metrics(scroll.widget())
+            result['pages'][workspace_title(scroll.widget())] = page_metrics(scroll.widget())
         out = Path(out)
         out.mkdir(parents=True, exist_ok=True)
         (out / 'metrics.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

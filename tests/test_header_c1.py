@@ -156,16 +156,15 @@ class HeaderTests(unittest.TestCase):
             host.privacy.set_enabled(False)
             header.refresh()
             self.assertFalse(header.privacy_toggle.isChecked())
-            self.assertEqual(header.findChildren(QPushButton), [])
+            self.assertEqual(header.findChildren(QPushButton), [header.connection])
+            self.assertTrue(header.time.isHidden())
+            self.assertIs(header.theme.parentWidget(), details)
             self.assertEqual({x.objectName() for x in header.findChildren(QCheckBox)}, {'research_mode_status', 'privacy_toggle'})
             self.assertEqual(host.privacy.notice.text(), ui_text('privacy.exports_raw'))
             for control in (header.privacy_toggle, header.disclosure, header.theme):
                 self.assertTrue(control.accessibleName())
-            for first, expected in ((header.privacy_toggle, header.disclosure), (header.disclosure, header.theme)):
-                following = first.nextInFocusChain()
-                while not following.focusPolicy() & Qt.FocusPolicy.TabFocus:
-                    following = following.nextInFocusChain()
-                self.assertIs(following, expected)
+            for control in (header.privacy_toggle, header.disclosure, header.theme, header.connection):
+                self.assertTrue(control.focusPolicy() & Qt.FocusPolicy.TabFocus)
             host.close()
             self.assertFalse(header.timer.isActive())
 
@@ -186,12 +185,18 @@ class HeaderTests(unittest.TestCase):
                 self.assertFalse(header.explanation.isHidden())
                 self.assertEqual(header.explanation.text(), ui_text('ui.init.research_only_disclaimer'))
                 self.assertEqual(window.status.text(), ui_text('ui.init.ready'))
-                self.assertIs(window.status.parentWidget(), header)
-                self.assertIn(ui_text('privacy.exports_raw'), [label.text() for label in header.findChildren(QLabel)])
+                self.assertIs(window.status.parentWidget(), window.centralWidget())
+                self.assertTrue(window.settings_page.isAncestorOf(header.privacy_toggle))
+                self.assertTrue(window.settings_page.isAncestorOf(header.theme))
+                self.assertTrue(window.settings_page.isAncestorOf(window.privacy.notice))
+                self.assertEqual(window.privacy.notice.text(), ui_text('privacy.exports_raw'))
+                self.assertTrue(header.time.isHidden())
+                header.connection.click()
+                self.assertTrue(window.settings_page.connection_toggle.isChecked())
                 self.assertLessEqual(header.sizeHint().height(), 48)
                 expected = json.loads((Path(__file__).parent / 'fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))
                 self.assertEqual(sorted({w.objectName() for w in window.findChildren(QWidget) if w.objectName()}), expected)
-                self.assertFalse(any(label.wordWrap() for label in header.findChildren(QLabel)))
+                self.assertFalse(any(label.wordWrap() for label in header.findChildren(QLabel) if label.isVisibleTo(header)))
             finally:
                 window.close()
                 window.deleteLater()
