@@ -28,6 +28,7 @@ from .value_bounds import _bounded_number, _exact_number, _bounded_value
 from .paper_replay import _require_wal_runtime, _require_local_wal_path
 from .strategies import builtin_strategies, _validate_bars
 from .data import validate_dataset
+from .windows_paths import canonical_path, native_path, sqlite_uri
 from .research import _dataset_identity, _evaluate_split, _integer, _keys, _reserve_holdout, _run_bounded, ResourceTimeout, validate_dsl, _unique_keys
 
 MAX_STATE_BYTES = 16 * 1024 * 1024
@@ -503,10 +504,10 @@ def _configure_state_storage(db, *, new_journal=False):
 
 def read_walk_forward_state(output_dir: Path) -> dict:
     """Read the authoritative journal without evaluation or state changes."""
-    path = Path(output_dir) / 'walk_forward.sqlite3'
+    path = native_path(Path(output_dir) / 'walk_forward.sqlite3')
     _require_wal_runtime()
     _require_local_wal_path(path)
-    with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=1)) as db:
+    with closing(sqlite3.connect(sqlite_uri(path.resolve()) + '?mode=ro', uri=True, timeout=1)) as db:
         state = _read_state(db)
     if state is None:
         raise ValidationError('Missing walk-forward state')
@@ -517,14 +518,14 @@ def reconcile_interrupted_walk_forward(*, output_dir: Path, descendants_stopped:
     """Call only after the desktop host stops/joins its process tree; never replay."""
     if descendants_stopped is not True:
         raise ValidationError('Walk-forward descendants must be stopped before reconciliation')
-    output_dir = Path(output_dir)
+    output_dir = native_path(output_dir)
     lock_path = output_dir / 'walk_forward.lock.sqlite3'
     state_path = output_dir / 'walk_forward.sqlite3'
     _require_wal_runtime()
     _require_local_wal_path(state_path)
-    with closing(sqlite3.connect(lock_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)) as lock:
+    with closing(sqlite3.connect(sqlite_uri(lock_path.resolve()) + '?mode=rw', uri=True, timeout=0)) as lock:
         lock.execute('BEGIN EXCLUSIVE')
-        with closing(sqlite3.connect(state_path.resolve().as_uri() + '?mode=rw', uri=True, timeout=0)) as db:
+        with closing(sqlite3.connect(sqlite_uri(state_path.resolve()) + '?mode=rw', uri=True, timeout=0)) as db:
             _configure_state_storage(db)
             state = _read_state(db)
             if state is None:
@@ -555,7 +556,7 @@ def walk_forward_binding(dataset: Dataset, plan: WalkForwardPlan, registry: Path
         'source_data_hash': dataset.manifest['data_hash'],
         'python_version': platform.python_version(),
         'candidate_pool_hash': content_hash(plan.candidate_pool),
-        'registry_identity': {'resolved_path': str(registry), 'coverage_policy': 'conservative_per_contract_envelopes'},
+        'registry_identity': {'resolved_path': str(canonical_path(registry)), 'coverage_policy': 'conservative_per_contract_envelopes'},
         'source_hashes': {name: content_hash(Path(__file__).with_name(name).read_text(encoding='utf-8')) for name in SOURCE_FILES},
     }
 
@@ -602,9 +603,9 @@ def run_walk_forward(
             raise ValidationError('Saved source/admission changed; preview again before any reservation')
     elif source_campaign_dir is not None or original_dataset is not None:
         raise ValidationError('Builtin and saved source inputs are mutually exclusive')
-    output_dir = Path(output_dir).resolve()
-    registry = Path(holdout_registry_path).resolve()
-    if registry.is_relative_to(output_dir):
+    output_dir = native_path(output_dir).resolve()
+    registry = native_path(holdout_registry_path).resolve()
+    if canonical_path(registry).is_relative_to(canonical_path(output_dir)):
         raise ValidationError('Authoritative registry must be outside the experiment output directory')
     config = to_dict(plan)
     binding = walk_forward_binding(dataset, plan, registry)

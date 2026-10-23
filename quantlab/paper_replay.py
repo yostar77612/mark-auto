@@ -18,6 +18,7 @@ from .core import ValidationError, canonical_json, content_hash, freeze
 from .data import validate_dataset
 from .strategies import generate_signals, validate_strategy
 from .backtest import calculate_costs
+from .windows_paths import canonical_path, native_path
 
 
 def _require_wal_runtime():
@@ -28,7 +29,7 @@ def _require_wal_runtime():
 
 def _require_local_wal_path(path):
     """WAL shared memory is supported only on a verified local filesystem."""
-    resolved = path.resolve()
+    resolved = canonical_path(native_path(path).resolve())
     if sys.platform == "win32":
         # Windows-only local drive verification; unavailable on other platforms.
         import ctypes
@@ -85,7 +86,7 @@ class PaperReplay:
             raise ValidationError('Replay margin schedule does not match pinned broker policy')
         if any(bar.contract_id != broker.instrument.contract_id for bar in dataset.bars):
             raise ValidationError('Replay contract must match paper broker; rolls unavailable')
-        self.path = Path(path)
+        self.path = native_path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.dataset, self.strategy, self.broker = dataset, strategy, broker
         self.margin = margin_per_contract
@@ -95,7 +96,7 @@ class PaperReplay:
         binding = {
             'data': dataset.manifest['data_hash'],
             'strategy': strategy,
-            'broker_journal': str(broker.path.resolve()),
+            'broker_journal': str(canonical_path(broker.path.resolve())),
             'costs': broker.costs,
             'limits': broker.limits,
             'margin': margin_per_contract,

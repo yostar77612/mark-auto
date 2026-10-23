@@ -22,6 +22,8 @@ import threading
 import time
 import uuid
 
+from .windows_paths import canonical_path, native_path, sqlite_uri
+
 VERSION = 1
 MAX_DATABASE = 16 * 1024 * 1024
 MAX_ROWS = 4096
@@ -111,7 +113,7 @@ def _hex(value, size=64):
 
 
 def _path(path, *, exists=True, directory=False):
-    path = Path(os.path.abspath(path))
+    path = native_path(Path(os.path.abspath(path)))
     for part in (path, *path.parents):
         try:
             info = part.lstat()
@@ -132,7 +134,7 @@ def _path(path, *, exists=True, directory=False):
 def _directory(path):
     path = _path(path, directory=True)
     info = path.stat()
-    return {'root': os.path.normcase(str(path)), 'device': info.st_dev, 'inode': info.st_ino}
+    return {'root': os.path.normcase(str(canonical_path(path))), 'device': info.st_dev, 'inode': info.st_ino}
 
 
 def _location(paths):
@@ -266,7 +268,7 @@ def _connect(path, *, write=False):
     for suffix in ('-journal', '-wal', '-shm'):
         _path(Path(str(path) + suffix), exists=False)
     query_deadline = time.monotonic() + 2
-    db = sqlite3.connect(path.as_uri() + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=LOCK_TIMEOUT)
+    db = sqlite3.connect(sqlite_uri(path) + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=LOCK_TIMEOUT)
     try:
         db.set_progress_handler(lambda: 1 if time.monotonic() > query_deadline else 0, 1000)
         db.execute('PRAGMA trusted_schema=OFF')

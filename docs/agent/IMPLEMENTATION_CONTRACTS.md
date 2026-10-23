@@ -5321,3 +5321,62 @@ review entry point, not an installer or a replacement for desktop.py.
 Evidence: tests/test_ui_redesign_*.py, existing desktop/paper/preferences/keyboard
 regressions, and docs/qa/ui-redesign/. No numeric golden is re-recorded. Widget
 inventory changes and source-line/consumer inventory changes are documented.
+
+## Windows long paths: local I/O spelling and unchanged storage authority
+
+The owner authorized repairing the Windows long-path failures, necessary G3
+storage compatibility and append-only producer profiles. Native reproduction
+separates Win32 filename limits from unrelated WinError 5/1314 failures. Ordinary
+paths fail SQLite writes or directory creation; extended local-drive filenames
+complete those same operations. Path length is counted in UTF-16 code units.
+No OS registry, security setting, global Python installation, SQLite DLL or VFS
+is changed. See the [Windows filename contract](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
+and [SQLite URI filename rules](https://www.sqlite.org/uri.html).
+
+`windows_paths.native_path` reserves suffix space for long local-drive I/O.
+Short path spellings remain unchanged. Traversal, trailing-dot/space and reserved
+device components are not promoted into extended paths. UNC and device namespaces
+are never converted into local drives. `canonical_path` removes only a local
+drive's extended prefix for existing path identity/containment comparisons;
+workspace pointers, holdout authority and replay bindings retain their ordinary
+identities. Existing drive-type, link/reparse, hard-link, size and source checks
+remain before access. Backup destinations inside the workspace remain refused.
+
+`sqlite_uri` percent-encodes an extended filename rather than treating its prefix
+as a URI authority. All existing ro/rw/rwc modes, timeouts, transactions, locks,
+FULL durability, WAL/runtime checks, interrupted-state handling and one-time
+range consumption are retained. No immutable/nolock mode or retry is added.
+The adapters cover campaign/holdout, Paper/replay, WFO, saved-source readers,
+interpretation/recovery and the existing provider ledger connections/ATTACHes.
+History import keeps its external source namespace rejection; only validated
+source I/O and managed-cache revalidation use the native local spelling.
+
+Two frozen profiles are appended: LONG_PATH_TRANSPORT_PROFILE_V1 and
+LONG_PATH_SIWC_PROFILE_V1. Their protocols and necessary research/provider source
+pins change; all 24 historical profiles, result-source variants, dependency
+targets and exact-tuple/receipt/source admission checks remain. Only their exact
+new transport protocol is added to the existing selector. Existing consumed or
+interrupted requests never become completed, and no consumption is refunded.
+
+`--smoke-isolated` requires the existing `--smoke-test` report argument. It skips
+original known-folder discovery, workspace pointer and settings reads entirely;
+normal startup and the default smoke settings-snapshot behavior are unchanged.
+Its disposable startup tree uses an extended spelling so recursive cleanup also
+handles long descendants. Reports state `user_state_access=none`; the unchanged
+worker-stop verification still precedes cleanup. Tests forbid original-state
+reads and writes and require every existing smoke phase. Paper 30 seconds,
+smoke-worker 40 seconds and research-job 15 minutes remain unchanged. Source,
+CI and installed native evidence remain distinct; synthetic cases do not change
+formal acceptance, model verification or permanently disabled live trading.
+
+### Frozen recovery smoke: canonical original-data reference
+
+Installed long-TEMP verification found that the disposable extended local-drive
+dataset filename reached `validate_analysis_request` as an external reference.
+`desktop_recovery_smoke._prepare_plan` now uses `canonical_path` only when
+serializing that already verified synthetic dataset reference. Native file I/O
+keeps its extended spelling. The request validator, source identity, admission,
+launch commit, original-handle containment and strict stop receipt remain
+unchanged. Offline regression exercises a 400-plus-character real filesystem
+fixture and control journal; raw extended/device and UNC references still reject.
+No provider, credentials, network, budget, deadline or producer profile changes.

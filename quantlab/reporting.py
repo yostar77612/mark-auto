@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
-from pathlib import Path
 import csv
 import os
 import tempfile
@@ -10,6 +9,7 @@ import tempfile
 from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, BacktestConfig, ValidationError, canonical_json, content_hash, to_dict
 
 from . import strict_json
+from .windows_paths import native_path
 
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
@@ -58,7 +58,7 @@ def read_json(path):
 
 def write_json(path, value):
     """Atomic replacement; never follow an existing output symlink."""
-    path = Path(path)
+    path = native_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.is_symlink():
         raise ValidationError('Refusing symlink output')
@@ -227,9 +227,9 @@ def export_report(result, output_dir):
     if not isinstance(source_type, str) or source_type not in _SOURCE_TEXT:
         raise ValidationError('Invalid dataset source classification')
     source_text = _SOURCE_TEXT[source_type]
-    root = Path(output_dir).resolve()
+    root = native_path(output_dir).resolve()
     digest = content_hash(result)
-    folder = root / digest
+    folder = native_path(root / digest)
     if folder.is_symlink():
         raise ValidationError('Refusing symlink report directory')
     source_path = folder / 'SOURCE.txt'

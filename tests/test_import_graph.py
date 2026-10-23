@@ -217,12 +217,22 @@ def uncommented_local_imports(source):
 class ImportGraphTests(unittest.TestCase):
     def test_a3_strict_json_dependencies(self):
         graph = import_graph(self.sources)
-        self.assertEqual(graph['quantlab.strict_json'], {'quantlab.core'})
+        self.assertEqual(graph['quantlab.strict_json'], {'quantlab.core', 'quantlab.windows_paths'})
         self.assertEqual(
             graph['quantlab.reporting'],
-            {'quantlab.core', 'quantlab.strict_json', 'quantlab.research_analysis', 'quantlab.configuration', 'quantlab.strategies', 'quantlab.data'},
+            {
+                'quantlab.core',
+                'quantlab.strict_json',
+                'quantlab.research_analysis',
+                'quantlab.configuration',
+                'quantlab.strategies',
+                'quantlab.data',
+                'quantlab.windows_paths',
+            },
         )
-        self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'pathlib', 'quantlab.core'})
+        self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'quantlab.core', 'quantlab.windows_paths'})
+        self.assertEqual(graph['quantlab.windows_paths'], set())
+        self.assertEqual(module_imports('quantlab.windows_paths', self.sources['quantlab.windows_paths']), {'os', 'pathlib', 're', 'sys', 'urllib.parse'})
 
     def test_b2_significance_has_no_application_dependencies(self):
         self.assertEqual(import_graph(self.sources)['quantlab.significance'], set())
@@ -234,7 +244,7 @@ class ImportGraphTests(unittest.TestCase):
 
     def test_r5_leaf_dependencies_and_compatibility_exports(self):
         graph = import_graph(self.sources)
-        self.assertEqual(graph['quantlab.runtime_support'], set())
+        self.assertEqual(graph['quantlab.runtime_support'], {'quantlab.windows_paths'})
         self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.analysis_recovery_windows'])
         self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.desktop_errors'])
         self.assertNotIn('quantlab.__main__', graph['quantlab.reporting'])

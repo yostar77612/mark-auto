@@ -34,10 +34,10 @@ class StreamContentTypeProducerProfileTests(unittest.TestCase):
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
         self.assertEqual(
-            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in SIWC['engine_source_hashes']},
-            SIWC['engine_source_hashes'],
+            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.LONG_PATH_SIWC_PROFILE_V1['engine_source_hashes']},
+            pools.LONG_PATH_SIWC_PROFILE_V1['engine_source_hashes'],
         )
-        for index, implementation in enumerate(pools.COMPLETED_ITEMS_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.LONG_PATH_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
                 if index:

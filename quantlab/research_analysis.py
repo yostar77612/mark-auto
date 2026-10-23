@@ -19,6 +19,7 @@ import sqlite3
 import time
 
 from .core import ValidationError, canonical_json, content_hash, to_dict
+from .windows_paths import native_path, sqlite_uri
 from .research import (
     _campaign_config,
     _dataset_identity,
@@ -60,6 +61,7 @@ def _safe_path(path):
     path = Path(path)
     if not path.is_absolute() or '..' in path.parts:
         _fail('Absolute managed analysis path required')
+    path = native_path(path)
     for item in (path, *path.parents):
         if item.is_symlink():
             _fail('Analysis links refused')
@@ -293,7 +295,7 @@ def _read_journal(folder):
         _fail('Missing saved analysis evidence')
     if journal.stat().st_size > 2 * MAX_RECORD_BYTES:
         _fail('Analysis journal size limit')
-    with closing(sqlite3.connect(journal.as_uri() + '?mode=ro', uri=True, timeout=0)) as db:
+    with closing(sqlite3.connect(sqlite_uri(journal) + '?mode=ro', uri=True, timeout=0)) as db:
         # Keep operation-specific dependencies out of module startup.
         from .saved_candidate_pool import _prepare_bounded_read
 
@@ -365,7 +367,7 @@ def _save(folder, record):
     _validate_record(record)
     text = canonical_json(record)
     journal = _safe_path(folder / 'analysis.sqlite3')
-    with closing(sqlite3.connect(journal.as_uri() + '?mode=rwc', uri=True, timeout=0)) as db, db:
+    with closing(sqlite3.connect(sqlite_uri(journal) + '?mode=rwc', uri=True, timeout=0)) as db, db:
         db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
         db.execute('INSERT OR REPLACE INTO state VALUES (1, ?)', (text,))
     _write_projection(folder, text)
@@ -398,7 +400,7 @@ def run_analysis(*, output_root, plan, provider, expected_analysis_id, user_conf
     folder = _folder(output_root, plan['analysis_id'])
     folder.mkdir(parents=True, exist_ok=True)
     lock_path = _safe_path(folder / 'analysis.lock.sqlite3')
-    with closing(sqlite3.connect(lock_path.as_uri() + '?mode=rwc', uri=True, timeout=0)) as lock:
+    with closing(sqlite3.connect(sqlite_uri(lock_path) + '?mode=rwc', uri=True, timeout=0)) as lock:
         try:
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError:
@@ -494,7 +496,7 @@ def _reconcile_analysis(*, output_root, analysis_id, provider, descendants_stopp
     lock_path = _safe_path(folder / 'analysis.lock.sqlite3')
     if not lock_path.is_file():
         _fail('Missing analysis lock evidence')
-    with closing(sqlite3.connect(lock_path.as_uri() + '?mode=rw', uri=True, timeout=0)) as lock:
+    with closing(sqlite3.connect(sqlite_uri(lock_path) + '?mode=rw', uri=True, timeout=0)) as lock:
         try:
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError:

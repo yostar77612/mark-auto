@@ -28,7 +28,8 @@ BASELINE = {
     # desktop_chatgpt_provider.py edit; every non-digest observation is unchanged.
     # Headerless-stream fix (owner approved 2026-10-23) refreshed the same 5 provider-derived digests.
     # Completed-items compatibility: exactly 9 digest leaves (5 identities); no other fixture leaf changed.
-    'ui_operations_golden.json': '356ac48d604ad1a941df0a24c5d710665460c6fc60138786b00b443b8dbd8ac8',
+    # Windows long-path storage: exactly 49 source/derived-digest leaves; other observations retained.
+    'ui_operations_golden.json': '76028f3e7dab0de0bf62f8cea05097d2160374a0e7e7bd754c2bca4b967c2fa2',
 }
 
 

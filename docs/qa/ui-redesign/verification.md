@@ -108,3 +108,27 @@ B4／R7／T16／T9 舊版面契約、匯入依賴註解、紙上交易規範詞�
 
 補修提交前重新檢查：58 個修改 Python 檔格式、全倉 lint、quality gate 與 diff whitespace
 均退出 0；detect_changes 完整回傳 97 檔、無截斷（仍為檔案層級，seed_symbols=0）。
+
+## 2026-10-24：依使用者授權整合至 main
+
+使用者完成另一輪測試後，授權先檢查並合併 UI，再做後續測試。
+整合 main `3a6027a`（已含 #89 長路徑修復及 #90 frozen recovery 修復）。
+唯一文字衝突是本契約與長路徑契約同時附加至文件尾端，兩節完整保留。
+desktop_ui.py 與 import graph 測試自動合併後已讀取差異核對。
+相對最新 main，quantlab、認證及 provider 來源沒有任何額外差異。
+
+整合後隔離驗證：新增 UI 45 項通過（51.174 秒）；R7 與兩組停止保護
+36 項通過（2.607 秒）；import graph、G3、page services、文件分層、倉庫結構、
+golden metadata、frozen recovery 合計 84 項通過（10.539 秒）；長路徑 9 項
+通過（0.793 秒）。共 174 項。全倉 Ruff lint、quality gate、修改合併來源格式
+及 git diff whitespace 均通過。codebase-memory 服務 Transport closed，
+本輪整合改採直接讀取合併來源及 Git 差異，未聲稱圖查詢成功。
+
+第一次合併測試 runner 因長路徑模組使用 discovery-only fixture import，
+以 dotted import 執行失敗；改用原 discovery 入口，沒有修改測試。
+沙箱一輪阻擋本機硬連結，9 項中 1 error；相同隔離資料環境於允許該操作後
+全數通過。上述失敗均保留於 .tmp-ui/merge-main-*.log。
+
+此前完整 CI 的診斷逾時與 UI job 取消仍是歷史未通過紀錄；本節只宣稱以上
+整合回歸通過，不代表新的完整 CI 或安裝版驗收已通過。合併後以當前 main
+的 Actions 為後續整套測試依據，不提高期限、改動門檻或略過測試。
