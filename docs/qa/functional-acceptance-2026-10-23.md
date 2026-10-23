@@ -2,7 +2,7 @@
 
 驗收安裝版：PR #87、a1bfe92632b3633e8cb569cb276814a8633f28e7、版本 0.2.2。使用者自行安裝；下載 SHA256、建置來源與安裝後 provider 雜湊已核對。PR 未合併；本文件不調整正式接受分數。
 
-所有資料與紙上績效均為明確標示的 synthetic 測試，不代表市場績效。真實 ChatGPT 呼叫只透過既有 App 授權／傳輸；沒有讀取憑證、真實 MarkAuto 資料或操作其他專案。
+所有資料與紙上績效均為明確標示的 synthetic 測試，不代表市場績效。真實 ChatGPT 呼叫只透過既有 App 授權／傳輸；沒有擷取憑證或讀取真實研究資料，未操作其他專案。內建 smoke 的原工作區指標／非敏感偏好唯讀例外及授權，詳見下方續驗。
 
 | 功能 | 安裝版結果 | 保護行為與限制 |
 |---|---|---|
@@ -43,3 +43,19 @@
 此輪沒有新增程式修復：後續拒絕均確認為連線到期、來源失敗、未達候選門檻、已消耗樣本外或鎖定政策覆蓋不足。未宣稱真實候選入選／OOS／holdout 正向流程通過；安裝版所有取消競態亦未逐項驗證。
 
 本機 prepush.ps1 被 Windows AuthorizationManager 擋下，未變更執行原則。分別執行 Ruff check（通過）、quality gate（0 findings）、498 個追蹤 Python 檔的 3.11 grammar scan（通過）。format check 僅既有 ADR 0006 例外，未修改該檔；正式 Python 3.11／3.12 測試以 CI 證據為準。
+
+## 安裝版整輪與短路徑續驗
+
+程式仍為已安裝的 a1bfe92／0.2.2，沒有修改安裝內容或增加帳號請求。1be4a83 文件提交的 Quantlab gates run 39935119661 全部 24 jobs 通過。這次僅補驗收事實。
+
+前三輪安裝版離線 smoke 保留失敗紀錄：第一輪主要七步通過，手動匯出 ValidationError，隔離重現其 cause 為 os.link 的 PermissionError／WinError 5；第二輪回測 PermissionError；第三輪主要七步、手動匯出／匯入、歷史匯入與 Walk-forward 預覽通過，Walk-forward 執行遇 FileNotFoundError。三輪都沒有逾時，清理證明均成立。沒有刪除、略過或弱化任何測項。
+
+原測試暫存根路徑長 112 字元，估算其巢狀 Walk-forward journal 路徑 262 字元。隔離 SQLite 對照：64 字元路徑可建立表並提交；259 字元路徑可連線，但建立表失敗，SQLITE_CANTOPEN（14）。安裝 EXE manifest 已宣告 longPathAware=true。這證實本機 SQLite 長路徑存在限制；不能僅憑此將所有 PermissionError 或 FileNotFoundError 都歸為同一原因。
+
+內建 smoke 使用 Windows SHGetFolderPathW 取得 bootstrap，環境變數不會改變其唯讀載入的原工作區指標與非敏感偏好。先前誤以為該入口也完全隔離，發現後已停止並向使用者更正。使用者其後明確核准「允許這一次限定唯讀對照」，例外允許這兩項直接唯讀；不讀憑證、帳號或研究資料。此次授權只用於下面的一次對照，之後不沿用。smoke 程式本來即不啟動帳號自動還原；所有可寫資料仍在本專案內。
+
+改用 repo 內較短的 TEMP／TMP（根路徑 76、估算 journal 路徑 226 字元），相同安裝程式與完整測項一次通過：exit 0、status passed、timed_out false、worker_cleanup verified，沒有清理錯誤。七個主要步驟、手動匯出／匯入、歷史匯入、Walk-forward preview／run／read、授權相依檢查與 frozen recovery helper 全部通過。先前長路徑失敗與此次成功對照支持測試暫存路徑是後段阻塞因素；沒有為此改程式、政策、閘門或時限。
+
+安裝版 Walk-forward fixture 實際完成 2 折、22 次評估，兩折各有 3 筆樣本外平倉；重新讀取驗證成功，零成交候選仍排除，最終保留集維持 excluded_not_evaluated，模型呼叫 0、paper_eligible false。這是工程合成案例，並非真實研究候選或市場績效。另 5 項窄範圍原始碼回歸通過，包含巢狀 spawn 正向 OOS、唯讀 journal、損壞／缺失 journal 拒絕及無候選判定。
+
+完整本機報告：`.tmp-acceptance/installed-short-smoke-report.json`（保留在 repo 內、未提交）；SHA256 `47e7d80e4c73c7c1b41498dd035e064d4a7fe00b94392c5bbdcace27dc784f0c`。先前失敗報告也保留。真實候選入選／OOS／holdout 的正向路徑與安裝版所有取消競態仍未逐項實測，不宣稱這些項目全數通過。實盤永久停用。
