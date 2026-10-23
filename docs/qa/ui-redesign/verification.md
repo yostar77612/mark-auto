@@ -26,7 +26,7 @@
 | `test_replay_b13.py` | 12 項通過，期限與原有 pacing 不變。 |
 | 其餘紙上／設定保護 | A2 撤單 10、B2 鎖單 16、C6 分頁 11、U9 時間軸 9、C3 面板 4、F5 備份 18、自動備份 8、設定 3、診斷 11 項通過。 |
 | `test_preferences_u8.py` | 11 項通過；另新增的 11 項偏好測試確認掛載、legacy 還原與損毀容器均不寫檔。 |
-| `test_desktop_text_aliases.py`／`test_desktop_strings.py` | 9／6 項通過；舊字串 UTF-8 位元組不變，新字串完整註冊且沒有未使用草稿鍵。 |
+| `test_desktop_text_aliases.py`／`test_desktop_strings.py` | 9／8 項通過；舊字串 UTF-8 位元組不變，新字串完整註冊且沒有未使用草稿鍵。 |
 | `test_header_c1.py`／`test_page_services_r1.py` | 6／15 項通過；相同控制項搬移，單一狀態與服務契約保留。 |
 | `test_function_lengths.py` | 2 項通過；G3 鎖定來源雜湊未改。 |
 | `test_repo_layout.py` | 29 項通過；只新增已明列的 Preview UI.cmd 根目錄入口。 |
