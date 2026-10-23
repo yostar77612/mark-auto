@@ -26,7 +26,7 @@
 | 區域 | 改版後的操作 |
 | --- | --- |
 | 全域 | 精簡頂部、研究模式與實盤停用、真實作業和連線狀態；時鐘不常駐；主題／隱私集中設定。 |
-| 導覽 | 資料 → 策略中心 → 回測結果 → 紙上模擬；市場與設定保留入口。比較從結果頁與 Ctrl+4 進入，原七頁身分和 Ctrl+1–7、Ctrl+K、F5、Esc 保留。 |
+| 導覽 | 資料 → 策略中心 → 回測結果 → 紙上交易；市場與設定保留入口。比較從結果頁與 Ctrl+4 進入，原七頁身分和 Ctrl+1–7、Ctrl+K、F5、Esc 保留。 |
 | 資料 | 本機／官方行情與 Tick／下載／合成示範分區；必要合約與可選篩選分開；保留交易日曆，匯入結果顯示真實商品、週期、時間、筆數和警示。 |
 | 策略 | 找點子／AI 研究／自行設定三種任務；模型與同意項目同步既有連線面板；JSON、手動回應、fixture、歷史進階收合；候選摘要與拒絕原因先行。 |
 | 進階驗證 | Walk-forward 有獨立入口，沿用既有五步精靈、預覽、不可逆同意與資格證據。 |
@@ -61,7 +61,7 @@
 | 策略中心 | [畫面](screens/light-strategy.png) | [畫面](screens/dark-strategy.png) |
 | 回測結果 | [畫面](screens/light-backtest.png) | [畫面](screens/dark-backtest.png) |
 | 比較 | [畫面](screens/light-compare.png) | [畫面](screens/dark-compare.png) |
-| 紙上模擬 | [畫面](screens/light-paper.png) | [畫面](screens/dark-paper.png) |
+| 紙上交易 | [畫面](screens/light-paper.png) | [畫面](screens/dark-paper.png) |
 | 市場總覽 | [畫面](screens/light-market.png) | [畫面](screens/dark-market.png) |
 | 設定 | [畫面](screens/light-settings.png) | [畫面](screens/dark-settings.png) |
 

@@ -1,0 +1,41 @@
+{
+  "default_input_counts": [3, 0, 0, 0, 5, 4, 4],
+  "default_domain_terms": ["JSON", "MTX", "MXF", "TMF", "TWD"],
+  "data_sources": 4,
+  "import_formats": 9,
+  "strategy_modes": ["ideas", "manual", "research", "walk_forward"],
+  "baseline_commit": "567dbb23d611303d5a26077360640563b794ae3f",
+  "original_tooltips": {
+    "market_provider": "tooltip.market_provider",
+    "import_path": "tooltip.import_path",
+    "calendar_path": "tooltip.calendar_path",
+    "import_kind": "tooltip.import_kind",
+    "bars": "tooltip.bars",
+    "days": "tooltip.days",
+    "strategy_form.family": "tooltip.family",
+    "strategy_form.fields.fast": "tooltip.fast",
+    "strategy_form.fields.slow": "tooltip.slow",
+    "strategy_form.fields.quantity": "tooltip.quantity",
+    "strategy_form.fields.stop_ticks": "tooltip.stop_ticks",
+    "strategy_form.fields.target_ticks": "tooltip.target_ticks",
+    "result_choice": "tooltip.result_choice",
+    "replay_bars": "tooltip.replay_bars",
+    "paper_time.enabled_value": "tooltip.paper_time",
+    "paper_time.picker": "tooltip.paper_time",
+    "cancel_order": "tooltip.cancel_order",
+    "market.contract_combo": "tooltip.market_contract",
+    "market.timeframe_combo": "tooltip.market_timeframe",
+    "market.search": "tooltip.market_search",
+    "market.catalog_combo": "tooltip.market_catalog"
+  },
+  "new_tooltip_controls": [
+    "data_page.contract",
+    "data_page.contract_filter",
+    "strategy_page.research_model",
+    "strategy_page.research_consent",
+    "strategy_page.research_usage_consent",
+    "paper_page.replay_controls.speed"
+  ],
+  "max_default_page_height": 1600,
+  "max_default_primary_buttons": 1
+}

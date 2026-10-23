@@ -363,7 +363,9 @@ class ImportGraphTests(unittest.TestCase):
         self.assertEqual(graph['quantlab.ui_preferences'], set())
         imports = module_imports('quantlab.ui_preferences', self.sources['quantlab.ui_preferences'])
         self.assertFalse(any(target.startswith(('desktop', 'PySide6')) for target in imports))
-        self.assertEqual(graph['desktop_pages.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support'})
+        # Only the UI adapter resolves translated legacy disclosure keys; the
+        # serialization core above remains free of Qt and application imports.
+        self.assertEqual(graph['desktop_pages.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support', 'desktop_strings'})
 
     def test_listed_cycles_are_absent(self):
         self.assertEqual(listed_cycles(self.sources), [])

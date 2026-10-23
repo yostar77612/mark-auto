@@ -84,9 +84,16 @@ class DataResultWorkflowTests(unittest.TestCase):
         save_dataset(data, self.window.root / 'dataset.json')
         saved = export_report(result, self.window.root / 'reports')
         self.window.refresh_views()
-        index = self.window.result_choice.findData(str(saved['result']))
+        # Windows CI TEMP can use RUNNER~1 while export_report resolves its long name.
+        # Select the actual discovered report by file identity, never by path spelling.
+        expected = Path(saved['result']).resolve(strict=True)
+        index = next(
+            (row for row in range(self.window.result_choice.count()) if Path(self.window.result_choice.itemData(row)).resolve(strict=True) == expected),
+            -1,
+        )
+        self.assertGreaterEqual(index, 0, 'The exported report must be discovered before any UI assertions')
         self.window.result_choice.setCurrentIndex(index)
-        self.window.show_result()
+        self.assertTrue(self.window.show_result())
         return data, result, saved
 
     def test_source_tabs_show_only_the_current_task_and_kind_fields(self):

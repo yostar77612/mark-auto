@@ -92,6 +92,7 @@ class DataPage(QWidget):
         self.contract_filter = QCheckBox(ui_text('redesign.data.contract_filter'))
         self.contract_filter.setObjectName('data_contract_filter')
         self.contract_filter.setAccessibleName(ui_text('redesign.data.contract_filter'))
+        self.contract_filter.setToolTip(ui_text('redesign.data.contract_filter_hint'))
         self.contract_filter.toggled.connect(self._kind_changed)
         local.addWidget(self.contract_filter)
         local.addWidget(self.contract_box)
@@ -160,6 +161,7 @@ class DataPage(QWidget):
     def _kind_changed(self):
         kind = self.import_kind.currentData()
         needs_contract = kind in ('ticks', 'ticks_rpt', 'daily_json', 'synthetic_daily_json')
+        self.contract.setToolTip(ui_text('redesign.data.contract_hint' if needs_contract else 'redesign.data.contract_filter_hint'))
         self.contract_filter.setVisible(not needs_contract and kind != 'validated_dataset')
         self.contract_box.setVisible(needs_contract or (kind != 'validated_dataset' and self.contract_filter.isChecked()))
         text = ui_text('redesign.data.contract_hint') if needs_contract else ''

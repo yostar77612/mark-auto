@@ -574,6 +574,7 @@ def event(shell, packet):
                 shell.strategy_page.choose_mode('research')
                 dialog.hide()
             elif kind in ('error', 'failed', 'cancelled', 'canceled'):
+                # Load the fixed error catalogue only for a failed adoption event.
                 from quantlab.desktop_errors import error_message
 
                 dialog.status.setText(ui_text('job.cancel_notice') if kind in ('cancelled', 'canceled') else error_message('operation_failed'))

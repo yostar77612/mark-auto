@@ -3094,14 +3094,14 @@
     },
     {
       "file": "tests/test_r7_characterization.py",
-      "line": 46,
+      "line": 67,
       "name": "_busy",
       "kind": "setattr",
       "receiver": "shell"
     },
     {
       "file": "tests/test_r7_characterization.py",
-      "line": 46,
+      "line": 67,
       "name": "_safe",
       "kind": "setattr",
       "receiver": "shell"
@@ -3171,7 +3171,21 @@
     },
     {
       "file": "tests/test_t9_onboarding.py",
-      "line": 181,
+      "line": 185,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_t9_onboarding.py",
+      "line": 205,
+      "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w.page_host"
+    },
+    {
+      "file": "tests/test_t9_onboarding.py",
+      "line": 215,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w.page_host"
@@ -3220,28 +3234,28 @@
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
-      "line": 116,
+      "line": 123,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
-      "line": 141,
+      "line": 148,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
-      "line": 175,
+      "line": 182,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
-      "line": 272,
+      "line": 279,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "window"

@@ -109,12 +109,14 @@ class PaperPage(PageContext, QWidget):
         super().__init__()
         self.setup_context(host)
         layout = self.host.mount_page(self, ui_text('ui.paper_page.title'))
+        # Load the optional form composition only when this page is mounted.
         from .paper_layout import build_paper
 
         build_paper(self, layout)
 
     def showEvent(self, event):
         super().showEvent(event)
+        # Load the display adapter only when a visible preparation hint is needed.
         from .paper_readiness import refresh_readiness
 
         refresh_readiness(self)
@@ -179,6 +181,7 @@ class PaperPage(PageContext, QWidget):
         else:
             self.start_job('ui_paper_' + op, payload)
         self.paper_confirm.setChecked(False)
+        # Load the display adapter after scheduling so it reads the current job state.
         from .paper_readiness import refresh_readiness
 
         refresh_readiness(self)
@@ -208,6 +211,7 @@ class PaperPage(PageContext, QWidget):
         orders = getattr(getattr(market, 'chart', None), 'paper_orders', None)
         if locked and orders is not None:
             orders.request = None
+        # Load the display adapter only after the persistent lock is projected.
         from .paper_readiness import refresh_readiness
 
         refresh_readiness(self)
@@ -335,6 +339,7 @@ class PaperPage(PageContext, QWidget):
             }
         )
         refresh_tables(self, account, orders, fills)
+        # Load the display adapter after account projection without another broker read.
         from .paper_readiness import refresh_readiness
 
         refresh_readiness(self)

@@ -77,6 +77,7 @@ class AppHeader(QWidget):
             self.privacy_toggle.setEnabled(getattr(host, 'privacy', None) is not None)
             self.privacy_toggle.toggled.connect(self._privacy_changed)
         self.privacy_toggle.setAccessibleName(ui_text('privacy.toggle'))
+        self.privacy_toggle.setToolTip(ui_text('redesign.privacy_hint'))
         for label in (self.job,):
             row.addWidget(label)
         self.source.hide()
@@ -147,6 +148,7 @@ class AppHeader(QWidget):
             controller.changed.connect(self.refresh)
 
     def _open_connection(self):
+        # Resolve page identity only when navigating, after all pages are mounted.
         from .palette_commands import page_index
 
         self.host.navigation.setCurrentRow(page_index(self.host, 'settings'))
