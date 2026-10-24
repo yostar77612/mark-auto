@@ -5380,3 +5380,15 @@ launch commit, original-handle containment and strict stop receipt remain
 unchanged. Offline regression exercises a 400-plus-character real filesystem
 fixture and control journal; raw extended/device and UNC references still reject.
 No provider, credentials, network, budget, deadline or producer profile changes.
+
+## Installed desktop: explain persistent Paper order locks
+
+Prepared-host UI review found that replay, submit and individual cancel actions
+correctly remained disabled after an explicit stop and after reopening, but their
+generic prerequisite falsely asked the user to wait for background work. Their
+visible hint and tooltip now project the existing persistent manual-order lock
+and direct the user to the existing explicit resume-new-orders action. A lock
+keeps priority even when another job is busy. Unlocking clears the disabled hint.
+No enabled state, reconciliation requirement, lock, cancellation, journal, budget
+or execution deadline changes. Native-widget regressions cover initial locking,
+unlocking and a real reopened journal; the installer must be rechecked on-host.
