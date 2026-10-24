@@ -5552,3 +5552,16 @@ original offline Streamlit skips. UI still requires pinned Streamlit and forbids
 those five skips; offline evidence cannot substitute for UI. Historical skip
 content is hash-pinned. Both producers and both profile aggregates are required
 by the final gate; no retries, changed test limits, removed cases or new skips.
+
+Installed-main public-data testing found an observed 2026-10-27 provisional archive
+above the intended 2026-10-22 archive. Automatic import now supplies the validated
+calendar's explicit trade dates to the downloader before archive selection and
+fetching. It rechecks every returned archive date before parsing or activation.
+Only observed official URLs matching that supplied scope may be requested; no
+weekday, holiday, current-date completion, night-session ownership or rollover is
+inferred. All downloads retain their original provisional/unverified classification
+until the unchanged full calendar and data-quality validation succeeds. Normal
+download-only discovery remains unchanged. The optional internal date set must be
+a nonempty frozenset of at most 256 ISO dates, matching the calendar input bound.
+No matching archive preserves the previous cache manifest and active research data.
+Original file, row, timeout, publication backup and rollback limits are unchanged.

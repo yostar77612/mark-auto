@@ -156,8 +156,11 @@ def download_and_import(cache, root, payload, *, emit=None):
     if payload.get('network_opt_in') is not True:
         raise ValidationError('network_disabled')
     contract, calendar_value, calendar = import_settings(payload['auto_import'])
-    manifest = refresh(cache, days=payload.get('days', 1), kind='csv')
+    trade_dates = frozenset(session['trade_date'] for session in calendar.sessions)
+    manifest = refresh(cache, days=payload.get('days', 1), kind='csv', trade_dates=trade_dates)
     try:
+        if any(archive['trade_date'] not in trade_dates for archive in manifest['archives']):
+            raise ValidationError('download_import_source_invalid')
         with tempfile.TemporaryDirectory(prefix='.download-import-', dir=cache) as temporary:
             source = Path(temporary) / 'downloaded-tmf.csv'
             sources = _combined(manifest, cache, source, contract)
