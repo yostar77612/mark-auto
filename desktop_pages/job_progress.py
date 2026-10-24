@@ -98,7 +98,7 @@ class JobFeedback:
             return False
         # Only import packets reach the lazy, display-only data report.
         page = getattr(shell, 'data_page', None)
-        if getattr(shell, 'last_operation', None) == 'ui_import' and page is not None:
+        if getattr(shell, 'last_operation', None) in ('ui_import', 'ui_refresh') and page is not None:
             import_event(page, event)
         if self.job_id is None:
             return True  # Not started through start_job; the host's own job-id filter already applied.

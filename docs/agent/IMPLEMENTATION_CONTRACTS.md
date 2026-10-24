@@ -5460,3 +5460,49 @@ then restores only those fields in memory and still requires the original
 No original baseline digest is retargeted. The exact reporting import set adds
 only runtime_support. The Windows-contention simulation explicitly uses spawn
 on all platforms; unsupported process methods remain rejected by production.
+
+## Download then import (2026-10-24)
+
+The download tab defaults to automatic research import, with an explicit TMF
+contract and versioned SessionCalendar JSON. The per-call network checkbox covers
+both download and import, resets after dispatch and on mode changes; opting out
+retains the historical download-only ui_refresh payload. Configuration is checked
+before network access. No current month, rollover, holiday, night-session ownership
+or missing price is inferred.
+
+The ui_refresh composition downloads through the existing bounded TAIFEX client,
+checks every extracted member's SHA-256, path, native columns and resource bounds,
+and combines only the chosen TMF contract in chronological archive order. It
+retains all raw cache files. The unchanged G3 import_taifex, SessionCalendar,
+reject_invalid_import and validate_dataset gates remain authoritative. Combined
+input retains the existing 64 MiB / one-million-row bounds; there is no unlimited
+multi-file admission. Original archive/member hashes are bound into the resulting
+dataset manifest hash. Unsupported archive shapes and duplicate sources fail closed.
+
+Only a fully valid result activates dataset.json and dataset_calendar.json.
+Previous bytes are backed up to content-addressed download_import_history before
+either replacement. A caught publication failure restores both prior byte streams;
+this is not a claim of a process-crash-atomic two-file transaction. Failed downloads,
+validation or imports leave prior active research data intact. Successful jobs
+refresh the existing dataset summary and strategy navigation and show a human
+download/import count. No budgets, OOS gates, risk, timeout, credential, live trading,
+G3 sources or historical saved-candidate profiles change. Sitecore is outside scope.
+
+Offline regressions exercise real native-schema ZIP download parsing, two-file
+TMF-only import, original quality validation, missing consent/configuration before
+HTTP, missing-minute rejection, tamper/duplicate rejection and byte-exact rollback
+with retained backup. Desktop checks cover default choice, consent reset, legacy
+payload, active-summary refresh and light/dark layouts at 1366x768 and 1920x1080.
+The widget guard admits only the six named new controls while preserving its
+historical inventory. B1 adds exactly three typed errors; exact new text and the
+complete old source/message digests remain asserted.
+
+The associated full desktop regression reproduced Windows access denial at the
+backtest report-directory promotion. That single rename now uses the existing
+bounded replace_file primitive (unchanged 0.1 s envelope / at most seven attempts).
+Only directory publication is retried; computation, serialization, result identity,
+existing-target verification and active_result activation retain their order.
+Deterministic transient/permanent denial checks require exactly one backtest and
+preserve the previous active reference on permanent failure. Native Windows tests
+hold a real directory handle without delete sharing, verify rejection while held,
+and verify complete publication after release. No timeout, ACL or privilege change.

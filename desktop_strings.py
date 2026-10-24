@@ -2542,6 +2542,21 @@ ZH_TW.update(
 )
 
 
+# Download and automatic strict research import.
+ZH_TW.update(
+    {
+        'download_import.enabled': '下載後自動匯入研究資料',
+        'download_import.contract': '本次 TMF 明確合約',
+        'download_import.contract_example': 'TAIFEX:TMF:YYYYMM',
+        'download_import.calendar': '已核對的版本化交易日曆 JSON',
+        'download_import.hint': '下載的逐筆資料會依此合約合併，通過既有完整時段與資料品質檢查後才切換研究資料。日曆須涵蓋本次資料；不會推算休市、夜盤歸屬或補造缺失行情。',
+        'download_import.action': '下載並自動匯入',
+        'download_import.consent': '同意本次連線至 TAIFEX，並依已核對的合約與交易日曆自動匯入',
+        'download_import.completed': '已下載 {0} 份資料，並匯入 {1} 根 K 棒（{2}）。可前往策略中心。',
+        'download_import.downloaded_only': '已下載 {0} 份資料；本次選擇僅下載，尚未匯入。',
+    }
+)
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

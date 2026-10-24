@@ -134,6 +134,7 @@ class DataResultWorkflowTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 page.download_data()
             start.assert_not_called()
+            page.download_import.enabled.setChecked(False)
             page.network_data.setChecked(True)
             page.days.setValue(3)
             page.download_data()

@@ -160,6 +160,18 @@ ERROR_TABLE = {
     'startup_workspace_busy': ErrorText('無法啟動：工作區正由另一個程序使用。', '請切回既有視窗，或關閉該程序後再啟動。'),
     'startup_failed': ErrorText('程式啟動失敗，原資料已保留。', '請重新安裝相容版本，或還原相容備份。'),
 }
+# Download/import composition; all historical catalogue entries retain their bytes.
+ERROR_TABLE.update(
+    {
+        'download_import_settings_required': ErrorText(
+            '請先設定本次匯入的 TMF 合約與版本化交易日曆。', '填妥合約與日曆，核對下載與匯入同意後重試；也可取消自動匯入，只下載檔案。'
+        ),
+        'download_import_source_invalid': ErrorText('下載檔案未通過自動匯入的格式、雜湊或資源檢查。', '保留原檔並核對下載結果；目前研究資料不變。'),
+        'download_import_failed': ErrorText(
+            '下載檔已保留，但自動匯入未完成；原研究資料已保留。', '核對 TMF 合約、完整交易日曆與資料品質後重試；不會自動補齊缺失行情。'
+        ),
+    }
+)
 ERROR_LABELS = {code: text.explanation for code, text in ERROR_TABLE.items()}
 
 
