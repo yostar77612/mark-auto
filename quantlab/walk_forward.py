@@ -29,6 +29,7 @@ from .paper_replay import _require_wal_runtime, _require_local_wal_path
 from .strategies import builtin_strategies, _validate_bars
 from .data import validate_dataset
 from .windows_paths import canonical_path, native_path, sqlite_uri
+from .runtime_support import replace_file
 from .research import _dataset_identity, _evaluate_split, _integer, _keys, _reserve_holdout, _run_bounded, ResourceTimeout, validate_dsl, _unique_keys
 
 MAX_STATE_BYTES = 16 * 1024 * 1024
@@ -353,7 +354,7 @@ def _save_state(db, output_dir, state):
     db.commit()
     path = output_dir / 'walk_forward.json.tmp'
     path.write_text(encoded, encoding='utf-8')
-    path.replace(output_dir / 'walk_forward.json')
+    replace_file(path, output_dir / 'walk_forward.json')
 
 
 def _validate_state(state):

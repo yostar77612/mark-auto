@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import time
 
 from .windows_paths import native_path
 
@@ -52,10 +53,40 @@ def atomic_write(path, raw, *, durable=False):
         if durable:
             _durable_replace(name, path)
         else:
-            os.replace(name, path)
+            replace_file(name, path)
     finally:
         if os.path.exists(name):
             os.unlink(name)
+
+
+def _retry_replace(operation):
+    """Retry only the same Windows rename while a short-lived reader releases it.
+
+    No serialization, database commit, admission or research operation is replayed.
+    Permanent access denial and exhausted attempts still raise the original error.
+    This bound is inside, and does not restart, the caller's existing deadline.
+    """
+    deadline = time.monotonic() + 0.1
+    delays = iter((0.001, 0.002, 0.004, 0.008, 0.016, 0.032))
+    while True:
+        try:
+            return operation()
+        except OSError as error:
+            if sys.platform != 'win32' or getattr(error, 'winerror', None) not in (5, 32, 33):
+                raise
+            delay = next(delays, None)
+            remaining = deadline - time.monotonic()
+            if delay is None or remaining <= 0:
+                raise
+            time.sleep(min(delay, remaining))
+            if time.monotonic() >= deadline:
+                raise
+
+
+def replace_file(source, destination):
+    """Same atomic replace and path spelling, with bounded Windows contention."""
+    source, destination = native_path(source), native_path(destination)
+    return _retry_replace(lambda: os.replace(source, destination))
 
 
 def _sync_directory(path):
@@ -77,8 +108,12 @@ def _durable_replace(source, destination):
         move = kernel.MoveFileExW
         move.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD]
         move.restype = wintypes.BOOL
-        if not move(str(source), str(destination), 0x1 | 0x8):
-            raise ctypes.WinError(ctypes.get_last_error())
+
+        def promote():
+            if not move(str(source), str(destination), 0x1 | 0x8):
+                raise ctypes.WinError(ctypes.get_last_error())
+
+        _retry_replace(promote)
     else:
         os.replace(source, destination)
         _sync_directory(Path(destination).parent)

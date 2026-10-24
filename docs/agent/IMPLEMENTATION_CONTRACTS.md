@@ -5392,3 +5392,37 @@ keeps priority even when another job is busy. Unlocking clears the disabled hint
 No enabled state, reconciliation requirement, lock, cancellation, journal, budget
 or execution deadline changes. Native-widget regressions cover initial locking,
 unlocking and a real reopened journal; the installer must be rechecked on-host.
+
+## Windows atomic promotion under transient sharing contention
+
+Synthetic host probes reproduced intermittent WinError 5 with raw file replace,
+independent of application logic and long paths. Shared atomic writes (including
+durable promotion) and the WFO JSON snapshot now repeat only the exact same native
+rename on Windows errors 5/32/33: at most seven attempts, exponential delays from
+1 to 32 ms and a 100 ms retry deadline inside the caller's existing time budget.
+No bytes are rewritten and no database commit, research evaluation, admission,
+range consumption, quota, cancellation or business operation is replayed.
+Permanent denial still raises; no delete-then-rename, partial write, ACL change,
+readonly-bit removal or success inference from a missing source is allowed.
+Durable Windows promotion retains replace-existing and write-through flags;
+non-Windows replacement and directory fsync retain their existing semantics.
+
+Regression covers deterministic transient/persistent errors, deadline expiry,
+single fsync, unchanged old bytes on failure and real Windows reader handles
+with and without release, for ordinary and durable writes. Existing journal,
+tamper, crash, one-time range, risk and golden tests remain authoritative.
+Native process tests use the venv's actual base Python and existing dependencies:
+the investigated Windows venv redirector has a different PID/handle table from
+its Python child. This changes test invocation, not retained-handle authority.
+Missing symlink privilege remains an explicit host limitation, never a new skip.
+No G3 file, producer profile, credential, live-trading path, score or timeout change.
+The only UI golden update is the exact `ui_walk_forward_preview.result.source_hashes`
+entry for `walk_forward.py`, from `2f9c9b4be41c680f28c907925d6002d7841855c1d2c11bfa5b2a928add93337a`
+to `00bb1d7c037dd6f18fd75144d24daea79ea14dda865ad686a28b6b031fb5bb48`,
+computed by the existing `content_hash(read_text(...))` producer. No result, risk,
+metric, exception or historical producer profile is regenerated or relabelled.
+Reporting JSON and source-notice promotion use the same bounded primitive after
+their existing symlink checks and encoding. Host stress reproduced the original
+reporting failure on write 20. WFO observers and WAL crash-cut injection follow
+the new outer promotion callable; their 33 evaluations, 93 commits/writes/exports,
+exact event order, actual process-death cuts and restoration assertions remain.

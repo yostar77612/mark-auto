@@ -10,6 +10,7 @@ from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, Backtest
 
 from . import strict_json
 from .windows_paths import native_path
+from .runtime_support import replace_file
 
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
@@ -67,7 +68,7 @@ def write_json(path, value):
     try:
         with os.fdopen(fd, 'w', encoding='utf-8') as out:
             out.write(data + '\n')
-        os.replace(temporary, path)
+        replace_file(temporary, path)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
@@ -255,7 +256,7 @@ def export_report(result, output_dir):
     try:
         with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as out:
             out.write(source_text)
-        os.replace(temporary, source_path)
+        replace_file(temporary, source_path)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
