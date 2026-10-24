@@ -86,6 +86,7 @@ def instrument_generic_operations(timings):
             (PaperReplay, 'step', 'replay.step'),
             (Path, 'write_text', 'export.write'),
             (Path, 'replace', 'export.replace'),
+            (research, 'replace_file', 'export.replace'),
         ):
             wrap(owner, name, phase)
         wrap(PaperBroker, '_transaction', 'broker.transaction', context=True)

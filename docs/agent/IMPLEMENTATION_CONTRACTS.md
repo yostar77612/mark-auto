@@ -5415,14 +5415,35 @@ Native process tests use the venv's actual base Python and existing dependencies
 the investigated Windows venv redirector has a different PID/handle table from
 its Python child. This changes test invocation, not retained-handle authority.
 Missing symlink privilege remains an explicit host limitation, never a new skip.
-No G3 file, producer profile, credential, live-trading path, score or timeout change.
-The only UI golden update is the exact `ui_walk_forward_preview.result.source_hashes`
+The owner explicitly approved the prepared G3 I/O patch and new exact profiles on
+2026-10-24. `research.py` adds one import and replaces its two campaign JSON rename
+calls; no other G3 file changes. Its genuine new content hash is
+`c6d3f1b4b13154c1bf90e6be5a664ac390edc20fb5c544dd909485dfe5fe2ae6`.
+All 26 historical frozen producer blocks remain verbatim. Two appended literal
+profiles bind only the new protocol/research source tuple; old results keep their
+old identity. Exact selection, mixed-source rejection and ambiguous-tuple rejection
+remain fail closed, including genuine current campaign-to-saved-pool admission.
+No credential, live-trading path, score or timeout change.
+The first UI golden update is the exact `ui_walk_forward_preview.result.source_hashes`
 entry for `walk_forward.py`, from `2f9c9b4be41c680f28c907925d6002d7841855c1d2c11bfa5b2a928add93337a`
 to `00bb1d7c037dd6f18fd75144d24daea79ea14dda865ad686a28b6b031fb5bb48`,
 computed by the existing `content_hash(read_text(...))` producer. No result, risk,
 metric, exception or historical producer profile is regenerated or relabelled.
+The approved campaign source change additionally updates exactly 25 provenance
+hash fields: 14 fixture-campaign identities, 8 subscription-campaign identities,
+1 subscription reconciliation binding and 2 WFO research/pool source hashes.
+Independent checks recompute both old and new campaign IDs from bindings, attempt
+IDs from campaign/sequence, selection/holdout hashes, the raw-source subscription
+budget identity and current source hashes before replacing only those exact tokens.
+All other golden bytes/annotations, metrics, statuses, exceptions and thresholds
+remain unchanged; live legacy-vs-registry equality and exact golden assertions stay.
 Reporting JSON and source-notice promotion use the same bounded primitive after
 their existing symlink checks and encoding. Host stress reproduced the original
 reporting failure on write 20. WFO observers and WAL crash-cut injection follow
 the new outer promotion callable; their 33 evaluations, 93 commits/writes/exports,
 exact event order, actual process-death cuts and restoration assertions remain.
+Research-phase and generic-smoke observers also retain promotion timing through
+the new outer call while preserving original Path.replace observation controls.
+New campaign regression confirms promotion retries repeat neither commit nor
+generation; sustained denial leaves the already-reserved trial committed and no
+model call occurs. Existing irreversible-budget, reopen and crash tests remain.

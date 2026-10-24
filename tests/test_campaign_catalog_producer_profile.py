@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class CampaignCatalogProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 26)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 28)
         self.assertEqual(content_hash(PREVIOUS), '797b5bcfcf94f111144eda6cb6cc01a0c9cc6b24ec9aa2d9d9dec3b34d78c729')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[17], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[18], PROFILE)

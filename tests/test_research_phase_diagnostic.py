@@ -72,6 +72,7 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
             observer = diagnostic.Observer({}, root / 'report.json')
             state = state_with('phase fixture')
             state['status'] = 'running'
+            original_promotion = wf.replace_file
             with ExitStack() as stack:
                 observer.instrument(stack)
                 with closing(sqlite3.connect(root / 'walk_forward.sqlite3')) as db:
@@ -83,6 +84,7 @@ class ResearchPhaseDiagnosticTests(unittest.TestCase):
                 wf._reserve_holdout(
                     synthetic_dataset(10), registry_path=root / 'holdout.sqlite3', campaign_id='fixture', selection_hash='fixture', output_dir=root
                 )
+            self.assertIs(wf.replace_file, original_promotion)
             for phase, count in {
                 'wfo.initial_save': 1,
                 'wfo.terminal_save': 1,

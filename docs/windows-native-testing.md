@@ -42,7 +42,7 @@ opened without delete sharing produces the same error. Restart Manager detected
 that controlled reader, but did not identify an owner for the intermittent
 failures; attributing them to a specific antivirus or process is unverified.
 
-Shared atomic writes and WFO snapshot promotion retry only the identical rename
+Shared atomic writes, reporting, campaign and WFO snapshot promotion retry only the identical rename
 on Windows errors 5, 32 or 33, at most seven attempts with a 100 ms retry deadline.
 Persistent denial still raises. Serialization, SQLite commits, research, consumed
 ranges, cancellation and business deadlines are not retried or reset. Durable
@@ -55,3 +55,10 @@ protection or grant permanent privileges to manufacture a pass. Record the faile
 cases and use an explicitly authorized Windows test process with the required
 privilege, or report them as blocked. Microsoft's [CreateSymbolicLinkW reference](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw)
 documents the Developer Mode prerequisite for unprivileged link creation.
+
+An AppContainer invocation is also distinct from a normal Windows process.
+On the investigated host, a synthetic 0700 directory in the default AppContainer
+TEMP refused child-file access while a 0777 directory permitted it; both worked
+inside the explicitly allowed checkout. Native tests use a normal Windows process
+and an explicitly isolated short TEMP. Do not alter the test's directory modes or
+the host's ACLs to compensate for this execution-context restriction.

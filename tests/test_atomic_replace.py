@@ -1,7 +1,10 @@
 """Windows rename contention must preserve bytes, atomicity and failure gates."""
 
 import ctypes
+from contextlib import closing
+import json
 from pathlib import Path
+import sqlite3
 import sys
 import tempfile
 import threading
@@ -159,6 +162,71 @@ class AtomicReplaceTests(unittest.TestCase):
                     reporting.write_json(target, {'synthetic': 'must not publish'})
             self.assertEqual(target.read_bytes(), attempts[0])
             self.assertEqual(list(target.parent.iterdir()), [target])
+
+    def test_campaign_rename_does_not_repeat_commit_generation_or_reserved_trial(self):
+        from quantlab import research
+        from tests.test_research import inputs, Spy
+
+        for persistent in (False, True):
+            with self.subTest(persistent=persistent), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                data, config = inputs()
+                config.update(families=['trend'], max_trials=1, max_improvements=0)
+                generator = Spy()
+                real_replace, real_connect = io.os.replace, sqlite3.connect
+                commits, attempts, workers = [], [], []
+
+                class Connection(sqlite3.Connection):
+                    def commit(connection):
+                        super().commit()
+                        commits.append(1)
+
+                def connect(database, *args, **kwargs):
+                    if str(database).endswith('campaign.sqlite3'):
+                        kwargs['factory'] = Connection
+                    return real_connect(database, *args, **kwargs)
+
+                def replace(source, destination):
+                    if Path(destination).name == 'campaign.json':
+                        snapshot = Path(source).read_bytes()
+                        state = json.loads(snapshot)
+                        if state['attempts'] and state['attempts'][0].get('generator_context') is None:
+                            attempts.append((snapshot, len(commits)))
+                            if persistent or len(attempts) == 1:
+                                raise denied()
+                    return real_replace(source, destination)
+
+                def worker(function, args, **kwargs):
+                    workers.append(function.__name__)
+                    return {'value': function(*args), 'memory_limit_enforced': False}
+
+                with (
+                    patch.object(io.sys, 'platform', 'win32'),
+                    patch.object(io.os, 'replace', side_effect=replace),
+                    patch.object(sqlite3, 'connect', side_effect=connect),
+                    patch.object(research, '_run_bounded', side_effect=worker),
+                ):
+                    arguments = dict(config=config, generator=generator, output_dir=root / 'campaign', holdout_registry_path=root / 'holdout.sqlite3')
+                    if persistent:
+                        with self.assertRaises(PermissionError):
+                            research.run_campaign(data, **arguments)
+                    else:
+                        result = research.run_campaign(data, **arguments)
+                        self.assertEqual(result['status'], 'completed')
+                        self.assertEqual(len(result['attempts']), 1)
+                        self.assertEqual(len(generator.contexts), 1)
+                        self.assertEqual(workers.count('_generate_candidate'), 1)
+                self.assertEqual(len(attempts), 7 if persistent else 2)
+                self.assertEqual(attempts, [attempts[0]] * len(attempts))
+                self.assertEqual(attempts[0][1], 2)
+                if persistent:
+                    self.assertEqual(generator.contexts, [])
+                    self.assertEqual(workers, [])
+                    with closing(real_connect(root / 'campaign' / 'campaign.sqlite3')) as database:
+                        state = json.loads(database.execute('SELECT payload FROM state').fetchone()[0])
+                    self.assertEqual(len(state['attempts']), 1)
+                    self.assertEqual(state['attempts'][0]['status'], 'running')
+                    self.assertEqual(state['binding']['config']['max_trials'], 1)
 
 
 @unittest.skipUnless(sys.platform == 'win32', 'Native Windows sharing modes')

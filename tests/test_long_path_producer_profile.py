@@ -27,7 +27,10 @@ class LongPathProducerProfileTests(unittest.TestCase):
             ]
         )
         self.assertEqual([content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[:24]], historical)
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[24:], (TRANSPORT, SIWC))
+        self.assertEqual(
+            pools.SUPPORTED_PRODUCERS[24:],
+            (TRANSPORT, SIWC, pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1),
+        )
         self.assertEqual(content_hash(TRANSPORT), '092877b654abacbf244e985a8d5d6a75785a4561be48b4d8cfd5f940cd44857d')
         self.assertEqual(content_hash(SIWC), '9a83126852a5a89a90fe939c930ac91badfaeb16ea239e2ee387ba2904cd7692')
 
@@ -45,7 +48,10 @@ class LongPathProducerProfileTests(unittest.TestCase):
     def test_current_engine_and_both_provider_checkout_variants_match(self):
         for profile in (TRANSPORT, SIWC):
             actual = {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in profile['engine_source_hashes']}
-            self.assertEqual(actual, profile['engine_source_hashes'])
+            expected = dict(profile['engine_source_hashes'])
+            expected['research.py'] = pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes']['research.py']
+            self.assertEqual(actual, expected)
+            self.assertNotEqual(actual['research.py'], profile['engine_source_hashes']['research.py'])
         for index, implementation in enumerate(SIWC['chatgpt_plan_implementations']):
             for name, expected in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')

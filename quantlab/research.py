@@ -6,6 +6,7 @@ its audit history; it does not make a previously examined holdout unseen again.
 from __future__ import annotations
 
 from .windows_paths import canonical_path, native_path, sqlite_uri
+from .runtime_support import replace_file
 
 import copy
 import json
@@ -845,7 +846,7 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
         db.commit()
         temporary = output_dir / 'campaign.json.tmp'
         temporary.write_text(encoded, encoding='utf-8')
-        temporary.replace(output_dir / 'campaign.json')
+        replace_file(temporary, output_dir / 'campaign.json')
     try:
         db.execute('CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)')
         row = db.execute('SELECT payload FROM state WHERE id=1').fetchone()
@@ -1078,7 +1079,7 @@ def reconcile_interrupted_campaign(*, output_dir: Path, generator: Generator,
         db.commit()
         temporary = output_dir / 'campaign.json.tmp'
         temporary.write_text(encoded, encoding='utf-8')
-        temporary.replace(output_dir / 'campaign.json')
+        replace_file(temporary, output_dir / 'campaign.json')
         return state
     except Exception:
         raise ValidationError('Interrupted campaign audit reconciliation failed') from None

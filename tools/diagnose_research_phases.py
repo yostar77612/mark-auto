@@ -198,6 +198,7 @@ class Observer:
 
         stack.enter_context(patch.object(sqlite3, 'connect', connect))
         original_write, original_replace = Path.write_text, Path.replace
+        original_snapshot_replace = walk_forward.replace_file
 
         def write(path, data, *args, **kwargs):
             if path.name.endswith(('.json', '.json.tmp')):
@@ -211,8 +212,12 @@ class Observer:
                 return self.call('json.replace', original_replace, path, target)
             return original_replace(path, target)
 
+        def replace_snapshot(path, target):
+            return self.call('json.replace', original_snapshot_replace, path, target)
+
         stack.enter_context(patch.object(Path, 'write_text', write))
         stack.enter_context(patch.object(Path, 'replace', replace))
+        stack.enter_context(patch.object(walk_forward, 'replace_file', replace_snapshot))
 
 
 def run_cases(path, runtime):
