@@ -5539,3 +5539,16 @@ are forbidden. Only the 34 original Linux-inapplicable native Windows skips from
 the full run are admitted with exact IDs/reasons. Reports/artifacts are attempt
 bound, and the final gate requires both producers and the independent aggregate.
 The original Windows core coverage and research worker validators are unchanged.
+
+The following full run's Linux offline 3.12 job also reached 15 minutes near its
+last cases, with no completed successful report. This is a failure, not a pass.
+Both original Linux offline profiles (3.11/3.12) now use the same whole-module
+core/research partition and independent exact coverage under the original
+non-Streamlit dependencies. The original mandatory Linux check names belong only
+to their complete independent aggregates. The shared validator binds the Python
+profile, pinned SQLite and unchanged source/runtime/run/attempt, exact original
+discovery/start/stop/order, all original native applicability skips plus the five
+original offline Streamlit skips. UI still requires pinned Streamlit and forbids
+those five skips; offline evidence cannot substitute for UI. Historical skip
+content is hash-pinned. Both producers and both profile aggregates are required
+by the final gate; no retries, changed test limits, removed cases or new skips.

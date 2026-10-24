@@ -1,6 +1,7 @@
 """Complete UI partition coverage may never accept missing, stale, skipped or failed work."""
 
 from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -71,6 +72,12 @@ class UiTestGateTests(unittest.TestCase):
                 installed.return_value = '1.64.0'
                 with self.assertRaises(ValueError):
                     gate.context()
+                with self.assertRaises(ValueError):
+                    gate.context('offline')
+                installed.side_effect = gate.importlib.metadata.PackageNotFoundError
+                self.assertIsNone(gate.context('offline')['streamlit'])
+                with self.assertRaises(ValueError):
+                    gate.context()
 
     def verify(self, reports, expected, context, identity, skips=None):
         with patch.object(gate.platform, 'python_version', return_value='3.12.13'):
@@ -82,6 +89,40 @@ class UiTestGateTests(unittest.TestCase):
         self.assertTrue(result['successful'])
         self.assertEqual(result['tests_run'], 7)
         self.assertEqual(len(result['streamlit_cases']), 5)
+
+    def test_offline_profiles_keep_exact_skips_and_cannot_substitute_for_ui(self):
+        for version in ('3.11', '3.12'):
+            reports, expected, context, identity = fixture()
+            context.update(plan=gate.OFFLINE_PLAN, streamlit=None)
+            identity['python'] = version + '.13 fixture'
+            skips = [{'id': item, 'reason': 'Original offline dependency profile'} for item in expected['discovered_ids'][:5]]
+            for report in reports:
+                report.update(ui_context=deepcopy(context), python=version + '.13', ui_identity_before=deepcopy(identity), ui_identity_after=deepcopy(identity))
+            reports[0]['skipped'] = skips
+            with patch.object(gate.platform, 'python_version', return_value=version + '.13'):
+                self.assertTrue(gate.validate(reports, expected, context, identity, skips, version)['successful'])
+                with self.assertRaises(ValueError):
+                    gate.validate(reports, expected, context, identity, [], version)
+                with self.assertRaises(ValueError):
+                    gate.validate(reports, expected, {**context, 'plan': gate.PLAN}, identity, skips, version)
+                with self.assertRaises(ValueError):
+                    gate.validate(reports, expected, context, identity, skips, '3.10')
+                reports[0]['python'] = '3.13.1'
+                with self.assertRaises(ValueError):
+                    gate.validate(reports, expected, context, identity, skips, version)
+
+    def test_applicability_baselines_are_original_and_only_offline_adds_five_streamlit_skips(self):
+        root = gate.ROOT / 'tests/fixtures'
+        ui = json.loads((root / 'ui_linux_applicability_skips.json').read_text(encoding='utf-8'))
+        offline = json.loads((root / 'linux_offline_applicability_skips.json').read_text(encoding='utf-8'))
+        self.assertEqual(
+            hashlib.sha256(json.dumps(ui, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
+            '6433af69149278c4252c412d55664aa2082dcc15e7a6193ca43d5f0b9cb745a9',
+        )
+        self.assertEqual([row for row in offline if not row['id'].startswith('test_ui.UITests.')], ui)
+        extras = [row for row in offline if row['id'].startswith('test_ui.UITests.')]
+        self.assertEqual(len(extras), 5)
+        self.assertEqual({row['reason'] for row in extras}, {'Optional Streamlit is not installed; UI verification not run'})
 
     def test_missing_duplicate_stale_failed_incomplete_and_new_skip_are_refused(self):
         for field, bad in (

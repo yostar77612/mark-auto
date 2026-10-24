@@ -1113,17 +1113,28 @@ class CoreShardWorkflowTests(unittest.TestCase):
     def test_exact_matrix_keeps_original_linux_and_research_with_six_core_shards(self):
         offline = self.job('offline')
         rows = re.findall(r"^          - \{os: ([^,]+), python: '([^']+)', group: ([^,}]+)(?:, shard: ([^}]+))?\}$", offline, re.MULTILINE)
-        expected = [('ubuntu-latest', version, 'all', '') for version in ('3.11', '3.12')]
-        expected += [('windows-latest', version, 'core', shard) for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining')]
+        expected = [('windows-latest', version, 'core', shard) for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining')]
         expected += [('windows-latest', version, 'research', '') for version in ('3.11', '3.12')]
         self.assertCountEqual(rows, expected)
-        self.assertEqual(len(rows), 10)
+        self.assertEqual(len(rows), 8)
         self.assertEqual(len(rows), len(set(rows)))
         self.assertIn('timeout-minutes: 15', offline)
         self.assertIn('fail-fast: false', offline)
         self.assertNotIn('continue-on-error', offline)
         self.assertIn("--workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }}", offline)
         self.assertIn("${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}", offline)
+        linux, coverage = self.job('linux-tests'), self.job('linux-coverage')
+        self.assertIn("python: ['3.11', '3.12']", linux)
+        self.assertIn('group: [core, research]', linux)
+        self.assertIn('timeout-minutes: 15', linux)
+        self.assertIn('fail-fast: false', linux)
+        self.assertIn('run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }}', linux)
+        self.assertIn('name: offline (ubuntu-latest, ${{ matrix.python }})', coverage)
+        self.assertIn('needs: [changes, linux-tests, ruff]', coverage)
+        self.assertIn("python: ['3.11', '3.12']", coverage)
+        self.assertIn('pattern: linux-test-inventory-${{ matrix.python }}-*-attempt-${{ github.run_attempt }}', coverage)
+        self.assertIn('run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --reports', coverage)
+        self.assertNotIn('continue-on-error', linux + coverage)
 
     def test_subset_check_names_and_artifacts_are_distinct_and_attempt_bound(self):
         offline = self.job('offline')
