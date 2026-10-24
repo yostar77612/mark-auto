@@ -174,11 +174,16 @@ jobs:
           path: dist/validation/core-coverage.json
           if-no-files-found: error
           retention-days: 7
-  ui:
+  ui-tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
+    name: UI original ${{ matrix.group }} (Linux 3.12)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [core, research]
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
@@ -204,14 +209,73 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: desktop-auth-ui-linux312
+          name: desktop-auth-ui-linux312-${{ matrix.group }}
           path: |
             dist/validation/desktop-auth-install.json
             qt-install-report.json
             dist/validation/sqlite-runtime.json
           if-no-files-found: warn
           retention-days: 7
-      - run: python -m unittest discover -s tests -v
+      - name: Run the unchanged original UI partition with complete identity evidence
+        run: python tools/ui_test_gate.py --group ${{ matrix.group }} --manifest dist/validation/ui-test-inventory.json
+      - name: Preserve this exact attempt's original UI case evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ui-test-inventory-${{ matrix.group }}-attempt-${{ github.run_attempt }}
+          path: dist/validation/ui-test-inventory.json
+          if-no-files-found: error
+          retention-days: 7
+  ui:
+    # The historical mandatory name now owns independently verified complete coverage.
+    name: ui
+    needs: [changes, ui-tests]
+    if: always() && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Provision matching pinned private SQLite for independent UI discovery
+        run: python tools/install_sqlite_runtime.py --destination build/sqlite-runtime --report dist/validation/sqlite-runtime.json --github
+      - run: python -m pip install -r requirements-ui.lock
+      - run: python -m pip install --no-deps -r requirements-ui-pillow.lock
+      - name: Install Linux Qt system runtime
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
+      - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
+      - name: Install matching pinned offline auth discovery runtime
+        run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
+      - name: Verify complete UI runtime before independent discovery
+        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - name: Download only this run attempt's UI case reports
+        if: always()
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: ui-test-inventory-*-attempt-${{ github.run_attempt }}
+          path: dist/validation/ui-groups
+          merge-multiple: false
+      - name: Require independent exact complete UI coverage
+        if: always()
+        run: python tools/ui_test_gate.py --reports dist/validation/ui-groups --manifest dist/validation/ui-coverage.json
+      - name: Require both original UI partitions to have succeeded
+        if: always()
+        env:
+          UI_RESULT: ${{ needs.ui-tests.result }}
+        run: python -c "import os, sys; sys.exit(0 if os.environ.get('UI_RESULT') == 'success' else 1)"
+      - name: Preserve complete or failed independent UI coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ui-complete-coverage-attempt-${{ github.run_attempt }}
+          path: dist/validation/ui-coverage.json
+          if-no-files-found: error
+          retention-days: 7
   quality:
     name: Static quality and credential gate
     runs-on: ubuntu-latest
@@ -463,7 +527,7 @@ jobs:
     # Stable aggregate for branch protection. Same run attempt only (G8): it
     # reads this run's job results, never an earlier attempt's artifacts.
     name: Quantlab gates complete
-    needs: [changes, ruff, quality, offline, core-coverage, ui, security, wfo-storage-diagnostic, research-phase-diagnostic, wfo-wal-storage-observation]
+    needs: [changes, ruff, quality, offline, core-coverage, ui-tests, ui, security, wfo-storage-diagnostic, research-phase-diagnostic, wfo-wal-storage-observation]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3

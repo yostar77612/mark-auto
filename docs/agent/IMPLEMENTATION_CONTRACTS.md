@@ -5523,3 +5523,19 @@ patch_sensitive flags (contract and run_backtest), existing observer line shifts
 and exactly five new observer references. The 80 services, 130 aliases and 84 state
 copies retain their identities and order. No full golden regeneration or new
 accessibility exception is used.
+
+The full Linux UI job reached its unchanged 15-minute cap after all 3,122 cases
+had reported OK; that cancelled job is not accepted as passed. UI execution now
+uses the existing whole-module core/research partition on two independent Linux
+3.12 runners, each retaining 15 minutes and identical UI/Qt/auth/SQLite locks.
+No case is removed and no per-case or production deadline changes. The stable
+mandatory `ui` name belongs to an independent genuine-discovery aggregate.
+It requires exactly two complete reports, matching source bytes (including both
+UI packages, fixtures, locks and workflow), run, attempt, Python and pinned SQLite,
+unchanged local identity, original discovery/order/partition and exact started /
+stopped case IDs. Missing, duplicate, incomplete, failed or stale work cannot pass.
+The five original Streamlit tests must be discovered and executed; their skips
+are forbidden. Only the 34 original Linux-inapplicable native Windows skips from
+the full run are admitted with exact IDs/reasons. Reports/artifacts are attempt
+bound, and the final gate requires both producers and the independent aggregate.
+The original Windows core coverage and research worker validators are unchanged.
