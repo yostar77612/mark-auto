@@ -2549,6 +2549,7 @@ ZH_TW.update(
         'download_import.contract': '本次 TMF 明確合約',
         'download_import.contract_example': 'TAIFEX:TMF:YYYYMM',
         'download_import.calendar': '已核對的版本化交易日曆 JSON',
+        'download_import.browse_calendar': '選擇自動匯入交易日曆',
         'download_import.hint': '下載的逐筆資料會依此合約合併，通過既有完整時段與資料品質檢查後才切換研究資料。日曆須涵蓋本次資料；不會推算休市、夜盤歸屬或補造缺失行情。',
         'download_import.action': '下載並自動匯入',
         'download_import.consent': '同意本次連線至 TAIFEX，並依已核對的合約與交易日曆自動匯入',

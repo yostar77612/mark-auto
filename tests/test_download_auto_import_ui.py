@@ -59,7 +59,8 @@ class DownloadAutoImportUiTests(unittest.TestCase):
             with self.assertRaisesRegex(ValidationError, 'download_import_settings_required'):
                 self.page.download_data()
             start.assert_not_called()
-            self.assertIn('TMF', self.controls.status.text())
+            self.assertIn('合約', self.controls.status.text())
+            self.assertIn('交易日曆', self.controls.status.text())
             self.controls.contract.setText('TAIFEX:TMF:202610')
             self.controls.calendar.setText('explicit-fixture-calendar.json')
             self.page.days.setValue(2)

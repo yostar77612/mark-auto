@@ -164,7 +164,7 @@ ERROR_TABLE = {
 ERROR_TABLE.update(
     {
         'download_import_settings_required': ErrorText(
-            '請先設定本次匯入的 TMF 合約與版本化交易日曆。', '填妥合約與日曆，核對下載與匯入同意後重試；也可取消自動匯入，只下載檔案。'
+            '請先設定本次匯入的明確合約與版本化交易日曆。', '填妥合約與日曆，核對下載與匯入同意後重試；也可取消自動匯入，只下載檔案。'
         ),
         'download_import_source_invalid': ErrorText('下載檔案未通過自動匯入的格式、雜湊或資源檢查。', '保留原檔並核對下載結果；目前研究資料不變。'),
         'download_import_failed': ErrorText(

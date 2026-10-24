@@ -141,17 +141,6 @@ class PageInteractionTests(unittest.TestCase):
     def test_widget_walk_matches_pre_change_fixture(self):
         actual = sorted({w.objectName() for w in [self.window, *self.window.findChildren(QWidget)] if w.objectName()})
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))
-        expected = sorted(
-            expected
-            + [
-                'download_auto_import',
-                'download_import_calendar',
-                'download_import_calendar_path',
-                'download_import_calendar_prerequisite',
-                'download_import_contract',
-                'download_import_status',
-            ]
-        )
         self.assertEqual(actual, expected)
         for group, names in MOVED.items():
             page = getattr(self.window, group + '_page')

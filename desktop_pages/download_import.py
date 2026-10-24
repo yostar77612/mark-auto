@@ -23,7 +23,7 @@ class DownloadImportControls(QWidget):
         self.contract.setPlaceholderText(ui_text('download_import.contract_example'))
         form.addRow(ui_text('download_import.contract'), self.contract)
         layout.addWidget(self)
-        self.calendar = page._file_field(layout, ui_text('download_import.calendar'), ui_text('ui.data_page.browse_calendar'), 'download_import_calendar')
+        self.calendar = page._file_field(layout, ui_text('download_import.calendar'), ui_text('download_import.browse_calendar'), 'download_import_calendar')
         self.calendar.setObjectName('download_import_calendar_path')
         self.hint = QLabel(ui_text('download_import.hint'))
         self.hint.setWordWrap(True)

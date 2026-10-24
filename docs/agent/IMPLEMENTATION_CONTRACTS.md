@@ -5506,3 +5506,20 @@ Deterministic transient/permanent denial checks require exactly one backtest and
 preserve the previous active reference on permanent failure. Native Windows tests
 hold a real directory handle without delete sharing, verify rejection while held,
 and verify complete publication after release. No timeout, ACL or privilege change.
+
+The complete CI walk additionally distinguishes the two calendar file pickers with
+an explicit automatic-import label. The new configuration error uses a descriptive
+Chinese contract label, retaining the original fixed-code presentation sanitizer.
+Tooltip traversal exercises both automatic import and the historical download-only
+consent route. The shared widget list adds exactly six names; a new historical
+digest guard removes only those six and still requires the complete old list.
+The R7 base, original redesign delta and page-services inventory remain unchanged
+and are digest-pinned. A separate reviewed download delta replaces only the one
+download caption and adds the six new focus controls / four new refresh controls.
+All four loaded-data/report/frozen refresh states require that same exact delta;
+chart pixels, eight result snapshots, refresh order and error boundaries retain
+their historical assertions. The AST service inventory admits only two test-observer
+patch_sensitive flags (contract and run_backtest), existing observer line shifts
+and exactly five new observer references. The 80 services, 130 aliases and 84 state
+copies retain their identities and order. No full golden regeneration or new
+accessibility exception is used.
