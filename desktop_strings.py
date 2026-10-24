@@ -2542,7 +2542,7 @@ ZH_TW.update(
 )
 
 
-# Download and automatic strict research import.
+# Lane download/import: automatic strict research import.
 ZH_TW.update(
     {
         'download_import.enabled': '下載後自動匯入研究資料',
