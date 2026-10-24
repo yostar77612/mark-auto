@@ -3262,14 +3262,14 @@
     },
     {
       "file": "tests/test_ui_redesign_paper_settings.py",
-      "line": 124,
+      "line": 137,
       "name": "backup",
       "kind": "patch.object",
       "receiver": "page"
     },
     {
       "file": "tests/test_ui_redesign_paper_settings.py",
-      "line": 128,
+      "line": 141,
       "name": "backup",
       "kind": "patch.object",
       "receiver": "page"
