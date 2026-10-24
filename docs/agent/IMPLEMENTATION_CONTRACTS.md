@@ -5447,3 +5447,16 @@ the new outer call while preserving original Path.replace observation controls.
 New campaign regression confirms promotion retries repeat neither commit nor
 generation; sustained denial leaves the already-reserved trial committed and no
 model call occurs. Existing irreversible-budget, reopen and crash tests remain.
+The original locked-source and pre-change golden fingerprints are retained.
+The source guard first pins the exact new normalized source SHA-256
+`b5a45a55550c362ca2d97add56f299cc99f93d49483c845c2635c475fce27d04`,
+then reverses only the one import/two promotion edits and requires the complete
+historical `25902491cebcdd71359648cc6eaa0eea685b1082240566d74ada29d9139861d7`.
+The golden guard pins the complete new semantic corpus
+`56133b5b080c8d355816dd02e7b220c9731d7aeb873005c312919df6022aab54`,
+checks the 26 exact old/new hashes in `ui_operations_atomic_provenance_delta.json`,
+then restores only those fields in memory and still requires the original
+`76028f3e7dab0de0bf62f8cea05097d2160374a0e7e7bd754c2bca4b967c2fa2`.
+No original baseline digest is retargeted. The exact reporting import set adds
+only runtime_support. The Windows-contention simulation explicitly uses spawn
+on all platforms; unsupported process methods remain rejected by production.

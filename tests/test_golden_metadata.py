@@ -34,6 +34,39 @@ BASELINE = {
 
 
 class GoldenMetadataTests(unittest.TestCase):
+    def _restore_reviewed_atomic_provenance(self, document):
+        # Keep the pre-change digest as an independent whole-corpus guard.
+        # Only the 26 owner-approved, formula-verified source/derived hashes
+        # may differ, with the complete new corpus independently pinned too.
+        canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(), '56133b5b080c8d355816dd02e7b220c9731d7aeb873005c312919df6022aab54')
+        changes = json.loads((FIXTURES / 'ui_operations_atomic_provenance_delta.json').read_text(encoding='utf-8'))
+        self.assertEqual(len(changes), 26)
+        self.assertEqual(len({tuple(row['path']) for row in changes}), 26)
+        for row in changes:
+            self.assertEqual(set(row), {'path', 'old', 'new'})
+            self.assertRegex(row['old'], r'^[a-f0-9]{64}$')
+            self.assertRegex(row['new'], r'^[a-f0-9]{64}$')
+            self.assertNotEqual(row['old'], row['new'])
+            self.assertIn(
+                row['path'][-1],
+                {
+                    'attempt_id',
+                    'campaign_id',
+                    'holdout_selection_hash',
+                    'selection_hash',
+                    'binding',
+                    'research.py',
+                    'saved_candidate_pool.py',
+                    'walk_forward.py',
+                },
+            )
+            node = document['observations']
+            for key in row['path'][:-1]:
+                node = node[key]
+            self.assertEqual(node[row['path'][-1]], row['new'])
+            node[row['path'][-1]] = row['old']
+
     def test_fixture_metadata_counts_and_original_values(self):
         expected_counts = {}
         for name, collection in inventory.FIXTURES.items():
@@ -61,6 +94,7 @@ class GoldenMetadataTests(unittest.TestCase):
                 self.assertEqual(document[collection]['ui_idea_adopt']['exception'], 'ValidationError')
                 del document[collection]['ui_idea_research']
                 del document[collection]['ui_idea_adopt']
+                self._restore_reviewed_atomic_provenance(document)
             canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
             self.assertEqual(hashlib.sha256(canonical).hexdigest(), BASELINE[name])
         report = inventory.count_unverified(FIXTURES)

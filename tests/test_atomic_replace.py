@@ -171,7 +171,7 @@ class AtomicReplaceTests(unittest.TestCase):
             with self.subTest(persistent=persistent), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 data, config = inputs()
-                config.update(families=['trend'], max_trials=1, max_improvements=0)
+                config.update(families=['trend'], max_trials=1, max_improvements=0, process_start_method='spawn')
                 generator = Spy()
                 real_replace, real_connect = io.os.replace, sqlite3.connect
                 commits, attempts, workers = [], [], []
@@ -203,6 +203,7 @@ class AtomicReplaceTests(unittest.TestCase):
                 with (
                     patch.object(io.sys, 'platform', 'win32'),
                     patch.object(io.os, 'replace', side_effect=replace),
+                    patch.object(io.time, 'sleep'),
                     patch.object(sqlite3, 'connect', side_effect=connect),
                     patch.object(research, '_run_bounded', side_effect=worker),
                 ):

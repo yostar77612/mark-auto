@@ -28,7 +28,18 @@ class FunctionLengthTests(unittest.TestCase):
     def test_locked_source_text(self):
         for filename, expected in LOCKED_HASHES.items():
             with self.subTest(file=filename):
-                self.assertEqual(hashlib.sha256((ROOT / filename).read_text(encoding='utf-8-sig').encode('utf-8')).hexdigest(), expected)
+                source = (ROOT / filename).read_text(encoding='utf-8-sig')
+                if filename == 'quantlab/research.py':
+                    # Owner-approved 2026-10-24: one import and two I/O calls.
+                    # Pin the new source AND reconstruct the complete old source;
+                    # the historical business-source fingerprint stays unchanged.
+                    self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), 'b5a45a55550c362ca2d97add56f299cc99f93d49483c845c2635c475fce27d04')
+                    imported = 'from .runtime_support import replace_file\n'
+                    promotion = "replace_file(temporary, output_dir / 'campaign.json')"
+                    self.assertEqual(source.count(imported), 1)
+                    self.assertEqual(source.count(promotion), 2)
+                    source = source.replace(imported, '').replace(promotion, "temporary.replace(output_dir / 'campaign.json')")
+                self.assertEqual(hashlib.sha256(source.encode('utf-8')).hexdigest(), expected)
 
 
 LOCKED_HASHES = {
