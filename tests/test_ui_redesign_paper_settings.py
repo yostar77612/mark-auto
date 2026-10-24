@@ -40,7 +40,19 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         self.assertEqual(page.readiness_next.text(), ui_text('redesign.paper.next_locked'))
         self.assertFalse(page.findChild(QPushButton, 'paper_replay').isEnabled())
         self.assertTrue(page.findChild(QPushButton, 'paper_manual_unlock').isEnabled())
+        for name in ('paper_submit', 'paper_replay', 'paper_cancel'):
+            button = page.findChild(QPushButton, name)
+            self.assertIn(ui_text('paper.lock.rejected'), button.property('disabled_hint'), name)
+            self.assertEqual(button.toolTip(), button.property('disabled_hint'), name)
+            self.assertNotIn(ui_text('ui_polish.install_polish.idle_prerequisite'), button.toolTip(), name)
+        with patch.object(self.window, 'jobs', SimpleNamespace(active=True)):
+            for hint in self.window._disabled_hints:
+                if hint.button.objectName() in ('paper_submit', 'paper_replay', 'paper_cancel'):
+                    hint.update()
+                    self.assertIn(ui_text('paper.lock.rejected'), hint.button.toolTip())
         page.page_state.manual_order_lock = False
+        page._apply_order_lock()
+        self.assertEqual(page.findChild(QPushButton, 'paper_replay').property('disabled_hint'), '')
         refresh_readiness(page)
         self.assertEqual(page.readiness_next.text(), ui_text('redesign.paper.next_empty'))
 
@@ -91,6 +103,7 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         self.assertEqual(page.readiness_account.text(), ui_text('redesign.paper.account_pending'))
         self.assertFalse(page.findChild(QPushButton, 'paper_replay').isEnabled())
         self.assertTrue(page.findChild(QPushButton, 'paper_manual_unlock').isEnabled())
+        self.assertIn(ui_text('paper.lock.rejected'), page.findChild(QPushButton, 'paper_replay').property('disabled_hint'))
 
     def test_known_risk_halt_overrides_the_start_prompt(self):
         from desktop_pages.paper_readiness import refresh_readiness

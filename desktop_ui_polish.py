@@ -21,6 +21,11 @@ class DisabledHint(QObject):
         prerequisite = (
             ui_text('ui_polish.update.job_busy') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else self.prerequisite
         )
+        paper = getattr(self.button.window(), 'paper_page', None)
+        if self.button.objectName() in ('paper_submit', 'paper_replay', 'paper_cancel') and getattr(
+            getattr(paper, 'page_state', None), 'manual_order_lock', False
+        ):
+            prerequisite = ui_text('paper.lock.rejected')
         text = ui_text('ui_polish.update.prerequisite_required').format(prerequisite) if disabled else ''
         if disabled and self.button.objectName() == 'cancel_job':
             progress = getattr(self.button.window(), 'job_progress', self.button.parentWidget())
