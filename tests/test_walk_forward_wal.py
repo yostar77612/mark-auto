@@ -24,7 +24,7 @@ def crash_child(directory, cut, sender):
     original_connect = sqlite3.connect
     original_reserve = wf._reserve_holdout
     original_write = Path.write_text
-    original_replace = Path.replace
+    original_replace = wf.replace_file
     active = {}
     last = {}
 
@@ -101,7 +101,7 @@ def crash_child(directory, cut, sender):
         patch.object(wf, '_run_bounded', side_effect=fake_worker),
         patch.object(wf, '_reserve_holdout', side_effect=reserve),
         patch.object(Path, 'write_text', write),
-        patch.object(Path, 'replace', replace),
+        patch.object(wf, 'replace_file', replace),
     ):
         wf.run_walk_forward(data, plan=plan, output_dir=output, holdout_registry_path=root / 'controls' / 'holdout.sqlite3')
 
@@ -183,7 +183,7 @@ class WalkForwardWalTests(unittest.TestCase):
     def test_complete_wal_and_legacy_delete_streams_have_identical_bytes_and_boundaries(self):
         original_connect = sqlite3.connect
         original_write = Path.write_text
-        original_replace = Path.replace
+        original_replace = wf.replace_file
         streams = []
         for legacy in (True, False):
             events = []
@@ -220,7 +220,7 @@ class WalkForwardWalTests(unittest.TestCase):
                 patch.object(wf.time, 'monotonic', return_value=100),
                 patch.object(wf, '_run_bounded', side_effect=fake_worker),
                 patch.object(Path, 'write_text', write),
-                patch.object(Path, 'replace', replace),
+                patch.object(wf, 'replace_file', replace),
             ):
                 result = wf.run_walk_forward(self.data, plan=self.plan, output_dir=self.output, holdout_registry_path=self.registry)
             self.assertEqual(result['status'], 'completed')

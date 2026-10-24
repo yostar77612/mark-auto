@@ -228,6 +228,7 @@ class ImportGraphTests(unittest.TestCase):
                 'quantlab.strategies',
                 'quantlab.data',
                 'quantlab.windows_paths',
+                'quantlab.runtime_support',
             },
         )
         self.assertEqual(module_imports('quantlab.strict_json', self.sources['quantlab.strict_json']), {'json', 'quantlab.core', 'quantlab.windows_paths'})

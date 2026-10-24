@@ -149,7 +149,7 @@ def observe_writer():
             wrap(walk_forward, 'to_dict', 'wfo.normalize')
             wrap(json, 'dumps', 'json.encode')
             wrap(Path, 'write_text', 'export.write')
-            wrap(Path, 'replace', 'export.replace')
+            wrap(walk_forward, 'replace_file', 'export.replace')
             yield timings
     finally:
         for owner, name, original in reversed(restores):

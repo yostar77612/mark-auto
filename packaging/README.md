@@ -29,6 +29,18 @@ real Start-menu window launch, upgrade, normal close and data-preserving uninsta
 Removing tools from PATH is useful isolation, but not a clean client-OS test.
 PE timestamps can vary; repeatable inputs do not imply byte-identical binaries.
 
+Native source testing must distinguish a venv Python redirector from the process
+whose retained handles are being tested; the frozen EXE uses its bundled runtime.
+See [Windows native testing](../docs/windows-native-testing.md) for the exact source
+invocation and symlink/AppContainer prerequisites. Installer and client smoke must
+still use isolated data, original deadlines and normal failure reporting. Windows
+source smoke also needs the documented isolated dependency user base when its child
+fixtures reset PYTHONPATH; do not remove that isolation to make imports succeed.
+Windows
+atomic-promotion retries only the same completed snapshot within a fixed bound;
+persistent access denial remains an error. Do not adjust ACLs or security policy,
+skip cases, or treat an elevated symlink fixture as standard-user application proof.
+
 PR runs upload CI artifacts only. Trusted main pushes/manual main runs and
 `desktop-v*` tags publish a GitHub **prerelease** after installer tests and same-workflow security gates succeed. Publication also
 requires a successful exact-SHA Quantlab workflow with every job passing; absent

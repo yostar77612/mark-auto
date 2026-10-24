@@ -91,6 +91,9 @@ using the discovery form above; dotted test names can be shadowed by an installe
 package. Add the modules relevant to the change and record which modules ran.
 These two documentation checks alone do not verify runtime behavior or full CI.
 Keep new tests offline, deterministic and cheap; do not extend timeouts.
+For Windows retained-handle tests and symlink prerequisites, follow
+[Windows native testing](windows-native-testing.md); a virtual-environment
+redirector is not the Python child whose handles the observer must retain.
 
 CI definitions are [quantlab.yml](../.github/workflows/quantlab.yml)
 (Quantlab offline gates) and

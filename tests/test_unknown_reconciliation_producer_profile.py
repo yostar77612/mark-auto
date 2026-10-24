@@ -55,14 +55,14 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
             self.assertEqual(restored, previous)
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
-        for profile in (pools.LONG_PATH_TRANSPORT_PROFILE_V1, pools.LONG_PATH_SIWC_PROFILE_V1):
+        for profile in (pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1):
             self.assertEqual(
                 {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in profile['engine_source_hashes']},
                 profile['engine_source_hashes'],
             )
         # R2 re-pin: current provider bytes now match the appended R2 profile; this
         # profile's own literals stay pinned by NEW_HASHES above.
-        latest = pools.LONG_PATH_SIWC_PROFILE_V1
+        latest = pools.ATOMIC_REPLACE_SIWC_PROFILE_V1
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')

@@ -36,7 +36,15 @@ class ActiveWriterDiagnosticTests(unittest.TestCase):
                 observed.append(diagnosis)
                 yield diagnosis
 
-        targets = [(sqlite3, 'connect'), (Path, 'write_text'), (Path, 'replace'), (walk_forward, '_save_state'), (walk_forward, 'to_dict'), (json, 'dumps')]
+        targets = [
+            (sqlite3, 'connect'),
+            (Path, 'write_text'),
+            (Path, 'replace'),
+            (walk_forward, 'replace_file'),
+            (walk_forward, '_save_state'),
+            (walk_forward, 'to_dict'),
+            (json, 'dumps'),
+        ]
         originals = [getattr(owner, name) for owner, name in targets]
         case = WalkForwardTests('test_concurrent_same_output_does_not_duplicate_work')
         result = unittest.TestResult()
@@ -245,7 +253,15 @@ class ActiveWriterDiagnosticTests(unittest.TestCase):
             self.assertIn('ACTIVE_WRITER_DIAGNOSTIC_ERROR FileExistsError', stderr.getvalue())
 
     def test_exception_restores_all_observed_callables(self):
-        targets = [(sqlite3, 'connect'), (Path, 'write_text'), (Path, 'replace'), (walk_forward, '_save_state'), (walk_forward, 'to_dict'), (json, 'dumps')]
+        targets = [
+            (sqlite3, 'connect'),
+            (Path, 'write_text'),
+            (Path, 'replace'),
+            (walk_forward, 'replace_file'),
+            (walk_forward, '_save_state'),
+            (walk_forward, 'to_dict'),
+            (json, 'dumps'),
+        ]
         originals = [getattr(owner, name) for owner, name in targets]
         with self.assertRaisesRegex(RuntimeError, 'original'):
             with observe_writer():
