@@ -5460,3 +5460,95 @@ then restores only those fields in memory and still requires the original
 No original baseline digest is retargeted. The exact reporting import set adds
 only runtime_support. The Windows-contention simulation explicitly uses spawn
 on all platforms; unsupported process methods remain rejected by production.
+
+## Download then import (2026-10-24)
+
+The download tab defaults to automatic research import, with an explicit TMF
+contract and versioned SessionCalendar JSON. The per-call network checkbox covers
+both download and import, resets after dispatch and on mode changes; opting out
+retains the historical download-only ui_refresh payload. Configuration is checked
+before network access. No current month, rollover, holiday, night-session ownership
+or missing price is inferred.
+
+The ui_refresh composition downloads through the existing bounded TAIFEX client,
+checks every extracted member's SHA-256, path, native columns and resource bounds,
+and combines only the chosen TMF contract in chronological archive order. It
+retains all raw cache files. The unchanged G3 import_taifex, SessionCalendar,
+reject_invalid_import and validate_dataset gates remain authoritative. Combined
+input retains the existing 64 MiB / one-million-row bounds; there is no unlimited
+multi-file admission. Original archive/member hashes are bound into the resulting
+dataset manifest hash. Unsupported archive shapes and duplicate sources fail closed.
+
+Only a fully valid result activates dataset.json and dataset_calendar.json.
+Previous bytes are backed up to content-addressed download_import_history before
+either replacement. A caught publication failure restores both prior byte streams;
+this is not a claim of a process-crash-atomic two-file transaction. Failed downloads,
+validation or imports leave prior active research data intact. Successful jobs
+refresh the existing dataset summary and strategy navigation and show a human
+download/import count. No budgets, OOS gates, risk, timeout, credential, live trading,
+G3 sources or historical saved-candidate profiles change. Sitecore is outside scope.
+
+Offline regressions exercise real native-schema ZIP download parsing, two-file
+TMF-only import, original quality validation, missing consent/configuration before
+HTTP, missing-minute rejection, tamper/duplicate rejection and byte-exact rollback
+with retained backup. Desktop checks cover default choice, consent reset, legacy
+payload, active-summary refresh and light/dark layouts at 1366x768 and 1920x1080.
+The widget guard admits only the six named new controls while preserving its
+historical inventory. B1 adds exactly three typed errors; exact new text and the
+complete old source/message digests remain asserted.
+
+The associated full desktop regression reproduced Windows access denial at the
+backtest report-directory promotion. That single rename now uses the existing
+bounded replace_file primitive (unchanged 0.1 s envelope / at most seven attempts).
+Only directory publication is retried; computation, serialization, result identity,
+existing-target verification and active_result activation retain their order.
+Deterministic transient/permanent denial checks require exactly one backtest and
+preserve the previous active reference on permanent failure. Native Windows tests
+hold a real directory handle without delete sharing, verify rejection while held,
+and verify complete publication after release. No timeout, ACL or privilege change.
+
+The complete CI walk additionally distinguishes the two calendar file pickers with
+an explicit automatic-import label. The new configuration error uses a descriptive
+Chinese contract label, retaining the original fixed-code presentation sanitizer.
+Tooltip traversal exercises both automatic import and the historical download-only
+consent route. The shared widget list adds exactly six names; a new historical
+digest guard removes only those six and still requires the complete old list.
+The R7 base, original redesign delta and page-services inventory remain unchanged
+and are digest-pinned. A separate reviewed download delta replaces only the one
+download caption and adds the six new focus controls / four new refresh controls.
+All four loaded-data/report/frozen refresh states require that same exact delta;
+chart pixels, eight result snapshots, refresh order and error boundaries retain
+their historical assertions. The AST service inventory admits only two test-observer
+patch_sensitive flags (contract and run_backtest), existing observer line shifts
+and exactly five new observer references. The 80 services, 130 aliases and 84 state
+copies retain their identities and order. No full golden regeneration or new
+accessibility exception is used.
+
+The full Linux UI job reached its unchanged 15-minute cap after all 3,122 cases
+had reported OK; that cancelled job is not accepted as passed. UI execution now
+uses the existing whole-module core/research partition on two independent Linux
+3.12 runners, each retaining 15 minutes and identical UI/Qt/auth/SQLite locks.
+No case is removed and no per-case or production deadline changes. The stable
+mandatory `ui` name belongs to an independent genuine-discovery aggregate.
+It requires exactly two complete reports, matching source bytes (including both
+UI packages, fixtures, locks and workflow), run, attempt, Python and pinned SQLite,
+unchanged local identity, original discovery/order/partition and exact started /
+stopped case IDs. Missing, duplicate, incomplete, failed or stale work cannot pass.
+The five original Streamlit tests must be discovered and executed; their skips
+are forbidden. Only the 34 original Linux-inapplicable native Windows skips from
+the full run are admitted with exact IDs/reasons. Reports/artifacts are attempt
+bound, and the final gate requires both producers and the independent aggregate.
+The original Windows core coverage and research worker validators are unchanged.
+
+The following full run's Linux offline 3.12 job also reached 15 minutes near its
+last cases, with no completed successful report. This is a failure, not a pass.
+Both original Linux offline profiles (3.11/3.12) now use the same whole-module
+core/research partition and independent exact coverage under the original
+non-Streamlit dependencies. The original mandatory Linux check names belong only
+to their complete independent aggregates. The shared validator binds the Python
+profile, pinned SQLite and unchanged source/runtime/run/attempt, exact original
+discovery/start/stop/order, all original native applicability skips plus the five
+original offline Streamlit skips. UI still requires pinned Streamlit and forbids
+those five skips; offline evidence cannot substitute for UI. Historical skip
+content is hash-pinned. Both producers and both profile aggregates are required
+by the final gate; no retries, changed test limits, removed cases or new skips.

@@ -232,6 +232,57 @@ class AtomicReplaceTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == 'win32', 'Native Windows sharing modes')
 class NativeWindowsReplaceTests(unittest.TestCase):
+    def test_real_directory_reader_release_and_persistent_denial(self):
+        from ctypes import wintypes as w
+
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE]
+        kernel.CreateFileW.restype = w.HANDLE
+        kernel.CloseHandle.argtypes = [w.HANDLE]
+        for release in (False, True):
+            with self.subTest(release=release), tempfile.TemporaryDirectory() as directory:
+                source, target = Path(directory) / 'staged', Path(directory) / 'published'
+                source.mkdir()
+                (source / 'result.json').write_bytes(b'complete staged report')
+                handle = kernel.CreateFileW(str(source), 0x80000000, 3, None, 3, 0x02000000, None)
+                self.assertNotEqual(handle, w.HANDLE(-1).value)
+                failures = []
+                original = io._retry_replace
+
+                def inspect(operation):
+                    def observed():
+                        nonlocal handle
+                        try:
+                            return operation()
+                        except OSError as error:
+                            failures.append(error.winerror)
+                            self.assertEqual((source / 'result.json').read_bytes(), b'complete staged report')
+                            self.assertFalse(target.exists())
+                            if release and handle is not None:
+                                kernel.CloseHandle(handle)
+                                handle = None
+                            raise
+
+                    return original(observed)
+
+                try:
+                    with patch.object(io, '_retry_replace', side_effect=inspect):
+                        if release:
+                            io.replace_file(source, target)
+                            self.assertFalse(source.exists())
+                            self.assertEqual((target / 'result.json').read_bytes(), b'complete staged report')
+                        else:
+                            with self.assertRaises(PermissionError):
+                                io.replace_file(source, target)
+                            self.assertEqual((source / 'result.json').read_bytes(), b'complete staged report')
+                            self.assertFalse(target.exists())
+                    self.assertTrue(failures)
+                    self.assertLessEqual(len(failures), 7)
+                    self.assertTrue(all(code in (5, 32, 33) for code in failures))
+                finally:
+                    if handle is not None:
+                        kernel.CloseHandle(handle)
+
     def test_real_reader_release_and_persistent_lock_keep_atomic_contract(self):
         from ctypes import wintypes as w
 

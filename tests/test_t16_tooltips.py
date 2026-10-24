@@ -158,6 +158,11 @@ class TooltipCoverageTests(unittest.TestCase):
         self.assertEqual(w.import_kind.count(), redesign_policy()['import_formats'])
         for source in range(w.data_page.sources.count()):
             w.data_page.sources.setCurrentIndex(source)
+            if source == 2:
+                # Both deliberate download modes retain reachable, explicit consent labels.
+                w.data_page.download_import.enabled.setChecked(False)
+                self.assert_route(data, seen)
+                w.data_page.download_import.enabled.setChecked(True)
             for kind in range(w.import_kind.count()) if source == 0 else (0,):
                 w.import_kind.setCurrentIndex(kind)
                 w.data_page.contract_filter.setChecked(True)

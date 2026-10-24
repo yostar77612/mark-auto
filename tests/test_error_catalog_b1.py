@@ -97,6 +97,15 @@ class ErrorCatalogTests(unittest.TestCase):
         # R1 adds six fixed messages and intentionally points one existing action to the new UI.
         # Assert those approved bytes, then restore only that action for the original 64-entry digest.
         additions = {
+            'download_import_settings_required': (
+                '請先設定本次匯入的明確合約與版本化交易日曆。',
+                '填妥合約與日曆，核對下載與匯入同意後重試；也可取消自動匯入，只下載檔案。',
+            ),
+            'download_import_source_invalid': ('下載檔案未通過自動匯入的格式、雜湊或資源檢查。', '保留原檔並核對下載結果；目前研究資料不變。'),
+            'download_import_failed': (
+                '下載檔已保留，但自動匯入未完成；原研究資料已保留。',
+                '核對 TMF 合約、完整交易日曆與資料品質後重試；不會自動補齊缺失行情。',
+            ),
             'idea_auth_refresh_required': ('策略點子的登入授權需要更新。', '請在設定頁明確更新選定連線；若要求重新登入，請由您本人操作。'),
             'idea_auth_unavailable': ('策略點子無法使用目前的登入授權。', '請在設定頁檢查連線狀態；不要重複送出研究。'),
             'idea_stream_failed_uncoded': ('策略點子串流回報失敗，但未附錯誤碼。', '本次研究未完成；請稍後檢查官方服務狀態。'),

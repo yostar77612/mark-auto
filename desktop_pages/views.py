@@ -213,6 +213,8 @@ class ViewCoordinator(PageContext):
             result = {'downloads': result}
         text = canonical_json(result)
         self.summary.setPlainText(text)
+        if self.last_operation == 'ui_refresh':
+            self.data_page.download_import.result(result)
         if self.last_operation == 'ui_compare':
             self.comparison.setPlainText(text)
             self.comparison_table.set_rows(result.get('rows', []))

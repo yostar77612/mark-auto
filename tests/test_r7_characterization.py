@@ -25,6 +25,7 @@ from tests.r7_characterization import ROOT, capture, mount_capture, snapshot_cas
 
 BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf-8'))
 REDESIGN = json.loads((ROOT / 'tests/fixtures/ui_redesign_characterization_delta.json').read_text(encoding='utf-8'))
+AUTO_IMPORT = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))
 
 
 def semantic_rows(rows):
@@ -32,17 +33,18 @@ def semantic_rows(rows):
     return Counter(json.dumps(row, ensure_ascii=False) for row in rows)
 
 
-def reviewed_ui_rows(rows, changes):
+def reviewed_ui_rows(rows, *deltas):
     expected = semantic_rows(rows)
-    for change in changes['removed']:
-        key = json.dumps(change['row'], ensure_ascii=False)
-        if expected[key] < change['count']:
-            raise AssertionError('Reviewed UI delta removes a row absent from the historical fixture')
-        expected[key] -= change['count']
-        if not expected[key]:
-            del expected[key]
-    for change in changes['added']:
-        expected[json.dumps(change['row'], ensure_ascii=False)] += change['count']
+    for changes in deltas:
+        for change in changes['removed']:
+            key = json.dumps(change['row'], ensure_ascii=False)
+            if expected[key] < change['count']:
+                raise AssertionError('Reviewed UI delta removes a row absent from the historical fixture')
+            expected[key] -= change['count']
+            if not expected[key]:
+                del expected[key]
+        for change in changes['added']:
+            expected[json.dumps(change['row'], ensure_ascii=False)] += change['count']
     return expected
 
 
@@ -89,13 +91,13 @@ class CharacterizationTests(unittest.TestCase):
             self.assertEqual(self.actual['window'][name], BASE['window'][name], name)
         self.assertEqual(len(self.actual['window']['states']), len(BASE['window']['states']))
         for index, (actual, historical) in enumerate(zip(self.actual['window']['states'], BASE['window']['states'])):
-            self.assertEqual(semantic_rows(actual), reviewed_ui_rows(historical, REDESIGN['refresh_states']), index)
+            self.assertEqual(semantic_rows(actual), reviewed_ui_rows(historical, REDESIGN['refresh_states'], AUTO_IMPORT['refresh_states']), index)
 
     def test_accessible_names_descriptions_and_focus_chain(self):
         # Controls moved across task panels and into a guide dialog. Preserve
         # every historical semantic row except the explicit UI-only delta;
         # test_accessibility_walk checks the new real keyboard traversal order.
-        self.assertEqual(semantic_rows(self.actual['window']['focus']), reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus']))
+        self.assertEqual(semantic_rows(self.actual['window']['focus']), reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus']))
 
     def test_reviewed_refresh_delta_changes_only_layout_controls_and_captions(self):
         changes = REDESIGN['refresh_states']

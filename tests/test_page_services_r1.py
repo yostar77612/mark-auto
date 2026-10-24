@@ -23,7 +23,7 @@ from desktop_pages import mount
 from desktop_pages.mount import _register_shell_callbacks
 from quantlab.core import ValidationError
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
-from tests.page_services_inventory import ROOT, FIXTURE, callback_reads, inventory, tree
+from tests.page_services_inventory import ROOT, FIXTURE, callback_reads, inventory, reviewed_inventory, tree
 from tests.test_t9_onboarding import sandbox_ui
 
 BASE = json.loads(FIXTURE.read_text(encoding='utf-8'))
@@ -33,7 +33,8 @@ NAMES = [entry['name'] for entry in SERVICES]
 
 class InventoryTests(unittest.TestCase):
     def test_complete_inventory_regenerates_exactly(self):
-        self.assertEqual(inventory(), BASE)
+        delta = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))
+        self.assertEqual(inventory(), reviewed_inventory(BASE, delta['inventory']))
         self.assertEqual(len(NAMES), len(set(NAMES)))
         self.assertEqual(sum(s['origin'] == 'mount' for s in SERVICES), 66)
         self.assertEqual(sum(s['origin'] == 'page_services' for s in SERVICES), 14)

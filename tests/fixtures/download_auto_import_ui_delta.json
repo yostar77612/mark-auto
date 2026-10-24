@@ -1,0 +1,701 @@
+{
+  "widget_names_historical_sha256": "366408108c0ac5de96107c5f3129f1b28753e6e1a02ca0c69e5f1098a3ae82e6",
+  "inventory": {
+    "services": {
+      "removed": [],
+      "added": []
+    },
+    "aliases": {
+      "removed": [
+        {
+          "row": {
+            "attribute": "contract",
+            "name": "contract",
+            "page": "data_page",
+            "patch_sensitive": false
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "attribute": "run_backtest",
+            "name": "run_backtest",
+            "page": "backtest_page",
+            "patch_sensitive": false
+          },
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": {
+            "attribute": "contract",
+            "name": "contract",
+            "page": "data_page",
+            "patch_sensitive": true
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "attribute": "run_backtest",
+            "name": "run_backtest",
+            "page": "backtest_page",
+            "patch_sensitive": true
+          },
+          "count": 1
+        }
+      ]
+    },
+    "state_copies": {
+      "removed": [],
+      "added": []
+    },
+    "patch_points": {
+      "removed": [
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch",
+            "line": 283,
+            "name": "saved_analysis_entries",
+            "receiver": "desktop_ui"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch",
+            "line": 297,
+            "name": "analysis_preview_text",
+            "receiver": "desktop_ui"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 167,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 197,
+            "name": "start_job",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 222,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 237,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 260,
+            "name": "_quiesce_and_recover",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 261,
+            "name": "poll_jobs",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 275,
+            "name": "refresh_views",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 276,
+            "name": "notify_local",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 295,
+            "name": "_analysis_request",
+            "receiver": "w.compare_page"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 303,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "assignment",
+            "line": 84,
+            "name": "_safe",
+            "receiver": "typed"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 221,
+            "name": "_safe",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 224,
+            "name": "start_job",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 227,
+            "name": "freeze_paper",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 230,
+            "name": "_button",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 233,
+            "name": "_busy",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 67,
+            "name": "_busy",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 67,
+            "name": "_safe",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 148,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 182,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 279,
+            "name": "start_job",
+            "receiver": "window"
+          },
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch",
+            "line": 284,
+            "name": "saved_analysis_entries",
+            "receiver": "desktop_ui"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch",
+            "line": 298,
+            "name": "analysis_preview_text",
+            "receiver": "desktop_ui"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 168,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 198,
+            "name": "start_job",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 223,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 238,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 261,
+            "name": "_quiesce_and_recover",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 262,
+            "name": "poll_jobs",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 276,
+            "name": "refresh_views",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 277,
+            "name": "notify_local",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 296,
+            "name": "_analysis_request",
+            "receiver": "w.compare_page"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_desktop_pages.py",
+            "kind": "patch.object",
+            "line": 304,
+            "name": "start_job",
+            "receiver": "w.page_host"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_download_auto_import.py",
+            "kind": "assignment",
+            "line": 27,
+            "name": "contract",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_download_auto_import.py",
+            "kind": "patch.object",
+            "line": 129,
+            "name": "write_json",
+            "receiver": "workflow"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_download_auto_import_ui.py",
+            "kind": "patch.object",
+            "line": 57,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_download_auto_import_ui.py",
+            "kind": "patch.object",
+            "line": 89,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "assignment",
+            "line": 85,
+            "name": "_safe",
+            "receiver": "typed"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 222,
+            "name": "_safe",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 225,
+            "name": "start_job",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 228,
+            "name": "freeze_paper",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 231,
+            "name": "_button",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_services_r1.py",
+            "kind": "patch.object",
+            "line": 234,
+            "name": "_busy",
+            "receiver": "w"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 69,
+            "name": "_busy",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 69,
+            "name": "_safe",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_report_promotion.py",
+            "kind": "patch.object",
+            "line": 44,
+            "name": "run_backtest",
+            "receiver": "backtest"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 149,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 183,
+            "name": "start_job",
+            "receiver": "self.window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_ui_redesign_data_results.py",
+            "kind": "patch.object",
+            "line": 280,
+            "name": "start_job",
+            "receiver": "window"
+          },
+          "count": 1
+        }
+      ]
+    }
+  },
+  "focus": {
+    "removed": [
+      {
+        "row": [
+          "refresh_data",
+          "下載最近交易日資料",
+          ""
+        ],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": [
+          "download_auto_import",
+          "下載後自動匯入研究資料",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_calendar",
+          "選擇自動匯入交易日曆",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_calendar_path",
+          "已核對的版本化交易日曆 JSON",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_calendar_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_contract",
+          "本次 TMF 明確合約",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_status",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "refresh_data",
+          "下載並自動匯入",
+          ""
+        ],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": {
+    "removed": [
+      {
+        "row": [
+          "refresh_data",
+          "下載最近交易日資料",
+          true,
+          false
+        ],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": [
+          "download_auto_import",
+          "下載後自動匯入研究資料",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_calendar",
+          "選擇自動匯入交易日曆",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_calendar_prerequisite",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_import_status",
+          "",
+          true,
+          false
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "refresh_data",
+          "下載並自動匯入",
+          true,
+          false
+        ],
+        "count": 1
+      }
+    ]
+  }
+}

@@ -140,5 +140,25 @@ def inventory():
     return {'services': services, 'aliases': aliases, 'state_copies': copies, 'patch_points': patches}
 
 
+def reviewed_inventory(base, delta):
+    """Apply exact additive test-observer changes without replacing the historical fixture."""
+    result = json.loads(json.dumps(base))
+    assert delta['services'] == delta['state_copies'] == {'removed': [], 'added': []}
+    before, after = delta['aliases']['removed'], delta['aliases']['added']
+    assert len(before) == len(after) == 2
+    for old, new in zip(before, after):
+        assert old['count'] == new['count'] == 1
+        assert old['row']['patch_sensitive'] is False and new['row']['patch_sensitive'] is True
+        assert {k: v for k, v in old['row'].items() if k != 'patch_sensitive'} == {k: v for k, v in new['row'].items() if k != 'patch_sensitive'}
+        result['aliases'][result['aliases'].index(old['row'])] = new['row']
+    for item in delta['patch_points']['removed']:
+        for _ in range(item['count']):
+            result['patch_points'].remove(item['row'])
+    for item in delta['patch_points']['added']:
+        result['patch_points'].extend([item['row']] * item['count'])
+    result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
+    return result
+
+
 if __name__ == '__main__':
     FIXTURE.write_text(json.dumps(inventory(), indent=2) + '\n', encoding='utf-8')

@@ -160,6 +160,7 @@ class PageInteractionTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 w.data_page.download_data()
             start.assert_not_called()
+            w.data_page.download_import.enabled.setChecked(False)
             w.network_data.setChecked(True)
             w.data_page.download_data()
             start.assert_called_once_with('ui_refresh', {'days': 1, 'network_opt_in': True})

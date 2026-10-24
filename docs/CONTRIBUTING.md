@@ -55,6 +55,15 @@ syntax scan of every tracked `.py`, and `tools/quality_gate.py`; it exits nonzer
   the dependency manifest). It always runs on main, `desktop-v*` tags and manual dispatch.
 - New pushes to a PR cancel its older runs. If a job must be rerun, use **Re-run all jobs**
   (G8): the aggregate coverage check only accepts evidence from a single run attempt.
+- Linux UI dependencies run the original core/research module partitions on separate
+  15-minute jobs. The mandatory `ui` aggregate independently discovers the complete
+  suite and verifies exact execution, source/runtime/run/attempt identity and the
+  original Linux applicability skips. All five Streamlit cases are mandatory.
+  This retains full UI coverage without extending job or test timeouts.
+- Linux offline 3.11/3.12 uses the same original module partitions and independent
+  exact coverage under its original dependency profile. Its stable mandatory
+  check names require both producers, exact original applicability skips and
+  matching source/run/attempt/Python/SQLite; they cannot replace the UI profile.
 
 ## Local verification
 

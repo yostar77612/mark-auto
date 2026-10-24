@@ -50,6 +50,8 @@ class DataPage(QWidget):
         local = self._source(ui_text('redesign.data.local'))
         official = self._source(ui_text('redesign.data.official'))
         download = self._source(ui_text('redesign.data.download'))
+        download.setContentsMargins(12, 12, 12, 12)
+        download.setSpacing(6)
         synthetic = self._source(ui_text('redesign.data.synthetic'))
         self.market_provider = QComboBox()
         self.market_provider.addItem(ui_text('ui.data_page.twse_json'), ('twse', 'json'))
@@ -119,7 +121,12 @@ class DataPage(QWidget):
         self.days.setAccessibleName(ui_text('redesign.data.days'))
         download.addWidget(QLabel(ui_text('redesign.data.days')))
         download.addWidget(self.days)
-        self.host.button(download, ui_text('ui.data_page.download_recent'), 'refresh_data', self.download_data, role='primary')
+        # Construct operation-specific controls only while mounting the data page.
+        from .download_import import DownloadImportControls
+
+        self.download_import = DownloadImportControls(self, download)
+        self.download_button = self.host.button(download, ui_text('download_import.action'), 'refresh_data', self.download_data, role='primary')
+        self.download_import.update_choice()
         details = section(layout, 'redesign.data.details', key='redesign_data_details', state=self.state)
         self.data_detail = QPlainTextEdit()
         self.data_detail.setReadOnly(True)
@@ -262,7 +269,11 @@ class DataPage(QWidget):
     def download_data(self):
         if not self.network_data.isChecked():
             raise ValidationError(ui_text('ui.download_data.consent_required'))
-        self.host.start_job('ui_refresh', {'days': self.days.value(), 'network_opt_in': True})
+        payload = {'days': self.days.value(), 'network_opt_in': True}
+        settings = self.download_import.request()
+        if settings is not None:
+            payload['auto_import'] = settings
+        self.host.start_job('ui_refresh', payload)
         self.network_data.setChecked(False)
 
     def show_gap_report(self, report):

@@ -611,6 +611,13 @@ def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stop
     return {'analysis_id': plan['analysis_id'], **result}
 
 
+def _promote_report(folder, destination):
+    # Retry only report promotion during bounded Windows reader contention.
+    from quantlab.runtime_support import replace_file
+
+    return replace_file(folder, destination)
+
+
 def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.strategies import builtin_strategies, validate_strategy
@@ -666,7 +673,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
                 if content_hash(load_result(destination / 'result.json')) != files['result_hash'] or read_json(destination / 'strategy.json') != to_dict(spec):
                     raise ValidationError(ui_text('ui.execute_ui_operation.incomplete_report'))
             else:
-                folder.rename(destination)
+                _promote_report(folder, destination)
             files = {key: str(destination / Path(value).name) if key != 'result_hash' else value for key, value in files.items()}
         reports.append(files)
     write_json(root / 'active_result.json', {'result_hash': reports[-1]['result_hash']})
@@ -1046,6 +1053,11 @@ def _handle_ui_paper_submit(payload, paths, root, *, emit=None, descendants_stop
 def _handle_ui_refresh(payload, paths, root, *, emit=None, descendants_stopped=False):
     if payload.get('network_opt_in') is not True:
         raise ValidationError(ui_text('ui.execute_ui_operation.taifex_consent_required'))
+    if 'auto_import' in payload:
+        # Load the download/import composition only for this explicit operation.
+        from quantlab.download_import import download_and_import
+
+        return download_and_import(Path(paths.cache), root, payload, emit=emit)
     # Keep operation-specific dependencies out of module startup.
     from quantlab.downloads import refresh
 
