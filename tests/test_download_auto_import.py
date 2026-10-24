@@ -60,8 +60,8 @@ class DownloadAutoImportTests(unittest.TestCase):
     def run_workflow(self):
         original = downloads.refresh
 
-        def refresh(cache, *, days, kind):
-            return original(cache, days=days, kind=kind, transport=self.transport)
+        def refresh(cache, *, days, kind, trade_dates=None):
+            return original(cache, days=days, kind=kind, transport=self.transport, trade_dates=trade_dates)
 
         with patch.object(downloads, 'refresh', side_effect=refresh):
             from desktop_ui import _handle_ui_refresh
