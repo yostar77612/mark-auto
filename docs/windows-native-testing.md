@@ -29,6 +29,21 @@ $env:PYTHONPATH = $sitePackages + ';' + (Get-Location).Path
 
 This selects the existing runtime and dependency files; it does not install or
 change Python, SQLite, Windows policy, file permissions or test applicability.
+For the complete source smoke suite, child fixtures deliberately replace
+`PYTHONPATH` with their isolated network guard and checkout. Preserve dependency
+discovery through a separate, explicit test-only user base before launching:
+
+```powershell
+$isolatedTestRoot = 'C:\path\to\isolated-test-data'
+$env:PYTHONUSERBASE = Join-Path $isolatedTestRoot 'python-dependency-site'
+& $nativePython -c 'from pathlib import Path; import site,sys; p=Path(site.getusersitepackages()); p.mkdir(parents=True,exist_ok=True); (p/"markauto-existing-venv.pth").write_text(sys.argv[1]+"\n",encoding="utf-8")' $sitePackages
+```
+
+This writes one path-only `.pth` file inside the test directory, pointing to the
+same existing venv packages. It does not change the system/user Python profile or
+the private base runtime. Keep `PYTHONUSERBASE` scoped to this test process and its
+children; the original smoke isolation and network guard remain active. A missing
+PySide6 import is an environment failure, never a passing or skipped smoke case.
 The full-suite command remains `tools/run_test_group.py --group all --manifest
 <isolated-output.json>` with the same interpreter/environment. Verify the child
 PID equals the retained `Popen.pid` before treating native handle evidence as valid.
