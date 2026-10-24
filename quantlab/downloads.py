@@ -180,21 +180,31 @@ def _atomic_write(path, raw):
             os.unlink(temporary)
 
 
-def refresh(cache, *, days=1, kind='csv', transport=https_transport):
+def refresh(cache, *, days=1, kind='csv', transport=https_transport, trade_dates=None):
     """Re-fetch latest N published trade dates, retaining content-addressed revisions.
 
     days means published archives, NOT inferred calendar days. Every selected URL
     is fetched on every call. Partial runs cannot update the discovery manifest.
     All records remain provisional pending explicit session/data validation.
+    Optional trade_dates limits discovery to the caller's explicit calendar;
+    it never infers completion, holidays or trading-day ownership.
     """
     if type(days) is not int or not 1 <= days <= 30 or kind not in ('csv', 'rpt'):
         raise ValidationError('days must be 1..30 and format must be csv or rpt')
+    if trade_dates is not None:
+        if type(trade_dates) is not frozenset or not 1 <= len(trade_dates) <= 256:
+            raise ValidationError('explicit calendar trade dates must be a bounded frozenset')
+        try:
+            if any(type(day) is not str or date.fromisoformat(day).isoformat() != day for day in trade_dates):
+                raise ValueError
+        except (ValueError, TypeError):
+            raise ValidationError('explicit calendar trade dates must be ISO dates') from None
     cache = Path(cache)
     page = fetch(SOURCE_URL, limit=MAX_PAGE, transport=transport)
     discovered = discover(page)
-    selected = [item for item in discovered if item['format'] == kind][:days]
+    selected = [item for item in discovered if item['format'] == kind and (trade_dates is None or item['trade_date'] in trade_dates)][:days]
     if not selected:
-        raise ValidationError('no archives found for requested format')
+        raise ValidationError('no archives found for requested format' if trade_dates is None else 'no official archive matches explicit calendar trade dates')
     results = []
     checked_at = datetime.now(timezone.utc).isoformat()
     for item in selected:
@@ -234,5 +244,7 @@ def refresh(cache, *, days=1, kind='csv', transport=https_transport):
         'notice': 'Free recent official downloads only; no redistribution license assumed. '
         'An explicit calendar and import quality validation are required before research.',
     }
+    if trade_dates is not None:
+        manifest['explicit_calendar_trade_dates'] = sorted(trade_dates)
     _atomic_write(cache / 'latest.json', json.dumps(manifest, sort_keys=True, indent=2).encode())
     return manifest
