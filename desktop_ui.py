@@ -611,6 +611,13 @@ def _handle_ui_analysis_run(payload, paths, root, *, emit=None, descendants_stop
     return {'analysis_id': plan['analysis_id'], **result}
 
 
+def _promote_report(folder, destination):
+    # Retry only report promotion during bounded Windows reader contention.
+    from quantlab.runtime_support import replace_file
+
+    return replace_file(folder, destination)
+
+
 def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Keep operation-specific dependencies out of module startup.
     from quantlab.strategies import builtin_strategies, validate_strategy
@@ -666,10 +673,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
                 if content_hash(load_result(destination / 'result.json')) != files['result_hash'] or read_json(destination / 'strategy.json') != to_dict(spec):
                     raise ValidationError(ui_text('ui.execute_ui_operation.incomplete_report'))
             else:
-                # Retry only report promotion during bounded Windows reader contention.
-                from quantlab.runtime_support import replace_file
-
-                replace_file(folder, destination)
+                _promote_report(folder, destination)
             files = {key: str(destination / Path(value).name) if key != 'result_hash' else value for key, value in files.items()}
         reports.append(files)
     write_json(root / 'active_result.json', {'result_hash': reports[-1]['result_hash']})
