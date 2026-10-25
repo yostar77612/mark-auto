@@ -102,6 +102,20 @@ crash-combinations run passed 4/4 in 49.609 seconds, including a real 31.5345
 second lease wait and no resubmission. Complete repaired-head remote CI and
 installer evidence remain pending; only those new results may authorize merge.
 
+After the owner's new explicit confirmation, f88ead3 was pushed and the
+installer started as run40205573572. The offline workflow was rejected before
+any jobs ran (push-event validation40205569695): six newly added pip command
+scalars contained `: ` and needed YAML quoting. The six scalars are now quoted
+without changing their commands; all six workflow-contract cases passed.
+A separate whole core-contract attempt ran45 cases and retained one original
+15-second synthetic-failure child timeout; its cause remains unproven and the
+failed log is preserved. It is not reported as a pass or hidden by the six
+workflow checks. New complete CI is still mandatory and no original timeout
+or assertion was changed. The owner additionally authorized downloading and
+installing the final merged-main package, preserving current data/settings,
+then repeating full functional and native-screen checks without Sitecore work
+or real financial operations.
+
 ## Current final local engineering receipt — implementationbf5141e
 
 Updated 2026-10-25T13:24:35.882146+00:00. **45local engineering cases passed;5external pending.** Formal acceptance230/300 unchanged. No real brokerage client/login/credential search/order, no Sitecore/original data change, no remote v2 write.
