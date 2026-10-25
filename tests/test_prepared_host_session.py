@@ -15,7 +15,7 @@ $script:multiMarketStartMenu = Join-Path ([Environment]::GetFolderPath('Programs
 SHORTCUT_VERIFY = rb"""  if ($RequireMultiMarketShortcut) {
     # Historical baseline installers need not contain the new optional entry.
     if (-not (Test-Path -LiteralPath $script:multiMarketStartMenu)) { throw 'Multi-market Start Menu shortcut missing from candidate' }
-    $multiMarketShortcut = $shortcutShell.CreateShortcut($script:multiMarketStartMenu)
+    $multiMarketShortcut = Read-AcceptanceShortcut $script:multiMarketStartMenu
     $shortcutActualDirectory = $null; $shortcutExpectedDirectory = $null; $shortcutDirectoryExact = $null; $shortcutDirectoryError = $null
     try {
       $shortcutActualDirectory = [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory)
@@ -159,6 +159,54 @@ class PreparedHostSessionContracts(unittest.TestCase):
             with self.subTest(mutation=old):
                 with self.assertRaises(ValueError):
                     original_installer_lifecycle(source.replace(old, new))
+
+    def test_shortcut_reader_uses_prebuilt_unicode_original_path_without_resolving(self):
+        native = (ROOT / 'packaging/acceptance_process.cs').read_text(encoding='utf-8')
+        helper = (ROOT / 'packaging/acceptance_process.ps1').read_text(encoding='utf-8')
+        read = native.split('public static MarkAutoShortcutMetadata ReadShortcutExact(string path)', 1)[1].split('[StructLayout', 1)[0]
+        for token in (
+            '000214F9-0000-0000-C000-000000000046',
+            'MarshalAs(UnmanagedType.LPWStr)',
+            'ComTypes.IPersistFile',
+            'persist.Load(full,0)',
+            'GetPath(target,target.Capacity,IntPtr.Zero,4)',
+            'Marshal.ThrowExceptionForHR',
+            'target.Length==target.Capacity-1',
+            'arguments.Length==arguments.Capacity-1',
+            'working.Length==working.Capacity-1',
+            'String.IsNullOrWhiteSpace(target.ToString())',
+            'System.IO.FileShare.Read',
+            'RequireSingleLinkDefaultStream',
+            'Marshal.FinalReleaseComObject(instance)',
+        ):
+            self.assertIn(token, native)
+        self.assertNotIn('.Resolve(', read)
+        self.assertNotIn('.Save(', read)
+        self.assertEqual(read.count('Marshal.FinalReleaseComObject(instance)'), 1)
+        self.assertIn('return [MarkAutoAcceptanceJob]::ReadShortcutExact($Path)', helper)
+        self.assertIn('Assert-AcceptancePath $Path', helper.split('function Read-AcceptanceShortcut', 1)[1].split('function Confirm-', 1)[0])
+        self.assertNotIn('Add-Type -TypeDefinition', helper)
+        self.assertIn('Add-Type -Path $assembly', helper)
+
+    def test_original_unicode_shortcut_native_cases_are_mandatory(self):
+        native_fixture = (ROOT / 'packaging/test_shortcut_reader.ps1').read_text(encoding='utf-8')
+        runner = (ROOT / 'packaging/test_acceptance_process.ps1').read_text(encoding='utf-8')
+        self.assertIn("Test-AcceptanceShortcutReader (Join-Path $fixture 'unicode-shortcuts')", runner)
+        for token in (
+            '0x591A,0x5E02,0x5834,0x5E73,0x53F0',
+            'ConvertFromUtf32(0x1F680)',
+            'Read-AcceptanceShortcut $path',
+            "@('target','arguments','working_directory')",
+            "'corrupt.lnk'",
+            "'empty-target.lnk'",
+            "'missing.lnk'",
+            "'relative.lnk'",
+            'exclusive_reopen=$true',
+            'compile_during_fixture=$false',
+        ):
+            self.assertIn(token, native_fixture)
+        for forbidden in ('Start-Process', 'Invoke-Item', '.Resolve(', 'Add-Type'):
+            self.assertNotIn(forbidden, native_fixture)
 
     def test_supervisor_and_exact_external_provenance(self):
         for token in (

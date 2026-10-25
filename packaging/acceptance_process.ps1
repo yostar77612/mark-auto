@@ -82,6 +82,10 @@ function Write-AcceptanceWorkerFailure($Failure, [string]$Path,
 # Invoke safety-critical CLR getters explicitly: PowerShell property access suppresses
 # getter exceptions to null, which can otherwise look like success or a live process.
 
+function Read-AcceptanceShortcut([string]$Path) {
+  Assert-AcceptancePath $Path
+  return [MarkAutoAcceptanceJob]::ReadShortcutExact($Path)
+}
 function Confirm-AcceptanceWorker([string]$JobName) {
   if (-not $JobName -or -not [MarkAutoAcceptanceJob]::Owns($JobName, [Diagnostics.Process]::GetCurrentProcess().get_Handle())) {
     throw 'Acceptance worker is not inside its creation-owned job'

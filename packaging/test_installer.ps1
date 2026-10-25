@@ -159,7 +159,7 @@ function Install-Version([string]$number, [string]$manifestPath, [switch]$Requir
   if ($RequireMultiMarketShortcut) {
     # Historical baseline installers need not contain the new optional entry.
     if (-not (Test-Path -LiteralPath $script:multiMarketStartMenu)) { throw 'Multi-market Start Menu shortcut missing from candidate' }
-    $multiMarketShortcut = $shortcutShell.CreateShortcut($script:multiMarketStartMenu)
+    $multiMarketShortcut = Read-AcceptanceShortcut $script:multiMarketStartMenu
     $shortcutActualDirectory = $null; $shortcutExpectedDirectory = $null; $shortcutDirectoryExact = $null; $shortcutDirectoryError = $null
     try {
       $shortcutActualDirectory = [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory)

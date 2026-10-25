@@ -4,6 +4,68 @@ using System.Runtime.InteropServices;
 using System.Text;
 public sealed class MarkAutoAcceptanceJob : IDisposable {
     IntPtr job, process;
+    [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IShellLinkW {
+        [PreserveSig] int GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, IntPtr findData, uint flags);
+        [PreserveSig] int GetIDList(out IntPtr list);
+        [PreserveSig] int SetIDList(IntPtr list);
+        [PreserveSig] int GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int capacity);
+        [PreserveSig] int SetDescription([MarshalAs(UnmanagedType.LPWStr)] string text);
+        [PreserveSig] int GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity);
+        [PreserveSig] int SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string path);
+        [PreserveSig] int GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder arguments, int capacity);
+        [PreserveSig] int SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+        [PreserveSig] int GetHotkey(out short hotkey);
+        [PreserveSig] int SetHotkey(short hotkey);
+        [PreserveSig] int GetShowCmd(out int command);
+        [PreserveSig] int SetShowCmd(int command);
+        [PreserveSig] int GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, out int index);
+        [PreserveSig] int SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string path, int index);
+        [PreserveSig] int SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved);
+        [PreserveSig] int Resolve(IntPtr window, uint flags);
+        [PreserveSig] int SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+    }
+    public static MarkAutoShortcutMetadata ReadShortcutExact(string path) {
+        // Load the ORIGINAL Unicode pathname. WScript.Shell.CreateShortcut uses
+        // the ANSI code page and can silently return a new, empty shortcut view.
+        if(String.IsNullOrWhiteSpace(path) || path.Length<3 || !Char.IsLetter(path[0]) ||
+           path[1]!=':' || path[2]!='\\' || path.Substring(2).IndexOf(':')>=0)
+            throw new ArgumentException("Ordinary absolute local shortcut path required");
+        string full=System.IO.Path.GetFullPath(path);
+        if(!String.Equals(full,path,StringComparison.Ordinal) ||
+           !String.Equals(System.IO.Path.GetExtension(full),".lnk",StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Canonical original .lnk pathname required");
+        for(string inspect=full; !String.IsNullOrEmpty(inspect); inspect=System.IO.Path.GetDirectoryName(inspect)) {
+            uint attributes=PathAttributes(inspect);
+            if(attributes==0xffffffff) throw new System.IO.FileNotFoundException("Original shortcut or ancestor missing",inspect);
+            if((attributes & 0x400u)!=0) throw new InvalidOperationException("Shortcut reparse path refused");
+        }
+        using(var pinned=new System.IO.FileStream(full,System.IO.FileMode.Open,System.IO.FileAccess.Read,System.IO.FileShare.Read)) {
+            if(pinned.Length==0 || pinned.Length>1048576) throw new InvalidOperationException("Shortcut metadata size refused");
+            RequireSingleLinkDefaultStream(pinned.SafeFileHandle.DangerousGetHandle(),full);
+            object instance=null;
+            try {
+                instance=Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046")));
+                var persist=(System.Runtime.InteropServices.ComTypes.IPersistFile)instance;
+                persist.Load(full,0); // STGM_READ. Never Resolve, Save or invoke a verb.
+                var link=(IShellLinkW)instance;
+                var target=new StringBuilder(32768);
+                var arguments=new StringBuilder(32768);
+                var working=new StringBuilder(32768);
+                Marshal.ThrowExceptionForHR(link.GetPath(target,target.Capacity,IntPtr.Zero,4)); // SLGP_RAWPATH
+                Marshal.ThrowExceptionForHR(link.GetArguments(arguments,arguments.Capacity));
+                Marshal.ThrowExceptionForHR(link.GetWorkingDirectory(working,working.Capacity));
+                if(String.IsNullOrWhiteSpace(target.ToString()) || target.Length==target.Capacity-1 ||
+                   arguments.Length==arguments.Capacity-1 || working.Length==working.Capacity-1)
+                    throw new InvalidOperationException("Empty or truncated shortcut metadata refused");
+                RequireSingleLinkDefaultStream(pinned.SafeFileHandle.DangerousGetHandle(),full);
+                return new MarkAutoShortcutMetadata(target.ToString(),arguments.ToString(),working.ToString());
+            } finally {
+                // Both interfaces alias this one exclusively owned RCW.
+                if(instance!=null && Marshal.IsComObject(instance)) Marshal.FinalReleaseComObject(instance);
+            }
+        }
+    }
     [StructLayout(LayoutKind.Sequential)] struct MemoryStatus {
         public uint length, load; public ulong totalPhysical, availablePhysical, totalPage, availablePage, totalVirtual, availableVirtual, extendedVirtual;
     }
@@ -263,5 +325,13 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         if(!Owns(name,handle)) throw new InvalidOperationException("Process ownership was not proven");
         if(WaitForSingleObject(handle,0)==0) return;
         Check(TerminateProcess(handle,1));
+    }
+}
+public sealed class MarkAutoShortcutMetadata {
+    public string TargetPath { get; private set; }
+    public string Arguments { get; private set; }
+    public string WorkingDirectory { get; private set; }
+    internal MarkAutoShortcutMetadata(string target,string arguments,string working) {
+        TargetPath=target; Arguments=arguments; WorkingDirectory=working;
     }
 }

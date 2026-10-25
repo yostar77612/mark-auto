@@ -2,6 +2,44 @@
 
 ## Current integration checkpoint — 2026-10-26
 
+### Unicode shortcut repair — full final CI/install still required
+
+The temporary diagnostic at c25a53b (run40221889865) proved a legacy WSH
+pathname-reading defect: the original Chinese-named1713-byte shortcut existed,
+but all three WScript properties were empty. Its byte-identical ASCII copy
+(same SHA256 E7EB2706017C3ECF93E59A431064A2285D4D86CCE0CBE2081607DFF80098C5D6)
+returned the correct target, '--platform-v2' and working directory. The pinned
+artifact12609373595 SHA256 is
+432dbc7ae0feebb2442c0ef3cdea7a03b2b72f8998820879d538d7ed691583ac.
+Ordinary local PS5/PS7 fixtures independently reproduced the same silent empty
+WSH view with an emoji filename outside ACP950; casts do not fix this defect.
+
+The existing precompiled ownership helper now reads the ORIGINAL Unicode file
+with IShellLinkW and IPersistFile.Load(STGM_READ). It never resolves, saves or
+executes the shortcut. Missing, redirected, aliased, alternate-stream, invalid
+or empty-target files are refused; owned COM resources and read handles are
+released on success and failure. The original three exact candidate comparisons,
+all legacy lifecycle guards, both historical safety goldens and timeouts remain.
+No ASCII-copy fallback is accepted. Existing Windows native quality fixtures
+mandatorily exercise the new reader before the previous ownership cases.
+
+Local prebuilt audit-helper evidence: PS5 and PS7 each12/12 metadata/negative
+cases passed, including byte-identical ASCII/Chinese/emoji original paths,
+wrong target/arguments/directory, malformed/empty/missing files and invalid paths.
+All67 related source/parser contracts passed in2.866s. Independent read-only
+review found no blocker in COM signatures, ownership and comparison preservation.
+These are not installed lifecycle or exact-main acceptance. Recovery evidence:
+`../multi-market-audit-20261025/main-integration-pr96/shortcut-unicode-reader/`.
+
+Next: replay the fixed older candidate with the repaired reader on an ephemeral
+CI host, remove the temporary diagnostic workflow, then require fresh final35
+offline jobs and the complete rebuilt-installer pipeline. Only then merge96,
+check actual main CI/release, verify/download/install its exact package and run
+the installed public LOCAL flows, native GUI and public-download/import checks.
+At18:41:59UTC all183 original files, directories and workspace-pointer bytes
+again matched the preserved backup; credentials were not accessed. No new
+package is installed, main is still6c2ea52, and Sitecore remains untouched.
+
 ### Latest follow-up after27166 — fresh CI still required
 
 E2d373a offline40216743880 subsequently passed all35 jobs. Its installer

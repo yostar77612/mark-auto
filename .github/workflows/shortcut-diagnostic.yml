@@ -24,6 +24,17 @@ jobs:
       - name: Compile current ownership helper only on the ephemeral builder
         shell: powershell
         run: ./packaging/build_acceptance_helper.ps1
+      - name: Exercise Unicode original-path reader and strict negative cases
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . ./packaging/acceptance_process.ps1
+          . ./packaging/test_shortcut_reader.ps1
+          [void][IO.Directory]::CreateDirectory((Join-Path $env:GITHUB_WORKSPACE 't'))
+          $fixture = Join-Path $env:GITHUB_WORKSPACE ('t\shortcut-reader-' + [guid]::NewGuid().ToString('N'))
+          Test-AcceptanceShortcutReader $fixture
+          [void][IO.Directory]::CreateDirectory((Join-Path $env:GITHUB_WORKSPACE 'dist/validation'))
+          [IO.File]::Copy((Join-Path $fixture 'shortcut-reader-fixture.json'), (Join-Path $env:GITHUB_WORKSPACE 'dist/validation/shortcut-reader-fixture.json'), $false)
       - name: Fetch only the hash-pinned failed-run candidates without rebuilding
         shell: pwsh
         env:
