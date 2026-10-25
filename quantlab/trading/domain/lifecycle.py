@@ -100,7 +100,7 @@ def plan_expiry(
     if session.trade_date > current.expiry:
         raise DomainError('reconciliation_required', 'position crossed expiry without verified settlement')
     close_side = Side.SELL if lot.direction is Side.BUY else Side.BUY
-    costs = fees.transaction(current, close_side, close_price, lot.quantity) + fees.slippage(current, lot.quantity, legs=1)
+    costs = fees.transaction(current, close_side, close_price, lot.quantity) + fees.slippage(current, lot.quantity, legs=1, prices=(close_price,))
     if lot.policy.expiry_action == 'EXIT':
         return ExpiryPlan('EXIT', current.instrument_id, None, close_side, None, lot.quantity, current.expiry, costs, 1)
     if next_contract is None or open_price is None or next_contract.expiry is None:
@@ -116,7 +116,7 @@ def plan_expiry(
         raise DomainError('instrument_unresolved', 'next contract specification not effective')
     next_contract.validate_quantity(lot.quantity, next_contract.unit)
     next_contract.validate_price(open_price)
-    costs += fees.transaction(next_contract, lot.direction, open_price, lot.quantity) + fees.slippage(next_contract, lot.quantity, legs=1)
+    costs += fees.transaction(next_contract, lot.direction, open_price, lot.quantity) + fees.slippage(next_contract, lot.quantity, legs=1, prices=(open_price,))
     return ExpiryPlan('ROLL', current.instrument_id, next_contract.instrument_id, close_side, lot.direction, lot.quantity, current.expiry, costs, 2)
 
 
@@ -128,5 +128,5 @@ def net_liquidation_pnl(lot: PositionLot, spec: InstrumentSpec, price: Decimal, 
         raise DomainError('instrument_unresolved', 'valuation instrument mismatch')
     sign = Decimal('1') if lot.direction is Side.BUY else Decimal('-1')
     gross = (price - lot.entry_price) * spec.multiplier * lot.quantity * sign
-    costs = fees.round_trip(spec, lot.entry_price, price, lot.quantity, lot.direction) + fees.slippage(spec, lot.quantity)
+    costs = fees.round_trip(spec, lot.entry_price, price, lot.quantity, lot.direction) + fees.slippage(spec, lot.quantity, prices=(lot.entry_price, price))
     return lot.realized_pnl + gross - costs

@@ -18,6 +18,7 @@ import tempfile
 import time
 from contextlib import closing
 
+
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'tests/fixtures'
 MODES = ('DELETE', 'PERSIST', 'PERSIST', 'DELETE', 'DELETE')
@@ -129,6 +130,10 @@ class TimedClosing(closing):
 
 
 def replay(payloads, directory, mode, measured=True, wal_observation=False, operation='replace'):
+    # The supervised script adds ROOT before worker execution. Keep CLI parsing
+    # independent of application imports, while sharing its rename authority.
+    from quantlab.runtime_support import replace_file
+
     if mode not in (('DELETE', 'WAL') if wal_observation else ('DELETE', 'PERSIST')):
         raise ValueError('Unsupported diagnostic mode')
     if operation not in OPERATIONS or (not wal_observation and operation != 'replace'):
@@ -180,7 +185,7 @@ def replay(payloads, directory, mode, measured=True, wal_observation=False, oper
                 then = time.perf_counter()
             temporary = directory / 'walk_forward.json.tmp'
             temporary.write_text(encoded, encoding='utf-8')
-            temporary.replace(directory / 'walk_forward.json')
+            replace_file(temporary, directory / 'walk_forward.json')
             exports += 1
             if measured:
                 times['export'].append(time.perf_counter() - then)

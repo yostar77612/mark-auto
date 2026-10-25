@@ -8,7 +8,7 @@ from dataclasses import replace
 from datetime import timedelta
 from typing import TYPE_CHECKING, Callable
 
-from .events import poll_events
+from .events import poll_events, reconcile, validate_observation
 from .research import entry_signal, exit_signal
 from .sessions import assert_daily_baseline, resolve_session, synchronize_session
 from .state import ACTIVE
@@ -92,7 +92,7 @@ def _entry_decision(engine: 'TradingEngine', record: 'StrategyRecord', history: 
         spec.lot_size,
         spec.unit,
         price,
-        price - spec.tick_size * 10 * sign,
+        spec.shift_ticks(price, -10 * sign),
         False,
         now,
         now + timedelta(seconds=30),
@@ -136,3 +136,52 @@ def run_cycle(engine: 'TradingEngine', history: dict[str, tuple['CompletedBar', 
             if engine.state.stopped:
                 break
             _attempt(engine, lambda record=record: _entry_decision(engine, record, history))
+
+
+def run_readonly_cycle(engine: 'TradingEngine') -> None:
+    """Observe outside the book lock, then reconcile a still-current book.
+
+    SDK queries cannot hold the application lock while STOP or shutdown waits.
+    If another command changes the book during a query, discard its batch and
+    query again on the next cycle. This path never submits or cancels orders.
+    """
+    # Keep the common valuation authority independent of coordinator imports.
+    from .workflows import observe_risk
+
+    with engine.lock:
+        if not engine.configuration.read_only or engine.state.engine_closed:
+            raise DomainError('capability_missing', 'an open read-only engine is required')
+        version = engine.state.version
+        gateways = tuple(engine.gateways.items())
+    try:
+        observations = {account: gateway.refresh(account) for account, gateway in gateways}
+    except Exception:
+        with engine.lock:
+            if not engine.state.engine_closed:
+                _attention(engine, 'reconciliation_required')
+                if engine.state.reconciled:
+                    engine._persist('readonly_query_failed', replace(engine.state, reconciled=False, stopped=True))
+        return
+    with engine.lock:
+        if engine.state.version != version or engine.state.engine_closed or tuple(engine.gateways.items()) != gateways:
+            return
+        try:
+            # Time and verified session evidence can expire without a new DTO,
+            # quote or book command. Never let a cache hit renew that evidence.
+            synchronize_session(engine)
+            for account, remote in observations.items():
+                validate_observation(engine, account, remote)
+            observation = tuple(observations.items())
+            if engine.confirmed_observations == (observation, engine.state.version, engine.quote_count):
+                return
+            reconcile(engine, snapshots=observations)
+        except DomainError as exc:
+            if engine.storage_failed:
+                raise
+            _attention(engine, exc.code)
+            if engine.state.reconciled:
+                engine._persist('confirmed_observations_rejected', replace(engine.state, reconciled=False, stopped=True))
+            return
+        if engine.state.reconciled and not engine.state.daily_baseline_required:
+            _attempt(engine, lambda: observe_risk(engine))
+        engine.confirmed_observations = (observation, engine.state.version, engine.quote_count)

@@ -16,6 +16,24 @@ if TYPE_CHECKING:
 ZERO = Decimal('0')
 
 
+def _financial_facts_current(engine: 'TradingEngine') -> bool:
+    from .events import validate_observation
+
+    if engine.configuration.environment is Environment.LOCAL:
+        return True
+    state, confirmed = engine.state, engine.confirmed_observations
+    if not state.reconciled or state.daily_baseline_required or state.daily_baseline_evidence is None or confirmed is None:
+        return False
+    if {account for account, _ in confirmed[0]} != set(engine.gateways):
+        return False
+    try:
+        for account, remote in confirmed[0]:
+            validate_observation(engine, account, remote)
+    except DomainError:
+        return False
+    return True
+
+
 def policy_name(policy) -> str:
     return f'{policy.kind.value}:{policy.min_days}-{policy.max_days}'
 
@@ -95,18 +113,29 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             )
         )
     performance = []
+    verified = _financial_facts_current(engine)
     tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
     for strategy in state.strategies:
         related = tuple(p for p in state.positions if (p.strategy_id, p.strategy_version) == (strategy.strategy_id, strategy.version))
         orders = tuple(o for o in state.orders if (o.plan.strategy_id, o.plan.strategy_version) == (strategy.strategy_id, strategy.version))
         costs = sum((o.costs for o in orders), ZERO)
         realized = sum((p.realized_pnl for p in related), ZERO) - sum((o.costs for o in orders if not o.plan.reduce_only), ZERO)
-        unrealized = ZERO
+        unrealized: Decimal | None = ZERO
         for lot in related:
+            if not lot.quantity:
+                continue
             quote = engine.quotes.get(lot.instrument_id)
-            if quote and lot.quantity:
-                spec = engine.catalog.resolve(lot.instrument_id)
-                unrealized += (quote.last - lot.entry_price) * lot.quantity * spec.multiplier * (1 if lot.direction is Side.BUY else -1)
+            if (
+                not verified
+                or quote is None
+                or quote.quality != 'VERIFIED'
+                or not 0 <= (engine.clock.now() - quote.source_at).total_seconds() <= 30
+                or not 0 <= (engine.clock.now() - quote.received_at).total_seconds() <= 30
+            ):
+                unrealized = None
+                break  # A partial version valuation is not its total unrealized PnL.
+            spec = engine.catalog.resolve(lot.instrument_id)
+            unrealized += (quote.last - lot.entry_price) * lot.quantity * spec.multiplier * (1 if lot.direction is Side.BUY else -1)
         track = tracks.get((strategy.strategy_id, strategy.version))
         if track:
             realized += track.realized_adjustment
@@ -141,15 +170,21 @@ def snapshot(engine: 'TradingEngine') -> UiState:
     issues = tuple(ERROR_TABLE.get(code, ERROR_TABLE['operation_failed']).explanation for code in state.issues)
     reserved = sum((r.risk for r in engine.reservations()), ZERO)
     remaining = max(ZERO, Decimal('100000') * state.settings.daily_loss_fraction - max(ZERO, -state.daily_pnl) - reserved)
-    quote_status = 'FRESH' if all(m.availability == 'FRESH' for m in markets) else 'STALE'
+    quote_status = (
+        'NO_DATA'
+        if not markets or all(m.availability == 'NO_DATA' for m in markets)
+        else 'FRESH'
+        if all(m.availability == 'FRESH' for m in markets)
+        else 'STALE'
+    )
     return UiState(
         environment=state.environment,
         account_ref=state.account_ref,
         engine_state=status,
         policy_label=strategies[-1].policy_label if strategies else 'SWING:3-5',
         allocated_cash=state.settings.stock_allocation + state.settings.futures_allocation,
-        daily_pnl=state.daily_pnl,
-        remaining_risk=remaining,
+        daily_pnl=state.daily_pnl if verified else None,
+        remaining_risk=remaining if verified else None,
         quote_status=quote_status,
         version=state.version,
         trading_day=state.trading_day.isoformat(),
@@ -175,4 +210,5 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         broker_readiness=state.broker_readiness,
         reconciliation=state.reconciliation,
         reconciliation_verified=state.reconciled,
+        financial_facts_verified=verified,
     )

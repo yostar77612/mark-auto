@@ -34,14 +34,9 @@ from quantlab.trading.runtime.build import synthetic_catalog
 from quantlab.trading.runtime.ipc import IpcFacade, read_session
 from quantlab.trading.runtime.protocol import Operation
 import trading_runtime
+from tools.trading_load_report import write_report
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def write_report(path: Path, value: dict[str, object]) -> None:
-    temporary = path.with_suffix('.writing')
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
-    temporary.replace(path)
 
 
 def process_memory(pid: int) -> dict[str, int]:
@@ -73,7 +68,7 @@ def process_memory(pid: int) -> dict[str, int]:
 
 def source_identity() -> dict[str, str]:
     paths = [*ROOT.glob('quantlab/trading/**/*.py'), *ROOT.glob('desktop_trading/*.py')]
-    paths.extend((ROOT / 'trading_runtime.py', ROOT / 'desktop_strings.py', Path(__file__).resolve()))
+    paths.extend((ROOT / 'trading_runtime.py', ROOT / 'desktop_strings.py', ROOT / 'tools/trading_load_report.py', Path(__file__).resolve()))
     return {str(path.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 

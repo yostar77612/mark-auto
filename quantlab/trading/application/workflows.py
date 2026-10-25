@@ -18,6 +18,7 @@ from quantlab.trading.domain.validation import DomainError
 
 if TYPE_CHECKING:
     from .engine import TradingEngine
+    from .state import AppState
     from quantlab.trading.domain.strategy import CompletedBar
 
 ZERO = Decimal('0')
@@ -115,9 +116,9 @@ def total_mark(engine: 'TradingEngine') -> Decimal:
 
 
 @decimal_operation
-def mark_risk(engine: 'TradingEngine') -> None:
+def _risk_mark(engine: 'TradingEngine') -> 'tuple[AppState, bool] | None':
     if engine.configuration.environment is not Environment.LOCAL and engine.state.daily_baseline_required:
-        return  # No invented new-day zero/baseline; protection remains independent.
+        return None  # No invented new-day zero/baseline; protection remains independent.
     pnl = total_mark(engine) - engine.state.daily_baseline_pnl
     settings = engine.state.settings
     hit = -pnl >= Decimal('100000') * settings.daily_loss_fraction
@@ -125,7 +126,26 @@ def mark_risk(engine: 'TradingEngine') -> None:
     if hit and engine.state.trading_day not in locks:
         locks = (*locks, engine.state.trading_day)
     tracks = advance_tracks(engine)
-    engine._persist('portfolio_marked', replace(engine.state, daily_pnl=pnl, daily_locks=locks, stopped=engine.state.stopped or hit, performance_tracks=tracks))
+    proposed = replace(engine.state, daily_pnl=pnl, daily_locks=locks, stopped=engine.state.stopped or hit, performance_tracks=tracks)
+    return proposed, hit
+
+
+def observe_risk(engine: 'TradingEngine') -> None:
+    """Record the same valuation/stop without issuing any execution command."""
+    prepared = _risk_mark(engine)
+    if prepared is not None:
+        proposed, _hit = prepared
+        if proposed != engine.state:
+            engine._persist('portfolio_observed_read_only', proposed)
+
+
+@decimal_operation
+def mark_risk(engine: 'TradingEngine') -> None:
+    prepared = _risk_mark(engine)
+    if prepared is None:
+        return
+    proposed, hit = prepared
+    engine._persist('portfolio_marked', proposed)
     if hit:
         try:
             cancel_entries(engine)
@@ -184,7 +204,7 @@ def step(engine: 'TradingEngine', history: dict[str, tuple['CompletedBar', ...]]
             spec = engine.catalog.resolve(instrument)
             from quantlab.trading.domain.models import Quote
 
-            engine.quote(Quote(instrument, current.open, current.open + spec.tick_size, current.open, now, now, next_day, sequence=engine.quote_count + 1))
+            engine.quote(Quote(instrument, current.open, spec.shift_ticks(current.open, 1), current.open, now, now, next_day, sequence=engine.quote_count + 1))
     reconcile(engine)
     # Reconciliation keeps new risk stopped until explicitly resumed. A normal
     # local day step retains an already-authorized RUNNING decision across days.

@@ -26,6 +26,8 @@ class UiAction(str, Enum):
     SHUTDOWN_ENGINE = 'shutdown_engine'
     SAVE_BROKER_SETTINGS = 'save_broker_settings'
     CHECK_READINESS = 'check_readiness'
+    CONNECT_READ_ONLY = 'connect_read_only'
+    ADD_CONTEXT = 'add_context'
 
 
 @dataclass(frozen=True)
@@ -69,6 +71,9 @@ class UiCommand:
     account_ref: str = ''
     destination_strategy_id: str = ''
     broker_settings: BrokerSettings | None = None
+    context_id: str = ''
+    profile_ref: str = ''
+    context_epoch: int | None = None
 
 
 @dataclass(frozen=True)
@@ -166,8 +171,8 @@ class PerformanceView:
     market: Market
     policy_label: str
     environment: Environment
-    net_pnl: Decimal
-    unrealized_pnl: Decimal
+    net_pnl: Decimal | None
+    unrealized_pnl: Decimal | None
     costs: Decimal
     drawdown: Decimal | None
     holding_days: str
@@ -187,14 +192,23 @@ class AccountView:
 
 
 @dataclass(frozen=True)
+class ContextOption:
+    context_id: str
+    label: str
+    environment: Environment
+    account_refs: tuple[str, ...]
+    status: str = 'CONFIGURED'
+
+
+@dataclass(frozen=True)
 class UiState:
     environment: Environment
     account_ref: str
     engine_state: str
     policy_label: str
     allocated_cash: Decimal
-    daily_pnl: Decimal
-    remaining_risk: Decimal
+    daily_pnl: Decimal | None
+    remaining_risk: Decimal | None
     quote_status: str
     version: int
     trading_day: str
@@ -215,9 +229,24 @@ class UiState:
     broker_readiness: BrokerReadiness | None = None
     reconciliation: tuple[ReconciliationView, ...] = ()
     reconciliation_verified: bool = False
+    contexts: tuple[ContextOption, ...] = ()
+    context_id: str = ''
+    context_epoch: int = 0
+    financial_facts_verified: bool = True
+    configuration_id: str = ''
 
 
 class TradingFacade(Protocol):
     def snapshot(self) -> UiState: ...
 
     def execute(self, command: UiCommand) -> UiReceipt: ...
+
+
+class ContextPort(Protocol):
+    def list_contexts(self) -> tuple[ContextOption, ...]: ...
+
+    def open_context(self, context_id: str, account_ref: str) -> TradingFacade: ...
+
+    def register_profile(self, profile_ref: str, environment: Environment) -> ContextOption: ...
+
+    def persist_selection(self, context_id: str, account_ref: str) -> None: ...

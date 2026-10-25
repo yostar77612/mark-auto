@@ -113,8 +113,8 @@ def synthetic_history(catalog: Catalog, calendar: TradingCalendar) -> dict[str, 
             # Keep the paper path fixed when extending training lookback.
             phase = index - paper_origin
             step = Decimal(phase % 12) - Decimal('6')
-            opened = base + spec.tick_size * step
-            closed = opened + spec.tick_size * (2 if phase % 7 < 4 else -2)
+            opened = spec.shift_ticks(base, int(step))
+            closed = spec.shift_ticks(opened, 2 if phase % 7 < 4 else -2)
             bars.append(CompletedBar(session.opens_at, session.closes_at, session.closes_at + timedelta(seconds=1), opened, closed, 100000))
         result[spec.instrument_id] = tuple(bars)
     return result
@@ -253,7 +253,7 @@ class SimulationControl:
                 Quote(
                     spec.instrument_id,
                     bar.open,
-                    bar.open + spec.tick_size,
+                    spec.shift_ticks(bar.open, 1),
                     bar.open,
                     self.clock.now(),
                     self.clock.now(),

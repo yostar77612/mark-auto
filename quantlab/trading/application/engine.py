@@ -26,6 +26,7 @@ from quantlab.trading.domain.risk import RiskPolicy, RiskService
 from quantlab.trading.domain.validation import DomainError, decimal_value
 from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.ports.interfaces import Clock
+from quantlab.trading.ports.contracts import RemoteSnapshot
 from quantlab.trading.ports.storage import Journal
 
 ZERO = Decimal('0')
@@ -69,6 +70,9 @@ class TradingEngine:
         self.lock = WriterLock()
         self.quotes: dict[str, Quote] = {}
         self.quote_count = 0
+        # Read-only polling may return the same immutable cached report many
+        # times. A successful unchanged observation must not rewrite the book.
+        self.confirmed_observations: tuple[tuple[tuple[str, RemoteSnapshot], ...], int, int] | None = None
         self.recent_quote_sequences: dict[str, int] = {}
         self.latencies: deque[float] = deque(maxlen=10000)
         self.storage_failed = False

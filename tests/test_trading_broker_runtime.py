@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from decimal import Decimal
+from hashlib import sha256
 from pathlib import Path
 import tempfile
 import unittest
@@ -9,6 +10,7 @@ from unittest.mock import patch
 
 import test_trading_adapters as fixtures
 from quantlab.trading.adapters.shioaji import InstrumentBinding
+from quantlab.trading.adapters.shioaji.stock_grid import StockGridEvidence, TWD_ETF_BANDS, TWD_ETF_RULE
 from quantlab.trading.adapters.storage.ledger import Ledger
 from quantlab.trading.application.broker_settings import BrokerSettings, READINESS_CODES, READINESS_DETAILS, check_readiness
 from quantlab.trading.application.codec import dumps, loads, register
@@ -56,12 +58,26 @@ class BrokerRuntimeTests(unittest.TestCase):
 
     def runtime(self, settings: BrokerSettings, factory: ClientFactory):
         cap = fixtures.capability(settings.environment)
+        # Explicit ETF source/grid fixture for this SDK-shaped broker scope;
+        # do not change the shared LOCAL simulator's scalar instrument helper.
+        self.broker_spec = replace(fixtures.instrument(), price_bands=TWD_ETF_BANDS, tick_rule_id=TWD_ETF_RULE)
+        grid = StockGridEvidence(
+            '0050',
+            'TSE',
+            'TWD_ETF',
+            'TW0000050004',
+            'CEOGEU',
+            'https://isin.twse.com.tw/isin/e_C_public.jsp?strMode=2',
+            self.clock.now().date().isoformat(),
+            sha256(b'SYNTHETIC-BROKER-FIXTURE-NOT-A-DOWNLOADED-ISIN-SNAPSHOT').hexdigest(),
+            self.clock.now(),
+        )
         return build_broker_runtime(
             settings,
             factory,
             self.clock,
             {'test-stock': factory.client.account},
-            (InstrumentBinding(fixtures.instrument(), '0050'),),
+            (InstrumentBinding(self.broker_spec, '0050', grid),),
             (cap,),
             {'test-stock': Decimal('100000')},
         )
@@ -163,7 +179,7 @@ class BrokerRuntimeTests(unittest.TestCase):
             self.clock,
             calendar,
             fees,
-            Catalog((fixtures.instrument(),)),
+            Catalog((self.broker_spec,)),
             ownership_clock=self.clock.now,
         )
         self.assertIs(engine.calendar, calendar)

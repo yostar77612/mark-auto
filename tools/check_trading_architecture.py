@@ -112,10 +112,23 @@ def check_source(source: str, path: str) -> tuple[Finding, ...]:
     _, package = _module(path)
     aliases: dict[str, str] = {}
     findings: list[Finding] = []
+    # Independently enforce the one owner-authorized lazy SDK import. This does
+    # not allow SDK dependencies elsewhere in adapters or the shared layers.
+    sdk_loader_body = {
+        id(node)
+        for function in tree.body
+        if path == 'quantlab/trading/adapters/shioaji/sdk_loader.py' and isinstance(function, ast.FunctionDef) and function.name == 'load_pinned_sdk'
+        for statement in function.body
+        for node in ast.walk(statement)
+    }
+    sdk_parents = {id(child): parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)} if sdk_loader_body else {}
 
     def target(node: ast.AST) -> str | None:
         if isinstance(node, ast.Name):
-            return aliases.get(node.id, node.id if node.id in ('__import__', 'getattr', 'eval', 'exec', 'compile', 'open') else None)
+            return aliases.get(
+                node.id,
+                node.id if node.id in ('__import__', 'getattr', 'eval', 'exec', 'compile', 'open', 'vars', 'locals', 'globals', 'setattr', 'delattr') else None,
+            )
         if isinstance(node, ast.Attribute):
             base = target(node.value)
             return base + '.' + node.attr if base else None
@@ -125,6 +138,18 @@ def check_source(source: str, path: str) -> tuple[Finding, ...]:
         return None
 
     def record(node: ast.AST, name: str | None, rule: str = 'forbidden-dependency') -> None:
+        if id(node) in sdk_loader_body and (
+            isinstance(node, ast.Import)
+            and name == 'shioaji'
+            and all(item.name == 'shioaji' for item in node.names)
+            or isinstance(node, ast.Call)
+            and name == 'shioaji.__version__'
+            and target(node.func) in ('getattr', 'builtins.getattr')
+            or isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Load)
+            and name == 'shioaji.__version__'
+        ):
+            return
         if name is None or not _allowed(layer, name):
             findings.append(Finding(path, node.lineno, rule, name or '<unresolved>'))
 
@@ -149,9 +174,45 @@ def check_source(source: str, path: str) -> tuple[Finding, ...]:
                     if isinstance(name, ast.Name):
                         aliases[name.id] = value
     for node in ast.walk(tree):
+        if path == 'quantlab/trading/adapters/shioaji/sdk_loader.py' and isinstance(node, ast.Name) and target(node) == 'shioaji':
+            parent = sdk_parents.get(id(node))
+            metadata_read = (
+                isinstance(parent, ast.Attribute)
+                and parent.value is node
+                and parent.attr == '__version__'
+                and isinstance(parent.ctx, ast.Load)
+                or isinstance(parent, ast.Call)
+                and target(parent.func) in ('getattr', 'builtins.getattr')
+                and len(parent.args) >= 2
+                and parent.args[0] is node
+                and _literal(parent.args[1]) == '__version__'
+            )
+            explicit_return = isinstance(parent, ast.Return) and parent.value is node
+            if id(node) not in sdk_loader_body or not (metadata_read or explicit_return):
+                findings.append(Finding(path, node.lineno, 'sdk-loader-module-escape', 'shioaji'))
+        if path == 'quantlab/trading/adapters/shioaji/sdk_loader.py' and isinstance(node, ast.Attribute):
+            name = target(node)
+            if name is not None and name.startswith('shioaji.'):
+                record(node, name, 'sdk-loader-metadata-only')
         if not isinstance(node, ast.Call):
             continue
         call = target(node.func)
+        if path == 'quantlab/trading/adapters/shioaji/sdk_loader.py':
+            if call in (
+                'vars',
+                'locals',
+                'globals',
+                'setattr',
+                'delattr',
+                'builtins.vars',
+                'builtins.locals',
+                'builtins.globals',
+                'builtins.setattr',
+                'builtins.delattr',
+            ):
+                findings.append(Finding(path, node.lineno, 'sdk-loader-reflection', call))
+            elif call is not None and call.startswith('shioaji.'):
+                record(node, call, 'sdk-loader-call-forbidden')
         if call in ('importlib.import_module', '__import__', 'builtins.__import__'):
             if layer == 'runtime':
                 continue  # explicit composition scope; credential gate remains active

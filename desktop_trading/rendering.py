@@ -144,6 +144,8 @@ def _render_markets(self, state: UiState) -> None:
 
 
 def _render_performance(self, state: UiState) -> None:
+    self.performance.horizontalHeaderItem(5).setToolTip(ui_text('v2.performance_freshness_hint'))
+    self.performance.horizontalHeaderItem(11).setToolTip(ui_text('v2.performance_freshness_hint'))
     rows(
         self.performance,
         tuple(
@@ -154,8 +156,8 @@ def _render_performance(self, state: UiState) -> None:
                     self._market_label(item.market),
                     policy_label(item.policy_label),
                     self._environment_label(item.environment),
-                    str(item.net_pnl),
-                    str(item.unrealized_pnl),
+                    str(item.net_pnl) if item.net_pnl is not None else ui_text('v2.valuation_unknown'),
+                    str(item.unrealized_pnl) if item.unrealized_pnl is not None else ui_text('v2.valuation_unknown'),
                     str(item.costs),
                     str(item.attributed_pnl) if item.attributed_pnl is not None else ui_text('v2.drawdown_unknown'),
                     str(item.drawdown) if item.drawdown is not None else ui_text('v2.drawdown_unknown'),

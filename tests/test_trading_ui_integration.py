@@ -9,10 +9,11 @@ import time
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QPushButton
+from shiboken6 import isValid
 
 from desktop_strings import ui_text
 from desktop_trading import TradingWindow
@@ -32,6 +33,7 @@ class TradingUiIntegrationTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         self.temp = tempfile.TemporaryDirectory(prefix='trading-ui-real-')
         self.root = Path(self.temp.name).resolve()
         self.engine = create_engine(self.root)
@@ -55,6 +57,8 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.drain()
         self.window.close()
         self.window.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.assertFalse(isValid(self.window), 'the fixture must destroy its owned Qt window')
         self.app.processEvents()
         self.engine.journal.close()
         self.engine.simulation.ledger.close()

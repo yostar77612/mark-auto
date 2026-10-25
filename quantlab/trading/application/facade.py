@@ -12,6 +12,7 @@ from .views import snapshot
 from .workflows import cancel_entries, execute_day, fill_local_pending, resume, run_research, step, transfer
 from .errors import ERROR_TABLE
 from quantlab.trading.domain.arithmetic import decimal_operation
+from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -36,6 +37,8 @@ class LocalFacade:
                 if engine.state.engine_closed and command.action is not UiAction.RECONCILE:
                     raise DomainError('state_conflict', 'engine is closed')
                 reference = self._execute(command)
+                if command.action is UiAction.FLATTEN and engine.configuration.environment is not Environment.LOCAL:
+                    return UiReceipt(True, 'completed', '退出要求已送出；成交與剩餘部位須以券商回報核對。', reference or '')
                 return UiReceipt(True, 'completed', '', reference or '')
             except DomainError as exc:
                 entry = ERROR_TABLE.get(exc.code, ERROR_TABLE['operation_failed'])
@@ -65,7 +68,8 @@ class LocalFacade:
             resume(engine)
         elif action is UiAction.STOP_NEW:
             engine._persist('new_entries_stopped', replace(engine.state, stopped=True))
-            cancel_entries(engine)
+            if not engine.configuration.read_only:
+                cancel_entries(engine)
         elif action is UiAction.CANCEL_ENTRIES:
             cancel_entries(engine)
         elif action is UiAction.FLATTEN:
@@ -74,7 +78,9 @@ class LocalFacade:
             result = engine.exit_lot(command.target_id, protective=True)
             if result is None:
                 raise DomainError('exit_unavailable', 'no executable unreserved quantity')
-            fill_local_pending(engine)
+            if engine.configuration.environment is Environment.LOCAL:
+                fill_local_pending(engine)
+            return result
         elif action is UiAction.TRANSFER:
             transfer(engine, command.target_id, command.destination_strategy_id)
         elif action is UiAction.STEP:

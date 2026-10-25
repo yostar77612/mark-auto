@@ -1,6 +1,6 @@
 """Explicit broker composition; readiness never resolves credentials or connects."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
 from hashlib import sha256
@@ -12,13 +12,16 @@ from typing import Protocol, Callable
 
 from quantlab.trading.adapters.shioaji import InstrumentBinding, ShioajiAdapter
 from quantlab.trading.adapters.shioaji.sdk import SDKClient, SecretResolver, TradeDateResolver
+from quantlab.trading.adapters.shioaji.sdk_loader import load_pinned_sdk
 from quantlab.trading.adapters.shioaji.secrets import WindowsSecretResolver
 from quantlab.trading.application.broker_settings import BrokerReadiness, BrokerSettings, ReferenceMetadata, check_readiness
 from quantlab.trading.application.context import Catalog, ExecutionConfiguration, ResearchRunner
+from quantlab.trading.application.contracts import SettingsForm
 from quantlab.trading.application.engine import TradingEngine
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
-from quantlab.trading.domain.models import CapabilitySnapshot, Environment
+from quantlab.trading.domain.models import CapabilitySnapshot, Environment, Market
+from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BROKER_SDK_VERSION, ConnectionState
 from quantlab.trading.ports.interfaces import Clock
@@ -105,7 +108,9 @@ class ShioajiClientFactory:
     def create(self, environment: Environment) -> SDKClient:
         if environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
             raise DomainError('capability_missing', 'explicit broker environment required')
-        return self.module.Shioaji(simulation=environment is Environment.BROKER_SIMULATION)
+        from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
+
+        return ShioajiSDKFacade(self.module.Shioaji(simulation=environment is Environment.BROKER_SIMULATION), self.module)
 
 
 @dataclass(frozen=True)
@@ -124,6 +129,8 @@ class BrokerRuntime:
         *,
         ownership_clock: Callable[[], datetime],
         research_runner: ResearchRunner | None = None,
+        reference_inspector: FilesystemReferenceInspector | None = None,
+        historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
     ) -> TradingEngine:
         """Assemble selected typed resources without login or execution arming.
 
@@ -152,6 +159,8 @@ class BrokerRuntime:
             source_profile=compute_profile(),
             research_runner=research_runner,
             fees=fees,
+            reference_inspector=reference_inspector,
+            historical_bars=historical_bars,
         )
 
     def connect_read_only(self) -> ConnectionState:
@@ -207,3 +216,138 @@ def build_broker_runtime(
     )
     configuration = ExecutionConfiguration(settings.environment, settings.stock_account_ref, settings.futures_account_ref, True, False, False)
     return BrokerRuntime(settings, adapter, configuration)
+
+
+class _AuthenticatedFactory:
+    """Reuse one explicitly logged-in client; never create or log in twice."""
+
+    def __init__(self, factory: BrokerClientFactory, client: SDKClient) -> None:
+        self.sdk_version, self.quote_version, self.client = factory.sdk_version, factory.quote_version, client
+
+    def create(self, environment: Environment) -> SDKClient:
+        return self.client
+
+
+class CalendarSessionResolver:
+    def __init__(self, calendar: TradingCalendar) -> None:
+        self.calendar = calendar
+
+    def session_at(self, instrument_id: str, timestamp: datetime):
+        session = self.calendar.session_at(timestamp, allow_night=True)
+        return session.trade_date, session.kind.lower()
+
+
+def connect_profile_engine(launch, resources, *, factory: BrokerClientFactory | None = None, secret_resolver: SecretResolver | None = None) -> TradingEngine:
+    """Controlled read-only entry, invoked only by CONNECT_READ_ONLY.
+
+    All SDK objects stop at this composition/adapter boundary. Only the exact
+    selected credential reference is resolved; no account or secret discovery is
+    performed. There is no CA activation, execution arming, or order operation.
+    """
+    from quantlab.trading.adapters.shioaji.sdk import sdk_text, sdk_value
+    from quantlab.trading.adapters.shioaji.stock_grid import validate_stock_grid
+    from quantlab.trading.adapters.storage.ledger import Ledger
+    from .bootstrap import WallClock
+    from .config import RuntimeLaunch, RuntimeResources
+    from .research_worker import SpawnResearchRunner
+
+    if (
+        not isinstance(launch, RuntimeLaunch)
+        or not isinstance(resources, RuntimeResources)
+        or resources.profile.configuration.environment is not launch.environment
+    ):
+        raise DomainError('capability_missing', 'explicit matching typed runtime resources required')
+    settings = resources.profile.settings
+    if not settings.broker_secret_ref or not settings.read_only or settings.execution_enabled:
+        raise DomainError('capability_missing', 'explicit credential reference and disabled execution required')
+    clock = WallClock()
+    for binding in resources.bindings:
+        if binding.spec.market is Market.STOCK:
+            exchange = binding.stock_grid.exchange if binding.stock_grid is not None else ''
+            validate_stock_grid(binding.spec, binding.sdk_code, exchange, binding.stock_grid, clock.now())
+    if factory is None:
+        # The adapter owns the single visible optional SDK import. This entry
+        # remains explicit; UI launch and readiness never load the dependency.
+        factory = ShioajiClientFactory(load_pinned_sdk())
+    if factory.sdk_version != BROKER_SDK_VERSION:
+        raise DomainError('capability_missing', 'pinned broker SDK required')
+    resolver = secret_resolver if secret_resolver is not None else WindowsSecretResolver()
+    client = factory.create(launch.environment)
+    journal = None
+    runner = None
+    login_attempted = False
+    try:
+        credentials = resolver.broker_credentials(settings.broker_secret_ref)
+        login_attempted = True
+        logged_in = client.login(api_key=credentials.api_key, secret_key=credentials.secret_key, subscribe_trade=True)
+        accounts = {}
+        for mapping in resources.accounts:
+            expected_type = 'S' if mapping.kind == 'STOCK' else 'F'
+            matches = [
+                account
+                for account in logged_in
+                if sdk_text(sdk_value(account, 'account_id')) == mapping.sdk_account_id and sdk_text(sdk_value(account, 'account_type')) == expected_type
+            ]
+            if len(matches) != 1:
+                raise DomainError('capability_missing', 'configured account identity was not uniquely confirmed')
+            accounts[mapping.account_ref] = matches[0]
+        allocations = {
+            ref: resources.profile.stock_allocation if ref == settings.stock_account_ref else resources.profile.futures_allocation for ref in accounts
+        }
+        runtime = build_broker_runtime(
+            settings,
+            _AuthenticatedFactory(factory, client),
+            clock,
+            accounts,
+            tuple(InstrumentBinding(binding.spec, binding.sdk_code, binding.stock_grid) for binding in resources.bindings),
+            resources.capabilities,
+            allocations,
+            secret_resolver=resolver,
+            session_resolver=CalendarSessionResolver(resources.calendar),
+        )
+        runtime.adapter.attach_authenticated()
+        # Specifications are checked against the actual selected SDK contracts;
+        # profile metadata alone cannot substitute for broker contract facts.
+        for spec in resources.catalog.instruments:
+            runtime.adapter.resolve(spec.instrument_id)
+        query_markets = frozenset(market for capability in resources.capabilities if capability.can_query for market in capability.markets)
+        subscriptions = tuple(spec.instrument_id for spec in resources.catalog.instruments if spec.market in query_markets)[:20]
+        if subscriptions:
+            runtime.adapter.subscribe(subscriptions)
+        journal = Ledger(launch.root / 'broker-trading-v2.sqlite', 'broker-platform-' + launch.environment.value, clock.now())
+        runner = SpawnResearchRunner()
+        engine = runtime.compose_engine(
+            journal,
+            clock,
+            resources.calendar,
+            resources.fees,
+            resources.catalog,
+            ownership_clock=clock.now,
+            research_runner=runner,
+            reference_inspector=FilesystemReferenceInspector((resources.profile.source_path.parent,)),
+            historical_bars=dict(resources.history),
+        )
+        engine._persist(
+            'readonly_broker_context_configured',
+            replace(
+                engine.state,
+                broker_settings=settings,
+                settings=SettingsForm(resources.profile.stock_allocation, resources.profile.futures_allocation, Decimal('0.02')),
+            ),
+        )
+        return engine
+    except BaseException as exc:
+        if runner is not None:
+            runner.close()
+        if journal is not None:
+            journal.close()
+        if login_attempted:
+            try:
+                client.logout()
+            except Exception:
+                pass
+        if isinstance(exc, (KeyboardInterrupt, SystemExit, DomainError)):
+            raise
+        if isinstance(exc, (TimeoutError, ConnectionError)):
+            raise DomainError('outcome_unknown', 'readonly connection was not confirmed; inspect before another attempt') from None
+        raise DomainError('capability_missing', 'readonly connector bootstrap failed; no orders were requested') from None

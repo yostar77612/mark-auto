@@ -21,6 +21,7 @@ from quantlab.trading.ports.contracts import (
 )
 from quantlab.trading.ports.interfaces import Clock
 from . import market_data
+from .stock_grid import validate_stock_grid
 from .mapping import account_from_sdk, order_from_sdk, position_from_sdk, sdk_order_fields, settlement_from_sdk, stock_sdk_quantity
 from .sdk import (
     SDK_VERSION,
@@ -166,10 +167,28 @@ class ShioajiAdapter:
         if spec.market is not Market.STOCK:
             if sdk_text(sdk_value(info, 'delivery_month')) != spec.delivery_month or sdk_value(info, 'delivery_date') != spec.expiry:
                 raise DomainError('instrument_unresolved', 'delivery month/expiry evidence changed')
-            if sdk_decimal(sdk_value(info, 'multiplier'), 'multiplier') != spec.multiplier or sdk_decimal(sdk_value(info, 'tick'), 'tick') != spec.tick_size:
+            if sdk_decimal(sdk_value(info, 'multiplier'), 'multiplier') != spec.multiplier:
                 raise DomainError('instrument_unresolved', 'contract specification changed')
-        elif sdk_decimal(sdk_value(info, 'unit'), 'stock lot') != spec.lot_size or getattr(info, 'trading_suspended', True) is not False:
-            raise DomainError('instrument_unresolved', 'stock lot or trading suspension unknown')
+            basis = sdk_text(sdk_value(info, 'tick_basis'))
+            rule = sdk_value(info, 'tick_rule')
+            if basis == 'fixed':
+                if rule is not None or spec.price_bands or sdk_decimal(sdk_value(info, 'tick'), 'tick') != spec.tick_size:
+                    raise DomainError('instrument_unresolved', 'fixed tick evidence changed')
+            elif basis == 'price':
+                if sdk_text(rule) != spec.tick_rule_id or not spec.price_bands:
+                    raise DomainError('instrument_unresolved', 'explicit price-band profile required')
+                if self.client.contracts.tick_bands(info) != spec.price_bands:
+                    raise DomainError('instrument_unresolved', 'authoritative price bands changed')
+            else:
+                raise DomainError('instrument_unresolved', 'unsupported or unknown tick basis')
+        else:
+            validate_stock_grid(spec, binding.sdk_code, sdk_text(sdk_value(contract, 'exchange')), binding.stock_grid, self.clock.now())
+            if (
+                sdk_text(sdk_value(info, 'currency')) != 'TWD'
+                or sdk_decimal(sdk_value(info, 'unit'), 'stock lot') != spec.lot_size
+                or getattr(info, 'trading_suspended', True) is not False
+            ):
+                raise DomainError('instrument_unresolved', 'stock currency, lot or trading suspension unknown')
         return spec
 
     def settlements(self, account_ref: str) -> tuple[SettlementItem, ...]:

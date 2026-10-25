@@ -5,9 +5,10 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Protocol
 
-from quantlab.trading.domain.models import InstrumentSpec
+from quantlab.trading.domain.models import InstrumentSpec, PriceBand
 from quantlab.trading.domain.validation import DomainError, identity
 from quantlab.trading.ports.contracts import BROKER_SDK_VERSION
+from .stock_grid import StockGridEvidence
 
 SDK_VERSION = BROKER_SDK_VERSION
 
@@ -29,11 +30,14 @@ class CertificateCredentials:
 class InstrumentBinding:
     spec: InstrumentSpec
     sdk_code: str
+    stock_grid: StockGridEvidence | None = None
 
     def __post_init__(self) -> None:
         identity(self.sdk_code)
         if self.sdk_code.endswith(('R1', 'R2')):
             raise DomainError('instrument_unresolved', 'continuous contracts are history-only')
+        if self.stock_grid is not None and (not isinstance(self.stock_grid, StockGridEvidence) or self.stock_grid.sdk_code != self.sdk_code):
+            raise DomainError('instrument_unresolved', 'typed stock-grid identity mismatch')
 
 
 class SecretResolver(Protocol):
@@ -48,6 +52,7 @@ class TradeDateResolver(Protocol):
 class SDKContractStore(Protocol):
     def get(self, code: str) -> object: ...
     def info(self, contract: object) -> object: ...
+    def tick_bands(self, info: object) -> tuple[PriceBand, ...]: ...
 
 
 class SDKClient(Protocol):

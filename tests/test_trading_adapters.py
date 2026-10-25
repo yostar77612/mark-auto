@@ -1,6 +1,7 @@
 """Behavioral exchange faults and SDK boundary contracts; no network or credentials."""
 
 from datetime import date, datetime, timedelta, timezone
+from dataclasses import replace
 from decimal import Decimal
 from types import SimpleNamespace
 import unittest
@@ -8,6 +9,7 @@ import unittest
 from quantlab.trading.adapters.simulated import FaultPlan, SimulatedBroker
 from quantlab.trading.adapters.shioaji import InstrumentBinding, ShioajiAdapter, SDK_VERSION
 from quantlab.trading.adapters.shioaji.mapping import account_from_sdk, history_from_sdk, sdk_order_fields
+from quantlab.trading.adapters.shioaji.stock_grid import StockGridEvidence, TWD_ETF_RULE, TWD_ETF_BANDS
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Market, OrderPlan, OrderStatus, QuantityUnit, Side
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BrokerPosition, OrderEvent
@@ -267,8 +269,10 @@ class SDKDouble:
 
     def __init__(self) -> None:
         self.account = SimpleNamespace(account_type='S', broker_id='TEST', account_id='0000', signed=True)
-        self.synthetic_contract = SimpleNamespace(code='0050', security_type='STK')
-        self.contracts = SimpleNamespace(get=lambda code: self.synthetic_contract, info=lambda contract: SimpleNamespace(unit=1000, trading_suspended=False))
+        self.synthetic_contract = SimpleNamespace(code='0050', security_type='STK', exchange='TSE', region='TW')
+        self.contracts = SimpleNamespace(
+            get=lambda code: self.synthetic_contract, info=lambda contract: SimpleNamespace(unit=1000, trading_suspended=False, currency='TWD')
+        )
         self.quote = SimpleNamespace(subscribe=lambda *args, **kwargs: None, unsubscribe=lambda *args, **kwargs: None)
         self.placed: list[object] = []
         self.order_calls: list[dict[str, object]] = []
@@ -320,7 +324,7 @@ class SDKDouble:
 
 class ShioajiContractTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.client, self.clock, self.spec = SDKDouble(), MutableClock(), instrument()
+        self.client, self.clock, self.spec = SDKDouble(), MutableClock(), replace(instrument(), price_bands=TWD_ETF_BANDS, tick_rule_id=TWD_ETF_RULE)
         self.environment = Environment.BROKER_SIMULATION
 
     def adapter(self, *, enabled: bool = False) -> ShioajiAdapter:
@@ -329,7 +333,23 @@ class ShioajiContractTests(unittest.TestCase):
             self.clock,
             self.environment,
             {'test-stock': self.client.account},
-            (InstrumentBinding(self.spec, '0050'),),
+            (
+                InstrumentBinding(
+                    self.spec,
+                    '0050',
+                    StockGridEvidence(
+                        '0050',
+                        'TSE',
+                        'TWD_ETF',
+                        'TW0000050004',
+                        'CEOGEU',
+                        'https://isin.twse.com.tw/isin/e_C_public.jsp?strMode=2',
+                        '2026-10-23',
+                        'a' * 64,
+                        NOW,
+                    ),
+                ),
+            ),
             (capability(self.environment),),
             {'test-stock': D('100000')},
             sdk_version=SDK_VERSION,

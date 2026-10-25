@@ -12,10 +12,11 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QRect, QThread, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QRect, QThread, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton, QScrollArea
+from shiboken6 import isValid
 
 from desktop_strings import ui_text
 from desktop_trading import TradingWindow
@@ -117,6 +118,10 @@ class TradingUiTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
+        # processEvents() without an outer app.exec() does not guarantee
+        # DeferredDelete delivery. Flush prior fixtures before timing this
+        # operation, rather than charging their deferred cleanup to its 3s.
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         self.facade = RecordingFacade()
         self.window = TradingWindow(self.facade, self.facade.snapshot())
         self.window.poll.stop()
@@ -146,6 +151,8 @@ class TradingUiTests(unittest.TestCase):
         self.drain()
         self.window.close()
         self.window.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.assertFalse(isValid(self.window), 'the fixture must destroy its owned Qt window')
         self.app.processEvents()
 
     def test_six_workspaces_keep_account_policy_funds_and_stale_state_visible(self):

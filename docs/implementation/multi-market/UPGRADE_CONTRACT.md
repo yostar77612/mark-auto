@@ -107,3 +107,21 @@ inventory, single-job isolation, durability, 22 smoke evaluation children,
 parent-first-import tests verify both sides. Historical elevated results retain
 their original source identity; final-source dependency/AST impact review is
 separate evidence and does not claim the elevated cases ran on new bytes.
+
+## Explicit optional v2 SDK import boundary
+
+The optional broker dependency is loaded only by the visible local
+`import shioaji` in `adapters/shioaji/sdk_loader.py:load_pinned_sdk`. Importing
+this adapter module is inert; the function requires the exact pinned version
+and returns the module without constructing a client. Runtime composition calls
+it only inside the explicit read-only connection operation. Startup, metadata
+readiness, source research, LOCAL simulation and default offline packaging do
+not call the loader. No importlib indirection hides the dependency from scans.
+
+This is a narrow v2 composition contract, not a general SDK import exemption.
+Legacy forbidden imports/calls, permanent v1 execution prohibitions and domain
+stdlib boundaries remain in force. The research gate owns the exact path and
+function exception; independent tests continue rejecting SDK imports elsewhere.
+SDK loader tests additionally verify inert import, missing dependency, exact
+version refusal and absence of client construction. SDK import/package probes
+remain distinct from external-account login and broker verification.

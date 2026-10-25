@@ -45,9 +45,34 @@ class WfoStorageDiagnosticTests(unittest.TestCase):
 
     def test_export_failure_is_not_success(self):
         with tempfile.TemporaryDirectory() as temporary:
-            with patch.object(Path, 'replace', side_effect=OSError('synthetic failure')):
+            with patch('quantlab.runtime_support.replace_file', side_effect=OSError('synthetic failure')):
                 with self.assertRaises(OSError):
                     probe.replay(['{}'], Path(temporary) / 'round', 'DELETE')
+
+    def test_export_contention_retries_same_snapshot_without_repeating_sql_commit(self):
+        from quantlab import runtime_support as io
+
+        payloads = ['{"value":1}', '{"value":2}', '{"value":3}']
+        attempted = []
+        original = io.os.replace
+
+        def replace(source, target):
+            attempted.append((Path(source), Path(target), Path(source).read_bytes()))
+            if len(attempted) == 1:
+                error = PermissionError('injected sharing contention')
+                error.winerror = 5
+                raise error
+            return original(source, target)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(io.sys, 'platform', 'win32'), patch.object(io.os, 'replace', side_effect=replace), patch.object(io.time, 'sleep'):
+                report = probe.replay(payloads, Path(temporary) / 'round', 'DELETE')
+            self.assertEqual(report['commits'], 3)
+            self.assertEqual(report['exports'], 3)
+            self.assertEqual(report['stream_sha256'], probe.digest(''.join(payloads).encode()))
+            self.assertEqual(len(attempted), 4)
+            self.assertEqual(attempted[0], attempted[1])
+            self.assertEqual([row[2] for row in attempted[1:]], [value.encode() for value in payloads])
 
     def test_report_write_preserves_existing_sibling_temp_file(self):
         with tempfile.TemporaryDirectory() as temporary:

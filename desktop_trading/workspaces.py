@@ -309,6 +309,15 @@ def _settings_page(self) -> None:
     layout.addLayout(form)
     self.environment.currentIndexChanged.connect(self._environment_selected)
     self.account.currentIndexChanged.connect(self._switch_context)
+    _buttons(
+        self,
+        layout,
+        (
+            ('v2.context_add_profile', 'add_context_button', self.add_context),
+            ('v2.connect_readonly', 'connect_read_only_button', self.connect_read_only),
+        ),
+    )
+    layout.addWidget(label('v2.context_navigation_hint'))
     layout.addWidget(label('v2.external_hint'))
     self.accounts = table(('v2.account', 'v2.environment', 'v2.market', 'v2.allocation', 'v2.availability'), 'accounts')
     layout.addWidget(self.accounts)

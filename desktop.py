@@ -97,9 +97,13 @@ def parse_args(argv=None):
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
     parser.add_argument('--smoke-isolated', action='store_true', help='Smoke only: do not discover or read the user bootstrap/settings')
     parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
-    parser.add_argument('--platform-v2', action='store_true', help='Open the separate multi-market local trading platform')
+    parser.add_argument('--platform-v2', action='store_true', help='Open the separate multi-market platform; startup never logs in')
     parser.add_argument('--trading-engine', type=Path, help='Run the independent local v2 engine in an explicit directory')
     parser.add_argument('--trading-root', type=Path, help='Explicit isolated v2 desktop directory')
+    parser.add_argument('--trading-environment', choices=('LOCAL', 'BROKER_SIMULATION', 'LIVE'), help='Explicit v2 host environment; startup never logs in')
+    parser.add_argument('--trading-account', help='Explicit configured v2 account alias')
+    parser.add_argument('--trading-profile', type=Path, help='Absolute versioned broker runtime profile; metadata only on startup')
+    parser.add_argument('--trading-contexts', type=Path, help='Absolute configured v2 context registry for the desktop')
     args = parser.parse_args(argv)
     if args.tls_smoke is not None:
         if args.smoke_test or not args.tls_smoke.is_absolute():
@@ -108,6 +112,17 @@ def parse_args(argv=None):
         parser.error('--smoke-test requires an absolute report path')
     if args.smoke_isolated and args.smoke_test is None:
         parser.error('--smoke-isolated requires --smoke-test')
+    if args.platform_v2 and (args.smoke_test is not None or args.tls_smoke is not None):
+        parser.error('--platform-v2 cannot combine with legacy smoke or TLS entry points')
+    if any(value is not None for value in (args.trading_environment, args.trading_account, args.trading_profile, args.trading_contexts)):
+        if not args.platform_v2 and args.trading_engine is None:
+            parser.error('v2 context arguments require --platform-v2 or --trading-engine')
+        if args.trading_contexts is not None and (not args.platform_v2 or not args.trading_contexts.is_absolute()):
+            parser.error('--trading-contexts requires --platform-v2 and an absolute registry')
+        if args.trading_profile is not None and (not args.trading_profile.is_absolute() or args.trading_environment in (None, 'LOCAL')):
+            parser.error('--trading-profile requires an explicit broker environment and absolute file')
+        if args.trading_environment in ('BROKER_SIMULATION', 'LIVE') and not args.trading_account:
+            parser.error('broker modes require an explicit --trading-account alias')
     return args
 
 
@@ -372,13 +387,33 @@ def main(argv=None):
     if args.trading_engine is not None:
         if not args.trading_engine.is_absolute() or args.platform_v2 or args.smoke_test or args.tls_smoke:
             raise ValueError('Independent engine requires only an absolute v2 path')
+        # Only explicit v2 engine startup loads its typed runtime configuration.
         from quantlab.trading.runtime.server import serve
 
-        return serve(args.trading_engine)
+        # Domain environment is resolved here without changing legacy startup.
+        from quantlab.trading.domain.models import Environment
+
+        # This immutable request never imports the optional broker SDK.
+        from quantlab.trading.runtime.config import RuntimeLaunch
+
+        launch = RuntimeLaunch(
+            args.trading_engine, Environment(args.trading_environment or 'LOCAL'), args.trading_profile, args.trading_account or 'local-stock'
+        )
+        return serve(args.trading_engine, launch=launch)
     if args.platform_v2:
+        # The optional v2 desktop composition owns context selection and Qt.
         from trading_runtime import run_window
 
-        return run_window(args.trading_root)
+        # No broker dependency is imported to parse or start the legacy UI.
+        from quantlab.trading.domain.models import Environment
+
+        return run_window(
+            args.trading_root,
+            environment=Environment(args.trading_environment) if args.trading_environment else None,
+            account_ref=args.trading_account,
+            profile_path=args.trading_profile,
+            contexts_path=args.trading_contexts,
+        )
     if args.tls_smoke is not None:
         from desktop_tls_smoke import write_report
 

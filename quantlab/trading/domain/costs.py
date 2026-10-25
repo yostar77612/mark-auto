@@ -68,14 +68,32 @@ class FeeSchedule:
         return max(ZERO, total - previous_fee)
 
     @decimal_operation
-    def slippage(self, spec: InstrumentSpec, quantity: int, legs: int = 2) -> Decimal:
+    def slippage(self, spec: InstrumentSpec, quantity: int, legs: int = 2, *, prices: tuple[Decimal, ...] = ()) -> Decimal:
         integer(quantity, 'quantity')
         integer(legs, 'legs')
-        return spec.tick_size * spec.multiplier * quantity * self.slippage_ticks * legs
+        if type(prices) is not tuple or prices and len(prices) != legs:
+            raise DomainError('validation_failed', 'slippage leg price context')
+        for price in prices:
+            decimal_value(price, 'slippage reference', positive=True)
+        if prices:
+            distance = sum((spec.slippage_distance(price, self.slippage_ticks) for price in prices), ZERO)
+        else:
+            # Historical fixed-price callers retain exactly their old result.
+            # Missing band price context uses the global largest tick plus one
+            # outward-grid allowance for an unknown off-grid VWAP basis. It
+            # never substitutes a smaller first-band scalar. This is a local
+            # conservative cost bound, not a broker execution guarantee.
+            ticks = self.slippage_ticks + (1 if spec.price_bands and self.slippage_ticks else 0)
+            distance = max((band.tick for band in spec.price_bands), default=spec.tick_size) * ticks * legs
+        return distance * spec.multiplier * quantity
 
     @decimal_operation
     def loss_at_stop(self, spec: InstrumentSpec, entry: Decimal, stop: Decimal, quantity: int, side: Side = Side.BUY) -> Decimal:
-        return abs(entry - stop) * spec.multiplier * quantity + self.round_trip(spec, entry, stop, quantity, side) + self.slippage(spec, quantity)
+        return (
+            abs(entry - stop) * spec.multiplier * quantity
+            + self.round_trip(spec, entry, stop, quantity, side)
+            + self.slippage(spec, quantity, prices=(entry, stop))
+        )
 
     def unit_risk(self, spec: InstrumentSpec, entry: Decimal, stop: Decimal, side: Side = Side.BUY) -> Decimal:
         return self.loss_at_stop(spec, entry, stop, 1, side)
@@ -83,4 +101,4 @@ class FeeSchedule:
     @decimal_operation
     def entry_cash(self, spec: InstrumentSpec, price: Decimal, quantity: int, side: Side = Side.BUY) -> Decimal:
         principal = price * quantity if spec.market is Market.STOCK else (spec.margin or ZERO) * quantity
-        return principal + self.transaction(spec, side, price, quantity) + self.slippage(spec, quantity)
+        return principal + self.transaction(spec, side, price, quantity) + self.slippage(spec, quantity, prices=(price, price))

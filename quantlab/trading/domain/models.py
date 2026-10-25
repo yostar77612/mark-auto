@@ -53,6 +53,40 @@ class OrderStatus(str, Enum):
 
 
 @dataclass(frozen=True)
+class PriceBand:
+    """Half-open Decimal price interval with a zero-origin legal price grid."""
+
+    lower: Decimal
+    upper: Decimal | None
+    tick: Decimal
+
+    @decimal_operation
+    def __post_init__(self) -> None:
+        decimal_value(self.lower, 'band lower', nonnegative=True)
+        decimal_value(self.tick, 'band tick', positive=True)
+        if self.upper is not None:
+            decimal_value(self.upper, 'band upper', positive=True)
+            if self.upper <= self.lower or self.upper % self.tick:
+                raise DomainError('validation_failed', 'band upper/grid')
+        if self.lower % self.tick:
+            raise DomainError('validation_failed', 'band lower/grid')
+
+
+def validate_price_bands(bands: tuple[PriceBand, ...], *, base_tick: Decimal | None = None) -> None:
+    """One complete-table validator shared with the SDK normalizer."""
+    if base_tick is not None:
+        decimal_value(base_tick, 'base tick', positive=True)
+    if type(bands) is not tuple or len(bands) > 64 or any(not isinstance(band, PriceBand) for band in bands):
+        raise DomainError('validation_failed', 'typed bounded price bands')
+    if bands:
+        if bands[0].lower != 0 or bands[-1].upper is not None or base_tick is not None and base_tick != bands[0].tick:
+            raise DomainError('validation_failed', 'complete price bands/base tick required')
+        for previous, current in zip(bands, bands[1:]):
+            if previous.upper is None or previous.upper != current.lower:
+                raise DomainError('validation_failed', 'price bands must be ordered without gaps or overlap')
+
+
+@dataclass(frozen=True)
 class InstrumentSpec:
     instrument_id: str
     market: Market
@@ -74,6 +108,7 @@ class InstrumentSpec:
     settlement_rule_id: str = 'cash-funded-v1'
     corporate_action_version: str = 'none-v1'
     schema_version: int = 2
+    price_bands: tuple[PriceBand, ...] = ()
 
     def __post_init__(self) -> None:
         for name in (
@@ -93,6 +128,7 @@ class InstrumentSpec:
         integer(self.lot_size, 'lot_size', 1)
         decimal_value(self.multiplier, 'multiplier', positive=True)
         decimal_value(self.tick_size, 'tick_size', positive=True)
+        validate_price_bands(self.price_bands, base_tick=self.tick_size)
         aware(self.effective_at)
         expected = QuantityUnit.SHARE if self.market is Market.STOCK else QuantityUnit.CONTRACT
         if self.unit is not expected or self.market is Market.STOCK and self.multiplier != 1:
@@ -116,9 +152,17 @@ class InstrumentSpec:
         if unit is not self.unit or quantity % self.lot_size and not (self.market is Market.STOCK and odd_lot):
             raise DomainError('validation_failed', 'quantity unit or trading lot')
 
+    def tick_for(self, price: Decimal) -> Decimal:
+        decimal_value(price, 'price', positive=True)
+        for band in self.price_bands:
+            if band.lower <= price and (band.upper is None or price < band.upper):
+                return band.tick
+        return self.tick_size
+
+    @decimal_operation
     def validate_price(self, price: Decimal) -> None:
         decimal_value(price, 'price', positive=True)
-        if price % self.tick_size:
+        if price % self.tick_for(price):
             raise DomainError('validation_failed', 'price tick')
 
     @decimal_operation
@@ -126,9 +170,62 @@ class InstrumentSpec:
         decimal_value(price, 'price', positive=True)
         if type(up) is not bool:
             raise DomainError('validation_failed', 'price rounding direction')
-        rounded = (price / self.tick_size).to_integral_value(rounding=ROUND_CEILING if up else ROUND_FLOOR) * self.tick_size
+        tick = self.tick_for(price)
+        rounded = (price / tick).to_integral_value(rounding=ROUND_CEILING if up else ROUND_FLOOR) * tick
         self.validate_price(rounded)
         return rounded
+
+    @decimal_operation
+    def shift_ticks(self, price: Decimal, signed_ticks: int) -> Decimal:
+        """Move along the executable grid, using the preceding band on a down-step.
+
+        Every boundary belongs to the upper band for validation, but the next
+        lower legal price uses the lower band's tick. Jump by whole intervals
+        rather than looping per tick; runtime is bounded by the band count.
+        """
+        self.validate_price(price)
+        integer(abs(signed_ticks) if type(signed_ticks) is int else signed_ticks, 'signed tick movement')
+        if not self.price_bands:
+            result = price + self.tick_size * signed_ticks
+            self.validate_price(result)
+            return result
+        remaining = abs(signed_ticks)
+        current = price
+        upwards = signed_ticks >= 0
+        while remaining:
+            index = next(i for i, band in enumerate(self.price_bands) if band.lower <= current and (band.upper is None or current < band.upper))
+            if not upwards and index and current == self.price_bands[index].lower:
+                index -= 1
+            band = self.price_bands[index]
+            boundary = band.upper if upwards else band.lower
+            available = remaining if boundary is None else int(abs(boundary - current) / band.tick)
+            steps = min(remaining, available)
+            if not steps:
+                raise DomainError('validation_failed', 'tick movement crosses zero')
+            current += band.tick * steps * (1 if upwards else -1)
+            remaining -= steps
+            if current <= 0:
+                raise DomainError('validation_failed', 'tick movement crosses zero')
+        self.validate_price(current)
+        return current
+
+    @decimal_operation
+    def slippage_distance(self, price: Decimal, ticks: int) -> Decimal:
+        """Worst adverse distance in either direction, including band crossings."""
+        decimal_value(price, 'slippage reference', positive=True)
+        integer(ticks, 'slippage ticks')
+        if not self.price_bands or not ticks:
+            return self.tick_size * ticks
+        # A cumulative fill/VWAP is a valid valuation basis even when it lies
+        # between grid points. Round outwards, never reject that known basis.
+        up = self.shift_ticks(self.round_price(price, up=True), ticks) - price
+        try:
+            down = price - self.shift_ticks(self.round_price(price), -ticks)
+        except DomainError:
+            # A nonpositive quote cannot execute; a complete loss to zero is
+            # still a conservative bound for every positive down-grid price.
+            down = price
+        return max(up, down)
 
 
 @dataclass(frozen=True)

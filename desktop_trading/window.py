@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 from PySide6.QtCore import QThread, QTimer, Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QComboBox, QMainWindow, QMessageBox, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QFileDialog, QMainWindow, QMessageBox, QVBoxLayout
 
 from desktop_strings import ui_text
 from quantlab.trading.application.contracts import BrokerSettings, SettingsForm, StrategyForm, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
@@ -50,11 +50,12 @@ class TradingWindow(QMainWindow):
         self.state = initial_state
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
-        self._rendered_version: tuple[int, int] | None = None
+        self._rendered_version: tuple[int, int, int] | None = None
         self._context_rendering = False
         self._settings_dirty = False
         self._last_feedback = ''
         self._engine_reachable = True
+        self._connecting_request = False
         self._screen_hooked = False
         self.setObjectName('multi_market_window')
         self.setWindowTitle(ui_text('v2.title'))
@@ -103,8 +104,25 @@ class TradingWindow(QMainWindow):
         account_ref: str = '',
         destination_strategy_id: str = '',
         broker_settings: BrokerSettings | None = None,
+        context_id: str | None = None,
+        profile_ref: str = '',
     ) -> None:
-        self._run(UiCommand(action, self.state.version, target_id, strategy, settings, environment, account_ref, destination_strategy_id, broker_settings))
+        self._run(
+            UiCommand(
+                action,
+                self.state.version,
+                target_id,
+                strategy,
+                settings,
+                environment,
+                account_ref,
+                destination_strategy_id,
+                broker_settings,
+                self.state.context_id if context_id is None else context_id,
+                profile_ref,
+                self.state.context_epoch if self.state.contexts else None,
+            )
+        )
 
     def _run(self, command: UiCommand | None) -> None:
         if self._priority_operation is not None:
@@ -118,7 +136,10 @@ class TradingWindow(QMainWindow):
                 else:
                     self._feedback(ui_text('v2.busy'))
             return
-        operation = _Operation(self.facade, command, self)
+        # Navigation is read-only: refresh its observation stamp while keeping
+        # the selected context epoch. Actual book mutations retain the exact
+        # version the user reviewed and are never silently refreshed/retried.
+        operation = _Operation(self.facade, command, self, refresh_before=command is not None and command.action is UiAction.SWITCH_CONTEXT)
         self._operation = operation
         operation.completed.connect(self._completed)
         operation.failed.connect(self._failed)
@@ -132,7 +153,14 @@ class TradingWindow(QMainWindow):
         self._result(state, receipt, action)
 
     def _priority_stop(self) -> None:
-        operation = _Operation(self.facade, UiCommand(UiAction.STOP_NEW, self.state.version), self, refresh_before=True)
+        operation = _Operation(
+            self.facade,
+            UiCommand(
+                UiAction.STOP_NEW, self.state.version, context_id=self.state.context_id, context_epoch=self.state.context_epoch if self.state.contexts else None
+            ),
+            self,
+            refresh_before=True,
+        )
         self._priority_operation = operation
         operation.completed.connect(self._priority_completed)
         operation.failed.connect(self._failed)
@@ -150,7 +178,7 @@ class TradingWindow(QMainWindow):
             operation.deleteLater()
 
     def _result(self, state: UiState, receipt: UiReceipt | None, action: UiAction | None) -> None:
-        if (state.version, state.quote_revision) < (self.state.version, self.state.quote_revision):
+        if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
         if receipt is not None and receipt.accepted:
@@ -158,9 +186,17 @@ class TradingWindow(QMainWindow):
                 self._settings_dirty = False
             elif action == UiAction.SAVE_BROKER_SETTINGS:
                 self.broker_panel.dirty = False
+        if action in (UiAction.SWITCH_CONTEXT, UiAction.ADD_CONTEXT):
+            self._rendered_version = None
         self.apply_state(state)
         if receipt is not None:
-            self._feedback(receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed'))
+            message = receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed')
+            if receipt.accepted and receipt.code == 'connection_pending':
+                self._connecting_request = state.engine_state == 'CONNECTING'
+                message = ui_text('v2.connection_pending' if self._connecting_request else 'v2.connection_request_finished')
+            if action is UiAction.SWITCH_CONTEXT and not receipt.accepted:
+                message = ui_text('v2.context_switch_failed').format(self._environment_label(state.environment), state.account_ref, message)
+            self._feedback(message)
             self.notice.setAccessibleName(receipt.code)
             if receipt.accepted and receipt.reference:
                 for row in range(self.strategies.rowCount()):
@@ -283,7 +319,12 @@ class TradingWindow(QMainWindow):
             self.command(UiAction.TRANSFER, identity, destination_strategy_id=destinations.currentData())
 
     def shutdown_engine(self) -> None:
-        if self._confirm(ui_text('v2.shutdown_summary').format(len(self.state.positions), len(self.state.orders))):
+        summary = (
+            ui_text('v2.shutdown_summary').format(len(self.state.positions), len(self.state.orders))
+            if self.state.financial_facts_verified
+            else ui_text('v2.shutdown_unverified')
+        )
+        if self._confirm(summary):
             self.command(UiAction.SHUTDOWN_ENGINE)
 
     def save_settings(self) -> None:
@@ -305,16 +346,56 @@ class TradingWindow(QMainWindow):
     def _populate_accounts(self, environment: Environment) -> None:
         self._context_rendering = True
         self.account.clear()
-        for item in self.state.accounts:
-            if item.environment == environment:
-                self.account.addItem(item.account_ref, item.account_ref)
+        if self.state.contexts:
+            for item in self.state.contexts:
+                if item.environment == environment:
+                    for account_ref in item.account_refs:
+                        caption = (item.label + ' · ' if item.label else '') + account_ref
+                        if item.status != 'CONFIGURED':
+                            caption += ' · ' + ui_text('v2.context_unavailable')
+                        self.account.addItem(caption, (item.context_id, account_ref))
+        else:
+            for item in self.state.accounts:
+                if item.environment == environment:
+                    self.account.addItem(item.account_ref, item.account_ref)
         self._context_rendering = False
 
     def _switch_context(self) -> None:
         if not self._context_rendering and self.account.currentData():
-            self.command(UiAction.SWITCH_CONTEXT, environment=Environment(self.environment.currentData()), account_ref=self.account.currentData())
+            selected = self.account.currentData()
+            context_id, account_ref = (selected[0], selected[1]) if self.state.contexts else ('', selected)
+            if self.state.contexts and (context_id, account_ref) == (self.state.context_id, self.state.account_ref):
+                return
+            if self._settings_dirty or self.broker_panel.dirty:
+                if not self._confirm(ui_text('v2.context_unsaved')):
+                    self._rendered_version = None
+                    self.apply_state(self.state)
+                    return
+            if self.state.positions and not self._confirm(
+                ui_text('v2.context_background_book').format(self._environment_label(self.state.environment), self.state.account_ref, len(self.state.positions))
+            ):
+                self._rendered_version = None
+                self.apply_state(self.state)
+                return
+            self.command(UiAction.SWITCH_CONTEXT, environment=Environment(self.environment.currentData()), account_ref=account_ref, context_id=context_id)
         elif not self._context_rendering:
             self._feedback(ui_text('v2.no_account'))
+
+    def add_context(self) -> None:
+        selected = Environment(self.environment.currentData())
+        if selected is Environment.LOCAL:
+            self._feedback(ui_text('v2.context_profile_broker_only'))
+            return
+        path, _ = QFileDialog.getOpenFileName(self, ui_text('v2.context_add_profile'), '', ui_text('v2.context_profile_filter'))
+        if path:
+            self.command(UiAction.ADD_CONTEXT, environment=selected, profile_ref=path)
+
+    def connect_read_only(self) -> None:
+        if self.state.environment is Environment.LOCAL:
+            self._feedback(ui_text('v2.context_profile_broker_only'))
+            return
+        if self._confirm(ui_text('v2.connect_readonly_summary').format(self._environment_label(self.state.environment), self.state.account_ref)):
+            self.command(UiAction.CONNECT_READ_ONLY)
 
     @staticmethod
     def _environment_label(environment: Environment) -> str:
@@ -329,32 +410,69 @@ class TradingWindow(QMainWindow):
         return ui_text({'STOCK': 'v2.stock', 'INDEX_FUTURE': 'v2.index_future', 'STOCK_FUTURE': 'v2.stock_future'}[market.value])
 
     def apply_state(self, state: UiState) -> None:
-        if (state.version, state.quote_revision) < (self.state.version, self.state.quote_revision):
+        if self._stamp(state) < self._stamp(self.state):
             return
+        freshness_changed = (
+            state.financial_facts_verified != self.state.financial_facts_verified
+            or tuple((item.instrument_id, item.availability) for item in state.markets)
+            != tuple((item.instrument_id, item.availability) for item in self.state.markets)
+            or tuple((item.strategy_id, item.version, item.net_pnl is None, item.unrealized_pnl is None) for item in state.performance)
+            != tuple((item.strategy_id, item.version, item.net_pnl is None, item.unrealized_pnl is None) for item in self.state.performance)
+        )
+        changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
+        if changed_context:
+            self._settings_dirty = False
+            self.broker_panel.dirty = False
+            self._last_feedback = ''
+            self._rendered_version = None
+            self._connecting_request = False
+            for table in (self.strategies, self.positions, self.orders, self.reconciliation):
+                table.clearSelection()
+                table.setCurrentCell(-1, -1)
         self.state = state
+        if self._connecting_request and state.engine_state != 'CONNECTING':
+            self._connecting_request = False
+            self._last_feedback = ui_text('v2.connection_request_finished')
+        account_caption = state.account_ref
+        option = next((item for item in state.contexts if item.context_id == state.context_id), None)
+        if option and option.label:
+            account_caption = ui_text('v2.account_context_caption').format(state.account_ref, option.label)
         self.context.setText(
             ui_text('v2.context_line').format(
                 self._environment_label(state.environment),
-                state.account_ref,
+                account_caption,
                 state_label(state.engine_state),
-                state.trading_day,
-                policy_label(state.policy_label),
+                state.trading_day or ui_text('v2.context_unknown_day'),
+                policy_label(state.policy_label) if state.policy_label else ui_text('v2.context_no_policy'),
             )
         )
-        self.summary.setText(ui_text('v2.summary_line').format(state.allocated_cash, state.daily_pnl, state.remaining_risk, state_label(state.quote_status)))
+        if state.financial_facts_verified and state.daily_pnl is not None and state.remaining_risk is not None:
+            self.summary.setText(
+                ui_text('v2.summary_line').format(state.allocated_cash, state.daily_pnl, state.remaining_risk, state_label(state.quote_status))
+            )
+        else:
+            self.summary.setText(ui_text('v2.summary_unknown_line').format(state.allocated_cash, state_label(state.quote_status)))
         self.notice.setText(
             ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else self._last_feedback or ui_text('v2.no_issues')
         )
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
-        render_version = (state.version, state.quote_revision)
-        if self._rendered_version == render_version:
+        self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
+        self.add_context_button.setVisible(bool(state.contexts))
+        self.overview_status.setText(
+            ui_text('v2.context_facts_pending')
+            if not state.financial_facts_verified
+            else ui_text('v2.local_data')
+            if state.synthetic_data
+            else ui_text('v2.external_data')
+        )
+        render_version = self._stamp(state)
+        if self._rendered_version == render_version and not freshness_changed:
             return
-        state_changed = self._rendered_version is None or self._rendered_version[0] != state.version
+        state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
         if not state_changed:
             return
-        self.overview_status.setText(ui_text('v2.local_data') if state.synthetic_data else ui_text('v2.external_data'))
         self.overview_deployments.setText(
             '\n'.join(f'{item.name} · v{item.version} · {policy_label(item.policy_label)} · {state_label(item.state)}' for item in state.strategies[-10:])
             or ui_text('v2.no_strategies')
@@ -371,7 +489,12 @@ class TradingWindow(QMainWindow):
         self.environment.setCurrentIndex(self.environment.findData(state.environment))
         self._populate_accounts(state.environment)
         self._context_rendering = True
-        self.account.setCurrentIndex(self.account.findData(state.account_ref))
+        wanted = (state.context_id, state.account_ref) if state.contexts else state.account_ref
+        if state.contexts:
+            selected = next((i for i in range(self.account.count()) if tuple(self.account.itemData(i)) == wanted), -1)
+        else:
+            selected = self.account.findData(wanted)
+        self.account.setCurrentIndex(selected)
         if not self._settings_dirty:
             self.stock_budget.setText(str(state.settings.stock_allocation))
             self.futures_budget.setText(str(state.settings.futures_allocation))
@@ -379,13 +502,23 @@ class TradingWindow(QMainWindow):
         self._context_rendering = False
         self.broker_panel.apply(state.broker_settings, state.broker_readiness)
 
+    @staticmethod
+    def _stamp(state: UiState) -> tuple[int, int, int]:
+        return state.context_epoch, state.version, state.quote_revision
+
     def closeEvent(self, event) -> None:
         if self._operation is not None or self._priority_operation is not None:
             self._feedback(ui_text('v2.busy'))
             event.ignore()
             return
         close_key = (
-            'v2.close_unknown' if not self._engine_reachable else 'v2.close_already_stopped' if self.state.engine_state == 'CLOSED' else 'v2.close_summary'
+            'v2.close_unverified'
+            if not self.state.financial_facts_verified
+            else 'v2.close_unknown'
+            if not self._engine_reachable
+            else 'v2.close_already_stopped'
+            if self.state.engine_state == 'CLOSED'
+            else 'v2.close_summary'
         )
         if not self.property('allow_close_for_tests') and not self._confirm(
             ui_text(close_key).format(state_label(self.state.engine_state), len(self.state.positions))

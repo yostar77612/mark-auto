@@ -286,7 +286,7 @@ def _prepare_open(engine: 'TradingEngine', job: RollJob) -> RollJob:
     spec = engine.catalog.resolve(job.new_instrument_id)
     side = job.source_lot.direction
     price = quote.ask if side is Side.BUY else quote.bid
-    stop = price - spec.tick_size * 10 * (1 if side is Side.BUY else -1)
+    stop = spec.shift_ticks(price, -10 * (1 if side is Side.BUY else -1))
     plan = OrderPlan(
         'roll-open:' + job.job_id,
         job.source_lot.account_ref,

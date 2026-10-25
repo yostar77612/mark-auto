@@ -103,6 +103,9 @@ class RiskService:
             raise DomainError('instrument_unresolved', 'specification not effective')
         spec.validate_quantity(plan.quantity, plan.unit, odd_lot=capabilities.odd_lot)
         spec.validate_price(plan.limit_price)
+        if spec.price_bands:
+            for price in (quote.bid, quote.ask, quote.last):
+                spec.validate_price(price)
         if quote.session == 'NIGHT' and not policy.night_enabled:
             raise DomainError('session_closed', 'night execution disabled')
         if not plan.reduce_only:

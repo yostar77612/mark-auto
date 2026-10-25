@@ -103,7 +103,7 @@ def research(
             rule_exit = age >= strategy.policy.min_days and exit_signal(strategy, history, now)
             if rule_exit or age >= strategy.policy.max_days or index == len(bars) - 1 or spec.expiry is not None and bar.opened_at.date() >= spec.expiry:
                 sign = 1 if strategy.form.direction is Side.BUY else -1
-                exit_price = bar.open - spec.tick_size * sign
+                exit_price = spec.shift_ticks(bar.open, -sign)
                 gross = (exit_price - entry_price) * quantity * spec.multiplier * sign
                 costs = fees.transaction(spec, strategy.form.direction, entry_price, quantity) + fees.transaction(
                     spec, Side.SELL if sign == 1 else Side.BUY, exit_price, quantity
@@ -117,9 +117,9 @@ def research(
             ensure_execution_after_signal(history[-1], now)
             if spec.expiry is None or bar.opened_at.date() < spec.expiry:
                 sign = 1 if strategy.form.direction is Side.BUY else -1
-                position = (index, bar.open + spec.tick_size * sign)
+                position = (index, spec.shift_ticks(bar.open, sign))
                 if strategy.policy.max_days == 0:
-                    exit_price = bar.close - spec.tick_size * sign
+                    exit_price = spec.shift_ticks(bar.close, -sign)
                     gross = (exit_price - position[1]) * quantity * spec.multiplier * sign
                     costs = fees.transaction(spec, strategy.form.direction, position[1], quantity) + fees.transaction(
                         spec, Side.SELL if sign == 1 else Side.BUY, exit_price, quantity

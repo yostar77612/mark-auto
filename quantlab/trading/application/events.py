@@ -1,6 +1,7 @@
 """Monotone broker event reduction and explicit reconciliation of unknown work."""
 
 from dataclasses import replace
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from hashlib import sha256
@@ -11,10 +12,10 @@ from .execution import check_event
 from .state import ACTIVE, EventCursor, replace_order
 from .reconciliation_views import differences
 from .reconciliation_state import confirmed_availability
-from quantlab.trading.domain.models import Market, PositionLot, Side
+from quantlab.trading.domain.models import Environment, Market, PositionLot, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
-from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.ports.contracts import OrderEvent
+from quantlab.trading.domain.validation import DomainError, aware
+from quantlab.trading.ports.contracts import OrderEvent, RemoteSnapshot
 
 if TYPE_CHECKING:
     from .engine import TradingEngine
@@ -132,24 +133,53 @@ def poll_events(engine: 'TradingEngine') -> None:
             for event in gateway.events(account, cursor(engine, account)):
                 apply_event(engine, event)
     except DomainError as exc:
-        engine._persist('event_quarantine', replace(engine.state, stopped=True, reconciled=False, issues=tuple(sorted(set((*engine.state.issues, exc.code))))))
+        quarantined = replace(engine.state, stopped=True, reconciled=False, issues=tuple(sorted(set((*engine.state.issues, exc.code)))))
+        if quarantined != engine.state:
+            engine._persist('event_quarantine', quarantined)
         raise
 
 
+def validate_account_observation(account: str, environment: Environment, now: datetime, remote: RemoteSnapshot) -> None:
+    """One freshness/identity authority for queried and supplied broker facts."""
+    aware(now)
+    if (
+        not isinstance(remote, RemoteSnapshot)
+        or remote.account.account_ref != account
+        or remote.account.environment is not environment
+        or not 0 <= (now - remote.as_of).total_seconds() <= 30
+        or not 0 <= (now - remote.account.as_of).total_seconds() <= 30
+    ):
+        raise DomainError('reconciliation_required', 'stale or mismatched account observation')
+
+
+def validate_observation(engine: 'TradingEngine', account: str, remote: RemoteSnapshot) -> None:
+    validate_account_observation(account, engine.configuration.environment, engine.clock.now(), remote)
+
+
 @decimal_operation
-def reconcile(engine: 'TradingEngine') -> None:
+def reconcile(engine: 'TradingEngine', *, snapshots: dict[str, RemoteSnapshot] | None = None) -> None:
     """Query-only reconciliation. Missing/ambiguous/external work stays visible."""
     from .sessions import synchronize_session, BASELINE_ISSUE
 
+    if snapshots is not None:
+        if not engine.configuration.read_only:
+            raise DomainError('capability_missing', 'precollected observations are read-only')
+        if type(snapshots) is not dict or set(snapshots) != set(engine.gateways):
+            raise DomainError('reconciliation_required', 'complete account observations required')
+        for account, remote in snapshots.items():
+            validate_observation(engine, account, remote)
     synchronize_session(engine)
     engine._persist('reconciliation_started', replace(engine.state, stopped=True, reconciled=False))
     from .lifecycle import recover_corporate_actions
 
     recover_corporate_actions(engine)
     unresolved: list[str] = []
+    observed: list[tuple[str, RemoteSnapshot]] = []
     for account, gateway in engine.gateways.items():
         try:
-            remote = gateway.refresh(account)
+            remote = snapshots[account] if snapshots is not None else gateway.refresh(account)
+            validate_observation(engine, account, remote)
+            observed.append((account, remote))
         except Exception:
             engine._persist(
                 'reconciliation_query_failed',
@@ -208,3 +238,4 @@ def reconcile(engine: 'TradingEngine') -> None:
     engine._persist('reconciliation_complete' if not unresolved else 'reconciliation_unresolved', state)
     if unresolved:
         raise DomainError('reconciliation_required', 'unresolved account differences')
+    engine.confirmed_observations = (tuple(observed), engine.state.version, engine.quote_count)

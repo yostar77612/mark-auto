@@ -10,16 +10,20 @@ from threading import BoundedSemaphore, Event, Lock, Thread
 from time import monotonic
 from uuid import uuid4
 
+from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
-from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.domain.validation import DomainError
-from .build import create_engine
+from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
+from .config import RuntimeLaunch
 from .control_secret import protect
 from .protocol import Metrics, Operation, Request, Response
 
 
-def _metrics(engine) -> Metrics:
-    subscriptions = sum(len(broker.subscriptions) for broker in engine.gateways.values())
+def _metrics(bundle: RuntimeBundle) -> Metrics:
+    engine = bundle.engine
+    if engine is None:
+        return Metrics(0, 0, 0, os.getpid())
+    subscriptions = sum(len(getattr(broker, 'subscriptions', ())) for broker in engine.gateways.values())
     return Metrics(
         engine.quote_count,
         len(engine.quotes),
@@ -31,27 +35,38 @@ def _metrics(engine) -> Metrics:
     )
 
 
-def _dispatch(engine, facade: LocalFacade, request: Request) -> Response:
+def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     now = datetime.now(timezone.utc)
     if not now < request.deadline or (request.deadline - now).total_seconds() > 30:
         raise DomainError('state_conflict', 'expired command envelope')
-    if request.environment is not engine.configuration.environment or request.account_ref not in engine.gateways:
+    if request.environment is not bundle.launch.environment or request.account_ref not in bundle.account_refs:
         raise DomainError('capability_missing', 'explicit running account/environment required')
     if request.operation is Operation.SNAPSHOT:
-        return Response(request.request_id, state=facade.snapshot())
+        return Response(request.request_id, state=bundle.snapshot())
     if request.operation is Operation.COMMAND:
-        receipt = facade.execute(request.command)
-        return Response(request.request_id, state=facade.snapshot(), receipt=receipt)
+        if not isinstance(request.command.action, UiAction):
+            raise DomainError('validation_failed', 'typed UI action required')
+        if request.command.action.value == 'connect_read_only':
+            receipt = bundle.connect_read_only(request.command)
+        else:
+            receipt = bundle.execute(request.command)
+        return Response(request.request_id, state=bundle.snapshot(), receipt=receipt)
     if request.operation is Operation.QUOTES:
         if len(request.quotes.items) > 1000:
             raise DomainError('validation_failed', 'quote batch limit')
+        engine = bundle.engine
+        if engine is None:
+            raise DomainError('capability_missing', 'disconnected context has no market-data port')
         with engine.lock:
             for quote in request.quotes.items:
                 engine.quote(quote)
-            return Response(request.request_id, metrics=_metrics(engine))
+            return Response(request.request_id, metrics=_metrics(bundle))
     if request.operation is Operation.METRICS:
+        engine = bundle.engine
+        if engine is None:
+            return Response(request.request_id, metrics=_metrics(bundle))
         with engine.lock:
-            return Response(request.request_id, metrics=_metrics(engine))
+            return Response(request.request_id, metrics=_metrics(bundle))
     raise DomainError('validation_failed', 'unsupported operation')
 
 
@@ -71,8 +86,8 @@ class _BoundedAuthentication:
 class _Handlers:
     """Bounded clients may wait for research without owning the writer lock."""
 
-    def __init__(self, engine, facade: LocalFacade, key: bytes):
-        self.engine, self.facade, self.key = engine, facade, key
+    def __init__(self, bundle: RuntimeBundle, key: bytes):
+        self.bundle, self.key = bundle, key
         self.slots, self.lock = BoundedSemaphore(8), Lock()
         self.threads: set[Thread] = set()
 
@@ -110,7 +125,7 @@ class _Handlers:
             if not isinstance(value, Request):
                 raise DomainError('validation_failed', 'typed request required')
             request_id = value.request_id
-            response = _dispatch(self.engine, self.facade, value)
+            response = _dispatch(self.bundle, value)
         except (OSError, EOFError, UnicodeError, DomainError) as exc:
             response = Response(request_id, code=exc.code if isinstance(exc, DomainError) else 'operation_failed')
         try:
@@ -130,39 +145,74 @@ class _Handlers:
         raise DomainError('operation_failed', 'owned request handlers did not finish')
 
 
-def serve(root: Path) -> int:
+def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: EngineFactory | None = None) -> int:
     root = root.resolve()
-    engine = create_engine(root)
-    facade = LocalFacade(engine)
+    launch = launch or RuntimeLaunch(root)
+    if launch.root.resolve() != root:
+        raise DomainError('validation_failed', 'launch and server roots differ')
+    bundle = build_runtime(launch, engine_factory=engine_factory)
     family = 'AF_PIPE' if os.name == 'nt' else 'AF_UNIX'
     address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else str(root / ('engine-' + uuid4().hex + '.sock'))
     key = os.urandom(32)
     # Authenticate in bounded handlers, so an unauthenticated peer cannot hold
     # the accept loop or prevent the ownership heartbeat/protective processing.
-    listener = Listener(address, family=family, authkey=None)
-    handlers = _Handlers(engine, facade, key)
-    if os.name != 'nt':
-        os.chmod(address, 0o600)
+    listener = None
     metadata = root / 'engine-session-v2.json'
     temp = root / ('session-' + uuid4().hex + '.tmp')
-    body = {'schema_version': 2, 'address': address, 'family': family, 'protected_key': protect(key).hex(), 'process_id': os.getpid()}
-    temp.write_text(json.dumps(body, sort_keys=True), encoding='utf-8')
-    if os.name != 'nt':
-        os.chmod(temp, 0o600)
-    temp.replace(metadata)
+    try:
+        listener = Listener(address, family=family, authkey=None)
+        handlers = _Handlers(bundle, key)
+        if os.name != 'nt':
+            os.chmod(address, 0o600)
+        body = {'schema_version': 2, 'address': address, 'family': family, 'protected_key': protect(key).hex(), 'process_id': os.getpid()}
+        temp.write_text(json.dumps(body, sort_keys=True), encoding='utf-8')
+        if os.name != 'nt':
+            os.chmod(temp, 0o600)
+        temp.replace(metadata)
+    except BaseException:
+        if listener is not None:
+            listener.close()
+        if temp.exists():
+            temp.unlink()
+        bundle.close()
+        raise
     stopped = Event()
 
     def heartbeat() -> None:
         while not stopped.wait(5):
             try:
-                with engine.lock:
-                    engine.fence()
-                    engine.simulation.ledger.heartbeat(datetime.now(timezone.utc))
+                bundle.heartbeat()
             except Exception:
-                engine.storage_failed = True
+                target = bundle.engine if bundle.engine is not None else bundle.facade
+                target.storage_failed = True
 
     watcher = Thread(target=heartbeat, name='markauto-ownership-heartbeat', daemon=True)
     watcher.start()
+
+    def coordinate() -> None:
+        while not stopped.wait(0.5):
+            try:
+                bundle.pump()
+            except DomainError:
+                # The coordinator journals typed issues. Unknown broker state
+                # never causes automatic resubmission or an invented fill.
+                continue
+            except Exception:
+                target = bundle.engine if bundle.engine is not None else bundle.facade
+                target.storage_failed = True
+
+    coordinator = Thread(target=coordinate, name='markauto-broker-coordinator', daemon=True)
+    coordinator.start()
+
+    def poll_broker() -> None:
+        while not stopped.wait(0.5):
+            try:
+                bundle.poll_ports()
+            except DomainError:
+                continue
+
+    query_worker = Thread(target=poll_broker, name='markauto-broker-query', daemon=True)
+    query_worker.start()
 
     def accept_clients() -> None:
         while not stopped.is_set():
@@ -179,12 +229,11 @@ def serve(root: Path) -> int:
     acceptor.start()
     try:
         while not stopped.wait(0.1):
-            if engine.state.engine_closed:
+            if bundle.closed:
                 break
     finally:
         stopped.set()
-        if engine.research_runner is not None:
-            engine.research_runner.close()
+        bundle.cancel_owned_workers()
         # Wake our own raw accept without changing ACLs or killing processes.
         try:
             with Client(address, family=family, authkey=None):
@@ -194,9 +243,15 @@ def serve(root: Path) -> int:
         acceptor.join(2)
         handlers.join()
         watcher.join(2)
+        coordinator.join(3)
+        # A provider query without a cancellable API may still be waiting.
+        # It owns only normalized port/cache state, never a core journal; the
+        # cancelled generation drops its late result before any core transition.
+        query_worker.join(0.2)
         listener.close()
-        engine.journal.close()
-        engine.simulation.ledger.close()
+        if coordinator.is_alive():
+            raise DomainError('operation_failed', 'owned connector query did not finish; journal remains fenced')
+        bundle.close()
         if metadata.exists():
             try:
                 current = json.loads(metadata.read_text(encoding='utf-8'))

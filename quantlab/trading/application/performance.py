@@ -83,7 +83,7 @@ def unrealized_liquidation(engine: 'TradingEngine', lot: PositionLot) -> Decimal
     price = quote.bid if sign == 1 else quote.ask
     side = Side.SELL if sign == 1 else Side.BUY
     return (price - lot.entry_price) * lot.quantity * spec.multiplier * sign - (
-        engine.fees.transaction(spec, side, price, lot.quantity) + engine.fees.slippage(spec, lot.quantity, legs=1)
+        engine.fees.transaction(spec, side, price, lot.quantity) + engine.fees.slippage(spec, lot.quantity, legs=1, prices=(price,))
     )
 
 
