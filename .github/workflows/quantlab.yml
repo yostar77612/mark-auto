@@ -323,7 +323,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: desktop-auth-ui-linux312-${{ matrix.group }}
+          name: desktop-auth-ui-linux312-${{ matrix.group }}${{ matrix.core_slice && format('-{0}', matrix.core_slice) || '' }}-attempt-${{ github.run_attempt }}
           path: |
             dist/validation/desktop-auth-install.json
             qt-install-report.json

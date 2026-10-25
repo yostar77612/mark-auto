@@ -7,6 +7,63 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Reviewed additive source, not a regenerated snapshot or a pattern mask.
+SHORTCUT_INITIAL = rb"""$script:multiMarketShortcutProof = $null
+# ASCII source remains readable by Windows PowerShell 5.1 and PowerShell 7.
+$script:multiMarketStartMenu = Join-Path ([Environment]::GetFolderPath('Programs')) ('Mark Auto\Mark Auto ' + (-join [char[]]@(0x591A,0x5E02,0x5834,0x5E73,0x53F0)) + '.lnk')
+"""
+SHORTCUT_VERIFY = rb"""  if ($RequireMultiMarketShortcut) {
+    # Historical baseline installers need not contain the new optional entry.
+    if (-not (Test-Path -LiteralPath $script:multiMarketStartMenu)) { throw 'Multi-market Start Menu shortcut missing from candidate' }
+    $multiMarketShortcut = $shortcutShell.CreateShortcut($script:multiMarketStartMenu)
+    if ($multiMarketShortcut.TargetPath -cne $script:installedExe -or $multiMarketShortcut.Arguments -cne '--platform-v2' -or
+        [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne [IO.Path]::GetFullPath($activeDirectory)) { throw 'Multi-market shortcut target, arguments or working directory changed' }
+    $script:multiMarketShortcutProof = @{verified=$true; target=$multiMarketShortcut.TargetPath;
+      arguments=$multiMarketShortcut.Arguments; working_directory=$multiMarketShortcut.WorkingDirectory;
+      shortcut_execution='NOT RUN: exact candidate shortcut resolution only'; broker_account_validation='NOT RUN'}
+  }
+"""
+SHORTCUT_UNINSTALL = b"if (Test-Path -LiteralPath $script:multiMarketStartMenu) { throw 'Multi-market Start Menu shortcut remains after uninstall' }\n"
+SHORTCUT_RESULTS = b'  multi_market_start_menu_shortcut=$script:multiMarketShortcutProof;\n  multi_market_start_menu_shortcut_removed=$true;\n'
+INSTALL_SIGNATURE = b'function Install-Version([string]$number, [string]$manifestPath'
+SHORTCUT_SWITCH = b', [switch]$RequireMultiMarketShortcut'
+HASHES_LINE = rb'  $sourceHashes | ConvertTo-Json | Set-Content "$results\installed-source-hashes-$number.json"' + b'\n'
+ACCEPTANCE_LINE = b'$script:acceptanceProcesses = New-Object System.Collections.ArrayList\n'
+UNINSTALL_LINE = b"if ((Test-Path $startMenu) -or (Test-Path $desktop)) { throw 'Shortcut remains after uninstall' }\n"
+RESULTS_LINE = (
+    b"  tests=@('install','bundled-runtime-launch','start-menu-shortcut','desktop-shortcut','version-upgrade',"
+    b"'reject-active-upgrade','reject-active-uninstall','native-window-close','uninstall','preserve-user-data');\n"
+)
+
+
+def original_installer_lifecycle(source):
+    """Reverse only the exact reviewed additions, retaining the historical hash."""
+    source = source.replace(b'\r\n', b'\n')
+    # Each individual added declaration/field must occur exactly once as well.
+    fragments = (
+        *SHORTCUT_INITIAL.splitlines(keepends=True),
+        SHORTCUT_SWITCH,
+        SHORTCUT_VERIFY,
+        b'Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut\n',
+        SHORTCUT_UNINSTALL,
+        *SHORTCUT_RESULTS.splitlines(keepends=True),
+    )
+    if any(source.count(fragment) != 1 for fragment in fragments):
+        raise ValueError('Reviewed shortcut addition changed or was duplicated')
+    replacements = (
+        (ACCEPTANCE_LINE + SHORTCUT_INITIAL + b'try {\n', ACCEPTANCE_LINE + b'try {\n'),
+        (INSTALL_SIGNATURE + SHORTCUT_SWITCH + b') {\n', INSTALL_SIGNATURE + b') {\n'),
+        (HASHES_LINE + SHORTCUT_VERIFY + b'  Assert-Sentinel\n', HASHES_LINE + b'  Assert-Sentinel\n'),
+        (b'Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut\n', b'Install-Version $Version $CandidateManifest\n'),
+        (UNINSTALL_LINE + SHORTCUT_UNINSTALL + b'Assert-Sentinel\n', UNINSTALL_LINE + b'Assert-Sentinel\n'),
+        (RESULTS_LINE + SHORTCUT_RESULTS, RESULTS_LINE),
+    )
+    for added, original in replacements:
+        if source.count(added) != 1:
+            raise ValueError('Reviewed shortcut addition moved or its context changed')
+        source = source.replace(added, original, 1)
+    return source
+
 
 class PreparedHostSessionContracts(unittest.TestCase):
     @classmethod
@@ -19,16 +76,43 @@ class PreparedHostSessionContracts(unittest.TestCase):
         # Git's Windows checkout converts this text file to CRLF; compare the
         # original source bytes with that checkout-only transformation reversed.
         actual = (ROOT / 'packaging/test_installer.ps1').read_bytes()
-        canonical = actual.replace(b'\r\n', b'\n')
+        canonical = original_installer_lifecycle(actual)
         self.assertEqual(hashlib.sha256(canonical).hexdigest(), expected)
-        windows_checkout = canonical.replace(b'\n', b'\r\n')
-        self.assertEqual(windows_checkout.replace(b'\r\n', b'\n'), canonical)
-        self.assertEqual(hashlib.sha256(windows_checkout.replace(b'\r\n', b'\n')).hexdigest(), expected)
+        windows_checkout = actual.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n')
+        self.assertEqual(original_installer_lifecycle(windows_checkout), canonical)
+        self.assertEqual(hashlib.sha256(original_installer_lifecycle(windows_checkout)).hexdigest(), expected)
         assertion = b'$json.steps.Count -ne 7'
         self.assertIn(assertion, canonical)
         weakened = canonical.replace(assertion, b'$json.steps.Count -ne 6')
         for changed in (weakened, weakened.replace(b'\n', b'\r\n')):
             self.assertNotEqual(hashlib.sha256(changed.replace(b'\r\n', b'\n')).hexdigest(), expected)
+
+    def test_additive_shortcut_projection_rejects_original_and_new_guard_changes(self):
+        source = (ROOT / 'packaging/test_installer.ps1').read_bytes().replace(b'\r\n', b'\n')
+        expected = '010025ba604d8b9d36e2902d10ff34c3dbb6dc0e34809bfe2f4c715001c6081f'
+        mutations = (
+            (b'$json.steps.Count -ne 7', b'$json.steps.Count -ne 6'),
+            (b'$json.native_window_visible -ne $true', b'$json.native_window_visible -ne $false'),
+            (b"'--platform-v2'", b"'--platform-v1'"),
+            (b'$multiMarketShortcut.TargetPath -cne $script:installedExe -or ', b''),
+            (b'$multiMarketShortcut.Arguments -cne', b'$multiMarketShortcut.Arguments -ceq'),
+            (b'[IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne', b'[IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -ceq'),
+            (SHORTCUT_VERIFY, b''),
+            (SHORTCUT_SWITCH, b''),
+            (b'Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut', b'Install-Version $Version $CandidateManifest'),
+            (SHORTCUT_UNINSTALL, b''),
+            (SHORTCUT_RESULTS, SHORTCUT_RESULTS + SHORTCUT_RESULTS),
+        )
+        changes = [source.replace(old, new) for old, new in mutations]
+        changes.append(source.replace(SHORTCUT_VERIFY, b'').replace(b'function Smoke(', SHORTCUT_VERIFY + b'function Smoke('))
+        for changed in changes:
+            with self.subTest(change=changed):
+                self.assertNotEqual(changed, source)
+                try:
+                    original = original_installer_lifecycle(changed)
+                except ValueError:
+                    continue
+                self.assertNotEqual(hashlib.sha256(original).hexdigest(), expected)
 
     def test_supervisor_and_exact_external_provenance(self):
         for token in (

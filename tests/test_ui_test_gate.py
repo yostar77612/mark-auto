@@ -326,6 +326,10 @@ class UiTestGateTests(unittest.TestCase):
         rows = re.findall(r'^          - \{group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$', producers, re.MULTILINE)
         self.assertCountEqual(rows, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('research', '')])
         self.assertEqual(len(rows), 3)
+        self.assertIn(
+            "name: desktop-auth-ui-linux312-${{ matrix.group }}${{ matrix.core_slice && format('-{0}', matrix.core_slice) || '' }}-attempt-${{ github.run_attempt }}",
+            producers,
+        )
         self.assertIn("format('--core-slice {0}', matrix.core_slice)", producers)
         self.assertIn('fail-fast: false', producers)
         self.assertIn('python tools/ui_test_gate.py --group ${{ matrix.group }}', producers)

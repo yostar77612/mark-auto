@@ -2,6 +2,63 @@
 
 ## Current integration checkpoint — 2026-10-26
 
+### Latest follow-up after27166 — fresh CI still required
+
+Commit27166 offline40213873038 completed all35 jobs:22 successful and13 failed,
+including downstream aggregates. No producer hit its15-minute deadline. Both
+Windows remaining producers executed2306 cases in524.110/551.009s. Failed raw
+receipts remain preserved. Three source-contract failures were the old two-role
+UI matrix/CLI and two whole-legacy installer hashes; one Windows3.11 trading
+case also exceeded its original5-second STEP drain. None is reported as passed.
+
+The KVM workflow contract now requires the exact three UI producer roles and
+slice CLI while retaining every infrastructure-isolation/safety assertion. UI
+auth artifact labels include the slice and attempt, with an exact contract;
+the former shared label was ambiguous, not an observed collision failure.
+Local KVM tests executed17 cases:7 passed and10 original Linux-only skips;
+this is not native Linux execution. All11 UI gate cases passed in0.306s.
+
+Both historical safety goldens remain unchanged:ISS non-message89527e67... and
+installer lifecycle010025ba.... Exact, uniquely positioned additive projections
+remove only the reviewed new shortcut fragments before comparing every original
+byte against those original hashes. Full fixed fragments, counts, order and
+context are mandatory; no broad mask or regenerated expected hash is used.
+Two added mutation-negative cases reject changes to original seven-step/native/
+privilege/flag/path guards and new activation/target/arguments/working-directory/
+verification/uninstall checks. Both full modules passed37/37 in0.526s, no skips.
+
+Controlled Qt/real-ledger observations located substantial fixture event-pump
+waiting.37 identical WAL/FULL writes completed with every Qt callback in an
+interleaved ABCCBA comparison; a real QApplication event loop was consistently
+faster than manual processEvents/qWait pumps. No production, durability, fencing
+or transaction code was changed. The integration fixture now enters the actual
+outer Qt loop with an owned precise timer and its single original monotonic
+5-second deadline. The original two completion assertions and40-step bound
+remain. Timer cleanup is explicit; unexpected early exit still fails. A real
+blocked-snapshot negative confirms the original deadline fails before release,
+Qt events are dispatched and the owned worker is cleaned up. The first quit()
+trial failed this negative because window-close veto delayed exit; that failed
+receipt remains. Using the existing explicit exit(0) lifecycle fixes only the
+test loop and leaves the window intact.
+
+Final12/12 integration cases passed in46.305s, no skips, ordinary-user pinned
+Windows3.13.16. The roll's final STEP took0.898319s versus4.138755s in the manual
+pump observation; all379 append scope/kind records stayed in the same order and
+all47 lease confirmations remained. Failed/invalid observers and all comparison
+runs are retained with scope and cache/CPU-resolution limitations in
+`ROLL_STEP_27166_DIAGNOSIS.md`. No original CI worker stack existed, so local
+observations are not retroactive proof of its exact cause. Fresh actual hosted
+3.11/3.12 and installer regression remain required before merge.
+
+Follow-up integrated checks:685-file Ruff lint/format,653-file3.11-target AST
+on3.13.11, static/history, architecture and staged whitespace all passed.
+The unchanged local prepush again stopped at the absent py-3.11 launcher; no
+local3.11 execution or full-prepush pass is claimed. The before/after Git context
+is equal in `final-integration-checks-qtfinal2.json`. Production PS scripts are
+unchanged from the already validated14-script native parser receipt.
+
+### Preserved earlier integration checkpoints
+
 PR96 remains open; main is still `6c2ea528122f4a69cf415e59052fac4fc6233bff`.
 The owner additionally authorized downloading/installing the merged main package
 and repeating complete functional and physical-screen checks on this computer.

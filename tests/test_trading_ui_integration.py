@@ -3,14 +3,18 @@
 from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
+import io
+import json
 from pathlib import Path
+import sys
 import tempfile
+import threading
 import time
+import traceback
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QCoreApplication, QEvent, QTimer
-from PySide6.QtTest import QTest
+from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QPushButton
 from shiboken6 import isValid
@@ -46,12 +50,95 @@ class TradingUiIntegrationTests(unittest.TestCase):
 
     def drain(self):
         deadline = time.monotonic() + 5
-        while (self.window._operation is not None or self.window._priority_operation is not None) and time.monotonic() < deadline:
-            self.app.processEvents()
-            QTest.qWait(5)
+        if self.window._operation is not None or self.window._priority_operation is not None:
+            # Match the host's event loop: repeated qWait calls can delay Python
+            # workers reacquiring the GIL between otherwise short native writes.
+            timer = QTimer()
+            timer.setTimerType(Qt.TimerType.PreciseTimer)
+            timer.setInterval(5)
+
+            def finished_or_expired():
+                if (self.window._operation is None and self.window._priority_operation is None) or time.monotonic() >= deadline:
+                    self.app.exit(0)
+
+            timer.timeout.connect(finished_or_expired)
+            timer.start()
+            try:
+                self.app.exec()
+            finally:
+                timer.stop()
+                timer.timeout.disconnect(finished_or_expired)
+                timer.deleteLater()
+                QCoreApplication.sendPostedEvents(timer, QEvent.Type.DeferredDelete)
+        if self.window._operation is not None or self.window._priority_operation is not None:
+            self._timeout_diagnostics()
         self.assertIsNone(self.window._operation)
         self.assertIsNone(self.window._priority_operation)
         self.app.processEvents()
+
+    def _timeout_diagnostics(self):
+        """Observe the failed deadline without waiting, retrying, or taking engine locks."""
+        operations = {}
+        for name in ('_operation', '_priority_operation'):
+            operation = getattr(self.window, name)
+            if operation is not None:
+                command = operation.command
+                operations[name] = {
+                    'action': command.action.value if command is not None else 'SNAPSHOT',
+                    'running': operation.isRunning(),
+                    'finished': operation.isFinished(),
+                    'interruption_requested': operation.isInterruptionRequested(),
+                    'object_name': operation.objectName(),
+                }
+        thread_names = {thread.ident: thread.name for thread in threading.enumerate()}
+        evidence = {
+            'test': self.id(),
+            'original_deadline_seconds': 5,
+            'operations': operations,
+            'engine_day': str(self.engine.state.trading_day),
+            'engine_version': self.engine.state.version,
+            'ui_version': self.window.state.version,
+            'threads': [
+                {'ident': ident, 'name': thread_names.get(ident, 'Qt/native Python thread'), 'stack': traceback.format_stack(frame)}
+                for ident, frame in sys._current_frames().items()
+            ],
+        }
+        print('TRADING_UI_DRAIN_TIMEOUT ' + json.dumps(evidence, ensure_ascii=True), file=sys.stderr, flush=True)
+
+    def test_drain_rejects_real_pending_worker_at_original_deadline_and_dispatches_events(self):
+        entered, release = threading.Event(), threading.Event()
+        original_snapshot = self.facade.snapshot
+        dispatches = []
+        ticker = QTimer()
+        ticker.setInterval(5)
+        ticker.timeout.connect(lambda: dispatches.append(True))
+
+        def blocked_snapshot():
+            entered.set()
+            if not release.wait(8):
+                raise RuntimeError('owned blocked-worker cleanup cap expired')
+            return original_snapshot()
+
+        try:
+            with patch.object(self.facade, 'snapshot', side_effect=blocked_snapshot):
+                self.window.refresh()
+                self.assertTrue(entered.wait(1), 'the real QThread must enter the controlled snapshot')
+                ticker.start()
+                started = time.monotonic()
+                with patch('sys.stderr', new_callable=io.StringIO) as diagnostics:
+                    with self.assertRaisesRegex(AssertionError, 'is not None'):
+                        self.drain()
+                self.assertGreaterEqual(time.monotonic() - started, 5)
+                self.assertIsNotNone(self.window._operation)
+                self.assertTrue(self.window._operation.isRunning())
+                self.assertTrue(dispatches, 'the original deadline must still dispatch Qt events')
+                self.assertIn('TRADING_UI_DRAIN_TIMEOUT ', diagnostics.getvalue())
+        finally:
+            ticker.stop()
+            ticker.deleteLater()
+            QCoreApplication.sendPostedEvents(ticker, QEvent.Type.DeferredDelete)
+            release.set()
+            self.drain()
 
     def tearDown(self):
         self.drain()
