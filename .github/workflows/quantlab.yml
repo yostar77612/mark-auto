@@ -123,7 +123,7 @@ jobs:
   linux-tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    name: offline ${{ matrix.group }} (ubuntu-latest, ${{ matrix.python }})
+    name: offline ${{ matrix.group }}${{ matrix.core_slice && format(' {0}', matrix.core_slice) || '' }} (ubuntu-latest, ${{ matrix.python }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -131,8 +131,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11', '3.12']
-        group: [core, research]
+        include:
+          - {python: '3.11', group: core, core_slice: desktop-trading}
+          - {python: '3.11', group: core, core_slice: paper-remaining}
+          - {python: '3.11', group: research}
+          - {python: '3.12', group: core, core_slice: desktop-trading}
+          - {python: '3.12', group: core, core_slice: paper-remaining}
+          - {python: '3.12', group: research}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -150,12 +155,12 @@ jobs:
       - run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Run original Linux partition without changing test limits
-        run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }} --manifest dist/validation/linux-test-inventory.json
+        run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }} ${{ matrix.core_slice && format('--core-slice {0}', matrix.core_slice) || '' }} --manifest dist/validation/linux-test-inventory.json
       - name: Preserve exact-attempt Linux inventory and runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: linux-test-inventory-${{ matrix.python }}-${{ matrix.group }}-attempt-${{ github.run_attempt }}
+          name: linux-test-inventory-${{ matrix.python }}-${{ matrix.group }}${{ matrix.core_slice && format('-{0}', matrix.core_slice) || '' }}-attempt-${{ github.run_attempt }}
           path: |
             dist/validation/linux-test-inventory.json
             dist/validation/desktop-auth-install.json
@@ -280,13 +285,16 @@ jobs:
   ui-tests:
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    name: UI original ${{ matrix.group }} (Linux 3.12)
+    name: UI original ${{ matrix.group }}${{ matrix.core_slice && format(' {0}', matrix.core_slice) || '' }} (Linux 3.12)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        group: [core, research]
+        include:
+          - {group: core, core_slice: desktop-trading}
+          - {group: core, core_slice: paper-remaining}
+          - {group: research}
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
@@ -323,12 +331,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Run the unchanged original UI partition with complete identity evidence
-        run: python tools/ui_test_gate.py --group ${{ matrix.group }} --manifest dist/validation/ui-test-inventory.json
+        run: python tools/ui_test_gate.py --group ${{ matrix.group }} ${{ matrix.core_slice && format('--core-slice {0}', matrix.core_slice) || '' }} --manifest dist/validation/ui-test-inventory.json
       - name: Preserve this exact attempt's original UI case evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ui-test-inventory-${{ matrix.group }}-attempt-${{ github.run_attempt }}
+          name: ui-test-inventory-${{ matrix.group }}${{ matrix.core_slice && format('-{0}', matrix.core_slice) || '' }}-attempt-${{ github.run_attempt }}
           path: dist/validation/ui-test-inventory.json
           if-no-files-found: error
           retention-days: 7

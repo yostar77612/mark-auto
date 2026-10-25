@@ -60,7 +60,19 @@ PAPER_MODULES = frozenset(
     }
 )
 CORE_SHARDS = ('desktop', 'paper', 'remaining', 'trading')
-CORE_SHARD_PLAN = 'core-modules-v3'
+CORE_SHARD_PLAN = 'core-modules-v4'
+# c054 Windows remaining log: these two additional UI modules account for
+# approximately 118 seconds. Keep them whole and retain the fifteen-minute cap.
+LEGACY_DESKTOP_MODULES = frozenset(
+    {
+        'test_analysis_recovery_ui',
+        'test_market_history_ui',
+        'test_ui_operations_registry',
+        'test_ui_redesign_data_results',
+    }
+)
+LINUX_CORE_SLICES = ('desktop-trading', 'paper-remaining')
+LINUX_CORE_PLAN = 'linux-core-whole-modules-v1'
 
 
 def core_shard_for_module(module):
@@ -72,7 +84,23 @@ def core_shard_for_module(module):
         return 'trading'
     if module in PAPER_MODULES:
         return 'paper'
-    return 'desktop' if module.startswith('test_desktop_') or module in {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining'
+    return 'desktop' if module.startswith('test_desktop_') or module in LEGACY_DESKTOP_MODULES else 'remaining'
+
+
+def linux_core_slice_for_module(module):
+    return 'desktop-trading' if core_shard_for_module(module) in ('desktop', 'trading') else 'paper-remaining'
+
+
+def linux_core_assignments(suite):
+    selected = list(cases(suite))
+    expected = [case.id() for case in selected]
+    assigned = {name: [] for name in LINUX_CORE_SLICES}
+    for case in selected:
+        assigned[linux_core_slice_for_module(type(case).__module__)].append(case.id())
+    union = sum(assigned.values(), [])
+    if not all(assigned.values()) or len(expected) != len(set(expected)) or len(union) != len(set(union)) or set(union) != set(expected):
+        raise ValueError('Linux slices must cover each original core case exactly once')
+    return assigned
 
 
 def core_shard_assignments(suite):
@@ -455,9 +483,19 @@ def main(argv=None):
     parser.add_argument("--start-directory", default="tests")
     parser.add_argument('--workers', type=int, choices=(1, 2), default=1)
     parser.add_argument('--core-shard', choices=CORE_SHARDS)
+    parser.add_argument('--core-slice', choices=LINUX_CORE_SLICES)
     parser.add_argument('--worker-index', type=int, choices=(0, 1), help=argparse.SUPPRESS)
     parser.add_argument('--worker-token', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.core_slice is not None and (
+        sys.platform != 'linux'
+        or args.group != 'core'
+        or args.workers != 1
+        or args.core_shard is not None
+        or args.worker_index is not None
+        or args.worker_token is not None
+    ):
+        parser.error('Core slices are supported only for independent Linux core runners')
     if args.core_shard is not None and (
         sys.platform != 'win32' or args.group != 'core' or args.workers != 1 or args.worker_index is not None or args.worker_token is not None
     ):
@@ -514,6 +552,24 @@ def main(argv=None):
             manifest.update(
                 selected_ids=selected, worker_index=args.worker_index, worker_token=args.worker_token, identity=execution_identity(args.start_directory)
             )
+        if args.core_slice is not None:
+            assignments = linux_core_assignments(groups['core'])
+            selected = assignments[args.core_slice]
+            groups['core'] = unittest.TestSuite(case for case in cases(groups['core']) if case.id() in set(selected))
+            manifest.update(
+                selected_ids=selected,
+                core_slice=args.core_slice,
+                core_slice_plan=LINUX_CORE_PLAN,
+                core_slice_assignments=assignments,
+                core_slice_context={
+                    'head_sha': os.environ.get('GITHUB_SHA'),
+                    'run_id': os.environ.get('GITHUB_RUN_ID'),
+                    'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
+                    'python_profile': str(sys.version_info.major) + '.' + str(sys.version_info.minor),
+                    'source_sha256': portable_source_identity(args.start_directory),
+                },
+                local_identity_before=execution_identity(args.start_directory),
+            )
     except ValueError as error:
         manifest["selection_error"] = str(error)
         print(error, file=sys.stderr)
@@ -547,12 +603,12 @@ def main(argv=None):
             "unexpected_successes": [test.id() for test in result.unexpectedSuccesses],
         }
     )
-    if args.core_shard is not None:
+    if args.core_shard is not None or args.core_slice is not None:
         manifest['local_identity_after'] = execution_identity(args.start_directory)
         manifest['source_sha256_after'] = portable_source_identity(args.start_directory)
         if (
             manifest['local_identity_after'] != manifest['local_identity_before']
-            or manifest['source_sha256_after'] != manifest['shard_context']['source_sha256']
+            or manifest['source_sha256_after'] != manifest['shard_context' if args.core_shard is not None else 'core_slice_context']['source_sha256']
         ):
             manifest['successful'] = False
             manifest['shard_identity_error'] = 'Source or local runtime identity changed during tests'

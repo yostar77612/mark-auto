@@ -79,13 +79,21 @@ EXPECTED_PAPER_MODULES = frozenset(
         'test_paper_replay_wal',
     }
 )
+EXPECTED_DESKTOP_MODULES = frozenset(
+    {
+        'test_analysis_recovery_ui',
+        'test_market_history_ui',
+        'test_ui_operations_registry',
+        'test_ui_redesign_data_results',
+    }
+)
 
 
 def _expected_shard(module):
     # Independent assertion of the versioned rule, not the production classifier.
     if module.startswith(('test_trading_', 'test_broker_', 'test_runtime_context_')) or module == 'test_quality_gate_v2_boundaries':
         return 'trading'
-    if module.startswith('test_desktop_') or module in ('test_analysis_recovery_ui', 'test_market_history_ui'):
+    if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES:
         return 'desktop'
     return 'paper' if module in EXPECTED_PAPER_MODULES else 'remaining'
 
@@ -106,8 +114,9 @@ class CoreShardAssignmentTests(unittest.TestCase):
 
     def test_versioned_rule_and_future_modules(self):
         self.assertEqual(group.CORE_SHARDS, ('desktop', 'paper', 'remaining', 'trading'))
-        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v3')
+        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v4')
         self.assertEqual(group.PAPER_MODULES, EXPECTED_PAPER_MODULES)
+        self.assertEqual(group.LEGACY_DESKTOP_MODULES, EXPECTED_DESKTOP_MODULES)
         for module in (
             'test_desktop_future',
             'test_analysis_recovery_ui',
@@ -125,6 +134,9 @@ class CoreShardAssignmentTests(unittest.TestCase):
             'test_tradingish',
             'test_brokerish',
             'test_runtime_contextish',
+            'test_ui_operations_registry',
+            'test_ui_redesign_data_results',
+            'test_ui_unknown_future',
             *sorted(EXPECTED_PAPER_MODULES),
         ):
             with self.subTest(module=module):
@@ -168,7 +180,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
                 continue
             legacy = (
                 'desktop'
-                if module.startswith('test_desktop_') or module in ('test_analysis_recovery_ui', 'test_market_history_ui')
+                if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES
                 else 'paper'
                 if module in EXPECTED_PAPER_MODULES
                 else 'remaining'
@@ -635,7 +647,7 @@ class CoreShardReportTests(unittest.TestCase):
                     'platform': 'win32',
                     'group': 'core',
                     'core_shard': label,
-                    'core_shard_plan': 'core-modules-v3',
+                    'core_shard_plan': 'core-modules-v4',
                     'core_shard_assignments': copy.deepcopy(assignments),
                     'shard_context': dict(self.CONTEXT),
                     'source_sha256_after': self.CONTEXT['source_sha256'],
@@ -671,7 +683,7 @@ class CoreShardReportTests(unittest.TestCase):
         self.assertEqual(result['coverage_scope'], 'original core only; research remains a separate mandatory gate')
         self.assertEqual(result['head_sha'], self.CONTEXT['head_sha'])
         self.assertEqual(result['python_profile'], self.CONTEXT['python_profile'])
-        self.assertEqual(result['core_shard_plan'], 'core-modules-v3')
+        self.assertEqual(result['core_shard_plan'], 'core-modules-v4')
         self.assertEqual(result['shards'], 4)
         self.assertEqual(result['tests_run'], len(reports[0]['partitions']['core']))
         self.assertIs(result['successful'], True)
@@ -1396,8 +1408,12 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn("--workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }}", offline)
         self.assertIn("${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}", offline)
         linux, coverage = self.job('linux-tests'), self.job('linux-coverage')
-        self.assertIn("python: ['3.11', '3.12']", linux)
-        self.assertIn('group: [core, research]', linux)
+        linux_rows = re.findall(r"^          - \{python: '([^']+)', group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$", linux, re.MULTILINE)
+        linux_expected = [(version, 'core', name) for version in ('3.11', '3.12') for name in ('desktop-trading', 'paper-remaining')]
+        linux_expected += [(version, 'research', '') for version in ('3.11', '3.12')]
+        self.assertCountEqual(linux_rows, linux_expected)
+        self.assertEqual(len(linux_rows), 6)
+        self.assertIn("format('--core-slice {0}', matrix.core_slice)", linux)
         self.assertIn('timeout-minutes: 15', linux)
         self.assertIn('fail-fast: false', linux)
         self.assertIn('run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }}', linux)

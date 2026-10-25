@@ -52,6 +52,9 @@ if (-not $AcceptanceJob) {
 }
 Confirm-AcceptanceWorker $AcceptanceJob
 $script:acceptanceProcesses = New-Object System.Collections.ArrayList
+$script:multiMarketShortcutProof = $null
+# ASCII source remains readable by Windows PowerShell 5.1 and PowerShell 7.
+$script:multiMarketStartMenu = Join-Path ([Environment]::GetFolderPath('Programs')) ('Mark Auto\Mark Auto ' + (-join [char[]]@(0x591A,0x5E02,0x5834,0x5E73,0x53F0)) + '.lnk')
 try {
 $os = Get-CimInstance Win32_OperatingSystem
 @{caption=$os.Caption; version=$os.Version; build=$os.BuildNumber; architecture=$os.OSArchitecture;
@@ -112,7 +115,7 @@ try {
 function Assert-Sentinel {
   if (-not (Test-Path $sentinel) -or (Get-Content $sentinel -Raw).Trim() -ne $sentinelValue) { throw 'User data was modified or lost' }
 }
-function Install-Version([string]$number, [string]$manifestPath) {
+function Install-Version([string]$number, [string]$manifestPath, [switch]$RequireMultiMarketShortcut) {
   $manifest = if ($manifestPath) { Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } else { $null }
   $installer = Join-Path $root "dist\installers\MarkAuto-$number-windows-x64-setup.exe"
   if ($manifest) {
@@ -153,6 +156,16 @@ function Install-Version([string]$number, [string]$manifestPath) {
     $sourceHashes['packaging/markauto.ico'] = $actual
   }
   $sourceHashes | ConvertTo-Json | Set-Content "$results\installed-source-hashes-$number.json"
+  if ($RequireMultiMarketShortcut) {
+    # Historical baseline installers need not contain the new optional entry.
+    if (-not (Test-Path -LiteralPath $script:multiMarketStartMenu)) { throw 'Multi-market Start Menu shortcut missing from candidate' }
+    $multiMarketShortcut = $shortcutShell.CreateShortcut($script:multiMarketStartMenu)
+    if ($multiMarketShortcut.TargetPath -cne $script:installedExe -or $multiMarketShortcut.Arguments -cne '--platform-v2' -or
+        [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne [IO.Path]::GetFullPath($activeDirectory)) { throw 'Multi-market shortcut target, arguments or working directory changed' }
+    $script:multiMarketShortcutProof = @{verified=$true; target=$multiMarketShortcut.TargetPath;
+      arguments=$multiMarketShortcut.Arguments; working_directory=$multiMarketShortcut.WorkingDirectory;
+      shortcut_execution='NOT RUN: exact candidate shortcut resolution only'; broker_account_validation='NOT RUN'}
+  }
   Assert-Sentinel
 }
 function Smoke([string]$stage, [string]$expectedVersion) {
@@ -185,7 +198,7 @@ foreach ($link in @($startMenu, $desktop)) {
   if (-not (Test-Path $link)) { throw "Shortcut missing: $link" }
   if ($shell.CreateShortcut($link).TargetPath -ne $script:installedExe) { throw 'Shortcut target incorrect' }
 }
-Install-Version $Version $CandidateManifest
+Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut
 Smoke 'upgraded' $Version
 # Launch normal mode via the Start-menu shortcut and check a real top-level window.
 $launchClock = [Diagnostics.Stopwatch]::StartNew()
@@ -233,10 +246,13 @@ Assert-AcceptancePath "$appDir\unins000.dat" -RequireAbsent
 [void](Assert-AbsentAcceptanceRegistration $registration)
 if ((Test-Path $script:installedExe) -or (Test-Path "$appDir\MarkAuto.exe")) { throw 'Executable remains after uninstall' }
 if ((Test-Path $startMenu) -or (Test-Path $desktop)) { throw 'Shortcut remains after uninstall' }
+if (Test-Path -LiteralPath $script:multiMarketStartMenu) { throw 'Multi-market Start Menu shortcut remains after uninstall' }
 Assert-Sentinel
 @{status=$(if ($AcceptanceScope -eq 'PreparedHost') { 'partial' } else { 'passed' });
   shortcut_execution=$(if ($AcceptanceScope -eq 'PreparedHost') { 'NOT RUN: verified shortcut resolution and owned direct-target launch only' } else { 'passed: real shell shortcut launch' });
   tests=@('install','bundled-runtime-launch','start-menu-shortcut','desktop-shortcut','version-upgrade','reject-active-upgrade','reject-active-uninstall','native-window-close','uninstall','preserve-user-data');
+  multi_market_start_menu_shortcut=$script:multiMarketShortcutProof;
+  multi_market_start_menu_shortcut_removed=$true;
   upgrade_scope=$(if ($BaselineVersion -eq '0.0.0') { 'installer version upgrade with same application payload; not historical data schema migration' } else { 'distinct released versions; sentinel preservation only, historical schema migration requires separate evidence' });
   client_os_acceptance='BLOCKED'; signing='unsigned'} | ConvertTo-Json | Set-Content "$results\installer-results.json"
 

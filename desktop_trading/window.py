@@ -32,12 +32,38 @@ class _Operation(QThread):
         try:
             if self.refresh_before and self.command is not None:
                 self.command = replace(self.command, expected_version=self.facade.snapshot().version)
-            receipt = self.facade.execute(self.command) if self.command is not None else None
+            receipt = (
+                self._save_draft()
+                if self.command is not None and self.command.action is UiAction.CREATE_STRATEGY
+                else (self.facade.execute(self.command) if self.command is not None else None)
+            )
             state = self.facade.snapshot()
         except Exception:
             self.failed.emit()
         else:
             self.completed.emit(state, receipt)
+
+    def _save_draft(self) -> UiReceipt:
+        # A draft is metadata, never deployment or an order. Retain its exact
+        # immutable form/context; only an explicit CAS refusal permits one retry.
+        command = self.command
+        for attempt in range(2):
+            current = self.facade.snapshot()
+            if (
+                command.strategy is None
+                or current.environment is not command.strategy.environment
+                or (command.context_id and current.context_id != command.context_id)
+                or (command.context_epoch is not None and current.context_epoch != command.context_epoch)
+            ):
+                return UiReceipt(False, 'state_conflict', '')
+            self.command = replace(command, expected_version=current.version)
+            receipt = self.facade.execute(self.command)
+            if receipt.accepted or receipt.code != 'state_conflict' or receipt.reference or attempt:
+                return receipt
+            after = self.facade.snapshot()
+            if after.version == self.command.expected_version:
+                return receipt
+        return receipt
 
 
 class TradingWindow(QMainWindow):
@@ -57,6 +83,7 @@ class TradingWindow(QMainWindow):
         self._engine_reachable = True
         self._connecting_request = False
         self._screen_hooked = False
+        self._pending_wizard = None
         self.setObjectName('multi_market_window')
         self.setWindowTitle(ui_text('v2.title'))
         font = self.font()
@@ -191,6 +218,12 @@ class TradingWindow(QMainWindow):
         self.apply_state(state)
         if receipt is not None:
             message = receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed')
+            if not receipt.accepted and receipt.code == 'state_conflict':
+                message = receipt.message or ui_text('v2.state_conflict')
+                if action is UiAction.CREATE_STRATEGY and self._pending_wizard is not None:
+                    message += ' ' + ui_text('v2.draft_retained')
+            if receipt.accepted and action in (UiAction.CREATE_STRATEGY, UiAction.SWITCH_CONTEXT):
+                self._clear_pending_wizard()
             if receipt.accepted and receipt.code == 'connection_pending':
                 self._connecting_request = state.engine_state == 'CONNECTING'
                 message = ui_text('v2.connection_pending' if self._connecting_request else 'v2.connection_request_finished')
@@ -226,9 +259,23 @@ class TradingWindow(QMainWindow):
             self._feedback(ui_text('v2.select_strategy'))
 
     def _wizard(self, parent_strategy_id: str) -> None:
-        wizard = StrategyWizard(self.state, self, parent_strategy_id=parent_strategy_id)
+        if self._operation is not None or self._priority_operation is not None:
+            self._feedback(ui_text('v2.busy'))
+            return
+        context = (self.state.context_id, self.state.context_epoch, self.state.environment, self.state.account_ref, parent_strategy_id)
+        if self._pending_wizard is None or self._pending_wizard[0] != context:
+            self._clear_pending_wizard()
+            self._pending_wizard = (context, StrategyWizard(self.state, self, parent_strategy_id=parent_strategy_id))
+        wizard = self._pending_wizard[1]
         if wizard.exec() == StrategyWizard.DialogCode.Accepted:
             self.command(UiAction.CREATE_STRATEGY, strategy=wizard.form())
+        else:
+            self._clear_pending_wizard()
+
+    def _clear_pending_wizard(self) -> None:
+        if self._pending_wizard is not None:
+            self._pending_wizard[1].deleteLater()
+            self._pending_wizard = None
 
     def _strategy_action(self, action: UiAction) -> None:
         identity = selected_id(self.strategies)

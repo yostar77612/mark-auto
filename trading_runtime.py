@@ -1,10 +1,12 @@
 """Desktop composition root for v2 process launch and legacy navigation."""
 
+from contextlib import closing
 from pathlib import Path
 import os
 import subprocess
 import sys
 
+from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contextnavigation import CompositeFacade
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment
@@ -19,6 +21,20 @@ def default_root() -> Path:
 
 
 def run_window(
+    root: Path | None = None,
+    *,
+    environment: Environment | None = None,
+    account_ref: str | None = None,
+    profile_path: Path | None = None,
+    contexts_path: Path | None = None,
+) -> int:
+    # UI and independent engine each own a handle to the existing installer
+    # presence guard. Closing one lifetime must not expose the other's files.
+    with closing(WindowsAppMutex()):
+        return _run_window(root, environment=environment, account_ref=account_ref, profile_path=profile_path, contexts_path=contexts_path)
+
+
+def _run_window(
     root: Path | None = None,
     *,
     environment: Environment | None = None,

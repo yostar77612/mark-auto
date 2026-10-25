@@ -1,5 +1,90 @@
 # Main integration authorization — 2026-10-25
 
+## Current integration checkpoint — 2026-10-26
+
+PR96 remains open; main is still `6c2ea528122f4a69cf415e59052fac4fc6233bff`.
+The owner additionally authorized downloading/installing the merged main package
+and repeating complete functional and physical-screen checks on this computer.
+Original data/settings and Sitecore remain protected; real financial actions
+and credential discovery remain prohibited.
+
+Head `c054620d928305f47d7011254ddaffd2e768e480`, offline run40208291415,
+is FAILED, not acceptance. Linux3.11 executed3318 cases in637.671s with one
+draft-wizard failure and39 original skips. Linux UI core and Windows3.11
+remaining exceeded their existing15-minute job limits. Linux3.12 independently
+verified exact3561-case coverage; its final all-matrix gate correctly failed
+because Linux3.11 failed. Installer40208291422 has passed static/security and
+the complete fresh regression; its build is still running. These old-head
+results do not certify the pending repairs.
+
+A controlled real Qt/authenticated-IPC reproduction proved draft creation could
+receive an explicit non-mutating `state_conflict` after a background observation
+advanced the book. The repair refreshes only draft metadata and permits one
+bounded retry only for that explicit refusal, advanced version and unchanged
+context. Financial commands and unknown/lost responses are never retried. A
+second refusal retains form input and displays the specific state-change
+message.46 UI/catalog/concurrency cases passed in4.569s; the original8 real
+context IPC cases passed in26.683s; the controlled background-race reproduction
+passed in16.651s. Linux fresh CI is still required. Raw failed and repaired
+receipts are retained in `multi-market-audit-20261025/main-integration-pr96/`.
+
+Scheduling repairs preserve every case, original applicability skip, deadline,
+same-source/runtime/run/attempt check and exact independent coverage. They are
+being verified before a new full run; no failed/cancelled job is labelled passed.
+Current original-state backup completed with183 files/1566727697 bytes and exact
+workspace-pointer bytes; credentials were excluded before metadata/read/copy.
+All13 retained installed payload identities are recorded. New installation has
+not occurred. Recovery and installation evidence are in the external task labs
+`main-integration-pr96/MERGE_RECOVERY.md` and `main96-validation-20261025/`.
+
+The final scheduling repair passed100 focused cases in46.747s, zero skips:
+Windows keeps four whole-module shards (planv4), moving only two legacy UI
+modules into desktop; Linux offline3.11/3.12 and UI3.12 each require two ordered
+whole-module core slices plus the original research producer. The aggregate
+independently verifies all three proofs, exact disjoint union and original five
+Streamlit cases. Every job/case timeout and original skip reason remains intact.
+Native Linux execution and sufficient remote job margin still require fresh CI.
+
+Installed v2 previously had no discoverable entry. The installer now adds only
+StartMenu `Mark Auto 多市場平台` with `--platform-v2`; both original shortcuts
+and postinstall behavior remain unchanged. Candidate CI must verify its exact
+target/arguments/working directory and removal; historical baseline installers
+are not required to have it. Packaging and all15 original service-inventory
+contracts passed32/32 in19.402s, including actual PowerShell parser execution.
+
+A real nonadmin Windows prestate also proved the independent v2 engine was
+invisible to the existing install/uninstall lifetime guard. Both public v2
+entry points now hold separate handles to the unchanged shared named-mutex
+authority, before Qt/contexts/endpoints/workspaces/engines, and release through
+normal/exception exit. Closing UI leaves an engine's guard intact and closing
+engine leaves a UI's guard intact. The final seven guard cases plus twelve
+original actual IPC/runtime cases passed19/19 in13.6009s, zero skips, with
+unchanged source and owned cleanup verified. The UI entry body was controlled;
+this is real process/kernel/IPC evidence, not rendered desktop acceptance.
+Hosted Windows CI executes the same lifetime assertions while recording its
+token status; Unix verifies the actual no-op contract without new skips. No
+shared helper, ACL, protection setting, original assertion or deadline changed.
+
+The old-head c054 installer workflow has since completed static/security, full
+regression and build successfully (release correctly skipped on PR). It does
+not override the failed offline workflow or certify these new source bytes.
+The final integrated head still requires complete new PR CI and installer,
+then merged-main CI/release, exact-asset installation and actual desktop flows.
+
+Final local integration: unchanged `tools/prepush.ps1` passed Ruff lint and
+format (685 files), then exited1 because this host has no `py -3.11` launcher.
+This is preserved as an environment limitation, not reported as prepush PASS.
+Supplementary Python3.11-target AST syntax plus compilation on3.13.11 passed
+all653 tracked Python files; it is not actual3.11 execution. Static/history and
+v2 architecture gates reported zero findings; the actual native PowerShell AST
+parser accepted all14 tracked scripts; staged whitespace passed. Eight G3 files,
+the entire historical saved-pool producer, formal acceptance and project-state
+files remain unchanged from main95. Exact before/after Git context and logs are
+in `final-integration-checks-guardfinal1.json` and the parser/protected receipt.
+Actual3.11/3.12 execution remains a required fresh remote CI gate.
+
+## Earlier integration history
+
 The owner subsequently requested `合並進main`, authorizing publication of this
 verified branch, a pull request and merge after CI. This supersedes the earlier
 local-only remote-write restriction for this integration; all prohibitions on

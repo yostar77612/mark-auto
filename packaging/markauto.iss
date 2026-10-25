@@ -35,6 +35,7 @@ Source: "..\dist\payload-inventory.txt"; DestDir: "{code:PayloadDir}"; Flags: ig
 [Icons]
 Name: "{userprograms}\Mark Auto\Mark Auto"; Filename: "{code:PayloadDir}\MarkAuto.exe"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation
 Name: "{userdesktop}\Mark Auto"; Filename: "{code:PayloadDir}\MarkAuto.exe"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation
+Name: "{userprograms}\Mark Auto\Mark Auto 多市場平台"; Filename: "{code:PayloadDir}\MarkAuto.exe"; Parameters: "--platform-v2"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation
 [Run]
 Filename: "{code:PayloadDir}\MarkAuto.exe"; Description: "啟動 Mark Auto"; Flags: nowait postinstall skipifsilent unchecked
 ; Deliberately no [UninstallDelete]: %LOCALAPPDATA%\MarkAuto is never removed.

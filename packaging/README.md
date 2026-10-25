@@ -8,6 +8,17 @@ uninstaller refuse while it is running, never force-close jobs or auto-relaunch 
 User data lives separately at `%LOCALAPPDATA%\MarkAuto` and is retained by upgrade
 and uninstall. Remove that directory yourself only if you intend to erase data.
 
+The Start menu's **Mark Auto** folder also contains **Mark Auto 多市場平台**.
+This entry opens the six-workspace platform with `--platform-v2`; the original
+Mark Auto Start-menu and desktop entries keep their existing research UI.
+First launch defaults to LOCAL simulation and stores v2 data separately at
+`%LOCALAPPDATA%\MarkAuto-v2\local`. Later launches restore the saved v2 context
+without logging in to a broker automatically. The standard installer does not
+bundle the optional broker SDK; its local simulations work offline, while actual
+broker connection and account verification remain pending. Candidate installer
+CI resolves the new shortcut's exact target, arguments and working directory and
+checks its removal on uninstall; that resolution is not a broker or GUI-flow pass.
+
 ## Repeatable developer build
 
 Build on Windows x64 with Python 3.13.16 and PowerShell, from the repository root:

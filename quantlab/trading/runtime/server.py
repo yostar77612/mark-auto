@@ -1,5 +1,6 @@
 """Independent authenticated local engine; GUI lifetime does not own positions."""
 
+from contextlib import closing
 from datetime import datetime, timezone
 import json
 from multiprocessing.connection import Client, Listener, answer_challenge, deliver_challenge
@@ -10,6 +11,7 @@ from threading import BoundedSemaphore, Event, Lock, Thread
 from time import monotonic
 from uuid import uuid4
 
+from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.domain.validation import DomainError
@@ -147,10 +149,13 @@ class _Handlers:
 
 
 def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: EngineFactory | None = None) -> int:
-    if os.name == 'nt':
-        return _serve(root, launch=launch, engine_factory=engine_factory)
-    with unix_endpoint(root) as endpoint:
-        return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint)
+    # Acquire before even the Unix endpoint or engine/workspace is opened.
+    # The shared helper is a no-op outside Windows and preserves the v1 name.
+    with closing(WindowsAppMutex()):
+        if os.name == 'nt':
+            return _serve(root, launch=launch, engine_factory=engine_factory)
+        with unix_endpoint(root) as endpoint:
+            return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint)
 
 
 def _serve(root: Path, *, launch: RuntimeLaunch | None, engine_factory: EngineFactory | None, endpoint: UnixEndpoint | None = None) -> int:

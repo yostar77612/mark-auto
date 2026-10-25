@@ -4,6 +4,7 @@ from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,11 +13,23 @@ from tools import run_test_group, ui_test_gate as gate
 
 
 def fixture():
-    core = [f'test_ui.UITests.test_{index}' for index in range(5)] + ['test_future.Core.test_a']
+    core = [f'test_ui.UITests.test_{index}' for index in range(5)] + [
+        'test_future.Core.test_a',
+        'test_desktop_fixture.Core.test_a',
+        'test_trading_fixture.Core.test_a',
+    ]
     research = ['test_research.Research.test_a']
     parts = {'core': core, 'research': research}
     expected = {'discovered_ids': core + research, 'partitions': parts}
-    context = {'plan': gate.PLAN, 'head_sha': 'a' * 40, 'run_id': '123', 'run_attempt': '2', 'source_sha256': 'b' * 64, 'streamlit': '1.65.0'}
+    context = {
+        'plan': gate.PLAN,
+        'head_sha': 'a' * 40,
+        'run_id': '123',
+        'run_attempt': '2',
+        'source_sha256': 'b' * 64,
+        'core_source_sha256': 'e' * 64,
+        'streamlit': '1.65.0',
+    }
     version = json.loads((gate.ROOT / 'packaging/sqlite-runtime.json').read_text(encoding='utf-8'))['version']
     identity = {
         'source_sha256': 'c' * 64,
@@ -27,10 +40,12 @@ def fixture():
         'executable': '/fixture/python',
         'tempfile_gettempdir': '/fixture/tmp',
     }
-    reports = [
-        {
+    selections = {'paper-remaining': core[:6], 'desktop-trading': core[6:], 'research': research}
+    reports = []
+    for key, ids in selections.items():
+        report = {
             **deepcopy(expected),
-            'group': key,
+            'group': 'research' if key == 'research' else 'core',
             'head_sha': context['head_sha'],
             'platform': 'linux',
             'python': '3.12.13',
@@ -45,8 +60,23 @@ def fixture():
             'successful': True,
             **{field: [] for field in ('discovery_errors', 'failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes')},
         }
-        for key, ids in parts.items()
-    ]
+        if key != 'research':
+            report.update(
+                core_slice=key,
+                core_slice_plan=run_test_group.LINUX_CORE_PLAN,
+                core_slice_assignments={name: selections[name][:] for name in ('desktop-trading', 'paper-remaining')},
+                core_slice_context={
+                    'head_sha': context['head_sha'],
+                    'run_id': context['run_id'],
+                    'run_attempt': context['run_attempt'],
+                    'python_profile': '3.12',
+                    'source_sha256': context['core_source_sha256'],
+                },
+                source_sha256_after=context['core_source_sha256'],
+                local_identity_before=deepcopy(identity),
+                local_identity_after=deepcopy(identity),
+            )
+        reports.append(report)
     return reports, expected, context, identity
 
 
@@ -87,8 +117,87 @@ class UiTestGateTests(unittest.TestCase):
         values = fixture()
         result = self.verify(*values)
         self.assertTrue(result['successful'])
-        self.assertEqual(result['tests_run'], 7)
+        self.assertEqual(result['tests_run'], 9)
         self.assertEqual(len(result['streamlit_cases']), 5)
+        self.assertEqual(result['producers'], ['desktop-trading', 'paper-remaining', 'research'])
+
+    def test_each_slice_and_research_must_have_its_own_current_proof(self):
+        for role in ('desktop-trading', 'paper-remaining', 'research'):
+            for mode in ('missing', 'duplicate', 'incomplete', 'wrong-attempt', 'wrong-source', 'native-source', 'assignment', 'old-plan', 'new-skip'):
+                values = fixture()
+                reports = values[0]
+                row = next(item for item in reports if (item.get('core_slice') or item['group']) == role)
+                if mode == 'missing':
+                    reports.remove(row)
+                elif mode == 'duplicate':
+                    reports.append(deepcopy(row))
+                elif mode == 'incomplete':
+                    row['stopped_ids'].pop()
+                elif mode == 'wrong-attempt':
+                    row['ui_context']['run_attempt'] = '1'
+                elif mode == 'wrong-source':
+                    row['ui_context']['core_source_sha256'] = 'f' * 64
+                elif mode == 'new-skip':
+                    row['skipped'] = [{'id': row['selected_ids'][0], 'reason': 'temporary'}]
+                elif role == 'research':
+                    row['core_slice'] = 'desktop-trading'
+                elif mode == 'native-source':
+                    row['source_sha256_after'] = 'f' * 64
+                elif mode == 'assignment':
+                    row['core_slice_assignments']['paper-remaining'].pop()
+                else:
+                    row['core_slice_plan'] = 'obsolete-plan'
+                with self.subTest(role=role, mode=mode), self.assertRaises(ValueError):
+                    self.verify(*values)
+
+    def test_correlated_slice_forgery_cannot_redefine_independent_discovery(self):
+        for mode in ('omit', 'move', 'duplicate'):
+            values = fixture()
+            reports, expected, _, _ = values
+            target = 'test_trading_fixture.Core.test_a'
+            for row in reports:
+                if row['group'] != 'core':
+                    continue
+                assignments = row['core_slice_assignments']
+                if mode != 'duplicate':
+                    assignments['desktop-trading'].remove(target)
+                if mode != 'omit':
+                    assignments['paper-remaining'].append(target)
+                ids = assignments[row['core_slice']]
+                for field in ('selected_ids', 'started_ids', 'stopped_ids'):
+                    row[field] = ids[:]
+                row['tests_run'] = len(ids)
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                self.verify(reports, expected, values[2], values[3])
+
+    def test_slice_producer_delegates_actual_runner_without_rewriting_started_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / 'ui-test-inventory.json'
+            rows, _, context, identity = fixture()
+
+            def produce(arguments):
+                Path(arguments[arguments.index('--manifest') + 1]).write_text(json.dumps(rows[0]), encoding='utf-8')
+                return 0
+
+            with (
+                patch.object(gate, 'context', return_value=context),
+                patch.object(run_test_group, 'execution_identity', side_effect=[identity, identity]),
+                patch.object(run_test_group, 'main', side_effect=produce) as original,
+            ):
+                self.assertEqual(gate.run('core', destination, core_slice='paper-remaining'), 0)
+            original.assert_called_once_with(
+                [
+                    '--group',
+                    'core',
+                    '--manifest',
+                    str(destination.with_suffix('.cases.json')),
+                    '--core-slice',
+                    'paper-remaining',
+                ]
+            )
+            report = json.loads(destination.read_text(encoding='utf-8'))
+            self.assertEqual(report['started_ids'], rows[0]['started_ids'])
+            self.assertEqual(report['stopped_ids'], rows[0]['stopped_ids'])
 
     def test_offline_profiles_keep_exact_skips_and_cannot_substitute_for_ui(self):
         for version in ('3.11', '3.12'):
@@ -98,6 +207,9 @@ class UiTestGateTests(unittest.TestCase):
             skips = [{'id': item, 'reason': 'Original offline dependency profile'} for item in expected['discovered_ids'][:5]]
             for report in reports:
                 report.update(ui_context=deepcopy(context), python=version + '.13', ui_identity_before=deepcopy(identity), ui_identity_after=deepcopy(identity))
+                if report['group'] == 'core':
+                    report.update(local_identity_before=deepcopy(identity), local_identity_after=deepcopy(identity))
+                    report['core_slice_context']['python_profile'] = version
             reports[0]['skipped'] = skips
             with patch.object(gate.platform, 'python_version', return_value=version + '.13'):
                 self.assertTrue(gate.validate(reports, expected, context, identity, skips, version)['successful'])
@@ -162,7 +274,7 @@ class UiTestGateTests(unittest.TestCase):
                 self.verify(*values)
 
     def test_wrong_independent_discovery_and_context_never_borrow_passes(self):
-        for key in ('head_sha', 'run_id', 'run_attempt', 'source_sha256', 'plan', 'streamlit'):
+        for key in ('head_sha', 'run_id', 'run_attempt', 'source_sha256', 'core_source_sha256', 'plan', 'streamlit'):
             values = fixture()
             values[2][key] = None
             with self.subTest(key=key), self.assertRaises(ValueError):
@@ -211,7 +323,10 @@ class UiTestGateTests(unittest.TestCase):
         producers = source.split('  ui-tests:\n', 1)[1].split('  ui:\n', 1)[0]
         aggregate = source.split('  ui:\n', 1)[1].split('  quality:\n', 1)[0]
         self.assertIn('timeout-minutes: 15', producers)
-        self.assertIn('group: [core, research]', producers)
+        rows = re.findall(r'^          - \{group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$', producers, re.MULTILINE)
+        self.assertCountEqual(rows, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('research', '')])
+        self.assertEqual(len(rows), 3)
+        self.assertIn("format('--core-slice {0}', matrix.core_slice)", producers)
         self.assertIn('fail-fast: false', producers)
         self.assertIn('python tools/ui_test_gate.py --group ${{ matrix.group }}', producers)
         self.assertIn('attempt-${{ github.run_attempt }}', producers)
