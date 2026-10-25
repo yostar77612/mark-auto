@@ -5,6 +5,8 @@ on:
     # change. Every push to main, desktop tag and manual dispatch always runs.
     paths:
       - 'packaging/**'
+      # Native supervision protocol cases qualify installer/recovery evidence.
+      - 'tests/test_windows_recovery_feasibility.py'
       - 'requirements*.lock'
       - 'requirements*.txt'
       - 'desktop_chatgpt_dependency_manifest.json'
