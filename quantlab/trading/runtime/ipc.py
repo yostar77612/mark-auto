@@ -15,6 +15,7 @@ from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from .control_secret import unprotect
 from .protocol import Operation, Request, Response
+from .unix_socket import validate_unix_address
 
 
 @dataclass(frozen=True)
@@ -37,8 +38,8 @@ def read_session(root: Path) -> Session:
         raise DomainError('validation_failed', 'local session fields')
     if os.name == 'nt' and not body['address'].startswith('\\\\.\\pipe\\markauto-v2-'):
         raise DomainError('validation_failed', 'not a local named pipe')
-    if os.name != 'nt' and Path(body['address']).parent != root:
-        raise DomainError('validation_failed', 'socket outside isolated root')
+    if os.name != 'nt':
+        validate_unix_address(root, body['address'])
     key = unprotect(bytes.fromhex(body['protected_key']))
     if len(key) != 32:
         raise DomainError('validation_failed', 'invalid control key')

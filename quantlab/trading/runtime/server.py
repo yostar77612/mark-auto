@@ -17,6 +17,7 @@ from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
 from .config import RuntimeLaunch
 from .control_secret import protect
 from .protocol import Metrics, Operation, Request, Response
+from .unix_socket import UnixEndpoint, unix_endpoint
 
 
 def _metrics(bundle: RuntimeBundle) -> Metrics:
@@ -146,13 +147,20 @@ class _Handlers:
 
 
 def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: EngineFactory | None = None) -> int:
+    if os.name == 'nt':
+        return _serve(root, launch=launch, engine_factory=engine_factory)
+    with unix_endpoint(root) as endpoint:
+        return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint)
+
+
+def _serve(root: Path, *, launch: RuntimeLaunch | None, engine_factory: EngineFactory | None, endpoint: UnixEndpoint | None = None) -> int:
     root = root.resolve()
     launch = launch or RuntimeLaunch(root)
     if launch.root.resolve() != root:
         raise DomainError('validation_failed', 'launch and server roots differ')
     bundle = build_runtime(launch, engine_factory=engine_factory)
     family = 'AF_PIPE' if os.name == 'nt' else 'AF_UNIX'
-    address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else str(root / ('engine-' + uuid4().hex + '.sock'))
+    address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else endpoint.address
     key = os.urandom(32)
     # Authenticate in bounded handlers, so an unauthenticated peer cannot hold
     # the accept loop or prevent the ownership heartbeat/protective processing.
@@ -163,7 +171,7 @@ def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: En
         listener = Listener(address, family=family, authkey=None)
         handlers = _Handlers(bundle, key)
         if os.name != 'nt':
-            os.chmod(address, 0o600)
+            endpoint.secure()
         body = {'schema_version': 2, 'address': address, 'family': family, 'protected_key': protect(key).hex(), 'process_id': os.getpid()}
         temp.write_text(json.dumps(body, sort_keys=True), encoding='utf-8')
         if os.name != 'nt':
@@ -233,30 +241,36 @@ def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: En
                 break
     finally:
         stopped.set()
-        bundle.cancel_owned_workers()
-        # Wake our own raw accept without changing ACLs or killing processes.
         try:
-            with Client(address, family=family, authkey=None):
-                pass
-        except (OSError, EOFError):
-            pass
-        acceptor.join(2)
-        handlers.join()
-        watcher.join(2)
-        coordinator.join(3)
-        # A provider query without a cancellable API may still be waiting.
-        # It owns only normalized port/cache state, never a core journal; the
-        # cancelled generation drops its late result before any core transition.
-        query_worker.join(0.2)
-        listener.close()
-        if coordinator.is_alive():
-            raise DomainError('operation_failed', 'owned connector query did not finish; journal remains fenced')
-        bundle.close()
-        if metadata.exists():
+            bundle.cancel_owned_workers()
+            # Wake our own raw accept without changing ACLs or killing processes.
             try:
-                current = json.loads(metadata.read_text(encoding='utf-8'))
-                if current.get('process_id') == os.getpid():
-                    metadata.unlink()
-            except (OSError, ValueError):
+                with Client(address, family=family, authkey=None):
+                    pass
+            except (OSError, EOFError):
                 pass
+            acceptor.join(2)
+            handlers.join()
+            watcher.join(2)
+            coordinator.join(3)
+            # A provider query without a cancellable API may still be waiting.
+            # It owns only normalized port/cache state, never a core journal; the
+            # cancelled generation drops its late result before any core transition.
+            query_worker.join(0.2)
+            listener.close()
+            if coordinator.is_alive():
+                raise DomainError('operation_failed', 'owned connector query did not finish; journal remains fenced')
+            bundle.close()
+            if metadata.exists():
+                try:
+                    current = json.loads(metadata.read_text(encoding='utf-8'))
+                    if current.get('process_id') == os.getpid():
+                        metadata.unlink()
+                except (OSError, ValueError):
+                    pass
+        finally:
+            if endpoint is not None:
+                # Even when a failed join deliberately keeps the journal fenced,
+                # close this Unix listener before releasing its private directory.
+                listener.close()
     return 0

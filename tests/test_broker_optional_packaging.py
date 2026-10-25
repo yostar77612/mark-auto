@@ -30,7 +30,7 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.module = runpy.run_path(str(ROOT / 'packaging/broker_package.py'))
         self.globals = self.module['inspect_wheel'].__globals__
         files = {
@@ -46,7 +46,7 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
         with zipfile.ZipFile(self.wheel, 'w') as archive:
             for name, raw in files.items():
                 archive.writestr(name, raw)
-        self.site = self.root / 'site'
+        self.site = (self.root / 'site').resolve()
         for name, raw in files.items():
             path = self.site / name
             path.parent.mkdir(parents=True, exist_ok=True)

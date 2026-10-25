@@ -24,6 +24,84 @@ error entries in the execution host's default temporary directory; rerunning
 unchanged tests with TEMP/TMP inside the writable task workspace passed. No ACL,
 system protection, assertion or timeout was changed.
 
+### PR96 first remote attempt — failed, preserved
+
+PR96 head `75c21cb5992770dc7b19ed24b92ea348de1598e3`, offline run
+`40199547226`, exposed portability/integration gaps and is not acceptance.
+Linux core reported AF_UNIX address-length failures, unavailable baseline Git
+objects in shallow checkouts, a direct crash-driver import-path failure, and
+missing `packaging.requirements` in offline dependency profiles. Windows core
+remaining jobs reached their unchanged 15-minute limits after the v2 workload
+was added; their partial runs are not passes. All five original job logs are
+preserved under the external task audit `main-integration-pr96/failed-job-*`.
+
+Repairs in progress: secure short POSIX socket lifecycle with strict client
+validation and unchanged Windows pipe behavior; complete baseline checkout and
+hash-locked packaging dependency; a fourth whole-module Windows trading shard
+with exact independent union coverage and unchanged per-case/job deadlines;
+explicit repository-root import setup in the direct fault-fixture child. No
+test is removed or skipped to hide these failures. A fresh complete PR run is
+required before merging. Sitecore, original data and financial operations
+remain outside this integration.
+
+Local repair evidence: 88 focused CI/worker/coverage contracts passed, including
+the original five CoreShardRunner cases (7.767 seconds; original 15-second
+child bounds unchanged). The fourth report is mandatory and missing, duplicate,
+reclassified, skipped, wrong-attempt and wrong-source reports are rejected.
+Actual crash/recovery combinations passed 4/4 in 52.591 seconds: both owned
+children were OS-killed, the real lease wait was 31.9975 seconds, reservations
+remained and restart never resent. An isolated `python -I` direct-script probe
+independently reproduced the original missing application import and confirmed
+the repaired fixture loads without opening a journal. Raw logs and import proof
+are retained in the integration audit. These focused results do not replace the
+pending complete repaired-head CI or claim fresh brokerage/native-load evidence.
+
+IPC repair focused evidence: 12 actual Windows independent-engine tests passed
+in 9.200 seconds; six endpoint isolation/cleanup contracts passed in 3.668
+seconds. POSIX-only owner/mode fault injection on Windows is not an actual
+Linux transport run. The first restricted-tool startup attempt failed after
+15.079 seconds with zero executed cases, an empty startup log and an owned
+child; exact-child cleanup and evidence were preserved. A subsequently exclusive
+ordinary-user run passed without changing its 15-second deadlines. The exact
+cause of the initial failure is not proven. Production changes now include the
+reviewed Unix socket lifecycle; the old bf5141e runtime-equivalence claim above
+does not apply to these new bytes.
+
+The first installer run `40199547250` also failed before freezing: its complete
+3.13 suite ran 3531 cases in 1757.097 seconds, with two failures, ten baseline
+Git errors and 33 original platform skips. It exposed the same missing baseline
+and direct crash-fixture import, plus one Windows short/long-path spelling
+assertion in optional packaging. This failed report is preserved separately and
+is not an installer pass. Build history provisioning and canonical-path fixture
+repair are required; scheduling the growing complete regression separately from
+freeze/lifecycle work is under review without raising the 35-minute job bound or
+removing a required regression.
+
+Installer repair is now locally verified: 46 focused phase/packaging/version
+contracts passed in 4.913 seconds, including missing/duplicate/reordered IDs,
+failed fixtures, unknown skips, wrong run/attempt/workflow/head/source/runtime,
+stale evidence and tampered logs. Actual private Python 3.13.16/SQLite 3.54.0
+discovery found 3556 unique IDs and exactly the original 33 declared Windows
+applicability skips; this is independent discovery, not 3556 fresh test passes.
+The same desktop lock versions/METADATA and pinned SQLite DLL were verified.
+The CI regression producer and build each retain a 35-minute bound. Only a
+fresh successful same-workflow/run/attempt/source/runtime full-suite receipt
+with every expected case permits freezing; local builds still execute the
+original complete suite directly. See `packaging/DESKTOP_REGRESSION.md`.
+The repaired source is ready for complete remote validation; the first failed
+attempt and all prior source-attributed evidence remain unchanged history.
+
+Final integrated pre-push checks passed: Ruff 0.16.10 lint/format (682 scanned
+files), static/history gate zero findings, v2 architecture zero violations,
+Python 3.11-target AST syntax for all 650 tracked Python files (executed on
+3.13.11, not a local 3.11 runtime claim), native PowerShell parsing of all 14
+tracked scripts, and staged whitespace checks. Lint first caught four E402
+imports in the direct crash fixture after path setup; those application imports
+were moved inside its `main` without disabling lint rules. The final actual
+crash-combinations run passed 4/4 in 49.609 seconds, including a real 31.5345
+second lease wait and no resubmission. Complete repaired-head remote CI and
+installer evidence remain pending; only those new results may authorize merge.
+
 ## Current final local engineering receipt — implementationbf5141e
 
 Updated 2026-10-25T13:24:35.882146+00:00. **45local engineering cases passed;5external pending.** Formal acceptance230/300 unchanged. No real brokerage client/login/credential search/order, no Sitecore/original data change, no remote v2 write.

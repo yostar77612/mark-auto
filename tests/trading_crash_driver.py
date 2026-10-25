@@ -7,13 +7,19 @@ import sys
 from threading import Event
 import os
 
-from quantlab.trading.application.events import reconcile
-from quantlab.trading.application.workflows import resume
-from quantlab.trading.domain.models import Environment, OrderPlan
-from quantlab.trading.runtime.build import create_engine
+# Direct script execution starts with tests/ on sys.path, including clean CI
+# hosts where the application has never been installed as an editable package.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def main() -> None:
+    from quantlab.trading.application.events import reconcile
+    from quantlab.trading.application.workflows import resume
+    from quantlab.trading.domain.models import Environment, OrderPlan
+    from quantlab.trading.runtime.build import create_engine
+
     root, phase, marker = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
     engine = create_engine(root)
     reconcile(engine)

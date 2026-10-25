@@ -56,13 +56,17 @@ PAPER_MODULES = frozenset(
         'test_paper_replay_wal',
     }
 )
-CORE_SHARDS = ('desktop', 'paper', 'remaining')
-CORE_SHARD_PLAN = 'core-modules-v2'
+CORE_SHARDS = ('desktop', 'paper', 'remaining', 'trading')
+CORE_SHARD_PLAN = 'core-modules-v3'
 
 
 def core_shard_for_module(module):
     if module in RESEARCH_MODULES:
         raise ValueError('Research modules cannot enter a core shard')
+    # Keep every module intact; the new platform has its own unchanged-budget
+    # runner rather than consuming the legacy remaining runner's fifteen minutes.
+    if module.startswith(('test_trading_', 'test_broker_', 'test_runtime_context_')) or module == 'test_quality_gate_v2_boundaries':
+        return 'trading'
     if module in PAPER_MODULES:
         return 'paper'
     return 'desktop' if module.startswith('test_desktop_') or module in {'test_analysis_recovery_ui', 'test_market_history_ui'} else 'remaining'

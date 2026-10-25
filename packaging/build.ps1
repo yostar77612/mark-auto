@@ -1,8 +1,9 @@
-param([string]$Version = '0.2.2')
+param([string]$Version = '0.2.2', [switch]$RegressionOnly, [string]$RegressionReceipt = '')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 & (Join-Path $PSScriptRoot 'validate_powershell.ps1')
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be numeric x.y.z' }
+if ($RegressionOnly -and $RegressionReceipt) { throw 'Regression producer and receipt consumer are separate phases' }
 if (-not [Environment]::Is64BitProcess) { throw 'Build requires x64 Python/PowerShell' }
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {
@@ -27,8 +28,19 @@ try {
   $env:MARKAUTO_REQUIRE_DESKTOP_AUTH_TESTS = '1'
   & $python -c "from desktop_chatgpt_provider import implementation_provenance; print(implementation_provenance()['dependency_target'])"
   if ($LASTEXITCODE) { throw 'Native authentication dependencies or provenance unavailable' }
-  & $python -m unittest discover -s tests -v
-  if ($LASTEXITCODE) { throw 'Regression suite failed before freezing' }
+  if ($RegressionOnly) {
+    & $python packaging/desktop_regression.py run --directory dist/validation/desktop-regression
+    if ($LASTEXITCODE) { throw 'Complete installer regression failed; no reusable success evidence' }
+    return
+  }
+  if ($RegressionReceipt) {
+    & $python packaging/desktop_regression.py verify --directory $RegressionReceipt --output dist/validation/desktop-regression-verified.json
+    if ($LASTEXITCODE) { throw 'Exact workflow regression evidence rejected before freezing' }
+  } else {
+    # The default local build still runs the complete original suite itself.
+    & $python -m unittest discover -s tests -v
+    if ($LASTEXITCODE) { throw 'Regression suite failed before freezing' }
+  }
   & $python packaging/collect_licenses.py
   if ($LASTEXITCODE) { throw 'License collection failed' }
   & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec

@@ -8,6 +8,7 @@ from multiprocessing.connection import Client
 import os
 from pathlib import Path
 import subprocess
+import stat
 import sys
 import tempfile
 import unittest
@@ -16,6 +17,7 @@ from uuid import uuid4
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.application.contracts import SettingsForm, UiAction, UiCommand
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.ipc import IpcFacade, read_session
 from quantlab.trading.runtime.protocol import Operation, Request, Response
 import trading_runtime
@@ -177,6 +179,41 @@ class IndependentEngineRuntimeTests(unittest.TestCase):
             moved = path.with_suffix('.closed')
             path.rename(moved)
             moved.rename(path)
+
+    def test_deep_engine_root_uses_private_native_transport_and_cleans_it(self) -> None:
+        root = Path(self.temp.name) / ('deep-engine-' + 'x' * 110)
+        self.assertGreater(len(os.fsencode(root.resolve())), 150)
+        facade = trading_runtime.ensure_engine(root)
+        session = read_session(root)
+        private_directory = None
+        try:
+            self.assertEqual(facade.snapshot().environment, Environment.LOCAL)
+            if os.name == 'nt':
+                self.assertTrue(session.address.startswith('\\\\.\\pipe\\markauto-v2-'))
+            else:
+                private_directory = Path(session.address).parent
+                self.assertLessEqual(len(os.fsencode(session.address)), 100)
+                self.assertNotEqual(private_directory, root.resolve())
+                self.assertEqual(stat.S_IMODE(private_directory.lstat().st_mode), 0o700)
+                self.assertEqual(stat.S_IMODE(Path(session.address).lstat().st_mode), 0o600)
+                self.assertEqual(private_directory.lstat().st_uid, os.geteuid())
+                foreign = Path(self.temp.name) / 'foreign-engine'
+                foreign.mkdir()
+                (foreign / 'engine-session-v2.json').write_bytes((root / 'engine-session-v2.json').read_bytes())
+                with self.assertRaises(DomainError):
+                    read_session(foreign)
+                private_directory.chmod(0o755)
+                try:
+                    with self.assertRaises(DomainError):
+                        read_session(root)
+                finally:
+                    private_directory.chmod(0o700)
+                self.assertEqual(facade.snapshot().environment, Environment.LOCAL)
+        finally:
+            trading_runtime.shutdown(root)
+        self.assertFalse((root / 'engine-session-v2.json').exists())
+        if private_directory is not None:
+            self.assertFalse(private_directory.exists(), 'owned private Unix endpoint must not remain after shutdown')
 
 
 if __name__ == '__main__':
