@@ -52,11 +52,11 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(raw)
         self.distribution = FakeDistribution(self.site, files)
-        self.contract = patch.dict(
+        self.sdk_hash_patch = patch.dict(
             self.globals, SDK_WHEEL_SHA256=sha256(self.wheel.read_bytes()).hexdigest(), SDK_CORE_SHA256=sha256(files['shioaji/_core.pyd']).hexdigest()
         )
-        self.contract.start()
-        self.addCleanup(self.contract.stop)
+        self.sdk_hash_patch.start()
+        self.addCleanup(self.sdk_hash_patch.stop)
 
     def test_default_analysis_is_untouched_without_wheel_or_sdk_lookup(self):
         analysis = object()

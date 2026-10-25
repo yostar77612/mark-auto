@@ -208,11 +208,37 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                     from quantlab.trading.runtime.protocol import Operation, Request
                     from quantlab.trading.runtime.server import _dispatch
                     from quantlab.trading.runtime.ipc import IpcFacade
+                    from quantlab.trading.runtime.bootstrap import PublicVersionState, RuntimeBundle
+                    from quantlab.trading.runtime.config import RuntimeLaunch
+                    from quantlab.trading.application.codec import loads
 
                     request = Request(uuid4().hex, environment, 'test-stock', datetime.now(timezone.utc) + timedelta(seconds=10), Operation.SNAPSHOT)
-                    self.assertEqual(_dispatch(engine, facade, request).state.environment, environment)
-                    with self.assertRaises(DomainError):
-                        _dispatch(engine, facade, replace(request, environment=Environment.LOCAL))
+                    # Bind this same explicitly armed, entirely local fake-port
+                    # engine to the actual host context and durable public stamp.
+                    # No SDK client, real account or production execution flag is
+                    # used; the original business flow above remains unchanged.
+                    with closing(Ledger(Path(directory) / 'runtime-control.sqlite', 'injected-public-version', datetime.now(timezone.utc))) as versions:
+                        launch = RuntimeLaunch(Path(directory), environment, account_ref='test-stock')
+                        bundle = RuntimeBundle(launch, facade, (journal, versions), engine=engine, version_journal=versions)
+                        response = _dispatch(bundle, request)
+                        self.assertEqual(response.state.environment, environment)
+                        self.assertEqual(response.state.configuration_id, 'UNCONFIGURED:' + environment.value + ':test-stock')
+                        with self.assertRaises(DomainError):
+                            _dispatch(bundle, replace(request, environment=Environment.LOCAL))
+                        with self.assertRaises(DomainError) as wrong_account:
+                            _dispatch(bundle, replace(request, account_ref='unconfigured-account'))
+                        self.assertEqual(wrong_account.exception.code, 'capability_missing')
+                        checkpoints = versions.replay()
+                        self.assertEqual(len(checkpoints), 1)
+                        checkpoint = loads(checkpoints[0].payload)
+                        self.assertIsInstance(checkpoint, PublicVersionState)
+                        self.assertEqual(checkpoint.environment, environment)
+                        self.assertEqual(checkpoint.account_refs, ('test-stock',))
+                        self.assertEqual(checkpoint.configuration_id, response.state.configuration_id)
+                        self.assertEqual(checkpoint.high_water, response.state.version)
+                        self.assertEqual(bundle.high_water, response.state.version)
+                        self.assertEqual(_dispatch(bundle, request).state.version, response.state.version)
+                        self.assertEqual(versions.replay(), checkpoints)
                     client = IpcFacade(Path(directory), environment=environment, account_ref='test-stock')
                     self.assertEqual((client.environment, client.account_ref), (environment, 'test-stock'))
 
