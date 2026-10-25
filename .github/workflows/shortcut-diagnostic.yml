@@ -66,6 +66,34 @@ jobs:
         # This is an observation of fixed older binaries using current assertions.
         # It is never exact-current-head installer or clean-client acceptance.
         run: ./packaging/test_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff -AcceptanceScope HostedCi -BaselineManifest build/shortcut-diagnostic/extracted/build-manifest.json -CandidateManifest build/shortcut-diagnostic/extracted/build-manifest.json
+      - name: Inspect original and byte-identical ASCII shortcut without executing either
+        if: failure()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $path = Join-Path ([Environment]::GetFolderPath('Programs')) ('Mark Auto\Mark Auto ' + (-join [char[]]@(0x591A,0x5E02,0x5834,0x5E73,0x53F0)) + '.lnk')
+          $result = @{scope='DIAGNOSTIC ONLY: no shortcut or executable launched'; original_path=$path; original_type=$path.GetType().FullName; exists=(Test-Path -LiteralPath $path)}
+          if ($result.exists) {
+            $item = Get-Item -LiteralPath $path -Force
+            $bytes = [IO.File]::ReadAllBytes($item.FullName)
+            $copy = Join-Path (Get-Location) 'dist/validation/ascii-shortcut-diagnostic.lnk'
+            $stream = [IO.File]::Open($copy, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+            try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+            $result.file = @{full_name=$item.FullName; length=$item.Length; attributes=$item.Attributes.ToString(); sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash; copy_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash; header_hex=([BitConverter]::ToString($bytes, 0, [Math]::Min(76, $bytes.Length)))}
+            $shell = New-Object -ComObject WScript.Shell
+            $result.reads = @()
+            foreach ($probe in @(@{label='original'; path=$path}, @{label='original-explicit-string'; path=[string]$path}, @{label='original-file-fullname'; path=$item.FullName}, @{label='ascii-identical-copy'; path=$copy})) {
+              $link = $shell.CreateShortcut($probe.path)
+              $result.reads += @{label=$probe.label; path_type=$probe.path.GetType().FullName; target=$link.TargetPath; arguments=$link.Arguments; working_directory=$link.WorkingDirectory}
+            }
+          }
+          $report = Join-Path (Get-Location) 'dist/validation/shortcut-path-reader-probe.json'
+          $reportStream = [IO.File]::Open($report, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+          try {
+            $reportBytes = [Text.UTF8Encoding]::new($false).GetBytes(($result | ConvertTo-Json -Depth 6))
+            $reportStream.Write($reportBytes, 0, $reportBytes.Length)
+          } finally { $reportStream.Dispose() }
       - name: Preserve actual values and failures without relabelling them as acceptance
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
