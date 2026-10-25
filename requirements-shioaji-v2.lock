@@ -1,0 +1,6 @@
+# Optional, isolated Windows broker runtime only; never required by v1 research.
+# Verified from https://pypi.org/pypi/shioaji/1.7.9/json on 2026-10-25.
+# This Windows abi3 wheel has no mandatory runtime dependency declarations.
+# Installation does not authorize login, CA activation or any trading operation.
+shioaji==1.7.9 ; sys_platform == "win32" \
+    --hash=sha256:77c864aa5bcd0f873746cb10a55a484c7a38723df432a7778f328d5fb7f57be4

@@ -33,7 +33,11 @@ analysis = Analysis(
            (str(root / 'quantlab' / 'research_analysis.py'), 'quantlab'),
            (str(root / 'quantlab' / 'indicators.py'), 'quantlab'),
            (str(root / 'quantlab' / 'provider.py'), 'quantlab'),
-           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')] + collect_data_files('tzdata')
+           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')]
+          # v2 profiles verify these exact source bytes in the frozen runtime.
+          + [(str(p), p.parent.relative_to(root).as_posix())
+             for p in sorted((root / 'quantlab' / 'trading').rglob('*.py'))]
+          + collect_data_files('tzdata')
           + [entry for name in ('PyJWT', 'cryptography', 'cffi', 'pycparser')
              for entry in copy_metadata(name)],
     hiddenimports=['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',

@@ -1,0 +1,397 @@
+"""Six workspaces backed exclusively by typed Application commands/read models."""
+
+from dataclasses import replace
+from decimal import Decimal, InvalidOperation
+
+from PySide6.QtCore import QThread, QTimer, Qt, Signal
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import QComboBox, QMainWindow, QMessageBox, QVBoxLayout
+
+from desktop_strings import ui_text
+from quantlab.trading.application.contracts import BrokerSettings, SettingsForm, StrategyForm, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
+from quantlab.trading.domain.models import Environment
+
+from .labels import event_label, policy_label, state_label
+from .widgets import fit_available_screen, label, selected_id
+from .rendering import reconciliation_cells, render_tables
+from .workspaces import build
+from .wizard import StrategyWizard
+
+
+class _Operation(QThread):
+    completed = Signal(object, object)
+    failed = Signal()
+
+    def __init__(self, facade: TradingFacade, command: UiCommand | None, parent, *, refresh_before: bool = False):
+        super().__init__(parent)
+        self.facade = facade
+        self.command = command
+        self.refresh_before = refresh_before
+
+    def run(self) -> None:
+        try:
+            if self.refresh_before and self.command is not None:
+                self.command = replace(self.command, expected_version=self.facade.snapshot().version)
+            receipt = self.facade.execute(self.command) if self.command is not None else None
+            state = self.facade.snapshot()
+        except Exception:
+            self.failed.emit()
+        else:
+            self.completed.emit(state, receipt)
+
+
+class TradingWindow(QMainWindow):
+    legacy_requested = Signal(str)
+    close_ui_requested = Signal()
+
+    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None):
+        super().__init__(parent)
+        self.facade = facade
+        self.state = initial_state
+        self._operation: _Operation | None = None
+        self._priority_operation: _Operation | None = None
+        self._rendered_version: tuple[int, int] | None = None
+        self._context_rendering = False
+        self._settings_dirty = False
+        self._last_feedback = ''
+        self._engine_reachable = True
+        self._screen_hooked = False
+        self.setObjectName('multi_market_window')
+        self.setWindowTitle(ui_text('v2.title'))
+        font = self.font()
+        font.setPointSize(max(11, font.pointSize()))
+        self.setFont(font)
+        self.resize(1180, 720)
+        self.setMinimumSize(600, 300)
+        build(self)
+        self.apply_state(initial_state)
+        self.poll = QTimer(self)
+        self.poll.setInterval(1000)
+        self.poll.timeout.connect(self.refresh)
+        self.poll.start()
+        QShortcut(QKeySequence('Ctrl+N'), self, activated=self.new_strategy)
+        QShortcut(QKeySequence('F5'), self, activated=self.refresh)
+        QShortcut(QKeySequence('Ctrl+1'), self, activated=lambda: self.navigation.setCurrentRow(0))
+        QShortcut(QKeySequence('Ctrl+4'), self, activated=lambda: self.navigation.setCurrentRow(3))
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        if not self._screen_hooked and self.windowHandle() is not None:
+            self.windowHandle().screenChanged.connect(lambda _screen: fit_available_screen(self))
+            self._screen_hooked = True
+        QTimer.singleShot(0, lambda: fit_available_screen(self))
+
+    def _dirty_settings(self) -> None:
+        if not self._context_rendering:
+            self._settings_dirty = True
+
+    def _feedback(self, text: str) -> None:
+        self._last_feedback = text
+        self.notice.setText(text)
+
+    def refresh(self) -> None:
+        self._run(None)
+
+    def command(
+        self,
+        action: UiAction,
+        target_id: str = '',
+        *,
+        strategy: StrategyForm | None = None,
+        settings: SettingsForm | None = None,
+        environment: Environment | None = None,
+        account_ref: str = '',
+        destination_strategy_id: str = '',
+        broker_settings: BrokerSettings | None = None,
+    ) -> None:
+        self._run(UiCommand(action, self.state.version, target_id, strategy, settings, environment, account_ref, destination_strategy_id, broker_settings))
+
+    def _run(self, command: UiCommand | None) -> None:
+        if self._priority_operation is not None:
+            if command is not None:
+                self._feedback(ui_text('v2.stop_in_progress'))
+            return
+        if self._operation is not None:
+            if command is not None:
+                if command.action == UiAction.STOP_NEW:
+                    self._priority_stop()
+                else:
+                    self._feedback(ui_text('v2.busy'))
+            return
+        operation = _Operation(self.facade, command, self)
+        self._operation = operation
+        operation.completed.connect(self._completed)
+        operation.failed.connect(self._failed)
+        operation.finished.connect(self._finished)
+        if command is not None:
+            self._feedback(ui_text('v2.working'))
+        operation.start()
+
+    def _completed(self, state: UiState, receipt: UiReceipt | None) -> None:
+        action = self._operation.command.action if self._operation is not None and self._operation.command is not None else None
+        self._result(state, receipt, action)
+
+    def _priority_stop(self) -> None:
+        operation = _Operation(self.facade, UiCommand(UiAction.STOP_NEW, self.state.version), self, refresh_before=True)
+        self._priority_operation = operation
+        operation.completed.connect(self._priority_completed)
+        operation.failed.connect(self._failed)
+        operation.finished.connect(self._priority_finished)
+        self._feedback(ui_text('v2.stop_in_progress'))
+        operation.start()
+
+    def _priority_completed(self, state: UiState, receipt: UiReceipt | None) -> None:
+        self._result(state, receipt, UiAction.STOP_NEW)
+
+    def _priority_finished(self) -> None:
+        operation = self._priority_operation
+        self._priority_operation = None
+        if operation is not None:
+            operation.deleteLater()
+
+    def _result(self, state: UiState, receipt: UiReceipt | None, action: UiAction | None) -> None:
+        if (state.version, state.quote_revision) < (self.state.version, self.state.quote_revision):
+            return
+        self._engine_reachable = True
+        if receipt is not None and receipt.accepted:
+            if action == UiAction.SAVE_SETTINGS:
+                self._settings_dirty = False
+            elif action == UiAction.SAVE_BROKER_SETTINGS:
+                self.broker_panel.dirty = False
+        self.apply_state(state)
+        if receipt is not None:
+            self._feedback(receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed'))
+            self.notice.setAccessibleName(receipt.code)
+            if receipt.accepted and receipt.reference:
+                for row in range(self.strategies.rowCount()):
+                    if self.strategies.item(row, 0).data(Qt.ItemDataRole.UserRole) == receipt.reference:
+                        self.strategies.selectRow(row)
+                        break
+
+    def _failed(self) -> None:
+        self._engine_reachable = False
+        self._feedback(ui_text('v2.connection_failed'))
+
+    def _finished(self) -> None:
+        operation = self._operation
+        self._operation = None
+        if operation is not None:
+            operation.deleteLater()
+
+    def new_strategy(self) -> None:
+        self._wizard('')
+
+    def new_version(self) -> None:
+        identity = selected_id(self.strategies)
+        strategy = next((item for item in self.state.strategies if f'{item.strategy_id}:{item.version}' == identity), None)
+        if strategy is not None:
+            self._wizard(strategy.strategy_id)
+        else:
+            self._feedback(ui_text('v2.select_strategy'))
+
+    def _wizard(self, parent_strategy_id: str) -> None:
+        wizard = StrategyWizard(self.state, self, parent_strategy_id=parent_strategy_id)
+        if wizard.exec() == StrategyWizard.DialogCode.Accepted:
+            self.command(UiAction.CREATE_STRATEGY, strategy=wizard.form())
+
+    def _strategy_action(self, action: UiAction) -> None:
+        identity = selected_id(self.strategies)
+        if identity:
+            self.command(action, identity)
+        else:
+            self._feedback(ui_text('v2.select_strategy'))
+
+    def _confirm(self, text: str) -> bool:
+        box = QMessageBox(QMessageBox.Icon.Question, ui_text('v2.review_scope'), text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel, self)
+        box.setTextFormat(Qt.TextFormat.PlainText)
+        box.button(QMessageBox.StandardButton.Yes).setText(ui_text('v2.confirm'))
+        box.button(QMessageBox.StandardButton.Cancel).setText(ui_text('v2.cancel'))
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        return box.exec() == QMessageBox.StandardButton.Yes
+
+    def deploy_selected(self) -> None:
+        identity = selected_id(self.strategies)
+        strategy = next((item for item in self.state.strategies if f'{item.strategy_id}:{item.version}' == identity), None)
+        if strategy is None:
+            self._feedback(ui_text('v2.select_strategy'))
+            return
+        if strategy.allocation <= 0:
+            self._feedback(ui_text('v2.strategy_config_missing'))
+            return
+        summary = ui_text('v2.deploy_summary').format(
+            strategy.name,
+            strategy.version,
+            self._environment_label(strategy.environment),
+            strategy.account_ref,
+            strategy.instrument_id,
+            policy_label(strategy.policy_label),
+            strategy.allocation,
+            strategy.risk_fraction * 100,
+        )
+        summary += '\n' + ui_text('v2.expiry_summary').format(
+            ui_text('v2.expiry_roll' if strategy.expiry_action == 'ROLL' else 'v2.expiry_exit'), strategy.roll_contract_id or ui_text('v2.no_roll_target')
+        )
+        if self._confirm(summary):
+            self.command(UiAction.DEPLOY, identity)
+
+    def flatten_selected(self) -> None:
+        if self.reconciliation.selectedItems():
+            self._feedback(ui_text('v2.reconciliation_cannot_flatten'))
+            return
+        identity = selected_id(self.positions)
+        position = next((item for item in self.state.positions if item.lot_id == identity), None)
+        if position is None:
+            self._feedback(ui_text('v2.select_position'))
+            return
+        if not position.account_ref:
+            self._feedback(ui_text('v2.position_account_missing'))
+            return
+        summary = ui_text('v2.flatten_summary').format(
+            position.account_ref,
+            position.instrument_id,
+            position.quantity,
+            self._unit_label(position.unit.value),
+            position.sellable_quantity,
+            state_label(position.source),
+        )
+        summary += '\n' + ui_text('v2.flatten_direction').format(ui_text('v2.long' if position.direction.value == 'BUY' else 'v2.short'))
+        if self._confirm(summary):
+            self.command(UiAction.FLATTEN, identity)
+
+    def transfer_selected(self) -> None:
+        identity = selected_id(self.positions)
+        if not identity:
+            self._feedback(ui_text('v2.select_position'))
+            return
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle(ui_text('v2.transfer'))
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(label('v2.transfer_hint'))
+        destinations = QComboBox()
+        for strategy in self.state.strategies:
+            destinations.addItem(f'{strategy.name} · v{strategy.version} · {policy_label(strategy.policy_label)}', f'{strategy.strategy_id}:{strategy.version}')
+        layout.addWidget(destinations)
+        controls = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        controls.button(QDialogButtonBox.StandardButton.Ok).setText(ui_text('v2.confirm_transfer'))
+        controls.button(QDialogButtonBox.StandardButton.Cancel).setText(ui_text('v2.cancel'))
+        controls.accepted.connect(dialog.accept)
+        controls.rejected.connect(dialog.reject)
+        layout.addWidget(controls)
+        if dialog.exec() == QDialog.DialogCode.Accepted and destinations.currentData():
+            self.command(UiAction.TRANSFER, identity, destination_strategy_id=destinations.currentData())
+
+    def shutdown_engine(self) -> None:
+        if self._confirm(ui_text('v2.shutdown_summary').format(len(self.state.positions), len(self.state.orders))):
+            self.command(UiAction.SHUTDOWN_ENGINE)
+
+    def save_settings(self) -> None:
+        try:
+            settings = SettingsForm(Decimal(self.stock_budget.text()), Decimal(self.futures_budget.text()), self.setting_risk.currentData())
+            if not settings.stock_allocation.is_finite() or not settings.futures_allocation.is_finite():
+                raise ValueError('nonfinite')
+        except (InvalidOperation, ValueError):
+            self._feedback(ui_text('v2.form_invalid'))
+            return
+        self.command(UiAction.SAVE_SETTINGS, settings=settings)
+
+    def _environment_selected(self) -> None:
+        if self._context_rendering:
+            return
+        self._populate_accounts(Environment(self.environment.currentData()))
+        self._switch_context()
+
+    def _populate_accounts(self, environment: Environment) -> None:
+        self._context_rendering = True
+        self.account.clear()
+        for item in self.state.accounts:
+            if item.environment == environment:
+                self.account.addItem(item.account_ref, item.account_ref)
+        self._context_rendering = False
+
+    def _switch_context(self) -> None:
+        if not self._context_rendering and self.account.currentData():
+            self.command(UiAction.SWITCH_CONTEXT, environment=Environment(self.environment.currentData()), account_ref=self.account.currentData())
+        elif not self._context_rendering:
+            self._feedback(ui_text('v2.no_account'))
+
+    @staticmethod
+    def _environment_label(environment: Environment) -> str:
+        return ui_text({Environment.LOCAL: 'v2.local', Environment.BROKER_SIMULATION: 'v2.broker_sim', Environment.LIVE: 'v2.live'}[environment])
+
+    @staticmethod
+    def _unit_label(unit: str) -> str:
+        return ui_text('v2.shares' if unit == 'SHARE' else 'v2.contracts')
+
+    @staticmethod
+    def _market_label(market) -> str:
+        return ui_text({'STOCK': 'v2.stock', 'INDEX_FUTURE': 'v2.index_future', 'STOCK_FUTURE': 'v2.stock_future'}[market.value])
+
+    def apply_state(self, state: UiState) -> None:
+        if (state.version, state.quote_revision) < (self.state.version, self.state.quote_revision):
+            return
+        self.state = state
+        self.context.setText(
+            ui_text('v2.context_line').format(
+                self._environment_label(state.environment),
+                state.account_ref,
+                state_label(state.engine_state),
+                state.trading_day,
+                policy_label(state.policy_label),
+            )
+        )
+        self.summary.setText(ui_text('v2.summary_line').format(state.allocated_cash, state.daily_pnl, state.remaining_risk, state_label(state.quote_status)))
+        self.notice.setText(
+            ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else self._last_feedback or ui_text('v2.no_issues')
+        )
+        self.overview_step.setEnabled(state.environment == Environment.LOCAL)
+        render_version = (state.version, state.quote_revision)
+        if self._rendered_version == render_version:
+            return
+        state_changed = self._rendered_version is None or self._rendered_version[0] != state.version
+        self._rendered_version = render_version
+        render_tables(self, state, state_changed=state_changed)
+        if not state_changed:
+            return
+        self.overview_status.setText(ui_text('v2.local_data') if state.synthetic_data else ui_text('v2.external_data'))
+        self.overview_deployments.setText(
+            '\n'.join(f'{item.name} · v{item.version} · {policy_label(item.policy_label)} · {state_label(item.state)}' for item in state.strategies[-10:])
+            or ui_text('v2.no_strategies')
+        )
+        self.issue_details.clear()
+        self.issue_details.addItems(list(state.issues) or [ui_text('v2.no_issues')])
+        self.issue_details.addItems(
+            [ui_text('v2.reconciliation_overview').format(*reconciliation_cells(item)[:2], *reconciliation_cells(item)[3:6]) for item in state.reconciliation]
+        )
+        self.diagnostics.setText(ui_text('v2.diagnostics').format(state.version, state.engine_state) + '\n' + '\n'.join(state.events[-20:]))
+        self.events.clear()
+        self.events.addItems([event_label(code) for code in state.events[-100:]])
+        self._context_rendering = True
+        self.environment.setCurrentIndex(self.environment.findData(state.environment))
+        self._populate_accounts(state.environment)
+        self._context_rendering = True
+        self.account.setCurrentIndex(self.account.findData(state.account_ref))
+        if not self._settings_dirty:
+            self.stock_budget.setText(str(state.settings.stock_allocation))
+            self.futures_budget.setText(str(state.settings.futures_allocation))
+            self.setting_risk.setCurrentIndex(self.setting_risk.findData(state.settings.risk_fraction))
+        self._context_rendering = False
+        self.broker_panel.apply(state.broker_settings, state.broker_readiness)
+
+    def closeEvent(self, event) -> None:
+        if self._operation is not None or self._priority_operation is not None:
+            self._feedback(ui_text('v2.busy'))
+            event.ignore()
+            return
+        close_key = (
+            'v2.close_unknown' if not self._engine_reachable else 'v2.close_already_stopped' if self.state.engine_state == 'CLOSED' else 'v2.close_summary'
+        )
+        if not self.property('allow_close_for_tests') and not self._confirm(
+            ui_text(close_key).format(state_label(self.state.engine_state), len(self.state.positions))
+        ):
+            event.ignore()
+            return
+        self.poll.stop()
+        self.close_ui_requested.emit()
+        super().closeEvent(event)

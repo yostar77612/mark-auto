@@ -47,7 +47,7 @@ DYNAMIC_PREFIXES = {
 def source_paths():
     """Application/tool sources plus tests; exclude archived fixture code."""
     yield from ROOT.glob('*.py')
-    for package in ('desktop_pages', 'desktop_smoke', 'quantlab', 'tools', 'tests'):
+    for package in ('desktop_pages', 'desktop_smoke', 'desktop_trading', 'quantlab', 'tools', 'tests'):
         for path in (ROOT / package).rglob('*.py'):
             if 'fixtures' not in path.relative_to(ROOT).parts:
                 yield path

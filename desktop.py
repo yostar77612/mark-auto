@@ -1,11 +1,17 @@
 """Frozen Windows desktop entry point; no web server, browser, or Python setup."""
 
 from __future__ import annotations
+
+import multiprocessing
+
+if __name__ == '__main__':
+    # Frozen workers must dispatch before importing presentation/catalogue code.
+    multiprocessing.freeze_support()
+
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
 
 import argparse
-import multiprocessing
 from pathlib import Path
 import sys
 
@@ -91,6 +97,9 @@ def parse_args(argv=None):
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
     parser.add_argument('--smoke-isolated', action='store_true', help='Smoke only: do not discover or read the user bootstrap/settings')
     parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
+    parser.add_argument('--platform-v2', action='store_true', help='Open the separate multi-market local trading platform')
+    parser.add_argument('--trading-engine', type=Path, help='Run the independent local v2 engine in an explicit directory')
+    parser.add_argument('--trading-root', type=Path, help='Explicit isolated v2 desktop directory')
     args = parser.parse_args(argv)
     if args.tls_smoke is not None:
         if args.smoke_test or not args.tls_smoke.is_absolute():
@@ -360,6 +369,16 @@ def run_gui(args):
 
 def main(argv=None):
     args = parse_args(argv)
+    if args.trading_engine is not None:
+        if not args.trading_engine.is_absolute() or args.platform_v2 or args.smoke_test or args.tls_smoke:
+            raise ValueError('Independent engine requires only an absolute v2 path')
+        from quantlab.trading.runtime.server import serve
+
+        return serve(args.trading_engine)
+    if args.platform_v2:
+        from trading_runtime import run_window
+
+        return run_window(args.trading_root)
     if args.tls_smoke is not None:
         from desktop_tls_smoke import write_report
 
@@ -368,5 +387,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
     raise SystemExit(main())
