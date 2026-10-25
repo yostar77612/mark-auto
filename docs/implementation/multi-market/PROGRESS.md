@@ -4,6 +4,27 @@
 
 ### Latest follow-up after27166 — fresh CI still required
 
+E2d373a offline40216743880 subsequently passed all35 jobs. Its installer
+40216743814 passed static/security and the complete fresh regression, then
+FAILED lifecycle verification at the new shortcut target/arguments/directory
+comparison (worker stack test_installer.ps1:164). Inno itself verified the
+payload and created all three links. Actual COM property values were not
+captured, so no specific case/8.3/trailing-slash cause is asserted. The failure
+artifact12609445307 was downloaded for diagnostics only, SHA256
+4e6e72c159683c1843ad85e0d7b11b34dae482a6107720e53f322dce8bd4b78a;
+neither candidate installer was executed on this computer. No merge occurred.
+
+The unchanged three exact refusal conditions now have CreateNew, exclusively
+written raw/expected/canonical observation before them; Dispose and refusal
+behavior were proved using workspace-only native COM links. All55 related
+source contracts passed, including native PS parser controls. The original
+010025ba safety golden is retained through its exact additive projection.
+A temporary separate PR96-only GitHub-hosted diagnostic replays the exact
+hash-pinned older binaries through the complete current lifecycle, to collect
+actual values without waiting for another freeze. It grants only read access,
+preserves failure and cannot count as current-head installer acceptance. Remove
+this temporary workflow after diagnosis, then require fresh full CI/installer.
+
 Commit27166 offline40213873038 completed all35 jobs:22 successful and13 failed,
 including downstream aggregates. No producer hit its15-minute deadline. Both
 Windows remaining producers executed2306 cases in524.110/551.009s. Failed raw

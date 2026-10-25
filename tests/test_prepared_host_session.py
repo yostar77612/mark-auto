@@ -16,6 +16,28 @@ SHORTCUT_VERIFY = rb"""  if ($RequireMultiMarketShortcut) {
     # Historical baseline installers need not contain the new optional entry.
     if (-not (Test-Path -LiteralPath $script:multiMarketStartMenu)) { throw 'Multi-market Start Menu shortcut missing from candidate' }
     $multiMarketShortcut = $shortcutShell.CreateShortcut($script:multiMarketStartMenu)
+    $shortcutActualDirectory = $null; $shortcutExpectedDirectory = $null; $shortcutDirectoryExact = $null; $shortcutDirectoryError = $null
+    try {
+      $shortcutActualDirectory = [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory)
+      $shortcutExpectedDirectory = [IO.Path]::GetFullPath($activeDirectory)
+      $shortcutDirectoryExact = $shortcutActualDirectory -ceq $shortcutExpectedDirectory
+    } catch { $shortcutDirectoryError = $_.Exception.GetType().FullName }
+    $shortcutObservation = @{
+      schema_version=1; scope='DIAGNOSTIC ONLY: not shortcut acceptance'; version=$number;
+      actual=@{target=$multiMarketShortcut.TargetPath; arguments=$multiMarketShortcut.Arguments; working_directory=$multiMarketShortcut.WorkingDirectory};
+      expected=@{target=$script:installedExe; arguments='--platform-v2'; working_directory=$activeDirectory};
+      raw_lengths=@{actual_target=$multiMarketShortcut.TargetPath.Length; expected_target=$script:installedExe.Length;
+        actual_arguments=$multiMarketShortcut.Arguments.Length; expected_arguments='--platform-v2'.Length;
+        actual_working_directory=$multiMarketShortcut.WorkingDirectory.Length; expected_working_directory=$activeDirectory.Length};
+      exact=@{target=($multiMarketShortcut.TargetPath -ceq $script:installedExe); arguments=($multiMarketShortcut.Arguments -ceq '--platform-v2'); working_directory=$shortcutDirectoryExact};
+      canonical=@{actual_working_directory=$shortcutActualDirectory; expected_working_directory=$shortcutExpectedDirectory; error_type=$shortcutDirectoryError}
+    }
+    $shortcutObservationPath = Join-Path $results "multi-market-shortcut-observation-$number.json"
+    $shortcutObservationStream = [IO.File]::Open($shortcutObservationPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+      $shortcutObservationBytes = [Text.UTF8Encoding]::new($false).GetBytes(($shortcutObservation | ConvertTo-Json -Depth 5))
+      $shortcutObservationStream.Write($shortcutObservationBytes, 0, $shortcutObservationBytes.Length)
+    } finally { $shortcutObservationStream.Dispose() }
     if ($multiMarketShortcut.TargetPath -cne $script:installedExe -or $multiMarketShortcut.Arguments -cne '--platform-v2' -or
         [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne [IO.Path]::GetFullPath($activeDirectory)) { throw 'Multi-market shortcut target, arguments or working directory changed' }
     $script:multiMarketShortcutProof = @{verified=$true; target=$multiMarketShortcut.TargetPath;
@@ -113,6 +135,30 @@ class PreparedHostSessionContracts(unittest.TestCase):
                 except ValueError:
                     continue
                 self.assertNotEqual(hashlib.sha256(original).hexdigest(), expected)
+
+    def test_shortcut_diagnostic_is_exclusive_disposed_and_precedes_unchanged_refusal(self):
+        source = (ROOT / 'packaging/test_installer.ps1').read_bytes().replace(b'\r\n', b'\n')
+        self.assertEqual(source.count(SHORTCUT_VERIFY), 1)
+        block = SHORTCUT_VERIFY.decode('ascii')
+        guard = (
+            "    if ($multiMarketShortcut.TargetPath -cne $script:installedExe -or $multiMarketShortcut.Arguments -cne '--platform-v2' -or\n"
+            "        [IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne [IO.Path]::GetFullPath($activeDirectory)) { throw 'Multi-market shortcut target, arguments or working directory changed' }"
+        )
+        self.assertEqual(block.count(guard), 1)
+        self.assertLess(block.index('[IO.FileMode]::CreateNew'), block.index(guard))
+        self.assertIn('[IO.FileAccess]::Write, [IO.FileShare]::None', block)
+        self.assertIn('finally { $shortcutObservationStream.Dispose() }', block)
+        self.assertIn("scope='DIAGNOSTIC ONLY: not shortcut acceptance'", block)
+        self.assertIn('multi-market-shortcut-observation-$number.json', block)
+        for field in ('actual=@{', 'expected=@{', 'raw_lengths=@{', 'exact=@{', 'canonical=@{'):
+            self.assertIn(field, block)
+        for old, new in (
+            (b'[IO.FileMode]::CreateNew', b'[IO.FileMode]::Create'),
+            (b'finally { $shortcutObservationStream.Dispose() }', b'finally {}'),
+        ):
+            with self.subTest(mutation=old):
+                with self.assertRaises(ValueError):
+                    original_installer_lifecycle(source.replace(old, new))
 
     def test_supervisor_and_exact_external_provenance(self):
         for token in (
