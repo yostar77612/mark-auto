@@ -335,3 +335,63 @@ public sealed class MarkAutoShortcutMetadata {
         TargetPath=target; Arguments=arguments; WorkingDirectory=working;
     }
 }
+// TEST ONLY: measure this process's exact fixture-file handles, not whether
+// unrelated system readers exist. Never duplicate, adopt, close or mutate a
+// snapshot handle; do not query the system-wide handle table or file contents.
+public static class TestOnlyShortcutHandles {
+    [StructLayout(LayoutKind.Sequential)] struct Entry {
+        public IntPtr handle,handles,pointers;
+        public uint access,type,attributes,reserved;
+    }
+    [DllImport("ntdll.dll")] static extern int NtQueryInformationProcess(IntPtr process,int information,IntPtr buffer,int length,out int returned);
+    [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll",SetLastError=true)] static extern uint GetFileType(IntPtr file);
+    [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern uint GetFinalPathNameByHandle(IntPtr file,StringBuilder name,uint length,uint flags);
+    [DllImport("kernel32.dll")] static extern void SetLastError(uint code);
+    public static int CountExact(string canonicalOwnedFixturePath) {
+        string path=canonicalOwnedFixturePath;
+        if(String.IsNullOrEmpty(path) || path.Length<3 || !Char.IsLetter(path[0]) || path[1]!=':' || path[2]!='\\' ||
+           path.Substring(2).IndexOf(':')>=0 || !String.Equals(System.IO.Path.GetFullPath(path),path,StringComparison.Ordinal))
+            throw new ArgumentException("Canonical local owned-fixture pathname required");
+        int size=65536,returned;
+        IntPtr buffer=Marshal.AllocHGlobal(size);
+        try {
+            int status=NtQueryInformationProcess(GetCurrentProcess(),51,buffer,size,out returned);
+            if(status==unchecked((int)0xC0000004) && returned>size && returned<=4194304) {
+                Marshal.FreeHGlobal(buffer); buffer=IntPtr.Zero;
+                size=returned; buffer=Marshal.AllocHGlobal(size);
+                status=NtQueryInformationProcess(GetCurrentProcess(),51,buffer,size,out returned);
+            }
+            if(status!=0) throw new InvalidOperationException("Current-process handle query failed: "+status.ToString("X8"));
+            int stride=Marshal.SizeOf(typeof(Entry)),header=IntPtr.Size*2;
+            if(returned<header || returned>size) throw new InvalidOperationException("Current-process handle snapshot length refused");
+            long count=IntPtr.Size==8 ? Marshal.ReadInt64(buffer) : Marshal.ReadInt32(buffer);
+            if(count<0 || count>(returned-header)/stride) throw new InvalidOperationException("Current-process handle snapshot bounds refused");
+            int matches=0;
+            for(int index=0;index<count;index++) {
+                var entry=(Entry)Marshal.PtrToStructure(IntPtr.Add(buffer,header+index*stride),typeof(Entry));
+                SetLastError(0);
+                uint type=GetFileType(entry.handle);
+                if(type!=1) {
+                    int error=Marshal.GetLastWin32Error();
+                    // Non-file objects and already-closed snapshot entries are
+                    // not live disk-file handles. Unknown query failures refuse.
+                    if(type==0 && error!=0 && error!=6) throw new Win32Exception(error);
+                    continue;
+                }
+                var name=new StringBuilder(32768);
+                uint length=GetFinalPathNameByHandle(entry.handle,name,(uint)name.Capacity,0);
+                if(length==0) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if(length>=name.Capacity) throw new InvalidOperationException("Current-process file name truncated");
+                string actual=name.ToString();
+                if(actual.StartsWith("\\\\?\\",StringComparison.Ordinal)) actual=actual.Substring(4);
+                if(String.Equals(actual,path,StringComparison.OrdinalIgnoreCase)) matches++;
+            }
+            return matches;
+        } finally { if(buffer!=IntPtr.Zero) Marshal.FreeHGlobal(buffer); }
+    }
+    public static void RequireClosed(string canonicalOwnedFixturePath) {
+        if(CountExact(canonicalOwnedFixturePath)!=0)
+            throw new InvalidOperationException("Current-process fixture file handle remains open");
+    }
+}

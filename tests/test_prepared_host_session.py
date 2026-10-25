@@ -192,6 +192,11 @@ class PreparedHostSessionContracts(unittest.TestCase):
         native_fixture = (ROOT / 'packaging/test_shortcut_reader.ps1').read_text(encoding='utf-8')
         runner = (ROOT / 'packaging/test_acceptance_process.ps1').read_text(encoding='utf-8')
         self.assertIn("Test-AcceptanceShortcutReader (Join-Path $fixture 'unicode-shortcuts')", runner)
+        self.assertLess(native_fixture.index('$Root=[IO.Path]::GetFullPath($Root)'), native_fixture.index('Assert-AcceptancePath $Root'))
+        self.assertLess(native_fixture.index('$Root=[IO.Path]::GetFullPath($Root)'), native_fixture.index('[IO.Directory]::CreateDirectory($Root)'))
+        self.assertLess(native_fixture.index('$Root=[IO.Path]::Combine([IO.Path]::GetFullPath($parent)'), native_fixture.index('Assert-AcceptancePath $Root'))
+        self.assertIn('Shortcut fixture requires an existing isolated parent', native_fixture)
+        self.assertIn("$noncanonical=$Root+'\\..\\'+[IO.Path]::GetFileName($Root)+'\\original.lnk'", native_fixture)
         for token in (
             '0x591A,0x5E02,0x5834,0x5E73,0x53F0',
             'ConvertFromUtf32(0x1F680)',
@@ -201,12 +206,26 @@ class PreparedHostSessionContracts(unittest.TestCase):
             "'empty-target.lnk'",
             "'missing.lnk'",
             "'relative.lnk'",
-            'exclusive_reopen=$true',
+            'Confirm-FixtureOwnedHandles $path',
+            'Assert-FixtureOwnedHandlesClosed',
+            'retained_pin_refused=$true',
+            'owned_handles_after=0',
             'compile_during_fixture=$false',
         ):
             self.assertIn(token, native_fixture)
         for forbidden in ('Start-Process', 'Invoke-Item', '.Resolve(', 'Add-Type'):
             self.assertNotIn(forbidden, native_fixture)
+        self.assertNotIn('[IO.FileShare]::None', native_fixture)
+        native = (ROOT / 'packaging/acceptance_process.cs').read_text(encoding='utf-8')
+        probe = native.split('public static class TestOnlyShortcutHandles', 1)[1]
+        self.assertIn('NtQueryInformationProcess(GetCurrentProcess(),51,', probe)
+        self.assertIn('if(status!=0) throw', probe)
+        self.assertIn('if(returned<header || returned>size) throw', probe)
+        self.assertIn('count>(returned-header)/stride', probe)
+        self.assertIn('if(length==0) throw', probe)
+        self.assertIn('if(CountExact(canonicalOwnedFixturePath)!=0)', probe)
+        for forbidden in ('NtQuerySystemInformation', 'DuplicateHandle(', 'CloseHandle(', 'OpenProcess(', 'Thread.Sleep', 'GC.Collect'):
+            self.assertNotIn(forbidden, probe)
 
     def test_supervisor_and_exact_external_provenance(self):
         for token in (

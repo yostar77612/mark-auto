@@ -31,8 +31,45 @@ review found no blocker in COM signatures, ownership and comparison preservation
 These are not installed lifecycle or exact-main acceptance. Recovery evidence:
 `../multi-market-audit-20261025/main-integration-pr96/shortcut-unicode-reader/`.
 
-Next: replay the fixed older candidate with the repaired reader on an ephemeral
-CI host, remove the temporary diagnostic workflow, then require fresh final35
+The repaired-reader diagnostic run40222845729 passed the complete older-candidate
+install, seven-operation smoke, upgrade, real legacy shortcut launch, active
+process refusals, window close, uninstall and sentinel-preservation lifecycle.
+Its new original Chinese shortcut metadata matched all three exact comparisons;
+the ownership supervisor exited0 in46.809975s with zero owned processes and
+verified cleanup. The diagnostic artifact12609952393 SHA256 is
+ff53a6a69335a69fe0b2baf75a307792992cd7e383e7ae72b65d6718b13d485f.
+This is older-binary diagnostic evidence, not fresh-head/main/client acceptance.
+
+The same-head regular native quality job exposed an8.3 TEMP fixture pathname:
+both local PS5 and PS7 reproduced the exact canonical-path refusal when the
+fixture derived expectations from a short path. Correct only the fixture root
+before file creation; retain the native reader's canonical-path refusal and
+add an explicit dot-segment negative case. Do not relax any comparison or cap.
+
+Further local PS5 fixture observations retained three sharing-denial failures;
+PS7 passed all13 original exclusive-open cases. Copy/hash/read stage isolation
+and calibrated current-process handle queries did not prove a persistent reader
+leak or an external owner. RestartManager returned no owners; this does not
+identify the owner at the earlier failed-open instant. No AV attribution is made.
+The newly introduced system-wide ShareNone probe was therefore an incorrect
+proxy for this API's own resource ownership. A test-only precompiled probe now
+checks the current process's exact fixture-file handles, with fail-closed query
+errors and bounds. Mandatory calibration deliberately retains a real own pin,
+proves the closed-resource assertion refuses it, then proves zero after Dispose.
+Every reader success/refusal must leave all owned fixture-file handles closed;
+no mutable COM object may escape. No sleep, retry, forced GC or old-guard change
+is used. The earlier exclusive-open failures remain recorded, not relabelled as
+passes. The final scoped fixture passed on ordinary PS5 and PS7: each13 behavior
+cases plus13 per-case retained-pin calibrations, with zero own handles after
+every success/refusal and invalid query paths refused. Evidence resides at
+`../multi-market-audit-20261025/main-integration-pr96/shortcut-unicode-reader-owned-final/`.
+Independent review required validating returned snapshot bytes before reading
+counts/entries; that fail-closed correction is included. Final audit DLL SHA256
+c80422f4c01d58f443a13921b0bfd764d9b5b8bfcae378e7f3c84b103ec76c45 was
+actually retested in both hosts, and all67 source/parser contracts passed again
+in3.186s. Fresh CI remains required before merging/installing.
+
+The temporary diagnostic workflow is now removed. Next require fresh final35
 offline jobs and the complete rebuilt-installer pipeline. Only then merge96,
 check actual main CI/release, verify/download/install its exact package and run
 the installed public LOCAL flows, native GUI and public-download/import checks.
