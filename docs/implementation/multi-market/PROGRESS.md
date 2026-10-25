@@ -2,6 +2,48 @@
 
 ## Current integration checkpoint — 2026-10-26
 
+### Main b07fd69 recovery-fixture follow-up
+
+PR96 merged after all35 exact-head offline jobs and the complete rebuilt
+installer pipeline passed. Main b07fd69 then exposed an intermittent Windows3.12
+TEST_ONLY recovery-case failure: immediately after helper job accounting reached
+zero, one original retained descendant process handle still returned
+WAIT_TIMEOUT258. The original individual-handle assertion correctly refused
+completion. Main job121278434352 ran2311 cases in317.195s with23 original skips;
+its failure is retained. No new package has been installed on the user's host.
+
+The native fixture now waits for both actual retained descendant handles within
+the SAME existing18-second case deadline before its unchanged state assertions
+and before allowing any durable TEST_ONLY receipt. It retains the separate zero
+job-accounting requirement, all three real Windows scenarios,30-second child
+life,90-second class watchdog and7-second cleanup budget. No production code or
+receipt authority is changed. Two portable controls use real temporary SQLite
+records plus explicit simulated Win32 states/clock: zero accounting with an
+unsignalled descendant never permits a receipt; both handles must signal; a
+persistent unsignalled handle exhausts the original deadline and fails without
+a receipt. This is not claimed as a real18-second native stall experiment.
+
+The installer workflow's PR path filter now also includes this native supervision
+test, so changes to installer/recovery evidence receive a fresh full packaging
+pipeline. No workflow command, skip rule, timeout or check is weakened.
+Whole local recovery module26/26 passed without skips in2.896s, including all
+three actual Windows child/grandchild scenarios and their owned-handle cleanup.
+Independent read-only review passed. Evidence: integration audit
+`RECOVERY_QUIESCENCE_B07_FIX.md` and `recovery-quiescence-b07-fix-1.*`.
+
+The primary local main was fast-forwarded to b07fd69. The user's original design
+document bytes were preserved exactly, leaving only its original line-ending
+difference visible in that checkout. Validation uses the separate clean owned
+worktree at the exact main tree; no assume-unchanged flag or difference hiding
+is used. Original feature85 and all other worktrees remain preserved.
+
+Root integration also executed all60 cases across the complete recovery,
+recovery-diagnostics, CI-filter and packaging modules: passed without skips in
+26.132s, with both changed source hashes unchanged before/after. Evidence:
+`recovery-b07-final-integration.json/.log`. Whole Ruff lint/format685 files and
+architecture checks passed. The follow-up requires fresh complete CI and
+installer verification before its own merge; b07's failed main result remains.
+
 ### Full 2c9ce67 follow-up — fresh CI required again
 
 Offline40224633914 completed all35 jobs:23 successful and12 failed, including

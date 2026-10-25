@@ -78,6 +78,20 @@ def _state(k, handle):
     return result
 
 
+def _test_only_until(predicate, message, deadline, *, collect, processes, expected_dead, fail):
+    """Shared fixture barrier; never production recovery authority or a fresh budget."""
+    while time.monotonic() < deadline:
+        collect()
+        if predicate():
+            return
+        for role in ('gui', 'helper'):
+            proc = processes.get(role)
+            if proc is not None and role not in expected_dead and proc.poll() is not None:
+                fail(role + ' failed before expected barrier', message)
+        time.sleep(0.01)
+    fail('bounded fixture timeout: ' + message, message)
+
+
 def _terminate(k, handle, *, deadline=None):
     if _state(k, handle) == WAIT_TIMEOUT:
         if not k.TerminateProcess(handle, 91):
@@ -569,6 +583,76 @@ class TestOnlyDurableProtocolTests(unittest.TestCase):
         with self.assertRaises((ValueError, sqlite3.Error)):
             self.store.read_receipt()
 
+    def test_zero_accounting_does_not_release_receipt_before_both_retained_handles_signal(self):
+        self.store.commit_launch(original_gui_admission=True)
+        _write(self.folder, 'quiescence-observed.json', {'active_processes': 0})
+        states = {'worker': WAIT_TIMEOUT, 'grandchild': WAIT_TIMEOUT}
+        transitions = iter(((WAIT_TIMEOUT, WAIT_TIMEOUT), (WAIT_OBJECT_0, WAIT_TIMEOUT), (WAIT_OBJECT_0, WAIT_OBJECT_0)))
+        observed = []
+        kernel = SimpleNamespace(WaitForSingleObject=lambda handle, milliseconds: states[handle])
+        clock = [100.0]
+        deadline = clock[0] + CASE_SECONDS
+
+        def collect():
+            self.assertEqual(_read_fixture_json(self.folder / 'quiescence-observed.json'), {'active_processes': 0})
+            self.assert_no_authority()
+            self.assertFalse((self.folder / 'allow-receipt.json').exists())
+            states['worker'], states['grandchild'] = next(transitions)
+            observed.append(tuple(states.values()))
+
+        def fail(message, _barrier):
+            self.fail(message)
+
+        with (
+            patch.object(time, 'monotonic', side_effect=lambda: clock[0]),
+            patch.object(time, 'sleep', side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds)),
+        ):
+            _test_only_until(
+                lambda: all(_state(kernel, role) == WAIT_OBJECT_0 for role in ('worker', 'grandchild')),
+                'retained descendant signals',
+                deadline,
+                collect=collect,
+                processes={},
+                expected_dead=set(),
+                fail=fail,
+            )
+        self.assertEqual(observed, [(WAIT_TIMEOUT, WAIT_TIMEOUT), (WAIT_OBJECT_0, WAIT_TIMEOUT), (WAIT_OBJECT_0, WAIT_OBJECT_0)])
+        self.assert_no_authority()
+        _write(self.folder, 'allow-receipt.json', {'test_only': True})
+        self.assertEqual(self.store.publish(lambda: 0), self.store.read_receipt())
+
+    def test_unsignalled_retained_handle_exhausts_original_case_deadline_without_receipt(self):
+        self.store.commit_launch(original_gui_admission=True)
+        _write(self.folder, 'quiescence-observed.json', {'active_processes': 0})
+        kernel = SimpleNamespace(WaitForSingleObject=lambda handle, milliseconds: WAIT_TIMEOUT)
+        clock = [100.0]
+        deadline = clock[0] + CASE_SECONDS
+
+        def fail(message, _barrier):
+            self.assertEqual(clock[0], deadline)
+            self.assertEqual(_read_fixture_json(self.folder / 'quiescence-observed.json'), {'active_processes': 0})
+            self.assert_no_authority()
+            self.assertFalse((self.folder / 'allow-receipt.json').exists())
+            self.fail(message)
+
+        with (
+            patch.object(time, 'monotonic', side_effect=lambda: clock[0]),
+            patch.object(time, 'sleep', side_effect=lambda _seconds: clock.__setitem__(0, deadline)),
+        ):
+            with self.assertRaisesRegex(AssertionError, 'bounded fixture timeout: retained descendant signals'):
+                _test_only_until(
+                    lambda: all(_state(kernel, role) == WAIT_OBJECT_0 for role in ('worker', 'grandchild')),
+                    'retained descendant signals',
+                    deadline,
+                    collect=lambda: None,
+                    processes={},
+                    expected_dead=set(),
+                    fail=fail,
+                )
+        self.assertEqual(deadline - 100, 18)
+        self.assert_no_authority()
+        self.assertFalse((self.folder / 'allow-receipt.json').exists())
+
     def test_admission_is_committed_before_gate_and_cannot_be_reopened(self):
         gates = []
         self.store.commit_launch(original_gui_admission=True)
@@ -1013,16 +1097,15 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                 self.fail(message + '; ' + evidence)
 
             def until(predicate, message):
-                while time.monotonic() < deadline:
-                    collect()
-                    if predicate():
-                        return
-                    for role in ('gui', 'helper'):
-                        proc = processes.get(role)
-                        if proc is not None and role not in expected_dead and proc.poll() is not None:
-                            fail_with_diagnostic(role + ' failed before expected barrier', message)
-                    time.sleep(0.01)
-                fail_with_diagnostic('bounded fixture timeout: ' + message, message)
+                _test_only_until(
+                    predicate,
+                    message,
+                    deadline,
+                    collect=collect,
+                    processes=processes,
+                    expected_dead=expected_dead,
+                    fail=fail_with_diagnostic,
+                )
 
             expected_dead = set()
             try:
@@ -1085,6 +1168,10 @@ class WindowsRecoveryFeasibilityTests(unittest.TestCase):
                     _write(folder, 'allow-quiescence.json', {'test_only': True})
                     until(lambda: (folder / 'quiescence-observed.json').is_file(), 'zero active')
                     self.assertEqual(_read_fixture_json(folder / 'quiescence-observed.json'), {'active_processes': 0})
+                    # Job accounting is not a process-handle completion barrier.
+                    # Termination is asynchronous: retain the original deadline
+                    # and wait for both actual descendant objects to signal.
+                    until(lambda: all(_state(k, handles[role]) == WAIT_OBJECT_0 for role in ('worker', 'grandchild')), 'retained descendant signals')
                     for role in ('worker', 'grandchild'):
                         self.assertEqual(_state(k, handles[role]), WAIT_OBJECT_0)
                     self.assertFalse((folder / 'receipt.json').exists())
