@@ -98,6 +98,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Run exact-coverage offline test group
+        # Use the job-owned runner temp volume for every Windows producer;
+        # tempfile still creates unique owned fixtures. Counts/FULL/deadlines stay.
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json --workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }} ${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}
       - name: Preserve exact-head discovery and selection evidence
         if: always()
@@ -111,6 +116,9 @@ jobs:
           retention-days: 7
       - name: Observe native Paper timing after failure (not acceptance)
         if: failure() && runner.os == 'Windows' && matrix.group == 'core'
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: python tools/diagnose_paper_replay.py dist/validation/paper-replay-timing.json
       - name: Preserve failed native timing evidence
         if: failure() && runner.os == 'Windows' && matrix.group == 'core'

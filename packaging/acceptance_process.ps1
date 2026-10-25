@@ -77,15 +77,16 @@ function Write-AcceptanceWorkerFailure($Failure, [string]$Path,
   try { $stream.Write($bytes,0,$bytes.Length); $stream.Flush($true) } finally { $stream.Dispose() }
 }
 
+function Read-AcceptanceShortcut([string]$Path) {
+  Assert-AcceptancePath $Path
+  return [MarkAutoAcceptanceJob]::ReadShortcutExact($Path)
+}
+
 # Windows-only lifecycle ownership and watchdog. No compiler runs during acceptance.
 # Build this helper on CI with build_acceptance_helper.ps1 and verify the kit digest.
 # Invoke safety-critical CLR getters explicitly: PowerShell property access suppresses
 # getter exceptions to null, which can otherwise look like success or a live process.
 
-function Read-AcceptanceShortcut([string]$Path) {
-  Assert-AcceptancePath $Path
-  return [MarkAutoAcceptanceJob]::ReadShortcutExact($Path)
-}
 function Confirm-AcceptanceWorker([string]$JobName) {
   if (-not $JobName -or -not [MarkAutoAcceptanceJob]::Owns($JobName, [Diagnostics.Process]::GetCurrentProcess().get_Handle())) {
     throw 'Acceptance worker is not inside its creation-owned job'

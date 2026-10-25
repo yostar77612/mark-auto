@@ -93,6 +93,9 @@ jobs:
           architecture: x64
       - name: Run complete regression with pinned private SQLite and desktop dependencies
         shell: pwsh
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: ./packaging/build.ps1 -Version 0.2.2 -RegressionOnly
       - name: Preserve full regression evidence, including failures
         if: always()

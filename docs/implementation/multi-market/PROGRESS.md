@@ -2,6 +2,46 @@
 
 ## Current integration checkpoint — 2026-10-26
 
+### Full 2c9ce67 follow-up — fresh CI required again
+
+Offline40224633914 completed all35 jobs:23 successful and12 failed, including
+downstream aggregates. Five Linux/Windows remaining producers identified the
+same original supervisor byte guard76d2966d...: the new four-line shortcut
+wrapper was inside its protected region. Moving the exact declaration before
+the existing marker restores the original protected bytes; no golden, expected
+value, reversal mask or historical guard was changed. The previously omitted
+worker-failure module is now included in focused verification.
+
+Windows3.12 paper diagnostics also failed: an original120-FULL-commit probe
+completed80 before the unchanged10-second deadline, and another case reached
+that deadline before its injected KeyboardInterrupt. Native commits cost8.0336s
+for80 calls while CPU was0.281s; checkpoint publication was0.0011s. This does
+not support a claim that instrumentation CPU/copying caused the delay. Tests now
+preserve safe branch/commit/child-cleanup evidence; a new negative proves a
+timeout cannot masquerade as the expected interrupt. The original120 commits,
+FULL profiles,10-second limits and outcome assertions remain.
+
+Every Windows offline producer and the complete installer-regression step now
+use TEMP/TMP from the [job-owned runner temporary directory](https://docs.github.com/en/actions/reference/workflows-and-actions/variables).
+The same full tests still create their own unique fixtures; LOCALAPPDATA and
+real installation locations are unchanged. This is a deterministic CI-location
+choice, not a speed-based profile selection. Same-run WFO evidence showed63
+FULL/DELETE commits at2.29/2.27s on one C-temp job and0.175/0.179s on a D-runner
+temp job. Those are different hosts/Python versions, not a causal C/D experiment
+and not proof that the new Windows3.12 pipeline passes. No disk/security/ACL,
+durability or timeout settings are changed.
+
+Actual local follow-up: all206 cases across13 complete CI, installer-protection
+and paper-diagnostic modules passed without skips in74.861s; source hashes
+before/after match. This includes the complete30-case diagnostic module and
+all original controlled failures. Ruff lint/format685 files, architecture and
+all12 packaging PowerShell parsers pass. Independent review of the environment
+and diagnostic changes passed. Evidence: integration audit
+`ci-2c9-followup-focused.json/.log`, `paper-diagnostics-2c9-repair-1.*` and
+`supervisor-placement-contracts.log`. Local3.13.16 is not actual hosted3.12
+verification. Full fresh CI, rebuilt installer, merge and installed checks are
+still required; no new package has been installed on the user's computer.
+
 ### Unicode shortcut repair — full final CI/install still required
 
 The temporary diagnostic at c25a53b (run40221889865) proved a legacy WSH
