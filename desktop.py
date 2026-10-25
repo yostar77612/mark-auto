@@ -1,11 +1,17 @@
 """Frozen Windows desktop entry point; no web server, browser, or Python setup."""
 
 from __future__ import annotations
+
+import multiprocessing
+
+# Frozen child processes must dispatch before importing desktop-only modules.
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
 
 import argparse
-import multiprocessing
 from pathlib import Path
 import sys
 
@@ -368,5 +374,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
     raise SystemExit(main())
