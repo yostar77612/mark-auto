@@ -11,6 +11,32 @@ ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / 'packaging' / 'early_multiprocessing_runtime_hook.py'
 
 
+def static_runtime_hook_paths(node):
+    """Read literal lists and their addition; never evaluate spec expressions."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return static_runtime_hook_paths(node.left) + static_runtime_hook_paths(node.right)
+    if not isinstance(node, ast.List):
+        raise AssertionError('Runtime hooks must be static lists')
+    paths = []
+    for entry in node.elts:
+        if not (
+            isinstance(entry, ast.Call)
+            and isinstance(entry.func, ast.Name)
+            and entry.func.id == 'str'
+            and len(entry.args) == 1
+            and not entry.keywords
+            and isinstance(entry.args[0], ast.BinOp)
+            and isinstance(entry.args[0].op, ast.Div)
+            and isinstance(entry.args[0].left, ast.Name)
+            and entry.args[0].left.id == 'root'
+            and isinstance(entry.args[0].right, ast.Constant)
+            and type(entry.args[0].right.value) is str
+        ):
+            raise AssertionError('Runtime hooks require literal root-relative paths')
+        paths.append(entry.args[0].right.value)
+    return paths
+
+
 class EarlyRuntimeBootstrapTests(unittest.TestCase):
     def run_probe(self, frozen, platform, argv, expected):
         code = """
@@ -73,16 +99,13 @@ assert not Path('MUST_NOT_EXECUTE.txt').exists()
         tree = ast.parse((ROOT / 'packaging' / 'markauto.spec').read_text(encoding='utf-8'))
         analysis = next(node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'Analysis')
         hooks = next(keyword.value for keyword in analysis.keywords if keyword.arg == 'runtime_hooks')
-
-        def static_entries(node):
-            if isinstance(node, ast.List):
-                return node.elts
-            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-                return static_entries(node.left) + static_entries(node.right)
-            self.fail('Runtime hooks must be explicit static lists; no dynamic dispatch configuration')
-
-        paths = [node.value for entry in static_entries(hooks) for node in ast.walk(entry) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
+        paths = static_runtime_hook_paths(hooks)
         self.assertEqual(paths, ['packaging/sqlite_runtime_hook.py', 'packaging/early_multiprocessing_runtime_hook.py'])
+
+    def test_hook_path_reader_rejects_dynamic_or_unreviewed_expressions(self):
+        for source in ('known_hooks', "[str(root / discover())]", "[str(other / 'hook.py')]", "[str(root / 'hook.py')] * 2"):
+            with self.subTest(source=source), self.assertRaises(AssertionError):
+                static_runtime_hook_paths(ast.parse(source, mode='eval').body)
 
     def test_sqlite_verification_failure_prevents_worker_dispatch(self):
         code = """

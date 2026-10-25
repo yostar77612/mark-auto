@@ -4,6 +4,11 @@ This local mission is authorized by the owner on 2026-10-25. Its scope permits a
 new multi-market engine and controlled connector implementation, while prohibiting
 real financial operations, credential discovery, remote writes and Sitecore work.
 
+The owner's subsequent 2026-10-25 instruction `合並進main` authorizes pushing
+the verified v2 branch and merging its pull request after integration checks.
+Only the earlier remote-write restriction is superseded; real financial
+operations, credential discovery and Sitecore work remain prohibited.
+
 ## Impact and entry points
 
 The eight frozen v1 sources, historical producer profiles, OOS one-time budgets,

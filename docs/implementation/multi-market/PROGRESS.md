@@ -1,4 +1,30 @@
-# Current final local engineering receipt — implementationbf5141e
+# Main integration authorization — 2026-10-25
+
+The owner subsequently requested `合並進main`, authorizing publication of this
+verified branch, a pull request and merge after CI. This supersedes the earlier
+local-only remote-write restriction for this integration; all prohibitions on
+real financial operations, credential discovery and Sitecore work remain.
+
+Integration baseline is main `6c2ea528122f4a69cf415e59052fac4fc6233bff` (PR95).
+Three overlapping bootstrap files were reviewed. Production `desktop.py` and
+`packaging/markauto.spec` retain the already verified v2 bytes, including PR95's
+early-worker dispatch. `tests/test_desktop_runtime_bootstrap.py` takes the exact
+main version, retaining its stricter literal-hook reader and additional negative
+test. Its seven cases passed locally. No production runtime bytes changed in
+this merge. The historical full-suite and package receipts below retain their
+original commits; fresh remote CI is required for the integrated head.
+
+Integrated local checks: Ruff 0.16.10 lint/format passed (677 formatted files),
+646 tracked Python files passed Python 3.11-target AST syntax on Python 3.13.11
+(not an actual local 3.11 execution), static/history and v2 architecture gates
+reported zero findings, and Git whitespace checks passed. Runtime bootstrap
+7, desktop bootstrap 3, worker-import 3, optional packaging 9 and documentation
+8 cases passed. The first optional-packaging attempt failed with 11 permission
+error entries in the execution host's default temporary directory; rerunning
+unchanged tests with TEMP/TMP inside the writable task workspace passed. No ACL,
+system protection, assertion or timeout was changed.
+
+## Current final local engineering receipt — implementationbf5141e
 
 Updated 2026-10-25T13:24:35.882146+00:00. **45local engineering cases passed;5external pending.** Formal acceptance230/300 unchanged. No real brokerage client/login/credential search/order, no Sitecore/original data change, no remote v2 write.
 
