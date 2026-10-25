@@ -116,6 +116,33 @@ installing the final merged-main package, preserving current data/settings,
 then repeating full functional and native-screen checks without Sitecore work
 or real financial operations.
 
+The actual 7129f24 matrix completed its Linux core/UI and both Windows remaining
+producers with the same four contract failures only: native quality fixtures
+still expected the old single-phase `build needs quality`, and the exact root
+allowlist omitted the new packaging CI lock. Those tests now require the native
+fixtures inside the mandatory non-ignored quality job, regression depending on
+quality, and build depending on both quality and regression. The root allowlist
+adds only the reviewed exact lock filename; it remains an exact set. All prior
+native fixture assertions and case IDs are retained. Acceptance-process 10,
+prepared-host 30 and repository-layout 29 focused cases passed.
+
+The original local Core15 timeout now has a precise observed location: while
+the child was still alive, its first portable source scan was waiting in raw
+Path.open/read_bytes before any toy test or manifest write. The OS component
+causing that waiting remains unproven. A four-worker reader now performs the
+same complete fresh reads with at most four in-flight results, preserving
+selection, ordering, byte-length prefixes and both digest formats; before/after
+passes still independently reread everything and errors fail closed. Independent
+sequential references, bounded concurrency/prefetch, read errors and drift
+controls passed. The same original29-ID observation passed in4.747s under the
+unchanged15-second child bound; the other64 relevant contracts also passed.
+The original failed observation and a copied outer observer's missing-field
+bookkeeping error are preserved, with a separate evidence adjudication rather
+than overwriting either. Details: external audit `SOURCE_READ_FIX.md`.
+Whole Ruff lint/format, history/static and architecture gates passed again.
+These are local repair checks, not a claim that earlier-head CI is successful;
+the integrated repair must receive a fresh complete CI/installer run.
+
 ## Current final local engineering receipt — implementationbf5141e
 
 Updated 2026-10-25T13:24:35.882146+00:00. **45local engineering cases passed;5external pending.** Formal acceptance230/300 unchanged. No real brokerage client/login/credential search/order, no Sitecore/original data change, no remote v2 write.

@@ -8,6 +8,8 @@ case is excluded. Module boundaries preserve unittest module/class fixtures.
 from __future__ import annotations
 
 import argparse
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 import ctypes
 import hashlib
 import json
@@ -21,6 +23,7 @@ import time
 import uuid
 import sys
 import unittest
+from itertools import islice
 
 # Running this file directly must have the same application import path as
 # `python -m unittest discover -s tests`.
@@ -84,6 +87,23 @@ def core_shard_assignments(suite):
     return assigned
 
 
+def _ordered_source_bytes(paths):
+    """Fresh raw reads in input order, with at most four reads/results in flight."""
+    paths = iter(paths)
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix='source-identity') as pool:
+        pending = deque(pool.submit(path.read_bytes) for path in islice(paths, 4))
+        try:
+            while pending:
+                yield pending.popleft().result()
+                for path in islice(paths, 1):
+                    pending.append(pool.submit(path.read_bytes))
+        finally:
+            # A read exception still propagates; never return a partial digest.
+            # Join running reads before returning so no source worker outlives it.
+            for future in pending:
+                future.cancel()
+
+
 def portable_source_identity(start_directory='tests'):
     """Source bytes plus relative names; host paths remain separate evidence."""
     # Resolve both sides: Windows temporary roots can contain 8.3 aliases.
@@ -110,8 +130,8 @@ def portable_source_identity(start_directory='tests'):
             raise ValueError('Ambiguous portable source path')
         named[name] = path
     digest = hashlib.sha256()
-    for name, path in sorted(named.items()):
-        raw = path.read_bytes()
+    ordered = sorted(named.items())
+    for (name, _), raw in zip(ordered, _ordered_source_bytes(path for _, path in ordered)):
         digest.update(name.encode('utf-8') + b'\0' + str(len(raw)).encode('ascii') + b'\0' + raw)
     return digest.hexdigest()
 
@@ -159,8 +179,9 @@ def execution_identity(start_directory):
     paths |= set((ROOT / 'tests').glob('*.py')) | {Path(__file__).resolve()}
     paths |= set(Path(start_directory).resolve().glob('*.py'))
     digest = hashlib.sha256()
-    for path in sorted(paths):
-        digest.update(str(path).encode('utf-8') + b'\0' + path.read_bytes() + b'\0')
+    ordered = sorted(paths)
+    for path, raw in zip(ordered, _ordered_source_bytes(ordered)):
+        digest.update(str(path).encode('utf-8') + b'\0' + raw + b'\0')
     return {
         'source_sha256': digest.hexdigest(),
         'head_sha': os.environ.get('GITHUB_SHA'),

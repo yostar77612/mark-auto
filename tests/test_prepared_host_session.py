@@ -252,8 +252,11 @@ class PreparedHostSessionContracts(unittest.TestCase):
             self.assertIn(token, fixture)
         self.assertNotIn('Start-OwnedAcceptanceProcess $installer', fixture)
         workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text(encoding='utf-8')
-        self.assertIn('run: ./packaging/test_prepared_host_session.ps1', workflow)
-        self.assertIn('  build:\n    needs: quality\n', workflow)
+        quality = workflow.split('  quality:\n', 1)[1].split('  regression:\n', 1)[0]
+        self.assertIn('run: ./packaging/test_prepared_host_session.ps1', quality)
+        self.assertNotIn('continue-on-error', quality)
+        self.assertIn('    needs: quality\n', workflow.split('  regression:\n', 1)[1].split('  build:\n', 1)[0])
+        self.assertIn('  build:\n    needs: [quality, regression]\n', workflow)
 
     def test_fixture_contracts_do_not_depend_on_windows_ansi_default(self):
         original = Path.read_text

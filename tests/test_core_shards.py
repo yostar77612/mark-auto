@@ -5,6 +5,7 @@ These controls do not run, shorten, mock out, or replace product test workloads.
 
 import contextlib
 import copy
+import hashlib
 import io
 import json
 import os
@@ -13,6 +14,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import types
 import unittest
 from unittest.mock import patch
@@ -336,6 +339,183 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
             self.assertEqual(expected, identity_with_sources([first, alias]))
             with self.assertRaisesRegex(ValueError, 'Ambiguous portable source path'):
                 identity_with_sources([first, second])
+
+    def test_parallel_source_digests_match_independent_ordered_byte_reference(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / 'checkout'
+            self.write_sources(root)
+            included = {
+                'application.py',
+                'quantlab/model.py',
+                'tests/test_synthetic.py',
+                'tools/run_test_group.py',
+                'tools/validate_core_shards.py',
+            }
+            additions = {
+                '.gitattributes': b'*.py text eol=lf\n',
+                'pyproject.toml': b'[project]\nname="fixture"\n',
+                'requirements-fixture.lock': b'fixture==1\n',
+                'desktop_pages/view.py': b'VIEW=1\n',
+                'desktop_trading/view.json': b'{"v":1}\n',
+                'desktop_smoke/source.txt': b'fixture\x00\xff',
+                'packaging/input.ps1': b'exit 0\r\n',
+                'packaging/input.cs': b'// fixture\n',
+                'tests/fixtures/data.gz': b'\x1f\x8b\x00\xff',
+                'tests/fixtures/data.csv': b'one,two\n1,2\n',
+                '.github/workflows/one.yml': b'name: one\n',
+                '.github/workflows/two.yaml': b'name: two\n',
+            }
+            for name, raw in additions.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(raw)
+            included.update(additions)
+            for name in ('ignored.json', 'quantlab/ignored.bin', 'quantlab/ignored.PY', 'quantlab/__pycache__/ignored.py'):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'not a source input\n')
+            external = Path(temporary).resolve() / 'external'
+            external.mkdir()
+            extra = external / 'test_extra.py'
+            extra.write_bytes(b'EXTERNAL=1\n')
+            portable = hashlib.sha256()
+            expected = {name: root / name for name in included}
+            expected['__test_suite__/test_extra.py'] = extra
+            # An independent fixed-fixture selection and sequential byte stream;
+            # neither production selector nor parallel reader builds this oracle.
+            for name, path in sorted(expected.items()):
+                with path.open('rb') as stream:
+                    raw = stream.read()
+                portable.update(name.encode('utf-8') + b'\0' + str(len(raw)).encode('ascii') + b'\0' + raw)
+            execution = hashlib.sha256()
+            local_paths = [root / name for name in ('application.py', 'quantlab/model.py', 'tests/test_synthetic.py', 'tools/run_test_group.py')]
+            if os.name == 'nt':
+                # Existing local glob is case-insensitive on Windows, unlike
+                # the portable recursive suffix allowlist. Preserve both rules.
+                local_paths.append(root / 'quantlab/ignored.PY')
+            for path in sorted(local_paths + [extra]):
+                with path.open('rb') as stream:
+                    raw = stream.read()
+                execution.update(str(path).encode('utf-8') + b'\0' + raw + b'\0')
+            with patch.object(group, 'ROOT', root), patch.object(group, '__file__', str(root / 'tools/run_test_group.py')):
+                self.assertEqual(group.portable_source_identity(str(external)), portable.hexdigest())
+                self.assertEqual(group.execution_identity(str(external))['source_sha256'], execution.hexdigest())
+
+    def test_parallel_reads_are_bounded_and_return_input_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            paths = [Path(temporary) / (str(index) + '.py') for index in range(8)]
+            expected = [bytes([index, 255, 0]) for index in range(8)]
+            for path, raw in zip(paths, expected):
+                path.write_bytes(raw)
+            original = Path.read_bytes
+            lock = threading.Lock()
+            barrier = threading.Barrier(4, timeout=3)
+            fourth_done = threading.Event()
+            active = peak = calls = 0
+
+            def read(path):
+                nonlocal active, peak, calls
+                with lock:
+                    calls += 1
+                    number = calls
+                    active += 1
+                    peak = max(peak, active)
+                try:
+                    if number <= 4:
+                        barrier.wait()
+                    if path == paths[0]:
+                        self.assertTrue(fourth_done.wait(3), 'Later raw read must run without waiting for the first result')
+                    raw = original(path)
+                    if path == paths[3]:
+                        fourth_done.set()
+                    time.sleep(0.005)
+                    return raw
+                finally:
+                    with lock:
+                        active -= 1
+
+            with patch.object(Path, 'read_bytes', read):
+                self.assertEqual(list(group._ordered_source_bytes(paths)), expected)
+            self.assertEqual(calls, len(paths))
+            self.assertEqual(peak, 4)
+            self.assertEqual(active, 0)
+
+    def test_source_read_window_does_not_prefetch_entire_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            paths = [Path(temporary) / (str(index) + '.py') for index in range(12)]
+            for path in paths:
+                path.write_bytes(b'fixture')
+            consumed = []
+
+            def inventory():
+                for path in paths:
+                    consumed.append(path)
+                    yield path
+
+            raw = group._ordered_source_bytes(inventory())
+            try:
+                self.assertEqual(next(raw), b'fixture')
+                self.assertEqual(consumed, paths[:4])
+            finally:
+                raw.close()
+
+    def test_read_failures_cannot_return_either_identity_or_leave_source_workers(self):
+        for name in ('portable_source_identity', 'execution_identity'):
+            for error_type in (PermissionError, FileNotFoundError):
+                with self.subTest(identity=name, error=error_type), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary).resolve()
+                    self.write_sources(root)
+                    original = Path.read_bytes
+                    lock = threading.Lock()
+                    active = 0
+
+                    def read(path):
+                        nonlocal active
+                        with lock:
+                            active += 1
+                        try:
+                            if path == root / 'quantlab/model.py':
+                                raise error_type('Controlled source read failure')
+                            time.sleep(0.005)
+                            return original(path)
+                        finally:
+                            with lock:
+                                active -= 1
+
+                    with (
+                        patch.object(group, 'ROOT', root),
+                        patch.object(group, '__file__', str(root / 'tools/run_test_group.py')),
+                        patch.object(Path, 'read_bytes', read),
+                        self.assertRaises(error_type),
+                    ):
+                        getattr(group, name)(str(root / 'tests'))
+                    self.assertEqual(active, 0)
+
+    def test_both_identity_passes_reread_changed_source_bytes(self):
+        for name in ('portable_source_identity', 'execution_identity'):
+            with self.subTest(identity=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                self.write_sources(root)
+                original = Path.read_bytes
+                lock = threading.Lock()
+                counts = {}
+
+                def read(path):
+                    with lock:
+                        counts[path] = counts.get(path, 0) + 1
+                    return original(path)
+
+                with (
+                    patch.object(group, 'ROOT', root),
+                    patch.object(group, '__file__', str(root / 'tools/run_test_group.py')),
+                    patch.object(Path, 'read_bytes', read),
+                ):
+                    first = getattr(group, name)(str(root / 'tests'))
+                    (root / 'quantlab/model.py').write_bytes(b'VALUE = 200\n')
+                    second = getattr(group, name)(str(root / 'tests'))
+                self.assertNotEqual(first, second)
+                self.assertTrue(counts)
+                self.assertTrue(all(count == 2 for count in counts.values()), counts)
 
 
 class IndependentCoreInventoryTests(unittest.TestCase):
