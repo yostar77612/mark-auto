@@ -181,6 +181,11 @@ def _strategy_page(self) -> None:
 def _market_page(self) -> None:
     layout = _page(self, 'market')
     layout.addWidget(label('v2.market_data_hint'))
+    self.market_refresh_button = button('v2.refresh_market', 'market_refresh_button')
+    self.market_refresh_button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    self.market_refresh_button.setToolTip(ui_text('v2.refresh_market_hint'))
+    self.market_refresh_button.clicked.connect(self.refresh)
+    layout.addWidget(self.market_refresh_button)
     self.markets = table(('v2.instrument', 'v2.market', 'v2.unit', 'v2.price', 'v2.quote_time', 'v2.availability', 'v2.source'), 'markets')
     layout.addWidget(self.markets)
     _buttons(

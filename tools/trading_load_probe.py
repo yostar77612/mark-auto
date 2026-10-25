@@ -22,7 +22,7 @@ import sqlite3
 from threading import Event, Thread
 import time
 
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -187,6 +187,34 @@ class QuoteProducer(Thread):
         self.stop.wait(max(0.0, started + self.seconds - time.monotonic()))
 
 
+class ObservedWindow(TradingWindow):
+    """Measure real UI operations without changing their implementation."""
+
+    refresh_started = Signal(object)
+    refresh_rendered = Signal(object, bool)
+    refresh_finished = Signal(object)
+
+    def _run(self, command):
+        previous = self._operation
+        super()._run(command)
+        if command is None and previous is None and self._operation is not None:
+            self.refresh_started.emit(self._operation)
+
+    def _completed(self, state, receipt):
+        super()._completed(state, receipt)
+        if receipt is None:
+            self.refresh_rendered.emit(self._operation, True)
+
+    def _failed(self):
+        super()._failed()
+        self.refresh_rendered.emit(self._operation, False)
+
+    def _finished(self):
+        operation = self._operation
+        super()._finished()
+        self.refresh_finished.emit(operation)
+
+
 class Probe:
     def __init__(self, root: Path, report: Path, seconds: int, facade: IpcFacade, evidence: dict[str, object]):
         self.root, self.report, self.seconds, self.facade, self.evidence = root, report, seconds, facade, evidence
@@ -194,7 +222,7 @@ class Probe:
         self.app = QApplication.instance() or QApplication(sys.argv[:1])
         if self.app.platformName() != 'windows':
             raise RuntimeError('native Windows Qt platform required')
-        self.window = TradingWindow(facade, facade.snapshot())
+        self.window = ObservedWindow(facade, facade.snapshot())
         self.window.setProperty('allow_close_for_tests', True)
         self.window.resize(1366, 768)
         self.window.poll.stop()
@@ -203,6 +231,10 @@ class Probe:
         self.producer = QuoteProducer(root, seconds, self.stop)
         self.started = 0.0
         self.pending: float | None = None
+        self.pending_operation = None
+        self.pending_rendered = False
+        self.sample_error = ''
+        self.refresh_requests = self.refresh_completions = self.refresh_failures = 0
         self.latencies: list[float] = []
         self.memory: list[dict[str, object]] = []
         self.errors: list[str] = []
@@ -211,6 +243,40 @@ class Probe:
         self.timer.timeout.connect(self.tick)
         self.next_refresh = self.next_memory = 0.0
         self.finished = False
+        self.window.refresh_started.connect(self.sample_started)
+        self.window.refresh_rendered.connect(self.sample_rendered)
+        self.window.refresh_finished.connect(self.sample_finished)
+
+    def sample_started(self, operation) -> None:
+        if self.pending is None or self.pending_operation is not None:
+            self.sample_error = 'unexpected or overlapping UI refresh'
+            return
+        self.pending_operation = operation
+        self.pending_rendered = False
+        self.refresh_requests += 1
+
+    def sample_rendered(self, operation, successful: bool) -> None:
+        if operation is not self.pending_operation or self.pending is None:
+            self.sample_error = 'UI response does not belong to the measured request'
+        elif not successful:
+            self.refresh_failures += 1
+            self.sample_error = 'UI refresh query failed'
+        elif self.pending_rendered:
+            self.sample_error = 'duplicate UI refresh response'
+        else:
+            self.pending_rendered = True
+            for row, market in enumerate(self.window.state.markets):
+                if self.window.markets.item(row, 3).text() != str(market.price):
+                    self.sample_error = 'displayed market quote does not match refreshed read model'
+
+    def sample_finished(self, operation) -> None:
+        if operation is not self.pending_operation or self.pending is None or not self.pending_rendered:
+            self.sample_error = self.sample_error or 'UI operation finished without its successful rendered response'
+        elif not self.sample_error:
+            self.latencies.append((time.perf_counter() - self.pending) * 1000)
+            self.refresh_completions += 1
+        self.pending = self.pending_operation = None
+        self.pending_rendered = False
 
     def run(self) -> int:
         self.window.show()
@@ -236,18 +302,17 @@ class Probe:
 
     def observe(self) -> None:
         elapsed = time.monotonic() - self.started
-        if self.pending is not None and self.window._operation is None:
-            self.latencies.append((time.perf_counter() - self.pending) * 1000)
-            self.pending = None
-            for row, market in enumerate(self.window.state.markets):
-                if self.window.markets.item(row, 3).text() != str(market.price):
-                    raise RuntimeError('displayed market quote does not match refreshed read model')
-        if elapsed >= self.next_refresh and self.pending is None:
+        if self.sample_error:
+            raise RuntimeError(self.sample_error)
+        if self.pending is not None and time.perf_counter() - self.pending > 10:
+            raise RuntimeError('UI refresh exceeded the existing IPC response deadline')
+        if elapsed < self.seconds and elapsed >= self.next_refresh and self.pending is None:
             self.next_refresh = elapsed + 1
             self.pending = time.perf_counter()
-            QTest.keyClick(self.window, Qt.Key.Key_F5)
-            if self.window._operation is None:
-                raise RuntimeError('native F5 did not start the UI refresh operation')
+            before = self.refresh_requests
+            QTest.mouseClick(self.window.market_refresh_button, Qt.MouseButton.LeftButton)
+            if self.refresh_requests != before + 1:
+                raise RuntimeError('native market refresh button did not start exactly one UI operation')
         if elapsed >= self.next_memory:
             self.next_memory = elapsed + 10
             pid = read_session(self.root).process_id
@@ -282,6 +347,10 @@ class Probe:
             'max_quote_schedule_lag_seconds': self.producer.max_schedule_lag,
             'quote_schedule_lag_limit_seconds': 1,
             'refresh_samples_ms': self.latencies,
+            'refresh_input': 'QTest native mouse click on production market refresh button',
+            'refresh_requests': self.refresh_requests,
+            'refresh_successful_rendered_completions': self.refresh_completions,
+            'refresh_query_failures': self.refresh_failures,
             'refresh_p95_ms': p95,
             'refresh_limit_ms': 300,
             'memory_samples': self.memory,
@@ -317,6 +386,9 @@ class Probe:
         passed = not self.errors and not self.producer.error and self.producer.sent == self.seconds * 100 and self.producer.acknowledged == self.producer.sent
         passed = (
             passed
+            and not self.sample_error
+            and self.refresh_failures == 0
+            and self.refresh_requests == self.refresh_completions == len(self.latencies)
             and report['source_unchanged']
             and report['quote_delta'] == self.producer.sent
             and report['refresh_p95_ms'] is not None
