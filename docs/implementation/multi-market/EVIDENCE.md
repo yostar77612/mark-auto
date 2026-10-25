@@ -1,115 +1,93 @@
-# 多市場 v2 驗收證據
+# 多市場v2最終本機工程驗收
 
-目前42項由本機測試快照驗證，A02/U03環境修補與U06原生驗收仍待完成，另5項需外部驗證。正式驗收維持 **230/300**。完整 test ID、來源位置、環境、資料/規則、預期與實際結果見 [ACCEPTANCE.json](ACCEPTANCE.json)。
+45項本機工程驗收通過，5項待外部驗證。正式v1驗收維持230/300；本次無真實券商登入、憑證搜尋或資產操作，Sitecore與原資料不在變更範圍。
 
-## 證據範圍與版本
+## 已測程式與文件版本
 
-- 工作樹：C:/Users/mark.tsai/Desktop/markauto/multi-market-v2；分支 feat/multi-market-v2-local；基準 4095c3e9fdd2e91f1423d6d1bf76466834cdb417。
-- 證據根目錄：C:/Users/mark.tsai/Desktop/markauto/multi-market-audit-20261025。JSON的artifact均相對此目錄。
-- 初次本機完整輪次：185/185，failure/error/skip均0，Python 3.13.11、SQLite 3.54.0，執行期間source manifest不變。
-- E07/少量UI後續有整合變更，上述歷史輪次已保存在trading-suite-185.json/.log，不是最終來源全通過的證明。其後202項來源快照已完成，但新發現的非LOCAL環境修補仍待下一輪exact-source驗證。
-- 原v1 Paper22、Replay18全過，八來源、歷史profile與凍結journal對4095基準逐位元與Git blob相同。
-- SDK1.7.9真正Order型別三市場進/退建構過，wheel SHA256為77c864aa5bcd0f873746cb10a55a484c7a38723df432a7778f328d5fb7f57be4。沒有初始化client、登入、CA或交易操作。
+- 實作提交：`bf5141ec3e3b4e4a7559342e29ebbdfb7fccf29f`；portable來源SHA256：`552cff8bab8079ae99ba576f6c9883ece06390c5fc8f929edf83086becd560ea`。
+- bf5141e普通權杖完整分區3511項：3469通過、42項原有平台跳過、0失敗／錯誤／預期失敗／意外成功；完整發現3530項，另19項保留ef04核准歷史通過及bf5141e依賴影響審查，未在bf5141e重跑。
+- 完整回歸結束後再次核對原183檔雜湊、目錄及工作區指標位元，全部不變；憑證目錄未讀。收據：`C:\Users\mark.tsai\Desktop\markauto\main95-validation-20261025\evidence\preservation-multi-market-bf5141e-final.json`，JSON保留其SHA256。
+- 普通完整報告：[來源結果](C:\Users\mark.tsai\Desktop\markauto\multi-market-audit-20261025\partition-regular-released-bf5141e-final.json)；脈絡：`permission-partition-context-bf5141e-shortest.json`（位於`C:\Users\mark.tsai\Desktop\markauto\multi-market-audit-20261025`）。原始結果、逐項ID與SHA256在[ACCEPTANCE.json](ACCEPTANCE.json)。
+- 後續若只有本目錄Markdown/ACCEPTANCE文件提交，文件HEAD可不同；它不改上述已測程式、portable來源或凍結包。不可將文件提交冒稱程式重新執行版本。
 
-## 故障與專項
+## 原生與凍結包
 
-- combination-e06-native.log：父程序真正Popen.kill兩自有child；立即被原lease拒絕，未改DB或注入未來時鐘，自然等32.631秒才恢復。送前remote0保持UNKNOWN，收單後remote1經query為ACCEPTED；cash9870/risk668保留、重送0。
-- combination-r02-native.log：UNKNOWN股票斷線且不能取消時，合法期貨保護仍ACCEPTED/真本機FILLED；日停與UNKNOWN預留保持。此組合曾抓出無關帳戶查詢擋保護的bug，修後單項通過。
-- A03/H04新專項已單項過；E07真差異UI/commit scopeguards、U07三類真持倉同表、研究child慢退出案例均已加入最終runner，尚未取得完成報告，不先標通過。
+- 原生Windows193實際DPR1.5/2.0、1366×768物理預算、11pt、市場更新按鈕及捲動有原生截圖與metrics；六份歷史截圖保留原`.png`檔名與原位元，實際內容為JPEG/JFIF，格式／解析度／SHA256依位元核對，不靠副檔名推定。先前93原生六步/日0可退出0/五模擬交易日退出證據保留，不冒稱都是同一次193執行。
+- 193凍結GUI實際回讀原私有v2模擬結果129淨損益／71成本，操作新更新按鈕；實際畫面在`native-frozen193-*.png`。不代表真人理解或真券商五日觀察。
+- `runtime-193-to-bf5141e-equivalence.json`逐檔核對80個實際原生負載程式輸入與bf5141e完全相同；193至bf僅變更四個測試fixture與PROGRESS，沒有產品程式或建置輸入改動。原生圖、metrics與1800秒仍歸193，不冒稱bf5141e原生重跑；bf5141e完整回歸及新凍結包另有本版收據。
+- bf5141e本機broker-enabled包1012檔、68份v2raw來源、8個v1保護核心及所有payload對應已核對；SDK1.7.9於本版實際EXE內載入，沒有建client／login／CA／交易。bf5141e凍結TRAINING正常/crash/timeout與cleanup、引擎重啟、help與loopbackTLS各有獨立收據。原40秒上限的本版凍結合成GUI/worker smoke於29.8433303秒通過，隔離資料、未讀使用者狀態、所有7步與子程序cleanup均核對；收據`frozen-build-bf5141e/frozen-legacy-original40*.json`。這是工程包裝證據，不是真模型、券商帳戶或乾淨機器驗證。
+- EXE：`C:\Users\mark.tsai\Desktop\markauto\multi-market-v2\dist\broker-enabled-bf5141e\MarkAuto\MarkAuto.exe`；SHA256 `a00264c0ff912af315a5eeeee794ce1ec4a8233c0d3b6423d0cbe85de3762af2`。
+- 可攜zip：`C:\Users\mark.tsai\Desktop\markauto\multi-market-v2\dist\MarkAuto-broker-enabled-bf5141ec3e3b-local.zip`；SHA256 `be776eb1528af8bcf7b493957538c3f52a91262e95f6ad3e4654cb55434d2dce`。本機交付，未發布／推送／合併遠端，不宣稱乾淨機器安裝認證。
 
-## 50項逐列狀態
+## 30分鐘本機按鈕負載
+
+`load1800-193b784.json`：193實際執行PASS，1800.051394秒，100候選／20訂閱／5策略／100行情每秒；180000送出、確認及引擎增量一致。1796次市場真按鈕要求皆成功渲染完成、0UI查詢失敗，p95=53.4619ms≤300ms；最大排程落後0.0165344秒≤1。64MiB成長與1MiB/min尾端斜率均通過，當時來源未改且正常關閉。其80個輸入已按原報告SHA256重新核對目前bf5141e程式位元；這是等同性對照，不是第二次1800秒執行。
+
+先前456秒、758秒等F5焦點失敗與更早中斷記錄保留；F5是WindowShortcut，原生診斷證明視窗非活躍時不啟動。主規格U06要求本機按鈕，現以真實產品「更新行情」滑鼠事件及start→render→finish核對，所有1800秒／100Hz／延遲／記憶體／事件門檻不變；沒有直接呼叫refresh假冒按鈕成功，失敗UI查詢不能當延遲成功樣本。F5原鍵盤行為與測試保留。
+
+## 50項對照
+
+各列最終普通執行方法與歷史185/202證據並存於JSON；五項外部不因其本機替身方法PASSED而轉為外部通過。
 
 | ID | 狀態 | 實際結果與限制 |
 |---|---|---|
-| A01 | 已通過 / passed_tested_snapshot | 零禁止依賴；別名、動態匯入與TYPE_CHECKING反例會被拒絕，組裝例外明確限Runtime。 |
-| A02 | 待實作 / nonlocal_fix_and_baseline_standalone_passed_final_source_pending | 共用三市場DTO、嚴格SDK形狀及只查核心通過；另真SDK1.7.9 Order型別建構不含session。 |
-| A03 | 已通過 / passed_pre_environment_202_snapshot | 新增2412股期只供應Spec/歷史/quote資料，經原Facade建立→研究→部署→真本機進場成交→持有三交易日→退出；共用risk/fee及UI市場列無特殊分支。202輪具體案例通過。 |
-| A04 | 已通過 / passed_tested_snapshot | 八來源、歷史profile與凍結journal對4095逐位元/Git blob相同；原Paper22/Replay18全過。 |
-| A05 | 已通過 / passed_tested_snapshot | float/NaN/Infinity/naive時間/bool數量/錯單位與非法wire欄位均拒，沒有默默轉型。 |
-| H01 | 已通過 / passed_tested_snapshot | 23日週五day0、26日day1，27日是測試休市，29日day3、11/2 day5；缺日曆拒絕。 |
-| H02 | 已通過 / passed_tested_snapshot | 無當沖資格可現股跨日做多；當沖/先賣拒絕且未改原選擇。 |
-| H03 | 已通過 / passed_tested_snapshot | 今日新買無合法退出時停新倉/告警；舊庫存可賣量不挪給今日新買，合法保護不受min阻擋。 |
-| H04 | 已通過 / passed_pre_environment_202_snapshot | 同一期貨帳戶以明示本機margin1萬同持INTRADAY與SWING，收盤時當沖平倉、SWING仍1口，退出單只關聯當沖lot；202輪通過。 |
-| H05 | 已通過 / passed_tested_snapshot | 新版本清研究資格，舊lot原政策；目的版本須驗證且對帳/無衝突單才可明確移交。 |
-| H06 | 已通過 / passed_tested_snapshot | 拆股、股利應收、乘數/margin按生效版本重建；order hash不動，stop/riskbasis與歷史成本分開。 |
-| H07 | 已通過 / passed_tested_snapshot | 實約月份/expiry必須吻合，adapter/UI未解析月份就拒絕，沒有猜近月。 |
-| H08 | 已通過 / passed_tested_snapshot | 兩期貨市場close FILLED後才新版本研究/open；雙腿成本/UNKNOWN/崩潰可恢復，holding origin不延長。 |
-| S01 | 已通過 / passed_tested_snapshot | 受限JSON經schema/白名單/型別/資源限制，才進隔離TRAINING研究與本機部署。 |
-| S02 | 已通過 / passed_tested_snapshot | 程式碼/讀憑證/直接下單等多餘欄位及惡意草案拒絕，沒有副作用。 |
-| S03 | 已通過 / passed_tested_snapshot | 規則或週期變更新版本/清證據；不能拿舊指紋跳階或改舊lot政策。 |
-| S04 | 已通過 / passed_tested_snapshot | Domain及真研究child拒未可得bar，同根開盤偷看拒絕。 |
-| S05 | 已通過 / passed_tested_snapshot | 無AI金鑰的確定性規則/停損/日停照常，優先停止不受研究阻塞；未宣稱真AI聯調。 |
-| S06 | 已通過 / passed_tested_snapshot | AI摘要只來自策略DTO，無行情/帳戶/設定；OOS/FINAL_HOLDOUT context拒絕，v1來源隔離保持。 |
-| R01 | 已通過 / passed_tested_snapshot | 單筆2%兩千包含雙腿費稅/滑價，按合法單位縮量或拒；3%只在明選後採用。 |
-| R02 | 已通過 / passed_tested_snapshot | UNKNOWN股票斷線也不壓掉期貨合法保護；修後單項通過，UNKNOWN cash/risk仍保留。 |
-| R03 | 已通過 / passed_tested_snapshot | 股票/期貨並行共用十萬，帳戶與策略cap分算，四萬現金不能負兩筆兩萬margin加成本。 |
-| R04 | 已通過 / passed_tested_snapshot | UNKNOWN全額預留；partial取消僅放餘單、非線性最低費重算；退出不放未成交進場cash。 |
-| R05 | 已通過 / passed_tested_snapshot | 未交割賣款不當cash；五合成交易日及重啟後，僅明示T+2轉已交割cash。 |
-| R06 | 已通過 / passed_tested_snapshot | 2330股票與股期共用underlying額度，不以估計相關性互抵。 |
-| R07 | 已通過 / passed_tested_snapshot | 缺margin、過期資格或估值不新鮮拒新倉；必須有版本FeeSchedule，不回退零成本。 |
-| R08 | 已通過 / passed_tested_snapshot | 日停日期持久，重啟/改設定/盈利不清當日鎖；提交前重估既有虧損。 |
-| E01 | 已通過 / passed_tested_snapshot | 同key同內容回原單、不同內容衝突，UNKNOWN不假設遠端沒收單。 |
-| E02 | 已通過 / passed_tested_snapshot | 收單後斷線重建UNKNOWN、保留cash/risk，query後ACCEPTED且無重送。 |
-| E03 | 已通過 / passed_tested_snapshot | 按帳戶去重；同id不同economics、終態復活、亂序/缺口隔離，補查不重算成交。 |
-| E04 | 已通過 / passed_tested_snapshot | partial/取消/餘量成交競態保留真數量，取消不把lot清零。 |
-| E05 | 已通過 / passed_tested_snapshot | 期限與保護同時觸發僅剩餘退出一單，已有預留不反向新開。 |
-| E06 | 已通過 / passed_tested_snapshot | 父Popen.kill兩child，原lease自然等32.631秒；送前remote0仍UNKNOWN、收單後remote1查成ACCEPTED，均不重送。 |
-| E07 | 已通過 / passed_pre_environment_202_snapshot | 真Facade/Qt顯local0、broker+2000股、sellable2000及外部SELL1口委託ref；不造managed lot、不准外部平倉；手機long→short差異與commit前未觀測反向也拒增加曝險。202輪通過。 |
-| E08 | 已通過 / passed_tested_snapshot | 第二程序拒奪權，舊owner恢復仍被fence，無broker submit。 |
-| E09 | 已通過 / passed_tested_snapshot | heartbeat/append故障停新倉；送前不碰broker，收單後保留SUBMITTING供重啟query。 |
-| E10 | 已通過 / passed_tested_snapshot | 真還原舊SUBMITTING備份後強制對帳，遠端ledger不回退，舊隊列不補送。 |
-| U01 | 待外部驗證 / passed_tested_snapshot | 六步精靈至真本機研究/部署/持有/退出/績效通過；真人理解測試未做。 |
-| U02 | 已通過 / passed_tested_snapshot | 無當沖資格顯示原因/跨日選項，當沖選擇未偷偷改變。 |
-| U03 | 待實作 / nonlocal_fix_and_baseline_standalone_passed_final_source_pending | 環境/帳戶明示，不可用外部環境不換別帳戶；交易能力拒絕與績效環境標籤分開。 |
-| U04 | 已通過 / passed_tested_snapshot | stop/cancel/flatten/關UI/關engine命令不同；client退出engine存活，shutdown釋放handles。 |
-| U05 | 已通過 / passed_tested_snapshot | 無資料不是零價，過期/斷線保留部位與影響，失敗訊息不被poll抹除。 |
-| U06 | 待實作 / native_focus_harness_failed_replacement_and_dpi_pending | 1800秒負載在32.092秒因另一QA視窗使F5 WindowShortcut inactive而終止；3210/3210 quotes、p95 89.48ms、source不變及乾淨shutdown。待所有QA完成後獨占前景重做1800秒與native DPI，不改任何門檻。 |
-| U07 | 已通過 / passed_pre_environment_202_snapshot | 真同時持有INTRADAY期貨空1口、SWING現股多、POSITION另一現股多；Qt三列逐一核對方向、單位、帳戶、day0與0/0、3/5、20/60退出窗。202輪通過。 |
-| L01 | 已通過 / passed_tested_snapshot | 無API金鑰的三市場App/adapter循環通過，明示LOCAL synthetic。 |
-| L02 | 待外部驗證 / passed_tested_snapshot | 本機只查拒交易與真SDK型別過，沒有真永豐帳戶查詢。 |
-| L03 | 待外部驗證 / passed_tested_snapshot | 三市場欄位/事件本機與SDK型別過，沒有券商模擬session。 |
-| L04 | 待外部驗證 / passed_tested_snapshot | 本機五日+重啟/交割/保護過，沒有真券商五日觀察。 |
-| L05 | 已通過 / passed_tested_snapshot | metadata存在不授予當沖/CA/交易/正式能力，各條件獨立/有期限且預設拒。 |
-| L06 | 待外部驗證 / passed_tested_snapshot | 預設不執行真交易、升級不自動啟用，本次沒有真實資產操作。 |
+| A01 | 已通過 | bf5141e本機行為驗證通過：掃描各層匯入與依賴；禁止依賴為零，例外僅在明確組裝入口。 |
+| A02 | 已通過 | 共用DTO、三市場本機成交、兩種非LOCAL標籤故障port、實際IPC/設定/唯讀核心、SDK1.7.9形狀與價格帶來源守衛通過；凍結包真載入SDK不登入。均不是券商session驗證。 |
+| A03 | 已通過 | bf5141e本機行為驗證通過：加入另一個合法股票期貨契約；修改商品資料及測試即可，不更改UI與共同風控。 |
+| A04 | 已通過 | bf5141e本機行為驗證通過：重播既有v1資料及紙上日誌；原結果與雜湊保持，v2紀錄不污染v1。 |
+| A05 | 已通過 | bf5141e本機行為驗證通過：提交跨層、無單位或浮點金額資料；邊界明確拒絕；不得默默取整或轉型。 |
+| H01 | 已通過 | bf5141e本機行為驗證通過：週五進場並設定持有3至5交易日，插入休市日；按版本化日曆得到正確退出窗，不用日曆日相加。 |
+| H02 | 已通過 | bf5141e本機行為驗證通過：未具當沖資格啟用現股跨日做多；符合交割與可交易性時允許；日內往返及先賣拒絕。 |
+| H03 | 已通過 | bf5141e本機行為驗證通過：無當沖資格的當日新買部位觸發退出；查核可賣量與合法路徑，未知或不可執行時告警並停止新倉。 |
+| H04 | 已通過 | bf5141e本機行為驗證通過：啟用當沖及跨日策略後到達收盤退出時間；只處理當沖或另有到期退出的部位，不清空所有持倉。 |
+| H05 | 已通過 | bf5141e本機行為驗證通過：既有持倉期間把策略由短期改長期；新版本只影響新進場，舊持倉沿用原政策。 |
+| H06 | 已通過 | bf5141e本機行為驗證通過：公司行動調整契約乘數或股票股數；按生效版本重建權益及數量，未解析時凍結受影響商品。 |
+| H07 | 已通過 | bf5141e本機行為驗證通過：以連續期貨代碼規畫正式執行；先解析實際月份；失敗時拒絕，不猜近月。 |
+| H08 | 已通過 | bf5141e本機行為驗證通過：期貨長期部位接近到期；執行已選退出或轉倉，分別記錄成交及成本。 |
+| S01 | 已通過 | bf5141e本機行為驗證通過：AI產生三至五日策略草案；schema、白名單、型別及資源限制通過後才進研究。 |
+| S02 | 已通過 | bf5141e本機行為驗證通過：AI要求執行程式碼、讀密鑰或直接下單；在工具及規則邊界拒絕，無副作用。 |
+| S03 | 已通過 | bf5141e本機行為驗證通過：修改週期或頻率並沿用舊績效；新版本失效相關驗證，不顯示已具正式資格。 |
+| S04 | 已通過 | bf5141e本機行為驗證通過：用完整日線產生訊號再嘗試同根開盤成交；資訊可得性檢查拒絕或移至下一合法時點。 |
+| S05 | 已通過 | bf5141e本機行為驗證通過：AI離線時已有持倉及保護規則；已驗證引擎持續處理保護；AI依賴的新決策暫停。 |
+| S06 | 已通過 | bf5141e本機行為驗證通過：掃描所有AI輸入及工具輸出；無樣本外、最終保留資料、密鑰及未授權個資。 |
+| R01 | 已通過 | bf5141e本機行為驗證通過：資金100,000，單筆2%，含成本風險超過2,000；縮減到合法數量或拒絕，不能超額送出。 |
+| R02 | 已通過 | bf5141e本機行為驗證通過：日虧達10,000且有未成交進場單；鎖新倉並撤進場單，保護性退出不受新倉鎖阻擋。 |
+| R03 | 已通過 | bf5141e本機行為驗證通過：同時送出股票及期貨進場計畫；共用風險額度且資金按帳戶分配，不能重複預留。 |
+| R04 | 已通過 | bf5141e本機行為驗證通過：UNKNOWN或部分成交委託存在；風險與資金預留維持正確，不能提前全額釋放。 |
+| R05 | 已通過 | bf5141e本機行為驗證通過：賣款未交割又送出新買單；依交割排程與可用資金政策判斷，不把全部應收當現金。 |
+| R06 | 已通過 | bf5141e本機行為驗證通過：股票及同標的期貨同時持有；合併群組曝險，不各自取得完整上限。 |
+| R07 | 已通過 | bf5141e本機行為驗證通過：缺保證金、費用、估值或資格版本；明確拒絕受影響的新倉，不回退零成本假設。 |
+| R08 | 已通過 | bf5141e本機行為驗證通過：日停後重啟、改風險設定或AI要求解除；當日鎖維持，不能藉設定變更繞過。 |
+| E01 | 已通過 | bf5141e本機行為驗證通過：相同冪等鍵重送相同及不同內容；相同回原結果，不同明確衝突；遠端未知不補送。 |
+| E02 | 已通過 | bf5141e本機行為驗證通過：券商收單後連線中斷而本機未收到確認；進入UNKNOWN、保存預留、補查對帳，無盲目重送。 |
+| E03 | 已通過 | bf5141e本機行為驗證通過：重複、亂序及遺漏成交回報；去重、補查或隔離，不重算成交、不靜默跳序。 |
+| E04 | 已通過 | bf5141e本機行為驗證通過：部分成交同時收到撤單及其餘成交；部位及剩餘量正確，不以撤單清空已成交數量。 |
+| E05 | 已通過 | bf5141e本機行為驗證通過：停損與期限退出同時觸發；只產生一致的剩餘退出計畫，不反向開倉。 |
+| E06 | 已通過 | bf5141e本機行為驗證通過：在送出前後與記錄前後強制中斷程序；重啟可重建已知狀態，未知項目對帳前不增加曝險。 |
+| E07 | 已通過 | bf5141e本機行為驗證通過：手機操作使部位與本機不同；顯示差異並凍結受影響範圍，外部持股不被自動賣出。 |
+| E08 | 已通過 | bf5141e本機行為驗證通過：第二程序啟動或舊執行者恢復；只有有效所有權程序可送單。 |
+| E09 | 已通過 | bf5141e本機行為驗證通過：日誌寫入失敗或磁碟滿；停止新倉，保存已知狀態並告警，不假裝已記錄。 |
+| E10 | 已通過 | bf5141e本機行為驗證通過：還原舊備份及舊待送佇列；強制全帳戶對帳，舊命令不直接重送。 |
+| U01 | 待外部驗證 | bf5141e本機行為驗證通過：初次使用者建立跨日策略至模擬啟用；可完成六步設定，知道市場、週期、帳戶及風險。 外部驗證仍未完成：三位獨立使用者或本人三種新情境理解測試需要真人，Qt不能代替。 |
+| U02 | 已通過 | bf5141e本機行為驗證通過：未具當沖資格選擇當沖；顯示原因及可選跨日流程，不偷偷改變策略。 |
+| U03 | 已通過 | 標準GUI/CLI/profile實際切換三環境及明確帳戶，獨立root/版本/資料隔離；失敗保留原書本、舊epoch拒絕、無profile保持未知，啟動不自動SDK登入。 |
+| U04 | 已通過 | bf5141e本機行為驗證通過：點停止新倉、撤單、平倉及關閉介面；每個效果符合按鈕說明，保護狀態可見。 |
+| U05 | 已通過 | 缺資料/過期/未核對不以零假裝正常；同版本/行情序號純時間失效仍重畫。開倉版本任一商品無有效估值則整版本未實現未知；已實現與已記錄歸屬/回撤保留。 |
+| U06 | 已通過 | 193實際Windows150%/200%、1366×768物理預算及11pt可操作；193真市場按鈕負載完成1800.051394秒，180000行情全確認，1796次成功渲染回應，p95=53.4619ms，記憶體/排程/來源/關閉均通過。80個實際程式輸入與bf5141e逐檔位元相等；未宣稱bf5141e原生重跑。F5另保留鍵盤測試。 |
+| U07 | 已通過 | bf5141e本機行為驗證通過：混合當沖、短期及長期持倉；每筆持有日、退出期限及接管範圍清楚可見。 |
+| L01 | 已通過 | bf5141e本機行為驗證通過：無任何API金鑰執行三市場替身流程；所有核心情境可離線測試，絕不發出真實委託。 |
+| L02 | 待外部驗證 | bf5141e本機行為驗證通過：唯讀權限連線永豐；可完成支援查詢，所有交易命令被能力檢查拒絕。 外部驗證仍未完成：缺使用者提供且授權的唯讀帳戶/API，沒有實際SDK client或登入。 |
+| L03 | 待外部驗證 | bf5141e本機行為驗證通過：券商模擬進行三市場對接；支援部分有實際證據，缺口由替身測試補充並標示。 外部驗證仍未完成：券商模擬也需真API key及三市場支援證據，替身與SDK型別不能代替。 |
+| L04 | 待外部驗證 | bf5141e本機行為驗證通過：證券跨日部署跨至少五個交易日與一次重啟；持有日、交割、未成交單及保護狀態持續一致。 外部驗證仍未完成：本機跨日/重啟/舊日鎖/可信基準與缺基準保護已驗；真券商至少五日、前收盤值供應者與同一v2淨估值軸正規化仍待外部證實，不能把metadata有效當成基準有效。 |
+| L05 | 已通過 | bf5141e本機行為驗證通過：API就緒但當沖資格、CA或交易權限不足；僅開放具備條件的能力，缺項不由其他成功項取代。 |
+| L06 | 待外部驗證 | bf5141e本機行為驗證通過：正式驗證及版本升級；在另行安排的受控範圍內記錄實際結果，無自動正式試單。 外部驗證仍未完成：本次禁止真實資產操作；正式受控驗證需另行安排、帳戶與CA。 |
 
-## 尚待外部驗證
+## 外部接入與歷史證據
 
-- U01：三位獨立使用者或本人三新情境，確認模式、週期、資金與停止效果；自動操作不能代替理解。
-- L02/L03：真正永豐唯讀查詢及券商模擬需使用者提供且授權的帳戶/API；替身與SDK型別不能代替。
-- L04：本機五日已過，真正券商五交易日與重啟觀察另驗。
-- L06：本次禁止真實資產操作；設定文件或開關不自行授予正式交易權限。
-- U06：邏輯縮放/離屏不能冒稱native DPI；第一次30分鐘負載被中斷，舊RUNNING報告不是通過證據，需全新完整負載與實際畫面檢查。
+U01需要三位獨立真人或使用者本人三種新情境理解測試；L02實際唯讀券商、L03真券商模擬、L04五個真交易日及可信前收盤估值提供者、L06另行授權受控正式驗證仍待完成。設定、CA、當沖、商品與費用證據各自核對；夜盤預設關閉。詳見[BROKER_READINESS.md](BROKER_READINESS.md)與[開始使用](START_HERE.md)。
 
-接入欄位、資格來源、CA、版本與只查/模擬步驟見 [BROKER_READINESS.md](BROKER_READINESS.md)。
+原19項UAC歷史結果為ef04的19/19PASS，不是bf5141e重新執行；`privileged-ef04-to-bf5141e-impact.json`核對固定方法、8核心與177個有界依賴並明列差異。193完整普通回歸3467通過／42跳過／1失敗／2錯誤，以及c101完整普通回歸3466通過／42跳過／1失敗／2錯誤，均保留FAILED於`partition-regular-shortest-193b784-final.json`與`partition-regular-shortest-c101f45-final.json`。舊22d六項案例在193原門檻下通過，另見`old-six-current193-behavior.json`，不據此將193整輪宣稱通過。
 
-## 最新 native 負載節點（未通過）
+外部完整測試runner移除冗餘Case清單，恢復標準unittest成功案例生命週期；bf兩個fixture在原close/jobs斷言後明確銷毀自身Qt物件，原BASE／下載delta／所有原行為斷言與時限未改。兩份實際offscreen ownership proof在dirty-c101執行並記錄portable552cff，與已提交bf相同；原模組12+5+15項通過另記錄兩個fixture檔案前後雜湊相同，不捏造其未記錄的整樹執行雜湊。JSON保留原dirty基底，不冒稱bf新執行。新完整原順序3511測試另由`partition-regular-released-bf5141e-final.json`證明。這些證據不證明歷史Core15逾時或WinError5的確切根因，也不宣稱永久消除作業系統間歇拒絕或時序失敗。
 
-- native-load-final-30m.json 已在32.092秒結束為FAIL；F5未派送到自己的Qt window，3210筆皆確認、p95 89.48ms、source不變、exit0與shutdown verified。
-- 這是工具輸入焦點條件失敗，不能用3210筆短結果當180000筆/1800秒驗收；root會先修正工具或前景條件再建立新的完整負載證據。
-- 只讀審核期間沒有修改任何production或測試來源。
-
-## 202項快照完成，仍不是最終來源
-
-- trading-suite-202.json/.log（已封存快照）：202/202，0 failure/error/skip，source unchanged，Python3.13.16、SQLite3.54.0；UTC 2026-10-24 23:45:49至23:52:09。報告SHA256 4b7f44f26638954ebc7cd4fd030a6b78ac7e8db71bea661a6c7d96f36d207d97。
-- A03/H04新增組合、E07真Qt差異/反向scopeguards、U07三類真持倉、新成本/來源研究失效守衛與研究child慢退出全包含在這輪實際結果。
-- 隨後review又找到非LOCAL exit/view硬編環境與獨立ports DTO registry缺口；A02/U03保持待修驗。新的controlled-nonlocal測試只有本機可故障port翻譯，不接真SDK，也不能代替L02/L03/L06。
-- 必須保留這份202快照，再把環境修補後的exact-source全回歸接成下一輪，不能覆寫歷史報告後沿用舊hash。
-- native負載失敗確認為root操作另一QA視窗致F5不活躍；下一輪會先完成其他畫面QA，再讓負載視窗獨占前景1800秒，所有時間/行情數/延遲門檻不變。
-
-## 非LOCAL交易日與日風險基準（16項本機測試通過）
-
-- broker-sessions-final.log：16/16，3.792秒。依版本日曆的已開DAY/明示NIGHT選交易日；UTC與市場時區同一時點得到同一結果，休市不猜weekday，夜盤預設關閉。
-- 新交易日或基準缺失時保留原日dated locks、舊PnL與舊base，停止新風險並要求fresh對帳，沒有把未知前收盤或持倉估值當0。無基準時已知scope的合法保護依然可實際送出及本機成交。
-- DailyBaselineEvidence綁環境、全configured accounts、前一明示交易日/目前交易日、calendar版本、fees版本及真值hash、精確前收盤as-of、可信source identity與固定v2 ledger net-mark估值軸；不是券商lifetime PnL、現金或一個metadata checkbox。
-- 確認會再讀fresh account事實且要求持倉行情可估值，來源須由可信backend/provider白名單背書；public mutation以engine.lock序列化。確認後仍stopped，必須另外明確resume，不能清掉同日風控鎖。
-- **真券商前收盤供應者及正規化尚待外部驗證**：本次沒有查真帳戶/前收行情/券商statement。不能因文件存在或metadata格式正確就宣稱日風險基準成立。取得實際唯讀權限後需證明同一v2已管理部位/費用/滑價軸的前收盤淨估值；未取得時保持nonLOCAL新倉停用。
-- 本機16項與controlled nonLOCAL port測試通過，不等於券商唯讀/模擬/正式交易已驗證；L02/L03/L04/L06仍外部待驗。最終整合來源回歸仍由root接續。
-
-
-## 舊版目錄與v2提交契約修復（35項通過）
-
-- legacy-v2-catalog-guard.log：35/35，10.626秒。原test_error_catalog_b1與test_error_guidance_u7的數量、歷史文字及來源雜湊檢查全部通過，沒有更新golden值。
-- quantlab/errors.py與4095基準逐byte相同；v2中文錯誤由application/errors.py複製後唯讀組合，不變更舊表、Enum、labels或pickle身分。
-- 原兩個v1 submit callers與intent writers精確預期不變。獨立完整枚舉五個v2 callers，只有TradingEngine.submit可以呼叫有參數的ExecutionService.commit；靜態守衛驗證writer lock、風控拒絕、風險預留、durable SUBMITTING及fence先於adapter提交。
-- 真應用故障測試確認失效owner無任何提交；超限時股票新倉為0，但既有期貨的合法保護退出仍存在。這不是以禁止保護換取測試通過。
-- Ruff與分層檢查通過；此次修復後最終完整整合來源仍須另跑，不能用35項局部結果代替整體回歸。
+原42跳過ID來源、所有早期失敗/取消/raw日志與歷史來源雜湊保留。原主檔仍是原始規格，實作狀態以此收據為準。此前EVIDENCE全文保存在本次audit preimage，不抹除JSON/PROGRESS歷史。

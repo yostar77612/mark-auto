@@ -1,3 +1,19 @@
+# Current final local engineering receipt — implementationbf5141e
+
+Updated 2026-10-25T13:24:35.882146+00:00. **45local engineering cases passed;5external pending.** Formal acceptance230/300 unchanged. No real brokerage client/login/credential search/order, no Sitecore/original data change, no remote v2 write.
+
+Implementation `bf5141ec3e3b4e4a7559342e29ebbdfb7fccf29f`; portable source `552cff8bab8079ae99ba576f6c9883ece06390c5fc8f929edf83086becd560ea`. bf5141e普通權杖完整分區3511項：3469通過、42項原有平台跳過、0失敗／錯誤／預期失敗／意外成功；完整發現3530項，另19項保留ef04核准歷史通過及bf5141e依賴影響審查，未在bf5141e重跑。
+
+Native150/200 and actual frozen GUI were executed at193; their80 measured production inputs are byte-identical at bf5141e by `runtime-193-to-bf5141e-equivalence.json` and rehash verification. They were not rerun at bf5141e. The fresh bf5141e frozen build separately passed1012payload/68v2sources/8legacy verification, SDK1.7.9 no-login probe, isolated engine restart, TRAINING normal/crash/timeout and help/loopbackTLS. Its original40s synthetic frozen GUI/worker smoke passed29.8433303s with all7steps, no user-state access, and verified owned-worker cleanup, not real-model/account certification. Actual193 Native1800 passed1800.051394s with180000quotes conserved, p9553.4619ms and all original memory/lag gates. Details and exact raw paths: [EVIDENCE.md](EVIDENCE.md), [ACCEPTANCE.json](ACCEPTANCE.json), [START_HERE.md](START_HERE.md).
+
+External only: U01human comprehension,L02real readonly broker,L03actual broker simulation,L04real five-day/closing-baseline provider,L06separately authorized controlled live validation. Defaults remain LOCAL/day-only and broker readonly; no setting grants qualification. The main95installed/data-preserving task is separate. A later docs-only commit does not replace tested bf5141e code; portable/EXE/archive bytes must remain fixed.
+
+The historical19 privilege run is ef04only plus explicit bf5141e impact, not19 new bf5141e executions. Both full reports remain FAILED:193(3467PASS/42SKIP/1FAIL/2ERROR) andc101(3466PASS/42SKIP/1FAIL/2ERROR). The new full uses standard successful-Case ownership and original discovery order, with fixture-owned Qt destruction after original assertions. Two actual ownership proofs and32 original module cases were executed on dirtyc101/portable552cff, matching committedbf bytes, not rerun atbf. They prove lifecycle cleanup, not the exact historical Core15/WinError5 cause or a permanent fix for all intermittent failures. Earlier failures/skips/source snapshots remain history. No remaining local feature gap is asserted after completedbf gates; external recovery steps are in BROKER_READINESS.
+
+---
+
+## Preserved chronological progress before final receipt
+
 # Multi-market v2 implementation progress
 
 ## Scope and recovery
