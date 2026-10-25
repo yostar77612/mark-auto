@@ -304,7 +304,7 @@ class StrategyWizard(QWizard):
                 self.policy.currentText(),
                 self.minimum.value(),
                 self.maximum.value(),
-                self.state.environment.value,
+                state_label(self.state.environment.value),
                 self.account.currentData() or '',
                 self.allocation.text(),
                 self.risk.currentText(),

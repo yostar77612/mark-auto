@@ -55,6 +55,7 @@ def laboratory(*, kind=HoldingKind.SWING, readonly=False, baseline=True, environ
             not readonly and environment is Environment.LIVE,
         )
         journal = Ledger(Path(directory) / 'cycle.sqlite', 'cycle-fixture', clock.now())
+        history = synthetic_history(catalog, calendar)
         engine = TradingEngine(
             journal,
             clock,
@@ -65,9 +66,8 @@ def laboratory(*, kind=HoldingKind.SWING, readonly=False, baseline=True, environ
             ownership_clock=lambda: fixtures.NOW,
             source_profile=compute_profile(),
             fees=FeeSchedule(),
+            historical_bars=history,
         )
-        history = synthetic_history(catalog, calendar)
-        engine.history = history
         try:
             for item in catalog.instruments:
                 refresh_quote(engine, item)

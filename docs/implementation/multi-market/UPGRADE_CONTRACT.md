@@ -61,3 +61,32 @@ broker simulation and controlled real trading cannot be inferred from a double.
 Financial arithmetic uses the shared fixed Decimal context. An AST dependency
 gate checks actual import direction, including relative and known dynamic imports.
 The existing v1 test/quality gates and timeouts remain unchanged.
+
+
+## Execution inventory and catalogue compatibility
+
+The owner explicitly authorizes the separate v2 execution architecture in this
+mission. This does not broaden the v1 permanent-live-disabled contract. The v1
+AST oracle continues to require exactly the original two paper submit callers
+and the same two intent writers, with risk rejection before the intent write.
+Its original expected sets and historical catalogue hashes are unchanged.
+
+`tests/test_paper_lock_b2.py` independently enumerates all five v2 submit call
+sites (coordinator entry, engine exit, both lifecycle roll legs, and the sole
+adapter submission in `ExecutionService.commit`). The exhaustive production
+scan includes the v2 Qt tree and composition entry point. Every new site fails
+this inventory until reviewed. The sole state-bearing execution commit caller
+is `TradingEngine.submit`; ordinary argument-free SQLite transaction commits are
+not order execution. Separate AST guards bind that call to the writer lock,
+domain risk preview/rejection, reservation construction, durable SUBMITTING
+intent and live ownership fence before any adapter submission. Real application
+fault tests additionally verify that daily loss and expired ownership prevent
+adapter submission. No v2 UI or AI path receives an adapter execution capability.
+
+`quantlab/errors.py` is restored byte-for-byte to baseline 4095c3e. V2 messages
+live solely in `quantlab/trading/application/errors.py`, which copies legacy
+rows into a read-only combined catalogue and rejects shadowed legacy codes.
+Importing v2 does not mutate legacy ERROR_TABLE, labels, enum or pickle paths.
+The legacy catalogue, rendering and source-hash tests remain exact, with separate
+v2 composition assertions. This is a scope separation with replacement coverage,
+not a scan exclusion or an expansion of the old golden expected sets.

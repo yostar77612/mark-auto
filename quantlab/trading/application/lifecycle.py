@@ -273,7 +273,7 @@ def _research_destination(engine: 'TradingEngine', job: RollJob) -> tuple[RollJo
         engine.validate_strategy(reference)
     target = engine.strategy(reference)
     if target.state == 'RULE_VALID':
-        bars = tuple(b for b in engine.history[job.new_instrument_id] if b.available_at < engine.clock.now())
+        bars = tuple(b for b in engine.history.get(job.new_instrument_id, ()) if b.available_at < engine.clock.now())
         run_research(engine, reference, bars)
     if engine.strategy(reference).state != 'ACTIVE':
         engine.deploy(reference)

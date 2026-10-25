@@ -10,7 +10,7 @@ from .engine import TradingEngine
 from .events import reconcile
 from .views import snapshot
 from .workflows import cancel_entries, execute_day, fill_local_pending, resume, run_research, step, transfer
-from quantlab.errors import ERROR_TABLE
+from .errors import ERROR_TABLE
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.validation import DomainError
 
@@ -56,7 +56,7 @@ class LocalFacade:
             engine.validate_strategy(command.target_id)
         elif action is UiAction.RESEARCH:
             strategy = engine.strategy(command.target_id)
-            run_research(engine, command.target_id, engine.history[strategy.form.instrument_id])
+            run_research(engine, command.target_id, engine.history.get(strategy.form.instrument_id, ()))
         elif action is UiAction.DEPLOY:
             engine.deploy(command.target_id)
         elif action is UiAction.RECONCILE:

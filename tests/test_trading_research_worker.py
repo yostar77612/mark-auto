@@ -49,14 +49,14 @@ class IsolatedResearchTests(unittest.TestCase):
     def test_result_waits_for_clean_exit_inside_original_deadline(self):
         runner = SpawnResearchRunner(max_seconds=10, diagnostic_fault=WorkerFault.SLOW_COMPLETION)
         result = self.run_worker(runner)
-        self.assertEqual(result.observations, len(self.bars))
+        self.assertEqual(result.observations, len(self.training_bars))
         self.assertTrue(runner.last_cleanup_verified)
 
     def setUp(self) -> None:
         self.calendar = synthetic_calendar()
         catalog = synthetic_catalog()
         self.spec = catalog.instruments[0]
-        self.bars = synthetic_history(catalog, self.calendar)[self.spec.instrument_id][:30]
+        self.training_bars = synthetic_history(catalog, self.calendar)[self.spec.instrument_id][:30]
         self.fees = FeeSchedule()
         form = StrategyForm(
             'worker-training',
@@ -79,7 +79,7 @@ class IsolatedResearchTests(unittest.TestCase):
             self.strategy,
             self.spec,
             self.calendar,
-            self.bars if bars is None else bars,
+            self.training_bars if bars is None else bars,
             self.fees,
             deadline=datetime.now(timezone.utc) + timedelta(seconds=30),
             source_profile=profile,
@@ -93,7 +93,7 @@ class IsolatedResearchTests(unittest.TestCase):
 
     def test_real_child_matches_authoritative_result_and_full_producer_profile(self) -> None:
         runner, profile = SpawnResearchRunner(), compute_profile()
-        expected = research(self.strategy, self.spec, self.calendar, self.bars, self.fees, source_profile=profile)
+        expected = research(self.strategy, self.spec, self.calendar, self.training_bars, self.fees, source_profile=profile)
         actual = self.run_worker(runner, profile=profile)
         self.assertEqual(actual, expected)
         self.assertEqual(actual.producer_profile, profile.profile_id)
@@ -102,10 +102,10 @@ class IsolatedResearchTests(unittest.TestCase):
         self.assert_clean(runner)
 
     def test_direct_lookahead_is_rejected_by_the_actual_child(self) -> None:
-        first = replace(self.bars[0], available_at=self.bars[1].ended_at + timedelta(seconds=1))
+        first = replace(self.training_bars[0], available_at=self.training_bars[1].ended_at + timedelta(seconds=1))
         runner = SpawnResearchRunner()
         with self.assertRaises(DomainError) as caught:
-            self.run_worker(runner, bars=(first, *self.bars[1:]))
+            self.run_worker(runner, bars=(first, *self.training_bars[1:]))
         self.assertEqual(caught.exception.code, 'validation_failed')
         self.assert_clean(runner)
 
@@ -130,11 +130,11 @@ class IsolatedResearchTests(unittest.TestCase):
     def test_expired_deadline_and_untyped_payload_never_start_a_child(self) -> None:
         runner = SpawnResearchRunner()
         with self.assertRaises(DomainError) as caught:
-            runner.run(self.strategy, self.spec, self.calendar, self.bars, self.fees, deadline=datetime.now(timezone.utc) - timedelta(seconds=1))
+            runner.run(self.strategy, self.spec, self.calendar, self.training_bars, self.fees, deadline=datetime.now(timezone.utc) - timedelta(seconds=1))
         self.assertEqual(caught.exception.code, 'research_timeout')
         self.assertIsNone(runner.last_child_pid)
         with self.assertRaises(DomainError):
-            self.run_worker(runner, bars=list(self.bars))
+            self.run_worker(runner, bars=list(self.training_bars))
         self.assertIsNone(runner.last_child_pid)
         self.assertTrue(runner.last_cleanup_verified)
 
@@ -142,7 +142,7 @@ class IsolatedResearchTests(unittest.TestCase):
         runner = SpawnResearchRunner()
         changed = replace(self.strategy, policy=HoldingPolicy(HoldingKind.POSITION, 30, 60))
         with self.assertRaises(DomainError):
-            runner.run(changed, self.spec, self.calendar, self.bars, self.fees, deadline=datetime.now(timezone.utc) + timedelta(seconds=30))
+            runner.run(changed, self.spec, self.calendar, self.training_bars, self.fees, deadline=datetime.now(timezone.utc) + timedelta(seconds=30))
         self.assertIsNone(runner.last_child_pid)
         for limit in (MAX_SECONDS + 1, float('nan'), float('inf'), True, 0):
             with self.subTest(limit=limit), self.assertRaises(DomainError):

@@ -6,6 +6,9 @@ from desktop_strings import ui_text
 
 
 STATE_KEYS = {
+    'LOCAL': 'v2.local',
+    'BROKER_SIMULATION': 'v2.broker_sim',
+    'LIVE': 'v2.live',
     'DRAFT': 'v2.state_draft',
     'RULE_VALID': 'v2.state_rule_valid',
     'RESEARCHED': 'v2.state_researched',

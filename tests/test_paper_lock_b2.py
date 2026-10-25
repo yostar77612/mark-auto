@@ -243,8 +243,14 @@ class OrderEntryScanTests(unittest.TestCase):
         self.assertEqual([n.args[0].value for n in writes], [True, True])
 
     def test_all_submit_callers_and_intent_writers_are_enumerated(self):
-        paths = sorted((ROOT / 'quantlab').rglob('*.py')) + sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').rglob('*.py'))
-        submits, writers = set(), set()
+        paths = (
+            sorted((ROOT / 'quantlab').rglob('*.py'))
+            + sorted(ROOT.glob('desktop*.py'))
+            + sorted((ROOT / 'desktop_pages').rglob('*.py'))
+            + sorted((ROOT / 'desktop_trading').rglob('*.py'))
+            + [ROOT / 'trading_runtime.py']
+        )
+        submits, v2_submits, writers, commits = set(), set(), set(), set()
         submit_function = None
         for path in paths:
             relative = path.relative_to(ROOT).as_posix()
@@ -256,7 +262,10 @@ class OrderEntryScanTests(unittest.TestCase):
                     if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Attribute):
                         continue
                     if call.func.attr == 'submit':
-                        submits.add((relative, function.name, ast.unparse(call.func.value)))
+                        target = v2_submits if relative.startswith('quantlab/trading/') else submits
+                        target.add((relative, function.name, ast.unparse(call.func.value)))
+                    if call.func.attr == 'commit' and (call.args or call.keywords):
+                        commits.add((relative, function.name, ast.unparse(call.func.value)))
                     if call.func.attr in ('_append', 'execute', 'executemany') and any(
                         isinstance(arg, ast.Constant) and isinstance(arg.value, str) and (arg.value == 'intent' or 'INSERT INTO journal' in arg.value)
                         for arg in call.args
@@ -265,6 +274,19 @@ class OrderEntryScanTests(unittest.TestCase):
                 if relative == 'quantlab/paper.py' and function.name == 'submit' and function.args.kwonlyargs:
                     submit_function = function
         self.assertEqual(submits, {('quantlab/paper_replay.py', '_step', 'self.broker'), ('desktop_ui.py', '_handle_ui_paper_submit', 'broker')})
+        # Owner-authorized v2 has an independently exhaustive execution contract;
+        # it does not alter the original two callers or v1 intent writer oracle.
+        self.assertEqual(
+            v2_submits,
+            {
+                ('quantlab/trading/application/coordinator.py', '_entry_decision', 'engine'),
+                ('quantlab/trading/application/engine.py', 'exit_lot', 'self'),
+                ('quantlab/trading/application/execution.py', 'commit', 'self.broker'),
+                ('quantlab/trading/application/lifecycle.py', '_progress_close', 'engine'),
+                ('quantlab/trading/application/lifecycle.py', '_progress_open', 'engine'),
+            },
+        )
+        self.assertEqual(commits, {('quantlab/trading/application/engine.py', 'submit', 'execution')})
         self.assertEqual(writers, {('quantlab/paper.py', 'submit'), ('quantlab/paper.py', '_append')})
         calls = [n for n in ast.walk(submit_function) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)]
         risks = [n for n in calls if n.func.attr == '_risk']
@@ -274,6 +296,79 @@ class OrderEntryScanTests(unittest.TestCase):
         guard = next(n for n in ast.walk(submit_function) if isinstance(n, ast.If) and ast.unparse(n.test) == 'not decision.allowed')
         self.assertTrue(any(isinstance(n, ast.Return) for n in guard.body))
         self.assertLess(guard.end_lineno, intent_write.lineno)
+
+    def test_v2_unique_commit_requires_locked_risk_reservation_durable_intent_and_fence(self):
+        engine = ast.parse((ROOT / 'quantlab/trading/application/engine.py').read_text(encoding='utf-8-sig'))
+        submit = next(n for n in ast.walk(engine) if isinstance(n, ast.FunctionDef) and n.name == 'submit')
+        locked = next(n for n in ast.walk(submit) if isinstance(n, ast.With) and ast.unparse(n.items[0].context_expr) == 'self.lock')
+        calls = [n for n in ast.walk(locked) if isinstance(n, ast.Call)]
+        preview = [n for n in calls if ast.unparse(n.func) == 'risk.preview']
+        commit = [n for n in calls if ast.unparse(n.func) == 'execution.commit']
+        self.assertEqual(len(preview), 1)
+        self.assertEqual(len(commit), 1)
+        guard = next(
+            n for n in ast.walk(locked) if isinstance(n, ast.If) and ast.unparse(n.test) == 'not decision.allowed or decision.quantity != plan.quantity'
+        )
+        self.assertTrue(any(isinstance(n, ast.Raise) for n in guard.body))
+        reservation = next(n for n in calls if ast.unparse(n.func) == 'Reservation')
+        construction = next(n for n in calls if ast.unparse(n.func) == 'ExecutionService')
+        self.assertLess(preview[0].lineno, guard.lineno)
+        self.assertLess(guard.end_lineno, reservation.lineno)
+        self.assertLess(reservation.lineno, construction.lineno)
+        self.assertLess(construction.lineno, commit[0].lineno)
+        self.assertEqual([ast.unparse(n) for n in construction.args[:4]], ['gateway', 'self._persist', 'self.fence', 'self.clock.now'])
+        self.assertEqual(ast.unparse(commit[0].args[5]), 'lambda: self.fence()')
+        execution = ast.parse((ROOT / 'quantlab/trading/application/execution.py').read_text(encoding='utf-8-sig'))
+        execute = next(n for n in ast.walk(execution) if isinstance(n, ast.FunctionDef) and n.name == 'commit')
+        calls = [n for n in ast.walk(execute) if isinstance(n, ast.Call)]
+        validate = next(n for n in calls if ast.unparse(n.func) == 'validate')
+        durable = next(
+            n for n in calls if ast.unparse(n.func) == 'self.persist' and isinstance(n.args[0], ast.Constant) and n.args[0].value == 'order_submitting'
+        )
+        fence = next(n for n in calls if ast.unparse(n.func) == 'self.fence')
+        broker = next(n for n in calls if ast.unparse(n.func) == 'self.broker.submit')
+        self.assertLess(validate.lineno, durable.lineno)
+        self.assertLess(durable.lineno, fence.lineno)
+        self.assertLess(fence.lineno, broker.lineno)
+
+    def test_v2_runtime_risk_and_ownership_reject_before_any_adapter_submission(self):
+        from tests.test_trading_application import ApplicationLifecycleTests
+
+        for name in (
+            'test_second_writer_and_expired_owner_are_fenced_before_broker_call',
+            'test_commit_revalues_existing_loss_before_accepting_new_entry',
+        ):
+            with self.subTest(case=name):
+                fixture = ApplicationLifecycleTests(name)
+                fixture.setUp()
+                try:
+                    getattr(fixture, name)()
+                    self.assertEqual(fixture.engine.gateways['local-stock'].submission_count, 0)
+                    expected = 0 if 'second_writer' in name else 2
+                    self.assertEqual(sum(g.submission_count for g in fixture.engine.gateways.values()), expected)
+                    if expected:
+                        # The loss quote legitimately submitted the existing
+                        # future's protective exit; the prohibited stock entry
+                        # is still absent. Protection must not be suppressed.
+                        self.assertEqual([o.plan.reduce_only for o in fixture.engine.state.orders], [False, True])
+                        self.assertTrue(all(o.plan.account_ref == 'local-futures' for o in fixture.engine.state.orders))
+                finally:
+                    fixture.tearDown()
+                    fixture.doCleanups()
+
+    def test_v2_catalogue_composes_without_mutating_legacy_or_shadowing_codes(self):
+        from quantlab.errors import ERROR_LABELS, ERROR_TABLE, ErrorCode
+        from quantlab.trading.application.errors import ERROR_TABLE as V2_TABLE, V2_ERROR_TEXT
+
+        self.assertFalse(V2_ERROR_TEXT.keys() & ERROR_TABLE.keys())
+        self.assertEqual(set(V2_TABLE), set(ERROR_TABLE) | set(V2_ERROR_TEXT))
+        self.assertEqual(set(ERROR_LABELS), set(ERROR_TABLE))
+        self.assertEqual({v.value for v in ErrorCode}, set(ERROR_TABLE))
+        self.assertNotIn('daily_baseline_required', ERROR_TABLE)
+        self.assertIn('daily_baseline_required', V2_TABLE)
+        self.assertTrue(all(V2_TABLE[code] is row for code, row in ERROR_TABLE.items()))
+        with self.assertRaises(TypeError):
+            V2_TABLE['new_code'] = V2_TABLE['operation_failed']
 
     def test_legacy_initial_state_checksum_is_pinned(self):
         # This hash pins the pre-B2 schema: adding a default lock field here

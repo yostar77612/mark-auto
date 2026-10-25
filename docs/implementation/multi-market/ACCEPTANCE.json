@@ -3,7 +3,7 @@
   "spec_sha256": "7f95c1d9eef88ebe42d2d76a168cadbff61f145088152d7734edea5020498ff5",
   "baseline": "4095c3e9fdd2e91f1423d6d1bf76466834cdb417",
   "scope": "Local engineering acceptance only; v1 formal acceptance remains 230/300",
-  "updated_at": "2026-10-25T00:10:43.178178+00:00",
+  "updated_at": "2026-10-25T01:17:10.240040+00:00",
   "branch": "feat/multi-market-v2-local",
   "main_context": "c392286910ac65a981a0763e17767cd6199fb7dc",
   "audit_root": "C:/Users/mark.tsai/Desktop/markauto/multi-market-audit-20261025",
@@ -101,6 +101,16 @@
         "tests/test_trading_broker_sessions.py": "5738f3e42ea2e30802910991c42f7174af1a741e04bbdabe2968a3acac03b0a7"
       },
       "limitation": "Standalone module passed; full final integrated source/other source inputs still require root final regression."
+    },
+    "legacy_v2_contract_repair": {
+      "artifact": "legacy-v2-catalog-guard.log",
+      "sha256": "39bf38a361fb458b5721c65e27ad68c5318dde3db62d71f505f14a4bbe431f5e",
+      "count": 35,
+      "passed": true,
+      "seconds": 10.626,
+      "legacy_errors_baseline": "4095c3e9fdd2e91f1423d6d1bf76466834cdb417",
+      "legacy_errors_bytes_sha256": "753dde64dbbbe691ad9b43080708dcd7ef25a63513327b8e890304f7674fb63e",
+      "scope": "Exact legacy catalogue and original paper guards unchanged; independent enumerated v2 submit/commit guards and real risk/fence behavior. Final full integrated run remains pending."
     }
   },
   "aggregate_source_status": {

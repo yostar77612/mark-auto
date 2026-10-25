@@ -104,3 +104,12 @@
 - 確認會再讀fresh account事實且要求持倉行情可估值，來源須由可信backend/provider白名單背書；public mutation以engine.lock序列化。確認後仍stopped，必須另外明確resume，不能清掉同日風控鎖。
 - **真券商前收盤供應者及正規化尚待外部驗證**：本次沒有查真帳戶/前收行情/券商statement。不能因文件存在或metadata格式正確就宣稱日風險基準成立。取得實際唯讀權限後需證明同一v2已管理部位/費用/滑價軸的前收盤淨估值；未取得時保持nonLOCAL新倉停用。
 - 本機16項與controlled nonLOCAL port測試通過，不等於券商唯讀/模擬/正式交易已驗證；L02/L03/L04/L06仍外部待驗。最終整合來源回歸仍由root接續。
+
+
+## 舊版目錄與v2提交契約修復（35項通過）
+
+- legacy-v2-catalog-guard.log：35/35，10.626秒。原test_error_catalog_b1與test_error_guidance_u7的數量、歷史文字及來源雜湊檢查全部通過，沒有更新golden值。
+- quantlab/errors.py與4095基準逐byte相同；v2中文錯誤由application/errors.py複製後唯讀組合，不變更舊表、Enum、labels或pickle身分。
+- 原兩個v1 submit callers與intent writers精確預期不變。獨立完整枚舉五個v2 callers，只有TradingEngine.submit可以呼叫有參數的ExecutionService.commit；靜態守衛驗證writer lock、風控拒絕、風險預留、durable SUBMITTING及fence先於adapter提交。
+- 真應用故障測試確認失效owner無任何提交；超限時股票新倉為0，但既有期貨的合法保護退出仍存在。這不是以禁止保護換取測試通過。
+- Ruff與分層檢查通過；此次修復後最終完整整合來源仍須另跑，不能用35項局部結果代替整體回歸。

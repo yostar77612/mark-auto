@@ -23,6 +23,7 @@ from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPoli
 from quantlab.trading.domain.policies import ExitCoordinator, check_entry_eligibility, holding_window
 from quantlab.trading.domain.risk import RiskPolicy, RiskService
 from quantlab.trading.domain.validation import DomainError, decimal_value
+from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.storage import Journal
 
@@ -45,11 +46,22 @@ class TradingEngine:
         source_profile: ProducerProfile | None = None,
         research_runner: ResearchRunner | None = None,
         fees: FeeSchedule | None = None,
+        historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
     ):
         initialize()
         self.journal, self.clock, self.calendar, self.catalog = journal, clock, calendar, catalog
         self.gateways, self.simulation, self.ownership_clock = gateways, simulation, ownership_clock
         self.configuration = configuration or ExecutionConfiguration()
+        if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
+            raise DomainError('validation_failed', 'bounded typed market history mapping required')
+        self.history: dict[str, tuple[CompletedBar, ...]] = {}
+        for instrument_id, series in (historical_bars or {}).items():
+            catalog.resolve(instrument_id)
+            if type(series) is not tuple or len(series) > 10000 or any(not isinstance(bar, CompletedBar) for bar in series):
+                raise DomainError('validation_failed', 'bounded immutable completed-bar series required')
+            if tuple(bar.opened_at for bar in series) != tuple(sorted(set(bar.opened_at for bar in series))):
+                raise DomainError('validation_failed', 'market history must have unique chronological bar identities')
+            self.history[instrument_id] = series
         self.reference_inspector = reference_inspector
         self.profile = source_profile
         self.research_runner = research_runner

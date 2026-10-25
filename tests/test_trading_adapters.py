@@ -267,8 +267,8 @@ class SDKDouble:
 
     def __init__(self) -> None:
         self.account = SimpleNamespace(account_type='S', broker_id='TEST', account_id='0000', signed=True)
-        self.contract = SimpleNamespace(code='0050', security_type='STK')
-        self.contracts = SimpleNamespace(get=lambda code: self.contract, info=lambda contract: SimpleNamespace(unit=1000, trading_suspended=False))
+        self.synthetic_contract = SimpleNamespace(code='0050', security_type='STK')
+        self.contracts = SimpleNamespace(get=lambda code: self.synthetic_contract, info=lambda contract: SimpleNamespace(unit=1000, trading_suspended=False))
         self.quote = SimpleNamespace(subscribe=lambda *args, **kwargs: None, unsubscribe=lambda *args, **kwargs: None)
         self.placed: list[object] = []
         self.order_calls: list[dict[str, object]] = []

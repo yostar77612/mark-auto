@@ -60,20 +60,57 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.engine.simulation.ledger.close()
         self.temp.cleanup()
 
+    def open_wizard(self, configure):
+        """Enter the same outer QApplication loop used by the desktop host.
+
+        Earlier startup tests run app.exec() and terminate it. Qt can then
+        return Rejected from a new nested dialog loop before its zero-timer
+        acceptance runs. processEvents() alone does not reset that lifecycle.
+        Re-entering the real outer loop also lets the fixture select the active
+        modal, instead of accepting an old deferred child found by object type.
+        """
+        failures, handled = [], []
+
+        def accept_active():
+            handled.append(True)
+            wizard = self.app.activeModalWidget()
+            try:
+                self.assertIsInstance(wizard, StrategyWizard)
+                self.assertIs(wizard.parentWidget(), self.window)
+                configure(wizard)
+                wizard.accept()
+                self.assertEqual(wizard.result(), StrategyWizard.DialogCode.Accepted)
+            except BaseException as exc:
+                failures.append(exc)
+                if isinstance(wizard, StrategyWizard):
+                    wizard.reject()
+                self.app.exit(1)
+
+        def open_modal():
+            QTimer.singleShot(0, accept_active)
+            try:
+                self.window.new_strategy()
+            except BaseException as exc:
+                failures.append(exc)
+            finally:
+                self.app.exit(0)
+
+        QTimer.singleShot(0, open_modal)
+        self.app.exec()
+        if failures:
+            raise failures[0]
+        self.assertEqual(handled, [True], 'the visible modal must be exercised exactly once')
+        self.drain()
+
     def make_strategy(self, *, intraday=False, structured=False):
-        def accept_wizard():
-            wizard = self.window.findChild(StrategyWizard)
-            self.assertIsNotNone(wizard)
+        def accept_wizard(wizard):
             wizard.name.setText('UI-created-stock')
             if intraday:
                 wizard.policy.setCurrentIndex(1)
             if structured:
                 wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
-            wizard.accept()
 
-        QTimer.singleShot(0, accept_wizard)
-        self.window.new_strategy()
-        self.drain()
+        self.open_wizard(accept_wizard)
         self.assertEqual(len(self.engine.state.strategies), 1, self.window.notice.text())
         self.window.strategies.selectRow(0)
 
@@ -187,15 +224,11 @@ class TradingUiIntegrationTests(unittest.TestCase):
     def test_malicious_draft_is_rejected_before_research_without_side_effects(self):
         marker = self.root / 'must-not-exist.txt'
 
-        def accept_untrusted():
-            wizard = self.window.findChild(StrategyWizard)
+        def accept_untrusted(wizard):
             wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
             wizard.draft.setPlainText('{"exec":"write_file_and_submit_order"}')
-            wizard.accept()
 
-        QTimer.singleShot(0, accept_untrusted)
-        self.window.new_strategy()
-        self.drain()
+        self.open_wizard(accept_untrusted)
         self.assertFalse(marker.exists())
         self.assertFalse(self.engine.state.strategies)
         self.assertFalse(self.engine.state.orders)
@@ -236,19 +269,15 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(self.window.broker_panel.findChild(QPushButton, 'broker_check_button'))
 
     def test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version(self):
-        def accept_roll():
-            wizard = self.window.findChild(StrategyWizard)
+        def accept_roll(wizard):
             wizard.market.setCurrentIndex(1)
             wizard.policy.setCurrentIndex(3)
             wizard.maximum.setValue(100)
             wizard.expiry_action.setCurrentIndex(wizard.expiry_action.findData('ROLL'))
             wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
             self.assertEqual(wizard.roll_contract.currentData(), 'TAIFEX:TMF:202703')
-            wizard.accept()
 
-        QTimer.singleShot(0, accept_roll)
-        self.window.new_strategy()
-        self.drain()
+        self.open_wizard(accept_roll)
         self.assertEqual(len(self.engine.state.strategies), 1, self.window.notice.text())
         self.window.strategies.selectRow(0)
         for widget in (self.window.validate_button, self.window.research_button):
@@ -327,15 +356,11 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.assertFalse(self.engine.state.orders)
 
     def test_mobile_direction_flip_cannot_turn_managed_flatten_into_new_short_exposure(self):
-        def accept_future():
-            wizard = self.window.findChild(StrategyWizard)
+        def accept_future(wizard):
             wizard.market.setCurrentIndex(1)
             wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
-            wizard.accept()
 
-        QTimer.singleShot(0, accept_future)
-        self.window.new_strategy()
-        self.drain()
+        self.open_wizard(accept_future)
         self.window.strategies.selectRow(0)
         for widget in (self.window.validate_button, self.window.research_button):
             widget.click()

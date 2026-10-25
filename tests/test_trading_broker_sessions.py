@@ -149,7 +149,7 @@ class BrokerSessionLifecycleTests(unittest.TestCase):
         self.catalog = Catalog((self.spec,))
         self.broker = SimulatedBroker(self.clock, fixtures.account(), (self.spec,), fixtures.capability())
         self.port = LocalEnvironmentPort(self.broker, Environment.BROKER_SIMULATION)
-        self.config = ExecutionConfiguration(Environment.BROKER_SIMULATION, '', 'test-stock', False, True, False)
+        self.execution_profile = ExecutionConfiguration(Environment.BROKER_SIMULATION, '', 'test-stock', False, True, False)
         self.open_engine()
         synchronize_session(self.engine)
         self.publish()
@@ -167,11 +167,11 @@ class BrokerSessionLifecycleTests(unittest.TestCase):
             self.calendar,
             self.catalog,
             {'test-stock': self.port},
-            configuration=self.config,
+            configuration=self.execution_profile,
             source_profile=compute_profile(),
             fees=self.fees,
+            historical_bars=synthetic_history(self.catalog, self.calendar),
         )
-        self.engine.history = synthetic_history(self.catalog, self.calendar)
         self.facade = LocalFacade(self.engine)
 
     def publish(self, price=D('100')) -> None:

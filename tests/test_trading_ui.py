@@ -231,6 +231,16 @@ class TradingUiTests(unittest.TestCase):
         self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed'))
         self.assertNotIn('private', self.window.notice.text())
 
+    def test_wizard_summary_uses_human_environment_labels_without_changing_dto(self):
+        for environment, key in ((Environment.LOCAL, 'v2.local'), (Environment.BROKER_SIMULATION, 'v2.broker_sim'), (Environment.LIVE, 'v2.live')):
+            state = replace(self.window.state, environment=environment)
+            wizard = StrategyWizard(state, self.window)
+            wizard._summary()
+            self.assertIn(ui_text(key), wizard.summary.text())
+            self.assertNotIn(environment.value, wizard.summary.text())
+            self.assertIs(wizard.state.environment, environment)
+            wizard.deleteLater()
+
     def test_quote_revision_updates_price_without_ledger_version_change(self):
         self.window.strategies.selectRow(0)
         strategy_item = self.window.strategies.item(0, 0)

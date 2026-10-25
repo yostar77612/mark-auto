@@ -286,6 +286,9 @@ class SettingsPage(PageContext, QWidget):
         self.status.setText(ui_text('ui.configure_workspace.next_workspace').format(str(root)))
 
     def open_releases(self):
+        if self.property('offlinePreview') is True:
+            self.status.setText(ui_text('redesign.preview.network_disabled'))
+            return
         # Verified repository Releases destination; never invent latest version or assets.
         if not QDesktopServices.openUrl(QUrl('https://github.com/yostar77612/mark-auto/releases')):
             raise ValidationError(ui_text('ui.open_releases.browser_failed'))

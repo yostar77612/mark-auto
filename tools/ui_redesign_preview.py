@@ -23,7 +23,7 @@ def isolate(root):
 
 
 def build_window(root, *, populated=True):
-    from PySide6.QtCore import QTimer
+    from PySide6.QtCore import QEvent, QObject, QTimer
     from quantlab.core import ValidationError
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
     from desktop_strings import ui_text
@@ -38,6 +38,25 @@ def build_window(root, *, populated=True):
                 raise ValidationError(ui_text('redesign.preview.network_disabled'))
             return super().start(operation, payload, **kwargs)
 
+    class OfflinePreviewAvailability(QObject):
+        """Queued readiness refreshes cannot grant preview network capabilities."""
+
+        def __init__(self, buttons, parent):
+            super().__init__(parent)
+            self.buttons = frozenset(buttons)
+            self.reason = ui_text('redesign.preview.network_disabled')
+            for button in self.buttons:
+                button.installEventFilter(self)
+                button.setEnabled(False)
+                button.setToolTip(self.reason)
+
+        def eventFilter(self, watched, event):
+            if event.type() == QEvent.Type.EnabledChange and watched in self.buttons and watched.isEnabled():
+                watched.setEnabled(False)
+            if event.type() == QEvent.Type.ToolTipChange and watched in self.buttons and watched.toolTip() != self.reason:
+                watched.setToolTip(self.reason)
+            return False
+
     paths = AppPaths(root / 'workspace').ensure()
     jobs = PreviewJobs(paths)
     if populated:
@@ -47,14 +66,12 @@ def build_window(root, *, populated=True):
             execute_ui_operation(operation, payload, paths)
     window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
     window.setWindowTitle(ui_text('redesign.preview.title'))
+    window.settings_page.setProperty('offlinePreview', True)
     window.settings_page.maintenance_panel.setProperty('offlinePreview', True)
-    window.settings_page.maintenance_panel.update_button.setEnabled(False)
-    window.settings_page.maintenance_panel.update_button.setToolTip(ui_text('redesign.preview.network_disabled'))
     from PySide6.QtWidgets import QPushButton
 
     releases = window.findChild(QPushButton, 'open_releases')
-    releases.setEnabled(False)
-    releases.setToolTip(ui_text('redesign.preview.network_disabled'))
+    window._offline_preview_availability = OfflinePreviewAvailability((releases, window.settings_page.maintenance_panel.update_button), window)
     if populated:
         window.backtest_page.show_result()
     for timer in window.findChildren(QTimer):

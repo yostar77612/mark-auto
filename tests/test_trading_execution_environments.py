@@ -63,6 +63,36 @@ class LocalEnvironmentPort:
 
 
 class ExecutionEnvironmentTests(unittest.TestCase):
+    def test_history_injection_rejects_invalid_series_before_writing_and_owns_its_mapping(self):
+        workspace = Path(__file__).resolve().parents[2]
+        clock, calendar = fixtures.MutableClock(), synthetic_calendar()
+        spec = fixtures.instrument(Market.INDEX_FUTURE)
+        catalog = Catalog((spec,))
+        broker = SimulatedBroker(clock, fixtures.account(), (spec,), fixtures.capability())
+        port = LocalEnvironmentPort(broker, Environment.BROKER_SIMULATION)
+        config = ExecutionConfiguration(Environment.BROKER_SIMULATION, '', 'test-stock', True, False, False)
+        series = synthetic_history(catalog, calendar)[spec.instrument_id][:2]
+        with tempfile.TemporaryDirectory(dir=workspace / 't') as directory:
+            with closing(Ledger(Path(directory) / 'history.sqlite', 'history-injection-test', clock.now())) as journal:
+                for invalid in (
+                    {spec.instrument_id: list(series)},
+                    {spec.instrument_id: (series[0], series[0])},
+                    {spec.instrument_id: tuple(reversed(series))},
+                    {'unresolved': series},
+                ):
+                    with self.subTest(invalid=type(next(iter(invalid.values()))).__name__), self.assertRaises(DomainError):
+                        TradingEngine(
+                            journal, clock, calendar, catalog, {'test-stock': port}, configuration=config, ownership_clock=clock.now, historical_bars=invalid
+                        )
+                    self.assertFalse(journal.replay())
+                supplied = {spec.instrument_id: series}
+                engine = TradingEngine(
+                    journal, clock, calendar, catalog, {'test-stock': port}, configuration=config, ownership_clock=clock.now, historical_bars=supplied
+                )
+                supplied.clear()
+                self.assertEqual(engine.history[spec.instrument_id], series)
+                self.assertEqual(broker.submission_count, 0)
+
     def test_controlled_nonlocal_entry_fill_protection_and_performance_keep_environment(self):
         workspace = Path(__file__).resolve().parents[2]
         for environment in (Environment.BROKER_SIMULATION, Environment.LIVE):
@@ -84,6 +114,7 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                         ownership_clock=clock.now,
                         source_profile=compute_profile(),
                         fees=FeeSchedule(),
+                        historical_bars=synthetic_history(catalog, calendar),
                     )
                     self.assertEqual(engine.account('test-stock').allocated_cash, Decimal('40000'))
                     port.allocation_cap = Decimal('5000')
@@ -99,7 +130,6 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                         live_execution_enabled=environment is Environment.LIVE,
                     )
                     facade = LocalFacade(engine)
-                    engine.history = synthetic_history(catalog, calendar)
                     for action in (UiAction.RECONCILE, UiAction.RESUME):
                         if action is UiAction.RESUME:
                             previous = calendar.days[calendar.index(engine.state.trading_day) - 1]

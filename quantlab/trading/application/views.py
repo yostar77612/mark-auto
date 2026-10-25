@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .codec import loads
 from .contracts import AccountView, MarketView, OrderView, PerformanceView, PositionView, StrategyView, UiState
 from .research import ResearchResult
-from quantlab.errors import ERROR_TABLE
+from .errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
