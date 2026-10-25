@@ -10,7 +10,8 @@ verify(root / 'packaging/sqlite-runtime.json', Path(sys.base_prefix))
 analysis = Analysis(
     [str(root / 'desktop.py')], pathex=[str(root)],
     binaries=[],
-    runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')],
+    runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py'),
+                   str(root / 'packaging/early_multiprocessing_runtime_hook.py')],
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
            (str(root / 'packaging/markauto.ico'), 'packaging'),
            (str(root / 'examples'), 'examples'),

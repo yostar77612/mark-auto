@@ -1,7 +1,7 @@
 """Small accessible desktop presentation building blocks."""
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem, QWidget
+from PySide6.QtWidgets import QComboBox, QDialog, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem, QWidget
 
 from desktop_strings import ui_text
 
@@ -35,7 +35,15 @@ def fit_available_screen(widget: QWidget) -> None:
     screen = widget.screen()
     if screen is None:
         return
-    available = screen.availableGeometry().adjusted(8, 8, -8, -8)
+    available = screen.availableGeometry()
+    owner = widget.parentWidget()
+    if isinstance(widget, QDialog) and owner is not None:
+        # A dialog must also fit its owner's usable viewport. A larger monitor
+        # is not evidence that a small owner window can expose its footer.
+        owner_available = available.intersected(owner.window().frameGeometry())
+        if not owner_available.isEmpty():
+            available = owner_available
+    available = available.adjusted(8, 8, -8, -8)
     frame = widget.frameGeometry()
     extra_width = max(0, frame.width() - widget.width())
     extra_height = max(0, frame.height() - widget.height())

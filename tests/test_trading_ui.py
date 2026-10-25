@@ -567,3 +567,32 @@ class TradingUiTests(unittest.TestCase):
                 self.assertEqual(wizard.currentId(), 5)
             wizard.reject()
             wizard.deleteLater()
+
+    def test_modal_wizard_six_pages_fit_real_small_owner_even_on_larger_screen(self):
+        self.window.resize(683, 384)
+        self.app.processEvents()
+        owner_frame = self.window.frameGeometry()
+        screen = SimpleNamespace(availableGeometry=lambda: QRect(0, 0, 1920, 1080))
+        wizard = StrategyWizard(self.window.state, self.window)
+        wizard.setWindowModality(Qt.WindowModality.WindowModal)
+        font_size = wizard.font().pointSizeF()
+        with patch.object(wizard, 'screen', return_value=screen):
+            wizard.show()
+            for page in range(6):
+                self.app.processEvents()
+                fit_available_screen(wizard)
+                self.app.processEvents()
+                self.assertTrue(owner_frame.contains(wizard.frameGeometry()), (owner_frame, wizard.frameGeometry()))
+                self.assertEqual(wizard.font().pointSizeF(), font_size)
+                self.assertGreaterEqual(font_size, 11)
+                scroll = wizard.currentPage().findChild(QScrollArea)
+                self.assertIsNotNone(scroll)
+                self.assertGreater(scroll.viewport().height(), 20)
+                control = wizard.button(StrategyWizard.WizardButton.NextButton if page < 5 else StrategyWizard.WizardButton.FinishButton)
+                self.assertTrue(control.isVisible())
+                self.assertTrue(owner_frame.contains(control.mapToGlobal(control.rect().bottomRight())))
+                if page < 5:
+                    control.click()
+            self.assertEqual(wizard.currentId(), 5)
+        wizard.reject()
+        wizard.deleteLater()
