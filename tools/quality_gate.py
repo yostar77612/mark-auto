@@ -27,6 +27,19 @@ SECRET_PATTERNS = {
 BANNED_IMPORTS = {"archives", "trader", "shioaji", "pickle", "subprocess"}
 BANNED_CALLS = {"eval", "exec", "compile", "__import__"}
 
+# Owner-authorized v2 boundaries, not research-core exceptions. The SDK import
+# is additionally restricted to the explicit adapter loader's function body.
+V2_SDK_LOADER = 'quantlab/trading/adapters/shioaji/sdk_loader.py'
+V2_PROCESS_OWNER = 'quantlab/trading/runtime/context_client.py'
+
+
+def v2_import_allowance(node: ast.AST, label: str, sdk_loader_body: set[int]) -> set[str]:
+    if label == V2_PROCESS_OWNER:
+        return {'subprocess'}
+    if label == V2_SDK_LOADER and id(node) in sdk_loader_body and isinstance(node, ast.Import) and all(item.name == 'shioaji' for item in node.names):
+        return {'shioaji'}
+    return set()
+
 
 def core_import_findings(source: str, label: str) -> list[str]:
     """Static UI boundary, including function-local imports and relative forms.
@@ -74,6 +87,13 @@ def python_findings(source: str, label: str, research: bool = False, desktop: bo
         return [f"{label}: invalid Python syntax"]
     findings = []
     if research or desktop:
+        sdk_loader_body = {
+            id(node)
+            for function in tree.body
+            if isinstance(function, ast.FunctionDef) and function.name == 'load_pinned_sdk'
+            for statement in function.body
+            for node in ast.walk(statement)
+        }
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 modules = [item.name.split(".")[0] for item in node.names]
@@ -81,15 +101,16 @@ def python_findings(source: str, label: str, research: bool = False, desktop: bo
                 modules = [(node.module or "").split(".")[0]]
             else:
                 modules = []
+            allowed_v2 = v2_import_allowance(node, label, sdk_loader_body) if research else set()
             if research and modules and not (isinstance(node, ast.ImportFrom) and node.level):
                 # The isolated desktop worker lazily dispatches to our root GUI
                 # module. It is first-party, not a third-party research dependency.
                 first_party = {"quantlab"}
                 if label == "quantlab/desktop_runtime.py":
                     first_party.add("desktop_ui")
-                if set(modules) - sys.stdlib_module_names - first_party:
+                if set(modules) - sys.stdlib_module_names - first_party - allowed_v2:
                     findings.append(f"{label}:{node.lineno}: research dependency must be standard library")
-            prohibited = BANNED_IMPORTS.intersection(modules)
+            prohibited = BANNED_IMPORTS.intersection(modules) - allowed_v2
             if prohibited:
                 findings.append(f"{label}:{node.lineno}: forbidden research import")
             if isinstance(node, ast.Call):

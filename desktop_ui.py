@@ -4,7 +4,11 @@ The GUI only schedules work. execute_ui_operation runs in the runtime's isolated
 worker process; its inputs are data, never executable strategy source.
 """
 
-from desktop_theme import apply_theme, set_status, set_theme_property, status_for_color
+from quantlab.desktop_runtime import _is_worker_registrar_import
+
+_worker_import = _is_worker_registrar_import()
+if not _worker_import:
+    from desktop_theme import apply_theme, set_status, set_theme_property, status_for_color
 from desktop_strings import ui_text
 from desktop_presentation import research_controls, _dataset
 from pathlib import Path
@@ -1388,66 +1392,82 @@ def dataset_market_series(dataset, calendar_payload):
     return tuple(result)
 
 
-from PySide6.QtCore import Qt, QTimer, QPoint, QPointF, QUrl, QPropertyAnimation
-from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QFrame as _QFrame,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QListWidget,
-    QStackedWidget,
-    QPushButton,
-    QLineEdit,
-    QPlainTextEdit,
-    QComboBox,
-    QSpinBox,
-    QCheckBox,
-    QProgressBar,
-    QFileDialog,
-    QFormLayout,
-    QScrollArea,
-    QTableWidget,
-    QTableWidgetItem,
-    QAbstractItemView,
-    QMessageBox,
-    QApplication,
-    QGroupBox,
-    QSizePolicy as _QSizePolicy,
-    QLayout as _QLayout,
-    QGraphicsOpacityEffect,
-)
+if _worker_import:
+    # Keep the public MainWindow definition and handler globals in this module.
+    # An operation worker must never construct UI objects or load Qt/page code.
+    class _WorkerBindings:
+        pass
 
+    class _WorkerWindow:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('GUI construction is unavailable in an operation worker')
 
-from desktop_pages import PageHost, PageState, MarketPage, DataPage, StrategyPage, BacktestPage
-from desktop_pages.equity import EquityPlot
-from desktop_pages.result_layers import result_snapshot_lines
+    def _worker_gui_unavailable(*args, **kwargs):
+        raise RuntimeError('GUI presentation is unavailable in an operation worker')
 
-from desktop_presentation import display_number, display_status, result_name
-from desktop_market import MarketDashboard, MarketHistoryDialog
-from desktop_forms import (
-    StrategyForm,
-    BacktestForm,
-    CampaignForm,
-    WalkForwardForm,
-    PaperPolicyForm,
-    PaperIntentForm,
-    PaperQuoteForm,
-    PaperSnapshotForm,
-    ResultTable,
-    SummaryCard,
-    BacktestSummaryCard,
-    BacktestFillsTable,
-    CandidateSummaryCard,
-)
+    SharedStateBindings, QMainWindow = _WorkerBindings, _WorkerWindow
+    result_snapshot_lines = _worker_gui_unavailable
+else:
+    from PySide6.QtCore import Qt, QTimer, QPoint, QPointF, QUrl, QPropertyAnimation
+    from PySide6.QtGui import QPainter, QPen, QColor, QPolygonF, QDesktopServices
+    from PySide6.QtWidgets import (
+        QMainWindow,
+        QFrame as _QFrame,
+        QWidget,
+        QVBoxLayout,
+        QHBoxLayout,
+        QLabel,
+        QListWidget,
+        QStackedWidget,
+        QPushButton,
+        QLineEdit,
+        QPlainTextEdit,
+        QComboBox,
+        QSpinBox,
+        QCheckBox,
+        QProgressBar,
+        QFileDialog,
+        QFormLayout,
+        QScrollArea,
+        QTableWidget,
+        QTableWidgetItem,
+        QAbstractItemView,
+        QMessageBox,
+        QApplication,
+        QGroupBox,
+        QSizePolicy as _QSizePolicy,
+        QLayout as _QLayout,
+        QGraphicsOpacityEffect,
+    )
 
+    from desktop_pages import PageHost, PageState, MarketPage, DataPage, StrategyPage, BacktestPage
+    from desktop_pages.equity import EquityPlot
+    from desktop_pages.result_layers import result_snapshot_lines
 
-from desktop_pages.bindings import SharedStateBindings
-from desktop_pages.mount import mount_pages
-import desktop_pages.job_progress as _job_progress
-import desktop_pages.app_header as _app_header
+    from desktop_presentation import display_number, display_status, result_name
+    from desktop_market import MarketDashboard, MarketHistoryDialog
+    from desktop_forms import (
+        StrategyForm,
+        BacktestForm,
+        CampaignForm,
+        WalkForwardForm,
+        PaperPolicyForm,
+        PaperIntentForm,
+        PaperQuoteForm,
+        PaperSnapshotForm,
+        ResultTable,
+        SummaryCard,
+        BacktestSummaryCard,
+        BacktestFillsTable,
+        CandidateSummaryCard,
+    )
+
+    from desktop_pages.bindings import SharedStateBindings
+    from desktop_pages.mount import mount_pages
+    import desktop_pages.job_progress as _job_progress
+    import desktop_pages.app_header as _app_header
+
+    import desktop_pages.notifications as _notifications
 
 
 def _install_window_support(window):
@@ -1472,7 +1492,6 @@ def _install_window_support(window):
 
 
 # fmt: off
-import desktop_pages.notifications as _notifications
 
 
 class MainWindow(SharedStateBindings, QMainWindow):

@@ -265,6 +265,31 @@ class PackagingTests(unittest.TestCase):
         self.assertNotRegex(source, r'(?m)^\[UninstallDelete\]')
         self.assertNotIn('runascurrentuser', source)  # not needed for per-user context
 
+    def test_multimarket_start_menu_entry_preserves_legacy_shortcuts_and_requires_candidate_proof(self):
+        source = (ROOT / 'packaging/markauto.iss').read_text(encoding='utf-8-sig')
+        icons = source.split('[Icons]', 1)[1].split('[Run]', 1)[0]
+        entries = [line for line in icons.splitlines() if line.startswith('Name:')]
+        legacy = [
+            r'Name: "{userprograms}\Mark Auto\Mark Auto"; Filename: "{code:PayloadDir}\MarkAuto.exe"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation',
+            r'Name: "{userdesktop}\Mark Auto"; Filename: "{code:PayloadDir}\MarkAuto.exe"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation',
+        ]
+        self.assertEqual(entries[:2], legacy)
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(
+            entries[2],
+            r'Name: "{userprograms}\Mark Auto\Mark Auto 多市場平台"; Filename: "{code:PayloadDir}\MarkAuto.exe"; Parameters: "--platform-v2"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation',
+        )
+        harness = (ROOT / 'packaging/test_installer.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn('Install-Version $BaselineVersion $BaselineManifest\n', harness)
+        self.assertIn('Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut', harness)
+        self.assertIn('if ($RequireMultiMarketShortcut)', harness)
+        self.assertIn("$multiMarketShortcut.TargetPath -cne $script:installedExe", harness)
+        self.assertIn("$multiMarketShortcut.Arguments -cne '--platform-v2'", harness)
+        self.assertIn('[IO.Path]::GetFullPath($multiMarketShortcut.WorkingDirectory) -cne [IO.Path]::GetFullPath($activeDirectory)', harness)
+        self.assertIn("throw 'Multi-market Start Menu shortcut remains after uninstall'", harness)
+        self.assertIn('multi_market_start_menu_shortcut=$script:multiMarketShortcutProof', harness)
+        self.assertIn('multi_market_start_menu_shortcut_removed=$true', harness)
+
     def test_actions_are_commit_pinned_and_publication_is_gated(self):
         workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
         for action in re.findall(r'uses:\s*(\S+)', workflow):

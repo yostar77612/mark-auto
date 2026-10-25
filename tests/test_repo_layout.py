@@ -15,6 +15,9 @@ ARCHIVE = ROOT / 'archives/legacy_autotrading'
 # Derived from the post-move git ls-files top level; additions need review.
 ALLOWED_FILES = {
     'Preview UI.cmd',
+    'trading_runtime.py',
+    'requirements-shioaji-v2.lock',
+    'requirements-packaging-ci.lock',
     'desktop_capital_scenario.py',
     'desktop_privacy.py',
     '.gitattributes',
@@ -64,6 +67,7 @@ ALLOWED_DIRECTORIES = {
     'archives',
     'desktop_pages',
     'desktop_smoke',
+    'desktop_trading',
     'docs',
     'examples',
     'packaging',

@@ -740,16 +740,45 @@ class ConnectionDiagnosticTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch('subprocess.Popen', side_effect=interrupt_observer):
                 result = _connection_case(Path(directory) / 'interrupted.json', 'persist-step', directory, time.monotonic() + 10)
-            self.assertFalse(result['complete'])
-            self.assertEqual(result['error_type'], 'KeyboardInterrupt')
-            self.assertTrue(result['workers_stopped'])
-            self.assertTrue(result['fixture_removed'])
-            self.assertEqual(len(children), 2)
-            self.assertTrue(all(child.returncode is not None for child in children))
-            self.assertTrue(all(child['returncode'] is not None for child in result['children']))
+            diagnostics = {
+                key: result.get(key) for key in ('returncode', 'timed_out', 'error_type', 'cleanup_error_type', 'workers_stopped', 'fixture_removed', 'seconds')
+            }
+            diagnostics['child_exits'] = [{'pid': child.pid, 'returncode': child.returncode} for child in children]
+            try:
+                diagnostics.update(_connection_checkpoint_fields(result))
+            except Exception:
+                diagnostics['checkpoint_observation_failed'] = True
+            try:
+                self.assertFalse(result['complete'], diagnostics)
+                # Failure before the injected observer remains a failure; show
+                # its real deadline/checkpoint rather than obscuring it by KeyError.
+                self.assertFalse(result.get('timed_out'), diagnostics)
+                self.assertIn('error_type', result, diagnostics)
+                self.assertEqual(result['error_type'], 'KeyboardInterrupt', diagnostics)
+                self.assertTrue(result['workers_stopped'], diagnostics)
+                self.assertTrue(result['fixture_removed'], diagnostics)
+                self.assertEqual(len(children), 2, diagnostics)
+                self.assertTrue(all(child.returncode is not None for child in children), diagnostics)
+                self.assertTrue(all(child['returncode'] is not None for child in result['children']), diagnostics)
+            except AssertionError:
+                _preserve_connection_failure(diagnostics)
+                raise
 
 
 class ConnectionFailureEvidenceTests(unittest.TestCase):
+    def test_keyboard_deadline_before_injection_is_preserved_without_becoming_interrupt_success(self):
+        case = ConnectionDiagnosticTests('test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture')
+        timed_out = {'complete': False, 'timed_out': True, 'workers_stopped': True, 'fixture_removed': True, 'returncode': 1}
+        with (
+            patch('tools.diagnose_paper_replay._connection_case', return_value=timed_out),
+            patch(__name__ + '._preserve_connection_failure') as record,
+        ):
+            with self.assertRaises(AssertionError):
+                case.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture()
+        record.assert_called_once()
+        self.assertTrue(record.call_args.args[0]['timed_out'])
+        self.assertIsNone(record.call_args.args[0]['error_type'])
+
     def test_milestone_failure_preserves_certification_and_owned_child_cleanup(self):
         import sys
         import tools.diagnose_paper_replay as diagnostic

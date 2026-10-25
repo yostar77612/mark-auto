@@ -40,6 +40,18 @@ conceal behavior changes.
 
 ## Fast pre-push check
 
+### Owner-authorized v2 engineering mission (2026-10-25)
+
+The separate `quantlab/trading` and `desktop_trading` platform is governed by
+[the v2 upgrade contract](implementation/multi-market/UPGRADE_CONTRACT.md).
+The owner authorized its controlled connector implementation and necessary
+engineering upgrades. The permanent live prohibition above remains the v1
+contract; it is not silently removed. V2 defaults to local simulation and its
+broker connector remains disconnected/read-only/execution-disabled. This mission
+does not authorize real financial operations, credential discovery, remote pushes,
+merges or releases. Preserve all historical v1 profiles, results and safeguards.
+Run the additional AST layer gate and v2 behavior tests alongside existing gates.
+
 Before pushing, run `powershell -File tools/prepush.ps1` (add `-Tests` to also run the
 unit tests of changed files). It is offline and runs Ruff check and format, a Python 3.11
 syntax scan of every tracked `.py`, and `tools/quality_gate.py`; it exits nonzero on failure.

@@ -1,7 +1,8 @@
 """Fail closed on incomplete independent-runner core coverage.
 
-This validates original core execution only. Research retains its own mandatory
-job and worker gate; the workflow also requires every offline matrix job to pass.
+This validates complete core execution, including its whole-module trading
+runner. Research retains its own mandatory job and worker gate; the workflow
+also requires every offline matrix job to pass.
 """
 
 from __future__ import annotations

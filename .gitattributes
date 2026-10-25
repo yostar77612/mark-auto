@@ -20,6 +20,9 @@ docs/agent/history/README_before_layering.md whitespace=-blank-at-eol
 *.py text eol=lf
 requirements-ruff.lock text eol=lf
 
+# Ruff formats this ADR's Python example with LF; keep Windows checkouts stable.
+docs/adr/0006-strategy-intent-pipeline.md text eol=lf
+
 # Frozen G3 producer files are excluded from Ruff and keep platform line-ending
 # conversion so their pinned bytes and derived goldens match the pre-Ruff behaviour.
 quantlab/research.py !eol

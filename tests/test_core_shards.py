@@ -5,6 +5,7 @@ These controls do not run, shorten, mock out, or replace product test workloads.
 
 import contextlib
 import copy
+import hashlib
 import io
 import json
 import os
@@ -13,6 +14,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import types
 import unittest
 from unittest.mock import patch
@@ -76,11 +79,21 @@ EXPECTED_PAPER_MODULES = frozenset(
         'test_paper_replay_wal',
     }
 )
+EXPECTED_DESKTOP_MODULES = frozenset(
+    {
+        'test_analysis_recovery_ui',
+        'test_market_history_ui',
+        'test_ui_operations_registry',
+        'test_ui_redesign_data_results',
+    }
+)
 
 
 def _expected_shard(module):
     # Independent assertion of the versioned rule, not the production classifier.
-    if module.startswith('test_desktop_') or module in ('test_analysis_recovery_ui', 'test_market_history_ui'):
+    if module.startswith(('test_trading_', 'test_broker_', 'test_runtime_context_')) or module == 'test_quality_gate_v2_boundaries':
+        return 'trading'
+    if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES:
         return 'desktop'
     return 'paper' if module in EXPECTED_PAPER_MODULES else 'remaining'
 
@@ -95,13 +108,15 @@ class CoreShardAssignmentTests(unittest.TestCase):
             'test_other_future',
             'test_paper',
             'test_paper_replay_wal',
+            'test_trading_future',
         )
         return unittest.TestSuite(unittest.TestSuite(_fixture_cases(module)) for module in modules)
 
     def test_versioned_rule_and_future_modules(self):
-        self.assertEqual(group.CORE_SHARDS, ('desktop', 'paper', 'remaining'))
-        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v2')
+        self.assertEqual(group.CORE_SHARDS, ('desktop', 'paper', 'remaining', 'trading'))
+        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v4')
         self.assertEqual(group.PAPER_MODULES, EXPECTED_PAPER_MODULES)
+        self.assertEqual(group.LEGACY_DESKTOP_MODULES, EXPECTED_DESKTOP_MODULES)
         for module in (
             'test_desktop_future',
             'test_analysis_recovery_ui',
@@ -112,6 +127,16 @@ class CoreShardAssignmentTests(unittest.TestCase):
             'test_analysis_recovery',
             'test_paper_future',
             'test_paperish',
+            'test_trading_future',
+            'test_broker_future',
+            'test_runtime_context_future',
+            'test_quality_gate_v2_boundaries',
+            'test_tradingish',
+            'test_brokerish',
+            'test_runtime_contextish',
+            'test_ui_operations_registry',
+            'test_ui_redesign_data_results',
+            'test_ui_unknown_future',
             *sorted(EXPECTED_PAPER_MODULES),
         ):
             with self.subTest(module=module):
@@ -137,6 +162,32 @@ class CoreShardAssignmentTests(unittest.TestCase):
             owners = {label for label, ids in assigned.items() if any(test_id.startswith(module + '.') for test_id in ids)}
             self.assertEqual(owners, {_expected_shard(module)})
 
+    def test_trading_modules_have_one_owner_and_preserve_legacy_module_rules(self):
+        trading = {
+            path.stem
+            for path in (group.ROOT / 'tests').glob('test_*.py')
+            if path.stem.startswith(('test_trading_', 'test_broker_', 'test_runtime_context_')) or path.stem == 'test_quality_gate_v2_boundaries'
+        }
+        self.assertIn('test_trading_application', trading)
+        self.assertIn('test_trading_runtime', trading)
+        self.assertIn('test_broker_optional_packaging', trading)
+        for module in sorted(trading):
+            with self.subTest(module=module):
+                self.assertEqual(group.core_shard_for_module(module), 'trading')
+        for path in (group.ROOT / 'tests').glob('test_*.py'):
+            module = path.stem
+            if module in trading or module in group.RESEARCH_MODULES:
+                continue
+            legacy = (
+                'desktop'
+                if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES
+                else 'paper'
+                if module in EXPECTED_PAPER_MODULES
+                else 'remaining'
+            )
+            with self.subTest(legacy_module=module):
+                self.assertEqual(group.core_shard_for_module(module), legacy)
+
     def test_original_research_modules_are_rejected_including_desktop_names(self):
         for module in sorted(group.RESEARCH_MODULES):
             with self.subTest(module=module), self.assertRaises(ValueError):
@@ -159,7 +210,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
             with self.subTest(ids=[case.id() for case in group.cases(suite)]):
                 with self.assertRaises(ValueError):
                     group.core_shard_assignments(suite)
-        for missing in ('desktop', 'paper', 'remaining'):
+        for missing in ('desktop', 'paper', 'remaining', 'trading'):
             suite = unittest.TestSuite(case for case in group.cases(self.suite()) if _expected_shard(type(case).__module__) != missing)
             with self.subTest(missing=missing), self.assertRaises(ValueError):
                 group.core_shard_assignments(suite)
@@ -172,8 +223,15 @@ class CoreShardAssignmentTests(unittest.TestCase):
         events = []
         modules = {}
         original_cases = []
-        expected_by_shard = {name: [] for name in ('desktop', 'paper', 'remaining')}
-        for module_name in ('test_desktop_fixture_alpha', 'test_future_fixture', 'test_desktop_fixture_beta', 'test_paper', 'test_paper_replay_wal'):
+        expected_by_shard = {name: [] for name in ('desktop', 'paper', 'remaining', 'trading')}
+        for module_name in (
+            'test_desktop_fixture_alpha',
+            'test_future_fixture',
+            'test_desktop_fixture_beta',
+            'test_paper',
+            'test_paper_replay_wal',
+            'test_trading_fixture',
+        ):
             module = types.ModuleType(module_name)
             module.setUpModule = lambda name=module_name: events.append(name + ':module-setup')
             module.tearDownModule = lambda name=module_name: events.append(name + ':module-teardown')
@@ -294,10 +352,187 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Ambiguous portable source path'):
                 identity_with_sources([first, second])
 
+    def test_parallel_source_digests_match_independent_ordered_byte_reference(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / 'checkout'
+            self.write_sources(root)
+            included = {
+                'application.py',
+                'quantlab/model.py',
+                'tests/test_synthetic.py',
+                'tools/run_test_group.py',
+                'tools/validate_core_shards.py',
+            }
+            additions = {
+                '.gitattributes': b'*.py text eol=lf\n',
+                'pyproject.toml': b'[project]\nname="fixture"\n',
+                'requirements-fixture.lock': b'fixture==1\n',
+                'desktop_pages/view.py': b'VIEW=1\n',
+                'desktop_trading/view.json': b'{"v":1}\n',
+                'desktop_smoke/source.txt': b'fixture\x00\xff',
+                'packaging/input.ps1': b'exit 0\r\n',
+                'packaging/input.cs': b'// fixture\n',
+                'tests/fixtures/data.gz': b'\x1f\x8b\x00\xff',
+                'tests/fixtures/data.csv': b'one,two\n1,2\n',
+                '.github/workflows/one.yml': b'name: one\n',
+                '.github/workflows/two.yaml': b'name: two\n',
+            }
+            for name, raw in additions.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(raw)
+            included.update(additions)
+            for name in ('ignored.json', 'quantlab/ignored.bin', 'quantlab/ignored.PY', 'quantlab/__pycache__/ignored.py'):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'not a source input\n')
+            external = Path(temporary).resolve() / 'external'
+            external.mkdir()
+            extra = external / 'test_extra.py'
+            extra.write_bytes(b'EXTERNAL=1\n')
+            portable = hashlib.sha256()
+            expected = {name: root / name for name in included}
+            expected['__test_suite__/test_extra.py'] = extra
+            # An independent fixed-fixture selection and sequential byte stream;
+            # neither production selector nor parallel reader builds this oracle.
+            for name, path in sorted(expected.items()):
+                with path.open('rb') as stream:
+                    raw = stream.read()
+                portable.update(name.encode('utf-8') + b'\0' + str(len(raw)).encode('ascii') + b'\0' + raw)
+            execution = hashlib.sha256()
+            local_paths = [root / name for name in ('application.py', 'quantlab/model.py', 'tests/test_synthetic.py', 'tools/run_test_group.py')]
+            if os.name == 'nt':
+                # Existing local glob is case-insensitive on Windows, unlike
+                # the portable recursive suffix allowlist. Preserve both rules.
+                local_paths.append(root / 'quantlab/ignored.PY')
+            for path in sorted(local_paths + [extra]):
+                with path.open('rb') as stream:
+                    raw = stream.read()
+                execution.update(str(path).encode('utf-8') + b'\0' + raw + b'\0')
+            with patch.object(group, 'ROOT', root), patch.object(group, '__file__', str(root / 'tools/run_test_group.py')):
+                self.assertEqual(group.portable_source_identity(str(external)), portable.hexdigest())
+                self.assertEqual(group.execution_identity(str(external))['source_sha256'], execution.hexdigest())
+
+    def test_parallel_reads_are_bounded_and_return_input_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            paths = [Path(temporary) / (str(index) + '.py') for index in range(8)]
+            expected = [bytes([index, 255, 0]) for index in range(8)]
+            for path, raw in zip(paths, expected):
+                path.write_bytes(raw)
+            original = Path.read_bytes
+            lock = threading.Lock()
+            barrier = threading.Barrier(4, timeout=3)
+            fourth_done = threading.Event()
+            active = peak = calls = 0
+
+            def read(path):
+                nonlocal active, peak, calls
+                with lock:
+                    calls += 1
+                    number = calls
+                    active += 1
+                    peak = max(peak, active)
+                try:
+                    if number <= 4:
+                        barrier.wait()
+                    if path == paths[0]:
+                        self.assertTrue(fourth_done.wait(3), 'Later raw read must run without waiting for the first result')
+                    raw = original(path)
+                    if path == paths[3]:
+                        fourth_done.set()
+                    time.sleep(0.005)
+                    return raw
+                finally:
+                    with lock:
+                        active -= 1
+
+            with patch.object(Path, 'read_bytes', read):
+                self.assertEqual(list(group._ordered_source_bytes(paths)), expected)
+            self.assertEqual(calls, len(paths))
+            self.assertEqual(peak, 4)
+            self.assertEqual(active, 0)
+
+    def test_source_read_window_does_not_prefetch_entire_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            paths = [Path(temporary) / (str(index) + '.py') for index in range(12)]
+            for path in paths:
+                path.write_bytes(b'fixture')
+            consumed = []
+
+            def inventory():
+                for path in paths:
+                    consumed.append(path)
+                    yield path
+
+            raw = group._ordered_source_bytes(inventory())
+            try:
+                self.assertEqual(next(raw), b'fixture')
+                self.assertEqual(consumed, paths[:4])
+            finally:
+                raw.close()
+
+    def test_read_failures_cannot_return_either_identity_or_leave_source_workers(self):
+        for name in ('portable_source_identity', 'execution_identity'):
+            for error_type in (PermissionError, FileNotFoundError):
+                with self.subTest(identity=name, error=error_type), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary).resolve()
+                    self.write_sources(root)
+                    original = Path.read_bytes
+                    lock = threading.Lock()
+                    active = 0
+
+                    def read(path):
+                        nonlocal active
+                        with lock:
+                            active += 1
+                        try:
+                            if path == root / 'quantlab/model.py':
+                                raise error_type('Controlled source read failure')
+                            time.sleep(0.005)
+                            return original(path)
+                        finally:
+                            with lock:
+                                active -= 1
+
+                    with (
+                        patch.object(group, 'ROOT', root),
+                        patch.object(group, '__file__', str(root / 'tools/run_test_group.py')),
+                        patch.object(Path, 'read_bytes', read),
+                        self.assertRaises(error_type),
+                    ):
+                        getattr(group, name)(str(root / 'tests'))
+                    self.assertEqual(active, 0)
+
+    def test_both_identity_passes_reread_changed_source_bytes(self):
+        for name in ('portable_source_identity', 'execution_identity'):
+            with self.subTest(identity=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                self.write_sources(root)
+                original = Path.read_bytes
+                lock = threading.Lock()
+                counts = {}
+
+                def read(path):
+                    with lock:
+                        counts[path] = counts.get(path, 0) + 1
+                    return original(path)
+
+                with (
+                    patch.object(group, 'ROOT', root),
+                    patch.object(group, '__file__', str(root / 'tools/run_test_group.py')),
+                    patch.object(Path, 'read_bytes', read),
+                ):
+                    first = getattr(group, name)(str(root / 'tests'))
+                    (root / 'quantlab/model.py').write_bytes(b'VALUE = 200\n')
+                    second = getattr(group, name)(str(root / 'tests'))
+                self.assertNotEqual(first, second)
+                self.assertTrue(counts)
+                self.assertTrue(all(count == 2 for count in counts.values()), counts)
+
 
 class IndependentCoreInventoryTests(unittest.TestCase):
     def write_suite(self, root, broken=False):
-        for name in ('test_desktop_expected_inventory', 'test_expected_inventory', 'test_paper', 'test_research'):
+        for name in ('test_desktop_expected_inventory', 'test_expected_inventory', 'test_paper', 'test_trading_expected_inventory', 'test_research'):
             marker = repr(str(root / 'execution-was-forbidden'))
             (root / (name + '.py')).write_text(
                 "import unittest\nfrom pathlib import Path\n"
@@ -338,10 +573,19 @@ else:
             self.assertNotIn('error', result)
             expected = [
                 module + '.Fixture.' + method
-                for module in ('test_desktop_expected_inventory', 'test_expected_inventory', 'test_paper', 'test_research')
+                for module in ('test_desktop_expected_inventory', 'test_expected_inventory', 'test_paper', 'test_research', 'test_trading_expected_inventory')
                 for method in ('test_b', 'test_a')
             ]
-            self.assertEqual(result['inventory'], {'discovered_ids': expected, 'partitions': {'core': expected[:6], 'research': expected[6:]}})
+            self.assertEqual(
+                result['inventory'],
+                {
+                    'discovered_ids': expected,
+                    'partitions': {
+                        'core': [item for item in expected if not item.startswith('test_research.')],
+                        'research': [item for item in expected if item.startswith('test_research.')],
+                    },
+                },
+            )
 
     def test_unrelated_import_error_is_fatal_to_independent_inventory(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -364,6 +608,8 @@ class CoreShardReportTests(unittest.TestCase):
             'test_paper.Fixture.test_b',
             'test_future_synthetic.Fixture.test_a',
             'test_future_synthetic.Fixture.test_b',
+            'test_trading_synthetic.Fixture.test_a',
+            'test_trading_synthetic.Fixture.test_b',
         ] + sorted(EXPECTED_WINDOWS_CORE_SKIPS)
         research = ['test_research.Fixture.test_a', 'test_walk_forward.Fixture.test_b']
         discovered = core[:2] + research[:1] + core[2:] + research[1:]
@@ -374,10 +620,11 @@ class CoreShardReportTests(unittest.TestCase):
         discovered = inventory['discovered_ids']
         core, research = inventory['partitions']['core'], inventory['partitions']['research']
         assignments = {
-            label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label] for label in ('desktop', 'paper', 'remaining')
+            label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label]
+            for label in ('desktop', 'paper', 'remaining', 'trading')
         }
         reports = []
-        for index, label in enumerate(('desktop', 'paper', 'remaining')):
+        for index, label in enumerate(('desktop', 'paper', 'remaining', 'trading')):
             selected = assignments[label]
             identity = {
                 'source_sha256': str(index + 1) * 64,
@@ -400,7 +647,7 @@ class CoreShardReportTests(unittest.TestCase):
                     'platform': 'win32',
                     'group': 'core',
                     'core_shard': label,
-                    'core_shard_plan': 'core-modules-v2',
+                    'core_shard_plan': 'core-modules-v4',
                     'core_shard_assignments': copy.deepcopy(assignments),
                     'shard_context': dict(self.CONTEXT),
                     'source_sha256_after': self.CONTEXT['source_sha256'],
@@ -436,8 +683,8 @@ class CoreShardReportTests(unittest.TestCase):
         self.assertEqual(result['coverage_scope'], 'original core only; research remains a separate mandatory gate')
         self.assertEqual(result['head_sha'], self.CONTEXT['head_sha'])
         self.assertEqual(result['python_profile'], self.CONTEXT['python_profile'])
-        self.assertEqual(result['core_shard_plan'], 'core-modules-v2')
-        self.assertEqual(result['shards'], 3)
+        self.assertEqual(result['core_shard_plan'], 'core-modules-v4')
+        self.assertEqual(result['shards'], 4)
         self.assertEqual(result['tests_run'], len(reports[0]['partitions']['core']))
         self.assertIs(result['successful'], True)
         self.assertEqual(result['core_ids'], reports[0]['partitions']['core'])
@@ -445,18 +692,49 @@ class CoreShardReportTests(unittest.TestCase):
         self.assertEqual(self.validate(list(reversed(reports))), result)
 
     def test_exactly_three_distinct_named_shards_required(self):
+        # Retain this historical test ID while extending the versioned plan.
         self.assert_each_of_three_shards_is_required_with_original_order_and_identity()
         for bad in ([], self.reports()[:1], self.reports()[:2], self.reports() + self.reports()[:1], [None, {}], [{}, {}], [[], []]):
             with self.subTest(reports=bad), self.assertRaises(ValueError):
                 self.validate(bad)
-        for label in ('desktop', 'remaining', 'unknown', None, True):
+        for label in ('desktop', 'remaining', 'trading', 'unknown', None, True):
             reports = self.reports()
             reports[1]['core_shard'] = label
             with self.subTest(label=label), self.assertRaises(ValueError):
                 self.validate(reports)
 
+    def test_fourth_trading_report_cannot_be_missing_forged_reclassified_or_skipped(self):
+        original = self.reports()
+        trading = next(row for row in original if row['core_shard'] == 'trading')
+        self.assertEqual(trading['selected_ids'], ['test_trading_synthetic.Fixture.test_a', 'test_trading_synthetic.Fixture.test_b'])
+        self.assertEqual(trading['skipped'], [])
+        self.assertEqual(self.validate(original)['shards'], 4)
+        with self.assertRaises(ValueError):
+            self.validate([row for row in original if row['core_shard'] != 'trading'])
+        for mode in ('duplicate', 'move', 'omit', 'skip', 'old-plan', 'wrong-attempt', 'wrong-source'):
+            reports = self.reports()
+            row = next(item for item in reports if item['core_shard'] == 'trading')
+            if mode == 'duplicate':
+                reports.append(copy.deepcopy(row))
+            elif mode == 'move':
+                for report in reports:
+                    moved = report['core_shard_assignments']['trading'].pop()
+                    report['core_shard_assignments']['remaining'].append(moved)
+            elif mode == 'omit':
+                row['selected_ids'].pop()
+            elif mode == 'skip':
+                row['skipped'] = [{'id': row['selected_ids'][0], 'reason': 'temporarily disabled'}]
+            elif mode == 'old-plan':
+                row['core_shard_plan'] = 'core-modules-v2'
+            elif mode == 'wrong-attempt':
+                row['shard_context']['run_attempt'] = '1'
+            else:
+                row['source_sha256_after'] = 'c' * 64
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                self.validate(reports)
+
     def assert_each_of_three_shards_is_required_with_original_order_and_identity(self):
-        for label in ('desktop', 'paper', 'remaining'):
+        for label in ('desktop', 'paper', 'remaining', 'trading'):
             reports = self.reports()
             with self.subTest(missing=label), self.assertRaises(ValueError):
                 self.validate([row for row in reports if row['core_shard'] != label])
@@ -572,7 +850,8 @@ class CoreShardReportTests(unittest.TestCase):
                     report['discovered_ids'].remove(omitted)
                 core = report['partitions']['core']
                 report['core_shard_assignments'] = {
-                    label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label] for label in ('desktop', 'paper', 'remaining')
+                    label: [test_id for test_id in core if _expected_shard(test_id.rsplit('.', 2)[0]) == label]
+                    for label in ('desktop', 'paper', 'remaining', 'trading')
                 }
                 selected = report['core_shard_assignments'][report['core_shard']]
                 for field in ('selected_ids', 'started_ids', 'stopped_ids'):
@@ -794,7 +1073,7 @@ class CoreShardReportTests(unittest.TestCase):
 
 class CoreShardRunnerTests(unittest.TestCase):
     def write_suite(self, root, outcome='pass', setup='pass', teardown='pass'):
-        for module_name in ('test_desktop_synthetic', 'test_future_synthetic', 'test_paper', 'test_research'):
+        for module_name in ('test_desktop_synthetic', 'test_future_synthetic', 'test_paper', 'test_trading_synthetic', 'test_research'):
             (root / (module_name + '.py')).write_text(
                 "import unittest, weakref\nreference = None\n"
                 "def setUpModule(): print('MODULE_SETUP:' + __name__); " + setup + "\n"
@@ -846,7 +1125,12 @@ g.portable_source_identity = changing
             root = Path(temporary)
             self.write_suite(root)
             reports = []
-            for label, module in (('desktop', 'test_desktop_synthetic'), ('paper', 'test_paper'), ('remaining', 'test_future_synthetic')):
+            for label, module in (
+                ('desktop', 'test_desktop_synthetic'),
+                ('paper', 'test_paper'),
+                ('remaining', 'test_future_synthetic'),
+                ('trading', 'test_trading_synthetic'),
+            ):
                 result, report = self.run_shard(root, label)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected = [module + '.Fixture.test_a', module + '.Fixture.test_b']
@@ -866,7 +1150,7 @@ g.portable_source_identity = changing
                 self.assertEqual(report['discovery_errors'], [])
                 self.assertTrue(report['run_completed'])
                 self.assertTrue(report['successful'])
-                self.assertEqual(len(report['discovered_ids']), 8)
+                self.assertEqual(len(report['discovered_ids']), 10)
                 reports.append(report)
             for report in reports[1:]:
                 for key in ('discovered_ids', 'partitions', 'core_shard_assignments'):
@@ -973,13 +1257,13 @@ class CoreShardReportFileTests(unittest.TestCase):
             code, summary = self.run_gate(root, downloads)
             self.assertEqual(code, 0)
             self.assertIs(summary['successful'], True)
-            self.assertEqual(summary['shards'], 3)
+            self.assertEqual(summary['shards'], 4)
             self.assertEqual(summary['coverage_scope'], 'original core only; research remains a separate mandatory gate')
             self.assertEqual(summary['run_id'], self.CONTEXT['run_id'])
             self.assertEqual(summary['run_attempt'], self.CONTEXT['run_attempt'])
 
     def assert_missing_or_wrong_attempt_for_any_of_three_artifacts_is_fatal(self):
-        for label in ('desktop', 'paper', 'remaining'):
+        for label in ('desktop', 'paper', 'remaining', 'trading'):
             for mode in ('missing', 'wrong-attempt'):
                 with self.subTest(shard=label, mode=mode), tempfile.TemporaryDirectory() as temporary:
                     root = Path(temporary)
@@ -1113,10 +1397,10 @@ class CoreShardWorkflowTests(unittest.TestCase):
     def test_exact_matrix_keeps_original_linux_and_research_with_six_core_shards(self):
         offline = self.job('offline')
         rows = re.findall(r"^          - \{os: ([^,]+), python: '([^']+)', group: ([^,}]+)(?:, shard: ([^}]+))?\}$", offline, re.MULTILINE)
-        expected = [('windows-latest', version, 'core', shard) for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining')]
+        expected = [('windows-latest', version, 'core', shard) for version in ('3.11', '3.12') for shard in ('desktop', 'paper', 'remaining', 'trading')]
         expected += [('windows-latest', version, 'research', '') for version in ('3.11', '3.12')]
         self.assertCountEqual(rows, expected)
-        self.assertEqual(len(rows), 8)
+        self.assertEqual(len(rows), 10)
         self.assertEqual(len(rows), len(set(rows)))
         self.assertIn('timeout-minutes: 15', offline)
         self.assertIn('fail-fast: false', offline)
@@ -1124,8 +1408,12 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn("--workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }}", offline)
         self.assertIn("${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}", offline)
         linux, coverage = self.job('linux-tests'), self.job('linux-coverage')
-        self.assertIn("python: ['3.11', '3.12']", linux)
-        self.assertIn('group: [core, research]', linux)
+        linux_rows = re.findall(r"^          - \{python: '([^']+)', group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$", linux, re.MULTILINE)
+        linux_expected = [(version, 'core', name) for version in ('3.11', '3.12') for name in ('desktop-trading', 'paper-remaining')]
+        linux_expected += [(version, 'research', '') for version in ('3.11', '3.12')]
+        self.assertCountEqual(linux_rows, linux_expected)
+        self.assertEqual(len(linux_rows), 6)
+        self.assertIn("format('--core-slice {0}', matrix.core_slice)", linux)
         self.assertIn('timeout-minutes: 15', linux)
         self.assertIn('fail-fast: false', linux)
         self.assertIn('run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }}', linux)
@@ -1207,6 +1495,31 @@ class CoreShardWorkflowTests(unittest.TestCase):
                 self.assertLess(position, aggregate.index(validator))
                 previous = position
         self.assertNotIn('continue-on-error', aggregate)
+
+    def test_every_producer_and_independent_discovery_has_full_baseline_history_and_hashlocked_packaging(self):
+        install = (
+            'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes '
+            '--only-binary=:all: --force-reinstall --no-cache-dir -r requirements-packaging-ci.lock'
+        )
+        for name in ('offline', 'linux-tests', 'linux-coverage', 'core-coverage', 'ui-tests', 'ui'):
+            job = self.job(name)
+            with self.subTest(job=name):
+                self.assertRegex(job, r'persist-credentials: false\n          fetch-depth: 0\n')
+                self.assertEqual(job.count(install), 1)
+                self.assertIn('timeout-minutes: 15', job)
+                self.assertNotIn('continue-on-error', job)
+                runner = (
+                    'tools/run_test_group.py'
+                    if name == 'offline'
+                    else ('tools/validate_core_shards.py' if name == 'core-coverage' else 'tools/ui_test_gate.py')
+                )
+                self.assertLess(job.index(install), job.index(runner))
+        lock = (group.ROOT / 'requirements-packaging-ci.lock').read_text(encoding='utf-8')
+        desktop = (group.ROOT / 'requirements-desktop.lock').read_text(encoding='utf-8')
+        requirement = r'packaging==26\.3\s*\\\n\s*--hash=sha256:([a-f0-9]{64})'
+        self.assertRegex(lock, requirement)
+        self.assertEqual(re.search(requirement, lock).group(1), re.search(requirement, desktop).group(1))
+        self.assertEqual(re.findall(r'(?m)^[A-Za-z][A-Za-z0-9_-]*==', lock), ['packaging=='])
 
     def test_aggregate_independently_requires_all_offline_runners_including_research(self):
         aggregate = self.job('core-coverage')

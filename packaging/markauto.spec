@@ -7,11 +7,14 @@ root = Path(SPECPATH).parent
 from quantlab.sqlite_runtime import verify, verify_binaries
 # Fail before freezing if dependency analysis would collect an unpinned DLL.
 verify(root / 'packaging/sqlite-runtime.json', Path(sys.base_prefix))
+# Offline remains the original Analysis unchanged. SDK collection is a separate
+# explicit build flavor, never a runtime environment or account-permission flag.
+broker_package = runpy.run_path(str(root / 'packaging/broker_package.py'))
+Analysis = broker_package['configure_analysis'](Analysis, root, copy_metadata)
 analysis = Analysis(
     [str(root / 'desktop.py')], pathex=[str(root)],
     binaries=[],
-    runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')]
-                  + [str(root / 'packaging/early_multiprocessing_runtime_hook.py')],
+    runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')] + [str(root / 'packaging/early_multiprocessing_runtime_hook.py')],
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
            (str(root / 'packaging/markauto.ico'), 'packaging'),
            (str(root / 'examples'), 'examples'),
@@ -34,7 +37,11 @@ analysis = Analysis(
            (str(root / 'quantlab' / 'research_analysis.py'), 'quantlab'),
            (str(root / 'quantlab' / 'indicators.py'), 'quantlab'),
            (str(root / 'quantlab' / 'provider.py'), 'quantlab'),
-           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')] + collect_data_files('tzdata')
+           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')]
+          # v2 profiles verify these exact source bytes in the frozen runtime.
+          + [(str(p), p.parent.relative_to(root).as_posix())
+             for p in sorted((root / 'quantlab' / 'trading').rglob('*.py'))]
+          + collect_data_files('tzdata')
           + [entry for name in ('PyJWT', 'cryptography', 'cffi', 'pycparser')
              for entry in copy_metadata(name)],
     hiddenimports=['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',

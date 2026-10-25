@@ -70,7 +70,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         self.jobs = JobManager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
         self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups)
-        self.addCleanup(self.cleanup_window)
+        self.addCleanup(lambda: (self.cleanup_window(), contract._destroy_owned_window(self, self.window)))
         self.window.timer.stop()
         self.panel = self.window.automatic_backup_panel
         self.panel.timer.stop()

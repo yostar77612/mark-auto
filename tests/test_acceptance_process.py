@@ -76,7 +76,11 @@ class AcceptanceProcessContracts(unittest.TestCase):
             self.assertLess(fixture.index(token), append)
         self.assertIn('$failedCases.Count -eq 0', fixture)
         workflow = (ROOT / '.github/workflows/windows-desktop.yml').read_text()
-        self.assertIn('  build:\n    needs: quality\n', workflow)
+        quality = workflow.split('  quality:\n', 1)[1].split('  regression:\n', 1)[0]
+        self.assertIn('run: ./packaging/test_acceptance_process.ps1', quality)
+        self.assertNotIn('continue-on-error', quality)
+        self.assertIn('    needs: quality\n', workflow.split('  regression:\n', 1)[1].split('  build:\n', 1)[0])
+        self.assertIn('  build:\n    needs: [quality, regression]\n', workflow)
 
     def test_no_host_compiler_or_unbounded_process_wait(self):
         self.assertNotIn('Add-Type -TypeDefinition', self.helper)

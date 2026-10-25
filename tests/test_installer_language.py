@@ -30,6 +30,27 @@ BASELINE_NON_UI_SHA256 = '89527e67d1e93ab766d363df8217f54935c31df48ea331eee61e15
 # identifiers (mbError, MB_OK, IDOK), paths and MARKAUTO_* Log keys are not UI.
 UI_IDENTIFIER_ALLOWLIST = {'Mark Auto': 'Product and upgrade/shortcut identity'}
 UI_CALL = r"((?:RaiseException|SuppressibleMsgBox|MsgBox)\(\s*)'((?:[^']|'')*)'"
+MULTI_MARKET_ICON = (
+    'Name: "{userprograms}\\Mark Auto\\Mark Auto 多市場平台"; Filename: "{code:PayloadDir}\\MarkAuto.exe"; '
+    'Parameters: "--platform-v2"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation'
+)
+LEGACY_ICONS = (
+    'Name: "{userprograms}\\Mark Auto\\Mark Auto"; Filename: "{code:PayloadDir}\\MarkAuto.exe"; '
+    'WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation',
+    'Name: "{userdesktop}\\Mark Auto"; Filename: "{code:PayloadDir}\\MarkAuto.exe"; WorkingDir: "{code:PayloadDir}"; BeforeInstall: RequireVerifiedActivation',
+)
+
+
+def original_non_ui_sha256(source):
+    """Project only the exact, positioned additive icon; pin every other body."""
+    icons = '[Icons]\n' + '\n'.join((*LEGACY_ICONS, MULTI_MARKET_ICON)) + '\n[Run]\n'
+    if source.count(MULTI_MARKET_ICON + '\n') != 1 or source.count(icons) != 1:
+        raise ValueError('The reviewed additive shortcut or its exact position changed')
+    source = source.replace(icons, '[Icons]\n' + '\n'.join(LEGACY_ICONS) + '\n[Run]\n', 1)
+    normalized = re.sub(r'^\[Languages\]\n.*?(?=^\[)', '', source, flags=re.M | re.S)
+    normalized = re.sub(UI_CALL, r"\1'<UI>'", normalized)
+    normalized = re.sub(r'Description: "[^"]*"', 'Description: "<UI>"', normalized)
+    return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
 
 
 def section(source, name):
@@ -83,10 +104,27 @@ class InstallerLanguageTests(unittest.TestCase):
             self.assertEqual(lines.count(expected), 1, expected)
         for name in ('UninstallDelete', 'InstallDelete'):
             self.assertNotRegex(self.source, r'(?m)^\[' + name + r'\]')
-        normalized = re.sub(r'^\[Languages\]\n.*?(?=^\[)', '', self.source, flags=re.M | re.S)
-        normalized = re.sub(UI_CALL, r"\1'<UI>'", normalized)
-        normalized = re.sub(r'Description: "[^"]*"', 'Description: "<UI>"', normalized)
-        self.assertEqual(hashlib.sha256(normalized.encode('utf-8')).hexdigest(), BASELINE_NON_UI_SHA256)
+        self.assertEqual(original_non_ui_sha256(self.source), BASELINE_NON_UI_SHA256)
+
+    def test_additive_shortcut_projection_rejects_changed_guards_flags_and_paths(self):
+        changes = (
+            self.source.replace('PrivilegesRequired=lowest', 'PrivilegesRequired=admin'),
+            self.source.replace('Flags: nowait postinstall skipifsilent unchecked', 'Flags: nowait postinstall'),
+            self.source.replace('DefaultDirName={localappdata}\\Programs\\MarkAuto', 'DefaultDirName={tmp}\\MarkAuto'),
+            self.source.replace(MULTI_MARKET_ICON, MULTI_MARKET_ICON.replace('--platform-v2', '--platform-v1')),
+            self.source.replace(MULTI_MARKET_ICON, MULTI_MARKET_ICON.replace('; BeforeInstall: RequireVerifiedActivation', '')),
+            self.source.replace(MULTI_MARKET_ICON, MULTI_MARKET_ICON.replace('{code:PayloadDir}', '{tmp}')),
+            self.source.replace(MULTI_MARKET_ICON + '\n', MULTI_MARKET_ICON + '\n' + MULTI_MARKET_ICON + '\n'),
+            self.source.replace(MULTI_MARKET_ICON + '\n', '').replace('[Run]\n', '[Run]\n' + MULTI_MARKET_ICON + '\n'),
+        )
+        for changed in changes:
+            with self.subTest(change=changed):
+                self.assertNotEqual(changed, self.source)
+                try:
+                    digest = original_non_ui_sha256(changed)
+                except ValueError:
+                    continue
+                self.assertNotEqual(digest, BASELINE_NON_UI_SHA256)
 
     def test_translation_is_build_input_only(self):
         # Evaluate only the real glob comprehension: no manifest generation,

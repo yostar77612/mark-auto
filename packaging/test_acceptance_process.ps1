@@ -24,6 +24,8 @@ $outsider = $null
 $outsiderStop=Join-Path $fixture 'outsider-complete'
 $registration = 'Software\MarkAuto-TestLab\' + [guid]::NewGuid().ToString('N')
 try {
+  . (Join-Path $PSScriptRoot 'test_shortcut_reader.ps1')
+  Test-AcceptanceShortcutReader (Join-Path $fixture 'unicode-shortcuts')
   $name='Local\MarkAutoAcceptance-Test-' + [guid]::NewGuid().ToString('N')
   $first=New-Object MarkAutoAcceptanceJob($name)
   try {

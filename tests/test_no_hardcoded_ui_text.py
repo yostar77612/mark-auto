@@ -36,7 +36,8 @@ UI_MODULES = (
     'desktop_walk_forward.py',
 )
 UI_PACKAGE_MODULES = tuple(
-    path.relative_to(ROOT).as_posix() for path in sorted(path for package in ('desktop_pages', 'desktop_smoke') for path in (ROOT / package).rglob('*.py'))
+    path.relative_to(ROOT).as_posix()
+    for path in sorted(path for package in ('desktop_pages', 'desktop_smoke', 'desktop_trading') for path in (ROOT / package).rglob('*.py'))
 )
 # Migration debt must stay empty; every UI module is scanned below.
 TODO_MODULES = {}

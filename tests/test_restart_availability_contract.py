@@ -29,6 +29,20 @@ HAS_QT = importlib.util.find_spec('PySide6') is not None
 from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeSafetyError, SettingsStore, WorkspaceLocator
 
 
+def _destroy_owned_window(case, window):
+    """Destroy only this fixture's native Qt tree after its close assertions."""
+    from PySide6.QtCore import QCoreApplication, QEvent, QTimer
+    from shiboken6 import isValid
+
+    case.assertTrue(isValid(window), 'Fixture window must still be valid before explicit destruction')
+    timers = window.findChildren(QTimer)
+    window.deleteLater()
+    QCoreApplication.sendPostedEvents(window, QEvent.Type.DeferredDelete)
+    case.assertFalse(isValid(window), 'Owned native window must be destroyed after fixture cleanup')
+    for timer in timers:
+        case.assertFalse(isValid(timer), 'Owned native timers must be destroyed with the fixture window')
+
+
 def _offline_worker(*args, **kwargs):
     """Spawn-safe wrapper around the unchanged real worker, with network denied."""
     from quantlab.desktop_runtime import _job_worker
@@ -234,6 +248,8 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.window.close()
         self.app.processEvents()
         self.assertFalse(self.jobs.active, 'Actual worker cleanup must complete')
+        self.assertFalse(self.window.isVisible(), 'Fixture close must hide the owned window before destruction')
+        _destroy_owned_window(self, self.window)
 
     def _click(self, name):
         from tests.test_desktop_ui import NativeDesktopTests

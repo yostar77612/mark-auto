@@ -61,6 +61,7 @@ class MaintenancePanel(QWidget):
 
     def check_updates(self):
         if self.property('offlinePreview') is True:
+            self.update_button.setEnabled(False)
             self.async_status.set_state('empty', message=ui_text('redesign.preview.network_disabled'))
             return
         if not self.update_button.isEnabled():
@@ -75,6 +76,11 @@ class MaintenancePanel(QWidget):
             self.poll_update()
 
     def poll_update(self):
+        if self.property('offlinePreview') is True:
+            self.timer.stop()
+            self.update_button.setEnabled(False)
+            self.async_status.set_state('empty', message=ui_text('redesign.preview.network_disabled'))
+            return
         if self.results.empty():
             return
         result = self.results.get_nowait()

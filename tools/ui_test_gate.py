@@ -16,9 +16,24 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-PLAN = 'ui-original-partitions-v1'
-OFFLINE_PLAN = 'linux-offline-original-partitions-v1'
+PLAN = 'ui-original-partitions-v2'
+OFFLINE_PLAN = 'linux-offline-original-partitions-v2'
 GROUPS = ('core', 'research')
+CORE_SLICES = ('desktop-trading', 'paper-remaining')
+PRODUCERS = (*CORE_SLICES, 'research')
+
+
+def producer_assignments(parts):
+    from tools.run_test_group import linux_core_slice_for_module
+
+    assigned = {key: [] for key in CORE_SLICES}
+    for test_id in parts['core']:
+        module, _, _ = test_id.rsplit('.', 2)
+        assigned[linux_core_slice_for_module(module)].append(test_id)
+    assigned['research'] = parts['research'][:]
+    if not all(assigned.values()):
+        raise ValueError('Every original Linux producer must contain whole modules')
+    return assigned
 
 
 def context(profile='ui'):
@@ -34,7 +49,8 @@ def context(profile='ui'):
     )
     if profile not in ('ui', 'offline') or (streamlit != pinned if profile == 'ui' else streamlit is not None):
         raise ValueError('UI runtime does not match its committed Streamlit lock')
-    digest = hashlib.sha256(portable_source_identity().encode('ascii'))
+    core_source = portable_source_identity()
+    digest = hashlib.sha256(core_source.encode('ascii'))
     # Include the UI packages as well as the existing portable core/test/workflow identity.
     for package in ('desktop_pages', 'desktop_smoke'):
         for path in sorted((ROOT / package).rglob('*.py')):
@@ -45,11 +61,12 @@ def context(profile='ui'):
         'run_id': os.environ.get('GITHUB_RUN_ID'),
         'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
         'source_sha256': digest.hexdigest(),
+        'core_source_sha256': core_source,
         'streamlit': streamlit,
     }
 
 
-def run(selected, destination, profile='ui'):
+def run(selected, destination, profile='ui', core_slice=None):
     # Reuse the original runner after direct-script path setup, without importing Qt here.
     from tools.run_test_group import execution_identity, main as run_group, write_manifest
     from tools.validate_core_shards import read_core_report
@@ -58,7 +75,10 @@ def run(selected, destination, profile='ui'):
     original = context(profile)
     cases_path = destination.with_suffix('.cases.json')
     # The existing runner preserves whole-module fixtures and all original case limits.
-    status = run_group(['--group', selected, '--manifest', str(cases_path)])
+    command = ['--group', selected, '--manifest', str(cases_path)]
+    if core_slice is not None:
+        command.extend(['--core-slice', core_slice])
+    status = run_group(command)
     report = read_core_report(cases_path)
     after = execution_identity('tests')
     report.update(ui_context=original, ui_identity_before=before, ui_identity_after=after)
@@ -81,12 +101,13 @@ def validate(reports, expected, expected_context, expected_identity, skips, pyth
         or (ui and python_profile != '3.12')
         or re.fullmatch('[a-f0-9]{40}', str(expected_context.get('head_sha'))) is None
         or re.fullmatch('[a-f0-9]{64}', str(expected_context.get('source_sha256'))) is None
+        or re.fullmatch('[a-f0-9]{64}', str(expected_context.get('core_source_sha256'))) is None
         or any(re.fullmatch('[1-9][0-9]*', str(expected_context.get(key))) is None for key in ('run_id', 'run_attempt'))
         or (not expected_context.get('streamlit') if ui else expected_context.get('streamlit') is not None)
     ):
         raise ValueError('Invalid UI source/run/dependency context')
-    if type(reports) is not list or len(reports) != 2:
-        raise ValueError('Exactly two UI partition reports required')
+    if type(reports) is not list or len(reports) != len(PRODUCERS):
+        raise ValueError('Exactly three Linux producer reports required')
     discovered, parts = expected['discovered_ids'], expected['partitions']
     if (
         not discovered
@@ -100,19 +121,27 @@ def validate(reports, expected, expected_context, expected_identity, skips, pyth
     streamlit_cases = [test_id for test_id in discovered if test_id.startswith('test_ui.UITests.')]
     if len(streamlit_cases) != 5 or not set(streamlit_cases) <= set(parts['core']):
         raise ValueError('Original five Streamlit cases must be present')
-    by_group = {row.get('group'): row for row in reports if type(row) is dict}
-    if len(by_group) != 2 or set(by_group) != set(GROUPS):
-        raise ValueError('Missing or duplicate UI partition')
+    assigned = producer_assignments(parts)
+    by_group = {}
+    for row in reports:
+        if type(row) is not dict:
+            raise ValueError('Invalid Linux producer report')
+        key = 'research' if row.get('group') == 'research' else row.get('core_slice')
+        if key not in PRODUCERS or key in by_group:
+            raise ValueError('Missing, unknown or duplicate Linux producer')
+        by_group[key] = row
+    if set(by_group) != set(PRODUCERS):
+        raise ValueError('Missing Linux producer')
     if type(skips) is not list or len({row['id'] for row in skips}) != len(skips) or (ui and set(streamlit_cases) & {row['id'] for row in skips}):
         raise ValueError('Invalid original Linux applicability skips')
     version = json.loads((ROOT / 'packaging/sqlite-runtime.json').read_text(encoding='utf-8'))['version']
     if expected_identity.get('sqlite_version') != version:
         raise ValueError('Independent UI discovery must use the pinned SQLite runtime')
-    for key in GROUPS:
-        report, selected = by_group[key], parts[key]
+    for key in PRODUCERS:
+        report, selected = by_group[key], assigned[key]
         before, after = report.get('ui_identity_before'), report.get('ui_identity_after')
         if (
-            report.get('group') != key
+            report.get('group') != ('research' if key == 'research' else 'core')
             or report.get('ui_context') != expected_context
             or report.get('head_sha') != expected_context['head_sha']
             or report.get('platform') != 'linux'
@@ -142,9 +171,39 @@ def validate(reports, expected, expected_context, expected_identity, skips, pyth
             or not before.get('tempfile_gettempdir')
         ):
             raise ValueError('Incomplete, failed or inconsistent UI partition: ' + key)
+        if key in CORE_SLICES:
+            from tools.run_test_group import LINUX_CORE_PLAN
+
+            expected_slice_context = {
+                'head_sha': expected_context['head_sha'],
+                'run_id': expected_context['run_id'],
+                'run_attempt': expected_context['run_attempt'],
+                'python_profile': python_profile,
+                'source_sha256': expected_context['core_source_sha256'],
+            }
+            if (
+                report.get('core_slice') != key
+                or report.get('core_slice_plan') != LINUX_CORE_PLAN
+                or report.get('core_slice_assignments') != {name: assigned[name] for name in CORE_SLICES}
+                or report.get('core_slice_context') != expected_slice_context
+                or report.get('source_sha256_after') != expected_context['core_source_sha256']
+                or report.get('local_identity_before') != before
+                or report.get('local_identity_after') != before
+                or 'shard_identity_error' in report
+            ):
+                raise ValueError('Invalid whole-module Linux core slice proof: ' + key)
+        elif any(name in report for name in ('core_slice', 'core_slice_plan', 'core_slice_context', 'core_slice_assignments')):
+            raise ValueError('Research cannot substitute for a core slice')
         if report.get('skipped') != [row for row in skips if row['id'] in set(selected)]:
             raise ValueError('Unexpected UI skip; original Streamlit cases may not be skipped')
-    return {'successful': True, 'ui_context': expected_context, 'tests_run': len(discovered), 'groups': list(GROUPS), 'streamlit_cases': streamlit_cases}
+    return {
+        'successful': True,
+        'ui_context': expected_context,
+        'tests_run': len(discovered),
+        'groups': list(GROUPS),
+        'producers': list(PRODUCERS),
+        'streamlit_cases': streamlit_cases,
+    }
 
 
 def main(argv=None):
@@ -154,6 +213,7 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--group', choices=GROUPS)
+    parser.add_argument('--core-slice', choices=CORE_SLICES)
     parser.add_argument('--reports', type=Path)
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--profile', choices=('ui', 'offline'), default='ui')
@@ -161,13 +221,15 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if (args.group is None) == (args.reports is None):
         parser.error('Choose one UI group or independent verification')
+    if args.core_slice is not None and args.group != 'core':
+        parser.error('A core slice requires the original core group')
     if args.profile == 'ui' and args.python_profile != '3.12':
         parser.error('The complete UI profile requires Python 3.12')
     os.chdir(ROOT)
     summary = {'successful': False}
     try:
         if args.group:
-            return run(args.group, args.manifest, args.profile)
+            return run(args.group, args.manifest, args.profile, args.core_slice)
         before, original = execution_identity('tests'), context(args.profile)
         expected = collect_expected_inventory()
         if execution_identity('tests') != before or context(args.profile) != original:

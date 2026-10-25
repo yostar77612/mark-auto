@@ -167,3 +167,7 @@ quantlab-output/
 # Local workflow/nohup captures are disposable runtime artifacts.
 lt_*.txt
 nohup.out
+
+# Generated/verified native acceptance helper; source remains versioned.
+/packaging/acceptance_process.dll
+/t/
