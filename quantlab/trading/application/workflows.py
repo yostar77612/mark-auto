@@ -10,7 +10,8 @@ from .events import poll_events, reconcile
 from .execution import ExecutionService
 from .research import research
 from .state import ACTIVE
-from quantlab.trading.domain.models import Environment, HoldingKind, Side
+from .performance import advance_tracks, unrealized_liquidation
+from quantlab.trading.domain.models import Environment, HoldingKind
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import transfer_position
 from quantlab.trading.domain.validation import DomainError
@@ -98,9 +99,9 @@ def transfer(engine: 'TradingEngine', lot_id: str, destination: str) -> None:
         raise DomainError('state_conflict', 'transfer scope mismatch')
     pending = sum(o.status in ACTIVE and o.plan.instrument_id == lot.instrument_id for o in engine.state.orders)
     moved = transfer_position(lot, strategy.strategy_id, strategy.version, strategy.policy, reconciled=engine.state.reconciled, pending_orders=pending)
-    engine._persist(
-        'position_transferred_explicitly', replace(engine.state, positions=tuple(moved if p.lot_id == lot_id else p for p in engine.state.positions))
-    )
+    proposed = replace(engine.state, positions=tuple(moved if p.lot_id == lot_id else p for p in engine.state.positions))
+    tracks = advance_tracks(engine, proposed_state=proposed)
+    engine._persist('position_transferred_explicitly', replace(proposed, performance_tracks=tracks))
 
 
 @decimal_operation
@@ -109,15 +110,7 @@ def total_mark(engine: 'TradingEngine') -> Decimal:
     for lot in engine.state.positions:
         if not lot.quantity:
             continue
-        spec = engine.catalog.resolve(lot.instrument_id)
-        quote = engine.quotes.get(lot.instrument_id)
-        if quote is None or not 0 <= (engine.clock.now() - quote.source_at).total_seconds() <= 30:
-            raise DomainError('stale_quote', 'open position valuation is unknown')
-        sign = 1 if lot.direction is Side.BUY else -1
-        exit_price = quote.bid if sign == 1 else quote.ask
-        exit_side = Side.SELL if sign == 1 else Side.BUY
-        result += (exit_price - lot.entry_price) * lot.quantity * spec.multiplier * sign
-        result -= engine.fees.transaction(spec, exit_side, exit_price, lot.quantity) + engine.fees.slippage(spec, lot.quantity, legs=1)
+        result += unrealized_liquidation(engine, lot)
     return result
 
 
@@ -131,7 +124,8 @@ def mark_risk(engine: 'TradingEngine') -> None:
     locks = engine.state.daily_locks
     if hit and engine.state.trading_day not in locks:
         locks = (*locks, engine.state.trading_day)
-    engine._persist('portfolio_marked', replace(engine.state, daily_pnl=pnl, daily_locks=locks, stopped=engine.state.stopped or hit))
+    tracks = advance_tracks(engine)
+    engine._persist('portfolio_marked', replace(engine.state, daily_pnl=pnl, daily_locks=locks, stopped=engine.state.stopped or hit, performance_tracks=tracks))
     if hit:
         try:
             cancel_entries(engine)

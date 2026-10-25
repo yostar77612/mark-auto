@@ -14,6 +14,7 @@ from .broker_settings import BrokerReadiness, BrokerSettings
 from quantlab.trading.domain.models import Environment, HoldingPolicy, InstrumentSpec, OrderPlan, OrderStatus, PositionLot, Reservation
 from quantlab.trading.domain.strategy import StrategyDefinition
 from .lifecycle_models import CorporateActionJob, RollJob
+from .performance import VersionEquityTrack
 
 
 @dataclass(frozen=True)
@@ -86,6 +87,7 @@ class AppState:
     instrument_overrides: tuple[InstrumentSpec, ...] = ()
     protection_stops: tuple[tuple[str, Decimal], ...] = ()
     reconciliation: tuple[ReconciliationView, ...] = ()
+    performance_tracks: tuple[VersionEquityTrack, ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

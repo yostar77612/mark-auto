@@ -3,9 +3,7 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from .codec import loads
 from .contracts import AccountView, MarketView, OrderView, PerformanceView, PositionView, StrategyView, UiState
-from .research import ResearchResult
 from .errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
@@ -97,6 +95,7 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             )
         )
     performance = []
+    tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
     for strategy in state.strategies:
         related = tuple(p for p in state.positions if (p.strategy_id, p.strategy_version) == (strategy.strategy_id, strategy.version))
         orders = tuple(o for o in state.orders if (o.plan.strategy_id, o.plan.strategy_version) == (strategy.strategy_id, strategy.version))
@@ -108,8 +107,9 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             if quote and lot.quantity:
                 spec = engine.catalog.resolve(lot.instrument_id)
                 unrealized += (quote.last - lot.entry_price) * lot.quantity * spec.multiplier * (1 if lot.direction is Side.BUY else -1)
-        report = loads(strategy.research_blob) if strategy.research_blob else None
-        drawdown = report.drawdown if isinstance(report, ResearchResult) else ZERO
+        track = tracks.get((strategy.strategy_id, strategy.version))
+        if track:
+            realized += track.realized_adjustment
         performance.append(
             PerformanceView(
                 strategy.strategy_id,
@@ -120,8 +120,11 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 realized,
                 unrealized,
                 costs,
-                drawdown,
+                track.max_drawdown if track else None,
                 ','.join(str(engine.calendar.age(p.entry_trade_date, state.trading_day)) for p in related),
+                'COMPLETE' if track and track.history_complete else 'LEGACY_UNKNOWN',
+                track.last_at.isoformat() if track else '',
+                attributed_pnl=track.equity if track and track.history_complete else None,
             )
         )
     accounts = tuple(

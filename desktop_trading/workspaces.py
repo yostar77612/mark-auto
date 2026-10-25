@@ -264,10 +264,26 @@ def _reconciliation_panel(self, layout) -> None:
 def _performance_page(self) -> None:
     layout = _page(self, 'performance')
     layout.addWidget(label('v2.performance_hint'))
+    layout.addWidget(label('v2.performance_valuation_hint'))
     self.performance = table(
-        ('v2.strategy_version', 'v2.market', 'v2.policy', 'v2.environment', 'v2.net_pnl', 'v2.unrealized', 'v2.costs', 'v2.drawdown', 'v2.held_days'),
+        (
+            'v2.strategy_version',
+            'v2.market',
+            'v2.policy',
+            'v2.environment',
+            'v2.net_pnl',
+            'v2.unrealized',
+            'v2.costs',
+            'v2.attributed_pnl',
+            'v2.drawdown_recorded',
+            'v2.held_days',
+            'v2.drawdown_coverage',
+            'v2.drawdown_as_of',
+        ),
         'performance_rows',
     )
+    self.performance.horizontalHeaderItem(7).setToolTip(ui_text('v2.attributed_pnl_hint'))
+    self.performance.horizontalHeaderItem(8).setToolTip(ui_text('v2.drawdown') + '\n' + ui_text('v2.performance_valuation_hint'))
     layout.addWidget(self.performance)
     _buttons(
         self,

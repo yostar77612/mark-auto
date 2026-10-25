@@ -23,6 +23,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from contextlib import contextmanager
+from contextvars import ContextVar
 
 from . import __version__
 from .windows_paths import canonical_path, native_path
@@ -67,6 +68,7 @@ class _OperationExecutorRegistry:
 
 _executor_registry = _OperationExecutorRegistry()
 _executor_registrar = None
+_worker_registrar_import = ContextVar("markauto_worker_registrar_import", default=False)
 
 
 def register_operation_executor(executor):
@@ -98,8 +100,23 @@ def _worker_operation_executor(registrar):
         raise RuntimeSafetyError('No operation executor is registered')
     module, name = registrar.split(':')
     registry = _OperationExecutorRegistry()
-    registry.register(getattr(importlib.import_module(module), name))
+    token = _worker_registrar_import.set(True)
+    try:
+        registry.register(getattr(importlib.import_module(module), name))
+    finally:
+        _worker_registrar_import.reset(token)
     return registry.executor()
+
+
+def _is_worker_registrar_import():
+    """True only while the worker resolves its explicit operation registrar.
+
+    The role is process-local and never conveyed in an untrusted job payload.
+    Ordinary GUI imports keep their full public surface and Qt implementations.
+    """
+    # A direct registrar lookup in the GUI process must not poison its cached
+    # desktop_ui module with the child-only, nonconstructible GUI bases.
+    return _worker_registrar_import.get() and mp.parent_process() is not None
 
 
 def _json_bytes(value):

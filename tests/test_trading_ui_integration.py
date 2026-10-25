@@ -19,9 +19,9 @@ from desktop_trading import TradingWindow
 from desktop_trading.wizard import StrategyWizard
 from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.application.facade import LocalFacade
-from quantlab.trading.application.workflows import fill_local_pending
+from quantlab.trading.application.workflows import fill_local_pending, mark_risk, total_mark
 from quantlab.trading.adapters.shioaji import ShioajiAdapter
-from quantlab.trading.domain.models import Environment, HoldingKind, Market, OrderPlan, QuantityUnit, Side
+from quantlab.trading.domain.models import Environment, HoldingKind, Market, OrderPlan, QuantityUnit, Quote, Side
 from quantlab.trading.ports.contracts import BrokerPosition
 from quantlab.trading.runtime.build import create_engine
 
@@ -468,3 +468,92 @@ class TradingUiIntegrationTests(unittest.TestCase):
             self.assertEqual(self.window.positions.item(row, 6).text(), view.entry_day)
             self.assertEqual(self.window.positions.item(row, 8).text(), view.exit_window)
             self.assertEqual(self.window.positions.item(row, 4).text(), view.account_ref)
+
+    def test_transfer_performance_separates_executed_profit_from_owned_liquidation_and_drawdown(self):
+        def accepted(action, **values):
+            receipt = self.facade.execute(UiCommand(action, self.engine.state.version, **values))
+            self.assertTrue(receipt.accepted, receipt)
+            return receipt.reference
+
+        def quote(bid):
+            now = self.engine.clock.now()
+            self.engine.quote(
+                Quote(
+                    'TWSE:2330',
+                    Decimal(bid),
+                    Decimal(bid) + Decimal('0.05'),
+                    Decimal(bid),
+                    now,
+                    now,
+                    self.engine.state.trading_day,
+                    sequence=self.engine.quote_count + 1,
+                    source='LOCAL_UI_TRANSFER_FIXTURE',
+                )
+            )
+
+        accepted(UiAction.RECONCILE)
+        accepted(UiAction.RESUME)
+        form = StrategyForm(
+            'UI-transfer',
+            Market.STOCK,
+            HoldingKind.SWING,
+            3,
+            5,
+            Side.BUY,
+            'TWSE:2330',
+            'local-stock',
+            Environment.LOCAL,
+            Decimal('30000'),
+            Decimal('0.02'),
+            'BUY_AND_HOLD',
+        )
+        original = accepted(UiAction.CREATE_STRATEGY, strategy=form)
+        for action in (UiAction.VALIDATE, UiAction.RESEARCH, UiAction.DEPLOY):
+            accepted(action, target_id=original)
+        quote('9.90')
+        record, now = self.engine.strategy(original), self.engine.clock.now()
+        plan = OrderPlan(
+            'UI-handoff-entry',
+            'local-stock',
+            Environment.LOCAL,
+            'TWSE:2330',
+            record.strategy_id,
+            record.version,
+            Side.BUY,
+            1000,
+            QuantityUnit.SHARE,
+            Decimal('9.95'),
+            Decimal('9.45'),
+            False,
+            now,
+            now + timedelta(seconds=30),
+            self.engine.state.version,
+        )
+        self.engine.submit(plan, record.policy, 'UI-handoff-entry')
+        fill_local_pending(self.engine)
+        mark_risk(self.engine)
+        quote('10.50')
+        mark_risk(self.engine)
+        newer = accepted(
+            UiAction.CREATE_STRATEGY,
+            strategy=replace(form, parent_strategy_id=record.strategy_id, holding_kind=HoldingKind.POSITION, min_days=20, max_days=100),
+        )
+        for action in (UiAction.VALIDATE, UiAction.RESEARCH, UiAction.DEPLOY):
+            accepted(action, target_id=newer)
+        accepted(UiAction.TRANSFER, target_id=self.engine.state.positions[0].lot_id, destination_strategy_id=newer)
+        quote('10.20')
+        mark_risk(self.engine)
+        self.window.apply_state(self.facade.snapshot())
+        self.window.navigation.setCurrentRow(4)
+        self.app.processEvents()
+        rows = self.window.state.performance
+        self.assertEqual(tuple(row.net_pnl for row in rows), (Decimal('-20'), Decimal('0')))
+        self.assertEqual(tuple(row.attributed_pnl for row in rows), (Decimal('428'), Decimal('-299')))
+        self.assertEqual(tuple(row.drawdown for row in rows), (Decimal('170'), Decimal('299')))
+        self.assertEqual(sum(row.attributed_pnl for row in rows), total_mark(self.engine))
+        for index, row in enumerate(rows):
+            self.assertEqual(self.window.performance.item(index, 4).text(), str(row.net_pnl))
+            self.assertEqual(self.window.performance.item(index, 7).text(), str(row.attributed_pnl))
+            self.assertEqual(self.window.performance.item(index, 8).text(), str(row.drawdown))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('v2.attributed_pnl'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).toolTip(), ui_text('v2.attributed_pnl_hint'))

@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QRect, Qt
+from PySide6.QtCore import QRect, QThread, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton, QScrollArea
@@ -25,6 +25,7 @@ from quantlab.trading.application.contracts import (
     AccountView,
     BrokerReadiness,
     MarketView,
+    PerformanceView,
     PositionView,
     ReconciliationView,
     StrategyView,
@@ -124,12 +125,21 @@ class TradingUiTests(unittest.TestCase):
         self.app.processEvents()
 
     def drain(self):
-        deadline = time.monotonic() + 3
+        started = time.monotonic()
+        deadline = started + 3
         while (self.window._operation is not None or self.window._priority_operation is not None) and time.monotonic() < deadline:
             self.app.processEvents()
             QTest.qWait(5)
-        self.assertIsNone(self.window._operation, 'application operation failed to finish')
-        self.assertIsNone(self.window._priority_operation, 'priority stop failed to finish')
+
+        def phase(operation):
+            if operation is None:
+                return 'none'
+            action = operation.command.action.value if operation.command else 'REFRESH'
+            return f'action={action},running={operation.isRunning()},finished={operation.isFinished()}'
+
+        details = f'elapsed={time.monotonic() - started:.3f}s,loop={QThread.currentThread().loopLevel()},commands={len(self.facade.commands)}'
+        self.assertIsNone(self.window._operation, f'application operation failed to finish: {phase(self.window._operation)};{details}')
+        self.assertIsNone(self.window._priority_operation, f'priority stop failed to finish: {phase(self.window._priority_operation)};{details}')
         self.app.processEvents()
 
     def tearDown(self):
@@ -240,6 +250,23 @@ class TradingUiTests(unittest.TestCase):
             self.assertNotIn(environment.value, wizard.summary.text())
             self.assertIs(wizard.state.environment, environment)
             wizard.deleteLater()
+
+    def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
+        legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
+        self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('v2.attributed_pnl'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(8).text(), ui_text('v2.drawdown_recorded'))
+        self.assertIn(ui_text('v2.performance_valuation_hint'), self.window.performance.horizontalHeaderItem(8).toolTip())
+        self.assertEqual(self.window.performance.item(0, 7).text(), ui_text('v2.drawdown_unknown'))
+        self.assertEqual(self.window.performance.item(0, 8).text(), ui_text('v2.drawdown_unknown'))
+        self.assertEqual(self.window.performance.item(0, 10).text(), ui_text('v2.drawdown_incomplete'))
+        self.assertEqual(self.window.performance.item(0, 11).text(), ui_text('v2.drawdown_not_recorded'))
+        known = replace(legacy, drawdown=Decimal('0'), attributed_pnl=Decimal('0'), drawdown_coverage='COMPLETE', drawdown_as_of='2026-10-23T09:05:00+08:00')
+        self.window.apply_state(replace(self.window.state, version=3, performance=(known,)))
+        self.assertEqual(self.window.performance.item(0, 7).text(), '0')
+        self.assertEqual(self.window.performance.item(0, 8).text(), '0')
+        self.assertEqual(self.window.performance.item(0, 10).text(), ui_text('v2.drawdown_complete'))
+        self.assertEqual(self.window.performance.item(0, 11).text(), known.drawdown_as_of)
 
     def test_quote_revision_updates_price_without_ledger_version_change(self):
         self.window.strategies.selectRow(0)

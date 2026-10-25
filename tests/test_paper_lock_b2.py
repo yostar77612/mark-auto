@@ -332,6 +332,7 @@ class OrderEntryScanTests(unittest.TestCase):
         self.assertLess(fence.lineno, broker.lineno)
 
     def test_v2_runtime_risk_and_ownership_reject_before_any_adapter_submission(self):
+        # Load the v2 fixture only for its separately authorized execution guard.
         from tests.test_trading_application import ApplicationLifecycleTests
 
         for name in (
@@ -357,7 +358,10 @@ class OrderEntryScanTests(unittest.TestCase):
                     fixture.doCleanups()
 
     def test_v2_catalogue_composes_without_mutating_legacy_or_shadowing_codes(self):
+        # Observe the legacy identities before importing the isolated v2 catalogue.
         from quantlab.errors import ERROR_LABELS, ERROR_TABLE, ErrorCode
+
+        # Import composition here so the test verifies its effect on the old table.
         from quantlab.trading.application.errors import ERROR_TABLE as V2_TABLE, V2_ERROR_TEXT
 
         self.assertFalse(V2_ERROR_TEXT.keys() & ERROR_TABLE.keys())

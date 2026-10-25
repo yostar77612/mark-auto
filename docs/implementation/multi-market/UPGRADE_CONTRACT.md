@@ -90,3 +90,20 @@ Importing v2 does not mutate legacy ERROR_TABLE, labels, enum or pickle paths.
 The legacy catalogue, rendering and source-hash tests remain exact, with separate
 v2 composition assertions. This is a scope separation with replacement coverage,
 not a scan exclusion or an expansion of the old golden expected sets.
+
+## Source worker import boundary
+
+Source Python workers resolve the existing `desktop_ui:execute_ui_operation`
+registrar under a process-local import role. The role also requires a real
+multiprocessing parent, so a registrar lookup in the GUI process cannot cache
+child-only window bases. Ordinary parent imports retain the real Qt types,
+public aliases, handler globals and monkeypatch behavior. Operation children
+load the same handler authority without Qt or page imports; attempting to
+construct a window in such a child raises explicitly.
+
+The JobManager and MainWindow class source/AST, default registrar, operation
+inventory, single-job isolation, durability, 22 smoke evaluation children,
+63 saves and original 40-second deadline remain unchanged. Real child and
+parent-first-import tests verify both sides. Historical elevated results retain
+their original source identity; final-source dependency/AST impact review is
+separate evidence and does not claim the elevated cases ran on new bytes.

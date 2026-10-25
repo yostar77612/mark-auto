@@ -14,6 +14,7 @@ from .contracts import StrategyForm
 from .broker_settings import ReferenceInspector
 from .provenance import ProducerProfile
 from .execution import ExecutionService
+from .performance import seed_track
 from .registry import initialize
 from .state import ACTIVE, AppState, StrategyRecord
 from quantlab.trading.domain.calendar import TradingCalendar
@@ -267,7 +268,11 @@ class TradingEngine:
             definition = replace(definition, strategy_id=strategy_id, version=version)
             form = replace(form, draft_json='')
         record = StrategyRecord(strategy_id, version, form, policy, definition=definition, draft_hash=draft_hash)
-        self._persist('strategy_version_created', replace(self.state, strategies=(*self.state.strategies, record)))
+        initial_track = seed_track(strategy_id, version, self.clock.now(), self.state.trading_day)
+        self._persist(
+            'strategy_version_created',
+            replace(self.state, strategies=(*self.state.strategies, record), performance_tracks=(*self.state.performance_tracks, initial_track)),
+        )
         return f'{strategy_id}:{version}'
 
     def strategy(self, reference: str) -> StrategyRecord:

@@ -169,8 +169,12 @@ class PerformanceView:
     net_pnl: Decimal
     unrealized_pnl: Decimal
     costs: Decimal
-    drawdown: Decimal
+    drawdown: Decimal | None
     holding_days: str
+    drawdown_coverage: str = 'LEGACY_UNKNOWN'
+    drawdown_as_of: str = ''
+    drawdown_basis: str = 'RECORDED_NET_LIQUIDATION_V1'
+    attributed_pnl: Decimal | None = None
 
 
 @dataclass(frozen=True)

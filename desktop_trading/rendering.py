@@ -157,8 +157,11 @@ def _render_performance(self, state: UiState) -> None:
                     str(item.net_pnl),
                     str(item.unrealized_pnl),
                     str(item.costs),
-                    str(item.drawdown),
+                    str(item.attributed_pnl) if item.attributed_pnl is not None else ui_text('v2.drawdown_unknown'),
+                    str(item.drawdown) if item.drawdown is not None else ui_text('v2.drawdown_unknown'),
                     item.holding_days,
+                    ui_text('v2.drawdown_complete' if item.drawdown_coverage == 'COMPLETE' else 'v2.drawdown_incomplete'),
+                    item.drawdown_as_of or ui_text('v2.drawdown_not_recorded'),
                 ),
             )
             for item in state.performance
