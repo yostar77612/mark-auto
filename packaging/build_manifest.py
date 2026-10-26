@@ -33,6 +33,7 @@ def main():
             'desktop_pages/*.py',
             'desktop_trading/**/*.py',
             'trading_runtime.py',
+            'trading_entry.py',
             'pyproject.toml',
             'requirements-shioaji-v2.lock',
             'desktop_chatgpt_dependency_manifest.json',

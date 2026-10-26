@@ -5623,3 +5623,10 @@ quantlab/trading preserves existing engine research producer identities. Explici
 embedded hint hosts and missing-model prerequisites apply only to UnifiedResearch;
 the standalone v1 characterization remains unchanged. The developer web campaign
 adapter loads only inside the user-invoked callback, preserving passive imports.
+
+PyInstaller native dependency analysis temporarily restricts only its process PATH
+to the pinned private Python and Windows directories, restoring the original PATH
+in finally. This prevents unrelated developer-tool ICU DLLs from shadowing the
+Windows ICU API required by Qt. No installed software or user files are removed;
+the complete original regression gate and Qt license audit remain mandatory.
+The build input manifest explicitly hashes the passive trading_entry source.

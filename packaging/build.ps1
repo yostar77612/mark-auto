@@ -43,8 +43,14 @@ try {
   }
   & $python packaging/collect_licenses.py
   if ($LASTEXITCODE) { throw 'License collection failed' }
-  & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec
-  if ($LASTEXITCODE) { throw 'PyInstaller failed' }
+  # Resolve native dependencies only from the pinned runtime, wheels and Windows.
+  # Unrelated developer tools can carry an incompatible same-named ICU DLL.
+  $analysisPath = $env:PATH
+  try {
+    $env:PATH = "$privateRuntime;$env:SystemRoot\System32;$env:SystemRoot"
+    & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec
+    if ($LASTEXITCODE) { throw 'PyInstaller failed' }
+  } finally { $env:PATH = $analysisPath }
   & $python packaging/qt_licenses.py --payload dist/MarkAuto --report dist/validation/qt-license-audit.json
   if ($LASTEXITCODE) { throw 'Actual Qt payload/license-text scope audit failed' }
   # Inspect the actual frozen EXE, not just its resource source. No DLL is modified.

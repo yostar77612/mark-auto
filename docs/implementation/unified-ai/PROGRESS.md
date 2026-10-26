@@ -4,7 +4,7 @@
 
 工作樹：`C:\Users\mark.tsai\Desktop\markauto\unified-ai`，分支 `feat/unified-ai-workspace`，基準 main `159f308181d8d84f4db8e0964d8ee3e95383bf3f`。原主工作樹設計文件未提交變更與其他工作樹保留。
 
-最新狀態（2026-10-26 15:21）：來源實作 c809b8843c7e2a3c44296f06d34914abbf9e3539 已完成完整一般權限回歸、獨立網頁 UI 補測及實際 Windows 畫面檢查。尚未完成權限案例、Linux 專屬案例與新安裝包驗證；沒有推送、合併或發布，也未更新使用者已安裝版本。詳見本文最後的驗證分類與恢復步驟。
+最新狀態（2026-10-26）：使用者已授權完成本機測試、建置與安裝驗證後推送及合併main，再驗證main CI／最新安裝包，最後整理跨電腦交接包。原28項權限補測已全數通過；本機新安裝版完整smoke、實際統一UI及原登入／資料保留檢查完成。已修正本機封裝誤收外部工具ICU DLL的問題，並補齊新入口的來源雜湊紀錄。接續執行PR完整CI與main發布驗證；下列歷史待測記錄以本文最後更新為準。
 
 ## 驗收追蹤
 
@@ -14,7 +14,9 @@
 - [x] 完整原研究工具、已存候選與回測入口可用；研究和多市場策略之間明確說明相容性，不把研究結果冒充三市場交易證據。
 - [x] 原研究工作與 v2 引擎可並行；停止、取消與關閉依原保護收尾，重啟資料保留。
 - [x] 完整一般權限回歸無失敗，獨立網頁補測通過；架構／lint／語法通過；實際 Windows 來源 UI 檢查完成。
-- [ ] 28項原生檔案連結防護案例待 Windows 權限；Linux及新安裝包專屬檢查另列，不視為通過。
+- [x] 28項原生檔案連結防護案例：使用者本次一次UAC授權，28項全過、0略過，來源未變。
+- [x] 本機新安裝版完整smoke及實際UI／原登入驗證通過，舊payload與原資料保留。
+- [ ] PR與main完整CI、最新發布安裝包下載／安裝重驗；完成後才整理跨電腦交接包。Linux及乾淨客戶端範圍分別記錄，不冒充通過。
 - [x] 最終核對資料保留、記錄測試與外部限制；未做真實金融操作，未動 Sitecore。
 
 ## 起始狀態與已確認邊界
@@ -122,3 +124,19 @@ passive-scoped-lazy-regression.log：129項57.673秒全部通過，包含原啟�
 已備妥僅28個原案例的一次性補測工具：audit/run_symlink_bundle_c809b88.py與permission-bundle-context-c809b88.json。原固定19項工具及manifest完整保留，沒有擅自擴大舊授權。新清單SHA256為919a507fbf216da08fa0289d9de7c0d53354dd859c973e1ee840b45b61a31a4a，工具SHA256為e5bf7250eaa1288046571e7d7f304b566de0baba37cde2d50e09e045095d7275。工具只接受privileged模式，先核對權限、固定案例、Python／SQLite與來源，再建立短路徑私有profile執行原案例，要求28項無略過通過並核對來源未變；不修改ACL、開發人員模式或防護設定。一般權限拒絕已實測，permission-bundle-ordinary-refusal.log，未建立任何fixture或啟動UAC。
 
 下一個具體動作：取得這次28項UAC補測的明確授權，讓使用者親自在Windows提示核准，再執行固定清單並檢查逐項結果；未獲授權前維持待測。復原依工作樹旁RECOVERY.md與上述固定來源／清單接續，不重寫已完成工作，也不接觸Sitecore。
+
+## 本機授權後的權限、封裝與安裝驗證
+
+使用者先前暫不提升的決定，已由新的明確授權取代：允許一次UAC僅跑已備妥28項，且本機測試／建置／安裝通過後推送、合併本次整合到main，確認CI與最新安裝包後再做跨電腦交接包。UAC PID8160已結束；partition-privileged-approved-c809b88.json/.log記錄28項1.384秒全通過，0略過、0失敗、來源未變。未更改ACL、開發人員模式或防護設定，未擴大提升權限範圍。
+
+本機凍結前獨立核對原packaging/desktop_regression.discover完整3615個ID與33個原適用性略過規則，合併實際一般分區、權限分區、獨立網頁補測後，3587個不同案例已實測通過，其餘28為原Linux／凍結harness適用性案例。local-build-regression-proof-c809b88.json是本機QA證據，不是CI收據，也不傳入工作流程收據驗證器。正式build.ps1原完整回歸與skip policy未放寬。最新封裝程式變更仍須PR與main完整CI對應確切提交驗證，不把先前來源指紋冒充新提交。
+
+實際封裝smoke抓到QtCore載入失敗，17.17秒退出、未觸及原資料。比對DLL SHA及Analysis TOC確認：開發工具PATH讓PyInstaller誤收Codex內附Poppler的icuuc.dll／icudt78.dll，覆蓋Qt需用的Windows ICU介面；不是原登入或研究資料損毀。保留故障包至audit/frozen-failed-qt-path與MarkAuto-failed-qt-local-setup.exe，未刪除原安裝、Codex、Poppler或其他程式。修正只在PyInstaller分析時使用固定Python＋Windows的程序PATH，finally恢復原值；Qt授權排除與依賴鎖定皆照舊。另補trading_entry.py到build-manifest來源清單，原實際manifest測試增加該檔雜湊斷言，未改預期結果或降低門檻。
+
+修正後：frozen-smoke-isolated-path-c809b88.json／receipt記錄真實凍結程式18.809秒完整通過；安裝後frozen-smoke-installed-local-c809b88.json／receipt記錄17.791秒完整通過，無開發工具PATH、無原資料或登入讀取，原7步、fixture、live disabled等條件成立。原smoke包含市場、歷史與walk-forward的額外證據，依原報告逐欄記錄，未把Linux或負面注入案例算成執行過。修正後原封裝／維護35項3.194秒通過，全部12個封裝PowerShell語法檢查通過；完整prepush以工作區內真實Python3.11編譯659檔、Ruff692檔、quality0通過。未安裝或替換原Python，未修改系統launcher。
+
+本機安裝包SHA256 e53e25c0d3ec8732af677620082b5d942dc261224ad70d8f4ca2fe22a24eb353，以原Inno配方CURRENTUSER升級成功，exit0。實際payload為is-5OATL，local-installed-payload-verification.json逐檔核對1006個程式檔與清單完全一致；原is-C3E91執行檔仍在，SHA00876c7e0468a6bc7c85a73afa29440a7f8515eb3f9729764e1c5eee94cf7b96完全未變。沒有執行會移除原資料的乾淨主機／解除安裝harness，也沒有改其拒絕既有資料的保護；本機證據是保留資料的升級，乾淨安裝／解除安裝由真正的CI隔離環境驗證。
+
+新安裝版PID35940完成原資料正常啟動、ChatGPT自動已連線、原帳戶與保存連線、深色偏好、策略AI入口、原AI策略中心、研究助理、同工作區返回、輸入／送出區與原模型前提的實際檢查，screens/installed-local-*保存PNG及UIA。沒有真實AI推論、模型刷新、同意勾選、額度變更或金融操作。確認LOCAL、0持倉／0委託後由UI正常關閉引擎，再正常關閉研究及外框。state-after-local-install-ui.json再次確認原183研究檔只有正常追加的desktop-events診斷log不同；所有原研究資料、設定與工作區指標逐位元組保留，v2仍只增加兩個正常引擎啟閉的SQLite日誌差異，未回滾或刪除。沒有直接讀取或複製登入憑證，Sitecore未碰。
+
+下一步：保存封裝修正，推送本分支、建立PR並等待全部必要CI成功再合併；隨後核對main確切提交、完整CI與預覽發布安裝包，下載後驗證雜湊、安裝與功能，再整理交接包。現有主機登入必須留在原機；交接包不攜帶OS綁定憑證，目標電腦使用官方重新登入流程。
