@@ -32,6 +32,7 @@ from quantlab.reporting import (
     load_selection,
 )
 from quantlab.__main__ import config_from_json
+from tools.research_campaign import run_fixture_campaign
 
 
 def guard(action):
@@ -176,7 +177,7 @@ def main():
         if not valid_name:
             st.error('Campaign name must contain only letters, numbers, hyphens or underscores.')
         if dataset and len(dataset.bars) >= 16:
-            from quantlab.research import demo_campaign_config, FixtureGenerator, run_campaign
+            from quantlab.research import demo_campaign_config
 
             cfg = demo_campaign_config(dataset, demo_config())
             cfg_text = st.text_area('Locked campaign configuration JSON', canonical_json(cfg), height=240)
@@ -185,7 +186,7 @@ def main():
                 def campaign():
                     config = json.loads(cfg_text)
                     config['backtest_config'] = config_from_json(config['backtest_config'])
-                    return run_campaign(dataset, config=config, generator=FixtureGenerator(), output_dir=campaign_dir)
+                    return run_fixture_campaign(dataset, config, campaign_dir)
 
                 if guard(campaign):
                     st.success('Campaign state persisted. Selection thresholds were locked before evaluation.')

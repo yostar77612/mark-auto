@@ -20,6 +20,14 @@ def default_root() -> Path:
     return Path(os.environ.get('LOCALAPPDATA', str(Path.home() / '.local' / 'share'))) / 'MarkAuto-v2' / 'local'
 
 
+def launch(argv=None):
+    """Public desktop entry, keeping the original callable recovery API intact."""
+    from desktop import main
+
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    return main(arguments or ['--platform-v2'])
+
+
 def run_window(
     root: Path | None = None,
     *,

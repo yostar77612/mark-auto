@@ -9,7 +9,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QCoreApplication, QEvent, QLockFile, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QLockFile, QPoint, QRect, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -107,6 +107,12 @@ class UnifiedResearchTests(unittest.TestCase):
         host.chatgpt_controller.changed.emit()
         self.assertEqual(self.outer.chatgpt_button.text(), ui_text('redesign.header.connected'))
         self.assertEqual(self.outer.chatgpt_button.accessibleName(), ui_text('redesign.header.connected'))
+        host.status.setText(ui_text('ui.start_job.running'))
+        self.integration.refresh_connection()
+        self.assertEqual(host.status.text(), ui_text('ui.init.ready'))
+        host.status.setText('validation feedback retained')
+        self.integration.refresh_connection()
+        self.assertEqual(host.status.text(), 'validation feedback retained')
         host.chatgpt_controller.state = 'unknown'
         host.chatgpt_controller.changed.emit()
         self.assertEqual(self.outer.chatgpt_button.text(), ui_text('redesign.header.connection'))
@@ -208,12 +214,21 @@ class UnifiedResearchTests(unittest.TestCase):
         host.chatgpt_controller.busy = False
 
     def test_assistant_is_directly_reachable_and_original_readonly_fixture_reply_works(self):
+        self.outer.resize(1000, 700)
         self.outer.ai_assistant_button.click()
         self.app.processEvents()
         assistant = self.session.window.settings_page.assistant_panel
         self.assertEqual(self.integration.panel.choice.currentData(), 'assistant')
         self.assertTrue(self.session.window.settings_page.maintenance_toggle.isChecked())
         self.assertTrue(assistant.isVisible())
+        viewport = self.session.window.stack.currentWidget().viewport()
+        for control in (assistant.input, assistant.send):
+            self.assertTrue(viewport.rect().contains(QRect(control.mapTo(viewport, QPoint()), control.size())))
+        hint = next(hint for hint in self.session.window._disabled_hints if hint.button is assistant.send)
+        hint.update()
+        self.assertIs(hint.host, self.session.window)
+        self.assertIn(ui_text('ui.plan_usage_request.connection_models_required'), hint.label.text())
+        self.assertNotIn(ui_text('ui_polish.install_polish.idle_prerequisite'), hint.label.text())
         # The original assistant requires a discovered model even in fixture
         # mode. Supply explicit offline fixture discovery; never bypass its gate.
         self.session.window.chatgpt_controller.models = ('offline-fixture',)
@@ -225,6 +240,22 @@ class UnifiedResearchTests(unittest.TestCase):
         self.assertTrue(assistant.transcript.toPlainText())
         self.assertFalse(assistant.worker.active)
         self.assertEqual(self.facade.commands, [])
+
+    def test_embedded_busy_hints_use_the_explicit_original_host(self):
+        from types import SimpleNamespace
+        from PySide6.QtWidgets import QLabel, QPushButton
+        from desktop_ui_polish import DisabledHint
+
+        button = QPushButton(self.session.window)
+        label = QLabel(self.session.window)
+        try:
+            button.setEnabled(False)
+            hint = DisabledHint(button, label, 'ready', host=SimpleNamespace(jobs=SimpleNamespace(active=True)))
+            self.assertIs(button.window(), self.outer)
+            self.assertIn(ui_text('ui_polish.update.job_busy'), hint.label.text())
+        finally:
+            label.deleteLater()
+            button.deleteLater()
 
     def test_unjoined_assistant_refuses_outer_close_and_retains_writer_lock(self):
         assistant = self.session.window.settings_page.assistant_panel

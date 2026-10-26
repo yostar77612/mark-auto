@@ -10,6 +10,7 @@ if __name__ == '__main__':
 
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
+from trading_runtime import launch
 
 import argparse
 from pathlib import Path
@@ -416,25 +417,13 @@ def main(argv=None):
             account_ref=args.trading_account,
             profile_path=args.trading_profile,
             contexts_path=args.trading_contexts,
-            research_bootstrap=args.research_bootstrap,
+            **({'research_bootstrap': args.research_bootstrap} if args.research_bootstrap is not None else {}),
         )
     if args.tls_smoke is not None:
         from desktop_tls_smoke import write_report
 
         return write_report(args.tls_smoke)
     return run_gui(args)
-
-
-def launch(argv=None):
-    """Public desktop entry; retain main's original callable recovery contract.
-
-    Installed shortcuts and source execution open the same unified window.
-    Explicit diagnostic/engine arguments keep their existing dispatch paths.
-    """
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    if not arguments:
-        arguments = ['--platform-v2']
-    return main(arguments)
 
 
 if __name__ == '__main__':

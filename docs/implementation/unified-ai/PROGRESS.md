@@ -59,3 +59,20 @@ PID4700與其本機引擎均已透過UI在0部位／0委託下正常關閉。資
 下一步：短TEMP重驗全部失敗模組、新17項整合及T11／復原；確認後凍結新來源、重新完整普通分區，繼續原生畫面與可行封裝。
 
 修正後證據：startup-inventory-compatibility.log 35項9.704秒全部通過；short-temp-diagnostics.log 原故障清理／隔離／候選來源24項357.241秒通過（含1原適用性skip）；lifecycle-ui-regression.log 新17項整合＋原復原／圖表共38項94.626秒全部通過；release-timers-native-guards.log 補強研究關閉停止所有子定時器後，原桌面runtime／安裝互斥與新增釋放案例共44項17.692秒全部通過。Python3.11 AST656檔通過，Ruff check/format、quality0及architecture0。接續以固定新來源重新完整普通權限3590項（全3609項，19項仍待權限）。
+
+
+### 完整普通分區 dbcabc8 與後續修正（2026-10-26）
+
+完整普通分區3590項已實際跑完，source_unchanged=true，6 failures、0 errors、42原條件skip，證據partition-regular-final-dbcabc8.json/.log。此輪不是通過；完整保留失敗結果。固定19項權限案例仍未執行，也未啟動UAC。
+
+修正六個失敗而不改歷史fixture／門檻：入口launch實作移至既有trading_runtime，desktop保留匯出與原七個定義；只明確提供隔離bootstrap時傳新增參數，保留舊CLI呼叫格式；新增desktop_research_runtime納入原文字掃描UI_MODULES（擴大覆蓋、不豁免）；診斷工具_write_json沿用既有replace_file的100ms同一次Windows原子取代重試，實際捕獲的PermissionError不再導致假失敗。未重跑任何交易、研究、預算或SQL交易。
+
+額外補齊原選配網頁UI測試：獨立37個套件逐檔核對官方PyPI雜湊，紀錄ui-verified-wheels.json／ui-verified-windows.lock，保留既有Pillow13審核後覆寫。Windows網頁活動原案例60秒超時，堆疊顯示反覆spawn重載Streamlit；同原配置／960合成bars／15次試驗的CLI在30.545秒完成。新增tools/research_campaign.py重用原fixture CLI，先以admission pipe完成程序樹隔離，再允許工作，整體沿用配置預算，已知失敗正常收尾，未確認停止則保留輸入並阻止新工作。原研究引擎、G3八檔、producer profiles、OOS與不可逆預算皆未改。原網頁案例維持60秒與全部15次試驗／重開不消耗斷言；實際來源已通過。
+
+獨立venv的Windows啟動器會增加一層父程序，原診斷所有權規則正確拒絕，因此保留原固定Python，僅透過隔離套件路徑執行選配UI profile；不改所有權規則。direct-runtime-paper-and-process-tests.log 35項36.191秒全過；final-unified-entry-web-regression.log 原網頁7項、新整合17項、入口／文字／安裝互斥共68項115.194秒全過；final-inventory-and-process-tests.log 18項6.287秒全過。新增程序案例驗證缺失admission、非零退出、超時與真實子程序清理、未確認停止保留輸入／禁止新工作、非法預算拒絕。
+
+原生檢查發現小視窗助理送出區在畫面外，已調整自動捲動並驗證1000x700輸入與按鈕都在viewport內；保留原模型清單門檻，缺模型時改為具體提示，不冒充背景作業仍執行。DisabledHint明確綁定原研究host，避免內嵌後誤讀多市場外框；原三參數用法仍相容。原連線完成後只清除兩種舊generic running文字，實際失敗、未知結果與待對帳內容全部保留。literal-key-and-embedded-hints中發現原新測試使用self.config被R1識別成原服務observer，已改為專用campaign_options；沒有變更R1 fixture。新增文字掃描也捕獲原動態key，改為兩個literal ui_text呼叫，未放寬掃描。final-idle-status-and-model-hints.log 15項9.725秒通過。
+
+實機來源UI已確認同一主視窗原登入自動恢復、連線／模型／額度管理、AI策略與助理入口、同工作區返回、輸入與送出區及正確缺模型提示。證據screens/final-source-*，最後final-source-assistant-model-prerequisite顯示ChatGPT已連線、就緒、官方模型清單前提，沒有送出實際推論。這是來源程式證據，不是新安裝包／正式CI。第三輪來源UI34852經UI正常關閉後，公開IPC確認LOCAL、0持倉、0委託並正常停止引擎；所有來源預覽已退出。state-final-ui-after.json再次核對原183研究檔僅診斷log正常追加，所有研究資料與設定逐位元組保留；v2僅兩個合法啟閉的SQLite日誌改變，未刪除／回滾資料。登入引用仍由原controller使用，沒有直接讀取或複製憑證。
+
+下一步：固定來源，完整重跑普通權限分區及獨立選配UI profile。選配網頁框架會改寫__main__，分開完整模組執行，保留同一固定Python、來源及原案例／時限，避免影響後續spawn。不能把原條件skip當成通過；原始逐項理由與補測結果分別保存。正式安裝版仍是main159，本任務沒有遠端推送／合併／發布，沒有新的正式安裝包成功證據。

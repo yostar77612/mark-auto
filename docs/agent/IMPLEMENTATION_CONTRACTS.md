@@ -5605,3 +5605,14 @@ The callable desktop.main legacy recovery API remains compatible for existing
 integrations; no frozen/test-environment conditional changes behavior. An original
 workspace presenter closing itself disables its released research view immediately
 and requests outer-shell close through the same guarded lifecycle.
+
+The embedded disabled-action explanations bind explicitly to the original
+research host. Missing assistant models have an actionable prerequisite without
+changing eligibility. Completed connection jobs clear only stale generic running
+captions after confirmed idle/done; failures and pending reconciliation remain.
+The developer-only web UI runs its unchanged fixture campaign through the existing
+CLI in an admitted, owned process tree. It preserves all trials, budgets and
+results, joins failures/timeout descendants, retains unverified stops and refuses
+new work. It never becomes a production broker or arbitrary-code interface.
+Diagnostic report publication reuses the bounded Windows same-rename helper;
+no research, transaction, serialization or budget operation is replayed.

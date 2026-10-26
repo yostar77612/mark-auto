@@ -244,6 +244,19 @@ class UnifiedResearch(QObject):
             return
         connected = host.chatgpt_controller.state == 'plan_ready'
         host.app_header.refresh()
+        # A consumed connection-result event leaves the legacy generic running
+        # caption behind. Clear only that caption after confirmed idle/done;
+        # keep all failures, unknown outcomes and pending reconciliation text.
+        if (
+            not host.jobs.active
+            and not host.job_progress.running
+            and not host.chatgpt_controller.busy
+            and not host.settings_page.assistant_panel.worker.active
+            and not any(getattr(host, flag, False) for flag in ('_pending_analysis_reconcile', '_pending_plan_reconcile', '_wf_pending_reconcile'))
+            and host.app_header.job.text() in (ui_text('header.idle'), ui_text('header.done'))
+            and host.status.text() in (ui_text('ui.start_job.running'), ui_text('ui.poll_jobs.running'))
+        ):
+            host.status.setText(ui_text('ui.init.ready'))
         from desktop_theme import appearance, apply_theme
 
         current_appearance = appearance(host)
@@ -252,7 +265,8 @@ class UnifiedResearch(QObject):
             self.trading.setProperty('appearanceConvention', current_appearance[1])
             apply_theme(self.trading)
             self._appearance = current_appearance
-        self.trading.chatgpt_button.setText(ui_text('redesign.header.connected' if connected else 'redesign.header.connection'))
+        connection_text = ui_text('redesign.header.connected') if connected else ui_text('redesign.header.connection')
+        self.trading.chatgpt_button.setText(connection_text)
         self.trading.chatgpt_button.setAccessibleName(self.trading.chatgpt_button.text())
         # Only the existing fixed-status presentation crosses this boundary.
         self.panel.job_status.setText(host.app_header.job.text())
@@ -312,7 +326,7 @@ class UnifiedResearch(QObject):
         if self.panel.choice.currentData() != 'assistant' or self.trading.pages.currentWidget() is not self.panel:
             return
         assistant = self._host.settings_page.assistant_panel
-        self._host.stack.currentWidget().ensureWidgetVisible(assistant.input, 0, 24)
+        self._host.stack.currentWidget().ensureWidgetVisible(assistant.send, 0, 24)
         assistant.input.setFocus()
 
     def _visibility(self, index):
