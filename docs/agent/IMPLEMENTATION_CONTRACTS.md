@@ -5686,3 +5686,8 @@ to cover the changed Application files; no historical identity is relabeled.
 After the final validated interface confirmation, process zero exit and owned
 subtree quiescence are authoritative; no live-window query races that expected
 window destruction. Intermediate modal closure is still explicitly observed.
+
+
+### Unified integration: owned synthetic-context cleanup
+
+Only the real-IPC test fixture may re-observe and make a fresh shutdown request after an explicit rejected state_conflict receipt, with at most three attempts. Other refusals and unknown outcomes are not replayed. Production command CAS checks, all test assertions, forced-cleanup failure and existing join deadlines remain unchanged. DomainError cleanup refusals are recorded. A real IPC case injects a version change and asserts the stale request rejects before a fresh shutdown succeeds; bounded-rejection and unknown-outcome cases remain mandatory.
