@@ -5655,3 +5655,13 @@ selected live control is revalidated before mutation. Snapshot caching does not
 relax the 512-element cap, exact dialog scope or 15-second total close-and-drain
 budget. The ephemeral CI owned-window fixture exercises the production collector
 against at least 128 real native controls; it is not a personal-host UI action.
+
+Accessible list selection is a presentation navigation event: exactly one selected
+workspace synchronizes its current row and visible page, including a return from
+an embedded research view. It never emits a financial command or replaces the
+research session. Native source-Qt qualification runs early only in ephemeral CI,
+with explicit private trading/research roots and login restoration disabled by
+that bootstrap. It uses the same owned-process close fixture and original
+15-second close-and-drain limit. This source-only result cannot replace frozen
+installer, upgrade, uninstall, recovery or clean-client acceptance. Personal-host
+invocations refuse before runtime/GUI loading; no host UIA action is introduced.

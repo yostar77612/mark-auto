@@ -17,6 +17,27 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.lifecycle = (ROOT / 'packaging/test_installer.ps1').read_text()
         self.wrapper = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
 
+    def test_source_ui_fixture_refuses_personal_host_before_loading_runtime(self):
+        environment = {key: value for key, value in os.environ.items() if key not in ('GITHUB_ACTIONS', 'RUNNER_ENVIRONMENT')}
+        run = subprocess.run(
+            [
+                'powershell' if sys.platform == 'win32' else 'pwsh',
+                '-NoProfile',
+                '-NonInteractive',
+                '-File',
+                str(ROOT / 'packaging/test_unified_source_ui.ps1'),
+                '-PythonPath',
+                'not-a-runtime',
+            ],
+            env=environment,
+            capture_output=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=15,
+        )
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn('Source UI fixture requires ephemeral hosted CI', run.stdout + run.stderr)
+
     def test_unified_close_policy_rejects_nonlocal_nonempty_or_unstopped_scope(self):
         from desktop_strings import ui_text
 

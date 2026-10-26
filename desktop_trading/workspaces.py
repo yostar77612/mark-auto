@@ -91,6 +91,18 @@ def build(self) -> None:
     self.navigation.currentRowChanged.connect(self.pages.setCurrentIndex)
     self.navigation.itemClicked.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))
     self.navigation.itemActivated.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))
+
+    def selected_workspace():
+        # Accessibility selection changes do not necessarily move Qt's current
+        # index. Keep the same read-only route authoritative for every input.
+        selected = self.navigation.selectedItems()
+        if len(selected) == 1:
+            row = self.navigation.row(selected[0])
+            if self.navigation.currentRow() != row:
+                self.navigation.setCurrentRow(row)
+            self.pages.setCurrentIndex(row)
+
+    self.navigation.itemSelectionChanged.connect(selected_workspace)
     self.navigation.setCurrentRow(0)
     self.setStyleSheet('''
         QMainWindow {background:#f3f6fa; color:#152438;}

@@ -9,7 +9,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QCoreApplication, QEvent, QLockFile, QPoint, QRect, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QItemSelectionModel, QLockFile, QPoint, QRect, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -96,6 +96,27 @@ class UnifiedResearchTests(unittest.TestCase):
         QTest.mouseClick(self.outer.navigation.viewport(), Qt.MouseButton.LeftButton, pos=self.outer.navigation.visualItemRect(item).center())
         self.app.processEvents()
         self.assertEqual(self.outer.pages.currentIndex(), 5)
+
+    def test_accessible_selection_navigates_without_changing_financial_state(self):
+        # Qt UIA Select uses selectionModel.select, without changing currentIndex.
+        # Exercise that real selection path, including reselecting an embedded
+        # tool's current workspace. No mouse/current-row shortcut stands in for it.
+        navigation = self.outer.navigation
+        for row in range(6):
+            navigation.selectionModel().clearSelection()
+            navigation.selectionModel().select(navigation.model().index(row, 0), QItemSelectionModel.SelectionFlag.Select)
+            self.app.processEvents()
+            self.assertEqual(navigation.currentRow(), row)
+            self.assertEqual(self.outer.pages.currentIndex(), row)
+        original = self.session.window
+        self.integration.show('connection')
+        self.assertIs(self.outer.pages.currentWidget(), self.integration.panel)
+        navigation.selectionModel().clearSelection()
+        navigation.selectionModel().select(navigation.model().index(5, 0), QItemSelectionModel.SelectionFlag.Select)
+        self.app.processEvents()
+        self.assertEqual(self.outer.pages.currentIndex(), 5)
+        self.assertIs(self.session.window, original)
+        self.assertEqual(self.facade.commands, [])
 
     def test_login_entry_uses_same_controller_and_updates_connection_status(self):
         host = self.session.window
