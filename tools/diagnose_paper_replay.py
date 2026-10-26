@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from quantlab.desktop_runtime import _job_worker as _original_worker
+from quantlab.runtime_support import replace_file
 
 
 class Timings:
@@ -135,7 +136,7 @@ def _write_json(path, value):
         raise ValueError('Diagnostic report exceeded its bound')
     partial = path.with_suffix('.partial')
     partial.write_bytes(raw)
-    os.replace(partial, path)
+    replace_file(partial, path)
 
 
 def _filesystem(root):

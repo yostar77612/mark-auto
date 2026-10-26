@@ -10,6 +10,7 @@ if __name__ == '__main__':
 
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
+from trading_entry import launch
 
 import argparse
 from pathlib import Path
@@ -97,7 +98,8 @@ def parse_args(argv=None):
     parser.add_argument('--smoke-test', type=Path, help='Show real native window, write launch report, then exit')
     parser.add_argument('--smoke-isolated', action='store_true', help='Smoke only: do not discover or read the user bootstrap/settings')
     parser.add_argument('--tls-smoke', type=Path, help='Explicit frozen Python TLS proof against an ephemeral loopback fixture')
-    parser.add_argument('--platform-v2', action='store_true', help='Open the separate multi-market platform; startup never logs in')
+    parser.add_argument('--platform-v2', action='store_true', help='Open the unified multi-market and AI research desktop (also the normal default)')
+    parser.add_argument('--research-bootstrap', type=Path, help='Explicit isolated research bootstrap for desktop validation; does not restore saved login')
     parser.add_argument('--trading-engine', type=Path, help='Run the independent local v2 engine in an explicit directory')
     parser.add_argument('--trading-root', type=Path, help='Explicit isolated v2 desktop directory')
     parser.add_argument('--trading-environment', choices=('LOCAL', 'BROKER_SIMULATION', 'LIVE'), help='Explicit v2 host environment; startup never logs in')
@@ -105,6 +107,8 @@ def parse_args(argv=None):
     parser.add_argument('--trading-profile', type=Path, help='Absolute versioned broker runtime profile; metadata only on startup')
     parser.add_argument('--trading-contexts', type=Path, help='Absolute configured v2 context registry for the desktop')
     args = parser.parse_args(argv)
+    if args.research_bootstrap is not None and (not args.platform_v2 or not args.research_bootstrap.is_absolute()):
+        parser.error('--research-bootstrap requires --platform-v2 and an absolute isolated directory')
     if args.tls_smoke is not None:
         if args.smoke_test or not args.tls_smoke.is_absolute():
             parser.error('--tls-smoke requires an absolute report path and cannot combine with --smoke-test')
@@ -413,6 +417,7 @@ def main(argv=None):
             account_ref=args.trading_account,
             profile_path=args.trading_profile,
             contexts_path=args.trading_contexts,
+            **({'research_bootstrap': args.research_bootstrap} if args.research_bootstrap is not None else {}),
         )
     if args.tls_smoke is not None:
         from desktop_tls_smoke import write_report
@@ -422,4 +427,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    raise SystemExit(launch())

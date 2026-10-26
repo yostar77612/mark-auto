@@ -50,8 +50,24 @@ def build(self) -> None:
     self.notice.setTextFormat(Qt.TextFormat.PlainText)
     self.notice.setObjectName('trading_notice')
     self.notice.setWordWrap(True)
-    outer.addWidget(self.context)
-    outer.addWidget(self.summary)
+    header = QHBoxLayout()
+    header.addWidget(self.context, 1)
+    self.chatgpt_button = button('redesign.header.connection', 'unified_chatgpt_connection')
+    self.chatgpt_button.setMaximumWidth(270)
+    header.addWidget(self.chatgpt_button)
+    outer.addLayout(header)
+    self.research_job = QLabel()
+    self.research_job.setTextFormat(Qt.TextFormat.PlainText)
+    self.research_job.setObjectName('unified_research_job')
+    self.research_job.setWordWrap(False)
+    summary_row = QHBoxLayout()
+    summary_row.addWidget(self.summary, 1)
+    summary_row.addWidget(self.research_job)
+    self.cancel_research_button = button('unified.cancel_research', 'unified_cancel_research')
+    self.cancel_research_button.setToolTip(ui_text('unified.cancel_research_hint'))
+    self.cancel_research_button.setEnabled(False)
+    summary_row.addWidget(self.cancel_research_button)
+    outer.addLayout(summary_row)
     outer.addWidget(self.notice)
     body = QHBoxLayout()
     self.navigation = QListWidget()
@@ -73,6 +89,20 @@ def build(self) -> None:
     _performance_page(self)
     _settings_page(self)
     self.navigation.currentRowChanged.connect(self.pages.setCurrentIndex)
+    self.navigation.itemClicked.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))
+    self.navigation.itemActivated.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))
+
+    def selected_workspace():
+        # Accessibility selection changes do not necessarily move Qt's current
+        # index. Keep the same read-only route authoritative for every input.
+        selected = self.navigation.selectedItems()
+        if len(selected) == 1:
+            row = self.navigation.row(selected[0])
+            if self.navigation.currentRow() != row:
+                self.navigation.setCurrentRow(row)
+            self.pages.setCurrentIndex(row)
+
+    self.navigation.itemSelectionChanged.connect(selected_workspace)
     self.navigation.setCurrentRow(0)
     self.setStyleSheet('''
         QMainWindow {background:#f3f6fa; color:#152438;}
@@ -170,6 +200,7 @@ def _strategy_page(self) -> None:
             ('v2.research', 'research_button', lambda: self._strategy_action(UiAction.RESEARCH)),
             ('v2.deploy', 'deploy_button', self.deploy_selected),
             ('v2.legacy_research', 'legacy_research_button', lambda: self.legacy_requested.emit('strategy')),
+            ('unified.page.assistant', 'ai_assistant_button', lambda: self.legacy_requested.emit('assistant')),
         ),
     )
     layout.addWidget(label('v2.version_hint'))

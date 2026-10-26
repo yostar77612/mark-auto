@@ -8,27 +8,28 @@ from PySide6.QtWidgets import QLabel, QPushButton, QBoxLayout, QFormLayout
 class DisabledHint(QObject):
     """Follow Qt's effective enabled state, including disabled parent containers."""
 
-    def __init__(self, button, label, prerequisite):
+    def __init__(self, button, label, prerequisite, *, host=None):
         super().__init__(button)
         self.button, self.label, self.prerequisite = button, label, prerequisite
+        self.host = host
         self.original_tooltip = button.toolTip()
         button.installEventFilter(self)
         self.update()
 
     def update(self):
         disabled = not self.button.isEnabled()
-        jobs = getattr(self.button.window(), 'jobs', None)
-        prerequisite = (
-            ui_text('ui_polish.update.job_busy') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else self.prerequisite
-        )
-        paper = getattr(self.button.window(), 'paper_page', None)
+        host = self.host if self.host is not None else self.button.window()
+        jobs = getattr(host, 'jobs', None)
+        prerequisite = self.prerequisite
+        prerequisite = ui_text('ui_polish.update.job_busy') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else prerequisite
+        paper = getattr(host, 'paper_page', None)
         if self.button.objectName() in ('paper_submit', 'paper_replay', 'paper_cancel') and getattr(
             getattr(paper, 'page_state', None), 'manual_order_lock', False
         ):
             prerequisite = ui_text('paper.lock.rejected')
         text = ui_text('ui_polish.update.prerequisite_required').format(prerequisite) if disabled else ''
         if disabled and self.button.objectName() == 'cancel_job':
-            progress = getattr(self.button.window(), 'job_progress', self.button.parentWidget())
+            progress = getattr(host, 'job_progress', self.button.parentWidget())
             text = ui_text('job.cancel_notice') if getattr(progress, 'running', False) else ui_text('job.idle_hint')
         self.button.setToolTip(text if disabled else self.original_tooltip)
         self.button.setProperty('disabled_hint', text)

@@ -235,6 +235,7 @@ class PackagingTests(unittest.TestCase):
                 'desktop_chatgpt_ui.py',
                 'desktop_chatgpt_dependency_manifest.json',
                 'desktop_icon.py',
+                'trading_entry.py',
                 'packaging/markauto.ico',
                 'tools/make_icon.py',
                 'packaging/third_party/chatgpt-auth-native-notices.zip',

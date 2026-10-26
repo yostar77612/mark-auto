@@ -395,3 +395,13 @@ capture route is intentionally unimplemented until separately tested.
 Success of this bounded subset remains `partial` / exit 2. Original clean Windows
 10/11, real AI/market, full functionality and visual acceptance remain unverified.
 No lifecycle assertion or exit code is changed by this separate phase.
+# Unified desktop lifecycle
+
+New unified-desktop kits explicitly record `lifecycle_source` and its digest in
+`kit.json`. The stable `packaging/test_installer.ps1` kit entry contains that
+verified variant, and `unified_acceptance_ui.ps1` is independently hashed. Legacy
+kit assembly remains available without this mode and retains its original script.
+The unified variant confirms an empty local account, stops its engine through the
+normal interface, confirms the stopped-engine close scope and waits for the owned
+process tree to finish within the original total close budget. It never accepts a
+real account, nonempty position/order scope or unknown engine state.

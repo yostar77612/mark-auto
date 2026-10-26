@@ -5565,3 +5565,124 @@ download-only discovery remains unchanged. The optional internal date set must b
 a nonempty frozenset of at most 256 ISO dates, matching the calendar input bound.
 No matching archive preserves the previous cache manifest and active research data.
 Original file, row, timeout, publication backup and rollback limits are unchanged.
+
+## Unified AI research and multi-market desktop (owner request 2026-10-26)
+
+Normal desktop startup and --platform-v2 compose the same six-workspace window.
+The original smoke, TLS and frozen worker dispatch paths retain their behavior.
+One ResearchSession owns the original WorkspaceLocator/bootstrap, writer lock,
+prepare_workspace recovery, RuntimeGuard, JobManager, settings and MainWindow.
+Its original presenter is an embedded Qt widget, not another desktop subprocess.
+The v2 engine remains independent and owns its existing typed command boundary.
+The embedded settings port preserves the original standalone window geometry
+(including absence), rather than publishing child-widget dimensions. All other
+explicit business preference changes use the original SettingsStore unchanged.
+
+Research data, AI search/candidates, backtests/comparisons, original paper tools,
+assistant and ChatGPT connection settings route inside that same window. The
+original controller alone restores the saved login and supplies connection/model
+state. Credentials are not copied to the v2 book or handled by a second resolver.
+The explicit isolated --research-bootstrap test option never restores a user's
+remembered login. Busy original sessions are not stolen, killed or migrated;
+failure is visible and the multi-market workspace remains usable for inspection.
+
+Global research cancellation delegates to the original pending/cancel/recovery
+gate, never a v2 order action. Closing the outer window first retains its existing
+scope confirmation and busy-operation checks, then asks the original research
+window to close. A refused or asynchronous research reconciliation retains the
+outer window and writer lock. Only original accepted close releases that session.
+The original assistant reply process must also stop and join before that lock is
+released; an unconfirmed assistant stop refuses close without unlocking.
+No timeouts, OOS access, irreversible budgets, AI tool permissions, risk gates,
+research evidence or historical producer profiles change. Research candidates do
+not auto-deploy or become evidence for another market or holding policy.
+Original v1 live prohibition and separate v2 execution-disabled defaults remain.
+Sitecore and real financial operations are outside this work.
+
+The executable/source __main__ entry uses desktop.launch: no arguments open the
+unified composition, while explicit diagnostic/engine arguments retain dispatch.
+The callable desktop.main legacy recovery API remains compatible for existing
+integrations; no frozen/test-environment conditional changes behavior. An original
+workspace presenter closing itself disables its released research view immediately
+and requests outer-shell close through the same guarded lifecycle.
+
+The embedded disabled-action explanations bind explicitly to the original
+research host. Missing assistant models have an actionable prerequisite without
+changing eligibility. Completed connection jobs clear only stale generic running
+captions after confirmed idle/done; failures and pending reconciliation remain.
+The developer-only web UI runs its unchanged fixture campaign through the existing
+CLI in an admitted, owned process tree. It preserves all trials, budgets and
+results, joins failures/timeout descendants, retains unverified stops and refuses
+new work. It never becomes a production broker or arbitrary-code interface.
+Diagnostic report publication reuses the bounded Windows same-rename helper;
+no research, transaction, serialization or budget operation is replayed.
+
+The public launch wrapper lives in the passive root trading_entry module; importing
+desktop alone does not initialize IPC or Qt. Keeping this composition entry outside
+quantlab/trading preserves existing engine research producer identities. Explicit
+embedded hint hosts and missing-model prerequisites apply only to UnifiedResearch;
+the standalone v1 characterization remains unchanged. The developer web campaign
+adapter loads only inside the user-invoked callback, preserving passive imports.
+
+PyInstaller native dependency analysis temporarily restricts only its process PATH
+to the pinned private Python and Windows directories, restoring the original PATH
+in finally. This prevents unrelated developer-tool ICU DLLs from shadowing the
+Windows ICU API required by Qt. No installed software or user files are removed;
+the complete original regression gate and Qt license audit remain mandatory.
+The build input manifest explicitly hashes the passive trading_entry source.
+
+### Unified installer lifecycle compatibility
+
+The historical v1 installer lifecycle and supervisor scripts retain their original
+byte-pinned guards. The separate unified lifecycle preserves those install, smoke,
+active-app refusal, uninstall and sentinel assertions, adding only the new explicit
+empty-LOCAL engine shutdown and interface-close interaction. Its complete close
+flow, including owned descendants exiting, shares the original 15-second budget.
+Unknown contexts, nonzero positions/orders, unverified stopped state, ambiguous
+controls, changed creation identity or failed cleanup still fail acceptance.
+Dialog discovery enumerates only the retained process's GUI thread and native
+owner chain. The test never searches the desktop, adopts PIDs or bypasses modals.
+The existing v1 entry remains available; unified clean-kit assembly requires exact
+candidate hashes for the variant and its extension and records the entry alias.
+Native UI fixtures compile/run only on ephemeral CI; actual user-host UI inspection
+continues through the approved computer-use interface. No personal-host uninstall
+or acceptance-helper compilation is introduced.
+
+Native close observation uses one bounded UI Automation property-cache snapshot
+instead of per-property cross-process enumeration. All descendant PIDs are checked,
+creation ownership and the original deadline remain checked throughout, and the
+selected live control is revalidated before mutation. Snapshot caching does not
+relax the 512-element cap, exact dialog scope or 15-second total close-and-drain
+budget. The ephemeral CI owned-window fixture exercises the production collector
+against at least 128 real native controls; it is not a personal-host UI action.
+
+Accessible list selection is a presentation navigation event: exactly one selected
+workspace synchronizes its current row and visible page, including a return from
+an embedded research view. It never emits a financial command or replaces the
+research session. Native source-Qt qualification runs early only in ephemeral CI,
+with explicit private trading/research roots and login restoration disabled by
+that bootstrap. It uses the same owned-process close fixture and original
+15-second close-and-drain limit. This source-only result cannot replace frozen
+installer, upgrade, uninstall, recovery or clean-client acceptance. Personal-host
+invocations refuse before runtime/GUI loading; no host UIA action is introduced.
+
+An owned confirmation must be visible; a hidden retired window with the same title
+cannot qualify. After a single asynchronous confirmation press, the fixture waits
+for that exact visible dialog to disappear before the next action. An unexpected
+replacement fails; interface-process exit still requires the final original zero
+exit-code and owned-descendant-drain assertions. The cached scope snapshot is
+validated only while its exact native visible dialog identity remains current.
+No action is blindly repeated, and all waits share the original 15-second limit.
+
+View-only context selection has an immutable ContextNavigationRequest and its own
+ContextNavigationPort. Its source context and generation, configured target mode
+and account, pending-mutation exclusion, atomic selection and persisted registry
+remain authoritative. It cannot change book contents, connect a broker, grant
+qualification, move funds or replay commands. The legacy version-bound switch
+command and every financial command retain their original admission. A priority
+stop during opening cancels selection through the same epoch fence. Unknown
+selection outcomes are not automatically repeated. V2 producer identity continues
+to cover the changed Application files; no historical identity is relabeled.
+After the final validated interface confirmation, process zero exit and owned
+subtree quiescence are authoritative; no live-window query races that expected
+window destruction. Intermediate modal closure is still explicitly observed.

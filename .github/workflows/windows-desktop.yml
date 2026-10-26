@@ -20,6 +20,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  # Diagnostics only: native faults remain failures with the original budgets.
+  PYTHONFAULTHANDLER: '1'
 concurrency:
   group: desktop-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -73,6 +76,20 @@ jobs:
       - run: python -m pip install pip-audit==2.10.1
       - name: Fail closed on runtime vulnerabilities or audit failure
         run: python -m pip_audit --path audit-runtime --cache-dir "${{ runner.temp }}/pip-audit-cache" --progress-spinner off --strict
+      - name: Provision pinned private SQLite for early native source UI verification
+        run: python tools/install_sqlite_runtime.py --destination build/unified-source-python --report dist/validation/unified-source-sqlite.json
+      - name: Verify real source Qt navigation and guarded close before the full regression
+        shell: powershell
+        run: ./packaging/test_unified_source_ui.ps1 -PythonPath "$PWD/build/unified-source-python/python.exe"
+      - name: Preserve early source UI evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unified-source-ui
+          path: |
+            dist/validation/unified-source-ui/
+            dist/validation/unified-source-sqlite.json
+          if-no-files-found: error
   regression:
     name: Complete fresh desktop regression before freezing
     needs: quality
@@ -145,9 +162,19 @@ jobs:
         run: python packaging/fetch_baseline.py baseline
       - name: Write candidate digest before actual-version upgrade validation
         run: python packaging/build_manifest.py
-      - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
+      - name: Verify preserved legacy and unified lifecycle guards before installation
         shell: pwsh
-        run: ./packaging/test_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff -AcceptanceScope HostedCi
+        run: |
+          python -m unittest discover -s tests -p test_acceptance_process.py
+          if ($LASTEXITCODE) { throw 'Installer lifecycle compatibility verification failed' }
+          @{
+            legacy_sha256 = (Get-FileHash packaging/test_installer.ps1 -Algorithm SHA256).Hash.ToLowerInvariant()
+            unified_sha256 = (Get-FileHash packaging/test_unified_installer.ps1 -Algorithm SHA256).Hash.ToLowerInvariant()
+            original_guard_sections_equal = $true
+          } | ConvertTo-Json | Set-Content dist/validation/installer-lifecycle-compatibility.json
+      - name: Test installed launch, shortcuts, upgrade and data-preserving uninstall
+        shell: powershell
+        run: ./packaging/test_unified_installer.ps1 -Version 0.2.2 -CreateRecoveryHandoff -AcceptanceScope HostedCi
       - name: Test actual released baseline and interrupted upgrade recovery
         shell: pwsh
         run: ./packaging/test_update_recovery.ps1 -Version 0.2.2 -BaselineVersion 0.2.1 -BaselineInstaller baseline/MarkAuto-0.2.1-windows-x64-setup.exe -BaselineManifest baseline/build-manifest.json -CandidateManifest dist/build-manifest.json -LifecycleHandoff dist/validation/lifecycle-state-handoff.json
@@ -157,7 +184,7 @@ jobs:
           New-Item candidate-release -ItemType Directory -Force | Out-Null
           Copy-Item dist/installers/MarkAuto-0.2.2-windows-x64-setup.exe candidate-release/
           Copy-Item dist/build-manifest.json candidate-release/
-          python packaging/clean_windows_kit.py --baseline baseline --baseline-version 0.2.1 --candidate candidate-release --version 0.2.2 --output clean-windows-kit
+          python packaging/clean_windows_kit.py --baseline baseline --baseline-version 0.2.1 --candidate candidate-release --version 0.2.2 --output clean-windows-kit --unified
           if ($LASTEXITCODE) { throw 'Clean client kit generation failed' }
           Compress-Archive -Path clean-windows-kit/* -DestinationPath dist/MarkAuto-0.2.2-clean-windows-acceptance.zip
       - name: Remove upgrade fixture from deliverables

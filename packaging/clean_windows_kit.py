@@ -36,7 +36,7 @@ def release(folder, version):
     return installer, manifest_path, manifest
 
 
-def assemble(baseline, candidate, baseline_version, version, output):
+def assemble(baseline, candidate, baseline_version, version, output, *, unified=False):
     old = release(baseline, baseline_version)
     new = release(candidate, version)
     if baseline_version == '0.0.0' or tuple(map(int, baseline_version.split('.'))) >= tuple(map(int, version.split('.'))):
@@ -46,15 +46,23 @@ def assemble(baseline, candidate, baseline_version, version, output):
     inputs = {key.replace('\\', '/'): value for key, value in new[2]['inputs_sha256'].items()}
     if digest(HELPER_DLL) != inputs.get('packaging/acceptance_process.dll'):
         raise ValueError('Prebuilt acceptance helper differs from candidate build manifest')
+    here = Path(__file__).resolve().parent
+    if unified:
+        for name in ('test_unified_installer.ps1', 'unified_acceptance_ui.ps1'):
+            if digest(here / name) != inputs.get('packaging/' + name):
+                raise ValueError('Unified lifecycle source differs from candidate build manifest')
     output = Path(output)
     if output.exists():
         raise FileExistsError('Refusing to overwrite an existing kit or evidence')
     output.mkdir(parents=True)
     (output / 'packaging').mkdir()
     (output / 'dist/installers').mkdir(parents=True)
-    here = Path(__file__).resolve().parent
     for name in ('test_installer.ps1', 'clean_windows_acceptance.ps1', 'acceptance_process.ps1', 'clean_windows_README.md'):
         shutil.copyfile(here / name, output / 'packaging' / name)
+    if unified:
+        # Keep the established no-Python kit entry path; record its exact source.
+        shutil.copyfile(here / 'test_unified_installer.ps1', output / 'packaging/test_installer.ps1')
+        shutil.copyfile(here / 'unified_acceptance_ui.ps1', output / 'packaging/unified_acceptance_ui.ps1')
     shutil.copyfile(HELPER_DLL, output / 'packaging/acceptance_process.dll')
     for label, data in (('baseline', old), ('candidate', new)):
         shutil.copyfile(data[0], output / 'dist/installers' / data[0].name)
@@ -69,6 +77,9 @@ def assemble(baseline, candidate, baseline_version, version, output):
         'files_sha256': files,
         'full_acceptance': 'EXTERNAL BLOCKED',
     }
+    if unified:
+        descriptor['lifecycle_source'] = 'packaging/test_unified_installer.ps1'
+        descriptor['lifecycle_source_sha256'] = inputs[descriptor['lifecycle_source']]
     (output / 'kit.json').write_text(json.dumps(descriptor, indent=2) + '\n', encoding='utf-8')
     return descriptor
 
@@ -77,8 +88,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('baseline', 'candidate', 'baseline-version', 'version', 'output'):
         parser.add_argument('--' + name, required=True)
+    parser.add_argument('--unified', action='store_true', help='Use the digest-verified unified UI lifecycle, preserving the legacy fixture')
     args = parser.parse_args()
-    assemble(args.baseline, args.candidate, args.baseline_version, args.version, args.output)
+    assemble(args.baseline, args.candidate, args.baseline_version, args.version, args.output, unified=args.unified)
 
 
 if __name__ == '__main__':

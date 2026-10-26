@@ -61,6 +61,27 @@ class CleanWindowsKitTests(unittest.TestCase):
             self.assemble()
         self.assertFalse((self.root / 'kit').exists())
 
+    def test_unified_kit_has_verified_lifecycle_alias_and_extension(self):
+        path = self.new / 'build-manifest.json'
+        data = json.loads(path.read_text())
+        for name in ('test_unified_installer.ps1', 'unified_acceptance_ui.ps1'):
+            data['inputs_sha256']['packaging/' + name] = kit.digest(ROOT / 'packaging' / name)
+        path.write_text(json.dumps(data))
+        result = kit.assemble(self.old, self.new, '0.1.1', '0.1.2', self.root / 'kit', unified=True)
+        dest = self.root / 'kit'
+        self.assertEqual(result['lifecycle_source'], 'packaging/test_unified_installer.ps1')
+        self.assertEqual(result['lifecycle_source_sha256'], kit.digest(dest / 'packaging/test_installer.ps1'))
+        self.assertEqual((dest / 'packaging/test_installer.ps1').read_bytes(), (ROOT / result['lifecycle_source']).read_bytes())
+        for name, checksum in result['files_sha256'].items():
+            self.assertEqual(kit.digest(dest / name), checksum)
+        self.assertIn('packaging/unified_acceptance_ui.ps1', result['files_sha256'])
+        self.assertFalse(list(dest.rglob('*.py')))
+
+    def test_unified_kit_refuses_unverified_extension_before_creating_output(self):
+        with self.assertRaises(ValueError):
+            kit.assemble(self.old, self.new, '0.1.1', '0.1.2', self.root / 'kit', unified=True)
+        self.assertFalse((self.root / 'kit').exists())
+
     def test_rejects_absent_source_or_bad_commit(self):
         path = self.new / 'build-manifest.json'
         original = json.loads(path.read_text())

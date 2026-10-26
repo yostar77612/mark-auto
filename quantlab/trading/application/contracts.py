@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, QuantityUnit, Side
 from .broker_settings import BrokerReadiness, BrokerSettings
@@ -240,6 +240,20 @@ class TradingFacade(Protocol):
     def snapshot(self) -> UiState: ...
 
     def execute(self, command: UiCommand) -> UiReceipt: ...
+
+
+@dataclass(frozen=True)
+class ContextNavigationRequest:
+    expected_context_id: str
+    expected_epoch: int
+    context_id: str
+    environment: Environment
+    account_ref: str
+
+
+@runtime_checkable
+class ContextNavigationPort(Protocol):
+    def navigate_context(self, request: ContextNavigationRequest) -> UiReceipt: ...
 
 
 class ContextPort(Protocol):

@@ -2,7 +2,9 @@
 
 `TradingWindow(facade, initial_state)` 僅接收 Application 的 `TradingFacade`、`UiState`，所有修改經 `UiCommand`。桌面不讀寫交易帳本，不載入券商 SDK，也不自行計算資格、風控或成交。視窗上的狀態、部位及績效來自 Application 的唯讀模型。
 
-主程式建立引擎或 IPC 連線後，建立視窗並接上 `legacy_requested(str)`，保留原有 `data`、`strategy`、`market`、`backtest`、`compare`、`settings` 入口。`close_ui_requested` 只表示關閉畫面；背景引擎生命週期由 Runtime 負責。關閉引擎是獨立的 `SHUTDOWN_ENGINE` 命令。
+主程式建立引擎或 IPC 連線後，由 `desktop_research_runtime.UnifiedResearch` 將 `legacy_requested(str)` 接入同視窗的原研究 presenter，保留 `data`、`strategy`、`market`、`backtest`、`compare`、`paper`、`settings` 並新增直接 `connection`、`assistant` 路由；不另開研究應用程式。`close_ui_requested` 只表示關閉畫面；背景引擎生命週期由 Runtime 負責。關閉引擎是獨立的 `SHUTDOWN_ENGINE` 命令。
+
+研究 UI 只接收已組裝的 widget 與導覽訊號。原研究 session、單寫入者鎖、工作管理器、原設定轉接與登入控制器由 Runtime 組裝；研究資料庫與券商 SDK 不進入 Presentation。全域登入狀態及取消入口分別為 `unified_chatgpt_connection`、`unified_cancel_research`，直接助理入口 `ai_assistant_button`，嵌入頁 `unified_research_panel`。原視窗幾何設定不會被內部 widget 的尺寸改寫。
 
 ## 首要操作流程
 

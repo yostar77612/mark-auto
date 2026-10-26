@@ -8,7 +8,18 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QComboBox, QFileDialog, QMainWindow, QMessageBox, QVBoxLayout
 
 from desktop_strings import ui_text
-from quantlab.trading.application.contracts import BrokerSettings, SettingsForm, StrategyForm, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
+from quantlab.trading.application.contracts import (
+    BrokerSettings,
+    ContextNavigationPort,
+    ContextNavigationRequest,
+    SettingsForm,
+    StrategyForm,
+    TradingFacade,
+    UiAction,
+    UiCommand,
+    UiReceipt,
+    UiState,
+)
 from quantlab.trading.domain.models import Environment
 
 from .labels import event_label, policy_label, state_label
@@ -30,13 +41,22 @@ class _Operation(QThread):
 
     def run(self) -> None:
         try:
+            observed = None
             if self.refresh_before and self.command is not None:
-                self.command = replace(self.command, expected_version=self.facade.snapshot().version)
-            receipt = (
-                self._save_draft()
-                if self.command is not None and self.command.action is UiAction.CREATE_STRATEGY
-                else (self.facade.execute(self.command) if self.command is not None else None)
-            )
+                observed = self.facade.snapshot()
+                self.command = replace(self.command, expected_version=observed.version)
+            if observed is not None and self.command.action is UiAction.SWITCH_CONTEXT and isinstance(self.facade, ContextNavigationPort):
+                receipt = self.facade.navigate_context(
+                    ContextNavigationRequest(
+                        observed.context_id, self.command.context_epoch, self.command.context_id, self.command.environment, self.command.account_ref
+                    )
+                )
+            else:
+                receipt = (
+                    self._save_draft()
+                    if self.command is not None and self.command.action is UiAction.CREATE_STRATEGY
+                    else (self.facade.execute(self.command) if self.command is not None else None)
+                )
             state = self.facade.snapshot()
         except Exception:
             self.failed.emit()
@@ -84,6 +104,7 @@ class TradingWindow(QMainWindow):
         self._connecting_request = False
         self._screen_hooked = False
         self._pending_wizard = None
+        self.research_close_guard = None
         self.setObjectName('multi_market_window')
         self.setWindowTitle(ui_text('v2.title'))
         font = self.font()
@@ -570,6 +591,9 @@ class TradingWindow(QMainWindow):
         if not self.property('allow_close_for_tests') and not self._confirm(
             ui_text(close_key).format(state_label(self.state.engine_state), len(self.state.positions))
         ):
+            event.ignore()
+            return
+        if self.research_close_guard is not None and not self.research_close_guard():
             event.ignore()
             return
         self.poll.stop()
