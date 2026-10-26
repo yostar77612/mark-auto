@@ -5630,3 +5630,20 @@ in finally. This prevents unrelated developer-tool ICU DLLs from shadowing the
 Windows ICU API required by Qt. No installed software or user files are removed;
 the complete original regression gate and Qt license audit remain mandatory.
 The build input manifest explicitly hashes the passive trading_entry source.
+
+### Unified installer lifecycle compatibility
+
+The historical v1 installer lifecycle and supervisor scripts retain their original
+byte-pinned guards. The separate unified lifecycle preserves those install, smoke,
+active-app refusal, uninstall and sentinel assertions, adding only the new explicit
+empty-LOCAL engine shutdown and interface-close interaction. Its complete close
+flow, including owned descendants exiting, shares the original 15-second budget.
+Unknown contexts, nonzero positions/orders, unverified stopped state, ambiguous
+controls, changed creation identity or failed cleanup still fail acceptance.
+Dialog discovery enumerates only the retained process's GUI thread and native
+owner chain. The test never searches the desktop, adopts PIDs or bypasses modals.
+The existing v1 entry remains available; unified clean-kit assembly requires exact
+candidate hashes for the variant and its extension and records the entry alias.
+Native UI fixtures compile/run only on ephemeral CI; actual user-host UI inspection
+continues through the approved computer-use interface. No personal-host uninstall
+or acceptance-helper compilation is introduced.

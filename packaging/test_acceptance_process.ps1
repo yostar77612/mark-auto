@@ -73,7 +73,25 @@ public sealed class MarkAutoThrowingProcess {
 public static class MarkAutoFixture {
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern uint GetFileAttributes(string path);
     public static int AttributeError(string path) { return GetFileAttributes(path)==0xffffffff ? Marshal.GetLastWin32Error() : 0; }
+    [STAThread]
     public static void Main(string[] args) {
+        if(args.Length==3 && args[0]=="owned-dialog") {
+            var main=new System.Windows.Forms.Form(); main.Text="MarkAuto owned root";
+            main.Shown+=delegate {
+                var dialog=new System.Windows.Forms.Form(); dialog.Text="MarkAuto owned close scope";
+                dialog.Show(main);
+                System.IO.File.WriteAllText(args[1]+".tmp",main.Handle.ToInt64()+":"+dialog.Handle.ToInt64());
+                System.IO.File.Move(args[1]+".tmp",args[1]);
+                var clock=System.Diagnostics.Stopwatch.StartNew();
+                var timer=new System.Windows.Forms.Timer(); timer.Interval=25;
+                timer.Tick+=delegate {
+                    if(System.IO.File.Exists(args[2])) { timer.Stop(); dialog.Close(); main.Close(); }
+                    else if(clock.ElapsedMilliseconds>5000) Environment.Exit(3);
+                };
+                timer.Start();
+            };
+            System.Windows.Forms.Application.Run(main); return;
+        }
         if(args.Length==2 && args[0]=="write-marker") { System.IO.File.WriteAllText(args[1],"executed"); return; }
         if(args.Length==3 && args[0]=="outsider") {
             var wait=System.Diagnostics.Stopwatch.StartNew();
@@ -102,7 +120,7 @@ public static class MarkAutoFixture {
         System.Threading.Thread.Sleep(60000);
     }
 }
-'@ -OutputAssembly $exe -OutputType ConsoleApplication
+'@ -ReferencedAssemblies @('System.dll','System.Windows.Forms.dll','System.Drawing.dll') -OutputAssembly $exe -OutputType ConsoleApplication
   [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes($exe))
   $info = New-Object Diagnostics.ProcessStartInfo
   $info.FileName=$exe; $info.UseShellExecute=$false
@@ -262,6 +280,27 @@ try {
     @{exit_code=7; native_handle_closed=$true; managed_handle_closed=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'fast-nonzero-proof.json')
     exit 0
   }
+  if ($Case -eq 'owned-dialog') {
+    $ready=Join-Path $Fixture 'owned-dialog-ready.txt'; $release=Join-Path $Fixture 'owned-dialog-release.txt'
+    $owned=Start-OwnedAcceptanceProcess (Join-Path $Fixture 'MarkAuto.exe') -ArgumentList @('owned-dialog',"`"$ready`"","`"$release`"")
+    $readyClock=[Diagnostics.Stopwatch]::StartNew()
+    while (-not (Test-Path -LiteralPath $ready) -and $readyClock.ElapsedMilliseconds -lt 2000) { Start-Sleep -Milliseconds 25 }
+    if (-not (Test-Path -LiteralPath $ready)) { throw 'Owned dialog fixture not ready' }
+    $handles=[IO.File]::ReadAllText($ready).Split(':')
+    $main=[IntPtr][long]$handles[0]; $dialog=[IntPtr][long]$handles[1]
+    $actual=[MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$owned.Handle,$main,'MarkAuto owned close scope')
+    if ($actual -ne $dialog) { throw 'Exact owned dialog was not found' }
+    if ([MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$owned.Handle,$main,'wrong scope') -ne [IntPtr]::Zero) { throw 'Unrelated dialog title was accepted' }
+    if ([MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$owned.Handle,$dialog,'MarkAuto owned close scope') -ne [IntPtr]::Zero) { throw 'Dialog without the retained main owner was accepted' }
+    $refused=$false
+    try { [void][MarkAutoAcceptanceJob]::OwnedDialog('Local\UnownedAcceptanceFixture',$owned.Handle,$main,'MarkAuto owned close scope') } catch { $refused=$true }
+    if (-not $refused) { throw 'Dialog outside creation ownership was accepted' }
+    [IO.File]::WriteAllText($release,'release')
+    Wait-OwnedAcceptanceProcess $owned 2000 'Owned dialog fixture did not finish'
+    if ($owned.Process.get_ExitCode() -ne 0) { throw 'Owned dialog fixture failed' }
+    @{exact_dialog=$true;wrong_title_refused=$true;wrong_owner_refused=$true;wrong_job_refused=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-dialog-proof.json')
+    exit 0
+  }
   if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {
     $hang=$Case.EndsWith('-hang')
     $marker=Join-Path $Fixture ($Case+'-child.txt')
@@ -391,7 +430,7 @@ try {
 '@ | Set-Content $worker
   Set-Content (Join-Path $fixture 'outsider-pid.txt') $outsider.Id
   $caseResults=New-Object System.Collections.ArrayList
-  foreach ($case in @('post-exit-diagnostic','install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','verified-image-marker','wrong-image','cleanup-error-closes-all','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
+  foreach ($case in @('post-exit-diagnostic','owned-dialog','install-hang','uninstall-hang','missing-window','window-exited-getter-failure','window-handle-getter-failure','verified-image-marker','wrong-image','cleanup-error-closes-all','unrelated','whole-run-hang','fast-nonzero','exit-two','descendant-completes','descendant-hang','worker-exits-completes','worker-exits-hang')) {
     Check ($suiteClock.Elapsed.TotalSeconds -lt $suiteLimitSeconds) 'Native fixture suite exceeded its existing outer deadline'
     $parameters = @{Helper=(Join-Path $PSScriptRoot 'acceptance_process.ps1'); Fixture=$fixture; Case=$case}
     $report = Join-Path $fixture ($case + '.json')
@@ -400,7 +439,7 @@ try {
     $caseFailure=$null; $exitCode=$null
     try {
     $exitCode = Invoke-AcceptanceSupervisor $worker $parameters $report $clock -LimitSeconds 10 -FailureReportPath $failure
-    $expected = if ($case -in @('post-exit-diagnostic','verified-image-marker','cleanup-error-closes-all','unrelated','fast-nonzero','descendant-completes','worker-exits-completes')) { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
+    $expected = if ($case -in @('post-exit-diagnostic','owned-dialog','verified-image-marker','cleanup-error-closes-all','unrelated','fast-nonzero','descendant-completes','worker-exits-completes')) { 0 } elseif ($case -eq 'exit-two') { 2 } else { 1 }
     Check ($exitCode -eq $expected) ('Unexpected exit: ' + $case)
     Check ($clock.Elapsed.TotalSeconds -lt 10) ('Unbounded wait: ' + $case)
     Check (Test-Path $report) ('Missing supervisor report: ' + $case)

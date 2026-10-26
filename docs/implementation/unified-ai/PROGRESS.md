@@ -140,3 +140,15 @@ passive-scoped-lazy-regression.log：129項57.673秒全部通過，包含原啟�
 新安裝版PID35940完成原資料正常啟動、ChatGPT自動已連線、原帳戶與保存連線、深色偏好、策略AI入口、原AI策略中心、研究助理、同工作區返回、輸入／送出區與原模型前提的實際檢查，screens/installed-local-*保存PNG及UIA。沒有真實AI推論、模型刷新、同意勾選、額度變更或金融操作。確認LOCAL、0持倉／0委託後由UI正常關閉引擎，再正常關閉研究及外框。state-after-local-install-ui.json再次確認原183研究檔只有正常追加的desktop-events診斷log不同；所有原研究資料、設定與工作區指標逐位元組保留，v2仍只增加兩個正常引擎啟閉的SQLite日誌差異，未回滾或刪除。沒有直接讀取或複製登入憑證，Sitecore未碰。
 
 下一步：保存封裝修正，推送本分支、建立PR並等待全部必要CI成功再合併；隨後核對main確切提交、完整CI與預覽發布安裝包，下載後驗證雜湊、安裝與功能，再整理交接包。現有主機登入必須留在原機；交接包不攜帶OS綁定憑證，目標電腦使用官方重新登入流程。
+
+### PR98 第一輪 CI 與統一介面關閉契約修正
+
+第一輪PR提交40ccc7f的35個Quantlab工作全部成功；Windows完整回歸實際跑完3615項，0失敗／0錯誤、33個原平台／選配略過，正式收據successful=true、validation_error=null。CI測試合併提交1aacd17的Git tree與分支40ccc7f完全相同。Windows安裝及升級smoke也成功，活動程式下升級／解除安裝正確拒絕；但後續生命週期收尾失敗，PR仍未合併。完整失敗證據保留於audit/pr98-failed-candidate與pr98-installer-failure.log。
+
+根因是原生命週期假設關閉主視窗即結束全部程序；新版正常入口有獨立引擎與明確的關閉範圍確認，不能省略。原CloseMainWindow收尾遇到未確認視窗，再由清理階段WinError5覆蓋主要失敗。沒有以忽略WinError5、移除確認框、停止不明程序或增加時限修補。
+
+原v1 test_installer.ps1及acceptance_process.ps1保留Git內容完全不變，歷史位元組鎖定測試全過。新增test_unified_installer.ps1及unified_acceptance_ui.ps1，安裝、smoke、活動升級／卸載拒絕、卸載與sentinel保護仍與原版一致，另以嚴格本機空帳戶範圍驗證正常UI操作：停止引擎、確認0持倉／0委託、關閉介面、確認引擎已關閉且0持倉，並等候所有建立時已證明所有權的子程序正常退出。整個流程合用原15秒，不增加任何預算；失敗前先保存主要診斷，後續清理仍會使整體失敗。這些UIA操作僅供隔離生命週期測試，未在使用者電腦執行；使用者電腦的實際畫面操作仍僅使用核准的computer-use工具。
+
+新增的原生對話框查找只列舉保留之GUI程序的同一GUI執行緒，核對native owner鏈、Job與活躍程序身分；不搜尋桌面、不依PID採納程序、不注入鍵盤或強制停止。新增CI原生fixture驗證確切對話框可找、錯誤標題／owner／Job均拒絕，原15分鐘外層與每案10秒上限不變。純PowerShell政策測試實際驗證正常情況及LIVE、其他帳戶、非空持倉／委託、未停止引擎、未知階段均拒絕，不載入UIA或讀原資料。原生UI正向驗證仍待下一輪真實CI，未冒充本機已完成。
+
+clean kit新增明確--unified模式，先核對candidate manifest中新版驗證器及UI extension雜湊，再產生既有穩定入口路徑的別名並記錄來源。原kit預設與所有既有預期值保留，沒有Python/Git需求或放寬完整性檢查。相關82項5.667秒全過、14個PowerShell腳本語法通過；接續保存修正並重新完整CI。此次只更動封裝驗證與測試，原應用程式、G3、研究／交易引擎、登入與使用者資料皆未變。沒有再次使用UAC、沒有在本機執行解除安裝，Sitecore未碰。

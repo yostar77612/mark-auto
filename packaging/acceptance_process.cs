@@ -326,6 +326,34 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         if(WaitForSingleObject(handle,0)==0) return;
         Check(TerminateProcess(handle,1));
     }
+    delegate bool ThreadWindow(IntPtr window, IntPtr parameter);
+    [DllImport("user32.dll", SetLastError=true)] static extern bool EnumThreadWindows(uint thread, ThreadWindow callback, IntPtr parameter);
+    [DllImport("user32.dll", SetLastError=true)] static extern uint GetWindowThreadProcessId(IntPtr window, out uint id);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
+    [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+    public static IntPtr OwnedDialog(string name, IntPtr handle, IntPtr main, string title) {
+        if(!Owns(name,handle) || WaitForSingleObject(handle,0)!=258)
+            throw new InvalidOperationException("Live dialog creation ownership was not proven");
+        uint id; uint thread=GetWindowThreadProcessId(main,out id);
+        if(thread==0 || id!=GetProcessId(handle) || String.IsNullOrEmpty(title))
+            throw new InvalidOperationException("Dialog root identity changed");
+        IntPtr found=IntPtr.Zero; int matches=0;
+        EnumThreadWindows(thread,delegate(IntPtr window,IntPtr unused) {
+            uint candidate; GetWindowThreadProcessId(window,out candidate);
+            if(candidate!=id || window==main) return true;
+            var text=new StringBuilder(512); GetWindowText(window,text,text.Capacity);
+            if(!String.Equals(text.ToString(),title,StringComparison.Ordinal)) return true;
+            IntPtr owner=GetWindow(window,4); // GW_OWNER: only this retained main window.
+            for(int depth=0; owner!=IntPtr.Zero && depth<8; depth++) {
+                if(owner==main) { found=window; matches++; break; }
+                owner=GetWindow(owner,4);
+            }
+            return true;
+        },IntPtr.Zero);
+        if(!Owns(name,handle) || WaitForSingleObject(handle,0)!=258 || matches>1)
+            throw new InvalidOperationException("Dialog ownership changed or is ambiguous");
+        return found;
+    }
 }
 public sealed class MarkAutoShortcutMetadata {
     public string TargetPath { get; private set; }

@@ -1,6 +1,10 @@
 """Source/kit contracts only. Native behavior runs separately in Windows CI."""
 
 from pathlib import Path
+import json
+import os
+import subprocess
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +16,64 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.native = (ROOT / 'packaging/acceptance_process.cs').read_text()
         self.lifecycle = (ROOT / 'packaging/test_installer.ps1').read_text()
         self.wrapper = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
+
+    @unittest.skipUnless(sys.platform == 'win32', 'Windows PowerShell close-scope policy verification')
+    def test_unified_close_policy_rejects_nonlocal_nonempty_or_unstopped_scope(self):
+        from desktop_strings import ui_text
+
+        cases = [
+            ('shutdown', ui_text('v2.local'), 'local-stock', ui_text('v2.shutdown_summary').format(0, 0), True),
+            ('interface', ui_text('v2.local'), 'local-stock', ui_text('v2.close_already_stopped').format('已關閉', 0), True),
+            ('shutdown', 'LIVE', 'local-stock', ui_text('v2.shutdown_summary').format(0, 0), False),
+            ('shutdown', ui_text('v2.local'), 'other-account', ui_text('v2.shutdown_summary').format(0, 0), False),
+            ('shutdown', ui_text('v2.local'), 'local-stock', ui_text('v2.shutdown_summary').format(1, 0), False),
+            ('shutdown', ui_text('v2.local'), 'local-stock', ui_text('v2.shutdown_summary').format(0, 1), False),
+            ('interface', ui_text('v2.local'), 'local-stock', ui_text('v2.close_already_stopped').format('執行中', 0), False),
+            ('interface', ui_text('v2.local'), 'local-stock', ui_text('v2.close_already_stopped').format('已關閉', 1), False),
+            ('unknown', ui_text('v2.local'), 'local-stock', '', False),
+        ]
+        # Extract just the pure scope policy: no helper DLL, UIA, application,
+        # security dialog or real user profile is loaded on the test host.
+        command = r'''
+$ErrorActionPreference='Stop'
+$tokens=$null; $errors=$null
+$ast=[Management.Automation.Language.Parser]::ParseFile($env:MARKAUTO_TEST_CLOSE_SOURCE,[ref]$tokens,[ref]$errors)
+if ($errors.Count) { throw 'Policy source did not parse' }
+$definition=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Assert-EmptyLocalAcceptanceClose'},$true)
+. ([scriptblock]::Create($definition.Extent.Text))
+$rows=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:MARKAUTO_TEST_CLOSE_ROWS)) | ConvertFrom-Json
+foreach ($row in $rows) {
+  $accepted=$true
+  try { Assert-EmptyLocalAcceptanceClose $row[0] $row[1] $row[2] $row[3] } catch { $accepted=$false }
+  if ($accepted -ne $row[4]) { throw 'Unexpected scope-policy decision' }
+}
+'''
+        import base64
+
+        payload = base64.b64encode(json.dumps([(*row[:3], row[3].replace(chr(92) + 'n', chr(10)), row[4]) for row in cases]).encode()).decode()
+        encoded = base64.b64encode(command.encode('utf-16le')).decode()
+        run = subprocess.run(
+            ['powershell', '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
+            env={**os.environ, 'MARKAUTO_TEST_CLOSE_SOURCE': str(ROOT / 'packaging/unified_acceptance_ui.ps1'), 'MARKAUTO_TEST_CLOSE_ROWS': payload},
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        self.assertEqual(run.returncode, 0, run.stderr[-2000:])
+
+    def test_unified_lifecycle_keeps_original_install_smoke_and_refusal_guards(self):
+        unified = (ROOT / 'packaging/test_unified_installer.ps1').read_text(encoding='utf-8-sig')
+        sections = (
+            ('function Install-Version(', 'function Smoke('),
+            ('function Smoke(', 'Install-Version $BaselineVersion'),
+            ("foreach ($attempt in @('upgrade', 'uninstall'))", 'Assert-OwnedAcceptanceProcess $gui'),
+            ('$owned = Start-OwnedAcceptanceProcess "$appDir\\unins000.exe"', '} catch {'),
+        )
+        for begin, end in sections:
+            with self.subTest(section=begin):
+                self.assertEqual(unified.split(begin, 1)[1].split(end, 1)[0], self.lifecycle.split(begin, 1)[1].split(end, 1)[0])
+        self.assertIn("'Window did not close cleanly' -DrainJob", unified)
+        self.assertIn('$closeRemaining=15000-$closeClock.ElapsedMilliseconds', unified)
 
     def test_native_membership_is_atomic_and_handle_owned(self):
         for token in ('0x2000D', '0x00080004', '0x2000', 'false,0x00080004', 'IsProcessInJob(handle,owned', 'TerminateProcess(handle,1)', 'CloseHandle(job)'):
