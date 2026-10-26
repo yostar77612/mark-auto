@@ -24,6 +24,10 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
   $hwnd=$Owned.Process.get_MainWindowHandle()
   if ($hwnd -eq [IntPtr]::Zero) { throw 'Owned platform window missing during close' }
   $pidProperty=[Windows.Automation.AutomationElement]::ProcessIdProperty
+  $typeProperty=[Windows.Automation.AutomationElement]::ControlTypeProperty
+  $idProperty=[Windows.Automation.AutomationElement]::AutomationIdProperty
+  $nameProperty=[Windows.Automation.AutomationElement]::NameProperty
+  $enabledProperty=[Windows.Automation.AutomationElement]::IsEnabledProperty
   function Confirm-CloseIdentity {
     if ($Clock.ElapsedMilliseconds -ge 15000) { throw 'Window did not close cleanly' }
     Assert-OwnedAcceptanceProcess $Owned
@@ -32,11 +36,19 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
   function Get-OwnedCloseElements($Parent) {
     Confirm-CloseIdentity
     if ($Parent.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'Close UI ownership changed' }
-    $elements=$Parent.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition)
+    # One provider snapshot avoids a separate cross-process call for every
+    # property of every descendant. Ownership and the original cap still apply
+    # to the entire snapshot; mutation also rechecks the selected live element.
+    $cache=New-Object Windows.Automation.CacheRequest
+    foreach ($property in @($pidProperty,$typeProperty,$idProperty,$nameProperty,$enabledProperty)) { $cache.Add($property) }
+    $activation=$cache.Activate()
+    try { $elements=$Parent.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.Condition]::TrueCondition) }
+    finally { $activation.Dispose() }
+    Confirm-CloseIdentity
     if ($elements.Count -gt 512) { throw 'Close UI inventory exceeds bounded scope' }
     foreach ($element in $elements) {
       Confirm-CloseIdentity
-      if ($element.GetCurrentPropertyValue($pidProperty) -ne $ownedPid) { throw 'Close descendant ownership changed' }
+      if ($element.GetCachedPropertyValue($pidProperty) -ne $ownedPid) { throw 'Close descendant ownership changed' }
       $element
     }
   }
@@ -48,12 +60,12 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
         throw 'Unified platform identity not proven'
       }
       $closeControls=@(Get-OwnedCloseElements $ui | Where-Object {
-        $_.get_Current().get_ControlType() -eq $Control -and
-        (-not $Suffix -or $_.get_Current().get_AutomationId().EndsWith($Suffix,[StringComparison]::Ordinal)) -and
-        (-not $Name -or $_.get_Current().get_Name() -ceq $Name)
+        $_.GetCachedPropertyValue($typeProperty) -eq $Control -and
+        (-not $Suffix -or $_.GetCachedPropertyValue($idProperty).EndsWith($Suffix,[StringComparison]::Ordinal)) -and
+        (-not $Name -or $_.GetCachedPropertyValue($nameProperty) -ceq $Name)
       })
       if ($closeControls.Count -gt 1) { throw 'Ambiguous close fixture control' }
-      if ($closeControls.Count -eq 1 -and (-not $Enabled -or $closeControls[0].get_Current().get_IsEnabled())) { return $closeControls[0] }
+      if ($closeControls.Count -eq 1 -and (-not $Enabled -or $closeControls[0].GetCachedPropertyValue($enabledProperty))) { return $closeControls[0] }
       Start-Sleep -Milliseconds 50
     }
     throw 'Window did not close cleanly'
@@ -74,8 +86,8 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
     }
     $dialog=[Windows.Automation.AutomationElement]::FromHandle($dialogHandle)
     $items=@(Get-OwnedCloseElements $dialog)
-    $text=@($items | Where-Object { $_.get_Current().get_ControlType() -eq [Windows.Automation.ControlType]::Text -and $_.get_Current().get_Name() })
-    $confirm=@($items | Where-Object { $_.get_Current().get_ControlType() -eq [Windows.Automation.ControlType]::Button -and $_.get_Current().get_Name() -ceq [regex]::Unescape('\u78ba\u8a8d\u6b64\u7bc4\u570d') })
+    $text=@($items | Where-Object { $_.GetCachedPropertyValue($typeProperty) -eq [Windows.Automation.ControlType]::Text -and $_.GetCachedPropertyValue($nameProperty) })
+    $confirm=@($items | Where-Object { $_.GetCachedPropertyValue($typeProperty) -eq [Windows.Automation.ControlType]::Button -and $_.GetCachedPropertyValue($nameProperty) -ceq [regex]::Unescape('\u78ba\u8a8d\u6b64\u7bc4\u570d') })
     if ($text.Count -ne 1 -or $confirm.Count -ne 1) { throw 'Close dialog scope is incomplete or ambiguous' }
     $environment=Find-OwnedCloseElement '.environment' ([Windows.Automation.ControlType]::ComboBox) ''
     $account=Find-OwnedCloseElement '.account_context' ([Windows.Automation.ControlType]::ComboBox) ''
@@ -85,6 +97,8 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
     Invoke-OwnedCloseElement $confirm[0]
   }
   $settings=Find-OwnedCloseElement '.trading_navigation' ([Windows.Automation.ControlType]::ListItem) ([regex]::Unescape('\u8a2d\u5b9a')) -Enabled
+  Confirm-CloseIdentity
+  if ($settings.GetCurrentPropertyValue($pidProperty) -ne $ownedPid -or -not $settings.get_Current().get_IsEnabled()) { throw 'Close navigation ownership or eligibility changed' }
   $settings.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
   $shutdown=Find-OwnedCloseElement '.shutdown_button' ([Windows.Automation.ControlType]::Button) '' -Enabled
   Invoke-OwnedCloseElement $shutdown

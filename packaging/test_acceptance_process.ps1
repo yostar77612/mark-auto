@@ -77,6 +77,11 @@ public static class MarkAutoFixture {
     public static void Main(string[] args) {
         if(args.Length==3 && args[0]=="owned-dialog") {
             var main=new System.Windows.Forms.Form(); main.Text="MarkAuto owned root";
+            main.ClientSize=new System.Drawing.Size(640,600);
+            for(int i=0;i<128;i++) {
+                var label=new System.Windows.Forms.Label(); label.Text="Owned "+i;
+                label.SetBounds((i%8)*78,(i/8)*28,76,24); main.Controls.Add(label);
+            }
             main.Shown+=delegate {
                 var dialog=new System.Windows.Forms.Form(); dialog.Text="MarkAuto owned close scope";
                 dialog.Show(main);
@@ -295,10 +300,36 @@ try {
     $refused=$false
     try { [void][MarkAutoAcceptanceJob]::OwnedDialog('Local\UnownedAcceptanceFixture',$owned.Handle,$main,'MarkAuto owned close scope') } catch { $refused=$true }
     if (-not $refused) { throw 'Dialog outside creation ownership was accepted' }
+    # Exercise the actual bounded production snapshot on a real, creation-owned
+    # 128-control native window. This runs only in ephemeral native CI.
+    Add-Type -AssemblyName UIAutomationClient
+    Add-Type -AssemblyName UIAutomationTypes
+    $tokens=$null; $parseErrors=$null
+    $extension=Join-Path (Split-Path $Helper -Parent) 'unified_acceptance_ui.ps1'
+    $ast=[Management.Automation.Language.Parser]::ParseFile($extension,[ref]$tokens,[ref]$parseErrors)
+    if ($parseErrors.Count) { throw 'Native snapshot source did not parse' }
+    foreach ($functionName in @('Confirm-CloseIdentity','Get-OwnedCloseElements')) {
+      $definition=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq $functionName},$true)
+      if (-not $definition) { throw 'Native snapshot definition missing' }
+      . ([scriptblock]::Create($definition.Extent.Text))
+    }
+    $Clock=[Diagnostics.Stopwatch]::StartNew()
+    $ownedPid=$owned.Process.get_Id()
+    $pidProperty=[Windows.Automation.AutomationElement]::ProcessIdProperty
+    $typeProperty=[Windows.Automation.AutomationElement]::ControlTypeProperty
+    $idProperty=[Windows.Automation.AutomationElement]::AutomationIdProperty
+    $nameProperty=[Windows.Automation.AutomationElement]::NameProperty
+    $enabledProperty=[Windows.Automation.AutomationElement]::IsEnabledProperty
+    $snapshot=@(Get-OwnedCloseElements ([Windows.Automation.AutomationElement]::FromHandle($main)))
+    if ($snapshot.Count -lt 128 -or $snapshot.Count -gt 512) { throw 'Native snapshot did not cover its bounded real controls' }
+    foreach ($element in $snapshot) {
+      foreach ($property in @($pidProperty,$typeProperty,$idProperty,$nameProperty,$enabledProperty)) { [void]$element.GetCachedPropertyValue($property) }
+    }
     [IO.File]::WriteAllText($release,'release')
     Wait-OwnedAcceptanceProcess $owned 2000 'Owned dialog fixture did not finish'
     if ($owned.Process.get_ExitCode() -ne 0) { throw 'Owned dialog fixture failed' }
-    @{exact_dialog=$true;wrong_title_refused=$true;wrong_owner_refused=$true;wrong_job_refused=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-dialog-proof.json')
+    @{exact_dialog=$true;wrong_title_refused=$true;wrong_owner_refused=$true;wrong_job_refused=$true;
+      cached_native_controls=$snapshot.Count;production_snapshot_executed=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-dialog-proof.json')
     exit 0
   }
   if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {

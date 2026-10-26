@@ -5647,3 +5647,11 @@ candidate hashes for the variant and its extension and records the entry alias.
 Native UI fixtures compile/run only on ephemeral CI; actual user-host UI inspection
 continues through the approved computer-use interface. No personal-host uninstall
 or acceptance-helper compilation is introduced.
+
+Native close observation uses one bounded UI Automation property-cache snapshot
+instead of per-property cross-process enumeration. All descendant PIDs are checked,
+creation ownership and the original deadline remain checked throughout, and the
+selected live control is revalidated before mutation. Snapshot caching does not
+relax the 512-element cap, exact dialog scope or 15-second total close-and-drain
+budget. The ephemeral CI owned-window fixture exercises the production collector
+against at least 128 real native controls; it is not a personal-host UI action.
