@@ -30,28 +30,10 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.config import RuntimeLaunch, load_profile
 from quantlab.trading.runtime.context_client import ContextIpcFacade, RuntimeContextManager, _STARTED, ensure_engine
 from quantlab.trading.runtime.ipc import read_session
-from test_trading_runtime_context import profile_fixture, serve_fixture
+from test_trading_runtime_context import close_owned_test_context, profile_fixture, serve_fixture
 
 
 WORKSPACE = Path(__file__).resolve().parents[1]
-
-
-def close_owned_test_context(client):
-    """Only an explicit rejected CAS permits a fresh cleanup request.
-
-    These are this fixture's synthetic hosts, not user engines. Unknown results
-    and every other refusal retain the failure; no force-stop is acceptance.
-    """
-    for _ in range(3):
-        state = client.snapshot()
-        if state.engine_state == 'CLOSED':
-            return
-        result = client.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
-        if result.accepted:
-            return
-        if result.code != 'state_conflict':
-            break
-    raise DomainError(result.code)
 
 
 class OwnedContextCleanupTests(unittest.TestCase):
