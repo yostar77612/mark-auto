@@ -76,3 +76,11 @@ PID4700與其本機引擎均已透過UI在0部位／0委託下正常關閉。資
 實機來源UI已確認同一主視窗原登入自動恢復、連線／模型／額度管理、AI策略與助理入口、同工作區返回、輸入與送出區及正確缺模型提示。證據screens/final-source-*，最後final-source-assistant-model-prerequisite顯示ChatGPT已連線、就緒、官方模型清單前提，沒有送出實際推論。這是來源程式證據，不是新安裝包／正式CI。第三輪來源UI34852經UI正常關閉後，公開IPC確認LOCAL、0持倉、0委託並正常停止引擎；所有來源預覽已退出。state-final-ui-after.json再次核對原183研究檔僅診斷log正常追加，所有研究資料與設定逐位元組保留；v2僅兩個合法啟閉的SQLite日誌改變，未刪除／回滾資料。登入引用仍由原controller使用，沒有直接讀取或複製憑證。
 
 下一步：固定來源，完整重跑普通權限分區及獨立選配UI profile。選配網頁框架會改寫__main__，分開完整模組執行，保留同一固定Python、來源及原案例／時限，避免影響後續spawn。不能把原條件skip當成通過；原始逐項理由與補測結果分別保存。正式安裝版仍是main159，本任務沒有遠端推送／合併／發布，沒有新的正式安裝包成功證據。
+
+### 恢復後相容性修正（2026-10-26）
+
+1816dd5完整普通分區3596項已跑完：3 failures、0 errors、42原適用性skip，來源未變；保留partition-regular-final-1816dd5.json/.log，不宣稱該輪通過。使用者說「繼續」後修正三個已定位問題：被動入口抽到根目錄trading_entry.py，避免匯入desktop即載入IPC；內嵌host與缺模型提示只在UnifiedResearch組裝時套用，原獨立研究介面四狀態語意保持不變；開發用網頁campaign adapter改為按下執行時才載入，保留原維護入口匯入契約。原測試門檻與歷史fixture未改，根目錄清單只增加新入口檔的明確項目。
+
+passive-scoped-lazy-regression.log：129項57.673秒全部通過，包含原啟動、R7四狀態、T15維護與新整合案例。light-entry-real-worker-regression.log：55項146.551秒無失敗，含1項原適用性skip，涵蓋原桌面真實worker、smoke隔離、安裝互斥與多市場端到端UI。Ruff check通過、692檔format通過、659檔Python3.11 AST通過、quality 0 finding、architecture 0 violation。
+
+整個quantlab/trading套件及G3八檔、歷史producer profiles均未改，避免入口重構改變研究來源身分。下一步保存本機提交、重新綁定完整來源指紋與測試清單，執行3596項完整普通分區及獨立原網頁UI7項。19項原生符號連結案例仍待權限，未啟動UAC；本次尚無新安裝包或遠端CI證據。

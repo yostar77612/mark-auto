@@ -5616,3 +5616,10 @@ results, joins failures/timeout descendants, retains unverified stops and refuse
 new work. It never becomes a production broker or arbitrary-code interface.
 Diagnostic report publication reuses the bounded Windows same-rename helper;
 no research, transaction, serialization or budget operation is replayed.
+
+The public launch wrapper lives in the passive root trading_entry module; importing
+desktop alone does not initialize IPC or Qt. Keeping this composition entry outside
+quantlab/trading preserves existing engine research producer identities. Explicit
+embedded hint hosts and missing-model prerequisites apply only to UnifiedResearch;
+the standalone v1 characterization remains unchanged. The developer web campaign
+adapter loads only inside the user-invoked callback, preserving passive imports.

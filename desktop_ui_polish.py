@@ -21,10 +21,6 @@ class DisabledHint(QObject):
         host = self.host if self.host is not None else self.button.window()
         jobs = getattr(host, 'jobs', None)
         prerequisite = self.prerequisite
-        assistant = self.button.parentWidget()
-        models = getattr(assistant, 'model', None)
-        if self.button.objectName() == 'assistant_send' and models is not None and models.count() == 0:
-            prerequisite = ui_text('ui.plan_usage_request.connection_models_required')
         prerequisite = ui_text('ui_polish.update.job_busy') if jobs is not None and jobs.active and self.button.objectName() != 'cancel_job' else prerequisite
         paper = getattr(host, 'paper_page', None)
         if self.button.objectName() in ('paper_submit', 'paper_replay', 'paper_cancel') and getattr(
@@ -135,7 +131,7 @@ def install_polish(window):
         label.setObjectName(name + '_prerequisite')
         layout = button.parentWidget().layout()
         if layout and _insert_after(layout, button, label):
-            window._disabled_hints.append(DisabledHint(button, label, prerequisite, host=window))
+            window._disabled_hints.append(DisabledHint(button, label, prerequisite))
         else:
             label.deleteLater()
 

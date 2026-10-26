@@ -229,6 +229,17 @@ class UnifiedResearch(QObject):
             return False
         self._host = host
         self.panel.mount(host)
+        # Only the embedded presenter needs a host different from window().
+        # Standalone v1 keeps its historical hint and popup semantics.
+        assistant = host.settings_page.assistant_panel
+        self._assistant_hint = None
+        self._assistant_prerequisite = ''
+        for hint in host._disabled_hints:
+            hint.host = host
+            hint.update()
+            if hint.button is assistant.send:
+                self._assistant_hint = hint
+                self._assistant_prerequisite = hint.prerequisite
         host.navigation.currentRowChanged.connect(self._research_navigated)
         host.chatgpt_controller.changed.connect(self.refresh_connection)
         self.status_timer = QTimer(self)
@@ -244,6 +255,13 @@ class UnifiedResearch(QObject):
             return
         connected = host.chatgpt_controller.state == 'plan_ready'
         host.app_header.refresh()
+        if self._assistant_hint is not None:
+            self._assistant_hint.prerequisite = (
+                ui_text('ui.plan_usage_request.connection_models_required')
+                if host.settings_page.assistant_panel.model.count() == 0
+                else self._assistant_prerequisite
+            )
+            self._assistant_hint.update()
         # A consumed connection-result event leaves the legacy generic running
         # caption behind. Clear only that caption after confirmed idle/done;
         # keep all failures, unknown outcomes and pending reconciliation text.

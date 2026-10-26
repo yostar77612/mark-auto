@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
 from desktop_strings import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
-from trading_runtime import launch
+from trading_entry import launch
 
 import argparse
 from pathlib import Path

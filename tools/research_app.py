@@ -32,7 +32,6 @@ from quantlab.reporting import (
     load_selection,
 )
 from quantlab.__main__ import config_from_json
-from tools.research_campaign import run_fixture_campaign
 
 
 def guard(action):
@@ -184,6 +183,8 @@ def main():
             if st.button('Run / reopen campaign', disabled=not valid_name):
 
                 def campaign():
+                    from tools.research_campaign import run_fixture_campaign
+
                     config = json.loads(cfg_text)
                     config['backtest_config'] = config_from_json(config['backtest_config'])
                     return run_fixture_campaign(dataset, config, campaign_dir)
