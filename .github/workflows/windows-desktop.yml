@@ -20,6 +20,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  # Diagnostics only: native faults remain failures with the original budgets.
+  PYTHONFAULTHANDLER: '1'
 concurrency:
   group: desktop-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
