@@ -17,7 +17,6 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.lifecycle = (ROOT / 'packaging/test_installer.ps1').read_text()
         self.wrapper = (ROOT / 'packaging/clean_windows_acceptance.ps1').read_text()
 
-    @unittest.skipUnless(sys.platform == 'win32', 'Windows PowerShell close-scope policy verification')
     def test_unified_close_policy_rejects_nonlocal_nonempty_or_unstopped_scope(self):
         from desktop_strings import ui_text
 
@@ -53,7 +52,7 @@ foreach ($row in $rows) {
         payload = base64.b64encode(json.dumps([(*row[:3], row[3].replace(chr(92) + 'n', chr(10)), row[4]) for row in cases]).encode()).decode()
         encoded = base64.b64encode(command.encode('utf-16le')).decode()
         run = subprocess.run(
-            ['powershell', '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
+            ['powershell' if sys.platform == 'win32' else 'pwsh', '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
             env={**os.environ, 'MARKAUTO_TEST_CLOSE_SOURCE': str(ROOT / 'packaging/unified_acceptance_ui.ps1'), 'MARKAUTO_TEST_CLOSE_ROWS': payload},
             capture_output=True,
             text=True,
