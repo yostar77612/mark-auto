@@ -98,6 +98,9 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
       throw 'Close dialog identity changed before confirmation'
     }
     Invoke-OwnedCloseElement $confirm[0]
+    # Final confirmation intentionally destroys the window. The caller's
+    # unchanged zero-exit and owned-descendant-drain checks prove completion.
+    if ($Stage -ceq 'interface') { return }
     # Qt accessibility presses are asynchronous (animateClick). Do not invoke
     # a background control while the prior confirmation is still visible.
     while ($true) {
@@ -105,8 +108,7 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
       Assert-OwnedAcceptanceProcess $Owned
       $Owned.Process.Refresh()
       if ($Owned.Process.get_HasExited()) {
-        if ($Stage -cne 'interface') { throw 'Platform exited before interface close was confirmed' }
-        return
+        throw 'Platform exited before interface close was confirmed'
       }
       $currentDialog=[MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$Owned.Handle,$hwnd,[regex]::Unescape('\u6838\u5c0d\u64cd\u4f5c\u7bc4\u570d'))
       if ($currentDialog -eq [IntPtr]::Zero) { return }

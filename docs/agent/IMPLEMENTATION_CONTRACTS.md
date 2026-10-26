@@ -5673,3 +5673,16 @@ replacement fails; interface-process exit still requires the final original zero
 exit-code and owned-descendant-drain assertions. The cached scope snapshot is
 validated only while its exact native visible dialog identity remains current.
 No action is blindly repeated, and all waits share the original 15-second limit.
+
+View-only context selection has an immutable ContextNavigationRequest and its own
+ContextNavigationPort. Its source context and generation, configured target mode
+and account, pending-mutation exclusion, atomic selection and persisted registry
+remain authoritative. It cannot change book contents, connect a broker, grant
+qualification, move funds or replay commands. The legacy version-bound switch
+command and every financial command retain their original admission. A priority
+stop during opening cancels selection through the same epoch fence. Unknown
+selection outcomes are not automatically repeated. V2 producer identity continues
+to cover the changed Application files; no historical identity is relabeled.
+After the final validated interface confirmation, process zero exit and owned
+subtree quiescence are authoritative; no live-window query races that expected
+window destruction. Intermediate modal closure is still explicitly observed.

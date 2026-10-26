@@ -88,7 +88,7 @@ if __name__ == '__main__':
     @{status='failed';private_source_ui=$true;installer_acceptance=$false;
       ui_exit_observed=$uiExited;ui_exit_code=$uiExitCode;
       close_elapsed_milliseconds=$(if ($closeClock) {$closeClock.ElapsedMilliseconds} else {$null})} |
-      ConvertTo-Json | Set-Content (Join-Path $results 'result.json')
+      ConvertTo-Json | Set-Content (Join-Path $results 'application-exit-observation.json')
   } catch { [Console]::Error.WriteLine('Source UI exit observation unavailable; primary failure preserved') }
   throw
 } finally { Close-AcceptanceProcesses }

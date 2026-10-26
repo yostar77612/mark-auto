@@ -6,7 +6,7 @@ from threading import Event, Thread
 import unittest
 
 from quantlab.trading.application.contextnavigation import CompositeFacade
-from quantlab.trading.application.contracts import AccountView, ContextOption, UiAction, UiCommand, UiReceipt, UiState
+from quantlab.trading.application.contracts import AccountView, ContextNavigationRequest, ContextOption, UiAction, UiCommand, UiReceipt, UiState
 from quantlab.trading.domain.models import Environment, Market
 
 
@@ -155,6 +155,25 @@ class ContextNavigationTests(unittest.TestCase):
         self.assertTrue(results[0].accepted, results)
         self.assertEqual(self.client.snapshot().context_id, 'broker')
         self.assertEqual(self.port.facades['local'].state.events, ('LEGAL_BACKGROUND_REPORT',))
+
+    def test_stop_during_typed_navigation_cancels_selection_without_retargeting_stop(self):
+        self.port.entered, self.port.release = Event(), Event()
+        results = []
+        request = ContextNavigationRequest('local', 0, 'broker', Environment.BROKER_SIMULATION, 'test-stock')
+        worker = Thread(target=lambda: results.append(self.client.navigate_context(request)))
+        worker.start()
+        try:
+            self.assertTrue(self.port.entered.wait(1))
+            stopped = self.client.execute(UiCommand(UiAction.STOP_NEW, 90, context_id='local', context_epoch=0))
+            self.assertTrue(stopped.accepted)
+        finally:
+            self.port.release.set()
+            worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertFalse(results[0].accepted)
+        self.assertEqual(self.port.selected, ('local', 'local-stock'))
+        self.assertEqual([command.action for command in self.port.facades['local'].commands], [UiAction.STOP_NEW])
+        self.assertEqual(self.port.facades['broker'].commands, [])
 
     def test_second_switch_cannot_commit_while_first_target_is_opening(self):
         self.port.entered, self.port.release = Event(), Event()
