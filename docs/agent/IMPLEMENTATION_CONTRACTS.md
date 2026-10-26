@@ -5665,3 +5665,11 @@ that bootstrap. It uses the same owned-process close fixture and original
 15-second close-and-drain limit. This source-only result cannot replace frozen
 installer, upgrade, uninstall, recovery or clean-client acceptance. Personal-host
 invocations refuse before runtime/GUI loading; no host UIA action is introduced.
+
+An owned confirmation must be visible; a hidden retired window with the same title
+cannot qualify. After a single asynchronous confirmation press, the fixture waits
+for that exact visible dialog to disappear before the next action. An unexpected
+replacement fails; interface-process exit still requires the final original zero
+exit-code and owned-descendant-drain assertions. The cached scope snapshot is
+validated only while its exact native visible dialog identity remains current.
+No action is blindly repeated, and all waits share the original 15-second limit.

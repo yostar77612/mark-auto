@@ -93,8 +93,26 @@ function Close-OwnedUnifiedAcceptanceWindow($Owned, [Diagnostics.Stopwatch]$Cloc
     $account=Find-OwnedCloseElement '.account_context' ([Windows.Automation.ControlType]::ComboBox) ''
     $environmentValue=$environment.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).get_Current().get_Value()
     $accountValue=$account.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).get_Current().get_Value()
-    Assert-EmptyLocalAcceptanceClose $Stage $environmentValue $accountValue $text[0].get_Current().get_Name()
+    Assert-EmptyLocalAcceptanceClose $Stage $environmentValue $accountValue $text[0].GetCachedPropertyValue($nameProperty)
+    if ([MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$Owned.Handle,$hwnd,[regex]::Unescape('\u6838\u5c0d\u64cd\u4f5c\u7bc4\u570d')) -ne $dialogHandle) {
+      throw 'Close dialog identity changed before confirmation'
+    }
     Invoke-OwnedCloseElement $confirm[0]
+    # Qt accessibility presses are asynchronous (animateClick). Do not invoke
+    # a background control while the prior confirmation is still visible.
+    while ($true) {
+      if ($Clock.ElapsedMilliseconds -ge 15000) { throw 'Window did not close cleanly' }
+      Assert-OwnedAcceptanceProcess $Owned
+      $Owned.Process.Refresh()
+      if ($Owned.Process.get_HasExited()) {
+        if ($Stage -cne 'interface') { throw 'Platform exited before interface close was confirmed' }
+        return
+      }
+      $currentDialog=[MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$Owned.Handle,$hwnd,[regex]::Unescape('\u6838\u5c0d\u64cd\u4f5c\u7bc4\u570d'))
+      if ($currentDialog -eq [IntPtr]::Zero) { return }
+      if ($currentDialog -ne $dialogHandle) { throw 'Unexpected replacement close dialog' }
+      Start-Sleep -Milliseconds 25
+    }
   }
   $settings=Find-OwnedCloseElement '.trading_navigation' ([Windows.Automation.ControlType]::ListItem) ([regex]::Unescape('\u8a2d\u5b9a')) -Enabled
   Confirm-CloseIdentity

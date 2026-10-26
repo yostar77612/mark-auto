@@ -83,6 +83,8 @@ public static class MarkAutoFixture {
                 label.SetBounds((i%8)*78,(i/8)*28,76,24); main.Controls.Add(label);
             }
             main.Shown+=delegate {
+                var retired=new System.Windows.Forms.Form(); retired.Text="MarkAuto owned close scope";
+                retired.Show(main); retired.Hide();
                 var dialog=new System.Windows.Forms.Form(); dialog.Text="MarkAuto owned close scope";
                 dialog.Show(main);
                 System.IO.File.WriteAllText(args[1]+".tmp",main.Handle.ToInt64()+":"+dialog.Handle.ToInt64());
@@ -90,8 +92,11 @@ public static class MarkAutoFixture {
                 var clock=System.Diagnostics.Stopwatch.StartNew();
                 var timer=new System.Windows.Forms.Timer(); timer.Interval=25;
                 timer.Tick+=delegate {
-                    if(System.IO.File.Exists(args[2])) { timer.Stop(); dialog.Close(); main.Close(); }
-                    else if(clock.ElapsedMilliseconds>5000) Environment.Exit(3);
+                    if(System.IO.File.Exists(args[2])) { timer.Stop(); dialog.Close(); retired.Close(); main.Close(); }
+                    else {
+                        if(System.IO.File.Exists(args[2]+".hide")) dialog.Hide();
+                        if(clock.ElapsedMilliseconds>5000) Environment.Exit(3);
+                    }
                 };
                 timer.Start();
             };
@@ -325,11 +330,16 @@ try {
     foreach ($element in $snapshot) {
       foreach ($property in @($pidProperty,$typeProperty,$idProperty,$nameProperty,$enabledProperty)) { [void]$element.GetCachedPropertyValue($property) }
     }
+    [IO.File]::WriteAllText($release+'.hide','hide only the owned fixture dialog')
+    $hiddenClock=[Diagnostics.Stopwatch]::StartNew()
+    while ([MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$owned.Handle,$main,'MarkAuto owned close scope') -ne [IntPtr]::Zero -and $hiddenClock.ElapsedMilliseconds -lt 500) { Start-Sleep -Milliseconds 25 }
+    if ([MarkAutoAcceptanceJob]::OwnedDialog($AcceptanceJob,$owned.Handle,$main,'MarkAuto owned close scope') -ne [IntPtr]::Zero) { throw 'Hidden retired dialog was accepted' }
     [IO.File]::WriteAllText($release,'release')
     Wait-OwnedAcceptanceProcess $owned 2000 'Owned dialog fixture did not finish'
     if ($owned.Process.get_ExitCode() -ne 0) { throw 'Owned dialog fixture failed' }
     @{exact_dialog=$true;wrong_title_refused=$true;wrong_owner_refused=$true;wrong_job_refused=$true;
-      cached_native_controls=$snapshot.Count;production_snapshot_executed=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-dialog-proof.json')
+      cached_native_controls=$snapshot.Count;production_snapshot_executed=$true;hidden_dialog_ignored=$true;
+      no_visible_dialog_refused=$true} | ConvertTo-Json | Set-Content (Join-Path $Fixture 'owned-dialog-proof.json')
     exit 0
   }
   if ($Case -like 'descendant-*' -or $Case -like 'worker-exits-*') {

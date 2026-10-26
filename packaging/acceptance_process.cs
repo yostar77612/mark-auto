@@ -331,6 +331,7 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
     [DllImport("user32.dll", SetLastError=true)] static extern uint GetWindowThreadProcessId(IntPtr window, out uint id);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
     public static IntPtr OwnedDialog(string name, IntPtr handle, IntPtr main, string title) {
         if(!Owns(name,handle) || WaitForSingleObject(handle,0)!=258)
             throw new InvalidOperationException("Live dialog creation ownership was not proven");
@@ -340,7 +341,7 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         IntPtr found=IntPtr.Zero; int matches=0;
         EnumThreadWindows(thread,delegate(IntPtr window,IntPtr unused) {
             uint candidate; GetWindowThreadProcessId(window,out candidate);
-            if(candidate!=id || window==main) return true;
+            if(candidate!=id || window==main || !IsWindowVisible(window)) return true;
             var text=new StringBuilder(512); GetWindowText(window,text,text.Capacity);
             if(!String.Equals(text.ToString(),title,StringComparison.Ordinal)) return true;
             IntPtr owner=GetWindow(window,4); // GW_OWNER: only this retained main window.
@@ -352,7 +353,7 @@ public sealed class MarkAutoAcceptanceJob : IDisposable {
         },IntPtr.Zero);
         if(!Owns(name,handle) || WaitForSingleObject(handle,0)!=258 || matches>1)
             throw new InvalidOperationException("Dialog ownership changed or is ambiguous");
-        return found;
+        return found!=IntPtr.Zero && !IsWindowVisible(found) ? IntPtr.Zero : found;
     }
 }
 public sealed class MarkAutoShortcutMetadata {

@@ -33,6 +33,8 @@ $fixtureParent=[IO.Path]::GetFullPath((Split-Path $FixtureRoot -Parent)).TrimEnd
 if ($fixtureParent -ine [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\') -or
     (Split-Path $FixtureRoot -Leaf) -notmatch '^MarkAutoUnifiedSource-[a-f0-9]{32}$') { throw 'Private source fixture root changed' }
 $script:acceptanceProcesses=New-Object System.Collections.ArrayList
+$gui=$null
+$closeClock=$null
 try {
   foreach ($entry in @(@('LOCALAPPDATA','local'),@('APPDATA','roaming'),@('USERPROFILE','home'))) {
     $privatePath=Join-Path $FixtureRoot $entry[1]
@@ -74,7 +76,19 @@ if __name__ == '__main__':
   $proof.installer_acceptance=$false
   $proof | ConvertTo-Json | Set-Content (Join-Path $results 'result.json')
 } catch {
-  try { Write-AcceptanceWorkerFailure -Failure $_ -Path (Join-Path $results 'worker-failure.json') -Source encoded_wrapper -Phase $global:acceptanceDiagnosticPhase }
+  $primaryFailure=$_
+  try { Write-AcceptanceWorkerFailure -Failure $primaryFailure -Path (Join-Path $results 'worker-failure.json') -Source encoded_wrapper -Phase $global:acceptanceDiagnosticPhase }
   catch { [Console]::Error.WriteLine('Source UI primary diagnostic unavailable') }
+  $uiExited=$null; $uiExitCode=$null
+  try {
+    if ($gui) {
+      $gui.Process.Refresh(); $uiExited=$gui.Process.get_HasExited()
+      if ($uiExited) { $uiExitCode=$gui.Process.get_ExitCode() }
+    }
+    @{status='failed';private_source_ui=$true;installer_acceptance=$false;
+      ui_exit_observed=$uiExited;ui_exit_code=$uiExitCode;
+      close_elapsed_milliseconds=$(if ($closeClock) {$closeClock.ElapsedMilliseconds} else {$null})} |
+      ConvertTo-Json | Set-Content (Join-Path $results 'result.json')
+  } catch { [Console]::Error.WriteLine('Source UI exit observation unavailable; primary failure preserved') }
   throw
 } finally { Close-AcceptanceProcesses }
