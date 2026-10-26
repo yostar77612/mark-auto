@@ -217,6 +217,24 @@ def serve_fixture(root, environment, profile, failure):
     serve(root, launch=RuntimeLaunch(root, environment, profile, 'test-stock'), engine_factory=factory)
 
 
+def close_owned_test_context(client):
+    """Only an explicit rejected CAS permits a fresh cleanup request.
+
+    These are this fixture's synthetic hosts, not user engines. Unknown results
+    and every other refusal retain the failure; no force-stop is acceptance.
+    """
+    for _ in range(3):
+        state = client.snapshot()
+        if state.engine_state == 'CLOSED':
+            return
+        result = client.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
+        if result.accepted:
+            return
+        if result.code != 'state_conflict':
+            break
+    raise DomainError(result.code)
+
+
 class RuntimeContextConfigurationTests(unittest.TestCase):
     def setUp(self):
         (WORKSPACE / 't').mkdir(exist_ok=True)
@@ -383,8 +401,7 @@ class OwnedBrokerTagHostTests(unittest.TestCase):
         for process, facade in self.processes:
             if process.is_alive():
                 try:
-                    state = facade.snapshot()
-                    facade.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
+                    close_owned_test_context(facade)
                 finally:
                     process.join(10)
             if process.is_alive():
@@ -446,9 +463,31 @@ class OwnedBrokerTagHostTests(unittest.TestCase):
                 self.assertEqual(observed.environment, environment)
                 self.assertFalse(observed.financial_facts_verified)
                 self.assertEqual(observed.orders, ())
-                facade.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, observed.version))
+                close_owned_test_context(facade)
                 process.join(10)
                 self.assertEqual(process.exitcode, 0)
+
+    def test_owned_broker_cleanup_preserves_real_ipc_stale_version_rejection(self):
+        environment = Environment.BROKER_SIMULATION
+        profile = profile_fixture(self.root / 'bundle', environment)
+        process, facade = self.start(self.root / 'engine', environment, profile)
+        initial = facade.snapshot()
+        self.assertTrue(facade.execute(UiCommand(UiAction.CONNECT_READ_ONLY, initial.version)).accepted)
+        self.wait_connected(facade)
+        original_execute, receipts = facade.execute, []
+
+        def advance_once(command):
+            if not receipts:
+                self.assertTrue(original_execute(UiCommand(UiAction.STOP_NEW, command.expected_version)).accepted)
+            receipt = original_execute(command)
+            receipts.append(receipt)
+            return receipt
+
+        with patch.object(facade, 'execute', side_effect=advance_once):
+            close_owned_test_context(facade)
+        self.assertEqual([(r.accepted, r.code) for r in receipts], [(False, 'state_conflict'), (True, 'completed')])
+        process.join(10)
+        self.assertEqual(process.exitcode, 0)
 
     def test_fresh_unconfigured_process_registers_nested_dtos_without_loading_any_profile(self):
         folder = self.root / 'no-profile'

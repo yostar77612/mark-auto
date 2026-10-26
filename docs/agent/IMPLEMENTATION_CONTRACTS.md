@@ -5691,3 +5691,6 @@ window destruction. Intermediate modal closure is still explicitly observed.
 ### Unified integration: owned synthetic-context cleanup
 
 Only the real-IPC test fixture may re-observe and make a fresh shutdown request after an explicit rejected state_conflict receipt, with at most three attempts. Other refusals and unknown outcomes are not replayed. Production command CAS checks, all test assertions, forced-cleanup failure and existing join deadlines remain unchanged. DomainError cleanup refusals are recorded. A real IPC case injects a version change and asserts the stale request rejects before a fresh shutdown succeeds; bounded-rejection and unknown-outcome cases remain mandatory.
+
+
+The same bounded explicit-refusal helper is shared by both owned synthetic IPC fixtures. A broker-tag fault-port case additionally injects a real version advance before shutdown and retains stale-command rejection plus normal zero-exit assertions. Strict stalled-connect/query timing tests and all production code remain unchanged.
