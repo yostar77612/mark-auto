@@ -4,6 +4,8 @@
 
 工作樹：`C:\Users\mark.tsai\Desktop\markauto\unified-ai`，分支 `feat/unified-ai-workspace`，基準 main `159f308181d8d84f4db8e0964d8ee3e95383bf3f`。原主工作樹設計文件未提交變更與其他工作樹保留。
 
+最新狀態（2026-10-26 15:21）：來源實作 c809b8843c7e2a3c44296f06d34914abbf9e3539 已完成完整一般權限回歸、獨立網頁 UI 補測及實際 Windows 畫面檢查。尚未完成權限案例、Linux 專屬案例與新安裝包驗證；沒有推送、合併或發布，也未更新使用者已安裝版本。詳見本文最後的驗證分類與恢復步驟。
+
 ## 驗收追蹤
 
 - [x] 一個主視窗，六工作區；AI 研究、原資料／結果／助理、登入入口不再啟動第二套視窗。
@@ -11,12 +13,13 @@
 - [x] ChatGPT 連線狀態在新版可見，可開啟原登入／模型／額度／助理功能；錯誤、登出及登入失效仍經原控制器。
 - [x] 完整原研究工具、已存候選與回測入口可用；研究和多市場策略之間明確說明相容性，不把研究結果冒充三市場交易證據。
 - [x] 原研究工作與 v2 引擎可並行；停止、取消與關閉依原保護收尾，重啟資料保留。
-- [ ] 行為／故障／架構／lint／語法／回歸測試通過；實際原生 UI 檢查；可用時建置檢查。
-- [ ] 最終核對資料保留、記錄測試與外部限制；未做真實金融操作，未動 Sitecore。
+- [x] 完整一般權限回歸無失敗，獨立網頁補測通過；架構／lint／語法通過；實際 Windows 來源 UI 檢查完成。
+- [ ] 28項原生檔案連結防護案例待 Windows 權限；Linux及新安裝包專屬檢查另列，不視為通過。
+- [x] 最終核對資料保留、記錄測試與外部限制；未做真實金融操作，未動 Sitecore。
 
-## 已確認
+## 起始狀態與已確認邊界
 
-- 現況 `trading_runtime.show_legacy` 透過 `Popen` 另開整套研究介面；v2 自己不載入原登入狀態。
+- 起始版本 `trading_runtime.show_legacy` 透過 `Popen` 另開整套研究介面；原v2自己不載入原登入狀態。本次已改為同視窗組裝。
 - 原研究的 `desktop.run_gui/prepare_workspace` 已有單寫入者鎖、復原、RuntimeGuard、原設定與 remembered login；應重用，不可自行用新 bootstrap 替代。
 - 原程式自動恢復後畫面已確認 ChatGPT 已連線；本次不直接讀取／複製憑證。
 - codebase-memory 技能已讀；索引工具 Transport closed，改採限縮來源核對，不宣稱圖索引完整。
@@ -84,3 +87,38 @@ PID4700與其本機引擎均已透過UI在0部位／0委託下正常關閉。資
 passive-scoped-lazy-regression.log：129項57.673秒全部通過，包含原啟動、R7四狀態、T15維護與新整合案例。light-entry-real-worker-regression.log：55項146.551秒無失敗，含1項原適用性skip，涵蓋原桌面真實worker、smoke隔離、安裝互斥與多市場端到端UI。Ruff check通過、692檔format通過、659檔Python3.11 AST通過、quality 0 finding、architecture 0 violation。
 
 整個quantlab/trading套件及G3八檔、歷史producer profiles均未改，避免入口重構改變研究來源身分。下一步保存本機提交、重新綁定完整來源指紋與測試清單，執行3596項完整普通分區及獨立原網頁UI7項。19項原生符號連結案例仍待權限，未啟動UAC；本次尚無新安裝包或遠端CI證據。
+
+## 最新來源驗證結果與使用入口（2026-10-26）
+
+程式來源提交 c809b8843c7e2a3c44296f06d34914abbf9e3539，完整來源 SHA256 為 1b2a50637df7055013a51f1d312dfb99e5236cb6fa94ffe265f4d7e3c8ec7068。後續只補文件，不改已驗證的程式、測試、依賴或封裝輸入。
+
+| 驗證 | 實際結果 | 證據（工作樹旁 unified-ai-audit-20261026） |
+|---|---|---|
+| 完整一般權限分區 | 3596項，3554通過、42原條件略過，0失敗、0錯誤；1563.238秒，source_unchanged=true | partition-regular-final-c809b88.json / .log、逐項checkpoint |
+| 原網頁UI＋Pillow相容性 | 7項全通過，32.415秒，無略過，來源指紋一致；覆蓋前列5項選配網頁略過 | optional-ui-final-c809b88.json / .log |
+| Windows來源實際操作 | 原登入自動恢復、六工作區、原AI策略中心、研究助理、同工作區返回、輸入與送出可見、正確模型前提、正常關閉 | screens/c809b88-native-*.png / .json |
+| 原資料保留 | 原183研究檔僅正常追加診斷log不同；研究資料、設定、workspace pointer逐位元組一致；v2僅正常啟閉的兩個SQLite日誌變化 | state-c809b88-after-native.json |
+| 靜態檢查 | Ruff check / 692檔format通過，659檔Python3.11 AST通過；quality0、architecture0 | 恢復紀錄及本機檢查輸出 |
+
+網頁補測工具最初誤將原test_ui的5項與獨立Pillow模組的2項當成同一模組，清單檢查在執行任何測試前拒絕；保留 optional-ui-preflight-v1.json 與原工具。改成完整載入兩個原模組後7項全過；沒有修改測試或60秒／15試驗門檻。這是工具清單錯誤，不是另一次程式修補。
+
+來源原生預覽PID36488透過一般入口啟動，沿用原資料、原登入引用與深色偏好，未送出實際AI推論。實際連線管理仍標示「本機憑證具訂閱權限；實際推論尚未驗證」，沒有更改單次同意、模型發現、額度上限或帳戶。透過UI確認LOCAL、0持倉／0委託後正常停止引擎，畫面顯示「引擎已關閉」，再依原範圍確認正常關閉研究與外框；程序已退出，沒有遺留預覽視窗。原憑證於任何讀取／hash／複製之前排除。
+
+使用入口：頂部「ChatGPT 已連線／連接 ChatGPT」開啟原登入、模型與額度管理；「策略」工作區提供「AI 策略研究」與「AI 研究助理」。研究工具列可切換原資料匯入、策略、回測、比較、紙上交易、行情、設定、登入與助理；按「返回多市場工作區」或再次點同一左側工作區即可返回。原研究取消與多市場停止新倉、關閉引擎、關閉介面各自保留責任。研究候選不會自動取得多市場部署資格，也不會觸發送單。
+
+責任分層：Presentation保留純Qt研究面板與路由；根目錄desktop_research_runtime負責組裝既有研究session與多市場外框；原研究controller／SettingsStore／JobsManager仍是登入、偏好、作業與預算權威。新增EmbeddedSettings只阻止內嵌尺寸覆寫原獨立視窗幾何，明確偏好仍經原驗證保存。Domain、整個quantlab/trading引擎、G3八檔與歷史producer profiles均未改。
+
+### 尚待驗證，不能宣稱全部通過
+
+3615個不同案例中，最新一般分區通過3554個，獨立網頁補測再覆蓋5個不同案例，共3559個不同案例實際通過；Pillow2項是重覆覆核，不灌入不同案例數。其餘分類如下：
+
+- 19個固定必測檔案連結案例未執行；另9個原案例因一般使用者無法建立符號連結而按原條件略過，合計28個需要Windows權限補測。沒有啟動UAC，不能沿用先前其他任務的一次性授權。
+- 23個Linux／POSIX專屬案例在此Windows主機不適用，WSL未安裝；沒有宣稱Linux測試或新遠端CI成功。
+- 5個原安裝／凍結程式harness專屬案例仍需新安裝包與隔離Windows環境。來源Qt檢查不能替代安裝版檢查。
+- 真實ChatGPT推論仍需使用者核對官方帳戶、模型與單次同意後外部驗證；本次只證實原登入自動恢復及離線fixture行為，不宣稱真實推論成功。
+
+正式封裝仍受packaging/build.ps1原完整回歸門檻保護，未繞過、不製造外部CI成功收據、不變更任何skip policy。原已安裝程式仍是main159；本次尚無新安裝包成功證據，不覆蓋原安裝或資料。後續遠端PR／合併／發布需另外明確授權。
+
+已備妥僅28個原案例的一次性補測工具：audit/run_symlink_bundle_c809b88.py與permission-bundle-context-c809b88.json。原固定19項工具及manifest完整保留，沒有擅自擴大舊授權。新清單SHA256為919a507fbf216da08fa0289d9de7c0d53354dd859c973e1ee840b45b61a31a4a，工具SHA256為e5bf7250eaa1288046571e7d7f304b566de0baba37cde2d50e09e045095d7275。工具只接受privileged模式，先核對權限、固定案例、Python／SQLite與來源，再建立短路徑私有profile執行原案例，要求28項無略過通過並核對來源未變；不修改ACL、開發人員模式或防護設定。一般權限拒絕已實測，permission-bundle-ordinary-refusal.log，未建立任何fixture或啟動UAC。
+
+下一個具體動作：取得這次28項UAC補測的明確授權，讓使用者親自在Windows提示核准，再執行固定清單並檢查逐項結果；未獲授權前維持待測。復原依工作樹旁RECOVERY.md與上述固定來源／清單接續，不重寫已完成工作，也不接觸Sitecore。
