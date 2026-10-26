@@ -14,8 +14,11 @@ operations, credential discovery and Sitecore work remain prohibited.
 The eight frozen v1 sources, historical producer profiles, OOS one-time budgets,
 paper journals and result readers remain unchanged. The new entry point is
 `desktop.py --platform-v2`; `--trading-root` selects an explicit isolated lab.
-The normal desktop entry still opens the existing research application. The v2
-interface retains callbacks to launch that complete application.
+The owner's 2026-10-26 follow-up unifies the normal and --platform-v2 desktop
+entries. Both now embed the original research session and ChatGPT presenter in
+the six-workspace window; callbacks route inside the window rather than launch a
+second desktop. Existing research paths, login references and safeguards remain
+authoritative, while the independent v2 trading engine retains its own book.
 
 Trading Domain, Application, Ports, Adapters and Runtime live under
 `quantlab/trading`; Qt presentation lives under `desktop_trading`. The composition

@@ -5565,3 +5565,36 @@ download-only discovery remains unchanged. The optional internal date set must b
 a nonempty frozenset of at most 256 ISO dates, matching the calendar input bound.
 No matching archive preserves the previous cache manifest and active research data.
 Original file, row, timeout, publication backup and rollback limits are unchanged.
+
+## Unified AI research and multi-market desktop (owner request 2026-10-26)
+
+Normal desktop startup and --platform-v2 compose the same six-workspace window.
+The original smoke, TLS and frozen worker dispatch paths retain their behavior.
+One ResearchSession owns the original WorkspaceLocator/bootstrap, writer lock,
+prepare_workspace recovery, RuntimeGuard, JobManager, settings and MainWindow.
+Its original presenter is an embedded Qt widget, not another desktop subprocess.
+The v2 engine remains independent and owns its existing typed command boundary.
+The embedded settings port preserves the original standalone window geometry
+(including absence), rather than publishing child-widget dimensions. All other
+explicit business preference changes use the original SettingsStore unchanged.
+
+Research data, AI search/candidates, backtests/comparisons, original paper tools,
+assistant and ChatGPT connection settings route inside that same window. The
+original controller alone restores the saved login and supplies connection/model
+state. Credentials are not copied to the v2 book or handled by a second resolver.
+The explicit isolated --research-bootstrap test option never restores a user's
+remembered login. Busy original sessions are not stolen, killed or migrated;
+failure is visible and the multi-market workspace remains usable for inspection.
+
+Global research cancellation delegates to the original pending/cancel/recovery
+gate, never a v2 order action. Closing the outer window first retains its existing
+scope confirmation and busy-operation checks, then asks the original research
+window to close. A refused or asynchronous research reconciliation retains the
+outer window and writer lock. Only original accepted close releases that session.
+The original assistant reply process must also stop and join before that lock is
+released; an unconfirmed assistant stop refuses close without unlocking.
+No timeouts, OOS access, irreversible budgets, AI tool permissions, risk gates,
+research evidence or historical producer profiles change. Research candidates do
+not auto-deploy or become evidence for another market or holding policy.
+Original v1 live prohibition and separate v2 execution-disabled defaults remain.
+Sitecore and real financial operations are outside this work.

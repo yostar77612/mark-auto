@@ -3,9 +3,9 @@
 from contextlib import closing
 from pathlib import Path
 import os
-import subprocess
 import sys
 
+from desktop_strings import ui_text
 from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contextnavigation import CompositeFacade
 from quantlab.trading.application.errors import ERROR_TABLE
@@ -27,11 +27,19 @@ def run_window(
     account_ref: str | None = None,
     profile_path: Path | None = None,
     contexts_path: Path | None = None,
+    research_bootstrap: Path | None = None,
 ) -> int:
     # UI and independent engine each own a handle to the existing installer
     # presence guard. Closing one lifetime must not expose the other's files.
     with closing(WindowsAppMutex()):
-        return _run_window(root, environment=environment, account_ref=account_ref, profile_path=profile_path, contexts_path=contexts_path)
+        return _run_window(
+            root,
+            environment=environment,
+            account_ref=account_ref,
+            profile_path=profile_path,
+            contexts_path=contexts_path,
+            research_bootstrap=research_bootstrap,
+        )
 
 
 def _run_window(
@@ -41,6 +49,7 @@ def _run_window(
     account_ref: str | None = None,
     profile_path: Path | None = None,
     contexts_path: Path | None = None,
+    research_bootstrap: Path | None = None,
 ) -> int:
     # Qt remains optional until the desktop entry is explicitly selected.
     from PySide6.QtWidgets import QApplication, QMessageBox
@@ -52,7 +61,11 @@ def _run_window(
     from desktop_icon import application_icon
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
-    app.setApplicationName('MarkAuto v2')
+    from quantlab import __version__
+
+    app.setApplicationName('MarkAuto')
+    app.setOrganizationName('MarkAuto')
+    app.setApplicationVersion(__version__)
     app.setWindowIcon(application_icon(app))
     try:
         contexts = RuntimeContextManager(root or default_root(), contexts_path)
@@ -67,24 +80,21 @@ def _run_window(
         facade = CompositeFacade(contexts, selected, current)
     except (OSError, ValueError) as exc:
         error = ERROR_TABLE.get(exc.code if isinstance(exc, DomainError) else 'startup_failed', ERROR_TABLE['startup_failed'])
-        QMessageBox.critical(None, 'MarkAuto v2', error.explanation + ' ' + error.action)
+        QMessageBox.critical(None, ui_text('v2.title'), error.explanation + ' ' + error.action)
         return 1
     window = TradingWindow(facade, facade.snapshot())
-    legacy = []
+    from desktop_research_runtime import ResearchSession, UnifiedResearch
 
-    def show_legacy(_page: str) -> None:
-        # Reuse the complete existing desktop, rather than reimplementing its
-        # research controls or touching any research data from v2.
-        if legacy and legacy[0].poll() is None:
-            return
-        args = [sys.executable]
-        if not getattr(sys, 'frozen', False):
-            args.append(str(Path(__file__).with_name('desktop.py')))
-        legacy[:] = [subprocess.Popen(args, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)]
-
-    window.legacy_requested.connect(show_legacy)
-    window.close_ui_requested.connect(window.close)
+    # One presenter/controller/session in the same Qt application. Explicit
+    # test bootstraps never discover or restore the user's remembered login.
+    research = UnifiedResearch(window, session=ResearchSession(window, bootstrap=research_bootstrap, restore_login=research_bootstrap is None))
+    window.unified_research = research
     window.show()
     result = app.exec()
+    # The normal close path already joins original workers and reconciles. An
+    # externally requested event-loop exit must not unlock a still-busy session.
+    if research.session.window is not None and not research.session._released:
+        if not research.session.request_close():
+            return 1
     # Engine intentionally remains independent when the interface closes.
     return result

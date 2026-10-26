@@ -84,6 +84,7 @@ class TradingWindow(QMainWindow):
         self._connecting_request = False
         self._screen_hooked = False
         self._pending_wizard = None
+        self.research_close_guard = None
         self.setObjectName('multi_market_window')
         self.setWindowTitle(ui_text('v2.title'))
         font = self.font()
@@ -570,6 +571,9 @@ class TradingWindow(QMainWindow):
         if not self.property('allow_close_for_tests') and not self._confirm(
             ui_text(close_key).format(state_label(self.state.engine_state), len(self.state.positions))
         ):
+            event.ignore()
+            return
+        if self.research_close_guard is not None and not self.research_close_guard():
             event.ignore()
             return
         self.poll.stop()

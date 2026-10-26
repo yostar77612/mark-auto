@@ -53,6 +53,7 @@ ALLOWED_FILES = {
     'desktop_chart_popout.py',
     'desktop_presentation.py',
     'desktop_recovery_smoke.py',
+    'desktop_research_runtime.py',
     'desktop_strings.py',
     'desktop_theme.py',
     'desktop_timeinput.py',
