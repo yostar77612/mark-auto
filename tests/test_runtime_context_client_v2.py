@@ -13,7 +13,7 @@ import tempfile
 import time
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtTest import QTest
@@ -24,7 +24,7 @@ from desktop_strings import ui_text
 from desktop_trading import TradingWindow
 from desktop_trading.wizard import StrategyWizard
 from quantlab.trading.application.contextnavigation import CompositeFacade
-from quantlab.trading.application.contracts import UiAction, UiCommand
+from quantlab.trading.application.contracts import UiAction, UiCommand, UiReceipt
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.config import RuntimeLaunch, load_profile
@@ -34,6 +34,67 @@ from test_trading_runtime_context import profile_fixture, serve_fixture
 
 
 WORKSPACE = Path(__file__).resolve().parents[1]
+
+
+def close_owned_test_context(client):
+    """Only an explicit rejected CAS permits a fresh cleanup request.
+
+    These are this fixture's synthetic hosts, not user engines. Unknown results
+    and every other refusal retain the failure; no force-stop is acceptance.
+    """
+    for _ in range(3):
+        state = client.snapshot()
+        if state.engine_state == 'CLOSED':
+            return
+        result = client.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
+        if result.accepted:
+            return
+        if result.code != 'state_conflict':
+            break
+    raise DomainError(result.code)
+
+
+class OwnedContextCleanupTests(unittest.TestCase):
+    def test_explicit_version_refusal_requires_fresh_snapshot_before_new_request(self):
+        client = Mock()
+        client.snapshot.side_effect = [SimpleNamespace(engine_state='STOPPED', version=4), SimpleNamespace(engine_state='STOPPED', version=5)]
+        client.execute.side_effect = [UiReceipt(False, 'state_conflict', ''), UiReceipt(True, 'completed', '')]
+        close_owned_test_context(client)
+        self.assertEqual(
+            client.method_calls,
+            [
+                unittest.mock.call.snapshot(),
+                unittest.mock.call.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, 4)),
+                unittest.mock.call.snapshot(),
+                unittest.mock.call.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, 5)),
+            ],
+        )
+
+    def test_unknown_or_other_refusal_is_not_replayed(self):
+        for failure in ('outcome_unknown', 'journal_failed', 'capability_missing'):
+            with self.subTest(failure=failure):
+                client = Mock()
+                client.snapshot.return_value = SimpleNamespace(engine_state='STOPPED', version=4)
+                client.execute.return_value = UiReceipt(False, failure, '')
+                with self.assertRaises(DomainError) as raised:
+                    close_owned_test_context(client)
+                self.assertEqual(raised.exception.code, failure)
+                client.execute.assert_called_once()
+        client = Mock()
+        client.snapshot.return_value = SimpleNamespace(engine_state='STOPPED', version=4)
+        client.execute.side_effect = EOFError('unknown transport outcome')
+        with self.assertRaises(EOFError):
+            close_owned_test_context(client)
+        client.execute.assert_called_once()
+
+    def test_repeated_conflict_remains_failure_with_bounded_requests(self):
+        client = Mock()
+        client.snapshot.return_value = SimpleNamespace(engine_state='STOPPED', version=4)
+        client.execute.return_value = UiReceipt(False, 'state_conflict', '')
+        with self.assertRaises(DomainError) as raised:
+            close_owned_test_context(client)
+        self.assertEqual(raised.exception.code, 'state_conflict')
+        self.assertEqual(client.execute.call_count, 3)
 
 
 class RuntimeContextRegistryTests(unittest.TestCase):
@@ -125,12 +186,10 @@ class RuntimeContextClientTests(unittest.TestCase):
         for launch in reversed(self.launches):
             try:
                 client = ContextIpcFacade(launch)
-                state = client.snapshot()
-                if state.engine_state != 'CLOSED':
-                    result = client.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
-                    if not result.accepted:
-                        cleanup_errors.append(result.code)
-            except (OSError, EOFError, DomainError):
+                close_owned_test_context(client)
+            except DomainError as exc:
+                cleanup_errors.append(exc.code)
+            except (OSError, EOFError):
                 pass  # A test may deliberately have closed its owned host.
         for process in self.processes:
             process.join(10)
@@ -309,6 +368,24 @@ class RuntimeContextClientTests(unittest.TestCase):
         self.assertIn('events_fault', trace)
         self.assertNotIn('FORBIDDEN_SUBMIT', trace)
         self.assertNotIn('FORBIDDEN_CANCEL', trace)
+
+    def test_owned_cleanup_handles_real_ipc_version_change_without_bypassing_cas(self):
+        manager = self.manager_with()
+        client = manager.open_context('local', 'local-stock')
+        original_execute = client.execute
+        receipts = []
+
+        def advance_once(command):
+            if not receipts:
+                stopped = original_execute(UiCommand(UiAction.STOP_NEW, command.expected_version))
+                self.assertTrue(stopped.accepted)
+            receipt = original_execute(command)
+            receipts.append(receipt)
+            return receipt
+
+        with patch.object(client, 'execute', side_effect=advance_once):
+            close_owned_test_context(client)
+        self.assertEqual([(r.accepted, r.code) for r in receipts], [(False, 'state_conflict'), (True, 'completed')])
 
     def test_wrong_running_identity_is_not_relaunched_or_silently_local(self):
         launch = self.start_synthetic_host(Environment.BROKER_SIMULATION)
