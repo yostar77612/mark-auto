@@ -34,8 +34,19 @@ class ResearchPanel(QWidget):
         self.choice = QComboBox()
         self.choice.setObjectName('unified_research_navigation')
         self.choice.setAccessibleName(ui_text('unified.research_navigation'))
-        for page in self.ROUTES:
-            self.choice.addItem(ui_text('unified.page.' + page), page)
+        captions = {
+            'data': ui_text('unified.page.data'),
+            'strategy': ui_text('unified.page.strategy'),
+            'backtest': ui_text('unified.page.backtest'),
+            'compare': ui_text('unified.page.compare'),
+            'paper': ui_text('unified.page.paper'),
+            'market': ui_text('unified.page.market'),
+            'settings': ui_text('unified.page.settings'),
+            'connection': ui_text('unified.page.connection'),
+            'assistant': ui_text('unified.page.assistant'),
+        }
+        for page, caption in captions.items():
+            self.choice.addItem(caption, page)
         self.choice.activated.connect(lambda: self.page_requested.emit(self.choice.currentData()))
         toolbar.addWidget(self.choice, 1)
         self.job_status = QLabel()

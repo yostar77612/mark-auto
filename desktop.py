@@ -403,7 +403,7 @@ def main(argv=None):
             args.trading_engine, Environment(args.trading_environment or 'LOCAL'), args.trading_profile, args.trading_account or 'local-stock'
         )
         return serve(args.trading_engine, launch=launch)
-    if args.platform_v2 or (args.smoke_test is None and args.tls_smoke is None):
+    if args.platform_v2:
         # The optional v2 desktop composition owns context selection and Qt.
         from trading_runtime import run_window
 
@@ -425,5 +425,17 @@ def main(argv=None):
     return run_gui(args)
 
 
+def launch(argv=None):
+    """Public desktop entry; retain main's original callable recovery contract.
+
+    Installed shortcuts and source execution open the same unified window.
+    Explicit diagnostic/engine arguments keep their existing dispatch paths.
+    """
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if not arguments:
+        arguments = ['--platform-v2']
+    return main(arguments)
+
+
 if __name__ == '__main__':
-    raise SystemExit(main())
+    raise SystemExit(launch())

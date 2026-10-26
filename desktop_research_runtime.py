@@ -150,8 +150,11 @@ class ResearchSession(QObject):
         if state.jobs is not None:
             state.jobs.close()
         if self.window is not None:
-            self.window.timer.stop()
-            self.window.app_header.timer.stop()
+            # The embedded presenter may outlive its accepted close while the
+            # outer engine operation finishes. No backup/poll callback may run
+            # after this session gives up its writer lock.
+            for timer in self.window.findChildren(QTimer):
+                timer.stop()
         if hasattr(self, 'clock_timer'):
             self.clock_timer.stop()
         if hasattr(self, 'power_events'):
@@ -203,6 +206,7 @@ class UnifiedResearch(QObject):
         self._host = None
         self._routing = False
         self._pending_close = False
+        self._closing = False
         self._appearance = None
         self.session.released.connect(self._released)
         trading.pages.currentChanged.connect(self._visibility)
@@ -211,6 +215,9 @@ class UnifiedResearch(QObject):
         QTimer.singleShot(0, self.ensure_open)
 
     def ensure_open(self):
+        if self.session._released:
+            self.panel.set_error(ui_text('unified.research_unavailable'))
+            return False
         if self._host is not None:
             return True
         try:
@@ -318,12 +325,20 @@ class UnifiedResearch(QObject):
     def _released(self):
         if hasattr(self, 'status_timer'):
             self.status_timer.stop()
-        if self._pending_close:
+        # Original workspace restore/restart may close its presenter directly.
+        # Never leave an unlocked, usable research widget in the outer shell.
+        if self._host is not None:
+            self._host.setEnabled(False)
+        if self._pending_close or self._host is not None and not self._closing:
             self._pending_close = False
             QTimer.singleShot(0, self.trading.close)
 
     def request_close(self):
-        accepted = self.session.request_close()
+        self._closing = True
+        try:
+            accepted = self.session.request_close()
+        finally:
+            self._closing = False
         # Asynchronous original reconciliation can finish after this close
         # request. Only then may the outer window close, never before joining.
         self._pending_close = not accepted and bool(getattr(self._host, '_close_after_reconcile', False))

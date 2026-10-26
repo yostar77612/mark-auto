@@ -44,3 +44,18 @@ PID4700與其本機引擎均已透過UI在0部位／0委託下正常關閉。資
 新16項整合含設定保留與明確業務偏好保存，63.787秒全通過（settings-preservation-tests.log）。主程式名稱／組織／版本也統一為原MarkAuto識別。接著凍結source/context，執行全部普通使用者與固定19項符號連結權限分區；audit/run_permission_partition.py已從先前核對腳本複用，僅改ROOT指向unified-ai。新一輪19項尚未獲UAC授權，不得沿用上輪一次性授權。最後仍需新修正版原生畫面、完整回歸及可行的本機封裝；遠端不自動推送。
 
 尚未宣稱任何新測試或新安裝版完成；不推送／合併本任務遠端分支，除非另有明確授權。
+
+
+### 2026-10-26：普通權限回歸的修正與恢復
+
+使用者選擇先完成其他測試；固定19項權限案例維持待執行，不啟動UAC。97f3406完整普通分區在原T11啟動測試卡住，該輪只能視為未完成，保留原log；已核對並停止唯一測試runner33036，再透過正式IPC關閉其私有LOCAL引擎37732。未動使用者引擎或Sitecore。
+
+根因與修正：歷史程式呼叫desktop.main([])是既有復原／診斷契約，改路由使原測試接縫失效。保留這個可呼叫契約，增加公開launch入口供實際來源／安裝執行（__main__）使用；無參數及--platform-v2同樣開啟整合UI，既有smoke/TLS/engine參數原樣分派。沒有依測試環境或frozen狀態隱藏分支。研究視窗自行關閉後立即停用內嵌功能並排程關閉外框，避免資料鎖釋放後繼續使用。
+
+其他大量候選pool profile子案例錯誤已確定為隔離TEMP路徑過長：long-profile-diagnostic.log保留WinError3原堆疊；短TEMP單例通過，後續使用workspace/t私有短路徑，不變更Windows設定、舊profile或測試。新增取消案例改驗證實際safety狀態與防重送，而非新增原服務patch observer，保留舊R1 inventory。新增測試模組改名test_desktop_unified_research.py以符合原CI桌面分組；只移動本次新測試，不刪既有案例。
+
+中斷後資料再次比對post-interrupted-regression-data-audit.json：原183研究檔仍僅正常追加診斷log不同；研究資料、設定、工作區指標保留。v2仍僅兩個正常啟動／關閉的SQLite日誌變更，未回滾。
+
+下一步：短TEMP重驗全部失敗模組、新17項整合及T11／復原；確認後凍結新來源、重新完整普通分區，繼續原生畫面與可行封裝。
+
+修正後證據：startup-inventory-compatibility.log 35項9.704秒全部通過；short-temp-diagnostics.log 原故障清理／隔離／候選來源24項357.241秒通過（含1原適用性skip）；lifecycle-ui-regression.log 新17項整合＋原復原／圖表共38項94.626秒全部通過；release-timers-native-guards.log 補強研究關閉停止所有子定時器後，原桌面runtime／安裝互斥與新增釋放案例共44項17.692秒全部通過。Python3.11 AST656檔通過，Ruff check/format、quality0及architecture0。接續以固定新來源重新完整普通權限3590項（全3609項，19項仍待權限）。

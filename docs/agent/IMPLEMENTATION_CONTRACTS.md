@@ -5598,3 +5598,10 @@ research evidence or historical producer profiles change. Research candidates do
 not auto-deploy or become evidence for another market or holding policy.
 Original v1 live prohibition and separate v2 execution-disabled defaults remain.
 Sitecore and real financial operations are outside this work.
+
+The executable/source __main__ entry uses desktop.launch: no arguments open the
+unified composition, while explicit diagnostic/engine arguments retain dispatch.
+The callable desktop.main legacy recovery API remains compatible for existing
+integrations; no frozen/test-environment conditional changes behavior. An original
+workspace presenter closing itself disables its released research view immediately
+and requests outer-shell close through the same guarded lifecycle.

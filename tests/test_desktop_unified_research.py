@@ -186,17 +186,26 @@ class UnifiedResearchTests(unittest.TestCase):
         self.assertTrue(self.outer.isVisible())
 
     def test_global_research_cancel_uses_original_pending_gate_and_never_sends_trade_commands(self):
+        import json
+
         host = self.session.window
+        host.chatgpt_controller.busy = True
         host.job_progress.begin()
         self.integration.refresh_connection()
         self.assertTrue(self.outer.cancel_research_button.isEnabled())
-        with patch.object(host, 'cancel_job') as cancel:
-            self.outer.cancel_research_button.click()
-            self.integration.cancel_research()
-            cancel.assert_called_once_with()
+        self.outer.cancel_research_button.click()
+        safety = json.loads((host.paths.state / 'desktop_safety.json').read_text(encoding='utf-8'))
+        self.assertTrue(safety['reconciliation_required'])
+        self.assertEqual(safety['reason'], ui_text('ui.cancel_and_recover.user_cancel'))
+        self.assertEqual(host.status.text(), ui_text('job.cancel_notice'))
         self.assertFalse(self.outer.cancel_research_button.isEnabled())
         self.assertTrue(host.job_progress.cancel_pending)
+        host.status.setText('post-cancellation status')
+        host.chatgpt_controller.busy = True
+        self.integration.cancel_research()
+        self.assertEqual(host.status.text(), 'post-cancellation status')
         self.assertEqual(self.facade.commands, [])
+        host.chatgpt_controller.busy = False
 
     def test_assistant_is_directly_reachable_and_original_readonly_fixture_reply_works(self):
         self.outer.ai_assistant_button.click()
@@ -252,10 +261,22 @@ class UnifiedResearchTests(unittest.TestCase):
         import desktop
 
         with patch('trading_runtime.run_window', return_value=23) as launch, patch.object(desktop, 'run_gui') as legacy:
-            self.assertEqual(desktop.main([]), 23)
-            self.assertEqual(desktop.main(['--platform-v2']), 23)
+            self.assertEqual(desktop.launch([]), 23)
+            self.assertEqual(desktop.launch(['--platform-v2']), 23)
             self.assertEqual(launch.call_count, 2)
             legacy.assert_not_called()
+
+    def test_original_workspace_close_disables_research_before_outer_close(self):
+        host = self.session.window
+        with patch.object(self.outer, 'close') as close_outer:
+            self.assertTrue(host.close())
+            self.assertFalse(host.isEnabled())
+            self.assertTrue(self.session._released)
+            self.assertFalse(host.automatic_backup_panel.timer.isActive())
+            self.assertFalse(host.timer.isActive())
+            self.assertFalse(self.integration.ensure_open())
+            self.app.processEvents()
+            close_outer.assert_called_once_with()
 
     def test_explicit_isolated_bootstrap_is_not_accepted_for_legacy_smoke(self):
         import desktop
