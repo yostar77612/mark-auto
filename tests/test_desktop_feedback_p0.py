@@ -104,6 +104,19 @@ class FeedbackTests(unittest.TestCase):
         self.assertIn('12 根', text)
         self.assertNotIn('private-token', text)
 
+    def test_download_completion_counts_manifest_archives_and_auto_import(self):
+        from desktop_pages.notification_log import safe_summary
+
+        manifest = {'downloaded_archives': 1, 'archives': [{'archive_path': 'C:/private/archive.zip'}]}
+        imported = {**manifest, 'auto_import': {'status': 'imported', 'bars': 1140, 'contract': 'TAIFEX:TMF:202611', 'dataset': 'C:/private/dataset.json'}}
+        for summarize in (completion_summary, safe_summary):
+            with self.subTest(summarize=summarize.__name__):
+                self.assertEqual(summarize('ui_refresh', manifest), '公開資料下載完成：1 份下載紀錄')
+                text = summarize('ui_refresh', imported)
+                self.assertEqual(text, '公開資料下載完成：1 份下載紀錄，已匯入 1140 根')
+                self.assertNotIn('private', text)
+        self.assertIn('2 份下載紀錄', completion_summary('ui_refresh', {'downloads': [{}, {}]}))
+
     def test_invalid_policy_replaces_previous_success_with_persistent_error(self):
         from quantlab.desktop_errors import error_message
 
