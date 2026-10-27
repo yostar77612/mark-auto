@@ -152,7 +152,14 @@ def completion_summary(operation, result):
     elif op.startswith('analysis_'):
         detail = '識別碼 ' + str(result.get('analysis_id', '未提供'))[:12] + '；建議不自動套用'
     elif op == 'refresh':
-        detail = f"{len(result.get('downloads', []))} 份下載紀錄"
+        # Download workers report a manifest count; older list results arrive wrapped as 'downloads'.
+        count = result.get('downloaded_archives')
+        if type(count) is not int:
+            count = len(result.get('archives', result.get('downloads', [])))
+        detail = f"{count} 份下載紀錄"
+        imported = result.get('auto_import')
+        if type(imported) is dict and imported.get('status') == 'imported':
+            detail += f"，已匯入 {imported.get('bars', '未知')} 根"
     elif op.startswith('backup_'):
         detail = '本機封存處理已結束；請核對保存紀錄'
     elif op.startswith('chatgpt_'):

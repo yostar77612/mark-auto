@@ -39,6 +39,13 @@ def safe_summary(operation, result):
     # Counts are validated integers, never strings from a worker.
     if type(result.get('bars')) is int and 0 <= result['bars'] <= 100000000:
         safe['bars'] = result['bars']
+    if operation == 'ui_refresh':
+        archives = result.get('downloaded_archives')
+        if type(archives) is int and 0 <= archives <= 10000:
+            safe['downloaded_archives'] = archives
+        imported = result.get('auto_import')
+        if type(imported) is dict and imported.get('status') == 'imported' and type(imported.get('bars')) is int and 0 <= imported['bars'] <= 100000000:
+            safe['auto_import'] = {'status': 'imported', 'bars': imported['bars']}
     providers = result.get('providers')
     if type(providers) is dict:
         safe['providers'] = {i: {'error': bool(type(row) is dict and row.get('error')), 'bars': 0} for i, row in enumerate(list(providers.values())[:200])}
