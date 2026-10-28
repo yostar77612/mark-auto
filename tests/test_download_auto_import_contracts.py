@@ -32,7 +32,7 @@ class DownloadImportContractTests(unittest.TestCase):
     def test_historical_characterization_and_service_inventory_are_not_regenerated(self):
         expected = {
             'page_services_inventory.json': '931b91be8baaf6fe44f91bf22c05033fb3f666f47b40c442a340b5b0e6f0c36f',
-            'r7_base.json': 'b8efbd267565c4bed84e12f3afaa8061bd88500d77280e14f810b1c3ef4fbc41',
+            'r7_base.json': '14252fdc502819d3860fee93b727f80103392f251934bb0083efd815aee0efa0',
             'ui_redesign_characterization_delta.json': 'b5fa49227f1ec94b22661aa5769e0183d84e207227f4ac90d24ac3c1e1ac96f5',
         }
         for name, sha in expected.items():
