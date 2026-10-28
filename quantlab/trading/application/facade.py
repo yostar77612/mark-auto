@@ -4,7 +4,7 @@ from dataclasses import replace
 from decimal import Decimal
 from time import perf_counter
 
-from .contracts import UiAction, UiCommand, UiReceipt, UiState
+from .contracts import MarketSeriesPage, MarketSeriesQuery, UiAction, UiCommand, UiReceipt, UiState
 from .broker_settings import BrokerSettings, check_readiness
 from .engine import TradingEngine
 from .events import reconcile
@@ -23,6 +23,12 @@ class LocalFacade:
     def snapshot(self) -> UiState:
         with self.engine.lock:
             return snapshot(self.engine)
+
+    def market_series(self, query: MarketSeriesQuery) -> MarketSeriesPage:
+        with self.engine.lock:
+            if self.engine.live_market is None:
+                raise DomainError('capability_missing', 'live market unavailable')
+            return self.engine.live_market.series(query)
 
     @decimal_operation
     def execute(self, command: UiCommand) -> UiReceipt:

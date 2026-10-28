@@ -53,12 +53,14 @@ class LiveMarketService:
     ) -> None:
         self.market, self.clock, self.resolver, self.settings = market, clock, resolver, settings
         self.calendar = calendar
+        self.watchlist: tuple[str, ...] | None = None
         self.market_revision = 0
         self.allocation = SubscriptionAllocation()
         self._strategy_ids: tuple[str, ...] = ()
         self._watch_ids: tuple[str, ...] = ()
         self._subscriptions: dict[str, str] = {}
         self._buffers: dict[str, _InstrumentBuffer] = {}
+        self._view_cache: dict[str, MarketWatchView] = {}
 
     def allocate(self, strategy_ids: tuple[str, ...], watch_ids: tuple[str, ...] = ()) -> SubscriptionAllocation:
         strategies = tuple(dict.fromkeys(strategy_ids))
@@ -74,6 +76,7 @@ class LiveMarketService:
                 self.market.unsubscribe(self._subscriptions[key])
                 del self._subscriptions[key]
                 del self._buffers[key]
+                self._view_cache.pop(key, None)
         for key in desired:
             if key not in self._subscriptions:
                 receipt = self.market.subscribe((key,))
@@ -105,6 +108,7 @@ class LiveMarketService:
 
     def poll(self, *, connected: bool = True, in_session: bool | None = None) -> int:
         before = self._views()
+        previous = {key: (buffer.minute, buffer.tick, len(buffer.live), buffer.freshness) for key, buffer in self._buffers.items()}
         now = self.clock.now()
         for tick in self.market.drain_ticks(self.settings.queue_limit):
             if tick.instrument_id not in self._buffers:
@@ -120,13 +124,26 @@ class LiveMarketService:
                     buffer.first_live_start = update.state.bar.start
                 if buffer.tick is None or tick.source_at >= buffer.tick.source_at:
                     buffer.tick = tick
-        for buffer in self._buffers.values():
+        for key, buffer in self._buffers.items():
             if buffer.minute is not None:
                 buffer.minute = finalize_minute(buffer.minute, now=now)
-            self._trim(buffer)
+            session = in_session
+            if session is None:
+                try:
+                    self.resolver.session_at(key, now)
+                    session = True
+                except DomainError as exc:
+                    if exc.code != 'session_closed':
+                        raise
+                    session = False
             buffer.freshness = classify_freshness(
-                buffer.tick.received_at if buffer.tick else None, now=now, connected=connected, in_session=in_session, settings=self.settings
+                buffer.tick.received_at if buffer.tick else None, now=now, connected=connected, in_session=session, settings=self.settings
             )
+            if (buffer.minute, buffer.tick, len(buffer.live), buffer.freshness) != previous[key]:
+                old_minute = previous[key][0]
+                if buffer.minute is not None and (old_minute is None or old_minute.bar.trade_date != buffer.minute.bar.trade_date):
+                    self._trim(buffer)
+                self._view_cache.pop(key, None)
         if self._views() != before:
             self.market_revision += 1
         return self.market_revision
@@ -159,6 +176,7 @@ class LiveMarketService:
             buffer.history_error = ''
         except DomainError as exc:
             buffer.history_error = exc.code
+        self._view_cache.pop(instrument_id, None)
         if self._views() != before:
             self.market_revision += 1
 
@@ -178,7 +196,10 @@ class LiveMarketService:
         return market_watch_view(instrument_id, buffer.tick, merged, buffer.freshness, stats, buffer.history_error)
 
     def _views(self) -> tuple[MarketWatchView, ...]:
-        return tuple(self.watch(key) for key in self.allocation.active)
+        for key in self.allocation.active:
+            if key not in self._view_cache:
+                self._view_cache[key] = self.watch(key)
+        return tuple(self._view_cache[key] for key in self.allocation.active)
 
     def overview(self) -> OverviewMarketSummary:
         return overview_market_summary(self._views(), limit=self.settings.subscription_limit, revision=self.market_revision)
@@ -200,6 +221,9 @@ class LiveMarketService:
             raise DomainError('state_conflict', 'market changed; restart series read')
         if query.instrument_id not in self._buffers:
             raise DomainError('capability_missing', 'instrument not allocated')
+        if query.retry_history:
+            end = self.clock.now()
+            self.backfill(query.instrument_id, end - timedelta(days=30), end)
         view = self.watch(query.instrument_id, period=query.period)
         selected = []
         size = 0

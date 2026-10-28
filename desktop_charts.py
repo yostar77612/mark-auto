@@ -113,6 +113,15 @@ def _number(value):
     return float(value)
 
 
+def _validate_chart_bar(bar):
+    """Validate one externally supplied display bar for every series boundary."""
+    o, h, l, c = map(_number, (bar.open, bar.high, bar.low, bar.close))
+    if not l <= min(o, c) <= max(o, c) <= h:
+        raise ValueError(ui_text('charts.set_series.invalid_ohlc'))
+    if bar.volume is not None and (type(bar.volume) is not int or bar.volume < 0):
+        raise ValueError(ui_text('charts.set_series.invalid_volume'))
+
+
 @dataclass(frozen=True)
 class ChartMarker:
     index: int
@@ -284,11 +293,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         if len({getattr(b, 'interval', None) for b in bars}) > 1:
             raise ValueError(ui_text('charts.set_series.mixed_timeframes'))
         for b in bars:
-            o, h, l, c = map(_number, (b.open, b.high, b.low, b.close))
-            if not l <= min(o, c) <= max(o, c) <= h:
-                raise ValueError(ui_text('charts.set_series.invalid_ohlc'))
-            if b.volume is not None and (type(b.volume) is not int or b.volume < 0):
-                raise ValueError(ui_text('charts.set_series.invalid_volume'))
+            _validate_chart_bar(b)
         self.bars = bars
         self.paper_orders.drag, self.paper_orders.hits = None, ()
         if trace is not None:
@@ -301,6 +306,12 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             else ui_text('charts.set_series.host_source')
         )
         self.status_label = status_label or (provenance.mode if provenance else ui_text('charts.set_series.status_unknown'))
+        self._refresh_series_layers()
+        self.crosshair_index = None
+        self.error = ''
+        self.reset_view()
+
+    def _refresh_series_layers(self):
         self.overlays = MappingProxyType({})
         self.panes = MappingProxyType({})
         self.markers = ()
@@ -309,9 +320,37 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self._unavailable_panes = set()
         self.pane_styles = {}
         self._marker_index = {}
-        self.crosshair_index = None
-        self.error = ''
-        self.reset_view()
+
+    def append_bar(self, bar):
+        """Append supplied display data, preserving the viewport and labels."""
+        if len(self.bars) >= 100000:
+            raise ValueError(ui_text('charts.set_series.bar_limit'))
+        self._validate_incremental_bar(bar, self.bars)
+        following = self.visible_range[1] == len(self.bars)
+        self.bars = (*self.bars, bar)
+        if following:
+            self._start = max(0, len(self.bars) - self._count)
+        self._refresh_series_layers()
+        self.paper_orders.drag, self.paper_orders.hits = None, ()
+        self.view_changed.emit()
+        self.update()
+
+    def replace_last_bar(self, bar):
+        """Replace supplied final display data; an empty series has no last bar."""
+        if not self.bars:
+            raise ValueError(ui_text('charts.set_series.last_bar_required'))
+        self._validate_incremental_bar(bar, self.bars if len(self.bars) > 1 else ())
+        self.bars = (*self.bars[:-1], bar)
+        self._refresh_series_layers()
+        self.paper_orders.drag, self.paper_orders.hits = None, ()
+        self.update()
+
+    def _validate_incremental_bar(self, bar, retained):
+        if (retained and bar.contract_id != retained[0].contract_id) or (self.trace and bar.contract_id != self.trace.contract_id):
+            raise ValueError(ui_text('charts.set_series.contract_mismatch'))
+        if retained and getattr(bar, 'interval', None) != getattr(retained[0], 'interval', None):
+            raise ValueError(ui_text('charts.set_series.mixed_timeframes'))
+        _validate_chart_bar(bar)
 
     def reset_view(self):
         self._count = min(self.MAX_VISIBLE, 100)

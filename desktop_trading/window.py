@@ -90,10 +90,11 @@ class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
     close_ui_requested = Signal()
 
-    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None):
+    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None):
         super().__init__(parent)
         self.facade = facade
         self.state = initial_state
+        self.market_watch = market_watch
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -480,6 +481,15 @@ class TradingWindow(QMainWindow):
     def apply_state(self, state: UiState) -> None:
         if self._stamp(state) < self._stamp(self.state):
             return
+        market_changed = state.market_revision != self.state.market_revision
+        market_only = (
+            self._rendered_version is not None
+            and self._stamp(state) == self._stamp(self.state)
+            and state.context_id == self.state.context_id
+            and market_changed
+        )
+        if self.market_watch is not None and (market_changed or self._rendered_version != self._stamp(state)):
+            self.market_watch.render(state)
         freshness_changed = (
             state.financial_facts_verified != self.state.financial_facts_verified
             or tuple((item.instrument_id, item.availability) for item in state.markets)
@@ -487,6 +497,9 @@ class TradingWindow(QMainWindow):
             or tuple((item.strategy_id, item.version, item.net_pnl is None, item.unrealized_pnl is None) for item in state.performance)
             != tuple((item.strategy_id, item.version, item.net_pnl is None, item.unrealized_pnl is None) for item in self.state.performance)
         )
+        if market_only and not freshness_changed:
+            self.state = state
+            return
         changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
         if changed_context:
             self._settings_dirty = False

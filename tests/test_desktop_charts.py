@@ -10,6 +10,7 @@ import os
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 import unittest
 import importlib.util
+from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -65,6 +66,79 @@ class ChartTests(unittest.TestCase):
         QTest.mouseMove(self.widget, point)
         self.app.processEvents()
         self.assertEqual(self.widget.crosshair_index, 50)
+
+    def invalid_bars(self):
+        values = {name: getattr(fixture(1)[0], name) for name in ('contract_id', 'interval', 'open', 'high', 'low', 'close', 'volume')}
+        return tuple(
+            SimpleNamespace(**(values | change))
+            for change in (
+                {'open': True},
+                {'high': float('inf')},
+                {'low': Decimal('NaN')},
+                {'close': '100'},
+                {'low': 200},
+                {'high': 99},
+                {'volume': -1},
+                {'volume': True},
+                {'volume': 1.5},
+                {'contract_id': 'OTHER'},
+                {'interval': '5m'},
+            )
+        )
+
+    def test_set_series_validation_characterization(self):
+        before = self.widget.bars
+        for bar in self.invalid_bars():
+            with self.subTest(bar=bar), self.assertRaises(ValueError):
+                self.widget.set_series((before[0], bar), trace=self.trace)
+            self.assertEqual(self.widget.bars, before)
+        with self.assertRaises(ValueError):
+            self.widget.set_series(before, trace=ChartTrace('OTHER', 'a' * 64, 'b' * 64, self.trace.mode))
+        self.assertEqual(self.widget.bars, before)
+        self.widget.set_series(())
+        self.assertEqual(self.widget.bars, ())
+
+    def test_set_series_limit_characterization(self):
+        bars = (fixture(1)[0],) * 100000
+        self.widget.set_series(bars, trace=self.trace)
+        self.assertEqual(self.widget.bars, bars)
+        with self.assertRaises(ValueError):
+            self.widget.set_series((*bars, bars[0]), trace=self.trace)
+        self.assertEqual(self.widget.bars, bars)
+
+    def test_incremental_matches_full_series_and_rejects_invalid(self):
+        bars = fixture(3)
+        for method, initial, bar, expected in (
+            ('append_bar', (), bars[0], bars[:1]),
+            ('append_bar', bars[:2], bars[2], bars),
+            ('replace_last_bar', bars, bars[1], (*bars[:2], bars[1])),
+            ('replace_last_bar', bars[:1], bars[1], bars[1:2]),
+        ):
+            with self.subTest(method=method, initial=len(initial)):
+                self.widget.set_series(initial, trace=self.trace)
+                getattr(self.widget, method)(bar)
+                actual = self.widget.bars
+                details = tuple(self.widget.bar_details(i) for i in range(len(actual)))
+                self.widget.set_series(expected, trace=self.trace)
+                self.assertEqual(actual, self.widget.bars)
+                self.assertEqual(details, tuple(self.widget.bar_details(i) for i in range(len(expected))))
+        for method in ('append_bar', 'replace_last_bar'):
+            for bar in self.invalid_bars():
+                with self.subTest(method=method, bar=bar):
+                    self.widget.set_series(bars, trace=self.trace)
+                    with self.assertRaises(ValueError):
+                        getattr(self.widget, method)(bar)
+                    self.assertEqual(self.widget.bars, bars)
+        self.widget.set_series(())
+        with self.assertRaises(ValueError):
+            self.widget.replace_last_bar(bars[0])
+        full = (bars[0],) * 100000
+        self.widget.set_series(full)
+        with self.assertRaises(ValueError):
+            self.widget.append_bar(bars[1])
+        self.assertEqual(self.widget.bars, full)
+        self.widget.replace_last_bar(bars[1])
+        self.assertEqual(self.widget.bars, (*full[:-1], bars[1]))
 
     def test_taipei_cross_midnight_display_preserves_utc(self):
         from dataclasses import replace

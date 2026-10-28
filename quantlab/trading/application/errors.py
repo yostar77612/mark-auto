@@ -10,6 +10,7 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'subscription_limit_reached': ErrorText('行情訂閱額度已滿。', '移除自選商品後再試；既有策略訂閱保留。'),
     'capability_missing': ErrorText('目前帳戶或環境尚未具備這項能力。', '核對帳戶、商品、交易資格與權限證據；可先使用本機跨日模擬。'),
     'intraday_eligibility_missing': ErrorText(
         '尚未確認現股當沖資格，此策略的持有政策未變更。', '可建立現股做多、持有三至五個交易日的跨日版本；資格核實後再驗證當沖版本。'

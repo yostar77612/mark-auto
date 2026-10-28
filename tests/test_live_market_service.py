@@ -33,6 +33,32 @@ class HistoryMarketStub:
 
 
 class LiveMarketServiceTests(unittest.TestCase):
+    def test_only_changed_instrument_views_are_rebuilt(self):
+        class RecordingService(LiveMarketService):
+            calls = ()
+
+            def watch(self, key, **kwargs):
+                self.calls += (key,)
+                return super().watch(key, **kwargs)
+
+        broker, clock, resolver = simulated_connector()
+        service = RecordingService(broker, clock, resolver)
+        service.allocate(('WATCH:0', 'WATCH:1'))
+        service.poll(in_session=True)
+        service.calls = ()
+        revision = service.market_revision
+        service.poll(in_session=True)
+        self.assertEqual(service.calls, ())
+        self.assertEqual(service.market_revision, revision)
+        tick = service._buffers['WATCH:0'].tick
+        from dataclasses import replace
+
+        with patch.object(broker, 'drain_ticks', return_value=(replace(tick, sequence=tick.sequence + 1, volume=2),)):
+            service.poll(in_session=True)
+        self.assertEqual(service.calls, ('WATCH:0',))
+        self.assertEqual(service.market_revision, revision + 1)
+        self.assertEqual(service._views(), tuple(service.watch(key) for key in service.allocation.active))
+
     def setUp(self):
         self.broker, self.clock, self.resolver = simulated_connector()
         self.service = LiveMarketService(self.broker, self.clock, self.resolver)

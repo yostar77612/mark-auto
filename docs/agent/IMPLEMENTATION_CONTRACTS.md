@@ -5756,7 +5756,7 @@ returns state_conflict and requires restarting. Reads do not mutate trading stat
 Older snapshot and envelope fields retain their defaults. Presentation wiring
 remains deferred to T2.
 
-Performance requirement (criterion 20; specified before measurement): for 20
+The LM1 performance requirement (specified before measurement): for 20
 instruments at 10 ticks/second each for 10 minutes (120,000 ticks), the offline
 target is p95 <= 50 ms and maximum <= 250 ms per drain/update batch of at most
 100 ticks at a 0.5-second cadence, with <= 256 MiB incremental process RSS for
@@ -5766,3 +5766,282 @@ must state hardware, Python version and history preload. Retention remains
 bounded independently of this ten-minute workload. These are requirements,
 not measurements: no performance benchmark has been run for T1. Real-broker
 delivery, latency, memory and recovery behavior: PENDING USER CONFIRMATION.
+
+### LM1 T2 slice 1: session health, polling and chart boundaries
+
+Market polling asks the existing SessionResolver for each instrument's current
+session. Only session_closed becomes CLOSED; other resolver failures propagate
+through the existing application issue path. Explicit poll session overrides
+remain available for deterministic fixtures. No instrument-type branch is added.
+Published default views are cached per allocated instrument and invalidated by
+tick/minute/freshness changes or backfill, and evicted on unsubscribe. Retention
+is trimmed on backfill and live trade-date changes; deque bounds still apply on
+every append. Replayed ticks and unchanged polls preserve market_revision.
+
+Before changing desktop_charts.py, characterization tests passed for atomic
+validation (numeric/OHLC/volume, contract, interval and trace identity), empty
+series, and the inclusive 100,000-bar limit. append_bar and replace_last_bar use
+the same per-bar validator. They accept host-supplied display data only, clear
+index-based layers as set_series does, retain labels/drawings and viewport zoom,
+and follow an appended bar only if the viewport was already at the end. Replacing
+an empty series is rejected. A subTest table checks bar/detail equivalence to
+full set_series and atomic rejection of invalid bars. set_series validation and
+its existing reset behavior remain unchanged.
+
+Host-offscreen measurement on 2026-10-28, before chart implementation changes:
+`$env:PYTHONUTF8='1'; $env:QT_QPA_PLATFORM='offscreen'; .venv\Scripts\python.exe tools/lm1_slice1_probe.py chart`
+(exit 0). Host DESKTOP-7O0GSTN, Windows-10-10.0.19045-SP0, AMD64 Family 25
+Model 33 Stepping 0 / AuthenticAMD, CPython 3.13.11 MSC v.1944 64-bit AMD64.
+Ten calls with 34,000 synthetic 1m MarketBars, excluding fixture creation and
+painting (including validation and Qt update scheduling), took in milliseconds:
+80.229, 83.446, 89.434, 86.271, 98.852, 86.598, 86.209, 97.982, 83.967,
+81.610. Median 86.240 ms, maximum 98.852 ms: **the <50 ms/call threshold was
+not met**. The widget was offscreen and not shown; this is no visual acceptance.
+
+Offline full-buffer measurement, same host/interpreter/environment:
+`.venv\Scripts\python.exe tools/lm1_slice1_probe.py poll` (exit 0). Each of 20
+instruments is preloaded with 34,200 continuous synthetic 1m history bars; no
+calendar/reference-price calculation is configured. Each update advances fake
+time 0.5 s and drains 100 distinct accepted ticks (five per instrument), followed
+by bounded views and overview construction. No broker, sleep or painting occurs.
+Before the polling changes, ten update samples had median 639.822 ms, range
+612.386–688.052 ms; ten quiet samples had median 623.719 ms, range
+604.159–690.638 ms. After the changes, update samples in milliseconds were:
+389.146, 156.664, 165.575, 159.202, 151.811, 155.377, 160.595, 158.809,
+167.667, 194.190 (median 159.899). The first sample includes initial cache
+construction; the remaining nine range from 151.811 to 194.190 ms. Quiet
+samples had median 0.186 ms, range 0.111–0.256 ms. **The cold maximum still
+exceeds 250 ms and these samples do not establish the LM1 performance
+requirement**: this is a ten-batch diagnostic, not the required 1,200-batch/RSS
+acceptance run. The probe prints every timing for reproducibility.
+
+### LM1 T2 slice 2: market watch panels and watchlist settings
+
+`MarketWatchWidget(facade, chart, state)` is a standalone three-panel widget;
+the composition root injects an existing CandlestickChart. It is deliberately
+not wired into window.py/workspaces.py until slice 3. Pure market_watch_rows
+functions format typed views, preserve supplied change/change-percent and trade
+dates, and render missing facts as Unknown. Optional bid/ask, session OHLC and
+total-volume fields remain Unknown when unavailable; receive latency is supplied
+by the Application mapper. Freshness uses text plus palette roles, including
+update times for delayed/stopped/closed data. The header uses an explicit
+market_connection view field, independent of engine trading stop state.
+
+Period buttons request Application-aggregated MARKET_SERIES pages through the
+facade, pinning subsequent pages to the first revision. No presentation price
+arithmetic or aggregation is introduced. One series request runs at a time;
+new selections supersede old results. Workers complete on the GUI thread and
+are detached safely when the widget is destroyed. Matching retained prefixes
+permit append_bar/replace_last_bar; other series changes use set_series. Gap
+and history-error indicators use view flags, and retry uses the same series
+request with a bounded Application history retry. All new visible labels use
+literal ui_text keys; controls have object/accessibility names and tab order.
+
+Watchlist changes use existing SAVE_SETTINGS commands with an optional watchlist
+payload, without a UiAction addition or an order path. Application validates
+identities/capacity before allocation and retains strategy subscription priority.
+Runtime reuses SettingsStore's atomic settings path at launch.root/settings.json,
+under market_watch_v2, retaining unrelated preferences. Explicit empty lists
+survive restart. Settings are restored when the runtime opens and when a newly
+connected engine is adopted. Successful saves advance the public version, and
+closed/transitioning/stale contexts refuse changes. Persisted instruments with
+no current view remain visible as Unknown rows.
+
+T2 restore regression contract: absent/null market_watch_v2 preserves the unset
+watchlist and existing market allocation. Restore does not enumerate or resolve
+the catalog or read a subscription limit to invent saved preferences. The
+existing market cycle retains ownership of default subscriptions; until a list
+is explicitly saved, runtime snapshots project the available market view IDs.
+An explicit empty list clears watch subscriptions and stays empty on restart.
+Engines without a live market service retain saved intent for reconnect without
+resolving contracts. Settings shape/identity validation remains at settings load;
+restore does not repeat it. The P1 transport/wiring fixtures and assertions are
+unchanged. Regression coverage: tests/test_watchlist_settings.py.
+
+Slice-2 files added: desktop_trading/market_watch.py, market_watch_rows.py;
+quantlab/trading/application/watchlist.py;
+quantlab/trading/runtime/watchlist_settings.py; tests/test_market_watch_ui.py.
+Existing files extended: desktop_strings.py; application/contracts.py, facade.py,
+contextnavigation.py, market_views.py, live_market.py, market_cycle.py;
+runtime/bootstrap.py; this contract. Slice-1 edits remain intact. No locked
+file, gate implementation, window.py or workspaces.py was edited for this slice.
+GitNexus status reported stale; per the task controller's explicit instruction,
+no analyze, commit, branch, reset, checkout or push was run. Impact reported HIGH
+for shared DTOs, CRITICAL for the additive string catalog, LOW for the mapper,
+polling and runtime class; series callers unresolved by graph were confirmed
+in source (facade/server/service tests).
+
+Host-offscreen verification (2026-10-28; not native visual acceptance):
+Set `$env:PYTHONUTF8='1'; $env:QT_QPA_PLATFORM='offscreen'` first. Commands:
+
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_market_watch_ui.py -k RowTests -k WidgetTests`: exit 0, 6 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_trading_ui.py`: exit 0, 30 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_desktop_charts.py`: exit 0, 12 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_page_services_r1.py`: exit 0, 15 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_live_market_service.py`: exit 0, 5 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_live_market_repairs.py`: exit 0, 4 tests.
+- `.venv/Scripts/python.exe -m unittest discover -s tests -p test_trading_market_refresh.py`: exit 0, 4 tests.
+- `.venv/Scripts/python.exe tools/check_trading_architecture.py`: exit 0, zero violations.
+- `.venv/Scripts/python.exe -m unittest tests.test_trading_architecture tests.test_docs_layering`: exit 0, 16 tests.
+- `.venv/Scripts/python.exe tools/quality_gate.py`: exit 0, zero findings.
+- `.venv/Scripts/ruff.exe check .`: exit 0 (access-denied warnings for sandbox-created temporary directories).
+- `.venv/Scripts/ruff.exe format --check <13 slice-2 changed Python files>`: exit 0.
+- `py -3.11 -m compileall -q <13 slice-2 changed Python files>`: exit 0.
+- `git diff --check`: exit 0.
+
+The full `.venv/Scripts/python.exe -m unittest discover -s tests -p test_market_watch_ui.py`
+was interrupted (exit 1) after stalling in the persistence test. A diagnostic
+faulthandler traceback localized the stall to SettingsStore.save -> atomic_write
+-> tempfile.mkstemp/_mkstemp_inner. No assertion failure was reached. This is the
+sandbox tempfile non-blocker explicitly documented in t2-base.md; the controller
+must rerun the unmodified full module outside the sandbox. The persistence test
+uses a real temporary settings file, Runtime SAVE_SETTINGS dispatch, nonempty
+restart restoration, unrelated-key retention, and explicit-empty restoration.
+It is present, not skipped, and persistence is not claimed as locally verified.
+
+Physical Windows display checks, 150%/200% scaling and real market viewing remain
+PENDING USER CONFIRMATION. Offscreen tests do not establish visual or broker PASS.
+
+### LM1 T2 slice 3: market workspace and snapshot polling
+
+The v2 runtime composition root now injects MarketWatchWidget and the shared
+CandlestickChart into TradingWindow. This is the only trading_runtime.py change:
+construction/wiring, with no market rules or legacy research changes. The market
+workspace embeds watchlist | chart | quote detail in the existing three-panel
+splitter concept. The original instrument table and research/data routes remain
+under the initially collapsed market_archive button at the bottom.
+
+The existing one-second snapshot poll renders market watch when market_revision
+changes. With unchanged context/version/quote_revision, it retains every table
+selection and skips the other tables. Existing quote_revision rendering and
+financial-fact/freshness invalidation still run when those facts change together
+with market_revision. No market arithmetic is added to window.py/workspaces.py.
+
+Before completing the partial edits, two characterization tests in
+test_trading_ui.py passed against both the partial working tree and the original
+22d5dc7 window.py/workspaces.py, loaded in memory using git show (no source
+restoration or checkout). They preserve the market workspace routes/table shape
+and identify the quote-only poll's position/market updates and retained selections.
+The new test_trading_ui_market_watch.py extension exercises the real widget,
+snapshot poll, chart request/result, header/detail updates, non-first watch
+selection, strategy/position/order selections and absence of table model resets
+or data changes outside market watch.
+
+Host-offscreen layout tests first exposed squeezed period buttons, collapsible
+panels and Tab moving among watchlist cells. Minimum layout constraints now let
+the existing workspace scroll area expose the full content, splitters retain
+all three panels, and Tab leaves the row-selection table. Tests exercise 20pt
+Arial at the 600x300 minimum window, reach each required input/period/retry/archive
+control by scrolling, check minimum control widths and non-overlap, and exercise
+Tab order plus Space activation. These are geometry/wiring assertions, not native
+visual acceptance. The existing broker-cycle test double now supplies typed
+LiveMarketSettings required by watchlist initialization; no assertion was removed.
+
+Criteria-T2.json review against 22d5dc7 plus the seven new T2 Python files:
+
+| Criterion | Evidence / disposition |
+|---|---|
+| 1 | Both market_watch modules exist; row formatting has no Qt; AST architecture scan: 0 violations. |
+| 2 | Source review: no market/reference/P&L/freshness arithmetic; period requests use Application MarketSeriesQuery pages. Length/prefix comparisons only choose display updates. |
+| 3 | Slice-1 pre-edit characterization and exact 34,000-bar command/host/timings remain recorded above; median 86.240ms exceeded 50ms. |
+| 4 | Append/replace remain display methods; chart subTest tests verify full-series equivalence, invalid input and inclusive 100,000 limit. |
+| 5 | AST/source check: zero CJK characters and all ui_text calls have literal keys in market_watch*.py; unknown formatting tests pass. |
+| 6 | Existing UI refusal test verifies 20-slot header, SAVE_SETTINGS payload, ERROR_TABLE feedback and retained strategy subscriptions. |
+| 7 | Existing temporary-settings test covers persisted watches, restart allocation, unrelated preferences and explicit-empty restoration. Reconnected candidates call the same restore adapter. Local persistence execution is filesystem-blocked below; controller rerun required. |
+| 8 | Poll characterization and five workspace extension tests pass host-offscreen; market-only poll updates all three panels, retaining table objects/selections without reset/data changes elsewhere. |
+| 9 | Existing row/widget tests cover freshness text/time/palette, unknown facts, gap/history error/retry and instrument-independent components. |
+| 10 | Object/accessibility names, actual Tab/Space navigation and minimum-window/large-font geometry tests pass host-offscreen. Required controls remain scroll-reachable. |
+| 11 | desktop_market.py unchanged; C5 and test_desktop_market.py pass. Archive opens by keyboard and retains legacy routes. Broader legacy filesystem-dependent tests require controller rerun. |
+| 12 | No UiAction additions or order controls; seven new modules have responsibility docstrings and <=400 lines: widget 294, rows 128, application watchlist 55, runtime settings 39, widget tests 331, workspace tests 161, probe 125. |
+| 13 | Review: typed data is trusted; optional missing facts remain Unknown. Worker exceptions surface a request-error label; boundary/settings errors use existing codes. UI tests assert display/wiring, with subTest tables; no old test is weakened/skipped/deleted. |
+| 14 | Full tracked diff from 22d5dc7 has no G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_market.py, aggregate_bars or gate changes. Live execution stays disabled. |
+| 15 | Exact gate commands/results follow. Filesystem-blocked runs are the explicit t2-base.md exceptions, not passing tests. No PR-head SHA was created: commit/push/branch/reset/checkout are prohibited for this slice. |
+| 16 | Physical Windows screen, native 150% scaling, native 200% scaling and user's real market viewing: **PENDING USER CONFIRMATION**. All local UI evidence is labelled host-offscreen. |
+
+Slice-3 files: desktop_trading/window.py, workspaces.py, market_watch.py;
+trading_runtime.py; tests/test_trading_ui.py, test_trading_ui_market_watch.py,
+test_live_market_repairs.py; this contract. Slices 1–2 are retained.
+
+Host-offscreen verification on 2026-10-28, PowerShell from the repository root:
+`$env:PYTHONUTF8='1'; $env:QT_QPA_PLATFORM='offscreen'`.
+Each row below runs
+`.venv/Scripts/python.exe -m unittest discover -s tests -p <pattern>`
+with any listed extra arguments (each module is a separate invocation).
+
+| Pattern / extra arguments | Result |
+|---|---|
+| test_market_watch_ui.py | 50-second diagnostic wrapper timeout; blocked in initial SettingsStore.save. No assertion failure reached. |
+| test_market_watch_ui.py -k RowTests -k WidgetTests | exit 0; 6 tests. |
+| test_trading_ui.py | exit 0; 32 tests, including both characterizations. |
+| test_trading_ui_market_watch.py | exit 0; 5 tests. |
+| test_trading_ui_integration.py | exit 1; 12 setup errors opening sandbox temporary SQLite files. |
+| test_desktop_charts.py | exit 0; 12 tests. |
+| test_chart_data.py | exit 0; 15 tests. |
+| test_chart_memory_f6.py | exit 0; 11 tests. |
+| test_market_workspace_c5.py | exit 0; 11 tests. |
+| test_trading_market_refresh.py | exit 0; 4 tests. |
+| test_desktop_market*.py | exit 1; 46 tests, 33 filesystem errors, 2 existing skips. WinError 5 in temporary workspace creation/cleanup and manual export. No test was changed to skip. |
+| test_desktop_market.py | exit 0; 21 tests. |
+| test_page_services_r1.py | exit 0; 15 tests. |
+| test_live_market_service.py | exit 0; 5 tests. |
+| test_live_market_repairs.py | exit 0; 4 tests after correcting typed mock settings (initial run: exit 1, four subTest setup errors). |
+
+Persistence diagnosis used the following command with a 15-second outer timeout:
+`.venv/Scripts/python.exe -X faulthandler -c "import faulthandler, unittest; faulthandler.dump_traceback_later(5); unittest.main(module=None, argv=['unittest', 'discover', '-s', 'tests', '-p', 'test_market_watch_ui.py', '-k', 'PersistenceTests'])"`.
+The five-second traceback identifies tempfile._mkstemp_inner -> mkstemp ->
+runtime_support.atomic_write -> SettingsStore.save at the test's initial save.
+The outer timeout then terminated it; persistence is not claimed as passed.
+These filesystem denials/stalls are the base instruction's explicit non-blockers;
+the controller must rerun the full persistence/integration/legacy modules outside
+the sandbox. No production or test fallback was added to bypass them.
+
+The 23 changed/new Python paths used for formatting and compilation are:
+
+```powershell
+$T2Python = @(
+  'desktop_charts.py', 'desktop_strings.py',
+  'desktop_trading/window.py', 'desktop_trading/workspaces.py',
+  'quantlab/trading/application/contextnavigation.py',
+  'quantlab/trading/application/contracts.py',
+  'quantlab/trading/application/facade.py',
+  'quantlab/trading/application/live_market.py',
+  'quantlab/trading/application/market_cycle.py',
+  'quantlab/trading/application/market_views.py',
+  'quantlab/trading/runtime/bootstrap.py',
+  'tests/test_desktop_charts.py', 'tests/test_live_market_repairs.py',
+  'tests/test_live_market_service.py', 'tests/test_trading_ui.py',
+  'trading_runtime.py', 'desktop_trading/market_watch.py',
+  'desktop_trading/market_watch_rows.py',
+  'quantlab/trading/application/watchlist.py',
+  'quantlab/trading/runtime/watchlist_settings.py',
+  'tests/test_market_watch_ui.py', 'tests/test_trading_ui_market_watch.py',
+  'tools/lm1_slice1_probe.py'
+)
+.venv/Scripts/ruff.exe format $T2Python
+.venv/Scripts/ruff.exe check .
+.venv/Scripts/ruff.exe format --check $T2Python
+py -3.11 -m compileall -q $T2Python
+.venv/Scripts/python.exe tools/quality_gate.py
+.venv/Scripts/python.exe tools/check_trading_architecture.py
+.venv/Scripts/python.exe -m unittest tests.test_trading_architecture tests.test_docs_layering
+git diff --check
+```
+
+All commands above exit 0; quality gate has 0 findings, architecture has 0
+violations, architecture/docs unit gates run 16 tests. Ruff reports access-denied
+warnings for sandbox-created temporary directories, with no lint findings.
+An initial Python subprocess wrapper used a relative slash-form executable path
+and failed with WinError 2 before running Ruff; absolute executable paths fixed
+that invocation. It did not indicate a source failure.
+
+GitNexus impact: apply_state LOW (three direct callers: initialization, snapshot
+result and context switching; no resolved processes), _market_page LOW (build
+process and TradingWindow initialization), runtime _run_window LOW (run_window,
+desktop main and trading entry). The new widget is absent from the baseline
+index (UNKNOWN); direct source searches confirmed runtime injection and UI test
+callers before its layout edits. The test method's UNKNOWN impact was likewise
+confirmed through unittest discovery. No re-index was run per the base command.
+`node .gitnexus/run.cjs detect-changes --scope all --repo .` exited 1:
+`Git diff failed: spawnSync git EPERM`. This is unresolved graph evidence, not a
+clean impact verdict. No commit was attempted; the controller should rerun this
+check before committing. Ordinary git diff and protected-path checks completed.
