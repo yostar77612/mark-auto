@@ -3,12 +3,14 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from .contracts import AccountView, MarketView, OrderView, PerformanceView, PositionView, StrategyView, UiState
+from .contracts import AccountView, MarketView, OrderView, OverviewMarketSummary, PerformanceView, PositionView, StrategyView, UiState
 from .errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
 from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.freshness import Freshness
+from quantlab.trading.domain.quote_stats import unrealized_pnl
 
 if TYPE_CHECKING:
     from .engine import TradingEngine
@@ -135,7 +137,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 unrealized = None
                 break  # A partial version valuation is not its total unrealized PnL.
             spec = engine.catalog.resolve(lot.instrument_id)
-            unrealized += (quote.last - lot.entry_price) * lot.quantity * spec.multiplier * (1 if lot.direction is Side.BUY else -1)
+            signed_quantity = lot.quantity * (1 if lot.direction is Side.BUY else -1)
+            unrealized += unrealized_pnl(quote.last, signed_quantity, spec, lot.entry_price * signed_quantity * spec.multiplier, freshness=Freshness.LIVE)
         track = tracks.get((strategy.strategy_id, strategy.version))
         if track:
             realized += track.realized_adjustment
@@ -211,4 +214,7 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         reconciliation=state.reconciliation,
         reconciliation_verified=state.reconciled,
         financial_facts_verified=verified,
+        market_revision=engine.live_market.market_revision if engine.live_market is not None else 0,
+        market_watch=engine.live_market.views() if engine.live_market is not None else (),
+        market_health=engine.live_market.overview() if engine.live_market is not None else OverviewMarketSummary(),
     )

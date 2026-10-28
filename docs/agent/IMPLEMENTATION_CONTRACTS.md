@@ -5694,3 +5694,75 @@ Only the real-IPC test fixture may re-observe and make a fresh shutdown request 
 
 
 The same bounded explicit-refusal helper is shared by both owned synthetic IPC fixtures. A broker-tag fault-port case additionally injects a real version advance before shutdown and retains stale-command rejection plus normal zero-exit assertions. Strict stalled-connect/query timing tests and all production code remain unchanged.
+
+### LM1 slice 1: pure live market domain
+
+Immutable Tick input validates prices, timestamps and resolver-supplied session
+and trade date. Pure minute composition uses exchange source time, suppresses
+known sequence duplicates, orders forming-minute OHLC by source time, and never
+reopens finalized minutes. Rejected late ticks and caller-reported loss mark
+data incomplete. Period bars derive only from minute bars; daily bars combine
+sessions by supplied trade date and require caller-confirmed trade-date closure.
+History yields its suffix to live bars and records an explicit gap without
+interpolation. Freshness uses explicit time, connection and calendar-session
+facts with validated shared settings. Quote statistics select the supplied
+previous trade-date close; unknown references and non-live P&L remain None.
+InstrumentSpec supplies the multiplier for the single domain P&L formula.
+Application liquidation delegates arithmetic while retaining executable-side
+pricing, fees, slippage and its existing 30-second stale-quote refusal. This
+slice adds no subscriptions, adapter/runtime wiring, UI or execution path.
+
+### LM1 slice 2: live market ports and application coordination
+
+MarketDataPort adds bounded, consuming tick drains in delivery order. The local
+connector can use a seeded pull feed with an injected clock and explicit session
+resolver; an unconfigured feed and the temporary Shioaji stub return no ticks.
+LiveMarketService allocates strategy subscriptions before watch entries, reports
+refused watch entries with capability_missing and raises that code on explicit
+over-capacity additions. Per-instrument minute buffers retain the configured
+trade-date count with a hard minute capacity. Domain functions remain the sole
+authority for bar composition, aggregation, merge, freshness and quote statistics.
+History requests use at most 30-calendar-day windows; normalized failures retain
+live bars and expose the error code until a successful backfill. Quiet polling,
+duplicate ticks and repeated identical allocations do not advance market_revision;
+changed bars, quote facts, freshness, history health or allocations do. Frozen
+watch, health and overview DTOs are additive presentation contracts. Scheduling,
+runtime/IPC/engine wiring and UI integration remain outside this slice.
+
+### LM1 slice 3: shared snapshots and host scheduling
+
+TradingEngine accepts an optional LiveMarketService; existing quote handling and
+quote_revision remain independent. UiState adds market_revision (default 0),
+market_watch (default empty tuple) and market_health (default empty overview).
+The tagged codec registers LiveBar/DataGap and market DTOs; old snapshots decode
+using defaults, and Response/IpcFacade carry the same frozen snapshot unchanged.
+The local composition injects seeded simulated feeds. Connected broker contexts
+inject their normalized market connector before account cache wrapping. The
+existing owned host coordinator schedules bounded drains every 0.5 seconds,
+under the engine lock, and stops with the host. Application owns allocation,
+session facts and Domain delegation; runtime adds no market calculation rules.
+Views reuse Domain P&L arithmetic while retaining the existing 30-second checks.
+No UI, order action or live execution permission is added.
+
+Periodic market snapshots carry quote/reference/change and health/freshness facts
+with only `LiveMarketSettings.snapshot_bar_tail` bars per instrument (default 2,
+maximum 32). Full retention is read separately through additive `MARKET_SERIES`
+IPC requests, never a UiAction. Application builds each chosen-period page from
+LiveMarketService; offsets/next_offset traverse ascending bars with gaps and
+forming/incomplete flags intact. `series_page_limit` caps pages at 1,000 bars
+(configurable downward), with a half-wire byte budget reserving envelope space.
+Clients pass the returned market_revision to subsequent pages; a changed revision
+returns state_conflict and requires restarting. Reads do not mutate trading state.
+Older snapshot and envelope fields retain their defaults. Presentation wiring
+remains deferred to T2.
+
+Performance requirement (criterion 20; specified before measurement): for 20
+instruments at 10 ticks/second each for 10 minutes (120,000 ticks), the offline
+target is p95 <= 50 ms and maximum <= 250 ms per drain/update batch of at most
+100 ticks at a 0.5-second cadence, with <= 256 MiB incremental process RSS for
+the live market service, buffers and snapshot construction. Samples must include
+all 1,200 updates, drained tick counts and memory baseline/peak; any benchmark
+must state hardware, Python version and history preload. Retention remains
+bounded independently of this ten-minute workload. These are requirements,
+not measurements: no performance benchmark has been run for T1. Real-broker
+delivery, latency, memory and recovery behavior: PENDING USER CONFIRMATION.

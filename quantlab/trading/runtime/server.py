@@ -46,6 +46,13 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         raise DomainError('capability_missing', 'explicit running account/environment required')
     if request.operation is Operation.SNAPSHOT:
         return Response(request.request_id, state=bundle.snapshot())
+    if request.operation is Operation.MARKET_SERIES:
+        with bundle.lock:
+            engine = bundle.engine
+            if engine is None or engine.live_market is None:
+                raise DomainError('capability_missing', 'live market service unavailable')
+            with engine.lock:
+                return Response(request.request_id, series=engine.live_market.series(request.series))
     if request.operation is Operation.COMMAND:
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')

@@ -270,6 +270,9 @@ class RuntimeBundle:
                 raise DomainError('capability_missing', 'connector must preserve readonly environment and explicit accounts')
             if candidate.simulation is not None:
                 raise DomainError('capability_missing', 'broker contexts cannot adopt the local exchange controller')
+            from .live_market import attach_market
+
+            attach_market(candidate)
             caches = {}
             for account, gateway in candidate.gateways.items():
                 if id(gateway) not in caches:
@@ -335,36 +338,41 @@ class RuntimeBundle:
         with self.lock:
             self._expire_connection()
             engine = self.engine
-        if self.closing or engine is None or engine.configuration.environment is Environment.LOCAL or engine.state.engine_closed or engine.storage_failed:
+        if self.closing or engine is None or engine.state.engine_closed or engine.storage_failed:
             return
-        from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle
+        if engine.configuration.environment is not Environment.LOCAL:
+            from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle
+
+            with engine.lock:
+                # Only actual normalized quotes from the selected gateway enter the
+                # core; missing/expired quotes never become synthetic zero prices.
+                selected = self.query_instruments
+                seen = set()
+                for gateway in engine.gateways.values():
+                    if id(gateway) in seen:
+                        continue
+                    seen.add(id(gateway))
+                    latest = getattr(gateway, 'latest', None)
+                    if latest is None:
+                        continue
+                    for instrument_id in selected:
+                        if self.closing:
+                            break
+                        try:
+                            quote = latest(instrument_id)
+                            prior = engine.quotes.get(instrument_id)
+                            if quote is not None and (prior is None or quote != prior):
+                                engine.quote(quote)
+                        except DomainError:
+                            continue
+            if engine.configuration.read_only:
+                run_readonly_cycle(engine)
+            else:
+                run_cycle(engine, engine.history, allow_entries=not engine.state.stopped and not self.control_failed)
+        from quantlab.trading.application.market_cycle import poll_market
 
         with engine.lock:
-            # Only actual normalized quotes from the selected gateway enter the
-            # core; missing/expired quotes never become synthetic zero prices.
-            selected = self.query_instruments
-            seen = set()
-            for gateway in engine.gateways.values():
-                if id(gateway) in seen:
-                    continue
-                seen.add(id(gateway))
-                latest = getattr(gateway, 'latest', None)
-                if latest is None:
-                    continue
-                for instrument_id in selected:
-                    if self.closing:
-                        break
-                    try:
-                        quote = latest(instrument_id)
-                        prior = engine.quotes.get(instrument_id)
-                        if quote is not None and (prior is None or quote != prior):
-                            engine.quote(quote)
-                    except DomainError:
-                        continue
-        if engine.configuration.read_only:
-            run_readonly_cycle(engine)
-        else:
-            run_cycle(engine, engine.history, allow_entries=not engine.state.stopped and not self.control_failed)
+            poll_market(engine)
 
     def poll_ports(self) -> None:
         """SDK waits run here, never on the decision/control writer lock."""

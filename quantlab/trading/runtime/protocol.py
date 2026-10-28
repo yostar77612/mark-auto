@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 
 from quantlab.trading.application.codec import register
-from quantlab.trading.application.contracts import UiCommand, UiReceipt, UiState
+from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError, aware, identity
@@ -16,6 +16,7 @@ class Operation(str, Enum):
     COMMAND = 'COMMAND'
     QUOTES = 'QUOTES'
     METRICS = 'METRICS'
+    MARKET_SERIES = 'MARKET_SERIES'
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class Request:
     command: UiCommand | None = None
     quotes: QuoteBatch | None = None
     schema_version: int = 2
+    series: MarketSeriesQuery | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -39,6 +41,8 @@ class Request:
             raise DomainError('validation_failed', 'missing command')
         if self.operation is Operation.QUOTES and not isinstance(self.quotes, QuoteBatch):
             raise DomainError('validation_failed', 'missing quote batch')
+        if self.operation is Operation.MARKET_SERIES and not isinstance(self.series, MarketSeriesQuery):
+            raise DomainError('validation_failed', 'missing series query')
 
 
 @dataclass(frozen=True)
@@ -59,6 +63,7 @@ class Response:
     receipt: UiReceipt | None = None
     metrics: Metrics | None = None
     code: str = ''
+    series: MarketSeriesPage | None = None
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)

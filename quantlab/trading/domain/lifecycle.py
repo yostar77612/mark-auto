@@ -9,6 +9,8 @@ from .calendar import TradingCalendar
 from .costs import FeeSchedule
 from .models import InstrumentSpec, Market, PositionLot, Side
 from .policies import corporate_action
+from .freshness import Freshness
+from .quote_stats import unrealized_pnl
 from .validation import DomainError, aware, decimal_value, identity, integer, trading_date
 
 
@@ -126,7 +128,7 @@ def net_liquidation_pnl(lot: PositionLot, spec: InstrumentSpec, price: Decimal, 
     decimal_value(price, 'mark price', positive=True)
     if lot.instrument_id != spec.instrument_id:
         raise DomainError('instrument_unresolved', 'valuation instrument mismatch')
-    sign = Decimal('1') if lot.direction is Side.BUY else Decimal('-1')
-    gross = (price - lot.entry_price) * spec.multiplier * lot.quantity * sign
+    quantity = lot.quantity if lot.direction is Side.BUY else -lot.quantity
+    gross = unrealized_pnl(price, quantity, spec, lot.entry_price * spec.multiplier * quantity, freshness=Freshness.LIVE)
     costs = fees.round_trip(spec, lot.entry_price, price, lot.quantity, lot.direction) + fees.slippage(spec, lot.quantity, prices=(lot.entry_price, price))
     return lot.realized_pnl + gross - costs

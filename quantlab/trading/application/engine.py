@@ -14,6 +14,7 @@ from .contracts import StrategyForm
 from .broker_settings import ReferenceInspector
 from .provenance import ProducerProfile
 from .execution import ExecutionService
+from .live_market import LiveMarketService
 from .performance import seed_track
 from .registry import initialize
 from .state import ACTIVE, AppState, StrategyRecord
@@ -49,11 +50,13 @@ class TradingEngine:
         research_runner: ResearchRunner | None = None,
         fees: FeeSchedule | None = None,
         historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
+        live_market: LiveMarketService | None = None,
     ):
         initialize()
         self.journal, self.clock, self.calendar, self.catalog = journal, clock, calendar, catalog
         self.gateways, self.simulation, self.ownership_clock = gateways, simulation, ownership_clock
         self.configuration = configuration or ExecutionConfiguration()
+        self.live_market = live_market
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}

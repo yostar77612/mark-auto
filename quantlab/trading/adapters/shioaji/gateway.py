@@ -7,6 +7,7 @@ from decimal import Decimal
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Market, OrderPlan, OrderStatus, Quote
 from quantlab.trading.domain.validation import DomainError, identity, integer
+from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.ports.contracts import (
     BrokerOrder,
     BrokerPosition,
@@ -390,3 +391,7 @@ class ShioajiAdapter:
 
     def latest(self, instrument_id: str) -> Quote | None:
         return market_data.latest(self, instrument_id)
+
+    def drain_ticks(self, max_items: int) -> tuple[Tick, ...]:
+        """Tick callback connector is supplied in T4."""
+        return ()

@@ -24,6 +24,16 @@ LOCKED = (
 
 
 class TradingArchitectureTests(unittest.TestCase):
+    def test_new_live_domain_module_cannot_import_outer_layers(self) -> None:
+        for source, target in (
+            ('from ..application.performance import unrealized_liquidation', 'quantlab.trading.application.performance.unrealized_liquidation'),
+            ('import PySide6', 'PySide6'),
+            ('import shioaji', 'shioaji'),
+        ):
+            with self.subTest(source=source):
+                findings = check_source(source, 'quantlab/trading/domain/live_bars.py')
+                self.assertEqual(tuple((finding.rule, finding.target) for finding in findings), (('forbidden-dependency', target),))
+
     def test_repository_layers_have_no_forbidden_dependencies(self) -> None:
         self.assertEqual(scan(ROOT), ())
 
