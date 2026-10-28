@@ -9,7 +9,7 @@ import os
 from uuid import uuid4
 
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
-from quantlab.trading.application.contracts import UiCommand, UiReceipt, UiState
+from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
@@ -58,9 +58,11 @@ class IpcFacade:
         self.environment, self.account_ref = environment, account_ref
         self.closed_state: UiState | None = None
 
-    def request(self, operation: Operation, *, command: UiCommand | None = None, quotes=None) -> Response:
+    def request(self, operation: Operation, *, command: UiCommand | None = None, quotes=None, series: MarketSeriesQuery | None = None) -> Response:
         session = read_session(self.root)
-        envelope = Request(uuid4().hex, self.environment, self.account_ref, datetime.now(timezone.utc) + timedelta(seconds=10), operation, command, quotes)
+        envelope = Request(
+            uuid4().hex, self.environment, self.account_ref, datetime.now(timezone.utc) + timedelta(seconds=10), operation, command, quotes, series=series
+        )
         with Client(session.address, family=session.family, authkey=session.key) as connection:
             connection.send_bytes(dumps(envelope).encode('utf-8'))
             if not connection.poll(10):
@@ -71,6 +73,12 @@ class IpcFacade:
         if response.code:
             raise DomainError(response.code, 'engine rejected request')
         return response
+
+    def market_series(self, query: MarketSeriesQuery) -> MarketSeriesPage:
+        response = self.request(Operation.MARKET_SERIES, series=query)
+        if not isinstance(response.series, MarketSeriesPage):
+            raise DomainError('validation_failed', 'missing market series page')
+        return response.series
 
     def snapshot(self) -> UiState:
         if self.closed_state is not None:

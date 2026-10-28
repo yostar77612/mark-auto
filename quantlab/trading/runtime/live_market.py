@@ -14,9 +14,11 @@ from quantlab.trading.ports.interfaces import Clock, MarketDataPort
 class CalendarResolver:
     def __init__(self, engine: TradingEngine) -> None:
         self.calendar = engine.calendar
+        self.catalog = engine.catalog
 
     def session_at(self, instrument_id: str, timestamp: datetime) -> tuple[date, str]:
-        session = self.calendar.session_at(timestamp, allow_night=True)
+        spec = self.catalog.resolve(instrument_id)
+        session = self.calendar.session_at(timestamp, allow_night=spec.market is not Market.STOCK)
         return session.trade_date, session.kind
 
 
@@ -85,4 +87,4 @@ def attach_market(engine: TradingEngine) -> None:
     for port in market.ports:
         for receipt in tuple(getattr(port, 'subscriptions', ())):
             port.unsubscribe(receipt)
-    engine.live_market = LiveMarketService(market, engine.clock, CalendarResolver(engine))
+    engine.live_market = LiveMarketService(market, engine.clock, CalendarResolver(engine), calendar=engine.calendar)

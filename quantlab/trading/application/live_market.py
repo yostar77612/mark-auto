@@ -6,17 +6,21 @@ Callers schedule poll/backfill and supply calendar-session facts explicitly.
 """
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 
+from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.freshness import Freshness, LiveMarketSettings, classify_freshness
 from quantlab.trading.domain.live_bars import LiveBar, MergedBars, MinuteState, aggregate_bars, compose_minute, finalize_minute, merge_history_live
 from quantlab.trading.domain.quote_stats import QuoteStats, TradeDateClose, quote_stats
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError, aware
 from quantlab.trading.ports.interfaces import Clock, MarketDataPort, SessionResolver
-from .contracts import MarketWatchView, OverviewMarketSummary
+from .contracts import MarketSeriesPage, MarketSeriesQuery, MarketWatchView, OverviewMarketSummary
+from .codec import MAX_BYTES, dumps, register
 from .market_views import market_watch_view, overview_market_summary
+
+register(LiveBar)
 
 
 @dataclass(frozen=True)
@@ -38,8 +42,17 @@ class _InstrumentBuffer:
 
 
 class LiveMarketService:
-    def __init__(self, market: MarketDataPort, clock: Clock, resolver: SessionResolver, *, settings: LiveMarketSettings = LiveMarketSettings()) -> None:
+    def __init__(
+        self,
+        market: MarketDataPort,
+        clock: Clock,
+        resolver: SessionResolver,
+        *,
+        calendar: TradingCalendar | None = None,
+        settings: LiveMarketSettings = LiveMarketSettings(),
+    ) -> None:
         self.market, self.clock, self.resolver, self.settings = market, clock, resolver, settings
+        self.calendar = calendar
         self.market_revision = 0
         self.allocation = SubscriptionAllocation()
         self._strategy_ids: tuple[str, ...] = ()
@@ -154,6 +167,9 @@ class LiveMarketService:
         live = (*buffer.live, *((buffer.minute.bar,) if buffer.minute else ()))
         merged = merge_history_live(tuple(buffer.history), live)
         stats = QuoteStats(None, None, None)
+        if buffer.tick is not None and previous_trade_date is None and self.calendar is not None:
+            index = self.calendar.index(buffer.tick.trade_date)
+            previous_trade_date = self.calendar.days[index - 1] if index > 0 else None
         if buffer.tick is not None and previous_trade_date is not None:
             closes = tuple(TradeDateClose(bar.trade_date, bar.close, bar.start) for bar in merged.bars if bar.final)
             stats = quote_stats(buffer.tick.price, previous_trade_date, closes)
@@ -168,5 +184,41 @@ class LiveMarketService:
         return overview_market_summary(self._views(), limit=self.settings.subscription_limit, revision=self.market_revision)
 
     def views(self) -> tuple[MarketWatchView, ...]:
-        """Expose the same immutable read models to all application consumers."""
-        return self._views()
+        """Publish bounded summaries; full retention is available only via series."""
+        tail = self.settings.snapshot_bar_tail
+        return tuple(replace(view, bars=view.bars[-tail:], gaps=view.gaps[-tail:]) for view in self._views())
+
+    def series(self, query: MarketSeriesQuery) -> MarketSeriesPage:
+        """Read one retained series, capped by count and encoded byte budget.
+
+        Pages use ascending offsets. Pass the returned revision on subsequent
+        reads; a changed market requires restarting rather than mixing pages.
+        Half the wire budget leaves room for the protocol envelope and metadata.
+        Domain remains the sole authority for aggregation and gap/forming facts.
+        """
+        if query.market_revision is not None and query.market_revision != self.market_revision:
+            raise DomainError('state_conflict', 'market changed; restart series read')
+        if query.instrument_id not in self._buffers:
+            raise DomainError('capability_missing', 'instrument not allocated')
+        view = self.watch(query.instrument_id, period=query.period)
+        selected = []
+        size = 0
+        for bar in view.bars[query.offset : query.offset + min(query.limit, self.settings.series_page_limit)]:
+            encoded_size = len(dumps(bar).encode('utf-8'))
+            if size + encoded_size > MAX_BYTES // 2:
+                if not selected:
+                    raise DomainError('validation_failed', 'series bar exceeds page budget')
+                break
+            selected.append(bar)
+            size += encoded_size
+        end = query.offset + len(selected)
+        return MarketSeriesPage(
+            query.instrument_id,
+            query.period,
+            tuple(selected),
+            view.gaps,
+            query.offset,
+            len(view.bars),
+            end if end < len(view.bars) else None,
+            self.market_revision,
+        )

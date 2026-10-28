@@ -58,7 +58,14 @@ class SimulatedTickFeed:
             timestamp = self.next_at[key]
             if timestamp > now:
                 break
-            day, session = self.resolver.session_at(key, timestamp)
+            try:
+                day, session = self.resolver.session_at(key, timestamp)
+            except DomainError as exc:
+                if exc.code != 'session_closed':
+                    raise
+                # A resolved closure is an empty stream interval, not a feed failure.
+                self.next_at[key] += self.interval
+                continue
             self.sequence += 1
             result.append(
                 Tick(key, self.price + Decimal(self.random.randrange(10)), self.random.randrange(1, 6), timestamp, timestamp, day, session, self.sequence)

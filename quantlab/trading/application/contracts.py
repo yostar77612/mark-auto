@@ -8,6 +8,8 @@ from typing import Protocol, runtime_checkable
 
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, QuantityUnit, Side
 from quantlab.trading.domain.live_bars import DataGap, LiveBar
+from quantlab.trading.domain.freshness import LiveMarketSettings
+from quantlab.trading.domain.validation import DomainError, identity, integer
 from .broker_settings import BrokerReadiness, BrokerSettings
 
 
@@ -40,9 +42,39 @@ class MarketWatchView:
 class OverviewMarketSummary:
     instruments: tuple[MarketHealthView, ...] = ()
     subscription_count: int = 0
-    subscription_limit: int = 20
+    subscription_limit: int = LiveMarketSettings.subscription_limit
     market_revision: int = 0
     has_warning: bool = False
+
+
+@dataclass(frozen=True)
+class MarketSeriesQuery:
+    instrument_id: str
+    period: str = '1m'
+    offset: int = 0
+    limit: int = LiveMarketSettings.series_page_limit
+    market_revision: int | None = None
+
+    def __post_init__(self) -> None:
+        identity(self.instrument_id)
+        if self.period not in ('1m', '3m', '5m', '15m', '30m', '60m', '1d'):
+            raise DomainError('validation_failed', 'market series period')
+        integer(self.offset, 'series offset')
+        integer(self.limit, 'series limit', 1)
+        if self.market_revision is not None:
+            integer(self.market_revision, 'market revision')
+
+
+@dataclass(frozen=True)
+class MarketSeriesPage:
+    instrument_id: str
+    period: str
+    bars: tuple[LiveBar, ...] = ()
+    gaps: tuple[DataGap, ...] = ()
+    offset: int = 0
+    total: int = 0
+    next_offset: int | None = None
+    market_revision: int = 0
 
 
 class UiAction(str, Enum):

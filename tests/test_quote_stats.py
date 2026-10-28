@@ -12,6 +12,7 @@ from quantlab.trading.domain.models import HoldingPolicy, InstrumentSpec, Market
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.freshness import Freshness
 from quantlab.trading.domain.quote_stats import TradeDateClose, quote_stats, reference_price, unrealized_pnl
+from quantlab.trading.domain.lifecycle import net_liquidation_pnl
 
 D = Decimal
 NOW = datetime(2026, 10, 28, 9, tzinfo=timezone.utc)
@@ -36,6 +37,29 @@ def spec_for(name='TMF', multiplier='10', market=Market.INDEX_FUTURE):
 
 
 class LiquidationCharacterizationTests(unittest.TestCase):
+    def test_lifecycle_liquidation_keeps_realized_costs_and_direction(self):
+        spec = spec_for(multiplier='50')
+        fees = Mock()
+        fees.round_trip.return_value = D('7')
+        fees.slippage.return_value = D('3')
+        for direction, quantity, expected in ((Side.BUY, 2, D('1015')), (Side.SELL, 2, D('-985')), (Side.BUY, 0, D('15'))):
+            with self.subTest(direction=direction, quantity=quantity):
+                lot = PositionLot(
+                    'lot',
+                    'account',
+                    spec.instrument_id,
+                    'strategy',
+                    1,
+                    HoldingPolicy(),
+                    quantity,
+                    D('100'),
+                    NOW.date(),
+                    quantity,
+                    direction=direction,
+                    realized_pnl=D('25'),
+                )
+                self.assertEqual(net_liquidation_pnl(lot, spec, D('110'), fees), expected)
+
     def test_executable_side_costs_zero_and_stale_boundary(self):
         spec = spec_for(multiplier='50')
         base = PositionLot('lot', 'account', spec.instrument_id, 'strategy', 1, HoldingPolicy(), 2, D('100'), NOW.date(), 2)
@@ -70,15 +94,12 @@ class LiquidationCharacterizationTests(unittest.TestCase):
 
 
 class QuoteStatsTests(unittest.TestCase):
-    def test_calendar_selected_previous_close_and_decimal_changes(self):
-        # Monday's calendar-selected previous trade date is Friday. Futures'
-        # Monday trade date begins with Friday's night session; calendar days
-        # cannot select the reference. Stock uses the same supplied date rule.
-        friday, monday = date(2026, 10, 23), date(2026, 10, 26)
+    def test_supplied_date_close_selection_and_decimal_changes(self):
+        selected, other = date(2026, 10, 23), date(2026, 10, 26)
         closes = (
-            TradeDateClose(friday, D('99'), NOW - timedelta(days=5)),
-            TradeDateClose(friday, D('100'), NOW - timedelta(days=4)),
-            TradeDateClose(monday, D('999'), NOW),
+            TradeDateClose(selected, D('99'), NOW - timedelta(days=5)),
+            TradeDateClose(selected, D('100'), NOW - timedelta(days=4)),
+            TradeDateClose(other, D('999'), NOW),
         )
         for instrument, price, change, percent in (
             ('TMF', D('102.5'), D('2.5'), D('2.5')),
@@ -86,14 +107,14 @@ class QuoteStatsTests(unittest.TestCase):
             ('STOCK', D('100'), D('0'), D('0')),
         ):
             with self.subTest(instrument=instrument):
-                result = quote_stats(price, friday, closes)
+                result = quote_stats(price, selected, closes)
                 self.assertEqual((result.reference_price, result.change, result.change_percent), (D('100'), change, percent))
                 self.assertIsInstance(result.change, D)
                 self.assertIsInstance(result.change_percent, D)
         for missing in ((), (closes[-1],)):
             with self.subTest(missing=missing):
-                self.assertIsNone(reference_price(friday, missing))
-                result = quote_stats(D('10'), friday, missing)
+                self.assertIsNone(reference_price(selected, missing))
+                result = quote_stats(D('10'), selected, missing)
                 self.assertEqual((result.reference_price, result.change, result.change_percent), (None, None, None))
 
     def test_pnl_uses_only_spec_multiplier_and_quote_liveness(self):

@@ -5744,6 +5744,18 @@ session facts and Domain delegation; runtime adds no market calculation rules.
 Views reuse Domain P&L arithmetic while retaining the existing 30-second checks.
 No UI, order action or live execution permission is added.
 
+Periodic market snapshots carry quote/reference/change and health/freshness facts
+with only `LiveMarketSettings.snapshot_bar_tail` bars per instrument (default 2,
+maximum 32). Full retention is read separately through additive `MARKET_SERIES`
+IPC requests, never a UiAction. Application builds each chosen-period page from
+LiveMarketService; offsets/next_offset traverse ascending bars with gaps and
+forming/incomplete flags intact. `series_page_limit` caps pages at 1,000 bars
+(configurable downward), with a half-wire byte budget reserving envelope space.
+Clients pass the returned market_revision to subsequent pages; a changed revision
+returns state_conflict and requires restarting. Reads do not mutate trading state.
+Older snapshot and envelope fields retain their defaults. Presentation wiring
+remains deferred to T2.
+
 Performance requirement (criterion 20; specified before measurement): for 20
 instruments at 10 ticks/second each for 10 minutes (120,000 ticks), the offline
 target is p95 <= 50 ms and maximum <= 250 ms per drain/update batch of at most

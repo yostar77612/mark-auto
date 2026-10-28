@@ -22,11 +22,15 @@ class LiveMarketSettings:
     buffer_trade_days: int = 30
     queue_limit: int = 10000
     subscription_limit: int = 20
+    snapshot_bar_tail: int = 2
+    series_page_limit: int = 1000
 
     def __post_init__(self) -> None:
-        for name in ('delayed_seconds', 'stopped_seconds', 'buffer_trade_days', 'queue_limit', 'subscription_limit'):
+        for name in ('delayed_seconds', 'stopped_seconds', 'buffer_trade_days', 'queue_limit', 'subscription_limit', 'snapshot_bar_tail', 'series_page_limit'):
             integer(getattr(self, name), name, 1)
-        if self.stopped_seconds <= self.delayed_seconds or self.subscription_limit > 20:
+        if self.snapshot_bar_tail > 32 or self.series_page_limit > type(self).series_page_limit:
+            raise DomainError('validation_failed', 'market transport bounds')
+        if self.stopped_seconds <= self.delayed_seconds or self.subscription_limit > type(self).subscription_limit:
             raise DomainError('validation_failed', 'freshness thresholds/subscription limit')
 
 
