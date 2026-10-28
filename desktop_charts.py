@@ -306,12 +306,12 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             else ui_text('charts.set_series.host_source')
         )
         self.status_label = status_label or (provenance.mode if provenance else ui_text('charts.set_series.status_unknown'))
-        self._clear_series_layers()
+        self._refresh_series_layers()
         self.crosshair_index = None
         self.error = ''
         self.reset_view()
 
-    def _clear_series_layers(self):
+    def _refresh_series_layers(self):
         self.overlays = MappingProxyType({})
         self.panes = MappingProxyType({})
         self.markers = ()
@@ -330,7 +330,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.bars = (*self.bars, bar)
         if following:
             self._start = max(0, len(self.bars) - self._count)
-        self._clear_series_layers()
+        self._refresh_series_layers()
         self.paper_orders.drag, self.paper_orders.hits = None, ()
         self.view_changed.emit()
         self.update()
@@ -341,7 +341,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             raise ValueError(ui_text('charts.set_series.last_bar_required'))
         self._validate_incremental_bar(bar, self.bars if len(self.bars) > 1 else ())
         self.bars = (*self.bars[:-1], bar)
-        self._clear_series_layers()
+        self._refresh_series_layers()
         self.paper_orders.drag, self.paper_orders.hits = None, ()
         self.update()
 

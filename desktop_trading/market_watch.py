@@ -286,8 +286,8 @@ class MarketWatchWidget(QWidget):
                 return
             receipt, state = value
             self.message.setText(receipt.message if not receipt.accepted else '')
-            if not receipt.accepted and receipt.code == 'capability_missing':
-                self.message.setText(ui_text('watch.refused').format(receipt.message))
+            if not receipt.accepted and receipt.code == 'subscription_limit_reached':
+                self.message.setText(ui_text('watch.refused').format(receipt.message, self.state.market_health.subscription_limit))
             if state is not None:
                 self.render(state)
 

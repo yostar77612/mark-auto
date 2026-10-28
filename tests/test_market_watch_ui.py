@@ -247,20 +247,29 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(self.widget.instrument.nextInFocusChain(), self.widget.add)
 
     def test_refusal_and_removal_route_only_settings(self):
-        error = ERROR_TABLE['capability_missing']
-        message = error.explanation + ' ' + error.action
-        self.facade.receipt = UiReceipt(False, 'capability_missing', message)
-        watches = ('TMF', *(f'fixture-{index}' for index in range(19)))
-        self.facade.state = replace(self.facade.state, watchlist=watches, market_health=replace(self.facade.state.market_health, subscription_count=20))
+        watches = ('TMF',)
+        self.facade.state = replace(self.facade.state, market_health=replace(self.facade.state.market_health, subscription_limit=17))
         self.widget.render(self.facade.state)
-        self.widget.instrument.setText('TX')
-        QTest.mouseClick(self.widget.add, Qt.MouseButton.LeftButton)
-        self.wait_for(lambda: bool(self.widget.message.text()))
-        self.assertIn(message, self.widget.message.text())
-        self.assertIn(ui_text('watch.refused').split('{0}')[1], self.widget.message.text())
-        self.assertEqual(self.facade.commands[-1].watchlist, (*watches, 'TX'))
-        self.assertEqual(self.facade.state.watchlist, watches)
-        self.assertEqual(self.facade.strategy_subscriptions, ('strategy-only',))
+        for case, code in (
+            ('slot limit', 'subscription_limit_reached'),
+            ('disconnected engine', 'capability_missing'),
+            ('no live market', 'capability_missing'),
+        ):
+            with self.subTest(case=case):
+                error = ERROR_TABLE[code]
+                message = error.explanation + ' ' + error.action
+                self.facade.receipt = UiReceipt(False, code, message)
+                self.widget.message.clear()
+                self.widget.instrument.setText('TX')
+                QTest.mouseClick(self.widget.add, Qt.MouseButton.LeftButton)
+                self.wait_for(lambda: bool(self.widget.message.text()))
+                expected = ui_text('watch.refused').format(message, 17) if code == 'subscription_limit_reached' else message
+                self.assertEqual(self.widget.message.text(), expected)
+                if code == 'subscription_limit_reached':
+                    self.assertIn('17', self.widget.message.text())
+                self.assertEqual(self.facade.commands[-1].watchlist, (*watches, 'TX'))
+                self.assertEqual(self.facade.state.watchlist, watches)
+                self.assertEqual(self.facade.strategy_subscriptions, ('strategy-only',))
         self.facade.state = state()
         self.widget.render(self.facade.state)
         self.facade.receipt = UiReceipt(True, 'completed', '')
