@@ -46,6 +46,8 @@ class LocalOrder:
     event_sequence: int = 0
     costs: Decimal = Decimal('0')
     released_quantity: int = 0
+    fill_count_day: date | None = None
+    daily_fill_count: int | None = None
 
 
 @dataclass(frozen=True)

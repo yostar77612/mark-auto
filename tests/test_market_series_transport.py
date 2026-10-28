@@ -147,3 +147,27 @@ class MarketTransportTests(unittest.TestCase):
                 body = json.loads(dumps(envelope))
                 del body['fields']['series']
                 self.assertEqual(loads(json.dumps(body)), envelope)
+
+    def test_old_snapshot_dashboard_fields_decode_with_defaults(self):
+        from decimal import Decimal
+        from quantlab.trading.application.contracts import PositionView, StrategyView
+        from quantlab.trading.domain.models import HoldingKind, Market, QuantityUnit
+
+        strategy = StrategyView(
+            'strategy', 'name', 1, Market.STOCK, 'instrument', HoldingKind.SWING, 'SWING:3-5', 'ACTIVE', 'local-stock', Environment.LOCAL, ''
+        )
+        position = PositionView(
+            'lot', 'instrument', 'strategy', 1, 'SWING:3-5', 1000, QuantityUnit.SHARE, 0, '2026-10-23', 0, 'exit window', '', 'quote time', 'MANAGED'
+        )
+        state = replace(LocalFacade(self.engine).snapshot(), strategies=(strategy,), positions=(position,), unrealized_pnl=Decimal('5'))
+        body = json.loads(dumps(Response('older', state=state)))
+        raw_state = body['fields']['state']['fields']
+        for field in ('unrealized_pnl', 'remaining_daily_loss', 'today_fill_count'):
+            del raw_state[field]
+        for collection, fields in (('strategies', ('today_order_count', 'today_pnl', 'activity_state')), ('positions', ('unrealized_pnl', 'quote_freshness'))):
+            for field in fields:
+                del raw_state[collection]['value'][0]['fields'][field]
+        decoded = loads(json.dumps(body)).state
+        self.assertEqual(decoded.strategies, (strategy,))
+        self.assertEqual(decoded.positions, (position,))
+        self.assertEqual((decoded.unrealized_pnl, decoded.remaining_daily_loss, decoded.today_fill_count), (None, None, None))

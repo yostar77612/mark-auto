@@ -2956,6 +2956,35 @@ ZH_TW.update(
 )
 
 
+# Lane LM1 dashboard
+ZH_TW.update(
+    {
+        'dashboard.status.connected': '已連線',
+        'dashboard.data_status': '資料狀態',
+        'dashboard.today': '今日摘要',
+        'dashboard.today.orders': '今日委託',
+        'dashboard.summary.item': '{}：{}',
+        'dashboard.strategy.summary': '{} · v{} · {} · {}',
+        'dashboard.status.disconnected': '連線中斷',
+        'dashboard.status.connecting': '連線中',
+        'dashboard.status.local': '本機模擬',
+        'dashboard.status.broker': '券商：{}',
+        'dashboard.status.market': '行情：{}',
+        'dashboard.status.engine': '引擎：{}',
+        'dashboard.status.reconciled': '對帳：已確認',
+        'dashboard.status.pending': '對帳：待確認',
+        'dashboard.status.attention': '需要處理：{}',
+        'dashboard.today.net_pnl': '今日淨損益',
+        'dashboard.today.unrealized_pnl': '未實現損益',
+        'dashboard.today.remaining_risk': '剩餘風險額度',
+        'dashboard.today.remaining_loss': '剩餘每日虧損額度',
+        'dashboard.today.fills': '今日成交筆數',
+        'dashboard.strategy.running': '運行中',
+        'dashboard.strategy.paused': '已暫停',
+        'dashboard.strategy.risk_stopped': '風控停止',
+    }
+)
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

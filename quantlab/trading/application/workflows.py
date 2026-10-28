@@ -194,9 +194,10 @@ def step(engine: 'TradingEngine', history: dict[str, tuple['CompletedBar', ...]]
         raise DomainError('capability_missing', 'only running local simulation can advance')
     next_day = engine.calendar.advance(engine.state.trading_day, 1)
     baseline = total_mark(engine)
+    tracks = tuple(replace(track, daily_baseline=track.equity, trade_date=next_day) for track in advance_tracks(engine))
     now = engine.calendar.day_session(next_day).opens_at + timedelta(minutes=5)
     engine.simulation.advance(next_day, now)
-    engine._persist('trading_day_advanced', replace(engine.state, trading_day=next_day, daily_baseline_pnl=baseline, daily_pnl=ZERO))
+    engine._persist('trading_day_advanced', replace(engine.state, trading_day=next_day, daily_baseline_pnl=baseline, daily_pnl=ZERO, performance_tracks=tracks))
     # Simulation composition updates quote state through the regular quote port.
     for instrument, bars in history.items():
         current = next((b for b in bars if b.opened_at.date() == next_day), None)

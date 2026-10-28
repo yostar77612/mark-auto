@@ -180,6 +180,9 @@ class StrategyView:
     risk_fraction: Decimal = Decimal('0.02')
     expiry_action: str = 'EXIT'
     roll_contract_id: str = ''
+    today_order_count: int | None = None
+    today_pnl: Decimal | None = None
+    activity_state: str | None = None
 
 
 @dataclass(frozen=True)
@@ -200,6 +203,8 @@ class PositionView:
     source: str
     account_ref: str = ''
     direction: Side = Side.BUY
+    unrealized_pnl: Decimal | None = None
+    quote_freshness: str = 'UNKNOWN'
 
 
 @dataclass(frozen=True)
@@ -318,6 +323,9 @@ class UiState:
     market_health: OverviewMarketSummary = OverviewMarketSummary()
     market_connection: str = 'UNKNOWN'
     watchlist: tuple[str, ...] = ()
+    unrealized_pnl: Decimal | None = None
+    remaining_daily_loss: Decimal | None = None
+    today_fill_count: int | None = None
 
 
 class TradingFacade(Protocol):

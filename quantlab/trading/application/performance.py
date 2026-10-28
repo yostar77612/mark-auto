@@ -41,6 +41,7 @@ class VersionEquityTrack:
     lot_ids: tuple[str, ...] = ()
     basis: str = BASIS
     realized_adjustment: Decimal = ZERO
+    daily_baseline: Decimal | None = None
 
     def __post_init__(self) -> None:
         identity(self.strategy_id)
@@ -53,6 +54,8 @@ class VersionEquityTrack:
             decimal_value(getattr(self, name), name)
         if self.max_drawdown is not None:
             decimal_value(self.max_drawdown, 'maximum drawdown', nonnegative=True)
+        if self.daily_baseline is not None:
+            decimal_value(self.daily_baseline, 'daily baseline')
         if (
             type(self.history_complete) is not bool
             or self.history_complete != (self.max_drawdown is not None)
@@ -69,7 +72,7 @@ class VersionEquityTrack:
 
 def seed_track(strategy_id: str, version: int, now: datetime, day: date) -> VersionEquityTrack:
     """Only a newly created, unexposed version has a proven zero baseline."""
-    return VersionEquityTrack(strategy_id, version, now, now, day, ZERO, ZERO, ZERO, True)
+    return VersionEquityTrack(strategy_id, version, now, now, day, ZERO, ZERO, ZERO, True, daily_baseline=ZERO)
 
 
 @decimal_operation
@@ -129,6 +132,7 @@ def _next_track(
         cashflow_adjustment=adjustment,
         realized_adjustment=realized_adjustment,
         lot_ids=lots,
+        daily_baseline=previous.daily_baseline if day == previous.trade_date else None,
     )
 
 

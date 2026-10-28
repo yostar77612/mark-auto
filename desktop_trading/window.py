@@ -22,9 +22,9 @@ from quantlab.trading.application.contracts import (
 )
 from quantlab.trading.domain.models import Environment
 
-from .labels import event_label, policy_label, state_label
+from .labels import policy_label, state_label
 from .widgets import fit_available_screen, label, selected_id
-from .rendering import reconciliation_cells, render_tables
+from .rendering import render_tables
 from .workspaces import build
 from .wizard import StrategyWizard
 
@@ -498,6 +498,7 @@ class TradingWindow(QMainWindow):
             != tuple((item.strategy_id, item.version, item.net_pnl is None, item.unrealized_pnl is None) for item in self.state.performance)
         )
         if market_only and not freshness_changed:
+            self.dashboard.render_market(state)
             self.state = state
             return
         changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
@@ -539,33 +540,16 @@ class TradingWindow(QMainWindow):
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
         self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
         self.add_context_button.setVisible(bool(state.contexts))
-        self.overview_status.setText(
-            ui_text('v2.context_facts_pending')
-            if not state.financial_facts_verified
-            else ui_text('v2.local_data')
-            if state.synthetic_data
-            else ui_text('v2.external_data')
-        )
         render_version = self._stamp(state)
         if self._rendered_version == render_version and not freshness_changed:
             return
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.dashboard.render(state, state_changed=state_changed)
         if not state_changed:
             return
-        self.overview_deployments.setText(
-            '\n'.join(f'{item.name} · v{item.version} · {policy_label(item.policy_label)} · {state_label(item.state)}' for item in state.strategies[-10:])
-            or ui_text('v2.no_strategies')
-        )
-        self.issue_details.clear()
-        self.issue_details.addItems(list(state.issues) or [ui_text('v2.no_issues')])
-        self.issue_details.addItems(
-            [ui_text('v2.reconciliation_overview').format(*reconciliation_cells(item)[:2], *reconciliation_cells(item)[3:6]) for item in state.reconciliation]
-        )
         self.diagnostics.setText(ui_text('v2.diagnostics').format(state.version, state.engine_state) + '\n' + '\n'.join(state.events[-20:]))
-        self.events.clear()
-        self.events.addItems([event_label(code) for code in state.events[-100:]])
         self._context_rendering = True
         self.environment.setCurrentIndex(self.environment.findData(state.environment))
         self._populate_accounts(state.environment)

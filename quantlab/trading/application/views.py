@@ -1,5 +1,6 @@
 """Read models assembled from application state, never writable projections."""
 
+from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -9,7 +10,7 @@ from quantlab.trading.domain.models import Environment, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.freshness import Freshness
+from quantlab.trading.domain.freshness import Freshness, classify_freshness
 from quantlab.trading.domain.quote_stats import unrealized_pnl
 
 if TYPE_CHECKING:
@@ -43,6 +44,16 @@ def policy_name(policy) -> str:
 @decimal_operation
 def snapshot(engine: 'TradingEngine') -> UiState:
     state = engine.state
+    verified = _financial_facts_current(engine)
+    tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
+    market_watch = engine.live_market.views() if engine.live_market is not None else ()
+    health = {view.instrument_id: view.health.freshness for view in market_watch}
+    order_days = {
+        order.order_id: next(
+            (session.trade_date for session in engine.calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None
+        )
+        for order in state.orders
+    }
     strategies = tuple(
         StrategyView(
             s.strategy_id,
@@ -60,15 +71,73 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             min(s.form.risk_fraction, state.settings.risk_fraction),
             s.form.expiry_action,
             s.form.roll_contract_id,
+            today_order_count=None
+            if any(order_days[o.order_id] is None for o in state.orders if (o.plan.strategy_id, o.plan.strategy_version) == (s.strategy_id, s.version))
+            else sum(
+                order_days[o.order_id] == state.trading_day for o in state.orders if (o.plan.strategy_id, o.plan.strategy_version) == (s.strategy_id, s.version)
+            ),
+            today_pnl=(
+                tracks[s.strategy_id, s.version].equity - tracks[s.strategy_id, s.version].daily_baseline
+                if verified
+                and (s.strategy_id, s.version) in tracks
+                and tracks[s.strategy_id, s.version].trade_date == state.trading_day
+                and tracks[s.strategy_id, s.version].daily_baseline is not None
+                else None
+            ),
+            activity_state=(
+                s.state
+                if s.state != 'ACTIVE'
+                else 'RISK_STOPPED'
+                if state.trading_day in state.daily_locks
+                else 'PAUSED'
+                if state.stopped or not state.reconciled or state.engine_closed
+                else 'RUNNING'
+            ),
         )
         for s in state.strategies
     )
     positions = []
+    gross_marks: dict[str, Decimal | None] = {}
     for lot in state.positions:
         if not lot.quantity:
             continue
         spec = engine.catalog.resolve(lot.instrument_id)
         quote = engine.quotes.get(lot.instrument_id)
+        freshness = (
+            Freshness(health[lot.instrument_id])
+            if lot.instrument_id in health
+            else classify_freshness(
+                quote.received_at if quote else None,
+                now=engine.clock.now(),
+                connected=True,
+                in_session=any(session.opens_at <= engine.clock.now() <= session.closes_at for session in engine.calendar.sessions),
+            )
+        )
+        if quote is None or quote.quality != 'VERIFIED':
+            freshness = Freshness.UNKNOWN
+        signed_quantity = lot.quantity * (1 if lot.direction is Side.BUY else -1)
+        # Preserve PerformanceView's existing 30-second coverage contract while
+        # calculating each gross mark only once. Dashboard coverage is stricter:
+        # its shared LIVE classification must also permit displaying that mark.
+        performance_live = (
+            verified
+            and quote is not None
+            and quote.quality == 'VERIFIED'
+            and 0 <= (engine.clock.now() - quote.source_at).total_seconds() <= 30
+            and 0 <= (engine.clock.now() - quote.received_at).total_seconds() <= 30
+        )
+        gross_marks[lot.lot_id] = (
+            unrealized_pnl(
+                quote.last,
+                signed_quantity,
+                spec,
+                lot.entry_price * signed_quantity * spec.multiplier,
+                freshness=Freshness.LIVE if performance_live else Freshness.UNKNOWN,
+            )
+            if quote is not None
+            else None
+        )
+        pnl = gross_marks[lot.lot_id] if freshness is Freshness.LIVE else None
         try:
             window = holding_window(lot.policy, lot.holding_origin, engine.calendar)
             exit_window = f'{window.earliest_normal_exit} ~ {window.latest_exit}'
@@ -94,6 +163,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 lot.origin,
                 lot.account_ref,
                 lot.direction,
+                unrealized_pnl=pnl,
+                quote_freshness=freshness.value,
             )
         )
     markets = []
@@ -115,8 +186,6 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             )
         )
     performance = []
-    verified = _financial_facts_current(engine)
-    tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
     for strategy in state.strategies:
         related = tuple(p for p in state.positions if (p.strategy_id, p.strategy_version) == (strategy.strategy_id, strategy.version))
         orders = tuple(o for o in state.orders if (o.plan.strategy_id, o.plan.strategy_version) == (strategy.strategy_id, strategy.version))
@@ -126,19 +195,11 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         for lot in related:
             if not lot.quantity:
                 continue
-            quote = engine.quotes.get(lot.instrument_id)
-            if (
-                not verified
-                or quote is None
-                or quote.quality != 'VERIFIED'
-                or not 0 <= (engine.clock.now() - quote.source_at).total_seconds() <= 30
-                or not 0 <= (engine.clock.now() - quote.received_at).total_seconds() <= 30
-            ):
+            mark = gross_marks[lot.lot_id]
+            if mark is None:
                 unrealized = None
                 break  # A partial version valuation is not its total unrealized PnL.
-            spec = engine.catalog.resolve(lot.instrument_id)
-            signed_quantity = lot.quantity * (1 if lot.direction is Side.BUY else -1)
-            unrealized += unrealized_pnl(quote.last, signed_quantity, spec, lot.entry_price * signed_quantity * spec.multiplier, freshness=Freshness.LIVE)
+            unrealized += mark
         track = tracks.get((strategy.strategy_id, strategy.version))
         if track:
             realized += track.realized_adjustment
@@ -172,7 +233,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
     status = 'CLOSED' if state.engine_closed else 'WAITING_RECONCILIATION' if not state.reconciled else 'STOPPED' if state.stopped else 'RUNNING'
     issues = tuple(ERROR_TABLE.get(code, ERROR_TABLE['operation_failed']).explanation for code in state.issues)
     reserved = sum((r.risk for r in engine.reservations()), ZERO)
-    remaining = max(ZERO, Decimal('100000') * state.settings.daily_loss_fraction - max(ZERO, -state.daily_pnl) - reserved)
+    daily_loss_room = max(ZERO, Decimal('100000') * state.settings.daily_loss_fraction - max(ZERO, -state.daily_pnl))
+    remaining = max(ZERO, daily_loss_room - reserved)
     quote_status = (
         'NO_DATA'
         if not markets or all(m.availability == 'NO_DATA' for m in markets)
@@ -180,6 +242,15 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         if all(m.availability == 'FRESH' for m in markets)
         else 'STALE'
     )
+    strategies = tuple(
+        replace(s, today_pnl=None)
+        if any((p.strategy_id, p.strategy_version) == (s.strategy_id, s.version) and p.unrealized_pnl is None for p in positions)
+        else s
+        for s in strategies
+    )
+    unrealized_total = None if not verified or any(p.unrealized_pnl is None for p in positions) else sum((p.unrealized_pnl for p in positions), ZERO)
+    fills = [o for o in state.orders if o.filled and (o.fill_count_day is None or o.fill_count_day == state.trading_day)]
+    today_fills = None if any(o.daily_fill_count is None for o in fills) else sum(o.daily_fill_count for o in fills)
     return UiState(
         environment=state.environment,
         account_ref=state.account_ref,
@@ -215,6 +286,9 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         reconciliation_verified=state.reconciled,
         financial_facts_verified=verified,
         market_revision=engine.live_market.market_revision if engine.live_market is not None else 0,
-        market_watch=engine.live_market.views() if engine.live_market is not None else (),
+        market_watch=market_watch,
         market_health=engine.live_market.overview() if engine.live_market is not None else OverviewMarketSummary(),
+        unrealized_pnl=unrealized_total,
+        remaining_daily_loss=daily_loss_room if verified else None,
+        today_fill_count=today_fills,
     )

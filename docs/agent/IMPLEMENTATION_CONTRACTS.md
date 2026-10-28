@@ -6045,3 +6045,202 @@ confirmed through unittest discovery. No re-index was run per the base command.
 `Git diff failed: spawnSync git EPERM`. This is unresolved graph evidence, not a
 clean impact verdict. No commit was attempted; the controller should rerun this
 check before committing. Ordinary git diff and protected-path checks completed.
+
+### LM1 T3 final: overview dashboard (2026-10-29)
+
+Evidence is **host-offscreen** only, adjacent to the P2 market workspace entry.
+Physical Windows screen, native 150% scaling, native 200% scaling and real
+automated-trading monitoring: **PENDING USER CONFIRMATION**. Offscreen geometry,
+keyboard and wiring checks do not establish these user acceptance results.
+
+Reviewed all criteria-T3.json items against base main `07b66e4`, including the
+retained slice-1 diff and all five new Python modules. No commit or PR-head SHA
+was created: the controller explicitly prohibits git commit/push/branch/reset/
+checkout and GitNexus analyze in this working tree.
+
+| Criterion | Evidence / disposition |
+|---|---|
+| 1 | dashboard.py renders dashboard_rows output; rows have no Qt import. Architecture scan covers both modules; result recorded below. |
+| 2 | Broker, market, engine and reconciliation lights include text and colour. Visible one-line red summary is asserted in test_dashboard_ui. |
+| 3 | One shared STOPPED MarketHealthView drives watch and dashboard in an offscreen test; DELAYED remains warning. Dashboard rows reuse market_watch_rows.freshness_text. |
+| 4 | Five today facts are Application fields; dashboard modules only format them. Snapshot computes daily_loss_room once and derives remaining risk and remaining daily loss from it; sessions.py and workflows.py formulas were not changed in slice 2. |
+| 5 | Strategy table displays name, version, activity, today orders and P&L from slice-1 Application fields. |
+| 6 | Position table displays instrument, strategy/version, direction, quantity, holding days, exit window, P&L and quote time. One UI assertion covers Unknown for a non-LIVE quote; valuation remains in Domain/Application. |
+| 7 | The prominent pending_issue_details list is at the top. recent_events reuses events, preserves the latest-100 chronological display and expands with Space. Disconnect test retains last prices and table objects, with STOPPED and a red light. |
+| 8 | Exactly STOP_NEW, CANCEL_ENTRIES and RECONCILE operation buttons use window.command; keyboard tests assert existing UiActions. No new action or engine/runtime handler. New strategy and local step remain outside the dashboard. |
+| 9 | Literal ui_text keys; zero CJK characters in dashboard*.py. Controls have objectName/accessibility names; Tab and Space tests pass. |
+| 10 | Two characterization tests passed before editing _overview_page/apply_state and pass afterward. Those modules only host/alias/render the widget. market_revision updates status, summary and quote cells in place, preserving selection and table models. |
+| 11 | AST comparison confirms old StrategyView/PositionView/UiState fields unchanged in order/type/default, and additions defaulted at the end. Old-snapshot decoding remains covered by test_market_series_transport. |
+| 12 | New module line counts: dashboard 164, rows 135, UI tests 197, row tests 114, characterization 58. Each has a responsibility docstring. New StatusLight is frozen; money stays Decimal. Typed facts are trusted; no swallowed exceptions or new redundant validation. UI tests assert display/wiring with subTest tables. No existing test weakened. |
+| 13 | Full diff leaves G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_market.py, chart_data.py and both gates untouched. UiAction is AST-identical to base; live execution remains disabled. |
+| 14 | Individual commands and exact exits follow. Filesystem-denied suites are controller-authorized sandbox exceptions, not passes; rerun outside sandbox. |
+| 15 | Physical Windows screen, 150%/200% scaling and real automated-trading monitoring remain **PENDING USER CONFIRMATION**; all UI evidence is host-offscreen. |
+
+GitNexus pre-edit: _overview_page LOW (build process and window initialization),
+apply_state LOW (initialization, result, context switch; caller set lower-bound).
+Snapshot UNKNOWN was resolved for navigation by reading LocalFacade.snapshot,
+which calls views.snapshot under the engine lock. The stale baseline graph does
+not contain the new dashboard modules; direct source/reference review covers
+them. No re-index was run per controller instruction. Final MCP
+`detect_changes(scope=all, repo=mark-auto)` reports 19 changed symbols, five
+processes, MEDIUM risk, with no partial/truncated flags. This is navigation
+evidence, not a substitute for tests or review of untracked new files.
+
+Slice-2 changed files: desktop_strings.py; desktop_trading/dashboard.py,
+dashboard_rows.py, workspaces.py, window.py; quantlab/trading/application/views.py;
+tests/test_dashboard_characterization.py, test_dashboard_ui.py; this contract.
+All slice-1 files and tests are retained.
+
+Host-offscreen commands on 2026-10-29 from the repository root, with
+`$env:PYTHONUTF8='1'; $env:QT_QPA_PLATFORM='offscreen'`:
+
+| Exact command | Exit / result |
+|---|---|
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_dashboard_ui.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_dashboard_characterization.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_trading_ui.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_trading_ui_integration.py` | 1 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_trading_application.py` | TIMEOUT (45s) |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_trading_performance.py` | TIMEOUT (45s) |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_dashboard_rows.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_market_watch_ui.py` | TIMEOUT (45s) |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_trading_ui_market_watch.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_r7_characterization.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_desktop_text_aliases.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_page_services_r1.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_market_series_transport.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" check .` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" format --check desktop_strings.py desktop_trading/dashboard.py desktop_trading/dashboard_rows.py desktop_trading/window.py desktop_trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
+| `py -3.11 -m compileall -q desktop_strings.py desktop_trading/dashboard.py desktop_trading/dashboard_rows.py desktop_trading/window.py desktop_trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/quality_gate.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/check_trading_architecture.py` | 0 |
+| `git diff --check` | 0 |
+
+The pre-edit characterization command was also run separately before changing
+workspaces.py/window.py: `.venv\Scripts\python.exe -m unittest discover -s tests -p test_dashboard_characterization.py`, exit 0 (two tests).
+After the final market-cell update, test_dashboard_ui and
+test_trading_ui_market_watch were separately rerun, exit 0 each (five tests each).
+With `PYTHONPATH=tests`, `.venv\Scripts\python.exe -m unittest test_trading_application.DashboardApplicationTests test_market_watch_ui.RowTests test_market_watch_ui.WidgetTests`
+exits 0 (eight tests), verifying the new Application facts and non-persistence
+market UI independently of the sandbox filesystem failures.
+
+The integration suite exits 1 during fixture setup: SQLite cannot open the temp
+database; cleanup reports WinError 5. Full application/performance/market-watch
+runs exceeded the 45-second harness limit and were terminated, not passed.
+Separate diagnostic commands, each exit 1, were:
+
+```powershell
+.venv\Scripts\python.exe -c "import faulthandler,unittest; faulthandler.dump_traceback_later(5,exit=True); unittest.main(module=None)" discover -s tests -p test_trading_application.py
+.venv\Scripts\python.exe -c "import faulthandler,unittest; faulthandler.dump_traceback_later(5,exit=True); unittest.main(module=None)" discover -s tests -p test_trading_performance.py
+.venv\Scripts\python.exe -c "import faulthandler,unittest; faulthandler.dump_traceback_later(5,exit=True); unittest.main(module=None)" discover -s tests -p test_market_watch_ui.py
+```
+
+Stacks locate application/performance in tempfile.mkdtemp during setUp and
+market-watch persistence in tempfile.mkstemp during atomic_write. These are
+explicit non-blockers in t3-base.md; controller reruns outside the sandbox remain
+required. No test assertion was weakened, skipped or removed. Local command
+logs/results are in .tmp-t3-slice2/; AST/protected-file review is review.json.
+An initial relative forward-slash subprocess executable failed with WinError 2
+before running the formatter; absolute executable paths corrected it.
+Ruff reports directory-access warnings and no lint findings. Architecture reports
+0 violations and quality gate reports 0 findings. This is working-tree evidence,
+not a claim that gates ran against a committed PR head SHA.
+
+### LM1 T3 slice 1: application facts and pure dashboard rows (2026-10-29)
+
+This slice supplies read models and pure display functions only. The dashboard
+widget and overview wiring belong to a subsequent slice. No trading action or
+execution capability is added. Physical Windows appearance, 150%/200% scaling,
+and actual automated-trading monitoring remain PENDING USER CONFIRMATION;
+Qt evidence here is host-offscreen only.
+
+New fields are appended with defaults; existing fields retain their positions,
+types and meaning. Money remains Decimal and unknown facts remain None.
+
+| Field | Why it is needed |
+|---|---|
+| StrategyView.today_order_count | Orders lack a presentation-level strategy/version daily count; decision timestamps are matched to calendar trade dates, including night sessions. Unresolvable dates remain unknown. |
+| StrategyView.today_pnl | Existing PerformanceView.attributed_pnl is cumulative version equity, not today's change. Reuse that recorded equity basis minus a known daily baseline; non-LIVE open holdings suppress the result. |
+| StrategyView.activity_state | The existing state is deployment lifecycle (e.g. ACTIVE), which cannot distinguish running, paused and a latched daily risk stop. Application supplies that distinction without changing the existing lifecycle field. |
+| PositionView.unrealized_pnl | Existing performance aggregates versions, not lots. Call Domain quote_stats.unrealized_pnl with signed quantity and entry cost; non-LIVE or unverified facts remain unknown. |
+| PositionView.quote_freshness | Existing quote_time has no freshness classification. Reuse live-market health; without that service use the shared Domain classifier. |
+| UiState.unrealized_pnl | Application aggregates lot values once; Presentation must not total money. Any unknown lot makes the portfolio total unknown. |
+| UiState.remaining_daily_loss | remaining_risk also subtracts reservations, so it cannot represent the remaining daily loss allowance. Use the existing daily-loss basis without that reservation deduction. |
+| UiState.today_fill_count | Existing OrderView.filled is cumulative quantity, not dated execution count. Unknown execution history remains unknown. |
+| VersionEquityTrack.daily_baseline | A cumulative version observation cannot reconstruct a daily baseline. Newly seeded versions start at zero; local day advancement captures the current version marks before advancing the clock. Missing legacy or externally unattested daily baselines remain unknown. |
+| LocalOrder.fill_count_day, daily_fill_count | Preserve the date and count of observed fill events across snapshots/restarts. Calendar trade dates own the counts; reconciled cumulative deltas cannot establish execution counts. |
+
+No additional held-days, quote-time, exit-date, portfolio daily-P&L, risk, or
+performance fields are introduced. Dashboard positions display the existing
+exit_window as the planned exit range. The existing registered dataclass codec
+already decodes absent fields through defaults; no protocol/codec edits are
+needed. One old-snapshot Response test covers missing StrategyView, PositionView
+and UiState additions.
+
+Each lot's gross mark is calculated once and reused by PerformanceView. Its
+existing 30-second coverage contract is preserved; dashboard display additionally
+requires the shared LIVE classification. This keeps the existing performance
+read model compatible while preventing delayed dashboard valuations.
+
+desktop_trading/dashboard_rows.py formats status lights, textual red summaries,
+today items, strategies, positions, issues and recent events. It imports no Qt
+and computes no money or freshness. Market labels and levels reuse
+market_watch_rows.freshness_text, with only STOPPED promoted to red. DELAYED is
+warning, CLOSED/UNKNOWN muted. Pending issues preserve their supplied order;
+events use existing event labels, most recent first. Literal strings live in
+the trailing Lane LM1 dashboard catalog block.
+
+Changed files: desktop_strings.py; desktop_trading/dashboard_rows.py;
+quantlab/trading/application/{contracts,views,state,events,performance,workflows}.py;
+tests/{test_dashboard_rows,test_trading_application,test_market_series_transport}.py;
+this implementation contract.
+
+Verification commands use PYTHONUTF8=1 and QT_QPA_PLATFORM=offscreen. Each command
+below was run from the repository root; exit codes are recorded explicitly.
+
+| Command | Exit |
+|---|---:|
+| `.venv\Scripts\ruff.exe check .` | 0 |
+| `.venv\Scripts\ruff.exe format --check desktop_strings.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
+| `py -3.11 -m compileall -q desktop_strings.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
+| `.venv\Scripts\python.exe tools/quality_gate.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_dashboard_rows.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_application.py -v` | 124 (45-second timeout) |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_performance.py -v` | 124 (45-second timeout) |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_ui.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_market_watch_ui.py -v` | 124 (45-second timeout) |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_market_service.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_market_series_transport.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_desktop_text_aliases.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_page_services_r1.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_market_wiring.py -v` | 0 |
+| `.venv\Scripts\python.exe -m unittest test_market_watch_ui.RowTests test_market_watch_ui.WidgetTests test_trading_application.DashboardApplicationTests` (PYTHONPATH=tests) | 0 |
+| `git diff --check` | 0 |
+
+The targeted final command passes eight tests, including both new application
+tests. The three full-suite timeouts are sandbox filesystem limitations allowed
+by the T3 base instructions: faulthandler confirms tempfile.mkdtemp in application
+setUp (also used by performance), and tempfile.mkstemp in atomic_write during
+market-watch persistence. No assertion failure was hidden or test disabled.
+The controller must rerun these three complete suites outside this sandbox.
+Ruff reports directory-access warnings but no lint findings. Logs and exact
+commands are retained locally in .tmp-t3-slice1/.
+
+The final combined regression command also exits 0 (90 tests), with
+PYTHONPATH=tests: `.venv\Scripts\python.exe -m unittest test_dashboard_rows test_market_watch_ui.RowTests test_market_watch_ui.WidgetTests test_trading_application.DashboardApplicationTests test_live_market_wiring test_market_series_transport test_live_market_service test_trading_ui test_desktop_text_aliases test_page_services_r1`.
+An intermediate inventory failure caused by a fake's `summary` attribute was
+fixed by removing that page-alias collision; the fixture and existing tests were
+not changed. All static gates were rerun after the final Python changes.
+
+GitNexus StrategyView, PositionView and UiState impact is HIGH (27 direct
+dependents each); only defaulted additions were made. Other touched application
+symbols have LOW/MEDIUM impact. snapshot is UNKNOWN with unresolved dynamic
+callers; direct source inspection confirms LocalFacade.snapshot consumes it.
+Status identifies the existing base index as stale; no analyze was run, as
+required by the controller's T3 instructions. CLI detect-changes exits 1 with
+spawnSync git EPERM. The MCP fallback detect_changes(scope=all, repo=mark-auto)
+succeeds without partial/truncated flags: sixteen changed symbols, four affected
+flows, MEDIUM risk. New untracked modules require direct review because they
+are absent from that baseline graph. No commit, push or branch operation ran.
