@@ -1,12 +1,48 @@
 """Typed presentation boundary. No Qt, SDK, persistence or risk implementation."""
 
 from dataclasses import dataclass
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Protocol, runtime_checkable
 
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, QuantityUnit, Side
+from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from .broker_settings import BrokerReadiness, BrokerSettings
+
+
+@dataclass(frozen=True)
+class MarketHealthView:
+    instrument_id: str = ''
+    freshness: str = 'UNKNOWN'
+    history_error: str = ''
+    incomplete: bool = False
+
+
+@dataclass(frozen=True)
+class MarketWatchView:
+    instrument_id: str = ''
+    price: Decimal | None = None
+    reference_price: Decimal | None = None
+    change: Decimal | None = None
+    change_percent: Decimal | None = None
+    source_at: datetime | None = None
+    received_at: datetime | None = None
+    trade_date: date | None = None
+    session: str = ''
+    source: str = ''
+    bars: tuple[LiveBar, ...] = ()
+    gaps: tuple[DataGap, ...] = ()
+    health: MarketHealthView = MarketHealthView()
+
+
+@dataclass(frozen=True)
+class OverviewMarketSummary:
+    instruments: tuple[MarketHealthView, ...] = ()
+    subscription_count: int = 0
+    subscription_limit: int = 20
+    market_revision: int = 0
+    has_warning: bool = False
 
 
 class UiAction(str, Enum):
@@ -234,6 +270,9 @@ class UiState:
     context_epoch: int = 0
     financial_facts_verified: bool = True
     configuration_id: str = ''
+    market_revision: int = 0
+    market_watch: tuple[MarketWatchView, ...] = ()
+    market_health: OverviewMarketSummary = OverviewMarketSummary()
 
 
 class TradingFacade(Protocol):

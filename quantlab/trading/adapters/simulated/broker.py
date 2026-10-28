@@ -19,6 +19,8 @@ from quantlab.trading.domain.models import (
     Side,
 )
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, integer
+from quantlab.trading.domain.ticks import Tick
+from .tick_feed import SimulatedTickFeed
 from quantlab.trading.ports.contracts import (
     BrokerOrder,
     BrokerPosition,
@@ -81,10 +83,12 @@ class SimulatedBroker:
         remote_state: RemoteState | None = None,
         *,
         fee_schedule: FeeSchedule | None = None,
+        tick_feed: SimulatedTickFeed | None = None,
     ) -> None:
         if account.environment is not Environment.LOCAL or capabilities.environment is not Environment.LOCAL or account.account_ref != capabilities.account_ref:
             raise DomainError('capability_missing', 'local-only account mismatch')
         self.clock = clock
+        self.tick_feed = tick_feed
         self.account_ref = account.account_ref
         self.instruments = {item.instrument_id: item for item in instruments}
         self.capabilities = capabilities
@@ -414,3 +418,10 @@ class SimulatedBroker:
         self._query(self.account_ref)
         self.resolve(instrument_id)
         return self.quotes.get(instrument_id)
+
+    def drain_ticks(self, max_items: int) -> tuple[Tick, ...]:
+        integer(max_items, 'max_items')
+        if not self.connected or self.tick_feed is None:
+            return ()
+        active = tuple(sorted({item for group in self.subscriptions.values() for item in group}))
+        return self.tick_feed.drain_ticks(active, max_items)

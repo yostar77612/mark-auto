@@ -270,6 +270,9 @@ class RuntimeBundle:
                 raise DomainError('capability_missing', 'connector must preserve readonly environment and explicit accounts')
             if candidate.simulation is not None:
                 raise DomainError('capability_missing', 'broker contexts cannot adopt the local exchange controller')
+            from .live_market import attach_market
+
+            attach_market(candidate)
             caches = {}
             for account, gateway in candidate.gateways.items():
                 if id(gateway) not in caches:
@@ -335,6 +338,11 @@ class RuntimeBundle:
         with self.lock:
             self._expire_connection()
             engine = self.engine
+        if not self.closing and engine is not None and not engine.state.engine_closed and not engine.storage_failed:
+            from quantlab.trading.application.market_cycle import poll_market
+
+            with engine.lock:
+                poll_market(engine)
         if self.closing or engine is None or engine.configuration.environment is Environment.LOCAL or engine.state.engine_closed or engine.storage_failed:
             return
         from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle

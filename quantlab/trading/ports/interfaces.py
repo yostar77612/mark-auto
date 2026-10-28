@@ -1,10 +1,11 @@
 """Narrow typed protocols; implementations may combine ports through composition."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Protocol
 
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, OrderPlan, Quote
+from quantlab.trading.domain.ticks import Tick
 from .contracts import (
     BrokerPosition,
     CommandReceipt,
@@ -40,6 +41,13 @@ class MarketDataPort(Protocol):
     def subscribe(self, instrument_ids: tuple[str, ...]) -> SubscriptionReceipt: ...
     def unsubscribe(self, subscription_id: str) -> None: ...
     def latest(self, instrument_id: str) -> Quote | None: ...
+    def drain_ticks(self, max_items: int) -> tuple[Tick, ...]:
+        """Consume at most max_items ticks in delivery order, once; zero drains none."""
+        ...
+
+
+class SessionResolver(Protocol):
+    def session_at(self, instrument_id: str, timestamp: datetime) -> tuple[date, str]: ...
 
 
 class AccountPort(Protocol):

@@ -352,8 +352,15 @@ def create_engine(root: Path) -> TradingEngine:
     if engine.state.trading_day != clock.now().date():
         engine._persist('local_clock_restored', replace(engine.state, trading_day=clock.now().date()))
     control.rebuild_history(engine)
-    for spec in engine.catalog.instruments:
-        gateway = gateways['local-stock' if spec.market is Market.STOCK else 'local-futures']
-        gateway.subscribe((spec.instrument_id,))
     control.persist_remote()
+    from quantlab.trading.adapters.simulated.tick_feed import SimulatedTickFeed
+    from .live_market import attach_market, CalendarResolver
+
+    resolver = CalendarResolver(engine)
+    for gateway in gateways.values():
+        gateway.tick_feed = SimulatedTickFeed(clock, resolver, start=clock.now(), catch_up=False)
+    attach_market(engine)
+    from quantlab.trading.application.market_cycle import poll_market
+
+    poll_market(engine)
     return engine

@@ -8,10 +8,12 @@ not losses. The append-only state journal retains each committed observation.
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.models import PositionLot, Side
+from quantlab.trading.domain.freshness import Freshness
+from quantlab.trading.domain.quote_stats import unrealized_pnl
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, integer, trading_date
 
 if TYPE_CHECKING:
@@ -82,9 +84,10 @@ def unrealized_liquidation(engine: 'TradingEngine', lot: PositionLot) -> Decimal
     sign = 1 if lot.direction is Side.BUY else -1
     price = quote.bid if sign == 1 else quote.ask
     side = Side.SELL if sign == 1 else Side.BUY
-    return (price - lot.entry_price) * lot.quantity * spec.multiplier * sign - (
+    cost = lot.entry_price * lot.quantity * spec.multiplier * sign + (
         engine.fees.transaction(spec, side, price, lot.quantity) + engine.fees.slippage(spec, lot.quantity, legs=1, prices=(price,))
     )
+    return cast(Decimal, unrealized_pnl(price, lot.quantity * sign, spec, cost, freshness=Freshness.LIVE))
 
 
 def _next_track(
