@@ -12,6 +12,26 @@ from test_tick_adapters_contract import simulated_connector
 from test_trading_adapters import NOW, D
 
 
+class HistoryMarketStub:
+    """Supply history outcomes while retaining the simulated live feed."""
+
+    def __init__(self, broker, history_response):
+        self.broker = broker
+        self.history_response = history_response
+
+    def history(self, instrument_id, start, end):
+        return self.history_response(instrument_id, start, end)
+
+    def subscribe(self, instrument_ids):
+        return self.broker.subscribe(instrument_ids)
+
+    def unsubscribe(self, subscription_id):
+        self.broker.unsubscribe(subscription_id)
+
+    def drain_ticks(self, max_items):
+        return self.broker.drain_ticks(max_items)
+
+
 class LiveMarketServiceTests(unittest.TestCase):
     def setUp(self):
         self.broker, self.clock, self.resolver = simulated_connector()
@@ -39,19 +59,25 @@ class LiveMarketServiceTests(unittest.TestCase):
 
     def test_history_failure_keeps_live_and_recovery_clears_error(self):
         key = 'WATCH:0'
+
+        def history(instrument_id, start, end):
+            if isinstance(outcome, DomainError):
+                raise outcome
+            return outcome
+
+        self.service = LiveMarketService(HistoryMarketStub(self.broker, history), self.clock, self.resolver)
         self.service.allocate((key,))
         self.service.poll(in_session=True)
         live = self.service.watch(key).bars
         for failure in (DomainError('rate_limited', 'test'), DataBatch(key, (), 'TEST', False, 'no_data')):
             with self.subTest(failure=failure):
-                values = {'side_effect': failure} if isinstance(failure, DomainError) else {'return_value': failure}
-                with patch.object(self.broker, 'history', **values):
-                    self.service.backfill(key, NOW - timedelta(days=1), NOW)
+                outcome = failure
+                self.service.backfill(key, NOW - timedelta(days=1), NOW)
                 self.assertEqual(self.service.watch(key).bars, live)
                 self.assertTrue(self.service.watch(key).health.history_error)
                 self.assertTrue(self.service.overview().has_warning)
-        with patch.object(self.broker, 'history', return_value=DataBatch(key, (), 'TEST', True)):
-            self.service.backfill(key, NOW - timedelta(days=1), NOW)
+        outcome = DataBatch(key, (), 'TEST', True)
+        self.service.backfill(key, NOW - timedelta(days=1), NOW)
         self.assertEqual(self.service.watch(key).health.history_error, '')
 
     def test_revision_tracks_changes_not_poll_calls(self):
@@ -76,8 +102,6 @@ class LiveMarketServiceTests(unittest.TestCase):
 
     def test_history_windows_and_trade_day_buffer_retention(self):
         key = 'WATCH:0'
-        service = LiveMarketService(self.broker, self.clock, self.resolver, settings=LiveMarketSettings(buffer_trade_days=2))
-        service.allocate((key,))
         start = NOW - timedelta(days=65)
         windows = []
 
@@ -89,8 +113,9 @@ class LiveMarketServiceTests(unittest.TestCase):
             )
             return DataBatch(key, bars, 'TEST', True)
 
-        with patch.object(self.broker, 'history', side_effect=history):
-            service.backfill(key, start, NOW)
+        service = LiveMarketService(HistoryMarketStub(self.broker, history), self.clock, self.resolver, settings=LiveMarketSettings(buffer_trade_days=2))
+        service.allocate((key,))
+        service.backfill(key, start, NOW)
         self.assertEqual(
             windows, [(start, start + timedelta(days=30)), (start + timedelta(days=30), start + timedelta(days=60)), (start + timedelta(days=60), NOW)]
         )

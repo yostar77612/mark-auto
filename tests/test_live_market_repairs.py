@@ -14,7 +14,7 @@ from quantlab.trading.application.market_cycle import poll_market
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.ports.contracts import DataBatch, HistoryBar
+from quantlab.trading.ports.contracts import HistoryBar
 from quantlab.trading.runtime.bootstrap import RuntimeBundle
 from quantlab.trading.runtime.config import RuntimeLaunch
 from quantlab.trading.runtime.live_market import CalendarResolver, attach_market
@@ -105,8 +105,8 @@ class MarketRepairTests(unittest.TestCase):
                 engine.live_market.allocate((spec.instrument_id,))
                 start = at(previous, 12)
                 bar = HistoryBar(spec.instrument_id, start, start + timedelta(minutes=1), *(Decimal('100'),) * 4, 1, 'TEST')
-                with patch.object(broker, 'history', return_value=DataBatch(spec.instrument_id, (bar,), 'TEST', True)):
-                    engine.live_market.backfill(spec.instrument_id, start, start + timedelta(minutes=1))
+                broker.bars[spec.instrument_id] = (bar,)
+                engine.live_market.backfill(spec.instrument_id, start, start + timedelta(minutes=1))
                 poll_market(engine)
                 watch = LocalFacade(engine).snapshot().market_watch[0]
                 self.assertEqual(watch.reference_price, Decimal('100'))
