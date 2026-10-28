@@ -284,12 +284,51 @@ class TradingUiTests(unittest.TestCase):
         self.window.apply_state(replace(self.window.state, quote_revision=1, markets=(market,)))
         self.assertEqual(self.window.state.version, 1)
         self.assertEqual(self.window.markets.item(0, 3).text(), '123.45')
+
         self.assertEqual(self.window.markets.item(0, 5).text(), ui_text('v2.quote_fresh'))
         self.assertIs(self.window.strategies.item(0, 0), strategy_item)
         self.assertTrue(strategy_item.isSelected())
         self.assertEqual(self.window.stock_budget.text(), '54321')
         self.window.navigation.setCurrentRow(2)
         self.assertEqual(self.window.markets.item(0, 3).text(), '123.45')
+
+    def test_market_workspace_characterization(self):
+        self.window.navigation.setCurrentRow(2)
+        page = self.window.pages.currentWidget()
+        self.assertEqual(page.objectName(), 'market_scroll')
+        self.assertTrue(page.isAncestorOf(self.window.markets))
+        self.assertTrue(page.isAncestorOf(self.window.market_refresh_button))
+        self.assertEqual(self.window.markets.columnCount(), 7)
+        routes = []
+        self.window.legacy_requested.connect(routes.append)
+        for button, route in ((self.window.legacy_import_button, 'data'), (self.window.legacy_market_button, 'market')):
+            with self.subTest(route=route):
+                button.click()
+                self.assertEqual(routes[-1], route)
+
+    def test_snapshot_poll_quote_refresh_characterization(self):
+        from unittest.mock import Mock
+
+        tables = (self.window.strategies, self.window.positions, self.window.orders, self.window.markets, self.window.performance)
+        changes = [Mock() for _ in tables]
+        for table, changed in zip(tables, changes):
+            table.model().dataChanged.connect(changed)
+            if table.rowCount():
+                table.selectRow(0)
+        selected = [table.selectedItems() for table in tables]
+        self.facade.state = replace(
+            self.facade.state,
+            quote_revision=1,
+            markets=tuple(replace(item, price=Decimal('123.45')) for item in self.facade.state.markets),
+            positions=tuple(replace(item, quote_time='new quote') for item in self.facade.state.positions),
+        )
+        self.assertEqual(self.window.poll.interval(), 1000)
+        self.window.poll.timeout.emit()
+        self.drain()
+        self.assertEqual([change.called for change in changes], [False, True, False, True, False])
+        for table, previous in zip(tables, selected):
+            with self.subTest(table=table.objectName()):
+                self.assertEqual(table.selectedItems(), previous)
 
     def test_removed_selected_lot_does_not_select_a_replacement_for_flatten(self):
         self.window.positions.selectRow(0)

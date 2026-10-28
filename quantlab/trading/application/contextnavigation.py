@@ -45,6 +45,15 @@ class CompositeFacade:
                 raise DomainError('state_conflict', 'context changed during read')
             return replace(state, context_id=context_id, context_epoch=epoch, contexts=self.contexts.list_contexts())
 
+    def market_series(self, query):
+        with self._lock:
+            facade, epoch = self._current, self._epoch
+        page = facade.market_series(query)
+        with self._lock:
+            if facade is not self._current or epoch != self._epoch:
+                raise DomainError('state_conflict', 'context changed during series read')
+        return page
+
     def execute(self, command: UiCommand) -> UiReceipt:
         if not isinstance(command, UiCommand):
             return _failure('validation_failed')

@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QLayout,
     QScrollArea,
     QStackedWidget,
     QVBoxLayout,
@@ -211,22 +212,36 @@ def _strategy_page(self) -> None:
 
 def _market_page(self) -> None:
     layout = _page(self, 'market')
+    layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
     layout.addWidget(label('v2.market_data_hint'))
     self.market_refresh_button = button('v2.refresh_market', 'market_refresh_button')
     self.market_refresh_button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
     self.market_refresh_button.setToolTip(ui_text('v2.refresh_market_hint'))
     self.market_refresh_button.clicked.connect(self.refresh)
     layout.addWidget(self.market_refresh_button)
+    if self.market_watch is not None:
+        layout.addWidget(self.market_watch, 1)
+    self.market_archive = button('v2.markets', 'market_archive')
+    self.market_archive.setCheckable(True)
+    self.market_archive.setChecked(False)
+    self.market_archive_content = QWidget()
+    self.market_archive_content.setObjectName('market_archive_content')
+    self.market_archive_content.setAccessibleName(ui_text('v2.markets'))
+    archive = QVBoxLayout(self.market_archive_content)
     self.markets = table(('v2.instrument', 'v2.market', 'v2.unit', 'v2.price', 'v2.quote_time', 'v2.availability', 'v2.source'), 'markets')
-    layout.addWidget(self.markets)
+    archive.addWidget(self.markets)
     _buttons(
         self,
-        layout,
+        archive,
         (
             ('v2.legacy_import', 'legacy_import_button', lambda: self.legacy_requested.emit('data')),
             ('v2.legacy_market', 'legacy_market_button', lambda: self.legacy_requested.emit('market')),
         ),
     )
+    self.market_archive_content.setVisible(False)
+    self.market_archive.toggled.connect(self.market_archive_content.setVisible)
+    layout.addWidget(self.market_archive)
+    layout.addWidget(self.market_archive_content)
     layout.addStretch()
 
 

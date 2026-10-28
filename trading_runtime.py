@@ -56,6 +56,8 @@ def _run_window(
 
     # Presentation is assembled here, not imported by the application core.
     from desktop_trading import TradingWindow
+    from desktop_trading.market_watch import MarketWatchWidget
+    from desktop_charts import CandlestickChart
 
     # Share the installed product icon without starting its legacy runtime.
     from desktop_icon import application_icon
@@ -82,7 +84,8 @@ def _run_window(
         error = ERROR_TABLE.get(exc.code if isinstance(exc, DomainError) else 'startup_failed', ERROR_TABLE['startup_failed'])
         QMessageBox.critical(None, ui_text('v2.title'), error.explanation + ' ' + error.action)
         return 1
-    window = TradingWindow(facade, facade.snapshot())
+    initial = facade.snapshot()
+    window = TradingWindow(facade, initial, market_watch=MarketWatchWidget(facade, CandlestickChart(), initial))
     from desktop_research_runtime import ResearchSession, UnifiedResearch
 
     # One presenter/controller/session in the same Qt application. Explicit

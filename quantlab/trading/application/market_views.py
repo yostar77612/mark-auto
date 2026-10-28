@@ -30,6 +30,7 @@ def market_watch_view(
         series.bars,
         series.gaps,
         health,
+        receive_latency=str(tick.received_at - tick.source_at) if tick else '',
     )
 
 

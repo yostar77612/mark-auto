@@ -15,17 +15,10 @@ def poll_market(engine: 'TradingEngine') -> None:
     if service is None:
         return
     strategies = tuple(record.form.instrument_id for record in engine.state.strategies if record.state == 'ACTIVE')
-    watches = tuple(spec.instrument_id for spec in engine.catalog.instruments)
+    watches = service.watchlist if service.watchlist is not None else tuple(spec.instrument_id for spec in engine.catalog.instruments)
     try:
         service.allocate(strategies, watches)
-        try:
-            engine.calendar.session_at(engine.clock.now(), allow_night=True)
-            in_session = True
-        except DomainError as exc:
-            if exc.code != 'session_closed':
-                raise
-            in_session = False
-        service.poll(in_session=in_session)
+        service.poll()
     except DomainError as exc:
         # The host's existing coordinator catches typed failures; publish the
         # issue first so a failed drain/allocation cannot disappear there.

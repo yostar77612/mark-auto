@@ -36,6 +36,13 @@ class MarketWatchView:
     bars: tuple[LiveBar, ...] = ()
     gaps: tuple[DataGap, ...] = ()
     health: MarketHealthView = MarketHealthView()
+    bid: Decimal | None = None
+    ask: Decimal | None = None
+    open: Decimal | None = None
+    high: Decimal | None = None
+    low: Decimal | None = None
+    total_volume: int | None = None
+    receive_latency: str = ''
 
 
 @dataclass(frozen=True)
@@ -54,9 +61,12 @@ class MarketSeriesQuery:
     offset: int = 0
     limit: int = LiveMarketSettings.series_page_limit
     market_revision: int | None = None
+    retry_history: bool = False
 
     def __post_init__(self) -> None:
         identity(self.instrument_id)
+        if type(self.retry_history) is not bool:
+            raise DomainError('validation_failed', 'history retry flag')
         if self.period not in ('1m', '3m', '5m', '15m', '30m', '60m', '1d'):
             raise DomainError('validation_failed', 'market series period')
         integer(self.offset, 'series offset')
@@ -142,6 +152,7 @@ class UiCommand:
     context_id: str = ''
     profile_ref: str = ''
     context_epoch: int | None = None
+    watchlist: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -305,12 +316,16 @@ class UiState:
     market_revision: int = 0
     market_watch: tuple[MarketWatchView, ...] = ()
     market_health: OverviewMarketSummary = OverviewMarketSummary()
+    market_connection: str = 'UNKNOWN'
+    watchlist: tuple[str, ...] = ()
 
 
 class TradingFacade(Protocol):
     def snapshot(self) -> UiState: ...
 
     def execute(self, command: UiCommand) -> UiReceipt: ...
+
+    def market_series(self, query: MarketSeriesQuery) -> MarketSeriesPage: ...
 
 
 @dataclass(frozen=True)

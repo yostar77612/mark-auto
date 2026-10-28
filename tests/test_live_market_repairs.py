@@ -12,6 +12,7 @@ from quantlab.trading.application.context import Catalog, ExecutionConfiguration
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.market_cycle import poll_market
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
+from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import HistoryBar
@@ -23,11 +24,31 @@ from test_tick_adapters_contract import simulated_connector
 
 
 class MarketRepairTests(unittest.TestCase):
+    def test_night_health_uses_each_instruments_session(self):
+        engine = memory_engine()
+        day = engine.calendar.sessions[0]
+        night = TradingSession(day.trade_date + timedelta(days=1), day.closes_at + timedelta(hours=2), day.closes_at + timedelta(hours=12), 'NIGHT')
+        engine.calendar = TradingCalendar('test', 'v1', 'EXPLICIT_TEST', (day, night))
+        specs = tuple(replace(spec, instrument_id=f'WATCH:{i}') for i, spec in enumerate(engine.catalog.instruments[:2]))
+        engine.catalog = Catalog(specs)
+        broker, _, _ = simulated_connector()
+        engine.gateways = {'local-stock': broker, 'local-futures': broker}
+        broker.tick_feed = SimulatedTickFeed(engine.clock, CalendarResolver(engine), start=engine.clock.now(), catch_up=False)
+        attach_market(engine)
+        poll_market(engine)
+        engine.clock.current = night.opens_at + timedelta(minutes=1)
+        poll_market(engine)
+        views = {view.instrument_id: view for view in engine.live_market.views()}
+        self.assertEqual(views[specs[0].instrument_id].health.freshness, 'CLOSED')
+        self.assertEqual(views[specs[1].instrument_id].health.freshness, 'LIVE')
+        self.assertEqual(engine.state.issues, ())
+
     def test_broker_cycle_is_independent_of_market_poll(self):
         for readonly in (False, True):
             for failure in (False, True):
                 with self.subTest(readonly=readonly, failure=failure):
                     service = Mock()
+                    service.settings = LiveMarketSettings()
                     engine = memory_engine(live_market=service)
                     engine.configuration = ExecutionConfiguration(environment=Environment.BROKER_SIMULATION, read_only=readonly)
                     gateway = Mock()

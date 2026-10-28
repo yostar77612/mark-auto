@@ -76,6 +76,11 @@ class RuntimeBundle:
     def __post_init__(self) -> None:
         if type(self.connect_timeout) not in (int, float) or not 0 < self.connect_timeout <= 8:
             raise DomainError('validation_failed', 'bounded readonly connection deadline required')
+        from .watchlist_settings import WatchlistSettings
+
+        self.watch_settings = WatchlistSettings(self.launch.root / 'settings.json')
+        if self.engine is not None:
+            self.watch_settings.restore(self.engine)
         self.lock = RLock()
         self.version_offset = 0
         self.transitioning = False
@@ -158,7 +163,12 @@ class RuntimeBundle:
             version = state.version + self.version_offset
             self._checkpoint(version)
             return replace(
-                state, version=version, engine_state='CONNECTING' if self.transitioning else state.engine_state, configuration_id=self.configuration_id
+                state,
+                watchlist=tuple(view.instrument_id for view in state.market_watch) if self.watch_settings.watchlist is None else self.watch_settings.watchlist,
+                market_connection='CONNECTING' if self.transitioning else 'CONNECTED' if self.engine is not None else 'DISCONNECTED',
+                version=version,
+                engine_state='CONNECTING' if self.transitioning else state.engine_state,
+                configuration_id=self.configuration_id,
             )
 
     @property
@@ -175,6 +185,17 @@ class RuntimeBundle:
                 return UiReceipt(False, 'journal_failed', '')
             if self.transitioning and command.action not in (UiAction.STOP_NEW, UiAction.SHUTDOWN_ENGINE):
                 return UiReceipt(False, 'state_conflict', '')
+            if command.action is UiAction.SAVE_SETTINGS and command.watchlist is not None:
+                if self.closing or self.closed:
+                    return UiReceipt(False, 'state_conflict', '')
+                if command.expected_version != self.facade.snapshot().version + self.version_offset:
+                    return UiReceipt(False, 'state_conflict', '')
+                if command.settings is not None:
+                    return UiReceipt(False, 'validation_failed', '')
+                receipt = self.watch_settings.save(self.engine, command.watchlist)
+                if receipt.accepted:
+                    self.version_offset += 1
+                return receipt
             facade, offset = self.facade, self.version_offset
             current = facade.snapshot().version + offset
             if command.expected_version != current:
@@ -273,6 +294,7 @@ class RuntimeBundle:
             from .live_market import attach_market
 
             attach_market(candidate)
+            self.watch_settings.restore(candidate)
             caches = {}
             for account, gateway in candidate.gateways.items():
                 if id(gateway) not in caches:
