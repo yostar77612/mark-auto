@@ -417,6 +417,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/quality_gate.py --history
+      - name: Enforce repository layer boundaries
+        run: python tools/check_layers.py --baseline-ref HEAD^
+      - name: Verify repository layer gate and shrink-only allowlist
+        run: python -m unittest discover -s tests -p test_layer_gate.py -v
       - run: python -m unittest discover -s tests -p test_quality_gate.py -v
       - name: Observe potential Windows x64 guest host resources (not acceptance)
         run: python tools/probe_windows_guest_host.py --output dist/validation/windows-guest-host.json
