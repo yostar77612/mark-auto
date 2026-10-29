@@ -70,7 +70,7 @@ class _InstrumentBuffer:
 class _HistoryPrefix:
     """History-derived facts reused while history and the live suffix start are unchanged."""
 
-    key: tuple[int, datetime | None]
+    key: tuple[tuple[int, int], datetime | None]
     bars: tuple[LiveBar, ...]
     incomplete: bool
     closes: dict[date, tuple[TradeDateClose, ...]] = field(default_factory=dict)
@@ -295,7 +295,8 @@ class LiveMarketService:
         else:
             # Re-sorting full retention on every tick dominated the poll; reuse the history prefix.
             ordered_live = tuple(sorted(live, key=lambda bar: bar.start))
-            key = (buffer.history_revision, ordered_live[0].start if ordered_live else None)
+            # The length also catches direct deque appends that bypass _replace_bars.
+            key = ((buffer.history_revision, len(buffer.history)), ordered_live[0].start if ordered_live else None)
             previous = buffer.prefix
             if previous is None or previous.key != key:
                 if previous is not None and previous.key[0] == key[0] and key[1] is not None and (previous.key[1] is None or key[1] <= previous.key[1]):
