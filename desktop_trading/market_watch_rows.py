@@ -14,6 +14,11 @@ def value_text(value) -> str:
     return ui_text('watch.unknown') if value is None or value == '' else str(value)
 
 
+def session_text(value) -> str:
+    labels = {'DAY': ui_text('presentation.labels.day'), 'NIGHT': ui_text('presentation.labels.night')}
+    return labels.get(str(value).upper(), value_text(value))
+
+
 def time_text(value: datetime | None) -> str:
     return ui_text('watch.unknown') if value is None else value.isoformat(sep=' ', timespec='seconds')
 
@@ -71,7 +76,7 @@ def quote_detail_rows(view: MarketWatchView) -> tuple[tuple[str, str], ...]:
         (ui_text('watch.reference'), value_text(view.reference_price)),
         (ui_text('watch.volume'), value_text(view.total_volume)),
         (ui_text('watch.trade_date'), value_text(view.trade_date)),
-        (ui_text('watch.session'), value_text(view.session)),
+        (ui_text('watch.session'), session_text(view.session)),
         (ui_text('watch.source'), value_text(view.source)),
         (ui_text('watch.latency'), value_text(view.receive_latency)),
         (ui_text('watch.updated'), time_text(view.received_at)),
