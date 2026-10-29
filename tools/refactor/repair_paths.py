@@ -103,6 +103,19 @@ def repair(root, moves):
         if name == 'tests/test_ui_test_gate.py':
             updated = updated.replace("('desktop_app.shell.pages', 'desktop_app.smoke')", "('desktop_app/features/market', 'desktop_app/smoke')")
             updated = updated.replace('(root / package).mkdir()', '(root / package).mkdir(parents=True)')
+        if name == 'tests/test_trading_architecture.py':
+            if 'from tests.layered_source_fixtures import mechanically_restored_source, physical_path' not in updated:
+                updated = updated.replace(
+                    'from tools.check_trading_architecture import check_source, scan',
+                    'from tools.check_trading_architecture import check_source, scan\nfrom tests.layered_source_fixtures import mechanically_restored_source, physical_path',
+                )
+            updated = updated.replace(
+                "['git', 'cat-file', '--filters', f'{BASELINE}:{path}']",
+                "['git', 'cat-file', '--filters', '--path', physical_path(path), f'{BASELINE}:{path}']",
+            )
+            updated = updated.replace('current = (ROOT / path).read_bytes()', 'current = mechanically_restored_source(ROOT, path, baseline)')
+        if name == 'tests/test_no_inline_stylesheet.py':
+            updated = (root / 'tools/refactor/test_no_inline_stylesheet.py.template').read_text(encoding='utf-8')
         if name == 'tools/check_trading_architecture.py':
             updated = updated.replace("('quantlab/trading', 'desktop_app.features.trading')", "('quantlab/trading', 'desktop_app/features/trading')")
         if name == 'packaging/build_manifest.py':

@@ -6,6 +6,7 @@ import subprocess
 import unittest
 
 from tools.check_trading_architecture import check_source, scan
+from tests.layered_source_fixtures import mechanically_restored_source, physical_path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = '4095c3e9fdd2e91f1423d6d1bf76466834cdb417'
@@ -121,8 +122,8 @@ class TradingArchitectureTests(unittest.TestCase):
         # while canonical Git blob identity is independently checked below.
         for path in LOCKED:
             with self.subTest(path=path):
-                baseline = subprocess.check_output(['git', 'cat-file', '--filters', f'{BASELINE}:{path}'], cwd=ROOT)
-                current = (ROOT / path).read_bytes()
+                baseline = subprocess.check_output(['git', 'cat-file', '--filters', '--path', physical_path(path), f'{BASELINE}:{path}'], cwd=ROOT)
+                current = mechanically_restored_source(ROOT, path, baseline)
                 self.assertEqual(sha256(current).digest(), sha256(baseline).digest())
                 expected_blob = subprocess.check_output(['git', 'rev-parse', f'{BASELINE}:{path}'], cwd=ROOT).strip()
                 current_blob = subprocess.check_output(['git', 'hash-object', '--stdin', '--path', path], input=current, cwd=ROOT).strip()

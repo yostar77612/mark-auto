@@ -3,7 +3,8 @@
 import ast
 from pathlib import Path
 import unittest
-from tests.layered_source_fixtures import physical_path
+import tempfile
+from tests.layered_source_fixtures import CURRENT_PATHS, physical_path, page_sources
 
 
 # QPainter chart drawing uses no setStyleSheet calls, so no exceptions are needed.
@@ -20,6 +21,26 @@ def stylesheet_calls(source):
         for node in ast.walk(ast.parse(source))
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'setStyleSheet'
     ]
+
+
+def stylesheet_sources(root):
+    """Project the original root/pages/smoke guard and scan every new desktop file."""
+    moved = {root / new for new in CURRENT_PATHS.values()}
+    projected = {root / new for old, new in CURRENT_PATHS.items() if not old.startswith('desktop_trading/') and (root / new).is_file()}
+    additions = set((root / 'desktop_app').rglob('*.py')) - moved
+    return sorted(projected | additions | set(root.glob('desktop*.py')) | set((root / 'tools').rglob('*.py')))
+
+
+def stylesheet_violations(root):
+    violations = []
+    for path in stylesheet_sources(root):
+        relative = path.relative_to(root).as_posix()
+        if relative == 'desktop_app/shell/theme.py':
+            continue
+        for line in stylesheet_calls(path.read_text(encoding='utf-8-sig')):
+            if (relative, line) not in STYLESHEET_ALLOWLIST:
+                violations.append((relative, line))
+    return violations
 
 
 class NoInlineStylesheetTests(unittest.TestCase):
@@ -44,33 +65,32 @@ class NoInlineStylesheetTests(unittest.TestCase):
             self.assertEqual(stylesheet_calls((ROOT / physical_path('desktop_pages' + '/' + str(name))).read_text(encoding='utf-8')), [])
 
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
-        sources = sorted(
-            set(
-                [
-                    *ROOT.glob('desktop*.py'),
-                    *(
-                        ROOT / relative
-                        for relative in (
-                            'quantlab/assistant/adapters/chatgpt/auth.py',
-                            'quantlab/assistant/adapters/chatgpt/provider.py',
-                            'quantlab/research_core/adapters/market_layout.py',
-                        )
-                    ),
-                ]
-            )
-            | set((ROOT / 'tools').rglob('*.py'))
-            | set((ROOT / physical_path('desktop_pages')).rglob('*.py'))
-            | set((ROOT / physical_path('desktop_smoke')).rglob('*.py'))
-        )
-        violations = []
-        for path in sources:
-            relative = path.relative_to(ROOT).as_posix()
-            if relative == 'desktop_app/shell/theme.py':
-                continue
-            for line in stylesheet_calls(path.read_text(encoding='utf-8-sig')):
-                if (relative, line) not in STYLESHEET_ALLOWLIST:
-                    violations.append((relative, line))
-        self.assertEqual(violations, [])
+        self.assertEqual(stylesheet_violations(ROOT), [])
+
+    def test_original_scope_and_new_trading_sources_keep_their_classification(self):
+        actual = set(stylesheet_sources(ROOT))
+        prior = {ROOT / new for old, new in CURRENT_PATHS.items() if not old.startswith('desktop_trading/')}
+        excluded = {ROOT / new for old, new in CURRENT_PATHS.items() if old.startswith('desktop_trading/')}
+        self.assertEqual(len(excluded), 14)
+        self.assertLessEqual(prior, actual)
+        self.assertFalse(excluded & actual)
+        self.assertEqual(STYLESHEET_ALLOWLIST, frozenset())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = root / CURRENT_PATHS['desktop_trading/dashboard.py']
+            old.parent.mkdir(parents=True)
+            old.write_text('widget.setStyleSheet("prior trading scope")', encoding='utf-8')
+            self.assertEqual(stylesheet_violations(root), [])
+            for relative in (
+                'desktop_app/features/trading/unknown.py',
+                'desktop_app/features/trading/nested/unknown.py',
+                'desktop_app/components/nested/unknown.py',
+            ):
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('widget.setStyleSheet("injected")', encoding='utf-8')
+                self.assertIn(path, stylesheet_sources(root))
+                self.assertIn((relative, 1), stylesheet_violations(root))
 
     def test_detector_rejects_synthetic_inline_calls(self):
         self.assertEqual(stylesheet_calls('widget.setStyleSheet("color:red")'), [1])
@@ -79,9 +99,11 @@ class NoInlineStylesheetTests(unittest.TestCase):
         self.assertEqual(stylesheet_calls('# widget.setStyleSheet("ignored")'), [])
 
     def test_package_injection_is_detected(self):
-        sources = sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
+        sources = page_sources(ROOT)
         self.assertTrue({'command_palette.py', 'palette_commands.py', 'backtest_summary_card.py'} <= {path.name for path in sources})
         self.assertTrue(sources)
         for path in sources:
             with self.subTest(module=path.name):
-                self.assertTrue(stylesheet_calls(path.read_text(encoding='utf-8-sig') + '\nwidget.setStyleSheet("color:red")\n'))
+                source = path.read_text(encoding='utf-8-sig')
+                self.assertEqual(stylesheet_calls(source), [])
+                self.assertTrue(stylesheet_calls(source + '\nwidget.setStyleSheet("color:red")\n'))

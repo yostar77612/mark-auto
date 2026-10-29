@@ -138,3 +138,18 @@ def project_page_service_lines(result):
         raise ValueError('A historical patch identity was removed or changed')
     result['patch_points'].sort(key=lambda point: (point['file'], point['line'], point['name'], point['kind']))
     return result
+
+
+def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> bytes:
+    """Read actual current bytes and undo only the reviewed B mechanical adapters."""
+    current = (root / physical_path(logical)).read_bytes()
+    if logical == 'desktop_chatgpt_provider.py':
+        return original_adapter_text(physical_path(logical), current.decode('utf-8')).encode('utf-8')
+    if logical == 'quantlab/saved_candidate_pool.py':
+        text = original_pool_text(current.decode('utf-8').replace('\r\n', '\n'))
+        canonical = baseline.replace(b'\r\n', b'\n')
+        eol = b'\r\n' if b'\r\n' in baseline else b'\n'
+        if b'\r' in canonical or canonical.replace(b'\n', eol) != baseline:
+            raise ValueError('Unknown historical checkout line-ending policy')
+        return text.encode('utf-8').replace(b'\n', eol)
+    return current
