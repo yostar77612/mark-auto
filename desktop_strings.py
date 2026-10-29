@@ -2963,6 +2963,7 @@ ZH_TW.update(
         'dashboard.data_status': '資料狀態',
         'dashboard.today': '今日摘要',
         'dashboard.today.orders': '今日委託',
+        'dashboard.separator': ' · ',
         'dashboard.summary.item': '{}：{}',
         'dashboard.strategy.summary': '{} · v{} · {} · {}',
         'dashboard.status.disconnected': '連線中斷',

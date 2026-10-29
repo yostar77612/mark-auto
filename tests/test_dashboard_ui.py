@@ -168,7 +168,35 @@ class DashboardUiTests(unittest.TestCase):
         for control in controls:
             with self.subTest(name=control.objectName()):
                 self.assertTrue(control.objectName())
-                self.assertTrue(control.accessibleName())
+                if control is not self.dashboard.red_summary:
+                    self.assertTrue(control.accessibleName())
+                self.assertNotIn('{', control.accessibleName())
+        pending = ui_text('dashboard.status.pending')
+        stopped = ui_text('dashboard.status.market').format(ui_text('watch.stopped').format(ui_text('watch.unknown')))
+        cases = (
+            (2, 0, False, 'LIVE', pending, ui_text('dashboard.status.attention').format(pending)),
+            (3, 0, True, 'LIVE', ui_text('dashboard.status.reconciled'), ''),
+            (3, 1, True, 'STOPPED', ui_text('dashboard.status.reconciled'), ui_text('dashboard.status.attention').format(stopped)),
+            (3, 2, True, 'LIVE', ui_text('dashboard.status.reconciled'), ''),
+        )
+        for version, revision, verified, freshness, reconciliation_name, summary_name in cases:
+            with self.subTest(version=version, revision=revision, verified=verified, freshness=freshness):
+                quote = view(freshness)
+                self.window.apply_state(
+                    replace(
+                        self.facade.state,
+                        version=version,
+                        market_revision=revision,
+                        reconciliation_verified=verified,
+                        market_watch=(quote,),
+                        market_health=OverviewMarketSummary((quote.health,)),
+                    )
+                )
+                self.assertEqual(self.dashboard.lights['reconciliation'].accessibleName(), reconciliation_name)
+                self.assertEqual(self.dashboard.red_summary.accessibleName(), summary_name)
+                for control in (*self.dashboard.lights.values(), self.dashboard.red_summary):
+                    self.assertNotIn('{', control.accessibleName())
+                    self.assertEqual(control.accessibleName(), control.text())
         self.window.setFont(QFont('Arial', 20))
         self.window.resize(self.window.minimumSize())
         self.app.processEvents()
@@ -186,7 +214,7 @@ class DashboardUiTests(unittest.TestCase):
             self.window.overview_step,
         )
         # Ensure a visible anomaly summary is included in geometry evidence.
-        self.window.apply_state(replace(self.facade.state, version=2, engine_state='STOPPED'))
+        self.window.apply_state(replace(self.facade.state, version=4, engine_state='STOPPED'))
         for control in required:
             with self.subTest(control=control.objectName()):
                 page.ensureWidgetVisible(control)

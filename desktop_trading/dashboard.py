@@ -19,7 +19,7 @@ class DashboardWidget(QWidget):
         self._identify(self, 'overview_dashboard', ui_text('v2.overview'))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.red_summary = self._label('dashboard_red_summary', ui_text('dashboard.status.attention'))
+        self.red_summary = self._label('dashboard_red_summary', '')
         self.red_summary.setWordWrap(False)
         self.red_summary.setStyleSheet('color:#9b1c1c;background:#fff0ef;font-weight:bold;padding:8px;')
         layout.addWidget(self.red_summary)
@@ -50,9 +50,9 @@ class DashboardWidget(QWidget):
         lights = QHBoxLayout()
         self.lights = {}
         for name, caption in (
-            ('broker', ui_text('dashboard.status.broker')),
-            ('market', ui_text('dashboard.status.market')),
-            ('engine', ui_text('dashboard.status.engine')),
+            ('broker', ui_text('dashboard.status.broker').format(ui_text('watch.unknown'))),
+            ('market', ui_text('dashboard.status.market').format(ui_text('watch.unknown'))),
+            ('engine', ui_text('dashboard.status.engine').format(ui_text('watch.unknown'))),
             ('reconciliation', ui_text('dashboard.status.pending')),
         ):
             light = self._label('dashboard_light_' + name, caption)
@@ -132,10 +132,12 @@ class DashboardWidget(QWidget):
         for light in display.status_lights(state):
             widget = self.lights[light.key]
             widget.setText(light.label)
+            widget.setAccessibleName(light.label)
             widget.setProperty('level', light.level)
             widget.setStyleSheet('font-weight:bold;color:' + palette[light.level])
         text = display.red_summary_text(state)
         self.red_summary.setText(text)
+        self.red_summary.setAccessibleName(text)
         self.red_summary.setVisible(bool(text))
         self.status.setText(display.data_status_text(state))
         self.today.setText(display.today_summary_text(state))

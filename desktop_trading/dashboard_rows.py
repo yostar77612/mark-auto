@@ -10,7 +10,7 @@ from desktop_strings import ui_text
 from quantlab.trading.application.contracts import MarketHealthView, UiState
 from quantlab.trading.domain.models import Environment, Side
 from .labels import event_label, policy_label, state_label
-from .rendering import reconciliation_cells
+from .reconciliation_rows import reconciliation_cells
 from .market_watch_rows import freshness_text, value_text
 
 
@@ -52,7 +52,7 @@ def status_lights(state: UiState) -> tuple[StatusLight, ...]:
 
 def red_summary_text(state: UiState) -> str:
     labels = tuple(light.label for light in status_lights(state) if light.level == 'red')
-    return ui_text('dashboard.status.attention').format(' · '.join(labels)) if labels else ''
+    return ui_text('dashboard.status.attention').format(ui_text('dashboard.separator').join(labels)) if labels else ''
 
 
 def today_summary_items(state: UiState) -> tuple[tuple[str, str], ...]:
@@ -119,7 +119,7 @@ def data_status_text(state: UiState) -> str:
 
 
 def today_summary_text(state: UiState) -> str:
-    return ' · '.join(ui_text('dashboard.summary.item').format(label, value) for label, value in today_summary_items(state))
+    return ui_text('dashboard.separator').join(ui_text('dashboard.summary.item').format(label, value) for label, value in today_summary_items(state))
 
 
 def strategy_summary_text(state: UiState) -> str:
