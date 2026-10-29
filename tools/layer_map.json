@@ -14,7 +14,8 @@
     "desktop_app/strings/": "shared",
     "desktop_app/smoke/": "tooling",
     "quantlab/assistant/adapters/": "infrastructure",
-    "quantlab/research_core/adapters/": "infrastructure"
+    "quantlab/research_core/adapters/": "infrastructure",
+    "quantlab/shared/": "shared"
   },
   "overrides": {
     "desktop.py": "composition",

@@ -240,12 +240,6 @@
     "justification": "Existing Qt binding validity helper; spec 3.1 only names PySide6. Replace through the C/E2 shared UI component work."
   },
   {
-    "path": "desktop_pages/preferences.py",
-    "target": "quantlab.runtime_support",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
     "path": "desktop_pages/quick_start.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
@@ -406,12 +400,6 @@
     "target": "quantlab.desktop_errors",
     "rule": "application-to-presentation",
     "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
-  },
-  {
-    "path": "quantlab/desktop_errors.py",
-    "target": "quantlab.runtime_support",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
   {
     "path": "quantlab/desktop_runtime.py",

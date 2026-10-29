@@ -29,7 +29,6 @@ from . import __version__
 from .windows_paths import canonical_path, native_path
 from .job_stages import normalize_stage, stage_from_traceback
 from .runtime_support import (
-    RuntimeSafetyError,
     WindowsAppMutex as WindowsAppMutex,
     WINDOWS_APP_MUTEX as WINDOWS_APP_MUTEX,
     atomic_write,
@@ -37,6 +36,7 @@ from .runtime_support import (
     _durable_replace,
     validate_analysis_request,
 )
+from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
