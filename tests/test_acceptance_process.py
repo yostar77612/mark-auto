@@ -56,6 +56,7 @@ class AcceptanceProcessContracts(unittest.TestCase):
         # security dialog or real user profile is loaded on the test host.
         command = r'''
 $ErrorActionPreference='Stop'
+$ProgressPreference='SilentlyContinue'
 $tokens=$null; $errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($env:MARKAUTO_TEST_CLOSE_SOURCE,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw 'Policy source did not parse' }
@@ -76,7 +77,9 @@ foreach ($row in $rows) {
             ['powershell' if sys.platform == 'win32' else 'pwsh', '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
             env={**os.environ, 'MARKAUTO_TEST_CLOSE_SOURCE': str(ROOT / 'packaging/unified_acceptance_ui.ps1'), 'MARKAUTO_TEST_CLOSE_ROWS': payload},
             capture_output=True,
-            text=True,
+            # Localized PowerShell 5.1 writes OEM-codepage text; keep diagnostics decodable.
+            encoding='utf-8',
+            errors='replace',
             timeout=15,
         )
         self.assertEqual(run.returncode, 0, run.stderr[-2000:])
