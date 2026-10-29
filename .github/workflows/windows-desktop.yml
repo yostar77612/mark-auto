@@ -72,7 +72,7 @@ jobs:
           architecture: x64
       - run: python tools/quality_gate.py --history
       - name: Enforce repository layer boundaries
-        run: python tools/check_layers.py
+        run: python tools/check_layers.py --baseline-ref HEAD^
       - name: Verify repository layer gate and shrink-only allowlist
         run: python -m unittest discover -s tests -p test_layer_gate.py -v
       - name: Resolve isolated desktop runtime closure

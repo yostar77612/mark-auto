@@ -2,6 +2,7 @@
 
 from contextlib import contextmanager, redirect_stdout
 import io
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -20,7 +21,7 @@ from tools import run_test_group as groups
 
 ROOT = Path(__file__).resolve().parents[1]
 # Frozen R1 baseline, independent of the live allowlist; never regenerate this
-# when removing debt. Moving a source must remove its old exemption and fix it.
+# when removing debt. Approved relocations preserve these original identities.
 BASELINE_COUNT = 92
 BASELINE = frozenset(
     tuple(line.split("|"))
@@ -240,6 +241,89 @@ class LayerGateTests(unittest.TestCase):
         entries = json.loads((ROOT / 'tools/layer_allowlist.json').read_text(encoding='utf-8'))
         self.assertEqual(len(BASELINE), BASELINE_COUNT)
         assert_shrink_only(self, entries)
+
+    def test_relocation_map_is_frozen_and_matches_inventory(self):
+        raw = (ROOT / 'tools/layer_relocations.json').read_bytes()
+        self.assertEqual(hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest(), 'b1f30593fa4736ea17ef5eca319a91de9e2f05411171e353100b8303d32942e2')
+        relocations = json.loads(raw)
+        self.assertEqual(len(relocations), len(set(relocations.values())))
+        self.assertFalse(set(relocations) & set(relocations.values()))
+        for old, new in relocations.items():
+            with self.subTest(path=old):
+                self.assertTrue(old.endswith('.py') and new.endswith('.py'))
+                self.assertNotIn('..', Path(new).parts)
+                self.assertFalse(Path(new).is_absolute())
+
+    def test_relocated_debt_cannot_expand_or_replace_original_debt(self):
+        relocations = json.loads((ROOT / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
+        entry = dict(path='desktop_chatgpt_ui.py', target='desktop_chatgpt_auth', rule='presentation-to-infrastructure', justification='R0 debt')
+        moved = gate.Finding(relocations[entry['path']], 50, entry['rule'], 'quantlab.assistant.adapters.chatgpt.auth')
+        self.assertEqual(gate.apply_allowlist((moved,), [entry], relocations), ())
+        for altered in (
+            gate.Finding(moved.path, 50, moved.rule, 'quantlab.new_adapter'),
+            gate.Finding('desktop_app/new.py', 50, moved.rule, moved.target),
+            gate.Finding(moved.path, 50, 'domain-to-infrastructure', moved.target),
+        ):
+            with self.subTest(finding=altered):
+                self.assertTrue(gate.apply_allowlist((altered,), [entry], relocations))
+
+    def test_removed_debt_cannot_be_restored(self):
+        entries = json.loads((ROOT / 'tools/layer_allowlist.json').read_text(encoding='utf-8'))
+        self.assertEqual(gate.restored_debts(entries[:-1], entries), ())
+        self.assertEqual([item.rule for item in gate.restored_debts(entries, entries[:-1])], ['restored-allowlist-entry'])
+
+    def test_cli_rejects_restored_debt_and_unresolvable_baseline(self):
+        with fixture_repository() as root:
+            (root / 'tools').mkdir()
+            (root / 'quantlab').mkdir()
+            (root / 'tools/layer_map.json').write_text(json.dumps(self.mapping), encoding='utf-8')
+            allowances = root / 'tools/layer_allowlist.json'
+            allowances.write_text('[]', encoding='utf-8')
+            source = root / 'quantlab/core.py'
+            source.write_text('import json\n', encoding='utf-8')
+            subprocess.run(['git', 'init', '-q', str(root)], check=True, capture_output=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True, capture_output=True)
+            subprocess.run(
+                [
+                    'git',
+                    '-C',
+                    str(root),
+                    '-c',
+                    'user.name=Layer Gate Test',
+                    '-c',
+                    'user.email=test@example.invalid',
+                    '-c',
+                    'commit.gpgsign=false',
+                    'commit',
+                    '-qm',
+                    'No debt',
+                ],
+                check=True,
+                capture_output=True,
+            )
+            entry = dict(path='quantlab/core.py', target='shioaji', rule='domain-to-external-sdk', justification='removed debt')
+            source.write_text('import shioaji\n', encoding='utf-8')
+            allowances.write_text(json.dumps([entry]), encoding='utf-8')
+            command = [sys.executable, str(ROOT / 'tools/check_layers.py'), '--root', str(root), '--baseline-ref']
+            result = subprocess.run([*command, 'HEAD'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('restored-allowlist-entry', result.stdout)
+            result = subprocess.run([*command, 'not-a-commit'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('layer-scan-failed', result.stdout)
+
+    def test_original_and_relocated_file_cannot_share_one_exemption(self):
+        with fixture_repository() as root:
+            old, new = 'old.py', 'moved.py'
+            for path in (old, new):
+                (root / path).write_text('import shioaji\n', encoding='utf-8')
+            (root / 'tools').mkdir()
+            (root / 'tools/layer_relocations.json').write_text(json.dumps({old: new}), encoding='utf-8')
+            mapping = dict(prefixes={}, overrides={old: 'domain', new: 'domain'}, ports=[])
+            entry = dict(path=old, target='shioaji', rule='domain-to-external-sdk', justification='R0 debt')
+            subprocess.run(['git', 'init', '-q', str(root)], check=True, capture_output=True)
+            subprocess.run(['git', '-C', str(root), 'add', '.'], check=True, capture_output=True)
+            self.assertIn('duplicate-relocated-source', [item.rule for item in gate.scan(root, mapping, [entry])])
 
     def test_fake_addition_and_same_count_replacement_fail_baseline(self):
         entries = json.loads((ROOT / 'tools/layer_allowlist.json').read_text(encoding='utf-8'))
