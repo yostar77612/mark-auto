@@ -64,7 +64,7 @@ class DownloadAutoImportTests(unittest.TestCase):
             return original(cache, days=days, kind=kind, transport=self.transport, trade_dates=trade_dates)
 
         with patch.object(downloads, 'refresh', side_effect=refresh):
-            from desktop_ui import _handle_ui_refresh
+            from desktop_app.shell.main_window import _handle_ui_refresh
 
             return _handle_ui_refresh(self.payload, SimpleNamespace(cache=self.cache), self.workspace)
 

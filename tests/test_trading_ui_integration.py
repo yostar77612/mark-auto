@@ -19,9 +19,9 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QPushButton
 from shiboken6 import isValid
 
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
-from desktop_trading.wizard import StrategyWizard
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
+from desktop_app.features.trading.wizard import StrategyWizard
 from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.workflows import fill_local_pending, mark_risk, total_mark

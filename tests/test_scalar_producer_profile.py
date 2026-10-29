@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 import tempfile
 import unittest
+from tests.layered_source_fixtures import reviewed_source_bytes
 from unittest.mock import patch
 from quantlab.core import content_hash, to_dict
 from quantlab import saved_candidate_pool as pools
@@ -64,7 +65,7 @@ class ScalarProducerProfileTests(unittest.TestCase):
                             )[index],
                         )
                         continue
-                    raw = (root / name).read_bytes().replace(b'\r\n', b'\n')
+                    raw = reviewed_source_bytes(root, name).replace(b'\r\n', b'\n')
                     if index:
                         raw = raw.replace(b'\n', b'\r\n')
                     self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)

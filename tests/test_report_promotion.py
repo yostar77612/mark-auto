@@ -15,7 +15,7 @@ from tests.test_atomic_replace import denied
 
 class ReportPromotionTests(unittest.TestCase):
     def test_transient_and_persistent_directory_denial_preserve_computation_and_activation(self):
-        from desktop_ui import _handle_ui_backtest
+        from desktop_app.shell.main_window import _handle_ui_backtest
 
         for persistent in (False, True):
             with self.subTest(persistent=persistent), tempfile.TemporaryDirectory() as directory:

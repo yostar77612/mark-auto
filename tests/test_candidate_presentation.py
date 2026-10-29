@@ -6,7 +6,7 @@ from decimal import Decimal
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
-from desktop_forms import CandidateSummaryCard, SummaryCard, candidate_summary_text
+from desktop_app.components.forms import CandidateSummaryCard, SummaryCard, candidate_summary_text
 from quantlab.core import canonical_json
 from tests.test_performance_metrics import metric
 
@@ -61,7 +61,7 @@ class CandidatePresentationTests(unittest.TestCase):
     def test_sharpe_values_and_assumptions_remain_honest(self):
         golden = metric()
         text = candidate_summary_text(view(golden, metric(values=('10000',))))
-        from desktop_presentation import display_number
+        from desktop_app.components.formatting import display_number
 
         for expected in (
             display_number(golden['sharpe']),
@@ -134,7 +134,7 @@ class CandidatePresentationHostTests(unittest.TestCase):
         from tests.saved_pool_fixtures import make_saved_source
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
         from quantlab.reporting import save_dataset
-        from desktop_ui import MainWindow, candidate_record
+        from desktop_app.shell.main_window import MainWindow, candidate_record
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = AppPaths(Path(tmp) / 'workspace', Path(tmp) / 'bootstrap').ensure()

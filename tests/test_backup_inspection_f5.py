@@ -156,7 +156,7 @@ class PanelTests(InspectionTests):
     def setUp(self):
         super().setUp()
         from PySide6.QtWidgets import QCheckBox, QLineEdit, QPushButton, QWidget
-        from desktop_pages.backup_inspection import BackupInspectionPanel
+        from desktop_app.features.settings.backup_inspection import BackupInspectionPanel
 
         self.page = QWidget()
         self.page.jobs = SimpleNamespace(active=False)
@@ -191,7 +191,7 @@ class PanelTests(InspectionTests):
         self.assertIn('validation_failed', self.panel.summary.text())
 
     def test_privacy_fixed_clock_placeholders_and_no_oos_widgets(self):
-        from desktop_strings import ui_text
+        from desktop_app.strings.catalog import ui_text
 
         self.assertIn(ui_text('backup_inspection.unavailable'), self.panel.latest.text())
         self.archive_with('state/settings.json', 'state/OOS-private-token-cookie.txt')
@@ -213,7 +213,7 @@ class PanelTests(InspectionTests):
             self.assertEqual(self.page.backup_path.echoMode().name, 'Password' if private else 'Normal')
 
     def test_restore_job_payload_consent_reset_and_no_preview_dispatch(self):
-        from desktop_pages.settings import SettingsPage
+        from desktop_app.features.settings.settings import SettingsPage
         from quantlab.core import ValidationError
 
         self.archive_with('state/settings.json')
@@ -239,7 +239,7 @@ class PanelTests(InspectionTests):
         self.assertIsNone(self.panel.preview)
 
     def test_completion_refreshes_state_after_scheduler_complete(self):
-        from desktop_automatic_backup import AutomaticBackupPanel
+        from desktop_app.features.settings.automatic_backup import AutomaticBackupPanel
 
         self.archive_with('state/settings.json')
         scheduler = SimpleNamespace(complete=lambda **kwargs: self.state.write_text(json.dumps({'last_archive': str(self.archive)})))

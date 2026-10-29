@@ -132,7 +132,7 @@ archives/legacy_autotrading/run.py                         archives/legacy_autot
 
 ## 原生桌面實作增補（2026-10-09）
 
-使用者將Win10 22H2／Win11原生安裝版列為必要交付，新的桌面路徑為 `desktop.py → desktop_ui.MainWindow → quantlab.desktop_runtime.JobManager → quantlab` 既有服務。研究／帳務核心不匯入Qt；Qt選用依賴留在根目錄桌面層。Streamlit作輔助研究入口保留，舊gui.py仍封鎖。
+使用者將Win10 22H2／Win11原生安裝版列為必要交付，新的桌面路徑為 `desktop.py → desktop_app.shell.main_window.MainWindow → quantlab.desktop_runtime.JobManager → quantlab` 既有服務。研究／帳務核心不匯入Qt；Qt選用依賴留在根目錄桌面層。Streamlit作輔助研究入口保留，舊gui.py仍封鎖。
 
 `desktop_runtime`負責固定bootstrap、可重啟套用的工作區選擇、Windows DPAPI、單例／安裝器mutex、程序樹、clock／power事件、交易凍結與安全備份還原。每使用者固定bootstrap包含credentials與不可回退的control-v1；資料state-v1可備份，支出預留／保留集已使用登記不可被舊備份重置。主視窗只送白名單資料作業，不執行AI程式碼。
 

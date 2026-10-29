@@ -18,10 +18,10 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton, QScrollArea
 from shiboken6 import isValid
 
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
-from desktop_trading.wizard import StrategyWizard
-from desktop_trading.widgets import fit_available_screen
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
+from desktop_app.features.trading.wizard import StrategyWizard
+from desktop_app.features.trading.widgets import fit_available_screen
 from quantlab.trading.application.contracts import (
     AccountView,
     BrokerReadiness,

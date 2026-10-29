@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from desktop_chatgpt_provider import PlanError
-import desktop_ui as ui
+from quantlab.assistant.adapters.chatgpt.provider import PlanError
+import desktop_app.shell.main_window as ui
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 from quantlab.idea_research import IdeaResearch, IdeaStore, adoption_candidate, new_task, verify_candidates
@@ -316,7 +316,7 @@ class DesktopHandlerTests(Harness):
     def test_t5_handler_persists_quota_pause(self):
         paths = self.paths()
         transport = FakeTransport(PlanError('quota_paused', http_status=429, remote_code='subscription_sharing_usage_limit_exceeded'))
-        with patch('desktop_chatgpt_provider._persist_account_pause') as pause:
+        with patch('quantlab.assistant.adapters.chatgpt.provider._persist_account_pause') as pause:
             result = ui._handle_ui_idea_research(
                 {'request': request(), 'registration': REGISTRATION, 'model': 'gpt-fixture'},
                 paths,
@@ -334,8 +334,11 @@ class DesktopHandlerTests(Harness):
             ui._handle_ui_idea_research(
                 {'request': request(consent={'network': True, 'plan_usage': False}), 'registration': REGISTRATION, 'model': 'm'}, paths, paths.state
             )
-        with patch('desktop_chatgpt_provider.read_account_status', return_value={'state': 'quota_paused', 'pending': False}):
-            with patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('no network')), self.assertRaises(ValidationError):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'quota_paused', 'pending': False}):
+            with (
+                patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('no network')),
+                self.assertRaises(ValidationError),
+            ):
                 ui._handle_ui_idea_research({'request': request(), 'registration': REGISTRATION, 'model': 'm'}, paths, paths.state)
 
     def test_runtime_payload_allowlist_and_deadline(self):

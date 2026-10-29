@@ -368,7 +368,7 @@ class PortableCoreSourceIdentityTests(unittest.TestCase):
                 'pyproject.toml': b'[project]\nname="fixture"\n',
                 'requirements-fixture.lock': b'fixture==1\n',
                 'desktop_pages/view.py': b'VIEW=1\n',
-                'desktop_trading/view.json': b'{"v":1}\n',
+                'desktop_app/features/trading/view.json': b'{"v":1}\n',
                 'desktop_smoke/source.txt': b'fixture\x00\xff',
                 'packaging/input.ps1': b'exit 0\r\n',
                 'packaging/input.cs': b'// fixture\n',

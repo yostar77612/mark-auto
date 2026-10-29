@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from tests.layered_source_fixtures import reviewed_source_bytes
 from unittest.mock import patch
 
 from quantlab.core import canonical_json, content_hash, to_dict
@@ -72,11 +73,11 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
         latest = pools.LONG_PATH_SIWC_PROFILE_V1
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
-                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
+                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
-            raw = (ROOT / 'desktop_chatgpt_dependency_manifest.json').read_bytes().replace(b'\r\n', b'\n')
+            raw = (ROOT / 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json').read_bytes().replace(b'\r\n', b'\n')
             if index:
                 raw = raw.replace(b'\n', b'\r\n')
             self.assertEqual(hashlib.sha256(raw).hexdigest(), implementation['dependency_manifest_sha256'])
@@ -84,7 +85,7 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
             expected = windows if index else windows | {'linux-cp311-x86_64', 'linux-cp312-x86_64'}
             self.assertEqual(set(implementation['dependency_targets']), expected)
             for target in expected:
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     self.assertIs(pools._select_producer(binding(latest, variant=index, target=target)), latest)
 
     def test_mixed_unknown_old_new_tuples_and_unsupported_targets_reject(self):
@@ -128,7 +129,7 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
             for index in (0, 1):
                 folder, reference, original, _ = make_chatgpt_source(Path(temporary) / f'variant-{index}', implementation=index, candidates=1, producer=PROFILE)
                 before = {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()}
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = pools.admit_saved_campaign_pool(
                         source_campaign_dir=folder,
                         source_campaign_ref=reference,

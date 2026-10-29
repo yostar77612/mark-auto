@@ -14,8 +14,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from desktop_pages.assistant_permissions import MODES, SETTING_KEY, ResearchPermission, install_menu
-from desktop_strings import ui_text
+from desktop_app.features.assistant.assistant_permissions import MODES, SETTING_KEY, ResearchPermission, install_menu
+from desktop_app.strings.catalog import ui_text
 from quantlab.agent_tools import Registry
 from quantlab.desktop_runtime import SettingsStore
 from tests import test_assistant_d4 as d4
@@ -65,7 +65,7 @@ class AssistantD8Tests(unittest.TestCase):
         QTest.keyClick(mirror, Qt.Key.Key_Up)
         self.assertEqual(self.panel.permission_menu.currentData(), 'read_only')
         # Both real installations remain inside already collapsed areas.
-        source = (ROOT / 'desktop_pages/settings_layout.py').read_text(encoding='utf-8')
+        source = (ROOT / 'desktop_app/features/settings/settings_layout.py').read_text(encoding='utf-8')
         self.assertIn("install_menu(management, page.assistant_panel.permissions, 'settings_research_permission')", source)
         self.assertIn('maintenance.addWidget(page.assistant_panel)', source)
 
@@ -106,7 +106,7 @@ class AssistantD8Tests(unittest.TestCase):
         self.assertEqual(registry.register({**mutation(), 'name': 'later_mutation'}, handler), REFUSAL)
         dispatcher = self.panel.dispatcher
         dispatcher._ChatDispatcher__registry = registry
-        with patch('desktop_pages.assistant.QMessageBox.question') as dialog:
+        with patch('desktop_app.features.assistant.assistant.QMessageBox.question') as dialog:
             from PySide6.QtWidgets import QMessageBox
 
             dialog.side_effect = [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok]
@@ -146,7 +146,7 @@ class AssistantD8Tests(unittest.TestCase):
         saved = {'credential': 'TOKEN_SENTINEL', 'protected': 'OOS_SENTINEL'}
         store = SimpleNamespace(load=lambda: deepcopy(saved), save=Mock())
         state = ResearchPermission(store)
-        with self.assertLogs('desktop_pages.assistant_permissions', level='INFO') as logs:
+        with self.assertLogs('desktop_app.features.assistant.assistant_permissions', level='INFO') as logs:
             state.select('confirm_each_time')
             state.select('read_only')
         self.assertEqual(len(logs.output), 2)
@@ -157,7 +157,7 @@ class AssistantD8Tests(unittest.TestCase):
 
     def test_permission_source_catalog_no_extra_authority_or_execution(self):
         forbidden = {'auto', 'always', 'allow-all', 'bypass'}
-        paths = ('desktop_pages/assistant_permissions.py', 'desktop_pages/assistant.py', 'quantlab/assistant_chat.py')
+        paths = ('desktop_app/features/assistant/assistant_permissions.py', 'desktop_app/features/assistant/assistant.py', 'quantlab/assistant_chat.py')
         for name in paths:
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
             values = [node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
@@ -166,7 +166,7 @@ class AssistantD8Tests(unittest.TestCase):
             self.assertFalse(forbidden.intersection(identifiers))
             calls = [node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)]
             self.assertFalse({'eval', 'exec', 'compile'}.intersection(calls))
-        from desktop_strings import ZH_TW
+        from desktop_app.strings.catalog import ZH_TW
 
         catalog = {key: value for key, value in ZH_TW.items() if key.startswith('assistant.permission_')}
         self.assertEqual(len(catalog), 4)

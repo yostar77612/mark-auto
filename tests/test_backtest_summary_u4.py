@@ -8,11 +8,11 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QGroupBox, QLabel, QPlainTextEdit, QPushButton, QVBoxLayout
 
-from desktop_forms import BacktestSummaryCard, RESULT_LABELS
-from desktop_pages.backtest import BacktestPage
-from desktop_pages.backtest_summary_card import ReportSummaryCard
-from desktop_strings import ZH_TW, ui_text
-import desktop_privacy as privacy
+from desktop_app.components.forms import BacktestSummaryCard, RESULT_LABELS
+from desktop_app.features.backtest.backtest import BacktestPage
+from desktop_app.features.backtest.backtest_summary_card import ReportSummaryCard
+from desktop_app.strings.catalog import ZH_TW, ui_text
+import desktop_app.components.privacy as privacy
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +71,7 @@ class BacktestSummaryTests(unittest.TestCase):
         self.page.result_choice.clear()
         self.page.result_choice.addItem('fixture', 'result.json')
         self.page.result_choice.blockSignals(False)
-        with patch('desktop_pages.backtest.load_result', return_value=result):
+        with patch('desktop_app.features.backtest.backtest.load_result', return_value=result):
             self.page.show_result()
         return result
 
@@ -139,7 +139,7 @@ class BacktestSummaryTests(unittest.TestCase):
         self.assertTrue(card.isHidden())
         self.assertEqual(card.label.text(), ui_text('backtest.summary.empty'))
         self.load()
-        with patch('desktop_pages.backtest.load_result', side_effect=ValueError('untrusted failure')):
+        with patch('desktop_app.features.backtest.backtest.load_result', side_effect=ValueError('untrusted failure')):
             self.page.show_result()
         self.assertTrue(card.isHidden())
         self.assertEqual(card.label.text(), ui_text('backtest.summary.empty'))

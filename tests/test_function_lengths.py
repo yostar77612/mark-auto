@@ -4,6 +4,7 @@ import ast
 import hashlib
 from pathlib import Path
 import unittest
+from tests.layered_source_fixtures import original_adapter_text
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
@@ -29,6 +30,8 @@ class FunctionLengthTests(unittest.TestCase):
         for filename, expected in LOCKED_HASHES.items():
             with self.subTest(file=filename):
                 source = (ROOT / filename).read_text(encoding='utf-8-sig')
+                if filename == 'quantlab/assistant/adapters/chatgpt/provider.py':
+                    source = original_adapter_text(filename, source)
                 if filename == 'quantlab/research.py':
                     # Owner-approved 2026-10-24: one import and two I/O calls.
                     # Pin the new source AND reconstruct the complete old source;
@@ -49,6 +52,6 @@ LOCKED_HASHES = {
     'quantlab/strategies.py': 'f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def',
     'quantlab/backtest.py': '2dcee78c0c7a7d09c54a0d362b6d0a2be957cf910046d3bd6a89525761da5bb6',
     'quantlab/data.py': 'bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4',
-    'desktop_chatgpt_auth.py': '4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf',
-    'desktop_chatgpt_provider.py': '0189228f63e44d57e4d3a11832178b49cb0d907d332d557c6c99bb8460d613ca',
+    'quantlab/assistant/adapters/chatgpt/auth.py': '4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf',
+    'quantlab/assistant/adapters/chatgpt/provider.py': '0189228f63e44d57e4d3a11832178b49cb0d907d332d557c6c99bb8460d613ca',
 }

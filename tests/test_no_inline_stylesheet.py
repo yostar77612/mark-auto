@@ -3,6 +3,7 @@
 import ast
 from pathlib import Path
 import unittest
+from tests.layered_source_fixtures import physical_path
 
 
 # QPainter chart drawing uses no setStyleSheet calls, so no exceptions are needed.
@@ -23,36 +24,48 @@ def stylesheet_calls(source):
 
 class NoInlineStylesheetTests(unittest.TestCase):
     def test_f6_memory_scanned(self):
-        self.assertEqual(stylesheet_calls((ROOT / 'desktop_chart_memory.py').read_text(encoding='utf-8')), [])
+        self.assertEqual(stylesheet_calls((ROOT / 'desktop_app/features/market/chart_memory.py').read_text(encoding='utf-8')), [])
 
     def test_f5_backup_inspection_scanned(self):
-        path = ROOT / 'desktop_pages/backup_inspection.py'
+        path = ROOT / 'desktop_app/features/settings/backup_inspection.py'
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
 
     def test_f2_overlay_scanned(self):
-        path = ROOT / 'desktop_pages/compare_equity.py'
+        path = ROOT / 'desktop_app/features/compare/compare_equity.py'
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
 
     def test_f1_gap_widget_is_scanned(self):
-        path = ROOT / 'desktop_pages/data_gaps.py'
+        path = ROOT / 'desktop_app/features/data/data_gaps.py'
         self.assertTrue(path.is_file())
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
 
     def test_quick_start_uses_theme_only(self):
         for name in ('quick_start.py', 'quick_start_chain.py'):
-            self.assertEqual(stylesheet_calls((ROOT / 'desktop_pages' / name).read_text(encoding='utf-8')), [])
+            self.assertEqual(stylesheet_calls((ROOT / physical_path('desktop_pages' + '/' + str(name))).read_text(encoding='utf-8')), [])
 
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
         sources = sorted(
-            set(ROOT.glob('desktop*.py'))
+            set(
+                [
+                    *ROOT.glob('desktop*.py'),
+                    *(
+                        ROOT / relative
+                        for relative in (
+                            'quantlab/assistant/adapters/chatgpt/auth.py',
+                            'quantlab/assistant/adapters/chatgpt/provider.py',
+                            'quantlab/research_core/adapters/market_layout.py',
+                        )
+                    ),
+                ]
+            )
             | set((ROOT / 'tools').rglob('*.py'))
-            | set((ROOT / 'desktop_pages').rglob('*.py'))
-            | set((ROOT / 'desktop_smoke').rglob('*.py'))
+            | set((ROOT / physical_path('desktop_pages')).rglob('*.py'))
+            | set((ROOT / physical_path('desktop_smoke')).rglob('*.py'))
         )
         violations = []
         for path in sources:
             relative = path.relative_to(ROOT).as_posix()
-            if relative == 'desktop_theme.py':
+            if relative == 'desktop_app/shell/theme.py':
                 continue
             for line in stylesheet_calls(path.read_text(encoding='utf-8-sig')):
                 if (relative, line) not in STYLESHEET_ALLOWLIST:
@@ -66,7 +79,7 @@ class NoInlineStylesheetTests(unittest.TestCase):
         self.assertEqual(stylesheet_calls('# widget.setStyleSheet("ignored")'), [])
 
     def test_package_injection_is_detected(self):
-        sources = sorted((ROOT / 'desktop_pages').rglob('*.py'))
+        sources = sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
         self.assertTrue({'command_palette.py', 'palette_commands.py', 'backtest_summary_card.py'} <= {path.name for path in sources})
         self.assertTrue(sources)
         for path in sources:

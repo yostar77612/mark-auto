@@ -11,12 +11,12 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
-from desktop_pages.app_header import AppHeader
-from desktop_pages.command_palette import CommandPalette
-from desktop_pages.job_progress import JobFeedback, JobProgress
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
-from desktop_ui_polish import DisabledHint
+from desktop_app.shell.app_header import AppHeader
+from desktop_app.components.command_palette import CommandPalette
+from desktop_app.components.job_progress import JobFeedback, JobProgress
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.polish import DisabledHint
 from quantlab.desktop_runtime import AppPaths, JobManager
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui

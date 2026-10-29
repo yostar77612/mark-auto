@@ -83,7 +83,7 @@ class SavedAnalysisDiscoveryTests(unittest.TestCase):
             'quantlab.research_analysis._read_analysis_journal',
             'quantlab.research_analysis.run_analysis',
             'quantlab.research_analysis.reconcile_analysis',
-            'desktop_chatgpt_provider.ChatGPTPlanProvider',
+            'quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider',
         )
         with ExitStack() as stack:
             mocks = [stack.enter_context(patch(name, side_effect=AssertionError(name))) for name in forbidden]
@@ -184,7 +184,7 @@ class SavedAnalysisCheckpointWidgetTests(unittest.TestCase):
         w.analysis_findings.setPlainText('stale completed findings')
         w.analysis_evidence.setPlainText('stale evidence')
         w.analysis_consent.setChecked(True)
-        with patch.object(w, 'start_job') as start, patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('No provider')):
+        with patch.object(w, 'start_job') as start, patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('No provider')):
             w.analysis_saved.setCurrentIndex(w.analysis_saved.findData('b' * 64))
             self.assertIn('中斷檢查點／尚未完成安全復原', w.analysis_saved.currentText())
             self.assertIn('尚未核對', w.analysis_checkpoint_notice.text())
@@ -243,7 +243,11 @@ class SavedAnalysisCheckpointWidgetTests(unittest.TestCase):
     def test_discovery_error_is_visible_without_startup_or_worker_failure(self):
         w = self.window
         for error in (ValidationError('unsafe path'), PermissionError('unreadable directory')):
-            with self.subTest(error=type(error).__name__), patch('desktop_ui.saved_analysis_entries', side_effect=error), patch.object(w, 'start_job') as start:
+            with (
+                self.subTest(error=type(error).__name__),
+                patch('desktop_app.shell.main_window.saved_analysis_entries', side_effect=error),
+                patch.object(w, 'start_job') as start,
+            ):
                 w._refresh_analysis_saved()
                 self.assertEqual(w.analysis_saved.count(), 0)
                 self.assertIn('無法安全列出', w.analysis_checkpoint_notice.text())
@@ -263,7 +267,7 @@ class SavedAnalysisCheckpointWidgetTests(unittest.TestCase):
                 w._analysis_running = operation == 'ui_analysis_run'
                 w.analysis_saved.setCurrentIndex(w.analysis_saved.findData('a' * 64))
                 w.last_operation = operation
-                with patch('desktop_ui.analysis_record_text', return_value='validated worker findings'), patch.object(w, 'record_event'):
+                with patch('desktop_app.shell.main_window.analysis_record_text', return_value='validated worker findings'), patch.object(w, 'record_event'):
                     self.assertTrue(w._analysis_event({'type': 'result', 'result': result}))
                 self.assertEqual(w.analysis_saved.currentData(), 'b' * 64)
                 self.assertEqual(w.analysis_findings.toPlainText(), 'validated worker findings')
@@ -278,7 +282,7 @@ class SavedAnalysisCheckpointWidgetTests(unittest.TestCase):
         self.entry('a' * 64)
         w._refresh_analysis_saved()
         for identity in ('a' * 64, 'b' * 64):
-            with self.subTest(identity=identity), patch('desktop_ui.analysis_record_text') as render, patch.object(w, 'record_event'):
+            with self.subTest(identity=identity), patch('desktop_app.shell.main_window.analysis_record_text') as render, patch.object(w, 'record_event'):
                 w.last_operation = 'ui_analysis_read'
                 w._analysis_event({'type': 'result', 'result': {'analysis_id': identity, 'record': {}}})
                 render.assert_not_called()

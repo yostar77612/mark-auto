@@ -239,8 +239,8 @@ requires separate approval before changing any of them:
 | `quantlab/research.py` | Review engine-source hashes, candidate evidence and campaign bindings if engine/interface versions change. |
 | `quantlab/provider.py` | Review bounded strategy-output schema if intent syntax is exposed; unchanged if the adapter remains internal. |
 | `quantlab/data.py` | Review period identity and availability/calendar inputs for multi-instrument support; unchanged for current TMF bars. |
-| `desktop_chatgpt_auth.py` | No intended functional change; verify provenance/budget bindings if new versions are introduced. |
-| `desktop_chatgpt_provider.py` | Review provider schema/provenance only if bounded output grammar changes; no intended auth or network change. |
+| `quantlab/assistant/adapters/chatgpt/auth.py` | No intended functional change; verify provenance/budget bindings if new versions are introduced. |
+| `quantlab/assistant/adapters/chatgpt/provider.py` | Review provider schema/provenance only if bounded output grammar changes; no intended auth or network change. |
 
 Also preserve `quantlab/saved_candidate_pool.py` profile blocks. Existing
 `engine_golden` (4 cases), `ui_operations_golden`, research hashes and

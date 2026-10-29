@@ -70,7 +70,7 @@ class ScaledLayoutTests(WindowFixture):
         self.assertFalse(market.right_panel.isHidden())
 
     def test_fonts_and_minimum_size_have_no_layout_defects(self):
-        from desktop_theme import scale_window_fonts
+        from desktop_app.shell.theme import scale_window_fonts
 
         w = self.window
         original = QFont(w.font())

@@ -9,74 +9,32 @@ from unittest.mock import patch
 
 from tools.quality_gate import python_findings, scan
 from quantlab import strict_json
+from tests.layered_source_fixtures import physical_path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'archives/legacy_autotrading'
 # Derived from the post-move git ls-files top level; additions need review.
 ALLOWED_FILES = {
-    'Preview UI.cmd',
-    'trading_runtime.py',
-    'trading_entry.py',
-    'requirements-shioaji-v2.lock',
-    'requirements-packaging-ci.lock',
-    'desktop_capital_scenario.py',
-    'desktop_privacy.py',
     '.gitattributes',
     '.gitignore',
     'LICENSE',
+    'Preview UI.cmd',
     'README.md',
+    'desktop.py',
     'pyproject.toml',
     'requirements-desktop.lock',
     'requirements-desktop.txt',
+    'requirements-packaging-ci.lock',
     'requirements-qt-ci.lock',
-    'requirements-ui.lock',
-    'requirements-ui-pillow.lock',
-    'requirements-ui.txt',
     'requirements-ruff.lock',
-    'desktop.py',
-    'desktop_accessibility.py',
-    'desktop_automatic_backup.py',
-    'desktop_charts.py',
-    'desktop_chart_memory.py',
-    'desktop_order_lines.py',
-    'desktop_chatgpt_auth.py',
-    'desktop_chatgpt_dependency_manifest.json',
-    'desktop_chatgpt_provider.py',
-    'desktop_chatgpt_states.py',
-    'desktop_chatgpt_ui.py',
-    'desktop_expiry_inputs.py',
-    'desktop_forms.py',
-    'desktop_help.py',
-    'desktop_icon.py',
-    'desktop_market.py',
-    'desktop_market_layout.py',
-    'desktop_market_workspace.py',
-    'desktop_chart_popout.py',
-    'desktop_presentation.py',
-    'desktop_recovery_smoke.py',
-    'desktop_research_runtime.py',
-    'desktop_strings.py',
-    'desktop_theme.py',
-    'desktop_timeinput.py',
-    'desktop_tls_smoke.py',
-    'desktop_ui.py',
-    'desktop_ui_polish.py',
-    'desktop_walk_forward.py',
+    'requirements-shioaji-v2.lock',
+    'requirements-ui-pillow.lock',
+    'requirements-ui.lock',
+    'requirements-ui.txt',
+    'trading_entry.py',
+    'trading_runtime.py',
 }
-ALLOWED_DIRECTORIES = {
-    '.github',
-    '.streamlit',
-    'archives',
-    'desktop_pages',
-    'desktop_smoke',
-    'desktop_trading',
-    'docs',
-    'examples',
-    'packaging',
-    'quantlab',
-    'tests',
-    'tools',
-}
+ALLOWED_DIRECTORIES = {'.github', '.streamlit', 'archives', 'desktop_app', 'docs', 'examples', 'packaging', 'quantlab', 'tests', 'tools'}
 # User-local files and normal ignored development/build output are not project
 # layout. Never inspect their contents or require their presence in CI.
 IGNORED_LOCAL_NAMES = {
@@ -139,13 +97,13 @@ class RepoLayoutTests(unittest.TestCase):
         self.assertEqual(tracked_ignored, '')
 
     def test_u8_preferences_modules_have_existing_package_homes(self):
-        for name in ('desktop_pages/preferences.py', 'quantlab/ui_preferences.py'):
+        for name in ('desktop_app/features/settings/preferences.py', 'quantlab/ui_preferences.py'):
             self.assertTrue((ROOT / name).is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
         self.assertIn('quantlab', ALLOWED_DIRECTORIES)
 
     def test_backtest_summary_u4_in_existing_packages(self):
-        for name in ('desktop_pages/backtest_summary_card.py', 'quantlab/backtest_summary.py'):
+        for name in ('desktop_app/features/backtest/backtest_summary_card.py', 'quantlab/backtest_summary.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
@@ -154,62 +112,62 @@ class RepoLayoutTests(unittest.TestCase):
         self.assertIn('quantlab', ALLOWED_DIRECTORIES)
 
     def test_f6_memory_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_chart_memory.py').is_file())
+        self.assertTrue((ROOT / 'desktop_app/features/market/chart_memory.py').is_file())
 
     def test_f5_inspection_modules(self):
-        for name in ('desktop_pages/backup_inspection.py', 'quantlab/backup_inspection.py'):
+        for name in ('desktop_app/features/settings/backup_inspection.py', 'quantlab/backup_inspection.py'):
             self.assertTrue((ROOT / name).is_file())
 
     def test_f2_overlay_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_pages/compare_equity.py').is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertTrue((ROOT / 'desktop_app/features/compare/compare_equity.py').is_file())
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
 
     def test_f1_gap_modules_stay_in_existing_packages(self):
-        for name in ('desktop_pages/data_gaps.py', 'quantlab/data_gap_report.py'):
+        for name in ('desktop_app/features/data/data_gaps.py', 'quantlab/data_gap_report.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
     def test_manifest_d12_in_existing_packages(self):
-        for name in ('desktop_pages/assistant_manifest.py', 'quantlab/agent_manifest.py'):
+        for name in ('desktop_app/features/assistant/assistant_manifest.py', 'quantlab/agent_manifest.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
     def test_assistant_d10_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_pages/assistant_models.py').is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertTrue((ROOT / 'desktop_app/features/assistant/assistant_models.py').is_file())
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
 
     def test_assistant_d6_module_in_inventory(self):
-        self.assertTrue((ROOT / 'desktop_pages/assistant_completion.py').is_file())
+        self.assertTrue((ROOT / 'desktop_app/features/assistant/assistant_completion.py').is_file())
 
     def test_connection_d9_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_pages/connection_test.py').is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertTrue((ROOT / 'desktop_app/features/assistant/connection_test.py').is_file())
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
 
     def test_assistant_d8_module_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_pages/assistant_permissions.py').is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertTrue((ROOT / 'desktop_app/features/assistant/assistant_permissions.py').is_file())
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
 
     def test_assistant_d5_module_in_existing_package(self):
-        self.assertTrue((ROOT / 'desktop_pages/assistant_details.py').is_file())
-        self.assertIn('desktop_pages', ALLOWED_DIRECTORIES)
+        self.assertTrue((ROOT / 'desktop_app/features/assistant/assistant_details.py').is_file())
+        self.assertIn('desktop_app', ALLOWED_DIRECTORIES)
 
     def test_assistant_d4_modules_registered_in_existing_packages(self):
-        for name in ('desktop_pages/assistant.py', 'desktop_pages/assistant_runtime.py', 'quantlab/assistant_chat.py'):
+        for name in ('desktop_app/features/assistant/assistant.py', 'desktop_app/features/assistant/worker.py', 'quantlab/assistant_chat.py'):
             self.assertTrue((ROOT / name).is_file())
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
     def test_u3_modules_stay_in_desktop_package(self):
         for name in ('quick_start.py', 'quick_start_chain.py'):
-            self.assertTrue((ROOT / 'desktop_pages' / name).is_file())
+            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
 
     def test_c6_modules_stay_in_desktop_package(self):
         for name in ('paper_tabs.py',):
-            self.assertTrue((ROOT / 'desktop_pages' / name).is_file())
+            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
         self.assertTrue((ROOT / 'quantlab/paper_tab_data.py').is_file())
 
     def test_c7_modules_stay_in_desktop_package(self):
         for name in ('command_palette.py', 'palette_commands.py', 'notifications.py', 'notification_log.py'):
-            self.assertTrue((ROOT / 'desktop_pages' / name).is_file())
+            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
 
     def test_agent_schema_registered_location(self):
         self.assertTrue((ROOT / AGENT_TOOL_SCHEMA).is_file())
@@ -244,7 +202,7 @@ class RepoLayoutTests(unittest.TestCase):
 
     def test_product_never_imports_archived_modules(self):
         paths = list(ROOT.glob('*.py'))
-        for directory in ('quantlab', 'desktop_pages'):
+        for directory in ('quantlab', 'desktop_app'):
             paths.extend((ROOT / directory).rglob('*.py'))
         for path in paths:
             tree = ast.parse(path.read_text(encoding='utf-8-sig'))
@@ -269,7 +227,7 @@ class RepoLayoutTests(unittest.TestCase):
 
     def test_archive_import_cannot_bypass_product_boundary(self):
         for source in ('import archives.legacy_autotrading.trader', 'from archives.legacy_autotrading import gui'):
-            self.assertTrue(python_findings(source, 'desktop_ui.py', desktop=True))
+            self.assertTrue(python_findings(source, 'desktop_app/shell/main_window.py', desktop=True))
             self.assertTrue(python_findings(source, 'quantlab/new.py', research=True))
 
 

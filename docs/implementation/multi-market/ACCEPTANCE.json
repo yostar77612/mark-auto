@@ -1986,7 +1986,7 @@
         "quantlab/trading/application/context.py",
         "quantlab/trading/application/engine.py",
         "quantlab/trading/adapters/simulated/broker.py",
-        "desktop_trading/rendering.py"
+        "desktop_app/features/trading/rendering.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -3990,7 +3990,7 @@
       "code": [
         "quantlab/trading/domain/models.py",
         "quantlab/trading/adapters/shioaji/mapping.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -9372,7 +9372,7 @@
         "quantlab/trading/application/events.py",
         "quantlab/trading/application/reconciliation_views.py",
         "quantlab/trading/application/views.py",
-        "desktop_trading/rendering.py"
+        "desktop_app/features/trading/rendering.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -10439,9 +10439,9 @@
       "external_reason": "三位獨立使用者或本人三種新情境理解測試需要真人，Qt不能代替。",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -10586,9 +10586,9 @@
       "external_reason": "",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -11803,9 +11803,9 @@
       "external_reason": "",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -12432,9 +12432,9 @@
       "external_reason": "",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -12734,9 +12734,9 @@
       "external_reason": "",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",
@@ -12913,9 +12913,9 @@
       "external_reason": "",
       "evidence_level": "本機工程／合成故障與SDK型別；非券商實測。原生GUI／凍結包另見明確收據。",
       "code": [
-        "desktop_trading/window.py",
-        "desktop_trading/rendering.py",
-        "desktop_trading/wizard.py"
+        "desktop_app/features/trading/window.py",
+        "desktop_app/features/trading/rendering.py",
+        "desktop_app/features/trading/wizard.py"
       ],
       "data": {
         "source": "explicit local per-test fixture; no original user data",

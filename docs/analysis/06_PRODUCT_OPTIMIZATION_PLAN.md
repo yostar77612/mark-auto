@@ -23,7 +23,7 @@
 |---|---|---|
 | G1 | **實盤固定停用** | 不新增任何券商連線、下單或實盤開關。 |
 | G2 | **失敗即封鎖（fail-closed）不放寬** | 驗證、拒絕條件、額度與一次性 OOS 消耗規則一律不變；UI 只能改「怎麼呈現」，不能改「是否允許」。 |
-| G3 | **溯源鎖定檔案** | 下列 8 個檔案的 SHA-256 被寫進 `quantlab/saved_candidate_pool.py` 的 producer profile：`quantlab/research.py`、`quantlab/provider.py`、`quantlab/core.py`、`quantlab/strategies.py`、`quantlab/backtest.py`、`quantlab/data.py`、`desktop_chatgpt_auth.py`、`desktop_chatgpt_provider.py`。**連格式化都會改變 hash。** 必須修改時：只能「追加」新 profile，既有 profile、hash、選擇邏輯一律不動，並補新舊來源各自選回原身分的回歸測試（比照 PR #24、#29、#31 的做法）。能不碰就不碰。 |
+| G3 | **溯源鎖定檔案** | 下列 8 個檔案的 SHA-256 被寫進 `quantlab/saved_candidate_pool.py` 的 producer profile：`quantlab/research.py`、`quantlab/provider.py`、`quantlab/core.py`、`quantlab/strategies.py`、`quantlab/backtest.py`、`quantlab/data.py`、`quantlab/assistant/adapters/chatgpt/auth.py`、`quantlab/assistant/adapters/chatgpt/provider.py`。**連格式化都會改變 hash。** 必須修改時：只能「追加」新 profile，既有 profile、hash、選擇邏輯一律不動，並補新舊來源各自選回原身分的回歸測試（比照 PR #24、#29、#31 的做法）。能不碰就不碰。 |
 | G4 | **研究模組匯入邊界** | `tools/quality_gate.py` 禁止研究模組匯入 `trader`、`shioaji`、`pickle`、`subprocess` 及呼叫 `eval/exec/compile/__import__`。搬移檔案後仍需通過。 |
 | G5 | **不降低測試** | 不刪測試、不放寬逾時、不以 mock 取代原本的真實路徑、不 skip。UI 文案改了，對應測試在同一個 PR 內一起更新。 |
 | G6 | **規格文件同步** | 行為或文案若被 `docs/agent/IMPLEMENTATION_CONTRACTS.md`、`docs/agent/ACCEPTANCE.json` 引用，同一個 PR 內一起更新並說明原因。 |
@@ -57,13 +57,13 @@
 
 | 指標 | 數值 |
 |---|---|
-| `MainWindow`（[desktop_ui.py:686](../../desktop_ui.py)） | 92 個方法、1,684 行 |
+| `MainWindow`（[desktop_app/shell/main_window.py:686](../../desktop_app/shell/main_window.py)） | 92 個方法、1,684 行 |
 | `desktop.main`（[desktop.py:571](../../desktop.py)） | 348 行 |
-| `execute_ui_operation`（[desktop_ui.py:264](../../desktop_ui.py)） | 329 行 |
+| `execute_ui_operation`（[desktop_app/shell/main_window.py:264](../../desktop_app/shell/main_window.py)） | 329 行 |
 | desktop UI 內 `setToolTip` | 0 |
 | 鍵盤快捷鍵（`QShortcut`／`QKeySequence`） | 0 |
-| 以 `;` 串接多敘述的行數 | desktop_chatgpt_ui 88、desktop_ui 53、market_history 29、chatgpt_auth 27 |
-| 超過 160 字元的行數 | desktop_ui 34、desktop_market 31、desktop_chatgpt_ui 29 |
+| 以 `;` 串接多敘述的行數 | desktop_app.features.assistant.connection 88、desktop_app.shell.main_window 53、market_history 29、chatgpt_auth 27 |
+| 超過 160 字元的行數 | desktop_app.shell.main_window 34、desktop_app.features.market.dashboard 31、desktop_app.features.assistant.connection 29 |
 | 各自定義 `_fail` 的檔案 | 6 |
 | 斷言中文字面文字的 desktop 測試檔 | 14 |
 | CI 內的 linter／formatter | 無 |
@@ -79,7 +79,7 @@ P0（快速修正，含真實 bug）
       → P2-B（其餘架構整理）
 ```
 
-理由：P1 要大改頁面版面。若先在 2,365 行的 `desktop_ui.py` 上改，P2 拆檔時要再搬一次。先做 P2-A 的地基，P1 只改一次。每個方塊內的項目可以各自一個 PR；同一批次內互不依賴的項目可以平行。
+理由：P1 要大改頁面版面。若先在 2,365 行的 `desktop_app/shell/main_window.py` 上改，P2 拆檔時要再搬一次。先做 P2-A 的地基，P1 只改一次。每個方塊內的項目可以各自一個 PR；同一批次內互不依賴的項目可以平行。
 
 ---
 
@@ -91,7 +91,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：在乾淨環境執行輸出與第 2 節同格式的數字；附一個測試確認工具只使用暫存目錄。
 
 ### P0-01 畫面刷新會讓紙上帳戶「需要對帳」（真實 bug）
-- **問題**：每個背景作業完成後，畫面會刷新紙上帳戶卡片（[desktop_ui.py:1890](../../desktop_ui.py)，`_show_account(_paper(self.root).snapshot())`）。`_paper()` 每次都建立新的 `PaperBroker`，而 `PaperBroker` 開啟既有帳本時一定會寫入一筆 `restart` 事件（[quantlab/paper.py:270-271](../../quantlab/paper.py)）；`restart` 會把帳戶設成「需要對帳」（[quantlab/paper.py:226-227](../../quantlab/paper.py)）。
+- **問題**：每個背景作業完成後，畫面會刷新紙上帳戶卡片（[desktop_app/shell/main_window.py:1890](../../desktop_app/shell/main_window.py)，`_show_account(_paper(self.root).snapshot())`）。`_paper()` 每次都建立新的 `PaperBroker`，而 `PaperBroker` 開啟既有帳本時一定會寫入一筆 `restart` 事件（[quantlab/paper.py:270-271](../../quantlab/paper.py)）；`restart` 會把帳戶設成「需要對帳」（[quantlab/paper.py:226-227](../../quantlab/paper.py)）。
   - 實測（隔離暫存工作區）：按「明確對帳紙上帳戶」後，作業結果的帳戶狀態是 `reconciliation_required: false`，但畫面卡片立刻顯示「需要對帳：是」。
   - 帳本出現使用者沒有做過的 `restart` 紀錄（例如對帳前就有 `restart:1`、`restart:2`），稽核紀錄失真。
 - **改法**：為「只讀顯示」提供不寫入事件的唯讀快照路徑（例如 `PaperBroker.read_snapshot()` 或唯讀開啟模式），畫面刷新改用它；`restart` 事件只在真正的程式啟動或 worker 接手時寫入。`quantlab/paper.py` 不是 G3 鎖定檔。重啟後必須對帳的安全規則不變（G2）。
@@ -112,13 +112,13 @@ P0（快速修正，含真實 bug）
 
 ### P0-04 修正頁面名稱與截斷
 - **問題**：
-  - 回測頁寫「使用『策略與版本』目前選定…」（[desktop_ui.py:1125](../../desktop_ui.py)），但側邊欄沒有這一頁，它叫「AI 策略中心」。README 的 Walk-forward 段落也引用「策略與版本」。
+  - 回測頁寫「使用『策略與版本』目前選定…」（[desktop_app/shell/main_window.py:1125](../../desktop_app/shell/main_window.py)），但側邊欄沒有這一頁，它叫「AI 策略中心」。README 的 Walk-forward 段落也引用「策略與版本」。
   - 紙上交易頁兩個表格的表頭被截斷（「始 UTC」「結束 UTC」「交易E」）。
 - **改法**：統一頁面名稱；表格欄寬依表頭自動調整，或改用可換行的表頭；README 同步。
 - **驗收**：全專案搜尋不到已不存在的頁面名稱；截圖中表頭完整可讀。
 
 ### P0-05 使用者看得懂的錯誤訊息
-- **問題**：`MainWindow._safe`（[desktop_ui.py:1473](../../desktop_ui.py)）把 `str(exc)` 直接放進狀態列；desktop_ui 共 7 處、desktop_market 3 處、desktop_chatgpt_ui 1 處顯示原始例外文字。
+- **問題**：`MainWindow._safe`（[desktop_app/shell/main_window.py:1473](../../desktop_app/shell/main_window.py)）把 `str(exc)` 直接放進狀態列；desktop_app.shell.main_window 共 7 處、desktop_app.features.market.dashboard 3 處、desktop_app.features.assistant.connection 1 處顯示原始例外文字。
 - **改法**：建立錯誤代碼對照表（代碼 → 中文說明 → 建議動作）。狀態列只顯示中文說明與建議；「詳細資訊」展開後只顯示錯誤代碼與發生階段。**不得把原始例外文字寫進日誌**：既有 `RedactedEventLog`（[quantlab/desktop_runtime.py:466](../../quantlab/desktop_runtime.py)）只接受固定的操作與事件代碼，這個隱私設計要保留；若要記錄錯誤，只能新增固定的錯誤代碼欄位。不得顯示金鑰、路徑、token、回應內容。
 - **驗收**：新增測試餵入各類已知例外，狀態列文字都來自對照表；未知例外顯示通用中文訊息加錯誤代碼。
 
@@ -139,8 +139,8 @@ P0（快速修正，含真實 bug）
 
 ### P0-09 ChatGPT 登入的兩個收尾
 - **問題**：
-  - `desktop_chatgpt_ui.py:22` 的 `LOCAL_ACTIONS` 註解寫「只讀本機」，但 `restore` 可能連網 refresh，因此跳過了「先等背景作業停止」的保護。目前只在背景閒置時觸發，實際無害，但分類錯誤，未來容易誤用。
-  - `desktop_chatgpt_ui.py:626` 的 refresh 失敗被 `except Exception: pass` 吞掉，沒有任何紀錄（`:667` 同樣模式也一併檢查）。
+  - `desktop_app/features/assistant/connection.py:22` 的 `LOCAL_ACTIONS` 註解寫「只讀本機」，但 `restore` 可能連網 refresh，因此跳過了「先等背景作業停止」的保護。目前只在背景閒置時觸發，實際無害，但分類錯誤，未來容易誤用。
+  - `desktop_app/features/assistant/connection.py:626` 的 refresh 失敗被 `except Exception: pass` 吞掉，沒有任何紀錄（`:667` 同樣模式也一併檢查）。
 - **改法**：`restore` 另立分類（「可能連網、但只在閒置時由主程式排程」），註解據實描述；失敗時記錄固定的階段代碼（不含 token、不含例外原文，遵守 `RedactedEventLog` 只收固定代碼的規則）。
 - **驗收**：既有 71 個 ChatGPT UI／整合測試通過；新增測試確認 refresh 失敗會留下階段代碼、畫面恢復顯示登入按鈕。
 
@@ -261,7 +261,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：截圖工具在 `--scale 1.5` 與 `--scale 2` 下沒有截斷文字或重疊元件；Tab 鍵順序符合視覺順序。
 
 ### P1-11 視窗最小尺寸與響應式版面
-- **問題**：目前最小尺寸 800×600（[desktop_ui.py:2240](../../desktop_ui.py)），在此尺寸下版面擁擠。
+- **問題**：目前最小尺寸 800×600（[desktop_app/shell/main_window.py:2240](../../desktop_app/shell/main_window.py)），在此尺寸下版面擁擠。
 - **改法**：決定支援的最小尺寸（建議 1280×720），在此以下改用可捲動但不破版的配置；市場總覽右側面板可收合。
 - **驗收**：截圖工具在最小支援尺寸下無截斷、無重疊。
 
@@ -308,12 +308,12 @@ P0（快速修正，含真實 bug）
 
 #### P2-A1 集中 UI 文字
 - **問題**：中文字串直接寫在各檔案；14 個 desktop 測試檔直接斷言中文文字，文案一改就壞。
-- **改法**：新增 `desktop_strings.py`（或同等模組），所有使用者可見文字集中管理；測試改為引用同一份常數或以 objectName 定位。為未來多語系預留結構，但本階段只做繁體中文。
+- **改法**：新增 `desktop_app/strings/catalog.py`（或同等模組），所有使用者可見文字集中管理；測試改為引用同一份常數或以 objectName 定位。為未來多語系預留結構，但本階段只做繁體中文。
 - **驗收**：desktop UI 檔內不再有使用者可見的中文字面字串（log、註解除外）；測試全數通過。
 
 #### P2-A2 主題與樣式獨立
-- **問題**：整份樣式寫死在 `MainWindow.__init__`（[desktop_ui.py:718](../../desktop_ui.py)），另有多處 inline `setStyleSheet`。
-- **改法**：新增 `desktop_theme.py`：色彩 token、字級、間距、按鈕三級樣式、狀態色（成功、警告、危險）。元件只設 objectName／property，不寫 inline 樣式。
+- **問題**：整份樣式寫死在 `MainWindow.__init__`（[desktop_app/shell/main_window.py:718](../../desktop_app/shell/main_window.py)），另有多處 inline `setStyleSheet`。
+- **改法**：新增 `desktop_app/shell/theme.py`：色彩 token、字級、間距、按鈕三級樣式、狀態色（成功、警告、危險）。元件只設 objectName／property，不寫 inline 樣式。
 - **驗收**：除主題模組外，desktop 檔案沒有 inline `setStyleSheet`（圖表繪製例外需註明）。
 
 #### P2-A3 拆分 MainWindow
@@ -322,14 +322,14 @@ P0（快速修正，含真實 bug）
 - **驗收**：`MainWindow` ≤ 400 行；每個頁面類別 ≤ 500 行；既有 objectName 不變；全部 desktop 測試通過；smoke test 通過。
 
 #### P2-A4 拆分 execute_ui_operation
-- **問題**：[desktop_ui.py:264](../../desktop_ui.py) 一個 329 行的函式處理所有背景操作。
+- **問題**：[desktop_app/shell/main_window.py:264](../../desktop_app/shell/main_window.py) 一個 329 行的函式處理所有背景操作。
 - **改法**：改為「操作名稱 → 處理函式」的註冊表，每個處理函式獨立、可單測；未知操作照舊拒絕。
 - **驗收**：函式本體 ≤ 60 行；每個操作有對應測試；子程序／worker 入口行為不變。
 
 ### P2-B（其餘整理）
 
 #### P2-B1 修正依賴方向
-- **問題**：核心 [quantlab/desktop_runtime.py:817](../../quantlab/desktop_runtime.py) 在函式內 `from desktop_ui import execute_ui_operation`，核心反過來依賴介面層。
+- **問題**：核心 [quantlab/desktop_runtime.py:817](../../quantlab/desktop_runtime.py) 在函式內 `from desktop_app.shell.main_window import execute_ui_operation`，核心反過來依賴介面層。
 - **改法**：由 UI 層在啟動時把操作處理器註冊給 runtime（依賴注入），`quantlab/` 內不 import 任何 `desktop_*` 模組。在 `tools/quality_gate.py` 加上這條邊界檢查。
 - **驗收**：`quantlab/` 下搜尋不到 `desktop_` 匯入；quality gate 新規則有測試。
 
@@ -338,7 +338,7 @@ P0（快速修正，含真實 bug）
   - `desktop_runtime` ↔ `analysis_recovery`
   - `analysis_recovery` ↔ `research_analysis`
   - `research_analysis` ↔ `saved_candidate_pool` ↔ `walk_forward`
-  - `desktop_ui` ↔ `desktop_walk_forward`
+  - `desktop_app.shell.main_window` ↔ `desktop_app.features.walk_forward.presenter`
 - **改法**：把共用的型別、常數、驗證函式抽到不互相依賴的底層模組。注意 `saved_candidate_pool.py` 雖不是 G3 鎖定檔，但它持有 profile 定義，改動要特別小心。
 - **驗收**：GitNexus 或 import 分析顯示上述循環消失；函式內延遲匯入只保留有明確理由的（例如避免啟動時載入 Qt），並加註解。
 
@@ -397,7 +397,7 @@ P0（快速修正，含真實 bug）
 | P3-09 | 市場總覽無資料時的價值低 | 四張指數卡片全部「尚無可用資料」，K 線區空白。 | 首次使用提供「載入範例行情」與「下載官方近期資料」兩個按鈕；有快取時顯示資料日期與「非即時」標示。 |
 | P3-10 | **背景作業固定延遲 3.5–8 秒；Walk-forward 每次評估約 8 秒** | 實測：960 根示範資料的回測本身只要 0.06 秒，但從按下按鈕到完成要 3.5–8 秒（機器負載不同時量到兩種數字）；紙上帳戶讀取、對帳、重播每次也約 8 秒。預設 Walk-forward（960 根、3 折、5 個內建候選、33 次評估）共花 269 秒，平均每次評估約 8 秒，遠高於回測本身的計算量。延遲主要來自每個作業或評估都啟動獨立子程序。 | 先量測子程序啟動、匯入、結果寫回各階段的耗時，再找出可省的部分（例如延後載入不需要的模組）。**子程序隔離是安全設計，不得取消**；只能在保持隔離的前提下縮短。 |
 | P3-11 | **大量資料的效能與儲存** | 實測：回測約 60 µs／根（10,000 根 0.62 秒），資料以 JSON 儲存（10,000 根 2.4 MB）。換算一年 1 分 K（約 34 萬根）：單次回測約 20 秒、檔案約 80 MB；Walk-forward 保存池最多 620 次評估，可能要數小時。合成產生器上限 10,000 根，現有測試沒有涵蓋大型資料。 | 建立大型資料的效能基準測試；評估研究資料改用 SQLite 或欄式格式（與既有 hash 與溯源規則相容）；Walk-forward 預覽時顯示預估耗時。`data.py`、`backtest.py` 為 G3 鎖定檔，引擎內部最佳化需追加 profile，排在有計畫的引擎版本升級時處理。 |
-| P3-12 | TLS 信任設定不一致（預防性） | `quantlab/downloads.py:59`、`quantlab/market_providers.py:179`、`quantlab/provider.py:85` 用 `ssl.create_default_context()`；ChatGPT 登入改用了 ROOT-only 信任錨（`desktop_chatgpt_auth.py:114-138`），因為本機有過期的交叉簽署 `ISRG Root X2`。實測：期交所、期交所 OpenAPI、證交所 OpenAPI、data.gov.tw 目前都**正常**（憑證鏈不經過 Let's Encrypt），所以現在不是 bug；但只要任何資料來源改用 Let's Encrypt 憑證就會在這台電腦失敗（例如用 Python 下載 sqlite.org 已重現）。 | 把信任錨建立抽成共用模組，非鎖定檔先改用；`provider.py` 屬 G3 鎖定檔，等有計畫的引擎版本升級時一起處理。加測試以含過期中繼憑證的假憑證庫重現。 |
+| P3-12 | TLS 信任設定不一致（預防性） | `quantlab/downloads.py:59`、`quantlab/market_providers.py:179`、`quantlab/provider.py:85` 用 `ssl.create_default_context()`；ChatGPT 登入改用了 ROOT-only 信任錨（`quantlab/assistant/adapters/chatgpt/auth.py:114-138`），因為本機有過期的交叉簽署 `ISRG Root X2`。實測：期交所、期交所 OpenAPI、證交所 OpenAPI、data.gov.tw 目前都**正常**（憑證鏈不經過 Let's Encrypt），所以現在不是 bug；但只要任何資料來源改用 Let's Encrypt 憑證就會在這台電腦失敗（例如用 Python 下載 sqlite.org 已重現）。 | 把信任錨建立抽成共用模組，非鎖定檔先改用；`provider.py` 屬 G3 鎖定檔，等有計畫的引擎版本升級時一起處理。加測試以含過期中繼憑證的假憑證庫重現。 |
 | P3-13 | Walk-forward 結果與預覽難讀 | 預覽是一大段純文字索引（例如 `[0, 240)`）；結果表格欄位擠在一起、回撤比例顯示 30 位小數（例如 `0.000725618324761175621…`），「已評估 第 4 個」等用語難懂。 | 併入 P1-02 精靈的時間軸預覽與 P1-07 的結果表格；數字套用 P0-10 格式。 |
 
 ---
@@ -473,7 +473,7 @@ P0（快速修正，含真實 bug）
 | P3-05 更新檢查的真實更新來源 | `quantlab/update_check.py`：使用者按下按鈕才檢查；以 SHA-256 驗證 release-manifest；不下載、不安裝；以注入的傳輸層離線測試所有情況 | 專案尚未發布 `release-manifest.json` 與其 `.sha256` 附檔，真實網路與真實發行頁面未實測：發布第一個含 manifest 的版本後，在設定頁按「檢查更新」確認顯示「已是最新」或「有新版本」 |
 | P3-04 舊版程式檔清理的真實安裝目錄實跑 | `quantlab/payload_cleanup.py` 只處理 `payloads\<版本>` 的直接子資料夾，保留目前版本與前一版，遇連結、無法解析的名稱或權限問題一律零刪除；以暫存資料夾測試 | 需在真實升級過的安裝（`%LOCALAPPDATA%\Programs\MarkAuto\payloads`）上執行，確認只刪除更舊的版本、捷徑與使用者資料不受影響 |
 | P3-06 程式碼簽署 | 僅提供檢查清單 `packaging/SIGNING_CHECKLIST.md`；目前安裝程式與執行檔皆未簽署，文件與介面也不宣稱已簽署 | 需要使用者取得程式碼簽署憑證與簽署環境後，依清單簽署並用 `signtool verify` 驗證 |
-| P3-03 ChatGPT 真實推論、額度不足、授權失效 | 介面端已依固定錯誤代碼呈現四種結果（成功／額度已達限制／需要重新授權／一般失敗），額度狀態不提供立即重試，授權失效提供重新授權；以假提供者離線測試，且不顯示例外文字、權杖或雜湊（`desktop_chatgpt_states.py`） | 真實帳號的推論路徑仍未驗證，必須由使用者本人以自己的帳號操作一次：連線後執行一次 AI 策略中心的產生流程，並在額度用盡與授權過期時確認畫面顯示對應的狀態 |
+| P3-03 ChatGPT 真實推論、額度不足、授權失效 | 介面端已依固定錯誤代碼呈現四種結果（成功／額度已達限制／需要重新授權／一般失敗），額度狀態不提供立即重試，授權失效提供重新授權；以假提供者離線測試，且不顯示例外文字、權杖或雜湊（`desktop_app/features/assistant/states.py`） | 真實帳號的推論路徑仍未驗證，必須由使用者本人以自己的帳號操作一次：連線後執行一次 AI 策略中心的產生流程，並在額度用盡與授權過期時確認畫面顯示對應的狀態 |
 | P3-07 長時間作業進度與取消 | 回測、研究、Walk-forward、下載共用同一個進度元件（階段名稱取自固定白名單、有百分比才顯示確定進度、否則不定進度）與取消按鈕；取消語意與逾時未改，說明已消耗額度不退；每次作業只有一則完成或取消通知（離線測試涵蓋四種作業與連按取消） | 真實長時間作業（例如完整 Walk-forward）的視覺體驗需在實機觀察一次 |
 | P3-09 市場總覽空白狀態 | 無資料時提供「載入範例行情」（離線合成、明確標示範例）與「下載官方近期資料」（沿用預設為否的明確同意）；有資料時顯示資料日期與「非即時」標示；離線測試涵蓋空白、範例、快取三種狀態且同意前零網路 | 官方近期資料的真實下載需在有網路的電腦上按一次確認；範例行情不是官方資料 |
 | P3-13 Walk-forward 可讀性與最終目標量測 | 預覽時間軸、四位小數上限與缺值文案已由測試涵蓋（含 30 位小數、NaN、無限大）；最終 1366×768 量測見 `docs/analysis/t16_final_targets.md`（最高頁 1377 px、每頁 primary ≤1、未標示輸入 0、標籤減少 60%–89%、MainWindow 393 行等） | 量測在離屏 Qt 與空白工作區完成；真實高 DPI 螢幕與不同系統字型的實機外觀仍需使用者驗證（見上方高 DPI 列） |

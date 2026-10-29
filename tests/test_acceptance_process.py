@@ -39,7 +39,7 @@ class AcceptanceProcessContracts(unittest.TestCase):
         self.assertIn('Source UI fixture requires ephemeral hosted CI', run.stdout + run.stderr)
 
     def test_unified_close_policy_rejects_nonlocal_nonempty_or_unstopped_scope(self):
-        from desktop_strings import ui_text
+        from desktop_app.strings.catalog import ui_text
 
         cases = [
             ('shutdown', ui_text('v2.local'), 'local-stock', ui_text('v2.shutdown_summary').format(0, 0), True),

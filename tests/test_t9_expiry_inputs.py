@@ -188,7 +188,7 @@ class ExpiryInputTests(unittest.TestCase):
         self.assertEqual(expected['content_hash'], content_hash(actual))
 
     def test_manual_payload_bytes_and_hash_match_head_archive(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         self.assertEqual(GOLDEN['head_archive'], 'db44477ac24573c752484ed357c11689b29deddf')
@@ -204,7 +204,7 @@ class ExpiryInputTests(unittest.TestCase):
                 self.assert_golden_request(expected, form.build_payload())
 
     def test_run_payload_identical_to_manual_for_every_product_and_boundaries(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         for product in ('TX', 'MTX', 'TMF'):
@@ -243,7 +243,7 @@ class ExpiryInputTests(unittest.TestCase):
                     self.assertEqual(selected.expiries.table.item(0, 1).text(), '2026-10-20')
 
     def test_uncovered_does_not_fill_or_bypass_missing_expiry_guard(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from quantlab.reporting import synthetic_dataset
         from quantlab.backtest import run_backtest
         from quantlab.__main__ import config_from_json
@@ -265,7 +265,7 @@ class ExpiryInputTests(unittest.TestCase):
                 run_backtest(data, builtin_strategies()[0], config_from_json(form.build_payload()['config']))
 
     def test_picker_uncovered_selection_preserves_manual_history_and_requires_calendar(self):
-        from desktop_market import MarketHistoryDialog
+        from desktop_app.features.market.dashboard import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for month in ('202509', '202610', '202609W2'):
@@ -284,7 +284,7 @@ class ExpiryInputTests(unittest.TestCase):
                     dialog.session_payload()
 
     def test_picker_selection_invalidates_history_confirmation(self):
-        from desktop_market import MarketHistoryDialog
+        from desktop_app.features.market.dashboard import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         dialog = MarketHistoryDialog()
@@ -297,10 +297,10 @@ class ExpiryInputTests(unittest.TestCase):
             dialog.session_payload()
 
     def test_invalid_provenance_preserves_manual_expiry_payload(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
-        with patch('desktop_expiry_inputs.load_expiries', side_effect=ValueError('invalid source digest')):
+        with patch('desktop_app.components.expiry_inputs.load_expiries', side_effect=ValueError('invalid source digest')):
             form = BacktestForm()
         self.addCleanup(form.close)
         self.assertIn('未通過來源驗證', form.expiry_picker.summary.text())
@@ -310,7 +310,7 @@ class ExpiryInputTests(unittest.TestCase):
         self.assertEqual(form.build_payload()['config']['instrument_expiries'], {'TAIFEX:TMF:202609': '2026-09-16'})
 
     def test_import_request_identical_and_calendar_still_explicit(self):
-        from desktop_market import MarketHistoryDialog
+        from desktop_app.features.market.dashboard import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for product in ('TX', 'MTX', 'TMF'):
@@ -333,7 +333,7 @@ class ExpiryInputTests(unittest.TestCase):
                 selected.session_payload()
 
     def test_history_manual_and_picker_requests_match_head_bytes_for_day_and_night(self):
-        from desktop_market import MarketHistoryDialog
+        from desktop_app.features.market.dashboard import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for key, expected in GOLDEN['history'].items():
@@ -354,8 +354,8 @@ class ExpiryInputTests(unittest.TestCase):
                     self.assert_golden_request(expected, dialog.request_payload())
 
     def test_market_page_demo_visible_without_calendar_and_clears_for_real_or_missing(self):
-        from desktop_pages.market import MarketPage
-        from desktop_pages.host import PageState
+        from desktop_app.features.market.market import MarketPage
+        from desktop_app.shell.host import PageState
         from quantlab.reporting import synthetic_dataset, save_dataset
 
         mkdir = os.mkdir
@@ -383,11 +383,11 @@ class ExpiryInputTests(unittest.TestCase):
                 self.assertIn(text, page.research_summary.text())
             self.assertEqual(page._quote_series, quotes)
             real = replace(dataset, manifest={**dataset.manifest, 'source_type': 'proxy'})
-            with patch('desktop_pages.market.load_dataset', return_value=real):
+            with patch('desktop_app.features.market.market.load_dataset', return_value=real):
                 page.load_market_cache()
             self.assertTrue(page.research_summary.isHidden())
             self.assertEqual(page.research_summary.text(), '')
-            with patch('desktop_pages.market.load_dataset', return_value=replace(dataset, bars=())):
+            with patch('desktop_app.features.market.market.load_dataset', return_value=replace(dataset, bars=())):
                 page.load_market_cache()
             self.assertTrue(page.research_summary.isHidden())
             (Path(folder) / 'dataset.json').write_text('{invalid', encoding='utf-8')
@@ -401,7 +401,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_widget_inventory_matches_fixture_with_verified_picker_enabled(self):
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QWidget
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager
 
         mkdir = os.mkdir
@@ -411,7 +411,7 @@ class ExpiryInputTests(unittest.TestCase):
 
         with (
             patch('os.mkdir', side_effect=inherited),
-            patch('desktop_chatgpt_auth.DPAPIVault._prepare'),
+            patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare'),
             tempfile.TemporaryDirectory(prefix='t9-widgets-') as folder,
         ):
             paths = AppPaths(Path(folder) / 'workspace').ensure()

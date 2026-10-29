@@ -407,7 +407,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
     def test_audited_chatgpt_lf_and_windows_descriptors_admit_without_loading_auth(self):
         for variant in (0, 1):
             folder, reference, original, state = make_chatgpt_source(self.root / ('plan-' + str(variant)), implementation=variant)
-            with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+            with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                 admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, original_dataset=original)
             self.assertEqual(len(admission.candidate_pool), 15)
             self.assertEqual(admission.admission['provider_mode'], 'chatgpt_plan')
@@ -723,7 +723,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                 folder, ref, original, _ = make_chatgpt_source(
                     self.root / f'profile-v2-{index}-{target}', producer=CURRENT_CHATGPT_PROFILE_V2, implementation=index, dependency_target=target
                 )
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
                 self.assertEqual(admission.admission['producer'], CURRENT_CHATGPT_PROFILE_V2)
                 self.assertEqual(admission.admission['real_model_status'], 'not_verified')
@@ -848,7 +848,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                             implementation=index,
                             dependency_target=target,
                         )
-                        with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                        with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                             admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
                         self.assertEqual(admission.admission['producer'], producer)
                         self.assertEqual(admission.admission['real_model_status'], 'not_verified')
@@ -1005,7 +1005,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
                         root, producer=profile, provider=compatible if mode == 'openai_compatible' else None, candidates=1
                     )
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
                 with patch('quantlab.saved_candidate_pool.SUPPORTED_PRODUCERS', tuple(reversed(SUPPORTED_PRODUCERS))):
                     reordered = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)

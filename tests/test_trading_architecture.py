@@ -59,7 +59,7 @@ class TradingArchitectureTests(unittest.TestCase):
             ('quantlab/trading/application/subject.py', 'from sqlite3 import connect'),
             ('quantlab/trading/ports/subject.py', 'from ..application import engine'),
             ('quantlab/trading/ports/subject.py', 'from ..runtime import build'),
-            ('quantlab/trading/adapters/subject.py', 'from desktop_trading.window import TradingWindow'),
+            ('quantlab/trading/adapters/subject.py', 'from desktop_app.features.trading.window import TradingWindow'),
             ('quantlab/trading/adapters/subject.py', 'from ..application.engine import TradingEngine'),
         ):
             with self.subTest(path=path, source=source):
@@ -75,11 +75,11 @@ class TradingArchitectureTests(unittest.TestCase):
             'from quantlab.trading.ports.storage import Journal',
         ):
             with self.subTest(source=source):
-                self.assertTrue(check_source(source, 'desktop_trading/subject.py'))
+                self.assertTrue(check_source(source, 'desktop_app/features/trading/subject.py'))
         self.assertEqual(
             check_source(
                 'from quantlab.trading.application.contracts import UiState\nfrom quantlab.trading.domain.models import Market\nfrom .widgets import label\nfrom PySide6.QtWidgets import QLabel',
-                'desktop_trading/subject.py',
+                'desktop_app/features/trading/subject.py',
             ),
             (),
         )

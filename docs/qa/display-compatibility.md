@@ -8,7 +8,7 @@ Automation cannot claim visual completeness; final confirmation is the user's.
 ## Pages and evidence boundary
 
 Inspect these seven sidebar pages, named exactly as in
-[desktop_strings.py](../../desktop_strings.py):
+[desktop_app/strings/catalog.py](../../desktop_app/strings/catalog.py):
 
 1. 市場總覽
 2. 資料匯入與更新

@@ -171,3 +171,8 @@ nohup.out
 # Generated/verified native acceptance helper; source remains versioned.
 /packaging/acceptance_process.dll
 /t/
+
+# The data feature is presentation source; keep other data directories ignored.
+!desktop_app/features/data/
+desktop_app/features/data/*
+!desktop_app/features/data/*.py

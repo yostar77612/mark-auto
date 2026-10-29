@@ -15,8 +15,8 @@ from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
 from shiboken6 import isValid
 
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
 from quantlab.trading.application.contracts import StrategyForm
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, PositionLot, Quote, Side

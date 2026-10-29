@@ -20,7 +20,7 @@
 
 Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/trading/runtime/` 組裝／process／IPC 支援範圍（不是准許其他服務任意移入該範圍）。`desktop_pages/mount.py:11` 僅掛載 UI 頁面，仍是 presentation。`tools/`、`packaging/`、獨立 smoke 與範例腳本均是 tooling；runtime 模組不得反向依賴 tooling，只有 composition 的顯式 smoke 入口可組裝它。
 
-目標路徑是本輪保留整檔或搬移整檔的落點，不代表當下已完成分層。研究套件採 **`quantlab/research_core/`**，避開 G3 的 `quantlab/research.py`；其子目錄使用 `domain/`、`application/`、`ports/`、`adapters/`。依 R4，只選擇已列違規或大於 600 行的研究檔案搬移，不為整齊搬動全部檔案。無觸發者列原路徑；G3 相依限制另見第 5 節。ChatGPT 非 UI 新抽出服務／port 使用 `quantlab/assistant/application/`，實作使用 `quantlab/assistant/adapters/chatgpt/`；G3 auth/provider 本體不搬。
+目標路徑是本輪保留整檔或搬移整檔的落點，不代表當下已完成分層。研究套件採 **`quantlab/research_core/`**，避開 G3 的 `quantlab/research.py`；其子目錄使用 `domain/`、`application/`、`ports/`、`adapters/`。依 R4，只選擇已列違規或大於 600 行的研究檔案搬移，不為整齊搬動全部檔案。無觸發者列原路徑；G3 相依限制另見第 5 節。ChatGPT 非 UI 新抽出服務／port 使用 `quantlab/assistant/application/`，實作使用 `quantlab/assistant/adapters/chatgpt/`；G3 auth/provider 本體於 B 純搬至上述 adapter 路徑，D 再依責任拆分。
 
 桌面元件採 `desktop_app/shell/`、`features/<功能>/`、`components/`、`strings/`；所有 `quantlab/trading/` 檔案保持現有路徑。表中 shared 字串目錄是 3.2 明定的例外，雖在 `desktop_app/strings/`，不因此依賴 PySide6。尚未拆開的檔案只列一個主要落點；slice 2 再列拆分後各責任的子模組。
 
@@ -49,7 +49,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_market_layout.py` | 114 | infrastructure | `quantlab/research_core/adapters/market_layout.py` | LayoutStore 寫檔；B 搬核心 adapter；`preset`，`desktop_market_layout.py:17` |
 | `desktop_market_workspace.py` | 324 | presentation | `desktop_app/features/market/workspace.py` | 可移動 UI panel 與 LayoutStore 使用者；匯入違規見第 3 節；`_button`，`desktop_market_workspace.py:17` |
 | `desktop_order_lines.py` | 155 | presentation | `desktop_app/features/paper/order_lines.py` | 紙上委託線與手勢投影；`tick_price`，`desktop_order_lines.py:12` |
-| `desktop_pages/__init__.py` | 13 | presentation | `desktop_app/shell/__init__.py` | 頁面／presenter 與顯示輔助：`__init__`；`desktop_pages/__init__.py:1` |
+| `desktop_pages/__init__.py` | 13 | presentation | `desktop_app/shell/pages.py` | 頁面／presenter 與顯示輔助：`__init__`；`desktop_pages/__init__.py:1` |
 | `desktop_pages/app_header.py` | 213 | presentation | `desktop_app/shell/app_header.py` | 頁面／presenter 與顯示輔助：`app_header`；`_CloseWatcher`，`desktop_pages/app_header.py:17` |
 | `desktop_pages/assistant.py` | 216 | presentation | `desktop_app/features/assistant/assistant.py` | 頁面／presenter 與顯示輔助：`assistant`；`AssistantPanel`，`desktop_pages/assistant.py:19` |
 | `desktop_pages/assistant_completion.py` | 161 | presentation | `desktop_app/features/assistant/assistant_completion.py` | 頁面／presenter 與顯示輔助：`assistant_completion`；匯入違規見第 3 節；`reference_catalog`，`desktop_pages/assistant_completion.py:21` |
@@ -57,7 +57,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_pages/assistant_manifest.py` | 144 | presentation | `desktop_app/features/assistant/assistant_manifest.py` | 頁面／presenter 與顯示輔助：`assistant_manifest`；`field_label`，`desktop_pages/assistant_manifest.py:12` |
 | `desktop_pages/assistant_models.py` | 163 | presentation | `desktop_app/features/assistant/assistant_models.py` | 頁面／presenter 與顯示輔助：`assistant_models`；`advertised_efforts`，`desktop_pages/assistant_models.py:12` |
 | `desktop_pages/assistant_permissions.py` | 77 | presentation | `desktop_app/features/assistant/assistant_permissions.py` | 頁面／presenter 與顯示輔助：`assistant_permissions`；`ResearchPermission`，`desktop_pages/assistant_permissions.py:17` |
-| `desktop_pages/assistant_runtime.py` | 208 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；D E1 才搬檔；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
+| `desktop_pages/assistant_runtime.py` | 208 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；B 已純搬至 desktop_app，D 抽取核心責任；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
 | `desktop_pages/async_status.py` | 78 | presentation | `desktop_app/components/async_status.py` | 頁面／presenter 與顯示輔助：`async_status`；`AsyncStatus`，`desktop_pages/async_status.py:12` |
 | `desktop_pages/backtest.py` | 284 | presentation | `desktop_app/features/backtest/backtest.py` | 頁面／presenter 與顯示輔助：`backtest`；匯入違規見第 3 節；`BacktestPage`，`desktop_pages/backtest.py:21` |
 | `desktop_pages/backtest_summary_card.py` | 115 | presentation | `desktop_app/features/backtest/backtest_summary_card.py` | 頁面／presenter 與顯示輔助：`backtest_summary_card`；`ReportSummaryCard`，`desktop_pages/backtest_summary_card.py:13` |
@@ -660,6 +660,8 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | C | B；與 D 在獨立 worktree 平行 | strings、shell/main window、forms、market、charts、idea UI 責任拆分；字串保留單一真正查詢入口。 |
 | D | B；與 C 平行 | desktop_runtime、ChatGPT UI/control/auth/provider、saved candidate pool、worker 的核心責任拆分；用 ports 和 composition 接線，歷史 profile bytes 不變。 |
 | E | C、D 合併 | R4 共用元件、R0 研究違規與過大檔的責任抽取；R5 死碼與過度防禦清理、刪 archives、更新架構與貢獻文件。E 不再拆成其他 PR。 |
+
+B 的唯一 R0 落點修正：desktop_pages/__init__.py 搬至 desktop_app/shell/pages.py；shell/__init__.py 必須為空 metadata，保留 worker guard 先於 Qt 載入。其餘 101 對映以原始 A fixture 逐項比對，102 來源與 92 債務身份不變。
 
 smoke 使用 desktop_app/smoke/，避免本機 packaging/ namespace 被已安裝 PyPI packaging 套件遮蔽。仍有 UI import 的 application worker 先純搬到 desktop_app/features/*/worker.py，D 再抽取核心責任；不在 B 引入 quantlab 反向依賴 UI。上述差異均是有證據的落點修正。
 

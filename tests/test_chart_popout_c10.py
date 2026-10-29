@@ -16,9 +16,9 @@ from PySide6.QtWidgets import QApplication, QWidget
 from PySide6.QtTest import QSignalSpy
 import shiboken6
 
-from desktop_market import MarketDashboard
-from desktop_pages.market import MarketPage
-from desktop_chart_popout import restore_position, save_position
+from desktop_app.features.market.dashboard import MarketDashboard
+from desktop_app.features.market.market import MarketPage
+from desktop_app.features.market.chart_popout import restore_position, save_position
 from tests.test_desktop_market import series
 from tests.test_desktop_window_position import FramedWindow
 from tests.test_result_reference_layers import fixture
@@ -41,7 +41,7 @@ class PopoutTests(unittest.TestCase):
         return folder
 
     def test_real_main_close_and_atomic_settings_layout_isolation(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         with sandbox_ui():
@@ -97,7 +97,7 @@ class PopoutTests(unittest.TestCase):
         (d.state.root / 'dataset.json').touch()
         d.host = SimpleNamespace(result_snapshot_lines=lambda *args: ())
         p = d.popout.open(visible=False)
-        with patch('desktop_pages.market.load_dataset', return_value=data):
+        with patch('desktop_app.features.market.market.load_dataset', return_value=data):
             MarketPage.bind_result_layers(d, result)
             self.assertTrue(d.chart.markers)
             self.assertIsNotNone(d.chart.trace)
@@ -200,8 +200,8 @@ class PopoutTests(unittest.TestCase):
         from tools.quality_gate import python_findings
 
         root = Path(__file__).resolve().parents[1]
-        source = (root / 'desktop_chart_popout.py').read_text(encoding='utf-8')
-        self.assertEqual(python_findings(source, 'desktop_chart_popout.py', desktop=True), [])
+        source = (root / 'desktop_app/features/market/chart_popout.py').read_text(encoding='utf-8')
+        self.assertEqual(python_findings(source, 'desktop_app/features/market/chart_popout.py', desktop=True), [])
 
     def test_disconnect_no_timers_no_retention_and_empty_data(self):
         d = self.dashboard

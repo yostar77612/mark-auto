@@ -21,7 +21,7 @@ second desktop. Existing research paths, login references and safeguards remain
 authoritative, while the independent v2 trading engine retains its own book.
 
 Trading Domain, Application, Ports, Adapters and Runtime live under
-`quantlab/trading`; Qt presentation lives under `desktop_trading`. The composition
+`quantlab/trading`; Qt presentation lives under `desktop_app.features.trading`. The composition
 root `trading_runtime.py` alone launches the independent engine. A byte-only,
 authenticated local named pipe transports registered immutable DTOs, Decimal
 strings and UTC timestamps; no network trading service or pickle is used.
@@ -101,7 +101,7 @@ not a scan exclusion or an expansion of the old golden expected sets.
 
 ## Source worker import boundary
 
-Source Python workers resolve the existing `desktop_ui:execute_ui_operation`
+Source Python workers resolve the existing `desktop_app.shell.main_window:execute_ui_operation`
 registrar under a process-local import role. The role also requires a real
 multiprocessing parent, so a registrar lookup in the GUI process cannot cache
 child-only window bases. Ordinary parent imports retain the real Qt types,

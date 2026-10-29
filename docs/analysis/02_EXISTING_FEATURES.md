@@ -212,7 +212,7 @@
 
 原始表仍對應固定基線，不把新增模組倒填成原本具備。現有新增桌面提供繁中總覽／資料匯入下載／策略與生成候選版本／日期與參數批次回測／報表比較選擇／Paper對帳重播急停／模型設定與安全備份。主要計算、下載、研究與備份在受控程序執行；大型本機資料或結果的顯示解析仍有同步部分，需用基準決定是否優化。
 
-來源證據為 `desktop_ui.py`、`quantlab/desktop_runtime.py`、`desktop.py` 及 `tests/test_desktop_ui.py`／`tests/test_desktop_runtime.py`。真券商、真模型語義、正式策略績效及乾淨Win10/11驗收並未因此變成已驗證；完整狀態只依ACCEPTANCE.json。GUI的fixture模式與loopback協定測試不冒充外部AI研究成功。
+來源證據為 `desktop_app/shell/main_window.py`、`quantlab/desktop_runtime.py`、`desktop.py` 及 `tests/test_desktop_ui.py`／`tests/test_desktop_runtime.py`。真券商、真模型語義、正式策略績效及乾淨Win10/11驗收並未因此變成已驗證；完整狀態只依ACCEPTANCE.json。GUI的fixture模式與loopback協定測試不冒充外部AI研究成功。
 
 ## 0.1.2 功能與驗收對照（接續驗收）
 
@@ -277,7 +277,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 | 微型 TMF | 官方每日／時段行情；另可將合格 TMF 研究分鐘 dataset 及其明示 calendar 適配為市场圖表 | 有合格分鐘源時為 1／3／5／15／30／60 分、日、週；daily source 僅日／週 | 核心只接受 `TAIFEX:TMF:YYYYMM`、乘數 10、tick 1；資料品質、到期／成本／日曆仍各自驗證 |
 | 後續本機歷史模組 | staging 支援明示 TX／MTX／TMF 到期月及日期時段的官方格式 CSV／RPT tick→分鐘 cache | 已有來源實驗 3 商品×8 週期、各 300 分鐘，共 900 bars | 尚未發布；它只寫市場 history cache，不寫研究 dataset，不取得研究／交易資格；仍沒有 TAIEX 分鐘線 |
 
-程式證據：`quantlab/market_providers.py` 的 `parse_twse_daily`、`parse_taifex_daily`；`market.py` 的 `InstrumentRef/MarketBar/SourceProvenance/QuoteSnapshot`；`desktop_ui.dataset_market_series`；核心 `validate_contract/Instrument`；[S03][S13][S14][S15]。
+程式證據：`quantlab/market_providers.py` 的 `parse_twse_daily`、`parse_taifex_daily`；`market.py` 的 `InstrumentRef/MarketBar/SourceProvenance/QuoteSnapshot`；`desktop_app.shell.main_window.dataset_market_series`；核心 `validate_contract/Instrument`；[S03][S13][S14][S15]。
 
 **來源與 freshness 的實際行為**
 
@@ -288,7 +288,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 - 本機檔案匯入保留 local-import 性質。符合官方 schema 或計算出 hash，不能單独證明任意輸入檔的真偽與授權。
 - TAIFEX 無完整 OHLC 的列及不支援價差契約會被省略並計數／警告；不從結算價或隔日資料補造。原始 outright 成交量與每日含價差合計量口徑可能不同。
 
-**聚合契約**（`chart_data.aggregate_bars`，`TIMEFRAMES`，`desktop_charts.CandlestickChart`；[S16][S17]）
+**聚合契約**（`chart_data.aggregate_bars`，`TIMEFRAMES`，`desktop_app.components.charts.CandlestickChart`；[S16][S17]）
 
 - 分鐘以明示 session-open 錨定，不跨日／夜盤中斷；目標週期必須是來源分鐘數的整倍數。日線按 exchange trade date 合併日夜時段；週線採 ISO 交易日週。
 - 對 exact duplicates 去重並提示；衝突 duplicate、混解析度、重疊、未知時段、較粗來源下採樣為細線均拒絕；亂序排序可追蹤。
@@ -361,7 +361,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 | 手動 export/import | 0.2.0 匯出受限 training context、回應 schema 及來源／config／data hash；用戶自行傳送／貼回或選檔；strict JSON／DSL 驗證後成 immutable candidate | 應用不自動操作 ChatGPT 網站、不讀 cookies；人工貼回的來源無法由本機證明，持續 `manual_unverified`；不執行任意程式 |
 | 官方 ChatGPT 訂閱整合 | **0.2.1 已合併，待發布品驗證**新增本應用自己的 PKCE／OIDC registration、官方 authorize URL、loopback callback、nonce／issuer／audience／RS256/JWKS 驗證、Windows DPAPI＋ACL；模型發現、Responses parser、typed 狀態及持久 receipt | 尚無实际使用者 grant、訂閱資格／model discovery／inference。授權必須使用者完成官方流程；不借用其他軟體 token 或 cookies。曾重現跨 registration unknown-call bypass，現已在最後 head 修復並通過指定 native／完整 gate；不把離線工程驗證當真帳戶資格 |
 
-已發布程式證據：`quantlab.provider.HTTPTransport`、`research.CompatibleProvider`、`manual_exchange`；[S07][S21][S22]。已合併 0.2.1 程式證據是 `desktop_chatgpt_auth.py` 的 `AuthSession/IdentityValidator/DPAPIVault` [S26]、`desktop_chatgpt_provider.py` 的 `ChatGPTPlanProvider`／持久 controls [S27]、`desktop_chatgpt_ui.py` [S28]、實際 host [S29]、研究 receipt reconciliation [S30] 與 worker [S31]；皆固定至 `2ed1e3e`，不引用早期受缺陷影響 head 作最終證據。
+已發布程式證據：`quantlab.provider.HTTPTransport`、`research.CompatibleProvider`、`manual_exchange`；[S07][S21][S22]。已合併 0.2.1 程式證據是 `quantlab/assistant/adapters/chatgpt/auth.py` 的 `AuthSession/IdentityValidator/DPAPIVault` [S26]、`quantlab/assistant/adapters/chatgpt/provider.py` 的 `ChatGPTPlanProvider`／持久 controls [S27]、`desktop_app/features/assistant/connection.py` [S28]、實際 host [S29]、研究 receipt reconciliation [S30] 與 worker [S31]；皆固定至 `2ed1e3e`，不引用早期受缺陷影響 head 作最終證據。
 
 **已合併訂閱安全要求與驗證邊界**：啟動自動還原已保存登入（讀本機 DPAPI 紀錄，到期時以保存的 refresh token 更新一次），不自動授權／發現／推論，登入後隱藏登入按鈕；每次網路及 included-usage policy 確認不持久化。auth／inference 共用受管理 worker；取消／關閉／睡眠／帳戶切換須確認整個子程序樹停止。未知結果消耗 reservation、不退額度、不自动重試；controls 缺失／損毀不得當新帳戶。新的 registration 也必須受同一安裝的未知／paused barrier 約束。最後 head 已含上述 barrier 修補及指定工程 gate；實際服務的授權、計費、配額及未知遠端結果仍不可由本機測試保證。
 
@@ -413,7 +413,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 | 項目 | 本次證據／判斷 | 最小後續驗收 |
 |---|---|---|
 | **必要 M4：真實資料到期日不能由普通表單完成** | `BacktestForm` 欄位沒有 expiry；其 default config 的 `instrument_expiries={}`；`run_backtest/run_campaign` 正常按鈕把此 config 交核心。`backtest._run` 對任何 official/proxy data 強制每合約明确 expiry。使用現有 13,680 真實 bars 及普通表單重現：`ValidationError: explicit instrument expiry required for real/proxy data`。核心正確拒絕，沒有被放寬；目前只能用進階 JSON／外部程式配置跨過此步 | **staging 已加型別化實際合約／到期日表格**，不推算日期或驗證來源，保留官方自行核對提示。9 新測試由本附錄查核者獨立重跑 PASS；以既有 training-only 5,700 bars、正常 Qt 輸入／回測按鈕兩次得到相同 hash，Campaign 只驗 config 且與 backtest 相同。尚需整合後完整 native/frozen gate；不提前為 M4 授分 |
-| **必要 M4：普通 Paper margin 與 replay host 衝突** | `PaperPolicyForm` 可輸入 120,000 之類有效金額，但 `desktop_ui.ui_paper_replay` 固定傳 `margin_per_contract=100000`／`synthetic-assumption-v1`；`PaperReplay.step` 比對實際 pinned policy 後拒絕。已在純 synthetic 臨時工作區重現 `Replay margin does not match pinned broker policy`，原政策 120,000 正確保留 | **staging 已修復並經獨立審查 PASS**：host 送既有 pinned schedule；按 quote_policy 交易日取值，完整版本／future rows／session source／broker config 綁 identity；missing coverage preflight。20 外部 adversarial＋75 broker/replay/policy tests 全 PASS。舊 scalar ledger 不自動遷移、不覆寫／另開帳本；匹配 scalar API 保持可重播。尚待最後整合／native／frozen gate，核心風控未放寬 |
+| **必要 M4：普通 Paper margin 與 replay host 衝突** | `PaperPolicyForm` 可輸入 120,000 之類有效金額，但 `desktop_app.shell.main_window.ui_paper_replay` 固定傳 `margin_per_contract=100000`／`synthetic-assumption-v1`；`PaperReplay.step` 比對實際 pinned policy 後拒絕。已在純 synthetic 臨時工作區重現 `Replay margin does not match pinned broker policy`，原政策 120,000 正確保留 | **staging 已修復並經獨立審查 PASS**：host 送既有 pinned schedule；按 quote_policy 交易日取值，完整版本／future rows／session source／broker config 綁 identity；missing coverage preflight。20 外部 adversarial＋75 broker/replay/policy tests 全 PASS。舊 scalar ledger 不自動遷移、不覆寫／另開帳本；匹配 scalar API 保持可重播。尚待最後整合／native／frozen gate，核心風控未放寬 |
 | **必要 M4／實際資料上手：calendar 必須外部備妥** | 資料頁有選擇 calendar JSON，但沒有版本化研究 session calendar 編輯／官方日期維護器。Paper policy 有 typed rows，不等於 research calendar 編輯器 | 誠實提供已核對檔與來源／覆蓋範圍或另外實作非 JSON 工作流；不要寫「下載後即可直接真實回測」。此项当前为上手依賴，是否另扩充功能须依原條款判定 |
 | **已修復 release veto：訂閱跨 registration 未確定呼叫** | 較早控制只按 registration 查詢，A 未確定後 B 可 reserve；原失敗仍保留。最後 head `f11e2ef`／main `2ed1e3e` 已修復，644 項 native suite 與全七-job gate PASS | 修補後所有 registration 共用事務 barrier；status／preflight／model discovery 同樣阻擋，不隱式清其他帳戶 row、重置／退回額度。發布品仍须與此 exact tree 核對；實際 grant／server 行為另驗 |
 | **必要發布：最終來源／二進位必須再綁定** | provider 修補已合併 `2ed1e3e`；最後 head 是 644 tests，不是先前受缺陷影響的 635-test head。Postmerge Release 尚在進行 | 等最終發布完成，核對 manifest／tree／notices，實際下載 installer／kit 並驗 digest；不能只以已合併或 CI artifact 稱交付完成 |
@@ -425,20 +425,20 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 
 最初 expiry 重現只在現有 Linux/offscreen Qt 中建構普通表單，讀取既有真實 dataset 並走到核心前置驗證，未進撮合。後續對 staging 修正獨立執行有界現有 training-only 回測，不重新使用 validation／OOS／holdout。全部額外查核沒有新模型／網路呼叫。第一次誤將非 envelope 的研究證據 JSON 交 `load_dataset` 而被拒絕；第二次使用既有正式 envelope 成功重現上述到期缺口。這兩類拒絕都不是「資料來源缺失所以推測」的結果。
 
-**到期表單 staging 的獨立複驗（非發布認證）：** `desktop_forms.py` SHA-256 `6714b2a9d647def22a1fe7bafaa54ba9784da7c940cd8b7bcb8ef2c266ce77f1`；9 項新增測試全 PASS。既有 2026-09-17 至 09-23 的 5,700 bars 完全落在預先宣告 training 範圍，普通 GUI worker 兩次結果均等於 direct-engine reference hash `81d5bf95bd100acd6ad4922f22da78bcf0b841d1e145ee4b48de2f249e7eae8b`。Campaign launch 僅攔截配置並驗證，0 model／0 OOS／0 holdout；原始四個輸入檔 hash 不變。已視覺核對表單圖片中可讀的普通合約／到期欄與來源限制提示；不是 Windows DPI acceptance。
+**到期表單 staging 的獨立複驗（非發布認證）：** `desktop_app/components/forms.py` SHA-256 `6714b2a9d647def22a1fe7bafaa54ba9784da7c940cd8b7bcb8ef2c266ce77f1`；9 項新增測試全 PASS。既有 2026-09-17 至 09-23 的 5,700 bars 完全落在預先宣告 training 範圍，普通 GUI worker 兩次結果均等於 direct-engine reference hash `81d5bf95bd100acd6ad4922f22da78bcf0b841d1e145ee4b48de2f249e7eae8b`。Campaign launch 僅攔截配置並驗證，0 model／0 OOS／0 holdout；原始四個輸入檔 hash 不變。已視覺核對表單圖片中可讀的普通合約／到期欄與來源限制提示；不是 Windows DPI acceptance。
 
-**Paper margin staging 的獨立複驗（由另位 reviewer 完成，本附錄已讀其完整報告）：** 20 外部 adversarial tests 加 fresh 75 項 broker/replay/policy 測試，共95次 test executions PASS，沒有 skips。普通 Qt table 的120,000經隔離worker完成重播，重複完成不增加 orders／fills；多日期120,000／180,000／240,000及跨UTC日期夜盤以exchange trade date選值。原先失敗的 scalar desktop ledger 重開會維持拒絕且 bytes／cursor／plan／路徑／帳本數不變，不偷偷新建帳本。修改來源 `desktop_ui.py` SHA-256 `e468c5aa9b24c4a00b55c26401f457542ad02359f58976510212088b32cb6a70`、`paper_replay.py` `6c537af0395dd139384bea82a15872beec32ac2b7d6d3930506e186ce6ff9be3`；broker `paper.py` 未修改。全部為Linux/offscreen、synthetic、temp workspace；0 network／model／broker／OOS／holdout，無原生Windows／frozen／release認證。
+**Paper margin staging 的獨立複驗（由另位 reviewer 完成，本附錄已讀其完整報告）：** 20 外部 adversarial tests 加 fresh 75 項 broker/replay/policy 測試，共95次 test executions PASS，沒有 skips。普通 Qt table 的120,000經隔離worker完成重播，重複完成不增加 orders／fills；多日期120,000／180,000／240,000及跨UTC日期夜盤以exchange trade date選值。原先失敗的 scalar desktop ledger 重開會維持拒絕且 bytes／cursor／plan／路徑／帳本數不變，不偷偷新建帳本。修改來源 `desktop_app/shell/main_window.py` SHA-256 `e468c5aa9b24c4a00b55c26401f457542ad02359f58976510212088b32cb6a70`、`paper_replay.py` `6c537af0395dd139384bea82a15872beec32ac2b7d6d3930506e186ce6ff9be3`；broker `paper.py` 未修改。全部為Linux/offscreen、synthetic、temp workspace；0 network／model／broker／OOS／holdout，無原生Windows／frozen／release認證。
 
 ### A.11 原始碼與驗證索引
 
 固定 released code：
 
-- [S01 原生頁面與實際 worker operation](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_ui.py)：`execute_ui_operation` 175–383、頁面 563–747、普通 backtest/campaign、候選及選擇、Paper。
-- [S02 市場首頁及指標實際接線](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_market.py)：`MarketDashboard` 74–408，`_apply_indicators` 327–349。
+- [S01 原生頁面與實際 worker operation](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/shell/main_window.py)：`execute_ui_operation` 175–383、頁面 563–747、普通 backtest/campaign、候選及選擇、Paper。
+- [S02 市場首頁及指標實際接線](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/features/market/dashboard.py)：`MarketDashboard` 74–408，`_apply_indicators` 327–349。
 - [S03 真實來源／cache／daily import](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/market_providers.py)：`parse_twse_daily`、`parse_taifex_daily`、`fetch_official`、`load_cached`、`import_daily/refresh_daily`。
 - [S04 研究資料／calendar／quality](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/data.py)：`SessionCalendar` 46–117、full-session coverage 124–159、`import_taifex` 292–434。
 - [S05 公開檔下載及 archive 檢查](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/downloads.py)。
-- [S06 普通表單](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_forms.py)：`StrategyForm` 103–139、`BacktestForm` 142–189、`CampaignForm` 192–239、Paper forms 242–420。
+- [S06 普通表單](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/components/forms.py)：`StrategyForm` 103–139、`BacktestForm` 142–189、`CampaignForm` 192–239、Paper forms 242–420。
 - [S07 DSL／生成／研究／holdout](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/research.py)：DSL 171–191、Provider 256–374、split 473–526、holdout 562–602、campaign 605–814。
 - [S08 因果 engine／metrics／manifest](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/backtest.py)：`_run` 73–320；real/proxy expiry gate 151–152。
 - [S09 結果／比較／匯出／選擇](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/reporting.py)：比較 137–145、匯出 166–187、default config 214–218、選擇 221–243。
@@ -446,12 +446,12 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 - [S11 歷史 Paper replay](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/paper_replay.py)。
 - [S12 工作區／vault／備份／worker](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/desktop_runtime.py)：controls 97–103、backup 414–591、JobManager 688–851。
 - [S13 唯讀市場資料型別](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/market.py)。
-- [S14 TMF dataset→市場圖表 adapter](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_ui.py#L409-L435)。
+- [S14 TMF dataset→市場圖表 adapter](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/shell/main_window.py#L409-L435)。
 - [S15 核心 TMF-only 合約及配置](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/core.py)：`validate_contract` 79–85、`Instrument` 142–155、`BacktestConfig` 277–316。
 - [S16 八週期聚合](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/chart_data.py)。
-- [S17 原生 chart／交互／圖層](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_charts.py)。
+- [S17 原生 chart／交互／圖層](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/components/charts.py)。
 - [S18 指標純函式](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/indicators.py)。
-- [S19 真實 host 圖層身分驗證](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_ui.py#L1065-L1110)。
+- [S19 真實 host 圖層身分驗證](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/desktop_app/shell/main_window.py#L1065-L1110)。
 - [S20 五策略與因果信號](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/strategies.py)。
 - [S21 有界相容 HTTP transport](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/provider.py)。
 - [S22 手動 AI 交換](https://github.com/yostar77612/mark-auto/blob/fc2dfacbf297004095e971ec10cf3620307417a2/quantlab/manual_exchange.py)。
@@ -461,10 +461,10 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 
 已合併待發布 0.2.1 的固定新增來源（`2ed1e3e`）：
 
-- [S26 官方授權／OIDC／Windows vault](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_chatgpt_auth.py)。
-- [S27 Responses／持久 receipts／跨 registration barrier](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_chatgpt_provider.py)。
-- [S28 普通訂閱操作／狀態面板](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_chatgpt_ui.py)。
-- [S29 實際 host 整合／固定 Paper 風控摘要](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_ui.py)。
+- [S26 官方授權／OIDC／Windows vault](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/quantlab/assistant/adapters/chatgpt/auth.py)。
+- [S27 Responses／持久 receipts／跨 registration barrier](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/quantlab/assistant/adapters/chatgpt/provider.py)。
+- [S28 普通訂閱操作／狀態面板](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_app/features/assistant/connection.py)。
+- [S29 實際 host 整合／固定 Paper 風控摘要](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/desktop_app/shell/main_window.py)。
 - [S30 不可變 provider provenance／中斷 receipt reconciliation](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/quantlab/research.py)。
 - [S31 工作樹停止／IPC／恢復順序](https://github.com/yostar77612/mark-auto/blob/2ed1e3e5fa8f6140e7305858e59a58555dcbc3e8/quantlab/desktop_runtime.py)。
 
@@ -480,7 +480,7 @@ CLI 與選用 Streamlit 研究入口仍存在，使用同一核心與序列化�
 
 ### A.11 本輪整合補記（02:25 UTC）
 
-後續行情、expiry及Paper margin已整合至同一功能分支 `agent/market-history-acceptance-v1`、候選0.2.2，未合併main。組合來源完整724tests709PASS15原生Windows/PowerShellskip（107.128s），sourcehistorysmoke保留原流程與24新chartviews。現在仍須等真0.2.1安裝檔發布/校验後鎖定升級baseline，及本版完整原生WindowsGate；不得把此處本地組合結果說成已下載產品功能。前述0.2.0/0.2.1固定blob證據保留歷史身分，本輪新程式位置為quantlab/market_history.py、desktop_market.py、desktop_forms.py、desktop_ui.py、quantlab/paper_replay.py與相應tests。
+後續行情、expiry及Paper margin已整合至同一功能分支 `agent/market-history-acceptance-v1`、候選0.2.2，未合併main。組合來源完整724tests709PASS15原生Windows/PowerShellskip（107.128s），sourcehistorysmoke保留原流程與24新chartviews。現在仍須等真0.2.1安裝檔發布/校验後鎖定升級baseline，及本版完整原生WindowsGate；不得把此處本地組合結果說成已下載產品功能。前述0.2.0/0.2.1固定blob證據保留歷史身分，本輪新程式位置為quantlab/market_history.py、desktop_app/features/market/dashboard.py、desktop_app/components/forms.py、desktop_app/shell/main_window.py、quantlab/paper_replay.py與相應tests。
 
 
 A.11續：02:36 UTC上述0.2.1已發布並實際校驗EXE/kit/manifest，下載入口 https://github.com/yostar77612/mark-auto/releases/tag/desktop-preview-38016622951-1 。M3完整通過後固定清單210/300＝70%，餘30%；0.2.2仍為待原生Gate候選。原文§5.1明列ProfitFactor/Sharpe，§3.4停損/停利/持倉成本參考線，已追加為必須補齊的工程項，不能因chart ReferenceLine元件存在就聲稱已接正常結果。既有Sharpe明示缺年化假設、PF缺欄位；下一模組只補必要公式/接線，沒有擴張至Sortino/Calmar/portfolio optimizer。

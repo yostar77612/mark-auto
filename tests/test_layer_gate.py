@@ -163,20 +163,20 @@ class LayerGateTests(unittest.TestCase):
             ('quantlab/core.py', 'import shioaji', 'domain-to-external-sdk'),
             ('quantlab/core.py', 'import quantlab.data', 'domain-to-infrastructure'),
             ('quantlab/core.py', 'from . import research', 'domain-to-application'),
-            ('quantlab/core.py', 'import desktop_forms', 'domain-to-presentation'),
+            ('quantlab/core.py', 'import desktop_app.components.forms', 'domain-to-presentation'),
             ('quantlab/research.py', 'from .data import load_csv', 'application-to-infrastructure'),
             ('quantlab/research.py', 'import PySide6', 'application-to-pyside6'),
-            ('quantlab/research.py', 'import desktop_forms', 'application-to-presentation'),
+            ('quantlab/research.py', 'import desktop_app.components.forms', 'application-to-presentation'),
             ('quantlab/research.py', 'import shioaji', 'application-to-external-sdk'),
-            ('quantlab/data.py', 'import desktop_forms', 'infrastructure-to-presentation'),
+            ('quantlab/data.py', 'import desktop_app.components.forms', 'infrastructure-to-presentation'),
             ('quantlab/data.py', 'from . import research', 'infrastructure-to-application'),
-            ('desktop_forms.py', 'import shioaji', 'presentation-to-external-sdk'),
-            ('desktop_forms.py', 'from quantlab import data', 'presentation-to-infrastructure'),
-            ('desktop_forms.py', 'import desktop', 'presentation-to-composition'),
-            ('desktop_forms.py', 'from tools import quality_gate', 'presentation-to-tooling'),
+            ('desktop_app/components/forms.py', 'import shioaji', 'presentation-to-external-sdk'),
+            ('desktop_app/components/forms.py', 'from quantlab import data', 'presentation-to-infrastructure'),
+            ('desktop_app/components/forms.py', 'import desktop', 'presentation-to-composition'),
+            ('desktop_app/components/forms.py', 'from tools import quality_gate', 'presentation-to-tooling'),
             ('quantlab/data.py', 'import tools', 'infrastructure-to-tooling'),
-            ('desktop_strings.py', 'import PySide6', 'shared-to-pyside6'),
-            ('desktop_strings.py', 'import shioaji', 'shared-to-external-sdk'),
+            ('desktop_app/strings/catalog.py', 'import PySide6', 'shared-to-pyside6'),
+            ('desktop_app/strings/catalog.py', 'import shioaji', 'shared-to-external-sdk'),
         ):
             with self.subTest(path=path, source=source):
                 findings = self.check(source, path)
@@ -186,22 +186,22 @@ class LayerGateTests(unittest.TestCase):
             ('quantlab.core', 'domain'),
             ('quantlab.research', 'application'),
             ('quantlab.data', 'infrastructure'),
-            ('desktop_forms', 'presentation'),
+            ('desktop_app.components.forms', 'presentation'),
             ('desktop', 'composition'),
             ('tools.quality_gate', 'tooling'),
         ):
             with self.subTest(shared_target=target):
-                self.assertEqual(self.check(f'import {target}', 'desktop_strings.py')[0].rule, f'shared-to-{layer}')
+                self.assertEqual(self.check(f'import {target}', 'desktop_app/strings/catalog.py')[0].rule, f'shared-to-{layer}')
 
     def test_allowed_dependencies_ports_and_composition(self):
         for path, source in (
             ('quantlab/core.py', 'import decimal\nfrom .errors import AppError'),
             ('quantlab/research.py', 'from .core import Bar'),
             ('quantlab/data.py', 'import shioaji\nfrom quantlab.trading.ports import broker'),
-            ('desktop_forms.py', 'from PySide6.QtCore import QObject\nfrom quantlab import research'),
-            ('desktop_strings.py', 'import json\nfrom quantlab import errors'),
-            ('desktop.py', 'import desktop_forms\nimport quantlab.data\nfrom tools import quality_gate'),
-            ('tools/new_tool.py', 'import desktop_forms\nimport shioaji'),
+            ('desktop_app/components/forms.py', 'from PySide6.QtCore import QObject\nfrom quantlab import research'),
+            ('desktop_app/strings/catalog.py', 'import json\nfrom quantlab import errors'),
+            ('desktop.py', 'import desktop_app.components.forms\nimport quantlab.data\nfrom tools import quality_gate'),
+            ('tools/new_tool.py', 'import desktop_app.components.forms\nimport shioaji'),
         ):
             with self.subTest(path=path, source=source):
                 self.assertEqual(self.check(source, path), ())
@@ -232,10 +232,61 @@ class LayerGateTests(unittest.TestCase):
         section = text.split('## 2 ')[1].split('## 3 ')[0]
         rows = dict(re.findall(r'^\| `([^`]+\.py)` \| \d+ \| (\w+) \|', section, re.M))
         self.assertTrue(rows)
-        self.assertLessEqual(set(gate.tracked_sources(ROOT)), rows.keys())
-        for path, layer in rows.items():
-            with self.subTest(path=path):
-                self.assertEqual(gate.layer_for(path, self.mapping), layer)
+        relocations = json.loads((ROOT / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
+        inverse = {new: old for old, new in relocations.items()}
+        metadata = {
+            'desktop_app/smoke/__init__.py': 'tooling',
+            'desktop_app/features/trading/__init__.py': 'presentation',
+            'desktop_app/shell/__init__.py': 'presentation',
+            'desktop_app/__init__.py': 'presentation',
+            'desktop_app/features/settings/__init__.py': 'presentation',
+            'desktop_app/features/__init__.py': 'presentation',
+            'desktop_app/features/capital_scenario/__init__.py': 'presentation',
+            'desktop_app/features/market/__init__.py': 'presentation',
+            'desktop_app/components/__init__.py': 'presentation',
+            'quantlab/assistant/adapters/chatgpt/__init__.py': 'infrastructure',
+            'quantlab/assistant/adapters/__init__.py': 'infrastructure',
+            'quantlab/assistant/__init__.py': 'shared',
+            'desktop_app/features/assistant/__init__.py': 'presentation',
+            'quantlab/research_core/adapters/__init__.py': 'infrastructure',
+            'quantlab/research_core/__init__.py': 'shared',
+            'desktop_app/features/paper/__init__.py': 'presentation',
+            'desktop_app/features/backtest/__init__.py': 'presentation',
+            'desktop_app/features/compare/__init__.py': 'presentation',
+            'desktop_app/features/data/__init__.py': 'presentation',
+            'desktop_app/features/strategy/__init__.py': 'presentation',
+            'desktop_app/features/onboarding/__init__.py': 'presentation',
+            'desktop_app/features/walk_forward/__init__.py': 'presentation',
+            'desktop_app/strings/__init__.py': 'shared',
+            'tools/refactor/move_desktop_app.py': 'tooling',
+            'tools/refactor/adapt_test_paths.py': 'tooling',
+            'tools/refactor/verify_moves.py': 'tooling',
+            'tools/refactor/repair_paths.py': 'tooling',
+        }
+        current = gate.tracked_sources(ROOT)
+        self.assertLessEqual({inverse.get(path, path) for path in current}, rows.keys() | metadata.keys())
+        for path in current:
+            canonical = inverse.get(path, path)
+            with self.subTest(path=path, original=canonical):
+                if canonical in rows:
+                    expected = rows[canonical]
+                elif path in metadata:
+                    expected = metadata[path]
+                    if path.endswith('/__init__.py'):
+                        self.assertEqual((ROOT / path).read_text(encoding='utf-8').strip(), '')
+                else:
+                    self.fail('Uninventoried product source: ' + path)
+                self.assertEqual(gate.layer_for(path, self.mapping), expected)
+
+    def test_only_package_initializer_destination_is_corrected(self):
+        raw = (ROOT / 'tests/fixtures/layered_paths/r0_relocations_a.json').read_bytes()
+        self.assertEqual(hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest(), 'b1f30593fa4736ea17ef5eca319a91de9e2f05411171e353100b8303d32942e2')
+        original = json.loads(raw)
+        self.assertEqual(len(original), 102)
+        self.assertEqual(original['desktop_pages/__init__.py'], 'desktop_app/shell/__init__.py')
+        original['desktop_pages/__init__.py'] = 'desktop_app/shell/pages.py'
+        actual = json.loads((ROOT / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
+        self.assertEqual(actual, original, 'The other 101 relocation pairs must remain exact')
 
     def test_allowlist_is_shrink_only(self):
         entries = json.loads((ROOT / 'tools/layer_allowlist.json').read_text(encoding='utf-8'))
@@ -244,7 +295,7 @@ class LayerGateTests(unittest.TestCase):
 
     def test_relocation_map_is_frozen_and_matches_inventory(self):
         raw = (ROOT / 'tools/layer_relocations.json').read_bytes()
-        self.assertEqual(hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest(), 'b1f30593fa4736ea17ef5eca319a91de9e2f05411171e353100b8303d32942e2')
+        self.assertEqual(hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest(), 'fa66be37970e64bbe132d90645c505d7120de6d7680784ec02e9fc6a3f2d3e17')
         relocations = json.loads(raw)
         self.assertEqual(len(relocations), len(set(relocations.values())))
         self.assertFalse(set(relocations) & set(relocations.values()))

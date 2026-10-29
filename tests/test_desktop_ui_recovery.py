@@ -14,7 +14,7 @@ if HAS_QT:
     from PySide6.QtCore import QItemSelectionModel, QPointF, QEvent, Qt
     from PySide6.QtGui import QMouseEvent
     from PySide6.QtWidgets import QApplication
-    from desktop_ui import MainWindow
+    from desktop_app.shell.main_window import MainWindow
     from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager, CredentialVault
 
 

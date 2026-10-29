@@ -25,7 +25,7 @@
       "UTC"
     ],
     "rpt": "Comma-delimited historical data file format; market.__init__.text_71",
-    "invariants": "Tooltips only; no geometry, public desktop_ui names, widget names, payload, validation, G3 or Part B snapshot changes."
+    "invariants": "Tooltips only; no geometry, public desktop_app.shell.main_window names, widget names, payload, validation, G3 or Part B snapshot changes."
   },
   "market_empty_state_t16_part_b": {
     "plan_items": [
@@ -3321,7 +3321,7 @@
           "release": "NOT_PUBLISHED",
           "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
           "changed_files": [
-            "desktop_ui.py",
+            "desktop_app/shell/main_window.py",
             "quantlab/reporting.py",
             "tests/test_desktop_analysis_discovery.py"
           ],
@@ -3353,7 +3353,7 @@
             "skipped_native_qt": 7,
             "strict_worker_adapter": "BYTE_IDENTICAL",
             "source_sha256": {
-              "desktop_ui.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
+              "desktop_app/shell/main_window.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
               "quantlab/reporting.py": "b1b9429266851498e83f6907d8df86a53816927da47e4ca79cdd6beb27ca0420"
             }
           },
@@ -4791,7 +4791,7 @@
         "release": "NOT_PUBLISHED",
         "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
         "changed_files": [
-          "desktop_ui.py",
+          "desktop_app/shell/main_window.py",
           "quantlab/reporting.py",
           "tests/test_desktop_analysis_discovery.py"
         ],
@@ -4826,7 +4826,7 @@
           "skipped_native_qt": 7,
           "strict_worker_adapter": "BYTE_IDENTICAL",
           "source_sha256": {
-            "desktop_ui.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
+            "desktop_app/shell/main_window.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
             "quantlab/reporting.py": "b1b9429266851498e83f6907d8df86a53816927da47e4ca79cdd6beb27ca0420"
           }
         },
@@ -5232,7 +5232,7 @@
         "release": "NOT_PUBLISHED",
         "boundary": "Journal-presence metadata only; no journal-content reading or valid/completed-result claim. Explicit unverified/unreconciled state; no repair/retry/candidate authority, provider transport, new registration or budget reset.",
         "changed_files": [
-          "desktop_ui.py",
+          "desktop_app/shell/main_window.py",
           "quantlab/reporting.py",
           "tests/test_desktop_analysis_discovery.py"
         ],
@@ -5264,7 +5264,7 @@
           "skipped_native_qt": 7,
           "strict_worker_adapter": "BYTE_IDENTICAL",
           "source_sha256": {
-            "desktop_ui.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
+            "desktop_app/shell/main_window.py": "5676b9adf9619d0a0463fb05d0c18ff937f6c8f4197bf3f029800cfc580d7af8",
             "quantlab/reporting.py": "b1b9429266851498e83f6907d8df86a53816927da47e4ca79cdd6beb27ca0420"
           }
         },
@@ -5905,7 +5905,7 @@
     ],
     "evidence": "tests/test_wf_wizard.py; docs/analysis/t8_snapshot_numbers.json",
     "controls_to_preview": 3,
-    "backend": "desktop_walk_forward.py byte-for-byte unchanged",
+    "backend": "desktop_app/features/walk_forward/presenter.py byte-for-byte unchanged",
     "presets": "Documented length-derived field values; same typed grammar, source validation, preview and run operations",
     "object_names": "All existing names preserved; new wizard names recorded in snapshot evidence",
     "full_suite": "Controller-owned outside sandbox per task instructions"
@@ -6054,7 +6054,7 @@
     ],
     "scope": "Presentation only; existing refresh/cancel guards retained, runtime log schema and pinned sources unchanged. Full existing regression suite remains controller-owned outside sandbox.",
     "verification": "25 focused tests passed, exit 0 (5.4 s); quality gate 0 findings, exit 0; 300 tracked/new Python files compile with py -3.11 reading utf-8-sig; diff check clean. Full existing regressions and Windows pixel archive remain controller-owned and were not run or regenerated in this sandbox.",
-    "graph": "MainWindow and MarketDashboard MEDIUM impact; ui_snapshot.capture LOW. load_settings UNKNOWN, callers confirmed in desktop_ui, mount aliases and existing UI tests. Index refresh attempted, blocked by sandbox spawn EPERM; pre-edit queries used the existing index."
+    "graph": "MainWindow and MarketDashboard MEDIUM impact; ui_snapshot.capture LOW. load_settings UNKNOWN, callers confirmed in desktop_app.shell.main_window, mount aliases and existing UI tests. Index refresh attempted, blocked by sandbox spawn EPERM; pre-edit queries used the existing index."
   },
   "t10_part_c": {
     "plan_items": [
@@ -6082,7 +6082,7 @@
     ],
     "restore": "Read actual minimum through PageHost. Production remains 1280x720 even when screen is smaller; legacy geometry tests lower disposable minima and retain assertions.",
     "catalog": "Repair T10 question-mark placeholders in shortcut, accessibility and collapse-toggle translations.",
-    "verification": "PASS: 51 focused tests in one process, 12.137s, exit 0, including complete desktop_pages (strict Windows metrics/pixels), window position, repaired market clamp, shortcuts/accessibility/layout/settings/logs/installer/help and both guards. quality_gate exit 0, 0 findings; Python 3.11 compile of 301 tracked/new Python files exit 0; git diff --check exit 0. Full suite/T9 remain controller-owned per sandbox instruction. Extra broader market/ui_snapshot run: 19 tests, 3 known sandbox failures (campaign evaluation, CLI temp ACL, subprocess isolation temp ACL); changed clamp test passes. GitNexus refresh blocked by spawn EPERM; existing index impact used.",
+    "verification": "PASS: 51 focused tests in one process, 12.137s, exit 0, including complete desktop_app.shell.pages (strict Windows metrics/pixels), window position, repaired market clamp, shortcuts/accessibility/layout/settings/logs/installer/help and both guards. quality_gate exit 0, 0 findings; Python 3.11 compile of 301 tracked/new Python files exit 0; git diff --check exit 0. Full suite/T9 remain controller-owned per sandbox instruction. Extra broader market/ui_snapshot run: 19 tests, 3 known sandbox failures (campaign evaluation, CLI temp ACL, subprocess isolation temp ACL); changed clamp test passes. GitNexus refresh blocked by spawn EPERM; existing index impact used.",
     "snapshot_cleanup": "Flush prior deferred-delete Qt widgets before changing snapshot app style; all original snapshot assertions retained."
   },
   "t12_part_a": {

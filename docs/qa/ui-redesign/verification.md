@@ -47,7 +47,7 @@
 本次造成的 widget inventory、字串註冊、任務按鈕 role 及新捲動行為斷言已修正並獨立通過。
 其餘 WinError 5／10013 來自沙箱阻擋硬連結、junction 或 loopback TLS；以相同隔離資料在允許該本機操作的環境重驗：
 
-- desktop_history_smoke、desktop_market_integration、desktop_market_smoke、desktop_smoke_isolation、desktop_tls_smoke、market_history_ui 全部通過。
+- desktop_history_smoke、desktop_market_integration、desktop_market_smoke、desktop_smoke_isolation、desktop_app.smoke.tls、market_history_ui 全部通過。
 - desktop_smoke_terminal 9 項通過，仍使用原 40 秒全域期限；失敗不能留下成功報告的斷言沒有變動。
 - 安裝 mutex lifetime 仍失敗。全新 Python 在匯入專案前已探測到既有固定名稱 mutex；隨機 GUID 的對照 mutex 則能正常建立、關閉。直接載入 `567dbb23` 原測試也於同一行失敗，runtime／mutex 實作與測試三檔 Git blob 完全相同。未關閉其他程式、清除 mutex 或修改保護。
 
@@ -114,7 +114,7 @@ B4／R7／T16／T9 舊版面契約、匯入依賴註解、紙上交易規範詞�
 使用者完成另一輪測試後，授權先檢查並合併 UI，再做後續測試。
 整合 main `3a6027a`（已含 #89 長路徑修復及 #90 frozen recovery 修復）。
 唯一文字衝突是本契約與長路徑契約同時附加至文件尾端，兩節完整保留。
-desktop_ui.py 與 import graph 測試自動合併後已讀取差異核對。
+desktop_app/shell/main_window.py 與 import graph 測試自動合併後已讀取差異核對。
 相對最新 main，quantlab、認證及 provider 來源沒有任何額外差異。
 
 整合後隔離驗證：新增 UI 45 項通過（51.174 秒）；R7 與兩組停止保護

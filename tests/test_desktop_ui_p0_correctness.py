@@ -30,7 +30,7 @@ class CorrectnessTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
 
     def window(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         paths = AppPaths(self.root).ensure()
         jobs = JobManager(paths)
@@ -41,7 +41,7 @@ class CorrectnessTests(unittest.TestCase):
         return window
 
     def test_reconciled_account_card_three_refreshes_are_read_only(self):
-        from desktop_ui import _paper
+        from desktop_app.shell.main_window import _paper
         from quantlab.paper import PaperBroker
 
         w = self.window()
@@ -65,7 +65,7 @@ class CorrectnessTests(unittest.TestCase):
         from quantlab.paper import PaperBroker, JournalConflict
         from quantlab.core import Instrument
         from quantlab.reporting import demo_config
-        from desktop_ui import paper_risk_limits
+        from desktop_app.shell.main_window import paper_risk_limits
 
         missing = self.root / 'missing.sqlite'
         with self.assertRaises(sqlite3.Error):
@@ -93,12 +93,12 @@ class CorrectnessTests(unittest.TestCase):
         w._safe(fail)
         self.assertEqual(w.status.text(), error_message('operation_failed'))
         self.assertEqual(exception_code(ValueError('C:/private/token-secret')), 'validation_failed')
-        from desktop_chatgpt_ui import ConnectionController, ChatGPTConnectionPanel
+        from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel
 
         panel = ChatGPTConnectionPanel(ConnectionController())
         self.addCleanup(panel.deleteLater)
         panel._safe(fail)
-        from desktop_chatgpt_states import outcome_message
+        from desktop_app.features.assistant.states import outcome_message
 
         self.assertEqual(panel.status.text(), outcome_message('operation_failed'))
         for text in (w.status.text(), panel.status.text(), error_message('C:/private/token-secret')):
@@ -121,7 +121,14 @@ class CorrectnessTests(unittest.TestCase):
         self.assertIn('error_message(startup_error_code(exc))', source)
 
     def test_restore_and_cleanup_failures_record_fixed_stage_and_restore_signin(self):
-        from desktop_chatgpt_ui import ConnectionRequest, ConnectionController, ChatGPTConnectionPanel, run_connection_request, LOCAL_ACTIONS, STARTUP_ACTIONS
+        from desktop_app.features.assistant.connection import (
+            ConnectionRequest,
+            ConnectionController,
+            ChatGPTConnectionPanel,
+            run_connection_request,
+            LOCAL_ACTIONS,
+            STARTUP_ACTIONS,
+        )
         from tests.test_desktop_chatgpt_ui import FixtureSession, REF
 
         self.assertNotIn('restore', LOCAL_ACTIONS)
@@ -146,7 +153,7 @@ class CorrectnessTests(unittest.TestCase):
         controller.worker_joined(request.request_id, joined=True)
         self.assertFalse(panel.primary_sign_in.isHidden())
         self.assertTrue(panel.primary_sign_in.isEnabled())
-        from desktop_chatgpt_states import outcome_message
+        from desktop_app.features.assistant.states import outcome_message
 
         self.assertEqual(controller.outcome, 'auth_expired')
         self.assertEqual(controller.message, outcome_message('restore_refresh_failed'))

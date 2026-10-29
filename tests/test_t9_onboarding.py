@@ -11,7 +11,7 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QComboBox
-from desktop_strings import GLOSSARY, FORBIDDEN_DEFAULT_TERMS
+from desktop_app.strings.catalog import GLOSSARY, FORBIDDEN_DEFAULT_TERMS
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
 
@@ -23,7 +23,7 @@ def sandbox_ui():
     def inherited(path, mode=0o777, *args, **kwargs):
         return mkdir(path, 0o777 if os.name == 'nt' else mode, *args, **kwargs)
 
-    with patch('os.mkdir', side_effect=inherited), patch('desktop_chatgpt_auth.DPAPIVault._prepare'):
+    with patch('os.mkdir', side_effect=inherited), patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare'):
         yield
 
 
@@ -49,7 +49,7 @@ class OnboardingTests(unittest.TestCase):
         self.open_window()
 
     def open_window(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         self.window = MainWindow(self.paths, self.jobs, self.settings)
         for timer in self.window.findChildren(QTimer):
@@ -91,7 +91,7 @@ class OnboardingTests(unittest.TestCase):
         self.assertFalse(self.settings.load()['onboarding_dismissed'])
 
     def test_progress_from_real_worker_outputs_and_selection(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         w = self.window
         execute_ui_operation('ui_demo', {'bars': 100}, self.paths)

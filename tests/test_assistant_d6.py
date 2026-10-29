@@ -10,8 +10,8 @@ from unittest.mock import Mock, patch
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from desktop_pages.assistant_completion import MAX_COMPLETIONS, reference_catalog, resolve_references
-from desktop_strings import ui_text
+from desktop_app.features.assistant.assistant_completion import MAX_COMPLETIONS, reference_catalog, resolve_references
+from desktop_app.strings.catalog import ui_text
 from quantlab import agent_skills
 from quantlab.assistant_chat import ChatDispatcher
 from quantlab.errors import ERROR_TABLE
@@ -74,7 +74,7 @@ class AssistantD6Tests(unittest.TestCase):
             self.panel.input.setText('/example-59')
             self.assertEqual(self.labels(), ['/example-59'])
         entries = {('result', format(i, '012x') + '0' * 52): self.fixture.storage.identity for i in range(60)}
-        with patch('desktop_pages.assistant_completion.reference_catalog', return_value=entries):
+        with patch('desktop_app.features.assistant.assistant_completion.reference_catalog', return_value=entries):
             self.panel.input.setText('@result:')
             self.assertEqual(self.menu.list.count(), MAX_COMPLETIONS)
             self.panel.input.setText('@result:00000000003b')
@@ -175,7 +175,10 @@ class AssistantD6Tests(unittest.TestCase):
             self.panel.submit()
             self.assertIn(ERROR_TABLE['agent_reference_not_found'].explanation, self.panel.transcript.toPlainText())
             self.fixture.worker.start.assert_not_called()
-        with patch('desktop_pages.assistant_completion.reference_catalog', return_value={('result', 'a' * 64): identity, ('result', 'a' * 63 + 'b'): identity}):
+        with patch(
+            'desktop_app.features.assistant.assistant_completion.reference_catalog',
+            return_value={('result', 'a' * 64): identity, ('result', 'a' * 63 + 'b'): identity},
+        ):
             with self.assertRaises(ValueError):
                 resolve_references('@result:' + 'a' * 12, self.dispatcher)
         (self.fixture.storage.root / identity / 'result.json').unlink()
@@ -200,7 +203,7 @@ class AssistantD6Tests(unittest.TestCase):
         self.assertNotIn('DPAPI_SECRET_SENTINEL', str(request))
 
     def test_no_dynamic_execution_or_operator_route_and_existing_safety_oracles(self):
-        source = (ROOT / 'desktop_pages/assistant_completion.py').read_text(encoding='utf-8')
+        source = (ROOT / 'desktop_app/features/assistant/assistant_completion.py').read_text(encoding='utf-8')
         tree = ast.parse(source)
         calls = {n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
         self.assertFalse(calls & {'eval', 'exec', 'compile', 'open'})

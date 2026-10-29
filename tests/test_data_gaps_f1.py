@@ -13,10 +13,10 @@ from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
-from desktop_pages.data import DataPage
-from desktop_pages.data_gaps import GapPanel, import_event, timeline_rows
-from desktop_pages.job_progress import JobFeedback
-from desktop_strings import ui_text
+from desktop_app.features.data.data import DataPage
+from desktop_app.features.data.data_gaps import GapPanel, import_event, timeline_rows
+from desktop_app.components.job_progress import JobFeedback
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, canonical_json, to_dict
 from quantlab.data import SessionCalendar, aggregate_ticks, parse_timestamp, validate_dataset
 from quantlab.data_gap_report import MAX_GAPS, build_gap_report, reject_invalid_import
@@ -89,33 +89,33 @@ class GapProjectionTests(unittest.TestCase):
         self.assertEqual(canonical_json(to_dict(accepted)), before)
 
     def test_import_rejected_before_store_accepted_write_preserved(self):
-        import desktop_ui
+        import desktop_app.shell.main_window
 
         payload = dict(calendar='calendar.json', path='input.csv', kind='ticks')
         cal = dict(version='f1', sessions=[])
         data = fixture()
         with (
-            patch.object(desktop_ui, 'read_json', return_value=cal),
+            patch.object(desktop_app.shell.main_window, 'read_json', return_value=cal),
             patch('quantlab.data.import_taifex', return_value=data),
-            patch.object(desktop_ui, 'save_dataset') as save,
-            patch.object(desktop_ui, 'write_json') as write,
+            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
+            patch.object(desktop_app.shell.main_window, 'write_json') as write,
         ):
             with self.assertRaisesRegex(ValidationError, '^dataset quality is not valid$'):
-                desktop_ui._handle_ui_import(payload, None, Path('.'))
+                desktop_app.shell.main_window._handle_ui_import(payload, None, Path('.'))
             save.assert_not_called()
             write.assert_not_called()
         data = fixture(True)
         with (
-            patch.object(desktop_ui, 'read_json', return_value=cal),
+            patch.object(desktop_app.shell.main_window, 'read_json', return_value=cal),
             patch('quantlab.data.import_taifex', return_value=data),
-            patch.object(desktop_ui, 'save_dataset') as save,
-            patch.object(desktop_ui, 'write_json'),
+            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
+            patch.object(desktop_app.shell.main_window, 'write_json'),
         ):
-            desktop_ui._handle_ui_import(payload, None, Path('.'))
+            desktop_app.shell.main_window._handle_ui_import(payload, None, Path('.'))
             self.assertIs(save.call_args.args[0], data)
 
     def test_catalog_fix_options_and_no_automatic_action(self):
-        source = Path('desktop_pages/data_gaps.py').read_text(encoding='utf-8')
+        source = Path('desktop_app/features/data/data_gaps.py').read_text(encoding='utf-8')
         self.assertNotIn('start_job', source)
         self.assertNotIn('QPushButton', source)
         self.assertNotIn('deleteLater', source)

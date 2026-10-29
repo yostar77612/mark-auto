@@ -16,8 +16,8 @@ LOCKED = frozenset(
         "quantlab/strategies.py",
         "quantlab/backtest.py",
         "quantlab/data.py",
-        "desktop_chatgpt_auth.py",
-        "desktop_chatgpt_provider.py",
+        "quantlab/assistant/adapters/chatgpt/auth.py",
+        "quantlab/assistant/adapters/chatgpt/provider.py",
         "quantlab/saved_candidate_pool.py",
     }
 )

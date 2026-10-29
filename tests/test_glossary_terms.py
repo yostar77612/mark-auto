@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import unittest
 
-import desktop_strings as strings
+import desktop_app.strings.catalog as strings
 
 
 ROOT = Path(__file__).resolve().parents[1]

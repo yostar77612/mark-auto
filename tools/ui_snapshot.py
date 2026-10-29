@@ -213,7 +213,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
-    from desktop_ui import MainWindow
+    from desktop_app.shell.main_window import MainWindow
 
     out = Path(out)
     app = QApplication.instance() or QApplication([])
@@ -243,7 +243,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
             jobs = JobManager(paths)
             window = None
             try:
-                import desktop_pages.app_header as _header
+                import desktop_app.shell.app_header as _header
 
                 _header.CLOCK_OVERRIDE = lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
                 window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
@@ -324,7 +324,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                         window.deleteLater()
                         QCoreApplication.sendPostedEvents(window, QEvent.Type.DeferredDelete)
     finally:
-        import desktop_pages.app_header as _header_reset
+        import desktop_app.shell.app_header as _header_reset
 
         _header_reset.CLOCK_OVERRIDE = None
         app.setFont(old_font)

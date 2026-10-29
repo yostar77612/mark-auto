@@ -9,7 +9,7 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QToolButton, QGroupBox
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from tests.test_t9_onboarding import sandbox_ui
 
 
@@ -19,7 +19,7 @@ class SettingsSectionsTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         self.context = sandbox_ui()
@@ -65,13 +65,13 @@ class SettingsSectionsTests(unittest.TestCase):
         self.assertEqual(page.workspace_path.text(), str(self.paths.root))
         labels = '\n'.join(label.text() for label in page.paths_advanced.findChildren(QLabel))
         self.assertIn(str(self.paths.logs), labels)
-        with patch('desktop_pages.settings_layout.QDesktopServices.openUrl', return_value=True) as opened:
+        with patch('desktop_app.features.settings.settings_layout.QDesktopServices.openUrl', return_value=True) as opened:
             button = next(button for button in page.findChildren(QPushButton) if button.text() == ui_text('settings.open_workspace'))
             button.click()
             self.assertEqual(Path(opened.call_args.args[0].toLocalFile()), self.paths.root)
 
     def test_chatgpt_single_official_home_and_navigation(self):
-        from desktop_chatgpt_ui import ChatGPTConnectionPanel
+        from desktop_app.features.assistant.connection import ChatGPTConnectionPanel
 
         panels = self.window.findChildren(ChatGPTConnectionPanel)
         self.assertEqual(panels, [self.window.chatgpt_panel])
@@ -98,7 +98,7 @@ class SettingsSectionsTests(unittest.TestCase):
         self.page.errors_only.setChecked(True)
         self.assertEqual(self.page.log_view.rowCount(), 1)
         destination = Path(self.temp.name) / 'report.csv'
-        with patch('desktop_pages.log_table.choose_log_export', return_value=str(destination)):
+        with patch('desktop_app.features.settings.log_table.choose_log_export', return_value=str(destination)):
             next(button for button in self.page.findChildren(QPushButton) if button.text() == ui_text('logs.export')).click()
         self.assertIn(ui_text('logs.operation.ui_import'), destination.read_text(encoding='utf-8-sig'))
         self.assertNotIn(ui_text('logs.operation.ui_demo'), destination.read_text(encoding='utf-8-sig'))

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from PySide6.QtWidgets import QComboBox, QPushButton
 
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from tests import test_settings_sections as support
 
 
@@ -24,7 +24,7 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         return page
 
     def test_preparation_stays_honest_and_recovery_actions_remain_reachable(self):
-        from desktop_pages.paper_readiness import refresh_readiness
+        from desktop_app.features.paper.paper_readiness import refresh_readiness
 
         page = self.paper()
         self.assertEqual(page.readiness_selection.text(), ui_text('redesign.paper.no_selection'))
@@ -69,7 +69,7 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         self.assertFalse(replay.stop_button.isVisibleTo(page))
 
     def test_readiness_tracks_active_and_paused_work_without_inviting_another_start(self):
-        from desktop_pages.paper_readiness import refresh_readiness
+        from desktop_app.features.paper.paper_readiness import refresh_readiness
 
         page = self.paper()
         with patch.object(page.page_state, 'jobs', SimpleNamespace(active=True)):
@@ -106,7 +106,7 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         self.assertIn(ui_text('paper.lock.rejected'), page.findChild(QPushButton, 'paper_replay').property('disabled_hint'))
 
     def test_known_risk_halt_overrides_the_start_prompt(self):
-        from desktop_pages.paper_readiness import refresh_readiness
+        from desktop_app.features.paper.paper_readiness import refresh_readiness
         from quantlab.desktop_feedback import stop_presentation
 
         page = self.paper()
@@ -131,7 +131,7 @@ class PaperSettingsRedesignTests(unittest.TestCase):
         self.assertFalse(page.log_view.isVisibleTo(page))
 
     def test_backup_destination_cancel_never_schedules_a_job(self):
-        from desktop_pages.settings_layout import choose_backup
+        from desktop_app.features.settings.settings_layout import choose_backup
 
         page = self.page
         with patch.object(page.host, 'save_file', return_value=('', '')), patch.object(page, 'backup') as backup:

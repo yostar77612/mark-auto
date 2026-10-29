@@ -16,7 +16,7 @@ from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 from tests import test_desktop_ui as ui_support
 from tests.test_research_analysis import source, PROVENANCE, AnalysisWire
 import quantlab.research_analysis as analysis
-import desktop_chatgpt_provider as provider
+import quantlab.assistant.adapters.chatgpt.provider as provider
 
 REF = 'a' * 32
 
@@ -26,9 +26,9 @@ def _offline_analysis_job_worker(*args):
     from quantlab.desktop_runtime import _job_worker
 
     with (
-        patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('No analysis provider in cancellation fixture')),
-        patch('desktop_chatgpt_provider.ChatGPTPlanProvider.__init__', side_effect=AssertionError('No provider controls')),
-        patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')),
+        patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('No analysis provider in cancellation fixture')),
+        patch('quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider.__init__', side_effect=AssertionError('No provider controls')),
+        patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
     ):
         _job_worker(*args)
@@ -66,7 +66,7 @@ class AnalysisRequestTests(unittest.TestCase):
         }
 
     def test_runtime_and_ui_operation_sets_match(self):
-        from desktop_ui import UI_OPERATIONS
+        from desktop_app.shell.main_window import UI_OPERATIONS
         from quantlab.desktop_runtime import UI_OPERATIONS as runtime
 
         self.assertEqual(UI_OPERATIONS, runtime)
@@ -161,7 +161,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         AnalysisWire.mutate = None
 
     def call(self, operation, payload, **kw):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         return execute_ui_operation(operation, payload, self.paths, **kw)
 
@@ -228,7 +228,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         second = self.call('ui_analysis_run', self.run_payload(preview))
         self.assertTrue(second['cache_hit'])
         self.assertEqual(len(AnalysisWire.requests), 1)
-        with patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('Saved read cannot touch grant')):
+        with patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('Saved read cannot touch grant')):
             loaded = self.call('ui_analysis_read', {'analysis_id': preview['analysis_id']})
         self.assertEqual(loaded['record'], first['record'])
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.folder.iterdir()})
@@ -263,7 +263,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         self.assertEqual(len(AnalysisWire.requests), 1)
 
     def test_plain_text_findings_use_local_values_and_do_not_apply_suggestions(self):
-        from desktop_ui import analysis_record_text
+        from desktop_app.shell.main_window import analysis_record_text
 
         preview = self.preview()
         result = self.call('ui_analysis_run', self.run_payload(preview))
@@ -276,7 +276,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'selection.json').exists())
 
     def test_comparison_values_identify_each_candidate_and_exact_split(self):
-        from desktop_ui import analysis_record_text, ANALYSIS_METRICS
+        from desktop_app.shell.main_window import analysis_record_text, ANALYSIS_METRICS
 
         self.request = request_for(self.paths, self.data, self.state, self.folder, compare=True)
         preview = self.preview()
@@ -328,7 +328,7 @@ class SpawnedAnalysisTests(unittest.TestCase):
         # Windows durable admission now requires the exact approved plan, before
         # spawning. Deny provider construction inside the real spawned worker so
         # even delayed cancellation cannot create a request or provider ledger.
-        from desktop_ui import analysis_plan
+        from desktop_app.shell.main_window import analysis_plan
         import quantlab.desktop_runtime as runtime
 
         plan = analysis_plan(self.paths, self.request)
@@ -379,7 +379,7 @@ class AnalysisWidgetTests(unittest.TestCase):
             patch.object(provider, 'implementation_provenance', return_value=PROVENANCE),
             patch.object(analysis, '_run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args)}),
         ):
-            from desktop_ui import execute_ui_operation
+            from desktop_app.shell.main_window import execute_ui_operation
 
             preview = execute_ui_operation('ui_analysis_preview', {'request': request}, self.paths)
         w._analysis_request_key = content_hash(w._analysis_request(request['task']))

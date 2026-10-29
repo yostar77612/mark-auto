@@ -16,10 +16,18 @@ from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from desktop_charts import CandlestickChart
-from desktop_strings import ui_text
-from desktop_trading.market_watch import MarketWatchWidget
-from desktop_trading.market_watch_rows import freshness_text, header_text, health_rows, quote_detail_rows, quote_detail_text, series_bars, watch_rows
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading.market_watch import MarketWatchWidget
+from desktop_app.features.trading.market_watch_rows import (
+    freshness_text,
+    header_text,
+    health_rows,
+    quote_detail_rows,
+    quote_detail_text,
+    series_bars,
+    watch_rows,
+)
 from quantlab.desktop_runtime import SettingsStore
 from quantlab.trading.application.contracts import (
     MarketHealthView,

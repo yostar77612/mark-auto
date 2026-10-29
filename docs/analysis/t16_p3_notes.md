@@ -1,6 +1,6 @@
 # T16 part A decisions
 
-- P3-03 is a pure presentation mapping in desktop_chatgpt_states.py. Fixed codes
+- P3-03 is a pure presentation mapping in desktop_app/features/assistant/states.py. Fixed codes
   map to four outcomes; unknown values are generic_failure without inspecting
   exception prose. Quota/rate-limit codes offer no retry-now action; credential
   expiry offers the existing sign-in flow with explicit reauthorization intent.

@@ -14,9 +14,9 @@ from PySide6.QtGui import QCloseEvent, QHideEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from desktop_pages import assistant_runtime as adapter
-from desktop_pages.assistant import AssistantPanel
-from desktop_strings import ui_text
+from desktop_app.features.assistant import worker as adapter
+from desktop_app.features.assistant.assistant import AssistantPanel
+from desktop_app.strings.catalog import ui_text
 from quantlab.agent_read_tools import TOOL_NAMES
 from quantlab.agent_tool_contract import MAX_RETURN_BYTES
 from quantlab.assistant_chat import ChatDispatcher
@@ -80,7 +80,7 @@ class AssistantD4Tests(unittest.TestCase):
         self.assertEqual(registry.register(declaration, Mock()), REFUSAL)
 
     def test_fixture_golden_no_provider_and_disclaimer_on_every_reply(self):
-        with patch('desktop_pages.assistant_runtime.chatgpt_reply') as provider, patch('socket.socket') as network:
+        with patch('desktop_app.features.assistant.worker.chatgpt_reply') as provider, patch('socket.socket') as network:
             self.panel.input.setText('help')
             self.panel.submit()
             expected = (
@@ -116,7 +116,7 @@ class AssistantD4Tests(unittest.TestCase):
         self.worker.start.assert_not_called()
         self.assertEqual(self.panel.transcript.toPlainText(), '')
         self.assertEqual(self.panel.input.text(), 'hello')
-        with patch('desktop_chatgpt_provider.PlanHTTPTransport') as provider:
+        with patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport') as provider:
             self.assertEqual(adapter.chatgpt_reply({'consent': False}, None), REFUSAL)
             provider.assert_not_called()
 
@@ -185,7 +185,7 @@ class AssistantD4Tests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 assert_no_protected_values(self, leaked)
         # No assistant module contains transcript persistence or dynamic execution.
-        for filename in ('desktop_pages/assistant_runtime.py', 'desktop_pages/assistant.py', 'quantlab/assistant_chat.py'):
+        for filename in ('desktop_app/features/assistant/worker.py', 'desktop_app/features/assistant/assistant.py', 'quantlab/assistant_chat.py'):
             tree = ast.parse((ROOT / filename).read_text(encoding='utf-8'))
             calls = [n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
             self.assertFalse(set(calls) & {'eval', 'exec', 'compile', 'open'})
@@ -201,7 +201,7 @@ class AssistantD4Tests(unittest.TestCase):
                     'quantlab.research.run_campaign',
                     'quantlab.walk_forward.run_walk_forward',
                     'quantlab.reporting.save_selection',
-                    'desktop_chatgpt_provider.ChatGPTPlanProvider._reserve',
+                    'quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider._reserve',
                 )
             ]
             for name in ('run_backtest', 'run_campaign', 'run_walk_forward', 'save_candidate', 'consume_quota'):
@@ -268,7 +268,7 @@ class AssistantD4Tests(unittest.TestCase):
         sender = Mock()
         gate = Mock()
         gate.wait.return_value = True
-        with patch('desktop_pages.assistant_runtime.chatgpt_reply', side_effect=RuntimeError('DPAPI_SECRET_SENTINEL')):
+        with patch('desktop_app.features.assistant.worker.chatgpt_reply', side_effect=RuntimeError('DPAPI_SECRET_SENTINEL')):
             adapter._worker(sender, gate, {}, None)
         self.assertEqual(json.loads(sender.send_bytes.call_args.args[0]), REFUSAL)
         sender.close.assert_called_once()

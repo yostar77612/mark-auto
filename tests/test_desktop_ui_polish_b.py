@@ -13,9 +13,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel
-from desktop_presentation import display_number, display_status, result_name
-from desktop_forms import SummaryCard, ResultTable
-from desktop_ui import MainWindow
+from desktop_app.components.formatting import display_number, display_status, result_name
+from desktop_app.components.forms import SummaryCard, ResultTable
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
 from tests.snapshot_cache import default_metrics
 
@@ -139,9 +139,9 @@ class PresentationTests(unittest.TestCase):
                     reports.append(path)
                 # Selector metadata comes from verified report loader; keep detail rendering separate.
                 with (
-                    patch('desktop_ui.load_result', return_value=result),
+                    patch('desktop_app.shell.main_window.load_result', return_value=result),
                     patch.object(window, 'show_result'),
-                    patch('desktop_ui.result_name', return_value=name),
+                    patch('desktop_app.shell.main_window.result_name', return_value=name),
                 ):
                     window.refresh_views()
                 self.assertEqual(window.result_choice.itemText(1), name + '（2）')

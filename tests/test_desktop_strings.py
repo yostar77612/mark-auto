@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-import desktop_strings as strings
+import desktop_app.strings.catalog as strings
 
 
 class CatalogTests(unittest.TestCase):
@@ -40,7 +40,7 @@ class CatalogTests(unittest.TestCase):
     def test_dynamic_templates_preserve_number_and_date_formatting(self):
         from decimal import Decimal
         from types import SimpleNamespace
-        from desktop_presentation import result_name
+        from desktop_app.components.formatting import result_name
 
         self.assertEqual(strings.ui_text('ui.paint_event.equity_range').format(1234, 5678), '權益 TWD  最低 1,234  最高 5,678 | 時間 →')
         result = SimpleNamespace(
@@ -56,7 +56,7 @@ class CatalogTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         from tests.test_no_hardcoded_ui_text import UI_MODULES
 
-        for name in ('desktop_strings.py', *UI_MODULES):
+        for name in ('desktop_app/strings/catalog.py', *UI_MODULES):
             tree = ast.parse((root / name).read_text(encoding='utf-8-sig'), filename=name, feature_version=(3, 11))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'ui_text':
@@ -65,7 +65,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_monkeypatching_registry_changes_rendered_widget_text(self):
         from PySide6.QtWidgets import QApplication, QLabel, QPushButton
-        from desktop_ui_polish import DisabledHint
+        from desktop_app.shell.polish import DisabledHint
 
         app = QApplication.instance() or QApplication([])
         button = QPushButton()
@@ -93,8 +93,8 @@ class CatalogTests(unittest.TestCase):
     def test_part_b_dynamic_text_preserves_validation_and_formatting(self):
         from datetime import datetime, timezone
         from decimal import Decimal
-        from desktop_charts import _display_time
-        from desktop_forms import number
+        from desktop_app.components.charts import _display_time
+        from desktop_app.components.forms import number
         from quantlab.core import ValidationError
 
         self.assertEqual(number('3', '口數', 1, 5, integer=True), 3)
@@ -108,7 +108,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_part_b_form_uses_registry_at_widget_construction(self):
         from PySide6.QtWidgets import QApplication, QLabel
-        from desktop_forms import StrategyForm
+        from desktop_app.components.forms import StrategyForm
 
         app = QApplication.instance() or QApplication([])
         stub = dict(strings.ZH_TW, **{'forms.init.strategy_family': 'Stub field caption'})

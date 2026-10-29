@@ -26,7 +26,7 @@ from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from desktop_trading import TradingWindow
+from desktop_app.features.trading import TradingWindow
 from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, Quote, Side
@@ -67,8 +67,8 @@ def process_memory(pid: int) -> dict[str, int]:
 
 
 def source_identity() -> dict[str, str]:
-    paths = [*ROOT.glob('quantlab/trading/**/*.py'), *ROOT.glob('desktop_trading/*.py')]
-    paths.extend((ROOT / 'trading_runtime.py', ROOT / 'desktop_strings.py', ROOT / 'tools/trading_load_report.py', Path(__file__).resolve()))
+    paths = [*ROOT.glob('quantlab/trading/**/*.py'), *ROOT.glob('desktop_app/features/trading/**/*.py')]
+    paths.extend((ROOT / 'trading_runtime.py', ROOT / 'desktop_app/strings/catalog.py', ROOT / 'tools/trading_load_report.py', Path(__file__).resolve()))
     return {str(path.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 

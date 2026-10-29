@@ -7,7 +7,7 @@ import unittest
 
 from PySide6.QtWidgets import QApplication
 
-from desktop_market import MarketDashboard
+from desktop_app.features.market.dashboard import MarketDashboard
 from quantlab.chart_drawings import DrawingStore, HorizontalLine
 from quantlab.core import content_hash, canonical_json
 from quantlab.desktop_runtime import SettingsStore

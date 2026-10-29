@@ -8,9 +8,9 @@ import unittest
 
 from PySide6.QtWidgets import QApplication, QListWidget, QPushButton
 
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
-from desktop_trading.labels import event_label, policy_label, state_label
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
+from desktop_app.features.trading.labels import event_label, policy_label, state_label
 from tests.test_trading_ui import RecordingFacade
 
 

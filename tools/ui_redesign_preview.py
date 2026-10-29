@@ -26,8 +26,8 @@ def build_window(root, *, populated=True):
     from PySide6.QtCore import QEvent, QObject, QTimer
     from quantlab.core import ValidationError
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
-    from desktop_strings import ui_text
-    from desktop_ui import MainWindow, execute_ui_operation
+    from desktop_app.strings.catalog import ui_text
+    from desktop_app.shell.main_window import MainWindow, execute_ui_operation
 
     class PreviewJobs(JobManager):
         def start(self, operation, payload, **kwargs):
@@ -60,7 +60,7 @@ def build_window(root, *, populated=True):
     paths = AppPaths(root / 'workspace').ensure()
     jobs = PreviewJobs(paths)
     if populated:
-        from desktop_smoke import _smoke_steps
+        from desktop_app.smoke import _smoke_steps
 
         for operation, payload in _smoke_steps()[:2]:
             execute_ui_operation(operation, payload, paths)
@@ -83,8 +83,8 @@ def capture(window, out):
     import json
     from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication, QScrollArea
-    from desktop_theme import apply_theme, scale_window_fonts
-    from desktop_pages.palette_commands import page_index
+    from desktop_app.shell.theme import apply_theme, scale_window_fonts
+    from desktop_app.shell.palette_commands import page_index
     from tools.ui_snapshot import _save_png, page_metrics
     from tests.test_scaled_layouts import layout_defects
 

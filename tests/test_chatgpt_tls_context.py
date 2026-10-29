@@ -4,7 +4,7 @@ import ssl
 import unittest
 from unittest.mock import patch
 
-import desktop_chatgpt_auth as auth
+import quantlab.assistant.adapters.chatgpt.auth as auth
 
 
 class OfficialTlsContextTests(unittest.TestCase):

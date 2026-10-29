@@ -119,7 +119,7 @@ def tracked_cleanup(manager):
  result = diagnostic_original_cleanup(manager)
  trace('cleanup_end', verified=result['verified'])
  return result
-desktop._close_smoke_worker = __import__('desktop_smoke')._close_smoke_worker = tracked_cleanup
+desktop._close_smoke_worker = __import__('desktop_app.smoke', fromlist=['__name__'])._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):

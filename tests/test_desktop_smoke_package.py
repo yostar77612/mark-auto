@@ -7,8 +7,9 @@ import unittest
 from unittest.mock import patch
 
 import desktop
-import desktop_smoke
+import desktop_app.smoke
 from tests.test_import_graph import import_graph, reaches, source_map
+from tests.layered_source_fixtures import physical_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,18 +51,19 @@ class SmokePackageTests(unittest.TestCase):
     def test_compatibility_exports_are_identical(self):
         for name in HARNESS:
             with self.subTest(name=name):
-                self.assertIs(getattr(desktop, name), getattr(desktop_smoke, name))
+                self.assertIs(getattr(desktop, name), getattr(desktop_app.smoke, name))
 
     def test_injections_reach_the_harness_globals(self):
         for name in ('_check_history_worker_result', '_history_smoke_fixture', '_close_smoke_worker', '_check_walk_forward_smoke_result'):
             sentinel = object()
-            with self.subTest(name=name), patch.object(desktop_smoke, name, sentinel):
+            with self.subTest(name=name), patch.object(desktop_app.smoke, name, sentinel):
                 self.assertIs(desktop.run_smoke.__globals__[name], sentinel)
 
     def test_all_package_modules_are_statically_reachable(self):
         graph = import_graph(source_map())
         modules = {
-            path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__') for path in (ROOT / 'desktop_smoke').rglob('*.py')
+            path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__')
+            for path in (ROOT / physical_path('desktop_smoke')).rglob('*.py')
         }
         self.assertTrue(modules)
         for name in modules:

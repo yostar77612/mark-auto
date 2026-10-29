@@ -51,7 +51,7 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
                 for target in variant['dependency_targets']:
                     with self.subTest(protocol=profile['protocol'], variant=index, target=target):
                         value = binding(profile, index, target)
-                        with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                        with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                             self.assertIs(pools._select_producer(value), profile)
                             with patch.object(pools, 'SUPPORTED_PRODUCERS', tuple(reversed(pools.SUPPORTED_PRODUCERS))):
                                 self.assertIs(pools._select_producer(value), profile)
@@ -97,7 +97,7 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
                     Path(temporary) / f'variant-{variant}', producer=PROFILE, implementation=variant, candidates=1
                 )
                 before = {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()}
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admitted = self.admit(folder, reference, original)
                 self.assertEqual(admitted.admission['producer'], PROFILE)
                 self.assertEqual(admitted.admission['real_model_status'], 'not_verified')

@@ -12,9 +12,9 @@ from unittest.mock import Mock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QAbstractButton, QApplication, QGroupBox, QScrollArea, QToolButton, QWidget
-import desktop_ui
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+import desktop_app.shell.main_window
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths
 from tests.test_t9_onboarding import sandbox_ui
 from tests.snapshot_cache import default_metrics
@@ -190,8 +190,10 @@ class TooltipCoverageTests(unittest.TestCase):
         from quantlab.core import to_dict
         from quantlab.reporting import demo_config
 
-        desktop_ui.execute_ui_operation('ui_demo', {'bars': 120}, w.paths)
-        desktop_ui.execute_ui_operation('ui_backtest', {'family': 'trend', 'parameters': {'fast': 5, 'slow': 20}, 'config': to_dict(demo_config())}, w.paths)
+        desktop_app.shell.main_window.execute_ui_operation('ui_demo', {'bars': 120}, w.paths)
+        desktop_app.shell.main_window.execute_ui_operation(
+            'ui_backtest', {'family': 'trend', 'parameters': {'fast': 5, 'slow': 20}, 'config': to_dict(demo_config())}, w.paths
+        )
         w.refresh_views()
         page.findChild(QAbstractButton, 'strategy_walk_forward_entry').click()
         wizard = page.wf_wizard
@@ -258,7 +260,7 @@ class TooltipCoverageTests(unittest.TestCase):
         widgets = [self.window, *self.window.findChildren(QWidget)]
         self.assertEqual(sorted({widget.objectName() for widget in widgets if widget.objectName()}), names)
         public_names = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(desktop_ui) if not name.startswith('_')), public_names)
+        self.assertEqual(sorted(name for name in vars(desktop_app.shell.main_window) if not name.startswith('_')), public_names)
         actual_pages = default_metrics()['pages']
         self.assertEqual(len(actual_pages), 7)
         policy = redesign_policy()

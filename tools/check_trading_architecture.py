@@ -32,7 +32,7 @@ def _within(target: str, prefix: str) -> bool:
 
 def _layer(path: str) -> str:
     normalized = path.replace('\\', '/')
-    if normalized.startswith('desktop_trading/'):
+    if normalized.startswith('desktop_app/features/trading/'):
         return 'presentation'
     if normalized.startswith('quantlab/trading/'):
         parts = normalized.split('/')
@@ -69,8 +69,8 @@ def _allowed(layer: str, target: str) -> bool:
             root in sys.stdlib_module_names
             and root not in IO_MODULES
             or root == 'PySide6'
-            or _within(target, 'desktop_strings')
-            or _within(target, 'desktop_trading')
+            or _within(target, 'desktop_app.strings.catalog')
+            or _within(target, 'desktop_app.features.trading')
             or _within(target, PREFIX + 'application.contracts')
             or _within(target, PREFIX + 'domain.models')
         )
@@ -251,7 +251,7 @@ def check_source(source: str, path: str) -> tuple[Finding, ...]:
 
 def scan(root: Path) -> tuple[Finding, ...]:
     findings = []
-    for scope in ('quantlab/trading', 'desktop_trading'):
+    for scope in ('quantlab/trading', 'desktop_app/features/trading'):
         directory = root / scope
         if not directory.is_dir():
             findings.append(Finding(scope, 0, 'required-scope-missing', scope))

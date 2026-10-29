@@ -15,11 +15,11 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QLabel
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget
-from desktop_chatgpt_states import outcome_state, outcome_presentation, outcome_message, campaign_outcome
-from desktop_chatgpt_ui import ConnectionController, ConnectionEvent, ChatGPTConnectionPanel
-from desktop_pages.job_progress import JobProgress, JobFeedback
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+from desktop_app.features.assistant.states import outcome_state, outcome_presentation, outcome_message, campaign_outcome
+from desktop_app.features.assistant.connection import ConnectionController, ConnectionEvent, ChatGPTConnectionPanel
+from desktop_app.components.job_progress import JobProgress, JobFeedback
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab import desktop_runtime as runtime
 from quantlab.desktop_errors import ERROR_TABLE
 from quantlab.job_stages import JOB_STAGES
@@ -78,7 +78,9 @@ class FixedCodeTests(unittest.TestCase):
             sender.close.assert_called_once()
 
     def test_size_limits_and_python_311(self):
-        paths = [ROOT / name for name in ('desktop_ui.py', 'desktop_chatgpt_states.py', 'desktop_pages/job_progress.py')]
+        paths = [
+            ROOT / name for name in ('desktop_app/shell/main_window.py', 'desktop_app/features/assistant/states.py', 'desktop_app/components/job_progress.py')
+        ]
         for path in paths:
             tree = ast.parse(path.read_text(encoding='utf-8-sig'), feature_version=(3, 11))
             for node in tree.body:
@@ -293,7 +295,7 @@ class PresentationWidgetTests(unittest.TestCase):
         panel.primary_sign_in.click()
         request = controller._request
         self.assertEqual(request.action, 'list')
-        with patch('desktop_chatgpt_ui.QTimer.singleShot'):
+        with patch('desktop_app.features.assistant.connection.QTimer.singleShot'):
             controller.apply_event(ConnectionEvent(request.request_id, 'result', 'plan_ready', ((ref, 'plan_ready'),), ref))
             controller.worker_joined(request.request_id, joined=True)
         panel._continue_primary(request.request_id)

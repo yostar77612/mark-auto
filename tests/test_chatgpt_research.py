@@ -8,10 +8,10 @@ import unittest
 from unittest.mock import patch
 
 from quantlab.core import ValidationError, content_hash
-from desktop_chatgpt_auth import OAuthCredentialReference
+from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
 from tests.test_research import inputs, tracked_sqlite_connections
 from quantlab import research as r
-import desktop_chatgpt_provider as pmod
+import quantlab.assistant.adapters.chatgpt.provider as pmod
 
 
 def receipt(sequence, status='completed'):

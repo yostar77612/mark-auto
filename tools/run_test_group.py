@@ -138,7 +138,7 @@ def portable_source_identity(start_directory='tests'):
     root = ROOT.resolve()
     paths = set(root.glob('*.py')) | set(root.glob('requirements*'))
     paths |= {root / 'pyproject.toml', root / '.gitattributes'}
-    for directory in ('quantlab', 'desktop_pages', 'desktop_smoke', 'desktop_trading', 'tests', 'tools', 'packaging', '.github/workflows'):
+    for directory in ('quantlab', 'desktop_app', 'tests', 'tools', 'packaging', '.github/workflows'):
         paths |= {
             path
             for path in (root / directory).rglob('*')

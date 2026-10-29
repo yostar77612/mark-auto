@@ -11,10 +11,10 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-import desktop_ui as ui
-from desktop_pages.paper import PaperPage, stop_exposure_text, stop_dialog, cancel_all_dialog
-from desktop_pages.job_progress import failure_notice
-from desktop_strings import ui_text
+import desktop_app.shell.main_window as ui
+from desktop_app.features.paper.paper import PaperPage, stop_exposure_text, stop_dialog, cancel_all_dialog
+from desktop_app.components.job_progress import failure_notice
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 from quantlab.desktop_feedback import completion_summary
 from quantlab.paper import LiveBroker, LiveTradingDisabled
@@ -117,7 +117,7 @@ class CancelAllTests(unittest.TestCase):
         with (
             patch.object(Path, 'exists', return_value=True),
             patch('quantlab.paper.PaperBroker.read_snapshot', return_value=self.before),
-            patch('desktop_pages.paper.stop_dialog', return_value=dialog),
+            patch('desktop_app.features.paper.paper.stop_dialog', return_value=dialog),
         ):
             page.kill_paper()
         after = self.broker.snapshot()
@@ -175,7 +175,7 @@ class CancelAllUiTests(unittest.TestCase):
         page.paper_time = Mock(text=Mock(return_value='2026-10-09T01:00:00Z'))
         page._stop_account = {'orders': {'one': {'status': 'accepted'}}}
         dialog = SimpleNamespace(confirm_button=object(), exec=Mock(), clickedButton=Mock(return_value=None))
-        with patch.object(Path, 'exists', return_value=False), patch('desktop_pages.paper.cancel_all_dialog', return_value=dialog) as factory:
+        with patch.object(Path, 'exists', return_value=False), patch('desktop_app.features.paper.paper.cancel_all_dialog', return_value=dialog) as factory:
             page.cancel_all_paper()
             factory.assert_called_once_with(page, 1)
             start.assert_not_called()
@@ -196,7 +196,7 @@ class CancelAllUiTests(unittest.TestCase):
         chart.update.assert_called_once_with()
 
     def test_notification_summary_retains_counts_without_ids_or_error_values(self):
-        from desktop_pages.notification_log import safe_summary
+        from desktop_app.shell.notification_log import safe_summary
 
         result = {
             'cancel_all_report': {
@@ -233,7 +233,7 @@ class CancelAllUiTests(unittest.TestCase):
                 self.assertFalse(button.isVisible())
                 page._stop_account = {'orders': {'pending': {'status': 'accepted'}}}
                 dialog = SimpleNamespace(confirm_button=object(), exec=Mock(), clickedButton=Mock(return_value=None))
-                with patch('desktop_pages.paper.cancel_all_dialog', return_value=dialog) as factory, patch.object(page, 'start_job') as start:
+                with patch('desktop_app.features.paper.paper.cancel_all_dialog', return_value=dialog) as factory, patch.object(page, 'start_job') as start:
                     button.click()
                     factory.assert_called_once_with(page, 1)
                     start.assert_not_called()

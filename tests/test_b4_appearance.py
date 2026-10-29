@@ -11,9 +11,9 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QWidget, QScrollArea
 
-import desktop_theme as theme
-from desktop_charts import CandlestickChart
-from desktop_pages.result_widgets import KpiCards, ResultTable
+import desktop_app.shell.theme as theme
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.components.result_widgets import KpiCards, ResultTable
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_t9_onboarding import sandbox_ui
 
@@ -159,7 +159,7 @@ class AppearanceTests(unittest.TestCase):
 class AppearanceWindowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         cls.app = QApplication.instance() or QApplication([])
         cls.context = sandbox_ui()
@@ -201,12 +201,12 @@ class AppearanceWindowTests(unittest.TestCase):
         RegistryTests().test_public_names_unchanged()
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))
         self.assertEqual(sorted({w.objectName() for w in [self.window, *self.window.findChildren(QWidget)] if w.objectName()}), expected)
-        tree = ast.parse((ROOT / 'desktop_ui.py').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8'))
         window = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(window.end_lineno - window.lineno + 1, 400)
 
     def test_all_pages_theme_accessibility_and_layout(self):
-        from desktop_accessibility import INTERACTIVE, semantic_name, visual_focus_order
+        from desktop_app.shell.accessibility import INTERACTIVE, semantic_name, visual_focus_order
         from tests.test_scaled_layouts import layout_defects
         from tests.snapshot_cache import default_metrics
 

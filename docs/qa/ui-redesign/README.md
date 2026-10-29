@@ -78,7 +78,7 @@
 ## 保留與相容性
 
 - G3 八個鎖定檔、saved_candidate_pool profile、引擎、預算、OOS／holdout 與期限未修改。
-- 新文字均置於 desktop_strings.py 語意鍵，既有錯誤仍使用單一錯誤表。
+- 新文字均置於 desktop_app/strings/catalog.py 語意鍵，既有錯誤仍使用單一錯誤表。
 - 不新增 controller 或資料狀態來源；搬移同一批表單與控制項。
 - 明確支援舊摺疊偏好，初始掛載／重載不保存，真正切換才保存，未知與歷史鍵保留。
 - 損毀的偏好容器回退，不自動修復或覆寫原檔。

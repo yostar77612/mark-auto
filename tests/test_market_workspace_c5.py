@@ -17,10 +17,10 @@ from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QApplication, QListWidget, QWidget
 import shiboken6
 
-from desktop_charts import CandlestickChart
-from desktop_market import MarketDashboard
-from desktop_market_layout import FILE_NAME, MAX_LAYOUTS, LayoutStore, preset, validate_layout
-from desktop_pages.market import MarketPage
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.features.market.dashboard import MarketDashboard
+from quantlab.research_core.adapters.market_layout import FILE_NAME, MAX_LAYOUTS, LayoutStore, preset, validate_layout
+from desktop_app.features.market.market import MarketPage
 from quantlab.desktop_errors import error_message
 from tests.test_desktop_market import series
 from tools.quality_gate import python_findings
@@ -204,7 +204,7 @@ class MarketWorkspaceTests(unittest.TestCase):
         for sentinel in (b'sentinel-price-435123', b'synthetic-research', b'sentinel-secret'):
             self.assertNotIn(sentinel, raw)
         host = SimpleNamespace(state=SimpleNamespace(settings=SimpleNamespace(path=folder / 'settings.json')))
-        with patch('desktop_market_layout.LayoutStore.load', autospec=True, side_effect=LayoutStore.load) as load:
+        with patch('quantlab.research_core.adapters.market_layout.LayoutStore.load', autospec=True, side_effect=LayoutStore.load) as load:
             page = MarketPage(host)
             try:
                 self.assertEqual(load.call_count, 1)
@@ -220,7 +220,7 @@ class MarketWorkspaceTests(unittest.TestCase):
         self.assertTrue(self.workspace.save_named('original'))
         path = self.workspace.store.path
         before = path.read_bytes()
-        for target in ('desktop_market_layout.json.dump', 'desktop_market_layout.os.replace'):
+        for target in ('quantlab.research_core.adapters.market_layout.json.dump', 'quantlab.research_core.adapters.market_layout.os.replace'):
             with patch(target, side_effect=OSError('sentinel-secret C:/private/path')):
                 self.assertFalse(self.workspace.save_named('failed'))
             self.assertEqual(path.read_bytes(), before)
@@ -311,7 +311,7 @@ class MarketWorkspaceTests(unittest.TestCase):
         self.assertFalse(shiboken6.isValid(other))
 
     def test_schema_has_no_dynamic_execution(self):
-        for filename in ('desktop_market_layout.py', 'desktop_market_workspace.py'):
+        for filename in ('quantlab/research_core/adapters/market_layout.py', 'desktop_app/features/market/workspace.py'):
             source = (ROOT / filename).read_text(encoding='utf-8')
             self.assertEqual(python_findings(source, filename, desktop=True), [])
             tree = ast.parse(source)

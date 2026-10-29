@@ -27,7 +27,7 @@ STACK_MODULES = frozenset(
         'paper.py',
         'paper_replay.py',
         'desktop_runtime.py',
-        'desktop_ui.py',
+        'desktop_app/shell/main_window.py',
         'core.py',
         'reporting.py',
         'connection.py',

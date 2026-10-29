@@ -17,7 +17,7 @@
   "desktop_market_layout.py": "quantlab/research_core/adapters/market_layout.py",
   "desktop_market_workspace.py": "desktop_app/features/market/workspace.py",
   "desktop_order_lines.py": "desktop_app/features/paper/order_lines.py",
-  "desktop_pages/__init__.py": "desktop_app/shell/__init__.py",
+  "desktop_pages/__init__.py": "desktop_app/shell/pages.py",
   "desktop_pages/app_header.py": "desktop_app/shell/app_header.py",
   "desktop_pages/assistant.py": "desktop_app/features/assistant/assistant.py",
   "desktop_pages/assistant_completion.py": "desktop_app/features/assistant/assistant_completion.py",

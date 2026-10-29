@@ -67,7 +67,7 @@ The fresh-interpreter import samples (subprocess.run) succeeded in both runs,
 with PySide6 absent in every runtime import. These are imports only and exclude
 interpreter startup. `--importtime` reports the top 15 contributors by self time,
 with cumulative time also recorded; a single instrumented import is diagnostic,
-not an N=5 worker benchmark. Importing desktop_ui still loads Qt via its existing
+not an N=5 worker benchmark. Importing desktop_app.shell.main_window still loads Qt via its existing
 registrar. A larger dispatcher/UI extraction is deferred because it affects
 patch points/public names and golden compatibility; no behavioral shortcut
 was introduced to hide that cost.
@@ -246,11 +246,11 @@ Paths are intentionally omitted; full samples and import contributors follow.
           "module": "ctypes"
         }
       ],
-      "desktop_ui": [
+      "desktop_app.shell.main_window": [
         {
           "self_us": 42239,
           "cumulative_us": 399689,
-          "module": "desktop_ui"
+          "module": "desktop_app.shell.main_window"
         },
         {
           "self_us": 16611,
@@ -260,7 +260,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 12206,
           "cumulative_us": 42680,
-          "module": "desktop_market"
+          "module": "desktop_app.features.market.dashboard"
         },
         {
           "self_us": 11942,
@@ -270,7 +270,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 11150,
           "cumulative_us": 12168,
-          "module": "desktop_forms"
+          "module": "desktop_app.components.forms"
         },
         {
           "self_us": 10830,
@@ -290,7 +290,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 8845,
           "cumulative_us": 14036,
-          "module": "desktop_charts"
+          "module": "desktop_app.components.charts"
         },
         {
           "self_us": 8821,
@@ -300,7 +300,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 6226,
           "cumulative_us": 6226,
-          "module": "desktop_strings"
+          "module": "desktop_app.strings.catalog"
         },
         {
           "self_us": 6193,
@@ -315,7 +315,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 5199,
           "cumulative_us": 18059,
-          "module": "desktop_pages.strategy"
+          "module": "desktop_app.features.strategy.strategy"
         },
         {
           "self_us": 4956,
@@ -492,11 +492,11 @@ Paths are intentionally omitted; full samples and import contributors follow.
           "module": "tokenize"
         }
       ],
-      "desktop_ui": [
+      "desktop_app.shell.main_window": [
         {
           "self_us": 47761,
           "cumulative_us": 427788,
-          "module": "desktop_ui"
+          "module": "desktop_app.shell.main_window"
         },
         {
           "self_us": 16283,
@@ -506,7 +506,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 14251,
           "cumulative_us": 49941,
-          "module": "desktop_market"
+          "module": "desktop_app.features.market.dashboard"
         },
         {
           "self_us": 13785,
@@ -526,7 +526,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 10668,
           "cumulative_us": 11554,
-          "module": "desktop_forms"
+          "module": "desktop_app.components.forms"
         },
         {
           "self_us": 10383,
@@ -536,7 +536,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 10111,
           "cumulative_us": 16118,
-          "module": "desktop_charts"
+          "module": "desktop_app.components.charts"
         },
         {
           "self_us": 9763,
@@ -551,7 +551,7 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 6331,
           "cumulative_us": 6331,
-          "module": "desktop_strings"
+          "module": "desktop_app.strings.catalog"
         },
         {
           "self_us": 5872,
@@ -561,12 +561,12 @@ Paths are intentionally omitted; full samples and import contributors follow.
         {
           "self_us": 5734,
           "cumulative_us": 18041,
-          "module": "desktop_pages.strategy"
+          "module": "desktop_app.features.strategy.strategy"
         },
         {
           "self_us": 5363,
           "cumulative_us": 10543,
-          "module": "desktop_pages.compare"
+          "module": "desktop_app.features.compare.compare"
         }
       ]
     }

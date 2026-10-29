@@ -13,10 +13,10 @@ from PySide6.QtGui import QFont
 from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QApplication, QLabel, QListWidget, QPushButton, QTableWidget
 
-from desktop_charts import CandlestickChart
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
-from desktop_trading.market_watch import MarketWatchWidget
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
+from desktop_app.features.trading.market_watch import MarketWatchWidget
 from quantlab.trading.application.contracts import OverviewMarketSummary, UiAction
 from quantlab.trading.domain.models import Environment
 from tests.test_market_watch_ui import FakeFacade, view

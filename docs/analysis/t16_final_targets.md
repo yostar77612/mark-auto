@@ -11,7 +11,7 @@ SHA：**2296916**（量測所用程式碼提交；其後只修改本文件）。
 | 每頁 primary ≤1 | 最大 1 | 同上，`primary_button_count` 最大值 | 2296916 | PASS |
 | 未標示輸入欄 0 | 0／7 頁 | 同上，`unlabeled_inputs` 長度總和 | 2296916 | PASS |
 | 每頁標籤減少 ≥50% | 最小 60.00%，最大 89.35% | 同上與 `docs/analysis/baseline/ui_snapshot_1366x768/metrics.json`；`100*(1-after/before)`，逐頁見下表 | 2296916 | PASS |
-| 禁用工程用語 0 | 0 | 依 `desktop_strings.FORBIDDEN_DEFAULT_TERMS` 與 `tests/test_t9_onboarding.py` 相同正規式，掃描七頁 `visible_text + combo_items + table_headers` | 2296916 | PASS |
+| 禁用工程用語 0 | 0 | 依 `desktop_app.strings.catalog.FORBIDDEN_DEFAULT_TERMS` 與 `tests/test_t9_onboarding.py` 相同正規式，掃描七頁 `visible_text + combo_items + table_headers` | 2296916 | PASS |
 | 狀態列原始例外 0 | 固定錯誤代碼對照測試 64／64；秘密字串外洩 0 | `test_t16_presentation.py` 的 fixed-code、worker failure、campaign outcome 測試（本次 15 tests PASS） | 2296916 | PASS |
 | MainWindow ≤400 行 | 393 行 | Python AST：`end_lineno-lineno+1` | 2296916 | PASS |
 | 每個非自明欄位皆有 tooltip | 非自明且無 tooltip 的輸入 0（30 個有 tooltip、11 個自明控制項已列入清單） | `tests/test_t16_tooltips.py`（建立視窗逐頁檢查） | 2296916 | PASS |

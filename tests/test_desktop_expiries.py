@@ -27,7 +27,7 @@ class DesktopExpiryTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def form(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
 
         form = BacktestForm()
         self.addCleanup(form.close)
@@ -185,7 +185,7 @@ class DesktopExpiryTests(unittest.TestCase):
         self.assertEqual(result.manifest['source_type'], 'proxy')
 
     def test_normal_window_sends_same_expiries_to_backtest_and_campaign(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.core import to_dict, ValidationError
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
         from quantlab.reporting import demo_config, synthetic_dataset

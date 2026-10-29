@@ -25,7 +25,7 @@ def measure(label, action, count):
 def chart(count):
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
     from PySide6.QtWidgets import QApplication
-    from desktop_charts import CandlestickChart
+    from desktop_app.components.charts import CandlestickChart
     from quantlab.market import InstrumentRef, MarketBar
 
     app = QApplication.instance() or QApplication([])

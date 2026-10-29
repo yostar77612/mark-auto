@@ -9,11 +9,11 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
-    'desktop_pages/mount.py': ('mount_pages', None),
-    'desktop_market.py': ('__init__', 'MarketDashboard'),
-    'desktop_charts.py': ('paintEvent', 'CandlestickChart'),
-    'desktop_pages/result_layers.py': ('result_snapshot_lines', None),
-    'desktop_pages/views.py': ('refresh_views', 'ViewCoordinator'),
+    'desktop_app/shell/mount.py': ('mount_pages', None),
+    'desktop_app/features/market/dashboard.py': ('__init__', 'MarketDashboard'),
+    'desktop_app/components/charts.py': ('paintEvent', 'CandlestickChart'),
+    'desktop_app/components/result_layers.py': ('result_snapshot_lines', None),
+    'desktop_app/shell/views.py': ('refresh_views', 'ViewCoordinator'),
 }
 BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf-8'))
 
@@ -60,9 +60,9 @@ class FunctionLengthTests(unittest.TestCase):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 80)
 
     def test_paint_stages_do_not_introduce_qt_lifetime_work(self):
-        tree = ast.parse((ROOT / 'desktop_charts.py').read_text(encoding='utf-8-sig'))
+        tree = ast.parse((ROOT / 'desktop_app/components/charts.py').read_text(encoding='utf-8-sig'))
         for node in tree.body:
-            if not isinstance(node, ast.FunctionDef) or node.name in BASE['functions']['desktop_charts.py']:
+            if not isinstance(node, ast.FunctionDef) or node.name in BASE['functions']['desktop_app/components/charts.py']:
                 continue
             for child in ast.walk(node):
                 if isinstance(child, ast.Call):

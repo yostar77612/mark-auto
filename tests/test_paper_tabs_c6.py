@@ -15,12 +15,12 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QStyleOptionViewItem, QTabWidget, QVBoxLayout, QWidget
 from shiboken6 import delete
 
-import desktop_privacy as privacy
-from desktop_pages.paper import PaperPage
+import desktop_app.components.privacy as privacy
+from desktop_app.features.paper.paper import PaperPage
 from quantlab.paper_tab_data import account_counts
-from desktop_pages.paper_tabs import BAR_ROLE, build_tabs, existing_journal, refresh_tables
-from desktop_pages.result_widgets import KpiCards, ResultTable, bind_tab_count, shown
-from desktop_strings import ui_text
+from desktop_app.features.paper.paper_tabs import BAR_ROLE, build_tabs, existing_journal, refresh_tables
+from desktop_app.components.result_widgets import KpiCards, ResultTable, bind_tab_count, shown
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_feedback import stop_presentation
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,7 +160,7 @@ class PaperTabWidgetTests(unittest.TestCase):
     def test_existing_export_is_read_only_projected_and_bounded(self):
         self.page.root = ROOT
         journal = [{'operation': 'amend', 'payload': {'secret': 'SECRET-SENTINEL', 'oos': 'OOS-SENTINEL'}}]
-        with patch('desktop_pages.paper_tabs.existing_journal', return_value=journal):
+        with patch('desktop_app.features.paper.paper_tabs.existing_journal', return_value=journal):
             self.refresh(generated())
         self.assertIn('amend', self.page.events_table.item(0, 1).text())
         self.assertNotIn('SENTINEL', self.page.events_table.copy_text())
@@ -247,7 +247,7 @@ class PaperTabWidgetTests(unittest.TestCase):
         self.assertEqual(table.currentRow(), 1)
 
     def test_no_timers_filters_row_widgets_or_mutation_entrypoints(self):
-        sources = [path.read_text(encoding='utf-8') for path in (ROOT / 'desktop_pages/paper_tabs.py', ROOT / 'quantlab/paper_tab_data.py')]
+        sources = [path.read_text(encoding='utf-8') for path in (ROOT / 'desktop_app/features/paper/paper_tabs.py', ROOT / 'quantlab/paper_tab_data.py')]
         for source in sources:
             tree = ast.parse(source)
             calls = {node.func.attr for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)}

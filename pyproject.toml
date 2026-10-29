@@ -11,7 +11,7 @@ license = "Apache-2.0"
 dependencies = ["tzdata==2026.5; sys_platform == 'win32'"]
 
 [tool.setuptools.packages.find]
-include = ["quantlab*", "desktop_trading*"]
+include = ["quantlab*", "desktop_app*"]
 exclude = ["archives*", "trader*", "tests*"]
 
 # Keep the eight G3 source/hash inputs explicit and independently testable.
@@ -29,8 +29,8 @@ exclude = [
     "quantlab/strategies.py",
     "quantlab/backtest.py",
     "quantlab/data.py",
-    "desktop_chatgpt_auth.py",
-    "desktop_chatgpt_provider.py",
+    "quantlab/assistant/adapters/chatgpt/auth.py",
+    "quantlab/assistant/adapters/chatgpt/provider.py",
 ]
 extend-exclude = [
     # Frozen producer literals would be reformatted; preserve the whole file.
@@ -51,15 +51,15 @@ select = ["E402", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "F"]
 
 [tool.ruff.lint.per-file-ignores]
 "desktop.py" = ["F401"]
-"desktop_chatgpt_ui.py" = ["E402"]
-"desktop_forms.py" = ["E402"]
-"desktop_pages/backtest.py" = ["F401"]
-"desktop_pages/compare.py" = ["F401"]
-"desktop_pages/data.py" = ["F401"]
-"desktop_pages/strategy.py" = ["F401"]
-"desktop_pages/wf_wizard.py" = ["F841"]
-"desktop_presentation.py" = ["E402"]
-"desktop_ui.py" = ["E402", "F401", "F841"]
+"desktop_app/features/assistant/connection.py" = ["E402"]
+"desktop_app/components/forms.py" = ["E402"]
+"desktop_app/features/backtest/backtest.py" = ["F401"]
+"desktop_app/features/compare/compare.py" = ["F401"]
+"desktop_app/features/data/data.py" = ["F401"]
+"desktop_app/features/strategy/strategy.py" = ["F401"]
+"desktop_app/features/walk_forward/wf_wizard.py" = ["F841"]
+"desktop_app/components/formatting.py" = ["E402"]
+"desktop_app/shell/main_window.py" = ["E402", "F401", "F841"]
 "packaging/validate_tls.py" = ["E402"]
 "quantlab/analysis_contracts.py" = ["E402"]
 "quantlab/analysis_recovery.py" = ["E402"]

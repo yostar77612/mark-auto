@@ -14,8 +14,8 @@ from unittest.mock import patch
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QToolButton
 
-from desktop_pages.maintenance import MaintenancePanel, installed_payload_root
-from desktop_strings import ui_text
+from desktop_app.features.settings.maintenance import MaintenancePanel, installed_payload_root
+from desktop_app.strings.catalog import ui_text
 from quantlab.payload_cleanup import CleanupPlan, execute_payload_cleanup, plan_payload_cleanup
 from quantlab.update_check import MAX_BODY, UpdateResult, _HTTPSRedirect, check_for_update
 from tests.test_t9_onboarding import sandbox_ui
@@ -250,13 +250,13 @@ class MaintenanceUITests(OfflineTest):
         return panel
 
     def test_page_and_window_construction_never_checks(self):
-        from desktop_ui import MainWindow  # Exercise the actual settings mounting path.
+        from desktop_app.shell.main_window import MainWindow  # Exercise the actual settings mounting path.
         from quantlab.desktop_runtime import AppPaths, JobManager  # Disposable workspace only.
 
         paths = AppPaths(self.temp() / 'workspace').ensure()
         jobs = JobManager(paths)
         self.addCleanup(jobs.close)
-        with patch('desktop_pages.maintenance.check_for_update') as checked:
+        with patch('desktop_app.features.settings.maintenance.check_for_update') as checked:
             panel = self.panel()
             window = MainWindow(paths, jobs)
             for timer in window.findChildren(QTimer):
@@ -279,7 +279,7 @@ class MaintenanceUITests(OfflineTest):
 
     def test_user_click_disables_button_and_poll_renders_fixed_result(self):
         panel = self.panel()
-        with patch('desktop_pages.maintenance.Thread') as thread:
+        with patch('desktop_app.features.settings.maintenance.Thread') as thread:
             panel.update_button.click()
             thread.return_value.start.assert_called_once()
             self.assertFalse(panel.update_button.isEnabled())
@@ -296,23 +296,23 @@ class MaintenanceUITests(OfflineTest):
         for version in ('0.1', '0.2', '0.2.2'):
             (root / version / 'unique').mkdir(parents=True)
         panel = self.panel()
-        with patch('desktop_pages.maintenance.installed_payload_root', return_value=root):
-            with patch('desktop_pages.maintenance.QMessageBox.question', return_value=QMessageBox.No) as question:
+        with patch('desktop_app.features.settings.maintenance.installed_payload_root', return_value=root):
+            with patch('desktop_app.features.settings.maintenance.QMessageBox.question', return_value=QMessageBox.No) as question:
                 panel.cleanup_button.click()
                 self.assertEqual(question.call_args.args[-1], QMessageBox.No)
                 self.assertIn('0.1', question.call_args.args[2])
                 self.assertTrue((root / '0.1').exists())
-            with patch('desktop_pages.maintenance.QMessageBox.question', return_value=QMessageBox.Yes):
+            with patch('desktop_app.features.settings.maintenance.QMessageBox.question', return_value=QMessageBox.Yes):
                 panel.cleanup_button.click()
                 self.assertFalse((root / '0.1').exists())
                 self.assertTrue((root / '0.2').exists())
                 self.assertTrue((root / '0.2.2').exists())
 
     def test_development_and_wrong_executable_path_cannot_offer_deletion(self):
-        with patch('desktop_pages.maintenance.sys.frozen', False, create=True):
+        with patch('desktop_app.features.settings.maintenance.sys.frozen', False, create=True):
             self.assertIsNone(installed_payload_root())
         with (
-            patch('desktop_pages.maintenance.sys.frozen', True, create=True),
+            patch('desktop_app.features.settings.maintenance.sys.frozen', True, create=True),
             patch.dict(os.environ, {'LOCALAPPDATA': str(self.temp())}),
         ):
             self.assertIsNone(installed_payload_root())

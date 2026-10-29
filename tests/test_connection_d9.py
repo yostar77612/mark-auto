@@ -11,12 +11,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from desktop_chatgpt_ui import ConnectionController, ChatGPTConnectionPanel, ConnectionRequest, ConnectionEvent, run_connection_request
-from desktop_pages import connection_test as probe
-from desktop_strings import ui_text
-from desktop_ui import connection_event_from_payload
+from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel, ConnectionRequest, ConnectionEvent, run_connection_request
+from desktop_app.features.assistant import connection_test as probe
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import connection_event_from_payload
 from quantlab.desktop_errors import error_message
-from desktop_chatgpt_provider import PlanError
+from quantlab.assistant.adapters.chatgpt.provider import PlanError
 
 REF = 'a' * 32
 OTHER = 'b' * 32
@@ -108,7 +108,7 @@ class ConnectionD9Tests(unittest.TestCase):
         transport = Transport()
         with (
             patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Cancel) as consent,
-            patch('desktop_chatgpt_provider.PlanHTTPTransport', return_value=transport),
+            patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', return_value=transport),
         ):
             for _ in range(2):
                 QTest.keyClick(self.panel.connection_test.button, Qt.Key.Key_Space)
@@ -142,7 +142,7 @@ class ConnectionD9Tests(unittest.TestCase):
         self.assertEqual((self.c.usage_known, self.c.reserved_count, self.c.unknown_count), (True, 7, 0))
         self.c.invalidate_campaign_usage()
         self.assertEqual((self.c.usage_known, self.c.reserved_count, self.c.unknown_count), (False, None, None))
-        with patch('desktop_pages.connection_test.run_probe', return_value=event) as worker:
+        with patch('desktop_app.features.assistant.connection_test.run_probe', return_value=event) as worker:
             self.assertIs(run_connection_request(request, bootstrap='/fixture', emit=Mock(), cancelled=lambda: False), event)
             worker.assert_called_once()
 

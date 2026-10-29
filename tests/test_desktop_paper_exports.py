@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from desktop_ui import execute_ui_operation, paper_risk_limits
+from desktop_app.shell.main_window import execute_ui_operation, paper_risk_limits
 from quantlab.core import Instrument, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths
 from quantlab.paper import PaperBroker
@@ -114,7 +114,7 @@ class PaperReplayExportTests(unittest.TestCase):
             patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start,
             patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance,
             patch.object(PaperReplay, 'stop', autospec=True, side_effect=original_stop) as stop,
-            patch('desktop_ui.write_json', side_effect=export),
+            patch('desktop_app.shell.main_window.write_json', side_effect=export),
         ):
             with self.assertRaisesRegex(OSError, 'synthetic post-commit export failure'):
                 execute_ui_operation('ui_paper_replay', self.payload, self.paths)
@@ -164,7 +164,7 @@ class PaperReplayExportTests(unittest.TestCase):
             patch.object(PaperReplay, 'start', autospec=True, side_effect=original_start) as start,
             patch.object(PaperReplay, 'step', autospec=True, side_effect=step) as advance,
             patch.object(PaperReplay, 'stop', autospec=True, side_effect=stop) as halt,
-            patch('desktop_ui.write_json', wraps=write_json) as export,
+            patch('desktop_app.shell.main_window.write_json', wraps=write_json) as export,
         ):
             with self.assertRaisesRegex(RuntimeError, 'synthetic ' + failing_method + ' failure'):
                 execute_ui_operation('ui_paper_replay', self.payload, self.paths)

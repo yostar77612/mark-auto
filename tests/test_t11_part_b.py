@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch
 
 import desktop
-import desktop_strings
+import desktop_app.strings.catalog
 from quantlab import errors
 from quantlab.saved_candidate_pool import SavedCandidatePoolError
 from quantlab.desktop_errors import ERROR_LABELS, ERROR_TABLE, error_message, exception_code
@@ -24,9 +24,9 @@ class _NormalizeState(ast.NodeTransformer):
         # Keep the original fingerprint and verify the identical message. The
         # earlier lock dialog uses the first alias; run_gui uses the last one.
         if node.value == 'desktop.main.startup_failed':
-            aliases = [old for old, new in desktop_strings.TEXT_ALIASES.items() if new == node.value]
+            aliases = [old for old, new in desktop_app.strings.catalog.TEXT_ALIASES.items() if new == node.value]
             assert len(aliases) == 2
-            assert all(desktop_strings.ui_text(old) == desktop_strings.ui_text(node.value) for old in aliases)
+            assert all(desktop_app.strings.catalog.ui_text(old) == desktop_app.strings.catalog.ui_text(node.value) for old in aliases)
             node.value = aliases[-1]
         return node
 
@@ -103,7 +103,7 @@ class StartupTests(unittest.TestCase):
         functions.update(
             {
                 node.name: node
-                for node in ast.parse((ROOT / 'desktop_smoke/__init__.py').read_text(encoding='utf-8-sig')).body
+                for node in ast.parse((ROOT / 'desktop_app/smoke/__init__.py').read_text(encoding='utf-8-sig')).body
                 if isinstance(node, ast.FunctionDef)
             }
         )
@@ -113,7 +113,7 @@ class StartupTests(unittest.TestCase):
 
     def test_main_routes_tls_without_gui(self):
         report = Path(__file__).resolve()
-        with patch('desktop_tls_smoke.write_report', return_value=17) as write, patch('desktop.run_gui') as gui:
+        with patch('desktop_app.smoke.tls.write_report', return_value=17) as write, patch('desktop.run_gui') as gui:
             self.assertEqual(desktop.main(['--tls-smoke', str(report)]), 17)
         write.assert_called_once_with(report)
         gui.assert_not_called()
@@ -184,12 +184,12 @@ class StartupTests(unittest.TestCase):
             stack.enter_context(patch('PySide6.QtCore.QAbstractNativeEventFilter', object))
             stack.enter_context(patch('PySide6.QtCore.QTimer', return_value=timer))
             stack.enter_context(patch('PySide6.QtWidgets.QApplication', return_value=app))
-            stack.enter_context(patch('desktop_icon.application_icon', return_value=None))
+            stack.enter_context(patch('desktop_app.components.icon.application_icon', return_value=None))
             stack.enter_context(patch('quantlab.desktop_runtime.AppPaths.discover', return_value=SimpleNamespace(root=MagicMock())))
             stack.enter_context(patch('quantlab.desktop_runtime.WorkspaceLocator'))
             stack.enter_context(patch('desktop.acquire_instance_lock', return_value=lock))
             stack.enter_context(patch('desktop.prepare_workspace', side_effect=prepare))
-            stack.enter_context(patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(MainWindow=Mock(return_value=window))}))
+            stack.enter_context(patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(MainWindow=Mock(return_value=window))}))
             self.assertEqual(desktop.main([]), 19)
         self.assertEqual(
             events, ['prepare', 'show', 'freeze', 'restore', 'filter', 'timer', 'exec', 'jobs.close', 'guard.finish', 'jobs.close', 'mutex.close', 'unlock']

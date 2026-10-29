@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from desktop_strings import stage_error_message
+from desktop_app.strings.catalog import stage_error_message
 from quantlab import desktop_runtime as runtime
 from quantlab.job_stages import JOB_STAGES, normalize_stage, stage_from_traceback
 
@@ -83,7 +83,7 @@ class JobStageTests(unittest.TestCase):
         self.assertEqual(stage_from_traceback(None, 'private-token'), 'unknown')
 
     def test_ui_error_display_uses_stage_and_ignores_raw_event_text(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         # Exercise the real polling branch using an in-memory host; no workspace.
         for stage in (*sorted(JOB_STAGES), 'private-token C:/private/path', None):

@@ -11,13 +11,13 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QTableWidget, QWidget
-import desktop_privacy as privacy
-from desktop_accessibility import INTERACTIVE, semantic_name, visual_focus_order
-from desktop_forms import ResultTable as LegacyTable
-from desktop_forms import backtest_summary_text
-from desktop_pages.result_widgets import ResultTable, TaipeiFillsTable
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+import desktop_app.components.privacy as privacy
+from desktop_app.shell.accessibility import INTERACTIVE, semantic_name, visual_focus_order
+from desktop_app.components.forms import ResultTable as LegacyTable
+from desktop_app.components.forms import backtest_summary_text
+from desktop_app.components.result_widgets import ResultTable, TaipeiFillsTable
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.backtest import run_backtest
 from quantlab.core import content_hash
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -238,7 +238,7 @@ class PrivacyWindowTests(unittest.TestCase):
 
         RegistryTests().test_public_names_unchanged()
         NoInlineStylesheetTests().test_desktop_and_tools_have_no_inline_stylesheet()
-        tree = ast.parse((ROOT / 'desktop_ui.py').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8'))
         node = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))

@@ -12,10 +12,10 @@ from PySide6.QtGui import QImage, QKeyEvent
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication, QListWidget, QVBoxLayout, QWidget
 
-import desktop_privacy as privacy
-from desktop_pages.compare_equity import CAP, PAINT_LIMIT, PATTERNS, EquityOverlay, attach_overlay, drawdown, paint_points, project_equity
-from desktop_pages.compare_table import FIELDS, SavedResultsTable, SideBySideTable, saved_row
-from desktop_strings import ui_text
+import desktop_app.components.privacy as privacy
+from desktop_app.features.compare.compare_equity import CAP, PAINT_LIMIT, PATTERNS, EquityOverlay, attach_overlay, drawdown, paint_points, project_equity
+from desktop_app.features.compare.compare_table import FIELDS, SavedResultsTable, SideBySideTable, saved_row
+from desktop_app.strings.catalog import ui_text
 
 
 def rows(values, start=date(2026, 1, 1)):
@@ -145,10 +145,10 @@ class OverlayTests(unittest.TestCase):
         self.assertEqual((side.rowCount(), side.columnCount()), (5, 2))
 
     def test_new_strings_and_read_only_source(self):
-        source = Path('desktop_pages/compare_equity.py').read_text(encoding='utf-8')
+        source = Path('desktop_app/features/compare/compare_equity.py').read_text(encoding='utf-8')
         for forbidden in ('QTimer', 'start_job(', 'deleteLater', 'setStyleSheet', 'optimise', 'recommend', 'weight', 'best'):
             self.assertNotIn(forbidden, source)
-        catalog = Path('desktop_strings.py').read_text(encoding='utf-8').split('# F2:')[1].split('# F3:')[0]
+        catalog = Path('desktop_app/strings/catalog.py').read_text(encoding='utf-8').split('# F2:')[1].split('# F3:')[0]
         for forbidden in ('best', 'recommend', 'weight', '?' * 3):
             self.assertNotIn(forbidden, catalog.lower())
 

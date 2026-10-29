@@ -41,8 +41,8 @@
   },
   "pinned_source_check": "Exact byte comparison against git cat-file --filters HEAD:path (checkout line endings)",
   "pinned_sources": {
-    "desktop_chatgpt_auth.py": "316db25c6d10aac93453d4da68784e09ec9a7270c82b438837339365e90fb15f",
-    "desktop_chatgpt_provider.py": "71e9e54a5f2bac93aab0036c60bae4655ca3e0b45cf38e4f7999e5eb3b9e045e",
+    "quantlab/assistant/adapters/chatgpt/auth.py": "316db25c6d10aac93453d4da68784e09ec9a7270c82b438837339365e90fb15f",
+    "quantlab/assistant/adapters/chatgpt/provider.py": "71e9e54a5f2bac93aab0036c60bae4655ca3e0b45cf38e4f7999e5eb3b9e045e",
     "quantlab/research.py": "4fb7ca86496192d6871477df2fc177a0bd57d755bcaf896f1f5414b97ea1275e",
     "quantlab/provider.py": "b26427d0584d83f1e62bf768c458df9b76eb309ca3cdf930e31bba68bde038ee",
     "quantlab/core.py": "61a89a7ac7978fe16fadd0f88c528374d3dc05b562ec01059d424c6ff0ca78c4",

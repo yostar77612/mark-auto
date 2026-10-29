@@ -13,7 +13,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
-from desktop_theme import COLORS, FONT_SIZES, SPACING, STATUS_COLORS, apply_theme, build_app_stylesheet, set_status
+from desktop_app.shell.theme import COLORS, FONT_SIZES, SPACING, STATUS_COLORS, apply_theme, build_app_stylesheet, set_status
 from tests.test_no_inline_stylesheet import WIDGET_STYLESHEET_ALLOWLIST
 
 
@@ -58,7 +58,7 @@ class DesktopThemeTests(unittest.TestCase):
         label.close()
 
     def test_window_roles_and_empty_widget_stylesheets(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
 
         root = Path(tempfile.gettempdir()) / ('markauto-theme-' + uuid.uuid4().hex)
@@ -83,7 +83,7 @@ class DesktopThemeTests(unittest.TestCase):
                 self.assertTrue(button.isCheckable())
                 self.assertIn(button, window.strategy_page.mode_buttons.values())
         previous = window.strategy_form.property('feedback')
-        with patch('desktop_ui.QTimer.singleShot') as single_shot:
+        with patch('desktop_app.shell.main_window.QTimer.singleShot') as single_shot:
             window.form_feedback(window.strategy_form, 'synthetic')
         self.assertTrue(window.strategy_form.property('feedback'))
         self.assertEqual(single_shot.call_args.args[:2], (1800, window.strategy_form))

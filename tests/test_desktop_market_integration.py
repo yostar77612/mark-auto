@@ -41,7 +41,7 @@ class MarketHostTests(unittest.TestCase):
         with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes), patch.object(self.window, 'start_job') as start:
             self.window.refresh_market()
             start.assert_called_once_with('ui_market_refresh', {'network_opt_in': True})
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         with self.assertRaises(ValidationError):
             execute_ui_operation('ui_market_refresh', {}, self.paths)
@@ -60,7 +60,7 @@ class MarketHostTests(unittest.TestCase):
             self.window.jobs = old
 
     def test_independent_provider_failure_retains_cache(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from quantlab.market_providers import import_daily, load_cached, MarketLoad
 
         a = import_daily('twse', self.paths.state / 'market_cache', TWSE, received_at=NOW)
@@ -80,7 +80,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertEqual(load_cached('twse', self.paths.state / 'market_cache').series, a.series)
 
     def test_local_file_import_no_network_and_no_research_replacement(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from quantlab.market_providers import load_cached
 
         path = Path(self.tmp.name) / 'source.json'
@@ -140,7 +140,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertIn('未提供', self.window.paper_card.label.text())
 
     def test_manual_export_and_import_use_existing_campaign_without_network(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from tests.test_research import inputs
         from quantlab.core import to_dict, content_hash, Dataset
         from quantlab.reporting import save_dataset
@@ -181,14 +181,16 @@ class MarketHostTests(unittest.TestCase):
         self.assertEqual((self.paths.state / 'dataset.json').read_text(), '{broken')
 
     def test_restart_loads_saved_preferences_without_network(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         self.window.market.timeframe_combo.setCurrentIndex(3)
         self.window.save_settings()
         with (
             patch('quantlab.market_providers.build_opener', side_effect=AssertionError('restart network')) as market_network,
-            patch('desktop_chatgpt_ui.ConnectionController.request', side_effect=AssertionError('restart subscription action')) as subscription_action,
-            patch('desktop_chatgpt_auth.AuthSession', side_effect=AssertionError('restart auth session')) as auth_session,
+            patch(
+                'desktop_app.features.assistant.connection.ConnectionController.request', side_effect=AssertionError('restart subscription action')
+            ) as subscription_action,
+            patch('quantlab.assistant.adapters.chatgpt.auth.AuthSession', side_effect=AssertionError('restart auth session')) as auth_session,
             patch('PySide6.QtGui.QDesktopServices.openUrl', side_effect=AssertionError('restart browser')) as browser,
         ):
             restored = MainWindow(self.paths, self.jobs, self.window.settings, self.window.backups)
@@ -244,7 +246,7 @@ class MarketHostTests(unittest.TestCase):
         from dataclasses import replace
         from datetime import datetime, timedelta
         from decimal import Decimal
-        from desktop_ui import latest_market_observations
+        from desktop_app.shell.main_window import latest_market_observations
         from quantlab.market import MarketSeries, QuoteSnapshot
         from quantlab.market_providers import parse_taifex_daily
 
@@ -282,7 +284,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertIn('過期快取', self.window.market.cards['MXF'].text())
 
     def test_synthetic_history_cannot_become_market_minutes(self):
-        from desktop_ui import dataset_market_series
+        from desktop_app.shell.main_window import dataset_market_series
         from quantlab.reporting import synthetic_dataset
 
         with self.assertRaises(ValueError):

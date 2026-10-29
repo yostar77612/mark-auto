@@ -12,7 +12,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-from desktop_ui import MainWindow
+from desktop_app.shell.main_window import MainWindow
 from tests.snapshot_cache import default_metrics
 
 
@@ -91,7 +91,12 @@ class DesktopPolishATests(unittest.TestCase):
                 self.assertGreaterEqual(table.columnWidth(i), table.fontMetrics().horizontalAdvance(table.horizontalHeaderItem(i).text()) + 12)
         obsolete = '策略' + '與版本'
         root = Path(__file__).resolve().parents[1]
-        for path in [root / 'desktop_ui.py', root / 'README.md', *list((root / 'docs').rglob('*.md')), *list((root / 'docs').rglob('*.json'))]:
+        for path in [
+            root / 'desktop_app/shell/main_window.py',
+            root / 'README.md',
+            *list((root / 'docs').rglob('*.md')),
+            *list((root / 'docs').rglob('*.json')),
+        ]:
             if path.name == '06_PRODUCT_OPTIMIZATION_PLAN.md':
                 continue  # the plan quotes the obsolete name as its problem statement
             self.assertNotIn(obsolete, path.read_text(encoding='utf-8'), str(path))

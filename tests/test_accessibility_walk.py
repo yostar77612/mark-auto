@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QTabBar, QTabWidget
 from tests.t10_fixture import WindowFixture
-from desktop_accessibility import INTERACTIVE, visual_focus_order
+from desktop_app.shell.accessibility import INTERACTIVE, visual_focus_order
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtTest import QTest
@@ -8,9 +8,9 @@ from PySide6.QtWidgets import QApplication
 import shiboken6
 import unittest
 
-from desktop_market import MarketDashboard
-from desktop_theme import apply_market_theme, build_market_stylesheet
-from desktop_strings import ZH_TW, ui_text
+from desktop_app.features.market.dashboard import MarketDashboard
+from desktop_app.shell.theme import apply_market_theme, build_market_stylesheet
+from desktop_app.strings.catalog import ZH_TW, ui_text
 
 from pathlib import Path
 import tempfile
@@ -28,7 +28,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         cls.started = perf_counter()
@@ -53,8 +53,8 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         cls.addClassCleanup(cls.window.close)
         for timer in cls.window.findChildren(QTimer):
             timer.stop()
-        from desktop_pages.paper_tabs import open_timeline
-        from desktop_pages.paper import stop_dialog
+        from desktop_app.features.paper.paper_tabs import open_timeline
+        from desktop_app.features.paper.paper import stop_dialog
 
         paper = cls.window.paper_page
         open_timeline(paper, paper.findChild(QTabWidget, 'paper_account_tabs'))
@@ -120,8 +120,8 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         self.assertTrue(self.window.paper_page.replay_controls.button.accessibleName())
 
     def test_next_step_hint_has_catalog_accessible_text(self):
-        from desktop_pages.async_status import AsyncStatus
-        from desktop_pages.error_guidance import next_step
+        from desktop_app.components.async_status import AsyncStatus
+        from desktop_app.components.error_guidance import next_step
 
         status = self.window.findChildren(AsyncStatus)[0]
         status.set_state('error', error_code='validation_failed')
@@ -276,7 +276,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
 
     def test_keyboard_buttons_escape_and_privacy(self):
         from PySide6.QtTest import QSignalSpy
-        from desktop_pages.paper import stop_dialog, stop_exposure_text
+        from desktop_app.features.paper.paper import stop_dialog, stop_exposure_text
 
         w = self.window
         button = w.app_header.disclosure

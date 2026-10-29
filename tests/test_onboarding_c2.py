@@ -9,9 +9,9 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
-from desktop_pages.onboarding import GettingStarted, WORKFLOW_ORDER
-from desktop_strings import ui_text
-from desktop_theme import build_app_stylesheet
+from desktop_app.shell.onboarding import GettingStarted, WORKFLOW_ORDER
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import build_app_stylesheet
 from quantlab.desktop_runtime import SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests import test_paper as paper_fixtures

@@ -26,7 +26,7 @@ try {
   & $python -c "from PySide6.QtWidgets import QApplication; import PySide6; print('Native Qt preflight', PySide6.__version__)"
   if ($LASTEXITCODE) { throw 'Native Qt preflight failed; refusing skipped UI tests' }
   $env:MARKAUTO_REQUIRE_DESKTOP_AUTH_TESTS = '1'
-  & $python -c "from desktop_chatgpt_provider import implementation_provenance; print(implementation_provenance()['dependency_target'])"
+  & $python -c "from quantlab.assistant.adapters.chatgpt.provider import implementation_provenance; print(implementation_provenance()['dependency_target'])"
   if ($LASTEXITCODE) { throw 'Native authentication dependencies or provenance unavailable' }
   if ($RegressionOnly) {
     & $python packaging/desktop_regression.py run --directory dist/validation/desktop-regression

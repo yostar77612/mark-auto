@@ -8,7 +8,7 @@ import unittest
 from PySide6.QtCore import QRect, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy, QToolButton
 
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_t9_onboarding import sandbox_ui
 
@@ -16,7 +16,7 @@ from tests.test_t9_onboarding import sandbox_ui
 class CompactHelpTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         cls.app = QApplication.instance() or QApplication([])
         cls.context = sandbox_ui()

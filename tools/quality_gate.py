@@ -59,6 +59,8 @@ def core_import_findings(source: str, label: str) -> list[str]:
                 modules.extend(alias.name for alias in node.names)
         else:
             modules = []
+        if any(module.split('.')[0] in ('PySide6', 'shiboken6') for module in modules):
+            findings.append(f'{label}:{node.lineno}: no Qt imports under quantlab/')
         if any(module.split('.')[0].startswith('desktop') for module in modules):
             findings.append(f'{label}:{node.lineno}: no desktop imports under quantlab/')
         if isinstance(node, ast.Call) and (
@@ -107,7 +109,10 @@ def python_findings(source: str, label: str, research: bool = False, desktop: bo
                 # module. It is first-party, not a third-party research dependency.
                 first_party = {"quantlab"}
                 if label == "quantlab/desktop_runtime.py":
-                    first_party.add("desktop_ui")
+                    if (isinstance(node, ast.Import) and all(item.name == "desktop_app.shell.main_window" for item in node.names)) or (
+                        isinstance(node, ast.ImportFrom) and node.module == "desktop_app.shell.main_window"
+                    ):
+                        first_party.add("desktop_app")
                 if set(modules) - sys.stdlib_module_names - first_party - allowed_v2:
                     findings.append(f"{label}:{node.lineno}: research dependency must be standard library")
             prohibited = BANNED_IMPORTS.intersection(modules) - allowed_v2
@@ -173,21 +178,22 @@ def scan(root: Path, history: bool = False) -> list[str]:
                 python_findings(
                     source,
                     name,
-                    name.startswith("quantlab/"),
+                    name.startswith("quantlab/")
+                    and name not in {"quantlab/assistant/adapters/chatgpt/auth.py", "quantlab/assistant/adapters/chatgpt/provider.py"},
                     desktop=name
                     in {
-                        "desktop_ui.py",
-                        "desktop_charts.py",
-                        "desktop_forms.py",
-                        "desktop_market.py",
-                        "desktop_market_layout.py",
-                        "desktop_market_workspace.py",
-                        "desktop_walk_forward.py",
-                        "desktop_chatgpt_auth.py",
-                        "desktop_chatgpt_provider.py",
-                        "desktop_chatgpt_ui.py",
-                        "desktop_automatic_backup.py",
-                        "desktop_tls_smoke.py",
+                        "desktop_app/shell/main_window.py",
+                        "desktop_app/components/charts.py",
+                        "desktop_app/components/forms.py",
+                        "desktop_app/features/market/dashboard.py",
+                        "quantlab/research_core/adapters/market_layout.py",
+                        "desktop_app/features/market/workspace.py",
+                        "desktop_app/features/walk_forward/presenter.py",
+                        "quantlab/assistant/adapters/chatgpt/auth.py",
+                        "quantlab/assistant/adapters/chatgpt/provider.py",
+                        "desktop_app/features/assistant/connection.py",
+                        "desktop_app/features/settings/automatic_backup.py",
+                        "desktop_app/smoke/tls.py",
                     },
                 )
             )

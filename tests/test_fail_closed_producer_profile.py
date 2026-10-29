@@ -3,6 +3,7 @@
 import hashlib
 import sys
 import unittest
+from tests.layered_source_fixtures import reviewed_source_bytes
 from pathlib import Path
 from unittest.mock import patch
 from quantlab.core import content_hash, to_dict
@@ -31,7 +32,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
 
     def test_current_literal_sources_and_only_reviewed_changes(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(len(SUPPORTED_PRODUCERS), 28)
+        self.assertEqual(len(SUPPORTED_PRODUCERS), 29)
         self.assertEqual(SUPPORTED_PRODUCERS[11:13], (FAIL_CLOSED_TRANSPORT_PROFILE_V1, FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in (
             (CLEANUP_TRANSPORT_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1),
@@ -81,7 +82,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
                             )[index],
                         )
                         continue
-                    raw = (root / name).read_bytes().replace(b'\r\n', b'\n')
+                    raw = reviewed_source_bytes(root, name).replace(b'\r\n', b'\n')
                     if index:
                         raw = raw.replace(b'\n', b'\r\n')
                     self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
@@ -161,7 +162,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
                         root, producer=profile, provider=compatible if mode == 'openai_compatible' else None, candidates=1
                     )
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
                 with patch('quantlab.saved_candidate_pool.SUPPORTED_PRODUCERS', tuple(reversed(SUPPORTED_PRODUCERS))):
                     reordered = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
@@ -291,7 +292,7 @@ class DeadlineProducerProfileTests(unittest.TestCase):
                         root, producer=profile, provider=compatible if mode == 'openai_compatible' else None, candidates=1
                     )
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
-                with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)
                 with patch('quantlab.saved_candidate_pool.SUPPORTED_PRODUCERS', tuple(reversed(SUPPORTED_PRODUCERS))):
                     reordered = self.admit(source_campaign_dir=folder, source_campaign_ref=ref, original_dataset=original)

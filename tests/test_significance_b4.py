@@ -10,8 +10,8 @@ import random
 import unittest
 from unittest.mock import patch
 
-from desktop_strings import ui_text
-from desktop_walk_forward import compact_walk_forward, oos_statistics_text
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.walk_forward.presenter import compact_walk_forward, oos_statistics_text
 from quantlab import significance as sig
 from quantlab.core import canonical_json
 from tests.test_significance_b2 import fold, state

@@ -5,463 +5,463 @@
   "named_methods_with_raw_ast_differences_before_repair": 43,
   "methods": [
     {
-      "file": "desktop_pages/backtest.py",
+      "file": "desktop_app/features/backtest/backtest.py",
       "method": "run_backtest",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/backtest.py",
+      "file": "desktop_app/features/backtest/backtest.py",
       "method": "show_result",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_analysis_section",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_invalidate_analysis_preview",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "pick_analysis_original",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host.open_file retains shell parent and original filters."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_analysis_request",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "preview_analysis",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "run_analysis",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "read_analysis",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_analysis_saved_changed",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_selected_recovery_launch",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "reconcile_saved_analysis",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_recovery_display_fingerprint",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_refresh_recovery_controls",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host.find_child remains bound to MainWindow.findChild; blocked actions still searched across whole window."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_analysis_event",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "_refresh_analysis_saved",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/compare.py",
+      "file": "desktop_app/features/compare/compare.py",
       "method": "select_strategy",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/data.py",
+      "file": "desktop_app/features/data/data.py",
       "method": "import_market_file",
       "ast_different_before_repair": true,
       "verdict": "FIXED: shell parent restored through host.open_file. Filter and job payload unchanged."
     },
     {
-      "file": "desktop_pages/data.py",
+      "file": "desktop_app/features/data/data.py",
       "method": "import_market_history",
       "ast_different_before_repair": true,
       "verdict": "FIXED: shell parent restored through host dialog factory. Single-dialog shared state, closing guards, accepted/finished signals and deleteLater unchanged."
     },
     {
-      "file": "desktop_pages/data.py",
+      "file": "desktop_app/features/data/data.py",
       "method": "import_data",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/data.py",
+      "file": "desktop_app/features/data/data.py",
       "method": "download_data",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/market.py",
+      "file": "desktop_app/features/market/market.py",
       "method": "refresh_market",
       "ast_different_before_repair": true,
       "verdict": "FIXED: shell parent restored through host.question. Default No and job payload unchanged."
     },
     {
-      "file": "desktop_pages/market.py",
+      "file": "desktop_app/features/market/market.py",
       "method": "save_market_preferences",
       "ast_different_before_repair": true,
       "verdict": "FIXED: save frame x()/y() through QPoint callback; retain original client width/height."
     },
     {
-      "file": "desktop_pages/market.py",
+      "file": "desktop_app/features/market/market.py",
       "method": "load_market_cache",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/market.py",
+      "file": "desktop_app/features/market/market.py",
       "method": "bind_result_layers",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host forwards original helper functions; shared binding references and fail-closed identity checks preserved."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "load_form_file",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host.open_file retains shell parent and JSON filter; parsing unchanged."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "demo_paper_policy",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "paper_job",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "kill_paper",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "_show_account",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "_remember_stop",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/paper.py",
+      "file": "desktop_app/features/paper/paper.py",
       "method": "freeze_paper",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "auto_restore_chatgpt",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "show_chatgpt_sign_in",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_chatgpt_quiesce",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_chatgpt_dispatch",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_chatgpt_cancel",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_chatgpt_open_browser",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_plan_usage_request",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_current_plan_binding",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "inspect_plan_usage",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_record_connection_error",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "_chatgpt_event",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "save_settings",
       "ast_different_before_repair": true,
       "verdict": "FIXED: save frame x()/y(); geometry width/height equal QWidget width()/height(). Inert settings and consent reset unchanged."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "load_settings",
       "ast_different_before_repair": true,
       "verdict": "FIXED: default missing x/y to frame position. int conversion, screen choice, size limits and post-resize move clamping preserved."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "configure_workspace",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "open_releases",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "record_event",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: callbacks ui_operations references original UI_OPERATIONS object; filtering/separator unchanged."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "read_logs",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/settings.py",
+      "file": "desktop_app/features/settings/settings.py",
       "method": "backup",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_walk_forward_section",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_connect_walk_forward_inputs",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_walk_forward_origin_changed",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "pick_walk_forward_original",
       "ast_different_before_repair": true,
       "verdict": "FIXED: shell parent restored through host.open_file. Path validation and invalidation unchanged."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_walk_forward_saved_source",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_invalidate_walk_forward_preview",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_walk_forward_input_key",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "preview_walk_forward",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "run_walk_forward",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "read_walk_forward",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_refresh_walk_forward_references",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_walk_forward_event",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "_family_changed",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "run_campaign",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "export_manual_request",
       "ast_different_before_repair": true,
       "verdict": "FIXED: shell parent restored through host.save_file. Filename/filter, no-overwrite guard and max_improvements check unchanged."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "inspect_candidate",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "use_candidate",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/strategy.py",
+      "file": "desktop_app/features/strategy/strategy.py",
       "method": "use_builtin",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: explicit host callback/shared state routing only; original literals, defaults, conversions, branches, arguments, signals and ordering retained."
     },
     {
-      "file": "desktop_pages/views.py",
+      "file": "desktop_app/shell/views.py",
       "method": "refresh_views",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: late callbacks forward original module helpers; ordering, shared widget targets and read-only snapshots preserved."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_button",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_confirm_button",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host.question retains shell parent and default No."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_text",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_advanced",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_save_section_preferences",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_payload",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_remember",
       "ast_different_before_repair": false,
       "verdict": "IDENTICAL AST."
     },
     {
-      "file": "desktop_pages/widgets.py",
+      "file": "desktop_app/components/widgets.py",
       "method": "_browse",
       "ast_different_before_repair": true,
       "verdict": "EQUIVALENT: host.open_file retains shell parent; target and feedback unchanged."

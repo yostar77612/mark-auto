@@ -10,8 +10,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QListWidget, QPushButton
-from desktop_pages.compare_table import FIELDS, SavedResultsTable, SideBySideTable, saved_row
-from desktop_strings import ui_text
+from desktop_app.features.compare.compare_table import FIELDS, SavedResultsTable, SideBySideTable, saved_row
+from desktop_app.strings.catalog import ui_text
 from tests import test_desktop_pages
 
 
@@ -108,7 +108,7 @@ class CompareHostTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text('{}', encoding='utf-8')
             paths.append(str(path))
-        with patch('desktop_ui.load_result', return_value=report({'net_pnl': '20'})), patch.object(w, 'show_result'):
+        with patch('desktop_app.shell.main_window.load_result', return_value=report({'net_pnl': '20'})), patch.object(w, 'show_result'):
             w.refresh_views()
             table = w.compare_page.saved_results_table
             self.assertEqual(table.rowCount(), 2)

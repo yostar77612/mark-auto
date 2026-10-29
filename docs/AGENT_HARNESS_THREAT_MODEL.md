@@ -15,7 +15,7 @@ Trust means reviewed application code, not permission conferred by model text.
 | --- | --- | --- |
 | Core engine | `quantlab/core.py`, `quantlab/backtest.py` | Immutable typed strategy/data records, Decimal money, bounded offline evaluation |
 | AST validator | `quantlab/research.py`, `quantlab/strategies.py` | Closed JSON DSL and recursive finite operator/type/depth/node allowlists |
-| DPAPI store | `desktop_chatgpt_auth.py` | Installation-local DPAPIVault, Windows ACL checks and explicit authentication lifecycle; read-only evidence for this task |
+| DPAPI store | `quantlab/assistant/adapters/chatgpt/auth.py` | Installation-local DPAPIVault, Windows ACL checks and explicit authentication lifecycle; read-only evidence for this task |
 | Local journal | `quantlab/paper.py` | PaperBroker durable simulated events, risk latches and reconciliation; never a live broker |
 | Tool boundary | `quantlab/agent_tools.py`, `quantlab/agent_tool_contract.py` | Host-owned handlers/grants/provenance, frozen read-only registry, strict input and output schemas |
 
@@ -80,7 +80,7 @@ scoped to the model boundary above, not the authorized authentication transport.
 The locked auth source is cited read only; no credential store is opened by
 these tests. Synthetic credentials/tokens never appear in any tool output.
 
-- `desktop_chatgpt_auth.py::DPAPIVault`
+- `quantlab/assistant/adapters/chatgpt/auth.py::DPAPIVault`
 - `quantlab/agent_tools.py::Registry.call`
 - `tests/test_agent_harness_d1.py::AgentHarnessD1Tests.test_every_registered_read_tool_and_all_pages_are_sentinel_safe`
 - `tests/test_agent_harness_d1.py::AgentHarnessD1Tests.test_invalid_return_and_exception_do_not_echo_raw_content`

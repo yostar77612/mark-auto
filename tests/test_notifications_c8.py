@@ -16,17 +16,18 @@ from PySide6.QtCore import Qt, QTimer, qInstallMessageHandler
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QCheckBox, QDialog, QLabel, QVBoxLayout, QWidget
 
-from desktop_pages.async_status import AsyncStatus
-from desktop_pages.notification_log import NotificationLog
-from desktop_pages.notifications import NotificationCenter, install_notifications
-from desktop_strings import ui_text
+from desktop_app.components.async_status import AsyncStatus
+from desktop_app.shell.notification_log import NotificationLog
+from desktop_app.shell.notifications import NotificationCenter, install_notifications
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_feedback import OPERATION_LABELS, completion_summary, stop_presentation
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 from tests.test_no_hardcoded_ui_text import UI_PACKAGE_MODULES
 from tests.test_import_graph import TOUCHED
-from desktop_ui import MainWindow
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from tests.layered_source_fixtures import physical_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -248,12 +249,12 @@ class NotificationTests(unittest.TestCase):
         self.assertTrue(all(not t.timer.isActive() for t in wrappers))
         self.assertTrue(all(t.isHidden() for t in wrappers))
         for name in ('notifications.py', 'notification_log.py'):
-            tree = ast.parse((ROOT / 'desktop_pages' / name).read_text(encoding='utf-8'))
+            tree = ast.parse((ROOT / physical_path('desktop_pages' + '/' + str(name))).read_text(encoding='utf-8'))
             calls = [node.func.attr for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)]
             self.assertFalse({'deleteLater', 'findChildren', 'installEventFilter', 'exec', 'submit', 'cancel', 'amend', 'kill'} & set(calls))
         imports = [
             node.module
-            for node in ast.walk(ast.parse((ROOT / 'desktop_pages/notification_log.py').read_text(encoding='utf-8')))
+            for node in ast.walk(ast.parse((ROOT / 'desktop_app/shell/notification_log.py').read_text(encoding='utf-8')))
             if isinstance(node, ast.ImportFrom)
         ]
         self.assertFalse(any(name.startswith('PySide') for name in imports))
@@ -265,7 +266,7 @@ class NotificationTests(unittest.TestCase):
         for account, reason, expected in fixture['stop']:
             self.assertEqual(list(stop_presentation(account, reason)), expected)
 
-        for module in ('desktop_pages/notifications.py', 'desktop_pages/notification_log.py'):
+        for module in ('desktop_app/shell/notifications.py', 'desktop_app/shell/notification_log.py'):
             self.assertIn(module, UI_PACKAGE_MODULES)
             self.assertIn(module, TOUCHED)
 

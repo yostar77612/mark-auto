@@ -35,7 +35,7 @@ def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *
 
     def profile(frame, event, arg):
         label = names.get(frame.f_code.co_name)
-        if label and frame.f_globals.get('__name__', '').startswith(('quantlab.', 'desktop_ui')):
+        if label and frame.f_globals.get('__name__', '').startswith(('quantlab.', 'desktop_app.shell.main_window')):
             key = id(frame)
             if event == 'call':
                 starts[key] = time.perf_counter()
@@ -161,7 +161,7 @@ def main():
             'errors': errors,
         }
         if options.importtime:
-            report['importtime'] = {module: import_report(module, 15) for module in ('quantlab.desktop_runtime', 'desktop_ui')}
+            report['importtime'] = {module: import_report(module, 15) for module in ('quantlab.desktop_runtime', 'desktop_app.shell.main_window')}
         raw = json.dumps(report, indent=2)
         if options.json:
             options.json.write_text(raw + '\n', encoding='utf-8')

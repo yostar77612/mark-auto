@@ -16,8 +16,8 @@ from quantlab.reporting import demo_config, synthetic_dataset
 from quantlab.research import _campaign_config, _dataset_identity, _evaluate_split, demo_campaign_config, PROMPT
 from quantlab.strategies import builtin_strategies
 from quantlab import research_analysis as a
-from desktop_chatgpt_auth import OAuthCredentialReference
-import desktop_chatgpt_provider as p
+from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
+import quantlab.assistant.adapters.chatgpt.provider as p
 from tests.test_chatgpt_plan import MockTransport, frame, provider as campaign_provider, CANDIDATE
 
 PROVENANCE = {'source_sha256': {'offline_fixture': 'a' * 64}}

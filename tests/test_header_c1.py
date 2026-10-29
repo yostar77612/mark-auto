@@ -11,12 +11,12 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QVBoxLayout, QWidget
-from desktop_pages.app_header import AppHeader
-from desktop_pages.job_progress import JobFeedback, JobProgress
-from desktop_privacy import enabled
-from desktop_strings import ui_text
-from desktop_theme import apply_theme, install_appearance_controls, load_appearance
-from desktop_ui import MainWindow, paper_risk_limits
+from desktop_app.shell.app_header import AppHeader
+from desktop_app.components.job_progress import JobFeedback, JobProgress
+from desktop_app.components.privacy import enabled
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import apply_theme, install_appearance_controls, load_appearance
+from desktop_app.shell.main_window import MainWindow, paper_risk_limits
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -169,7 +169,7 @@ class HeaderTests(unittest.TestCase):
             self.assertFalse(header.timer.isActive())
 
     def test_real_mount_preserves_disclosure_and_top_position(self):
-        with disposable_directory() as folder, sandbox_ui(), patch('desktop_pages.app_header.datetime', wraps=datetime) as fake_datetime:
+        with disposable_directory() as folder, sandbox_ui(), patch('desktop_app.shell.app_header.datetime', wraps=datetime) as fake_datetime:
             fake_datetime.now.return_value = NOW
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)

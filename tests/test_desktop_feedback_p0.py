@@ -27,7 +27,7 @@ class FeedbackTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
 
     def window(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         paths = AppPaths(self.root).ensure()
         jobs = JobManager(paths)
@@ -69,7 +69,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertTrue(w.notification.isHidden())
 
     def test_p017_every_operation_has_distinct_summary(self):
-        from desktop_ui import UI_OPERATIONS
+        from desktop_app.shell.main_window import UI_OPERATIONS
 
         self.assertEqual(set(UI_OPERATIONS), {'ui_' + op for op in OPERATION_LABELS})
         summaries = [completion_summary('ui_' + op, {}) for op in OPERATION_LABELS]
@@ -105,7 +105,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertNotIn('private-token', text)
 
     def test_download_completion_counts_manifest_archives_and_auto_import(self):
-        from desktop_pages.notification_log import safe_summary
+        from desktop_app.shell.notification_log import safe_summary
 
         manifest = {'downloaded_archives': 1, 'archives': [{'archive_path': 'C:/private/archive.zip'}]}
         imported = {**manifest, 'auto_import': {'status': 'imported', 'bars': 1140, 'contract': 'TAIFEX:TMF:202611', 'dataset': 'C:/private/dataset.json'}}
@@ -134,7 +134,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertFalse((w.root / 'paper_policy.json').exists())
 
     def test_p018_demo_policy_scroll_highlight_and_loaded_form(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         w = self.window()
         execute_ui_operation('ui_demo', {'bars': 960}, w.paths)
@@ -152,7 +152,7 @@ class FeedbackTests(unittest.TestCase):
 
         path = self.root / 'snapshot.json'
         write_json(path, {'account_id': 'demo', 'cash': '1000', 'positions': {}, 'orders': {}, 'fills': {}})
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
             w.load_form_file(w.snapshot_form, w.snapshot)
         self.assertIn('已載入參考資料', w.status.text())
         self.assertTrue(w.snapshot_form.property('feedback'))
@@ -161,7 +161,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertIn('已切回內建家族', w.status.text())
         self.assertTrue(w.strategy_form.property('feedback'))
         self.assertEqual(w.strategy_form.styleSheet(), '')
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
             w._browse(w.import_path)
             self.assertIn('已填入選取檔案', w.status.text())
             w.pick_analysis_original()
@@ -190,7 +190,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertTrue(account['kill_switch'])
 
     def test_p020_card_matches_readonly_ledger_and_reference_counts_labelled(self):
-        from desktop_ui import _paper
+        from desktop_app.shell.main_window import _paper
         from quantlab.paper import PaperBroker
         from quantlab.reporting import write_json
 
@@ -207,7 +207,7 @@ class FeedbackTests(unittest.TestCase):
         from quantlab.paper import PaperBroker as Broker
         from quantlab.core import Instrument
         from quantlab.reporting import demo_config
-        from desktop_ui import paper_risk_limits
+        from desktop_app.shell.main_window import paper_risk_limits
 
         now = datetime(2026, 1, 5, 1, tzinfo=timezone.utc)
         session = {'open': '2026-01-05T00:45:00Z', 'end': '2026-01-05T04:45:00Z', 'trade_date': '2026-01-05', 'source': 'synthetic', 'session': 'day'}

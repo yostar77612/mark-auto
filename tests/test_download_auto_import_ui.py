@@ -9,8 +9,8 @@ from unittest.mock import patch
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.core import ValidationError
 from quantlab.desktop_runtime import AppPaths, JobManager
 from quantlab.reporting import save_dataset, synthetic_dataset
@@ -121,7 +121,7 @@ class DownloadAutoImportUiTests(unittest.TestCase):
         self.assertTrue(self.page.gap_panel.isHidden())
 
     def test_download_layout_at_supported_sizes(self):
-        from desktop_theme import apply_theme
+        from desktop_app.shell.theme import apply_theme
         from PySide6.QtGui import QFont, QFontDatabase
 
         destination = os.environ.get('MARKAUTO_UI_QA_IMAGES')

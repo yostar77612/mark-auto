@@ -31,6 +31,6 @@ quantlab/core.py !eol
 quantlab/strategies.py !eol
 quantlab/backtest.py !eol
 quantlab/data.py !eol
-desktop_chatgpt_auth.py !eol
-desktop_chatgpt_provider.py !eol
+quantlab/assistant/adapters/chatgpt/auth.py !eol
+quantlab/assistant/adapters/chatgpt/provider.py !eol
 quantlab/saved_candidate_pool.py !eol

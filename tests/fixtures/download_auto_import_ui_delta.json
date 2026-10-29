@@ -59,7 +59,7 @@
             "kind": "patch",
             "line": 283,
             "name": "saved_analysis_entries",
-            "receiver": "desktop_ui"
+            "receiver": "desktop_app.shell.main_window"
           },
           "count": 1
         },
@@ -69,7 +69,7 @@
             "kind": "patch",
             "line": 297,
             "name": "analysis_preview_text",
-            "receiver": "desktop_ui"
+            "receiver": "desktop_app.shell.main_window"
           },
           "count": 1
         },
@@ -291,7 +291,7 @@
             "kind": "patch",
             "line": 284,
             "name": "saved_analysis_entries",
-            "receiver": "desktop_ui"
+            "receiver": "desktop_app.shell.main_window"
           },
           "count": 1
         },
@@ -301,7 +301,7 @@
             "kind": "patch",
             "line": 298,
             "name": "analysis_preview_text",
-            "receiver": "desktop_ui"
+            "receiver": "desktop_app.shell.main_window"
           },
           "count": 1
         },

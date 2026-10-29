@@ -21,7 +21,7 @@ class AutomaticBackupPanelTests(unittest.TestCase):
     def setUp(self):
         from PySide6.QtWidgets import QWidget
         from quantlab.desktop_runtime import AppPaths, JobManager
-        from desktop_automatic_backup import AutomaticBackupPanel
+        from desktop_app.features.settings.automatic_backup import AutomaticBackupPanel
 
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -137,7 +137,7 @@ class IntegratedAutomaticBackupTests(unittest.TestCase):
     def test_main_window_defers_all_real_managers_then_archives(self):
         from PySide6.QtWidgets import QApplication
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         app = QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as temp:

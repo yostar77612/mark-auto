@@ -46,7 +46,7 @@ MAX_FILES = 10000
 # UI-owned worker protocol, retained as the default for legacy JobManager(paths)
 # callers. This is the sole desktop registrar literal in quantlab. Resolution is
 # dynamic so the runtime has no static dependency on a desktop module.
-DEFAULT_OPERATION_REGISTRAR = 'desktop_ui:execute_ui_operation'
+DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
 
 
 class _OperationExecutorRegistry:

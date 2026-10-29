@@ -10,7 +10,7 @@ import platform
 import sys
 import unittest
 from unittest.mock import patch
-import desktop_chatgpt_provider as p
+import quantlab.assistant.adapters.chatgpt.provider as p
 
 VERSIONS = {'PyJWT': '2.15.1', 'cryptography': '50.0.2', 'cffi': '2.1.1', 'pycparser': '3.11'}
 ROOT = Path(p.__file__).parent
@@ -35,7 +35,19 @@ class ProvenanceStructureTests(unittest.TestCase):
     def test_exact_sources_and_manifest(self):
         descriptor = p.implementation_provenance()
         for name, digest in descriptor['source_sha256'].items():
-            assert digest == hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+            assert (
+                digest
+                == hashlib.sha256(
+                    (
+                        ROOT
+                        / {
+                            'desktop_chatgpt_auth.py': 'auth.py',
+                            'desktop_chatgpt_provider.py': 'provider.py',
+                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
+                        }[name]
+                    ).read_bytes()
+                ).hexdigest()
+            )
         assert descriptor['dependency_manifest_sha256'] == hashlib.sha256((ROOT / 'desktop_chatgpt_dependency_manifest.json').read_bytes()).hexdigest()
         assert str(ROOT) not in json.dumps(descriptor)
 
@@ -46,7 +58,17 @@ class ProvenanceStructureTests(unittest.TestCase):
             with self.subTest(name=name):
 
                 def altered(path):
-                    return original(path) + b'\n' if path == ROOT / name else original(path)
+                    return (
+                        original(path) + b'\n'
+                        if path
+                        == ROOT
+                        / {
+                            'desktop_chatgpt_auth.py': 'auth.py',
+                            'desktop_chatgpt_provider.py': 'provider.py',
+                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
+                        }[name]
+                        else original(path)
+                    )
 
                 with patch.object(Path, 'read_bytes', altered):
                     changed = p.implementation_provenance()
@@ -56,7 +78,15 @@ class ProvenanceStructureTests(unittest.TestCase):
                         assert changed['dependency_manifest_sha256'] != baseline['dependency_manifest_sha256']
 
                 def missing(path):
-                    if path == ROOT / name:
+                    if (
+                        path
+                        == ROOT
+                        / {
+                            'desktop_chatgpt_auth.py': 'auth.py',
+                            'desktop_chatgpt_provider.py': 'provider.py',
+                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
+                        }[name]
+                    ):
                         raise FileNotFoundError('synthetic private path')
                     return original(path)
 

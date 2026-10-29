@@ -7,7 +7,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -28,7 +28,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -41,7 +41,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -54,7 +54,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -83,7 +83,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -96,7 +96,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -109,7 +109,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -130,7 +130,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -143,7 +143,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -164,7 +164,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -177,7 +177,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -190,7 +190,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -251,7 +251,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -264,7 +264,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -277,7 +277,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -290,7 +290,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -303,7 +303,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -316,7 +316,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -329,7 +329,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -342,7 +342,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -355,7 +355,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -368,7 +368,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -381,7 +381,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -394,7 +394,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -415,7 +415,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -428,7 +428,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -449,7 +449,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -478,7 +478,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -491,7 +491,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -504,7 +504,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -517,7 +517,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -538,7 +538,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -551,7 +551,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -580,7 +580,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -593,7 +593,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -606,7 +606,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -619,7 +619,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -632,7 +632,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -645,7 +645,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -658,7 +658,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -671,7 +671,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -684,7 +684,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -697,7 +697,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -710,7 +710,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -723,7 +723,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -736,7 +736,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -757,7 +757,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/bindings.py",
+          "module": "desktop_app/shell/bindings.py",
           "kind": "HostMethod"
         }
       ],
@@ -778,7 +778,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper_layout.py",
+          "module": "desktop_app/features/paper/paper_layout.py",
           "kind": "callbacks"
         }
       ],
@@ -791,7 +791,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper.py",
+          "module": "desktop_app/features/paper/paper.py",
           "kind": "callbacks"
         }
       ],
@@ -804,7 +804,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/settings.py",
+          "module": "desktop_app/features/settings/settings.py",
           "kind": "callbacks"
         }
       ],
@@ -817,7 +817,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/settings.py",
+          "module": "desktop_app/features/settings/settings.py",
           "kind": "callbacks"
         }
       ],
@@ -830,7 +830,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/settings.py",
+          "module": "desktop_app/features/settings/settings.py",
           "kind": "callbacks"
         }
       ],
@@ -843,7 +843,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/compare.py",
+          "module": "desktop_app/features/compare/compare.py",
           "kind": "callbacks"
         }
       ],
@@ -856,7 +856,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/compare.py",
+          "module": "desktop_app/features/compare/compare.py",
           "kind": "callbacks"
         }
       ],
@@ -869,7 +869,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/compare.py",
+          "module": "desktop_app/features/compare/compare.py",
           "kind": "callbacks"
         }
       ],
@@ -882,7 +882,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/views.py",
+          "module": "desktop_app/shell/views.py",
           "kind": "callbacks"
         }
       ],
@@ -895,7 +895,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/views.py",
+          "module": "desktop_app/shell/views.py",
           "kind": "callbacks"
         }
       ],
@@ -908,7 +908,7 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper.py",
+          "module": "desktop_app/features/paper/paper.py",
           "kind": "callbacks"
         }
       ],
@@ -921,11 +921,11 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper.py",
+          "module": "desktop_app/features/paper/paper.py",
           "kind": "callbacks"
         },
         {
-          "module": "desktop_pages/views.py",
+          "module": "desktop_app/shell/views.py",
           "kind": "callbacks"
         }
       ],
@@ -938,11 +938,11 @@
       "variadic": true,
       "consumers": [
         {
-          "module": "desktop_pages/paper.py",
+          "module": "desktop_app/features/paper/paper.py",
           "kind": "callbacks"
         },
         {
-          "module": "desktop_pages/views.py",
+          "module": "desktop_app/shell/views.py",
           "kind": "callbacks"
         }
       ],
@@ -2320,7 +2320,7 @@
       "line": 111,
       "name": "load_result",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_compare_table.py",
@@ -2341,28 +2341,28 @@
       "line": 98,
       "name": "read_json",
       "kind": "patch.object",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_data_gaps_f1.py",
       "line": 101,
       "name": "write_json",
       "kind": "patch.object",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_data_gaps_f1.py",
       "line": 109,
       "name": "read_json",
       "kind": "patch.object",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_data_gaps_f1.py",
       "line": 112,
       "name": "write_json",
       "kind": "patch.object",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis.py",
@@ -2474,7 +2474,7 @@
       "line": 246,
       "name": "saved_analysis_entries",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
@@ -2488,7 +2488,7 @@
       "line": 266,
       "name": "analysis_record_text",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
@@ -2502,7 +2502,7 @@
       "line": 281,
       "name": "analysis_record_text",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
@@ -2691,7 +2691,7 @@
       "line": 283,
       "name": "saved_analysis_entries",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_pages.py",
@@ -2705,7 +2705,7 @@
       "line": 297,
       "name": "analysis_preview_text",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_pages.py",
@@ -2719,14 +2719,14 @@
       "line": 117,
       "name": "write_json",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_paper_exports.py",
       "line": 167,
       "name": "write_json",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_ui.py",
@@ -2740,7 +2740,7 @@
       "line": 142,
       "name": "load_result",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
@@ -2754,7 +2754,7 @@
       "line": 144,
       "name": "result_name",
       "kind": "patch",
-      "receiver": "desktop_ui"
+      "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_walk_forward.py",

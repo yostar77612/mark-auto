@@ -128,10 +128,10 @@ class IndicatorExpansionTests(unittest.TestCase):
         import ast
         from tests.test_no_hardcoded_ui_text import hardcoded_ui_text
 
-        for filename in ('quantlab/indicators.py', 'desktop_market.py', 'desktop_strings.py'):
+        for filename in ('quantlab/indicators.py', 'desktop_app/features/market/dashboard.py', 'desktop_app/strings/catalog.py'):
             source = Path(filename).read_text(encoding='utf-8')
             for node in ast.walk(ast.parse(source)):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                     self.assertNotIn(node.func.id, ('eval', 'exec', 'compile'))
-            if filename == 'desktop_market.py':
+            if filename == 'desktop_app/features/market/dashboard.py':
                 self.assertEqual(hardcoded_ui_text(source), [])

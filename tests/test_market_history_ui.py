@@ -9,8 +9,8 @@ import unittest
 from unittest.mock import patch
 from PySide6.QtCore import QTime
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog
-from desktop_market import MarketHistoryDialog
-from desktop_ui import execute_ui_operation
+from desktop_app.features.market.dashboard import MarketHistoryDialog
+from desktop_app.shell.main_window import execute_ui_operation
 from tests import test_desktop_ui as support
 
 HEADER = '成交日期,商品代號,到期月份(週別),成交時間,成交價格,成交數量(B+S),近月價格,遠月價格,開盤集合競價\n'
@@ -236,7 +236,7 @@ class HistoryHostTests(unittest.TestCase):
         self.assertNotIn('來源更新失敗', self.window.market.message.text())
         self.assertIn('部分區間完整性尚未確認', self.window.market.message.text())
         # A fresh host reloads only the persisted bounded history cache.
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import JobManager, SettingsStore, BackupManager
 
         jobs = JobManager(self.paths)

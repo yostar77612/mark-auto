@@ -11,15 +11,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QListWidget, QStackedWidget, QTabWidget, QVBoxLayout
 
-import desktop_privacy as privacy
-import desktop_theme as theme
-from desktop_pages.compare_table import FIELDS, SavedResultsTable, SideBySideTable
-from desktop_pages.log_table import LogTable
-from desktop_pages.paper import PaperPage
-from desktop_pages.result_widgets import ResultTable, bind_tab_count
-from desktop_pages.widgets import WidgetTools
-from desktop_presentation import display_number
-from desktop_strings import ui_text
+import desktop_app.components.privacy as privacy
+import desktop_app.shell.theme as theme
+from desktop_app.features.compare.compare_table import FIELDS, SavedResultsTable, SideBySideTable
+from desktop_app.features.settings.log_table import LogTable
+from desktop_app.features.paper.paper import PaperPage
+from desktop_app.components.result_widgets import ResultTable, bind_tab_count
+from desktop_app.components.widgets import WidgetTools
+from desktop_app.components.formatting import display_number
+from desktop_app.strings.catalog import ui_text
 from quantlab.paper import RiskLimits
 from shiboken6 import delete
 

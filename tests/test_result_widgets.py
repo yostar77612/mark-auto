@@ -8,10 +8,10 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
-from desktop_strings import ui_text
-from desktop_pages.result_widgets import ResultTable, KpiCards, TaipeiFillsTable, position_text, taipei_time, shown
-from desktop_pages.equity import EquityPlot
-from desktop_pages.result_panels import WalkForwardResults
+from desktop_app.strings.catalog import ui_text
+from desktop_app.components.result_widgets import ResultTable, KpiCards, TaipeiFillsTable, position_text, taipei_time, shown
+from desktop_app.components.equity import EquityPlot
+from desktop_app.components.result_panels import WalkForwardResults
 from tests import test_desktop_pages
 
 

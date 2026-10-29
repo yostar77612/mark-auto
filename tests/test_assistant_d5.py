@@ -11,10 +11,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel, QPlainTextEdit, QVBoxLayout, QWidget
 
-import desktop_privacy as privacy
-from desktop_pages.assistant_details import MAX_ROWS, MAX_SUMMARY_CHARS, TextFold, ToolTimeline, parameter_summary, redacted
-from desktop_pages import assistant_runtime as runtime
-from desktop_strings import ui_text
+import desktop_app.components.privacy as privacy
+from desktop_app.features.assistant.assistant_details import MAX_ROWS, MAX_SUMMARY_CHARS, TextFold, ToolTimeline, parameter_summary, redacted
+from desktop_app.features.assistant import worker as runtime
+from desktop_app.strings.catalog import ui_text
 from quantlab.errors import ERROR_TABLE
 from tests import test_assistant_d4 as d4
 from tests.test_agent_harness_d1 import REFUSAL, assert_no_protected_values
@@ -201,7 +201,7 @@ class AssistantD5Tests(unittest.TestCase):
             assert_no_protected_values(self, widget_text(self.panel) + ' TOKEN_SENTINEL')
 
     def test_new_module_has_no_dynamic_execution_operator_or_persistence(self):
-        source = (ROOT / 'desktop_pages/assistant_details.py').read_text(encoding='utf-8')
+        source = (ROOT / 'desktop_app/features/assistant/assistant_details.py').read_text(encoding='utf-8')
         calls = [node.func for node in ast.walk(ast.parse(source)) if isinstance(node, ast.Call)]
         self.assertFalse({node.id for node in calls if isinstance(node, ast.Name)} & {'eval', 'exec', 'compile', 'open'})
         self.assertFalse(

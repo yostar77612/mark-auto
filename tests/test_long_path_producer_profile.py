@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+from tests.layered_source_fixtures import reviewed_source_bytes
 
 from quantlab.core import content_hash, to_dict
 from quantlab import saved_candidate_pool as pools
@@ -54,7 +55,7 @@ class LongPathProducerProfileTests(unittest.TestCase):
             self.assertNotEqual(actual['research.py'], profile['engine_source_hashes']['research.py'])
         for index, implementation in enumerate(SIWC['chatgpt_plan_implementations']):
             for name, expected in implementation['source_sha256'].items():
-                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
+                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
                 self.assertEqual(hashlib.sha256(raw if index == 0 else raw.replace(b'\n', b'\r\n')).hexdigest(), expected)
 
     def test_exact_selector_and_mixed_provider_refusal(self):
@@ -92,7 +93,7 @@ class LongPathProducerProfileTests(unittest.TestCase):
                 authoritative_registry_path=root / 'source-registry.sqlite3',
             )
             before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
-            with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+            with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                 result = pools.admit_saved_campaign_pool(**arguments)
                 pools.validate_admission_snapshot(result.admission, result.candidate_pool)
             self.assertEqual(result.admission['producer'], SIWC)

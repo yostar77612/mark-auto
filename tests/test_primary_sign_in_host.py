@@ -15,7 +15,7 @@ class PrimarySignInHostTests(unittest.TestCase):
     cleanup_window = support.NativeDesktopTests.cleanup_window
 
     def queue_after_local_list(self, launch):
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
 
         w = self.window
         c = w.chatgpt_controller
@@ -139,7 +139,7 @@ class PrimarySignInHostTests(unittest.TestCase):
             self.app.processEvents()
 
     def test_intended_auth_quiescence_keeps_same_flow_and_dispatches_once(self):
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window
@@ -173,7 +173,7 @@ class PrimarySignInHostTests(unittest.TestCase):
             self.assertIsNone(p._primary_flow)
 
     def test_cancel_after_url_queued_prevents_browser_open(self):
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window

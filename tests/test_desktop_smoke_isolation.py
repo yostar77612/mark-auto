@@ -95,7 +95,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 class SmokeUserStateIsolationTests(unittest.TestCase):
     def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
         from desktop import _smoke_steps
-        from desktop_ui import _paper
+        from desktop_app.shell.main_window import _paper
         from quantlab.desktop_runtime import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -212,7 +212,7 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
         self.smoke(injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
         self.smoke(
             redirected=True,
-            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_smoke')._history_smoke_fixture = missing",
+            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing",
             expected_status='failed',
         )
 

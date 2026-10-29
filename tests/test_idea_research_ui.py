@@ -11,9 +11,9 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtWidgets import QApplication, QComboBox, QTableWidgetItem
 
-import desktop_pages.idea_research as page
-from desktop_pages.host import PageState
-from desktop_strings import ui_text
+import desktop_app.features.strategy.idea_research as page
+from desktop_app.shell.host import PageState
+from desktop_app.strings.catalog import ui_text
 from quantlab.idea_research import IdeaStore
 
 TASK = 'idea-' + 'b' * 32

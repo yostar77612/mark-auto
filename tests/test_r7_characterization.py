@@ -15,12 +15,13 @@ from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 import shiboken6
 
-import desktop_charts as charts
-import desktop_market as market
-from desktop_pages import mount, result_layers
-from desktop_pages.host import PageHost
-from desktop_pages.bindings import SharedStateBindings
-from desktop_pages.views import ViewCoordinator
+import desktop_app.components.charts as charts
+import desktop_app.features.market.dashboard as market
+from desktop_app.shell import mount
+from desktop_app.components import result_layers
+from desktop_app.shell.host import PageHost
+from desktop_app.shell.bindings import SharedStateBindings
+from desktop_app.shell.views import ViewCoordinator
 from tests.r7_characterization import ROOT, capture, mount_capture, snapshot_cases
 
 BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf-8'))
@@ -165,7 +166,7 @@ class CharacterizationTests(unittest.TestCase):
         self.assertIn('result_snapshot_lines', PageHost.__annotations__)
         binding = SharedStateBindings()
         binding.page_state = SimpleNamespace(_result_snapshot_lines=result_layers.result_snapshot_lines)
-        with patch('desktop_pages.result_layers.result_snapshot_lines', return_value=('module',)) as patched:
+        with patch('desktop_app.components.result_layers.result_snapshot_lines', return_value=('module',)) as patched:
             self.assertEqual(result_layers.result_snapshot_lines(None, (), None), ('module',))
             patched.assert_called_once()
         with patch.object(binding, '_result_snapshot_lines', return_value=('binding',)):

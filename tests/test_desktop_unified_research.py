@@ -13,9 +13,9 @@ from PySide6.QtCore import QCoreApplication, QEvent, QItemSelectionModel, QLockF
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from desktop_research_runtime import ResearchSession, ResearchUnavailable, UnifiedResearch
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
+from desktop_app.research_bootstrap import ResearchSession, ResearchUnavailable, UnifiedResearch
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
 from quantlab.desktop_runtime import WorkspaceLocator
 from tests.test_trading_ui import RecordingFacade
 
@@ -66,7 +66,7 @@ class UnifiedResearchTests(unittest.TestCase):
         self.assertTrue(self.outer.isAncestorOf(original))
         self.assertEqual(self.outer.navigation.count(), 6)
         self.assertFalse(original.navigation.isVisible())
-        from desktop_pages.palette_commands import page_index
+        from desktop_app.shell.palette_commands import page_index
 
         with patch('subprocess.Popen', side_effect=AssertionError('navigation must not launch a second desktop')):
             for route, (workspace, page) in self.integration.panel.ROUTES.items():
@@ -80,7 +80,7 @@ class UnifiedResearchTests(unittest.TestCase):
 
     def test_existing_cross_page_actions_stay_in_the_integrated_workspace(self):
         self.integration.show('strategy')
-        from desktop_pages.palette_commands import page_index
+        from desktop_app.shell.palette_commands import page_index
 
         self.session.window.navigation.setCurrentRow(page_index(self.session.window, 'data'))
         self.assertEqual(self.outer.navigation.currentRow(), 2)
@@ -265,7 +265,7 @@ class UnifiedResearchTests(unittest.TestCase):
     def test_embedded_busy_hints_use_the_explicit_original_host(self):
         from types import SimpleNamespace
         from PySide6.QtWidgets import QLabel, QPushButton
-        from desktop_ui_polish import DisabledHint
+        from desktop_app.shell.polish import DisabledHint
 
         button = QPushButton(self.session.window)
         label = QLabel(self.session.window)

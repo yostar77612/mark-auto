@@ -16,8 +16,8 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 import shiboken6
 
-import desktop_chatgpt_ui as ui
-from desktop_ui import connection_event_from_payload
+import desktop_app.features.assistant.connection as ui
+from desktop_app.shell.main_window import connection_event_from_payload
 from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
 
 REF = 'a' * 32
@@ -133,11 +133,16 @@ class ReconciliationPayloadTests(unittest.TestCase):
         with ExitStack() as stack:
             forbidden = [
                 stack.enter_context(patch(target, side_effect=AssertionError('unexpected external operation')))
-                for target in ('desktop_chatgpt_auth.AuthSession', 'desktop_chatgpt_auth.DPAPIVault', 'socket.socket', 'socket.create_connection')
+                for target in (
+                    'quantlab.assistant.adapters.chatgpt.auth.AuthSession',
+                    'quantlab.assistant.adapters.chatgpt.auth.DPAPIVault',
+                    'socket.socket',
+                    'socket.create_connection',
+                )
             ]
             inspect = stack.enter_context(
                 patch(
-                    'desktop_chatgpt_provider.inspect_unknown_request',
+                    'quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request',
                     return_value={
                         'kind': 'k1_resolvable',
                         'sequence': 2,
@@ -146,10 +151,10 @@ class ReconciliationPayloadTests(unittest.TestCase):
                     },
                 )
             )
-            resolve = stack.enter_context(patch('desktop_chatgpt_provider.resolve_unknown_request'))
+            resolve = stack.enter_context(patch('quantlab.assistant.adapters.chatgpt.provider.resolve_unknown_request'))
             status = stack.enter_context(
                 patch(
-                    'desktop_chatgpt_provider.read_account_status',
+                    'quantlab.assistant.adapters.chatgpt.provider.read_account_status',
                     return_value={
                         'state': 'user_confirmed_consumed',
                         'pending': False,
@@ -178,12 +183,12 @@ class ReconciliationPayloadTests(unittest.TestCase):
 
     def test_worker_cancel_and_private_errors_remain_bounded_and_local(self):
         request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
-        with patch('desktop_chatgpt_provider.inspect_unknown_request') as inspect:
+        with patch('quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request') as inspect:
             result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: True)
             self.assertEqual(result.kind, 'error')
             inspect.assert_not_called()
         private = 'secret token user@example.invalid C:/private/account.sqlite'
-        with patch('desktop_chatgpt_provider.inspect_unknown_request', side_effect=ValueError(private)):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request', side_effect=ValueError(private)):
             result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
         self.assertEqual(result.kind, 'error')
         self.assertNotIn(private, json.dumps(asdict(result)))
@@ -195,8 +200,8 @@ class ReconciliationPayloadTests(unittest.TestCase):
             kwargs = {'side_effect': OSError('private path')} if observed is None else {'return_value': {'state': observed[0], 'pending': observed[1]}}
             with (
                 self.subTest(observed=observed),
-                patch('desktop_chatgpt_provider.resolve_unknown_request') as resolve,
-                patch('desktop_chatgpt_provider.read_account_status', **kwargs),
+                patch('quantlab.assistant.adapters.chatgpt.provider.resolve_unknown_request') as resolve,
+                patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', **kwargs),
             ):
                 result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
                 resolve.assert_called_once()
@@ -481,7 +486,7 @@ class ReconciliationWidgetTests(unittest.TestCase):
         self.assertFalse(dialog.grab().isNull())
 
     def test_host_race_refuses_reconciliation_without_cancelling_unrelated_work(self):
-        from desktop_pages.settings import SettingsPage
+        from desktop_app.features.settings.settings import SettingsPage
 
         c = self.pending()
         request = c.request('inspect_unknown', REF)
@@ -561,9 +566,9 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
             self.finished(expected_outcome='quota_paused')
 
     def test_finished_outcomes_match_the_provider_set(self):
-        import desktop_chatgpt_provider
+        import quantlab.assistant.adapters.chatgpt.provider
 
-        self.assertEqual(ui.FINISHED_OUTCOMES, desktop_chatgpt_provider._FINISHED_UNKNOWN_STATUSES)
+        self.assertEqual(ui.FINISHED_OUTCOMES, quantlab.assistant.adapters.chatgpt.provider._FINISHED_UNKNOWN_STATUSES)
 
     def test_finished_events_round_trip_and_outcome_is_only_for_k2_resolvable(self):
         request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
@@ -589,10 +594,15 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
         with ExitStack() as stack:
             forbidden = [
                 stack.enter_context(patch(target, side_effect=AssertionError('unexpected external operation')))
-                for target in ('desktop_chatgpt_auth.AuthSession', 'desktop_chatgpt_auth.DPAPIVault', 'socket.socket', 'socket.create_connection')
+                for target in (
+                    'quantlab.assistant.adapters.chatgpt.auth.AuthSession',
+                    'quantlab.assistant.adapters.chatgpt.auth.DPAPIVault',
+                    'socket.socket',
+                    'socket.create_connection',
+                )
             ]
-            r1 = stack.enter_context(patch('desktop_chatgpt_provider.inspect_unknown_request'))
-            k2 = stack.enter_context(patch('desktop_chatgpt_provider.inspect_finished_unknown_request', return_value=finished))
+            r1 = stack.enter_context(patch('quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request'))
+            k2 = stack.enter_context(patch('quantlab.assistant.adapters.chatgpt.provider.inspect_finished_unknown_request', return_value=finished))
             for kind in ('k1_resolvable', 'k1_other_registration', 'none'):
                 r1.return_value = {'kind': kind, 'sequence': 1 if kind == 'k1_resolvable' else None, 'calls': 1 if kind == 'k1_resolvable' else None,
                                    'max_age_ok': kind == 'k1_resolvable'}  # fmt: skip
@@ -612,9 +622,9 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
 
     def test_worker_resolution_passes_the_bound_target(self):
         with (
-            patch('desktop_chatgpt_provider.resolve_finished_unknown_request') as resolve,
-            patch('desktop_chatgpt_provider.resolve_unknown_request') as r1,
-            patch('desktop_chatgpt_provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
+            patch('quantlab.assistant.adapters.chatgpt.provider.resolve_finished_unknown_request') as resolve,
+            patch('quantlab.assistant.adapters.chatgpt.provider.resolve_unknown_request') as r1,
+            patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
         ):
             result = ui.run_connection_request(self.finished(), bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
         r1.assert_not_called()
