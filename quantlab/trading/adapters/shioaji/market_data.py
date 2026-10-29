@@ -4,11 +4,13 @@ from datetime import datetime, timedelta
 from typing import Protocol
 
 from quantlab.trading.domain.models import InstrumentSpec, Quote
+from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError, aware
 from quantlab.trading.ports.contracts import DataBatch, SubscriptionReceipt
 from quantlab.trading.ports.interfaces import Clock
 from .mapping import history_from_sdk
 from .sdk import InstrumentBinding, SDKClient, TradeDateResolver, query_error, sdk_decimal, sdk_time, sdk_value
+from .tick_stream import ShioajiTickStream
 
 
 class MarketDataContext(Protocol):
@@ -18,8 +20,10 @@ class MarketDataContext(Protocol):
     bindings: dict[str, InstrumentBinding]
     subscriptions: dict[str, tuple[str, ...]]
     subscription_counter: int
+    subscription_limit: int
     session_resolver: TradeDateResolver | None
     quote_version: object
+    tick_stream: ShioajiTickStream | None
 
     def resolve(self, instrument_id: str) -> InstrumentSpec: ...
 
@@ -41,15 +45,19 @@ def history(context: MarketDataContext, instrument_id: str, start: datetime, end
 
 
 def subscribe(context: MarketDataContext, instrument_ids: tuple[str, ...]) -> SubscriptionReceipt:
-    if not context.connected or type(instrument_ids) is not tuple or not 1 <= len(instrument_ids) <= 20 or len(set(instrument_ids)) != len(instrument_ids):
+    limit = context.subscription_limit
+    if not context.connected or type(instrument_ids) is not tuple or not 1 <= len(instrument_ids) <= limit or len(set(instrument_ids)) != len(instrument_ids):
         raise DomainError('capability_missing', 'subscription configuration/capacity')
     if context.quote_version is None:
         raise DomainError('capability_missing', 'explicit pinned SDK quote version required')
     active = {instrument_id for group in context.subscriptions.values() for instrument_id in group}
-    if len(active | set(instrument_ids)) > 20 or len(context.subscriptions) >= 20:
+    if len(active | set(instrument_ids)) > limit or len(context.subscriptions) >= limit:
         raise DomainError('capability_missing', 'total subscription capacity')
     subscribed: list[object] = []
     try:
+        if context.tick_stream is not None:
+            context.tick_stream.start()
+            context.tick_stream.set_active(active | set(instrument_ids))
         for instrument_id in instrument_ids:
             context.resolve(instrument_id)
             if instrument_id not in active:
@@ -57,6 +65,8 @@ def subscribe(context: MarketDataContext, instrument_ids: tuple[str, ...]) -> Su
                 context.client.subscribe(contract, quote_type='tick', version=context.quote_version)
                 subscribed.append(contract)
     except Exception:
+        if context.tick_stream is not None:
+            context.tick_stream.set_active(active)
         for contract in subscribed:
             context.client.unsubscribe(contract, quote_type='tick', version=context.quote_version)
         raise DomainError('capability_missing', 'subscription failed; partial subscriptions removed') from None
@@ -74,6 +84,12 @@ def unsubscribe(context: MarketDataContext, subscription_id: str) -> None:
             context.client.unsubscribe(context.client.contracts.get(context.bindings[instrument_id].sdk_code), quote_type='tick', version=context.quote_version)
     # Keep receipt until every unsubscription succeeded, so a failure is visible.
     context.subscriptions.pop(subscription_id, None)
+    if context.tick_stream is not None:
+        context.tick_stream.set_active({key for group in context.subscriptions.values() for key in group})
+
+
+def drain_ticks(context: MarketDataContext, max_items: int) -> tuple[Tick, ...]:
+    return context.tick_stream.drain_ticks(max_items) if context.connected and context.tick_stream is not None else ()
 
 
 def latest(context: MarketDataContext, instrument_id: str) -> Quote | None:

@@ -171,6 +171,18 @@ class StrictSDK:
 
 
 class SDKFacadeTests(unittest.TestCase):
+    def test_tick_callback_binding_and_registration_failure_are_transparent(self):
+        for name in ('set_on_tick_stk_v1_callback', 'set_on_tick_fop_v1_callback'):
+            with self.subTest(name=name):
+                callback = lambda exchange, tick: None
+                getattr(self.bridge, name)(callback, bind=True)
+                self.assertEqual(self.vendor._seen[-1], (name, (callback,), {'bind': True}))
+                self.vendor._failure[name] = RuntimeError('synthetic registration failure')
+                with self.assertRaises(RuntimeError):
+                    getattr(self.bridge, name)(callback)
+                with self.assertRaises(DomainError):
+                    getattr(self.bridge, name)(None)
+
     def setUp(self):
         self.vendor = StrictSDK()
         self.models = []

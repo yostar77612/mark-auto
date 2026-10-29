@@ -9,6 +9,7 @@ from quantlab.trading.domain.models import Market, Quote
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.ports.contracts import DataBatch, SubscriptionReceipt
 from quantlab.trading.ports.interfaces import Clock, MarketDataPort
+from quantlab.trading.ports.tick_stream import MarketConnectionSource, TickLoss, TickLossSource
 
 
 class CalendarResolver:
@@ -29,8 +30,19 @@ class RoutedMarketData:
         self.routes = routes
         self.clock = clock
         self.ports = tuple({id(port): port for port in routes.values()}.values())
+        self.loss_sources = tuple(port for port in self.ports if isinstance(port, TickLossSource))
+        self.connection_sources = tuple(port for port in self.ports if isinstance(port, MarketConnectionSource))
         self.subscriptions: dict[str, tuple[tuple[MarketDataPort, str], ...]] = {}
         self.cursor = 0
+
+    @property
+    def connected(self) -> bool:
+        return all(source.connected for source in self.connection_sources)
+
+    @property
+    def disconnected_at(self) -> datetime | None:
+        times = tuple(source.disconnected_at for source in self.connection_sources if source.disconnected_at is not None)
+        return max(times) if times else None
 
     def history(self, instrument_id: str, start: datetime, end: datetime) -> DataBatch:
         return self.routes[instrument_id].history(instrument_id, start, end)
@@ -52,8 +64,9 @@ class RoutedMarketData:
         return SubscriptionReceipt(key, instrument_ids, True, self.clock.now())
 
     def unsubscribe(self, subscription_id: str) -> None:
-        for port, key in self.subscriptions.pop(subscription_id):
+        for port, key in self.subscriptions[subscription_id]:
             port.unsubscribe(key)
+        del self.subscriptions[subscription_id]
 
     def drain_ticks(self, max_items: int) -> tuple[Tick, ...]:
         result: list[Tick] = []
@@ -65,6 +78,9 @@ class RoutedMarketData:
         if self.ports:
             self.cursor = (self.cursor + 1) % len(self.ports)
         return tuple(result)
+
+    def drain_tick_losses(self) -> tuple[TickLoss, ...]:
+        return tuple(loss for source in self.loss_sources for loss in source.drain_tick_losses())
 
 
 def attach_market(engine: TradingEngine) -> None:

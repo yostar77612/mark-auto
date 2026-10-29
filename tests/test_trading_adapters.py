@@ -323,6 +323,24 @@ class SDKDouble:
 
 
 class ShioajiContractTests(unittest.TestCase):
+    def test_market_subscription_receipts_are_shared_and_empty_drain_is_inert(self):
+        from unittest.mock import Mock
+
+        adapter = self.adapter()
+        self.client.subscribe, self.client.unsubscribe = Mock(), Mock()
+        self.assertEqual(adapter.drain_ticks(0), ())
+        self.assertEqual(adapter.drain_ticks(5), ())
+        first = adapter.subscribe((self.spec.instrument_id,))
+        second = adapter.subscribe((self.spec.instrument_id,))
+        self.assertTrue(first.active)
+        self.assertNotEqual(first.subscription_id, second.subscription_id)
+        self.client.subscribe.assert_called_once_with(self.client.synthetic_contract, quote_type='tick', version='synthetic-v1-enum')
+        adapter.unsubscribe(first.subscription_id)
+        self.client.unsubscribe.assert_not_called()
+        adapter.unsubscribe(second.subscription_id)
+        self.client.unsubscribe.assert_called_once_with(self.client.synthetic_contract, quote_type='tick', version='synthetic-v1-enum')
+        self.assertEqual(adapter.subscriptions, {})
+
     def setUp(self) -> None:
         self.client, self.clock, self.spec = SDKDouble(), MutableClock(), replace(instrument(), price_bands=TWD_ETF_BANDS, tick_rule_id=TWD_ETF_RULE)
         self.environment = Environment.BROKER_SIMULATION
@@ -359,6 +377,29 @@ class ShioajiContractTests(unittest.TestCase):
         adapter.attach_authenticated()
         adapter.quote_version = 'synthetic-v1-enum'
         return adapter
+
+    def test_authenticated_market_receipts_survive_explicit_disconnect(self) -> None:
+        """Characterize session adoption and receipt ownership before reconnect work."""
+
+        class SessionSDK(SDKDouble):
+            def logout(self):
+                return None
+
+        self.client = SessionSDK()
+        adapter = self.adapter()
+        self.assertTrue(adapter.connected)
+        self.assertTrue(adapter.read_only)
+        self.assertFalse(adapter.execution_enabled)
+        receipt = adapter.subscribe((self.spec.instrument_id,))
+        adapter.disconnect()
+        self.assertFalse(adapter.connected)
+        self.assertEqual(adapter.subscriptions, {receipt.subscription_id: receipt.instrument_ids})
+        self.assertEqual(adapter.drain_ticks(1), ())
+        adapter.attach_authenticated()
+        self.assertTrue(adapter.connected)
+        self.assertEqual(adapter.subscriptions[receipt.subscription_id], receipt.instrument_ids)
+        adapter.unsubscribe(receipt.subscription_id)
+        self.assertEqual(adapter.subscriptions, {})
 
     def test_read_only_default_refuses_every_trading_command(self) -> None:
         adapter = self.adapter()

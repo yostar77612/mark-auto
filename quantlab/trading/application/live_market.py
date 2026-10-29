@@ -11,16 +11,32 @@ from datetime import date, datetime, timedelta
 
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.freshness import Freshness, LiveMarketSettings, classify_freshness
-from quantlab.trading.domain.live_bars import LiveBar, MergedBars, MinuteState, aggregate_bars, compose_minute, finalize_minute, merge_history_live
+from quantlab.trading.domain.live_bars import (
+    DataGap,
+    LiveBar,
+    MergedBars,
+    MinuteState,
+    aggregate_bars,
+    compose_minute,
+    finalize_minute,
+    merge_history_live,
+    recover_data_gaps,
+)
 from quantlab.trading.domain.quote_stats import QuoteStats, TradeDateClose, quote_stats
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError, aware
 from quantlab.trading.ports.interfaces import Clock, MarketDataPort, SessionResolver
+from quantlab.trading.ports.tick_stream import MarketConnectionSource, TickLoss, TickLossSource
 from .contracts import MarketSeriesPage, MarketSeriesQuery, MarketWatchView, OverviewMarketSummary
 from .codec import MAX_BYTES, dumps, register
 from .market_views import market_watch_view, overview_market_summary
 
 register(LiveBar)
+
+
+def _affected_minute(timestamp: datetime, loss: TickLoss) -> bool:
+    start = timestamp.replace(second=0, microsecond=0)
+    return loss.first_source_at.replace(second=0, microsecond=0) <= start <= loss.last_source_at.replace(second=0, microsecond=0)
 
 
 @dataclass(frozen=True)
@@ -34,11 +50,14 @@ class SubscriptionAllocation:
 class _InstrumentBuffer:
     history: deque[LiveBar]
     live: deque[LiveBar]
+    losses: deque[TickLoss]
     minute: MinuteState | None = None
     tick: Tick | None = None
     first_live_start: datetime | None = None
     history_error: str = ''
     freshness: Freshness = Freshness.UNKNOWN
+    recovery: bool = False
+    gaps: tuple[DataGap, ...] = ()
 
 
 class LiveMarketService:
@@ -61,6 +80,11 @@ class LiveMarketService:
         self._subscriptions: dict[str, str] = {}
         self._buffers: dict[str, _InstrumentBuffer] = {}
         self._view_cache: dict[str, MarketWatchView] = {}
+        self.issues: deque[TickLoss] = deque(maxlen=settings.queue_limit)
+        self._loss_source = market if isinstance(market, TickLossSource) else None
+        self._connection_source = market if isinstance(market, MarketConnectionSource) else None
+        self._disconnected_at: datetime | None = None
+        self._recovered_disconnect: datetime | None = None
 
     def allocate(self, strategy_ids: tuple[str, ...], watch_ids: tuple[str, ...] = ()) -> SubscriptionAllocation:
         strategies = tuple(dict.fromkeys(strategy_ids))
@@ -84,7 +108,7 @@ class LiveMarketService:
                     raise DomainError('capability_missing', receipt.reason)
                 self._subscriptions[key] = receipt.subscription_id
                 bound = self.settings.buffer_trade_days * 24 * 60
-                self._buffers[key] = _InstrumentBuffer(deque(maxlen=bound), deque(maxlen=bound))
+                self._buffers.setdefault(key, _InstrumentBuffer(deque(maxlen=bound), deque(maxlen=bound), deque(maxlen=bound)))
         self._strategy_ids, self._watch_ids = strategies, watches
         self.allocation = SubscriptionAllocation(desired, refused, 'capability_missing' if refused else '')
         if self.allocation != before:
@@ -106,7 +130,38 @@ class LiveMarketService:
             bars.clear()
             bars.extend(kept)
 
-    def poll(self, *, connected: bool = True, in_session: bool | None = None) -> int:
+    def _recover_connection(self, connected: bool, now: datetime) -> None:
+        if self._connection_source is not None:
+            lost_at = self._connection_source.disconnected_at
+            if lost_at is not None and lost_at != self._recovered_disconnect:
+                self._disconnected_at = lost_at
+        if not connected:
+            if self._disconnected_at is None:
+                self._disconnected_at = now
+            return
+        if self._disconnected_at is None:
+            return
+        # Retain buffers; only receipt ownership is replaced. Allocation order
+        # already contains strategies first and obeys the typed settings limit.
+        for key in tuple(self._subscriptions):
+            self.market.unsubscribe(self._subscriptions[key])
+            del self._subscriptions[key]
+        for key in self.allocation.active:
+            receipt = self.market.subscribe((key,))
+            if not receipt.active:
+                raise DomainError('capability_missing', receipt.reason)
+            self._subscriptions[key] = receipt.subscription_id
+        for key in self.allocation.active:
+            self._buffers[key].recovery = True
+            if self._disconnected_at < now:
+                self.backfill(key, self._disconnected_at, now)
+        self._recovered_disconnect = self._disconnected_at
+        self._disconnected_at = None
+
+    def poll(self, *, connected: bool | None = None, in_session: bool | None = None) -> int:
+        if connected is None:
+            connected = self._connection_source.connected if self._connection_source is not None else True
+        self._recover_connection(connected, self.clock.now())
         before = self._views()
         previous = {key: (buffer.minute, buffer.tick, len(buffer.live), buffer.freshness) for key, buffer in self._buffers.items()}
         now = self.clock.now()
@@ -114,7 +169,7 @@ class LiveMarketService:
             if tick.instrument_id not in self._buffers:
                 continue
             buffer = self._buffers[tick.instrument_id]
-            update = compose_minute(buffer.minute, tick)
+            update = compose_minute(buffer.minute, tick, incomplete=any(_affected_minute(tick.source_at, loss) for loss in buffer.losses))
             if buffer.minute is not None and buffer.minute.bar.final and update.state.bar.start > buffer.minute.bar.start:
                 buffer.live.append(buffer.minute.bar)
             buffer.minute = update.state
@@ -124,6 +179,20 @@ class LiveMarketService:
                     buffer.first_live_start = update.state.bar.start
                 if buffer.tick is None or tick.source_at >= buffer.tick.source_at:
                     buffer.tick = tick
+        if self._loss_source is not None:
+            for loss in self._loss_source.drain_tick_losses():
+                self.issues.append(loss)
+                if loss.instrument_id not in self._buffers:
+                    continue
+                buffer = self._buffers[loss.instrument_id]
+                buffer.losses.append(loss)
+                if buffer.minute is not None and _affected_minute(buffer.minute.bar.start, loss):
+                    buffer.minute = replace(buffer.minute, bar=replace(buffer.minute.bar, incomplete=True))
+                for bars in (buffer.history, buffer.live):
+                    marked = tuple(replace(bar, incomplete=True) if _affected_minute(bar.start, loss) else bar for bar in bars)
+                    bars.clear()
+                    bars.extend(marked)
+                self._view_cache.pop(loss.instrument_id, None)
         for key, buffer in self._buffers.items():
             if buffer.minute is not None:
                 buffer.minute = finalize_minute(buffer.minute, now=now)
@@ -155,10 +224,11 @@ class LiveMarketService:
             raise DomainError('validation_failed', 'history range')
         before = self._views()
         buffer = self._buffers[instrument_id]
-        try:
-            cursor = start
-            while cursor < end:
-                window_end = min(cursor + timedelta(days=30), end)
+        cursor = start
+        error = ''
+        while cursor < end:
+            window_end = min(cursor + timedelta(days=30), end)
+            try:
                 batch = self.market.history(instrument_id, cursor, window_end)
                 converted = []
                 for bar in batch.bars:
@@ -166,16 +236,22 @@ class LiveMarketService:
                     converted.append(
                         LiveBar(instrument_id, bar.start, bar.available_at, day, session, bar.open, bar.high, bar.low, bar.close, bar.volume, final=True)
                     )
-                by_start = {bar.start: bar for bar in (*buffer.history, *converted) if buffer.first_live_start is None or bar.start < buffer.first_live_start}
+                by_start = {
+                    bar.start: bar
+                    for bar in (*buffer.history, *converted)
+                    if buffer.recovery or buffer.first_live_start is None or bar.start < buffer.first_live_start
+                }
                 buffer.history.clear()
                 buffer.history.extend(sorted(by_start.values(), key=lambda bar: bar.start))
                 self._trim(buffer)
                 if not batch.complete:
                     raise DomainError('market_data_invalid', batch.reason)
-                cursor = window_end
-            buffer.history_error = ''
-        except DomainError as exc:
-            buffer.history_error = exc.code
+                buffer.gaps = recover_data_gaps(buffer.gaps, cursor, window_end)
+            except DomainError as exc:
+                error = exc.code
+                buffer.gaps = (*buffer.gaps, DataGap(cursor, window_end))[-self.settings.buffer_trade_days * 24 * 60 :]
+            cursor = window_end
+        buffer.history_error = error
         self._view_cache.pop(instrument_id, None)
         if self._views() != before:
             self.market_revision += 1
@@ -183,7 +259,8 @@ class LiveMarketService:
     def watch(self, instrument_id: str, *, period: str = '1m', previous_trade_date: date | None = None, trade_date_closed: bool = False) -> MarketWatchView:
         buffer = self._buffers[instrument_id]
         live = (*buffer.live, *((buffer.minute.bar,) if buffer.minute else ()))
-        merged = merge_history_live(tuple(buffer.history), live)
+        merged = merge_history_live(tuple(buffer.history), live, recover_suffix=buffer.recovery)
+        merged = MergedBars(merged.bars, tuple(dict.fromkeys((*merged.gaps, *buffer.gaps))))
         stats = QuoteStats(None, None, None)
         if buffer.tick is not None and previous_trade_date is None and self.calendar is not None:
             index = self.calendar.index(buffer.tick.trade_date)
