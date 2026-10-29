@@ -128,7 +128,9 @@ class TradingUiIntegrationTests(unittest.TestCase):
                 with patch('sys.stderr', new_callable=io.StringIO) as diagnostics:
                     with self.assertRaisesRegex(AssertionError, 'is not None'):
                         self.drain()
-                self.assertGreaterEqual(time.monotonic() - started, 5)
+                # Same clock and same float expression as drain()'s own deadline
+                # (`monotonic() + 5`); never re-derive it by subtraction.
+                self.assertGreaterEqual(time.monotonic(), started + 5)
                 self.assertIsNotNone(self.window._operation)
                 self.assertTrue(self.window._operation.isRunning())
                 self.assertTrue(dispatches, 'the original deadline must still dispatch Qt events')
