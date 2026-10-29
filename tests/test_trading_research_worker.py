@@ -10,6 +10,7 @@ from time import monotonic
 from threading import Thread
 from time import sleep
 import unittest
+from unittest.mock import patch
 
 from quantlab.trading.application.codec import dumps
 from quantlab.trading.application.contracts import StrategyForm
@@ -20,7 +21,73 @@ from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPoli
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.build import synthetic_calendar, synthetic_catalog, synthetic_history
 from quantlab.trading.runtime.provenance import compute_profile
+from quantlab.trading.runtime import research_worker
 from quantlab.trading.runtime.research_worker import MAX_SECONDS, SpawnResearchRunner, WorkerFault
+
+
+class _RunnerMonotonic:
+    """The runner module's own monotonic source with one explicit forward jump.
+
+    The first read is SpawnResearchRunner.run's admission instant (`started`).
+    Never moves backwards; the spawned child keeps the real clock.
+    """
+
+    def __init__(self) -> None:
+        self.admitted_at: float | None = None
+        self.offset = 0.0
+
+    def __call__(self) -> float:
+        value = monotonic() + self.offset
+        if self.admitted_at is None:
+            self.admitted_at = value
+        return value
+
+    def jump_to(self, runner_elapsed: float) -> None:
+        self.offset = max(self.offset, self.admitted_at + runner_elapsed - monotonic())
+
+
+def _own_handle_count() -> int | None:
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+
+        library = ctypes.WinDLL('kernel32.dll', use_last_error=True)
+        library.GetProcessHandleCount.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+        library.GetProcessHandleCount.restype = wintypes.BOOL
+        count = wintypes.DWORD()
+        if not library.GetProcessHandleCount(wintypes.HANDLE(-1), ctypes.byref(count)):
+            raise OSError('Unable to inspect own process handle count')
+        return count.value
+    if os.path.isdir('/proc/self/fd'):
+        return len(os.listdir('/proc/self/fd'))
+    return None
+
+
+def _handle_probe_owner(channel) -> None:
+    """Fixed test-only owner: only this runner's jobs run between the two counts."""
+    fixture = IsolatedResearchTests()
+    fixture.setUp()
+    runner = SpawnResearchRunner()
+    first = fixture.run_worker(runner)
+    first_pid, first_clean = runner.last_child_pid, runner.last_cleanup_verified
+    before = _own_handle_count()
+    second = fixture.run_worker(runner)
+    after = _own_handle_count()
+    channel.send_bytes(
+        json.dumps(
+            {
+                'owner_pid': os.getpid(),
+                'first_pid': first_pid,
+                'second_pid': runner.last_child_pid,
+                'clean': [first_clean, runner.last_cleanup_verified],
+                'children': [child.pid for child in multiprocessing.active_children()],
+                'same_result': dumps(first) == dumps(second),
+                'before': before,
+                'after': after,
+            }
+        ).encode()
+    )
+    channel.close()
 
 
 def _orphan_probe_owner(channel) -> None:
@@ -118,11 +185,30 @@ class IsolatedResearchTests(unittest.TestCase):
 
     def test_deadline_terminates_only_the_owned_stalled_child(self) -> None:
         before = {child.pid for child in multiprocessing.active_children()}
-        runner = SpawnResearchRunner(max_seconds=0.3, diagnostic_fault=WorkerFault.STALL_AFTER_DECODE)
+        # 20 s budget: 2 s reserved cleanup, computation deadline = admission + 18 s.
+        runner = SpawnResearchRunner(max_seconds=20, diagnostic_fault=WorkerFault.STALL_AFTER_DECODE)
+        clock, outcome = _RunnerMonotonic(), []
+
+        def run() -> None:
+            try:
+                self.run_worker(runner)
+            except DomainError as exc:
+                outcome.append(exc.code)
+
         started = monotonic()
-        with self.assertRaises(DomainError) as caught:
-            self.run_worker(runner)
-        self.assertEqual(caught.exception.code, 'research_timeout')
+        with patch.object(research_worker, 'monotonic', clock):
+            thread = Thread(target=run, name='training-deadline-test')
+            thread.start()
+            waiting_until = monotonic() + 10
+            while not runner.last_child_ready and thread.is_alive() and monotonic() < waiting_until:
+                sleep(0.01)
+            self.assertTrue(runner.last_child_ready, 'actual child never acknowledged its decoded training job')
+            # Expire the computation budget on the runner's own clock, inside its
+            # reserved cleanup slice, while the real decoded child is stalled.
+            clock.jump_to(18.25)
+            thread.join(timeout=10)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(outcome, ['research_timeout'])
         self.assertLess(monotonic() - started, 10)
         self.assert_clean(runner)
         self.assertEqual({child.pid for child in multiprocessing.active_children()}, before)
@@ -179,34 +265,32 @@ class IsolatedResearchTests(unittest.TestCase):
             thread.join(timeout=3)
 
     def test_repeated_owned_jobs_use_new_children_and_keep_no_handles(self) -> None:
-        def handles() -> int | None:
-            if os.name == 'nt':
-                import ctypes
-                from ctypes import wintypes
-
-                library = ctypes.WinDLL('kernel32.dll', use_last_error=True)
-                library.GetProcessHandleCount.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
-                library.GetProcessHandleCount.restype = wintypes.BOOL
-                count = wintypes.DWORD()
-                if not library.GetProcessHandleCount(wintypes.HANDLE(-1), ctypes.byref(count)):
-                    self.fail('Unable to inspect own process handle count')
-                return count.value
-            if os.path.isdir('/proc/self/fd'):
-                return len(os.listdir('/proc/self/fd'))
-            return None
-
-        runner = SpawnResearchRunner()
-        first = self.run_worker(runner)
-        first_pid = runner.last_child_pid
-        self.assert_clean(runner)
-        before = handles()
-        second = self.run_worker(runner)
-        self.assert_clean(runner)
-        self.assertNotEqual(first_pid, runner.last_child_pid)
-        self.assertEqual(dumps(first), dumps(second))
-        after = handles()
-        if before is not None:
-            self.assertLessEqual(after, before)
+        # Count inside a fresh owned process: the shard process also holds
+        # Qt/OS threadpool and other tests' handles the runner does not own.
+        context = multiprocessing.get_context('spawn')
+        receiver, writer = context.Pipe(duplex=False)
+        owner = context.Process(target=_handle_probe_owner, args=(writer,), name='OwnedTrainingHandleProbe')
+        owner.start()
+        writer.close()
+        try:
+            self.assertTrue(receiver.poll(60), 'handle probe did not report')
+            info = json.loads(receiver.recv_bytes(4096))
+            owner.join(timeout=10)
+            self.assertEqual(owner.exitcode, 0)
+        finally:
+            receiver.close()
+            if owner.is_alive():
+                owner.terminate()  # only the exact owned probe Process handle
+                owner.join(timeout=3)
+            owner.close()
+        self.assertEqual(info['clean'], [True, True])
+        self.assertNotIn(info['first_pid'], (None, os.getpid(), info['owner_pid']))
+        self.assertNotIn(info['second_pid'], (None, os.getpid(), info['owner_pid']))
+        self.assertNotEqual(info['first_pid'], info['second_pid'])
+        self.assertEqual(info['children'], [])
+        self.assertTrue(info['same_result'])
+        if info['before'] is not None:
+            self.assertLessEqual(info['after'], info['before'])
 
     def test_forced_owner_process_death_cannot_leave_a_training_orphan(self) -> None:
         context = multiprocessing.get_context('spawn')
