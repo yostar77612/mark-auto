@@ -9,6 +9,7 @@ means no deduplication claim. Missing minutes are never synthesized.
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from operator import attrgetter
 
 from .ticks import Tick
 from .validation import DomainError
@@ -163,6 +164,9 @@ def recover_data_gaps(gaps: tuple[DataGap, ...], start: datetime, end: datetime)
     return tuple(piece for gap in gaps for piece in (DataGap(gap.start, min(gap.end, start)), DataGap(max(gap.start, end), gap.end)) if piece.start < piece.end)
 
 
+_START = attrgetter('start')
+
+
 @dataclass(frozen=True)
 class MergedBars:
     bars: tuple[LiveBar, ...]
@@ -175,12 +179,22 @@ def merge_history_live(history: tuple[LiveBar, ...], live: tuple[LiveBar, ...], 
     Recovery retains history inside the suffix with live winning on overlap.
     Record a discontinuity without interpolation; missing bars stay missing.
     """
-    ordered_live = tuple(sorted(live, key=lambda bar: bar.start))
-    retained = tuple(sorted((bar for bar in history if not ordered_live or bar.start < ordered_live[0].start), key=lambda bar: bar.start))
+    ordered_live = tuple(sorted(live, key=_START))
+    merged = join_history_live(history_before(history, ordered_live[0].start if ordered_live else None), ordered_live)
+    if recover_suffix:
+        by_start = {bar.start: bar for bar in (*history, *ordered_live)}
+        return MergedBars(tuple(sorted(by_start.values(), key=_START)), merged.gaps)
+    return merged
+
+
+def history_before(history: tuple[LiveBar, ...], start: datetime | None) -> tuple[LiveBar, ...]:
+    """History ordered by start and cut before the live suffix; callers may cache it."""
+    return tuple(sorted((bar for bar in history if start is None or bar.start < start), key=_START))
+
+
+def join_history_live(retained: tuple[LiveBar, ...], ordered_live: tuple[LiveBar, ...]) -> MergedBars:
+    """Join history_before output with start-ordered live bars, recording a discontinuity."""
     gaps = ()
     if retained and ordered_live and retained[-1].end < ordered_live[0].start:
         gaps = (DataGap(retained[-1].end, ordered_live[0].start),)
-    if recover_suffix:
-        by_start = {bar.start: bar for bar in (*history, *ordered_live)}
-        return MergedBars(tuple(sorted(by_start.values(), key=lambda bar: bar.start)), gaps)
     return MergedBars(retained + ordered_live, gaps)
