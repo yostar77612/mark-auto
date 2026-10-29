@@ -103,6 +103,9 @@ def repair(root, moves):
         if name == 'tests/test_ui_test_gate.py':
             updated = updated.replace("('desktop_app.shell.pages', 'desktop_app.smoke')", "('desktop_app/features/market', 'desktop_app/smoke')")
             updated = updated.replace('(root / package).mkdir()', '(root / package).mkdir(parents=True)')
+        if name == 'tests/test_core_shards.py':
+            updated = updated.replace("'desktop_pages/view.py'", "'desktop_app/features/strategy/view.py'")
+            updated = updated.replace("'desktop_smoke/source.txt'", "'desktop_app/smoke/source.txt'")
         if name == 'tests/test_trading_architecture.py':
             if 'from tests.layered_source_fixtures import mechanically_restored_source, physical_path' not in updated:
                 updated = updated.replace(
