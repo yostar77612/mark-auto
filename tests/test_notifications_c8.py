@@ -27,7 +27,7 @@ from tests.test_no_hardcoded_ui_text import UI_PACKAGE_MODULES
 from tests.test_import_graph import TOUCHED
 from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -248,8 +248,8 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(warnings, [])
         self.assertTrue(all(not t.timer.isActive() for t in wrappers))
         self.assertTrue(all(t.isHidden() for t in wrappers))
-        for name in ('notifications.py', 'notification_log.py'):
-            tree = ast.parse((ROOT / physical_path('desktop_pages' + '/' + str(name))).read_text(encoding='utf-8'))
+        for name in ('desktop_app/shell/notifications.py', 'desktop_app/shell/notification_log.py'):
+            tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
             calls = [node.func.attr for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)]
             self.assertFalse({'deleteLater', 'findChildren', 'installEventFilter', 'exec', 'submit', 'cancel', 'amend', 'kill'} & set(calls))
         imports = [

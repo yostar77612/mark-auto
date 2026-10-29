@@ -115,7 +115,7 @@ def _is_worker_registrar_import():
     Ordinary GUI imports keep their full public surface and Qt implementations.
     """
     # A direct registrar lookup in the GUI process must not poison its cached
-    # desktop_ui module with the child-only, nonconstructible GUI bases.
+    # desktop_app.shell.main_window module with the child-only, nonconstructible GUI bases.
     return _worker_registrar_import.get() and mp.parent_process() is not None
 
 

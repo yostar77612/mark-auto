@@ -1,12 +1,12 @@
 [
   {
     "file": "tests/test_workspace_wal_guard.py",
-    "edit": "Stub ModuleType name: desktop_app.shell.main_window -> desktop_app.components.formatting",
-    "justification": "Pure import-path plumbing: the adapter imports the extracted dataset/control facade from desktop_app.components.formatting; dataset timing and all assertions are unchanged."
+    "edit": "Stub ModuleType name: desktop_ui -> desktop_presentation",
+    "justification": "Pure import-path plumbing: the adapter imports the extracted dataset/control facade from desktop_presentation; dataset timing and all assertions are unchanged."
   },
   {
     "file": "tests/test_workspace_wal_guard.py",
-    "edit": "sys.modules stub key: desktop_app.shell.main_window -> desktop_app.components.formatting",
+    "edit": "sys.modules stub key: desktop_ui -> desktop_presentation",
     "justification": "Route the same stub to the extracted dependency import path. Retains the real adapter, WAL marker assertions, existing-journal read-only checks and core-call sentinel."
   },
   {

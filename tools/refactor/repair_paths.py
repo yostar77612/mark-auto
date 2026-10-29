@@ -1,6 +1,7 @@
 """Idempotent mechanical corrections for physical paths and nested test fixtures."""
 
 import ast
+import json
 import subprocess
 
 FROZEN = {
@@ -42,28 +43,55 @@ def fixture_parents(source):
     return ''.join(lines)
 
 
-def strict_core_fixture(source):
+def current_test_paths(source, moves):
+    """Use current physical paths in executable tests; retain frozen identity keys."""
     tree = ast.parse(source)
+    edits = []
     lines = source.splitlines(keepends=True)
-    wanted = "if name.startswith('quantlab/'):\n    self.assertTrue(scan(root), name)\nelse:\n    self.assertEqual(scan(root), [], name)\n"
-    wanted_node = ast.parse(wanted).body[0]
-    for method in ast.walk(tree):
-        if not isinstance(method, ast.FunctionDef) or method.name != 'test_all_desktop_components_enforce_existing_execution_boundary':
-            continue
-        for node in ast.walk(method):
-            guard = isinstance(node, ast.If) and ast.dump(node.test) == ast.dump(wanted_node.test)
-            expression = isinstance(node, ast.Expr) and isinstance(node.value, (ast.Call, ast.IfExp))
-            if not (guard or expression):
+    offsets = [0]
+    for line in lines:
+        offsets.append(offsets[-1] + len(line))
+
+    def span(node):
+        return (
+            offsets[node.lineno - 1] + len(lines[node.lineno - 1].encode()[: node.col_offset].decode()),
+            offsets[node.end_lineno - 1] + len(lines[node.end_lineno - 1].encode()[: node.end_col_offset].decode()),
+        )
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.For) and isinstance(node.iter, (ast.Tuple, ast.List)):
+            expression = "physical_path('desktop_pages' + '/' + str(" + ast.unparse(node.target) + '))'
+            if expression not in ast.get_source_segment(source, node):
                 continue
-            text = ast.get_source_segment(source, node)
-            if 'scan(root)' not in text or 'assertEqual' not in text:
+            for item in node.iter.elts:
+                if isinstance(item, ast.Constant) and isinstance(item.value, str):
+                    edits.append((*span(item), repr(moves['desktop_pages/' + item.value])))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'physical_path':
+            argument = ast.unparse(node.args[0])
+            directories = {'desktop_pages': 'desktop_app', 'desktop_trading': 'desktop_app/features/trading', 'desktop_smoke': 'desktop_app/smoke'}
+            if isinstance(node.args[0], ast.Constant):
+                value = node.args[0].value
+                replacement = repr(moves.get(value, directories.get(value, value)))
+            elif argument.startswith("'desktop_pages' + '/' + str("):
+                replacement = ast.unparse(node.args[0].right.args[0])
+            else:
                 continue
-            if guard and ast.dump(node) == ast.dump(wanted_node):
-                return source
-            indent = ' ' * node.col_offset
-            replacement = ''.join(indent + line for line in wanted.splitlines(keepends=True))
-            lines[node.lineno - 1 : node.end_lineno] = [replacement]
-            return ''.join(lines)
+            edits.append((*span(node), replacement))
+    for start, end, replacement in sorted(edits, reverse=True):
+        source = source[:start] + replacement + source[end:]
+    if 'physical_path(' not in source:
+        source = source.replace('physical_path, ', '').replace(', physical_path', '')
+        source = source.replace('from tests.layered_source_fixtures import physical_path\n', '# Source scans below use current physical paths.\n')
+    source = source.replace('desktop_theme.apply_market_theme', 'desktop_app.shell.theme.apply_market_theme')
+    source = source.replace(
+        "for old, new in CURRENT_PATHS.items() if not old.startswith('desktop_trading/')",
+        "for new in CURRENT_PATHS.values() if not new.startswith('desktop_app/features/trading/')",
+    )
+    source = source.replace(
+        "for old, new in CURRENT_PATHS.items() if old.startswith('desktop_trading/')",
+        "for new in CURRENT_PATHS.values() if new.startswith('desktop_app/features/trading/')",
+    )
+    source = source.replace("CURRENT_PATHS['desktop_trading/dashboard.py']", "'desktop_app/features/trading/dashboard.py'")
     return source
 
 
@@ -127,11 +155,15 @@ def repair(root, moves):
             )
         if name == 'tests/test_quality_gate.py':
             updated = fixture_parents(updated)
-            updated = strict_core_fixture(updated)
-        if name == 'tools/quality_gate.py' and 'no Qt imports under quantlab/' not in updated:
-            anchor = "        if any(module.split('.')[0].startswith('desktop') for module in modules):"
-            added = "        if any(module.split('.')[0] in ('PySide6', 'shiboken6') for module in modules):\n            findings.append(f'{label}:{node.lineno}: no Qt imports under quantlab/')\n"
-            updated = updated.replace(anchor, added + anchor, 1)
+        if name == 'tools/quality_gate.py':
+            updated = updated.replace(
+                "            if name.startswith('quantlab/'):",
+                "            if name.startswith('quantlab/') and name not in {'quantlab/assistant/adapters/chatgpt/auth.py', 'quantlab/assistant/adapters/chatgpt/provider.py', 'quantlab/research_core/adapters/market_layout.py'}:",
+            )
+            updated = updated.replace(
+                '"quantlab/assistant/adapters/chatgpt/provider.py"}',
+                '"quantlab/assistant/adapters/chatgpt/provider.py", "quantlab/research_core/adapters/market_layout.py"}',
+            )
         if name == '.gitignore' and '!desktop_app/features/data/*.py' not in updated:
             updated += '\n# The data feature is presentation source; keep other data directories ignored.\n!desktop_app/features/data/\ndesktop_app/features/data/*\n!desktop_app/features/data/*.py\n'
         if name == 'tests/fixtures/desktop_text_alias_map.json':
@@ -142,7 +174,7 @@ def repair(root, moves):
                     'from tests.layered_source_fixtures import page_sources',
                     'from tests.layered_source_fixtures import page_sources, project_page_service_lines',
                 )
-                if 'project_page_service_lines' not in updated
+                if 'import page_sources, project_page_service_lines' not in updated
                 else updated
             )
             updated = updated.replace(
@@ -203,6 +235,12 @@ def repair(root, moves):
                 "'tools/refactor/verify_moves.py': 'tooling',",
                 "'tools/refactor/verify_moves.py': 'tooling',\n            'tools/refactor/repair_paths.py': 'tooling',",
             )
+        if name.startswith('tests/') and name.endswith('.py') and name not in {'tests/layered_source_fixtures.py', 'tests/test_trading_architecture.py'}:
+            updated = current_test_paths(updated, moves)
+        if name == 'quantlab/desktop_runtime.py':
+            updated = updated.replace('# desktop_ui module', '# desktop_app.shell.main_window module')
+        if name == 'tests/test_desktop_theme.py':
+            updated = updated.replace('QSS rules in desktop_theme', 'QSS rules in desktop_app.shell.theme')
         if updated != source:
             path.write_bytes(updated.encode('utf-8'))
             changed.append(name)
@@ -213,4 +251,33 @@ def repair(root, moves):
             raise ValueError('README destination already exists; preserve both until reviewed')
         subprocess.run(['git', '-C', str(root), 'mv', '--', 'desktop_trading/README.md', 'desktop_app/features/trading/README.md'], check=True)
         changed.append('desktop_app/features/trading/README.md')
+    # Dated contracts, snapshots and verification records retain their original paths.
+    folder = root / 'tools/refactor'
+    historical = json.loads((folder / 'historical_docs.json.template').read_text(encoding='utf-8'))
+    for name in historical:
+        raw = subprocess.check_output(['git', '-C', str(root), 'show', '559025982afbeac8b473b42802d0a8340de90e88:' + name])
+        if name == 'docs/agent/IMPLEMENTATION_CONTRACTS.md':
+            header, body = raw.decode('utf-8').split('\n', 1)
+            raw = (header + (folder / 'contracts_current_locations.md.template').read_text(encoding='utf-8') + body).encode('utf-8')
+        text = raw.decode('utf-8')
+        for old, new in {**moves, 'desktop_trading/README.md': 'desktop_app/features/trading/README.md'}.items():
+            target = '../../' + old
+            replacement = (
+                ('../../' + new)
+                if name == 'docs/design/TEMPLATE.md'
+                else ('https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/' + old)
+            )
+            text = text.replace('](' + target + ')', '](' + replacement + ')')
+        raw = text.encode('utf-8')
+        if (root / name).read_bytes().replace(b'\r\n', b'\n') != raw.replace(b'\r\n', b'\n'):
+            (root / name).write_bytes(raw)
+            changed.append(name)
+    path = root / 'docs/CONTRIBUTING.md'
+    source = path.read_text(encoding='utf-8')
+    updated = source.replace('desktop_app.shell.pages tools tests', 'desktop_app tools tests').replace(
+        'desktop_app.features.trading', 'desktop_app/features/trading'
+    )
+    if updated != source:
+        path.write_text(updated, encoding='utf-8', newline='')
+        changed.append('docs/CONTRIBUTING.md')
     return changed

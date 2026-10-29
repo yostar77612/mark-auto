@@ -45,8 +45,8 @@
     ]
   },
   "additional_helpers": [
-    "EquityPlot -> desktop_app/components/equity.py (re-exported from desktop_app.shell.main_window)",
-    "MainWindow._result_snapshot_lines -> desktop_app/components/result_layers.py:result_snapshot_lines (static alias preserved)"
+    "EquityPlot -> desktop_pages/equity.py (re-exported from desktop_ui)",
+    "MainWindow._result_snapshot_lines -> desktop_pages/result_layers.py:result_snapshot_lines (static alias preserved)"
   ],
   "measurements": {
     "mainwindow_class_lines": 1480,

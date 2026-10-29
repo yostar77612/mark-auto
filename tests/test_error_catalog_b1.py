@@ -16,7 +16,7 @@ from quantlab.analysis_recovery import RecoveryError
 from quantlab.core import ValidationError
 from quantlab.desktop_errors import error_message, exception_code
 from quantlab.errors import ERROR_LABELS, ERROR_TABLE, ErrorCode
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -169,7 +169,7 @@ class ErrorCatalogTests(unittest.TestCase):
                     ),
                 ]
             )
-            + sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
+            + sorted((ROOT / 'desktop_app').rglob('*.py'))
         )
         tables = []
         for path in paths:

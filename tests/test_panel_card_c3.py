@@ -21,7 +21,7 @@ from desktop_app.shell.theme import apply_theme, build_app_stylesheet, theme_col
 import desktop_app.shell.theme as theme_module
 from quantlab.paper import RiskLimits
 from tests.test_b4_appearance import contrast_ratio
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 class PolishCounter(QObject):
@@ -141,7 +141,7 @@ class PanelCardTests(unittest.TestCase):
 
     def test_hosted_page_class_budgets(self):
         root = Path(__file__).resolve().parents[1]
-        for path in (root / physical_path('desktop_pages')).rglob('*.py'):
+        for path in (root / 'desktop_app').rglob('*.py'):
             for node in ast.parse(path.read_text(encoding='utf-8')).body:
                 if isinstance(node, ast.ClassDef) and node.name.endswith('Page'):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 500, node.name)

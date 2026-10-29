@@ -497,7 +497,7 @@ P0–P8 local implementation is integrated. Final independent acceptance, full r
 |---|---|---|
 | Domain | v2_domain: `quantlab/trading/domain/`, domain tests | Immutable typed models, explicit calendars, holding/eligibility, fees/risk, restricted strategy rules |
 | Ports/adapters | v2_adapters: `ports/`, `adapters/simulated/`, `adapters/shioaji/`, adapter tests/readiness | Fault-injectable remote state and documented SDK mapping; no live calls |
-| Presentation | v2_ui: `desktop_app/features/trading/`, additive string keys, UI tests | Six workspaces and complete typed application controller boundary |
+| Presentation | v2_ui: `desktop_trading/`, additive string keys, UI tests | Six workspaces and complete typed application controller boundary |
 | Application/storage/runtime | root | Transactional event ledger, fencing, reconciliation, execution/exit coordination, process boundary, composition and acceptance integration |
 
 ## Decisions

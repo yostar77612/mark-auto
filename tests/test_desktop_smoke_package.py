@@ -9,7 +9,7 @@ from unittest.mock import patch
 import desktop
 import desktop_app.smoke
 from tests.test_import_graph import import_graph, reaches, source_map
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,8 +62,7 @@ class SmokePackageTests(unittest.TestCase):
     def test_all_package_modules_are_statically_reachable(self):
         graph = import_graph(source_map())
         modules = {
-            path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__')
-            for path in (ROOT / physical_path('desktop_smoke')).rglob('*.py')
+            path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__') for path in (ROOT / 'desktop_app/smoke').rglob('*.py')
         }
         self.assertTrue(modules)
         for name in modules:

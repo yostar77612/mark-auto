@@ -17,7 +17,7 @@ from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 def reverse_pages(window):
@@ -134,7 +134,7 @@ class PageIdentityTests(unittest.TestCase):
                 jobs.close()
 
     def test_no_numeric_page_identity_comparisons(self):
-        paths = [Path('desktop_app/shell/main_window.py'), *Path(physical_path('desktop_pages')).rglob('*.py')]
+        paths = [Path('desktop_app/shell/main_window.py'), *Path('desktop_app').rglob('*.py')]
         for path in paths:
             for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
                 if not isinstance(node, ast.Compare):

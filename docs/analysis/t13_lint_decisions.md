@@ -9,8 +9,8 @@ output rewrites producer literals, so all its bytes and selection logic are pres
 
 ## Formatter measurement
 
-Ruff 0.16.10 `format --diff --line-length N` on desktop_app/shell/main_window.py,
-desktop_app/features/assistant/connection.py, desktop_app/features/market/dashboard.py, quantlab/paper.py,
+Ruff 0.16.10 `format --diff --line-length N` on desktop_ui.py,
+desktop_chatgpt_ui.py, desktop_market.py, quantlab/paper.py,
 quantlab/market_history.py, tools/quality_gate.py, packaging/wait_for_gates.py,
 tests/test_core_shards.py, tests/test_packaging.py, tests/test_quality_gate.py,
 and quantlab/saved_candidate_pool.py (7,166 lines): median 63, p90 112, p95 132.
@@ -25,7 +25,7 @@ comparison/type mistakes, bare except, syntax and Pyflakes errors without requir
 semantic cleanup. E401/E701/E702 are omitted as formatting debt for part B;
 E731/E741 naming/lambda rewrites are outside pure formatting. No global ignores.
 Per-file ignores below are exact observed file/code pairs, with no wildcard suppression.
-F401 preserves public re-exports (including desktop_ui/desktop_app.shell.pages), import-time
+F401 preserves public re-exports (including desktop_ui/desktop_pages), import-time
 initialization/dependency probes and existing test fixtures. F841 preserves evaluation
 and exception bindings. E402 preserves environment/bootstrap-before-import order.
 F811 preserves the existing test class setup override; changing it is behavioral work.
@@ -34,20 +34,20 @@ The selected rules still reject new errors in other files and all unignored code
 | File | Ignored rules | Reason |
 | --- | --- | --- |
 | `desktop.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/assistant/connection.py` | E402 | preserve bootstrap/environment import order |
-| `desktop_app/components/forms.py` | E402 | preserve bootstrap/environment import order |
-| `desktop_app/features/market/dashboard.py` | F401, F841 | preserve imports/re-exports and initialization; preserve evaluated unused/exception bindings |
-| `desktop_app/features/backtest/backtest.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/compare/compare.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/data/data.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/paper/paper.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/strategy/strategy.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/shell/views.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/features/walk_forward/wf_wizard.py` | F841 | preserve evaluated unused/exception bindings |
-| `desktop_app/components/widgets.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/components/formatting.py` | E402 | preserve bootstrap/environment import order |
-| `desktop_app/smoke/recovery.py` | F401 | preserve imports/re-exports and initialization |
-| `desktop_app/shell/main_window.py` | E402, F401, F841 | preserve bootstrap/environment import order; preserve imports/re-exports and initialization; preserve evaluated unused/exception bindings |
+| `desktop_chatgpt_ui.py` | E402 | preserve bootstrap/environment import order |
+| `desktop_forms.py` | E402 | preserve bootstrap/environment import order |
+| `desktop_market.py` | F401, F841 | preserve imports/re-exports and initialization; preserve evaluated unused/exception bindings |
+| `desktop_pages/backtest.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/compare.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/data.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/paper.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/strategy.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/views.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_pages/wf_wizard.py` | F841 | preserve evaluated unused/exception bindings |
+| `desktop_pages/widgets.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_presentation.py` | E402 | preserve bootstrap/environment import order |
+| `desktop_recovery_smoke.py` | F401 | preserve imports/re-exports and initialization |
+| `desktop_ui.py` | E402, F401, F841 | preserve bootstrap/environment import order; preserve imports/re-exports and initialization; preserve evaluated unused/exception bindings |
 | `packaging/validate_tls.py` | E402 | preserve bootstrap/environment import order |
 | `quantlab/__main__.py` | F401 | preserve imports/re-exports and initialization |
 | `quantlab/analysis_contracts.py` | E402 | preserve bootstrap/environment import order |
@@ -179,7 +179,7 @@ No locked input or pinned producer-profile hash changes. Walk-forward source
 hashes and analysis implementation hashes are otherwise computed dynamically;
 no additional fixed source expectations were found by the source-hash audit.
 
-GitNexus impact covered all formatter targets. desktop_app/strings/catalog.py was CRITICAL
+GitNexus impact covered all formatter targets. desktop_strings.py was CRITICAL
 (32 direct dependents); quantlab/desktop_runtime.py was HIGH (17). MainWindow
 was MEDIUM (six direct dependents). Unresolved callers were supplemented by
 tracked-source text checks. The existing index is stale; refresh was attempted

@@ -32,7 +32,7 @@
 
 1. PR #79（`fix/short-dataset-refresh`，head `5761547`）：Quantlab 整輪成功；只有觀察用的「WFO storage diagnostic (Windows 3.12)」卡在 in_progress（所有步驟已完成，超過 6 分鐘上限，GitHub 狀態異常）。確認 head 未變、其餘檢查全綠後 squash 合併；卡住的觀察項目在報告註明。
 2. PR #80（`qa/full-function-test`）：CI 執行中；全綠後 squash 合併（#79 之後）。
-3. 擁有者已在對話中核准 PR #76 的建議方案（2026-10-22），原文：「核准 PR #76 的建議方案（D1 只做 K1、D2 兩步恢復、D3 300 秒、D4 user_confirmed_consumed／已由使用者確認消耗），允許為這個功能修改 quantlab/assistant/adapters/chatgpt/provider.py 和 quantlab/research.py。照設計分兩個 PR 實作，CI 全綠後先給我看，不要自行合併。」→ 尚未開始實作。設計文件在 PR #76 分支 `docs/chatgpt-unknown-request-reconciliation-design` 的 `docs/design/chatgpt-unknown-request-reconciliation.md`。
+3. 擁有者已在對話中核准 PR #76 的建議方案（2026-10-22），原文：「核准 PR #76 的建議方案（D1 只做 K1、D2 兩步恢復、D3 300 秒、D4 user_confirmed_consumed／已由使用者確認消耗），允許為這個功能修改 desktop_chatgpt_provider.py 和 quantlab/research.py。照設計分兩個 PR 實作，CI 全綠後先給我看，不要自行合併。」→ 尚未開始實作。設計文件在 PR #76 分支 `docs/chatgpt-unknown-request-reconciliation-design` 的 `docs/design/chatgpt-unknown-request-reconciliation.md`。
 4. 擁有者已安裝 `desktop-preview-39775999074-2`，ChatGPT 登入成功（#77 修正有效）；「取得此連線可用模型」仍被 `reserved_unknown` 擋住，等第 3 項完成。
 5. 第 3 步帳號實測：等第 3 項完成、擁有者用人工核對解除後，帳戶 ready 才可執行。
 
@@ -57,8 +57,8 @@
 
 ### 已驗證的問題
 
-1. （中，PR #79 修正中）匯入少於 16 根 K 棒的有效資料後，`desktop_app/shell/views.py` `_refresh_dataset_views` 無最小根數檢查，`defaults_for_bars`（需 8 根）拋錯，被 `poll_jobs` 當成失敗，顯示「驗證失敗」且無完成通知；重開程式仍出現。→ PR #79（`fix/short-dataset-refresh`），CI 執行中。
-2. （輕，未修，待擁有者決定訊息規則）手動交換驗證錯誤只顯示「作業執行失敗」，因 `desktop_app/components/job_progress.py` `failure_notice` 忽略 `error_code`。
+1. （中，PR #79 修正中）匯入少於 16 根 K 棒的有效資料後，`desktop_pages/views.py` `_refresh_dataset_views` 無最小根數檢查，`defaults_for_bars`（需 8 根）拋錯，被 `poll_jobs` 當成失敗，顯示「驗證失敗」且無完成通知；重開程式仍出現。→ PR #79（`fix/short-dataset-refresh`），CI 執行中。
+2. （輕，未修，待擁有者決定訊息規則）手動交換驗證錯誤只顯示「作業執行失敗」，因 `desktop_pages/job_progress.py` `failure_notice` 忽略 `error_code`。
 
 ## 尚未測試的功能
 

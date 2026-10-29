@@ -19,7 +19,7 @@ from quantlab.paper import LiveBroker, LiveTradingDisabled, PaperBroker, Reconci
 from tests import test_paper as fixtures
 from tests import test_paper_replay as replay_fixtures
 from tests import test_ui_operations_registry as registry_fixtures
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -223,7 +223,7 @@ class OrderEntryScanTests(unittest.TestCase):
         ui = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
         window = next(n for n in ui.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(window.end_lineno - window.lineno + 1, 400)
-        for path in (ROOT / physical_path('desktop_pages')).rglob('*.py'):
+        for path in (ROOT / 'desktop_app').rglob('*.py'):
             for node in ast.parse(path.read_text(encoding='utf-8-sig')).body:
                 if isinstance(node, ast.ClassDef) and node.name.endswith('Page'):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 500)
@@ -247,8 +247,8 @@ class OrderEntryScanTests(unittest.TestCase):
         paths = (
             sorted((ROOT / 'quantlab').rglob('*.py'))
             + sorted(ROOT.glob('desktop*.py'))
-            + sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
-            + sorted((ROOT / physical_path('desktop_trading')).rglob('*.py'))
+            + sorted((ROOT / 'desktop_app').rglob('*.py'))
+            + sorted((ROOT / 'desktop_app/features/trading').rglob('*.py'))
             + [ROOT / 'trading_runtime.py']
         )
         submits, v2_submits, writers, commits = set(), set(), set(), set()

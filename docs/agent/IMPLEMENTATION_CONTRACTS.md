@@ -1,5 +1,18 @@
 # mark-auto implementation contracts v1 — frozen development baseline
 
+> T2 location addendum (2026-10-30): The frozen contracts and verification records below
+> retain the paths used when recorded. Current page implementations are under
+> `desktop_app/features/`; MarketPage is in `desktop_app/features/market/market.py`,
+> EquityPlot is in
+> `desktop_app/components/equity.py`. The page aggregator is
+> `desktop_app/shell/pages.py`; MainWindow is `desktop_app/shell/main_window.py`.
+> Current directory scans use `desktop_app/`, including its trading feature directory
+> `desktop_app/features/trading/`.
+>
+> Current equivalents of the historical compile and SDK-search commands:
+> `py -3.11 -m compileall -q quantlab desktop_app tools tests desktop.py`
+> `rg -n '^\s*(import shioaji\b|from shioaji\b)' quantlab tests desktop_app/features/trading`
+
 ### LB-B10: journaled paper order lines and re-price
 
 PaperBroker.amend(order_id, price=Decimal, amend_key, quote, now) only changes
@@ -48,7 +61,7 @@ and result-trace interaction; the paper confirmation, quote form and paper clock
 supply consent and risk inputs. Existing generic worker failure notifications apply.
 No G3, profile, OOS, budget, acceptance score or PROJECT_STATE changes.
 Amend replay is isolated in _reduce_amend; the chart snapshot adapter and Decimal
-price bounds live in desktop_app.features.paper.order_lines, preserving reducer and chart size limits.
+price bounds live in desktop_order_lines, preserving reducer and chart size limits.
 The append-site enumeration keeps order creation confined to submit.
 Evidence: tests/test_lb_b10_paper_orders.py (offline, offscreen, no show/style).
 
@@ -158,7 +171,7 @@ and add `stage`: one of `prepare_operation`, `load_data`, `build_candidates`,
 `run_backtest`, `run_campaign`, `run_operation`, `write_result`, `unknown`.
 Non-string or unrecognized stage values normalize to `unknown`; exception
 values never select stages. UI error notifications render only the fixed
-desktop_app.strings.catalog stage message, with a generic fallback for missing/unknown
+desktop_strings stage message, with a generic fallback for missing/unknown
 codes; raw message, exception text, paths and secrets are never displayed.
 Stage progress annotations are optional and contain only normalized codes.
 Campaign internals remain one coarse `run_campaign` stage because research.py
@@ -200,7 +213,7 @@ Preview displays four proportional train/validation/walk-forward/holdout segment
 P0-10 formatted numbers. Raw evidence remains in the existing advanced control.
 Invalidation clears the summary and hides the timeline. Run requires a current
 preview and explicit one-time consent, including after busy-state reset.
-desktop_app/features/walk_forward/presenter.py and all pinned G3 sources remain unchanged. Snapshot
+desktop_walk_forward.py and all pinned G3 sources remain unchanged. Snapshot
 metrics include all tab heights plus each wizard step's natural content height
 without bypassing navigation guards or starting jobs. Evidence:
 tests/test_wf_wizard.py and docs/analysis/t8_snapshot_numbers.json.
@@ -229,7 +242,7 @@ Legacy safety patch is separate: disable unsafe automatic/live entry paths, requ
 
 ## UI operation registry (P2-A4)
 
-`desktop_app.shell.main_window.execute_ui_operation` retains its worker signature and public import
+`desktop_ui.execute_ui_operation` retains its worker signature and public import
 surface. Its private `_UI_OPERATION_HANDLERS` dictionary has exactly one distinct
 module-level callable per `UI_OPERATIONS` entry. The dispatcher rejects operations
 outside that immutable allowlist before workspace setup or handler invocation;
@@ -242,7 +255,7 @@ are shared helpers; replay still calls `require_replay_wal` before constructing
 messages from the HEAD dispatcher captured before extraction. Its metadata lists
 offline limitations and the exact temporary-path, path-derived identity and
 elapsed-time normalisations. `desktop_ui_public_names.json` freezes the public
-import surface. Each test loads `git show HEAD:desktop_app/shell/main_window.py` under an isolated
+import surface. Each test loads `git show HEAD:desktop_ui.py` under an isolated
 module name and exercises old and new implementations in separate fresh temporary
 workspaces against the recorded baseline. Successful coverage includes synthetic
 analysis preview/run/read/reconcile, fixture and mock-wire subscription campaigns,
@@ -449,7 +462,7 @@ No acceptance threshold or original research identity files are weakened to make
 Staging only: /tmp/mark-auto-market-history, copied from /tmp/mark-auto-oauth-host. No source checkout edits, commits, release delay, paid/network/model/broker changes. Existing trading/research validators remain unchanged. Scope is the next module after 0.2.1, not a retrospective acceptance change.
 
 ## Owned scope
-New quantlab/market_history.py; desktop_app/shell/main_window.py and desktop_app/features/market/dashboard.py only for typed local history import/reload controls; new tests/test_market_history.py, tests/test_market_history_ui.py; optional tools/validate_market_history_import.py. Existing UI tests may receive narrowly necessary additions. No account/OAuth/provider logic changes. Source/data/calendar remain local; do not bundle real ticks or derived bars.
+New quantlab/market_history.py; desktop_ui.py and desktop_market.py only for typed local history import/reload controls; new tests/test_market_history.py, tests/test_market_history_ui.py; optional tools/validate_market_history_import.py. Existing UI tests may receive narrowly necessary additions. No account/OAuth/provider logic changes. Source/data/calendar remain local; do not bundle real ticks or derived bars.
 
 ## Frozen behavior and tests
 1. Stream observed TAIFEX nine-column CSV/comma-delimited RPT, UTF-8 or CP950; maximum64MiB,1,000,000rows,120seconds, cancellation callback checked throughout. Reject unknown/fixed-width schema, wrong columns, nonfinite/nonintegral prices, invalid dates, odd/nonpositive B+S quantity, unsafe paths and selected malformed rows. Do not parse arbitrary JSON as normal market history input.
@@ -547,7 +560,7 @@ Regression evidence: tests/test_desktop_ui_polish_a.py, tests/test_ui_snapshot.p
 
 P0-07/08/10/11/12 change presentation only. The sole top marker `研究模式・實盤停用` expands to the full research limitations. Repeated page warnings are removed; irreversible OOS consent and enforced risk limits remain intact.
 Technical forms, Walk-forward, full candidate evaluation/history, paper policy, reference evidence and manual order parameters live in collapsed `進階` sections. `advanced_sections` stores only section booleans in non-sensitive settings, including market diagnostics and Walk-forward evidence. New profiles default to collapsed. At 1366×768, `tools/ui_snapshot.capture` measures AI 策略中心 at 956 px and 紙上交易與復原 at 1073 px (each ≤1600).
-`desktop_app/components/formatting.py` owns display number formatting and status translations: amounts use separators and TWD, ratios use percent, other metrics have at most four decimals. Original decimal strings, stored records, hashes and payloads remain exact; tooltips/advanced views retain original values. Unknown status codes show a Chinese diagnostic fallback. Default backtest fee inputs are inside advanced because their exact editable tax ratio has five decimals.
+`desktop_presentation.py` owns display number formatting and status translations: amounts use separators and TWD, ratios use percent, other metrics have at most four decimals. Original decimal strings, stored records, hashes and payloads remain exact; tooltips/advanced views retain original values. Unknown status codes show a Chinese diagnostic fallback. Default backtest fee inputs are inside advanced because their exact editable tax ratio has five decimals.
 Result selectors and compare lists use strategy family, main parameters, data interval and creation time in Taipei (legacy report file creation time), with numeric collision suffixes. UserRole paths and report IDs are unchanged; hashes remain in tooltips and advanced records. Corrupt metadata gets a readable fallback and remains subject to the original loader validation.
 Regression evidence: tests/test_desktop_ui_polish_b.py plus updated backtest/candidate presentation, market acceptance and feedback tests. Full suite/native worker verification remains controller-owned outside the sandbox.
 
@@ -556,13 +569,13 @@ Regression evidence: tests/test_desktop_ui_polish_b.py plus updated backtest/can
 
 P0-15: the legacy requirements file is archived byte-for-byte at `archives/legacy_autotrading/requirements.txt` (SHA-256 `0402de4d2eb719a30c7dd5428e9fcc9db10732fc76ce1419b959719d99f08ec0`). The obsolete root dependency list is absent. README directs installation to requirements-desktop.lock and packaging/build.ps1; current lock dependency audits remain unchanged. Historical commit links remain historical evidence.
 
-P0-16: tools/make_icon.py uses only the standard library, no network, to produce packaging/markauto.ico with 16/24/32/48/64/128/256 px images. desktop_app.components.icon.application_icon loads from the module-relative packaging path (also PyInstaller _internal); absent/corrupt artwork falls back to Qt's standard computer icon. QApplication startup and MainWindow explicitly set non-null window icons. PyInstaller embeds the EXE icon and ships the ICO as data; Inno Setup uses it for setup and uninstall display. Shortcut icons use the EXE resource.
+P0-16: tools/make_icon.py uses only the standard library, no network, to produce packaging/markauto.ico with 16/24/32/48/64/128/256 px images. desktop_icon.application_icon loads from the module-relative packaging path (also PyInstaller _internal); absent/corrupt artwork falls back to Qt's standard computer icon. QApplication startup and MainWindow explicitly set non-null window icons. PyInstaller embeds the EXE icon and ships the ICO as data; Inno Setup uses it for setup and uninstall display. Shortcut icons use the EXE resource.
 
 Packaging consistency: build_manifest.py records both artwork and generator; payload_inventory.py discovers the new asset automatically without a fixed file list. test_installer.ps1 verifies the installed candidate icon against its source manifest while preserving compatibility with historical baselines. test_packaging.py checks data/source manifest inputs; test_prepared_host_session.py pins the updated lifecycle hash without weakening guards. Regression tests: tests/test_application_icon.py. Actual frozen EXE/taskbar/installer/client Windows appearance remains controller-owned verification. Existing safety, quotas, objectNames and OOS consumption are unchanged.
 
 ## T4 — Shared desktop UI text
 
-User-visible text authored in desktop UI modules lives in `desktop_app/strings/catalog.py`.
+User-visible text authored in desktop UI modules lives in `desktop_strings.py`.
 `ui_text` resolves stable keys with a Traditional Chinese fallback; dynamic text
 uses catalog templates and preserves the original formatting. Existing domain
 error and feedback catalogs remain authoritative in `quantlab`.
@@ -571,7 +584,7 @@ error and feedback catalogs remain authoritative in `quantlab`.
 module and scans every UI module, including f-string text, with an empty TODO
 list and empty literal allowlist. Only true docstrings and logging arguments
 are exempt. Documented non-UI exclusions are the catalog, CLI TLS diagnostic,
-and SHA-256-pinned `quantlab/assistant/adapters/chatgpt/auth.py`/`quantlab/assistant/adapters/chatgpt/provider.py`;
+and SHA-256-pinned `desktop_chatgpt_auth.py`/`desktop_chatgpt_provider.py`;
 the pinned files are never migrated. Any future literal exception needs a
 specific documented reason rather than a module-wide UI exemption.
 
@@ -585,7 +598,7 @@ ObjectNames, payloads, validation, quotas and one-time OOS consumption are uncha
 
 ## T5 — Desktop theme and style module
 
-- `desktop_app/shell/theme.py` owns colour tokens (`COLORS`, `STATUS_COLORS`), pixel font sizes,
+- `desktop_theme.py` owns colour tokens (`COLORS`, `STATUS_COLORS`), pixel font sizes,
   spacing and the complete application QSS. `build_app_stylesheet()` resolves these
   tokens; `apply_theme(window)` installs it on the MainWindow (not the QApplication, so independently hosted top-level widgets render as before); widgets other than the window root and the market dashboard keep empty QSS.
 - Existing objectNames and `role=primary|secondary|danger` remain stable. Runtime
@@ -596,7 +609,7 @@ ObjectNames, payloads, validation, quotas and one-time OOS consumption are uncha
 - No desktop or tools module may call `setStyleSheet` outside the theme module.
   The AST allowlist in `tests/test_no_inline_stylesheet.py` is empty; the runtime widget allowlist
   contains only `market_dashboard`, which receives its scoped dark sheet from
-  `desktop_app.shell.theme.apply_market_theme()`. QPainter chart drawing needs no QSS exception. Tests cover every button role,
+  `desktop_theme.apply_market_theme()`. QPainter chart drawing needs no QSS exception. Tests cover every button role,
   empty widget stylesheets, live status palette refresh, and existing feedback.
 - Visual parity is checked against a `git archive HEAD` copy with
   `tools/ui_snapshot.py --size 1366x768` on both trees using identical Qt settings.
@@ -609,12 +622,12 @@ ObjectNames, payloads, validation, quotas and one-time OOS consumption are uncha
 
 ## T6 part A ? Desktop page boundaries
 
-`desktop_app.shell.pages` owns MarketPage (including cache and result chart binding), DataPage,
+`desktop_pages` owns MarketPage (including cache and result chart binding), DataPage,
 StrategyPage (including walk-forward controls/callbacks and campaign/candidate actions),
 and BacktestPage. Pages use the explicit `PageHost` callbacks and `PageState` object;
-they never import desktop_app.shell.main_window or discover a shell through QWidget parents. Existing
+they never import desktop_ui or discover a shell through QWidget parents. Existing
 MainWindow widget and handler names remain explicit aliases. EquityPlot and the actual
-open-lot reference-line helper also live in desktop_app.shell.pages; their desktop_app.shell.main_window import and
+open-lot reference-line helper also live in desktop_pages; their desktop_ui import and
 static-method access paths remain available.
 
 Compare, Paper and Settings construction/handlers remain in MainWindow for part B.
@@ -628,7 +641,7 @@ pages against `tests/fixtures/desktop_pages_before`, captured from an archive of
 pre-change HEAD. Metrics JSON and all 14 PNG pixel buffers are identical at 1366x768,
 scale 1, using the snapshot tool's Windows offscreen font/style settings. Baseline
 provenance is in `tests/fixtures/desktop_pages_baseline.json`. Both text and stylesheet
-AST guards recursively cover desktop_app.shell.pages and include injected-violation tests.
+AST guards recursively cover desktop_pages and include injected-violation tests.
 
 ## T6 part B - Complete desktop page boundaries
 
@@ -637,14 +650,14 @@ consent and recovery presentation. PaperPage owns paper construction, account re
 policy/snapshot loading and paper actions. SettingsPage owns settings, backup/log handlers
 and ChatGPT connection construction, signals and callbacks. WidgetTools and ViewCoordinator
 own shared widget construction and result/view rendering. Page composition, compatibility
-aliases and cross-page signal wiring live in desktop_app.shell.mount. Part A page bodies and
+aliases and cross-page signal wiring live in desktop_pages.mount. Part A page bodies and
 the pre-change visual archive are preserved.
 
 MainWindow owns navigation, global status/notifications, background-job scheduling and
 callback dispatch, and shutdown/recovery coordination. Its enforced AST ceiling is 400
 lines (measured 371); every page class remains at most 500 lines (largest: StrategyPage,
 326). SharedStateBindings contains data descriptors; PageContext exposes explicit host
-callbacks without importing or discovering the shell. Public desktop_app.shell.main_window module names,
+callbacks without importing or discovering the shell. Public desktop_ui module names,
 widget aliases and handler aliases remain available, including late dispatch of patched
 public analysis/rendering helpers.
 
@@ -700,9 +713,9 @@ Evidence: `tests/test_strategy_tabs.py`, the added tab-measurement test in `test
 
 ## T8 part C - Result presentation
 
-`desktop_app/components/result_widgets.py` supplies KPI cards and read-only tables with numeric sort keys, header-click sorting and a copy action/Ctrl+C exporting all displayed rows with TSV headers in their current order. Missing fields show the catalog's not-provided text, explicit None shows undefined, and a real zero stays numeric. Numeric display delegates rounding/units to the P0-10 formatter, with grouping for other numeric columns. Source reports are never rewritten.
+`desktop_pages/result_widgets.py` supplies KPI cards and read-only tables with numeric sort keys, header-click sorting and a copy action/Ctrl+C exporting all displayed rows with TSV headers in their current order. Missing fields show the catalog's not-provided text, explicit None shows undefined, and a real zero stays numeric. Numeric display delegates rounding/units to the P0-10 formatter, with grouping for other numeric columns. Source reports are never rewritten.
 
-Backtest uses net P&L, PF, descriptive Sharpe, drawdown, closed-lot and position cards plus sortable/copyable fills. PF/Sharpe reason labels are visible only for explicit undefined values. The legacy summary adapter remains hidden for compatibility consumers; raw reports remain in the existing collapsed advanced section. Fill times in the new UI adapter are Asia/Taipei (UTC+08:00); legacy desktop_app.components.forms adapters and their existing semantics tests are unchanged. Position presentation distinguishes long, short and flat.
+Backtest uses net P&L, PF, descriptive Sharpe, drawdown, closed-lot and position cards plus sortable/copyable fills. PF/Sharpe reason labels are visible only for explicit undefined values. The legacy summary adapter remains hidden for compatibility consumers; raw reports remain in the existing collapsed advanced section. Fill times in the new UI adapter are Asia/Taipei (UTC+08:00); legacy desktop_forms adapters and their existing semantics tests are unchanged. Position presentation distinguishes long, short and flat.
 
 Walk-forward uses the same cards/table in its wizard results area, with one row per fold and no invented portfolio aggregation. Cards show supplied evaluation counts; candidate-level evidence stays in advanced. Paper uses cash, position/order/fill counts, reconcile and stop cards, and three detail tabs; the legacy SummaryCard remains in advanced for compatibility. Paper's new fills widget has its own attribute so it cannot overwrite the shared backtest fills binding. All consent, preview, stop, validation, quota, OOS consumption and no-retry operations are unchanged.
 
@@ -771,7 +784,7 @@ synthetic data shows it even without an official calendar. Existing quote series
 remain unchanged. New helper is covered by both UI AST guards; all G3 sources
 remain byte-identical to HEAD with Git checkout filters applied. Full-suite testing remains controller-owned per
 the sandbox instruction. GitNexus impact on BacktestForm reports LOW with two
-direct importers (desktop.py, desktop_app/shell/main_window.py); unindexed new helpers report UNKNOWN,
+direct importers (desktop.py, desktop_ui.py); unindexed new helpers report UNKNOWN,
 resolved by direct caller reads. Index refresh fails with sandbox spawn EPERM;
 no clean refreshed-graph claim is made. No commit, push or PR is performed.
 
@@ -785,12 +798,12 @@ the repository; no new repository scratch directory was created.
 
 ### T9 part B: P1-06 Taipei date/time inputs
 
-- `desktop_app/components/timeinput.py` supplies presentation-only `DateInput`, native QDateEdit/QDateTimeEdit calendar controls, table delegates and UTC hints. Taipei uses `datetime.timezone(timedelta(hours=8))`; Qt controls use an explicit fixed UTC+8 zone. No zoneinfo/tzdata dependency.
+- `desktop_timeinput.py` supplies presentation-only `DateInput`, native QDateEdit/QDateTimeEdit calendar controls, table delegates and UTC hints. Taipei uses `datetime.timezone(timedelta(hours=8))`; Qt controls use an explicit fixed UTC+8 zone. No zoneinfo/tzdata dependency.
 - Coverage: backtest start/end/cost effective dates; manual instrument expiry rows; history trade/open/end dates and existing time controls; paper intent creation, quote/session timestamps and trading date; paper policy session open/end/trading dates and margin effective dates; paper action clock and the paper page clock. Campaign and walk-forward ranges are K-bar indices and remain numeric. Snapshot nested records remain read-only and retain original timestamps. Advanced JSON evidence/import remains unchanged.
 - Checkbox off means unset (`text() == ""`), including when the disabled picker clock changes. Enabling is an explicit user action. Restored strings, including invalid values, UTC offset spelling and fractional precision, are passed unchanged to existing validators; no loading-time coercion can turn a rejected input into an accepted default. Explicit native datetime edits emit UTC `YYYY-MM-DDTHH:MM:SSZ`.
 - Date-only values retain exact exchange/trading/effective date meaning, without shifting to UTC. History session payloads retain their previous UTC `+00:00` spelling; the adjacent hint uses Z. History edits still invalidate dated-policy confirmation.
 - Night example: Taipei Jan 2 15:00 to Jan 3 05:00 is UTC Jan 2 07:00 to 21:00. Trading date is the independently supplied policy date; backend `quote_policy` still chooses margin by that date. Taipei Jan 2 07:30 maps to UTC Jan 1 23:30.
-- Original field/table objectNames and `.text()` / `.setText()` / `.clear()` accessors remain. Table items retain canonical raw strings; persistent native editors update them through delegates. User text uses `desktop_app.strings.catalog.ui_text`; grey small hints reuse the central theme prerequisite style.
+- Original field/table objectNames and `.text()` / `.setText()` / `.clear()` accessors remain. Table items retain canonical raw strings; persistent native editors update them through delegates. User text uses `desktop_strings.ui_text`; grey small hints reuse the central theme prerequisite style.
 - Evidence: `tests/test_t9_timeinput.py` compares old QLineEdit paths using unchanged parsing/validation functions against picker payloads, canonical JSON and hashes; includes unset/invalid/legacy restoration, both midnight cases, policy margin trade dates, history confirmation and expiry rows. Existing assertions are unchanged; registrations and additive Qt widget inventory are logged in `t9_test_edits.json`.
 - Measurements: appended in `t9_snapshot_numbers.json`, before captured from a fresh archive of HEAD and after from this working tree, with isolated profiles. Full existing integration suite is controller-owned outside the sandbox.
 
@@ -799,7 +812,7 @@ the repository; no new repository scratch directory was created.
 
 The sidebar follows data, strategy, backtest, comparison, paper trading, market,
 settings. All seven pages stay accessible; prerequisite hints are tooltips.
-`desktop_app/shell/onboarding.py` owns guidance and completion: validated loaded data,
+`desktop_pages/onboarding.py` owns guidance and completion: validated loaded data,
 a persisted active candidate or strategy selection, loaded saved backtest results,
 comparison selection (or persisted selection), and a read-only, journal-verified initialized paper account (an empty or corrupt journal is pending).
 The checklist opens for a fresh workspace, can be dismissed, and reopens from
@@ -808,7 +821,7 @@ No onboarding action creates trading state or bypasses validation. Five empty pa
 have one primary navigation action; existing execution buttons remain usable with
 secondary presentation while empty. All existing objectNames remain present.
 
-`desktop_app.strings.catalog.GLOSSARY`, `FORBIDDEN_DEFAULT_TERMS` and
+`desktop_strings.GLOSSARY`, `FORBIDDEN_DEFAULT_TERMS` and
 `DEFAULT_TERM_ALLOWLIST` document the plain wording. Proper names Walk-forward,
 TMF, AI, ChatGPT and UTC are allowed; there are no forbidden-term exemptions.
 Technical catalog spelling is available in the help tooltip, import-kind item
@@ -839,7 +852,7 @@ Final GitNexus detect_changes(scope=all): HIGH aggregate risk across the existin
 
 ### T9 part D final: P1-04 help and integration
 
-`desktop_app/components/help.py` installs progressive disclosure after the existing polish pass.
+`desktop_help.py` installs progressive disclosure after the existing polish pass.
 Every page has one named `*_page_hint` (at most 30 characters). Short field
 captions retain the complete original caption in their tooltip; named `?`
 QToolButtons next to explanations carry the complete original wording and an
@@ -936,7 +949,7 @@ buttons (ui_snapshot metric excludes checkbox inputs).
 P1-15: LogTable reads only RedactedEventLog.tail(), whose schema, allowed codes,
 privacy rules and recording behavior remain unchanged. Its columns are 時間（台北）,
 作業（中文名稱）, 結果. Epoch seconds are converted using a fixed UTC+8 offset,
-without tzdata, to yyyy-mm-dd HH:MM:SS. desktop_app.strings.catalog contains every approved
+without tzdata, to yyyy-mm-dd HH:MM:SS. desktop_strings contains every approved
 operation and event label. The errors-only checkbox includes only existing error
 events. Export uses a mockable save-file function and writes UTF-8 BOM CSV with
 the same header and currently filtered rows; cancellation writes nothing. No raw
@@ -945,14 +958,14 @@ JSON, epoch, error payload, secret or path is projected into a cell or export.
 Evidence: tests/test_settings_sections.py, tests/test_log_table.py;
 docs/analysis/t10_snapshot_numbers.json records ui_snapshot measurements and
 docs/analysis/t10_test_edits.json records existing test adaptations. New helpers
-under desktop_app.shell.pages are automatically inventoried by both UI text and stylesheet
+under desktop_pages are automatically inventoried by both UI text and stylesheet
 guards. Full regression execution is controller-owned outside the sandbox.
 
 
 ### T10 part B: keyboard, accessibility and responsive layout
 
 - Minimum supported MainWindow size is **1280?720 logical pixels**, defined by
-  `desktop_app.shell.theme.MINIMUM_WINDOW_SIZE`; restored preferences read the window's actual
+  `desktop_theme.MINIMUM_WINDOW_SIZE`; restored preferences read the window's actual
   minimum through `PageHost.window_minimum_size`. Production restores keep the
   1280x720 floor even on smaller screens. Disposable geometry-test windows may
   lower their minimum to exercise legacy frame-position and screen-clamp cases.
@@ -1064,7 +1077,7 @@ backup-specific zipfile imports move to their operation paths. G3 and golden
 files remain unchanged. See docs/analysis/t14_p3_latency.md and t14_p3_scale.md.
 
 Walk-forward's existing wf_preview_summary label includes display-only duration
-wording from desktop_app.strings.catalog. estimated_seconds multiplies positive integer
+wording from desktop_strings. estimated_seconds multiplies positive integer
 evaluation count by positive finite measured seconds. Missing/invalid measurements
 return None; zero/invalid counts omit duration wording. The named measurement
 constant is None because this sandbox rejects real multiprocessing pipes, so
@@ -1123,10 +1136,10 @@ OOS consumption or existing test assertions change.
 
 ## T16 part A: fixed inference outcomes and shared job progress
 
-P3-03: `desktop_app.features.assistant.states` maps fixed error/stage/receipt codes to success,
+P3-03: `desktop_chatgpt_states` maps fixed error/stage/receipt codes to success,
 quota_exhausted, auth_expired or generic_failure. Unknown/non-string codes are
 neutral failures; diagnostic prose is never parsed or displayed. All outcome
-copy is in desktop_app.strings.catalog. Quota exhaustion offers no retry action and explains
+copy is in desktop_strings. Quota exhaustion offers no retry action and explains
 consumption/limits. Auth expiry exposes the existing primary sign-in flow with
 an explicit reauthorization intent; a successful local list cannot short-circuit
 that user-requested authorization. Existing consent, join, registration and
@@ -1136,7 +1149,7 @@ campaigns whose worker returned normally after a provider failure. The worker's
 existing failure packet gains only an allowlisted error_code; no runtime timeout,
 cancellation, quota or validation behavior changes.
 
-P3-07: `desktop_app.components.job_progress.JobProgress` is the single shell progress row
+P3-07: `desktop_pages.job_progress.JobProgress` is the single shell progress row
 shared by backtest, campaign, Walk-forward and download views. It preserves
 `cancel_job` and the public progress/cancel aliases. Stages use job_stages'
 allow-list with catalog labels and an unknown fallback. Only finite numeric
@@ -1174,7 +1187,7 @@ call or job submission on empty-state construction, sample loading or refusal.
 Once data exists, the two actions hide and the existing refresh button appears.
 Cards show trade dates and the catalog's not-real-time label; source details use
 the provenance date, with precise receipt timestamps retained in diagnostics.
-All new UI text uses literal desktop_app.strings.catalog keys. Existing objectNames remain;
+All new UI text uses literal desktop_strings keys. Existing objectNames remain;
 the widget fixture adds two action names and two prerequisite-label names.
 
 P3-13 uses the unchanged real `display_result_rows` / ResultTable / display_number
@@ -1195,7 +1208,7 @@ t16_p3_notes.md for the controller.
 ### T16 part C: default input explanations and domain vocabulary
 
 Every non-obvious default-visible input across the seven pages has a nonempty
-plain-language tooltip from literal ui_text keys in desktop_app/strings/catalog.py.
+plain-language tooltip from literal ui_text keys in desktop_strings.py.
 StrategyForm rebuilds tooltip text with each family switch and payload load.
 The 41 default inputs comprise 30 with tooltips and 11 obvious checkboxes whose
 stable catalog label keys and individual reasons are explicitly allowlisted in
@@ -1206,7 +1219,7 @@ internal state. The ten domain terms CSV, JSON, MTX, MXF, RPT, TAIFEX, TMF, TWD,
 TWSE and UTC remain visible. A live seven-page scan of visible text, combo items
 and table headers rejects any other uppercase token or raw hash: internal codes
 are zero after this explicit domain classification.
-Only tooltips change: no geometry, widget names, public desktop_app.shell.main_window names,
+Only tooltips change: no geometry, widget names, public desktop_ui names,
 validation, payloads, quotas, OOS consumption or G3 files change. MainWindow stays
 393 lines; Part B snapshot images and metrics remain unchanged by Part C.
 Evidence: tests/test_t16_tooltips.py (4 tests), t16_tooltip_metrics.json and
@@ -1263,7 +1276,7 @@ Only an explicit journaled unlock clears it, requiring a reconciled account and
 no UNKNOWN/submitting orders. The UI exposes lock through the existing paper
 kill operation with an explicit lock payload, and reconcile/unlock through the
 existing reconciliation operation with an explicit unlock payload. All new text
-comes from desktop_app.strings.catalog; stop_presentation displays the manual stop state.
+comes from desktop_strings; stop_presentation displays the manual stop state.
 
 For compatibility the snapshot key `manual_order_lock` is additive and appears
 only after the first lock/unlock event. Absence means unlocked. No schema/config
@@ -1277,7 +1290,7 @@ method or persistent connection). Evidence: tests/test_paper_lock_b2.py.
 clock, network, job submission or workspace writes. Its explicit `now` input
 makes snapshots deterministic. Settings exposes Refresh diagnostics and Copy
 diagnostics inside the existing collapsed version-maintenance panel through
-desktop_app.strings.catalog keys, preserving the default Settings text and metrics. Copy rebuilds the displayed snapshot
+desktop_strings keys, preserving the default Settings text and metrics. Copy rebuilds the displayed snapshot
 and passes that exact string to the clipboard; no file export or upload occurs.
 
 The field allowlist is app_version (the package constant); workspace (presence
@@ -1371,7 +1384,7 @@ disabled; finite AST, OOS consumption, irreversible budget and all timeouts
 remain in force. B1 ancestry and source/impact evidence are recorded in the ADR.
 ### LC-B4: persisted appearance preferences
 
-`desktop_app.shell.theme.THEMES` exposes `dark` and `light`, with identical COLORS key sets.
+`desktop_theme.THEMES` exposes `dark` and `light`, with identical COLORS key sets.
 The existing `COLORS` and no-argument stylesheet builders retain the original
 dark tokens and byte-identical QSS. `appearance.theme` defaults to `dark`;
 `appearance.rise_fall` defaults to `red_up` (Taiwan), with `green_up` reversing
@@ -1418,11 +1431,11 @@ the controller owns the single B4 commit and its required co-author trailer.
 
 ## LC-B11: display-only privacy mode
 
-One window-owned `desktop_app.components.privacy.PrivacyState` controls all seven pages. The
+One window-owned `desktop_privacy.PrivacyState` controls all seven pages. The
 one-click, accessible `privacy_toggle` shares the existing research-banner row;
 it defaults off. Settings use `privacy_mode`, accepting only JSON boolean true;
 missing or corrupt values fall back to off. Existing settings validation remains
-fail-closed. All new labels live in desktop_app/strings/catalog.py.
+fail-closed. All new labels live in desktop_strings.py.
 
 `mask_money(value)` always returns four bullets (`••••`), including None, zero,
 negative, non-finite and arbitrarily large inputs. `mask_account_id(value)`
@@ -1434,7 +1447,7 @@ Scope: money/account columns in research results, comparisons (including
 transposed comparisons), fills, paper positions/orders/fills and market account
 tables; KPI and summary cards; market price cards; equity value axes/tooltips;
 candlestick prices, crosshair OHLC/change, reference labels and fill prices/costs.
-The money classification includes desktop_app.components.formatting.AMOUNTS plus equity,
+The money classification includes desktop_presentation.AMOUNTS plus equity,
 price/average/limit/fill/stop prices, OHLC, cost/fees, pnl/balance and initial and
 maintenance margins. Account identifiers use account_id. Symbols, timestamps,
 order status, quantities and ratio metrics retain their original table text.
@@ -1532,7 +1545,7 @@ session inspects durable state before ticking; a saved pause requires Resume.
 The selected max_bars bounds the session total, then an explicit short stop
 operation turns kill ON. Errors/cancellation/close halt the timer; the existing
 freeze and reconciliation paths remain authoritative. No live or broker network
-path is introduced. No public desktop_app.shell.main_window names or locked source files change.
+path is introduced. No public desktop_ui names or locked source files change.
 
 Evidence: tests/test_replay_b13.py uses an injected fake monotonic clock, no real
 sleeps, no shown windows or application style changes. It checks speed/hash
@@ -1557,7 +1570,7 @@ earlier imports. application ends after QApplication/icon/application metadata;
 bootstrap after workspace-location discovery and instance locking; workspace
 after prepare_workspace; window after MainWindow construction/show; ready after
 startup hooks and the existing guard timer setup, before smoke/event-loop entry.
-window includes desktop_app.shell.main_window import time; ready does not assert first paint or
+window includes desktop_ui import time; ready does not assert first paint or
 background/network readiness. Existing timeouts and safety gates are unchanged.
 
 B12 diagnostics adds `startup_timing` (explicit `unavailable` without a recorder).
@@ -1638,11 +1651,11 @@ writing policy from existing catalog observations. Its T16 table quotes the
 recorded 89 tooltip widgets, 41 default-visible inputs, 30 with tooltips,
 11 obvious controls without and 0 non-obvious inputs without; these are scoped
 measurements, not a claim of complete product coverage. Examples and observed
-wording variations identify verbatim desktop_app.strings.catalog values; no strings change.
+wording variations identify verbatim desktop_strings values; no strings change.
 
 New or revised explanatory tooltips require plain complete sentences, a
 120-character rendered bound, glossary-backed terminology and accurate units,
-defaults, prerequisites and execution scope. New UI text uses desktop_app.strings.catalog
+defaults, prerequisites and execution scope. New UI text uses desktop_strings
 with literal ui_text keys; error text retains the B1 ERROR_TABLE. The existing
 test_t16_tooltips module must pass unmodified. Documentation checks and direct
 catalog/JSON comparisons verify the guide without a new runtime test.
@@ -2009,7 +2022,7 @@ in widget memory. Missing optional host controls use empty defaults. The existin
 onboarding_help callback clears persisted dismissal and reopens an incomplete
 workflow; completed workflows remain hidden. Its glossary tooltip, WORKFLOW_ORDER,
 navigation hints, per-page empty guidance and completion-file semantics remain
-unchanged. No desktop_app.shell.main_window exports, locked G3 source, candidate profiles, monetary
+unchanged. No desktop_ui exports, locked G3 source, candidate profiles, monetary
 calculations, execution paths, limits, timeouts or acceptance scores change.
 
 Evidence: seven new focused tests pass in 0.11 s locally without shown windows,
@@ -2034,7 +2047,7 @@ The item is left uncommitted for the controller's single item commit.
 
 ### U1-C1: compact application header
 
-`desktop_app/shell/app_header.py` owns the single `app_header` at central-layout
+`desktop_pages/app_header.py` owns the single `app_header` at central-layout
 index zero. Its maximum height is 48 logical pixels; focused offscreen tests
 verify its size hint also stays within 48 in dark and light themes at 1366x768.
 Default label widths and the complete row's size hint fit that width. These
@@ -2095,9 +2108,9 @@ are edited here. All item changes remain uncommitted for the controller.
 
 ### U1-C4: shared asynchronous status presentation
 
-`desktop_app/components/async_status.py::AsyncStatus` has exactly four states, selected
+`desktop_pages/async_status.py::AsyncStatus` has exactly four states, selected
 through `set_state`: loading, empty, error and stale. Invalid states raise
-ValueError before changing presentation. Literal desktop_app.strings.catalog keys supply
+ValueError before changing presentation. Literal desktop_strings keys supply
 default state text and action captions. The state property selects theme QSS;
 the widget, label and action have accessible names without showing a window.
 Both parentless construction and bare SimpleNamespace hosts are supported.
@@ -2160,8 +2173,8 @@ this comparison does not attribute every changed pixel to C4.
 
 ## UI-1 C3: shared PanelCard (2026-10-20)
 
-PanelCard is defined once in desktop_app/components/widgets.py, without a host dependency
-or a new desktop_app.shell.main_window public name. Six existing market sections and two existing
+PanelCard is defined once in desktop_pages/widgets.py, without a host dependency
+or a new desktop_ui public name. Six existing market sections and two existing
 paper advanced form sections use it. Existing inner widgets and objectNames
 remain. The four shared chrome objectNames are additive in the widget inventory;
 no new module is introduced. widgets.py is included in the import graph scanner.
@@ -2199,7 +2212,7 @@ Validation: test_panel_card_c3, test_help_reachability, test_desktop_market,
 test_market_empty_ui, test_b4_appearance, test_t16_tooltips and the dark/light
 accessibility walk pass. Ruff 0.16.10 check, changed-file format check, Python 3.11
 compilation and tools/quality_gate.py pass. The requested history, terminal,
-isolation, market-smoke, desktop_app.shell.pages and desktop_app.shell.main_window modules were attempted;
+isolation, market-smoke, desktop_pages and desktop_ui modules were attempted;
 Windows sandbox temporary-directory ACL errors prevent completion. Their full
 subprocess/interaction runs still require controller verification. GitNexus
 reports an incomplete local index; analyze --skip-fts fails spawning its worker
@@ -2223,7 +2236,7 @@ remain uncommitted for the controller's single C3 implementation commit.
 ## UI-1 C9: table readability and model-derived tab counts (2026-10-20)
 
 SavedResultsTable's five metric columns and SideBySideTable's transposed result
-columns use desktop_app.shell.theme.align_table_item for right/vertical-center alignment,
+columns use desktop_theme.align_table_item for right/vertical-center alignment,
 including missing/undefined/masked values and matching headers. The single
 NUMERIC_FONT_FAMILY token selects a fixed-pitch monospace font through this same
 helper. Text cells and headers stay left/vertical-center aligned. LogTable has
@@ -2242,7 +2255,7 @@ listens to model insertion/removal/reset, reads table.rowCount(), and formats th
 existing title through literal ui_text('tables.tab_count') and display_number.
 Empty tabs show [0]; there is no parallel count state. Elision is disabled. The
 callback ignores deleted Qt wrappers during teardown. No host/settings dependency,
-new desktop module, widget objectName or desktop_app.shell.main_window public name is introduced;
+new desktop module, widget objectName or desktop_ui public name is introduced;
 the existing widget inventory and automatic text/style module scans still apply.
 The touched source/test paths are added to the import-graph scan.
 
@@ -2287,7 +2300,7 @@ The new AssistantPanel lives inside Settings' existing collapsed maintenance
 area. No default page text, layout, label count or baseline image is intentionally
 changed. The widget-name inventory adds only five sorted assistant names. The
 current lane has no PanelCard or AsyncStatus implementation to reuse. No new
-desktop_app.shell.main_window public name or MainWindow method is introduced.
+desktop_ui public name or MainWindow method is introduced.
 
 quantlab.assistant_chat.ChatDispatcher owns a private frozen registry created
 only by agent_read_tools.create_registry. Its callable tool surface is exactly
@@ -2360,8 +2373,8 @@ Changes remain uncommitted; the controller owns the single A2-D4 commit.
 
 Initial assessment confirmed D4's collapsed maintenance-area assistant existed,
 but had no timeline, thinking fold or code-copy control. The existing assistant
-now owns desktop_app.features.assistant.assistant_details widgets. No default page, public
-desktop_app.shell.main_window name, MainWindow method, PanelCard or AsyncStatus is changed (the
+now owns desktop_pages.assistant_details widgets. No default page, public
+desktop_ui name, MainWindow method, PanelCard or AsyncStatus is changed (the
 latter two components are absent in this lane). The widget inventory adds only
 assistant_thinking and assistant_timeline; no baseline refresh is requested.
 
@@ -2438,10 +2451,10 @@ uncommitted; the controller owns the single A2-D5 commit.
 ### TASK A2-D8: research permission menus and session-only confirmation intent
 
 Initial assessment confirmed the frozen D4/D3 read surface existed without
-permission menus. desktop_app.features.assistant.assistant_permissions now owns two synchronized
+permission menus. desktop_pages.assistant_permissions now owns two synchronized
 native QComboBox menus: below the assistant input and inside the existing
 collapsed connection management area. Both say research actions and offer exactly
-read-only and confirm each time through literal desktop_app.strings.catalog catalog keys.
+read-only and confirm each time through literal desktop_strings catalog keys.
 The accompanying plain-text label explicitly states that confirmation still
 permits only read tools in this release, cannot start research/backtests or
 Walk-forward, save candidates or consume quota, and never enables live trading.
@@ -2492,7 +2505,7 @@ graph tool or extension download was used.
 All new controls stay in existing collapsed areas; no default-page baseline
 refresh is requested. The widget-name fixture adds only the two permission menu
 names. UI-1 PanelCard/AsyncStatus are absent; the existing page header is retained.
-No new desktop_app.shell.main_window public names, root-level modules, gates, OOS rules, budgets,
+No new desktop_ui public names, root-level modules, gates, OOS rules, budgets,
 timeouts, scores or existing-test exemptions are introduced. G3 sources, all
 saved_candidate_pool bytes, PROJECT_STATE, optimization plan and ACCEPTANCE have
 empty diffs. Changes remain uncommitted for the controller's single A2-D8 commit.
@@ -2548,7 +2561,7 @@ adds only chatgpt_test and chatgpt_test_status. No default-page baseline refresh
 is requested: the controls stay inside the existing collapsed connection area.
 Existing header behavior is retained; UI-1 PanelCard/AsyncStatus are absent.
 MainWindow remains 396 lines; ChatGPTConnectionPanel and the helper stay below
-500 lines. desktop_app.shell.main_window has no new public names. No gate, OOS rule, budget,
+500 lines. desktop_ui has no new public names. No gate, OOS rule, budget,
 timeout, existing test, golden, score or acceptance evidence is weakened.
 
 Validation: D9 6, D4 10, D5 9, D8 6, import graph 8, UI-text 9, stylesheet 3,
@@ -2629,7 +2642,7 @@ CI unittest discovery includes the new test file.
 All controls remain inside the existing collapsed assistant. No default-page
 baseline refresh is requested; the widget-name fixture adds only the sorted
 assistant_completions name. Existing header behavior is retained; PanelCard and
-AsyncStatus are absent. desktop_app.shell.main_window exports and MainWindow are unchanged, and
+AsyncStatus are absent. desktop_ui exports and MainWindow are unchanged, and
 the new classes remain below the class-size limit.
 
 Validation: D6 8, unchanged D7 10, D3 9, D4 10, D5 9, D8 6, D9 6, B1 8,
@@ -2704,7 +2717,7 @@ in fixtures and check payload/transcript exclusion and AST execution bans. The
 only D4 change supplies a discovered fixture model for its remote consent and
 keyboard tests, as newly required by D10; no assertion is removed or weakened.
 Inventory checks register the new package module additively; existing package
-scans cover inline styles and UI text. desktop_app.shell.main_window exports and MainWindow are
+scans cover inline styles and UI text. desktop_ui exports and MainWindow are
 unchanged; new classes remain below the size limit.
 
 Validation: D10 11, D4 10, D6 8, D5 9, D8 6, D9 6, import graph 8,
@@ -2782,7 +2795,7 @@ Optional missing values display `not recorded`. All labels use literal ui_text
 keys, QTableWidgetItem paints plain text, and the title uses PlainText. No HTML,
 code execution, provider call, consent bypass or authority is added. Existing
 UI-1 header behavior is retained; PanelCard/AsyncStatus are absent in this lane.
-desktop_app.shell.main_window exports and MainWindow are unchanged; new classes stay below the
+desktop_ui exports and MainWindow are unchanged; new classes stay below the
 class-size budget. Default-page fixtures are untouched; no baseline refresh is
 requested. The widget-name fixture adds only the eight manifest object names.
 
@@ -2819,7 +2832,7 @@ A2-D12 commit.
 
 ## UI-3 C5: market dock workspace (2026-10-20)
 
-MarketWorkspace in desktop_app/features/market/workspace.py owns three equivalent dock panels:
+MarketWorkspace in desktop_market_workspace.py owns three equivalent dock panels:
 `cards`, `watchlist`, `chart`, with `market_dock_<id>` objectNames. It reparents
 existing content and retains all public widget references and original names.
 Title dragging and keyboard menus dock to top/left/center/right/bottom or reorder;
@@ -2834,7 +2847,7 @@ Exactly three presets are supported: overview (cards above, watchlist/chart/side
 Safety/source/stale/live-disabled labels remain outside every collapsible panel.
 No order or live path is added.
 
-LayoutStore in quantlab/research_core/adapters/market_layout.py stores a separate versioned JSON file at
+LayoutStore in desktop_market_layout.py stores a separate versioned JSON file at
 `<settings parent>/display_profile/market-layout-v1.json`, next to DrawingStore.
 There is one persisted read at page mount; missing settings use memory only.
 The exact document keys are version/current/layouts. Each layout has version/panels,
@@ -2957,7 +2970,7 @@ tracked, so the tracked-root layout test passes. The item is a single C10 commit
 Multi-monitor visual behaviour remains PENDING USER FINAL CONFIRMATION.
 ## U2-C7: keyboard command palette (2026-10-20)
 
-Entry points: desktop_app.shell.shortcuts.install_shortcuts owns the unique Ctrl+K
+Entry points: desktop_pages.shortcuts.install_shortcuts owns the unique Ctrl+K
 QShortcut and one reusable CommandPalette popup. palette_commands.command_table
 is a pure immutable metadata table (ids, literal catalog keys, localized labels,
 ASCII aliases, handler names and page rows), with no Qt or provider imports.
@@ -3012,14 +3025,14 @@ async C4, panel C3, accessibility walk, desktop theme and UI operations/public-n
 tests. Catalog, import, hardcoded-text, inline-style and layout checks pass.
 Ruff 0.16.10 check and changed-file format --check, Python 3.11 compile and
 tools/quality_gate.py (zero findings) pass. Desktop pages' three structural
-tests pass; its interaction tests and desktop_app.shell.main_window encounter the sandbox ACL
+tests pass; its interaction tests and desktop_ui encounter the sandbox ACL
 errors above. GitNexus analyze fails with spawn EPERM; the server has no lane-ui2
 index, so direct source inspection/runtime tests supply local navigation evidence.
 
 
 ## U2-C8: bounded notification history and toast center (2026-10-20)
 
-Entry points: desktop_app.shell.notification_log.NotificationLog is Qt-free and
+Entry points: desktop_pages.notification_log.NotificationLog is Qt-free and
 stores at most 100 immutable entries in a deque (configurable only within
 1..200). Id and sequence increase monotonically; eviction removes the oldest
 entry first. Terminal identities have an equally bounded duplicate cache.
@@ -3109,7 +3122,7 @@ Repair-round evidence: the unchanged test_t16_presentation.py reproduced all
 C8 tests cover bare-host notify/close behavior, exact banner message/status,
 timer/fade compatibility and the combined visible-notice cap. B4 appearance
 (8 tests), shortcuts (2), feedback P0 (7), header C1 (5) and async C4 (7) pass.
-Unchanged desktop_app.shell.main_window and desktop_app.shell.pages runs hit WinError 5 temporary-dir
+Unchanged desktop_ui and desktop_pages runs hit WinError 5 temporary-dir
 ACL errors inside the sandbox; the controller's runs outside it pass. A separate disposable metrics-only
 capture shows zero differences across all seven pages for visible_text,
 button_count, label_char_count, visible_input_count, unlabeled_inputs and
@@ -3125,7 +3138,7 @@ Entry points: PaperPage wires desktop_pages/paper_tabs.build_tabs and calls
 refresh_tables from the existing _show_account refresh. quantlab.paper_tab_data is
 Qt-free and exports account_counts, working_order, scaled_fractions,
 position_rows and event_rows. No execution, broker or network dependency is added.
-PaperPage remains below 500 lines; MainWindow and desktop_app.shell.main_window public names are
+PaperPage remains below 500 lines; MainWindow and desktop_ui public names are
 unchanged. The item is a single feat(desktop) implementation commit; no push, tag
 or release is performed by the lane.
 
@@ -3154,7 +3167,7 @@ to float. Fractions are abs(pnl)/max(abs(pnl)), with zero and missing values
 handled explicitly. The QStyledItemDelegate paints model-role fractions and
 theme-driven semantic up/down colors. There are no widgets per row. SortItem
 numeric roles, numeric alignment and monospaced fonts are retained; fractions
-travel with their items during sorting. Privacy uses desktop_app.components.privacy for
+travel with their items during sorting. Privacy uses desktop_privacy for
 position quantities and P&L display/accessibility/tooltips; bars are not painted
 in privacy mode. Tab titles contain record counts, never account IDs or amounts.
 Raw CSV/JSON exports and guarded submit/cancel/amend handlers are unchanged.
@@ -3203,7 +3216,7 @@ real-broker verification is claimed; the user's final visual check remains pendi
 
 ## S-R2 - desktop smoke harness extraction
 
-The offline harness resides in desktop_app/smoke/__init__.py. desktop.py retains
+The offline harness resides in desktop_smoke/__init__.py. desktop.py retains
 only parse_args, acquire_instance_lock, prepare_workspace, run_gui, main and the
 two production startup helpers. It is 360 lines versus 1290 at 4c72a30. All
 fifteen harness definitions, including run_smoke with nested complete_smoke, are
@@ -3220,31 +3233,31 @@ differences. test_t11_part_b retains SMOKE_DIGEST, HANDLERS_DIGEST,
 FINALLY_DIGEST and the body[3:] slice; all three original digest checks pass.
 Smoke semantics, report schema, step order, catalog keys and deadlines are
 unchanged (global 120 seconds, per-step 40 seconds, Paper 30 seconds). No
-widgets, timers, lifetime operations, styles or public desktop_app.shell.main_window names change.
+widgets, timers, lifetime operations, styles or public desktop_ui names change.
 
 Existing-test path/target changes are limited to:
 
-- test_t11_part_b.py reads run_smoke's AST from desktop_app/smoke/__init__.py;
+- test_t11_part_b.py reads run_smoke's AST from desktop_smoke/__init__.py;
   run_gui lifecycle fingerprints still read desktop.py.
 - test_desktop_market_smoke.py and test_desktop_walk_forward_smoke.py read
-  harness source from desktop_app/smoke/__init__.py. Every assertIn literal and
+  harness source from desktop_smoke/__init__.py. Every assertIn literal and
   timeout is retained byte-for-byte.
 - test_desktop_history_smoke.py and test_desktop_smoke_isolation.py direct
-  injected fixture/result assignments to desktop_app.smoke through __import__.
+  injected fixture/result assignments to desktop_smoke through __import__.
 - test_desktop_walk_forward_smoke.py directs injected checker assignments to
-  desktop_app.smoke; its other injection logic and assertions are unchanged.
+  desktop_smoke; its other injection logic and assertions are unchanged.
 - test_desktop_smoke_terminal.py and test_desktop_walk_forward_terminal.py
-  assign injected cleanup to both desktop and desktop_app.smoke. The former keeps
+  assign injected cleanup to both desktop and desktop_smoke. The former keeps
   run_gui's terminal cleanup injection; the latter reaches the moved harness.
   Startup fixture injection in test_desktop_smoke_terminal targets
-  desktop_app.smoke. Original-function reads retain the identical compatibility
+  desktop_smoke. Original-function reads retain the identical compatibility
   exports.
 
 Registry and packaging changes are additive: test_repo_layout allows exactly one
-additional directory, desktop_app.smoke. test_import_graph includes its Python files
+additional directory, desktop_smoke. test_import_graph includes its Python files
 and maps package __init__ to the importable package name. UI-text and inline-
 stylesheet scanners include the package. packaging/build_manifest.py adds
-desktop_app/smoke/**/*.py; test_packaging adds an assertion proving every package
+desktop_smoke/*.py; test_packaging adds an assertion proving every package
 source is inventoried. packaging/markauto.spec still analyzes desktop.py.
 test_desktop_smoke_package.py adds cheap identity, injection-global, production
 shape/size, evidence-coverage and static freeze-import reachability checks. No
@@ -3261,9 +3274,9 @@ startup timing, icon, UI correctness, dev setup, locked-source lengths and
 public UI registry checks pass. Ruff 0.16.10 check and format --check on all
 changed Python files, Python 3.11 compileall, both fresh import orders and
 quality_gate (0 findings) pass. The exact tracked-layout test enforces the
-directory registry including desktop_app.smoke; its registry assertion is unchanged.
+directory registry including desktop_smoke; its registry assertion is unchanged.
 
-G3 files, saved_candidate_pool.py, desktop_app/strings/catalog.py, PROJECT_STATE, acceptance
+G3 files, saved_candidate_pool.py, desktop_strings.py, PROJECT_STATE, acceptance
 scores, baseline PNG/metrics/widget-name fixtures and protected documents have
 empty diffs. No baseline refresh is required. Live trading remains permanently
 disabled; OOS consumption, irreversible budgets and fail-closed gates are
@@ -3314,9 +3327,9 @@ independently callable stage per target. The synthetic capture support is in
 do not show windows or set application style, and add no subprocess or sleep.
 The import-graph and repository-layout tests add only test inventory checks.
 
-Production edits are restricted to desktop_app/features/market/dashboard.py, desktop_app/components/charts.py,
-desktop_app/shell/mount.py, desktop_app/components/result_layers.py and
-desktop_app/shell/views.py. MainWindow, desktop_app.shell.main_window public names, strings, widget-
+Production edits are restricted to desktop_market.py, desktop_charts.py,
+desktop_pages/mount.py, desktop_pages/result_layers.py and
+desktop_pages/views.py. MainWindow, desktop_ui public names, strings, widget-
 name fixture, existing snapshot baselines, G3 sources and
 saved_candidate_pool.py are unchanged. No UI text key or acceptance score
 changes. Live trading remains permanently disabled; fail-closed gates, one-time
@@ -3331,22 +3344,22 @@ check remains pending.
 
 | Target | Base lines | New lines | Base/new extracted stages | Largest new stage |
 | --- | ---: | ---: | ---: | ---: |
-| desktop_app/shell/mount.py | 297 | 12 | 0 / 11 | 70 |
-| desktop_app/features/market/dashboard.py | 292 | 41 | 0 / 11 | 57 |
-| desktop_app/components/charts.py | 212 | 37 | 0 / 5 | 50 |
-| desktop_app/components/result_layers.py | 166 | 47 | 0 / 5 | 48 |
-| desktop_app/shell/views.py | 148 | 8 | 0 / 5 | 40 |
+| desktop_pages/mount.py | 297 | 12 | 0 / 11 | 70 |
+| desktop_market.py | 292 | 41 | 0 / 11 | 57 |
+| desktop_charts.py | 212 | 37 | 0 / 5 | 50 |
+| desktop_pages/result_layers.py | 166 | 47 | 0 / 5 | 48 |
+| desktop_pages/views.py | 148 | 8 | 0 / 5 | 40 |
 
 Stage counts exclude pre-existing nested functions. Source hashes normalize
 checkout line endings to LF (the same convention as the locked-source test).
 
 | Changed production source | SHA256 (UTF-8, LF) |
 | --- | --- |
-| desktop_app/shell/mount.py | `27e729421f125d88c4acc82f4b52a8459121224eddbbeecef35dcf76e1e2b531` |
-| desktop_app/features/market/dashboard.py | `4a40956d487b4fd87b755f71597c8139dfc539117e813db7d296b31c273e8a3d` |
-| desktop_app/components/charts.py | `4212088a0d7cab416b1c371701bc6f6f64d9db98aedbd844fbafd207b13e1fb5` |
-| desktop_app/components/result_layers.py | `91ed9b02480db90ba0035e1402914f764f245596d5eb38298b7146a40d3e5ee4` |
-| desktop_app/shell/views.py | `dcaba54b4e3e0304310134ba48c7ca93153ae355015d3bf91f92b1e69efd0bd9` |
+| desktop_pages/mount.py | `27e729421f125d88c4acc82f4b52a8459121224eddbbeecef35dcf76e1e2b531` |
+| desktop_market.py | `4a40956d487b4fd87b755f71597c8139dfc539117e813db7d296b31c273e8a3d` |
+| desktop_charts.py | `4212088a0d7cab416b1c371701bc6f6f64d9db98aedbd844fbafd207b13e1fb5` |
+| desktop_pages/result_layers.py | `91ed9b02480db90ba0035e1402914f764f245596d5eb38298b7146a40d3e5ee4` |
+| desktop_pages/views.py | `dcaba54b4e3e0304310134ba48c7ca93153ae355015d3bf91f92b1e69efd0bd9` |
 
 ### S-R7 before/after page capture hashes
 
@@ -3395,7 +3408,7 @@ MainWindow or page construction. Shell wrappers call getattr at invocation time;
 module wrappers reuse MainWindow.page_services' late global lookup. The
 ui_operations field retains the original UI_OPERATIONS frozenset identity, and
 the private operation-handler mapping retains its keys and function identities.
-No desktop_app.shell.main_window import is introduced into desktop_app.shell.pages. MainWindow remains 378
+No desktop_ui import is introduced into desktop_pages. MainWindow remains 378
 lines and gains no public names. No dependency or lockfile is added.
 
 `tests/test_page_services_r1.py` checks complete AST inventory equality, ordered
@@ -3416,7 +3429,7 @@ behaviors are characterized, including bars/family, refresh_market/import_data
 and method aliases. _busy currently has no page reader; its registered binding
 and typed view are characterized explicitly. PageState contains neither the
 shell nor a shell-bound method. Existing HostMethod declarations, bindings.py,
-mount.py, desktop_app/shell/main_window.py and page bodies retain their behavior and source.
+mount.py, desktop_ui.py and page bodies retain their behavior and source.
 
 Widget-name and desktop_pages_before fixtures are byte-identical; no baseline
 refresh or UI text change is required. G3 sources and saved_candidate_pool.py,
@@ -3461,11 +3474,11 @@ Moved source SHA-256:
 `5019d8dfe99555aab95b15c2cf6c9109a81104608937b7e5609937c8b03b9247`. Both
 compared files use LF; the complete function-definition comparison is exact.
 Ruff 0.16.10 check and format --check on the five changed Python files exit 0.
-`py -3.11 -m compileall -q quantlab desktop_app.shell.pages tools tests desktop.py` and
+`py -3.11 -m compileall -q quantlab desktop_pages tools tests desktop.py` and
 `py -3.11 -m py_compile tools/research_app.py` exit 0.
 ## F1 - Rejected-import gap diagnosis
 
-F1 adds quantlab/data_gap_report.py and desktop_app/features/data/data_gaps.py. The item is
+F1 adds quantlab/data_gap_report.py and desktop_pages/data_gaps.py. The item is
 scoped to a single commit. The report projects only the existing validator's
 session_coverage_gaps coordinates: contract_id, trade_date, session, start and
 end. It never reads bars, research results, OOS/holdout payloads, filenames,
@@ -3499,7 +3512,7 @@ network access, data repair or order-capable call is added.
 Only allowlisted structural values reach the new widgets in either privacy
 state. Paths, filenames, arbitrary error messages and unrelated OOS/holdout
 metadata are omitted in both states. No timer, event filter or deferred deletion
-is added. Parent ownership is explicit. No new objectName or desktop_app.shell.main_window public
+is added. Parent ownership is explicit. No new objectName or desktop_ui public
 name is added. UI, style, import-graph and layout inventories cover the new
 package modules. Default snapshots, widget-name fixtures, theme stylesheet and
 appearance digests are unchanged; no baseline refresh is required.
@@ -3523,7 +3536,7 @@ control is loosened. Existing tests receive only additive inventory assertions.
 
 ## F2 - Saved equity and drawdown overlay
 
-F2 is scoped to a single commit. desktop_app/features/compare/compare_equity.py adds a native
+F2 is scoped to a single commit. desktop_pages/compare_equity.py adds a native
 read-only overlay in the existing collapsed comparison details area, created on
 the first saved-result selection. Default page widgets, snapshots and the
 widget-name inventory are unchanged. No fixture refresh is required.
@@ -3545,7 +3558,7 @@ states that convention. Dates are aligned without filling missing days. Gap
 identities survive reduction. At most eight selected series are displayed with a
 cap note; each curve paints at most 2,048 points, prepared outside paintEvent.
 Labels and line patterns identify series alongside color. The canvas reuses
-desktop_app.components.charts' footer layout helper without changing its public behavior.
+desktop_charts' footer layout helper without changing its public behavior.
 
 The accessible name and summary identify the series count and date range. Mouse
 and arrow-key readouts report only displayed series on observed dates. Legend
@@ -3560,7 +3573,7 @@ counts, corruption, shared axes, different starts, gaps, rebasing, selection
 updates, lazy allocation, privacy states, excluded auxiliary data, the series
 cap and 100,000-point reduction. Raising mocks protect the saved-read and engine
 boundaries. Import, layout and UI/style inventories include the new module.
-Protected engine/provider files, saved_candidate_pool, desktop_app.shell.main_window public names,
+Protected engine/provider files, saved_candidate_pool, desktop_ui public names,
 gates, timeouts, consent controls, theme, scores and PROJECT_STATE are
 unchanged. Live trading remains permanently disabled and no order path is added.
 The user's final visual check remains pending.
@@ -3568,7 +3581,7 @@ The user's final visual check remains pending.
 ## F3 - Walk-forward estimates and failure guidance
 
 F3 is scoped to a single commit. The existing evaluation upper-bound count and
-duration projection in desktop_app/features/walk_forward/wf_wizard.py are reused without changing
+duration projection in desktop_pages/wf_wizard.py are reused without changing
 quantlab/wf_estimate.py, its conservative factor, planning or validation rules.
 The same summary label appears above consent on the final confirmation step and
 returns to the preview step when navigating back. The five-step flow and header
@@ -3588,7 +3601,7 @@ Hints accept only allowlisted codes, never exception text, result values, paths
 or user names. This fixed projection is identical in both privacy states and
 excludes auxiliary OOS/holdout data. Literal ui_text keys are appended in a
 trailing ZH_TW.update block. Existing widget names, default-page content,
-snapshot fixtures, theme, desktop_app.shell.main_window public names and protected sources are
+snapshot fixtures, theme, desktop_ui public names and protected sources are
 unchanged. Live trading remains permanently disabled.
 
 tests/test_wf_guidance_f3.py covers catalogue completeness and fallback,
@@ -3626,7 +3639,7 @@ worker, shows a window, sleeps, accesses the network or changes application
 style.
 
 Live trading remains permanently disabled. Order paths, consent controls, fail-
-closed validation, gates, timeouts, protected sources, desktop_app.shell.main_window public names,
+closed validation, gates, timeouts, protected sources, desktop_ui public names,
 PROJECT_STATE and acceptance scores are unchanged. Existing tests and default-
 page snapshots remain unchanged; no baseline fixture refresh is needed. The
 user's final visual check remains pending.
@@ -3641,7 +3654,7 @@ corrupt state/archive metadata produces an unavailable placeholder. Manual
 backup completions supply session metadata; automatic completions refresh the
 existing durable last_archive state after scheduler completion.
 
-The new desktop_app/features/settings/backup_inspection.py panel provides synchronous read-only
+The new desktop_pages/backup_inspection.py panel provides synchronous read-only
 ZIP central-directory inspection before restore. Reads are limited to the
 22-byte EOCD and at most 4 MiB of central metadata; member payloads, including
 the manifest body, are never opened or decompressed. The summary reports member
@@ -3661,7 +3674,7 @@ restrictions still apply. Dispatch remains ui_backup_restore with the unchanged
 path payload. Consent resets after dispatch; path changes and job completion
 invalidate previews. The existing automatic scheduling, claim_due, watermark,
 gate validation and timeouts are unchanged. Live trading remains permanently
-disabled and no order path is added. Protected sources and desktop_app.shell.main_window public
+disabled and no order path is added. Protected sources and desktop_ui public
 names are unchanged.
 
 Privacy toggles mask time, size, entry names and the selected-path editor. Local
@@ -3681,7 +3694,7 @@ include the modules. The user's final visual check remains pending.
 
 F6 is a single commit. Market preferences include an additive chart_state v1
 container keyed by validated instrument identity and timeframe. Existing global
-preferences and legacy settings remain supported. The desktop_app/features/market/chart_memory.py
+preferences and legacy settings remain supported. The desktop_chart_memory.py
 projection stores only visible start/count, latest-bar anchoring and allowlisted
 enabled indicator IDs. It retains at most 200 entries in insertion/update order,
 evicts the oldest, bounds each entry, and ignores unknown fields, invalid
@@ -3717,7 +3730,7 @@ equality, privacy states, annotation/order snapshot preservation, latest-bar
 growth, pop-out sharing, save counts and write failure. Module inventories
 include the memory helper. Live trading remains permanently disabled; no order
 path, job dispatch, consent, gate, threshold, budget, timeout, protected source,
-acceptance score or desktop_app.shell.main_window public name changes. The user's final visual
+acceptance score or desktop_ui public name changes. The user's final visual
 check remains pending.
 ## Round 3 X-U2: compact explanation controls
 
@@ -3761,7 +3774,7 @@ Default help geometry changes affect strategy, backtest, compare, paper and
 settings. Snapshot review is isolated to a separate fixture-only commit for
 02_full.png, 02_viewport.png, 03_full.png, 03_viewport.png, 04_full.png,
 04_viewport.png, 05_full.png, 05_viewport.png, 07_full.png, 07_viewport.png and
-metrics.json under tests/fixtures/desktop_pages_before. No public desktop_app.shell.main_window name or module
+metrics.json under tests/fixtures/desktop_pages_before. No public desktop_ui name or module
 is added. G3 sources, saved_candidate_pool, PROJECT_STATE, acceptance scores,
 gates, thresholds and timeouts have empty diffs; live trading remains disabled.
 
@@ -3787,7 +3800,7 @@ cancel-hint labels, catalog wiring, accessibility, palette availability, running
 progress, terminal success/failure, cancellation idempotency, other prerequisite
 hints and a SimpleNamespace host without job_progress or job_feedback. It uses
 no shown windows, style changes, sleeps, network or worker subprocesses. No new
-widget, public desktop_app.shell.main_window name, timer, event filter or deferred deletion is
+widget, public desktop_ui name, timer, event filter or deferred deletion is
 added. Automation evidence claims only "not broken"; visual quality remains the
 user's final check.
 
@@ -3834,7 +3847,7 @@ cover boundaries, placement, exact KPI parity, privacy, empty/failure reset,
 catalog neutrality and accessibility without showing windows or starting jobs.
 The existing presentation tests, KPI assertions and default-page fixtures retain
 their original expectations. Import-graph checks pin the new policy module's
-lack of dependencies. No new stylesheet, button, public desktop_app.shell.main_window name, timer,
+lack of dependencies. No new stylesheet, button, public desktop_ui name, timer,
 event filter or deferred deletion is introduced.
 
 Automation evidence claims only "not broken". The user's final visual check
@@ -3847,7 +3860,7 @@ label is added.
 
 The stop-new-orders button and host callback open the same patchable three-
 choice confirmation before freezing. The pure `stop_exposure_text` helper in
-`desktop_app/features/paper/paper.py` lists each nonzero signed snapshot position as symbol,
+`desktop_pages/paper.py` lists each nonzero signed snapshot position as symbol,
 side and absolute quantity, and sums absolute quantities as gross contract
 exposure. It performs no broker calls or currency valuation. Snapshot inspection
 uses the existing read-only journal reader; an empty account still prompts. If
@@ -3886,7 +3899,7 @@ visual check remains pending.
 
 ## TASK X-U7: inline error next steps
 
-`desktop_app/components/error_guidance.py` owns the common B1-code to next-step
+`desktop_pages/error_guidance.py` owns the common B1-code to next-step
 catalog-key mapping and the pure `next_step(code)` lookup. Unknown and unmapped
 codes add no text. The existing B1 message remains the prefix; ERROR_TABLE and
 existing catalog values are unchanged. New catalog values occupy one trailing
@@ -3923,7 +3936,7 @@ exercises every B1 code and a bogus code through next_step, pins the unchanged
 ERROR_TABLE source, patches QMessageBox methods to fail during a real typed form
 failure, and covers privacy, reset, job projection, accessibility and
 catalog/module registration. Import-graph checks pin the display dependencies.
-No new button, stylesheet, timer, event filter, deferred deletion or desktop_app.shell.main_window
+No new button, stylesheet, timer, event filter, deferred deletion or desktop_ui
 public name is introduced. Live trading remains disabled; consent controls,
 order paths, protected sources, gates, thresholds and timeouts are unchanged. No
 evaluation-period data or label is added. The item is a single commit.
@@ -3960,7 +3973,7 @@ and the import-graph test pins the sequencer's lack of dependencies.
 The cheap test_quick_start_u3 tests cover consent, busy refusal, recorded
 operation order, blocked sockets, each stage failing, cancellation, reset,
 worker isolation, results labelling and privacy masking without shown windows,
-new threads, sleeps or network. MainWindow and desktop_app.shell.main_window public names are
+new threads, sleeps or network. MainWindow and desktop_ui public names are
 unchanged. No paper/live navigation, paper job, new broker or order path is
 introduced. Existing confirmations, paper consent, protected sources, gates,
 thresholds and timeouts are unchanged. Live trading remains disabled. New
@@ -3996,7 +4009,7 @@ including with privacy enabled. The table disables editing and interactive
 sorting and has no order actions. Live trading remains disabled, and existing
 paper_confirm, confirmations, job controls, protected sources, gates and timeouts
 are unchanged. No new order or broker path is introduced. New text uses literal
-ui_text keys appended in a trailing desktop_app/strings/catalog.py catalog update.
+ui_text keys appended in a trailing desktop_strings.py catalog update.
 
 tests/test_paper_timeline_u9.py covers pure classification, timestamp ordering,
 sequence ties, the legacy fixture, malformed rows, empty data, bounded 10k-row
@@ -4035,8 +4048,8 @@ Existing consent and paper confirmations remain required; live trading remains
 disabled, with no new broker or order path, timeout or gate change.
 
 The pure quantlab/ui_preferences.py projections have Qt-free unit tests.
-desktop_app/features/settings/preferences.py owns shell serialization and bounded restoration;
-desktop_app/components/forms.py owns family validation. tests/test_preferences_u8.py covers
+desktop_pages/preferences.py owns shell serialization and bounded restoration;
+desktop_forms.py owns family validation. tests/test_preferences_u8.py covers
 identity reorder/fallback, independent families, invalid values, strict bounds,
 privacy allowlists, bare hosts, settings None, corrupt reads and existing
 market/disclosure/geometry round trips. Registry tests include the new modules.
@@ -4105,7 +4118,7 @@ menus, modules or stylesheet rules are added and the widget-name fixture is
 unchanged. The navigation list now takes the first Tab stop, so the selected
 navigation row renders in the active selection color: the seven viewport
 baselines and the R7 focus-chain characterization were refreshed in two separate
-fixture-only commits. MainWindow and desktop_app.shell.main_window public names are unchanged. Paper consent and existing confirmations remain required. Live trading
+fixture-only commits. MainWindow and desktop_ui public names are unchanged. Paper consent and existing confirmations remain required. Live trading
 stays disabled; no order/broker path, protected source, threshold, gate, timeout,
 evaluation-data text or acceptance score changes. The item is a single feature
 commit plus the two fixture-only commits described above.
@@ -4128,7 +4141,7 @@ claim that those operations occurred.
 
 ## T-R4: page identity survives visual reordering
 
-`desktop_app/shell/palette_commands.py` defines the seven unique page ids and the
+`desktop_pages/palette_commands.py` defines the seven unique page ids and the
 documented construction/default-order mappings. `install_onboarding` captures
 weak references to the actual stack widgets once before its remove/add reorder;
 this includes the scroll-area wrappers around ordinary pages. `page_widget`
@@ -4163,11 +4176,11 @@ without network, sleep, style changes or added skips. Window teardown emits no
 Qt warnings.
 
 Regression sensitivity was verified by temporarily substituting only
-`git show 4c72a30:desktop_app/shell/shortcuts.py` and running the real-window test:
+`git show 4c72a30:desktop_pages/shortcuts.py` and running the real-window test:
 exit 1, settings `logs.call_count` was 0 instead of 1, and data at index 6 was 1
 instead of 0. Restoring the implementation yields exit 0 for both new tests. The
 separate AST regression finds no numeric stack/navigation identity comparison in
-`desktop_app/**/*.py` or `desktop_app/shell/main_window.py`.
+`desktop_pages/*.py` or `desktop_ui.py`.
 
 Local evidence uses `QT_QPA_PLATFORM=offscreen`, `PYTHONUTF8=1`, and the
 specified shared interpreter at `C:/Users/Mark/Desktop/Mark
@@ -4208,8 +4221,8 @@ convention:
 | `quantlab/strategies.py` | `f4bfcf36f99d6b2e3e373dca019a86030997e382a3c42480f388347ec8490def` |
 | `quantlab/backtest.py` | `2dcee78c0c7a7d09c54a0d362b6d0a2be957cf910046d3bd6a89525761da5bb6` |
 | `quantlab/data.py` | `bd14fce1bacd1832ddf41a705b9bcaa3fa6226a27feba31d5e240b5f481e42e4` |
-| `quantlab/assistant/adapters/chatgpt/auth.py` | `4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf` |
-| `quantlab/assistant/adapters/chatgpt/provider.py` | `9ceed8ae5c779ebbab725518a7e8bf785e2122de6c95efa915ba69caa5c4f903` |
+| `desktop_chatgpt_auth.py` | `4b9320c7552dd8059d6b59d67562706077845bc22037df1f04a54de552f1a1cf` |
+| `desktop_chatgpt_provider.py` | `9ceed8ae5c779ebbab725518a7e8bf785e2122de6c95efa915ba69caa5c4f903` |
 | `quantlab/saved_candidate_pool.py` | `0a1020d5151fafd3ee4e37e8d5d4822176baf5563aaf9bbb03c156eeb3bedd43` |
 
 The change set contains only page identity/dispatch, its regression, additive
@@ -4230,7 +4243,7 @@ report validation no longer imports the CLI. `__main__` retains its existing
 `config_from_json`, `execute` and `main` exports.
 
 All pre-existing public names in the five affected consumer modules and
-`desktop_app.shell.main_window` retain their original import paths. The leaf adds only the mutex
+`desktop_ui` retain their original import paths. The leaf adds only the mutex
 class and constant to its public names. The mutex's canonical module is
 `quantlab.runtime_support`; its old `quantlab.desktop_runtime` alias resolves
 the same class, including old pickle lookups. Recovery and worker entry points
@@ -4268,7 +4281,7 @@ also declares `__all__` containing its complete original public-name set,
 including the `urllib` package; wildcard imports retain the same names. The
 eight original application modules had no `__all__`. Their fresh-interpreter
 public-name sets are exactly equal before
-and after, and `desktop_app.shell.main_window` has exactly the same public names. All application
+and after, and `desktop_ui` has exactly the same public names. All application
 import targets, symbol lists and their initialization order are unchanged,
 including imports from G3 sources and operation registration dependencies.
 
@@ -4328,11 +4341,11 @@ compatibility binding. F841 actions are detailed separately.
 | `quantlab/desktop_errors.py` | 3 / 0 | export `ErrorCode`, `ErrorText`, `ERROR_LABELS` |
 | `quantlab/market_history.py` | 2 / 0 | export `replace`, `io` |
 | `quantlab/paper.py` | 1 / 0 | export `Any` |
-| `desktop_app/smoke/recovery.py` | 1 / 0 | export `Path` |
-| `desktop_app/components/widgets.py` | 1 / 0 | export `QFileDialog` |
-| `desktop_app/features/paper/paper.py` | 4 / 0 | export `read_json`, `write_json`, `load_dataset`, `QFileDialog` |
-| `desktop_app/shell/views.py` | 4 / 0 | export `read_json`, `load_dataset`, `load_result`, `result_name` |
-| `desktop_app/features/market/dashboard.py` | 2 / 0 | export `MarketValidationError`; F841: `exc` |
+| `desktop_recovery_smoke.py` | 1 / 0 | export `Path` |
+| `desktop_pages/widgets.py` | 1 / 0 | export `QFileDialog` |
+| `desktop_pages/paper.py` | 4 / 0 | export `read_json`, `write_json`, `load_dataset`, `QFileDialog` |
+| `desktop_pages/views.py` | 4 / 0 | export `read_json`, `load_dataset`, `load_result`, `result_name` |
+| `desktop_market.py` | 2 / 0 | export `MarketValidationError`; F841: `exc` |
 | `tests/test_baseline_download.py` | 1 / 0 | delete `json` |
 | `tests/test_chatgpt_plan.py` | 4 / 0 | F841: four `tmp_path` bindings; keep `self.tmp_path` evaluation |
 | `tests/test_desktop_smoke_terminal.py` | 1 / 0 | delete `subprocess`; preserve subprocess imports inside embedded programs |
@@ -4361,7 +4374,7 @@ the specified shared interpreter with `QT_QPA_PLATFORM=offscreen` and
 | `tests/test_desktop_ui_polish_b.py:76` (`root`) | remove unused context-manager binding; enter/exit and context body unchanged |
 | `tests/test_help_reachability.py:19` (`folder`) | remove unused context-manager binding; enter/exit and context body unchanged |
 | `tests/test_strategy_tabs.py:66` (`temporary`) | remove unused context-manager binding; enter/exit and context body unchanged |
-| `desktop_app/features/market/dashboard.py:669` (`exc`) | remove unused exception binding; handler unchanged |
+| `desktop_market.py:669` (`exc`) | remove unused exception binding; handler unchanged |
 | `tests/test_chatgpt_plan.py:216,238,273,287` (`tmp_path`) | remove only assignment targets; retain each `self.tmp_path` attribute evaluation |
 
 No original assertion, test method, fixture or skip decorator is removed or
@@ -4380,11 +4393,11 @@ their case counts are identical for each substep:
 | `quantlab/desktop_errors.py` | `test_error_catalog_b1.py` | 8 / 8 |
 | `quantlab/market_history.py` | `test_market_history.py` | 37 / 37 |
 | `quantlab/paper.py` | `test_paper.py` | 59 / 59 |
-| `desktop_app/smoke/recovery.py` | `test_recovery_frozen_smoke.py` | 7 / 7 |
-| `desktop_app/components/widgets.py` | `test_panel_card_c3.py` | 4 / 4 |
-| `desktop_app/features/paper/paper.py` | `test_paper_tabs_c6.py` | 11 / 11 |
-| `desktop_app/shell/views.py` | `test_desktop_pages.py` | 14 / 14 |
-| `desktop_app/features/market/dashboard.py` | `test_desktop_market.py` | 21 / 21 |
+| `desktop_recovery_smoke.py` | `test_recovery_frozen_smoke.py` | 7 / 7 |
+| `desktop_pages/widgets.py` | `test_panel_card_c3.py` | 4 / 4 |
+| `desktop_pages/paper.py` | `test_paper_tabs_c6.py` | 11 / 11 |
+| `desktop_pages/views.py` | `test_desktop_pages.py` | 14 / 14 |
+| `desktop_market.py` | `test_desktop_market.py` | 21 / 21 |
 
 The unchanged registry/public-name tests pass (6 tests); import-graph (11), UI-
 text (13), layout (16), function-length (2), and Ruff-configuration (7) checks
@@ -4413,8 +4426,8 @@ changes.
 | `quantlab/backtest.py` | `6295ed2e256cb494b43af550e438583b288f494b07fb86db91ef35f82246d91e` |
 | `quantlab/data.py` | `7ad965d33b856e345b4c5a091b675dd6a4b9a88fc5668170184347cd382ff0fb` |
 | `quantlab/saved_candidate_pool.py` | `20885d4e7680b34eac83ad902cae0819d30f50d178ff217b7093a0a47fda3c3d` |
-| `quantlab/assistant/adapters/chatgpt/auth.py` | `316db25c6d10aac93453d4da68784e09ec9a7270c82b438837339365e90fb15f` |
-| `quantlab/assistant/adapters/chatgpt/provider.py` | `71e9e54a5f2bac93aab0036c60bae4655ca3e0b45cf38e4f7999e5eb3b9e045e` |
+| `desktop_chatgpt_auth.py` | `316db25c6d10aac93453d4da68784e09ec9a7270c82b438837339365e90fb15f` |
+| `desktop_chatgpt_provider.py` | `71e9e54a5f2bac93aab0036c60bae4655ca3e0b45cf38e4f7999e5eb3b9e045e` |
 
 The following 10 F401/F841 exceptions remain; scope is partial. No exception was
 added. Seven files have concurrent-lane ownership, two sources form part of
@@ -4423,12 +4436,12 @@ persisted identities, and the research-app entry belongs to R8.
 | Retained file | Existing codes | Reason |
 | --- | --- | --- |
 | `desktop.py` | `F401` | Structure R2 relocates its smoke harness. |
-| `desktop_app/features/backtest/backtest.py` | `F401` | UX U4 changes this page; UX U3 also edits it. |
-| `desktop_app/features/compare/compare.py` | `F401` | Feature F2 changes this page. |
-| `desktop_app/features/data/data.py` | `F401` | Feature F1 changes this page. |
-| `desktop_app/features/strategy/strategy.py` | `F401` | Feature F3 changes this page. |
-| `desktop_app/features/walk_forward/wf_wizard.py` | `F841` | Feature F3 changes this wizard. |
-| `desktop_app/shell/main_window.py` | `E402`, `F401`, `F841` | Feature F1 changes the shell; UX U3 also edits it. Public names and patch targets stay intact. |
+| `desktop_pages/backtest.py` | `F401` | UX U4 changes this page; UX U3 also edits it. |
+| `desktop_pages/compare.py` | `F401` | Feature F2 changes this page. |
+| `desktop_pages/data.py` | `F401` | Feature F1 changes this page. |
+| `desktop_pages/strategy.py` | `F401` | Feature F3 changes this page. |
+| `desktop_pages/wf_wizard.py` | `F841` | Feature F3 changes this wizard. |
+| `desktop_ui.py` | `E402`, `F401`, `F841` | Feature F1 changes the shell; UX U3 also edits it. Public names and patch targets stay intact. |
 | `quantlab/research_analysis.py` | `F401` | `_implementation()` hashes this source into plan packets; reconciliation rejects an existing plan when that hash changes. Even aliases change persisted-plan validity. |
 | `quantlab/walk_forward.py` | `F401` | `SOURCE_FILES` includes this source; its content hash is part of the walk-forward binding and identity. Re-export spelling changes that identity. |
 | `tools/research_app.py` | `F401` | Development-only Streamlit workspace moved by R8; its exception is kept. |
@@ -4468,7 +4481,7 @@ non-generic catalog entries and existing uppercase registries. It captures final
 values after every update block and appended help patch, including
 `keyboard.help`; it is independent of the renamed catalog.
 
-`desktop_app.strings.catalog.TEXT_ALIASES` maps those historical keys directly to **1,269**
+`desktop_strings.TEXT_ALIASES` maps those historical keys directly to **1,269**
 semantic catalog keys. Aliases contain identifiers only, never rendered text.
 `ui_text(key, locale=None)` performs one additional dictionary lookup before its
 existing call-time locale selection and default fallback. No alias chains,
@@ -4781,7 +4794,7 @@ float is confined to internal statistical computation. Counts are integers.
 | Required-days cap | 1,000,000,000; larger estimates are None with a reason |
 | Invalid planning moments | mean <= 0 or sd == 0 are None with reasons |
 
-`desktop_app.features.walk_forward.presenter.oos_statistics_text` builds the catalog-based statistics
+`desktop_walk_forward.oos_statistics_text` builds the catalog-based statistics
 block during worker compaction. The compact IPC object includes only bounded
 derived display text, never raw daily-return arrays. The existing result panel
 displays the precomputed text without recomputing on refresh or paint. Its label
@@ -4829,7 +4842,7 @@ in both halves produce None statistics plus reasons, with no partial result.
 The cut has no configurable parameter. One constant half is valid when the other
 half has positive variance.
 
-`desktop_app.features.walk_forward.presenter.oos_statistics_text` adds exactly one catalog-based line
+`desktop_walk_forward.oos_statistics_text` adds exactly one catalog-based line
 for decline, increase (非未來保證), no detectable difference (不等於沒有變化), or
 the reason. It creates no widgets or UI operations. These derived display data
 are not written back to results, metrics, journals, manifests or any file and
@@ -4874,7 +4887,7 @@ Other high flags are sorted by code; duplicate flags are removed. Medium flags
 are sorted notes only for statistical_edge. B2 owns the bootstrap seed, cap and
 12-place inference precision; B3 adds no randomness or resampling.
 
-`desktop_app.features.walk_forward.presenter` renders catalog names and explanations at the top of the
+`desktop_walk_forward` renders catalog names and explanations at the top of the
 existing OOS statistics block, separately from stage codes. Only
 completed runs with evaluated folds receive a level. Failed/interrupted runs
 and runs without evaluated folds display reasons without a level. The text
@@ -4919,7 +4932,7 @@ within the existing job deadline; process cancellation and DeadlineExceeded
 also clear the scenario display. Window close uses the existing worker stop
 flow without a scenario journal or scenario reconciliation operation.
 
-`desktop_app/features/capital_scenario/worker.py` accepts exactly reference, start_equity, threshold,
+`desktop_capital_scenario.py` accepts exactly reference, start_equity, threshold,
 horizon_days, paths and seed. The reference uses the existing `_folder` guard.
 Only `read_walk_forward_state` followed by `merge_oos_daily_returns` supplies
 inputs inside the worker. Evaluated OOS folds are concatenated in index order;
@@ -5018,7 +5031,7 @@ remain unverified until the owner runs the documented account checks.
 ## R1-A: explicit reconciliation of an orphaned ChatGPT reservation
 
 Owner approval (2026-10-22) permits changes only to the G3 files
-`quantlab/assistant/adapters/chatgpt/provider.py` and `quantlab/research.py` for PR #76's D1=K1,
+`desktop_chatgpt_provider.py` and `quantlab/research.py` for PR #76's D1=K1,
 D2=two-step recovery, D3=300 seconds and D4=`user_confirmed_consumed` design.
 No real account call, OAuth interaction or official usage-page read is part of
 implementation or automated verification.
@@ -5099,7 +5112,7 @@ historical catalogue bytes remain locked. Real-account acceptance is untested.
 ## R2-A: explicit reconciliation of a uniquely mapped finished-unknown ChatGPT receipt
 
 Owner approval (2026-10-23, PR #83, D0-D10 as recommended) permits changes only to
-the G3 file `quantlab/assistant/adapters/chatgpt/provider.py`, one appended saved-candidate SIWC
+the G3 file `desktop_chatgpt_provider.py`, one appended saved-candidate SIWC
 profile and the listed fixture re-pins. `quantlab/research.py` is unchanged. No
 real account call, OAuth interaction or official usage-page read is part of
 implementation or automated verification.
@@ -5182,7 +5195,7 @@ Real-account acceptance is untested.
 ## Headerless official stream: Content-Type exception
 
 Owner approval (2026-10-23) permits one narrow change to the G3 file
-`quantlab/assistant/adapters/chatgpt/provider.py`, one appended saved-candidate SIWC profile and the
+`desktop_chatgpt_provider.py`, one appended saved-candidate SIWC profile and the
 necessary fixture re-pins. A diagnostic with the owner's sign-in showed that the
 official streamed POST /v1/responses reply carries no Content-Type header while
 its body is a valid event stream ending in response.completed. The transport now
@@ -5309,7 +5322,7 @@ without initial writes. Only user toggles persist; unknown/old keys survive.
 Malformed preference containers fall back without repairing the source file.
 Hidden buttons have no orphaned prerequisite label. Ctrl+K import reveals the
 local source before focusing its existing action. All new catalog entries are
-in one explicitly marked Lane block in desktop_app/strings/catalog.py; unused draft keys
+in one explicitly marked Lane block in desktop_strings.py; unused draft keys
 are removed and old superseded captions remain explicitly retained.
 
 Preview UI.cmd and tools/ui_redesign_preview.py create a disposable synthetic
@@ -5373,7 +5386,7 @@ formal acceptance, model verification or permanently disabled live trading.
 
 Installed long-TEMP verification found that the disposable extended local-drive
 dataset filename reached `validate_analysis_request` as an external reference.
-`desktop_app.smoke.recovery._prepare_plan` now uses `canonical_path` only when
+`desktop_recovery_smoke._prepare_plan` now uses `canonical_path` only when
 serializing that already verified synthetic dataset reference. Native file I/O
 keeps its extended spelling. The request validator, source identity, admission,
 launch commit, original-handle containment and strict stop receipt remain
@@ -5778,7 +5791,7 @@ tick/minute/freshness changes or backfill, and evicted on unsubscribe. Retention
 is trimmed on backfill and live trade-date changes; deque bounds still apply on
 every append. Replayed ticks and unchanged polls preserve market_revision.
 
-Before changing desktop_app/components/charts.py, characterization tests passed for atomic
+Before changing desktop_charts.py, characterization tests passed for atomic
 validation (numeric/OHLC/volume, contract, interval and trace identity), empty
 series, and the inclusive 100,000-bar limit. append_bar and replace_last_bar use
 the same per-bar validator. They accept host-supplied display data only, clear
@@ -5882,10 +5895,10 @@ resolving contracts. Settings shape/identity validation remains at settings load
 restore does not repeat it. The P1 transport/wiring fixtures and assertions are
 unchanged. Regression coverage: tests/test_watchlist_settings.py.
 
-Slice-2 files added: desktop_app/features/trading/market_watch.py, market_watch_rows.py;
+Slice-2 files added: desktop_trading/market_watch.py, market_watch_rows.py;
 quantlab/trading/application/watchlist.py;
 quantlab/trading/runtime/watchlist_settings.py; tests/test_market_watch_ui.py.
-Existing files extended: desktop_app/strings/catalog.py; application/contracts.py, facade.py,
+Existing files extended: desktop_strings.py; application/contracts.py, facade.py,
 contextnavigation.py, market_views.py, live_market.py, market_cycle.py;
 runtime/bootstrap.py; this contract. Slice-1 edits remain intact. No locked
 file, gate implementation, window.py or workspaces.py was edited for this slice.
@@ -5975,14 +5988,14 @@ Criteria-T2.json review against 22d5dc7 plus the seven new T2 Python files:
 | 8 | Poll characterization and five workspace extension tests pass host-offscreen; market-only poll updates all three panels, retaining table objects/selections without reset/data changes elsewhere. |
 | 9 | Existing row/widget tests cover freshness text/time/palette, unknown facts, gap/history error/retry and instrument-independent components. |
 | 10 | Object/accessibility names, actual Tab/Space navigation and minimum-window/large-font geometry tests pass host-offscreen. Required controls remain scroll-reachable. |
-| 11 | desktop_app/features/market/dashboard.py unchanged; C5 and test_desktop_market.py pass. Archive opens by keyboard and retains legacy routes. Broader legacy filesystem-dependent tests require controller rerun. |
+| 11 | desktop_market.py unchanged; C5 and test_desktop_market.py pass. Archive opens by keyboard and retains legacy routes. Broader legacy filesystem-dependent tests require controller rerun. |
 | 12 | No UiAction additions or order controls; seven new modules have responsibility docstrings and <=400 lines: widget 294, rows 128, application watchlist 55, runtime settings 39, widget tests 331, workspace tests 161, probe 125. |
 | 13 | Review: typed data is trusted; optional missing facts remain Unknown. Worker exceptions surface a request-error label; boundary/settings errors use existing codes. UI tests assert display/wiring, with subTest tables; no old test is weakened/skipped/deleted. |
-| 14 | Full tracked diff from 22d5dc7 has no G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_app/features/market/dashboard.py, aggregate_bars or gate changes. Live execution stays disabled. |
+| 14 | Full tracked diff from 22d5dc7 has no G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_market.py, aggregate_bars or gate changes. Live execution stays disabled. |
 | 15 | Exact gate commands/results follow. Filesystem-blocked runs are the explicit t2-base.md exceptions, not passing tests. No PR-head SHA was created: commit/push/branch/reset/checkout are prohibited for this slice. |
 | 16 | Physical Windows screen, native 150% scaling, native 200% scaling and user's real market viewing: **PENDING USER CONFIRMATION**. All local UI evidence is labelled host-offscreen. |
 
-Slice-3 files: desktop_app/features/trading/window.py, workspaces.py, market_watch.py;
+Slice-3 files: desktop_trading/window.py, workspaces.py, market_watch.py;
 trading_runtime.py; tests/test_trading_ui.py, test_trading_ui_market_watch.py,
 test_live_market_repairs.py; this contract. Slices 1–2 are retained.
 
@@ -6023,8 +6036,8 @@ The 23 changed/new Python paths used for formatting and compilation are:
 
 ```powershell
 $T2Python = @(
-  'desktop_app/components/charts.py', 'desktop_app/strings/catalog.py',
-  'desktop_app/features/trading/window.py', 'desktop_app/features/trading/workspaces.py',
+  'desktop_charts.py', 'desktop_strings.py',
+  'desktop_trading/window.py', 'desktop_trading/workspaces.py',
   'quantlab/trading/application/contextnavigation.py',
   'quantlab/trading/application/contracts.py',
   'quantlab/trading/application/facade.py',
@@ -6034,8 +6047,8 @@ $T2Python = @(
   'quantlab/trading/runtime/bootstrap.py',
   'tests/test_desktop_charts.py', 'tests/test_live_market_repairs.py',
   'tests/test_live_market_service.py', 'tests/test_trading_ui.py',
-  'trading_runtime.py', 'desktop_app/features/trading/market_watch.py',
-  'desktop_app/features/trading/market_watch_rows.py',
+  'trading_runtime.py', 'desktop_trading/market_watch.py',
+  'desktop_trading/market_watch_rows.py',
   'quantlab/trading/application/watchlist.py',
   'quantlab/trading/runtime/watchlist_settings.py',
   'tests/test_market_watch_ui.py', 'tests/test_trading_ui_market_watch.py',
@@ -6096,7 +6109,7 @@ checkout and GitNexus analyze in this working tree.
 | 10 | Two characterization tests passed before editing _overview_page/apply_state and pass afterward. Those modules only host/alias/render the widget. market_revision updates status, summary and quote cells in place, preserving selection and table models. |
 | 11 | AST comparison confirms old StrategyView/PositionView/UiState fields unchanged in order/type/default, and additions defaulted at the end. Old-snapshot decoding remains covered by test_market_series_transport. |
 | 12 | New module line counts: dashboard 164, rows 135, UI tests 197, row tests 114, characterization 58. Each has a responsibility docstring. New StatusLight is frozen; money stays Decimal. Typed facts are trusted; no swallowed exceptions or new redundant validation. UI tests assert display/wiring with subTest tables. No existing test weakened. |
-| 13 | Full diff leaves G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_app/features/market/dashboard.py, chart_data.py and both gates untouched. UiAction is AST-identical to base; live execution remains disabled. |
+| 13 | Full diff leaves G3, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json, desktop_market.py, chart_data.py and both gates untouched. UiAction is AST-identical to base; live execution remains disabled. |
 | 14 | Individual commands and exact exits follow. Filesystem-denied suites are controller-authorized sandbox exceptions, not passes; rerun outside sandbox. |
 | 15 | Physical Windows screen, 150%/200% scaling and real automated-trading monitoring remain **PENDING USER CONFIRMATION**; all UI evidence is host-offscreen. |
 
@@ -6110,7 +6123,7 @@ them. No re-index was run per controller instruction. Final MCP
 processes, MEDIUM risk, with no partial/truncated flags. This is navigation
 evidence, not a substitute for tests or review of untracked new files.
 
-Slice-2 changed files: desktop_app/strings/catalog.py; desktop_app/features/trading/dashboard.py,
+Slice-2 changed files: desktop_strings.py; desktop_trading/dashboard.py,
 dashboard_rows.py, workspaces.py, window.py; quantlab/trading/application/views.py;
 tests/test_dashboard_characterization.py, test_dashboard_ui.py; this contract.
 All slice-1 files and tests are retained.
@@ -6134,8 +6147,8 @@ Host-offscreen commands on 2026-10-29 from the repository root, with
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_page_services_r1.py` | 0 |
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -X faulthandler -m unittest discover -s tests -p test_market_series_transport.py` | 0 |
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" check .` | 0 |
-| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" format --check desktop_app/strings/catalog.py desktop_app/features/trading/dashboard.py desktop_app/features/trading/dashboard_rows.py desktop_app/features/trading/window.py desktop_app/features/trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
-| `py -3.11 -m compileall -q desktop_app/strings/catalog.py desktop_app/features/trading/dashboard.py desktop_app/features/trading/dashboard_rows.py desktop_app/features/trading/window.py desktop_app/features/trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" format --check desktop_strings.py desktop_trading/dashboard.py desktop_trading/dashboard_rows.py desktop_trading/window.py desktop_trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
+| `py -3.11 -m compileall -q desktop_strings.py desktop_trading/dashboard.py desktop_trading/dashboard_rows.py desktop_trading/window.py desktop_trading/workspaces.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_dashboard_characterization.py tests/test_dashboard_rows.py tests/test_dashboard_ui.py tests/test_market_series_transport.py tests/test_trading_application.py` | 0 |
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/quality_gate.py` | 0 |
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
 | `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/check_trading_architecture.py` | 0 |
@@ -6207,7 +6220,7 @@ existing 30-second coverage contract is preserved; dashboard display additionall
 requires the shared LIVE classification. This keeps the existing performance
 read model compatible while preventing delayed dashboard valuations.
 
-desktop_app/features/trading/dashboard_rows.py formats status lights, textual red summaries,
+desktop_trading/dashboard_rows.py formats status lights, textual red summaries,
 today items, strategies, positions, issues and recent events. It imports no Qt
 and computes no money or freshness. Market labels and levels reuse
 market_watch_rows.freshness_text, with only STOPPED promoted to red. DELAYED is
@@ -6215,7 +6228,7 @@ warning, CLOSED/UNKNOWN muted. Pending issues preserve their supplied order;
 events use existing event labels, most recent first. Literal strings live in
 the trailing Lane LM1 dashboard catalog block.
 
-Changed files: desktop_app/strings/catalog.py; desktop_app/features/trading/dashboard_rows.py;
+Changed files: desktop_strings.py; desktop_trading/dashboard_rows.py;
 quantlab/trading/application/{contracts,views,state,events,performance,workflows}.py;
 tests/{test_dashboard_rows,test_trading_application,test_market_series_transport}.py;
 this implementation contract.
@@ -6226,8 +6239,8 @@ below was run from the repository root; exit codes are recorded explicitly.
 | Command | Exit |
 |---|---:|
 | `.venv\Scripts\ruff.exe check .` | 0 |
-| `.venv\Scripts\ruff.exe format --check desktop_app/strings/catalog.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_app/features/trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
-| `py -3.11 -m compileall -q desktop_app/strings/catalog.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_app/features/trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
+| `.venv\Scripts\ruff.exe format --check desktop_strings.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
+| `py -3.11 -m compileall -q desktop_strings.py quantlab/trading/application/contracts.py quantlab/trading/application/events.py quantlab/trading/application/performance.py quantlab/trading/application/state.py quantlab/trading/application/views.py quantlab/trading/application/workflows.py tests/test_market_series_transport.py tests/test_trading_application.py desktop_trading/dashboard_rows.py tests/test_dashboard_rows.py` | 0 |
 | `.venv\Scripts\python.exe tools/quality_gate.py` | 0 |
 | `.venv\Scripts\python.exe -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
 | `.venv\Scripts\python.exe -m unittest discover -s tests -p test_dashboard_rows.py -v` | 0 |
@@ -6497,7 +6510,7 @@ Each test row was executed as its own process, not a combined test discovery.
 | `git diff --check` | 0 |
 | `py -3.11 tools/quality_gate.py` | 0 |
 | `py -3.11 -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
-| `rg -n '^\s*(import shioaji\b|from shioaji\b)' quantlab tests desktop_app.features.trading` | 0 (only sdk_loader.py:16) |
+| `rg -n '^\s*(import shioaji\b|from shioaji\b)' quantlab tests desktop_trading` | 0 (only sdk_loader.py:16) |
 
 Ruff emits pre-existing inaccessible-directory warnings and exits 0. Architecture
 reports `0 violation(s)`; quality gate reports `0 finding(s)`. Detailed command

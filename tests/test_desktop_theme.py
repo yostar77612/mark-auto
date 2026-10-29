@@ -77,7 +77,7 @@ class DesktopThemeTests(unittest.TestCase):
         buttons = window.findChildren(QPushButton)
         self.assertTrue(buttons)
         for button in buttons:
-            # UI-1 C2 adds the onboardingChip role (QSS rules in desktop_theme); every button still needs a known role.
+            # UI-1 C2 adds the onboardingChip role (QSS rules in desktop_app.shell.theme); every button still needs a known role.
             self.assertIn(button.property('role'), ('primary', 'secondary', 'danger', 'onboardingChip', 'taskChoice'), button.objectName())
             if button.property('role') == 'taskChoice':
                 self.assertTrue(button.isCheckable())

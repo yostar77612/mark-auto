@@ -16,7 +16,7 @@
   },
   {
     "file": "tests/test_no_hardcoded_ui_text.py",
-    "edit": "Register desktop_app/shell/accessibility.py in UI_MODULES.",
+    "edit": "Register desktop_accessibility.py in UI_MODULES.",
     "reason": "Add the new presentation helper to the existing exhaustive CJK AST guard; all assertions remain unchanged."
   },
   {

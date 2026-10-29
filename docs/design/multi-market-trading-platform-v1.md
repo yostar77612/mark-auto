@@ -49,7 +49,7 @@
 | [quantlab/paper.py](../../quantlab/paper.py) | 紙上委託、事件及風控日誌；LiveBroker 明確拒絕實盤 | 沿用可重播及預設拒絕原則，新增獨立券商邊界 |
 | [quantlab/paper_replay.py](../../quantlab/paper_replay.py) | 綁定資料、策略與紙上日誌的歷史重播 | 不視為即時行情或完整保護單執行器 |
 | [quantlab/walk_forward.py](../../quantlab/walk_forward.py) | 具保留資料及不可逆研究預算管理 | 延續資料隔離，升級結果使用新的版本身分 |
-| [desktop_app/shell/host.py](../../desktop_app/shell/host.py) | PageServices 是第一階段服務契約 | 新頁面使用窄介面，逐步替換過大的服務表面 |
+| [desktop_pages/host.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_pages/host.py) | PageServices 是第一階段服務契約 | 新頁面使用窄介面，逐步替換過大的服務表面 |
 | [ADR 0006](../adr/0006-strategy-intent-pipeline.md) | 策略意圖與委託規畫的設計決策 | 延伸為多商品及持有政策，不能寫成既有實作 |
 
 ### 2.2 相容性規則
@@ -198,7 +198,7 @@ quantlab/trading/
     storage/    journal repositories migrations
   runtime/      engine commands events lifecycle
 desktop_pages/  沿用既有頁面入口並逐頁導入窄服務
-desktop_app/features/trading/ presenters widgets forms
+desktop_trading/ presenters widgets forms
 tests/trading/  domain contracts adapters recovery scenarios
 ```
 

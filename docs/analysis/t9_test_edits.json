@@ -5,7 +5,7 @@
       "edits": [
         {
           "file": "tests/test_no_hardcoded_ui_text.py",
-          "change": "UI_MODULES includes desktop_app/components/expiry_inputs.py",
+          "change": "UI_MODULES includes desktop_expiry_inputs.py",
           "reason": "Register new helper for the existing full AST scan; assertions unchanged."
         },
         {
@@ -42,7 +42,7 @@
       "edits": [
         {
           "file": "tests/test_no_hardcoded_ui_text.py",
-          "change": "Register desktop_app/components/timeinput.py in UI_MODULES.",
+          "change": "Register desktop_timeinput.py in UI_MODULES.",
           "reason": "Apply the complete existing AST scan to the new adapter; no assertion changes."
         },
         {
@@ -223,7 +223,7 @@
           "reason": "Keep exact text, geometry, and pixel equality assertions; independent HEAD metrics recorded in T9 snapshot evidence."
         }
       ],
-      "note": "No assertions removed or weakened. Both guards auto-discover desktop_app/shell/onboarding.py. Full existing integration suite is controller-owned outside sandbox."
+      "note": "No assertions removed or weakened. Both guards auto-discover desktop_pages/onboarding.py. Full existing integration suite is controller-owned outside sandbox."
     },
     {
       "run": "T9 part D final",
@@ -235,7 +235,7 @@
         },
         {
           "file": "tests/test_no_hardcoded_ui_text.py",
-          "change": "Register desktop_app/components/help.py in UI_MODULES.",
+          "change": "Register desktop_help.py in UI_MODULES.",
           "reason": "Keep complete desktop module AST coverage; assertions unchanged."
         },
         {
@@ -314,7 +314,7 @@
           "reason": "Keep exact geometry, text and pixel equality assertions; fresh HEAD archive before evidence is preserved separately."
         }
       ],
-      "note": "No existing assertions removed or weakened. desktop_app/components/help.py is registered in the text guard and automatically covered by the stylesheet guard. Full unrelated integration suite is controller-owned outside sandbox."
+      "note": "No existing assertions removed or weakened. desktop_help.py is registered in the text guard and automatically covered by the stylesheet guard. Full unrelated integration suite is controller-owned outside sandbox."
     },
     {
       "run": "T9 repair",
@@ -327,7 +327,7 @@
         },
         {
           "file": "tests/fixtures/ui_operations_golden.json",
-          "change": "Regenerated only observations.ui_analysis_preview.events[0][1].message and observations.ui_analysis_run.events[0][1].message by executing the frozen legacy implementation with current desktop_app.strings.catalog in the existing hermetic workspace.",
+          "change": "Regenerated only observations.ui_analysis_preview.events[0][1].message and observations.ui_analysis_run.events[0][1].message by executing the frozen legacy implementation with current desktop_strings in the existing hermetic workspace.",
           "reason": "P1-05 replaces space plus OOS with the Chinese sample-outside wording. Exact recursive comparison confirms only these two strings differ; structure, results and every hash remain identical. git diff: 2 additions, 2 deletions."
         },
         {

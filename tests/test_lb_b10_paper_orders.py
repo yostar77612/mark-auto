@@ -29,7 +29,7 @@ from quantlab.paper import PaperBroker, RiskLimits, RiskDecision, JournalConflic
 from tests.test_chart_data import bar
 import tests.test_paper as _paper_fixture
 from tests.test_paper import NOW, CID
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -403,7 +403,7 @@ class OrderChartTests(unittest.TestCase):
     def test_public_oracle_and_class_size_limits_unchanged(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
         self.assertEqual(sorted(name for name in vars(ui) if not name.startswith('_')), expected)
-        for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / physical_path('desktop_pages')).rglob('*.py')]:
+        for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / 'desktop_app').rglob('*.py')]:
             for node in ast.parse(path.read_text(encoding='utf-8-sig'), feature_version=(3, 11)).body:
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 400 if node.name == 'MainWindow' else 500)

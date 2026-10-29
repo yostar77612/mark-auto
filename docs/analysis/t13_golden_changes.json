@@ -373,42 +373,42 @@
   },
   "class_line_counts": {
     "MainWindow": {
-      "file": "desktop_app/shell/main_window.py",
+      "file": "desktop_ui.py",
       "before": 394,
       "after": 394
     },
     "BacktestPage": {
-      "file": "desktop_app/features/backtest/backtest.py",
+      "file": "desktop_pages/backtest.py",
       "before": 56,
       "after": 87
     },
     "ComparePage": {
-      "file": "desktop_app/features/compare/compare.py",
+      "file": "desktop_pages/compare.py",
       "before": 282,
       "after": 405
     },
     "DataPage": {
-      "file": "desktop_app/features/data/data.py",
+      "file": "desktop_pages/data.py",
       "before": 75,
       "after": 101
     },
     "MarketPage": {
-      "file": "desktop_app/features/market/market.py",
+      "file": "desktop_pages/market.py",
       "before": 143,
       "after": 184
     },
     "PaperPage": {
-      "file": "desktop_app/features/paper/paper.py",
+      "file": "desktop_pages/paper.py",
       "before": 153,
       "after": 247
     },
     "SettingsPage": {
-      "file": "desktop_app/features/settings/settings.py",
+      "file": "desktop_pages/settings.py",
       "before": 269,
       "after": 287
     },
     "StrategyPage": {
-      "file": "desktop_app/features/strategy/strategy.py",
+      "file": "desktop_pages/strategy.py",
       "before": 346,
       "after": 443
     }

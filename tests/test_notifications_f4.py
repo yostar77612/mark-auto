@@ -20,7 +20,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_feedback import OPERATION_LABELS
 from quantlab.errors import ERROR_TABLE
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +42,7 @@ def dispatch_operations():
                 )
             ),
         ]
-    ) + sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
+    ) + sorted((ROOT / 'desktop_app').rglob('*.py'))
     trees = [(path, ast.parse(path.read_text(encoding='utf-8-sig'))) for path in paths]
     paper = set()
     for _, tree in trees:

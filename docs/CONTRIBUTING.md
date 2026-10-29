@@ -47,7 +47,7 @@ conceal behavior changes.
 
 ### Owner-authorized v2 engineering mission (2026-10-25)
 
-The separate `quantlab/trading` and `desktop_app.features.trading` platform is governed by
+The separate `quantlab/trading` and `desktop_app/features/trading` platform is governed by
 [the v2 upgrade contract](implementation/multi-market/UPGRADE_CONTRACT.md).
 The owner authorized its controlled connector implementation and necessary
 engineering upgrades. The permanent live prohibition above remains the v1
@@ -99,7 +99,7 @@ $env:PYTHONUTF8 = '1'
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' --version
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' check .
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe' format --check .
-py -3.11 -m compileall -q quantlab desktop_app.shell.pages tools tests desktop.py
+py -3.11 -m compileall -q quantlab desktop_app tools tests desktop.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' tools/quality_gate.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_docs_layering.py
 & 'C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_repo_layout.py

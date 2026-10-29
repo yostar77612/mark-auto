@@ -14,7 +14,7 @@ import types
 import subprocess
 import unittest
 from unittest.mock import patch
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,7 +67,7 @@ class PackagingTests(unittest.TestCase):
         patterns = {node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
         self.assertIn('desktop_app/smoke/**/*.py', patterns)
         included = {path for pattern in patterns if '*' in pattern for path in ROOT.glob(pattern) if path.is_file()}
-        self.assertTrue(set((ROOT / physical_path('desktop_smoke')).rglob('*.py')) <= included)
+        self.assertTrue(set((ROOT / 'desktop_app/smoke').rglob('*.py')) <= included)
 
     def test_build_inputs_are_committed_not_silently_gitignored(self):
         required = {

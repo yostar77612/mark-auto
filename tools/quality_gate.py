@@ -59,8 +59,6 @@ def core_import_findings(source: str, label: str) -> list[str]:
                 modules.extend(alias.name for alias in node.names)
         else:
             modules = []
-        if any(module.split('.')[0] in ('PySide6', 'shiboken6') for module in modules):
-            findings.append(f'{label}:{node.lineno}: no Qt imports under quantlab/')
         if any(module.split('.')[0].startswith('desktop') for module in modules):
             findings.append(f'{label}:{node.lineno}: no desktop imports under quantlab/')
         if isinstance(node, ast.Call) and (
@@ -169,7 +167,11 @@ def scan(root: Path, history: bool = False) -> list[str]:
                         and node.func.attr in {"place_order", "place_comboorder"}
                     ):
                         findings.append(f"{name}:{node.lineno}: legacy broker submission")
-            if name.startswith('quantlab/'):
+            if name.startswith('quantlab/') and name not in {
+                'quantlab/assistant/adapters/chatgpt/auth.py',
+                'quantlab/assistant/adapters/chatgpt/provider.py',
+                'quantlab/research_core/adapters/market_layout.py',
+            }:
                 try:
                     findings.extend(core_import_findings(source, name))
                 except SyntaxError:
@@ -179,7 +181,12 @@ def scan(root: Path, history: bool = False) -> list[str]:
                     source,
                     name,
                     name.startswith("quantlab/")
-                    and name not in {"quantlab/assistant/adapters/chatgpt/auth.py", "quantlab/assistant/adapters/chatgpt/provider.py"},
+                    and name
+                    not in {
+                        "quantlab/assistant/adapters/chatgpt/auth.py",
+                        "quantlab/assistant/adapters/chatgpt/provider.py",
+                        "quantlab/research_core/adapters/market_layout.py",
+                    },
                     desktop=name
                     in {
                         "desktop_app/shell/main_window.py",

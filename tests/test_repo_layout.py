@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from tools.quality_gate import python_findings, scan
 from quantlab import strict_json
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'archives/legacy_autotrading'
@@ -157,17 +157,22 @@ class RepoLayoutTests(unittest.TestCase):
             self.assertIn(name.split('/')[0], ALLOWED_DIRECTORIES)
 
     def test_u3_modules_stay_in_desktop_package(self):
-        for name in ('quick_start.py', 'quick_start_chain.py'):
-            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
+        for name in ('desktop_app/features/onboarding/quick_start.py', 'desktop_app/features/onboarding/quick_start_chain.py'):
+            self.assertTrue((ROOT / name).is_file())
 
     def test_c6_modules_stay_in_desktop_package(self):
-        for name in ('paper_tabs.py',):
-            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
+        for name in ('desktop_app/features/paper/paper_tabs.py',):
+            self.assertTrue((ROOT / name).is_file())
         self.assertTrue((ROOT / 'quantlab/paper_tab_data.py').is_file())
 
     def test_c7_modules_stay_in_desktop_package(self):
-        for name in ('command_palette.py', 'palette_commands.py', 'notifications.py', 'notification_log.py'):
-            self.assertTrue((ROOT / physical_path('desktop_pages' + '/' + str(name))).is_file())
+        for name in (
+            'desktop_app/components/command_palette.py',
+            'desktop_app/shell/palette_commands.py',
+            'desktop_app/shell/notifications.py',
+            'desktop_app/shell/notification_log.py',
+        ):
+            self.assertTrue((ROOT / name).is_file())
 
     def test_agent_schema_registered_location(self):
         self.assertTrue((ROOT / AGENT_TOOL_SCHEMA).is_file())

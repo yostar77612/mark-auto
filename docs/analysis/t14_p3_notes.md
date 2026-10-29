@@ -20,7 +20,7 @@ Preparation/recovery admission uses prepare_operation; final serialization and
 publication use write_result. These are operation boundaries, not inferred
 exception diagnoses. Payloads and exception attributes cannot select a stage.
 Unexpected stage values become unknown. UI failure notifications use only the
-fixed desktop_app.strings.catalog catalog and ignore event message/error_type values.
+fixed desktop_strings catalog and ignore event message/error_type values.
 
 GitNexus was bound to C:/Users/Mark/Desktop/Mark auto. Its existing index is 18
 commits behind HEAD. Refresh was attempted; sandbox CLI respawn failed EPERM.

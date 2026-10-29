@@ -4,12 +4,12 @@ import ast
 from pathlib import Path
 import unittest
 import tempfile
-from tests.layered_source_fixtures import CURRENT_PATHS, physical_path, page_sources
+from tests.layered_source_fixtures import CURRENT_PATHS, page_sources
 
 
 # QPainter chart drawing uses no setStyleSheet calls, so no exceptions are needed.
 STYLESHEET_ALLOWLIST = frozenset()
-# The market dashboard keeps a widget-scoped dark theme (applied by desktop_theme.apply_market_theme)
+# The market dashboard keeps a widget-scoped dark theme (applied by desktop_app.shell.theme.apply_market_theme)
 # so it renders identically when hosted standalone, outside the main window's application theme.
 WIDGET_STYLESHEET_ALLOWLIST = frozenset({'market_dashboard'})
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +26,7 @@ def stylesheet_calls(source):
 def stylesheet_sources(root):
     """Project the original root/pages/smoke guard and scan every new desktop file."""
     moved = {root / new for new in CURRENT_PATHS.values()}
-    projected = {root / new for old, new in CURRENT_PATHS.items() if not old.startswith('desktop_trading/') and (root / new).is_file()}
+    projected = {root / new for new in CURRENT_PATHS.values() if not new.startswith('desktop_app/features/trading/') and (root / new).is_file()}
     additions = set((root / 'desktop_app').rglob('*.py')) - moved
     return sorted(projected | additions | set(root.glob('desktop*.py')) | set((root / 'tools').rglob('*.py')))
 
@@ -61,23 +61,23 @@ class NoInlineStylesheetTests(unittest.TestCase):
         self.assertEqual(stylesheet_calls(path.read_text(encoding='utf-8')), [])
 
     def test_quick_start_uses_theme_only(self):
-        for name in ('quick_start.py', 'quick_start_chain.py'):
-            self.assertEqual(stylesheet_calls((ROOT / physical_path('desktop_pages' + '/' + str(name))).read_text(encoding='utf-8')), [])
+        for name in ('desktop_app/features/onboarding/quick_start.py', 'desktop_app/features/onboarding/quick_start_chain.py'):
+            self.assertEqual(stylesheet_calls((ROOT / name).read_text(encoding='utf-8')), [])
 
     def test_desktop_and_tools_have_no_inline_stylesheet(self):
         self.assertEqual(stylesheet_violations(ROOT), [])
 
     def test_original_scope_and_new_trading_sources_keep_their_classification(self):
         actual = set(stylesheet_sources(ROOT))
-        prior = {ROOT / new for old, new in CURRENT_PATHS.items() if not old.startswith('desktop_trading/')}
-        excluded = {ROOT / new for old, new in CURRENT_PATHS.items() if old.startswith('desktop_trading/')}
+        prior = {ROOT / new for new in CURRENT_PATHS.values() if not new.startswith('desktop_app/features/trading/')}
+        excluded = {ROOT / new for new in CURRENT_PATHS.values() if new.startswith('desktop_app/features/trading/')}
         self.assertEqual(len(excluded), 14)
         self.assertLessEqual(prior, actual)
         self.assertFalse(excluded & actual)
         self.assertEqual(STYLESHEET_ALLOWLIST, frozenset())
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            old = root / CURRENT_PATHS['desktop_trading/dashboard.py']
+            old = root / 'desktop_app/features/trading/dashboard.py'
             old.parent.mkdir(parents=True)
             old.write_text('widget.setStyleSheet("prior trading scope")', encoding='utf-8')
             self.assertEqual(stylesheet_violations(root), [])

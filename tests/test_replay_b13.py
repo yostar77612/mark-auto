@@ -26,7 +26,7 @@ from quantlab.strategies import builtin_strategies
 from tests import test_paper_replay as fixtures
 from tests.test_t9_onboarding import sandbox_ui
 from quantlab.desktop_runtime import AppPaths
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -341,7 +341,7 @@ class ReplayUITests(unittest.TestCase):
     def test_public_oracle_and_page_size(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
         self.assertEqual(sorted(name for name in vars(ui) if not name.startswith('_')), expected)
-        for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / physical_path('desktop_pages')).rglob('*.py')]:
+        for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / 'desktop_app').rglob('*.py')]:
             for node in ast.parse(path.read_text(encoding='utf-8-sig')).body:
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 400 if node.name == 'MainWindow' else 500)

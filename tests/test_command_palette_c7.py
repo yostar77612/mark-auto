@@ -19,7 +19,7 @@ from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ALLOW = {*(f'page_{i}' for i in range(1, 8)), 'refresh', 'cancel_job', 'theme', 'privacy', 'focus_import', 'focus_backtest'}
@@ -223,8 +223,8 @@ class PaletteTests(unittest.TestCase):
         bare = CommandPalette(SimpleNamespace())
         self.addCleanup(bare.close)
         self.assertEqual(bare.commands(), ())
-        for path in ('command_palette.py', 'palette_commands.py'):
-            source = Path(physical_path('desktop_pages' + '/' + str(path))).read_text()
+        for path in ('desktop_app/components/command_palette.py', 'desktop_app/shell/palette_commands.py'):
+            source = Path(path).read_text()
             tree = ast.parse(source)
             forbidden = {'deleteLater', 'installEventFilter', 'exec', 'eval', 'QTimer', 'save', 'start_job', 'place_order', 'open', 'read_text', 'write_text'}
             for node in ast.walk(tree):

@@ -237,7 +237,7 @@
         }
       },
       "preview_artifact": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8b-20261018\\wizard-preview.png",
-      "ui_module_registration": "New desktop_app.shell.pages module is included automatically by both recursive AST scan inventories"
+      "ui_module_registration": "New desktop_pages module is included automatically by both recursive AST scan inventories"
     },
     {
       "run": "T8 part C",
@@ -323,7 +323,7 @@
         "tests/fixtures/desktop_pages_before/metrics.json: result presentation metrics",
         "tests/fixtures/desktop_pages_before/03,04,06 full/viewport PNG: result presentation baselines; no existing assertion edits"
       ],
-      "ui_module_registration": "Both new desktop_app.shell.pages modules are automatically included by the recursive text/style AST inventories",
+      "ui_module_registration": "Both new desktop_pages modules are automatically included by the recursive text/style AST inventories",
       "artifacts": "C:\\Users\\Mark\\AppData\\Local\\Temp\\markauto-t8c-20261018",
       "gitnexus": "Impact performed: account CRITICAL, chart MEDIUM, walk-forward LOW; BacktestPage and wizard UNKNOWN checked by text/source. Index refresh failed spawn EPERM. No clean graph claim.",
       "sandbox_capture": "Existing invocation-only temp sitecustomize inherits mkdir ACL; product and tests unchanged",
@@ -354,7 +354,7 @@
           "count": 276,
           "encoding": "utf-8-sig"
         },
-        "full_suite": "Not run per sandbox instruction; existing backtest/candidate/desktop_app.shell.main_window modules controller-owned",
+        "full_suite": "Not run per sandbox instruction; existing backtest/candidate/desktop_ui modules controller-owned",
         "intermediate_bundle": "58-test run had three stale snapshot assertions during concurrent code/fixture updates. A later optional combined existing-page run was stopped after prolonged execution; fresh isolated page boundary/name/snapshot checks passed (5 tests). Existing assertions remain unchanged.",
         "page_guards_names_snapshot": {
           "exit_code": 0,
@@ -501,7 +501,7 @@
           "seconds": 43.021,
           "includes": "All focused_bundle modules plus PageSnapshotTests, exact widget-name parity and original compare/backup payload/consent test"
         },
-        "protected_source_check": "No git diff for eight G3 files or desktop_app/features/walk_forward/presenter.py; content matches HEAD after Git CRLF normalization. Initial raw-byte comparison differed because checkout line endings are CRLF."
+        "protected_source_check": "No git diff for eight G3 files or desktop_walk_forward.py; content matches HEAD after Git CRLF normalization. Initial raw-byte comparison differed because checkout line endings are CRLF."
       },
       "scratch_cleanup": "This run created no repository scratch. Pre-existing .tmp, .tmp-t2, .tmp-t3, .tmp-t4, .t4b-work, .t6-work remain: automatic approval review rejected recursive removal (including explicit verified literal paths) as blocked by policy; no detailed reason supplied.",
       "completion": "UI implementation and all requested focused/guard checks pass; required pre-existing scratch cleanup remains blocked by automatic approval policy."

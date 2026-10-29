@@ -90,10 +90,7 @@ class QualityGateTests(unittest.TestCase):
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_text("from PySide6.QtWidgets import QWidget\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name + "\0").encode()):
-                    if name.startswith('quantlab/'):
-                        self.assertTrue(scan(root), name)
-                    else:
-                        self.assertEqual(scan(root), [], name)
+                    self.assertEqual(scan(root), [], name)
 
     def test_automatic_backup_component_keeps_desktop_boundary(self):
         with tempfile.TemporaryDirectory() as directory:

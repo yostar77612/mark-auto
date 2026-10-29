@@ -7,7 +7,7 @@ from pathlib import Path
 import pickle
 import unittest
 from unittest.mock import patch
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -174,8 +174,8 @@ def source_map():
                 ),
             ]
         )
-        + sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))
-        + sorted((ROOT / physical_path('desktop_smoke')).glob('*.py'))
+        + sorted((ROOT / 'desktop_app').rglob('*.py'))
+        + sorted((ROOT / 'desktop_app/smoke').glob('*.py'))
     )
     return {
         path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__'): path.read_text(encoding='utf-8-sig') for path in paths

@@ -25,7 +25,7 @@ from quantlab.core import content_hash, canonical_json
 from quantlab.research import _summary
 from tests.test_chart_data import bar, START
 from tests.test_backtest import bar as engine_bar, dataset, spec, run
-from tests.layered_source_fixtures import physical_path
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -224,7 +224,7 @@ class DrawingTests(unittest.TestCase):
         source = (ROOT / 'desktop_app/components/charts.py').read_text(encoding='utf-8-sig')
         chart = next(node for node in ast.parse(source).body if isinstance(node, ast.ClassDef) and node.name == 'CandlestickChart')
         self.assertLessEqual(chart.end_lineno - chart.lineno + 1, 500)
-        for path in (ROOT / 'desktop_app/shell/main_window.py', *sorted((ROOT / physical_path('desktop_pages')).rglob('*.py'))):
+        for path in (ROOT / 'desktop_app/shell/main_window.py', *sorted((ROOT / 'desktop_app').rglob('*.py'))):
             for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 400 if node.name == 'MainWindow' else 500, node.name)
