@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import unittest
 
-from quantlab.trading.domain.live_bars import DataGap, aggregate_bars, compose_minute, finalize_minute, merge_history_live
+from quantlab.trading.domain.live_bars import DataGap, aggregate_bars, compose_minute, finalize_minute, merge_history_live, recover_data_gaps
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 
@@ -29,6 +29,21 @@ def minute_bars(ticks):
 
 
 class LiveBarsTests(unittest.TestCase):
+    def test_recovered_window_subtracts_only_covered_gap(self):
+        def gap(a, b):
+            return DataGap(START + timedelta(minutes=a), START + timedelta(minutes=b))
+
+        for start, end, expected in ((0, 4, ()), (1, 3, (gap(0, 1), gap(3, 4))), (5, 6, (gap(0, 4),))):
+            with self.subTest(start=start, end=end):
+                self.assertEqual(recover_data_gaps((gap(0, 4),), START + timedelta(minutes=start), START + timedelta(minutes=end)), expected)
+
+    def test_explicit_recovery_fills_suffix_with_live_overlap_priority(self):
+        live = minute_bars((tick(0, '101'), tick(180, '105')))
+        history = minute_bars(tuple(tick(i * 60, '99') for i in range(4)))
+        for recover, expected in ((False, live), (True, (live[0], history[1], history[2], live[1]))):
+            with self.subTest(recover=recover):
+                self.assertEqual(merge_history_live(history, live, recover_suffix=recover).bars, expected)
+
     def test_tick_boundary_validation(self):
         base = tick()
         for changes in (

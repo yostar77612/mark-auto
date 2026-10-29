@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from quantlab.trading.domain.arithmetic import decimal_operation
+from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Market, OrderPlan, OrderStatus, Quote
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from quantlab.trading.domain.ticks import Tick
@@ -21,7 +22,10 @@ from quantlab.trading.ports.contracts import (
     SubscriptionReceipt,
 )
 from quantlab.trading.ports.interfaces import Clock
+from quantlab.trading.ports.tick_stream import TickLoss
 from . import market_data
+from .sdk_facade import ShioajiSDKFacade
+from .tick_stream import ShioajiTickStream
 from .stock_grid import validate_stock_grid
 from .mapping import account_from_sdk, order_from_sdk, position_from_sdk, sdk_order_fields, settlement_from_sdk, stock_sdk_quantity
 from .sdk import (
@@ -56,6 +60,7 @@ class ShioajiAdapter:
         share_unit: object = 'Share',
         session_resolver: TradeDateResolver | None = None,
         quote_version: object = None,
+        market_settings: LiveMarketSettings = LiveMarketSettings(),
     ) -> None:
         if sdk_version != SDK_VERSION or environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
             raise DomainError('capability_missing', 'unsupported SDK/environment')
@@ -70,6 +75,8 @@ class ShioajiAdapter:
         self.session_resolver = session_resolver
         self.quote_version = quote_version
         self.connected = False
+        self.disconnected_at: datetime | None = None
+        self.subscription_limit = market_settings.subscription_limit
         self.trades: dict[str, object] = {}
         self.orders: dict[str, BrokerOrder] = {}
         self.sequence = 0
@@ -77,6 +84,13 @@ class ShioajiAdapter:
         self.event_log: list[OrderEvent] = []
         self.subscriptions: dict[str, tuple[str, ...]] = {}
         self.subscription_counter = 0
+        # Legacy injected account-only clients keep their original surface.
+        # The pinned facade is the explicit capability for SDK tick callbacks.
+        self.tick_stream = (
+            ShioajiTickStream(client, clock, bindings, session_resolver, lambda: self.connected, market_settings, self._session_down)
+            if isinstance(client, ShioajiSDKFacade)
+            else None
+        )
         if set(self.accounts) != set(self.allocations) or set(self.accounts) != set(self.capabilities):
             raise DomainError('validation_failed', 'explicit account configuration incomplete')
         for account_ref, capability in self.capabilities.items():
@@ -134,7 +148,13 @@ class ShioajiAdapter:
         try:
             self.client.logout()
         finally:
-            self.connected = False
+            self._session_down()
+
+    def _session_down(self, *args: object) -> None:
+        """Record SDK session loss without logging in or scheduling recovery."""
+        if self.connected:
+            self.disconnected_at = self.clock.now()
+        self.connected = False
 
     def _account(self, account_ref: str) -> object:
         if not self.connected or account_ref not in self.accounts:
@@ -393,5 +413,7 @@ class ShioajiAdapter:
         return market_data.latest(self, instrument_id)
 
     def drain_ticks(self, max_items: int) -> tuple[Tick, ...]:
-        """Tick callback connector is supplied in T4."""
-        return ()
+        return market_data.drain_ticks(self, max_items)
+
+    def drain_tick_losses(self) -> tuple[TickLoss, ...]:
+        return self.tick_stream.drain_tick_losses() if self.tick_stream is not None else ()

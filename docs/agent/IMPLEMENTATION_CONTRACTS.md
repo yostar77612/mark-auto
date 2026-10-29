@@ -6244,3 +6244,248 @@ spawnSync git EPERM. The MCP fallback detect_changes(scope=all, repo=mark-auto)
 succeeds without partial/truncated flags: sixteen changed symbols, four affected
 flows, MEDIUM risk. New untracked modules require direct review because they
 are absent from that baseline graph. No commit, push or branch operation ran.
+
+## LM1 T4 slice 1: fake-SDK tick delivery (2026-10-29)
+
+The Shioaji gateway uses the pinned SDK facade's stock/futures tick callback
+setters on its first subscription. Construction remains inert and disconnected;
+legacy injected account-only SDK doubles retain their original market surface.
+Tick delivery requires the pinned facade. No order path or UI action is added.
+
+`adapters/shioaji/tick_stream.py` translates SDK ticks to immutable Domain Tick
+values. Prices are Decimal; trade date/session come exclusively from the injected
+TradeDateResolver. Missing resolver/calendar, naive source time, non-positive
+price, invalid volume, unknown session and receive-before-source time fail closed.
+One adapter callback guard logs a sanitized rejection and lets later ticks flow.
+The callback performs only translation and bounded enqueueing under a short lock.
+The existing LiveMarketSettings.queue_limit controls the queue; no new setting
+or timeout is introduced. SDK sequence identity is not fabricated.
+
+Queue overflow coalesces into a typed TickLoss envelope per instrument between
+drains, retaining exact lost-tick count and earliest/latest source times. This
+keeps overflow metadata bounded by the active subscription count. The optional
+TickLossSource port and RoutedMarketData forward these envelopes independently
+of the tick budget. LiveMarketService records one issue per envelope, marks
+retained affected minutes incomplete, and remembers loss for later-arriving
+minutes. Coalesced intervals conservatively include intervening minutes; no
+missing bar is synthesized. Bar composition/freshness remain Domain/Application.
+The issue and loss retention collections are bounded.
+
+Characterization ran before changing production behavior: the extended
+`test_trading_sdk_facade` (11 tests) and `test_trading_adapters` (31 tests) both
+exited 0. The new tick-boundary suite first failed on absent callback wiring,
+normalization module and settings injection; the overflow suite first failed
+on missing incomplete flags. Both then passed with the implementation.
+Mock evidence only: no network, account, credential/keyring access or real SDK
+import was used. Real broker-simulation subscription and callback delivery:
+PENDING USER CONFIRMATION via the existing CONNECT_READ_ONLY action. Reconnect,
+backfill and the shared two-connector contract suite are outside this slice.
+
+Changed files:
+
+- quantlab/trading/adapters/shioaji/tick_stream.py (new)
+- quantlab/trading/adapters/shioaji/gateway.py
+- quantlab/trading/adapters/shioaji/market_data.py
+- quantlab/trading/application/live_market.py
+- quantlab/trading/runtime/live_market.py
+- quantlab/trading/ports/tick_stream.py (new)
+- tests/shioaji_tick_fakes.py (new)
+- tests/test_shioaji_tick_stream.py (new)
+- tests/test_shioaji_tick_overflow.py (new)
+- tests/test_trading_adapters.py
+- tests/test_trading_sdk_facade.py
+- docs/agent/IMPLEMENTATION_CONTRACTS.md
+
+GitNexus pre-edit impact: ShioajiAdapter MEDIUM (34 dependents),
+market_data.subscribe LOW (connect_profile_engine), LiveMarketService LOW,
+RoutedMarketData LOW. Gateway drain_ticks is UNKNOWN; direct text/source review
+confirms consumption through MarketDataPort by LiveMarketService and the router.
+Status reports the controller's existing index as stale; no analyze ran, as
+required by t4-base.md. detect_changes(scope=all, repo=mark-auto) returned 24
+changed symbols, nine affected processes, HIGH risk, without partial/truncated
+flags. Polling, allocation and broker-connect flows were reviewed against the
+actual diff; the stale index also maps adjacent unchanged methods into touched
+ranges. New untracked modules were reviewed directly. No commit, push or branch
+operation ran. Protected files and gates remain untouched.
+
+Final slice verification (working tree, no commit created):
+`$env:PYTHONUTF8='1'`; `$env:QT_QPA_PLATFORM='offscreen'`.
+
+| Exact process command | Exit code |
+|---|---:|
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_tick_adapters_contract.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_sdk_facade.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_sdk_loader.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_adapters.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_broker_runtime.py` | 124 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_broker_sessions.py` | 124 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_trading_readonly_coordination.py` | 124 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_live_market_service.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_live_bars.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_live_market_wiring.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_shioaji_tick_stream.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_shioaji_tick_overflow.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest discover -s tests -p test_page_services_r1.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" check .` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\ruff.exe" format --check quantlab/trading/adapters/shioaji/tick_stream.py quantlab/trading/adapters/shioaji/gateway.py quantlab/trading/adapters/shioaji/market_data.py quantlab/trading/application/live_market.py quantlab/trading/runtime/live_market.py quantlab/trading/ports/tick_stream.py tests/test_shioaji_tick_stream.py tests/test_shioaji_tick_overflow.py tests/shioaji_tick_fakes.py tests/test_trading_adapters.py tests/test_trading_sdk_facade.py` | 0 |
+| `py -3.11 -m compileall -q quantlab/trading/adapters/shioaji/tick_stream.py quantlab/trading/adapters/shioaji/gateway.py quantlab/trading/adapters/shioaji/market_data.py quantlab/trading/application/live_market.py quantlab/trading/runtime/live_market.py quantlab/trading/ports/tick_stream.py tests/test_shioaji_tick_stream.py tests/test_shioaji_tick_overflow.py tests/shioaji_tick_fakes.py tests/test_trading_adapters.py tests/test_trading_sdk_facade.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/quality_gate.py` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
+| `"C:\Users\Mark\Desktop\Mark auto\.venv\Scripts\python.exe" tools/check_trading_architecture.py` | 0 |
+| `git diff --check` | 0 |
+
+112 tests passed across the completed suites, including all eight new tick
+stream/overflow tests. Ruff reports pre-existing inaccessible-directory warnings
+but exits 0; the architecture scanner reports zero violations and the quality
+gate reports zero findings. After bounding the producer-thread join to one second
+(with a daemon thread and explicit liveness assertion), the five-test tick-stream
+suite, repo Ruff check, its format check and Python 3.11 compileall were rerun:
+all exit 0. No existing test or application timeout was increased.
+
+Exit 124 is the outer runner's 60-second termination, not a test assertion
+failure. Faulthandler diagnostics terminate after three seconds (exit 1) and show
+all three affected suites stalled in tempfile.mkdtemp, before product code:
+
+- test_trading_broker_runtime.py:45, BrokerRuntimeTests.setUp
+- test_trading_broker_sessions.py:145, BrokerSessionLifecycleTests.setUp
+- test_trading_coordinator.py:38, laboratory used by read-only coordination
+
+These tests explicitly target a temp directory under the workspace's parent,
+which is outside this sandbox's writable root. This is the non-blocking sandbox
+exception in t4-base.md; the controller must rerun the three original discovery
+commands outside the sandbox. No suite was weakened or skipped. Exact commands,
+per-suite logs, diagnostic stacks and machine-readable exit codes are retained
+locally under .tmp-t4-slice1/. Slice status: DONE under that documented exception;
+real-broker evidence remains PENDING USER CONFIRMATION.
+
+
+## LM1 T4 final slice: reconnect and shared tick contract (2026-10-29)
+
+Scope: Slice 1 is retained. Verification below is **mock evidence** from fake SDK
+objects and injected clocks, not a real broker session. The controller owns
+index refresh, commits and head-SHA verification; these commands ran against the
+complete working tree and reviewed diff versus local `main`, without committing.
+
+The SDK session-down callback records typed connection facts. After the existing
+explicit session connection/adoption succeeds, the next Application poll replaces
+receipt ownership, restores active subscriptions in strategy-first allocation
+order, and backfills the disconnected interval through the existing `history()`
+port in windows of at most 30 days. The settings subscription limit is enforced
+by both allocation and the Shioaji boundary (never more than 20). Last known
+prices and buffers survive disconnection and failed restore. No login retry,
+credential discovery, new UI action or execution path is added.
+
+P1 Domain merge now accepts explicit recovery inside a live suffix, with live
+bars winning overlaps. Failed or empty history windows remain P1 `DataGap`
+intervals; later windows are still attempted. A successful retry subtracts only
+the recovered portion of a gap. These pure merge/gap rules stay in Domain;
+Application schedules recovery and publishes the existing health/error views.
+The shared factory table in `test_tick_adapters_contract.py` executes the same
+assertions against simulated tick_feed and fake-SDK Shioaji. The Slice-1
+Shioaji-only drain test was moved into that suite with its exact FIFO prices
+retained as factory expectations; existing simulator sequence assertions remain.
+
+### Locked criteria review (all 14, full diff versus main)
+
+| Criterion | Evidence / disposition |
+|---|---|
+| 1 | `tick_stream.py` registers stock/futures callbacks through sdk_facade only. The import grep below finds only sdk_loader line 16; architecture reports 0 violations. |
+| 2 | Fake-SDK normalization table covers Decimal price, resolver trade date/session, missing calendar/resolver, nonpositive price, invalid session, negative volume and received-before-source. |
+| 3 | Callback translates/enqueues under the queue lock; capacity uses LiveMarketSettings.queue_limit. No adapter bar, aggregation or freshness computation. |
+| 4 | The recorded callback guard logs a sanitized error; the next valid callback still drains. No vendor exception text is published. |
+| 5 | Small-queue overflow tests assert exact loss accounting, issue delivery and affected Application bars marked incomplete. |
+| 6 | Fake SDK/clock reconnect tests cover configured limits 2 and 20, promoted strategy priority, loss between polls, 65-day recovery in 30/30/5-day windows, no repeated recovery, continued callbacks, failed/empty windows, retry and failed subscription restore. |
+| 7 | Port drains expose Domain Tick only. Slice-1 facade/market characterization retained; new disconnect/receipt characterization passed before session/market edits (32 adapter tests). |
+| 8 | One parametrised connector factory table runs shared drain, receipt, ordering, budget, once-only/FIFO and unsubscribe assertions for both connectors; duplicated connector-only drain test moved, not weakened. |
+| 9 | Deterministic separate producer thread covers queue limits 3 and 100, bounded join, exact drained-plus-lost accounting and no exception. |
+| 10 | All T4 tick tests use fake SDKs; no actual login, credential/keyring read, SDK import or network. SDK loader tests inject fake modules. Existing disconnected/read-only/execution-disabled defaults remain. No new order call. Real initial connection remains the existing CONNECT_READ_ONLY path. |
+| 11 | AST/line audit of all 37 new Python modules versus main (including untracked T4 modules): responsibility docstrings present, each <=400 lines. Rule 12: optional capabilities discovered once at composition; SDK/config validation only, callback guard records errors, history failures publish typed errors/gaps, subscription errors propagate. Rule 13: shared/subTest cases, Domain arithmetic tested in Domain, no UI changes in T4. |
+| 12 | Full diff excludes all eight G3 files, saved_candidate_pool.py, PROJECT_STATE.md, ACCEPTANCE.json and both gate implementations. No live/order/ExecutionPort/UiAction expansion. |
+| 13 | Commands and exit codes below. All completed gates pass; three original broker suites hit the documented sandbox tempfile exception and require the controller's outside-sandbox rerun. No tests skipped or timeouts increased. |
+| 14 | **Real Shioaji broker-simulation subscription, callback delivery and reconnect = PENDING USER CONFIRMATION (via CONNECT_READ_ONLY).** Fake-SDK results are **mock evidence**, never real-broker PASS. |
+
+### T4 files (both slices)
+
+- `docs/agent/IMPLEMENTATION_CONTRACTS.md`
+- `quantlab/trading/adapters/shioaji/gateway.py`
+- `quantlab/trading/adapters/shioaji/market_data.py`
+- `quantlab/trading/adapters/shioaji/tick_stream.py`
+- `quantlab/trading/ports/tick_stream.py`
+- `quantlab/trading/application/live_market.py`
+- `quantlab/trading/domain/live_bars.py`
+- `quantlab/trading/runtime/live_market.py`
+- `tests/shioaji_tick_fakes.py`
+- `tests/test_shioaji_tick_stream.py`
+- `tests/test_shioaji_tick_overflow.py`
+- `tests/test_shioaji_tick_reconnect.py`
+- `tests/test_tick_adapters_contract.py`
+- `tests/test_live_bars.py`
+- `tests/test_trading_adapters.py`
+- `tests/test_trading_sdk_facade.py`
+
+### Verification commands and exit codes
+
+PowerShell environment: `$env:PYTHONUTF8='1'`; `$env:QT_QPA_PLATFORM='offscreen'`.
+The provisioned `.venv\Scripts\python.exe` is Python 3.13.11. Compilation and
+additional quality/architecture/docs checks also ran using `py -3.11`.
+`$changedPython` below is the exact sorted set from:
+
+```powershell
+$changedPython = @((git diff --name-only --diff-filter=ACM main -- '*.py') + @(
+  'quantlab/trading/adapters/shioaji/tick_stream.py',
+  'quantlab/trading/ports/tick_stream.py',
+  'tests/shioaji_tick_fakes.py',
+  'tests/test_shioaji_tick_stream.py',
+  'tests/test_shioaji_tick_overflow.py',
+  'tests/test_shioaji_tick_reconnect.py'
+) | Sort-Object -Unique)
+```
+
+Each test row was executed as its own process, not a combined test discovery.
+
+| Command | Exit |
+|---|---:|
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_tick_adapters_contract.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_sdk_facade.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_sdk_loader.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_adapters.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_broker_runtime.py` | 124 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_broker_sessions.py` | 124 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_trading_readonly_coordination.py` | 124 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_market_service.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_market_wiring.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_bars.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_market_series_transport.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_page_services_r1.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_shioaji_tick_stream.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_shioaji_tick_overflow.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_shioaji_tick_reconnect.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_live_market_repairs.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_freshness.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_quote_stats.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest discover -s tests -p test_watchlist_settings.py` | 0 |
+| `.venv\Scripts\ruff.exe check .` | 0 |
+| `.venv\Scripts\ruff.exe format --check $changedPython` | 0 |
+| `py -3.11 -m compileall -q $changedPython` | 0 |
+| `.venv\Scripts\python.exe tools/quality_gate.py` | 0 |
+| `.venv\Scripts\python.exe -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
+| `.venv\Scripts\python.exe tools/check_trading_architecture.py` | 0 |
+| `git diff --check` | 0 |
+| `py -3.11 tools/quality_gate.py` | 0 |
+| `py -3.11 -m unittest tests.test_trading_architecture tests.test_docs_layering` | 0 |
+| `rg -n '^\s*(import shioaji\b|from shioaji\b)' quantlab tests desktop_trading` | 0 (only sdk_loader.py:16) |
+
+Ruff emits pre-existing inaccessible-directory warnings and exits 0. Architecture
+reports `0 violation(s)`; quality gate reports `0 finding(s)`. Detailed command
+arguments, per-suite logs, new-module audit and exit codes are retained locally
+under `.tmp-t4-slice2/`.
+
+The three exit-124 rows are the outer verification runner's 45-second limit.
+Separate faulthandler probes terminated after three seconds (Python exit 1) and
+confirmed all three are blocked in `tempfile.mkdtemp`, before the affected
+product code: broker runtime setUp line 45; broker sessions setUp line 145;
+readonly coordination's `test_trading_coordinator.laboratory` line 38. Their
+fixtures request temp directories outside the writable workspace. This is the
+explicit non-blocking sandbox exception in t4-base.md; the controller must rerun
+the original discovery commands outside the sandbox. No replacement tests,
+skips, fixture rewrites or timeout extensions were used.
