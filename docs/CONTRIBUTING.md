@@ -31,7 +31,12 @@ without owner approval:
 - `quantlab/assistant/adapters/chatgpt/auth.py`
 - `quantlab/assistant/adapters/chatgpt/provider.py`
 
-Also preserve the profile blocks in `quantlab/saved_candidate_pool.py`.
+The owner approved relocation and splitting of G3 files for this refactor on
+2026-10-29, with unchanged behavior and per-file QA. The list above names their
+current paths; historical producer hash keys retain their original names.
+Preserve all existing profile blocks in `quantlab/saved_candidate_pool.py` byte
+for byte. New source identities require an explicit new current profile; never
+re-pin historical profiles to the moved sources.
 New UI strings go through [desktop_app/strings/catalog.py](../desktop_app/strings/catalog.py) with literal
 `ui_text` keys; no hardcoded CJK literals in desktop modules or pages. Error text
 uses the single B1 `ERROR_TABLE` in [quantlab/errors.py](../quantlab/errors.py).

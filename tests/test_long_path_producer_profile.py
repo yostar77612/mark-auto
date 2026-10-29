@@ -30,8 +30,10 @@ class LongPathProducerProfileTests(unittest.TestCase):
         self.assertEqual([content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[:24]], historical)
         self.assertEqual(
             pools.SUPPORTED_PRODUCERS[24:],
-            (TRANSPORT, SIWC, pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1),
+            (TRANSPORT, SIWC, pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1, pools.LAYERED_PATHS_SIWC_PROFILE_V1),
         )
+        # Append the owner-approved current identity; retain every historical pin.
+        self.assertEqual(content_hash(pools.LAYERED_PATHS_SIWC_PROFILE_V1), '27419b0e7cd6b481a6cdf27b0fb7c728cfd32544bde29c52c0082b5fe38ae4c5')
         self.assertEqual(content_hash(TRANSPORT), '092877b654abacbf244e985a8d5d6a75785a4561be48b4d8cfd5f940cd44857d')
         self.assertEqual(content_hash(SIWC), '9a83126852a5a89a90fe939c930ac91badfaeb16ea239e2ee387ba2904cd7692')
 
