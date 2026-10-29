@@ -1,0 +1,554 @@
+[
+  {
+    "path": "desktop_automatic_backup.py",
+    "target": "quantlab.analysis_recovery",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_automatic_backup.py",
+    "target": "quantlab.automatic_backup",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_capital_scenario.py",
+    "target": "desktop_pages.job_progress",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_capital_scenario.py",
+    "target": "desktop_walk_forward",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_capital_scenario.py",
+    "target": "quantlab.desktop_feedback",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_charts.py",
+    "target": "quantlab.chart_drawings",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_chatgpt_auth.py",
+    "target": "quantlab.desktop_runtime",
+    "rule": "infrastructure-to-application",
+    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+  },
+  {
+    "path": "desktop_chatgpt_provider.py",
+    "target": "quantlab.research",
+    "rule": "infrastructure-to-application",
+    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+  },
+  {
+    "path": "desktop_chatgpt_provider.py",
+    "target": "quantlab.research_analysis",
+    "rule": "infrastructure-to-application",
+    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+  },
+  {
+    "path": "desktop_chatgpt_ui.py",
+    "target": "desktop_chatgpt_auth",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_chatgpt_ui.py",
+    "target": "desktop_chatgpt_provider",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_expiry_inputs.py",
+    "target": "quantlab.taifex_expiries",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_forms.py",
+    "target": "quantlab.__main__",
+    "rule": "presentation-to-composition",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_forms.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_market.py",
+    "target": "quantlab.market_history",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_market.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_market_workspace.py",
+    "target": "desktop_market_layout",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/assistant_completion.py",
+    "target": "quantlab.agent_skills",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/assistant_runtime.py",
+    "target": "desktop_chatgpt_auth",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_pages/assistant_runtime.py",
+    "target": "desktop_chatgpt_provider",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_pages/assistant_runtime.py",
+    "target": "desktop_pages.assistant_models",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_pages/backtest.py",
+    "target": "quantlab.__main__",
+    "rule": "presentation-to-composition",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/backtest.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/backtest.py",
+    "target": "quantlab.strict_json",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/backup_inspection.py",
+    "target": "quantlab.backup_inspection",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/compare.py",
+    "target": "quantlab.analysis_recovery",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/compare.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/connection_test.py",
+    "target": "desktop_chatgpt_auth",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/connection_test.py",
+    "target": "desktop_chatgpt_provider",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/maintenance.py",
+    "target": "quantlab.payload_cleanup",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/maintenance.py",
+    "target": "quantlab.update_check",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/market.py",
+    "target": "quantlab.chart_drawings",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/market.py",
+    "target": "quantlab.market_history",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/market.py",
+    "target": "quantlab.market_providers",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/market.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/paper.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/paper_layout.py",
+    "target": "quantlab.strict_json",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/paper_readiness.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/paper_tabs.py",
+    "target": "quantlab.strict_json",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/paper_tabs.py",
+    "target": "shiboken6",
+    "rule": "presentation-to-external-sdk",
+    "justification": "Existing Qt binding validity helper; spec 3.1 only names PySide6. Replace through the C/E2 shared UI component work."
+  },
+  {
+    "path": "desktop_pages/preferences.py",
+    "target": "quantlab.runtime_support",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/quick_start.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/result_widgets.py",
+    "target": "shiboken6",
+    "rule": "presentation-to-external-sdk",
+    "justification": "Existing Qt binding validity helper; spec 3.1 only names PySide6. Replace through the C/E2 shared UI component work."
+  },
+  {
+    "path": "desktop_pages/settings.py",
+    "target": "quantlab.__main__",
+    "rule": "presentation-to-composition",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/strategy.py",
+    "target": "quantlab.__main__",
+    "rule": "presentation-to-composition",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/strategy.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/views.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/widgets.py",
+    "target": "quantlab.strict_json",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_presentation.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "desktop_chatgpt_auth",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "desktop_chatgpt_provider",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.__main__",
+    "rule": "presentation-to-composition",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.analysis_recovery",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.data",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.downloads",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.idea_search",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.manual_exchange",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.market_history",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.market_providers",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_ui.py",
+    "target": "quantlab.runtime_support",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "quantlab/agent_read_tools.py",
+    "target": "quantlab.reporting",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/agent_skills.py",
+    "target": "quantlab.agent_tools",
+    "rule": "infrastructure-to-application",
+    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+  },
+  {
+    "path": "quantlab/analysis_contracts.py",
+    "target": "quantlab.research",
+    "rule": "domain-to-application",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "quantlab/automatic_backup.py",
+    "target": "quantlab.desktop_runtime",
+    "rule": "infrastructure-to-application",
+    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+  },
+  {
+    "path": "quantlab/backup_inspection.py",
+    "target": "quantlab.desktop_runtime",
+    "rule": "infrastructure-to-application",
+    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+  },
+  {
+    "path": "quantlab/data_gap_report.py",
+    "target": "quantlab.data",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/data_gap_report.py",
+    "target": "quantlab.desktop_errors",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/desktop_errors.py",
+    "target": "quantlab.runtime_support",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "quantlab/desktop_runtime.py",
+    "target": "quantlab.__main__",
+    "rule": "application-to-composition",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/desktop_runtime.py",
+    "target": "quantlab.analysis_recovery",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/desktop_runtime.py",
+    "target": "quantlab.analysis_recovery_windows",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/desktop_runtime.py",
+    "target": "quantlab.desktop_errors",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/desktop_runtime.py",
+    "target": "quantlab.runtime_support",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/diagnostics.py",
+    "target": "quantlab.desktop_feedback",
+    "rule": "application-to-presentation",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/download_import.py",
+    "target": "quantlab.data",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/download_import.py",
+    "target": "quantlab.downloads",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/download_import.py",
+    "target": "quantlab.reporting",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/download_import.py",
+    "target": "quantlab.runtime_support",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/idea_research.py",
+    "target": "quantlab.idea_search",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/idea_research.py",
+    "target": "quantlab.reporting",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/idea_research.py",
+    "target": "quantlab.response_output",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/idea_research.py",
+    "target": "quantlab.web_fetch",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/manual_exchange.py",
+    "target": "quantlab.research",
+    "rule": "infrastructure-to-application",
+    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+  },
+  {
+    "path": "quantlab/paper_replay.py",
+    "target": "quantlab.data",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/provider.py",
+    "target": "quantlab.research",
+    "rule": "infrastructure-to-application",
+    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+  },
+  {
+    "path": "quantlab/reporting.py",
+    "target": "quantlab.research_analysis",
+    "rule": "infrastructure-to-application",
+    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+  },
+  {
+    "path": "quantlab/research.py",
+    "target": "quantlab.runtime_support",
+    "rule": "application-to-infrastructure",
+    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+  },
+  {
+    "path": "quantlab/research_analysis.py",
+    "target": "quantlab.analysis_recovery",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/saved_candidate_pool.py",
+    "target": "quantlab.data",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/walk_forward.py",
+    "target": "quantlab.data",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "quantlab/walk_forward.py",
+    "target": "quantlab.runtime_support",
+    "rule": "application-to-infrastructure",
+    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  }
+]
