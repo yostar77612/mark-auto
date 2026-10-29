@@ -127,6 +127,8 @@ class MarketWatchWidget(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setWidget(self.detail)
         self.panels.addWidget(scroll)
+        # Initial proportions; otherwise the chart's size hint squeezes the side panels to slivers.
+        self.panels.setSizes((3000, 5000, 2000))
         layout.addWidget(self.panels)
         self.message = self._label('watch_message', ui_text('watch.message'))
         layout.addWidget(self.message)

@@ -163,7 +163,7 @@ class RowTests(unittest.TestCase):
             ('watch.low', '97'),
             ('watch.reference', '99'),
             ('watch.volume', '42'),
-            ('watch.session', 'DAY'),
+            ('watch.session', ui_text('presentation.labels.day')),
             ('watch.source', 'fixture'),
             ('watch.latency', '0:00:00'),
         ):
