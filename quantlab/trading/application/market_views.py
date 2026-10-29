@@ -14,8 +14,13 @@ def market_watch_view(
     freshness: Freshness,
     stats: QuoteStats,
     history_error: str,
+    *,
+    incomplete: bool | None = None,
 ) -> MarketWatchView:
-    health = MarketHealthView(instrument_id, freshness.value, history_error, bool(series.gaps) or any(bar.incomplete for bar in series.bars))
+    """``incomplete`` lets a caller supply a cached any-bar-incomplete result."""
+    if incomplete is None:
+        incomplete = any(bar.incomplete for bar in series.bars)
+    health = MarketHealthView(instrument_id, freshness.value, history_error, bool(series.gaps) or incomplete)
     return MarketWatchView(
         instrument_id,
         tick.price if tick else None,

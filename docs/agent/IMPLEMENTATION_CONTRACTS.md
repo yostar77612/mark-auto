@@ -5815,6 +5815,25 @@ exceeds 250 ms and these samples do not establish the LM1 performance
 requirement**: this is a ten-batch diagnostic, not the required 1,200-batch/RSS
 acceptance run. The probe prints every timing for reproducibility.
 
+Follow-up (2026-10-29): re-sorting and scanning full retention for every
+changed instrument dominated each update. `merge_history_live` is now composed
+of `history_before` and `join_history_live` with unchanged results. The
+Application caches per instrument the ordered history prefix and its
+any-incomplete flag, keyed by a history revision (bumped whenever history or
+live bars are replaced by different objects, so a re-backfilled batch still wins
+even when numerically equal) and the live suffix start. An earlier cut of
+the same history slices the cached prefix by bisection. Previous-trade-date
+closes are built lazily per date. Recovery keeps the uncached full merge. A
+subTest table checks cached and uncached `watch` equality across backfill,
+first ticks, a new minute and a later backfill, for 1m and 5m. Same host and
+interpreter, `tools/lm1_slice1_probe.py poll --calls 1200` (20 instruments,
+34,200 preloaded bars each, 100 ticks per 0.5 s batch, 1,200 batches = ten
+fake minutes): p50 10.61 ms, p95 13.24 ms, maximum 204.44 ms (the first,
+cold batch); one batch exceeded 50 ms. This meets the p95 <= 50 ms and maximum
+<= 250 ms timing targets offline. Incremental RSS was not measured, so the full
+LM1 performance acceptance is still not claimed. Real-broker delivery: PENDING
+USER CONFIRMATION.
+
 ### LM1 T2 slice 2: market watch panels and watchlist settings
 
 `MarketWatchWidget(facade, chart, state)` is a standalone three-panel widget;

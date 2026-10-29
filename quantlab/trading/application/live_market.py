@@ -5,9 +5,11 @@ suffix. Each deque has a hard minute bound as well as trade-date retention.
 Callers schedule poll/backfill and supply calendar-session facts explicitly.
 """
 
+from bisect import bisect_left
 from collections import deque
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
+from operator import attrgetter, is_
 
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.freshness import Freshness, LiveMarketSettings, classify_freshness
@@ -19,6 +21,8 @@ from quantlab.trading.domain.live_bars import (
     aggregate_bars,
     compose_minute,
     finalize_minute,
+    history_before,
+    join_history_live,
     merge_history_live,
     recover_data_gaps,
 )
@@ -58,6 +62,37 @@ class _InstrumentBuffer:
     freshness: Freshness = Freshness.UNKNOWN
     recovery: bool = False
     gaps: tuple[DataGap, ...] = ()
+    history_revision: int = 0
+    prefix: '_HistoryPrefix | None' = None
+
+
+@dataclass(frozen=True)
+class _HistoryPrefix:
+    """History-derived facts reused while history and the live suffix start are unchanged."""
+
+    key: tuple[int, datetime | None]
+    bars: tuple[LiveBar, ...]
+    incomplete: bool
+    closes: dict[date, tuple[TradeDateClose, ...]] = field(default_factory=dict)
+
+    def closes_on(self, trade_date: date) -> tuple[TradeDateClose, ...]:
+        if trade_date not in self.closes:
+            self.closes[trade_date] = _closes(bar for bar in self.bars if bar.trade_date == trade_date)
+        return self.closes[trade_date]
+
+
+def _closes(bars) -> tuple[TradeDateClose, ...]:
+    return tuple(TradeDateClose(bar.trade_date, bar.close, bar.start) for bar in bars if bar.final)
+
+
+def _replace_bars(buffer: _InstrumentBuffer, bars: deque[LiveBar], kept) -> None:
+    kept = tuple(kept)
+    # Identity, not value equality: a re-backfilled 100.00 must still replace 100.
+    if len(kept) == len(bars) and all(map(is_, kept, bars)):
+        return
+    bars.clear()
+    bars.extend(kept)
+    buffer.history_revision += 1
 
 
 class LiveMarketService:
@@ -126,9 +161,7 @@ class LiveMarketService:
             days.add(buffer.minute.bar.trade_date)
         retained = set(sorted(days)[-self.settings.buffer_trade_days :])
         for bars in (buffer.history, buffer.live):
-            kept = tuple(bar for bar in bars if bar.trade_date in retained)
-            bars.clear()
-            bars.extend(kept)
+            _replace_bars(buffer, bars, (bar for bar in bars if bar.trade_date in retained))
 
     def _recover_connection(self, connected: bool, now: datetime) -> None:
         if self._connection_source is not None:
@@ -189,9 +222,7 @@ class LiveMarketService:
                 if buffer.minute is not None and _affected_minute(buffer.minute.bar.start, loss):
                     buffer.minute = replace(buffer.minute, bar=replace(buffer.minute.bar, incomplete=True))
                 for bars in (buffer.history, buffer.live):
-                    marked = tuple(replace(bar, incomplete=True) if _affected_minute(bar.start, loss) else bar for bar in bars)
-                    bars.clear()
-                    bars.extend(marked)
+                    _replace_bars(buffer, bars, (replace(bar, incomplete=True) if _affected_minute(bar.start, loss) else bar for bar in bars))
                 self._view_cache.pop(loss.instrument_id, None)
         for key, buffer in self._buffers.items():
             if buffer.minute is not None:
@@ -241,8 +272,7 @@ class LiveMarketService:
                     for bar in (*buffer.history, *converted)
                     if buffer.recovery or buffer.first_live_start is None or bar.start < buffer.first_live_start
                 }
-                buffer.history.clear()
-                buffer.history.extend(sorted(by_start.values(), key=lambda bar: bar.start))
+                _replace_bars(buffer, buffer.history, sorted(by_start.values(), key=lambda bar: bar.start))
                 self._trim(buffer)
                 if not batch.complete:
                     raise DomainError('market_data_invalid', batch.reason)
@@ -259,18 +289,39 @@ class LiveMarketService:
     def watch(self, instrument_id: str, *, period: str = '1m', previous_trade_date: date | None = None, trade_date_closed: bool = False) -> MarketWatchView:
         buffer = self._buffers[instrument_id]
         live = (*buffer.live, *((buffer.minute.bar,) if buffer.minute else ()))
-        merged = merge_history_live(tuple(buffer.history), live, recover_suffix=buffer.recovery)
+        if buffer.recovery:
+            merged = merge_history_live(tuple(buffer.history), live, recover_suffix=True)
+            incomplete = None
+        else:
+            # Re-sorting full retention on every tick dominated the poll; reuse the history prefix.
+            ordered_live = tuple(sorted(live, key=lambda bar: bar.start))
+            key = (buffer.history_revision, ordered_live[0].start if ordered_live else None)
+            previous = buffer.prefix
+            if previous is None or previous.key != key:
+                if previous is not None and previous.key[0] == key[0] and key[1] is not None and (previous.key[1] is None or key[1] <= previous.key[1]):
+                    # Same history, earlier cut: slice the already ordered prefix.
+                    bars = previous.bars[: bisect_left(previous.bars, key[1], key=attrgetter('start'))]
+                else:
+                    bars = history_before(tuple(buffer.history), key[1])
+                buffer.prefix = _HistoryPrefix(key, bars, any(bar.incomplete for bar in bars))
+            merged = join_history_live(buffer.prefix.bars, ordered_live)
+            incomplete = buffer.prefix.incomplete or any(bar.incomplete for bar in ordered_live)
         merged = MergedBars(merged.bars, tuple(dict.fromkeys((*merged.gaps, *buffer.gaps))))
         stats = QuoteStats(None, None, None)
         if buffer.tick is not None and previous_trade_date is None and self.calendar is not None:
             index = self.calendar.index(buffer.tick.trade_date)
             previous_trade_date = self.calendar.days[index - 1] if index > 0 else None
         if buffer.tick is not None and previous_trade_date is not None:
-            closes = tuple(TradeDateClose(bar.trade_date, bar.close, bar.start) for bar in merged.bars if bar.final)
+            if buffer.recovery:
+                closes = _closes(merged.bars)
+            else:
+                # reference_price only reads the previous trade date's closes.
+                closes = buffer.prefix.closes_on(previous_trade_date) + _closes(bar for bar in ordered_live if bar.trade_date == previous_trade_date)
             stats = quote_stats(buffer.tick.price, previous_trade_date, closes)
         if period != '1m':
             merged = MergedBars(aggregate_bars(merged.bars, period, now=self.clock.now(), trade_date_closed=trade_date_closed), merged.gaps)
-        return market_watch_view(instrument_id, buffer.tick, merged, buffer.freshness, stats, buffer.history_error)
+            incomplete = None
+        return market_watch_view(instrument_id, buffer.tick, merged, buffer.freshness, stats, buffer.history_error, incomplete=incomplete)
 
     def _views(self) -> tuple[MarketWatchView, ...]:
         for key in self.allocation.active:

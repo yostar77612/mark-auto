@@ -106,6 +106,29 @@ class LiveMarketServiceTests(unittest.TestCase):
         self.service.backfill(key, NOW - timedelta(days=1), NOW)
         self.assertEqual(self.service.watch(key).health.history_error, '')
 
+    def test_cached_history_prefix_matches_uncached_watch(self):
+        key = 'WATCH:0'
+        bars = tuple(
+            HistoryBar(key, NOW - timedelta(minutes=m), NOW - timedelta(minutes=m - 1), D('100'), D('103'), D('99'), D(100 + m % 3), 1, 'TEST')
+            # History runs past the first live minute so the live cut removes bars.
+            for m in range(600, -5, -1)
+        )
+        self.service = LiveMarketService(HistoryMarketStub(self.broker, lambda *_: DataBatch(key, bars, 'TEST', True)), self.clock, self.resolver)
+        self.service.allocate((key,))
+        steps = (
+            ('backfill before live', lambda: self.service.backfill(key, NOW - timedelta(days=1), NOW + timedelta(minutes=10))),
+            ('first ticks', lambda: self.service.poll(in_session=True)),
+            ('next minute', lambda: (setattr(self.clock, 'value', self.clock.value + timedelta(minutes=1)), self.service.poll(in_session=True))),
+            ('backfill after live', lambda: self.service.backfill(key, NOW - timedelta(days=1), NOW)),
+        )
+        for name, step in steps:
+            with self.subTest(step=name):
+                step()
+                for period in ('1m', '5m'):
+                    cached = self.service.watch(key, period=period)
+                    self.service._buffers[key].prefix = None
+                    self.assertEqual(cached, self.service.watch(key, period=period))
+
     def test_revision_tracks_changes_not_poll_calls(self):
         self.assertEqual(self.service.poll(), 0)
         self.service.allocate(('WATCH:0',))
