@@ -22,6 +22,7 @@ from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
 from .widgets import button, combo, label, table
 from .broker_panel import BrokerPanel
+from .dashboard import DashboardWidget
 
 
 PAGE_KEYS = {
@@ -153,6 +154,15 @@ def _buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> 
 
 def _overview_page(self) -> None:
     layout = _page(self, 'overview')
+    self.dashboard = DashboardWidget(self.command)
+    layout.addWidget(self.dashboard)
+    self.overview_status = self.dashboard.status
+    self.overview_deployments = self.dashboard.strategy_summary
+    self.issue_details = self.dashboard.issue_details
+    self.events = self.dashboard.events
+    self.overview_stop = self.dashboard.operation_buttons[UiAction.STOP_NEW]
+    self.overview_cancel_entries = self.dashboard.operation_buttons[UiAction.CANCEL_ENTRIES]
+    self.overview_reconcile = self.dashboard.operation_buttons[UiAction.RECONCILE]
     layout.addWidget(label('v2.start_hint'))
     _buttons(
         self,
@@ -160,32 +170,8 @@ def _overview_page(self) -> None:
         (
             ('v2.new_strategy', 'overview_new_strategy', self.new_strategy),
             ('v2.local_step', 'overview_step', lambda: self.command(UiAction.STEP)),
-            ('v2.stop_new', 'overview_stop', lambda: self.command(UiAction.STOP_NEW)),
-            ('v2.reconcile', 'overview_reconcile', lambda: self.command(UiAction.RECONCILE)),
         ),
     )
-    self.overview_status = QLabel()
-    self.overview_status.setTextFormat(Qt.TextFormat.PlainText)
-    self.overview_status.setWordWrap(True)
-    layout.addWidget(self.overview_status)
-    self.overview_deployments = QLabel()
-    self.overview_deployments.setTextFormat(Qt.TextFormat.PlainText)
-    self.overview_deployments.setWordWrap(True)
-    self.overview_deployments.setObjectName('overview_strategy_summary')
-    layout.addWidget(self.overview_deployments)
-    layout.addWidget(label('v2.pending_issues'))
-    self.issue_details = QListWidget()
-    self.issue_details.setObjectName('pending_issue_details')
-    self.issue_details.setAccessibleName(ui_text('v2.pending_issues'))
-    self.issue_details.setMinimumHeight(90)
-    self.issue_details.setWordWrap(True)
-    layout.addWidget(self.issue_details)
-    self.events = QListWidget()
-    self.events.setObjectName('recent_events')
-    self.events.setAccessibleName(ui_text('v2.recent_events'))
-    self.events.setMinimumHeight(160)
-    layout.addWidget(label('v2.recent_events'))
-    layout.addWidget(self.events)
     layout.addStretch()
 
 

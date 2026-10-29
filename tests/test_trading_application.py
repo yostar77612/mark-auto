@@ -534,5 +534,182 @@ class ApplicationLifecycleTests(unittest.TestCase):
         self.assertEqual(len(self.engine.gateways['local-stock'].remote_state.orders), 1)
 
 
+class DashboardApplicationTests(unittest.TestCase):
+    """One application table owns daily metrics and position valuation wiring."""
+
+    def test_daily_values_and_live_only_position_valuation(self):
+        from test_live_market_wiring import memory_engine
+        from quantlab.trading.application.state import StrategyRecord, LocalOrder
+        from quantlab.trading.application.performance import seed_track
+        from quantlab.trading.domain.models import HoldingPolicy, PositionLot, Quote, Reservation
+
+        engine = memory_engine()
+        now = engine.clock.now()
+        day = engine.state.trading_day
+        next_day = engine.calendar.advance(day, 1)
+        next_now = engine.calendar.day_session(next_day).opens_at + timedelta(minutes=5)
+        spec = engine.catalog.instruments[0]
+        form = StrategyForm(
+            'dashboard', spec.market, HoldingKind.SWING, 3, 5, Side.BUY, spec.instrument_id, 'local-stock', Environment.LOCAL, D('30000'), D('.02')
+        )
+        record = StrategyRecord('strategy', 1, form, HoldingPolicy())
+        plan = OrderPlan(
+            'today',
+            'local-stock',
+            Environment.LOCAL,
+            spec.instrument_id,
+            'strategy',
+            1,
+            Side.BUY,
+            1000,
+            spec.unit,
+            D('10'),
+            D('9'),
+            False,
+            next_now,
+            next_now + timedelta(seconds=30),
+            0,
+        )
+        reserve = Reservation('reserve', 'local-stock', spec.instrument_id, 'group', D('0'), D('0'), 0, OrderStatus.FILLED)
+        old_plan = replace(plan, plan_id='old', decision_at=now, deadline=now + timedelta(seconds=30))
+        old_order = LocalOrder('old', 'old', 'hash', old_plan, record.policy, reserve, OrderStatus.FILLED, filled=1000, fill_count_day=day, daily_fill_count=4)
+        order = LocalOrder('today', 'today', 'hash', plan, record.policy, reserve, OrderStatus.FILLED, filled=1000, fill_count_day=next_day, daily_fill_count=2)
+        lot = PositionLot('today', 'local-stock', spec.instrument_id, 'strategy', 1, record.policy, 1000, D('10'), next_day, 0)
+        track = replace(seed_track('strategy', 1, now, day), trade_date=next_day, last_at=next_now, equity=D('125'), peak=D('125'), daily_baseline=D('100'))
+        engine.clock.current = next_now
+
+        class MarketService:
+            market_revision = 0
+
+            def __init__(self, freshness):
+                from quantlab.trading.application.contracts import MarketHealthView, MarketWatchView
+
+                health = MarketHealthView(spec.instrument_id, freshness)
+                self.view = MarketWatchView(spec.instrument_id, health=health)
+
+            def views(self):
+                return (self.view,)
+
+            def overview(self):
+                from quantlab.trading.application.contracts import OverviewMarketSummary
+
+                return OverviewMarketSummary((self.view.health,))
+
+        for age, quality, shared_health, expected_pnl, expected_today in (
+            (0, 'VERIFIED', None, D('1000'), D('25')),
+            (11, 'VERIFIED', None, None, None),
+            (61, 'VERIFIED', None, None, None),
+            (0, 'UNVERIFIED', None, None, None),
+            (0, 'VERIFIED', 'LIVE', D('1000'), D('25')),
+            (0, 'VERIFIED', 'DELAYED', None, None),
+            (0, 'VERIFIED', 'STOPPED', None, None),
+            (0, 'VERIFIED', 'CLOSED', None, None),
+            (0, 'VERIFIED', 'UNKNOWN', None, None),
+        ):
+            with self.subTest(age=age, quality=quality, shared_health=shared_health):
+                engine.live_market = MarketService(shared_health) if shared_health is not None else None
+                engine.state = replace(
+                    engine.state, trading_day=next_day, strategies=(record,), orders=(old_order, order), positions=(lot,), performance_tracks=(track,)
+                )
+                engine.quotes[spec.instrument_id] = Quote(
+                    spec.instrument_id,
+                    D('11'),
+                    D('11'),
+                    D('11'),
+                    next_now - timedelta(seconds=age),
+                    next_now - timedelta(seconds=age),
+                    next_day,
+                    quality=quality,
+                )
+                view = LocalFacade(engine).snapshot()
+                self.assertEqual((view.strategies[0].today_order_count, view.strategies[0].today_pnl), (1, expected_today))
+                self.assertEqual((view.positions[0].unrealized_pnl, view.unrealized_pnl), (expected_pnl, expected_pnl))
+                self.assertEqual(view.today_fill_count, 2)
+                self.assertEqual(view.positions[0].quote_time, engine.quotes[spec.instrument_id].source_at.isoformat())
+                self.assertIn(str(engine.calendar.advance(next_day, 5)), view.positions[0].exit_window)
+        engine.state = replace(
+            engine.state, performance_tracks=(replace(track, daily_baseline=None),), orders=(replace(order, fill_count_day=None, daily_fill_count=None),)
+        )
+        self.assertIsNone(LocalFacade(engine).snapshot().strategies[0].today_pnl)
+        self.assertIsNone(LocalFacade(engine).snapshot().today_fill_count)
+        for stopped, reconciled, locks, expected in (
+            (False, True, (), 'RUNNING'),
+            (True, True, (), 'PAUSED'),
+            (False, False, (), 'PAUSED'),
+            (True, True, (next_day,), 'RISK_STOPPED'),
+        ):
+            with self.subTest(stopped=stopped, reconciled=reconciled, locks=locks):
+                engine.state = replace(engine.state, strategies=(replace(record, state='ACTIVE'),), stopped=stopped, reconciled=reconciled, daily_locks=locks)
+                self.assertEqual(LocalFacade(engine).snapshot().strategies[0].activity_state, expected)
+
+    def test_local_day_rollover_and_dated_fill_counts(self):
+        from types import SimpleNamespace
+        from test_live_market_wiring import memory_engine
+        from quantlab.trading.application.events import apply_event
+        from quantlab.trading.application.state import LocalOrder, StrategyRecord
+        from quantlab.trading.application.performance import seed_track
+        from quantlab.trading.domain.models import HoldingPolicy, Quote, Reservation
+        from quantlab.trading.ports.contracts import OrderEvent
+
+        engine = memory_engine()
+        spec = engine.catalog.instruments[0]
+        now = engine.clock.now()
+        day = engine.state.trading_day
+        form = StrategyForm('daily', spec.market, HoldingKind.SWING, 3, 5, Side.BUY, spec.instrument_id, 'local-stock', Environment.LOCAL, D('30000'), D('.02'))
+        record = StrategyRecord('strategy', 1, form, HoldingPolicy())
+        plan = OrderPlan(
+            'entry',
+            'local-stock',
+            Environment.LOCAL,
+            spec.instrument_id,
+            'strategy',
+            1,
+            Side.BUY,
+            3000,
+            spec.unit,
+            D('10'),
+            D('9'),
+            False,
+            now,
+            now + timedelta(seconds=30),
+            0,
+        )
+        reserve = Reservation('reserve', 'local-stock', spec.instrument_id, 'group', D('0'), D('0'), 3000, OrderStatus.ACCEPTED)
+        order = LocalOrder('entry', 'entry', 'hash', plan, record.policy, reserve, OrderStatus.ACCEPTED)
+        engine.state = replace(engine.state, strategies=(record,), orders=(order,), performance_tracks=(seed_track('strategy', 1, now, day),))
+
+        class Gateway:
+            def inspect(self, account):
+                return SimpleNamespace(day_trade=True)
+
+        class Simulation:
+            def advance(self, trade_day, current):
+                engine.clock.current = current
+
+        engine.gateways = {'local-stock': Gateway()}
+        engine.quotes[spec.instrument_id] = Quote(spec.instrument_id, D('10'), D('10'), D('10'), now, now, day)
+        for sequence, current_day in enumerate((day, engine.calendar.advance(day, 1)), 1):
+            with self.subTest(day=current_day):
+                current = engine.calendar.day_session(current_day).opens_at + timedelta(minutes=5)
+                engine.clock.current = current
+                engine.state = replace(engine.state, trading_day=current_day)
+                apply_event(
+                    engine,
+                    OrderEvent(
+                        f'fill-{sequence}', 'entry', 'broker', OrderStatus.PARTIALLY_FILLED, sequence * 1000, 1000, D('10'), current, sequence, 'SIMULATED'
+                    ),
+                )
+                self.assertEqual(LocalFacade(engine).snapshot().today_fill_count, 1)
+        engine.gateways = {}
+        engine.simulation = Simulation()
+        current = engine.clock.now()
+        engine.quotes[spec.instrument_id] = Quote(spec.instrument_id, D('10'), D('10'), D('10'), current, current, current_day)
+        step(engine, {})
+        current = engine.clock.now()
+        engine.quotes[spec.instrument_id] = Quote(spec.instrument_id, D('10'), D('10'), D('10'), current, current, engine.state.trading_day)
+        view = LocalFacade(engine).snapshot()
+        self.assertEqual((view.strategies[0].today_order_count, view.strategies[0].today_pnl, view.today_fill_count), (0, D('0'), 0))
+
+
 if __name__ == '__main__':
     unittest.main()

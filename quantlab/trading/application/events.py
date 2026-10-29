@@ -103,6 +103,16 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
         required_risk = engine.fees.loss_at_stop(spec, order.plan.limit_price, order.plan.stop_price, total_open) if total_open else ZERO
         pending_cash = engine.fees.entry_cash(spec, order.plan.limit_price, pending, order.plan.side) if pending else ZERO
         reservation = replace(reservation, quantity=total_open, cash=pending_cash, risk=required_risk, status=event.status)
+    fill_day, fill_count = order.fill_count_day, order.daily_fill_count
+    if delta:
+        fill_day = next((s.trade_date for s in engine.calendar.sessions if s.opens_at <= event.occurred_at <= s.closes_at), None)
+        # Reconciled cumulative deltas do not prove how many executions occurred.
+        if reconciled or fill_day is None:
+            fill_count = None
+        elif order.fill_count_day == fill_day:
+            fill_count = None if fill_count is None else fill_count + 1
+        else:
+            fill_count = 1 if not order.filled or order.fill_count_day is not None else None
     order = replace(
         order,
         status=event.status,
@@ -112,6 +122,8 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
         event_sequence=event.sequence,
         reservation=reservation,
         costs=order.costs + fee,
+        fill_count_day=fill_day,
+        daily_fill_count=fill_count,
     )
     state = replace_order(state, order)
     event_key = f'{account}:{event.event_id}'
