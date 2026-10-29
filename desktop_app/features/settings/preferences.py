@@ -1,7 +1,7 @@
 """Display-only persistence adapters; no jobs, actions or provider settings."""
 
 from PySide6.QtWidgets import QSplitter, QScrollArea
-from quantlab.runtime_support import RuntimeSafetyError
+from quantlab.shared.runtime_errors import RuntimeSafetyError
 from quantlab.ui_preferences import page_row, bounded_size, splitter_sizes
 from desktop_app.strings.catalog import ui_text
 

@@ -14,7 +14,8 @@ import multiprocessing as mp
 import sys
 import time
 
-from .runtime_support import RuntimeSafetyError, WindowsAppMutex
+from .runtime_support import WindowsAppMutex
+from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 GATE_SECONDS = 15
 STOP_SECONDS = 6

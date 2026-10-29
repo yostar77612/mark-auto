@@ -11,8 +11,7 @@ import time
 from .windows_paths import native_path
 
 
-class RuntimeSafetyError(ValueError):
-    pass
+from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 
 WINDOWS_APP_MUTEX = r'Local\MarkAuto.Desktop.58788303-95B7-491B-A67A-B1EBA50DA420'

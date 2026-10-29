@@ -26,7 +26,7 @@ def exception_code(exc):
 
 def startup_error_code(exc):
     # Keep the shared safety type local to startup classification.
-    from .runtime_support import RuntimeSafetyError
+    from quantlab.shared.runtime_errors import RuntimeSafetyError
 
     if isinstance(exc, RuntimeSafetyError) and len(exc.args) == 1 and type(exc.args[0]) is str:
         return {

@@ -17,7 +17,8 @@ from pathlib import Path
 import time
 import uuid
 
-from .desktop_runtime import BackupManager, MAX_BACKUP, RuntimeSafetyError, _json_bytes, _read_json, atomic_write
+from .desktop_runtime import BackupManager, MAX_BACKUP, _json_bytes, _read_json, atomic_write
+from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 
 MAX_ARCHIVES = 7
