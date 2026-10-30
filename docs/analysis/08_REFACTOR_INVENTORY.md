@@ -431,7 +431,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/assistant/adapters/chatgpt/__init__.py` | 0 | infrastructure | `quantlab/assistant/adapters/chatgpt/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 | `quantlab/shared/__init__.py` | 1 | shared | `quantlab/shared/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 
-| `tools/refactor/split_core_r3d.py` | 175 | tooling | `tools/refactor/split_core_r3d.py` | PR D reproducible repair |
+| `tools/refactor/split_core_r3d.py` | 206 | tooling | `tools/refactor/split_core_r3d.py` | PR D reproducible repair |
 
 | `tools/refactor/split_core_r3f.py` | 146 | tooling | `tools/refactor/split_core_r3f.py` | PR D reproducible repair |
 

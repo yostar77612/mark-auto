@@ -123,6 +123,36 @@ def repair_smoke():
     write(name, source)
 
 
+def repair_market_source_identity():
+    """Pin the approved receipt split's actual sources in the market smoke."""
+    name = 'tests/test_desktop_market_smoke.py'
+    source = (ROOT / name).read_text(encoding='utf-8')
+    old = "            self.assertEqual(len(market['engine_source_hashes']), 5)"
+    new = """            self.assertEqual(
+                set(market['engine_source_hashes']),
+                {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'},
+            )
+            from quantlab.core import to_dict
+            from quantlab.saved_candidate_pool import CORE_SPLIT_SIWC_PROFILE_V1
+
+            self.assertEqual(market['engine_source_hashes'], to_dict(CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']))"""
+    if old not in source and new not in source:
+        raise ValueError('Market smoke source identity assertion anchor missing')
+    write(name, source.replace(old, new, 1))
+    path = ROOT / '.tmp-layered/test-edit-reasons.json'
+    rows = json.loads(path.read_text(encoding='utf-8-sig'))
+    rows = [row for row in rows if not (row.get('slice') == 'T4-r3k' and row.get('file') == name)]
+    rows.append(
+        {
+            'file': name,
+            'slice': 'T4-r3k',
+            'reason': 'G3 owner decision: receipts validator split from research.py; engine source set is base 5 + receipts.py; count replaced by exact key set and exact NEW current producer profile pins.',
+            'reproduced_by': 'tools/refactor/split_core_r3d.py',
+        }
+    )
+    path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+
 def repair_inventory():
     name = 'docs/analysis/08_REFACTOR_INVENTORY.md'
     source = (ROOT / name).read_text(encoding='utf-8')
@@ -133,7 +163,7 @@ def repair_inventory():
         row = f'\n| `{script}` | {count} | tooling | `{script}` | PR D r3d reproducible repair |\n'
         source = source[:index] + row + source[index:]
     source = re.sub(
-        r'(?m)^(\| `([^`]+\.py)` \| )\d+( \| [^\n]*PR D (?:extracted responsibility owner|r3d reproducible repair)[^\n]*)$',
+        r'(?m)^(\| `([^`]+\.py)` \| )\d+( \| [^\n]*PR D (?:extracted responsibility owner|(?:r3d )?reproducible repair)[^\n]*)$',
         lambda match: match[1] + str(len((ROOT / match[2]).read_text(encoding='utf-8').splitlines())) + match[3],
         source,
     )
@@ -162,6 +192,7 @@ def main():
     base = repair_walk_forward()
     repair_scan()
     repair_smoke()
+    repair_market_source_identity()
     repair_inventory()
     repair_historical_projection(base)
     record()
