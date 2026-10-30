@@ -394,11 +394,5 @@
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_pages/compare.py",
-    "target": "quantlab.runtime_support",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing request validation follows D relocation from desktop_runtime to runtime_support; no new operation or behavior."
   }
 ]

@@ -159,7 +159,7 @@ class ComparePage(PageContext, QWidget):
         self.form_feedback(self.analysis_original, ui_text('ui.pick_analysis_original.original_selected'))
 
     def _analysis_request(self, task):
-        from quantlab.runtime_support import validate_analysis_request
+        from quantlab.research_core.application.job_requests import validate_analysis_request
 
         refs = [item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
         if not refs or len({ref['campaign_folder'] for ref in refs}) != 1:

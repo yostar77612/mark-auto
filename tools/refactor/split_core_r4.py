@@ -168,8 +168,8 @@ def repair():
         (ROOT / name)
         .read_text(encoding='utf-8')
         .replace(
-            'from quantlab.research_core.application.job_requests import validate_analysis_request',
             'from quantlab.runtime_support import validate_analysis_request',
+            'from quantlab.research_core.application.job_requests import validate_analysis_request',
         ),
     )
     name = 'desktop_app/bootstrap.py'
@@ -183,14 +183,7 @@ def repair():
     write(name, json.dumps(mapping, indent=2) + '\n')
     name = 'tools/layer_allowlist.json'
     entries = json.loads((ROOT / name).read_text(encoding='utf-8'))
-    entry = {
-        'path': 'desktop_pages/compare.py',
-        'target': 'quantlab.runtime_support',
-        'rule': 'presentation-to-infrastructure',
-        'justification': 'Existing request validation follows D relocation from desktop_runtime to runtime_support; no new operation or behavior.',
-    }
-    if not any(row['path'] == entry['path'] and row['target'] == entry['target'] for row in entries):
-        entries.append(entry)
+    entries = [row for row in entries if (row['path'], row['target']) != ('desktop_pages/compare.py', 'quantlab.runtime_support')]
     write(name, json.dumps(entries, indent=2) + '\n')
     name = 'tools/refactor/measure_ui_sizes.py'
     write(name, (ROOT / name).read_text(encoding='utf-8').replace("'6b78239', 'HEAD', '--', 'desktop_app/'", "'6b78239', '--', 'desktop_app/'"))
