@@ -274,6 +274,7 @@
     "tools/refactor/split_core_r3f.py": "tooling",
     "desktop_app/bootstrap.py": "composition",
     "tools/refactor/measure_ui_sizes.py": "tooling",
+    "tools/refactor/measure_core_sizes.py": "tooling",
     "tools/refactor/check_ui_scripts.py": "tooling",
     "tools/refactor/replay_pr_c.py": "tooling",
     "tools/refactor/replay_pr_c_content.json": "tooling",
