@@ -1,5 +1,7 @@
 """Cheap offline connection-probe regression tests; no subprocess or network."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 from dataclasses import asdict
 import json
 from pathlib import Path
@@ -14,7 +16,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel, ConnectionRequest, ConnectionEvent, run_connection_request
 from desktop_app.features.assistant import connection_test as probe
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import connection_event_from_payload
+from quantlab.research_core.application.ui_operations.assistant import connection_event_from_payload
 from quantlab.desktop_errors import error_message
 from quantlab.assistant.adapters.chatgpt.provider import PlanError
 
@@ -133,7 +135,7 @@ class ConnectionD9Tests(unittest.TestCase):
         self.ready.assert_not_called()
         transport = Transport()
         event = self.run_probe(transport, request)
-        wire = connection_event_from_payload(json.loads(json.dumps(asdict(event))))
+        wire = connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(event))))
         self.finish(wire)
         self.assertEqual(len(transport.calls), 1)
         self.assertTrue(transport.closed)

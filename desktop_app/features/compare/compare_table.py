@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 import re
 
 from PySide6.QtCore import Qt, Signal
-from desktop_app.components.forms import PARAM_LABELS
+from desktop_app.features.strategy.forms import PARAM_LABELS
 from desktop_app.components.formatting import display_number, display_status, result_name
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import FINANCIAL_FIELDS, align_table_item, set_financial_item

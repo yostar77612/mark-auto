@@ -1,5 +1,9 @@
 """Cheap synthetic/offscreen evidence for the display-only U2-C8 boundary."""
 
+from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
+
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from dataclasses import replace
 from datetime import datetime
@@ -25,7 +29,7 @@ from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 from tests.test_no_hardcoded_ui_text import UI_PACKAGE_MODULES
 from tests.test_import_graph import TOUCHED
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 # Source scans below use current physical paths.
 
@@ -271,7 +275,7 @@ class NotificationTests(unittest.TestCase):
             self.assertIn(module, TOUCHED)
 
     def test_bare_host_notify_keeps_legacy_attributes_and_original_text(self):
-        MainWindow.notify_local(SimpleNamespace(), Exception(SECRET), error=True)
+        _c_JobPresenter(SimpleNamespace()).notify_local(Exception(SECRET), error=True)
         host = SimpleNamespace(
             notification=QLabel(),
             notification_timer=QTimer(),
@@ -283,15 +287,15 @@ class NotificationTests(unittest.TestCase):
         self.addCleanup(host.notification.close)
         host.local_notifications.setChecked(True)
         message = ui_text('notifications.error') + '<script>x</script><b>y</b>'
-        MainWindow.notify_local(host, message, error=True, completion=True)
+        _c_JobPresenter(host).notify_local(message, error=True, completion=True)
         self.assertEqual(host.notification.text(), ui_text('ui.notify_local.result_close_links').format(escape(message)))
         self.assertEqual(host.notification.property('status'), 'danger')
         self.assertFalse(host.notification_timer.isActive())
         self.assertEqual(host._notification_operation, 'ui_import')
-        MainWindow.notify_local(host, ui_text('job.cancelled'), completion=True)
+        _c_JobPresenter(host).notify_local(ui_text('job.cancelled'), completion=True)
         self.assertEqual(host.notification.property('status'), 'neutral')
         self.assertEqual(host.notification_timer.interval(), 5000)
-        MainWindow._notification_link(host, 'close')
+        _c_JobPresenter(host)._notification_link('close')
         self.assertTrue(host.notification.isHidden())
         self.assertFalse(host.notification_timer.isActive())
         host.notification_fade.stop.assert_called()
@@ -308,7 +312,7 @@ class NotificationTests(unittest.TestCase):
         host.local_notifications = QCheckBox()
         host.local_notifications.setChecked(True)
         message = ui_text('ui.poll_jobs.restore_incomplete')
-        MainWindow.notify_local(host, message, error=True, completion=True)
+        _c_JobPresenter(host).notify_local(message, error=True, completion=True)
         self.assertEqual(host.notification.text(), ui_text('ui.notify_local.result_close_links').format(message))
         self.assertIsNot(host.notification, center.toasts[0])
         self.assertIs(host.notification_fade.targetObject(), host.notification_opacity)
@@ -325,7 +329,7 @@ class NotificationTests(unittest.TestCase):
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace', Path(folder) / 'bootstrap').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), None)
+            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), None, services=_c_create_ui_services(_c_create_operation_ports()))
             window.timer.stop()
             try:
                 window._pending_chatgpt_restore = False

@@ -1,12 +1,15 @@
 """Candidate pane presentation only; isolated synthetic source fixtures."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os, tempfile, unittest
 from pathlib import Path
 from decimal import Decimal
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
-from desktop_app.components.forms import CandidateSummaryCard, SummaryCard, candidate_summary_text
+from desktop_app.features.strategy.summary import CandidateSummaryCard, candidate_summary_text
+from desktop_app.components.result_tables import SummaryCard
 from quantlab.core import canonical_json
 from tests.test_performance_metrics import metric
 
@@ -134,21 +137,28 @@ class CandidatePresentationHostTests(unittest.TestCase):
         from tests.saved_pool_fixtures import make_saved_source
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
         from quantlab.reporting import save_dataset
-        from desktop_app.shell.main_window import MainWindow, candidate_record
+        from desktop_app.shell.window import MainWindow
+        from quantlab.research_core.application.ui_operations.data import candidate_record
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = AppPaths(Path(tmp) / 'workspace', Path(tmp) / 'bootstrap').ensure()
             folder, ref, data, state = make_saved_source(paths.state / 'campaigns', candidates=1, registry_path=paths.controls / 'holdout-registry.sqlite3')
             save_dataset(data, paths.state / 'dataset.json')
             jobs = JobManager(paths)
-            w = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+            w = MainWindow(
+                paths,
+                jobs,
+                SettingsStore(paths.state / 'settings.json'),
+                BackupManager(paths, jobs),
+                services=_c_create_ui_services(_c_create_operation_ports()),
+            )
             w.show()
             self.app.processEvents()
             try:
                 attempt = state['attempts'][0]
                 reference = {'campaign_folder': ref, 'attempt_id': attempt['attempt_id'], 'strategy_hash': attempt['strategy_hash']}
                 before = {p.name: p.read_bytes() for p in folder.iterdir() if p.is_file()}
-                spec, provenance = candidate_record(paths.state, reference)
+                spec, provenance = candidate_record(_c_create_operation_ports(), paths.state, reference)
                 w.candidate_choice.addItem('工程候選', reference)
                 w.candidate_choice.setCurrentIndex(w.candidate_choice.count() - 1)
                 w.inspect_candidate()

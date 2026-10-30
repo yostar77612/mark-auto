@@ -1,3 +1,4 @@
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 import importlib.util
 import os
 from pathlib import Path
@@ -137,13 +138,19 @@ class IntegratedAutomaticBackupTests(unittest.TestCase):
     def test_main_window_defers_all_real_managers_then_archives(self):
         from PySide6.QtWidgets import QApplication
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         app = QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as temp:
             paths = AppPaths(Path(temp) / 'workspace').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+            window = MainWindow(
+                paths,
+                jobs,
+                SettingsStore(paths.state / 'settings.json'),
+                BackupManager(paths, jobs),
+                services=_c_create_ui_services(_c_create_operation_ports()),
+            )
             try:
                 panel = window.automatic_backup_panel
                 panel.timer.stop()

@@ -176,39 +176,24 @@ class WorkspaceWALGuardTests(unittest.TestCase):
                     self.assertEqual(json.loads((paths.root / 'workspace-format.json').read_text()), restored if committed else prior)
 
     def test_real_ui_adapter_guards_before_replay_constructor(self):
-        # Compile the actual worker adapter without importing optional Qt widgets.
+        # Compile the real stable executor; use every real registered handler.
         import ast
+        from desktop_app.bootstrap import create_operation_ports
+        from quantlab.research_core.application.ui_operations import registry
+        from quantlab.research_core.application import paper_operations
 
         source = Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py'
         tree = ast.parse(source.read_text(encoding='utf-8'))
-        # Compile the entire replacement body, including every registered handler
-        # and shared paper helper, so the constructor-order assertion stays real.
-        functions = [
-            node
-            for node in tree.body
-            if isinstance(node, ast.FunctionDef)
-            and (
-                node.name == 'execute_ui_operation'
-                or node.name.startswith('_handle_ui_')
-                or node.name in ('_prepare_paper_operation', '_finish_paper_operation')
-            )
-        ]
-        registry = next(
-            node
-            for node in tree.body
-            if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == '_UI_OPERATION_HANDLERS' for target in node.targets)
-        )
+        executor = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'execute_ui_operation')
+        ports = create_operation_ports()
+        ports.inputs = types.SimpleNamespace(_dataset=lambda root, payload: types.SimpleNamespace(manifest={'data_hash': 'data'}))
         broker = types.SimpleNamespace(reconcile=lambda snapshot: None, snapshot=lambda: {}, _margin_schedule=())
         namespace = {
-            'UI_OPERATIONS': {'ui_paper_replay'},
-            '_root': lambda paths: paths.state,
-            '_paper': lambda root: broker,
-            '_dataset': lambda root, payload: types.SimpleNamespace(manifest={'data_hash': 'data'}),
-            'load_selection': lambda path: {'strategy_hash': 'strategy', 'strategy': {}},
-            'content_hash': lambda value: 'binding',
-            'StrategySpec': lambda **value: value,
+            'create_operation_ports': lambda: ports,
+            'prepare_operation': registry.prepare_operation,
+            '_UI_OPERATION_HANDLERS': registry._UI_OPERATION_HANDLERS,
         }
-        exec(compile(ast.Module(body=[*functions, registry], type_ignores=[]), str(source), 'exec'), namespace)
+        exec(compile(ast.Module(body=[executor], type_ignores=[]), str(source), 'exec'), namespace)
 
         class ReachedConstructor(Exception):
             pass
@@ -217,7 +202,13 @@ class WorkspaceWALGuardTests(unittest.TestCase):
             self.assertEqual(json.loads((self.paths.root / 'workspace-format.json').read_text()), GUARDED)
             raise ReachedConstructor()
 
-        with patch('quantlab.paper_replay.PaperReplay', side_effect=constructor):
+        with (
+            patch('quantlab.paper_replay.PaperReplay', side_effect=constructor),
+            patch.object(paper_operations, '_paper', return_value=broker),
+            patch('quantlab.reporting.load_selection', return_value={'strategy_hash': 'strategy', 'strategy': {}}),
+            patch.object(paper_operations, 'content_hash', return_value='binding'),
+            patch.object(paper_operations, 'StrategySpec', side_effect=lambda **value: value),
+        ):
             with self.assertRaises(ReachedConstructor):
                 namespace['execute_ui_operation']('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': {}}, self.paths)
 
@@ -517,7 +508,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             patch.object(adapter, 'run_walk_forward', side_effect=run),
         ):
             with self.assertRaisesRegex(RuntimeError, 'reached core'):
-                adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths)
+                adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, inputs=fake_ui)
             folder = self.paths.state / 'walk_forward' / identity
             folder.mkdir(parents=True, exist_ok=True)
             (folder / 'walk_forward.sqlite3').write_bytes(b'old data')
@@ -529,7 +520,8 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
                 patch.object(adapter, 'compact_walk_forward', return_value={'old': True}),
             ):
                 self.assertEqual(
-                    adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths), {'old': True}
+                    adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, inputs=fake_ui),
+                    {'old': True},
                 )
                 require.assert_not_called()
             self.assertEqual((self.paths.root / 'workspace-format.json').read_bytes(), before)

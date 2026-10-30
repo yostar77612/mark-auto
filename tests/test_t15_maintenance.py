@@ -1,5 +1,7 @@
 """T15 offline maintenance contracts; no socket, installer or real profile access."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from contextlib import ExitStack
 import hashlib
@@ -250,7 +252,7 @@ class MaintenanceUITests(OfflineTest):
         return panel
 
     def test_page_and_window_construction_never_checks(self):
-        from desktop_app.shell.main_window import MainWindow  # Exercise the actual settings mounting path.
+        from desktop_app.shell.window import MainWindow  # Exercise the actual settings mounting path.
         from quantlab.desktop_runtime import AppPaths, JobManager  # Disposable workspace only.
 
         paths = AppPaths(self.temp() / 'workspace').ensure()
@@ -258,7 +260,7 @@ class MaintenanceUITests(OfflineTest):
         self.addCleanup(jobs.close)
         with patch('desktop_app.features.settings.maintenance.check_for_update') as checked:
             panel = self.panel()
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             for timer in window.findChildren(QTimer):
                 timer.stop()
             self.addCleanup(window.deleteLater)

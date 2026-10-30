@@ -233,9 +233,9 @@ def run_gui(args):
         if not prepare_workspace(state):
             return 3
         state.startup_timing.mark('workspace')
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.main_window import create_window
 
-        state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
+        state.window = create_window(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
         page_state = getattr(state.window, 'page_state', None)
         if page_state is not None:
             page_state.startup_timing = state.startup_timing

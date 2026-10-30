@@ -1,5 +1,7 @@
 """Offline, explicit local reconciliation; no account, vault or network fixtures."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 from dataclasses import asdict, replace
 from contextlib import ExitStack
 import json
@@ -17,7 +19,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 import shiboken6
 
 import desktop_app.features.assistant.connection as ui
-from desktop_app.shell.main_window import connection_event_from_payload
+from quantlab.research_core.application.ui_operations.assistant import connection_event_from_payload
 from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
 
 REF = 'a' * 32
@@ -103,7 +105,7 @@ class ReconciliationPayloadTests(unittest.TestCase):
         ]
         for event in events:
             with self.subTest(event=event):
-                decoded = connection_event_from_payload(json.loads(json.dumps(asdict(event))))
+                decoded = connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(event))))
                 self.assertIs(type(decoded), ui.ReconciliationEvent)
                 self.assertEqual(decoded, event)
                 self.assertEqual((decoded.state, decoded.registrations, decoded.models, decoded.authorization_url), ('unknown', (), (), None))
@@ -573,9 +575,9 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
     def test_finished_events_round_trip_and_outcome_is_only_for_k2_resolvable(self):
         request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
         event = finished_inspection_event(request)
-        self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
+        self.assertEqual(connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(event)))), event)
         other = finished_inspection_event(request, ('k2_other_registration', None, None, False), None)
-        self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(other)))), other)
+        self.assertEqual(connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(other)))), other)
         for inspection, outcome in (
             (('k2_resolvable', 1, 1, True), None),
             (('k2_resolvable', 1, 1, True), 'quota_paused'),

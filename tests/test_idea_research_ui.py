@@ -12,6 +12,10 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QComboBox, QTableWidgetItem
 
 import desktop_app.features.strategy.idea_research as page
+from desktop_app.features.strategy.idea_labels import COLUMNS as _c_page_COLUMNS
+from desktop_app.features.strategy.idea_events import event as _c_page_event
+from desktop_app.features.strategy.idea_links import open_url as _c_page_open_url
+from desktop_app.features.strategy import idea_links as _c_idea_links
 from desktop_app.shell.host import PageState
 from desktop_app.strings.catalog import ui_text
 from quantlab.idea_research import IdeaStore
@@ -53,7 +57,11 @@ class DialogTests(unittest.TestCase):
             backtest_form=SimpleNamespace(build_payload=lambda: {'config': {}}),
         )
         self.host = SimpleNamespace(
-            state=self.state, safe=lambda callback: callback(), start_job=Mock(return_value='job-1'), payload=Mock(return_value={'families': ['trend']})
+            state=self.state,
+            idea_records=IdeaStore,
+            safe=lambda callback: callback(),
+            start_job=Mock(return_value='job-1'),
+            payload=Mock(return_value={'families': ['trend']}),
         )
         self.dialog = page.IdeaResearchDialog(self.host)
         self.addCleanup(self.dialog.deleteLater)
@@ -105,39 +113,39 @@ class DialogTests(unittest.TestCase):
             {'kind': 'source', 'source': source(1, urls[0], cited=True)},
             {'kind': 'source', 'source': source(2, urls[1])},
         )
-        column = page.COLUMNS.index('url')
+        column = _c_page_COLUMNS.index('url')
         for row, url in enumerate(urls):
             self.assertEqual(self.dialog.sources.item(row, column).text(), url)
-        self.assertEqual(self.dialog.sources.item(0, page.COLUMNS.index('origin')).text(), ui_text('idea.origin.cited'))
-        self.assertEqual(self.dialog.sources.item(1, page.COLUMNS.index('origin')).text(), ui_text('idea.origin.search_only'))
-        with patch.object(page.QDesktopServices, 'openUrl', return_value=True) as opened:
+        self.assertEqual(self.dialog.sources.item(0, _c_page_COLUMNS.index('origin')).text(), ui_text('idea.origin.cited'))
+        self.assertEqual(self.dialog.sources.item(1, _c_page_COLUMNS.index('origin')).text(), ui_text('idea.origin.search_only'))
+        with patch.object(_c_idea_links.QDesktopServices, 'openUrl', return_value=True) as opened:
             for row in range(2):
-                button = self.dialog.sources.cellWidget(row, page.COLUMNS.index('open'))
+                button = self.dialog.sources.cellWidget(row, _c_page_COLUMNS.index('open'))
                 self.assertTrue(button.isVisible() or not self.dialog.isVisible())
                 button.click()
             self.dialog.sources.cellDoubleClicked.emit(0, column)
-        self.assertEqual([call.args[0].toString() for call in opened.call_args_list], [urls[0], page.QUrl(urls[1]).toString(), urls[0]])
+        self.assertEqual([call.args[0].toString() for call in opened.call_args_list], [urls[0], _c_idea_links.QUrl(urls[1]).toString(), urls[0]])
         # A cited URL the app refused to fetch is still listed and clickable.
         refused = 'https://www.yuanta.com.tw/report'
         self.feed({'kind': 'urls', 'urls': self.dialog.record['urls'] + [{'url': refused, 'origin': ['url_citation'], 'reject_reason': 'policy_blocked'}]})
         self.assertEqual(self.dialog.sources.rowCount(), 3)
         self.assertEqual(self.dialog.sources.item(2, column).text(), refused)
         self.assertEqual(self.dialog.sources.item(2, 0).text(), ui_text('idea.state.not_fetched'))
-        self.assertEqual(self.dialog.sources.item(2, page.COLUMNS.index('reason')).text(), 'policy_blocked')
-        with patch.object(page.QDesktopServices, 'openUrl', return_value=True) as opened:
-            self.dialog.sources.cellWidget(2, page.COLUMNS.index('open')).click()
+        self.assertEqual(self.dialog.sources.item(2, _c_page_COLUMNS.index('reason')).text(), 'policy_blocked')
+        with patch.object(_c_idea_links.QDesktopServices, 'openUrl', return_value=True) as opened:
+            self.dialog.sources.cellWidget(2, _c_page_COLUMNS.index('open')).click()
         self.assertEqual(opened.call_args.args[0].toString(), refused)
-        with patch.object(page.QDesktopServices, 'openUrl') as opened:
-            self.assertFalse(page.open_url('http://alpha.example.org/'))
-            self.assertFalse(page.open_url('file:///C:/Windows/win.ini'))
-            self.assertFalse(page.open_url('javascript:alert(1)'))
+        with patch.object(_c_idea_links.QDesktopServices, 'openUrl') as opened:
+            self.assertFalse(_c_page_open_url('http://alpha.example.org/'))
+            self.assertFalse(_c_page_open_url('file:///C:/Windows/win.ini'))
+            self.assertFalse(_c_page_open_url('javascript:alert(1)'))
         opened.assert_not_called()
 
     def test_web_text_is_plain_text_only(self):
         self.start_task()
         hostile = '<b>bold</b><img src="https://tracker.example/x.png"><script>alert(1)</script>'
         self.feed({'kind': 'source', 'source': source(1, 'https://alpha.example.org/a', title=hostile)})
-        item = self.dialog.sources.item(0, page.COLUMNS.index('title'))
+        item = self.dialog.sources.item(0, _c_page_COLUMNS.index('title'))
         self.assertIsInstance(item, QTableWidgetItem)
         self.assertEqual(item.text(), hostile)
         IdeaStore(self.root).write_text(TASK, 's1', hostile)
@@ -181,7 +189,7 @@ class DialogTests(unittest.TestCase):
             last_operation='ui_idea_research', strategy_page=SimpleNamespace(idea_dialog=self.dialog), record_event=Mock(), notify_local=Mock(), status=Mock()
         )
         self.state.jobs.active = False
-        self.assertTrue(page.event(shell, {'type': 'cancelled'}))
+        self.assertTrue(_c_page_event(shell, {'type': 'cancelled'}))
         self.assertEqual([s['state'] for s in self.dialog.record['sources']], ['read', 'cancelled', 'cancelled'])
         self.assertEqual(self.dialog.record['status'], 'cancelled')
         shell.record_event.assert_called_once_with('ui_idea_research', 'cancelled')
@@ -213,7 +221,7 @@ class DialogTests(unittest.TestCase):
 
     def test_event_hook_ignores_other_operations(self):
         shell = SimpleNamespace(last_operation='ui_backtest')
-        self.assertFalse(page.event(shell, {'type': 'result'}))
+        self.assertFalse(_c_page_event(shell, {'type': 'result'}))
 
     def test_missing_sign_in_blocks_start(self):
         self.state.chatgpt_controller.active_registration = None

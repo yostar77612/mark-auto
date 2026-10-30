@@ -1,5 +1,7 @@
 """P0 presentation regressions; synthetic local data and offline sessions only."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import json
 from contextlib import closing
 import os
@@ -30,24 +32,26 @@ class CorrectnessTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
 
     def window(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         paths = AppPaths(self.root).ensure()
         jobs = JobManager(paths)
-        window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+        window = MainWindow(
+            paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         self.addCleanup(window.deleteLater)
         self.addCleanup(window.close)
         self.addCleanup(jobs.close)
         return window
 
     def test_reconciled_account_card_three_refreshes_are_read_only(self):
-        from desktop_app.shell.main_window import _paper
+        from quantlab.research_core.application.paper_operations import _paper
         from quantlab.paper import PaperBroker
 
         w = self.window()
         policy = {'contract_id': 'TAIFEX:TMF:202610', 'risk_sessions': [], 'margin_schedule': []}
         (w.root / 'paper_policy.json').write_text(json.dumps(policy), encoding='utf8')
-        broker = _paper(w.root)
+        broker = _paper(_c_create_operation_ports(), w.root)
         broker.reconcile({'account_id': 'synthetic', 'cash': '100000', 'positions': {}, 'orders': {}, 'fills': {}})
         before = broker.journal_events()
         with patch.object(w.paper_card, 'set_values', wraps=w.paper_card.set_values) as card:
@@ -57,7 +61,7 @@ class CorrectnessTests(unittest.TestCase):
                 self.assertEqual(broker.journal_events(), before)
         self.assertEqual(sum(x['operation'] == 'restart' for x in broker.journal_events()), 0)
         self.assertFalse(PaperBroker.read_snapshot(broker.path)['reconciliation_required'])
-        restarted = _paper(w.root)
+        restarted = _paper(_c_create_operation_ports(), w.root)
         self.assertTrue(restarted.snapshot()['reconciliation_required'])
         self.assertEqual(sum(x['operation'] == 'restart' for x in restarted.journal_events()), 1)
 
@@ -65,7 +69,7 @@ class CorrectnessTests(unittest.TestCase):
         from quantlab.paper import PaperBroker, JournalConflict
         from quantlab.core import Instrument
         from quantlab.reporting import demo_config
-        from desktop_app.shell.main_window import paper_risk_limits
+        from quantlab.research_core.application.paper_operations import paper_risk_limits
 
         missing = self.root / 'missing.sqlite'
         with self.assertRaises(sqlite3.Error):

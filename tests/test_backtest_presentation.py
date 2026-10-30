@@ -9,7 +9,8 @@ import unittest
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
 from quantlab.core import canonical_json, to_dict
-from desktop_app.components.forms import BacktestSummaryCard, BacktestFillsTable, SummaryCard, ResultTable, backtest_summary_text
+from desktop_app.features.backtest.summary import BacktestSummaryCard, BacktestFillsTable, backtest_summary_text
+from desktop_app.components.result_tables import SummaryCard, ResultTable
 from tests.test_performance_metrics import metric
 from tests import test_result_reference_layers as references
 

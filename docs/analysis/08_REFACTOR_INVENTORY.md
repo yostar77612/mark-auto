@@ -130,7 +130,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/window.py` | 598 | presentation | `desktop_app/features/trading/window.py` | 既有 v2 UI／row 投影：`window`；保留現行較嚴格交易閘門；`_Operation`，`desktop_trading/window.py:32` |
 | `desktop_trading/wizard.py` | 325 | presentation | `desktop_app/features/trading/wizard.py` | 既有 v2 UI／row 投影：`wizard`；保留現行較嚴格交易閘門；`StrategyWizard`，`desktop_trading/wizard.py:41` |
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
-| `desktop_ui.py` | 1902 | presentation | `desktop_app/shell/main_window.py` | 主視窗混合 worker dispatch；C/D 分離責任；匯入違規見第 3 節；`provider_binding_options`，`desktop_ui.py:77` |
+| `desktop_ui.py` | 1902 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
 | `desktop_walk_forward.py` | 609 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
@@ -341,6 +341,212 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/verify_format_equivalence.py` | 104 | tooling | `tools/verify_format_equivalence.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`equivalent`，`tools/verify_format_equivalence.py:26` |
 | `trading_entry.py` | 11 | composition | `trading_entry.py` | 根目錄 launcher／桌面接線；保留路徑；`launch`，`trading_entry.py:6` |
 | `trading_runtime.py` | 103 | composition | `trading_runtime.py` | 根目錄 launcher／桌面接線；保留路徑；`default_root`，`trading_runtime.py:18` |
+
+
+
+### 2.1 PR C slice 1 added responsibilities
+
+The 311-row R0 baseline above stays fixed. These additions record the shared error leaf already cherry-picked into C and the strings/forms/charts extractions.
+
+| path | lines | layer | target path | note |
+|---|---:|---|---|---|
+| `desktop_app/components/chart_annotations.py` | 129 | presentation | `desktop_app/components/chart_annotations.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/chart_footer.py` | 47 | presentation | `desktop_app/components/chart_footer.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/chart_geometry.py` | 37 | presentation | `desktop_app/components/chart_geometry.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/chart_interaction.py` | 78 | presentation | `desktop_app/components/chart_interaction.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/chart_paint.py` | 134 | presentation | `desktop_app/components/chart_paint.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/chart_paint_footer.py` | 51 | presentation | `desktop_app/components/chart_paint_footer.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/form_values.py` | 48 | presentation | `desktop_app/components/form_values.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/job_messages.py` | 20 | presentation | `desktop_app/components/job_messages.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/result_tables.py` | 141 | presentation | `desktop_app/components/result_tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/backtest/forms.py` | 126 | presentation | `desktop_app/features/backtest/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/backtest/summary.py` | 196 | presentation | `desktop_app/features/backtest/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/paper/forms.py` | 198 | presentation | `desktop_app/features/paper/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/paper/policy_form.py` | 64 | presentation | `desktop_app/features/paper/policy_form.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/research/forms.py` | 90 | presentation | `desktop_app/features/research/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/strategy/forms.py` | 157 | presentation | `desktop_app/features/strategy/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/strategy/summary.py` | 120 | presentation | `desktop_app/features/strategy/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/walk_forward/forms.py` | 155 | presentation | `desktop_app/features/walk_forward/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/access.py` | 21 | shared | `desktop_app/strings/access.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/alias_parts.py` | 45 | shared | `desktop_app/strings/alias_parts.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/__init__.py` | 1 | shared | `desktop_app/strings/aliases/__init__.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/automatic_backup.py` | 28 | shared | `desktop_app/strings/aliases/automatic_backup.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/charts.py` | 68 | shared | `desktop_app/strings/aliases/charts.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/chatgpt_ui.py` | 77 | shared | `desktop_app/strings/aliases/chatgpt_ui.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/desktop.py` | 15 | shared | `desktop_app/strings/aliases/desktop.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/forms.py` | 344 | shared | `desktop_app/strings/aliases/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/market.py` | 172 | shared | `desktop_app/strings/aliases/market.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/presentation.py` | 46 | shared | `desktop_app/strings/aliases/presentation.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/__init__.py` | 1 | shared | `desktop_app/strings/aliases/ui/__init__.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/analysis.py` | 66 | shared | `desktop_app/strings/aliases/ui/analysis.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/assistant.py` | 21 | shared | `desktop_app/strings/aliases/ui/assistant.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/backtest.py` | 12 | shared | `desktop_app/strings/aliases/ui/backtest.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/data.py` | 29 | shared | `desktop_app/strings/aliases/ui/data.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/market.py` | 22 | shared | `desktop_app/strings/aliases/ui/market.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/paper.py` | 42 | shared | `desktop_app/strings/aliases/ui/paper.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/polish.py` | 43 | shared | `desktop_app/strings/aliases/ui/polish.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/results.py` | 38 | shared | `desktop_app/strings/aliases/ui/results.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/settings.py` | 34 | shared | `desktop_app/strings/aliases/ui/settings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/shell.py` | 105 | shared | `desktop_app/strings/aliases/ui/shell.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/strategy.py` | 46 | shared | `desktop_app/strings/aliases/ui/strategy.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/ui/walk_forward.py` | 46 | shared | `desktop_app/strings/aliases/ui/walk_forward.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/aliases/walk_forward.py` | 149 | shared | `desktop_app/strings/aliases/walk_forward.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/appearance.py` | 11 | shared | `desktop_app/strings/appearance.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/assistant.py` | 57 | shared | `desktop_app/strings/assistant.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/async_strings.py` | 14 | shared | `desktop_app/strings/async_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/automatic_backup.py` | 33 | shared | `desktop_app/strings/automatic_backup.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/backtest.py` | 16 | shared | `desktop_app/strings/backtest.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/backup_inspection.py` | 21 | shared | `desktop_app/strings/backup_inspection.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/capital.py` | 34 | shared | `desktop_app/strings/capital.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/catalog_data.py` | 11 | shared | `desktop_app/strings/catalog_data.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/charts.py` | 66 | shared | `desktop_app/strings/charts.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/chatgpt_reconciliation.py` | 34 | shared | `desktop_app/strings/chatgpt_reconciliation.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/chatgpt_reconciliation_k2.py` | 25 | shared | `desktop_app/strings/chatgpt_reconciliation_k2.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/chatgpt_ui.py` | 97 | shared | `desktop_app/strings/chatgpt_ui.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/compare.py` | 26 | shared | `desktop_app/strings/compare.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/connection_test.py` | 15 | shared | `desktop_app/strings/connection_test.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/dashboard.py` | 28 | shared | `desktop_app/strings/dashboard.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/data.py` | 18 | shared | `desktop_app/strings/data.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/desktop.py` | 24 | shared | `desktop_app/strings/desktop.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/diagnostics.py` | 8 | shared | `desktop_app/strings/diagnostics.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/download_import.py` | 19 | shared | `desktop_app/strings/download_import.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/errors.py` | 34 | shared | `desktop_app/strings/errors.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/expiry.py` | 17 | shared | `desktop_app/strings/expiry.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/forms.py` | 344 | shared | `desktop_app/strings/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/header.py` | 17 | shared | `desktop_app/strings/header.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/help.py` | 22 | shared | `desktop_app/strings/help.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/idea.py` | 97 | shared | `desktop_app/strings/idea.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/import_strings.py` | 13 | shared | `desktop_app/strings/import_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/job.py` | 16 | shared | `desktop_app/strings/job.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/keyboard.py` | 8 | shared | `desktop_app/strings/keyboard.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/logs.py` | 50 | shared | `desktop_app/strings/logs.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/maintenance.py` | 23 | shared | `desktop_app/strings/maintenance.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/manifest.py` | 30 | shared | `desktop_app/strings/manifest.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/market.py` | 208 | shared | `desktop_app/strings/market.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/notifications.py` | 17 | shared | `desktop_app/strings/notifications.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/onboarding.py` | 38 | shared | `desktop_app/strings/onboarding.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/orders.py` | 10 | shared | `desktop_app/strings/orders.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/outcome.py` | 13 | shared | `desktop_app/strings/outcome.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/palette.py` | 24 | shared | `desktop_app/strings/palette.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/panel.py` | 6 | shared | `desktop_app/strings/panel.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/paper.py` | 61 | shared | `desktop_app/strings/paper.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/popout.py` | 8 | shared | `desktop_app/strings/popout.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/presentation.py` | 46 | shared | `desktop_app/strings/presentation.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/privacy.py` | 6 | shared | `desktop_app/strings/privacy.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/quick_start.py` | 19 | shared | `desktop_app/strings/quick_start.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/redesign.py` | 129 | shared | `desktop_app/strings/redesign.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/replay.py` | 17 | shared | `desktop_app/strings/replay.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/results.py` | 19 | shared | `desktop_app/strings/results.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/settings.py` | 15 | shared | `desktop_app/strings/settings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/strategy.py` | 7 | shared | `desktop_app/strings/strategy.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/tables.py` | 3 | shared | `desktop_app/strings/tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/timeinput.py` | 11 | shared | `desktop_app/strings/timeinput.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/tooltip.py` | 33 | shared | `desktop_app/strings/tooltip.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/trade_structure.py` | 38 | shared | `desktop_app/strings/trade_structure.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/translation_parts.py` | 147 | shared | `desktop_app/strings/translation_parts.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/__init__.py` | 1 | shared | `desktop_app/strings/ui/__init__.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/analysis.py` | 71 | shared | `desktop_app/strings/ui/analysis.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/assistant.py` | 21 | shared | `desktop_app/strings/ui/assistant.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/backtest.py` | 12 | shared | `desktop_app/strings/ui/backtest.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/data.py` | 29 | shared | `desktop_app/strings/ui/data.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/market.py` | 22 | shared | `desktop_app/strings/ui/market.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/paper.py` | 52 | shared | `desktop_app/strings/ui/paper.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/polish.py` | 41 | shared | `desktop_app/strings/ui/polish.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/results.py` | 38 | shared | `desktop_app/strings/ui/results.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/settings.py` | 34 | shared | `desktop_app/strings/ui/settings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/shell.py` | 115 | shared | `desktop_app/strings/ui/shell.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/strategy.py` | 51 | shared | `desktop_app/strings/ui/strategy.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/ui/walk_forward.py` | 56 | shared | `desktop_app/strings/ui/walk_forward.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/unified.py` | 27 | shared | `desktop_app/strings/unified.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/v2.py` | 398 | shared | `desktop_app/strings/v2.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/walk_forward.py` | 238 | shared | `desktop_app/strings/walk_forward.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/watch.py` | 55 | shared | `desktop_app/strings/watch.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/wf.py` | 44 | shared | `desktop_app/strings/wf.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/worker.py` | 12 | shared | `desktop_app/strings/worker.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/strings/workspace.py` | 33 | shared | `desktop_app/strings/workspace.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `quantlab/shared/__init__.py` | 1 | shared | `quantlab/shared/__init__.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `quantlab/shared/runtime_errors.py` | 5 | shared | `quantlab/shared/runtime_errors.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/extract_runtime_error.py` | 139 | tooling | `tools/refactor/extract_runtime_error.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_catalog_check.py` | 60 | tooling | `tools/refactor/split_ui_catalog_check.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_fixture_lines.py` | 155 | tooling | `tools/refactor/split_ui_fixture_lines.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_modules.py` | 262 | tooling | `tools/refactor/split_ui_modules.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_references.py` | 222 | tooling | `tools/refactor/split_ui_references.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_strings.py` | 274 | tooling | `tools/refactor/split_ui_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_tests.py` | 459 | tooling | `tools/refactor/split_ui_tests.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+
+### 2.2 PR C slice 2 added responsibilities
+
+| Source | Lines | Layer | Target | Reason |
+| --- | ---: | --- | --- | --- |
+| `desktop_app/bootstrap.py` | 139 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/analysis/presenter.py` | 130 | presentation | `desktop_app/features/analysis/presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/chart_presenter.py` | 76 | presentation | `desktop_app/features/market/chart_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/history_dialog.py` | 254 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_controls.py` | 144 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_labels.py` | 49 | presentation | `desktop_app/features/strategy/idea_labels.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_layout.py` | 193 | presentation | `desktop_app/features/strategy/idea_layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_links.py` | 10 | presentation | `desktop_app/features/strategy/idea_links.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_presenter.py` | 182 | presentation | `desktop_app/features/strategy/idea_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_rows.py` | 131 | presentation | `desktop_app/features/strategy/idea_rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/job_presenter.py` | 209 | presentation | `desktop_app/shell/job_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/navigation.py` | 34 | presentation | `desktop_app/shell/navigation.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/services.py` | 27 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/setup.py` | 172 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/window.py` | 157 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_files.py` | 49 | infrastructure | `quantlab/research_core/adapters/ui_files.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_idea_stream.py` | 47 | infrastructure | `quantlab/research_core/adapters/ui_idea_stream.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_repository.py` | 93 | infrastructure | `quantlab/research_core/adapters/ui_repository.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/analysis_operations.py` | 126 | application | `quantlab/research_core/application/analysis_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/paper_operations.py` | 182 | application | `quantlab/research_core/application/paper_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/research_operations.py` | 110 | application | `quantlab/research_core/application/research_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/assistant.py` | 140 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/backup.py` | 15 | application | `quantlab/research_core/application/ui_operations/backup.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/binding_policy.py` | 9 | application | `quantlab/research_core/application/ui_operations/binding_policy.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/data.py` | 124 | application | `quantlab/research_core/application/ui_operations/data.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/derived.py` | 23 | application | `quantlab/research_core/application/ui_operations/derived.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/idea.py` | 68 | application | `quantlab/research_core/application/ui_operations/idea.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/lifecycle.py` | 23 | application | `quantlab/research_core/application/ui_operations/lifecycle.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/market.py` | 131 | application | `quantlab/research_core/application/ui_operations/market.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/registry.py` | 135 | application | `quantlab/research_core/application/ui_operations/registry.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/domain/market_sessions.py` | 107 | domain | `quantlab/research_core/domain/market_sessions.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/idea_records.py` | 9 | application | `quantlab/research_core/ports/idea_records.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/ui_operations.py` | 132 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_consumers.py` | 174 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_finish.py` | 77 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_idea.py` | 190 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_inputs.py` | 110 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_market.py` | 218 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_oracles.py` | 92 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_shell.py` | 318 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_slice2.py` | 268 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_verify.py` | 56 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_workers.py` | 431 | tooling | `tools/refactor/split_ui_workers.py` | PR C: slice 2 responsibility extraction |
+
+| `tools/refactor/split_ui_r3b.py` | 150 | tooling | `tools/refactor/split_ui_r3b.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3c.py` | 103 | tooling | `tools/refactor/split_ui_r3c.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3d.py` | 96 | tooling | `tools/refactor/split_ui_r3d.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3f.py` | 81 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/measure_ui_sizes.py` | 70 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
+
+| `tools/refactor/check_ui_scripts.py` | 59 | tooling | `tools/refactor/check_ui_scripts.py` | PR C r4b: audit every historical UI script for byte-identical reruns. |
+
+| `tools/refactor/replay_pr_c.py` | 234 | tooling | `tools/refactor/replay_pr_c.py` | PR C r5: ordered content and mechanical replay. |
+
+| `tools/refactor/replay_pr_c_content.json` | 778 | tooling | `tools/refactor/replay_pr_c_content.json` | PR C r5: ordered content and mechanical replay. |
+
+| `tools/refactor/replay_pr_c_mechanical.py` | 376 | tooling | `tools/refactor/replay_pr_c_mechanical.py` | PR C r5: ordered content and mechanical replay. |
+
+| `tools/refactor/replay_pr_c_inventory.json` | 4 | tooling | `tools/refactor/replay_pr_c_inventory.json` | PR C r5: ordered content and mechanical replay. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -772,6 +978,89 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 | `desktop_pages/idea_research.py` | 617 | C | dialog widget／layout → `desktop_app/features/strategy/idea_research.py`（`desktop_pages/idea_research.py:96`）；consent/start/retry/adopt／event 投影 → `idea_presenter.py`（`desktop_pages/idea_research.py:295`、`desktop_pages/idea_research.py:306`、`desktop_pages/idea_research.py:367`、`desktop_pages/idea_research.py:566`）；search/source/candidate rows 與明細 → `idea_rows.py`（`desktop_pages/idea_research.py:440`、`desktop_pages/idea_research.py:464`、`desktop_pages/idea_research.py:500`）。短名均在 `desktop_app/features/strategy/`；網路／storage 操作走 application，不進 widget。 |
 | `desktop_walk_forward.py` | 609 | D | paths／saved-pool plan／preview/execute → `quantlab/research_core/application/walk_forward_operations.py`（`desktop_walk_forward.py:29`、`desktop_walk_forward.py:57`、`desktop_walk_forward.py:108`、`desktop_walk_forward.py:215`），先去掉 UI 字串、回固定資料；compact result → 同 application 的 `walk_forward_projection.py`（`desktop_walk_forward.py:168`）；狀態、OOS 文字與 row adapter 留 `desktop_app/features/walk_forward/presenter.py`、`rows.py`（`desktop_walk_forward.py:346`、`desktop_walk_forward.py:351`、`desktop_walk_forward.py:437`、`desktop_walk_forward.py:560`）。worker 不 import presentation；OOS 未評估／已消耗語意不變。 |
 
-字串責任的其餘具體落點包括 `desktop_app/strings/forms.py`（`desktop_strings.py:608`）、`charts.py`（`desktop_strings.py:1298`）、`jobs.py`（`desktop_strings.py:1668`）、`appearance.py`（`desktop_strings.py:1774`）、`workspace.py`（`desktop_strings.py:1887`）、`trading.py`（`desktop_strings.py:2565`），短名均在 `desktop_app/strings/`。較大的 `ui.*` 群（`desktop_strings.py:112`）再按第二段的功能／操作名稱拆到 `desktop_app/strings/ui/`；aliases 同樣依所指向的功能分到 `desktop_app/strings/aliases/` 的資料檔，`aliases.py` 彙整時應改選不同名稱如 `alias_catalog.py`，避免檔案／套件同名衝突。這些均是 C 的資料責任切分，不新增 locale 行為。
+字串責任的其餘具體落點包括 `desktop_app/strings/forms.py`（`desktop_strings.py:608`）、`charts.py`（`desktop_strings.py:1298`）、`job.py`（`desktop_strings.py:1668`）、`appearance.py`（`desktop_strings.py:1774`）、`workspace.py`（`desktop_strings.py:1887`）、`v2.py`（`desktop_strings.py:2565`），短名均在 `desktop_app/strings/`。較大的 `ui.*` 群（`desktop_strings.py:112`）再按第二段的功能／操作名稱拆到 `desktop_app/strings/ui/`；aliases 同樣依所指向的功能分到 `desktop_app/strings/aliases/` 的資料檔，`aliases.py` 彙整時應改選不同名稱如 `alias_catalog.py`，避免檔案／套件同名衝突。這些均是 C 的資料責任切分，不新增 locale 行為。
 
 G3 拆分以第 5 節授權為準；saved-pool frozen-data 只有資料字面值 bytes 例外。E 涉及 paper、recovery、test runner 的結構修改須跑各自的故障／deadline／provenance 與 coverage 測試，不能只跑文件 gate。後續各 PR 仍依第 6 節重做 symbol impact、完整 detect_changes、全測試及打包 smoke；本次只更新盤點文件。
+
+### 10.1 PR C size exceptions
+
+Measured by `python -B tools/refactor/measure_ui_sizes.py --check` against
+`git diff 6b78239 HEAD`. File spans count physical lines; class and function
+spans use AST `lineno..end_lineno` inclusive. The following is the complete
+exception set, including import-only consumers; there is no blanket claim
+that all other historical consumers meet the size targets.
+
+| Path:line | Name | Kind | Lines | Justification |
+|---|---|---|---|---|
+| `desktop_app/features/backtest/backtest.py:23` | `__init__` | function | 104 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/backtest.py:222` | `show_result` | function | 64 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/backtest_summary_card.py:55` | `_set_structure` | function | 61 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/forms.py:14` | `__init__` | function | 59 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/backtest/summary.py:52` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/data/data.py:16` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/market/chart_presenter.py:11` | `_render_chart` | function | 66 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/history_dialog.py:28` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/indicator_controls.py:26` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/indicator_presenter.py:69` | `_apply_indicators` | function | 89 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/market.py:69` | `load_market_cache` | function | 75 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/market/market.py:145` | `bind_result_layers` | function | 83 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/preferences.py:31` | `restore_preferences` | function | 72 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/paper/paper_layout.py:30` | `build_paper` | function | 162 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/redesign_strategy_layout.py:171` | `build_strategy` | function | 68 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/redesign_strategy_layout.py:241` | `build_research` | function | 125 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:1` | `<module>` | file | 440 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:13` | `StrategyPage` | class | 428 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:40` | `_walk_forward_section` | function | 65 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:246` | `_walk_forward_event` | function | 84 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/summary.py:14` | `candidate_summary_text` | function | 100 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/walk_forward/presenter.py:1` | `<module>` | file | 607 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:108` | `preview_walk_forward` | function | 51 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:214` | `execute_walk_forward` | function | 58 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:349` | `oos_statistics_text` | function | 61 | body unchanged in PR C (import-only edit); decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:435` | `preview_text` | function | 121 | body unchanged in PR C (import-only edit); decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/research_bootstrap.py:55` | `open` | function | 73 | Retained as one ordered Qt construction sequence; preserves dialog lifetime and signal wiring. |
+| `desktop_app/shell/host.py:143` | `_page_services` | function | 88 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/shell/window.py:95` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/smoke/__init__.py:1` | `<module>` | file | 969 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:32` | `_auth_smoke_dependencies` | function | 84 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:154` | `_market_smoke_ui` | function | 118 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:367` | `_check_history_worker_result` | function | 74 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:443` | `_history_smoke_ui` | function | 54 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:499` | `_walk_forward_smoke_fixture` | function | 56 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:557` | `_check_walk_forward_smoke_result` | function | 112 | body unchanged except the inputs-port integration; decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:709` | `run_smoke` | function | 261 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:753` | `complete_smoke` | function | 175 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+
+### 10.2 PR C ordered replay contract
+
+Run `python -B tools/refactor/replay_pr_c.py --root <fresh-detached-6b78239>`.
+The driver verifies both the exact base commit and a clean detached checkout.
+`replay_pr_c_content.json` records the reviewed content reference and a reason
+for each authored module or split source. Consumer imports, patch targets,
+location tables, digest pins and inventories are excluded from that content set.
+The executing tooling package bootstraps its own authored sources; the recorded
+content reference pins the product and new characterization modules. Use
+`--content-ref <PR-head>` to override that pin; before commit, use `--expect-root <PR-C-worktree>` to supply authored working bytes and
+compare every PR path, including deletions and new tooling, plus the whole tree.
+The PR set is the source diff from 6b78239 to HEAD, extended with expected-tree
+uncommitted and untracked paths when --expect-root is supplied.
+
+Order: content installation; runtime-error extraction; isolated strings, modules,
+workers, market, idea, inputs and shell preparations; slice-2 composition;
+reference and dependency injection; source-scanner adaptations; r3b, r3c and r3f
+repairs; compatibility/inventory preparation; formatting and exact selector
+normalization; page-service location generation and digest re-pinning; r3d
+validation; final formatting; catalog and layer/size verification; whole-tree
+comparison. Preparation output is applied only to mechanical consumers in the PR set;
+reviewed split module bodies come exclusively from the content phase.
+
+The comparison normalizes CRLF/LF for .py, .json and .md bytes. Every PR path
+is compared with the head or expected tree. Whole-tree Git status also identifies
+any modified or untracked path outside the PR set, ignoring .tmp-layered/,
+__pycache__ directories and *.pyc files. Preparation and source scratch directories
+stay outside the replay root. Each extra path is printed as `outside PR: <path>`.
+The final line is `replay: <N> paths, <C> content, <M> mechanical, <D> differences, <O> outside-PR changes`.
+A nonzero D or O exits 1. No whole-PR patch or scratch input is used.
+Reason recording is optional; neither replay nor its inputs depend on local
+operator reports. `check_ui_scripts.py` validates replay in an isolated base
+checkout and requires unchanged bytes and status in the audited PR tree.

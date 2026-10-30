@@ -1,5 +1,7 @@
 """Cheap offscreen keyboard and closed-dispatch evidence; no broker or visual claims."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from dataclasses import replace
 from pathlib import Path
@@ -15,7 +17,7 @@ from desktop_app.components.command_palette import CommandPalette
 from desktop_app.shell.palette_commands import command_table
 from desktop_app.shell.shortcuts import install_shortcuts
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
@@ -237,7 +239,7 @@ class PaletteTests(unittest.TestCase):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
             self.addCleanup(jobs.close)
-            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'))
+            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

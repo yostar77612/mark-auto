@@ -1,10 +1,11 @@
+from desktop_app.features.market.dashboard import sample_market_series
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.reporting import read_json, load_dataset, load_result, load_selection
 from quantlab.desktop_errors import error_message, exception_code
-from desktop_app.features.market.dashboard import MarketDashboard, sample_market_series
+from desktop_app.features.market.dashboard import MarketDashboard
 from quantlab.chart_drawings import DrawingStore
 from desktop_app.shell.host import PageHost
 
@@ -144,7 +145,7 @@ class MarketPage(MarketDashboard):
     def bind_result_layers(self, result=None):
         """Only exact source, strategy and chart identities may carry result layers."""
         # Load this operation-specific dependency only when requested.
-        from desktop_app.components.charts import ChartTrace, ChartMarker
+        from desktop_app.components.chart_annotations import ChartTrace, ChartMarker
 
         chart = self.market.chart
         bars = chart.bars

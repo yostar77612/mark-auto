@@ -444,7 +444,7 @@ class IndicatorWorkBoundaryTests(unittest.TestCase):
 
         p = self.panel
         original = p.message.text()
-        with patch('desktop_app.features.market.dashboard.indicators.sma', side_effect=ValueError('INTERNAL BUG SENTINEL')):
+        with patch('desktop_app.features.market.indicator_presenter.indicators.sma', side_effect=ValueError('INTERNAL BUG SENTINEL')):
             with self.assertRaisesRegex(ValueError, 'INTERNAL BUG SENTINEL'):
                 p._apply_indicators()
         self.assertEqual(p.message.text(), original)

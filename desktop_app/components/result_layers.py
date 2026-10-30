@@ -12,7 +12,7 @@ def result_snapshot_lines(result, bars, selected):
     wins (with existing gap handling). An average-price stop is not that rule.
     No line is projected back through historical candles or beyond this event.
     """
-    from desktop_app.components.charts import ReferenceLine
+    from desktop_app.components.chart_annotations import ReferenceLine
     from decimal import Context, InvalidOperation, ROUND_HALF_EVEN, localcontext
 
     if not result.equity:

@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 from quantlab.assistant.adapters.chatgpt.provider import PlanError
 from quantlab.assistant.adapters.chatgpt.auth import AuthError
-from desktop_app.shell.main_window import _idea_event_caller
+from quantlab.research_core.adapters.ui_idea_stream import _idea_event_caller
 
 from quantlab.idea_research import _extraction_output, run_extraction
 from quantlab.idea_search import RemoteFailure

@@ -1,5 +1,7 @@
 """T9 C: real workspace progress, navigation, persistence and wording capture."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from contextlib import contextmanager
 import os
 from pathlib import Path
@@ -49,9 +51,9 @@ class OnboardingTests(unittest.TestCase):
         self.open_window()
 
     def open_window(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
-        self.window = MainWindow(self.paths, self.jobs, self.settings)
+        self.window = MainWindow(self.paths, self.jobs, self.settings, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.window.show()

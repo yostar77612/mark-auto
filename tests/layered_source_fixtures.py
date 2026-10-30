@@ -150,6 +150,21 @@ def page_sources(root: Path):
     moved = set(CURRENT_PATHS.values())
     projected = {new for old, new in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
     additions = {path.relative_to(root).as_posix() for path in (root / 'desktop_app').rglob('*.py')} - moved
+    # Only the two real assembly roots are excluded; every presenter stays scanned.
+    for name in ('desktop_app/bootstrap.py', 'desktop_app/shell/main_window.py'):
+        if (root / name).is_file():
+            import json
+
+            mapping = json.loads((root / 'tools/layer_map.json').read_text(encoding='utf-8'))
+            assert mapping['overrides'][name] == 'composition'
+            additions.discard(name)
+    window = root / 'desktop_app/shell/window.py'
+    if window.is_file():
+        import ast
+
+        classes = [node.name for node in ast.parse(window.read_text(encoding='utf-8')).body if isinstance(node, ast.ClassDef)]
+        assert classes == ['MainWindow']
+        additions.discard('desktop_app/shell/window.py')
     return [root / name for name in sorted(projected | additions)]
 
 
@@ -241,7 +256,7 @@ def project_page_service_lines(result):
     path = Path(__file__).parent / 'fixtures/layered_paths/page_service_line_relocations.json'
     table = json.loads(path.read_text(encoding='utf-8'))
     canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode('utf-8')
-    if hashlib.sha256(canonical).hexdigest() != 'a1b69b15bffb350df2ffc78aac0a902e3b99f5670c28991d75d079e8fbe2343c':
+    if hashlib.sha256(canonical).hexdigest() != '04890b66fff9e9090edeb92541bb13f0a084c1e70d8d572da28d3cfdab86b859':
         raise ValueError('Reviewed mechanical line-location table changed')
     if len(result['patch_points']) != table['patch_points']:
         raise ValueError('Historical patch inventory size changed')
@@ -255,7 +270,7 @@ def project_page_service_lines(result):
     if used != rows.keys():
         raise ValueError('A historical patch identity was removed or changed')
     result['patch_points'].sort(key=lambda point: (point['file'], point['line'], point['name'], point['kind']))
-    return result
+    return _project_slice2_service_refs(result)
 
 
 def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> bytes:
@@ -271,3 +286,34 @@ def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> b
             raise ValueError('Unknown historical checkout line-ending policy')
         return text.encode('utf-8').replace(b'\n', eol)
     return current
+
+
+_SLICE2_PATCH_SHA = '00143849c2fd1ff59147d2f790fdbe09b8db4cc2bf8da5aed8a2c2245a8d9c22'
+
+
+def _project_slice2_service_refs(result):
+    """Project reviewed observer locations; every historical observer is retained."""
+    import json
+
+    path = Path(__file__).parent / 'fixtures/layered_paths/slice2_service_relocations.json'
+    table = json.loads(path.read_text(encoding='utf-8'))
+    canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    if hashlib.sha256(canonical).hexdigest() != _SLICE2_PATCH_SHA:
+        raise ValueError('Reviewed slice 2 observer table changed')
+    assert len(result['patch_points']) == table['original_observers'] == 174
+    service = next(row for row in result['services'] if row['name'] == '_paper')
+    assert service['patch_sensitive'] is False
+    service['patch_sensitive'] = True
+    for row in table['relocations']:
+        original, current = row['original'], row['current']
+        assert (original['file'], original['name']) == (current['file'], current['name'])
+        index = result['patch_points'].index(original)
+        result['patch_points'][index] = dict(current)
+    additions = table['newly_discovered_existing_observers']
+    assert [(point['file'], point['name'], point['receiver']) for point in additions] == [
+        ('tests/test_compare_equity_f2.py', 'load_result', 'quantlab.reporting'),
+        ('tests/test_workspace_wal_guard.py', '_paper', 'paper_operations'),
+    ]
+    result['patch_points'].extend(additions)
+    result['patch_points'].sort(key=lambda point: (point['file'], point['line'], point['name'], point['kind']))
+    return result

@@ -1,0 +1,9 @@
+"""Read and purge capabilities used by the idea presentation."""
+
+from typing import Protocol
+
+
+class IdeaRecords(Protocol):
+    def load(self, task_id: str) -> dict: ...
+    def read_text(self, task_id: str, source_id: str) -> str: ...
+    def purge(self, max_tasks: int, *, max_age: int) -> int: ...

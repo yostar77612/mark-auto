@@ -12,7 +12,9 @@ from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication
 
 from desktop_app.features.market.chart_memory import ChartMemory
-from desktop_app.features.market.dashboard import DEFAULT_INDICATORS, MarketDashboard, _identity
+from desktop_app.features.market.indicator_presenter import DEFAULT_INDICATORS
+from desktop_app.features.market.dashboard import MarketDashboard
+from desktop_app.features.market.rows import _identity
 from quantlab.chart_data import TIMEFRAMES
 from quantlab.core import content_hash, to_dict
 from tests.test_desktop_market import series
@@ -181,8 +183,8 @@ class ChartMemoryTests(unittest.TestCase):
         popout = p.popout.open(visible=False)
         self.addCleanup(popout.close)
         for _ in range(5):
-            popout.chart._zoom(0.8)
-            popout.chart._pan(-2)
+            popout.chart.interaction._zoom(0.8)
+            popout.chart.interaction._pan(-2)
         self.assertEqual(saves.count(), 0)
         self.assertEqual(p.chart.visible_range, popout.chart.visible_range)
         remembered = p.chart.visible_range

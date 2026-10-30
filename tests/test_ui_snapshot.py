@@ -238,7 +238,7 @@ class UiSnapshotTests(unittest.TestCase):
                 patch.object(AppPaths, 'ensure', ensure),
                 patch.object(AppPaths, 'discover', side_effect=AssertionError('default workspace forbidden')),
                 patch.object(WorkspaceLocator, 'load', side_effect=AssertionError('workspace lookup forbidden')),
-                patch.object(desktop_app.shell.main_window, 'MainWindow', side_effect=construct),
+                patch('desktop_app.shell.main_window.MainWindow', side_effect=construct),
                 patch.object(ui_snapshot, '_save_png', side_effect=save),
             ):
                 ui_snapshot.capture(Path(temporary) / 'out')
@@ -256,7 +256,7 @@ class UiSnapshotTests(unittest.TestCase):
                 def fallback(*args, **kwargs):
                     return original_window(AppPaths.discover(), *args[1:], **kwargs)
 
-                with patch.object(desktop_app.shell.main_window, 'MainWindow', side_effect=fallback):
+                with patch('desktop_app.shell.main_window.MainWindow', side_effect=fallback):
                     with self.assertRaisesRegex(AssertionError, 'default workspace forbidden'):
                         ui_snapshot.capture(Path(temporary) / 'fallback')
                 self.assertTrue(all(not path.exists() for path in directories))

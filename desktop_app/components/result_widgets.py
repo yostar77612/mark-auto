@@ -11,7 +11,8 @@ from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
 from desktop_app.shell.theme import FINANCIAL_FIELDS, set_financial_item, set_financial_label
 from desktop_app.components.formatting import display_number, display_value, RATIOS, AMOUNTS
-from desktop_app.components.forms import ResultTable as LegacyTable, BacktestFillsTable, RESULT_LABELS, _report_text
+from desktop_app.components.result_tables import ResultTable as LegacyTable, RESULT_LABELS
+from desktop_app.features.backtest.summary import BacktestFillsTable, _report_text
 
 MISSING = object()
 NUMERIC_FIELDS = (

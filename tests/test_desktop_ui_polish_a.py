@@ -1,5 +1,7 @@
 """P0-02/03/04/13: offline native-widget presentation contracts."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 from pathlib import Path
 import shutil
@@ -12,7 +14,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from tests.snapshot_cache import default_metrics
 
 
@@ -26,7 +28,13 @@ class DesktopPolishATests(unittest.TestCase):
         self.root.mkdir()
         self.paths = AppPaths(self.root / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), BackupManager(self.paths, self.jobs))
+        self.window = MainWindow(
+            self.paths,
+            self.jobs,
+            SettingsStore(self.paths.state / 'settings.json'),
+            BackupManager(self.paths, self.jobs),
+            services=_c_create_ui_services(_c_create_operation_ports()),
+        )
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.window.resize(1366, 768)

@@ -1,5 +1,7 @@
 """Cheap header contracts: fixed clocks, existing state, no shown windows."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,7 +18,8 @@ from desktop_app.components.job_progress import JobFeedback, JobProgress
 from desktop_app.components.privacy import enabled
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import apply_theme, install_appearance_controls, load_appearance
-from desktop_app.shell.main_window import MainWindow, paper_risk_limits
+from desktop_app.shell.window import MainWindow
+from quantlab.research_core.application.paper_operations import paper_risk_limits
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -174,7 +177,7 @@ class HeaderTests(unittest.TestCase):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
             self.addCleanup(jobs.close)
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

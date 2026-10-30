@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QLabel
 
-from desktop_app.components.forms import SummaryCard, RESULT_LABELS
+from desktop_app.components.result_tables import SummaryCard, RESULT_LABELS
 from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
 from quantlab.backtest_summary import warning_keys

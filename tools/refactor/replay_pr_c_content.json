@@ -1,0 +1,778 @@
+{
+  "base": "6b78239",
+  "content_ref": "2badce6472a039f53c8f8ec81856a3a2a2b3d186",
+  "files": [
+    {
+      "path": "desktop_app/bootstrap.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_annotations.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_footer.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_geometry.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_interaction.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_paint.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/chart_paint_footer.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/charts.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/components/form_values.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/formatting.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/components/forms.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/components/job_messages.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/components/result_tables.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/analysis/presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/backtest/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/backtest/summary.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/chart_presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/dashboard.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/features/market/history_dialog.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/indicator_controls.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/indicator_presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/layout.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/preferences.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/rows.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/market/watchlist_presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/paper/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/paper/policy_form.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/research/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_events.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_labels.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_layout.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_links.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_research.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/features/strategy/idea_rows.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/strategy/summary.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/features/walk_forward/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/shell/job_presenter.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/shell/main_window.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/shell/navigation.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/shell/services.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/shell/setup.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/shell/window.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/access.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/alias_parts.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/__init__.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/automatic_backup.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/charts.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/chatgpt_ui.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/desktop.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/market.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/presentation.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/__init__.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/analysis.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/assistant.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/backtest.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/data.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/market.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/paper.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/polish.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/results.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/settings.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/shell.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/strategy.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/ui/walk_forward.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/aliases/walk_forward.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/appearance.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/assistant.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/async_strings.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/automatic_backup.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/backtest.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/backup_inspection.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/capital.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/catalog.py",
+      "reason": "split source: body reduced to composition and concrete presentation delegates"
+    },
+    {
+      "path": "desktop_app/strings/catalog_data.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/charts.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/chatgpt_reconciliation.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/chatgpt_reconciliation_k2.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/chatgpt_ui.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/compare.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/connection_test.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/dashboard.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/data.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/desktop.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/diagnostics.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/download_import.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/errors.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/expiry.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/forms.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/header.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/help.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/idea.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/import_strings.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/job.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/keyboard.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/logs.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/maintenance.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/manifest.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/market.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/notifications.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/onboarding.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/orders.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/outcome.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/palette.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/panel.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/paper.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/popout.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/presentation.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/privacy.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/quick_start.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/redesign.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/replay.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/results.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/settings.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/strategy.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/tables.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/timeinput.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/tooltip.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/trade_structure.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/translation_parts.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/__init__.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/analysis.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/assistant.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/backtest.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/data.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/market.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/paper.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/polish.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/results.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/settings.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/shell.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/strategy.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/ui/walk_forward.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/unified.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/v2.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/walk_forward.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/watch.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/wf.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/worker.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "desktop_app/strings/workspace.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/adapters/ui_files.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/adapters/ui_idea_stream.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/adapters/ui_repository.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/analysis_operations.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/paper_operations.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/research_operations.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/assistant.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/backup.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/binding_policy.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/data.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/derived.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/idea.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/lifecycle.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/market.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/application/ui_operations/registry.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/domain/market_sessions.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/ports/idea_records.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/research_core/ports/ui_operations.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/shared/__init__.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "quantlab/shared/runtime_errors.py",
+      "reason": "new module from the UI responsibility split"
+    },
+    {
+      "path": "tests/test_desktop_catalog_split.py",
+      "reason": "new split characterization test"
+    },
+    {
+      "path": "tests/test_runtime_safety_error_shared.py",
+      "reason": "new split characterization test"
+    },
+    {
+      "path": "tests/test_ui_split_contracts.py",
+      "reason": "new split characterization test"
+    },
+    {
+      "path": "tools/refactor/check_ui_scripts.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/extract_runtime_error.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/measure_ui_sizes.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_catalog_check.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_consumers.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_finish.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_fixture_lines.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_idea.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_inputs.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_market.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_modules.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_oracles.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_owners.json",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_r3b.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_r3c.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_r3d.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_r3f.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_references.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_shell.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_slice2.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_strings.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_tests.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_verify.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/split_ui_workers.py",
+      "reason": "new replay tooling"
+    },
+    {
+      "path": "tools/refactor/replay_pr_c.py",
+      "reason": "new ordered replay tooling and explicit content contract"
+    },
+    {
+      "path": "tools/refactor/replay_pr_c_content.json",
+      "reason": "new ordered replay tooling and explicit content contract"
+    },
+    {
+      "path": "tools/refactor/replay_pr_c_mechanical.py",
+      "reason": "new mechanical transformation tooling and authored inventory rendering data"
+    },
+    {
+      "path": "tools/refactor/replay_pr_c_inventory.json",
+      "reason": "new mechanical transformation tooling and authored inventory rendering data"
+    }
+  ]
+}

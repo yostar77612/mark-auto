@@ -1,5 +1,7 @@
 """Idea research end to end with a local fake site and scripted SSE (T1, T5-T12, T16, T18)."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import json
 from pathlib import Path
 import tempfile
@@ -8,6 +10,8 @@ from unittest.mock import Mock, patch
 
 from quantlab.assistant.adapters.chatgpt.provider import PlanError
 import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.research_operations import _handle_ui_backtest as _c_ui__handle_ui_backtest
+from quantlab.research_core.application.ui_operations.idea import _handle_ui_idea_research as _c_ui__handle_ui_idea_research
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
 from quantlab.idea_research import IdeaResearch, IdeaStore, adoption_candidate, new_task, verify_candidates
@@ -317,7 +321,8 @@ class DesktopHandlerTests(Harness):
         paths = self.paths()
         transport = FakeTransport(PlanError('quota_paused', http_status=429, remote_code='subscription_sharing_usage_limit_exceeded'))
         with patch('quantlab.assistant.adapters.chatgpt.provider._persist_account_pause') as pause:
-            result = ui._handle_ui_idea_research(
+            result = _c_ui__handle_ui_idea_research(
+                _c_create_operation_ports(),
                 {'request': request(), 'registration': REGISTRATION, 'model': 'gpt-fixture'},
                 paths,
                 paths.state,
@@ -331,15 +336,20 @@ class DesktopHandlerTests(Harness):
     def test_handler_requires_consent_and_ready_account(self):
         paths = self.paths()
         with self.assertRaises(ValidationError):
-            ui._handle_ui_idea_research(
-                {'request': request(consent={'network': True, 'plan_usage': False}), 'registration': REGISTRATION, 'model': 'm'}, paths, paths.state
+            _c_ui__handle_ui_idea_research(
+                _c_create_operation_ports(),
+                {'request': request(consent={'network': True, 'plan_usage': False}), 'registration': REGISTRATION, 'model': 'm'},
+                paths,
+                paths.state,
             )
         with patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'quota_paused', 'pending': False}):
             with (
                 patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('no network')),
                 self.assertRaises(ValidationError),
             ):
-                ui._handle_ui_idea_research({'request': request(), 'registration': REGISTRATION, 'model': 'm'}, paths, paths.state)
+                _c_ui__handle_ui_idea_research(
+                    _c_create_operation_ports(), {'request': request(), 'registration': REGISTRATION, 'model': 'm'}, paths, paths.state
+                )
 
     def test_runtime_payload_allowlist_and_deadline(self):
         manager = JobManager.__new__(JobManager)
@@ -363,7 +373,10 @@ class DesktopHandlerTests(Harness):
         shell.paths = self.paths()
         shell.jobs.active = True
         with self.assertRaises(ValidationError):
-            ui.MainWindow.start_job(shell, 'ui_idea_research', {})
+            # Load the concrete owner only when this test path is exercised.
+            from desktop_app.shell.job_presenter import JobPresenter
+
+            JobPresenter(shell).start_job('ui_idea_research', {})
         shell.jobs.start.assert_not_called()
         manager = JobManager.__new__(JobManager)
         with patch.object(JobManager, 'active', True), self.assertRaises(RuntimeSafetyError):
@@ -384,7 +397,7 @@ class AdoptionTests(Harness):
 
         config = to_dict(demo_campaign_config(synthetic_dataset(240), demo_config()))
         self.assertEqual(len(config['families']), 5)
-        builtin = ui._handle_ui_backtest({'config': to_dict(demo_config()), 'family': 'trend'}, paths, paths.state)
+        builtin = _c_ui__handle_ui_backtest(_c_create_operation_ports(), {'config': to_dict(demo_config()), 'family': 'trend'}, paths, paths.state)
         before = {p: p.read_bytes() for p in (paths.state / 'reports').rglob('*') if p.is_file()}
         payload = {'task_id': record['task_id'], 'candidate_id': 'c1', 'config': config}
         with patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}):
@@ -406,7 +419,7 @@ class AdoptionTests(Harness):
         # Existing ui_backtest candidate path: one spec, unchanged parameters, results reported as computed.
         self.assertEqual(attempt['status'], 'evaluated')
         reference = {'campaign_folder': campaigns[0].name, 'attempt_id': attempt['attempt_id'], 'strategy_hash': attempt['strategy_hash']}
-        result = ui._handle_ui_backtest({'config': to_dict(demo_config()), 'candidate': reference}, paths, paths.state)
+        result = _c_ui__handle_ui_backtest(_c_create_operation_ports(), {'config': to_dict(demo_config()), 'candidate': reference}, paths, paths.state)
         self.assertEqual(len(result['reports']), 1)
         strategy = read_json(Path(result['reports'][0]['result']).parent / 'strategy.json')
         self.assertEqual((strategy['family'], strategy['parameters']), ('channel_breakout', {'lookback': 20}))

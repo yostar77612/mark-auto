@@ -1,5 +1,7 @@
 """Offline native-schema fixtures: download, strict validation and safe activation."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import csv
 import io
 import json
@@ -64,9 +66,9 @@ class DownloadAutoImportTests(unittest.TestCase):
             return original(cache, days=days, kind=kind, transport=self.transport, trade_dates=trade_dates)
 
         with patch.object(downloads, 'refresh', side_effect=refresh):
-            from desktop_app.shell.main_window import _handle_ui_refresh
+            from quantlab.research_core.application.ui_operations.data import _handle_ui_refresh
 
-            return _handle_ui_refresh(self.payload, SimpleNamespace(cache=self.cache), self.workspace)
+            return _handle_ui_refresh(_c_create_operation_ports(), self.payload, SimpleNamespace(cache=self.cache), self.workspace)
 
     def test_all_downloaded_files_are_imported_and_the_original_validator_accepts(self):
         result = self.run_workflow()

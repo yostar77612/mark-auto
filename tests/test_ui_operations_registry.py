@@ -7,6 +7,8 @@ The inherited-permission mkdir shim avoids Windows sandbox's mode=0700 ACL
 artifact; it changes no application logic or file contents.
 """
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import ast
 from contextlib import contextmanager
 import importlib.util
@@ -24,6 +26,10 @@ from unittest.mock import patch
 from tests.layered_source_fixtures import historical_ui_environment
 
 import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.ui_operations.registry import _UI_OPERATION_HANDLERS as _c_ui__UI_OPERATION_HANDLERS
+from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS as _c_ui_UI_OPERATIONS
+from quantlab.reporting import read_json as _c_ui_read_json
+from quantlab.research_core.application.ui_operations.assistant import plan_provider as _c_ui_plan_provider
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths
 from quantlab.reporting import demo_config, save_dataset, synthetic_dataset, write_json
@@ -54,7 +60,14 @@ def old_module():
     raw = (FIXTURES / 'desktop_ui_pre_registry.py.txt').read_bytes()
     with workspace() as paths:
         source_file = paths.root / 'old_desktop_ui.py'
-        source_file.write_bytes(raw)
+        from tools.refactor.split_ui_references import rewrite_source
+
+        owners = json.loads((FIXTURES.parents[1] / 'tools/refactor/split_ui_owners.json').read_text(encoding='utf-8'))
+        from tools.refactor.split_ui_inputs import legacy_owner_name, legacy_walk_forward_inputs
+
+        legacy_owners = {legacy_owner_name(name): owner for name, owner in owners.items()}
+        projected, _ = rewrite_source(raw.decode('utf-8'), 'desktop_ui.py', legacy_owners, set())
+        source_file.write_text(legacy_walk_forward_inputs(projected), encoding='utf-8')
         name = '_ui_operations_before_refactor'
         spec = importlib.util.spec_from_file_location(name, source_file)
         module = importlib.util.module_from_spec(spec)
@@ -207,7 +220,7 @@ def exercise(execute):
         call('ui_paper_snapshot', {'policy': policy})
         call('ui_paper_reconcile', {'snapshot': snapshot})
         call('ui_paper_kill', {})
-        selection = ui.read_json(paths.state / 'selection.json')
+        selection = _c_ui_read_json(paths.state / 'selection.json')
         now = '2026-01-05T00:46:00Z'
         call(
             'ui_paper_submit',
@@ -239,7 +252,7 @@ def exercise(execute):
         call('ui_paper_cancel', {'order_id': 'offline-order', 'now': now})
         if execute is ui.execute_ui_operation:
             call('ui_paper_cancel_all', {'now': now})
-        call('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': ui.read_json(paths.state / 'paper_snapshot.json'), 'max_bars': 100})
+        call('ui_paper_replay', {'reconcile_confirmed': True, 'snapshot': _c_ui_read_json(paths.state / 'paper_snapshot.json'), 'max_bars': 100})
         call('ui_disable', {})
         local = paths.root / 'official.json'
         local.write_bytes(TWSE)
@@ -294,7 +307,7 @@ def exercise(execute):
             patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', MockTransport),
             patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}),
         ):
-            _, binding = ui.plan_provider(paths, subscription_data, subscription_config, options, for_usage=True)
+            _, binding = _c_ui_plan_provider(_c_create_operation_ports(), paths, subscription_data, subscription_config, options, for_usage=True)
             call(
                 'campaign_subscription_fixture',
                 {
@@ -441,34 +454,36 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(dict(os.environ), original_environment)
 
     def test_registry_exact_allowlist_and_callable_handlers(self):
-        self.assertEqual(set(ui._UI_OPERATION_HANDLERS), ui.UI_OPERATIONS)
-        self.assertTrue(all(callable(handler) for handler in ui._UI_OPERATION_HANDLERS.values()))
-        self.assertEqual(len(set(ui._UI_OPERATION_HANDLERS.values())), len(ui.UI_OPERATIONS))
+        self.assertEqual(set(_c_ui__UI_OPERATION_HANDLERS), _c_ui_UI_OPERATIONS)
+        self.assertTrue(all(callable(handler) for handler in _c_ui__UI_OPERATION_HANDLERS.values()))
+        self.assertEqual(len(set(_c_ui__UI_OPERATION_HANDLERS.values())), len(_c_ui_UI_OPERATIONS))
 
     def test_dispatcher_and_handlers_at_most_sixty_lines(self):
-        functions = [ui.execute_ui_operation, *ui._UI_OPERATION_HANDLERS.values()]
+        functions = [ui.execute_ui_operation, *_c_ui__UI_OPERATION_HANDLERS.values()]
         for function in functions:
             with self.subTest(function=function.__name__):
                 node = ast.parse(inspect.getsource(function)).body[0]
                 self.assertLessEqual(node.end_lineno - node.lineno + 1, 60)
 
     def test_unknown_operations_fail_before_dispatch_or_workspace_access(self):
-        expected = ui.ui_text('ui.execute_ui_operation.unknown_operation')
-        with patch.dict(ui._UI_OPERATION_HANDLERS, {'': unittest.mock.Mock(), 'ui_unknown': unittest.mock.Mock()}):
-            with patch.object(ui, '_root', side_effect=AssertionError('workspace accessed')):
+        from desktop_app.strings.catalog import ui_text
+
+        expected = ui_text('ui.execute_ui_operation.unknown_operation')
+        with patch.dict(_c_ui__UI_OPERATION_HANDLERS, {'': unittest.mock.Mock(), 'ui_unknown': unittest.mock.Mock()}):
+            with patch('quantlab.research_core.adapters.ui_files._root', side_effect=AssertionError('workspace accessed')):
                 for operation in ('', 'ui_unknown', 'backtest', 'demo', 'ui_analysis_unknown', None):
                     with self.subTest(operation=operation):
                         with self.assertRaises(ValidationError) as caught:
                             ui.execute_ui_operation(operation, {}, None)
                         self.assertEqual(str(caught.exception), expected)
-            ui._UI_OPERATION_HANDLERS[''].assert_not_called()
-            ui._UI_OPERATION_HANDLERS['ui_unknown'].assert_not_called()
+            _c_ui__UI_OPERATION_HANDLERS[''].assert_not_called()
+            _c_ui__UI_OPERATION_HANDLERS['ui_unknown'].assert_not_called()
 
     def test_operation_coverage_and_golden_parity(self):
         observed = exercise(ui.execute_ui_operation)
         # Explicit operation -> test callable coverage table, including guarded paths.
-        coverage = {operation: self.test_operation_coverage_and_golden_parity for operation in observed if operation in ui.UI_OPERATIONS}
-        self.assertEqual(set(coverage), ui.UI_OPERATIONS)
+        coverage = {operation: self.test_operation_coverage_and_golden_parity for operation in observed if operation in _c_ui_UI_OPERATIONS}
+        self.assertEqual(set(coverage), _c_ui_UI_OPERATIONS)
         self.assertTrue(all(callable(test) for test in coverage.values()))
         expected = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))
         expected['observations'] = portable_paths(golden_observations())
@@ -510,5 +525,15 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(observed['ui_analysis_run']['result']['record']['status'], 'completed')
 
     def test_public_names_unchanged(self):
-        expected = json.loads((FIXTURES / 'desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(ui) if not name.startswith('_')), expected)
+        from desktop_app.shell.window import MainWindow
+        from desktop_app.bootstrap import create_ui_services
+        from quantlab.research_core.application.ui_operations import registry
+
+        self.assertIs(ui.MainWindow, MainWindow)
+        self.assertIs(ui._UI_OPERATION_HANDLERS, registry._UI_OPERATION_HANDLERS)
+        self.assertIs(ui.UI_OPERATIONS, registry.UI_OPERATIONS)
+        self.assertIs(ui.create_ui_services, create_ui_services)
+        self.assertEqual(ui.execute_ui_operation.__module__, 'desktop_app.shell.main_window')
+        self.assertEqual(ui.OPERATION_REGISTRAR, 'desktop_app.shell.main_window:execute_ui_operation')
+        self.assertNotIn('plan_provider', vars(ui))
+        self.assertNotIn('_handle_ui_paper_submit', vars(ui))

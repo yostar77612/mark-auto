@@ -1,5 +1,7 @@
 """F1 projections and lazy UI checks without jobs, network or shown windows."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 from dataclasses import asdict
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -89,29 +91,29 @@ class GapProjectionTests(unittest.TestCase):
         self.assertEqual(canonical_json(to_dict(accepted)), before)
 
     def test_import_rejected_before_store_accepted_write_preserved(self):
-        import desktop_app.shell.main_window
+        from quantlab.research_core.application.ui_operations.data import _handle_ui_import as _c_desktop_app_shell_main_window__handle_ui_import
 
         payload = dict(calendar='calendar.json', path='input.csv', kind='ticks')
         cal = dict(version='f1', sessions=[])
         data = fixture()
         with (
-            patch.object(desktop_app.shell.main_window, 'read_json', return_value=cal),
+            patch('quantlab.reporting.read_json', return_value=cal),
             patch('quantlab.data.import_taifex', return_value=data),
-            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
-            patch.object(desktop_app.shell.main_window, 'write_json') as write,
+            patch('quantlab.reporting.save_dataset') as save,
+            patch('quantlab.reporting.write_json') as write,
         ):
             with self.assertRaisesRegex(ValidationError, '^dataset quality is not valid$'):
-                desktop_app.shell.main_window._handle_ui_import(payload, None, Path('.'))
+                _c_desktop_app_shell_main_window__handle_ui_import(_c_create_operation_ports(), payload, None, Path('.'))
             save.assert_not_called()
             write.assert_not_called()
         data = fixture(True)
         with (
-            patch.object(desktop_app.shell.main_window, 'read_json', return_value=cal),
+            patch('quantlab.reporting.read_json', return_value=cal),
             patch('quantlab.data.import_taifex', return_value=data),
-            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
-            patch.object(desktop_app.shell.main_window, 'write_json'),
+            patch('quantlab.reporting.save_dataset') as save,
+            patch('quantlab.reporting.write_json'),
         ):
-            desktop_app.shell.main_window._handle_ui_import(payload, None, Path('.'))
+            _c_desktop_app_shell_main_window__handle_ui_import(_c_create_operation_ports(), payload, None, Path('.'))
             self.assertIs(save.call_args.args[0], data)
 
     def test_catalog_fix_options_and_no_automatic_action(self):

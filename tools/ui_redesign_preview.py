@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import argparse
 import os
 from pathlib import Path
@@ -27,7 +29,8 @@ def build_window(root, *, populated=True):
     from quantlab.core import ValidationError
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
     from desktop_app.strings.catalog import ui_text
-    from desktop_app.shell.main_window import MainWindow, execute_ui_operation
+    from desktop_app.shell.window import MainWindow
+    from desktop_app.shell.main_window import execute_ui_operation
 
     class PreviewJobs(JobManager):
         def start(self, operation, payload, **kwargs):
@@ -64,7 +67,9 @@ def build_window(root, *, populated=True):
 
         for operation, payload in _smoke_steps()[:2]:
             execute_ui_operation(operation, payload, paths)
-    window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+    window = MainWindow(
+        paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+    )
     window.setWindowTitle(ui_text('redesign.preview.title'))
     window.settings_page.setProperty('offlinePreview', True)
     window.settings_page.maintenance_panel.setProperty('offlinePreview', True)

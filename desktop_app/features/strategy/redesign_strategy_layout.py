@@ -15,7 +15,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from desktop_app.components.forms import StrategyForm, CampaignForm, ResultTable, CandidateSummaryCard
+from desktop_app.features.strategy.forms import StrategyForm
+from desktop_app.features.research.forms import CampaignForm
+from desktop_app.components.result_tables import ResultTable
+from desktop_app.features.strategy.summary import CandidateSummaryCard
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import set_theme_property
 from quantlab.desktop_errors import error_message

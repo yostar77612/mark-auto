@@ -1,5 +1,7 @@
 """Offline desktop critique integration. No grant, model service or held-out evaluation."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import copy
 import json
 import os
@@ -26,7 +28,10 @@ def _offline_analysis_job_worker(*args):
     from quantlab.desktop_runtime import _job_worker
 
     with (
-        patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('No analysis provider in cancellation fixture')),
+        patch(
+            'quantlab.research_core.application.analysis_operations.analysis_provider_for',
+            side_effect=AssertionError('No analysis provider in cancellation fixture'),
+        ),
         patch('quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider.__init__', side_effect=AssertionError('No provider controls')),
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
@@ -66,7 +71,7 @@ class AnalysisRequestTests(unittest.TestCase):
         }
 
     def test_runtime_and_ui_operation_sets_match(self):
-        from desktop_app.shell.main_window import UI_OPERATIONS
+        from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS
         from quantlab.desktop_runtime import UI_OPERATIONS as runtime
 
         self.assertEqual(UI_OPERATIONS, runtime)
@@ -228,7 +233,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         second = self.call('ui_analysis_run', self.run_payload(preview))
         self.assertTrue(second['cache_hit'])
         self.assertEqual(len(AnalysisWire.requests), 1)
-        with patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('Saved read cannot touch grant')):
+        with patch('quantlab.research_core.application.analysis_operations.analysis_provider_for', side_effect=AssertionError('Saved read cannot touch grant')):
             loaded = self.call('ui_analysis_read', {'analysis_id': preview['analysis_id']})
         self.assertEqual(loaded['record'], first['record'])
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.folder.iterdir()})
@@ -263,7 +268,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         self.assertEqual(len(AnalysisWire.requests), 1)
 
     def test_plain_text_findings_use_local_values_and_do_not_apply_suggestions(self):
-        from desktop_app.shell.main_window import analysis_record_text
+        from desktop_app.features.analysis.presenter import analysis_record_text
 
         preview = self.preview()
         result = self.call('ui_analysis_run', self.run_payload(preview))
@@ -276,7 +281,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'selection.json').exists())
 
     def test_comparison_values_identify_each_candidate_and_exact_split(self):
-        from desktop_app.shell.main_window import analysis_record_text, ANALYSIS_METRICS
+        from desktop_app.features.analysis.presenter import analysis_record_text, ANALYSIS_METRICS
 
         self.request = request_for(self.paths, self.data, self.state, self.folder, compare=True)
         preview = self.preview()
@@ -328,10 +333,10 @@ class SpawnedAnalysisTests(unittest.TestCase):
         # Windows durable admission now requires the exact approved plan, before
         # spawning. Deny provider construction inside the real spawned worker so
         # even delayed cancellation cannot create a request or provider ledger.
-        from desktop_app.shell.main_window import analysis_plan
+        from quantlab.research_core.application.analysis_operations import analysis_plan
         import quantlab.desktop_runtime as runtime
 
-        plan = analysis_plan(self.paths, self.request)
+        plan = analysis_plan(_c_create_operation_ports(), self.paths, self.request)
         payload = {
             'request': self.request,
             'expected_analysis_id': plan['analysis_id'],

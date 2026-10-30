@@ -1,5 +1,7 @@
 """Idle/cancel presentation evidence claims only not broken, without shown windows."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from pathlib import Path
 from types import SimpleNamespace
 import os
@@ -15,7 +17,7 @@ from desktop_app.shell.app_header import AppHeader
 from desktop_app.components.command_palette import CommandPalette
 from desktop_app.components.job_progress import JobFeedback, JobProgress
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from desktop_app.shell.polish import DisabledHint
 from quantlab.desktop_runtime import AppPaths, JobManager
 from tests.test_desktop_ui_polish_b import disposable_directory
@@ -107,7 +109,7 @@ class IdleHintTests(unittest.TestCase):
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace', Path(folder) / 'bootstrap').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

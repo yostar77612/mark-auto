@@ -105,15 +105,14 @@ def _range(data, bounds):
     }
 
 
-def preview_walk_forward(data, plan_payload, paths, saved_source=None):
+def preview_walk_forward(data, plan_payload, paths, saved_source=None, *, inputs):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.components.formatting import research_controls
 
     # Load the optional UI adapter only when this operation is requested.
     from quantlab.desktop_runtime import validate_walk_forward_request
 
     validate_walk_forward_request(plan_payload, saved_source)
-    registry = research_controls(paths) / 'holdout-registry.sqlite3'
+    registry = inputs.research_controls(paths) / 'holdout-registry.sqlite3'
     if saved_source is None:
         plan = walk_forward_plan_from_dict(plan_payload)
     else:
@@ -212,9 +211,8 @@ def compact_walk_forward(state, reference):
     }
 
 
-def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False):
+def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False, inputs):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.components.formatting import _dataset, research_controls
 
     if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
         required = {'plan'} if operation.endswith('_preview') else {'plan', 'preview_identity'}
@@ -224,8 +222,8 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
             required = required | {'saved_source'}
         if set(payload) != required:
             raise ValidationError('Unsupported walk-forward request fields')
-        data = _dataset(Path(paths.state), {})
-        preview = preview_walk_forward(data, payload['plan'], paths, payload.get('saved_source'))
+        data = inputs._dataset(Path(paths.state), {})
+        preview = preview_walk_forward(data, payload['plan'], paths, payload.get('saved_source'), inputs=inputs)
         if operation.endswith('_preview'):
             return preview
         if preview.get('admission_status') == 'rejected':
@@ -253,7 +251,7 @@ def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False
             data,
             plan=walk_forward_plan_from_dict(preview['plan']),
             output_dir=output,
-            holdout_registry_path=research_controls(paths) / 'holdout-registry.sqlite3',
+            holdout_registry_path=inputs.research_controls(paths) / 'holdout-registry.sqlite3',
             **source_options,
         )
         return compact_walk_forward(state, identity)
