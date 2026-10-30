@@ -127,7 +127,11 @@ def physical_path(relative: str) -> str:
     return CURRENT_PATHS.get(relative, relative)
 
 
-def reviewed_source_bytes(root: Path, name: str) -> bytes:
+def reviewed_source_bytes(root: Path, name: str, *, current=False) -> bytes:
+    if current:
+        from tests.core_split_source_fixtures import CURRENT_SOURCES
+
+        return (root / CURRENT_SOURCES.get(name, name)).read_bytes()
     if name not in HASHES:
         return (root / name).read_bytes()
     path = Path(__file__).resolve().parent / 'fixtures' / 'layered_paths' / (name + '.gz')
@@ -138,11 +142,15 @@ def reviewed_source_bytes(root: Path, name: str) -> bytes:
 
 
 def original_adapter_text(path: str, source: str) -> str:
+    from tests.core_split_source_fixtures import before_core_split
+
+    eol = '\r\n' if '\r\n' in source else '\n'
+    source = before_core_split(path, source)
     for current, original in NORMALIZATIONS[path]:
         if source.count(current) != 1:
             raise ValueError('Reviewed mechanical source rewrite changed')
         source = source.replace(current, original, 1)
-    return source
+    return source.replace('\n', eol)
 
 
 def page_sources(root: Path):
@@ -150,7 +158,7 @@ def page_sources(root: Path):
     moved = set(CURRENT_PATHS.values())
     projected = {new for old, new in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
     additions = {path.relative_to(root).as_posix() for path in (root / 'desktop_app').rglob('*.py')} - moved
-    return [root / name for name in sorted(projected | additions)]
+    return [root / name for name in sorted((projected | additions) - {'desktop_app/connection_composition.py'})]
 
 
 def historical_ui_environment():
@@ -187,6 +195,14 @@ def historical_ui_environment():
             return original_import(name, globals, locals, fromlist, level)
 
         def source_bytes(path):
+            if path == root / 'quantlab/research.py':
+                from tests.core_split_source_fixtures import before_core_split
+
+                raw = original_read(path)
+                restored = before_core_split('quantlab/research.py', raw.decode('utf-8')).encode('utf-8')
+                return restored.replace(b'\n', b'\r\n') if b'\r\n' in raw else restored
+            if path == root / 'quantlab/research_analysis.py':
+                return historical_analysis_source(original_read(path))
             name = source_keys.get(path)
             if name is not None:
                 return reviewed_source_bytes(root, name)
@@ -196,10 +212,21 @@ def historical_ui_environment():
 
         def source_text(path, *args, **kwargs):
             source = original_text(path, *args, **kwargs)
+            if path == root / 'quantlab/research.py':
+                from tests.core_split_source_fixtures import before_core_split
+
+                return before_core_split('quantlab/research.py', source)
+            if path == root / 'quantlab/walk_forward.py':
+                return historical_walk_forward_source(source)
             return original_pool_text(source) if path == root / 'quantlab/saved_candidate_pool.py' else source
 
         source_text._layered_historical_projection = True
-        with patch('builtins.__import__', projected_import), patch.object(Path, 'read_bytes', source_bytes), patch.object(Path, 'read_text', source_text):
+        with (
+            patch('builtins.__import__', projected_import),
+            patch.object(Path, 'read_bytes', source_bytes),
+            patch.object(Path, 'read_text', source_text),
+            patch('quantlab.research.content_hash', new=historical_campaign_hash),
+        ):
             yield
 
     return environment()
@@ -209,6 +236,9 @@ def original_pool_text(source: str) -> str:
     """Undo only the reviewed additional producer literal and exact tuple entry."""
     import ast
     from quantlab.core import content_hash
+    from tests.core_split_source_fixtures import before_core_split
+
+    source = before_core_split('quantlab/saved_candidate_pool.py', source)
 
     marker = '\n# Reviewed mechanical-path producer; all earlier literal blocks remain exact.\n'
     tail = 'ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, ATOMIC_REPLACE_SIWC_PROFILE_V1, LAYERED_PATHS_SIWC_PROFILE_V1)'
@@ -241,7 +271,7 @@ def project_page_service_lines(result):
     path = Path(__file__).parent / 'fixtures/layered_paths/page_service_line_relocations.json'
     table = json.loads(path.read_text(encoding='utf-8'))
     canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode('utf-8')
-    if hashlib.sha256(canonical).hexdigest() != 'a1b69b15bffb350df2ffc78aac0a902e3b99f5670c28991d75d079e8fbe2343c':
+    if hashlib.sha256(canonical).hexdigest() != 'd16e2b5f41bdd18b04d1a4dd913c3503a397bebd0daa1b317bff85b5d1cf68b1':
         raise ValueError('Reviewed mechanical line-location table changed')
     if len(result['patch_points']) != table['patch_points']:
         raise ValueError('Historical patch inventory size changed')
@@ -261,6 +291,11 @@ def project_page_service_lines(result):
 def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> bytes:
     """Read actual current bytes and undo only the reviewed B mechanical adapters."""
     current = (root / physical_path(logical)).read_bytes()
+    if logical in ('desktop_chatgpt_auth.py', 'quantlab/research.py'):
+        from tests.core_split_source_fixtures import before_core_split
+
+        text = before_core_split(physical_path(logical), current.decode('utf-8'))
+        return text.encode('utf-8').replace(b'\n', b'\r\n' if b'\r\n' in baseline else b'\n')
     if logical == 'desktop_chatgpt_provider.py':
         return original_adapter_text(physical_path(logical), current.decode('utf-8')).encode('utf-8')
     if logical == 'quantlab/saved_candidate_pool.py':
@@ -271,3 +306,67 @@ def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> b
             raise ValueError('Unknown historical checkout line-ending policy')
         return text.encode('utf-8').replace(b'\n', eol)
     return current
+
+
+def historical_analysis_source(raw):
+    """Undo only the receipt-validator import move, with an exact historical pin."""
+    source = raw.decode('utf-8').replace('\r\n', '\n')
+    current = 'from quantlab.research_core.domain.receipts import _validated_receipt_snapshot\n'
+    if source.count(current) != 1 or source.count('    _validated_provider_descriptor,\n') != 1:
+        raise ValueError('Reviewed analysis receipt import changed')
+    source = source.replace(current, '', 1).replace(
+        '    _validated_provider_descriptor,\n',
+        '    _validated_provider_descriptor,\n    _validated_receipt_snapshot,\n',
+        1,
+    )
+    source = source.replace(
+        'from quantlab.research_core.adapters.saved_pool_source import _read_campaign, _validate_original_dataset',
+        'from .saved_candidate_pool import _read_campaign, _validate_original_dataset',
+    )
+    source = source.replace(
+        'from quantlab.research_core.adapters.saved_pool_source import _prepare_bounded_read', 'from .saved_candidate_pool import _prepare_bounded_read'
+    )
+    restored = source.encode('utf-8')
+    if hashlib.sha256(restored).hexdigest() != '98b60d821e7b7b6fab5a70d9284a16c3708670aac0b56af9ec9c61f6778a8c30':
+        raise ValueError('Historical analysis source outside the import move changed')
+    return restored
+
+
+def historical_campaign_hash(value):
+    """Project only the exact reviewed engine tuple before deriving golden identities."""
+    from quantlab.core import content_hash, to_dict
+    from quantlab.saved_candidate_pool import ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, CORE_SPLIT_SIWC_PROFILE_V1
+    from tests.core_split_source_fixtures import layered_source_bytes
+
+    fields = {'config', 'data_hash', 'split_hashes', 'provider', 'prompt_template_hash', 'engine_source_hashes'}
+    if isinstance(value, dict) and set(value) == fields:
+        if value['engine_source_hashes'] == ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes']:
+            return content_hash(value)
+        expected = to_dict(CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'])
+        expected['research.py'] = content_hash(layered_source_bytes('quantlab/research.py').decode('utf-8').replace('\r\n', '\n'))
+        if value['engine_source_hashes'] != expected:
+            raise ValueError('Unreviewed current campaign source tuple')
+        historical = dict(expected)
+        del historical['research_core/domain/receipts.py']
+        if historical != ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes']:
+            raise ValueError('Historical campaign source tuple changed')
+        value['engine_source_hashes'] = historical
+    return content_hash(value)
+
+
+def historical_walk_forward_source(source):
+    """Undo only the exact reviewed lazy validation import/argument move."""
+    if hashlib.sha256(source.encode()).hexdigest() != '38e18c7c775d6da3bd23e69cb77336b2bee03826e7f3763a6ce02b92617cc318':
+        raise ValueError('Unreviewed walk-forward source drift')
+    source = source.replace(
+        'from quantlab.research_core.application.saved_pool_validation import validate_admission_snapshot\n            from .saved_candidate_pool import SUPPORTED_PRODUCERS, AUDITED_PRODUCER  # Operation-specific profiles.',
+        'from .saved_candidate_pool import validate_admission_snapshot',
+    )
+    source = source.replace(', profiles=SUPPORTED_PRODUCERS, audited_producer=AUDITED_PRODUCER', '')
+    source = source.replace(
+        "validate_admission_snapshot(\n                plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool)\n            )",
+        "validate_admission_snapshot(plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool))",
+    )
+    if hashlib.sha256(source.encode()).hexdigest() != '40d22058414cecb8db5d2f964e1b624b25a4e83375a298dc96b05f9519cf1502':
+        raise ValueError('Historical walk-forward source outside the import move changed')
+    return source

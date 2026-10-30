@@ -10,11 +10,39 @@ import platform
 import sys
 import unittest
 from unittest.mock import patch
-import quantlab.assistant.adapters.chatgpt.provider as p
+import quantlab.assistant.adapters.chatgpt.provenance as p
 
 VERSIONS = {'PyJWT': '2.15.1', 'cryptography': '50.0.2', 'cffi': '2.1.1', 'pycparser': '3.11'}
 ROOT = Path(p.__file__).parent
 TARGETS = {'windows-cp311-amd64', 'windows-cp312-amd64', 'windows-cp313-amd64', 'linux-cp311-x86_64', 'linux-cp312-x86_64'}
+
+SOURCE_PATHS = {
+    'assistant_domain_init.py': ROOT.parents[3] / 'quantlab/assistant/domain/__init__.py',
+    'assistant_ports_init.py': ROOT.parents[3] / 'quantlab/assistant/ports/__init__.py',
+    'research_domain_init.py': ROOT.parents[3] / 'quantlab/research_core/domain/__init__.py',
+    'desktop_chatgpt_auth.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/auth.py',
+    'desktop_chatgpt_provider.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/provider.py',
+    'chatgpt_vault.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/vault.py',
+    'chatgpt_identity.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/identity.py',
+    'chatgpt_loopback.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/loopback.py',
+    'chatgpt_account_summary.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/account_summary.py',
+    'chatgpt_account_paths.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/account_paths.py',
+    'chatgpt_response_stream.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/response_stream.py',
+    'chatgpt_transport.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/transport.py',
+    'chatgpt_provenance.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/provenance.py',
+    'chatgpt_account_store.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/account_store.py',
+    'chatgpt_resolution_audit.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/resolution_audit.py',
+    'chatgpt_unknown_reconciliation.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py',
+    'chatgpt_finished_reconciliation.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/finished_reconciliation.py',
+    'chatgpt_campaign_receipts.py': ROOT.parents[3] / 'quantlab/assistant/adapters/chatgpt/campaign_receipts.py',
+    'assistant_auth_protocol.py': ROOT.parents[3] / 'quantlab/assistant/domain/auth_protocol.py',
+    'assistant_auth_tokens.py': ROOT.parents[3] / 'quantlab/assistant/domain/auth_tokens.py',
+    'assistant_plan_protocol.py': ROOT.parents[3] / 'quantlab/assistant/domain/plan_protocol.py',
+    'assistant_source_components.py': ROOT.parents[3] / 'quantlab/assistant/domain/source_components.py',
+    'assistant_auth_ports.py': ROOT.parents[3] / 'quantlab/assistant/ports/auth.py',
+    'research_receipts.py': ROOT.parents[3] / 'quantlab/research_core/domain/receipts.py',
+    'desktop_chatgpt_dependency_manifest.json': ROOT / 'desktop_chatgpt_dependency_manifest.json',
+}
 
 
 class ProvenanceStructureTests(unittest.TestCase):
@@ -35,40 +63,18 @@ class ProvenanceStructureTests(unittest.TestCase):
     def test_exact_sources_and_manifest(self):
         descriptor = p.implementation_provenance()
         for name, digest in descriptor['source_sha256'].items():
-            assert (
-                digest
-                == hashlib.sha256(
-                    (
-                        ROOT
-                        / {
-                            'desktop_chatgpt_auth.py': 'auth.py',
-                            'desktop_chatgpt_provider.py': 'provider.py',
-                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
-                        }[name]
-                    ).read_bytes()
-                ).hexdigest()
-            )
+            assert digest == hashlib.sha256((ROOT / SOURCE_PATHS[name]).read_bytes()).hexdigest()
         assert descriptor['dependency_manifest_sha256'] == hashlib.sha256((ROOT / 'desktop_chatgpt_dependency_manifest.json').read_bytes()).hexdigest()
         assert str(ROOT) not in json.dumps(descriptor)
 
     def test_mutation_and_missing_files(self):
         baseline = p.implementation_provenance()
         original = Path.read_bytes
-        for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
+        for name in SOURCE_PATHS:
             with self.subTest(name=name):
 
                 def altered(path):
-                    return (
-                        original(path) + b'\n'
-                        if path
-                        == ROOT
-                        / {
-                            'desktop_chatgpt_auth.py': 'auth.py',
-                            'desktop_chatgpt_provider.py': 'provider.py',
-                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
-                        }[name]
-                        else original(path)
-                    )
+                    return original(path) + b'\n' if path == ROOT / SOURCE_PATHS[name] else original(path)
 
                 with patch.object(Path, 'read_bytes', altered):
                     changed = p.implementation_provenance()
@@ -78,15 +84,7 @@ class ProvenanceStructureTests(unittest.TestCase):
                         assert changed['dependency_manifest_sha256'] != baseline['dependency_manifest_sha256']
 
                 def missing(path):
-                    if (
-                        path
-                        == ROOT
-                        / {
-                            'desktop_chatgpt_auth.py': 'auth.py',
-                            'desktop_chatgpt_provider.py': 'provider.py',
-                            'desktop_chatgpt_dependency_manifest.json': 'desktop_chatgpt_dependency_manifest.json',
-                        }[name]
-                    ):
+                    if path == ROOT / SOURCE_PATHS[name]:
                         raise FileNotFoundError('synthetic private path')
                     return original(path)
 
@@ -229,7 +227,7 @@ class NativePinnedProvenanceTests(unittest.TestCase):
         descriptor = p.implementation_provenance()
         assert descriptor['dependency_versions'] == VERSIONS
         assert descriptor['dependency_target'] in TARGETS
-        assert set(descriptor['source_sha256']) == {'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'}
+        assert set(descriptor['source_sha256']) == set(SOURCE_PATHS) - {'desktop_chatgpt_dependency_manifest.json'}
 
 
 class NativeProfileBoundaryTests(unittest.TestCase):

@@ -27,7 +27,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         save_dataset(self.data, self.paths.state / 'dataset.json')
 
     def operation(self, name, payload, **kwargs):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         return execute_ui_operation('ui_walk_forward_' + name, payload, self.paths, **kwargs)
 
@@ -68,10 +68,13 @@ class WalkForwardAdapterTests(unittest.TestCase):
             replace(self.plan, evidence_mode='historical_replay'),
         ):
             self.assertNotEqual(p['preview_identity'], self.preview(plan)['preview_identity'])
-        import desktop_app.features.walk_forward.presenter
+        import quantlab.research_core.application.walk_forward_operations
 
-        original = desktop_app.features.walk_forward.presenter._binding
-        with patch('desktop_app.features.walk_forward.presenter._binding', side_effect=lambda *a: {**original(*a), 'source_hashes': {'fixture': 'changed'}}):
+        original = quantlab.research_core.application.walk_forward_operations._binding
+        with patch(
+            'quantlab.research_core.application.walk_forward_operations._binding',
+            side_effect=lambda *a: {**original(*a), 'source_hashes': {'fixture': 'changed'}},
+        ):
             with self.assertRaisesRegex(ValidationError, 'preview again'):
                 self.operation('run', request)
         self.assertFalse((self.paths.state / 'walk_forward').exists())
@@ -114,7 +117,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         self.assertEqual(result['summary']['model_calls'], 0)
         for filename in ('selection.json', 'active_candidate.json', 'paper.sqlite3', 'campaigns'):
             self.assertFalse((self.paths.state / filename).exists())
-        with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No rerun')):
+        with patch('quantlab.research_core.application.walk_forward_operations.run_walk_forward', side_effect=AssertionError('No rerun')):
             self.assertEqual(self.operation('run', payload), result)
             self.assertEqual(self.operation('read', {'reference': result['reference']}), result)
         from desktop_app.shell.main_window import candidate_record
@@ -205,7 +208,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         with closing(sqlite3.connect(folder / 'walk_forward.sqlite3')) as db, db:
             _save_state(db, folder, state)
         before = (folder / 'walk_forward.sqlite3').read_bytes()
-        with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No retry')):
+        with patch('quantlab.research_core.application.walk_forward_operations.run_walk_forward', side_effect=AssertionError('No retry')):
             result = self.operation('run', {'plan': p['plan'], 'preview_identity': p['preview_identity']})
         self.assertEqual(result['display_status'], 'running_or_interrupted_no_stop_proof')
         self.assertEqual(before, (folder / 'walk_forward.sqlite3').read_bytes())
@@ -291,7 +294,7 @@ class WalkForwardHostTests(unittest.TestCase):
     cleanup_window = _Support.cleanup_window
 
     def seed(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         execute_ui_operation('ui_demo', {'bars': 240}, self.paths)
         self.window.refresh_views()
@@ -301,7 +304,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         with patch.object(w.jobs, 'start', return_value='preview-job'):
             w.preview_walk_forward()
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         result = execute_ui_operation('ui_walk_forward_preview', {'plan': w._walk_forward_input_key()[1]}, self.paths)
         w._walk_forward_event({'type': 'result', 'job_id': 'preview-job', 'result': result})
@@ -328,7 +331,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         with patch.object(w.jobs, 'start', return_value='old-preview'):
             w.preview_walk_forward()
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         result = execute_ui_operation('ui_walk_forward_preview', {'plan': w._walk_forward_input_key()[1]}, self.paths)
         w.walk_forward_form.fields['minimum'].setText('123')
@@ -408,7 +411,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         data, plan = inputs()
         save_dataset(data, self.paths.state / 'dataset.json')
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         p = execute_ui_operation('ui_walk_forward_preview', {'plan': to_dict(plan)}, self.paths)
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker):

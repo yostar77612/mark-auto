@@ -42,7 +42,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
             paths = AppPaths(Path(temp) / 'workspace').ensure()
             jobs = JobManager(paths)
             before = sorted(str(p.relative_to(paths.root)) for p in paths.root.rglob('*'))
-            with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 for action in ('download', 'install', 'serve', 'probe'):
                     with self.assertRaises(RuntimeSafetyError):
                         jobs.start('ui_local_ai', {'action': action, 'consent': True})
@@ -55,7 +55,8 @@ class ProductAIBoundaryTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec('PySide6'), 'Qt required for host adapter')
     def test_removed_worker_dispatch_does_not_create_workspace(self):
-        from desktop_app.shell.main_window import execute_ui_operation, campaign_generator
+        from desktop_app.connection_composition import execute_ui_operation
+        from desktop_app.shell.main_window import campaign_generator
         from quantlab.desktop_runtime import AppPaths
         from quantlab.core import ValidationError
 

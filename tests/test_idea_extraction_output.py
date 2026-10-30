@@ -4,8 +4,8 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from quantlab.assistant.adapters.chatgpt.provider import PlanError
-from quantlab.assistant.adapters.chatgpt.auth import AuthError
+from quantlab.assistant.domain.plan_protocol import PlanError
+from quantlab.assistant.domain.auth_protocol import AuthError
 from desktop_app.shell.main_window import _idea_event_caller
 
 from quantlab.idea_research import _extraction_output, run_extraction

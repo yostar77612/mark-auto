@@ -14,7 +14,8 @@ import unittest
 from unittest.mock import patch
 
 from quantlab.core import CostSpec, Instrument, ValidationError
-from quantlab.desktop_runtime import AppPaths, BackupManager, RuntimeSafetyError, WorkspaceLocator, _read_json
+from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError, WorkspaceLocator, _read_json
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 from quantlab.paper import PaperBroker, RiskLimits
 from quantlab.paper_replay import _require_local_wal_path
 from quantlab.runtime_support import atomic_write

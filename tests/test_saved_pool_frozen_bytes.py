@@ -1,0 +1,62 @@
+"""Historical profile literals are exact Git 7b59809 checkout bytes."""
+
+import ast
+import hashlib
+from pathlib import Path
+import unittest
+
+PINS = {
+    'AUDITED_PRODUCER': '6cc01e88dd33abe47761a8c120c27ad34e7d2ba7fd617ffebf600a885ee99daf',
+    'CURRENT_PRODUCER': '30237aafa509484843ff4d37fa4f0412335f5de52bb782d1ae737a7cceedcd5b',
+    'CURRENT_CHATGPT_PROFILE_V2': '7f2aca0ceb9d74a4bd13945b4da56a2f794895580e8dc2be066f6dccce5f28e4',
+    'TRANSPORT_VERIFIER_PRODUCER': 'b8605824890e650cd22db51a39ebdbff9d79a1fd613ba36a89392ceb78523ac7',
+    'TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2': '930853fc1e1598622fcccf87a69c3c50bd35a6b9e4c448b9bc41f82453d442a5',
+    'SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1': '1d4fa719b1fb777764e15e02f63ff962161b77c177b7ac0098932a4ab831af37',
+    'SIWC_ANALYSIS_CAPABLE_PROFILE_V1': '1da6561020112a1ae5346a7c56a5ef80f0bddd15de95adf0d263a6d719852c81',
+    'SCALAR_TRANSPORT_PROFILE_V1': '16b968615b23ea2f9afcd1b31d0a3da7adff08ba96e64849b9ec85b63b32b628',
+    'SCALAR_SIWC_ANALYSIS_PROFILE_V1': '24525539ebd1ecc80bd5b685baea1a5b9e523f72cb9150d2d730d391a12bf155',
+    'CLEANUP_TRANSPORT_PROFILE_V1': '9d505fd0d89db42715791607fd7cbeece2751b367f51bdcc1fd080a6a18df96d',
+    'CLEANUP_SIWC_ANALYSIS_PROFILE_V1': '44276fe4206f423c9877e346b7348315fdeac945ad64a454568a04ed98884166',
+    'FAIL_CLOSED_TRANSPORT_PROFILE_V1': '5f6d8cf382ea90dd7d5e7a6fbf4a6cc3212b90b1c04abadc19e8d555467f3902',
+    'FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1': 'f7d128469e74769fefa9efd3ad1df2e3498dc21a512073875c8b390e77fc69c7',
+    'DEADLINE_TRANSPORT_PROFILE_V1': 'caa4a68eae58f398ce7310b5d1fdfc05d852e1da640e1fec024b044911e55975',
+    'DEADLINE_SIWC_ANALYSIS_PROFILE_V1': 'e5bda851be77ab480a0621e8fe2aeaa6c743b9ec63cd775f82e4503b75d96d28',
+    'TOKEN_FORMAT_SIWC_ANALYSIS_PROFILE_V1': 'b08e6875cc1895c093a7e0874b2e632ff8f349ebbb0b46b9268ce610e1ca9b29',
+    'TLS_ANCHOR_SIWC_ANALYSIS_PROFILE_V1': '3614bcd9b4404f5559eb88cb0197990b6f838c1b07e0c74145d24c57abff5746',
+    'MODELS_LIMIT_SIWC_ANALYSIS_PROFILE_V1': '0b90ccb1bdfa59413f8f59fe49d50d39081105f56570816a456b7d936291a7c4',
+    'CAMPAIGN_CATALOG_SIWC_ANALYSIS_PROFILE_V1': 'f9ae3ffe32fa00fe8a6d7ae8fa659e3274096b2b4c62c1be2df8bf0ae91c9765',
+    'UNKNOWN_RECONCILIATION_TRANSPORT_PROFILE_V1': '1a24c39e873bc3c1411388bb827642a77ecf5879d7f7d57b1c2b0799377ce3fc',
+    'UNKNOWN_RECONCILIATION_SIWC_PROFILE_V1': '6af768ad73e9447d9c7efa4b39e5e09bf39a356d99973e87561a5025708995cc',
+    'FINISHED_UNKNOWN_RECONCILIATION_SIWC_PROFILE_V1': '0b72f490b31b659f2702bc2d684addf4c4352b921027bea5ca8b776cb3bcfb99',
+    'STREAM_CONTENT_TYPE_SIWC_PROFILE_V1': '4f3b47923c5dc3e01cdae666df415124bda501aaebbba4f6076c15969a8682e9',
+    'COMPLETED_ITEMS_SIWC_PROFILE_V1': '2c9cd1faa2e8eff006f9454b048881d2d420c9c01a2e394335cac22a6f396737',
+    'LONG_PATH_TRANSPORT_PROFILE_V1': '5055f1560df6f2b79d1b16db3ec68a71b17821b6b09ea762a519358432e18fee',
+    'LONG_PATH_SIWC_PROFILE_V1': 'f258dcc551c46b269b8bfd72a3b5f9868385e706a101c1ca512e674e9e520fc2',
+    'ATOMIC_REPLACE_TRANSPORT_PROFILE_V1': '85f1fb440038842a52b6e7e698d8fa11f78e977e69cd14cdeb6147b74b94ee78',
+    'ATOMIC_REPLACE_SIWC_PROFILE_V1': '92803b0317844c3a53aaae737d3061b375130f98845313d1c89559268d1a8c1c',
+}
+
+
+def assert_frozen_bytes(raw):
+    lines = raw.splitlines(keepends=True)
+    blocks = {
+        node.targets[0].id: b"".join(lines[node.lineno - 1 : node.end_lineno])
+        for node in ast.parse(raw).body
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == "freeze"
+    }
+    for name, digest in PINS.items():
+        if name not in blocks or hashlib.sha256(blocks[name]).hexdigest() != digest:
+            raise AssertionError("Historical producer literal changed: " + name)
+
+
+class FrozenProducerBytesTests(unittest.TestCase):
+    def test_historical_literals_are_byte_identical(self):
+        root = Path(__file__).resolve().parents[1]
+        assert_frozen_bytes((root / "quantlab/saved_candidate_pool.py").read_bytes())
+
+    def test_one_changed_byte_fails(self):
+        root = Path(__file__).resolve().parents[1]
+        raw = (root / "quantlab/saved_candidate_pool.py").read_bytes()
+        changed = raw.replace(b"archived_campaign_74fa33dc_v1", b"archived_campaign_74fa33dc_v2", 1)
+        with self.assertRaises(AssertionError):
+            assert_frozen_bytes(changed)

@@ -33,7 +33,7 @@ class DownloadImportContractTests(unittest.TestCase):
         # PR B: re-pin only reviewed path/module substitutions in the inventory
         # and R7 path keys; both normalized diffs are empty (f05328b precedent).
         expected = {
-            'page_services_inventory.json': '39c5ca7d7e61cca59c62050fdef3b9c9eafd9dc9a04861849423616c3cca325c',
+            'page_services_inventory.json': '9b5ab2362ba2ea7c14ecdda986e3f79bf8a0d03dbb8bb217814cc7501da82b18',
             'r7_base.json': '4507e432e092fc2f1921468ceee4e5f2730f81aa96cf067ad3c5ce00b8c895ba',
             'ui_redesign_characterization_delta.json': 'b5fa49227f1ec94b22661aa5769e0183d84e207227f4ac90d24ac3c1e1ac96f5',
         }

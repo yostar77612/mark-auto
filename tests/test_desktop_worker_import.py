@@ -1,5 +1,8 @@
 """Real source-worker imports preserve parent GUI and operation isolation."""
 
+from quantlab.research_core.adapters import job_worker
+
+
 import json
 import os
 from pathlib import Path
@@ -17,7 +20,7 @@ FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, cu
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT.parent
-ORIGINAL_WORKER = runtime._job_worker
+ORIGINAL_WORKER = job_worker._job_worker
 
 
 def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *extra):
@@ -48,7 +51,7 @@ class SourceWorkerImportTests(unittest.TestCase):
     def test_actual_spawned_operation_worker_runs_real_demo_without_qt_or_pages(self):
         manager = runtime.JobManager(runtime.AppPaths(self.root).ensure())
         self.addCleanup(manager.close)
-        with patch.object(runtime, '_job_worker', observed_worker):
+        with patch('quantlab.research_core.adapters.job_worker._job_worker', observed_worker):
             manager.start('ui_demo', {'bars': 120})
         child_pid = manager.process.pid
         events = []
@@ -65,7 +68,7 @@ class SourceWorkerImportTests(unittest.TestCase):
     def test_first_parent_registrar_lookup_cannot_poison_real_mainwindow_or_public_aliases(self):
         code = '''from pathlib import Path
 import sys
-from quantlab.desktop_runtime import _worker_operation_executor, _is_worker_registrar_import, AppPaths, JobManager, SettingsStore, BackupManager, RuntimeGuard
+from quantlab.research_core.adapters.job_worker import _worker_operation_executor, _is_worker_registrar_import; from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeGuard; from quantlab.research_core.adapters.workspace_backup import BackupManager
 executor = _worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
 assert not _is_worker_registrar_import()
 import desktop_app.shell.main_window
@@ -94,10 +97,10 @@ print('real parent GUI after first registrar lookup')
         self.assertIn('real parent GUI', result.stdout)
 
     def test_failed_registrar_import_restores_process_role(self):
-        self.assertFalse(runtime._is_worker_registrar_import())
+        self.assertFalse(job_worker._is_worker_registrar_import())
         with self.assertRaises(ModuleNotFoundError):
-            runtime._worker_operation_executor('_markauto_absent_worker_registrar:execute')
-        self.assertFalse(runtime._is_worker_registrar_import())
+            job_worker._worker_operation_executor('_markauto_absent_worker_registrar:execute')
+        self.assertFalse(job_worker._is_worker_registrar_import())
 
 
 if __name__ == '__main__':

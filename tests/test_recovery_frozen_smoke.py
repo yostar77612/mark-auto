@@ -96,7 +96,8 @@ class RecoveryFrozenSmokeTests(unittest.TestCase):
                 smoke._prepare_plan(paths, {'status': 'completed', 'real_model_status': 'verified'}, time.monotonic() + 10)
 
     def test_long_fixture_uses_canonical_reference_without_relaxing_admission(self):
-        from quantlab.desktop_runtime import RuntimeSafetyError, validate_analysis_request
+        from quantlab.desktop_runtime import RuntimeSafetyError
+        from quantlab.runtime_support import validate_analysis_request
         from quantlab.windows_paths import canonical_path, native_path
 
         with tempfile.TemporaryDirectory(dir=native_path(tempfile.gettempdir(), force=True)) as folder:

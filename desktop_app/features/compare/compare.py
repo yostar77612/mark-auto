@@ -159,7 +159,7 @@ class ComparePage(PageContext, QWidget):
         self.form_feedback(self.analysis_original, ui_text('ui.pick_analysis_original.original_selected'))
 
     def _analysis_request(self, task):
-        from quantlab.desktop_runtime import validate_analysis_request
+        from quantlab.research_core.application.job_requests import validate_analysis_request
 
         refs = [item.data(Qt.ItemDataRole.UserRole) for item in self.analysis_candidates.selectedItems()]
         if not refs or len({ref['campaign_folder'] for ref in refs}) != 1:
@@ -187,7 +187,7 @@ class ComparePage(PageContext, QWidget):
         self.start_job('ui_analysis_preview', {'request': request})
 
     def run_analysis(self):
-        from desktop_app.features.assistant.connection import SubscriptionOptions
+        from quantlab.assistant.application.connection_contracts import SubscriptionOptions
 
         preview = self._analysis_preview
         if preview is None or not self.analysis_consent.isChecked():

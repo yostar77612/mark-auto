@@ -1,5 +1,10 @@
 """Offline, explicit local reconciliation; no account, vault or network fixtures."""
 
+from quantlab.desktop_errors import ERROR_LABELS
+
+from quantlab.assistant.application import connection_contracts
+from quantlab.assistant.adapters.chatgpt import connection_worker
+
 from dataclasses import asdict, replace
 from contextlib import ExitStack
 import json
@@ -26,7 +31,7 @@ BOOTSTRAP = Path(__file__).resolve().parents[1] / 'fixture-bootstrap'
 
 
 def inspection_event(request, inspection=('k1_resolvable', 1, 1, True), **kwargs):
-    return ui.ReconciliationEvent(
+    return connection_contracts.ReconciliationEvent(
         request.request_id,
         'result',
         reconciliation_action=request.action,
@@ -42,18 +47,18 @@ class ReconciliationPayloadTests(unittest.TestCase):
 
     def test_existing_and_new_request_shapes_round_trip_with_optional_version(self):
         requests = [
-            ui.ConnectionRequest(1, 'list'),
-            ui.ConnectionRequest(2, 'restore'),
-            ui.ConnectionRequest(3, 'first_sign_in', user_confirmed=True),
-            ui.ConnectionRequest(4, 'models', REF, user_confirmed=True),
-            ui.ConnectionRequest(5, 'test', REF, user_confirmed=True, model='gpt-fixture'),
-            ui.ConnectionRequest(6, 'inspect_unknown', REF),
-            ui.ConnectionRequest(7, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1),
+            connection_contracts.ConnectionRequest(1, 'list'),
+            connection_contracts.ConnectionRequest(2, 'restore'),
+            connection_contracts.ConnectionRequest(3, 'first_sign_in', user_confirmed=True),
+            connection_contracts.ConnectionRequest(4, 'models', REF, user_confirmed=True),
+            connection_contracts.ConnectionRequest(5, 'test', REF, user_confirmed=True, model='gpt-fixture'),
+            connection_contracts.ConnectionRequest(6, 'inspect_unknown', REF),
+            connection_contracts.ConnectionRequest(7, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1),
         ]
         for request in requests:
             with self.subTest(action=request.action):
                 payload = json.loads(json.dumps(request.payload()))
-                self.assertEqual(ui.ConnectionRequest(**payload), request)
+                self.assertEqual(connection_contracts.ConnectionRequest(**payload), request)
                 self.assertEqual(self.prepare(payload)[1:], (request.request_id, False))
                 self.assertIn('model', payload)
                 self.assertEqual(payload['acknowledgement_version'], 1 if request.action == 'resolve_unknown' else None)
@@ -63,7 +68,7 @@ class ReconciliationPayloadTests(unittest.TestCase):
         self.assertEqual(self.prepare(legacy)[1], 1)
 
     def test_resolution_confirmation_and_registration_types_fail_closed_at_both_boundaries(self):
-        base = ui.ConnectionRequest(1, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1).payload()
+        base = connection_contracts.ConnectionRequest(1, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1).payload()
         changes = [
             *({'acknowledgement_version': value} for value in (None, False, True, 0, 2, 1.0, '1')),
             *({'user_confirmed': value} for value in (False, 1, 'true', None)),
@@ -74,37 +79,37 @@ class ReconciliationPayloadTests(unittest.TestCase):
             payload = {**base, **change}
             with self.subTest(change=change):
                 with self.assertRaises((TypeError, ValueError)):
-                    ui.ConnectionRequest(**payload)
+                    connection_contracts.ConnectionRequest(**payload)
                 with self.assertRaises(RuntimeSafetyError):
                     self.prepare(payload)
         for action in ('list', 'inspect_unknown'):
-            payload = ui.ConnectionRequest(2, action, REF if action == 'inspect_unknown' else None).payload()
+            payload = connection_contracts.ConnectionRequest(2, action, REF if action == 'inspect_unknown' else None).payload()
             with self.assertRaises(ValueError):
-                ui.ConnectionRequest(**{**payload, 'acknowledgement_version': 1})
+                connection_contracts.ConnectionRequest(**{**payload, 'acknowledgement_version': 1})
             with self.assertRaises(RuntimeSafetyError):
                 self.prepare({**payload, 'acknowledgement_version': 1})
         for action in ('inspect_unknown', 'resolve_unknown'):
             with self.assertRaises(ValueError):
-                ui.ConnectionRequest(
+                connection_contracts.ConnectionRequest(
                     1, action, REF, user_confirmed=True, model='gpt-fixture', acknowledgement_version=1 if action == 'resolve_unknown' else None
                 )
 
     def test_typed_events_round_trip_without_auth_or_private_detail_projection(self):
-        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        request = connection_contracts.ConnectionRequest(1, 'inspect_unknown', REF)
         events = [
             inspection_event(request),
             *(inspection_event(request, (kind, None, None, False)) for kind in ('k1_other_registration', 'k2_unresolvable', 'none')),
-            ui.ReconciliationEvent(
+            connection_contracts.ReconciliationEvent(
                 2, 'result', reconciliation_action='resolve_unknown', reconciliation_registration=REF, account_status=('user_confirmed_consumed', False)
             ),
-            ui.ReconciliationEvent(
+            connection_contracts.ReconciliationEvent(
                 3, 'error', reconciliation_action='inspect_unknown', reconciliation_registration=REF, error_code='unknown_request_too_recent'
             ),
         ]
         for event in events:
             with self.subTest(event=event):
                 decoded = connection_event_from_payload(json.loads(json.dumps(asdict(event))))
-                self.assertIs(type(decoded), ui.ReconciliationEvent)
+                self.assertIs(type(decoded), connection_contracts.ReconciliationEvent)
                 self.assertEqual(decoded, event)
                 self.assertEqual((decoded.state, decoded.registrations, decoded.models, decoded.authorization_url), ('unknown', (), (), None))
         valid = events[0]
@@ -135,7 +140,7 @@ class ReconciliationPayloadTests(unittest.TestCase):
                 stack.enter_context(patch(target, side_effect=AssertionError('unexpected external operation')))
                 for target in (
                     'quantlab.assistant.adapters.chatgpt.auth.AuthSession',
-                    'quantlab.assistant.adapters.chatgpt.auth.DPAPIVault',
+                    'quantlab.assistant.adapters.chatgpt.vault.DPAPIVault',
                     'socket.socket',
                     'socket.create_connection',
                 )
@@ -163,16 +168,16 @@ class ReconciliationPayloadTests(unittest.TestCase):
             )
             factory = Mock(side_effect=AssertionError('auth factory must not run'))
             emit = Mock()
-            request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=emit, cancelled=lambda: False, session_factory=factory)
+            request = connection_contracts.ConnectionRequest(1, 'inspect_unknown', REF)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=emit, cancelled=lambda: False, session_factory=factory)
             self.assertEqual(result.inspection, ('k1_resolvable', 2, 2, True))
             reference, controls = inspect.call_args.args
             self.assertEqual(reference.registration, REF)
             self.assertEqual(controls, BOOTSTRAP / 'control-v1')
             resolve.assert_not_called()
             status.assert_not_called()
-            request = ui.ConnectionRequest(2, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1)
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=emit, cancelled=lambda: False, session_factory=factory)
+            request = connection_contracts.ConnectionRequest(2, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=emit, cancelled=lambda: False, session_factory=factory)
             self.assertEqual(result.account_status, ('user_confirmed_consumed', False))
             self.assertEqual(resolve.call_args.kwargs, {'user_confirmed': True, 'acknowledgement_version': 1})
             self.assertEqual(resolve.call_args.args[1], controls)
@@ -182,20 +187,20 @@ class ReconciliationPayloadTests(unittest.TestCase):
                 guard.assert_not_called()
 
     def test_worker_cancel_and_private_errors_remain_bounded_and_local(self):
-        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        request = connection_contracts.ConnectionRequest(1, 'inspect_unknown', REF)
         with patch('quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request') as inspect:
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: True)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: True)
             self.assertEqual(result.kind, 'error')
             inspect.assert_not_called()
         private = 'secret token user@example.invalid C:/private/account.sqlite'
         with patch('quantlab.assistant.adapters.chatgpt.provider.inspect_unknown_request', side_effect=ValueError(private)):
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
         self.assertEqual(result.kind, 'error')
         self.assertNotIn(private, json.dumps(asdict(result)))
-        self.assertIn(result.error_code, ui.ERROR_LABELS)
+        self.assertIn(result.error_code, ERROR_LABELS)
 
     def test_successful_resolution_is_not_misreported_when_followup_status_fails_or_changes(self):
-        request = ui.ConnectionRequest(1, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1)
+        request = connection_contracts.ConnectionRequest(1, 'resolve_unknown', REF, user_confirmed=True, acknowledgement_version=1)
         for observed in (None, ('quota_paused', False), ('reserved_unknown', True), ('ready', False)):
             kwargs = {'side_effect': OSError('private path')} if observed is None else {'return_value': {'state': observed[0], 'pending': observed[1]}}
             with (
@@ -203,7 +208,7 @@ class ReconciliationPayloadTests(unittest.TestCase):
                 patch('quantlab.assistant.adapters.chatgpt.provider.resolve_unknown_request') as resolve,
                 patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', **kwargs),
             ):
-                result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+                result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
                 resolve.assert_called_once()
                 self.assertEqual(result.kind, 'result')
                 self.assertEqual(result.account_status, observed)
@@ -237,7 +242,9 @@ class ReconciliationWidgetTests(unittest.TestCase):
         c.set_host_available(True)
         request = c.request('list')
         c.apply_event(
-            ui.ConnectionEvent(request.request_id, 'result', 'plan_ready', ((REF, 'plan_ready'), (OTHER, 'plan_ready')), REF, models=('gpt-fixture',))
+            connection_contracts.ConnectionEvent(
+                request.request_id, 'result', 'plan_ready', ((REF, 'plan_ready'), (OTHER, 'plan_ready')), REF, models=('gpt-fixture',)
+            )
         )
         c.worker_joined(request.request_id, joined=True)
         c.set_usage(REF, [{'sequence': 1, 'status': 'reserved_unknown'}], account_status={'state': 'reserved_unknown', 'pending': True})
@@ -340,7 +347,7 @@ class ReconciliationWidgetTests(unittest.TestCase):
         self.assertIs(type(resolve.acknowledgement_version), int)
         self.assertEqual(self.quiesce, [])
         c.apply_event(
-            ui.ReconciliationEvent(
+            connection_contracts.ReconciliationEvent(
                 resolve.request_id,
                 'result',
                 reconciliation_action=resolve.action,
@@ -376,7 +383,9 @@ class ReconciliationWidgetTests(unittest.TestCase):
         c = self.pending()
         request = c.request('resolve_unknown', REF, confirmed=True, acknowledgement_version=1)
         c.apply_event(
-            ui.ReconciliationEvent(request.request_id, 'result', reconciliation_action=request.action, reconciliation_registration=REF, account_status=None)
+            connection_contracts.ReconciliationEvent(
+                request.request_id, 'result', reconciliation_action=request.action, reconciliation_registration=REF, account_status=None
+            )
         )
         c.worker_joined(request.request_id, joined=True)
         self.assertFalse(c.account_status_known)
@@ -425,7 +434,7 @@ class ReconciliationWidgetTests(unittest.TestCase):
         self.requests.clear()
         request = self.start()
         c.apply_event(
-            ui.ReconciliationEvent(
+            connection_contracts.ReconciliationEvent(
                 request.request_id, 'error', reconciliation_action=request.action, reconciliation_registration=REF, error_code='unknown_request_too_recent'
             )
         )
@@ -446,8 +455,8 @@ class ReconciliationWidgetTests(unittest.TestCase):
         self.assertFalse(c.apply_event(replace(inspection_event(request), request_id=request.request_id + 1)))
         for event in (
             replace(inspection_event(request), reconciliation_registration=OTHER),
-            ui.ConnectionEvent(request.request_id, 'result', 'unknown'),
-            ui.ReconciliationEvent(
+            connection_contracts.ConnectionEvent(request.request_id, 'result', 'unknown'),
+            connection_contracts.ReconciliationEvent(
                 request.request_id,
                 'result',
                 reconciliation_action='resolve_unknown',
@@ -503,7 +512,7 @@ class ReconciliationWidgetTests(unittest.TestCase):
 
 
 def finished_inspection_event(request, inspection=('k2_resolvable', 1, 1, True), outcome='invalid_content_type', **kwargs):
-    return ui.ReconciliationEvent(
+    return connection_contracts.ReconciliationEvent(
         request.request_id,
         'result',
         reconciliation_action=request.action,
@@ -523,14 +532,14 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
     def finished(self, **kwargs):
         values = dict(user_confirmed=True, acknowledgement_version=1, expected_sequence=1, expected_calls=1, expected_outcome='invalid_content_type')
         values.update(kwargs)
-        return ui.ConnectionRequest(9, 'resolve_finished_unknown', REF, **values)
+        return connection_contracts.ConnectionRequest(9, 'resolve_finished_unknown', REF, **values)
 
     def test_finished_request_round_trips_and_every_payload_carries_the_null_target(self):
         request = self.finished()
         payload = json.loads(json.dumps(request.payload()))
-        self.assertEqual(ui.ConnectionRequest(**payload), request)
+        self.assertEqual(connection_contracts.ConnectionRequest(**payload), request)
         self.assertEqual(self.prepare(payload)[1:], (9, False))
-        for other in (ui.ConnectionRequest(1, 'list'), ui.ConnectionRequest(2, 'inspect_unknown', REF)):
+        for other in (connection_contracts.ConnectionRequest(1, 'list'), connection_contracts.ConnectionRequest(2, 'inspect_unknown', REF)):
             payload = other.payload()
             self.assertEqual((payload['expected_sequence'], payload['expected_calls'], payload['expected_outcome']), (None, None, None))
             self.assertEqual(self.prepare(payload)[1], other.request_id)
@@ -548,17 +557,17 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
             payload = {**base, **change}
             with self.subTest(change=change):
                 with self.assertRaises((TypeError, ValueError)):
-                    ui.ConnectionRequest(**payload)
+                    connection_contracts.ConnectionRequest(**payload)
                 with self.assertRaises(RuntimeSafetyError):
                     self.prepare(payload)
         for action in ('list', 'inspect_unknown', 'resolve_unknown'):
             for key, value in (('expected_sequence', 1), ('expected_calls', 1), ('expected_outcome', 'cancelled')):
                 confirmation = {'user_confirmed': True, 'acknowledgement_version': 1} if action == 'resolve_unknown' else {}
-                payload = ui.ConnectionRequest(3, action, REF if action != 'list' else None, **confirmation).payload()
+                payload = connection_contracts.ConnectionRequest(3, action, REF if action != 'list' else None, **confirmation).payload()
                 payload[key] = value
                 with self.subTest(action=action, key=key):
                     with self.assertRaises((TypeError, ValueError)):
-                        ui.ConnectionRequest(**payload)
+                        connection_contracts.ConnectionRequest(**payload)
                     with self.assertRaises(RuntimeSafetyError):
                         self.prepare(payload)
         # A code outside the UI's frozen set is rejected by the typed request.
@@ -568,10 +577,10 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
     def test_finished_outcomes_match_the_provider_set(self):
         import quantlab.assistant.adapters.chatgpt.provider
 
-        self.assertEqual(ui.FINISHED_OUTCOMES, quantlab.assistant.adapters.chatgpt.provider._FINISHED_UNKNOWN_STATUSES)
+        self.assertEqual(connection_contracts.FINISHED_OUTCOMES, quantlab.assistant.adapters.chatgpt.provider._FINISHED_UNKNOWN_STATUSES)
 
     def test_finished_events_round_trip_and_outcome_is_only_for_k2_resolvable(self):
-        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        request = connection_contracts.ConnectionRequest(1, 'inspect_unknown', REF)
         event = finished_inspection_event(request)
         self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
         other = finished_inspection_event(request, ('k2_other_registration', None, None, False), None)
@@ -589,14 +598,14 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
                 finished_inspection_event(request, inspection, outcome)
 
     def test_worker_consults_the_finished_inspector_only_after_an_r1_k2_refusal(self):
-        request = ui.ConnectionRequest(1, 'inspect_unknown', REF)
+        request = connection_contracts.ConnectionRequest(1, 'inspect_unknown', REF)
         finished = {'kind': 'k2_resolvable', 'sequence': 1, 'calls': 1, 'max_age_ok': True, 'outcome': 'invalid_content_type'}
         with ExitStack() as stack:
             forbidden = [
                 stack.enter_context(patch(target, side_effect=AssertionError('unexpected external operation')))
                 for target in (
                     'quantlab.assistant.adapters.chatgpt.auth.AuthSession',
-                    'quantlab.assistant.adapters.chatgpt.auth.DPAPIVault',
+                    'quantlab.assistant.adapters.chatgpt.vault.DPAPIVault',
                     'socket.socket',
                     'socket.create_connection',
                 )
@@ -606,15 +615,15 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
             for kind in ('k1_resolvable', 'k1_other_registration', 'none'):
                 r1.return_value = {'kind': kind, 'sequence': 1 if kind == 'k1_resolvable' else None, 'calls': 1 if kind == 'k1_resolvable' else None,
                                    'max_age_ok': kind == 'k1_resolvable'}  # fmt: skip
-                result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+                result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
                 self.assertEqual(result.inspection[0], kind)
                 self.assertIsNone(result.inspection_outcome)
             k2.assert_not_called()
             r1.return_value = {'kind': 'k2_unresolvable', 'sequence': None, 'calls': None, 'max_age_ok': False}
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
             self.assertEqual((result.inspection, result.inspection_outcome), (('k2_resolvable', 1, 1, True), 'invalid_content_type'))
             k2.side_effect = ValueError('private path C:/secret')
-            result = ui.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            result = connection_worker.run_connection_request(request, bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
             self.assertEqual(result.kind, 'error')
             self.assertNotIn('secret', json.dumps(asdict(result)))
             for guard in forbidden:
@@ -626,7 +635,7 @@ class FinishedReconciliationPayloadTests(unittest.TestCase):
             patch('quantlab.assistant.adapters.chatgpt.provider.resolve_unknown_request') as r1,
             patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
         ):
-            result = ui.run_connection_request(self.finished(), bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
+            result = connection_worker.run_connection_request(self.finished(), bootstrap=BOOTSTRAP, emit=Mock(), cancelled=lambda: False)
         r1.assert_not_called()
         self.assertEqual(result.account_status, ('user_confirmed_consumed', False))
         self.assertEqual(
@@ -693,7 +702,7 @@ class FinishedReconciliationWidgetTests(unittest.TestCase):
         self.assertEqual(resolve.acknowledgement_version, 1)
         c = self.controller
         c.apply_event(
-            ui.ReconciliationEvent(
+            connection_contracts.ReconciliationEvent(
                 resolve.request_id,
                 'result',
                 reconciliation_action=resolve.action,

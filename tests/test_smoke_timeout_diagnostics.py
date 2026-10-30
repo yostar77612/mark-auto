@@ -72,7 +72,7 @@ class SmokeTimeoutDiagnosticTests(unittest.TestCase):
             report, pids, writes = (root / name for name in ('report.json', 'pids.json', 'writes.jsonl'))
             worker_code = '''import json, subprocess, sys, time
 from pathlib import Path
-from quantlab.desktop_runtime import _WindowsProcessTree
+from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 grandchild = subprocess.Popen([sys.executable, '-c', 'import sys,time; sys.stdin.read(1); time.sleep(60)'], stdin=subprocess.PIPE, text=True)
 inner_tree = _WindowsProcessTree(grandchild.pid) if sys.platform == 'win32' else None
 grandchild.stdin.write('x'); grandchild.stdin.flush(); grandchild.stdin.close()
@@ -383,7 +383,7 @@ time.sleep(60)
         self.assertEqual(command[3:], [str(kwargs[key]) for key in ('report', 'pidfile', 'writes')])
         code = command[2]
         compile(code, '<synthetic terminal smoke>', 'exec')
-        self.assertIn('runtime._job_worker = diagnosed_smoke_worker', code)
+        self.assertIn('job_worker._job_worker = diagnosed_smoke_worker', code)
         self.assertIn('faulthandler.dump_traceback_later(35)', code)
         self.assertIn('faulthandler.cancel_dump_traceback_later()', code)
         self.assertLess(code.index('JobManager._join_descendants = tracked_join'), code.index('# injected fixture marker'))
@@ -592,7 +592,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
 
     def test_entire_retention_job_and_wait_sequence_shares_one_six_second_deadline(self):
         from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         clock = [100.0]
         kernel = self.accounting_kernel(clock, metadata_step=2, terminate_step=0.5, query_step=0.5, wait_step=0.5)
@@ -614,7 +614,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
 
     def test_slow_retention_still_drains_job_without_resetting_reserve(self):
         from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         clock = [100.0]
         kernel = self.accounting_kernel(clock, metadata_step=4)
@@ -636,7 +636,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
 
     def test_retention_refusal_attempts_owned_job_drain_and_reports_failure(self):
         from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         clock = [100.0]
         kernel = self.accounting_kernel(clock)
@@ -657,7 +657,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
 
     def test_coordinator_propagates_aggregate_close_failure(self):
         from tests.smoke_timeout_diagnostics import _stop_windows_smoke_workers
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         clock = [100.0]
         kernel = self.accounting_kernel(clock)
@@ -674,7 +674,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         self.assertEqual(failure.exception.cleanup_failures, {'close_native_false': 1})
 
     def test_native_tree_cannot_extend_deadline_when_caller_passes_future_budget(self):
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         clock = [100.0]
         kernel = self.accounting_kernel(clock, terminate_step=7)

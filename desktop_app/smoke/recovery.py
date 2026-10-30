@@ -59,7 +59,7 @@ def _gated_worker(gate, connection, deadline):
 def _prepare_plan(fixture_paths, campaign_state, deadline):
     from quantlab.core import content_hash
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
-    from quantlab.saved_candidate_pool import _read_campaign, load_original_dataset
+    from quantlab.research_core.adapters.saved_pool_source import _read_campaign, load_original_dataset
     from quantlab.windows_paths import canonical_path
 
     root = fixture_paths.state

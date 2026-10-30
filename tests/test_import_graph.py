@@ -170,6 +170,7 @@ def source_map():
                         'quantlab/assistant/adapters/chatgpt/auth.py',
                         'quantlab/assistant/adapters/chatgpt/provider.py',
                         'quantlab/research_core/adapters/market_layout.py',
+                        'quantlab/shared/runtime_errors.py',
                     )
                 ),
             ]
@@ -258,7 +259,7 @@ class ImportGraphTests(unittest.TestCase):
 
     def test_r5_leaf_dependencies_and_compatibility_exports(self):
         graph = import_graph(self.sources)
-        self.assertEqual(graph['quantlab.runtime_support'], {'quantlab.windows_paths'})
+        self.assertEqual(graph['quantlab.runtime_support'], {'quantlab.windows_paths', 'quantlab.shared.runtime_errors'})
         self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.analysis_recovery_windows'])
         self.assertNotIn('quantlab.desktop_runtime', graph['quantlab.desktop_errors'])
         self.assertNotIn('quantlab.__main__', graph['quantlab.reporting'])
@@ -274,8 +275,8 @@ class ImportGraphTests(unittest.TestCase):
         self.assertIs(cli.config_from_json, configuration.config_from_json)
         for module, name in (
             (runtime, 'WindowsAppMutex'),
-            (runtime, '_job_worker'),
-            (runtime, '_worker_recovery_guard'),
+            (importlib.import_module('quantlab.research_core.adapters.job_worker'), '_job_worker'),
+            (importlib.import_module('quantlab.research_core.adapters.job_worker'), '_worker_recovery_guard'),
             (recovery, 'WindowsAnalysisRecoveryTree'),
         ):
             with self.subTest(name=name):
@@ -392,7 +393,7 @@ class ImportGraphTests(unittest.TestCase):
         # Only the UI adapter resolves translated legacy disclosure keys; the
         # serialization core above remains free of Qt and application imports.
         self.assertEqual(
-            graph['desktop_app.features.settings.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support', 'desktop_app.strings.catalog'}
+            graph['desktop_app.features.settings.preferences'], {'quantlab.ui_preferences', 'quantlab.shared.runtime_errors', 'desktop_app.strings.catalog'}
         )
 
     def test_listed_cycles_are_absent(self):

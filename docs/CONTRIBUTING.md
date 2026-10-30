@@ -19,7 +19,7 @@ returns or prompts. Treat AI output as untrusted input validated by the existing
 AST rules; do not add dynamic execution. Money calculations stay `Decimal`.
 Do not read, store or display ChatGPT credentials.
 
-The G3 locked file set is exactly these eight files. They must not be edited
+The G3 locked file set covers the following 30 source files. They must not be edited
 without owner approval:
 
 - `quantlab/research.py`
@@ -30,6 +30,28 @@ without owner approval:
 - `quantlab/data.py`
 - `quantlab/assistant/adapters/chatgpt/auth.py`
 - `quantlab/assistant/adapters/chatgpt/provider.py`
+- `quantlab/assistant/adapters/chatgpt/vault.py`
+- `quantlab/assistant/adapters/chatgpt/identity.py`
+- `quantlab/assistant/adapters/chatgpt/loopback.py`
+- `quantlab/assistant/adapters/chatgpt/account_summary.py`
+- `quantlab/assistant/adapters/chatgpt/account_paths.py`
+- `quantlab/assistant/adapters/chatgpt/response_stream.py`
+- `quantlab/assistant/adapters/chatgpt/transport.py`
+- `quantlab/assistant/adapters/chatgpt/provenance.py`
+- `quantlab/assistant/adapters/chatgpt/account_store.py`
+- `quantlab/assistant/adapters/chatgpt/resolution_audit.py`
+- `quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py`
+- `quantlab/assistant/adapters/chatgpt/finished_reconciliation.py`
+- `quantlab/assistant/adapters/chatgpt/campaign_receipts.py`
+- `quantlab/assistant/domain/auth_protocol.py`
+- `quantlab/assistant/domain/auth_tokens.py`
+- `quantlab/assistant/domain/plan_protocol.py`
+- `quantlab/assistant/domain/source_components.py`
+- `quantlab/assistant/ports/auth.py`
+- `quantlab/research_core/domain/receipts.py`
+- `quantlab/assistant/domain/__init__.py`
+- `quantlab/assistant/ports/__init__.py`
+- `quantlab/research_core/domain/__init__.py`
 
 The owner approved relocation and splitting of G3 files for this refactor on
 2026-10-29, with unchanged behavior and per-file QA. The list above names their

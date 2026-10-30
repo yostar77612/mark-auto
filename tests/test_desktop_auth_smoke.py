@@ -2,6 +2,7 @@
 
 import importlib.util
 from pathlib import Path
+from tests.core_split_source_fixtures import CURRENT_SOURCES
 import socket
 import tempfile
 import unittest
@@ -26,7 +27,7 @@ class AuthPackagingSmokeTests(unittest.TestCase):
         self.assertEqual(result['real_model_status'], 'not_verified')
         self.assertTrue(result['rs256_identity_binding'])
         self.assertTrue(result['parser_and_cffi'])
-        self.assertEqual(set(result['implementation_provenance']['source_sha256']), {'desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'})
+        self.assertEqual(set(result['implementation_provenance']['source_sha256']), set(CURRENT_SOURCES))
         self.assertEqual(original, (socket.socket, socket.create_connection, socket.getaddrinfo))
 
     def test_native_failure_is_not_swallowed_and_network_functions_restored(self):

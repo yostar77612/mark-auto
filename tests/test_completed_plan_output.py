@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from quantlab.assistant.adapters.chatgpt.provider import PlanError
+from quantlab.assistant.domain.plan_protocol import PlanError
 from tests.test_chatgpt_plan import CANDIDATE, MockTransport, frame, provider
 from tests.test_response_output import events
 

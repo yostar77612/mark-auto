@@ -1,5 +1,11 @@
 """Append-only path compatibility pins; never relax source or receipt admission."""
 
+from quantlab import saved_candidate_pool as pool_profiles
+
+from quantlab.research_core.application import saved_pool_validation
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from pathlib import Path
 import tempfile
@@ -29,7 +35,7 @@ class LongPathProducerProfileTests(unittest.TestCase):
         )
         self.assertEqual([content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[:24]], historical)
         self.assertEqual(
-            pools.SUPPORTED_PRODUCERS[24:],
+            pools.SUPPORTED_PRODUCERS[24:29],
             (TRANSPORT, SIWC, pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1, pools.LAYERED_PATHS_SIWC_PROFILE_V1),
         )
         # Append the owner-approved current identity; retain every historical pin.
@@ -50,15 +56,21 @@ class LongPathProducerProfileTests(unittest.TestCase):
 
     def test_current_engine_and_both_provider_checkout_variants_match(self):
         for profile in (TRANSPORT, SIWC):
-            actual = {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in profile['engine_source_hashes']}
-            expected = dict(profile['engine_source_hashes'])
-            expected['research.py'] = pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes']['research.py']
+            actual = {
+                name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']
+            }
+            expected = dict(pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'])
             self.assertEqual(actual, expected)
             self.assertNotEqual(actual['research.py'], profile['engine_source_hashes']['research.py'])
-        for index, implementation in enumerate(SIWC['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.CORE_SPLIT_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
             for name, expected in implementation['source_sha256'].items():
-                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
-                self.assertEqual(hashlib.sha256(raw if index == 0 else raw.replace(b'\n', b'\r\n')).hexdigest(), expected)
+                raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')
+                self.assertEqual(
+                    hashlib.sha256(
+                        raw.replace(b'\n', b'\r\n') if index and name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py') else raw
+                    ).hexdigest(),
+                    expected,
+                )
 
     def test_exact_selector_and_mixed_provider_refusal(self):
         item = {
@@ -74,7 +86,7 @@ class LongPathProducerProfileTests(unittest.TestCase):
             mixed['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = pools.COMPLETED_ITEMS_SIWC_PROFILE_V1[
                 'chatgpt_plan_implementations'
             ][index]['source_sha256']['desktop_chatgpt_provider.py']
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(mixed)
 
     def test_new_saved_sources_are_readonly_and_consumed_receipts_refused(self):
@@ -97,12 +109,14 @@ class LongPathProducerProfileTests(unittest.TestCase):
             before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
             with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                 result = pools.admit_saved_campaign_pool(**arguments)
-                pools.validate_admission_snapshot(result.admission, result.candidate_pool)
+                saved_pool_validation.validate_admission_snapshot(
+                    result.admission, result.candidate_pool, profiles=pool_profiles.SUPPORTED_PRODUCERS, audited_producer=pool_profiles.AUDITED_PRODUCER
+                )
             self.assertEqual(result.admission['producer'], SIWC)
             self.assertEqual({path: path.read_bytes() for path in root.rglob('*') if path.is_file()}, before)
             state['provider_receipts'][0]['status'] = 'user_confirmed_consumed'
             write_source(folder, state)
-            with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 pools.admit_saved_campaign_pool(**arguments)
             self.assertEqual(caught.exception.reason_code, 'source_provider_receipt_invalid')
 

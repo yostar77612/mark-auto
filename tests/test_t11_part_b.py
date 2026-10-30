@@ -1,5 +1,8 @@
 """Cheap startup and error-contract checks; no subprocesses or disk fixtures."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import ast
 import copy
 from contextlib import ExitStack
@@ -12,7 +15,7 @@ from unittest.mock import MagicMock, Mock, patch
 import desktop
 import desktop_app.strings.catalog
 from quantlab import errors
-from quantlab.saved_candidate_pool import SavedCandidatePoolError
+from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError
 from quantlab.desktop_errors import ERROR_LABELS, ERROR_TABLE, error_message, exception_code
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -228,12 +231,12 @@ class SharedErrorTests(unittest.TestCase):
                 expected = {'reason_code': 'source_invalid_evidence'} if module is saved_candidate_pool else {}
                 self.assertEqual(vars(raised.exception), expected)
         self.assertIs(analysis_recovery.RecoveryError, errors.RecoveryError)
-        self.assertIs(saved_candidate_pool.SavedCandidatePoolError, SavedCandidatePoolError)
+        self.assertIs(saved_pool.SavedCandidatePoolError, SavedCandidatePoolError)
         self.assertEqual(errors.RecoveryError.__module__, 'quantlab.analysis_recovery')
         self.assertEqual(SavedCandidatePoolError.__module__, 'quantlab.saved_candidate_pool')
 
     def test_saved_reason_precedence(self):
-        from quantlab.saved_candidate_pool import _fail, SavedCandidatePoolError
+        from quantlab.research_core.domain.saved_pool import _fail, SavedCandidatePoolError
 
         for message, code in [
             ('strictly before producer protocol', 'source_temporal_overlap'),

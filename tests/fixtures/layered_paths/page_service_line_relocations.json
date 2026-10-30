@@ -1,286 +1,25 @@
 {
-  "base_sha": "559025982afbeac8b473b42802d0a8340de90e88",
   "patch_points": 174,
   "line_relocations": [
     {
       "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 233,
-        "name": "_quiesce_and_recover",
-        "kind": "patch.object",
-        "receiver": "window.paper_page"
-      },
-      "current_line": 234
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "_refresh_analysis_saved",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "_refresh_recovery_controls",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "_refresh_walk_forward_references",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "inspect_candidate",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "load_market_cache",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 251,
-        "name": "show_result",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 252
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 267,
-        "name": "_refresh_analysis_saved",
-        "kind": "patch.object",
-        "receiver": "coordinator"
-      },
-      "current_line": 268
-    },
-    {
-      "original": {
-        "file": "tests/r7_characterization.py",
-        "line": 272,
-        "name": "load_dataset",
-        "kind": "patch.dict",
-        "receiver": "window.page_host.callbacks"
-      },
-      "current_line": 273
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 42,
-        "name": "market",
-        "kind": "assignment",
-        "receiver": "w"
-      },
-      "current_line": 43
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 46,
-        "name": "cancel_job",
-        "kind": "assignment",
-        "receiver": "w"
-      },
-      "current_line": 47
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 48,
-        "name": "_safe",
-        "kind": "assignment",
-        "receiver": "w"
-      },
-      "current_line": 49
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 162,
-        "name": "read_logs",
-        "kind": "patch.object",
-        "receiver": "self.window"
-      },
-      "current_line": 163
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 162,
-        "name": "refresh_market",
-        "kind": "patch.object",
-        "receiver": "self.window"
-      },
-      "current_line": 163
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 162,
-        "name": "refresh_views",
-        "kind": "patch.object",
-        "receiver": "self.window"
-      },
-      "current_line": 163
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 249,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "window"
-      },
-      "current_line": 250
-    },
-    {
-      "original": {
-        "file": "tests/test_command_palette_c7.py",
-        "line": 250,
-        "name": "_confirm_button",
-        "kind": "patch.object",
-        "receiver": "window.widgets_page"
-      },
-      "current_line": 251
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 246,
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch",
+        "line": 284,
         "name": "saved_analysis_entries",
-        "kind": "patch",
-        "receiver": "desktop_app.shell.main_window"
-      },
-      "current_line": 248
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 246,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 249
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 266,
-        "name": "analysis_record_text",
-        "kind": "patch",
-        "receiver": "desktop_app.shell.main_window"
-      },
-      "current_line": 270
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 266,
-        "name": "record_event",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 270
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 281,
-        "name": "analysis_record_text",
-        "kind": "patch",
         "receiver": "desktop_app.shell.main_window"
       },
       "current_line": 285
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis_discovery.py",
-        "line": 281,
-        "name": "record_event",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 285
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 289,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 291
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 304,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 306
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 406,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 408
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 417,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current_line": 419
     },
     {
       "original": {
         "file": "tests/test_desktop_pages.py",
-        "line": 156,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
+        "kind": "patch",
+        "line": 298,
+        "name": "analysis_preview_text",
+        "receiver": "desktop_app.shell.main_window"
       },
-      "current_line": 157
+      "current_line": 299
     },
     {
       "original": {
@@ -300,7 +39,7 @@
         "name": "start_job",
         "receiver": "w"
       },
-      "current_line": 199
+      "current_line": 157
     },
     {
       "original": {
@@ -365,16 +104,6 @@
     {
       "original": {
         "file": "tests/test_desktop_pages.py",
-        "kind": "patch",
-        "line": 284,
-        "name": "saved_analysis_entries",
-        "receiver": "desktop_app.shell.main_window"
-      },
-      "current_line": 285
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_pages.py",
         "kind": "patch.object",
         "line": 296,
         "name": "_analysis_request",
@@ -385,142 +114,12 @@
     {
       "original": {
         "file": "tests/test_desktop_pages.py",
-        "kind": "patch",
-        "line": 298,
-        "name": "analysis_preview_text",
-        "receiver": "desktop_app.shell.main_window"
-      },
-      "current_line": 299
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_pages.py",
         "kind": "patch.object",
         "line": 304,
         "name": "start_job",
         "receiver": "w.page_host"
       },
       "current_line": 305
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_c8.py",
-        "line": 126,
-        "name": "_notification_link",
-        "kind": "assignment",
-        "receiver": "center.host"
-      },
-      "current_line": 127
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 172,
-        "name": "_analysis_event",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 185
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 172,
-        "name": "_chatgpt_event",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 185
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 172,
-        "name": "_walk_forward_event",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 185
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 174,
-        "name": "record_event",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 187
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 177,
-        "name": "notify_local",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 190
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 178,
-        "name": "freeze_paper",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 191
-    },
-    {
-      "original": {
-        "file": "tests/test_notifications_f4.py",
-        "line": 216,
-        "name": "_notification_link",
-        "kind": "assignment",
-        "receiver": "host"
-      },
-      "current_line": 229
-    },
-    {
-      "original": {
-        "file": "tests/test_page_identity_r4.py",
-        "line": 90,
-        "name": "_safe",
-        "kind": "patch.object",
-        "receiver": "window"
-      },
-      "current_line": 91
-    },
-    {
-      "original": {
-        "file": "tests/test_page_identity_r4.py",
-        "line": 91,
-        "name": "read_logs",
-        "kind": "patch.object",
-        "receiver": "window"
-      },
-      "current_line": 92
-    },
-    {
-      "original": {
-        "file": "tests/test_page_identity_r4.py",
-        "line": 92,
-        "name": "refresh_market",
-        "kind": "patch.object",
-        "receiver": "window"
-      },
-      "current_line": 93
-    },
-    {
-      "original": {
-        "file": "tests/test_page_identity_r4.py",
-        "line": 93,
-        "name": "refresh_views",
-        "kind": "patch.object",
-        "receiver": "window"
-      },
-      "current_line": 94
     },
     {
       "original": {
@@ -584,66 +183,6 @@
     },
     {
       "original": {
-        "file": "tests/test_panel_card_c3.py",
-        "line": 106,
-        "name": "_advanced",
-        "kind": "setattr",
-        "receiver": "host"
-      },
-      "current_line": 107
-    },
-    {
-      "original": {
-        "file": "tests/test_panel_card_c3.py",
-        "line": 106,
-        "name": "_button",
-        "kind": "setattr",
-        "receiver": "host"
-      },
-      "current_line": 107
-    },
-    {
-      "original": {
-        "file": "tests/test_panel_card_c3.py",
-        "line": 106,
-        "name": "_remember",
-        "kind": "setattr",
-        "receiver": "host"
-      },
-      "current_line": 107
-    },
-    {
-      "original": {
-        "file": "tests/test_panel_card_c3.py",
-        "line": 106,
-        "name": "_text",
-        "kind": "setattr",
-        "receiver": "host"
-      },
-      "current_line": 107
-    },
-    {
-      "original": {
-        "file": "tests/test_quick_start_u3.py",
-        "line": 131,
-        "name": "result_choice",
-        "kind": "assignment",
-        "receiver": "self.host"
-      },
-      "current_line": 132
-    },
-    {
-      "original": {
-        "file": "tests/test_quick_start_u3.py",
-        "line": 195,
-        "name": "result_choice",
-        "kind": "assignment",
-        "receiver": "self.host"
-      },
-      "current_line": 199
-    },
-    {
-      "original": {
         "file": "tests/test_r7_characterization.py",
         "kind": "setattr",
         "line": 69,
@@ -661,46 +200,6 @@
         "receiver": "shell"
       },
       "current_line": 70
-    },
-    {
-      "original": {
-        "file": "tests/test_replay_b13.py",
-        "line": 200,
-        "name": "_dataset",
-        "kind": "patch.object",
-        "receiver": "ui"
-      },
-      "current_line": 201
-    },
-    {
-      "original": {
-        "file": "tests/test_replay_b13.py",
-        "line": 231,
-        "name": "start_job",
-        "kind": "assignment",
-        "receiver": "self.page"
-      },
-      "current_line": 232
-    },
-    {
-      "original": {
-        "file": "tests/test_replay_b13.py",
-        "line": 325,
-        "name": "paper_job",
-        "kind": "patch.object",
-        "receiver": "page"
-      },
-      "current_line": 326
-    },
-    {
-      "original": {
-        "file": "tests/test_replay_b13.py",
-        "line": 333,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "page"
-      },
-      "current_line": 334
     }
   ]
 }

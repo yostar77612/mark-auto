@@ -342,6 +342,99 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `trading_entry.py` | 11 | composition | `trading_entry.py` | 根目錄 launcher／桌面接線；保留路徑；`launch`，`trading_entry.py:6` |
 | `trading_runtime.py` | 103 | composition | `trading_runtime.py` | 根目錄 launcher／桌面接線；保留路徑；`default_root`，`trading_runtime.py:18` |
 
+| `quantlab/research_core/__init__.py` | 0 | application | `quantlab/research_core/__init__.py` | PR D; slice 2a responsibility owner |
+| `quantlab/research_core/adapters/job_process.py` | 325 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/job_worker.py` | 188 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/saved_pool_source.py` | 297 | application | `quantlab/research_core/adapters/saved_pool_source.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/workspace_backup.py` | 302 | application | `quantlab/research_core/adapters/workspace_backup.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/__init__.py` | 0 | infrastructure | `quantlab/research_core/adapters/__init__.py` | PR D; slice 2a owner; extracted orchestration retains application classification |
+| `quantlab/research_core/application/job_requests.py` | 264 | application | `quantlab/research_core/application/job_requests.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/application/saved_pool_attempts.py` | 302 | application | `quantlab/research_core/application/saved_pool_attempts.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/application/saved_pool_validation.py` | 442 | application | `quantlab/research_core/application/saved_pool_validation.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/application/__init__.py` | 1 | application | `quantlab/research_core/application/__init__.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/job_protocol.py` | 51 | domain | `quantlab/research_core/domain/job_protocol.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/saved_pool.py` | 50 | domain | `quantlab/research_core/domain/saved_pool.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/ports/jobs.py` | 15 | application | `quantlab/research_core/ports/jobs.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/ports/__init__.py` | 1 | application | `quantlab/research_core/ports/__init__.py` | PR D; slice 2a real owner |
+| `tools/refactor/split_core_runtime.py` | 626 | tooling | `tools/refactor/split_core_runtime.py` | PR D reproducible repair |
+| `tools/refactor/split_core_controller_fixes.py` | 136 | tooling | `tools/refactor/split_core_controller_fixes.py` | PR D reproducible repair |
+
+| `quantlab/assistant/application/connection_contracts.py` | 420 | application | `quantlab/assistant/application/connection_contracts.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/application/connection_controller.py` | 387 | application | `quantlab/assistant/application/connection_controller.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/application/context_usage.py` | 9 | application | `quantlab/assistant/application/context_usage.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/domain/connection_errors.py` | 15 | domain | `quantlab/assistant/domain/connection_errors.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/ports/connection.py` | 21 | application | `quantlab/assistant/ports/connection.py` | PR D slice 2b responsibility owner |
+| `desktop_app/connection_composition.py` | 15 | composition | `desktop_app/connection_composition.py` | PR D slice 2b responsibility owner |
+| `desktop_app/features/assistant/connection_presenter.py` | 233 | presentation | `desktop_app/features/assistant/connection_presenter.py` | PR D slice 2b responsibility owner |
+| `desktop_app/features/capital_scenario/presenter.py` | 29 | presentation | `desktop_app/features/capital_scenario/presenter.py` | PR D slice 2b responsibility owner |
+| `desktop_app/features/walk_forward/rows.py` | 56 | presentation | `desktop_app/features/walk_forward/rows.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/adapters/chatgpt/connection_worker.py` | 189 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | PR D slice 2b responsibility owner |
+| `quantlab/assistant/adapters/chatgpt/connection_probe.py` | 72 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_operations.py` | 204 | application | `quantlab/research_core/application/walk_forward_operations.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_projection.py` | 72 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_inputs.py` | 15 | application | `quantlab/research_core/application/walk_forward_inputs.py` | PR D slice 2b responsibility owner |
+
+| `quantlab/assistant/adapters/chatgpt/account_paths.py` | 26 | infrastructure | `quantlab/assistant/adapters/chatgpt/account_paths.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/account_store.py` | 179 | infrastructure | `quantlab/assistant/adapters/chatgpt/account_store.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/account_summary.py` | 32 | infrastructure | `quantlab/assistant/adapters/chatgpt/account_summary.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/campaign_receipts.py` | 70 | infrastructure | `quantlab/assistant/adapters/chatgpt/campaign_receipts.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/finished_reconciliation.py` | 88 | infrastructure | `quantlab/assistant/adapters/chatgpt/finished_reconciliation.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/identity.py` | 221 | infrastructure | `quantlab/assistant/adapters/chatgpt/identity.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/loopback.py` | 92 | infrastructure | `quantlab/assistant/adapters/chatgpt/loopback.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/provenance.py` | 91 | infrastructure | `quantlab/assistant/adapters/chatgpt/provenance.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/resolution_audit.py` | 209 | infrastructure | `quantlab/assistant/adapters/chatgpt/resolution_audit.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/response_stream.py` | 167 | infrastructure | `quantlab/assistant/adapters/chatgpt/response_stream.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/transport.py` | 127 | infrastructure | `quantlab/assistant/adapters/chatgpt/transport.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py` | 88 | infrastructure | `quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/adapters/chatgpt/vault.py` | 174 | infrastructure | `quantlab/assistant/adapters/chatgpt/vault.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/domain/auth_protocol.py` | 186 | domain | `quantlab/assistant/domain/auth_protocol.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/domain/auth_tokens.py` | 45 | domain | `quantlab/assistant/domain/auth_tokens.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/domain/plan_protocol.py` | 183 | domain | `quantlab/assistant/domain/plan_protocol.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/domain/source_components.py` | 28 | domain | `quantlab/assistant/domain/source_components.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/assistant/ports/auth.py` | 25 | application | `quantlab/assistant/ports/auth.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/research_core/domain/receipts.py` | 65 | domain | `quantlab/research_core/domain/receipts.py` | T4 extracted owner; behaviour preserved. |
+| `quantlab/shared/runtime_errors.py` | 5 | shared | `quantlab/shared/runtime_errors.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/adapt_test_paths.py` | 352 | tooling | `tools/refactor/adapt_test_paths.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/extract_runtime_error.py` | 138 | tooling | `tools/refactor/extract_runtime_error.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/move_desktop_app.py` | 394 | tooling | `tools/refactor/move_desktop_app.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/repair_paths.py` | 283 | tooling | `tools/refactor/repair_paths.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/split_core_assistant.py` | 200 | tooling | `tools/refactor/split_core_assistant.py` | PR D reproducible repair |
+| `tools/refactor/split_core_lock_paths.py` | 97 | tooling | `tools/refactor/split_core_lock_paths.py` | PR D reproducible repair |
+| `tools/refactor/split_core_profile.py` | 99 | tooling | `tools/refactor/split_core_profile.py` | PR D reproducible repair |
+| `tools/refactor/split_core_slice1_references.py` | 77 | tooling | `tools/refactor/split_core_slice1_references.py` | PR D reproducible repair |
+| `tools/refactor/split_core_test_paths.py` | 94 | tooling | `tools/refactor/split_core_test_paths.py` | PR D reproducible repair |
+| `tools/refactor/split_core_ui.py` | 697 | tooling | `tools/refactor/split_core_ui.py` | PR D reproducible repair |
+| `tools/refactor/verify_moves.py` | 258 | tooling | `tools/refactor/verify_moves.py` | T4 extracted owner; behaviour preserved. |
+
+| `quantlab/assistant/domain/__init__.py` | 0 | domain | `quantlab/assistant/domain/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/assistant/ports/__init__.py` | 0 | application | `quantlab/assistant/ports/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/research_core/domain/__init__.py` | 0 | domain | `quantlab/research_core/domain/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `tools/refactor/split_core_r3c.py` | 246 | tooling | `tools/refactor/split_core_r3c.py` | PR D reproducible repair |
+| `desktop_app/__init__.py` | 0 | presentation | `desktop_app/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/components/__init__.py` | 0 | presentation | `desktop_app/components/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/__init__.py` | 0 | presentation | `desktop_app/features/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/assistant/__init__.py` | 0 | presentation | `desktop_app/features/assistant/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/backtest/__init__.py` | 0 | presentation | `desktop_app/features/backtest/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/capital_scenario/__init__.py` | 0 | presentation | `desktop_app/features/capital_scenario/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/compare/__init__.py` | 0 | presentation | `desktop_app/features/compare/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/data/__init__.py` | 0 | presentation | `desktop_app/features/data/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/market/__init__.py` | 0 | presentation | `desktop_app/features/market/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/onboarding/__init__.py` | 0 | presentation | `desktop_app/features/onboarding/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/paper/__init__.py` | 0 | presentation | `desktop_app/features/paper/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/settings/__init__.py` | 0 | presentation | `desktop_app/features/settings/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/strategy/__init__.py` | 0 | presentation | `desktop_app/features/strategy/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/features/walk_forward/__init__.py` | 0 | presentation | `desktop_app/features/walk_forward/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/shell/__init__.py` | 0 | presentation | `desktop_app/shell/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `desktop_app/strings/__init__.py` | 0 | shared | `desktop_app/strings/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/assistant/__init__.py` | 0 | shared | `quantlab/assistant/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/assistant/adapters/__init__.py` | 0 | infrastructure | `quantlab/assistant/adapters/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/assistant/adapters/chatgpt/__init__.py` | 0 | infrastructure | `quantlab/assistant/adapters/chatgpt/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+| `quantlab/shared/__init__.py` | 1 | shared | `quantlab/shared/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
+
+| `tools/refactor/split_core_r3d.py` | 175 | tooling | `tools/refactor/split_core_r3d.py` | PR D reproducible repair |
+
+| `tools/refactor/split_core_r3f.py` | 91 | tooling | `tools/refactor/split_core_r3f.py` | PR D reproducible repair |
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細

@@ -47,7 +47,7 @@ class ChatGPTHostTests(unittest.TestCase):
     def test_json_event_roundtrip_restores_model_label_tuples(self):
         import json
         from desktop_app.shell.main_window import connection_event_from_payload
-        from desktop_app.features.assistant.connection import ConnectionEvent
+        from quantlab.assistant.application.connection_contracts import ConnectionEvent
 
         for event in (
             ConnectionEvent(1, 'result'),
@@ -65,7 +65,8 @@ class ChatGPTHostTests(unittest.TestCase):
             self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
 
     def test_usage_and_campaign_binding_use_discovered_slug_not_display_label(self):
-        from desktop_app.shell.main_window import execute_ui_operation, _dataset, plan_provider, demo_config
+        from desktop_app.connection_composition import execute_ui_operation
+        from desktop_app.shell.main_window import _dataset, plan_provider, demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import canonical_json
 
@@ -100,12 +101,12 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(p.included_usage_only.isChecked())
 
     def test_both_authorization_modes_require_managed_private_events(self):
-        from desktop_app.shell.main_window import execute_ui_operation
-        from desktop_app.features.assistant.connection import ConnectionRequest
+        from desktop_app.connection_composition import execute_ui_operation
+        from quantlab.assistant.application.connection_contracts import ConnectionRequest
 
         for action in ('begin', 'first_sign_in', 'enable_plan'):
             request = ConnectionRequest(1, action, REF if action == 'enable_plan' else None, user_confirmed=True)
-            with patch('desktop_app.features.assistant.connection.run_connection_request') as run:
+            with patch('quantlab.assistant.adapters.chatgpt.connection_worker.run_connection_request') as run:
                 with self.assertRaises(ValueError):
                     execute_ui_operation('ui_chatgpt_auth', {'request': request.payload()}, self.paths)
                 run.assert_not_called()
@@ -116,7 +117,7 @@ class ChatGPTHostTests(unittest.TestCase):
             request = w.chatgpt_controller.request('list')
         self.assertEqual(start.call_args.args, ('ui_chatgpt_auth', {'request': request.payload()}))
         self.assertIs(w.jobs, self.jobs)
-        from desktop_app.features.assistant.connection import ConnectionEvent
+        from quantlab.assistant.application.connection_contracts import ConnectionEvent
 
         result = asdict(ConnectionEvent(request.request_id, 'result', 'host_initialization_required'))
         self.assertTrue(w._chatgpt_event({'job_id': 'fixture-job', 'type': 'result', 'result': {'auth_event': result}}))
@@ -177,18 +178,19 @@ class ChatGPTHostTests(unittest.TestCase):
     def test_runtime_rejects_unbounded_auth_before_spawn(self):
         from quantlab.desktop_runtime import RuntimeSafetyError
 
-        with patch('quantlab.desktop_runtime.mp.get_context') as context:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as context:
             with self.assertRaises(RuntimeSafetyError):
                 self.jobs.start('ui_chatgpt_auth', {'request': {'request_id': 1}})
         context.assert_not_called()
 
     def test_worker_local_status_dispatch_has_no_implicit_initialization(self):
-        from desktop_app.shell.main_window import execute_ui_operation
-        from desktop_app.features.assistant.connection import ConnectionRequest, ConnectionEvent
+        from desktop_app.connection_composition import execute_ui_operation
+        from quantlab.assistant.application.connection_contracts import ConnectionRequest, ConnectionEvent
 
         request = ConnectionRequest(1, 'list')
         with patch(
-            'desktop_app.features.assistant.connection.run_connection_request', return_value=ConnectionEvent(1, 'result', 'host_initialization_required')
+            'quantlab.assistant.adapters.chatgpt.connection_worker.run_connection_request',
+            return_value=ConnectionEvent(1, 'result', 'host_initialization_required'),
         ) as run:
             result = execute_ui_operation('ui_chatgpt_auth', {'request': request.payload()}, self.paths)
         self.assertEqual(result['auth_event']['state'], 'host_initialization_required')
@@ -197,7 +199,7 @@ class ChatGPTHostTests(unittest.TestCase):
     def test_private_authorization_progress_is_not_persisted(self):
         import json
         from unittest.mock import Mock
-        from desktop_app.features.assistant.connection import ConnectionEvent
+        from quantlab.assistant.application.connection_contracts import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         manager = self.jobs
@@ -284,7 +286,7 @@ class ChatGPTHostTests(unittest.TestCase):
             )
 
     def test_sleep_freeze_clears_transient_authorization_and_consent(self):
-        from desktop_app.features.assistant.connection import ConnectionEvent
+        from quantlab.assistant.application.connection_contracts import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window
@@ -299,7 +301,7 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(w.chatgpt_controller.account_status_known)
 
     def test_shutdown_clears_transient_authorization(self):
-        from desktop_app.features.assistant.connection import ConnectionEvent
+        from quantlab.assistant.application.connection_contracts import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window
@@ -311,7 +313,8 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertIsNone(w.chatgpt_controller._authorization_url)
 
     def test_model_worker_rechecks_durable_account_before_network(self):
-        from desktop_app.features.assistant.connection import run_connection_request, ConnectionRequest
+        from quantlab.assistant.adapters.chatgpt.connection_worker import run_connection_request
+        from quantlab.assistant.application.connection_contracts import ConnectionRequest
         from tests.test_desktop_chatgpt_ui import FixtureSession
 
         session = FixtureSession()
@@ -332,7 +335,7 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_reconciliation_requires_same_manager_subtree_proof(self):
         from quantlab.desktop_runtime import RuntimeSafetyError
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from quantlab.core import ValidationError
 
         with self.assertRaises(RuntimeSafetyError):
@@ -479,7 +482,7 @@ class WindowsTreeProtocolFixtureTests(unittest.TestCase):
 
     def test_keeps_job_handle_until_zero_active_processes(self):
         from unittest.mock import Mock
-        from quantlab.desktop_runtime import _WindowsProcessTree
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
         tree = object.__new__(_WindowsProcessTree)
         tree.handle = 123
@@ -500,7 +503,8 @@ class WindowsTreeProtocolFixtureTests(unittest.TestCase):
 
     def test_unknown_win32_observation_preserves_handle(self):
         from unittest.mock import Mock
-        from quantlab.desktop_runtime import _WindowsProcessTree, RuntimeSafetyError
+        from quantlab.research_core.adapters.job_process import _WindowsProcessTree
+        from quantlab.desktop_runtime import RuntimeSafetyError
 
         tree = object.__new__(_WindowsProcessTree)
         tree.handle = 123

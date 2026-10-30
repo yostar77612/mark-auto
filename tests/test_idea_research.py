@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from quantlab.assistant.adapters.chatgpt.provider import PlanError
+from quantlab.assistant.domain.plan_protocol import PlanError
 import desktop_app.shell.main_window as ui
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError

@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from desktop_app.shell.main_window import execute_ui_operation, paper_risk_limits
+from desktop_app.connection_composition import execute_ui_operation
+from desktop_app.shell.main_window import paper_risk_limits
 from quantlab.core import Instrument, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths
 from quantlab.paper import PaperBroker

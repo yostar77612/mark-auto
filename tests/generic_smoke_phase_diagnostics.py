@@ -8,7 +8,7 @@ import threading
 import time
 from unittest.mock import patch
 
-from quantlab.desktop_runtime import _job_worker as _original_job_worker
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_job_worker
 from tests.smoke_timeout_diagnostics import PREFIX, WorkerTimings, instrument_walk_forward
 
 OPERATIONS = frozenset({'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'})

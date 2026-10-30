@@ -27,6 +27,10 @@ class WalkForwardResults(QWidget):
             self._scenario.setVisible(bool(evaluated and self.scenario_reference))
             self._scenario_output.clear()
         text = result.get('oos_statistics_text', '')
+        if 'oos_statistics' in result:
+            from desktop_app.features.walk_forward.presenter import oos_statistics_text
+
+            text = oos_statistics_text(result)
         if text and not hasattr(self, '_oos_statistics'):
             self._oos_statistics = QLabel(self)
             self._oos_statistics.setWordWrap(True)

@@ -71,7 +71,7 @@ def refresh_connection(page):
         return
     if not getattr(page, '_connection_bound', False):
         bind_connection(page, controller, panel)
-    from desktop_app.features.assistant.connection import CONNECTED_STATES
+    from quantlab.assistant.application.connection_contracts import CONNECTED_STATES
 
     connected = bool(controller.active_registration and controller.state in CONNECTED_STATES)
     page.chatgpt_sign_in_entry.setVisible(not connected)

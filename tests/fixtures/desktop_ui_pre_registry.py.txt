@@ -55,7 +55,7 @@ def campaign_generator(paths, options):
 
 
 def connection_event_from_payload(payload):
-    from desktop_chatgpt_ui import ConnectionEvent
+    from quantlab.assistant.application.connection_contracts import ConnectionEvent
     if not isinstance(payload, dict): raise ValidationError(ui_text('ui.connection_event_from_payload.text_1'))
     value = dict(payload)
     value['registrations'] = tuple(tuple(row) for row in value.get('registrations', ()))
@@ -70,7 +70,7 @@ def plan_provider(paths, data, config, options, *, for_usage=False):
     """Fixed bootstrap/control identity, never workspace-relative or random."""
     from desktop_chatgpt_auth import OAuthCredentialReference
     from desktop_chatgpt_provider import ChatGPTPlanProvider
-    from desktop_chatgpt_ui import SubscriptionOptions
+    from quantlab.assistant.application.connection_contracts import SubscriptionOptions
     from dataclasses import asdict
     allowed = {'mode','registration','model','max_calls','timeout_seconds','network_opt_in',
                'included_usage_policy_confirmed','paid_api_fallback','expected_binding'}
@@ -190,13 +190,13 @@ def _paper(root):
 
 
 def analysis_plan(paths, request, *, emit=None):
-    from quantlab.desktop_runtime import validate_analysis_request
+    from quantlab.runtime_support import validate_analysis_request
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
     from desktop_chatgpt_provider import implementation_provenance
     validate_analysis_request(request)
     research_controls(paths)
     if emit: emit('progress',message=ui_text('ui.analysis_plan.text_1'))
-    from quantlab.saved_candidate_pool import load_original_dataset
+    from quantlab.research_core.adapters.saved_pool_source import load_original_dataset
     data=load_original_dataset(Path(request['original_dataset']['path']))
     packet=build_analysis_packet(source_campaign_dir=_root(paths)/'campaigns'/request['campaign_reference'],
         original_dataset=data,attempt_ids=request['attempt_ids'],task=request['task'],max_runtime_seconds=120)
@@ -317,10 +317,12 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
             record=read_analysis(output,payload['analysis_id'])
         return {'analysis_id':payload['analysis_id'],'record':record,'cache_hit':True}
     if operation.startswith('ui_walk_forward_'):
-        from desktop_walk_forward import execute_walk_forward
-        return execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped)
+        from quantlab.research_core.application.walk_forward_operations import execute_walk_forward
+        from desktop_app.features.walk_forward.presenter import render_result
+        return render_result(execute_walk_forward(operation, payload, paths, descendants_stopped=descendants_stopped, dataset_loader=_dataset))
     if operation == 'ui_chatgpt_auth':
-        from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+        from quantlab.assistant.application.connection_contracts import ConnectionRequest
+        from quantlab.assistant.adapters.chatgpt.connection_worker import run_connection_request
         from dataclasses import asdict
         if set(payload) != {'request'} or not isinstance(payload['request'], dict): raise ValidationError(ui_text('ui.execute_ui_operation.text_13'))
         request = ConnectionRequest(**payload['request'])
@@ -366,7 +368,7 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
                           account_status=read_account_status(reference,research_controls(paths)))
         return result
     if operation in ('ui_backup_create', 'ui_backup_restore'):
-        from quantlab.desktop_runtime import BackupManager
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
         manager = BackupManager(paths)
         if operation == 'ui_backup_restore':
             manager.restore(Path(payload['path']))
@@ -1002,7 +1004,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             if self.backups is not None:
                 self.backups.recover()
             else:
-                from quantlab.desktop_runtime import BackupManager
+                from quantlab.research_core.adapters.workspace_backup import BackupManager
                 BackupManager(self.paths).recover()
 
 

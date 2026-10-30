@@ -186,7 +186,7 @@ def make_saved_source(root, *, data=None, candidates=15, exclude_sequences=(), p
                 }
             )
     if provider['mode'] == 'openai_compatible':
-        from quantlab.saved_candidate_pool import _compatible_request
+        from quantlab.research_core.application.saved_pool_attempts import _compatible_request
 
         for attempt in state['attempts']:
             if attempt['output_hash'] is not None:

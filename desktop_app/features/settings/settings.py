@@ -105,7 +105,7 @@ class SettingsPage(PageContext, QWidget):
     def _chatgpt_open_browser(self, url):
         if getattr(self, '_closing', False) or not self.chatgpt_controller.host_available:
             return
-        from desktop_app.features.assistant.connection import official_authorization_url
+        from quantlab.assistant.application.connection_contracts import official_authorization_url
         from PySide6.QtCore import QUrl
         from PySide6.QtGui import QDesktopServices
 

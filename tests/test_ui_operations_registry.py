@@ -164,9 +164,9 @@ def workspace():
                 locale.setlocale(locale.LC_ALL, 'C')
                 with (
                     patch.dict(os.environ, environment),
-                    patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare', prepare_empty_vault),
+                    patch('quantlab.assistant.adapters.chatgpt.vault.DPAPIVault._prepare', prepare_empty_vault),
                     patch('quantlab.desktop_runtime.CredentialVault._crypt', side_effect=AssertionError('credential access forbidden')),
-                    patch('quantlab.assistant.adapters.chatgpt.auth.OfficialTransport.request', side_effect=AssertionError('offline fixtures only')),
+                    patch('quantlab.assistant.adapters.chatgpt.identity.OfficialTransport.request', side_effect=AssertionError('offline fixtures only')),
                 ):
                     yield AppPaths(root / 'workspace', root / 'bootstrap').ensure()
             finally:
@@ -368,7 +368,7 @@ def exercise(execute):
         call('ui_backup_restore', {'path': str(backup)})
         if 'ui_idea_research' in getattr(sys.modules.get(execute.__module__), 'UI_OPERATIONS', ()):
             # Offline: the fixture transport reports that the plan cannot use web search.
-            from quantlab.assistant.adapters.chatgpt.provider import PlanError
+            from quantlab.assistant.domain.plan_protocol import PlanError
 
             class Unsupported:
                 def stream(self, *args, **kwargs):
@@ -405,7 +405,7 @@ class RegistryTests(unittest.TestCase):
         expected = portable_paths(golden_observations())
         original_environment = dict(os.environ)
         with old_module() as old, workspace() as host:
-            from quantlab.assistant.adapters.chatgpt.auth import DPAPIVault
+            from quantlab.assistant.adapters.chatgpt.vault import DPAPIVault
 
             vault = DPAPIVault(str(host.bootstrap))
             vault.directory.mkdir(parents=True)

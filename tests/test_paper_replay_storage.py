@@ -19,7 +19,8 @@ from unittest.mock import patch
 import zipfile
 
 from quantlab.core import ValidationError, content_hash
-from quantlab.desktop_runtime import AppPaths, BackupManager, atomic_write
+from quantlab.desktop_runtime import AppPaths, atomic_write
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 from quantlab.reporting import synthetic_dataset
 from quantlab.strategies import builtin_strategies
 from tests import test_paper_replay as replay_fixtures

@@ -237,7 +237,7 @@ class FakeTransport:
             for start in range(0, len(response), self.chunk):
                 if cancelled is not None and cancelled():
                     # Load optional certificate and desktop dependencies only when a fixture needs them.
-                    from quantlab.assistant.adapters.chatgpt.provider import PlanError
+                    from quantlab.assistant.domain.plan_protocol import PlanError
 
                     raise PlanError('cancelled')
                 piece = response[start : start + self.chunk]

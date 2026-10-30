@@ -13,7 +13,9 @@ import time
 import uuid
 from types import SimpleNamespace
 
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError, _WindowsProcessTree, _job_worker as _original_job_worker
+from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.job_process import _WindowsProcessTree
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_job_worker
 
 PREFIX = 'SMOKE_DIAGNOSTIC '
 STATUSES = {'passed', 'failed', 'completed', 'running', 'cancelled'}

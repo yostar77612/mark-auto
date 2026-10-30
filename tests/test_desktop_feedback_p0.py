@@ -11,7 +11,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from quantlab.desktop_feedback import OPERATION_LABELS, completion_summary, stop_presentation
-from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
+from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 class FeedbackTests(unittest.TestCase):
@@ -134,7 +135,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertFalse((w.root / 'paper_policy.json').exists())
 
     def test_p018_demo_policy_scroll_highlight_and_loaded_form(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         w = self.window()
         execute_ui_operation('ui_demo', {'bars': 960}, w.paths)

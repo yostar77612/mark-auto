@@ -57,7 +57,7 @@ def run_fixture_campaign(dataset: Dataset, config: dict, output_dir: Path) -> di
             start_new_session=sys.platform != 'win32',
         )
         if sys.platform == 'win32':
-            from quantlab.desktop_runtime import _WindowsProcessTree
+            from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
             tree = _WindowsProcessTree(process.pid)
         started = time.monotonic()

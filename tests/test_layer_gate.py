@@ -235,6 +235,36 @@ class LayerGateTests(unittest.TestCase):
         relocations = json.loads((ROOT / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
         inverse = {new: old for old, new in relocations.items()}
         metadata = {
+            'quantlab/shared/__init__.py': 'shared',
+            'quantlab/shared/runtime_errors.py': 'shared',
+            'tools/refactor/extract_runtime_error.py': 'tooling',
+            "quantlab/assistant/adapters/chatgpt/vault.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/identity.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/loopback.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/account_summary.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/account_paths.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/response_stream.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/transport.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/provenance.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/account_store.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/resolution_audit.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/finished_reconciliation.py": "infrastructure",
+            "quantlab/assistant/adapters/chatgpt/campaign_receipts.py": "infrastructure",
+            "quantlab/assistant/domain/auth_protocol.py": "domain",
+            "quantlab/assistant/domain/auth_tokens.py": "domain",
+            "quantlab/assistant/domain/plan_protocol.py": "domain",
+            "quantlab/assistant/domain/source_components.py": "domain",
+            "quantlab/assistant/ports/auth.py": "application",
+            "quantlab/research_core/domain/receipts.py": "domain",
+            "quantlab/assistant/domain/__init__.py": "domain",
+            "quantlab/assistant/ports/__init__.py": "application",
+            "quantlab/research_core/domain/__init__.py": "domain",
+            "tools/refactor/split_core_assistant.py": "tooling",
+            "tools/refactor/split_core_profile.py": "tooling",
+            "tools/refactor/split_core_slice1_references.py": "tooling",
+            "tools/refactor/split_core_test_paths.py": "tooling",
+            "tools/refactor/split_core_lock_paths.py": "tooling",
             'desktop_app/smoke/__init__.py': 'tooling',
             'desktop_app/features/trading/__init__.py': 'presentation',
             'desktop_app/shell/__init__.py': 'presentation',
@@ -273,7 +303,8 @@ class LayerGateTests(unittest.TestCase):
                 elif path in metadata:
                     expected = metadata[path]
                     if path.endswith('/__init__.py'):
-                        self.assertEqual((ROOT / path).read_text(encoding='utf-8').strip(), '')
+                        expected_initializer = '"""Pure shared contracts for Quantlab layers."""' if path == 'quantlab/shared/__init__.py' else ''
+                        self.assertEqual((ROOT / path).read_text(encoding='utf-8').strip(), expected_initializer)
                 else:
                     self.fail('Uninventoried product source: ' + path)
                 self.assertEqual(gate.layer_for(path, self.mapping), expected)
@@ -322,6 +353,45 @@ class LayerGateTests(unittest.TestCase):
         entries = json.loads((ROOT / 'tools/layer_allowlist.json').read_text(encoding='utf-8'))
         self.assertEqual(gate.restored_debts(entries[:-1], entries), ())
         self.assertEqual([item.rule for item in gate.restored_debts(entries, entries[:-1])], ['restored-allowlist-entry'])
+
+    def test_split_origins_preserve_only_existing_debt_and_never_new_edges(self):
+        origins = self.mapping['split_origins']
+        self.assertEqual(
+            origins,
+            {
+                'quantlab/assistant/adapters/chatgpt/vault.py': 'desktop_chatgpt_auth.py',
+                'quantlab/assistant/adapters/chatgpt/transport.py': 'desktop_chatgpt_provider.py',
+                'quantlab/assistant/adapters/chatgpt/response_stream.py': 'desktop_chatgpt_provider.py',
+                'quantlab/research_core/adapters/job_process.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/job_worker.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/saved_pool_source.py': 'quantlab/saved_candidate_pool.py',
+                'quantlab/research_core/adapters/workspace_backup.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/application/job_requests.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/application/saved_pool_attempts.py': 'quantlab/saved_candidate_pool.py',
+                'quantlab/research_core/application/saved_pool_validation.py': 'quantlab/saved_candidate_pool.py',
+                'desktop_app/features/capital_scenario/presenter.py': 'desktop_capital_scenario.py',
+            },
+        )
+        entry = dict(
+            path='desktop_chatgpt_auth.py',
+            target='quantlab.desktop_runtime',
+            rule='infrastructure-to-application',
+            justification='Unchanged pre-existing vault dependency',
+        )
+        finding = gate.Finding('quantlab/assistant/adapters/chatgpt/vault.py', 10, entry['rule'], entry['target'])
+        self.assertEqual(gate.apply_allowlist((finding,), [entry], split_origins=origins), ())
+        for altered in (
+            gate.Finding(finding.path, 10, finding.rule, 'quantlab.research'),
+            gate.Finding('quantlab/assistant/adapters/chatgpt/provenance.py', 10, finding.rule, finding.target),
+            gate.Finding(finding.path, 10, 'domain-to-application', finding.target),
+        ):
+            with self.subTest(finding=altered):
+                self.assertTrue(gate.apply_allowlist((altered,), [entry], split_origins=origins))
+
+    def test_scan_includes_new_untracked_sources_before_controller_commit(self):
+        with patch.object(gate, 'git', return_value=b'quantlab/core.py\0quantlab/new.py\0') as command:
+            self.assertEqual(gate.tracked_sources(ROOT), ('quantlab/core.py', 'quantlab/new.py'))
+            command.assert_called_once_with(ROOT, 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '*.py')
 
     def test_cli_rejects_restored_debt_and_unresolvable_baseline(self):
         with fixture_repository() as root:

@@ -4,7 +4,7 @@ The GUI only schedules work. execute_ui_operation runs in the runtime's isolated
 worker process; its inputs are data, never executable strategy source.
 """
 
-from quantlab.desktop_runtime import _is_worker_registrar_import
+from quantlab.research_core.adapters.job_worker import _is_worker_registrar_import
 
 _worker_import = _is_worker_registrar_import()
 if not _worker_import:
@@ -96,7 +96,7 @@ def campaign_generator(paths, options):
 
 def connection_event_from_payload(payload):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.assistant.connection import ConnectionEvent, TestConnectionEvent, ReconciliationEvent
+    from quantlab.assistant.application.connection_contracts import ConnectionEvent, TestConnectionEvent, ReconciliationEvent
 
     if not isinstance(payload, dict):
         raise ValidationError(ui_text('ui.connection_event_from_payload.invalid_event_format'))
@@ -127,7 +127,7 @@ def plan_provider(paths, data, config, options, *, for_usage=False):
     from quantlab.assistant.adapters.chatgpt.provider import ChatGPTPlanProvider
 
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.assistant.connection import SubscriptionOptions
+    from quantlab.assistant.application.connection_contracts import SubscriptionOptions
 
     # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
@@ -293,7 +293,7 @@ def _paper(root):
 
 def analysis_plan(paths, request, *, emit=None):
     # Load the optional UI adapter only when this operation is requested.
-    from quantlab.desktop_runtime import validate_analysis_request
+    from quantlab.runtime_support import validate_analysis_request
 
     # Keep operation-specific dependencies out of module startup.
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
@@ -306,7 +306,7 @@ def analysis_plan(paths, request, *, emit=None):
     if emit:
         emit('progress', message=ui_text('ui.analysis_plan.recomputing_training_evidence'))
     # Keep operation-specific dependencies out of module startup.
-    from quantlab.saved_candidate_pool import load_original_dataset
+    from quantlab.research_core.adapters.saved_pool_source import load_original_dataset
 
     data = load_original_dataset(Path(request['original_dataset']['path']))
     packet = build_analysis_packet(
@@ -698,7 +698,7 @@ def _handle_ui_backtest(payload, paths, root, *, emit=None, descendants_stopped=
 
 def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from quantlab.desktop_runtime import BackupManager
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     manager = BackupManager(paths)
     return {'backup': str(manager.create(Path(payload['path'])))}
@@ -706,7 +706,7 @@ def _handle_ui_backup_create(payload, paths, root, *, emit=None, descendants_sto
 
 def _handle_ui_backup_restore(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from quantlab.desktop_runtime import BackupManager
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     manager = BackupManager(paths)
     manager.restore(Path(payload['path']))
@@ -756,7 +756,10 @@ def _handle_ui_campaign(payload, paths, root, *, emit=None, descendants_stopped=
 
 def _handle_ui_chatgpt_auth(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.assistant.connection import ConnectionRequest, run_connection_request
+    from quantlab.assistant.application.connection_contracts import ConnectionRequest
+
+    # Defer the operation adapter until the request is dispatched.
+    from quantlab.assistant.ports.connection import run_connection_request
 
     # Keep operation-specific dependencies out of module startup.
     from dataclasses import asdict
@@ -1106,7 +1109,7 @@ def _idea_event_caller(reference, transport):
     from quantlab.assistant.adapters.chatgpt.provider import PlanError, SSEParser
 
     # Keep authentication exception handling local to this network operation.
-    from quantlab.assistant.adapters.chatgpt.auth import AuthError
+    from quantlab.assistant.domain.auth_protocol import AuthError
 
     # Translate only fixed diagnostics into the research domain boundary.
     from quantlab.idea_search import RemoteFailure
@@ -1231,30 +1234,42 @@ def _handle_ui_idea_adopt(payload, paths, root, *, emit=None, descendants_stoppe
 
 def _handle_ui_walk_forward_preview(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.walk_forward.presenter import execute_walk_forward
+    from quantlab.research_core.application.walk_forward_operations import execute_walk_forward
 
-    return execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped)
+    # Resolve presentation only when the operation runs in its owning process.
+    from desktop_app.features.walk_forward.presenter import render_result
+
+    return render_result(execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=_dataset))
 
 
 def _handle_ui_walk_forward_read(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.walk_forward.presenter import execute_walk_forward
+    from quantlab.research_core.application.walk_forward_operations import execute_walk_forward
 
-    return execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped)
+    # Resolve presentation only when the operation runs in its owning process.
+    from desktop_app.features.walk_forward.presenter import render_result
+
+    return render_result(execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=_dataset))
 
 
 def _handle_ui_walk_forward_reconcile(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.walk_forward.presenter import execute_walk_forward
+    from quantlab.research_core.application.walk_forward_operations import execute_walk_forward
 
-    return execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped)
+    # Resolve presentation only when the operation runs in its owning process.
+    from desktop_app.features.walk_forward.presenter import render_result
+
+    return render_result(execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=_dataset))
 
 
 def _handle_ui_walk_forward_run(payload, paths, root, *, emit=None, descendants_stopped=False):
     # Load the optional UI adapter only when this operation is requested.
-    from desktop_app.features.walk_forward.presenter import execute_walk_forward
+    from quantlab.research_core.application.walk_forward_operations import execute_walk_forward
 
-    return execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped)
+    # Resolve presentation only when the operation runs in its owning process.
+    from desktop_app.features.walk_forward.presenter import render_result
+
+    return render_result(execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=_dataset))
 
 
 _UI_OPERATION_HANDLERS = {
@@ -1315,12 +1330,12 @@ def execute_ui_operation(operation, payload, paths, *, emit=None, descendants_st
 
 
 # Register after the executor definition, before GUI startup and smoke dispatch.
-from quantlab.desktop_runtime import (
+from quantlab.research_core.adapters.job_worker import (
     register_operation_executor as _register_operation_executor,
     register_operation_executor_factory as _register_operation_executor_factory,
 )
 
-OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
+OPERATION_REGISTRAR = 'desktop_app.connection_composition:execute_ui_operation'
 _register_operation_executor(execute_ui_operation)
 _register_operation_executor_factory(OPERATION_REGISTRAR)
 
@@ -1736,7 +1751,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 recovery_changed = recovery_changed or event.get('type') in ('result','error','failed','cancelled','canceled')
                 self.automatic_backup_panel.handle_job_event(event)
                 # Keep operation-specific presentation out of the shell.
-                import desktop_app.features.capital_scenario.worker as _capital
+                import desktop_app.features.capital_scenario.presenter as _capital
                 if _capital.event(self, event): continue
                 # Keep operation-specific presentation out of the shell.
                 import desktop_app.features.strategy.idea_research as _ideas
@@ -1840,7 +1855,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
                 self.backups.recover()
             else:
                 # Load the optional UI adapter only when this operation is requested.
-                from quantlab.desktop_runtime import BackupManager
+                from quantlab.research_core.adapters.workspace_backup import BackupManager
                 BackupManager(self.paths).recover()
 
     def showEvent(self, event):

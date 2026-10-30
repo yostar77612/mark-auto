@@ -53,7 +53,9 @@ def layer_for(path: str, mapping: dict) -> str | None:
 
 def tracked_sources(root: Path) -> tuple[str, ...]:
     return tuple(
-        name for name in git(root, 'ls-files', '-z', '--', '*.py').decode('utf-8').split('\0') if name and not name.startswith(('tests/', 'archives/'))
+        name
+        for name in git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '*.py').decode('utf-8').split('\0')
+        if name and not name.startswith(('tests/', 'archives/'))
     )
 
 
@@ -127,11 +129,13 @@ def check_source(source: str, path: str, mapping: dict, modules: dict[str, str])
     return tuple(sorted(findings, key=lambda item: (item.path, item.line, item.rule, item.target)))
 
 
-def finding_key(item: Finding, relocations: dict[str, str] | None = None) -> tuple[str, str, str]:
+def finding_key(item: Finding, relocations: dict[str, str] | None = None, split_origins: dict[str, str] | None = None) -> tuple[str, str, str]:
     """Keep R0 debt identities stable across the approved whole-file moves."""
     relocations = relocations or {}
     paths = {new: old for old, new in relocations.items()}
+    paths.update(split_origins or {})
     modules = {_module(new)[0]: _module(old)[0] for old, new in relocations.items()}
+    modules.update({_module(new)[0]: _module(old)[0] for new, old in (split_origins or {}).items()})
     return paths.get(item.path, item.path), modules.get(item.target, item.target), item.rule
 
 
@@ -139,7 +143,9 @@ def allowlist_key(entry: dict) -> tuple[str, str, str]:
     return entry['path'], entry['target'], entry['rule']
 
 
-def apply_allowlist(findings: tuple[Finding, ...], entries: list[dict], relocations: dict[str, str] | None = None) -> tuple[Finding, ...]:
+def apply_allowlist(
+    findings: tuple[Finding, ...], entries: list[dict], relocations: dict[str, str] | None = None, split_origins: dict[str, str] | None = None
+) -> tuple[Finding, ...]:
     allowed = set()
     errors = []
     for entry in entries:
@@ -147,8 +153,8 @@ def apply_allowlist(findings: tuple[Finding, ...], entries: list[dict], relocati
         if not entry['justification'].strip() or key in allowed:
             errors.append(Finding(entry['path'], 1, 'invalid-allowlist-entry', entry['target']))
         allowed.add(key)
-    actual = {finding_key(item, relocations) for item in findings}
-    errors.extend(item for item in findings if finding_key(item, relocations) not in allowed)
+    actual = {finding_key(item, relocations, split_origins) for item in findings}
+    errors.extend(item for item in findings if finding_key(item, relocations, split_origins) not in allowed)
     errors.extend(Finding(path, 1, 'stale-allowlist-entry', f'{target} ({rule})') for path, target, rule in sorted(allowed - actual))
     return tuple(errors)
 
@@ -180,7 +186,7 @@ def scan(root: Path, mapping: dict | None = None, entries: list[dict] | None = N
             findings.append(Finding(path, 1, 'tracked-file-missing', path))
             continue
         findings.extend(check_source((root / path).read_text(encoding='utf-8-sig'), path, mapping, modules))
-    errors = apply_allowlist(tuple(findings), entries, relocations)
+    errors = apply_allowlist(tuple(findings), entries, relocations, mapping.get('split_origins'))
     if baseline_ref and git(root, 'ls-tree', baseline_ref, '--', 'tools/layer_allowlist.json').strip():
         previous = json.loads(git(root, 'show', f'{baseline_ref}:tools/layer_allowlist.json'))
         errors += restored_debts(entries, previous)

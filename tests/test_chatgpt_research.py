@@ -5,6 +5,7 @@ from contextlib import closing
 from pathlib import Path
 import tempfile
 import unittest
+from quantlab.research_core.domain.receipts import _validated_receipt_snapshot
 from unittest.mock import patch
 
 from quantlab.core import ValidationError, content_hash
@@ -53,7 +54,7 @@ class UserConfirmedConsumedResearchTests(unittest.TestCase):
         provider = SyntheticProvider()
         provider.rows = [receipt(1, 'user_confirmed_consumed')]
         snapshot = provider.read_receipt_snapshot()
-        accepted = r._validated_receipt_snapshot(snapshot, provider.provider_descriptor())
+        accepted = _validated_receipt_snapshot(snapshot, provider.provider_descriptor())
         self.assertEqual(accepted, provider.rows)
         accepted[0]['status'] = 'completed'
         self.assertEqual(snapshot['receipts'][0]['status'], 'user_confirmed_consumed')

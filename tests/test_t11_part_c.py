@@ -1,5 +1,10 @@
 """In-memory characterization captured before the Part C extractions."""
 
+from quantlab.research_core.adapters import job_process
+
+from quantlab.research_core.domain import saved_pool
+
+
 from dataclasses import replace
 from contextlib import ExitStack
 from datetime import timedelta
@@ -37,11 +42,11 @@ def runtime_oracle():
             context.Pipe.return_value = (Mock(), Mock())
             with (
                 patch('quantlab.analysis_recovery.require_operation'),
-                patch.object(desktop_runtime.mp, 'get_context', return_value=context),
+                patch.object(job_process.mp, 'get_context', return_value=context),
                 patch.object(desktop_runtime.uuid, 'uuid4', return_value=SimpleNamespace(hex='job')),
                 patch.object(desktop_runtime.time, 'monotonic', return_value=100.0),
                 patch.object(desktop_runtime.sys, 'platform', 'linux'),
-                patch.object(desktop_runtime, '_executor_registrar', registrar),
+                patch('quantlab.research_core.adapters.job_worker._executor_registrar', registrar),
             ):
                 job = manager.start(operation, payload)
             args = context.Process.call_args.kwargs['args']
@@ -179,7 +184,7 @@ class PartCBehaviorTests(unittest.TestCase):
         self.assertEqual(paper_oracle(), PAPER_EXPECTED)
 
     def test_admission_validation_order(self):
-        with self.assertRaisesRegex(saved_candidate_pool.SavedCandidatePoolError, 'Source campaign reference must be a normal 64-hex workspace reference'):
+        with self.assertRaisesRegex(saved_pool.SavedCandidatePoolError, 'Source campaign reference must be a normal 64-hex workspace reference'):
             saved_candidate_pool.admit_saved_campaign_pool(
                 source_campaign_dir=None, source_campaign_ref='invalid', original_dataset=None, original_dataset_ref=None, first_training_timestamp=None
             )

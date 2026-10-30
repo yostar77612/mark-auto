@@ -25,7 +25,7 @@ REQUIRED = {
         'tests/test_research.py::ResearchTests.test_reject_corpus',
     },
     'credentials': {
-        'quantlab/assistant/adapters/chatgpt/auth.py::DPAPIVault',
+        'quantlab/assistant/adapters/chatgpt/vault.py::DPAPIVault',
         'quantlab/agent_tools.py::Registry.call',
         'tests/test_agent_harness_d1.py::AgentHarnessD1Tests.test_every_registered_read_tool_and_all_pages_are_sentinel_safe',
     },

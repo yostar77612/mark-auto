@@ -76,8 +76,9 @@ class TerminalSmokeProcessTests(unittest.TestCase):
 from pathlib import Path
 import desktop
 import quantlab.desktop_runtime as runtime
+from quantlab.research_core.adapters import job_worker
 from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
-runtime._job_worker = diagnosed_smoke_worker
+job_worker._job_worker = diagnosed_smoke_worker
 from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))

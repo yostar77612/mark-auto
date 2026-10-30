@@ -27,10 +27,10 @@ from .research import (
     _run_bounded,
     _unique_keys,
     _validated_provider_descriptor,
-    _validated_receipt_snapshot,
     PARAMETER_CONTRACTS,
     validate_dsl,
 )
+from quantlab.research_core.domain.receipts import _validated_receipt_snapshot
 
 from .analysis_contracts import (
     VERSION,
@@ -129,7 +129,7 @@ def build_analysis_packet(*, source_campaign_dir, original_dataset, attempt_ids,
     dataset must be the exact original; source paths never enter model context.
     """
     # Keep operation-specific dependencies out of module startup.
-    from .saved_candidate_pool import _read_campaign, _validate_original_dataset
+    from quantlab.research_core.adapters.saved_pool_source import _read_campaign, _validate_original_dataset
 
     folder = _safe_path(source_campaign_dir)
     if not _hash(folder.name):
@@ -297,7 +297,7 @@ def _read_journal(folder):
         _fail('Analysis journal size limit')
     with closing(sqlite3.connect(sqlite_uri(journal) + '?mode=ro', uri=True, timeout=0)) as db:
         # Keep operation-specific dependencies out of module startup.
-        from .saved_candidate_pool import _prepare_bounded_read
+        from quantlab.research_core.adapters.saved_pool_source import _prepare_bounded_read
 
         _prepare_bounded_read(db, {'state': [('id', 'INTEGER', 0, None, 1, 0), ('payload', 'TEXT', 1, None, 0, 0)]})
         size = db.execute('SELECT id, length(CAST(payload AS BLOB)) FROM state').fetchmany(2)

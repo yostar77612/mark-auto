@@ -15,7 +15,8 @@ if HAS_QT:
     from PySide6.QtGui import QMouseEvent
     from PySide6.QtWidgets import QApplication
     from desktop_app.shell.main_window import MainWindow
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager, CredentialVault
+    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, CredentialVault
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 @unittest.skipUnless(HAS_QT, 'Install pinned desktop requirements to test Qt widgets')

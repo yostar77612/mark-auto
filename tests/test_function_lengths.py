@@ -5,6 +5,7 @@ import hashlib
 from pathlib import Path
 import unittest
 from tests.layered_source_fixtures import original_adapter_text
+from tests.core_split_source_fixtures import before_core_split
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
@@ -30,6 +31,8 @@ class FunctionLengthTests(unittest.TestCase):
         for filename, expected in LOCKED_HASHES.items():
             with self.subTest(file=filename):
                 source = (ROOT / filename).read_text(encoding='utf-8-sig')
+                if filename in ('quantlab/research.py', 'quantlab/assistant/adapters/chatgpt/auth.py'):
+                    source = before_core_split(filename, source)
                 if filename == 'quantlab/assistant/adapters/chatgpt/provider.py':
                     source = original_adapter_text(filename, source)
                 if filename == 'quantlab/research.py':

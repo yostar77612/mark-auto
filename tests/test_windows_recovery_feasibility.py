@@ -284,7 +284,7 @@ def _fixture(role, folder, observer, token, extra, *, diagnosis):
     if role != 'helper':
         raise ValueError('unknown fixture role')
     diagnosis.at('helper.runtime.import')
-    from quantlab.desktop_runtime import _WindowsProcessTree
+    from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
     diagnosis.at('helper.admission')
     gui_handle, worker_handle = map(int, extra)

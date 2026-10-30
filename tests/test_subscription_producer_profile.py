@@ -1,5 +1,8 @@
 """Literal SIWC profile admission only: no grant, credential, or model calls."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from datetime import timedelta
 from pathlib import Path
@@ -114,13 +117,13 @@ class SubscriptionProducerProfileTests(unittest.TestCase):
         item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64
         bad_bindings.append(item)
         for index, item in enumerate(bad_bindings):
-            with self.subTest(index=index), self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.subTest(index=index), self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 pools._select_producer(item)
             self.assertEqual(caught.exception.reason_code, 'source_provider_provenance_invalid')
         for field in PROFILE['engine_source_hashes']:
             item = binding()
             item['engine_source_hashes'][field] = 'f' * 64
-            with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 pools._select_producer(item)
             self.assertEqual(caught.exception.reason_code, 'source_producer_unsupported')
 

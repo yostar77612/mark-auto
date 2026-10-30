@@ -166,7 +166,7 @@ class ReconciliationFlow:
         dialog.open()
 
     def _submit(self, request_id, dialog, result):
-        from desktop_app.features.assistant.connection import FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION, RECONCILIATION_ACKNOWLEDGEMENT_VERSION
+        from quantlab.assistant.application.connection_contracts import FINISHED_RECONCILIATION_ACKNOWLEDGEMENT_VERSION, RECONCILIATION_ACKNOWLEDGEMENT_VERSION
 
         if self.dialog is not dialog:
             dialog.deleteLater()

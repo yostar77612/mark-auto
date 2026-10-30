@@ -11,10 +11,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from quantlab.assistant.adapters.chatgpt.provider import parse_models
+from quantlab.assistant.domain.plan_protocol import parse_models
 from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel
 from desktop_app.features.assistant.assistant import AssistantPanel
-from desktop_app.features.assistant.assistant_models import context_usage
+from quantlab.assistant.application.context_usage import context_usage
 from desktop_app.features.assistant.worker import chatgpt_reply
 from desktop_app.strings.catalog import ui_text
 from quantlab.errors import ERROR_TABLE

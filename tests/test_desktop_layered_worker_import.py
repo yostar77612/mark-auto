@@ -1,5 +1,8 @@
 """A real spawned registrar import must never attempt Qt or the eager pages entry."""
 
+from quantlab.research_core.adapters import job_worker
+
+
 import importlib
 import importlib.abc
 import json
@@ -10,7 +13,6 @@ import sys
 import tempfile
 import unittest
 
-import quantlab.desktop_runtime as runtime
 from tests.layered_source_fixtures import CURRENT_PATHS
 
 
@@ -30,7 +32,7 @@ def guarded_registrar_import(proof_path):
     blocker = RejectQt()
     sys.meta_path.insert(0, blocker)
     try:
-        executor = runtime._worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
+        executor = job_worker._worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
         module = importlib.import_module('desktop_app.shell.main_window')
         refused = False
         try:
