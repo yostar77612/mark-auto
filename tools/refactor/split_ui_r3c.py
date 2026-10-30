@@ -1,13 +1,5 @@
 """Run after split_ui_r3b.py to reproduce the controller-diagnosed r3c repairs."""
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_r3c.py: already applied')
-    raise SystemExit(0)
-
-
 import ast
 import json
 from pathlib import Path
@@ -87,8 +79,8 @@ def metadata():
         index = source.index(marker)
         source = source[:index] + row + source[index:]
     write(name, source)
-    name = '.tmp-layered/test-edit-reasons.json'
-    rows = json.loads((ROOT / name).read_text(encoding='utf-8-sig'))
+    name = 'tools/refactor/test-edit-reasons.json'
+    rows = json.loads((ROOT / name).read_text(encoding='utf-8-sig')) if (ROOT / name).exists() else []
     rows = [row for row in rows if row.get('slice') != 'T3-r3c']
     reasons = {
         'tests/test_r7_characterization.py': 'Restore the base public MarketValidationError binding in the PR-written expected tuple; frozen BASE and exact equality unchanged.',
@@ -96,13 +88,15 @@ def metadata():
         'tests/test_market_empty_ui.py': 'Import pure demo data from its real presentation owner instead of bootstrap; every offline/clearing assertion retained.',
     }
     rows.extend({'slice': 'T3-r3c', 'path': name, 'reason': reason} for name, reason in reasons.items())
-    write(name, json.dumps(rows, ensure_ascii=False, indent=2) + '\n')
+    if (ROOT / name).exists():
+        write(name, json.dumps(rows, ensure_ascii=False, indent=2) + '\n')
 
 
 def main():
-    product()
+    if 'def sample_market_series' in (ROOT / 'desktop_app/bootstrap.py').read_text(encoding='utf-8'):
+        product()
+        metadata()
     references()
-    metadata()
 
 
 if __name__ == '__main__':

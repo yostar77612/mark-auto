@@ -2,13 +2,6 @@
 
 from __future__ import annotations
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_verify.py: already applied')
-    raise SystemExit(0)
-
 import ast
 import json
 from pathlib import Path
@@ -47,9 +40,7 @@ def measurements():
 
 
 def main():
-    directory = ROOT / '.tmp-layered'
     rows = measurements()
-    (directory / 'slice2-sizes.json').write_text(json.dumps(rows, indent=2) + '\n', encoding='utf-8')
     paths = sorted(
         set(check_layers.tracked_sources(ROOT)) | {name for name in changed_files() if name.endswith('.py') and not name.startswith(('tests/', 'archives/'))}
     )

@@ -30,6 +30,13 @@ def main():
     sys.path.insert(0, str(ROOT))
     from desktop_app.strings import catalog
 
+    if not FIXTURE.exists():
+        import subprocess
+
+        baseline = subprocess.check_output(['git', 'show', BASE + ':desktop_app/strings/catalog.py'], cwd=ROOT).decode('utf-8')
+        namespace = {'__name__': 'pr_c_baseline'}
+        exec(compile(baseline, '<fixed-base-catalog>', 'exec'), namespace)
+        FIXTURE.write_text(json.dumps({'source_commit': BASE, **dump(namespace)}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     expected = json.loads(FIXTURE.read_text(encoding='utf-8'))
     if expected.pop('source_commit') != BASE:
         raise SystemExit('Unexpected catalog baseline commit')

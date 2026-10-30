@@ -1,13 +1,5 @@
 """Replay the r3f repair after split_ui_r3d.py; retain base sample ownership."""
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_r3f.py: already applied')
-    raise SystemExit(0)
-
-
 import ast
 import json
 from pathlib import Path
@@ -74,14 +66,15 @@ def main():
             marker = source.index('## 3 ')
             source = source[:marker] + row + '\n' + source[marker:]
     write(name, source)
-    name = '.tmp-layered/test-edit-reasons.json'
-    rows = [row for row in json.loads((ROOT / name).read_text(encoding='utf-8-sig')) if row.get('slice') != 'T3-r3f']
+    name = 'tools/refactor/test-edit-reasons.json'
+    rows = [row for row in (json.loads((ROOT / name).read_text(encoding='utf-8-sig')) if (ROOT / name).exists() else []) if row.get('slice') != 'T3-r3f']
     reasons = {
         'tests/test_market_empty_ui.py': 'Import sample_market_series from its restored base dashboard owner; behavior assertions unchanged.',
         'tests/test_r7_characterization.py': 'Restore base public names MarketSeries and sample_market_series in dashboard expected tuple; frozen BASE and exact equality unchanged.',
     }
     rows.extend({'slice': 'T3-r3f', 'path': path, 'reason': reason} for path, reason in reasons.items())
-    write(name, json.dumps(rows, ensure_ascii=False, indent=2) + '\n')
+    if (ROOT / name).exists():
+        write(name, json.dumps(rows, ensure_ascii=False, indent=2) + '\n')
 
 
 if __name__ == '__main__':

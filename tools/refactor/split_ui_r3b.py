@@ -1,13 +1,5 @@
 """Reproduce r3b contract collection and reference repairs without changing fixtures."""
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_r3b.py: already applied')
-    raise SystemExit(0)
-
-
 import ast
 import importlib
 import json
@@ -133,8 +125,8 @@ def product():
 
 
 def record():
-    path = ROOT / '.tmp-layered/test-edit-reasons.json'
-    rows = json.loads(path.read_text(encoding='utf-8-sig'))
+    path = ROOT / 'tools/refactor/test-edit-reasons.json'
+    rows = json.loads(path.read_text(encoding='utf-8-sig')) if path.exists() else []
     reasons = {
         name: 'Collect relocated public bindings from concrete manifest owners; retain frozen names, exact equality, and all size/readability limits.'
         for name in ORACLES
@@ -143,7 +135,8 @@ def record():
     reasons['tests/test_desktop_history_smoke.py'] = 'Correct an ambiguous COLUMNS relocation to the original history fixture owner; assertions unchanged.'
     rows = [row for row in rows if row.get('slice') != 'T3-r3b']
     rows.extend({'slice': 'T3-r3b', 'path': name, 'reason': reason} for name, reason in reasons.items())
-    path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    if path.exists():
+        path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
 def main():

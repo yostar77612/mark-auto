@@ -2,13 +2,6 @@
 
 from __future__ import annotations
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_oracles.py: already applied')
-    raise SystemExit(0)
-
 import argparse
 from datetime import datetime, timezone
 import json
@@ -72,7 +65,9 @@ def main():
     if args.capture:
         print(json.dumps(capture(args.capture.resolve(), args.state.resolve()), ensure_ascii=False))
         return
-    directory = root / '.tmp-layered/slice2-shell-oracle'
+    import tempfile
+
+    directory = Path(tempfile.mkdtemp(prefix='pr-c-oracle-', dir=root.parent))
     directory.mkdir(exist_ok=True)
     snapshots = {}
     for mode, source in (('baseline', args.baseline.resolve()), ('tree', root)):

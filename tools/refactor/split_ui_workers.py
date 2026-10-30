@@ -7,13 +7,6 @@ functions only name those interfaces, while bootstrap supplies implementations.
 
 from __future__ import annotations
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'quantlab/research_core/ports/ui_operations.py').is_file():
-    print('split_ui_workers.py: already applied')
-    raise SystemExit(0)
-
 
 import argparse
 import ast
@@ -430,7 +423,7 @@ def main():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding='utf-8', newline='\n')
     report = {name: len(text.splitlines()) for name, text in outputs.items()}
-    (output / '.tmp-layered/slice2-worker-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'worker_report': report}))
     print(json.dumps(report))
 
 

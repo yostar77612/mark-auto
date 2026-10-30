@@ -5,13 +5,6 @@ Extends the slice 1 generators and owner map. No GitNexus or git mutations.
 
 from __future__ import annotations
 
-# Historical pass: never overwrite the applied split or its subsequent repairs.
-from pathlib import Path as _AppliedPath
-
-if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
-    print('split_ui_slice2.py: already applied')
-    raise SystemExit(0)
-
 
 import argparse
 import ast
@@ -120,7 +113,9 @@ def capture_base(root, reference):
     """Recreate generator inputs from the fixed pre-slice commit, read-only git."""
     import subprocess
 
-    base = root / '.tmp-layered' / ('slice2-source-' + reference)
+    import tempfile
+
+    base = Path(tempfile.mkdtemp(prefix='pr-c-source-', dir=root.parent))
     names = (
         'desktop_app/shell/main_window.py',
         'desktop_app/shell/host.py',
