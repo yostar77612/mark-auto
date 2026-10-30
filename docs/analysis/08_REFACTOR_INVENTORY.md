@@ -433,7 +433,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 
 | `tools/refactor/split_core_r3d.py` | 175 | tooling | `tools/refactor/split_core_r3d.py` | PR D reproducible repair |
 
-| `tools/refactor/split_core_r3f.py` | 91 | tooling | `tools/refactor/split_core_r3f.py` | PR D reproducible repair |
+| `tools/refactor/split_core_r3f.py` | 146 | tooling | `tools/refactor/split_core_r3f.py` | PR D reproducible repair |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

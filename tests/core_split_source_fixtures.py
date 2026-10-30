@@ -47,7 +47,7 @@ def layered_source_bytes(path):
 
 
 def before_core_split(path, source):
-    raw = (FIXTURES / 'core_split_pins.json').read_bytes()
+    raw = (FIXTURES / 'core_split_pins.json').read_bytes().replace(b'\r\n', b'\n')
     if hashlib.sha256(raw).hexdigest() != '21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb':
         raise ValueError('Exact current source/projection pins changed')
     pins = json.loads(raw)

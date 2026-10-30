@@ -1,8 +1,11 @@
 """Reproduce T4-r3f/r3g base patch points and passive desktop imports."""
 
+import ast
+import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,6 +52,7 @@ def repair():
         path.write_text(source, encoding='utf-8', newline='\n')
 
     repair_launch_lookup()
+    repair_text_fixture_pins()
     repair_inventory()
 
 
@@ -62,6 +66,57 @@ def repair_launch_lookup():
         source = source.replace(anchor, anchor + local_import)
     if source != path.read_text(encoding='utf-8'):
         path.write_text(source, encoding='utf-8', newline='\n')
+
+
+def repair_text_fixture_pins():
+    """Pin committed LF text while accepting either checkout line ending."""
+    name = 'tests/core_split_source_fixtures.py'
+    path = ROOT / name
+    source = path.read_text(encoding='utf-8')
+    raw = subprocess.check_output(['git', 'show', '2fa5165:tests/fixtures/core_split_pins.json'], cwd=ROOT).replace(b'\r\n', b'\n')
+    digest = hashlib.sha256(raw).hexdigest()
+    source = source.replace(
+        "(FIXTURES / 'core_split_pins.json').read_bytes()\n", "(FIXTURES / 'core_split_pins.json').read_bytes().replace(b'\\r\\n', b'\\n')\n"
+    )
+    source = source.replace('21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb', digest)
+    path.write_text(source, encoding='utf-8', newline='\n')
+    name = 'tests/test_saved_pool_frozen_bytes.py'
+    path = ROOT / name
+    source = path.read_text(encoding='utf-8')
+    raw = subprocess.check_output(['git', 'show', '7b59809:quantlab/saved_candidate_pool.py'], cwd=ROOT).replace(b'\r\n', b'\n')
+    lines = raw.splitlines(keepends=True)
+    blocks = {
+        node.targets[0].id: b''.join(lines[node.lineno - 1 : node.end_lineno])
+        for node in ast.parse(raw).body
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'freeze'
+    }
+    pins = ast.literal_eval(next(node.value for node in ast.parse(source).body if isinstance(node, ast.Assign) and node.targets[0].id == 'PINS'))
+    for key, old in pins.items():
+        source = source.replace(old, hashlib.sha256(blocks[key]).hexdigest())
+    source = source.replace('    lines = raw.splitlines(keepends=True)', "    lines = raw.replace(b'\\r\\n', b'\\n').splitlines(keepends=True)")
+    source = source.replace('exact Git 7b59809 checkout bytes', 'exact LF-normalized Git 7b59809 bytes')
+    path.write_text(source, encoding='utf-8', newline='\n')
+    path = ROOT / 'tests/layered_source_fixtures.py'
+    source = path.read_text(encoding='utf-8')
+    anchor = '    """Undo only the exact reviewed lazy validation import/argument move."""\n'
+    addition = "    source = source.replace('\\r\\n', '\\n')\n"
+    if anchor + addition not in source:
+        source = source.replace(anchor, anchor + addition)
+    path.write_text(source, encoding='utf-8', newline='\n')
+    path = ROOT / '.tmp-layered/test-edit-reasons.json'
+    rows = json.loads(path.read_text(encoding='utf-8-sig'))
+    names = ('tests/core_split_source_fixtures.py', 'tests/test_saved_pool_frozen_bytes.py', 'tests/layered_source_fixtures.py')
+    rows = [row for row in rows if row.get('slice') != 'T4-r3i']
+    rows.extend(
+        {
+            'file': name,
+            'slice': 'T4-r3i',
+            'reason': 'CRLF/LF checkout independence; pin recomputed from the committed blob; exact equality retained.',
+            'reproduced_by': 'tools/refactor/split_core_r3f.py',
+        }
+        for name in names
+    )
+    path.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
 
 
 def repair_inventory():

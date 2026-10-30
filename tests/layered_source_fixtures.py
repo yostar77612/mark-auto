@@ -356,6 +356,7 @@ def historical_campaign_hash(value):
 
 def historical_walk_forward_source(source):
     """Undo only the exact reviewed lazy validation import/argument move."""
+    source = source.replace('\r\n', '\n')
     if hashlib.sha256(source.encode()).hexdigest() != '38e18c7c775d6da3bd23e69cb77336b2bee03826e7f3763a6ce02b92617cc318':
         raise ValueError('Unreviewed walk-forward source drift')
     source = source.replace(
