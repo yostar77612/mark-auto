@@ -10,7 +10,7 @@ from PySide6.QtCore import QDate, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QTableWidgetItem
 
-from desktop_app.components.forms import BacktestForm
+from desktop_app.features.backtest.forms import BacktestForm
 from quantlab.core import ValidationError, canonical_json, content_hash
 from tests.test_ui_operations_registry import exercise, old_module
 import desktop_app.shell.main_window as ui

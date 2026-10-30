@@ -9,7 +9,10 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QDate, QDateTime, QTime, QTimeZone
 from PySide6.QtWidgets import QApplication, QDateEdit, QDateTimeEdit, QLineEdit
 from desktop_app.components.timeinput import DateInput, taipei_to_utc_iso, utc_iso_to_taipei
-from desktop_app.components.forms import BacktestForm, PaperIntentForm, PaperQuoteForm, PaperPolicyForm, PaperActionForm, utc
+from desktop_app.features.backtest.forms import BacktestForm
+from desktop_app.features.paper.forms import PaperIntentForm, PaperQuoteForm, PaperActionForm
+from desktop_app.features.paper.policy_form import PaperPolicyForm
+from desktop_app.components.form_values import utc
 from quantlab.core import ValidationError, content_hash, canonical_json, to_dict
 
 

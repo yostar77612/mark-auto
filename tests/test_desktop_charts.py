@@ -21,7 +21,8 @@ if HAS_QT:
     from PySide6.QtGui import QWheelEvent
     from PySide6.QtTest import QTest
     from quantlab.market import InstrumentRef, MarketBar
-    from desktop_app.components.charts import CandlestickChart, ChartTrace, ChartMarker, ReferenceLine
+    from desktop_app.components.charts import CandlestickChart
+    from desktop_app.components.chart_annotations import ChartTrace, ChartMarker, ReferenceLine
 
 
 def fixture(n=100):
@@ -142,7 +143,7 @@ class ChartTests(unittest.TestCase):
 
     def test_taipei_cross_midnight_display_preserves_utc(self):
         from dataclasses import replace
-        from desktop_app.components.charts import _display_time
+        from desktop_app.components.chart_footer import _display_time
 
         utc = datetime(2026, 10, 8, 16, 5, tzinfo=timezone.utc)
         bar = replace(

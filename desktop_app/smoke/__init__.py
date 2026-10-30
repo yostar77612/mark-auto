@@ -159,7 +159,8 @@ def _market_smoke_ui(app):
     import shiboken6
     from desktop_app.features.market.dashboard import MarketDashboard
     from desktop_app.components.charts import CandlestickChart
-    from desktop_app.components.forms import StrategyForm, CampaignForm
+    from desktop_app.features.strategy.forms import StrategyForm
+    from desktop_app.features.research.forms import CampaignForm
     from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance
     from quantlab.core import canonical_json
 
@@ -249,7 +250,12 @@ def _market_smoke_ui(app):
                 'network_used': False,
                 'live_status': 'disabled',
                 'fixture_sha256': fixture_hash,
-                'modules': ['desktop_app.features.market.dashboard', 'desktop_app.components.charts', 'desktop_app.components.forms'],
+                'modules': [
+                    'desktop_app.features.market.dashboard',
+                    'desktop_app.components.charts',
+                    'desktop_app.features.strategy.forms',
+                    'desktop_app.features.research.forms',
+                ],
                 'chart_rendered_bars': dashboard.chart.last_rendered_bar_count,
                 'timeframe_bars': counts,
                 'indicator_series': len(dashboard.chart.overlays) + len(dashboard.chart.panes),

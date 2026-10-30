@@ -241,7 +241,7 @@ def project_page_service_lines(result):
     path = Path(__file__).parent / 'fixtures/layered_paths/page_service_line_relocations.json'
     table = json.loads(path.read_text(encoding='utf-8'))
     canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode('utf-8')
-    if hashlib.sha256(canonical).hexdigest() != 'a1b69b15bffb350df2ffc78aac0a902e3b99f5670c28991d75d079e8fbe2343c':
+    if hashlib.sha256(canonical).hexdigest() != '04890b66fff9e9090edeb92541bb13f0a084c1e70d8d572da28d3cfdab86b859':
         raise ValueError('Reviewed mechanical line-location table changed')
     if len(result['patch_points']) != table['patch_points']:
         raise ValueError('Historical patch inventory size changed')

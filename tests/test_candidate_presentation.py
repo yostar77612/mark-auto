@@ -6,7 +6,8 @@ from decimal import Decimal
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
-from desktop_app.components.forms import CandidateSummaryCard, SummaryCard, candidate_summary_text
+from desktop_app.features.strategy.summary import CandidateSummaryCard, candidate_summary_text
+from desktop_app.components.result_tables import SummaryCard
 from quantlab.core import canonical_json
 from tests.test_performance_metrics import metric
 

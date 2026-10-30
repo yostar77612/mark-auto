@@ -220,7 +220,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_defaults_percent_round_trip_and_modes(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -239,7 +239,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         self.assertEqual(form.build_payload(), expanded)
 
     def test_invalid_risk_and_step_inputs_reject(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -263,7 +263,8 @@ class WalkForwardTypedFormTests(unittest.TestCase):
             self.assertIsNotNone(form.build_payload())
 
     def test_typed_costs_preserved_and_variable_steps_reject(self):
-        from desktop_app.components.forms import WalkForwardForm, BacktestForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from dataclasses import replace
         from quantlab.walk_forward import WalkForwardFold
 

@@ -10,7 +10,7 @@
         "kind": "patch.object",
         "receiver": "window.paper_page"
       },
-      "current_line": 234
+      "current_line": 235
     },
     {
       "original": {
@@ -20,7 +20,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -30,7 +30,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -40,7 +40,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -50,7 +50,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -60,7 +60,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -70,7 +70,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 252
+      "current_line": 253
     },
     {
       "original": {
@@ -80,7 +80,7 @@
         "kind": "patch.object",
         "receiver": "coordinator"
       },
-      "current_line": 268
+      "current_line": 269
     },
     {
       "original": {
@@ -90,7 +90,7 @@
         "kind": "patch.dict",
         "receiver": "window.page_host.callbacks"
       },
-      "current_line": 273
+      "current_line": 274
     },
     {
       "original": {
@@ -404,6 +404,26 @@
     },
     {
       "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 340,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current_line": 341
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 358,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current_line": 359
+    },
+    {
+      "original": {
         "file": "tests/test_notifications_c8.py",
         "line": 126,
         "name": "_notification_link",
@@ -650,7 +670,7 @@
         "name": "_busy",
         "receiver": "shell"
       },
-      "current_line": 70
+      "current_line": 72
     },
     {
       "original": {
@@ -660,7 +680,7 @@
         "name": "_safe",
         "receiver": "shell"
       },
-      "current_line": 70
+      "current_line": 72
     },
     {
       "original": {
@@ -701,6 +721,26 @@
         "receiver": "page"
       },
       "current_line": 334
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 181,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current_line": 184
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 220,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current_line": 223
     }
   ]
 }

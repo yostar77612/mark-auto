@@ -382,7 +382,7 @@ class SavedPoolTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_exclusive_origin_and_explicit_budget_without_auto_increase(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)

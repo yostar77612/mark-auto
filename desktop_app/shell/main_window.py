@@ -1458,21 +1458,15 @@ else:
 
     from desktop_app.components.formatting import display_number, display_status, result_name
     from desktop_app.features.market.dashboard import MarketDashboard, MarketHistoryDialog
-    from desktop_app.components.forms import (
-        StrategyForm,
-        BacktestForm,
-        CampaignForm,
-        WalkForwardForm,
-        PaperPolicyForm,
-        PaperIntentForm,
-        PaperQuoteForm,
-        PaperSnapshotForm,
-        ResultTable,
-        SummaryCard,
-        BacktestSummaryCard,
-        BacktestFillsTable,
-        CandidateSummaryCard,
-    )
+    from desktop_app.features.strategy.forms import StrategyForm
+    from desktop_app.features.backtest.forms import BacktestForm
+    from desktop_app.features.research.forms import CampaignForm
+    from desktop_app.features.walk_forward.forms import WalkForwardForm
+    from desktop_app.features.paper.policy_form import PaperPolicyForm
+    from desktop_app.features.paper.forms import PaperIntentForm, PaperQuoteForm, PaperSnapshotForm
+    from desktop_app.components.result_tables import ResultTable, SummaryCard
+    from desktop_app.features.backtest.summary import BacktestSummaryCard, BacktestFillsTable
+    from desktop_app.features.strategy.summary import CandidateSummaryCard
 
     from desktop_app.shell.bindings import SharedStateBindings
     from desktop_app.shell.mount import mount_pages

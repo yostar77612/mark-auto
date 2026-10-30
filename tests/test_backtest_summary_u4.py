@@ -8,7 +8,8 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QGroupBox, QLabel, QPlainTextEdit, QPushButton, QVBoxLayout
 
-from desktop_app.components.forms import BacktestSummaryCard, RESULT_LABELS
+from desktop_app.features.backtest.summary import BacktestSummaryCard
+from desktop_app.components.result_tables import RESULT_LABELS
 from desktop_app.features.backtest.backtest import BacktestPage
 from desktop_app.features.backtest.backtest_summary_card import ReportSummaryCard
 from desktop_app.strings.catalog import ZH_TW, ui_text

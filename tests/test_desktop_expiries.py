@@ -27,7 +27,7 @@ class DesktopExpiryTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def form(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
 
         form = BacktestForm()
         self.addCleanup(form.close)

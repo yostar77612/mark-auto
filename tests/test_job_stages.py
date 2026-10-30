@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from desktop_app.strings.catalog import stage_error_message
+from desktop_app.components.job_messages import stage_error_message
 from quantlab import desktop_runtime as runtime
 from quantlab.job_stages import JOB_STAGES, normalize_stage, stage_from_traceback
 

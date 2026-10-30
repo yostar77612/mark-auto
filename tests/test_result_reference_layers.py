@@ -188,7 +188,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(w.market.chart.reference_lines)
 
     def test_snapshot_widget_identity_range_limits_and_atomic_validation(self):
-        from desktop_app.components.charts import ReferenceLine, ChartTrace
+        from desktop_app.components.chart_annotations import ReferenceLine, ChartTrace
 
         _, result, _ = self.install()
         chart = self.window.market.chart

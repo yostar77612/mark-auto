@@ -46,7 +46,7 @@ class WidgetTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def form(self):
-        from desktop_app.components.forms import StrategyForm
+        from desktop_app.features.strategy.forms import StrategyForm
 
         return StrategyForm()
 

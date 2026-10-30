@@ -105,7 +105,12 @@ class MarketSmokeWidgetTests(unittest.TestCase):
     def test_missing_root_modules_fail_instead_of_reporting_market_success(self):
         from desktop import _market_smoke_ui
 
-        for name in ('desktop_app.features.market.dashboard', 'desktop_app.components.charts', 'desktop_app.components.forms'):
+        for name in (
+            'desktop_app.features.market.dashboard',
+            'desktop_app.components.charts',
+            'desktop_app.features.strategy.forms',
+            'desktop_app.features.research.forms',
+        ):
             with self.subTest(module=name), patch.dict(sys.modules, {name: None}):
                 with self.assertRaises(ImportError):
                     _market_smoke_ui(self.app)
@@ -113,7 +118,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
     def test_invalid_typed_module_contract_fails(self):
         from desktop import _market_smoke_ui
 
-        with patch('desktop_app.components.forms.StrategyForm.build_payload', return_value={}):
+        with patch('desktop_app.features.strategy.forms.StrategyForm.build_payload', return_value={}):
             with self.assertRaises((ValueError, KeyError)):
                 _market_smoke_ui(self.app)
 
@@ -122,9 +127,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             report = Path(temporary, 'report.json')
             env = dict(os.environ, HOME=temporary, QT_QPA_PLATFORM='offscreen', XDG_CACHE_HOME=str(Path(temporary, 'cache')))
-            code = (
-                "import sys; import desktop; sys.modules['desktop_app.components.forms'] = None; raise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))"
-            )
+            code = "import sys; import desktop; sys.modules['desktop_app.features.strategy.forms'] = None; raise SystemExit(desktop.main(['--smoke-test', sys.argv[1]]))"
             result = subprocess.run([sys.executable, '-c', code, str(report)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 1, result.stderr[-1000:])
             value = json.loads(report.read_text())

@@ -49,9 +49,14 @@ class FunctionLengthTests(unittest.TestCase):
                 self.assertGreater(BASE['lengths'][path], 80, 'The same budget must reject the captured base')
 
     def test_extracted_stages_are_private_descriptive_and_bounded(self):
-        for path in TARGETS:
+        stages = dict.fromkeys(TARGETS)
+        stages.update(
+            dict.fromkeys(('desktop_app/components/chart_geometry.py', 'desktop_app/components/chart_paint.py', 'desktop_app/components/chart_paint_footer.py'))
+        )
+        for path in stages:
             tree = ast.parse((ROOT / path).read_text(encoding='utf-8-sig'))
-            added = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name not in BASE['functions'][path]]
+            baseline = BASE['functions'].get(path, BASE['functions']['desktop_app/components/charts.py'])
+            added = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name not in baseline]
             self.assertTrue(added, path)
             for node in added:
                 with self.subTest(stage=node.name):
@@ -60,8 +65,9 @@ class FunctionLengthTests(unittest.TestCase):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 80)
 
     def test_paint_stages_do_not_introduce_qt_lifetime_work(self):
-        tree = ast.parse((ROOT / 'desktop_app/components/charts.py').read_text(encoding='utf-8-sig'))
-        for node in tree.body:
+        paths = ('charts.py', 'chart_geometry.py', 'chart_paint.py', 'chart_paint_footer.py')
+        nodes = [node for path in paths for node in ast.parse((ROOT / 'desktop_app/components' / path).read_text(encoding='utf-8-sig')).body]
+        for node in nodes:
             if not isinstance(node, ast.FunctionDef) or node.name in BASE['functions']['desktop_app/components/charts.py']:
                 continue
             for child in ast.walk(node):

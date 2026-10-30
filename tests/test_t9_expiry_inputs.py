@@ -188,7 +188,7 @@ class ExpiryInputTests(unittest.TestCase):
         self.assertEqual(expected['content_hash'], content_hash(actual))
 
     def test_manual_payload_bytes_and_hash_match_head_archive(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         self.assertEqual(GOLDEN['head_archive'], 'db44477ac24573c752484ed357c11689b29deddf')
@@ -204,7 +204,7 @@ class ExpiryInputTests(unittest.TestCase):
                 self.assert_golden_request(expected, form.build_payload())
 
     def test_run_payload_identical_to_manual_for_every_product_and_boundaries(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         for product in ('TX', 'MTX', 'TMF'):
@@ -243,7 +243,7 @@ class ExpiryInputTests(unittest.TestCase):
                     self.assertEqual(selected.expiries.table.item(0, 1).text(), '2026-10-20')
 
     def test_uncovered_does_not_fill_or_bypass_missing_expiry_guard(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from quantlab.reporting import synthetic_dataset
         from quantlab.backtest import run_backtest
         from quantlab.__main__ import config_from_json
@@ -297,7 +297,7 @@ class ExpiryInputTests(unittest.TestCase):
             dialog.session_payload()
 
     def test_invalid_provenance_preserves_manual_expiry_payload(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         with patch('desktop_app.components.expiry_inputs.load_expiries', side_effect=ValueError('invalid source digest')):

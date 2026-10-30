@@ -20,7 +20,8 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import QApplication
 
-from desktop_app.components.charts import CandlestickChart, ChartTrace
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.components.chart_annotations import ChartTrace
 from desktop_app.features.paper.order_lines import tick_price
 from desktop_app.strings.catalog import ui_text
 import desktop_app.shell.main_window as ui

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QFormLayout, QPushButton, QVBoxLayout, QWidget
 
-from desktop_app.components.forms import StrategyForm
+from desktop_app.features.strategy.forms import StrategyForm
 from desktop_app.components.async_status import AsyncStatus
 from desktop_app.components.error_guidance import NEXT_STEP_KEYS, clear_inline, next_step, run_inline, with_next_step
 from desktop_app.components.job_progress import JobFeedback, JobProgress

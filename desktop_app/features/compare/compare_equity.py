@@ -9,7 +9,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from desktop_app.components.charts import _footer_items
+from desktop_app.components.chart_footer import _footer_items
 import desktop_app.components.privacy as privacy
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.compare.compare_table import safe_text

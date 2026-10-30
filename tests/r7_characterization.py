@@ -14,7 +14,8 @@ from PySide6.QtGui import QImage, QPainter, QFont
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QAbstractButton, QTableWidget
 import shiboken6
 
-from desktop_app.components.charts import CandlestickChart, ChartTrace, ChartMarker, ReferenceLine
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.components.chart_annotations import ChartTrace, ChartMarker, ReferenceLine
 from desktop_app.shell import mount
 from desktop_app.components import result_layers
 from tests.test_chart_data import bar, START

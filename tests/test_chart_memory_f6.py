@@ -181,8 +181,8 @@ class ChartMemoryTests(unittest.TestCase):
         popout = p.popout.open(visible=False)
         self.addCleanup(popout.close)
         for _ in range(5):
-            popout.chart._zoom(0.8)
-            popout.chart._pan(-2)
+            popout.chart.interaction._zoom(0.8)
+            popout.chart.interaction._pan(-2)
         self.assertEqual(saves.count(), 0)
         self.assertEqual(p.chart.visible_range, popout.chart.visible_range)
         remembered = p.chart.visible_range

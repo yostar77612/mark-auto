@@ -5,7 +5,7 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, canonical_json, content_hash, to_dict
 from quantlab.reporting import write_json
 from quantlab.desktop_errors import error_message
-from desktop_app.components.forms import WalkForwardForm
+from desktop_app.features.walk_forward.forms import WalkForwardForm
 from desktop_app.shell.host import PageHost
 from desktop_app.features.strategy.strategy_tabs import strategy_tabs
 

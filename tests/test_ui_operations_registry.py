@@ -54,7 +54,15 @@ def old_module():
     raw = (FIXTURES / 'desktop_ui_pre_registry.py.txt').read_bytes()
     with workspace() as paths:
         source_file = paths.root / 'old_desktop_ui.py'
-        source_file.write_bytes(raw)
+        from tools.refactor.split_ui_references import rewrite_source
+
+        owners = json.loads((FIXTURES.parents[1] / 'tools/refactor/split_ui_owners.json').read_text(encoding='utf-8'))
+        legacy_owners = {
+            name.replace('desktop_app.components.forms.', 'desktop_forms.').replace('desktop_app.components.charts.', 'desktop_charts.'): owner
+            for name, owner in owners.items()
+        }
+        projected, _ = rewrite_source(raw.decode('utf-8'), 'desktop_ui.py', legacy_owners, set())
+        source_file.write_text(projected, encoding='utf-8')
         name = '_ui_operations_before_refactor'
         spec = importlib.util.spec_from_file_location(name, source_file)
         module = importlib.util.module_from_spec(spec)

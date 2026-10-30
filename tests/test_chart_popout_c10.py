@@ -155,8 +155,8 @@ class PopoutTests(unittest.TestCase):
         MarketPage.bind_result_layers(d)
         self.equal(p)
         main_view = d.chart.visible_range
-        p.chart._zoom(0.5)
-        p.chart._pan(-3)
+        p.chart.interaction._zoom(0.5)
+        p.chart.interaction._pan(-3)
         p.chart.reset_view()
         self.assertEqual(d.chart.visible_range, main_view)
         prefs = d.preferences()

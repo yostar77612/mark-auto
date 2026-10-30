@@ -13,8 +13,8 @@ from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QTableWidget, QWidget
 import desktop_app.components.privacy as privacy
 from desktop_app.shell.accessibility import INTERACTIVE, semantic_name, visual_focus_order
-from desktop_app.components.forms import ResultTable as LegacyTable
-from desktop_app.components.forms import backtest_summary_text
+from desktop_app.components.result_tables import ResultTable as LegacyTable
+from desktop_app.features.backtest.summary import backtest_summary_text
 from desktop_app.components.result_widgets import ResultTable, TaipeiFillsTable
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.main_window import MainWindow

@@ -144,7 +144,7 @@ class MarketPage(MarketDashboard):
     def bind_result_layers(self, result=None):
         """Only exact source, strategy and chart identities may carry result layers."""
         # Load this operation-specific dependency only when requested.
-        from desktop_app.components.charts import ChartTrace, ChartMarker
+        from desktop_app.components.chart_annotations import ChartTrace, ChartMarker
 
         chart = self.market.chart
         bars = chart.bars
