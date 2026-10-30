@@ -436,5 +436,11 @@
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
     "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_market.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   }
 ]

@@ -224,13 +224,10 @@ def verify(original, destination):
     """Compare actual constant values, order, live lookup and original metadata."""
     reference = runpy.run_path(str(original))
     program = """
-import importlib.util, json, pathlib, sys
+import importlib, json, pathlib, sys
 base = pathlib.Path(sys.argv[1])
-spec = importlib.util.spec_from_file_location('c_catalog_fixture', base / '__init__.py', submodule_search_locations=[str(base)])
-package = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = package
-spec.loader.exec_module(package)
-from c_catalog_fixture import catalog
+sys.path.insert(0, str(base.parent))
+catalog = importlib.import_module(f'{base.name}.catalog')
 names = ('ZH_TW', 'TEXT_ALIASES', 'RETAINED_CATALOG_KEYS', 'GLOSSARY', 'FORBIDDEN_DEFAULT_TERMS', 'DEFAULT_TERM_ALLOWLIST', 'LOG_OPERATION_NAMES', 'LOG_EVENT_NAMES')
 print(json.dumps({name: list(getattr(catalog, name).items()) if isinstance(getattr(catalog, name), dict) else sorted(getattr(catalog, name)) for name in names}, ensure_ascii=False))
 """

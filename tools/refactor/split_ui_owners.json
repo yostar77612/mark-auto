@@ -60,7 +60,7 @@
   "desktop_app.shell.main_window.execute_ui_operation": "desktop_app.shell.main_window.execute_ui_operation",
   "desktop_app.shell.main_window.OPERATION_REGISTRAR": "desktop_app.shell.main_window.OPERATION_REGISTRAR",
   "desktop_app.shell.main_window.create_window": "desktop_app.shell.main_window.create_window",
-  "desktop_app.features.market.dashboard.sample_market_series": "desktop_app.features.market.samples.sample_market_series",
+  "desktop_app.features.market.dashboard.sample_market_series": "desktop_app.features.market.dashboard.sample_market_series",
   "desktop_app.features.market.dashboard.MarketDashboard": "desktop_app.features.market.dashboard.MarketDashboard",
   "desktop_app.features.market.dashboard._identity": "desktop_app.features.market.rows._identity",
   "desktop_app.features.market.dashboard._friendly_contract": "desktop_app.features.market.rows._friendly_contract",

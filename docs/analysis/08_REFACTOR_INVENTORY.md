@@ -485,7 +485,6 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/samples.py` | 46 | presentation | `desktop_app/features/market/samples.py` | PR C r3c: pure offline demo data, called directly by MarketPage; no composition dependency. |
 | `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |
@@ -527,6 +526,14 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `tools/refactor/split_ui_slice2.py` | 264 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_verify.py` | 57 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_workers.py` | 430 | tooling | `tools/refactor/split_ui_workers.py` | PR C: slice 2 responsibility extraction |
+
+| `tools/refactor/split_ui_r3b.py` | 149 | tooling | `tools/refactor/split_ui_r3b.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3c.py` | 101 | tooling | `tools/refactor/split_ui_r3c.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3d.py` | 106 | tooling | `tools/refactor/split_ui_r3d.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/split_ui_r3f.py` | 81 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -967,3 +974,4 @@ G3 拆分以第 5 節授權為準；saved-pool frozen-data 只有資料字面值
 The 98 generated string files (including the concrete catalog lookup), 18 form/chart responsibility modules and worker-stage message module stay at <=400 lines; extracted classes stay at <=300 lines. The unchanged ordered field setup in BacktestForm.__init__ remains 59 lines; backtest_summary_text remains 71 lines and candidate_summary_text remains 100 lines. These retained cohesive field/section sequences preserve report ordering and formatting; splitting them further would introduce one-use formatting helpers.
 
 Import-only consumers retain their existing size debts: StrategyPage (428 lines, file 440), MainWindow (389 lines, file 1896) and the smoke module (965 lines). Main window decomposition is slice 2; strategy page and smoke responsibilities are outside slice 1. Their bodies are unchanged except the smoke module's concrete-owner import/metadata paths. Complete per-function measurements are recorded in the slice handoff.
+

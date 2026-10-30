@@ -1,4 +1,4 @@
-from desktop_app.features.market.samples import sample_market_series
+from desktop_app.features.market.dashboard import sample_market_series
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from desktop_app.strings.catalog import ui_text

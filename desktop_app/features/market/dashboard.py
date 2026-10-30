@@ -1,4 +1,4 @@
-from quantlab.market import MarketValidationError as MarketValidationError
+from quantlab.market import MarketSeries, MarketValidationError as MarketValidationError
 from desktop_app.shell.theme import apply_market_theme
 from desktop_app.strings.catalog import ui_text
 from copy import deepcopy
@@ -180,3 +180,49 @@ class MarketDashboard(QWidget):
 
     def set_account_tables(self, *, positions=(), orders=(), fills=()):
         return self.rows.set_account_tables(positions=positions, orders=orders, fills=fills)
+
+
+def sample_market_series():
+    """Project the existing invented demo into daily display bars, in memory only."""
+    # Load this operation-specific dependency only when requested.
+    from datetime import datetime, timezone
+
+    # Load this operation-specific dependency only when requested.
+    from quantlab.reporting import synthetic_dataset
+
+    # Load this operation-specific dependency only when requested.
+    from quantlab.market import InstrumentRef, MarketBar, SourceProvenance
+
+    data = synthetic_dataset(960)
+    instrument = InstrumentRef('TAIFEX', 'TMF', 'TAIFEX:TMF:202601', '202601')
+    days = sorted({bar.trade_date for bar in data.bars})
+    bars = []
+    for day in days:
+        group = [bar for bar in data.bars if bar.trade_date == day]
+        bars.append(
+            MarketBar(
+                instrument,
+                day,
+                'day',
+                group[0].open,
+                max(b.high for b in group),
+                min(b.low for b in group),
+                group[-1].close,
+                sum(b.volume for b in group),
+                interval='1d',
+                source_id='synthetic-v1',
+            )
+        )
+    provenance = SourceProvenance(
+        'sample:synthetic-v1',
+        data.manifest['source_hash'],
+        ui_text('market.sample_label'),
+        'sample:synthetic-v1',
+        datetime(2026, 1, 5, tzinfo=timezone.utc),
+        days[-1],
+        days[0],
+        days[-1],
+        mode='offline',
+        warnings=(ui_text('market.sample_label'),),
+    )
+    return MarketSeries(instrument, tuple(bars), provenance)

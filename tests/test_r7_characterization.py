@@ -91,6 +91,7 @@ class CharacterizationTests(unittest.TestCase):
                 'MarketPreferences',
                 'MarketPresenter',
                 'MarketRows',
+                'MarketSeries',
                 'MarketValidationError',
                 'QAbstractItemView',
                 'QHeaderView',
@@ -101,6 +102,7 @@ class CharacterizationTests(unittest.TestCase):
                 'Signal',
                 'apply_market_theme',
                 'deepcopy',
+                'sample_market_series',
                 'ui_text',
             )
         )

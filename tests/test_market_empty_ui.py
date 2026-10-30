@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QMessageBox
-from desktop_app.features.market.samples import sample_market_series
+from desktop_app.features.market.dashboard import sample_market_series
 from desktop_app.features.market.market import MarketPage
 from desktop_app.components.result_widgets import ResultTable
 from desktop_app.features.walk_forward.wf_wizard import display_result_rows, WindowTimeline
