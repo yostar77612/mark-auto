@@ -198,7 +198,8 @@
     "desktop_app/__init__.py": "presentation",
     "quantlab/assistant/__init__.py": "shared",
     "quantlab/research_core/__init__.py": "shared",
-    "desktop_app/bootstrap.py": "composition"
+    "desktop_app/bootstrap.py": "composition",
+    "desktop_app/features/market/samples.py": "presentation"
   },
   "ports": [
     "quantlab/trading/ports/"

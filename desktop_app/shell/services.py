@@ -22,7 +22,6 @@ class UiServices:
     recover_state: Callable[..., Any]
     require_operation: Callable[..., Any]
     result_name: Callable[..., Any]
-    sample_market_series: Callable[..., Any]
     saved_analysis_entries: Callable[..., Any]
     state_root: Callable[..., Any]
     write_json: Callable[..., Any]

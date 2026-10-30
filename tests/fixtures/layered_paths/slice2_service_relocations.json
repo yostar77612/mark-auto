@@ -795,7 +795,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 135,
+        "line": 137,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
@@ -811,7 +811,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 136,
+        "line": 138,
         "name": "poll_jobs",
         "kind": "patch.object",
         "receiver": "w"
@@ -827,7 +827,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 137,
+        "line": 139,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -843,7 +843,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 145,
+        "line": 147,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
@@ -859,7 +859,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 145,
+        "line": 147,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -875,7 +875,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 176,
+        "line": 178,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -891,7 +891,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 302,
+        "line": 306,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -907,7 +907,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 317,
+        "line": 321,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -923,7 +923,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 421,
+        "line": 427,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -939,7 +939,7 @@
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 432,
+        "line": 438,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -1707,7 +1707,7 @@
       },
       "current": {
         "file": "tests/test_page_services_r1.py",
-        "line": 258,
+        "line": 260,
         "name": "_safe",
         "kind": "patch.object",
         "receiver": "w"
@@ -1723,7 +1723,7 @@
       },
       "current": {
         "file": "tests/test_page_services_r1.py",
-        "line": 261,
+        "line": 263,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -1739,7 +1739,7 @@
       },
       "current": {
         "file": "tests/test_page_services_r1.py",
-        "line": 264,
+        "line": 266,
         "name": "freeze_paper",
         "kind": "patch.object",
         "receiver": "w"
@@ -1755,7 +1755,7 @@
       },
       "current": {
         "file": "tests/test_page_services_r1.py",
-        "line": 267,
+        "line": 269,
         "name": "_button",
         "kind": "patch.object",
         "receiver": "w"
@@ -1771,7 +1771,7 @@
       },
       "current": {
         "file": "tests/test_page_services_r1.py",
-        "line": 270,
+        "line": 272,
         "name": "_busy",
         "kind": "patch.object",
         "receiver": "w"
@@ -1835,10 +1835,10 @@
       },
       "current": {
         "file": "tests/test_paper_stop_a1.py",
-        "line": 231,
+        "line": 230,
         "name": "_dataset",
-        "kind": "patch.object",
-        "receiver": "ui"
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
       }
     },
     {
@@ -1979,10 +1979,10 @@
       },
       "current": {
         "file": "tests/test_replay_b13.py",
-        "line": 205,
+        "line": 206,
         "name": "_dataset",
-        "kind": "patch.object",
-        "receiver": "ui"
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
       }
     },
     {
@@ -1995,7 +1995,7 @@
       },
       "current": {
         "file": "tests/test_replay_b13.py",
-        "line": 236,
+        "line": 237,
         "name": "start_job",
         "kind": "assignment",
         "receiver": "self.page"
@@ -2011,7 +2011,7 @@
       },
       "current": {
         "file": "tests/test_replay_b13.py",
-        "line": 330,
+        "line": 331,
         "name": "paper_job",
         "kind": "patch.object",
         "receiver": "page"
@@ -2027,7 +2027,7 @@
       },
       "current": {
         "file": "tests/test_replay_b13.py",
-        "line": 338,
+        "line": 339,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "page"

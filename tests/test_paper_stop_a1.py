@@ -10,7 +10,6 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox, QWidget
 
-import desktop_app.shell.main_window as ui
 from quantlab.research_core.application.paper_operations import _handle_ui_paper_reconcile as _c_ui__handle_ui_paper_reconcile
 from quantlab.research_core.application.paper_operations import _handle_ui_paper_submit as _c_ui__handle_ui_paper_submit
 from quantlab.research_core.application.paper_operations import _handle_ui_paper_replay as _c_ui__handle_ui_paper_replay
@@ -228,7 +227,7 @@ class StopResumeTests(unittest.TestCase):
         self.page.kill_paper()
         before = deepcopy(self.broker.snapshot())
         cursor = fixture.replay.snapshot()['cursor']
-        with patch.object(ui, '_dataset', return_value=fixture.data) as data:
+        with patch('quantlab.research_core.adapters.ui_repository.WorkerRepository._dataset', return_value=fixture.data) as data:
             with self.assertRaises(ValidationError) as caught:
                 _c_ui__handle_ui_paper_replay(_c_create_operation_ports(), dict(snapshot=before, reconcile_confirmed=True), Mock(), self.root)
         self.assertEqual(str(caught.exception), ui_text('paper.lock.rejected'))

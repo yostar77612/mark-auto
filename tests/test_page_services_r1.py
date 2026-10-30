@@ -123,6 +123,7 @@ class MockEquivalenceTests(unittest.TestCase):
                 if entry['origin'] == 'page_services':
                     target = {'_paper': 'paper', '_dataset': 'dataset'}.get(target, target)
                     if target in ('analysis_preview_text', 'analysis_record_text'):
+                        # Load the concrete owner only when this test path is exercised.
                         from desktop_app.features.analysis import presenter
 
                         receiver = presenter
@@ -222,6 +223,7 @@ class RealWindowTests(unittest.TestCase):
                 continue
             name = entry['name']
             with self.subTest(service=name):
+                # Load the concrete owner only when this test path is exercised.
                 from tests.page_services_inventory import service_patch_target
 
                 receiver, target = service_patch_target(self.window, entry)

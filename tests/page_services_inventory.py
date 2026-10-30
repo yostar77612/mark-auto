@@ -49,17 +49,21 @@ def service_patch_target(window, entry):
     if entry['origin'] == 'mount':
         return window, target
     if target == '_dataset':
+        # Load the concrete owner only when this test path is exercised.
         from quantlab.research_core.adapters.ui_repository import WorkerRepository
 
         return WorkerRepository, target
     if target in ('analysis_preview_text', 'analysis_record_text'):
+        # Load the concrete owner only when this test path is exercised.
         from desktop_app.features.analysis import presenter
 
         return presenter, target
     if target == 'result_name':
+        # Load the concrete owner only when this test path is exercised.
         from desktop_app.components import formatting
 
         return formatting, target
+    # Load the concrete owner only when this test path is exercised.
     from quantlab import reporting
 
     return reporting, target

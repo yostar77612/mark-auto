@@ -485,6 +485,7 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/samples.py` | 46 | presentation | `desktop_app/features/market/samples.py` | PR C r3c: pure offline demo data, called directly by MarketPage; no composition dependency. |
 | `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |

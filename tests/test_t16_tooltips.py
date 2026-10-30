@@ -1,5 +1,7 @@
 """Default budgets and live help coverage through the redesigned task routes."""
 
+from tools.refactor.split_ui_r3b import window_public_names
+
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 
 import json
@@ -262,7 +264,7 @@ class TooltipCoverageTests(unittest.TestCase):
         widgets = [self.window, *self.window.findChildren(QWidget)]
         self.assertEqual(sorted({widget.objectName() for widget in widgets if widget.objectName()}), names)
         public_names = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(desktop_app.shell.main_window) if not name.startswith('_')), public_names)
+        self.assertEqual(window_public_names(), public_names)
         actual_pages = default_metrics()['pages']
         self.assertEqual(len(actual_pages), 7)
         policy = redesign_policy()

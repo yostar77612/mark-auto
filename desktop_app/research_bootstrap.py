@@ -58,6 +58,7 @@ class ResearchSession(QObject):
         self._released = False
         from desktop import prepare_workspace
         from desktop_app.shell.window import MainWindow
+        from desktop_app.shell.main_window import create_window
         from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
 
         owner = self
@@ -96,7 +97,7 @@ class ResearchSession(QObject):
             if not prepare_workspace(state):
                 raise ResearchUnavailable(error_message('startup_failed'))
             state.settings = EmbeddedSettings(state.settings)
-            window = EmbeddedWindow(state.paths, state.jobs, state.settings, state.backups, state.guard)
+            window = create_window(state.paths, state.jobs, state.settings, state.backups, state.guard, window_type=EmbeddedWindow)
             self.window = window
             window.setWindowFlags(Qt.WindowType.Widget)
             window.setMinimumSize(0, 0)

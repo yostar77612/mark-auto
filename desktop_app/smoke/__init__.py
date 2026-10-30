@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
-
 from pathlib import Path
 import sys
 
@@ -571,6 +569,8 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
     data = load_dataset(paths.state / 'dataset.json')
     if data.manifest['data_hash'] != report['fixture_data_hash'] or data.manifest['source_type'] != 'synthetic':
         raise ValueError('Walk-forward synthetic source changed')
+    from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
     expected = preview_walk_forward(data, payload['plan'], paths, inputs=_c_create_operation_ports().inputs)
     reference = expected['preview_identity']
     if operation == 'ui_walk_forward_preview':

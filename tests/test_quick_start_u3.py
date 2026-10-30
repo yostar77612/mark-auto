@@ -182,13 +182,13 @@ class WidgetTests(unittest.TestCase):
         ):
             for operation in ('ui_demo', 'ui_backtest'):
                 desktop_app.shell.main_window.execute_ui_operation(operation, {'synthetic_quick_start': True}, paths)
-                self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS[operation].call_args.args[2], root / 'synthetic-quick-start')
+                self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS[operation].call_args.args[3], root / 'synthetic-quick-start')
             self.assertEqual(
-                _c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[0]['dataset'],
+                _c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[1]['dataset'],
                 str(root / 'synthetic-quick-start' / 'synthetic-demo-dataset.json'),
             )
             desktop_app.shell.main_window.execute_ui_operation('ui_demo', {}, paths)
-            self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_demo'].call_args.args[2], root)
+            self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_demo'].call_args.args[3], root)
         data = SimpleNamespace(bars=(1,), manifest={})
         with (
             patch('quantlab.reporting.synthetic_dataset', return_value=data),

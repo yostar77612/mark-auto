@@ -91,6 +91,7 @@ class CharacterizationTests(unittest.TestCase):
                 'MarketPreferences',
                 'MarketPresenter',
                 'MarketRows',
+                'MarketValidationError',
                 'QAbstractItemView',
                 'QHeaderView',
                 'QScrollArea',

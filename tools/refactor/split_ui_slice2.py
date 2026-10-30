@@ -91,11 +91,12 @@ if not _worker_import:
     from desktop_app.shell.window import MainWindow
 
 
-def create_window(paths, jobs, settings=None, backups=None, guard=None):
+def create_window(paths, jobs, settings=None, backups=None, guard=None, *, window_type=None):
     if _worker_import:
         raise RuntimeError('GUI construction is unavailable in an operation worker')
     services = create_ui_services(create_operation_ports())
-    return MainWindow(paths, jobs, settings, backups, guard, services=services)
+    factory = MainWindow if window_type is None else window_type
+    return factory(paths, jobs, settings, backups, guard, services=services)
 '''
     outputs['desktop_app/shell/main_window.py'] = entry
     fields = sorted(set(shell.SERVICES.values()) | {'recover_state', 'idea_records', 'sample_market_series'})

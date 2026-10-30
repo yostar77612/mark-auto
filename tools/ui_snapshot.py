@@ -5,8 +5,6 @@ See docs/analysis/baseline/ui_snapshot_1366x768/README.md for metric definitions
 
 from __future__ import annotations
 
-from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
-
 import argparse
 import math
 import os
@@ -215,7 +213,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
-    from desktop_app.shell.window import MainWindow
+    from desktop_app.shell.main_window import create_window
 
     out = Path(out)
     app = QApplication.instance() or QApplication([])
@@ -248,12 +246,11 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
                 import desktop_app.shell.app_header as _header
 
                 _header.CLOCK_OVERRIDE = lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
-                window = MainWindow(
+                window = create_window(
                     paths,
                     jobs,
                     SettingsStore(paths.state / 'settings.json'),
                     BackupManager(paths, jobs),
-                    services=_c_create_ui_services(_c_create_operation_ports()),
                 )
                 # Stop polling before dispatching Qt events: snapshots never run jobs.
                 for timer in window.findChildren(QTimer):

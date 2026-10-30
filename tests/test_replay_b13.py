@@ -1,5 +1,7 @@
 """Offline B13 pacing, durable pause and UI controller regressions."""
 
+from tools.refactor.split_ui_r3b import window_public_names
+
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 
 import ast
@@ -17,7 +19,6 @@ from uuid import uuid4
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 
-import desktop_app.shell.main_window as ui
 from quantlab.research_core.application.paper_operations import _handle_ui_paper_replay as _c_ui__handle_ui_paper_replay
 from desktop_app.shell.window import MainWindow as _c_ui_MainWindow
 from desktop_app.features.paper.paper import PaperPage
@@ -202,7 +203,7 @@ class ReplayB13Tests(unittest.TestCase):
         selection = {'strategy': to_dict(self.fixture.spec), 'strategy_hash': content_hash(self.fixture.spec)}
         with (
             patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', return_value=r.broker),
-            patch.object(ui, '_dataset', return_value=self.fixture.data),
+            patch('quantlab.research_core.adapters.ui_repository.WorkerRepository._dataset', return_value=self.fixture.data),
             patch('quantlab.reporting.load_selection', return_value=selection),
         ):
             payload = {'snapshot': r.broker.snapshot(), 'reconcile_confirmed': True, 'max_bars': 25}
@@ -344,7 +345,7 @@ class ReplayUITests(unittest.TestCase):
 
     def test_public_oracle_and_page_size(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(ui) if not name.startswith('_')), expected)
+        self.assertEqual(window_public_names(), expected)
         for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / 'desktop_app').rglob('*.py')]:
             for node in ast.parse(path.read_text(encoding='utf-8-sig')).body:
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):

@@ -1,3 +1,4 @@
+from desktop_app.features.market.samples import sample_market_series
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from desktop_app.strings.catalog import ui_text
@@ -38,7 +39,7 @@ class MarketPage(MarketDashboard):
         """Read-only demo; do not persist or replace a research dataset/cache."""
         if self._series:
             return
-        series = self.host.sample_market_series()
+        series = sample_market_series()
         self._selected = series.instrument.contract_id
         self.set_quote_series(series, stale=True)
         self.set_market_series(series, stale=True)

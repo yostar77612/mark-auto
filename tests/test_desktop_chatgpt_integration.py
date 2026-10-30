@@ -67,7 +67,9 @@ class ChatGPTHostTests(unittest.TestCase):
             self.assertEqual(connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(event)))), event)
 
     def test_usage_and_campaign_binding_use_discovered_slug_not_display_label(self):
-        from desktop_app.shell.main_window import execute_ui_operation, _dataset
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
         from quantlab.reporting import demo_config
         from quantlab.research_core.application.ui_operations.assistant import plan_provider
         from quantlab.research import demo_campaign_config
@@ -253,7 +255,9 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_plan_binding_stable_and_requires_current_usage_identity(self):
         from quantlab.research_core.application.ui_operations.assistant import plan_provider
-        from desktop_app.shell.main_window import execute_ui_operation, _dataset
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
         from quantlab.reporting import demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import ValidationError
@@ -368,7 +372,9 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_plan_campaign_uses_exact_provider_and_local_reconcile_never_enables_network(self):
         from quantlab.research_core.application.ui_operations.assistant import plan_provider
-        from desktop_app.shell.main_window import execute_ui_operation, _dataset
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
         from quantlab.reporting import demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import to_dict

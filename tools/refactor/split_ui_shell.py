@@ -264,13 +264,14 @@ def register_operations():
     register_operation_executor(execute_ui_operation)
     register_operation_executor_factory('desktop_app.bootstrap:execute_ui_operation')
 
-def create_window(paths, jobs, settings=None, backups=None, guard=None):
+def create_window(paths, jobs, settings=None, backups=None, guard=None, *, window_type=None):
     if _worker_import:
         raise RuntimeError('GUI construction is unavailable in an operation worker')
     register_operations()
     from desktop_app.shell.main_window import MainWindow
     services = create_ui_services(create_operation_ports())
-    return MainWindow(paths, jobs, settings, backups, guard, services=services)
+    factory = MainWindow if window_type is None else window_type
+    return factory(paths, jobs, settings, backups, guard, services=services)
 '''
 
 

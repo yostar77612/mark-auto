@@ -47,7 +47,6 @@ class PageHost:
     window_geometry: Callable
     window_position: Callable
     window_minimum_size: Callable
-    sample_market_series: Callable
     idea_records: Callable
 
 

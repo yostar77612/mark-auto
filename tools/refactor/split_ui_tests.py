@@ -1,8 +1,16 @@
 """Update source-scanner paths after the literal and chart-stage extractions."""
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def write_source(path, source):
+    """Preserve existing formatting when a replay makes no syntax change."""
+    current = path.read_text(encoding='utf-8')
+    if ast.dump(ast.parse(current)) != ast.dump(ast.parse(source)):
+        path.write_text(source, encoding='utf-8', newline='\n')
 
 
 def main():
@@ -17,7 +25,7 @@ def main():
         projected, _ = rewrite_source(raw.decode('utf-8'), 'desktop_ui.py', legacy_owners, set())
         source_file.write_text(projected, encoding='utf-8')''',
     )
-    path.write_text(source, encoding='utf-8', newline='\n')
+    write_source(path, source)
 
     path = ROOT / 'tests/test_desktop_text_aliases.py'
     source = path.read_text(encoding='utf-8')
@@ -42,13 +50,13 @@ def main():
     if replacement not in source:
         assert anchor in source
         source = source.replace(anchor, replacement)
-    path.write_text(source, encoding='utf-8', newline='\n')
+    write_source(path, source)
 
     for name in ('test_chart_memory_f6.py', 'test_chart_popout_c10.py'):
         path = ROOT / 'tests' / name
         source = path.read_text(encoding='utf-8')
         source = source.replace('.chart._zoom(', '.chart.interaction._zoom(').replace('.chart._pan(', '.chart.interaction._pan(')
-        path.write_text(source, encoding='utf-8', newline='\n')
+        write_source(path, source)
 
     old = "'desktop_app.features.market.dashboard', 'desktop_app.components.charts', 'desktop_app.components.forms'"
     new = (
@@ -58,7 +66,7 @@ def main():
         path = ROOT / name
         source = path.read_text(encoding='utf-8').replace(old, new)
         source = source.replace("sys.modules['desktop_app.components.forms'] = None", "sys.modules['desktop_app.features.strategy.forms'] = None")
-        path.write_text(source, encoding='utf-8', newline='\n')
+        write_source(path, source)
 
     path = ROOT / 'tests/test_r7_characterization.py'
     source = path.read_text(encoding='utf-8')
@@ -77,7 +85,7 @@ def main():
         annotations = public_names((ROOT / 'desktop_app/components/chart_annotations.py').read_text(encoding='utf-8'))
         self.assertEqual(annotations[1], annotation_classes)''',
     )
-    path.write_text(source, encoding='utf-8', newline='\n')
+    write_source(path, source)
 
     # Keep every R7 stage check on the helpers' new concrete owners.
     path = ROOT / 'tests/test_r7_function_lengths.py'
@@ -96,7 +104,7 @@ def main():
         "        nodes = [node for path in paths for node in ast.parse((ROOT / 'desktop_app/components' / path).read_text(encoding='utf-8-sig')).body]\n"
         "        for node in nodes:",
     )
-    path.write_text(source, encoding='utf-8', newline='\n')
+    write_source(path, source)
 
 
 def replace_test_function(source, name, replacement):
@@ -116,7 +124,7 @@ def slice2():
         source = path.read_text(encoding='utf-8')
         updated = transform(source)
         if updated != source:
-            path.write_text(updated, encoding='utf-8', newline='\n')
+            write_source(path, updated)
 
     edit(
         'tests/test_desktop_ui.py',
@@ -188,7 +196,7 @@ def slice2():
                 "            mapping = json.loads((root / 'tools/layer_map.json')",
                 "            import json\n            mapping = json.loads((root / 'tools/layer_map.json')",
             )
-            if '            import json\n            mapping' not in s
+            if '            import json\n' not in s
             else s
         ),
     )
@@ -393,7 +401,58 @@ def slice2():
     )
 
 
+def repair_r3a():
+    """Mechanical construction and patch-owner updates; assertions stay intact."""
+    import json
+
+    replacements = {
+        'tests/test_t11_part_b.py': [("SimpleNamespace(MainWindow=Mock(return_value=window))", "SimpleNamespace(create_window=Mock(return_value=window))")],
+        'tests/test_restart_availability_contract.py': [
+            (
+                "self.window = Window(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups)",
+                "self.window = Window(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups, services=_c_create_ui_services(_c_create_operation_ports()))",
+            )
+        ],
+        'tests/test_desktop_chatgpt_integration.py': [
+            (
+                'from desktop_app.shell.main_window import execute_ui_operation, _dataset',
+                'from desktop_app.shell.main_window import execute_ui_operation\n        _dataset = _c_create_operation_ports().inputs._dataset',
+            )
+        ],
+        'tests/test_paper_stop_a1.py': [
+            ('import desktop_app.shell.main_window as ui\n', ''),
+            ("patch.object(ui, '_dataset',", "patch('quantlab.research_core.adapters.ui_repository.WorkerRepository._dataset',"),
+        ],
+        'tests/test_replay_b13.py': [("patch.object(ui, '_dataset',", "patch('quantlab.research_core.adapters.ui_repository.WorkerRepository._dataset',")],
+        'tests/test_quick_start_u3.py': [
+            ('_UI_OPERATION_HANDLERS[operation].call_args.args[2]', '_UI_OPERATION_HANDLERS[operation].call_args.args[3]'),
+            ("_UI_OPERATION_HANDLERS['ui_demo'].call_args.args[2]", "_UI_OPERATION_HANDLERS['ui_demo'].call_args.args[3]"),
+            ("call_args.args[0]['dataset']", "call_args.args[1]['dataset']"),
+        ],
+    }
+    reasons = {
+        'tests/test_t11_part_b.py': 'Fake the lazy create_window composition entry instead of the former constructor; lifecycle expectations unchanged.',
+        'tests/test_restart_availability_contract.py': 'Supply required concrete services to the existing test-only subclass constructor; assertions unchanged.',
+        'tests/test_desktop_chatgpt_integration.py': 'Resolve dataset through the concrete inputs adapter that now owns it; assertions unchanged.',
+        'tests/test_paper_stop_a1.py': 'Patch WorkerRepository._dataset where paper operation inputs look it up; assertions unchanged.',
+        'tests/test_replay_b13.py': 'Patch WorkerRepository._dataset where paper operation inputs look it up; assertions unchanged.',
+        'tests/test_quick_start_u3.py': 'Shift inspected handler argument positions by one for the injected ports argument; payload/path contracts and assertions retained.',
+    }
+    for name, pairs in replacements.items():
+        path = ROOT / name
+        source = path.read_text(encoding='utf-8')
+        for old, new in pairs:
+            source = source.replace(old, new)
+        write_source(path, source)
+    path = ROOT / '.tmp-layered/test-edit-reasons.json'
+    entries = json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
+    entries = [entry for entry in entries if entry.get('slice') != 'T3-r3a']
+    entries.extend({'slice': 'T3-r3a', 'path': name, 'reason': reason} for name, reason in reasons.items())
+    path.write_text(json.dumps(entries, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+
 if __name__ == '__main__':
     main()
     if (ROOT / 'desktop_app/bootstrap.py').exists():
         slice2()
+        repair_r3a()

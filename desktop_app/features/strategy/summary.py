@@ -3,7 +3,7 @@
 from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
 import re
-from desktop_app.features.walk_forward.presenter import STATUS_LABELS
+from desktop_app.components.formatting import STATUS_LABELS
 from desktop_app.components.result_tables import RESULT_LABELS, SummaryCard
 from desktop_app.features.backtest.summary import _report_number, _report_text
 

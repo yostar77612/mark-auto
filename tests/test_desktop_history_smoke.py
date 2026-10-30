@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class HistorySmokeFixtureTests(unittest.TestCase):
     def test_tiny_explicit_fixture_contract_and_dates(self):
         from desktop import _history_smoke_fixture
-        from desktop_app.features.strategy.idea_labels import COLUMNS
+        from quantlab.market_history import COLUMNS
         from quantlab.research_core.domain.market_sessions import PRODUCT_SOURCES, session_from_dict
         import csv
 

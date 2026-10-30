@@ -167,7 +167,9 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.stack.enter_context(patch.object(self.jobs, 'start', self.policy.start))
         self.stack.enter_context(patch.object(self.backups, 'recover', self.policy.recover))
         Window = _contract_window_type(self.policy)
-        self.window = Window(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups)
+        self.window = Window(
+            self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups, services=_c_create_ui_services(_c_create_operation_ports())
+        )
         self.addCleanup(self._cleanup_window)
         self.window.timer.stop()
         self.panel = self.window.automatic_backup_panel

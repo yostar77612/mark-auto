@@ -34,6 +34,7 @@ class MarketDashboard(QWidget):
     preferences_changed = Signal()
 
     def __init__(self, parent=None):
+        # Keep widget dependencies out of module startup.
         from desktop_app.components.widgets import PanelCard
 
         self.presenter = MarketPresenter(self)

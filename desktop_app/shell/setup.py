@@ -162,7 +162,6 @@ def _create_page_host(window):
         window_position=lambda: QPoint(window.x(), window.y()),
         window_minimum_size=lambda: (window.minimumWidth(), window.minimumHeight()),
         idea_records=window.services.idea_records,
-        sample_market_series=window.services.sample_market_series,
     )
 
 

@@ -17,6 +17,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def inject(source, filename, port_targets):
+    if filename in (
+        'desktop.py',
+        'tools/ui_snapshot.py',
+        'tools/ui_readability_audit.py',
+        'desktop_app/research_bootstrap.py',
+        'desktop_app/smoke/__init__.py',
+    ):
+        return repair_composition(source, filename)
     tree = ast.parse(source)
     imports = {}
     for node in ast.walk(tree):
@@ -49,7 +57,7 @@ def inject(source, filename, port_targets):
             left, right = span(node, lines, starts)
             edits.append((left, right, ast.unparse(ast.fix_missing_locations(node))))
             continue
-        if target in port_targets and not (node.args and ast.unparse(node.args[0]) == '_c_create_operation_ports()'):
+        if target in port_targets and not (node.args and ast.unparse(node.args[0]) in ('_c_create_operation_ports()', 'ports')):
             node.args.insert(0, ast.parse('_c_create_operation_ports()', mode='eval').body)
             required.add('ports')
         elif target == 'desktop_app.shell.window.MainWindow' and not any(key.arg == 'services' for key in node.keywords):
@@ -131,6 +139,34 @@ def main():
             path.write_text(updated, encoding='utf-8', newline='\n')
             changed.append(name)
     print(json.dumps(changed))
+
+
+def repair_composition(source, filename):
+    """Keep launchers lazy and delegate construction to the assembly root."""
+    import re
+
+    source = re.sub(r'^from desktop_app.bootstrap import .*\n\n?', '', source, flags=re.MULTILINE)
+    if filename == 'desktop_app/smoke/__init__.py':
+        anchor = '    expected = preview_walk_forward('
+        if '_c_create_operation_ports' in source and '    from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports' not in source:
+            source = source.replace(anchor, '    from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports\n\n' + anchor)
+        return source
+    if filename == 'desktop_app/research_bootstrap.py':
+        source = (
+            source.replace(
+                '        from desktop_app.shell.window import MainWindow\n',
+                '        from desktop_app.shell.window import MainWindow\n        from desktop_app.shell.main_window import create_window\n',
+            )
+            if '        from desktop_app.shell.main_window import create_window' not in source
+            else source
+        )
+        return source.replace(
+            'window = EmbeddedWindow(state.paths, state.jobs, state.settings, state.backups, state.guard)',
+            'window = create_window(state.paths, state.jobs, state.settings, state.backups, state.guard, window_type=EmbeddedWindow)',
+        )
+    source = source.replace('from desktop_app.shell.window import MainWindow', 'from desktop_app.shell.main_window import create_window')
+    source = source.replace('state.window = MainWindow(', 'state.window = create_window(').replace('window = MainWindow(', 'window = create_window(')
+    return re.sub(r'^\s*services=_c_create_ui_services\(_c_create_operation_ports\(\)\),?\n', '', source, flags=re.MULTILINE)
 
 
 if __name__ == '__main__':

@@ -66,7 +66,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
         QTimer.singleShot(1800, widget, lambda: set_theme_property(widget, 'feedback', original))
 
     def start_job(self, operation, payload):
-        return self.job_presenter.start_job(operation, payload)
+        return self.job_presenter.start_job(*(operation, payload))
 
     def _busy(self, active, *, refresh_recovery=False):
         return self.job_presenter._busy(active, refresh_recovery=refresh_recovery)

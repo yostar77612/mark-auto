@@ -75,7 +75,12 @@ def slice2():
         current = min(exact or candidates, key=lambda point: point['line'])
         assert old['kind'] == current['kind'] or (old['kind'], current['kind']) == ('patch.object', 'patch')
         if old['receiver'] != current['receiver']:
-            assert current['receiver'] in ('quantlab.reporting', 'desktop_app.features.analysis.presenter', 'desktop_app.components.formatting')
+            assert current['receiver'] in (
+                'quantlab.reporting',
+                'desktop_app.features.analysis.presenter',
+                'desktop_app.components.formatting',
+                'quantlab.research_core.adapters.ui_repository.WorkerRepository',
+            )
         remaining.remove(current)
         if old != current:
             rows.append({'original': old, 'current': current})

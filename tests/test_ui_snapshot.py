@@ -180,7 +180,7 @@ class UiSnapshotTests(unittest.TestCase):
             return
         from tools import ui_snapshot
         from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
-        from desktop_app.shell.window import MainWindow as _c_desktop_app_shell_main_window_MainWindow
+        import desktop_app.shell.main_window
 
         # Read-only evidence for the actual bootstrap and redirected workspace.
         # No ensure(), probes, locks, application startup, or byte reads here.
@@ -202,7 +202,7 @@ class UiSnapshotTests(unittest.TestCase):
         directories = []
         original_temp = tempfile.TemporaryDirectory
         original_ensure = AppPaths.ensure
-        original_window = _c_desktop_app_shell_main_window_MainWindow
+        original_window = desktop_app.shell.main_window.MainWindow
         original_save = ui_snapshot._save_png
         windows = []
         full_captures = []
@@ -238,7 +238,7 @@ class UiSnapshotTests(unittest.TestCase):
                 patch.object(AppPaths, 'ensure', ensure),
                 patch.object(AppPaths, 'discover', side_effect=AssertionError('default workspace forbidden')),
                 patch.object(WorkspaceLocator, 'load', side_effect=AssertionError('workspace lookup forbidden')),
-                patch('desktop_app.shell.window.MainWindow', side_effect=construct),
+                patch('desktop_app.shell.main_window.MainWindow', side_effect=construct),
                 patch.object(ui_snapshot, '_save_png', side_effect=save),
             ):
                 ui_snapshot.capture(Path(temporary) / 'out')
@@ -256,7 +256,7 @@ class UiSnapshotTests(unittest.TestCase):
                 def fallback(*args, **kwargs):
                     return original_window(AppPaths.discover(), *args[1:], **kwargs)
 
-                with patch('desktop_app.shell.window.MainWindow', side_effect=fallback):
+                with patch('desktop_app.shell.main_window.MainWindow', side_effect=fallback):
                     with self.assertRaisesRegex(AssertionError, 'default workspace forbidden'):
                         ui_snapshot.capture(Path(temporary) / 'fallback')
                 self.assertTrue(all(not path.exists() for path in directories))

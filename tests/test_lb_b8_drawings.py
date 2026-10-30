@@ -1,5 +1,7 @@
 """Cheap offline B8 contracts: time anchors, isolated storage, history and paint."""
 
+from tools.refactor.split_ui_r3b import window_public_names
+
 import ast
 from contextlib import contextmanager
 from dataclasses import FrozenInstanceError, fields, replace
@@ -18,7 +20,6 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
 from desktop_app.components.charts import CandlestickChart
-import desktop_app.shell.main_window
 from quantlab import chart_drawings as cd
 from quantlab.chart_data import aggregate_bars
 from quantlab.core import content_hash, canonical_json
@@ -220,7 +221,7 @@ class DrawingTests(unittest.TestCase):
 
     def test_public_name_oracle_and_class_size_unchanged(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(desktop_app.shell.main_window) if not name.startswith('_')), expected)
+        self.assertEqual(window_public_names(), expected)
         source = (ROOT / 'desktop_app/components/charts.py').read_text(encoding='utf-8-sig')
         chart = next(node for node in ast.parse(source).body if isinstance(node, ast.ClassDef) and node.name == 'CandlestickChart')
         self.assertLessEqual(chart.end_lineno - chart.lineno + 1, 500)

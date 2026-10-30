@@ -348,6 +348,7 @@ class WidgetTests(unittest.TestCase):
             )
             event = Mock()
             with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes) as question:
+                # Load the concrete owner only when this test path is exercised.
                 from desktop_app.shell.window import MainWindow
 
                 MainWindow.closeEvent(shell, event)

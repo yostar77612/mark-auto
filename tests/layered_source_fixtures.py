@@ -288,7 +288,7 @@ def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> b
     return current
 
 
-_SLICE2_PATCH_SHA = '0c83300137244e6884bf9b786d7429f2ca039068af1e149379e0c0aa4f660e60'
+_SLICE2_PATCH_SHA = '00143849c2fd1ff59147d2f790fdbe09b8db4cc2bf8da5aed8a2c2245a8d9c22'
 
 
 def _project_slice2_service_refs(result):

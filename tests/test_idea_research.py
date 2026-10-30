@@ -373,6 +373,7 @@ class DesktopHandlerTests(Harness):
         shell.paths = self.paths()
         shell.jobs.active = True
         with self.assertRaises(ValidationError):
+            # Load the concrete owner only when this test path is exercised.
             from desktop_app.shell.job_presenter import JobPresenter
 
             JobPresenter(shell).start_job('ui_idea_research', {})
