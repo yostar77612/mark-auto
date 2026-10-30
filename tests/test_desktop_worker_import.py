@@ -11,6 +11,9 @@ import unittest
 from unittest.mock import patch
 
 import quantlab.desktop_runtime as runtime
+from tests.layered_source_fixtures import CURRENT_PATHS
+
+FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, current in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT.parent
@@ -31,7 +34,7 @@ def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, r
         except RuntimeError:
             refused = True
         qt = sorted(name for name in sys.modules if name == 'PySide6' or name.startswith('PySide6.'))
-        pages = sorted(name for name in sys.modules if name == 'desktop_app.shell.pages' or name.startswith('desktop_app.shell.pages.'))
+        pages = sorted(FORMER_PAGE_MODULES.intersection(list(sys.modules)))
         Path(root, 'worker-import-proof.json').write_text(json.dumps({'pid': os.getpid(), 'qt': qt, 'pages': pages, 'gui_refused': refused}), encoding='utf-8')
 
 

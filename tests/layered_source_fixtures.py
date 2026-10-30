@@ -124,8 +124,7 @@ CURRENT_PATHS = {
 
 
 def physical_path(relative: str) -> str:
-    directories = {'desktop_pages': 'desktop_app', 'desktop_trading': 'desktop_app/features/trading', 'desktop_smoke': 'desktop_app/smoke'}
-    return CURRENT_PATHS.get(relative, directories.get(relative, relative))
+    return CURRENT_PATHS.get(relative, relative)
 
 
 def reviewed_source_bytes(root: Path, name: str) -> bytes:

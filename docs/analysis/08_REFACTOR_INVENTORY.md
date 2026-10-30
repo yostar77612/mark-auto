@@ -320,7 +320,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
-| `tools/quality_gate.py` | 228 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
+| `tools/quality_gate.py` | 235 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
 | `tools/research_campaign.py` | 95 | tooling | `tools/research_campaign.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`run_fixture_campaign`，`tools/research_campaign.py:21` |
 | `tools/run_test_group.py` | 620 | tooling | `tools/run_test_group.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`core_shard_for_module`，`tools/run_test_group.py:78` |

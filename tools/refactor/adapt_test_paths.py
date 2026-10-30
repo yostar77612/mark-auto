@@ -270,6 +270,21 @@ def adapt(outputs, originals, moves, root):
     for path, source in list(outputs.items()):
         if not path.startswith('tests/') or not path.endswith('.py'):
             continue
+        if path == 'tests/test_desktop_worker_import.py':
+            source = source.replace(
+                'import quantlab.desktop_runtime as runtime\n',
+                'import quantlab.desktop_runtime as runtime\nfrom tests.layered_source_fixtures import CURRENT_PATHS\n',
+                1,
+            )
+            source = source.replace(
+                'ROOT = Path',
+                "FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, current in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}\n\nROOT = Path",
+                1,
+            )
+            source = source.replace(
+                "sorted(name for name in sys.modules if name == 'desktop_app.shell.pages' or name.startswith('desktop_app.shell.pages.'))",
+                'sorted(FORMER_PAGE_MODULES.intersection(list(sys.modules)))',
+            )
         if 'producer_profile' in path:
             source = re.sub(r'(len\((?:pools\.)?SUPPORTED_PRODUCERS\)\s*,\s*)28\b', r'\g<1>29', source)
             source = source.replace('pools.SUPPORTED_PRODUCERS[26:]', 'pools.SUPPORTED_PRODUCERS[26:28]')

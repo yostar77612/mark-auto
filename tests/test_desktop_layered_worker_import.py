@@ -11,6 +11,10 @@ import tempfile
 import unittest
 
 import quantlab.desktop_runtime as runtime
+from tests.layered_source_fixtures import CURRENT_PATHS
+
+
+FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, current in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
 
 
 def guarded_registrar_import(proof_path):
@@ -40,7 +44,7 @@ def guarded_registrar_import(proof_path):
             'gui_refused': refused,
             'attempts': attempts,
             'qt': sorted(name for name in sys.modules if name.split('.')[0] in ('PySide6', 'shiboken6')),
-            'pages': sorted(name for name in sys.modules if name == 'desktop_app.shell.pages' or name.startswith('desktop_app.shell.pages.')),
+            'pages': sorted(FORMER_PAGE_MODULES.intersection(list(sys.modules))),
         }
         Path(proof_path).write_text(json.dumps(proof), encoding='utf-8')
     finally:
