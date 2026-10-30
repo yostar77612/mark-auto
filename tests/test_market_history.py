@@ -7,7 +7,8 @@ from pathlib import Path
 import csv, io, json, tempfile, unittest
 from unittest.mock import patch
 from quantlab.market import InstrumentRef, MarketValidationError
-from quantlab.market_history import MarketSession, PRODUCT_SOURCES, import_history, load_history, list_history, session_from_dict
+from quantlab.market_history import MarketSession, PRODUCT_SOURCES, session_from_dict
+from quantlab.market_history import import_history, load_history, list_history
 
 UTC = timezone.utc
 OPEN = datetime(2026, 10, 8, 0, 45, tzinfo=UTC)

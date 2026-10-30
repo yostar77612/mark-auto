@@ -1,5 +1,7 @@
 """Offline fixture host integration only; no real grant or subscription evidence."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import os
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -46,7 +48,7 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_json_event_roundtrip_restores_model_label_tuples(self):
         import json
-        from desktop_app.shell.main_window import connection_event_from_payload
+        from quantlab.research_core.application.ui_operations.assistant import connection_event_from_payload
         from quantlab.assistant.application.connection_contracts import ConnectionEvent
 
         for event in (
@@ -62,11 +64,14 @@ class ChatGPTHostTests(unittest.TestCase):
                 account_labels=((REF, '已驗證帳戶 ••••abcd1234（電子郵件未提供）'),),
             ),
         ):
-            self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
+            self.assertEqual(connection_event_from_payload(_c_create_operation_ports(), json.loads(json.dumps(asdict(event)))), event)
 
     def test_usage_and_campaign_binding_use_discovered_slug_not_display_label(self):
-        from desktop_app.connection_composition import execute_ui_operation
-        from desktop_app.shell.main_window import _dataset, plan_provider, demo_config
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
+        from quantlab.reporting import demo_config
+        from quantlab.research_core.application.ui_operations.assistant import plan_provider
         from quantlab.research import demo_campaign_config
         from quantlab.core import canonical_json
 
@@ -94,7 +99,7 @@ class ChatGPTHostTests(unittest.TestCase):
         p.consent.setChecked(True)
         p.included_usage_only.setChecked(True)
         options = {**asdict(p.build_plan_options()), 'expected_binding': binding}
-        generator, active_binding = plan_provider(self.paths, data, config, options)
+        generator, active_binding = plan_provider(_c_create_operation_ports(), self.paths, data, config, options)
         self.assertEqual(active_binding, binding)
         self.assertEqual(generator.model, 'official-fixture-slug')
         self.assertFalse(p.consent.isChecked())
@@ -250,7 +255,11 @@ class ChatGPTHostTests(unittest.TestCase):
                 self.assertFalse(any(e['type'] == 'cancelled' for e in events))
 
     def test_plan_binding_stable_and_requires_current_usage_identity(self):
-        from desktop_app.shell.main_window import plan_provider, execute_ui_operation, _dataset, demo_config
+        from quantlab.research_core.application.ui_operations.assistant import plan_provider
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
+        from quantlab.reporting import demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import ValidationError
 
@@ -267,18 +276,23 @@ class ChatGPTHostTests(unittest.TestCase):
             included_usage_policy_confirmed=False,
             paid_api_fallback=False,
         )
-        p, binding = plan_provider(self.paths, data, config, options, for_usage=True)
-        self.assertEqual(binding, plan_provider(self.paths, data, config, options, for_usage=True)[1])
+        p, binding = plan_provider(_c_create_operation_ports(), self.paths, data, config, options, for_usage=True)
+        self.assertEqual(binding, plan_provider(_c_create_operation_ports(), self.paths, data, config, options, for_usage=True)[1])
         self.assertEqual(p.path.parent, (self.paths.bootstrap or self.paths.root) / 'control-v1')
         with self.assertRaises(ValidationError):
-            plan_provider(self.paths, data, config, {**options, 'network_opt_in': True, 'included_usage_policy_confirmed': True})
+            plan_provider(_c_create_operation_ports(), self.paths, data, config, {**options, 'network_opt_in': True, 'included_usage_policy_confirmed': True})
         p2, b2 = plan_provider(
-            self.paths, data, config, {**options, 'expected_binding': binding, 'network_opt_in': True, 'included_usage_policy_confirmed': True}
+            _c_create_operation_ports(),
+            self.paths,
+            data,
+            config,
+            {**options, 'expected_binding': binding, 'network_opt_in': True, 'included_usage_policy_confirmed': True},
         )
         self.assertEqual(p2.path, p.path)
         self.assertEqual(binding, b2)
         with self.assertRaises(ValidationError):
             plan_provider(
+                _c_create_operation_ports(),
                 self.paths,
                 data,
                 config,
@@ -359,7 +373,11 @@ class ChatGPTHostTests(unittest.TestCase):
             m.cancel()
 
     def test_plan_campaign_uses_exact_provider_and_local_reconcile_never_enables_network(self):
-        from desktop_app.shell.main_window import plan_provider, execute_ui_operation, _dataset, demo_config
+        from quantlab.research_core.application.ui_operations.assistant import plan_provider
+        from desktop_app.shell.main_window import execute_ui_operation
+
+        _dataset = _c_create_operation_ports().inputs._dataset
+        from quantlab.reporting import demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import to_dict
 
@@ -376,7 +394,7 @@ class ChatGPTHostTests(unittest.TestCase):
             included_usage_policy_confirmed=False,
             paid_api_fallback=False,
         )
-        _, binding = plan_provider(self.paths, data, config, options, for_usage=True)
+        _, binding = plan_provider(_c_create_operation_ports(), self.paths, data, config, options, for_usage=True)
         active = {**options, 'network_opt_in': True, 'included_usage_policy_confirmed': True, 'expected_binding': binding}
         with patch('quantlab.research.run_campaign', return_value={'status': 'fixture'}) as run:
             execute_ui_operation('ui_campaign', {'config': to_dict(config), 'provider': active}, self.paths)

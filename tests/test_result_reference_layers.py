@@ -154,7 +154,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(w.market.chart.reference_lines)
 
     def test_flat_signal_only_invalid_future_and_incomplete_lots_no_references(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         _, result, series = self.install()
         method = MainWindow._result_snapshot_lines
@@ -188,7 +188,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(w.market.chart.reference_lines)
 
     def test_snapshot_widget_identity_range_limits_and_atomic_validation(self):
-        from desktop_app.components.charts import ReferenceLine, ChartTrace
+        from desktop_app.components.chart_annotations import ReferenceLine, ChartTrace
 
         _, result, _ = self.install()
         chart = self.window.market.chart
@@ -225,7 +225,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(self.window.market.chart.markers)
 
     def test_changed_basis_without_settlement_is_not_actual_mtm(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         _, result, series = self.install()
         lots = tuple({**lot, 'basis_price': D('25000')} for lot in result.metrics['open_lots'])
@@ -233,7 +233,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(MainWindow._result_snapshot_lines(wrong, series.bars, C), 'Unauthenticated basis is presented as actual MTM')
 
     def test_duplicate_lot_fragments_cannot_exceed_original_fill(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         _, result, series = self.install()
         original = result.metrics['open_lots'][1]
@@ -244,7 +244,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(MainWindow._result_snapshot_lines(wrong, series.bars, C), 'A duplicate fill exceeds its actual filled quantity')
 
     def test_legitimate_split_residual_lots_preserve_references(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         for side in (1, -1):
             for mtm in (False, True):
@@ -256,7 +256,7 @@ class ResultReferenceHostTests(unittest.TestCase):
                 self.assertEqual(MainWindow._result_snapshot_lines(split, series.bars, C), expected)
 
     def test_partial_closed_lot_residual_and_daily_mtm_are_verified(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         for side in (1, -1):
             data = dataset([bar(i, p) for i, p in enumerate((20000, 20000, 20100, 20110, 20115))])
@@ -276,7 +276,7 @@ class ResultReferenceHostTests(unittest.TestCase):
             self.assertFalse(MainWindow._result_snapshot_lines(bad, data.bars, C))
 
     def test_settlement_before_same_timestamp_next_open_does_not_change_basis(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         data = dataset([bar(i, p) for i, p in enumerate((20000, 20000, 20100, 20110))])
         event = dict(timestamp=data.bars[0].end, known_at=data.bars[0].end, contract_id=C, price=D('19000'), version='synthetic')
@@ -286,7 +286,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertEqual([line.price for line in lines], [D('20000'), D('20000')])
 
     def test_unapplied_or_misbound_settlement_omits_snapshot(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         _, result, series = fixture(mtm=True)
         actual = result.metrics['settlements'][0]
@@ -312,7 +312,7 @@ class ResultReferenceHostTests(unittest.TestCase):
         self.assertFalse(self.window.market.chart.reference_lines)
 
     def test_rolled_open_lot_keeps_new_contract_entry_and_mtm_basis(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         new = 'TAIFEX:TMF:202611'
         data = dataset([bar(0, 20000), bar(1, 20000), bar(2, 20010), bar(2, 20100, contract=new), bar(3, 20110, contract=new), bar(4, 20120, contract=new)])

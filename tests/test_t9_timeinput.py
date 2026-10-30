@@ -9,7 +9,10 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QDate, QDateTime, QTime, QTimeZone
 from PySide6.QtWidgets import QApplication, QDateEdit, QDateTimeEdit, QLineEdit
 from desktop_app.components.timeinput import DateInput, taipei_to_utc_iso, utc_iso_to_taipei
-from desktop_app.components.forms import BacktestForm, PaperIntentForm, PaperQuoteForm, PaperPolicyForm, PaperActionForm, utc
+from desktop_app.features.backtest.forms import BacktestForm
+from desktop_app.features.paper.forms import PaperIntentForm, PaperQuoteForm, PaperActionForm
+from desktop_app.features.paper.policy_form import PaperPolicyForm
+from desktop_app.components.form_values import utc
 from quantlab.core import ValidationError, content_hash, canonical_json, to_dict
 
 
@@ -172,7 +175,7 @@ class TaipeiInputTests(unittest.TestCase):
         self.same(old.build_payload(), backtest.build_payload())
 
     def test_history_day_night_payload_strings_unchanged(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for night in (False, True):
@@ -194,7 +197,7 @@ class TaipeiInputTests(unittest.TestCase):
             new.close()
 
     def test_same_value_restoration_keeps_history_confirmation(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         dialog = MarketHistoryDialog()
@@ -207,7 +210,7 @@ class TaipeiInputTests(unittest.TestCase):
         dialog.close()
 
     def test_history_required_midnight_and_previous_utc_day(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from desktop_app.components.timeinput import history_utc_hint
         from tests.test_market_history_ui import fill
 

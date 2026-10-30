@@ -79,7 +79,7 @@ manager = JobManager(paths)
 window = desktop_app.shell.main_window.create_window(paths, manager, SettingsStore(paths.state / "settings.json"), BackupManager(paths, manager), RuntimeGuard(paths))
 assert isinstance(window, QMainWindow)
 assert executor is desktop_app.shell.main_window.execute_ui_operation
-assert window.__class__ is desktop_app.shell.main_window.MainWindow
+assert window.__class__ is desktop_app.shell.window.MainWindow
 assert desktop_app.shell.main_window.QMainWindow is QMainWindow
 manager.close()
 window.close()

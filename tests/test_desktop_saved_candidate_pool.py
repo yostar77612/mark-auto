@@ -384,7 +384,7 @@ class SavedPoolTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_exclusive_origin_and_explicit_budget_without_auto_increase(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -447,10 +447,10 @@ class SavedPoolHostTests(unittest.TestCase):
         w.walk_forward_campaign.setCurrentIndex(1)
         with self.assertRaises(ValidationError):
             w._walk_forward_input_key()
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(source), '')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=(str(source), '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(source.resolve()))
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=('', '')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=('', '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(source.resolve()))
         self.assertEqual((self.paths.state / 'dataset.json').read_bytes(), before)
@@ -483,10 +483,10 @@ class SavedPoolHostTests(unittest.TestCase):
         before = {path: path.read_bytes() for path in protected}
         w.walk_forward_form.fields['pool_origin'].setCurrentIndex(1)
         w.walk_forward_campaign.setCurrentIndex(1)
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(alias), '')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=(str(alias), '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(canonical))
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=('', '')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=('', '')):
             w.pick_walk_forward_original()
         with patch.object(w.jobs, 'start', return_value='preview-job') as start:
             w.preview_walk_forward()

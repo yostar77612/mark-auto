@@ -1,0 +1,33 @@
+"""Traditional Chinese feature literals; ordered records preserve the original catalog."""
+
+ENTRIES = (
+    (25, 1689, 'workspace.layouts', '\u7248\u9762'),
+    (
+        25,
+        1690,
+        'workspace.keyboard_hint',
+        'Tab \u9078\u53d6\u6a19\u984c\uff0cC \u6536\u5408\uff0f\u5c55\u958b\uff1bEnter \u6216\u7a7a\u767d\u9375\u958b\u555f\u79fb\u52d5\u9078\u55ae\u3002\u62d6\u66f3\u6a19\u984c\u81f3\u5176\u4ed6\u9762\u677f\u53ef\u79fb\u52d5\u3002',
+    ),
+    (25, 1691, 'workspace.collapse', '\u6536\u5408\uff0f\u5c55\u958b'),
+    (25, 1692, 'workspace.earlier', '\u5f80\u524d\u6392\u5217'),
+    (25, 1693, 'workspace.later', '\u5f80\u5f8c\u6392\u5217'),
+    (25, 1694, 'workspace.top', '\u79fb\u81f3\u4e0a\u65b9'),
+    (25, 1695, 'workspace.left', '\u79fb\u81f3\u5de6\u65b9'),
+    (25, 1696, 'workspace.center', '\u79fb\u81f3\u4e2d\u9593'),
+    (25, 1697, 'workspace.right', '\u79fb\u81f3\u53f3\u65b9'),
+    (25, 1698, 'workspace.bottom', '\u79fb\u81f3\u4e0b\u65b9'),
+    (25, 1699, 'workspace.cards', '\u5546\u54c1\u5361'),
+    (25, 1700, 'workspace.watchlist', '\u81ea\u9078\u6e05\u55ae'),
+    (25, 1701, 'workspace.chart', '\u5716\u8868'),
+    (25, 1702, 'workspace.apply', '\u5957\u7528\u9810\u8a2d\u7248\u9762'),
+    (25, 1703, 'workspace.overview', '\u7e3d\u89bd'),
+    (25, 1704, 'workspace.chart_focus', '\u5716\u8868\u512a\u5148'),
+    (25, 1705, 'workspace.watchlist_focus', '\u81ea\u9078\u512a\u5148'),
+    (25, 1706, 'workspace.save', '\u53e6\u5b58\u7248\u9762'),
+    (25, 1707, 'workspace.restore', '\u9084\u539f\u5df2\u5b58\u7248\u9762'),
+    (25, 1708, 'workspace.delete', '\u522a\u9664\u5df2\u5b58\u7248\u9762'),
+    (25, 1709, 'workspace.reset', '\u91cd\u8a2d\u70ba\u7e3d\u89bd'),
+    (25, 1710, 'workspace.error', '\u7248\u9762\u932f\u8aa4'),
+    (25, 1711, 'workspace.collapsed', '{0} [+]'),
+    (25, 1712, 'workspace.name', '\u7248\u9762\u540d\u7a31\uff081-64 \u5b57\u5143\uff09'),
+)

@@ -1,0 +1,2293 @@
+{
+  "original_observers": 174,
+  "relocations": [
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 234,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 237,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "_refresh_recovery_controls",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "_refresh_recovery_controls",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "_refresh_walk_forward_references",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "_refresh_walk_forward_references",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "inspect_candidate",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "inspect_candidate",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "load_market_cache",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "load_market_cache",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 252,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 255,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 268,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 271,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 273,
+        "name": "load_dataset",
+        "kind": "patch.dict",
+        "receiver": "window.page_host.callbacks"
+      },
+      "current": {
+        "file": "tests/r7_characterization.py",
+        "line": 276,
+        "name": "load_dataset",
+        "kind": "patch.dict",
+        "receiver": "window.page_host.callbacks"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_analysis_recovery_ui.py",
+        "line": 138,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_analysis_recovery_ui.py",
+        "line": 142,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_b11_privacy.py",
+        "line": 136,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_b11_privacy.py",
+        "line": 138,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 90,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      },
+      "current": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 92,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 153,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      },
+      "current": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 155,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 43,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 45,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 47,
+        "name": "cancel_job",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 49,
+        "name": "cancel_job",
+        "kind": "assignment",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 49,
+        "name": "_safe",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 51,
+        "name": "_safe",
+        "kind": "assignment",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 163,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 165,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 163,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 165,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 163,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 165,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 250,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 252,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 251,
+        "name": "_confirm_button",
+        "kind": "patch.object",
+        "receiver": "window.widgets_page"
+      },
+      "current": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 253,
+        "name": "_confirm_button",
+        "kind": "patch.object",
+        "receiver": "window.widgets_page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_table.py",
+        "line": 111,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_compare_table.py",
+        "line": 111,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 98,
+        "name": "read_json",
+        "kind": "patch.object",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 100,
+        "name": "read_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 101,
+        "name": "write_json",
+        "kind": "patch.object",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 103,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 109,
+        "name": "read_json",
+        "kind": "patch.object",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 111,
+        "name": "read_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 112,
+        "name": "write_json",
+        "kind": "patch.object",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 114,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 424,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 429,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 467,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 472,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 478,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 483,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 494,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 499,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 495,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 500,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 514,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 519,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 515,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 520,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 517,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 522,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 551,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 556,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 552,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 557,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 554,
+        "name": "_chatgpt_dispatch",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 559,
+        "name": "_chatgpt_dispatch",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 580,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 585,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 187,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 188,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 216,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 219,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 229,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 232,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 248,
+        "name": "saved_analysis_entries",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 251,
+        "name": "saved_analysis_entries",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 249,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 252,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 270,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 274,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 270,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 275,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 285,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 293,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 285,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 294,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 32,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 33,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 91,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 92,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 132,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 137,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 133,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 138,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 134,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 139,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 142,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 147,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 142,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 147,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 173,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 178,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 293,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 307,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 308,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 322,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 411,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 429,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 422,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 440,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_expiries.py",
+        "line": 203,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_desktop_expiries.py",
+        "line": 211,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 38,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 40,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 41,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 43,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 97,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 99,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 169,
+        "name": "start_job",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 171,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 157,
+        "name": "start_job",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 159,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 199,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 201,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 224,
+        "name": "start_job",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 226,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 239,
+        "name": "start_job",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 241,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 262,
+        "name": "_quiesce_and_recover",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 264,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 263,
+        "name": "poll_jobs",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 265,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 277,
+        "name": "refresh_views",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 279,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 278,
+        "name": "notify_local",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 280,
+        "name": "notify_local",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch",
+        "line": 285,
+        "name": "saved_analysis_entries",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 287,
+        "name": "saved_analysis_entries",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 297,
+        "name": "_analysis_request",
+        "receiver": "w.compare_page"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 299,
+        "name": "_analysis_request",
+        "kind": "patch.object",
+        "receiver": "w.compare_page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch",
+        "line": 299,
+        "name": "analysis_preview_text",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 301,
+        "name": "analysis_preview_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "kind": "patch.object",
+        "line": 305,
+        "name": "start_job",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 307,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 118,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 118,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 168,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 168,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui.py",
+        "line": 296,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_desktop_ui.py",
+        "line": 304,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 143,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 145,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 144,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 146,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 145,
+        "name": "result_name",
+        "kind": "patch",
+        "receiver": "desktop_app.shell.main_window"
+      },
+      "current": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 147,
+        "name": "result_name",
+        "kind": "patch",
+        "receiver": "desktop_app.components.formatting"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 343,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 346,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 361,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 364,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import.py",
+        "kind": "assignment",
+        "line": 27,
+        "name": "contract",
+        "receiver": "self"
+      },
+      "current": {
+        "file": "tests/test_download_auto_import.py",
+        "line": 29,
+        "name": "contract",
+        "kind": "assignment",
+        "receiver": "self"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import.py",
+        "kind": "patch.object",
+        "line": 129,
+        "name": "write_json",
+        "receiver": "workflow"
+      },
+      "current": {
+        "file": "tests/test_download_auto_import.py",
+        "line": 131,
+        "name": "write_json",
+        "kind": "patch.object",
+        "receiver": "workflow"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "kind": "patch.object",
+        "line": 57,
+        "name": "start_job",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "line": 59,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "kind": "patch.object",
+        "line": 89,
+        "name": "start_job",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "line": 91,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_header_c1.py",
+        "line": 95,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_header_c1.py",
+        "line": 98,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_market_empty_ui.py",
+        "line": 32,
+        "name": "bind_result_layers",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_market_empty_ui.py",
+        "line": 34,
+        "name": "bind_result_layers",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 173,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 175,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 199,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 201,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 209,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 211,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_c8.py",
+        "line": 127,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "center.host"
+      },
+      "current": {
+        "file": "tests/test_notifications_c8.py",
+        "line": 131,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "center.host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 185,
+        "name": "_analysis_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_analysis_event",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 185,
+        "name": "_chatgpt_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_chatgpt_event",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 185,
+        "name": "_walk_forward_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_walk_forward_event",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 187,
+        "name": "record_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 188,
+        "name": "record_event",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 190,
+        "name": "notify_local",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 191,
+        "name": "notify_local",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 191,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 192,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 229,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "current": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 230,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 91,
+        "name": "_safe",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 93,
+        "name": "_safe",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 92,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 94,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 93,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 95,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 94,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 96,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "assignment",
+        "line": 86,
+        "name": "_safe",
+        "receiver": "typed"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 112,
+        "name": "_safe",
+        "kind": "assignment",
+        "receiver": "typed"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "patch.object",
+        "line": 223,
+        "name": "_safe",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 260,
+        "name": "_safe",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "patch.object",
+        "line": 226,
+        "name": "start_job",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 263,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "patch.object",
+        "line": 229,
+        "name": "freeze_paper",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 266,
+        "name": "freeze_paper",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "patch.object",
+        "line": 232,
+        "name": "_button",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 269,
+        "name": "_button",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "kind": "patch.object",
+        "line": 235,
+        "name": "_busy",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 272,
+        "name": "_busy",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 113,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "current": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 116,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 114,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "current": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 117,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 236,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "current": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 239,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_a1.py",
+        "line": 224,
+        "name": "_dataset",
+        "kind": "patch.object",
+        "receiver": "ui"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_a1.py",
+        "line": 230,
+        "name": "_dataset",
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 29,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 31,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 65,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 67,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 66,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 68,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 67,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 69,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 168,
+        "name": "freeze_paper",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      },
+      "current": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 170,
+        "name": "freeze_paper",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_product_ai_boundary.py",
+        "line": 87,
+        "name": "run_campaign",
+        "kind": "patch.object",
+        "receiver": "validate_real_ai"
+      },
+      "current": {
+        "file": "tests/test_product_ai_boundary.py",
+        "line": 89,
+        "name": "run_campaign",
+        "kind": "patch.object",
+        "receiver": "validate_real_ai"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 132,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      },
+      "current": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 134,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 199,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      },
+      "current": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 205,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "kind": "setattr",
+        "line": 70,
+        "name": "_busy",
+        "receiver": "shell"
+      },
+      "current": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 72,
+        "name": "_busy",
+        "kind": "setattr",
+        "receiver": "shell"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "kind": "setattr",
+        "line": 70,
+        "name": "_safe",
+        "receiver": "shell"
+      },
+      "current": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 72,
+        "name": "_safe",
+        "kind": "setattr",
+        "receiver": "shell"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 201,
+        "name": "_dataset",
+        "kind": "patch.object",
+        "receiver": "ui"
+      },
+      "current": {
+        "file": "tests/test_replay_b13.py",
+        "line": 206,
+        "name": "_dataset",
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 232,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "current": {
+        "file": "tests/test_replay_b13.py",
+        "line": 237,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 326,
+        "name": "paper_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "current": {
+        "file": "tests/test_replay_b13.py",
+        "line": 331,
+        "name": "paper_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 334,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "current": {
+        "file": "tests/test_replay_b13.py",
+        "line": 339,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_report_promotion.py",
+        "kind": "patch.object",
+        "line": 44,
+        "name": "run_backtest",
+        "receiver": "backtest"
+      },
+      "current": {
+        "file": "tests/test_report_promotion.py",
+        "line": 46,
+        "name": "run_backtest",
+        "kind": "patch.object",
+        "receiver": "backtest"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 185,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 187,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 205,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 207,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 215,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "current": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 217,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 181,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 184,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 220,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 223,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 123,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 126,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "kind": "patch.object",
+        "line": 149,
+        "name": "start_job",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 152,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "kind": "patch.object",
+        "line": 183,
+        "name": "start_job",
+        "receiver": "self.window"
+      },
+      "current": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 186,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "kind": "patch.object",
+        "line": 280,
+        "name": "start_job",
+        "receiver": "window"
+      },
+      "current": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 283,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 500,
+        "name": "_dataset",
+        "kind": "assignment",
+        "receiver": "fake_ui"
+      },
+      "current": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 491,
+        "name": "_dataset",
+        "kind": "assignment",
+        "receiver": "fake_ui"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 509,
+        "name": "preview_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      },
+      "current": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 500,
+        "name": "preview_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 510,
+        "name": "run_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      },
+      "current": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 501,
+        "name": "run_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      }
+    }
+  ],
+  "newly_discovered_existing_observers": [
+    {
+      "file": "tests/test_compare_equity_f2.py",
+      "line": 129,
+      "name": "load_result",
+      "kind": "patch",
+      "receiver": "quantlab.reporting"
+    },
+    {
+      "file": "tests/test_workspace_wal_guard.py",
+      "line": 200,
+      "name": "_paper",
+      "kind": "patch.object",
+      "receiver": "paper_operations"
+    }
+  ]
+}

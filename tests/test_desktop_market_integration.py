@@ -1,5 +1,7 @@
 """Frozen host cases: all fixtures are engineering examples, never live-feed evidence."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import json
 import os
 from pathlib import Path
@@ -181,7 +183,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertEqual((self.paths.state / 'dataset.json').read_text(), '{broken')
 
     def test_restart_loads_saved_preferences_without_network(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         self.window.market.timeframe_combo.setCurrentIndex(3)
         self.window.save_settings()
@@ -193,7 +195,7 @@ class MarketHostTests(unittest.TestCase):
             patch('quantlab.assistant.adapters.chatgpt.auth.AuthSession', side_effect=AssertionError('restart auth session')) as auth_session,
             patch('PySide6.QtGui.QDesktopServices.openUrl', side_effect=AssertionError('restart browser')) as browser,
         ):
-            restored = MainWindow(self.paths, self.jobs, self.window.settings, self.window.backups)
+            restored = MainWindow(self.paths, self.jobs, self.window.settings, self.window.backups, services=_c_create_ui_services(_c_create_operation_ports()))
         try:
             for action in (market_network, subscription_action, auth_session, browser):
                 action.assert_not_called()
@@ -246,7 +248,7 @@ class MarketHostTests(unittest.TestCase):
         from dataclasses import replace
         from datetime import datetime, timedelta
         from decimal import Decimal
-        from desktop_app.shell.main_window import latest_market_observations
+        from quantlab.research_core.application.ui_operations.market import latest_market_observations
         from quantlab.market import MarketSeries, QuoteSnapshot
         from quantlab.market_providers import parse_taifex_daily
 
@@ -284,11 +286,11 @@ class MarketHostTests(unittest.TestCase):
         self.assertIn('過期快取', self.window.market.cards['MXF'].text())
 
     def test_synthetic_history_cannot_become_market_minutes(self):
-        from desktop_app.shell.main_window import dataset_market_series
+        from quantlab.research_core.application.ui_operations.market import dataset_market_series
         from quantlab.reporting import synthetic_dataset
 
         with self.assertRaises(ValueError):
-            dataset_market_series(synthetic_dataset(120), {'sessions': [], 'version': 'test'})
+            dataset_market_series(_c_create_operation_ports(), synthetic_dataset(120), {'sessions': [], 'version': 'test'})
 
 
 if __name__ == '__main__':

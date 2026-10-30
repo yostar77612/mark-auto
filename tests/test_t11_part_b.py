@@ -192,7 +192,7 @@ class StartupTests(unittest.TestCase):
             stack.enter_context(patch('quantlab.desktop_runtime.WorkspaceLocator'))
             stack.enter_context(patch('desktop.acquire_instance_lock', return_value=lock))
             stack.enter_context(patch('desktop.prepare_workspace', side_effect=prepare))
-            stack.enter_context(patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(MainWindow=Mock(return_value=window))}))
+            stack.enter_context(patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(create_window=Mock(return_value=window))}))
             self.assertEqual(desktop.main([]), 19)
         self.assertEqual(
             events, ['prepare', 'show', 'freeze', 'restore', 'filter', 'timer', 'exec', 'jobs.close', 'guard.finish', 'jobs.close', 'mutex.close', 'unlock']

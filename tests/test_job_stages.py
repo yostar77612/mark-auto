@@ -2,6 +2,7 @@
 
 from quantlab.research_core.adapters import job_worker
 
+from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
 
 from contextlib import nullcontext
 import json
@@ -9,7 +10,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from desktop_app.strings.catalog import stage_error_message
+from desktop_app.components.job_messages import stage_error_message
 from quantlab import desktop_runtime as runtime
 from quantlab.job_stages import JOB_STAGES, normalize_stage, stage_from_traceback
 
@@ -86,7 +87,6 @@ class JobStageTests(unittest.TestCase):
         self.assertEqual(stage_from_traceback(None, 'private-token'), 'unknown')
 
     def test_ui_error_display_uses_stage_and_ignores_raw_event_text(self):
-        from desktop_app.shell.main_window import MainWindow
 
         # Exercise the real polling branch using an in-memory host; no workspace.
         for stage in (*sorted(JOB_STAGES), 'private-token C:/private/path', None):
@@ -105,6 +105,6 @@ class JobStageTests(unittest.TestCase):
                 status=SimpleNamespace(clear=Mock(), setText=Mock()),
                 notify_local=Mock(),
             )
-            MainWindow.poll_jobs(host)
+            _c_JobPresenter(host).poll_jobs()
             host.notify_local.assert_called_once_with(stage_error_message(stage), error=True, completion=True)
             self.assertNotIn('private', host.notify_local.call_args.args[0])

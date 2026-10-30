@@ -1,5 +1,7 @@
 """Focused T2B presentation contracts, offline synthetic data only."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 from pathlib import Path
 import shutil
@@ -28,11 +30,13 @@ class FeedbackTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
 
     def window(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         paths = AppPaths(self.root).ensure()
         jobs = JobManager(paths)
-        w = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+        w = MainWindow(
+            paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         w.timer.stop()
         self.addCleanup(w.deleteLater)
         self.addCleanup(w.close)
@@ -70,7 +74,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertTrue(w.notification.isHidden())
 
     def test_p017_every_operation_has_distinct_summary(self):
-        from desktop_app.shell.main_window import UI_OPERATIONS
+        from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS
 
         self.assertEqual(set(UI_OPERATIONS), {'ui_' + op for op in OPERATION_LABELS})
         summaries = [completion_summary('ui_' + op, {}) for op in OPERATION_LABELS]
@@ -153,7 +157,7 @@ class FeedbackTests(unittest.TestCase):
 
         path = self.root / 'snapshot.json'
         write_json(path, {'account_id': 'demo', 'cash': '1000', 'positions': {}, 'orders': {}, 'fills': {}})
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
             w.load_form_file(w.snapshot_form, w.snapshot)
         self.assertIn('已載入參考資料', w.status.text())
         self.assertTrue(w.snapshot_form.property('feedback'))
@@ -162,7 +166,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertIn('已切回內建家族', w.status.text())
         self.assertTrue(w.strategy_form.property('feedback'))
         self.assertEqual(w.strategy_form.styleSheet(), '')
-        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
+        with patch('PySide6.QtWidgets.QFileDialog.getOpenFileName', return_value=(str(path), 'JSON')):
             w._browse(w.import_path)
             self.assertIn('已填入選取檔案', w.status.text())
             w.pick_analysis_original()
@@ -191,13 +195,13 @@ class FeedbackTests(unittest.TestCase):
         self.assertTrue(account['kill_switch'])
 
     def test_p020_card_matches_readonly_ledger_and_reference_counts_labelled(self):
-        from desktop_app.shell.main_window import _paper
+        from quantlab.research_core.application.paper_operations import _paper
         from quantlab.paper import PaperBroker
         from quantlab.reporting import write_json
 
         w = self.window()
         write_json(w.root / 'paper_policy.json', {'contract_id': 'TAIFEX:TMF:202610', 'risk_sessions': [], 'margin_schedule': []})
-        broker = _paper(w.root)
+        broker = _paper(_c_create_operation_ports(), w.root)
         broker.reconcile({'account_id': 'demo', 'cash': '1000000', 'positions': {}, 'orders': {}, 'fills': {}})
         before = broker.journal_events()
         w._show_account(PaperBroker.read_snapshot(broker.path))
@@ -208,7 +212,7 @@ class FeedbackTests(unittest.TestCase):
         from quantlab.paper import PaperBroker as Broker
         from quantlab.core import Instrument
         from quantlab.reporting import demo_config
-        from desktop_app.shell.main_window import paper_risk_limits
+        from quantlab.research_core.application.paper_operations import paper_risk_limits
 
         now = datetime(2026, 1, 5, 1, tzinfo=timezone.utc)
         session = {'open': '2026-01-05T00:45:00Z', 'end': '2026-01-05T04:45:00Z', 'trade_date': '2026-01-05', 'source': 'synthetic', 'session': 'day'}

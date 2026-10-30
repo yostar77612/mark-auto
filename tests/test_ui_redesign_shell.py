@@ -1,5 +1,7 @@
 """Disclosure migration keeps saved preferences intact until a real user edit."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 import os
 from pathlib import Path
@@ -151,9 +153,9 @@ class WindowDisclosurePersistenceTests(unittest.TestCase):
         self.store = SettingsStore(self.paths.state / 'settings.json')
 
     def open_window(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
-        window = MainWindow(self.paths, self.jobs, self.store)
+        window = MainWindow(self.paths, self.jobs, self.store, services=_c_create_ui_services(_c_create_operation_ports()))
         self.addCleanup(window.deleteLater)
         self.addCleanup(window.close)
         for timer in window.findChildren(QTimer):

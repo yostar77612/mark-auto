@@ -1,5 +1,9 @@
 """Cheap synthetic paper amend, replay and offscreen gesture contracts."""
 
+from tools.refactor.split_ui_r3b import window_public_names
+
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import ast
 from contextlib import closing
 from copy import deepcopy
@@ -20,10 +24,11 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QImage, QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import QApplication
 
-from desktop_app.components.charts import CandlestickChart, ChartTrace
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.components.chart_annotations import ChartTrace
 from desktop_app.features.paper.order_lines import tick_price
 from desktop_app.strings.catalog import ui_text
-import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_cancel as _c_ui__handle_ui_paper_cancel
 from quantlab.core import Instrument, CostSpec, ValidationError, canonical_json
 from quantlab.paper import PaperBroker, RiskLimits, RiskDecision, JournalConflict, ReconciliationError, LiveBroker, LiveTradingDisabled
 from tests.test_chart_data import bar
@@ -247,19 +252,19 @@ class AmendTests(unittest.TestCase):
             snapshot=self.broker.snapshot(),
         )
         with (
-            patch.object(ui, '_prepare_paper_operation', side_effect=lambda *a: PaperBroker(self.path, **self.kw)),
-            patch.object(ui, '_finish_paper_operation', side_effect=lambda root, broker: broker.snapshot()),
+            patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', side_effect=lambda *a: PaperBroker(self.path, **self.kw)),
+            patch('quantlab.research_core.application.paper_operations._finish_paper_operation', side_effect=lambda ports, root, broker: broker.snapshot()),
             patch('socket.socket', side_effect=AssertionError('offline only')),
         ):
-            result = ui._handle_ui_paper_cancel(payload, None, self.root)
+            result = _c_ui__handle_ui_paper_cancel(_c_create_operation_ports(), payload, None, self.root)
         self.assertEqual(result['orders']['a']['intent']['limit_price'], '20001')
         self.assertNotIn('pending_amend', result['orders']['a'])
         self.assertFalse(result['reconciliation_required'])
         self.broker = PaperBroker(self.path, **self.kw)
         payload['snapshot'] = self.broker.snapshot()
-        with patch.object(ui, '_prepare_paper_operation') as prepare:
+        with patch('quantlab.research_core.application.paper_operations._prepare_paper_operation') as prepare:
             with self.assertRaises(ValidationError):
-                ui._handle_ui_paper_cancel(payload, None, self.root)
+                _c_ui__handle_ui_paper_cancel(_c_create_operation_ports(), payload, None, self.root)
             prepare.assert_not_called()
 
     def test_drag_to_broker_with_failed_journal_preserves_snapshot(self):
@@ -402,7 +407,7 @@ class OrderChartTests(unittest.TestCase):
 
     def test_public_oracle_and_class_size_limits_unchanged(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(ui) if not name.startswith('_')), expected)
+        self.assertEqual(window_public_names(), expected)
         for path in [ROOT / 'desktop_app/shell/main_window.py', *(ROOT / 'desktop_app').rglob('*.py')]:
             for node in ast.parse(path.read_text(encoding='utf-8-sig'), feature_version=(3, 11)).body:
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):

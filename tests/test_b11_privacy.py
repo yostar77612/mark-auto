@@ -1,5 +1,7 @@
 """Cheap offscreen display-only privacy contracts; no jobs, paints or network."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from decimal import Decimal
 import hashlib
@@ -13,11 +15,11 @@ from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QTableWidget, QWidget
 import desktop_app.components.privacy as privacy
 from desktop_app.shell.accessibility import INTERACTIVE, semantic_name, visual_focus_order
-from desktop_app.components.forms import ResultTable as LegacyTable
-from desktop_app.components.forms import backtest_summary_text
+from desktop_app.components.result_tables import ResultTable as LegacyTable
+from desktop_app.features.backtest.summary import backtest_summary_text
 from desktop_app.components.result_widgets import ResultTable, TaipeiFillsTable
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.backtest import run_backtest
 from quantlab.core import content_hash
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -81,7 +83,7 @@ class PrivacyWindowTests(unittest.TestCase):
         cls.paths = AppPaths(Path(cls.temp.name) / 'workspace').ensure()
         cls.jobs = JobManager(cls.paths)
         cls.store = SettingsStore(cls.paths.state / 'settings.json')
-        cls.window = MainWindow(cls.paths, cls.jobs, cls.store)
+        cls.window = MainWindow(cls.paths, cls.jobs, cls.store, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in cls.window.findChildren(QTimer):
             timer.stop()
 
@@ -238,7 +240,7 @@ class PrivacyWindowTests(unittest.TestCase):
 
         RegistryTests().test_public_names_unchanged()
         NoInlineStylesheetTests().test_desktop_and_tools_have_no_inline_stylesheet()
-        tree = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'desktop_app/shell/window.py').read_text(encoding='utf-8'))
         node = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))

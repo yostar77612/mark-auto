@@ -1,0 +1,28 @@
+"""Historical single-hop alias literals; ordered records preserve the original catalog."""
+
+ENTRIES = (
+    (1299, 'automatic_backup.__init__.text_1', 'automatic_backup.init.enable'),
+    (1300, 'automatic_backup.__init__.text_2', 'automatic_backup.init.directory'),
+    (1301, 'automatic_backup.__init__.text_3', 'automatic_backup.init.browse'),
+    (1302, 'automatic_backup.__init__.text_4', 'automatic_backup.init.save'),
+    (1303, 'automatic_backup.__init__.text_5', 'automatic_backup.init.schedule_hint'),
+    (1304, 'automatic_backup.__init__.text_6', 'automatic_backup.init.never_attempted'),
+    (1305, 'automatic_backup.__init__.text_7', 'automatic_backup.init.last_unknown'),
+    (1306, 'automatic_backup.__init__.text_8', 'automatic_backup.init.last_success'),
+    (1307, 'automatic_backup.__init__.text_9', 'automatic_backup.init.last_failed'),
+    (1308, 'automatic_backup.__init__.text_10', 'automatic_backup.init.last_cancelled'),
+    (1309, 'automatic_backup.__init__.text_11', 'automatic_backup.init.suspended'),
+    (1310, 'automatic_backup.browse.text_1', 'automatic_backup.browse.dialog_title'),
+    (1311, 'automatic_backup.save.text_1', 'automatic_backup.save.job_busy'),
+    (1312, 'automatic_backup.save.text_2', 'automatic_backup.save.saved'),
+    (1313, 'automatic_backup.save.text_3', 'automatic_backup.save.disabled'),
+    (1314, 'automatic_backup.save.text_4', 'automatic_backup.save.save_failed'),
+    (1315, 'automatic_backup.tick.text_1', 'automatic_backup.tick.waiting_idle'),
+    (1316, 'automatic_backup.tick.text_2', 'automatic_backup.tick.running'),
+    (1317, 'automatic_backup.tick.text_3', 'automatic_backup.tick.recovery_unconfirmed'),
+    (1318, 'automatic_backup.tick.text_4', 'automatic_backup.tick.suspended'),
+    (1319, 'automatic_backup.handle_job_event.text_1', 'automatic_backup.handle_job_event.success'),
+    (1320, 'automatic_backup.handle_job_event.text_2', 'automatic_backup.handle_job_event.failed'),
+    (1321, 'automatic_backup.handle_job_event.text_3', 'automatic_backup.handle_job_event.cancelled'),
+    (1322, 'automatic_backup.handle_job_event.text_4', 'automatic_backup.handle_job_event.outcome_unknown'),
+)

@@ -1,5 +1,7 @@
 """Cheap display contracts: no shown windows, clocks, work or style switching."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 import json
 from pathlib import Path
@@ -19,7 +21,7 @@ from desktop_app.shell.theme import build_app_stylesheet
 from quantlab.errors import ERROR_TABLE
 from quantlab.update_check import UpdateResult
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 
@@ -153,7 +155,7 @@ class AsyncStatusTests(unittest.TestCase):
         with sandbox_ui(), disposable_directory() as folder:
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'))
+            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

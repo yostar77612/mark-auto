@@ -1,5 +1,7 @@
 """Offline removal regressions. No models, credentials or external requests."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import contextlib
 import importlib.util
 import io
@@ -55,8 +57,8 @@ class ProductAIBoundaryTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec('PySide6'), 'Qt required for host adapter')
     def test_removed_worker_dispatch_does_not_create_workspace(self):
-        from desktop_app.connection_composition import execute_ui_operation
-        from desktop_app.shell.main_window import campaign_generator
+        from desktop_app.shell.main_window import execute_ui_operation
+        from quantlab.research_core.application.research_operations import campaign_generator
         from quantlab.desktop_runtime import AppPaths
         from quantlab.core import ValidationError
 
@@ -66,7 +68,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     execute_ui_operation('ui_campaign', {'provider': provider}, paths)
                 with self.assertRaises(ValidationError):
-                    campaign_generator(paths, provider)
+                    campaign_generator(_c_create_operation_ports(), paths, provider)
             self.assertFalse(paths.root.exists())
 
     def test_removed_cli_flags_refuse_before_user_workspace_access(self):

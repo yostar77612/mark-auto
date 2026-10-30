@@ -93,8 +93,8 @@ class CatalogTests(unittest.TestCase):
     def test_part_b_dynamic_text_preserves_validation_and_formatting(self):
         from datetime import datetime, timezone
         from decimal import Decimal
-        from desktop_app.components.charts import _display_time
-        from desktop_app.components.forms import number
+        from desktop_app.components.chart_footer import _display_time
+        from desktop_app.components.form_values import number
         from quantlab.core import ValidationError
 
         self.assertEqual(number('3', '口數', 1, 5, integer=True), 3)
@@ -108,7 +108,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_part_b_form_uses_registry_at_widget_construction(self):
         from PySide6.QtWidgets import QApplication, QLabel
-        from desktop_app.components.forms import StrategyForm
+        from desktop_app.features.strategy.forms import StrategyForm
 
         app = QApplication.instance() or QApplication([])
         stub = dict(strings.ZH_TW, **{'forms.init.strategy_family': 'Stub field caption'})

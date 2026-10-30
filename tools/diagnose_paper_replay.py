@@ -444,7 +444,7 @@ def observe(output, *, limit=180):
     from decimal import Decimal
     from tests.test_desktop_ui import NativeDesktopTests
     from quantlab.reporting import read_json
-    from desktop_app.shell.main_window import paper_risk_limits
+    from quantlab.research_core.application.paper_operations import paper_risk_limits
 
     output = Path(output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -3,7 +3,9 @@
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QCheckBox, QGridLayout, QHBoxLayout, QLabel, QPlainTextEdit, QScrollArea, QSpinBox
 
-from desktop_app.components.forms import PaperIntentForm, PaperPolicyForm, PaperQuoteForm, PaperSnapshotForm, SummaryCard
+from desktop_app.features.paper.forms import PaperIntentForm, PaperQuoteForm, PaperSnapshotForm
+from desktop_app.features.paper.policy_form import PaperPolicyForm
+from desktop_app.components.result_tables import SummaryCard
 from desktop_app.components.formatting import display_number
 from desktop_app.strings.catalog import ui_text
 from desktop_app.components.timeinput import DateInput

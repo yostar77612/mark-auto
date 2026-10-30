@@ -1,5 +1,7 @@
 """Synthetic-only typed local history UI/worker/restart coverage; no exchange files."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -9,8 +11,8 @@ import unittest
 from unittest.mock import patch
 from PySide6.QtCore import QTime
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog
-from desktop_app.features.market.dashboard import MarketHistoryDialog
-from desktop_app.connection_composition import execute_ui_operation
+from desktop_app.features.market.history_dialog import MarketHistoryDialog
+from desktop_app.shell.main_window import execute_ui_operation
 from tests import test_desktop_ui as support
 
 HEADER = '成交日期,商品代號,到期月份(週別),成交時間,成交價格,成交數量(B+S),近月價格,遠月價格,開盤集合競價\n'
@@ -59,7 +61,7 @@ class HistoryFormTests(unittest.TestCase):
         self.assertEqual(d.end_date.text(), '')
 
     def test_contract_day_utc_product_source_and_weekly(self):
-        from quantlab.market_history import PRODUCT_SOURCES
+        from quantlab.research_core.domain.market_sessions import PRODUCT_SOURCES
 
         d = self.dialog
         fill(d, 'MTX')
@@ -236,12 +238,18 @@ class HistoryHostTests(unittest.TestCase):
         self.assertNotIn('來源更新失敗', self.window.market.message.text())
         self.assertIn('部分區間完整性尚未確認', self.window.market.message.text())
         # A fresh host reloads only the persisted bounded history cache.
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import JobManager, SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         jobs = JobManager(self.paths)
-        restarted = MainWindow(self.paths, jobs, SettingsStore(self.paths.state / 'settings.json'), BackupManager(self.paths, jobs))
+        restarted = MainWindow(
+            self.paths,
+            jobs,
+            SettingsStore(self.paths.state / 'settings.json'),
+            BackupManager(self.paths, jobs),
+            services=_c_create_ui_services(_c_create_operation_ports()),
+        )
         try:
             self.assertEqual(len(restarted.market.selected_series().bars), 2)
             self.assertEqual(restarted._market_data_bindings, {})

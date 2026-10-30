@@ -1,5 +1,7 @@
 """Cheap offline B2 risk, persistence and order-entry regression evidence."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import ast
 from copy import deepcopy
 from datetime import timedelta
@@ -11,7 +13,9 @@ import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
-import desktop_app.shell.main_window
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_kill as _c_desktop_app_shell_main_window__handle_ui_paper_kill
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_reconcile as _c_desktop_app_shell_main_window__handle_ui_paper_reconcile
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_submit as _c_desktop_app_shell_main_window__handle_ui_paper_submit
 from desktop_app.strings.catalog import ui_text
 from quantlab.core import canonical_json, content_hash
 from quantlab.desktop_feedback import stop_presentation
@@ -167,18 +171,25 @@ class LockTests(unittest.TestCase):
 
     def test_ui_submit_and_explicit_lock_unlock_payloads(self):
         root = Path(self.tmp.name)
-        common = patch.object(desktop_app.shell.main_window, '_prepare_paper_operation', return_value=self.broker)
-        with common, patch.object(desktop_app.shell.main_window, '_finish_paper_operation', side_effect=lambda root, broker, replay: broker.snapshot()):
-            desktop_app.shell.main_window._handle_ui_paper_kill({'manual_order_lock': True}, None, root)
+        common = patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', return_value=self.broker)
+        with (
+            common,
+            patch(
+                'quantlab.research_core.application.paper_operations._finish_paper_operation', side_effect=lambda ports, root, broker, replay: broker.snapshot()
+            ),
+        ):
+            _c_desktop_app_shell_main_window__handle_ui_paper_kill(_c_create_operation_ports(), {'manual_order_lock': True}, None, root)
             count = len(self.broker.journal_events())
             payload = dict(reconcile_confirmed=True, snapshot=self.broker.snapshot(), intent=self.intent('ui'), quote=self.quote(), now=NOW.isoformat())
-            with patch.object(desktop_app.shell.main_window, 'load_selection', return_value={'strategy_hash': 'synthetic-strategy'}):
-                account = desktop_app.shell.main_window._handle_ui_paper_submit(payload, None, root)
+            with patch('quantlab.reporting.load_selection', return_value={'strategy_hash': 'synthetic-strategy'}):
+                account = _c_desktop_app_shell_main_window__handle_ui_paper_submit(_c_create_operation_ports(), payload, None, root)
             self.assertEqual(account['orders']['ui']['reason'], 'manual_order_lock')
             self.assert_no_intents_since(count)
-            account = desktop_app.shell.main_window._handle_ui_paper_reconcile({'snapshot': account}, None, root)
+            account = _c_desktop_app_shell_main_window__handle_ui_paper_reconcile(_c_create_operation_ports(), {'snapshot': account}, None, root)
             self.assertTrue(account['manual_order_lock'])
-            account = desktop_app.shell.main_window._handle_ui_paper_reconcile({'snapshot': account, 'manual_order_lock': False}, None, root)
+            account = _c_desktop_app_shell_main_window__handle_ui_paper_reconcile(
+                _c_create_operation_ports(), {'snapshot': account, 'manual_order_lock': False}, None, root
+            )
             self.assertFalse(account['manual_order_lock'])
 
     def test_stop_text_and_live_disabled(self):
@@ -220,7 +231,7 @@ class OrderEntryScanTests(unittest.TestCase):
         registry_fixtures.RegistryTests('test_public_names_unchanged').test_public_names_unchanged()
 
     def test_class_limits_and_ui_lock_catalog_wiring(self):
-        ui = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
+        ui = ast.parse((ROOT / 'desktop_app/shell/window.py').read_text(encoding='utf-8-sig'))
         window = next(n for n in ui.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(window.end_lineno - window.lineno + 1, 400)
         for path in (ROOT / 'desktop_app').rglob('*.py'):
@@ -275,7 +286,11 @@ class OrderEntryScanTests(unittest.TestCase):
                 if relative == 'quantlab/paper.py' and function.name == 'submit' and function.args.kwonlyargs:
                     submit_function = function
         self.assertEqual(
-            submits, {('quantlab/paper_replay.py', '_step', 'self.broker'), ('desktop_app/shell/main_window.py', '_handle_ui_paper_submit', 'broker')}
+            submits,
+            {
+                ('quantlab/paper_replay.py', '_step', 'self.broker'),
+                ('quantlab/research_core/application/paper_operations.py', '_handle_ui_paper_submit', 'broker'),
+            },
         )
         # Owner-authorized v2 has an independently exhaustive execution contract;
         # it does not alter the original two callers or v1 intent writer oracle.

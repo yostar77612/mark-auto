@@ -1,5 +1,7 @@
 """Cheap offline sequencing and confirmation contracts, without shown windows."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -168,29 +170,33 @@ class WidgetTests(unittest.TestCase):
 
     def test_executor_isolation_reuses_handlers(self):
         import desktop_app.shell.main_window
+        from quantlab.research_core.application.ui_operations.registry import _UI_OPERATION_HANDLERS as _c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS
+        from quantlab.research_core.application.ui_operations.data import _handle_ui_demo as _c_desktop_app_shell_main_window__handle_ui_demo
 
         root = Path('synthetic-test-root')
         paths = SimpleNamespace()
         with (
-            patch.object(desktop_app.shell.main_window, '_root', return_value=root),
+            patch('quantlab.research_core.adapters.ui_files._root', return_value=root),
             patch.object(Path, 'mkdir'),
-            patch.dict(desktop_app.shell.main_window._UI_OPERATION_HANDLERS, {'ui_demo': Mock(return_value={}), 'ui_backtest': Mock(return_value={})}),
+            patch.dict(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS, {'ui_demo': Mock(return_value={}), 'ui_backtest': Mock(return_value={})}),
         ):
             for operation in ('ui_demo', 'ui_backtest'):
                 desktop_app.shell.main_window.execute_ui_operation(operation, {'synthetic_quick_start': True}, paths)
-                self.assertEqual(desktop_app.shell.main_window._UI_OPERATION_HANDLERS[operation].call_args.args[2], root / 'synthetic-quick-start')
+                self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS[operation].call_args.args[3], root / 'synthetic-quick-start')
             self.assertEqual(
-                desktop_app.shell.main_window._UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[0]['dataset'],
+                _c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[1]['dataset'],
                 str(root / 'synthetic-quick-start' / 'synthetic-demo-dataset.json'),
             )
             desktop_app.shell.main_window.execute_ui_operation('ui_demo', {}, paths)
-            self.assertEqual(desktop_app.shell.main_window._UI_OPERATION_HANDLERS['ui_demo'].call_args.args[2], root)
+            self.assertEqual(_c_desktop_app_shell_main_window__UI_OPERATION_HANDLERS['ui_demo'].call_args.args[3], root)
         data = SimpleNamespace(bars=(1,), manifest={})
         with (
-            patch.object(desktop_app.shell.main_window, 'synthetic_dataset', return_value=data),
-            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
+            patch('quantlab.reporting.synthetic_dataset', return_value=data),
+            patch('quantlab.reporting.save_dataset') as save,
         ):
-            output = desktop_app.shell.main_window._handle_ui_demo({'synthetic_quick_start': True}, paths, root / 'synthetic-quick-start')
+            output = _c_desktop_app_shell_main_window__handle_ui_demo(
+                _c_create_operation_ports(), {'synthetic_quick_start': True}, paths, root / 'synthetic-quick-start'
+            )
             self.assertIn('synthetic-demo-dataset.json', output['dataset'])
             save.assert_called_once_with(data, root / 'synthetic-quick-start' / 'synthetic-demo-dataset.json')
 

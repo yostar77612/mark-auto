@@ -123,7 +123,7 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
     from PySide6.QtWidgets import QApplication, QScrollArea, QTabWidget, QWidget
 
     import desktop_app.shell.theme
-    from desktop_app.shell.main_window import MainWindow
+    from desktop_app.shell.main_window import create_window
     from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
@@ -143,7 +143,12 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
             with tempfile.TemporaryDirectory(prefix='markauto-readability-') as temporary:
                 paths = AppPaths(Path(temporary) / 'workspace', Path(temporary) / 'bootstrap').ensure()
                 jobs = JobManager(paths)
-                window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+                window = create_window(
+                    paths,
+                    jobs,
+                    SettingsStore(paths.state / 'settings.json'),
+                    BackupManager(paths, jobs),
+                )
                 try:
                     for timer in window.findChildren(QTimer):
                         timer.stop()

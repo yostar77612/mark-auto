@@ -8,7 +8,8 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, canonical_json, to_dict
 from quantlab.reporting import load_result, demo_config
 from quantlab.desktop_errors import error_message, exception_code
-from desktop_app.components.forms import BacktestForm, BacktestSummaryCard, BacktestFillsTable
+from desktop_app.features.backtest.forms import BacktestForm
+from desktop_app.features.backtest.summary import BacktestSummaryCard, BacktestFillsTable
 from desktop_app.features.backtest.backtest_summary_card import ReportSummaryCard
 from desktop_app.shell.host import PageHost
 from desktop_app.components.async_status import AsyncStatus

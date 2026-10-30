@@ -6,6 +6,8 @@ query fixture; original Windows handle semantics are a separate native test.
 No provider/network/helper is executed. All workspaces are temporary.
 """
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from contextlib import ExitStack
 import importlib.util
 import json
@@ -36,7 +38,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
     _enable_backup = contract.RestartAvailabilityContractTests._enable_backup
 
     def setUp(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.research_analysis import _read_analysis_journal
 
         self.tmp = tempfile.TemporaryDirectory(prefix='markauto-recovery-ui-')
@@ -64,13 +66,15 @@ class AnalysisRecoveryUITests(unittest.TestCase):
             'socket.create_connection',
             'http.client.HTTPSConnection',
             'quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport',
-            'desktop_app.shell.main_window.analysis_provider_for',
+            'quantlab.research_core.application.analysis_operations.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('No recovery UI network/provider')))
         self.stack.enter_context(patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_worker))
         self.jobs = JobManager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
-        self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups)
+        self.window = MainWindow(
+            self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups, services=_c_create_ui_services(_c_create_operation_ports())
+        )
         self.addCleanup(lambda: (self.cleanup_window(), contract._destroy_owned_window(self, self.window)))
         self.window.timer.stop()
         self.panel = self.window.automatic_backup_panel
@@ -274,7 +278,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_other_workspace_keeps_non_ai_but_enforces_installation_source_conflict(self):
         from PySide6.QtWidgets import QPushButton
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.reporting import save_dataset
 
         original = _snapshot(self.paths.root)
@@ -284,7 +288,9 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         other = locator.load(probe=False).ensure()
         save_dataset(self.data, other.state / 'dataset.json')
         jobs = JobManager(other)
-        window = MainWindow(other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs))
+        window = MainWindow(
+            other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         window.timer.stop()
         window.automatic_backup_panel.timer.stop()
         try:
@@ -335,7 +341,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def _assert_full_startup_and_close(self, *, unknown=False):
         import desktop
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from PySide6.QtCore import QTimer
 
         locator = WorkspaceLocator(self.paths.bootstrap)
@@ -374,14 +380,14 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_clean_legacy_startup_has_no_recovery_ledger_or_conflict(self):
         from desktop import _prepare_startup_workspace
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         clean = AppPaths(self.base / 'legacy-workspace', self.base / 'legacy-bootstrap').ensure()
         backups = BackupManager(clean)
         self.assertTrue(_prepare_startup_workspace(clean, backups).legacy)
         self.assertFalse((clean.controls / 'analysis-recovery-v1.sqlite3').exists())
         jobs = JobManager(clean)
-        window = MainWindow(clean, jobs, SettingsStore(clean.state / 'settings.json'), backups)
+        window = MainWindow(clean, jobs, SettingsStore(clean.state / 'settings.json'), backups, services=_c_create_ui_services(_c_create_operation_ports()))
         window.timer.stop()
         window.automatic_backup_panel.timer.stop()
         try:

@@ -1,5 +1,7 @@
 """Generated-bar desktop routing and typed UI checks; never market evidence."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import importlib.util
 import json
 import os
@@ -120,10 +122,10 @@ class WalkForwardAdapterTests(unittest.TestCase):
         with patch('quantlab.research_core.application.walk_forward_operations.run_walk_forward', side_effect=AssertionError('No rerun')):
             self.assertEqual(self.operation('run', payload), result)
             self.assertEqual(self.operation('read', {'reference': result['reference']}), result)
-        from desktop_app.shell.main_window import candidate_record
+        from quantlab.research_core.application.ui_operations.data import candidate_record
 
         with self.assertRaises((ValidationError, FileNotFoundError)):
-            candidate_record(self.paths.state, {'walk_forward_reference': result['reference']})
+            candidate_record(_c_create_operation_ports(), self.paths.state, {'walk_forward_reference': result['reference']})
         with self.assertRaises(ValidationError):
             self.operation('read', {'reference': '../bad'})
 
@@ -223,7 +225,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_defaults_percent_round_trip_and_modes(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -242,7 +244,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         self.assertEqual(form.build_payload(), expanded)
 
     def test_invalid_risk_and_step_inputs_reject(self):
-        from desktop_app.components.forms import WalkForwardForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -266,7 +268,8 @@ class WalkForwardTypedFormTests(unittest.TestCase):
             self.assertIsNotNone(form.build_payload())
 
     def test_typed_costs_preserved_and_variable_steps_reject(self):
-        from desktop_app.components.forms import WalkForwardForm, BacktestForm
+        from desktop_app.features.walk_forward.forms import WalkForwardForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from dataclasses import replace
         from quantlab.walk_forward import WalkForwardFold
 

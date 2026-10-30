@@ -16,13 +16,15 @@ from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 import shiboken6
 
 import desktop_app.components.charts as charts
-import desktop_app.features.market.dashboard as market
+from desktop_app.components.chart_annotations import ReferenceLine as _c_charts_ReferenceLine
+from desktop_app.components.chart_paint import _paint_chart_references as _c_charts__paint_chart_references
+from desktop_app.features.market.layout import _build_market_header as _c_market__build_market_header
 from desktop_app.shell import mount
 from desktop_app.components import result_layers
 from desktop_app.shell.host import PageHost
 from desktop_app.shell.bindings import SharedStateBindings
 from desktop_app.shell.views import ViewCoordinator
-from tests.r7_characterization import ROOT, capture, mount_capture, snapshot_cases
+from tests.r7_characterization import ROOT, capture, mount_capture, snapshot_cases, public_names
 
 BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf-8'))
 REDESIGN = json.loads((ROOT / 'tests/fixtures/ui_redesign_characterization_delta.json').read_text(encoding='utf-8'))
@@ -60,7 +62,7 @@ class CharacterizationTests(unittest.TestCase):
         self.assertEqual(self.actual['stub_callbacks'], STUB_CALLBACKS)
 
     def test_main_window_attribute_and_callback_sets(self):
-        self.assertEqual(self.actual['window']['attributes'], sorted(WINDOW_ATTRIBUTES + REDESIGN['added_window_attributes']))
+        self.assertEqual(self.actual['window']['attributes'], sorted(WINDOW_ATTRIBUTES + REDESIGN['added_window_attributes'] + ['services', 'job_presenter']))
         self.assertEqual(self.actual['window']['callbacks'], WINDOW_CALLBACKS)
 
     def test_mount_callbacks_dispatch_to_patched_shell(self):
@@ -72,7 +74,43 @@ class CharacterizationTests(unittest.TestCase):
             patched.assert_called_once_with()
 
     def test_public_names_are_identical(self):
-        self.assertEqual(self.actual['public'], BASE['public'])
+        expected = json.loads(json.dumps(BASE['public']))
+        chart = expected['desktop_app/components/charts.py']
+        moved_imports = {'ChartMarker', 'ChartTrace', 'ReferenceLine', 'Decimal', 'QPolygonF', 'ZoneInfo', 'dataclass', 'datetime', 're', 'timedelta'}
+        chart[0] = sorted((set(chart[0]) - moved_imports) | {'ChartInteraction'})
+        annotation_classes = {name: value for name, value in chart[1].items() if name != 'CandlestickChart'}
+        chart[1] = {'CandlestickChart': chart[1]['CandlestickChart']}
+        market = expected['desktop_app/features/market/dashboard.py']
+        history = market[1].pop('MarketHistoryDialog')
+        market[0] = sorted(
+            (
+                'ChartPresenter',
+                'DEFAULT_INDICATORS',
+                'IndicatorPresenter',
+                'MarketDashboard',
+                'MarketPreferences',
+                'MarketPresenter',
+                'MarketRows',
+                'MarketSeries',
+                'MarketValidationError',
+                'QAbstractItemView',
+                'QHeaderView',
+                'QScrollArea',
+                'QTableWidget',
+                'QVBoxLayout',
+                'QWidget',
+                'Signal',
+                'apply_market_theme',
+                'deepcopy',
+                'sample_market_series',
+                'ui_text',
+            )
+        )
+        history_owner = public_names((ROOT / 'desktop_app/features/market/history_dialog.py').read_text(encoding='utf-8'))
+        self.assertEqual(history_owner[1]['MarketHistoryDialog'], history)
+        self.assertEqual(self.actual['public'], expected)
+        annotations = public_names((ROOT / 'desktop_app/components/chart_annotations.py').read_text(encoding='utf-8'))
+        self.assertEqual(annotations[1], annotation_classes)
 
     def test_three_chart_pixels_and_painter_stack_counts(self):
         self.assertEqual([x[1] for x in self.actual['charts']], [x[1] for x in BASE['charts']])
@@ -123,7 +161,7 @@ class CharacterizationTests(unittest.TestCase):
         shell = SimpleNamespace(refresh_requested=SimpleNamespace(emit=Mock()))
         try:
             root = QVBoxLayout(parent)
-            header = market._build_market_header(shell, root)
+            header = _c_market__build_market_header(shell, root)
             self.assertEqual(header.count(), 4)
             self.assertEqual(shell.refresh_button.objectName(), 'market_refresh')
             shell.refresh_button.click()
@@ -138,7 +176,7 @@ class CharacterizationTests(unittest.TestCase):
         painter = QPainter(image)
         try:
             text = lambda x, y, value: painter.drawText(QPointF(x, y), str(value))
-            result = charts._paint_chart_references(
+            result = _c_charts__paint_chart_references(
                 chart, painter, painter.fontMetrics(), text, (), chart.price_rect, lambda i: i, lambda price: float(price), 1
             )
             self.assertEqual(result, ([], []))
@@ -148,7 +186,7 @@ class CharacterizationTests(unittest.TestCase):
 
     def test_snapshot_line_stage_in_isolation(self):
         result, bars, _ = snapshot_cases()[2]
-        actual = result_layers._build_snapshot_lines(result, [20000], [20000], [1], 1, 1, len(bars) - 1, bars[-1].end, charts.ReferenceLine)
+        actual = result_layers._build_snapshot_lines(result, [20000], [20000], [1], 1, 1, len(bars) - 1, bars[-1].end, _c_charts_ReferenceLine)
         self.assertEqual([line.price for line in actual], [20000, 20000, 19700, 20500])
 
     def test_refresh_restore_stage_in_isolation(self):

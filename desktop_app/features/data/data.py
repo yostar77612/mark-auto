@@ -4,7 +4,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.components.formatting import display_status
 from quantlab.core import ValidationError
 from quantlab.data_gap_report import GapReport
-from desktop_app.features.market.dashboard import MarketHistoryDialog
+from desktop_app.features.market.history_dialog import MarketHistoryDialog
 from desktop_app.shell.host import PageHost
 from desktop_app.features.data.data_gaps import GapPanel
 from desktop_app.components.design import card, section

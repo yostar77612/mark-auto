@@ -1,3 +1,4 @@
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 from PySide6.QtWidgets import QWidget, QTabBar, QTabWidget
 from tests.t10_fixture import WindowFixture
 from desktop_app.shell.accessibility import INTERACTIVE, visual_focus_order
@@ -28,7 +29,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         cls.started = perf_counter()
@@ -48,7 +49,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         guard = patch.object(cls.jobs, 'start', side_effect=AssertionError('The accessibility walk must not start jobs.'))
         guard.start()
         cls.addClassCleanup(guard.stop)
-        cls.window = MainWindow(paths, cls.jobs, SettingsStore(paths.state / 'settings.json'))
+        cls.window = MainWindow(paths, cls.jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
         cls.addClassCleanup(shiboken6.delete, cls.window)
         cls.addClassCleanup(cls.window.close)
         for timer in cls.window.findChildren(QTimer):

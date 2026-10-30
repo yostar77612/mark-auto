@@ -14,7 +14,8 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from quantlab.market import InstrumentRef
-from quantlab.market_history import MarketSession, PRODUCT_SOURCES, import_history
+from quantlab.market_history import MarketSession, PRODUCT_SOURCES
+from quantlab.market_history import import_history
 from quantlab.chart_data import aggregate_bars, TIMEFRAMES
 
 EXPECTED_HASH = '6807f4c3b7f977cb7e5109b1135fe69bbfe18d7c6b71a445e6576bb6be6163a8'

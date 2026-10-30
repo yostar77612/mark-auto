@@ -4,7 +4,8 @@ import math
 from collections import deque
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QProgressBar
-from desktop_app.strings.catalog import ui_text, stage_error_message
+from desktop_app.strings.catalog import ui_text
+from desktop_app.components.job_messages import stage_error_message
 from desktop_app.features.assistant.states import campaign_outcome, outcome_message, outcome_state
 from quantlab.job_stages import normalize_stage
 from quantlab.diagnostics import error_entry

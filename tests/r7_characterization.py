@@ -1,5 +1,7 @@
 """Synthetic capture instruments for the R7 behavior-preserving split."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from contextlib import ExitStack
 from dataclasses import asdict, replace
@@ -14,7 +16,8 @@ from PySide6.QtGui import QImage, QPainter, QFont
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QAbstractButton, QTableWidget
 import shiboken6
 
-from desktop_app.components.charts import CandlestickChart, ChartTrace, ChartMarker, ReferenceLine
+from desktop_app.components.charts import CandlestickChart
+from desktop_app.components.chart_annotations import ChartTrace, ChartMarker, ReferenceLine
 from desktop_app.shell import mount
 from desktop_app.components import result_layers
 from tests.test_chart_data import bar, START
@@ -188,7 +191,7 @@ def window_capture():
     import tempfile
 
     # Keep this dependency local to the stage that uses it.
-    from desktop_app.shell.main_window import MainWindow
+    from desktop_app.shell.window import MainWindow
 
     # Keep this dependency local to the stage that uses it.
     from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -209,7 +212,7 @@ def window_capture():
     ):
         paths = AppPaths(Path(folder) / 'workspace').ensure()
         jobs = JobManager(paths)
-        window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'))
+        window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
         try:
             for timer in window.findChildren(QTimer):
                 timer.stop()

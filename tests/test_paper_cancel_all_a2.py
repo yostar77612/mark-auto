@@ -1,5 +1,7 @@
 """Offline cancel-all contracts: snapshot authority, isolation and UI consent."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,7 +13,8 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_cancel_all as _c_ui__handle_ui_paper_cancel_all
+from desktop_app.shell.window import MainWindow as _c_ui_MainWindow
 from desktop_app.features.paper.paper import PaperPage, stop_exposure_text, stop_dialog, cancel_all_dialog
 from desktop_app.components.job_progress import failure_notice
 from desktop_app.strings.catalog import ui_text
@@ -45,8 +48,8 @@ class CancelAllTests(unittest.TestCase):
         self.before = self.broker.snapshot()
 
     def run_cancel(self, **payload):
-        with patch.object(ui, '_prepare_paper_operation', return_value=self.broker):
-            return ui._handle_ui_paper_cancel_all({'now': NOW.isoformat(), **payload}, None, self.fixture.path.parent)
+        with patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', return_value=self.broker):
+            return _c_ui__handle_ui_paper_cancel_all(_c_create_operation_ports(), {'now': NOW.isoformat(), **payload}, None, self.fixture.path.parent)
 
     def test_sorted_snapshot_targets_idempotent_preserves_cash_positions_and_lock(self):
         self.broker.set_manual_order_lock(True)
@@ -221,7 +224,7 @@ class CancelAllUiTests(unittest.TestCase):
 
         with sandbox_ui(), workspace() as paths:
             jobs = JobManager(paths)
-            window = ui.MainWindow(paths, jobs)
+            window = _c_ui_MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

@@ -75,8 +75,10 @@ def lane_catalog_additions():
         assert isinstance(call.func, ast.Attribute) and isinstance(call.func.value, ast.Name)
         assert (call.func.value.id, call.func.attr) == ('ZH_TW', 'update')
         assert lines[node.lineno - 2].startswith('# Lane '), 'Every trailing update needs its Lane marker'
-        assert len(call.args) == 1 and not call.keywords and isinstance(call.args[0], ast.Dict)
-        block = ast.literal_eval(call.args[0])
+        assert len(call.args) == 1 and not call.keywords and isinstance(call.args[0], ast.Subscript)
+        assert isinstance(call.args[0].value, ast.Name) and call.args[0].value.id == '_ZH_TW_CHUNKS'
+        phase = ast.literal_eval(call.args[0].slice)
+        block = strings._ZH_TW_CHUNKS[phase]
         assert all(isinstance(key, str) and isinstance(value, str) for key, value in block.items())
         assert not additions.keys() & block.keys(), 'Duplicate Lane catalog keys'
         additions.update(block)
@@ -184,6 +186,14 @@ class DesktopTextAliasTests(unittest.TestCase):
                     if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'TEXT_ALIASES' for target in node.targets)
                 )
                 allowed_nodes = {id(node) for node in ast.walk(alias)}
+            if name.startswith('desktop_app/strings/aliases/'):
+                for statement in tree.body:
+                    if not isinstance(statement, ast.Assign) or not any(isinstance(t, ast.Name) and t.id == 'ENTRIES' for t in statement.targets):
+                        continue
+                    for row in statement.value.elts:
+                        order, key, value = row.elts
+                        self.assertEqual(strings.TEXT_ALIASES[ast.literal_eval(key)], ast.literal_eval(value))
+                        allowed_nodes.add(id(key))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in allowed_nodes:
                     self.assertIsNone(GENERIC.search(node.value), f'{name}:{node.lineno}: {node.value}')

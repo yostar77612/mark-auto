@@ -108,7 +108,7 @@ class CompareHostTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text('{}', encoding='utf-8')
             paths.append(str(path))
-        with patch('desktop_app.shell.main_window.load_result', return_value=report({'net_pnl': '20'})), patch.object(w, 'show_result'):
+        with patch('quantlab.reporting.load_result', return_value=report({'net_pnl': '20'})), patch.object(w, 'show_result'):
             w.refresh_views()
             table = w.compare_page.saved_results_table
             self.assertEqual(table.rowCount(), 2)

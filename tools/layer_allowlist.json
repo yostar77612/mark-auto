@@ -42,30 +42,6 @@
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
   {
-    "path": "desktop_forms.py",
-    "target": "quantlab.__main__",
-    "rule": "presentation-to-composition",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_forms.py",
-    "target": "quantlab.reporting",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_market.py",
-    "target": "quantlab.market_history",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_market.py",
-    "target": "quantlab.reporting",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
     "path": "desktop_market_workspace.py",
     "target": "desktop_market_layout",
     "rule": "presentation-to-infrastructure",
@@ -230,84 +206,6 @@
   {
     "path": "desktop_pages/widgets.py",
     "target": "quantlab.strict_json",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_presentation.py",
-    "target": "quantlab.reporting",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "desktop_chatgpt_auth",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "desktop_chatgpt_provider",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.__main__",
-    "rule": "presentation-to-composition",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.analysis_recovery",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.data",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.downloads",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.idea_search",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.manual_exchange",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.market_history",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.market_providers",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.reporting",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_ui.py",
-    "target": "quantlab.runtime_support",
     "rule": "presentation-to-infrastructure",
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
@@ -490,5 +388,17 @@
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
     "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+  },
+  {
+    "path": "desktop_market.py",
+    "target": "quantlab.reporting",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+  },
+  {
+    "path": "desktop_pages/compare.py",
+    "target": "quantlab.runtime_support",
+    "rule": "presentation-to-infrastructure",
+    "justification": "Existing request validation follows D relocation from desktop_runtime to runtime_support; no new operation or behavior."
   }
 ]

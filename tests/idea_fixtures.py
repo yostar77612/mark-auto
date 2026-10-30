@@ -252,9 +252,9 @@ class FakeTransport:
 
 def caller(transport):
     # Load optional certificate and desktop dependencies only when a fixture needs them.
-    import desktop_app.shell.main_window
+    from quantlab.research_core.adapters.ui_idea_stream import _idea_event_caller as _c_desktop_app_shell_main_window__idea_event_caller
 
-    return desktop_app.shell.main_window._idea_event_caller(object(), transport)
+    return _c_desktop_app_shell_main_window__idea_event_caller(object(), transport)
 
 
 def page(rule):

@@ -167,7 +167,8 @@ def _market_smoke_ui(app):
     import shiboken6
     from desktop_app.features.market.dashboard import MarketDashboard
     from desktop_app.components.charts import CandlestickChart
-    from desktop_app.components.forms import StrategyForm, CampaignForm
+    from desktop_app.features.strategy.forms import StrategyForm
+    from desktop_app.features.research.forms import CampaignForm
     from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance
     from quantlab.core import canonical_json
 
@@ -257,7 +258,12 @@ def _market_smoke_ui(app):
                 'network_used': False,
                 'live_status': 'disabled',
                 'fixture_sha256': fixture_hash,
-                'modules': ['desktop_app.features.market.dashboard', 'desktop_app.components.charts', 'desktop_app.components.forms'],
+                'modules': [
+                    'desktop_app.features.market.dashboard',
+                    'desktop_app.components.charts',
+                    'desktop_app.features.strategy.forms',
+                    'desktop_app.features.research.forms',
+                ],
                 'chart_rendered_bars': dashboard.chart.last_rendered_bar_count,
                 'timeframe_bars': counts,
                 'indicator_series': len(dashboard.chart.overlays) + len(dashboard.chart.panes),
@@ -572,7 +578,9 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
     data = load_dataset(paths.state / 'dataset.json')
     if data.manifest['data_hash'] != report['fixture_data_hash'] or data.manifest['source_type'] != 'synthetic':
         raise ValueError('Walk-forward synthetic source changed')
-    expected = preview_walk_forward(data, payload['plan'], paths)
+    from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
+    expected = preview_walk_forward(data, payload['plan'], paths, inputs=_c_create_operation_ports().inputs)
     reference = expected['preview_identity']
     if operation == 'ui_walk_forward_preview':
         if result != expected or (paths.state / 'walk_forward').exists() or (paths.controls / 'holdout-registry.sqlite3').exists():

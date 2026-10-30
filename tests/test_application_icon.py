@@ -58,7 +58,7 @@ class ApplicationIconTests(unittest.TestCase):
             self.app.setWindowIcon(previous)
 
     def test_start_paths_apply_icon_and_freezer_installer_reference_same_artwork(self):
-        for name in ('desktop.py', 'desktop_app/shell/main_window.py'):
+        for name in ('desktop.py', 'desktop_app/shell/setup.py'):
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8-sig'))
             self.assertTrue(
                 any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'setWindowIcon' for node in ast.walk(tree)), name

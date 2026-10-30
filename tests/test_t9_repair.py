@@ -10,10 +10,11 @@ from PySide6.QtCore import QDate, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QTableWidgetItem
 
-from desktop_app.components.forms import BacktestForm
+from desktop_app.features.backtest.forms import BacktestForm
 from quantlab.core import ValidationError, canonical_json, content_hash
 from tests.test_ui_operations_registry import exercise, old_module
 import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.ui_operations.registry import _UI_OPERATION_HANDLERS as _c_ui__UI_OPERATION_HANDLERS
 
 
 class ExpiryKeyboardParityTests(unittest.TestCase):
@@ -69,7 +70,7 @@ class ExpiryKeyboardParityTests(unittest.TestCase):
 
 class LegacyOracleTests(unittest.TestCase):
     def test_current_handler_mutation_does_not_mutate_legacy_oracle(self):
-        original = ui._UI_OPERATION_HANDLERS['ui_analysis_preview']
+        original = _c_ui__UI_OPERATION_HANDLERS['ui_analysis_preview']
 
         def mutated(*args, **kwargs):
             return dict(original(*args, **kwargs), repair_mutation=True)
@@ -77,7 +78,7 @@ class LegacyOracleTests(unittest.TestCase):
         with old_module() as old:
             self.assertIsNot(old.execute_ui_operation, ui.execute_ui_operation)
             self.assertNotIn('_UI_OPERATION_HANDLERS', vars(old))
-            with patch.dict(ui._UI_OPERATION_HANDLERS, ui_analysis_preview=mutated):
+            with patch.dict(_c_ui__UI_OPERATION_HANDLERS, ui_analysis_preview=mutated):
                 legacy = exercise(old.execute_ui_operation)
                 current = exercise(ui.execute_ui_operation)
         self.assertIn('analysis_id', legacy['ui_analysis_preview']['result'])

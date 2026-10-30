@@ -1,0 +1,33 @@
+"""Traditional Chinese feature literals; ordered records preserve the original catalog."""
+
+ENTRIES = (
+    (0, 1357, 'automatic_backup.init.enable', '啟用每日自動備份（預設關閉）'),
+    (0, 1358, 'automatic_backup.init.directory', '工作區與應用資料夾以外的備份資料夾'),
+    (0, 1359, 'automatic_backup.init.browse', '選取自動備份資料夾'),
+    (0, 1360, 'automatic_backup.init.save', '儲存自動備份設定'),
+    (
+        0,
+        1361,
+        'automatic_backup.init.schedule_hint',
+        '程式開啟且研究／模型服務／設定作業全部停止後，每 UTC 日最多嘗試一次；取消、失敗或關閉後不會當日自動重試。最多 7 個封存檔、2 GiB；空間不足即停止並提示，永不自動刪除。備份不含金鑰、快取、模型與不可逆預算紀錄。還原仍須手動確認。',
+    ),
+    (0, 1362, 'automatic_backup.init.never_attempted', '尚無備份'),
+    (0, 1363, 'automatic_backup.init.last_unknown', '上次嘗試結果未確認；不會當日重送'),
+    (0, 1364, 'automatic_backup.init.last_success', '上次備份成功'),
+    (0, 1365, 'automatic_backup.init.last_failed', '上次備份失敗'),
+    (0, 1366, 'automatic_backup.init.last_cancelled', '上次備份已取消'),
+    (0, 1367, 'automatic_backup.init.suspended', '自動備份已暫停：{0}'),
+    (0, 1368, 'automatic_backup.browse.dialog_title', '選取自動備份資料夾'),
+    (0, 1369, 'automatic_backup.save.job_busy', '請先等待或取消目前自動備份。'),
+    (0, 1370, 'automatic_backup.save.saved', '設定已保存；下次閒置檢查時執行。'),
+    (0, 1371, 'automatic_backup.save.disabled', '自動備份已關閉。'),
+    (0, 1372, 'automatic_backup.save.save_failed', '設定未保存：{0}'),
+    (0, 1373, 'automatic_backup.tick.waiting_idle', '等待研究、授權與設定作業全部停止後備份。'),
+    (0, 1374, 'automatic_backup.tick.running', '每日自動備份進行中；可使用下方取消背景作業。'),
+    (0, 1375, 'automatic_backup.tick.recovery_unconfirmed', '備份等待原始分析停止紀錄核對；未確認前不會開始新的備份嘗試。'),
+    (0, 1376, 'automatic_backup.tick.suspended', '自動備份已暫停；修正後重新儲存設定：{0}'),
+    (0, 1377, 'automatic_backup.handle_job_event.success', '每日自動備份成功。'),
+    (0, 1378, 'automatic_backup.handle_job_event.failed', '每日自動備份失敗；今天不會自動重試。'),
+    (0, 1379, 'automatic_backup.handle_job_event.cancelled', '每日自動備份已取消；今天不會自動重試。'),
+    (0, 1380, 'automatic_backup.handle_job_event.outcome_unknown', '備份結果未能確認；已暫停：{0}'),
+)

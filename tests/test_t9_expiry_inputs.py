@@ -1,5 +1,7 @@
 """T9 A: offline provenance, unchanged payload/hash gates and synthetic summary."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 from dataclasses import replace
 import json
@@ -188,7 +190,7 @@ class ExpiryInputTests(unittest.TestCase):
         self.assertEqual(expected['content_hash'], content_hash(actual))
 
     def test_manual_payload_bytes_and_hash_match_head_archive(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         self.assertEqual(GOLDEN['head_archive'], 'db44477ac24573c752484ed357c11689b29deddf')
@@ -204,7 +206,7 @@ class ExpiryInputTests(unittest.TestCase):
                 self.assert_golden_request(expected, form.build_payload())
 
     def test_run_payload_identical_to_manual_for_every_product_and_boundaries(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         for product in ('TX', 'MTX', 'TMF'):
@@ -243,7 +245,7 @@ class ExpiryInputTests(unittest.TestCase):
                     self.assertEqual(selected.expiries.table.item(0, 1).text(), '2026-10-20')
 
     def test_uncovered_does_not_fill_or_bypass_missing_expiry_guard(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from quantlab.reporting import synthetic_dataset
         from quantlab.backtest import run_backtest
         from quantlab.__main__ import config_from_json
@@ -265,7 +267,7 @@ class ExpiryInputTests(unittest.TestCase):
                 run_backtest(data, builtin_strategies()[0], config_from_json(form.build_payload()['config']))
 
     def test_picker_uncovered_selection_preserves_manual_history_and_requires_calendar(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for month in ('202509', '202610', '202609W2'):
@@ -284,7 +286,7 @@ class ExpiryInputTests(unittest.TestCase):
                     dialog.session_payload()
 
     def test_picker_selection_invalidates_history_confirmation(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         dialog = MarketHistoryDialog()
@@ -297,7 +299,7 @@ class ExpiryInputTests(unittest.TestCase):
             dialog.session_payload()
 
     def test_invalid_provenance_preserves_manual_expiry_payload(self):
-        from desktop_app.components.forms import BacktestForm
+        from desktop_app.features.backtest.forms import BacktestForm
         from PySide6.QtWidgets import QTableWidgetItem
 
         with patch('desktop_app.components.expiry_inputs.load_expiries', side_effect=ValueError('invalid source digest')):
@@ -310,7 +312,7 @@ class ExpiryInputTests(unittest.TestCase):
         self.assertEqual(form.build_payload()['config']['instrument_expiries'], {'TAIFEX:TMF:202609': '2026-09-16'})
 
     def test_import_request_identical_and_calendar_still_explicit(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for product in ('TX', 'MTX', 'TMF'):
@@ -333,7 +335,7 @@ class ExpiryInputTests(unittest.TestCase):
                 selected.session_payload()
 
     def test_history_manual_and_picker_requests_match_head_bytes_for_day_and_night(self):
-        from desktop_app.features.market.dashboard import MarketHistoryDialog
+        from desktop_app.features.market.history_dialog import MarketHistoryDialog
         from tests.test_market_history_ui import fill
 
         for key, expected in GOLDEN['history'].items():
@@ -401,7 +403,7 @@ class ExpiryInputTests(unittest.TestCase):
     def test_widget_inventory_matches_fixture_with_verified_picker_enabled(self):
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QWidget
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager
 
         mkdir = os.mkdir
@@ -416,7 +418,7 @@ class ExpiryInputTests(unittest.TestCase):
         ):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

@@ -1,5 +1,7 @@
 """Native widget and real isolated-worker integration tests; run QT_QPA_PLATFORM=offscreen."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import importlib.util
 import json
 import os
@@ -25,13 +27,19 @@ class NativeDesktopTests(unittest.TestCase):
     def setUp(self):
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), BackupManager(self.paths, self.jobs))
+        self.window = MainWindow(
+            self.paths,
+            self.jobs,
+            SettingsStore(self.paths.state / 'settings.json'),
+            BackupManager(self.paths, self.jobs),
+            services=_c_create_ui_services(_c_create_operation_ports()),
+        )
         self.assertEqual(self.window.provider_mode.currentData(), 'chatgpt_plan')
         self.window.provider_mode.setCurrentIndex(self.window.provider_mode.findData('fixture'))
         self.window.show()
@@ -218,7 +226,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertTrue((self.paths.state / 'desktop_safety.json').exists())
 
     def test_legacy_provider_settings_remain_inert_and_budget_identity_unchanged(self):
-        from desktop_app.shell.main_window import provider_binding_options
+        from quantlab.research_core.application.ui_operations.binding_policy import provider_binding_options
 
         old = {'mode': 'compatible', 'model': 'example', 'network_opt_in': True}
         self.assertEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='json_object')))
@@ -300,7 +308,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse(self.jobs.active)
 
     def test_remote_free_assumption_and_secret_endpoint_rejected_before_files(self):
-        from desktop_app.shell.main_window import campaign_generator
+        from quantlab.research_core.application.research_operations import campaign_generator
 
         opts = dict(
             mode='compatible',
@@ -316,10 +324,10 @@ class NativeDesktopTests(unittest.TestCase):
             timeout_seconds=2,
         )
         with self.assertRaises(ValueError):
-            campaign_generator(self.paths, opts)
+            campaign_generator(_c_create_operation_ports(), self.paths, opts)
         opts.update(endpoint='https://key:secret@example.invalid/v1', max_spend='1', cost_per_token='0.001')
         with self.assertRaises(ValueError):
-            campaign_generator(self.paths, opts)
+            campaign_generator(_c_create_operation_ports(), self.paths, opts)
         self.assertFalse((self.paths.state / 'provider_budgets').exists())
 
     def campaign(self, minimum='-100000000'):
@@ -335,7 +343,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.wait_job(60)
 
     def test_generated_candidate_picker_backtest_selection_and_persistence(self):
-        from desktop_app.shell.main_window import candidate_record
+        from quantlab.research_core.application.ui_operations.data import candidate_record
         from quantlab.reporting import load_result
 
         self.demo()
@@ -346,7 +354,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.click('use_candidate')
         reference = self.window.active_candidate
         self.assertIsNotNone(reference)
-        spec, meta = candidate_record(self.paths.state, reference)
+        spec, meta = candidate_record(_c_create_operation_ports(), self.paths.state, reference)
         self.assertTrue(meta['paper_qualified'])
         self.assertTrue(self.window.parameters.isReadOnly())
         self.assertFalse(self.window.strategy_form.isEnabled())
@@ -476,13 +484,13 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((destination / 'state-v1' / 'dataset.json').exists())
 
     def test_candidate_edited_export_cannot_change_qualification(self):
-        from desktop_app.shell.main_window import candidate_record
+        from quantlab.research_core.application.ui_operations.data import candidate_record
         from quantlab.reporting import read_json, write_json
 
         self.demo()
         self.campaign()
         reference = self.window.candidate_choice.currentData()
-        spec, meta = candidate_record(self.paths.state, reference)
+        spec, meta = candidate_record(_c_create_operation_ports(), self.paths.state, reference)
         self.assertTrue(meta['paper_qualified'])
         path = self.paths.state / 'campaigns' / reference['campaign_folder'] / 'campaign.json'
         original = read_json(path)
@@ -490,7 +498,7 @@ class NativeDesktopTests(unittest.TestCase):
         edited['evaluations']['oos'][0]['metrics']['net_pnl'] = '999999999'
         write_json(path, edited)
         with self.assertRaises(ValueError):
-            candidate_record(self.paths.state, reference)
+            candidate_record(_c_create_operation_ports(), self.paths.state, reference)
         self.window.inspect_candidate()
         self.assertFalse(self.window.use_candidate_button.isEnabled())
         self.assertEqual(read_json(path), edited)  # Never silently repair an edited export.
@@ -500,7 +508,7 @@ class NativeDesktopTests(unittest.TestCase):
         edited['status'] = 'completed'
         write_json(path, edited)
         with self.assertRaises(ValueError):
-            candidate_record(self.paths.state, reference)
+            candidate_record(_c_create_operation_ports(), self.paths.state, reference)
 
     def test_freeze_recovers_cancelled_restore_before_any_state_write(self):
         self.demo()
@@ -552,7 +560,7 @@ class NativeDesktopTests(unittest.TestCase):
             window.backups.recover()
 
     def test_historical_provider_budget_survives_older_backup_and_workspace_change(self):
-        from desktop_app.shell.main_window import research_controls
+        research_controls = _c_create_operation_ports().inputs.research_controls
         from quantlab.research import CompatibleProvider
         from quantlab.provider import HTTPTransport
 
@@ -623,14 +631,14 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'campaigns' / '.holdout_registry.sqlite3').exists())
 
     def test_legacy_research_ledgers_fail_closed_without_migration(self):
-        from desktop_app.shell.main_window import campaign_generator
+        from quantlab.research_core.application.research_operations import campaign_generator
 
         for relative in ['provider_budgets/legacy.sqlite3', 'campaigns/.holdout_registry.sqlite3']:
             path = self.paths.state / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'legacy-used-ledger')
             with self.assertRaises(ValueError):
-                campaign_generator(self.paths, {'mode': 'fixture'})
+                campaign_generator(_c_create_operation_ports(), self.paths, {'mode': 'fixture'})
             self.assertEqual(path.read_bytes(), b'legacy-used-ledger')
             path.unlink()
 

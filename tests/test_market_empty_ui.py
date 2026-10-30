@@ -1,5 +1,7 @@
 """Offline market onboarding and the real Walk-forward display projection."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from dataclasses import replace
 from decimal import Decimal
 import os
@@ -110,13 +112,13 @@ class MarketEmptyTests(unittest.TestCase):
 
     def test_completion_success_arms_timer_and_fade_hides_without_waiting(self):
         from PySide6.QtCore import QTimer
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths
         from tests.test_t9_onboarding import sandbox_ui
 
         with sandbox_ui(), tempfile.TemporaryDirectory(prefix='t16-notice-') as temporary:
             jobs = SimpleNamespace(active=False, poll=lambda: [], close=Mock())
-            window = MainWindow(AppPaths(Path(temporary) / 'workspace').ensure(), jobs)
+            window = MainWindow(AppPaths(Path(temporary) / 'workspace').ensure(), jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

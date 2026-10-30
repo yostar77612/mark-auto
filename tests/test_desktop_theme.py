@@ -1,5 +1,7 @@
 """Offline theme tokens, Qt property refresh, and application integration."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 from pathlib import Path
 import shutil
@@ -58,7 +60,7 @@ class DesktopThemeTests(unittest.TestCase):
         label.close()
 
     def test_window_roles_and_empty_widget_stylesheets(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
 
@@ -68,7 +70,9 @@ class DesktopThemeTests(unittest.TestCase):
         paths = AppPaths(root).ensure()
         jobs = JobManager(paths)
         self.addCleanup(jobs.close)
-        window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+        window = MainWindow(
+            paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         self.addCleanup(window.deleteLater)
         self.addCleanup(window.close)
         for timer in window.findChildren(QTimer):
@@ -84,7 +88,7 @@ class DesktopThemeTests(unittest.TestCase):
                 self.assertTrue(button.isCheckable())
                 self.assertIn(button, window.strategy_page.mode_buttons.values())
         previous = window.strategy_form.property('feedback')
-        with patch('desktop_app.shell.main_window.QTimer.singleShot') as single_shot:
+        with patch('PySide6.QtCore.QTimer.singleShot') as single_shot:
             window.form_feedback(window.strategy_form, 'synthetic')
         self.assertTrue(window.strategy_form.property('feedback'))
         self.assertEqual(single_shot.call_args.args[:2], (1800, window.strategy_form))

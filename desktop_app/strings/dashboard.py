@@ -1,0 +1,28 @@
+"""Traditional Chinese feature literals; ordered records preserve the original catalog."""
+
+ENTRIES = (
+    (55, 2584, 'dashboard.status.connected', '已連線'),
+    (55, 2585, 'dashboard.data_status', '資料狀態'),
+    (55, 2586, 'dashboard.today', '今日摘要'),
+    (55, 2587, 'dashboard.today.orders', '今日委託'),
+    (55, 2588, 'dashboard.separator', ' · '),
+    (55, 2589, 'dashboard.summary.item', '{}：{}'),
+    (55, 2590, 'dashboard.strategy.summary', '{} · v{} · {} · {}'),
+    (55, 2591, 'dashboard.status.disconnected', '連線中斷'),
+    (55, 2592, 'dashboard.status.connecting', '連線中'),
+    (55, 2593, 'dashboard.status.local', '本機模擬'),
+    (55, 2594, 'dashboard.status.broker', '券商：{}'),
+    (55, 2595, 'dashboard.status.market', '行情：{}'),
+    (55, 2596, 'dashboard.status.engine', '引擎：{}'),
+    (55, 2597, 'dashboard.status.reconciled', '對帳：已確認'),
+    (55, 2598, 'dashboard.status.pending', '對帳：待確認'),
+    (55, 2599, 'dashboard.status.attention', '需要處理：{}'),
+    (55, 2600, 'dashboard.today.net_pnl', '今日淨損益'),
+    (55, 2601, 'dashboard.today.unrealized_pnl', '未實現損益'),
+    (55, 2602, 'dashboard.today.remaining_risk', '剩餘風險額度'),
+    (55, 2603, 'dashboard.today.remaining_loss', '剩餘每日虧損額度'),
+    (55, 2604, 'dashboard.today.fills', '今日成交筆數'),
+    (55, 2605, 'dashboard.strategy.running', '運行中'),
+    (55, 2606, 'dashboard.strategy.paused', '已暫停'),
+    (55, 2607, 'dashboard.strategy.risk_stopped', '風控停止'),
+)

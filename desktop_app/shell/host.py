@@ -45,9 +45,9 @@ class PageHost:
     start_job: Callable
     text: Callable
     window_geometry: Callable
-    # QWidget x()/y() are frame coordinates; geometry().x()/y() are client coordinates.
     window_position: Callable
     window_minimum_size: Callable
+    idea_records: Callable
 
 
 @dataclass(frozen=True)

@@ -34,7 +34,8 @@
     "quantlab/research_core/application/job_requests.py": "quantlab/desktop_runtime.py",
     "quantlab/research_core/application/saved_pool_attempts.py": "quantlab/saved_candidate_pool.py",
     "quantlab/research_core/application/saved_pool_validation.py": "quantlab/saved_candidate_pool.py",
-    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py"
+    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py",
+    "quantlab/research_core/application/analysis_operations.py": "quantlab/desktop_runtime.py"
   },
   "overrides": {
     "desktop.py": "composition",
@@ -66,7 +67,7 @@
     "desktop_app/shell/theme.py": "presentation",
     "desktop_app/components/timeinput.py": "presentation",
     "desktop_app/smoke/tls.py": "tooling",
-    "desktop_app/shell/main_window.py": "presentation",
+    "desktop_app/shell/main_window.py": "composition",
     "desktop_app/shell/polish.py": "presentation",
     "desktop_app/features/walk_forward/presenter.py": "presentation",
     "quantlab/__init__.py": "shared",
@@ -213,7 +214,7 @@
     "desktop_app/features/trading/workspaces.py": "presentation",
     "desktop_app/__init__.py": "presentation",
     "quantlab/assistant/__init__.py": "shared",
-    "quantlab/research_core/__init__.py": "application",
+    "quantlab/research_core/__init__.py": "shared",
     "quantlab/research_core/adapters/job_process.py": "application",
     "quantlab/research_core/adapters/job_worker.py": "application",
     "quantlab/research_core/adapters/saved_pool_source.py": "application",
@@ -270,7 +271,14 @@
     "tools/refactor/split_core_ui.py": "tooling",
     "tools/refactor/split_core_r3c.py": "tooling",
     "tools/refactor/split_core_r3d.py": "tooling",
-    "tools/refactor/split_core_r3f.py": "tooling"
+    "tools/refactor/split_core_r3f.py": "tooling",
+    "desktop_app/bootstrap.py": "composition",
+    "tools/refactor/measure_ui_sizes.py": "tooling",
+    "tools/refactor/check_ui_scripts.py": "tooling",
+    "tools/refactor/replay_pr_c.py": "tooling",
+    "tools/refactor/replay_pr_c_content.json": "tooling",
+    "tools/refactor/replay_pr_c_mechanical.py": "tooling",
+    "tools/refactor/replay_pr_c_inventory.json": "tooling"
   },
   "ports": [
     "quantlab/assistant/ports/",

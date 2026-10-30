@@ -295,7 +295,7 @@ class TypedReplayWorkerTests(unittest.TestCase):
     def test_typed_120000_normal_worker_and_repeat_are_safe(self):
         from tests.test_desktop_ui import NativeDesktopTests
         from quantlab.reporting import read_json
-        from desktop_app.shell.main_window import paper_risk_limits
+        from quantlab.research_core.application.paper_operations import paper_risk_limits
 
         self.cleanup_window = NativeDesktopTests.cleanup_window.__get__(self)
         self.click = NativeDesktopTests.click.__get__(self)

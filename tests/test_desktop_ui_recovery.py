@@ -1,5 +1,7 @@
 """Regression tests for accessible page selection and no-data preference reload."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 import importlib.util
 
@@ -14,7 +16,7 @@ if HAS_QT:
     from PySide6.QtCore import QItemSelectionModel, QPointF, QEvent, Qt
     from PySide6.QtGui import QMouseEvent
     from PySide6.QtWidgets import QApplication
-    from desktop_app.shell.main_window import MainWindow
+    from desktop_app.shell.window import MainWindow
     from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, CredentialVault
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
@@ -52,7 +54,9 @@ class UiRecoveryTests(unittest.TestCase):
         self.app.processEvents()
 
     def window(self):
-        window = MainWindow(self.paths, self.jobs, self.store, BackupManager(self.paths, self.jobs))
+        window = MainWindow(
+            self.paths, self.jobs, self.store, BackupManager(self.paths, self.jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         window.timer.stop()
         self.windows.append(window)
         return window

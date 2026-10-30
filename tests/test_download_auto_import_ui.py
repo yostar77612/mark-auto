@@ -1,5 +1,7 @@
 """Consent, dispatch and result activation through the actual desktop widgets."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 from pathlib import Path
 import tempfile
@@ -10,7 +12,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.core import ValidationError
 from quantlab.desktop_runtime import AppPaths, JobManager
 from quantlab.reporting import save_dataset, synthetic_dataset
@@ -34,7 +36,7 @@ class DownloadAutoImportUiTests(unittest.TestCase):
         self.environment.start()
         self.paths = AppPaths(root / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs)
+        self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.page = self.window.data_page

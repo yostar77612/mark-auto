@@ -2,6 +2,9 @@
 
 from quantlab.research_core.adapters import job_worker
 
+from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
+
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 
 from contextlib import nullcontext
 import ast
@@ -23,7 +26,7 @@ from desktop_app.features.assistant.connection import ConnectionController, Chat
 from quantlab.assistant.application.connection_contracts import ConnectionEvent
 from desktop_app.components.job_progress import JobProgress, JobFeedback
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab import desktop_runtime as runtime
 from quantlab.desktop_errors import ERROR_TABLE
 from quantlab.job_stages import JOB_STAGES
@@ -136,7 +139,7 @@ class PresentationWidgetTests(unittest.TestCase):
 
     def poll(self, host, *events):
         host.jobs.poll.return_value = list(events)
-        MainWindow.poll_jobs(host)
+        _c_JobPresenter(host).poll_jobs()
 
     def test_all_stages_and_unknown_are_catalog_only(self):
         widget = self.widget(JobProgress, Mock())
@@ -152,7 +155,7 @@ class PresentationWidgetTests(unittest.TestCase):
         with sandbox_ui(), tempfile.TemporaryDirectory(prefix='t16-host-') as temp:
             paths = runtime.AppPaths(Path(temp) / 'workspace').ensure()
             jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()
@@ -207,13 +210,13 @@ class PresentationWidgetTests(unittest.TestCase):
                     else:
                         host.freeze_paper.assert_not_called()
                     host.freeze_paper.reset_mock()
-                    MainWindow.cancel_job(host)
+                    _c_JobPresenter(host).cancel_job()
                     host.freeze_paper.assert_not_called()
 
     def test_double_cancel_uses_existing_freeze_path_and_waits_for_terminal(self):
         host = self.host('ui_backtest')
-        host.job_progress.request_cancel(lambda: MainWindow.cancel_job(host))
-        host.job_progress.request_cancel(lambda: MainWindow.cancel_job(host))
+        host.job_progress.request_cancel(lambda: _c_JobPresenter(host).cancel_job())
+        host.job_progress.request_cancel(lambda: _c_JobPresenter(host).cancel_job())
         host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.user_cancel'))
         self.assertEqual(host.status.text(), ui_text('job.cancel_notice'))
         self.assertFalse(host.job_progress.cancel_button.isEnabled())
@@ -228,7 +231,7 @@ class PresentationWidgetTests(unittest.TestCase):
 
     def test_cancel_then_authoritative_finish_notifies_completion_once(self):
         host = self.host('ui_backtest')
-        host.job_progress.request_cancel(lambda: MainWindow.cancel_job(host))
+        host.job_progress.request_cancel(lambda: _c_JobPresenter(host).cancel_job())
         host.notify_local.assert_not_called()
         self.poll(host, {'type': 'result', 'result': {}}, {'type': 'cancelled'}, {'type': 'result', 'result': {}})
         host.notify_local.assert_called_once()
@@ -240,7 +243,7 @@ class PresentationWidgetTests(unittest.TestCase):
         host.jobs.active = False
         host.job_feedback.terminal = True
         host.chatgpt_panel = SimpleNamespace(primary_sign_in_pending=True)
-        MainWindow.cancel_job(host)
+        _c_JobPresenter(host).cancel_job()
         host.freeze_paper.assert_called_once_with(ui_text('ui.cancel_and_recover.user_cancel'))
 
     def test_fixed_import_progress_notice_is_preserved_beside_stage(self):
