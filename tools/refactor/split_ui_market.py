@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/features/market/rows.py').is_file():
+    print('split_ui_market.py: already applied')
+    raise SystemExit(0)
+
+
 import argparse
 import ast
 from copy import deepcopy

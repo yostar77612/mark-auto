@@ -198,7 +198,9 @@
     "desktop_app/__init__.py": "presentation",
     "quantlab/assistant/__init__.py": "shared",
     "quantlab/research_core/__init__.py": "shared",
-    "desktop_app/bootstrap.py": "composition"
+    "desktop_app/bootstrap.py": "composition",
+    "tools/refactor/measure_ui_sizes.py": "tooling",
+    "tools/refactor/check_ui_scripts.py": "tooling"
   },
   "ports": [
     "quantlab/trading/ports/"

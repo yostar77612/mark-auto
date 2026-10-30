@@ -5,8 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-import runpy
-import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,15 +30,12 @@ def main():
     sys.path.insert(0, str(ROOT))
     from desktop_app.strings import catalog
 
-    directory = ROOT / '.tmp-layered/catalog-equality'
-    directory.mkdir(parents=True, exist_ok=True)
-    original = directory / 'main_catalog.py'
-    original.write_bytes(subprocess.check_output(['git', 'show', f'{BASE}:desktop_app/strings/catalog.py'], cwd=ROOT))
-    expected, actual = dump(runpy.run_path(str(original))), dump(vars(catalog))
-    for name, payload in (('main', expected), ('tree', actual)):
-        (directory / f'{name}.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    expected = json.loads(FIXTURE.read_text(encoding='utf-8'))
+    if expected.pop('source_commit') != BASE:
+        raise SystemExit('Unexpected catalog baseline commit')
+    actual = dump(vars(catalog))
     if args.write_baseline:
-        FIXTURE.write_text(json.dumps({'source_commit': BASE, **expected}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        print('catalog baseline: already applied; committed fixture retained')
     summary = {}
     for locale in expected['locales'].keys() | actual['locales'].keys():
         before, after = expected['lookups'].get(locale, {}), actual['lookups'].get(locale, {})

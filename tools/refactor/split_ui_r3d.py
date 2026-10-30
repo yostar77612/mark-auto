@@ -1,5 +1,13 @@
 """Run after split_ui_r3c.py to reproduce the r3d import and fixture repairs."""
 
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
+    print('split_ui_r3d.py: already applied')
+    raise SystemExit(0)
+
+
 import json
 from collections import Counter
 from pathlib import Path

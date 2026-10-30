@@ -465,13 +465,13 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/strings/workspace.py` | 33 | shared | `desktop_app/strings/workspace.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `quantlab/shared/__init__.py` | 1 | shared | `quantlab/shared/__init__.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `quantlab/shared/runtime_errors.py` | 5 | shared | `quantlab/shared/runtime_errors.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/extract_runtime_error.py` | 138 | tooling | `tools/refactor/extract_runtime_error.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_catalog_check.py` | 58 | tooling | `tools/refactor/split_ui_catalog_check.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_fixture_lines.py` | 52 | tooling | `tools/refactor/split_ui_fixture_lines.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_modules.py` | 253 | tooling | `tools/refactor/split_ui_modules.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_references.py` | 188 | tooling | `tools/refactor/split_ui_references.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_strings.py` | 276 | tooling | `tools/refactor/split_ui_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `tools/refactor/split_ui_tests.py` | 103 | tooling | `tools/refactor/split_ui_tests.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/extract_runtime_error.py` | 146 | tooling | `tools/refactor/extract_runtime_error.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_catalog_check.py` | 53 | tooling | `tools/refactor/split_ui_catalog_check.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_fixture_lines.py` | 163 | tooling | `tools/refactor/split_ui_fixture_lines.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_modules.py` | 269 | tooling | `tools/refactor/split_ui_modules.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_references.py` | 229 | tooling | `tools/refactor/split_ui_references.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_strings.py` | 281 | tooling | `tools/refactor/split_ui_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `tools/refactor/split_ui_tests.py` | 466 | tooling | `tools/refactor/split_ui_tests.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 
 ### 2.2 PR C slice 2 added responsibilities
 
@@ -516,24 +516,28 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `quantlab/research_core/domain/market_sessions.py` | 107 | domain | `quantlab/research_core/domain/market_sessions.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/ports/idea_records.py` | 9 | application | `quantlab/research_core/ports/idea_records.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/ports/ui_operations.py` | 132 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_consumers.py` | 137 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_finish.py` | 76 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_idea.py` | 189 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_inputs.py` | 109 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_market.py` | 217 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_oracles.py` | 89 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_shell.py` | 316 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_slice2.py` | 264 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_verify.py` | 57 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_workers.py` | 430 | tooling | `tools/refactor/split_ui_workers.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_consumers.py` | 181 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_finish.py` | 84 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_idea.py` | 197 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_inputs.py` | 117 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_market.py` | 225 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_oracles.py` | 97 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_shell.py` | 325 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_slice2.py` | 273 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_verify.py` | 65 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_workers.py` | 438 | tooling | `tools/refactor/split_ui_workers.py` | PR C: slice 2 responsibility extraction |
 
-| `tools/refactor/split_ui_r3b.py` | 149 | tooling | `tools/refactor/split_ui_r3b.py` | PR C repair replay; existing behavior retained. |
+| `tools/refactor/split_ui_r3b.py` | 157 | tooling | `tools/refactor/split_ui_r3b.py` | PR C repair replay; existing behavior retained. |
 
-| `tools/refactor/split_ui_r3c.py` | 101 | tooling | `tools/refactor/split_ui_r3c.py` | PR C repair replay; existing behavior retained. |
+| `tools/refactor/split_ui_r3c.py` | 109 | tooling | `tools/refactor/split_ui_r3c.py` | PR C repair replay; existing behavior retained. |
 
-| `tools/refactor/split_ui_r3d.py` | 106 | tooling | `tools/refactor/split_ui_r3d.py` | PR C repair replay; existing behavior retained. |
+| `tools/refactor/split_ui_r3d.py` | 114 | tooling | `tools/refactor/split_ui_r3d.py` | PR C repair replay; existing behavior retained. |
 
-| `tools/refactor/split_ui_r3f.py` | 81 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
+| `tools/refactor/split_ui_r3f.py` | 88 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
+
+| `tools/refactor/measure_ui_sizes.py` | 70 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
+
+| `tools/refactor/check_ui_scripts.py` | 104 | tooling | `tools/refactor/check_ui_scripts.py` | PR C r4b: audit every historical UI script for byte-identical reruns. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -969,9 +973,71 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 
 G3 拆分以第 5 節授權為準；saved-pool frozen-data 只有資料字面值 bytes 例外。E 涉及 paper、recovery、test runner 的結構修改須跑各自的故障／deadline／provenance 與 coverage 測試，不能只跑文件 gate。後續各 PR 仍依第 6 節重做 symbol impact、完整 detect_changes、全測試及打包 smoke；本次只更新盤點文件。
 
-### 10.1 PR C slice 1 size exceptions
+### 10.1 PR C size exceptions
 
-The 98 generated string files (including the concrete catalog lookup), 18 form/chart responsibility modules and worker-stage message module stay at <=400 lines; extracted classes stay at <=300 lines. The unchanged ordered field setup in BacktestForm.__init__ remains 59 lines; backtest_summary_text remains 71 lines and candidate_summary_text remains 100 lines. These retained cohesive field/section sequences preserve report ordering and formatting; splitting them further would introduce one-use formatting helpers.
+Measured by `python -B tools/refactor/measure_ui_sizes.py --check` against
+`git diff 6b78239 HEAD`. File spans count physical lines; class and function
+spans use AST `lineno..end_lineno` inclusive. The following is the complete
+exception set, including import-only consumers; there is no blanket claim
+that all other historical consumers meet the size targets.
 
-Import-only consumers retain their existing size debts: StrategyPage (428 lines, file 440), MainWindow (389 lines, file 1896) and the smoke module (965 lines). Main window decomposition is slice 2; strategy page and smoke responsibilities are outside slice 1. Their bodies are unchanged except the smoke module's concrete-owner import/metadata paths. Complete per-function measurements are recorded in the slice handoff.
+| Path:line | Name | Kind | Lines | Justification |
+|---|---|---|---|---|
+| `desktop_app/features/backtest/backtest.py:23` | `__init__` | function | 104 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/backtest.py:222` | `show_result` | function | 64 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/backtest_summary_card.py:55` | `_set_structure` | function | 61 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/backtest/forms.py:14` | `__init__` | function | 59 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/backtest/summary.py:52` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/data/data.py:16` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/market/chart_presenter.py:11` | `_render_chart` | function | 66 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/history_dialog.py:28` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/indicator_controls.py:26` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/indicator_presenter.py:69` | `_apply_indicators` | function | 89 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/market.py:69` | `load_market_cache` | function | 75 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/market/market.py:145` | `bind_result_layers` | function | 83 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/preferences.py:31` | `restore_preferences` | function | 72 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/paper/paper_layout.py:30` | `build_paper` | function | 162 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/redesign_strategy_layout.py:171` | `build_strategy` | function | 68 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/redesign_strategy_layout.py:241` | `build_research` | function | 125 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:1` | `<module>` | file | 440 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:13` | `StrategyPage` | class | 428 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:40` | `_walk_forward_section` | function | 65 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/strategy.py:246` | `_walk_forward_event` | function | 84 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/strategy/summary.py:14` | `candidate_summary_text` | function | 100 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/walk_forward/presenter.py:1` | `<module>` | file | 607 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:108` | `preview_walk_forward` | function | 51 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:214` | `execute_walk_forward` | function | 58 | Body unchanged except the PR C keyword-only inputs-port integration; decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:349` | `oos_statistics_text` | function | 61 | body unchanged in PR C (import-only edit); decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/features/walk_forward/presenter.py:435` | `preview_text` | function | 121 | body unchanged in PR C (import-only edit); decomposition assigned to PR D per section 10 desktop_walk_forward row. |
+| `desktop_app/research_bootstrap.py:55` | `open` | function | 73 | Retained as one ordered Qt construction sequence; preserves dialog lifetime and signal wiring. |
+| `desktop_app/shell/host.py:143` | `_page_services` | function | 88 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/shell/window.py:95` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/smoke/__init__.py:1` | `<module>` | file | 969 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:32` | `_auth_smoke_dependencies` | function | 84 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:154` | `_market_smoke_ui` | function | 118 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:367` | `_check_history_worker_result` | function | 74 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:443` | `_history_smoke_ui` | function | 54 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:499` | `_walk_forward_smoke_fixture` | function | 56 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:557` | `_check_walk_forward_smoke_result` | function | 112 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:709` | `run_smoke` | function | 261 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
+| `desktop_app/smoke/__init__.py:753` | `complete_smoke` | function | 175 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
 
+### 10.2 PR C mechanical script rerun audit
+
+Run `python -B tools/refactor/check_ui_scripts.py --root <detached-worktree-at-PR-C-head>`.
+The driver lists all historical extraction, reference, repair and verification passes
+in order and supplies each original CLI's arguments. It runs every committed
+`split_ui_*.py` and `extract_runtime_error.py`, then requires unchanged file bytes
+and Git porcelain status. Expected output: `ui scripts: 21 run, 0 changes`.
+The catalog audit compares every locale/key, alias and insertion order against its
+committed main-baseline fixture without creating local reports.
+
+Historical script bodies are retained. Their entry points detect an existing
+split output and print `already applied` before importing historical dependencies,
+reading preparation material or writing anything. Late repair/verification passes
+use the split shell as their conservative stop marker: they must not replay an
+older intermediate state over subsequent repairs. These are intentional rerun
+refusals, not a claim that the scripts reconstruct the entire PR from its base.
+No stored PR patch or overlay manifest is used. The audit reads no scratch files.
+For precommit QA, existing tool/doc overlays are allowed as the initial baseline;
+the same byte and porcelain comparison detects any additional change during runs.

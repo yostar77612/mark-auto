@@ -1,5 +1,13 @@
 """Reproduce r3b contract collection and reference repairs without changing fixtures."""
 
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
+    print('split_ui_r3b.py: already applied')
+    raise SystemExit(0)
+
+
 import ast
 import importlib
 import json

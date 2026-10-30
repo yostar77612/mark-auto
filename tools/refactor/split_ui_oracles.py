@@ -1,6 +1,14 @@
 """Compare actual pre-split and split native shell construction and normal close."""
 
 from __future__ import annotations
+
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
+    print('split_ui_oracles.py: already applied')
+    raise SystemExit(0)
+
 import argparse
 from datetime import datetime, timezone
 import json

@@ -7,6 +7,14 @@ functions only name those interfaces, while bootstrap supplies implementations.
 
 from __future__ import annotations
 
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'quantlab/research_core/ports/ui_operations.py').is_file():
+    print('split_ui_workers.py: already applied')
+    raise SystemExit(0)
+
+
 import argparse
 import ast
 from collections import defaultdict

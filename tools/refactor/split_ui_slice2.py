@@ -5,6 +5,14 @@ Extends the slice 1 generators and owner map. No GitNexus or git mutations.
 
 from __future__ import annotations
 
+# Historical pass: never overwrite the applied split or its subsequent repairs.
+from pathlib import Path as _AppliedPath
+
+if __name__ == '__main__' and (_AppliedPath(__file__).resolve().parents[2] / 'desktop_app/shell/window.py').is_file():
+    print('split_ui_slice2.py: already applied')
+    raise SystemExit(0)
+
+
 import argparse
 import ast
 import json
