@@ -759,10 +759,6 @@
       "reason": "new replay tooling"
     },
     {
-      "path": "tools/refactor/split_ui_owners.json",
-      "reason": "authored symbol ownership routing used by mechanical reference passes"
-    },
-    {
       "path": "tools/refactor/replay_pr_c.py",
       "reason": "new ordered replay tooling and explicit content contract"
     },

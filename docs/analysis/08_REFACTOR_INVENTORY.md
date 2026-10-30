@@ -540,9 +540,9 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | `tools/refactor/check_ui_scripts.py` | 59 | tooling | `tools/refactor/check_ui_scripts.py` | PR C r4b: audit every historical UI script for byte-identical reruns. |
 
-| `tools/refactor/replay_pr_c.py` | 219 | tooling | `tools/refactor/replay_pr_c.py` | PR C r5: ordered content and mechanical replay. |
+| `tools/refactor/replay_pr_c.py` | 234 | tooling | `tools/refactor/replay_pr_c.py` | PR C r5: ordered content and mechanical replay. |
 
-| `tools/refactor/replay_pr_c_content.json` | 782 | tooling | `tools/refactor/replay_pr_c_content.json` | PR C r5: ordered content and mechanical replay. |
+| `tools/refactor/replay_pr_c_content.json` | 778 | tooling | `tools/refactor/replay_pr_c_content.json` | PR C r5: ordered content and mechanical replay. |
 
 | `tools/refactor/replay_pr_c_mechanical.py` | 376 | tooling | `tools/refactor/replay_pr_c_mechanical.py` | PR C r5: ordered content and mechanical replay. |
 
@@ -978,7 +978,7 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 | `desktop_pages/idea_research.py` | 617 | C | dialog widget／layout → `desktop_app/features/strategy/idea_research.py`（`desktop_pages/idea_research.py:96`）；consent/start/retry/adopt／event 投影 → `idea_presenter.py`（`desktop_pages/idea_research.py:295`、`desktop_pages/idea_research.py:306`、`desktop_pages/idea_research.py:367`、`desktop_pages/idea_research.py:566`）；search/source/candidate rows 與明細 → `idea_rows.py`（`desktop_pages/idea_research.py:440`、`desktop_pages/idea_research.py:464`、`desktop_pages/idea_research.py:500`）。短名均在 `desktop_app/features/strategy/`；網路／storage 操作走 application，不進 widget。 |
 | `desktop_walk_forward.py` | 609 | D | paths／saved-pool plan／preview/execute → `quantlab/research_core/application/walk_forward_operations.py`（`desktop_walk_forward.py:29`、`desktop_walk_forward.py:57`、`desktop_walk_forward.py:108`、`desktop_walk_forward.py:215`），先去掉 UI 字串、回固定資料；compact result → 同 application 的 `walk_forward_projection.py`（`desktop_walk_forward.py:168`）；狀態、OOS 文字與 row adapter 留 `desktop_app/features/walk_forward/presenter.py`、`rows.py`（`desktop_walk_forward.py:346`、`desktop_walk_forward.py:351`、`desktop_walk_forward.py:437`、`desktop_walk_forward.py:560`）。worker 不 import presentation；OOS 未評估／已消耗語意不變。 |
 
-字串責任的其餘具體落點包括 `desktop_app/strings/forms.py`（`desktop_strings.py:608`）、`charts.py`（`desktop_strings.py:1298`）、`jobs.py`（`desktop_strings.py:1668`）、`appearance.py`（`desktop_strings.py:1774`）、`workspace.py`（`desktop_strings.py:1887`）、`trading.py`（`desktop_strings.py:2565`），短名均在 `desktop_app/strings/`。較大的 `ui.*` 群（`desktop_strings.py:112`）再按第二段的功能／操作名稱拆到 `desktop_app/strings/ui/`；aliases 同樣依所指向的功能分到 `desktop_app/strings/aliases/` 的資料檔，`aliases.py` 彙整時應改選不同名稱如 `alias_catalog.py`，避免檔案／套件同名衝突。這些均是 C 的資料責任切分，不新增 locale 行為。
+字串責任的其餘具體落點包括 `desktop_app/strings/forms.py`（`desktop_strings.py:608`）、`charts.py`（`desktop_strings.py:1298`）、`job.py`（`desktop_strings.py:1668`）、`appearance.py`（`desktop_strings.py:1774`）、`workspace.py`（`desktop_strings.py:1887`）、`v2.py`（`desktop_strings.py:2565`），短名均在 `desktop_app/strings/`。較大的 `ui.*` 群（`desktop_strings.py:112`）再按第二段的功能／操作名稱拆到 `desktop_app/strings/ui/`；aliases 同樣依所指向的功能分到 `desktop_app/strings/aliases/` 的資料檔，`aliases.py` 彙整時應改選不同名稱如 `alias_catalog.py`，避免檔案／套件同名衝突。這些均是 C 的資料責任切分，不新增 locale 行為。
 
 G3 拆分以第 5 節授權為準；saved-pool frozen-data 只有資料字面值 bytes 例外。E 涉及 paper、recovery、test runner 的結構修改須跑各自的故障／deadline／provenance 與 coverage 測試，不能只跑文件 gate。後續各 PR 仍依第 6 節重做 symbol impact、完整 detect_changes、全測試及打包 smoke；本次只更新盤點文件。
 
@@ -1041,20 +1041,26 @@ location tables, digest pins and inventories are excluded from that content set.
 The executing tooling package bootstraps its own authored sources; the recorded
 content reference pins the product and new characterization modules. Use
 `--content-ref <PR-head>` to override that pin; before commit, use `--expect-root <PR-C-worktree>` to supply authored working bytes and
-compare every changed path, including deletions and new tooling.
+compare every PR path, including deletions and new tooling, plus the whole tree.
+The PR set is the source diff from 6b78239 to HEAD, extended with expected-tree
+uncommitted and untracked paths when --expect-root is supplied.
 
 Order: content installation; runtime-error extraction; isolated strings, modules,
 workers, market, idea, inputs and shell preparations; slice-2 composition;
 reference and dependency injection; source-scanner adaptations; r3b, r3c and r3f
 repairs; compatibility/inventory preparation; formatting and exact selector
 normalization; page-service location generation and digest re-pinning; r3d
-validation; final formatting; catalog and layer/size verification; full changed
-path comparison. Preparation output is applied only to mechanical consumers;
+validation; final formatting; catalog and layer/size verification; whole-tree
+comparison. Preparation output is applied only to mechanical consumers in the PR set;
 reviewed split module bodies come exclusively from the content phase.
 
-The comparison normalizes text checkout line endings to Git blob LF bytes.
-The final line reports total, content and mechanical path counts and differences.
-A nonzero difference count exits 1. No whole-PR patch or scratch input is used.
+The comparison normalizes CRLF/LF for .py, .json and .md bytes. Every PR path
+is compared with the head or expected tree. Whole-tree Git status also identifies
+any modified or untracked path outside the PR set, ignoring .tmp-layered/,
+__pycache__ directories and *.pyc files. Preparation and source scratch directories
+stay outside the replay root. Each extra path is printed as `outside PR: <path>`.
+The final line is `replay: <N> paths, <C> content, <M> mechanical, <D> differences, <O> outside-PR changes`.
+A nonzero D or O exits 1. No whole-PR patch or scratch input is used.
 Reason recording is optional; neither replay nor its inputs depend on local
 operator reports. `check_ui_scripts.py` validates replay in an isolated base
 checkout and requires unchanged bytes and status in the audited PR tree.

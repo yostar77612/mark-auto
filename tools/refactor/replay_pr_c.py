@@ -1,4 +1,4 @@
-"""Rebuild PR C from its fixed base, then compare every changed path.
+"""Rebuild PR C from its fixed base, then verify PR bytes and the whole tree.
 
 Content is explicit; consumer edits are executed in order, never copied from the
 expected tree. --expect-root supplies uncommitted content and comparison bytes.
@@ -37,7 +37,7 @@ def invoke(name, root, *args):
     print(f'mechanical: {name}', flush=True)
 
 
-def run(root, expected, reference, manifest):
+def run(root, expected, reference, manifest, names):
     baseline = git(root, 'rev-parse', 'HEAD').decode().strip()
     if baseline != git(root, 'rev-parse', BASE).decode().strip():
         raise ValueError('--root must be detached at 6b78239')
@@ -61,7 +61,7 @@ def run(root, expected, reference, manifest):
     invoke('extract_runtime_error', root, '--source-root', root, '--output-root', preparation)
     for path in preparation.rglob('*.py'):
         name = path.relative_to(preparation).as_posix()
-        if name not in content:
+        if name in names and name not in content:
             write(root, name, path.read_bytes())
     # Run historical generators against immutable inputs, isolated from authored bodies.
     source = root.parent / (root.name + '-source')
@@ -93,6 +93,8 @@ def run(root, expected, reference, manifest):
     subprocess.run([sys.executable, '-B', '-c', code, str(preparation), str(source)], cwd=root, check=True, capture_output=True)
     print('mechanical: split_ui_slice2', flush=True)
     for name in ('desktop_app/shell/host.py', 'desktop_app/features/walk_forward/presenter.py'):
+        if name not in names:
+            continue
         raw = (preparation / name).read_bytes()
         if name.endswith('host.py'):
             raw = raw.replace(b'    sample_market_series: Callable\n', b'')
@@ -140,6 +142,8 @@ def render_metadata(root):
         source,
         flags=re.M,
     )
+    source = source.replace('`jobs.py`', '`job.py`')
+    source = source.replace('`trading.py`', '`v2.py`')
     source = source.replace('## 3 ', rows + '## 3 ', 1)
     write(root, path, (source + data['size_and_replay']).encode('utf-8'))
     mapping_path = root / 'tools/layer_map.json'
@@ -177,6 +181,10 @@ def render_metadata(root):
     path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
+def ignored_path(name):
+    return name.startswith('.tmp-layered/') or '__pycache__' in Path(name).parts or name.endswith('.pyc')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', required=True, type=Path)
@@ -187,12 +195,12 @@ def main():
     reference = args.content_ref or manifest['content_ref']
     root = args.root.resolve()
     expected = args.expect_root.resolve() if args.expect_root else None
-    content = run(root, expected, reference, manifest)
     names = set(git(SOURCE, 'diff', '--name-only', '--no-renames', BASE, 'HEAD').decode().splitlines())
     if expected:
         names.update(git(expected, 'diff', '--name-only', '--no-renames', 'HEAD').decode().splitlines())
         names.update(git(expected, 'ls-files', '--others', '--exclude-standard').decode().splitlines())
-    names = {name for name in names if not name.startswith('.tmp-layered/')}
+    names = {name for name in names if not ignored_path(name)}
+    content = run(root, expected, reference, manifest, names)
     differences = []
     for name in sorted(names):
         if expected:
@@ -208,11 +216,18 @@ def main():
             wanted = wanted.replace(b'\r\n', b'\n') if wanted is not None else None
         if actual != wanted:
             differences.append(name)
+    status = git(root, 'status', '--porcelain', '-z', '--untracked-files=all', '--no-renames').decode()
+    changed = {entry[3:] for entry in status.split('\0') if entry and not ignored_path(entry[3:])}
+    outside = sorted(changed - names)
     print(f'mechanical paths produced by scripts: {len(names - content)}')
-    print(f'replay: {len(names)} paths, {len(content)} content, {len(names - content)} mechanical, {len(differences)} differences')
+    print(
+        f'replay: {len(names)} paths, {len(content)} content, {len(names - content)} mechanical, {len(differences)} differences, {len(outside)} outside-PR changes'
+    )
     for name in differences:
         print('difference: ' + name)
-    return int(bool(differences))
+    for name in outside:
+        print('outside PR: ' + name)
+    return int(bool(differences or outside))
 
 
 if __name__ == '__main__':
