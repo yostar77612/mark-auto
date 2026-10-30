@@ -12,14 +12,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QHideEvent
 from PySide6.QtWidgets import QApplication, QCheckBox, QDialog, QWidget
 
-from desktop_automatic_backup import AutomaticBackupPanel
-from desktop_pages import notifications
-from desktop_pages.notification_log import safe_summary
-from desktop_pages.notifications import NotificationCenter
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+from desktop_app.features.settings.automatic_backup import AutomaticBackupPanel
+from desktop_app.shell import notifications
+from desktop_app.shell.notification_log import safe_summary
+from desktop_app.shell.notifications import NotificationCenter
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_feedback import OPERATION_LABELS
 from quantlab.errors import ERROR_TABLE
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,19 @@ EVALUATION = 'PRIVATE_EVALUATION_82469'
 
 def dispatch_operations():
     """Resolve literal, conditional and paper dispatcher operations; reject new opaque sites."""
-    paths = sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').glob('*.py'))
+    paths = sorted(
+        [
+            *ROOT.glob('desktop*.py'),
+            *(
+                ROOT / relative
+                for relative in (
+                    'quantlab/assistant/adapters/chatgpt/auth.py',
+                    'quantlab/assistant/adapters/chatgpt/provider.py',
+                    'quantlab/research_core/adapters/market_layout.py',
+                )
+            ),
+        ]
+    ) + sorted((ROOT / 'desktop_app').rglob('*.py'))
     trees = [(path, ast.parse(path.read_text(encoding='utf-8-sig'))) for path in paths]
     paper = set()
     for _, tree in trees:

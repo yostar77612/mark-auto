@@ -11,6 +11,9 @@ import unittest
 from unittest.mock import patch
 
 import quantlab.desktop_runtime as runtime
+from tests.layered_source_fixtures import CURRENT_PATHS
+
+FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, current in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT.parent
@@ -23,15 +26,15 @@ def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, r
         ORIGINAL_WORKER(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *extra)
     finally:
         # Observe the already-resolved registrar module in the actual child.
-        import desktop_ui
+        import desktop_app.shell.main_window
 
         refused = False
         try:
-            desktop_ui.create_window(None, None)
+            desktop_app.shell.main_window.create_window(None, None)
         except RuntimeError:
             refused = True
         qt = sorted(name for name in sys.modules if name == 'PySide6' or name.startswith('PySide6.'))
-        pages = sorted(name for name in sys.modules if name == 'desktop_pages' or name.startswith('desktop_pages.'))
+        pages = sorted(FORMER_PAGE_MODULES.intersection(list(sys.modules)))
         Path(root, 'worker-import-proof.json').write_text(json.dumps({'pid': os.getpid(), 'qt': qt, 'pages': pages, 'gui_refused': refused}), encoding='utf-8')
 
 
@@ -63,18 +66,18 @@ class SourceWorkerImportTests(unittest.TestCase):
         code = '''from pathlib import Path
 import sys
 from quantlab.desktop_runtime import _worker_operation_executor, _is_worker_registrar_import, AppPaths, JobManager, SettingsStore, BackupManager, RuntimeGuard
-executor = _worker_operation_executor('desktop_ui:execute_ui_operation')
+executor = _worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
 assert not _is_worker_registrar_import()
-import desktop_ui
+import desktop_app.shell.main_window
 from PySide6.QtWidgets import QApplication, QMainWindow
 app = QApplication([])
 paths = AppPaths(Path(sys.argv[1])).ensure()
 manager = JobManager(paths)
-window = desktop_ui.create_window(paths, manager, SettingsStore(paths.state / "settings.json"), BackupManager(paths, manager), RuntimeGuard(paths))
+window = desktop_app.shell.main_window.create_window(paths, manager, SettingsStore(paths.state / "settings.json"), BackupManager(paths, manager), RuntimeGuard(paths))
 assert isinstance(window, QMainWindow)
-assert executor is desktop_ui.execute_ui_operation
-assert window.__class__ is desktop_ui.MainWindow
-assert desktop_ui.QMainWindow is QMainWindow
+assert executor is desktop_app.shell.main_window.execute_ui_operation
+assert window.__class__ is desktop_app.shell.main_window.MainWindow
+assert desktop_app.shell.main_window.QMainWindow is QMainWindow
 manager.close()
 window.close()
 print('real parent GUI after first registrar lookup')

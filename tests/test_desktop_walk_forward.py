@@ -27,7 +27,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         save_dataset(self.data, self.paths.state / 'dataset.json')
 
     def operation(self, name, payload, **kwargs):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         return execute_ui_operation('ui_walk_forward_' + name, payload, self.paths, **kwargs)
 
@@ -35,7 +35,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         return self.operation('preview', {'plan': to_dict(plan or self.plan)})
 
     def test_preview_is_read_only_exact_bound_and_risk_labeled(self):
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         p = self.preview()
         self.assertFalse((self.paths.state / 'walk_forward').exists())
@@ -68,10 +68,10 @@ class WalkForwardAdapterTests(unittest.TestCase):
             replace(self.plan, evidence_mode='historical_replay'),
         ):
             self.assertNotEqual(p['preview_identity'], self.preview(plan)['preview_identity'])
-        import desktop_walk_forward
+        import desktop_app.features.walk_forward.presenter
 
-        original = desktop_walk_forward._binding
-        with patch('desktop_walk_forward._binding', side_effect=lambda *a: {**original(*a), 'source_hashes': {'fixture': 'changed'}}):
+        original = desktop_app.features.walk_forward.presenter._binding
+        with patch('desktop_app.features.walk_forward.presenter._binding', side_effect=lambda *a: {**original(*a), 'source_hashes': {'fixture': 'changed'}}):
             with self.assertRaisesRegex(ValidationError, 'preview again'):
                 self.operation('run', request)
         self.assertFalse((self.paths.state / 'walk_forward').exists())
@@ -114,10 +114,10 @@ class WalkForwardAdapterTests(unittest.TestCase):
         self.assertEqual(result['summary']['model_calls'], 0)
         for filename in ('selection.json', 'active_candidate.json', 'paper.sqlite3', 'campaigns'):
             self.assertFalse((self.paths.state / filename).exists())
-        with patch('desktop_walk_forward.run_walk_forward', side_effect=AssertionError('No rerun')):
+        with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No rerun')):
             self.assertEqual(self.operation('run', payload), result)
             self.assertEqual(self.operation('read', {'reference': result['reference']}), result)
-        from desktop_ui import candidate_record
+        from desktop_app.shell.main_window import candidate_record
 
         with self.assertRaises((ValidationError, FileNotFoundError)):
             candidate_record(self.paths.state, {'walk_forward_reference': result['reference']})
@@ -205,7 +205,7 @@ class WalkForwardAdapterTests(unittest.TestCase):
         with closing(sqlite3.connect(folder / 'walk_forward.sqlite3')) as db, db:
             _save_state(db, folder, state)
         before = (folder / 'walk_forward.sqlite3').read_bytes()
-        with patch('desktop_walk_forward.run_walk_forward', side_effect=AssertionError('No retry')):
+        with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No retry')):
             result = self.operation('run', {'plan': p['plan'], 'preview_identity': p['preview_identity']})
         self.assertEqual(result['display_status'], 'running_or_interrupted_no_stop_proof')
         self.assertEqual(before, (folder / 'walk_forward.sqlite3').read_bytes())
@@ -220,7 +220,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_defaults_percent_round_trip_and_modes(self):
-        from desktop_forms import WalkForwardForm
+        from desktop_app.components.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -239,7 +239,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
         self.assertEqual(form.build_payload(), expanded)
 
     def test_invalid_risk_and_step_inputs_reject(self):
-        from desktop_forms import WalkForwardForm
+        from desktop_app.components.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -263,7 +263,7 @@ class WalkForwardTypedFormTests(unittest.TestCase):
             self.assertIsNotNone(form.build_payload())
 
     def test_typed_costs_preserved_and_variable_steps_reject(self):
-        from desktop_forms import WalkForwardForm, BacktestForm
+        from desktop_app.components.forms import WalkForwardForm, BacktestForm
         from dataclasses import replace
         from quantlab.walk_forward import WalkForwardFold
 
@@ -291,7 +291,7 @@ class WalkForwardHostTests(unittest.TestCase):
     cleanup_window = _Support.cleanup_window
 
     def seed(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         execute_ui_operation('ui_demo', {'bars': 240}, self.paths)
         self.window.refresh_views()
@@ -301,7 +301,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         with patch.object(w.jobs, 'start', return_value='preview-job'):
             w.preview_walk_forward()
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         result = execute_ui_operation('ui_walk_forward_preview', {'plan': w._walk_forward_input_key()[1]}, self.paths)
         w._walk_forward_event({'type': 'result', 'job_id': 'preview-job', 'result': result})
@@ -328,7 +328,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         with patch.object(w.jobs, 'start', return_value='old-preview'):
             w.preview_walk_forward()
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         result = execute_ui_operation('ui_walk_forward_preview', {'plan': w._walk_forward_input_key()[1]}, self.paths)
         w.walk_forward_form.fields['minimum'].setText('123')
@@ -408,7 +408,7 @@ class WalkForwardHostTests(unittest.TestCase):
         w = self.seed()
         data, plan = inputs()
         save_dataset(data, self.paths.state / 'dataset.json')
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         p = execute_ui_operation('ui_walk_forward_preview', {'plan': to_dict(plan)}, self.paths)
         with patch('quantlab.walk_forward._run_bounded', side_effect=fake_worker):
@@ -429,11 +429,11 @@ class WalkForwardStaticTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         from tools.quality_gate import python_findings, secret_findings
 
-        for name in ('desktop_forms.py', 'desktop_ui.py', 'desktop_walk_forward.py'):
+        for name in ('desktop_app/components/forms.py', 'desktop_app/shell/main_window.py', 'desktop_app/features/walk_forward/presenter.py'):
             source = (root / name).read_text(encoding='utf-8')
             self.assertEqual(python_findings(source, name, desktop=True), [])
             self.assertEqual(secret_findings(source, name), [])
-        self.assertIn('"desktop_walk_forward.py"', (root / 'tools/quality_gate.py').read_text(encoding='utf-8'))
+        self.assertIn('"desktop_app/features/walk_forward/presenter.py"', (root / 'tools/quality_gate.py').read_text(encoding='utf-8'))
         self.assertIn("(str(root / 'quantlab' / 'walk_forward.py'), 'quantlab')", (root / 'packaging/markauto.spec').read_text(encoding='utf-8'))
 
 

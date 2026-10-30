@@ -11,12 +11,12 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QMessageBox
-from desktop_market import sample_market_series
-from desktop_pages.market import MarketPage
-from desktop_pages.result_widgets import ResultTable
-from desktop_pages.wf_wizard import display_result_rows, WindowTimeline
-from desktop_presentation import display_number
-from desktop_strings import ui_text
+from desktop_app.features.market.dashboard import sample_market_series
+from desktop_app.features.market.market import MarketPage
+from desktop_app.components.result_widgets import ResultTable
+from desktop_app.features.walk_forward.wf_wizard import display_result_rows, WindowTimeline
+from desktop_app.components.formatting import display_number
+from desktop_app.strings.catalog import ui_text
 
 
 class MarketEmptyTests(unittest.TestCase):
@@ -110,7 +110,7 @@ class MarketEmptyTests(unittest.TestCase):
 
     def test_completion_success_arms_timer_and_fade_hides_without_waiting(self):
         from PySide6.QtCore import QTimer
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths
         from tests.test_t9_onboarding import sandbox_ui
 

@@ -13,8 +13,8 @@ from uuid import uuid4
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QWidget
 
-from desktop_pages.diagnostics import DiagnosticsPanel, snapshot_for_state
-from desktop_pages.job_progress import JobFeedback
+from desktop_app.features.settings.diagnostics import DiagnosticsPanel, snapshot_for_state
+from desktop_app.components.job_progress import JobFeedback
 from quantlab import __version__
 from quantlab.desktop_runtime import AppPaths
 from quantlab.diagnostics import LOG_BYTES, MAX_BYTES, MAX_ERRORS, TRUNCATION_MARKER, build_diagnostics, copy_diagnostics, read_error_records
@@ -190,7 +190,7 @@ class DiagnosticsTests(unittest.TestCase):
         copy_diagnostics(text, clipboard)
         clipboard.setText.assert_called_once_with(text)
         panel = DiagnosticsPanel(lambda: text)
-        with patch('desktop_pages.diagnostics.QApplication.clipboard', return_value=clipboard):
+        with patch('desktop_app.features.settings.diagnostics.QApplication.clipboard', return_value=clipboard):
             panel.copy_button.click()
         self.assertEqual(panel.output.toPlainText(), text)
         self.assertEqual(panel.text, text)
@@ -210,7 +210,7 @@ class DiagnosticsTests(unittest.TestCase):
 
     def test_controls_are_hidden_until_existing_maintenance_toggle_opens(self):
         # Load the full shell only for the mounted-controls regression.
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         app = QApplication.instance() or QApplication([])
         with sandbox_ui():

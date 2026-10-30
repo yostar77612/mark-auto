@@ -4,8 +4,16 @@ from dataclasses import replace
 from decimal import Decimal
 import unittest
 
-from desktop_strings import ui_text
-from desktop_trading.dashboard_rows import status_lights, red_summary_text, today_summary_items, strategy_rows, position_rows, issue_rows, event_rows
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading.dashboard_rows import (
+    status_lights,
+    red_summary_text,
+    today_summary_items,
+    strategy_rows,
+    position_rows,
+    issue_rows,
+    event_rows,
+)
 from quantlab.trading.application.contracts import MarketHealthView, OverviewMarketSummary, PositionView, StrategyView, UiState
 from quantlab.trading.domain.models import Environment, Market, HoldingKind, QuantityUnit
 
@@ -33,7 +41,7 @@ def state(**changes):
 
 class DashboardRowsTests(unittest.TestCase):
     def test_light_rules_and_shared_market_labels(self):
-        from desktop_trading.market_watch_rows import freshness_text
+        from desktop_app.features.trading.market_watch_rows import freshness_text
 
         for freshness, level in (('LIVE', 'live'), ('DELAYED', 'warning'), ('STOPPED', 'red'), ('CLOSED', 'muted'), ('UNKNOWN', 'muted')):
             with self.subTest(freshness=freshness):

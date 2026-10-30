@@ -14,7 +14,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 from shiboken6 import isValid
 
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from test_trading_ui import RecordingFacade
 from tools.trading_load_probe import ObservedWindow, Probe
 

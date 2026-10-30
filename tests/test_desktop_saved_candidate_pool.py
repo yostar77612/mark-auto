@@ -151,12 +151,12 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.payload = {'plan': self.plan, 'saved_source': self.source}
 
     def operation(self, name, payload=None):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         return execute_ui_operation('ui_walk_forward_' + name, payload or self.payload, self.paths)
 
     def test_every_candidate_and_attempt_preserved_without_scores_or_model_calls(self):
-        from desktop_walk_forward import preview_text, result_rows
+        from desktop_app.features.walk_forward.presenter import preview_text, result_rows
         from quantlab.core import canonical_json
         from tests.test_walk_forward import fake_worker
 
@@ -199,7 +199,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
             self.assertIn('completed', preview_text(result, advanced=True))
             self.assertEqual(result['status'], 'completed')
             self.assertEqual(result['folds'][0]['candidates'][0]['train']['status'], 'evaluated')
-            with patch('desktop_walk_forward.run_walk_forward', side_effect=AssertionError('No rerun')):
+            with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No rerun')):
                 self.assertEqual(self.operation('read', {'reference': result['reference']}), result)
                 self.assertEqual(self.operation('run', {**self.payload, 'preview_identity': preview['preview_identity']}), result)
         self.assertEqual(self.original_path.read_bytes(), original_bytes)
@@ -207,7 +207,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
             self.assertEqual((self.folder / name).read_bytes(), content)
 
     def test_explicit_budget_over_exact_bound_is_nonlaunchable_and_not_clamped(self):
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         self.plan['max_evaluations'] = 620
         preview = self.operation('preview')
@@ -241,8 +241,8 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'walk_forward').exists())
 
     def test_relocated_workspace_cannot_silently_switch_to_fresh_registry(self):
-        from desktop_ui import execute_ui_operation
-        from desktop_walk_forward import preview_text
+        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         other = AppPaths(self.paths.root, Path(self.tmp.name) / 'different-bootstrap').ensure()
         preview = execute_ui_operation('ui_walk_forward_preview', self.payload, other)
@@ -266,7 +266,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'walk_forward').exists())
 
     def test_missing_selected_original_has_explicit_reason_without_path_fallback(self):
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         self.original_path.unlink()
         preview = self.operation('preview')
@@ -278,7 +278,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
 
     def test_source_rejected_attempt_is_visible_and_never_silently_replaced(self):
         from tests.saved_pool_fixtures import write_source
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         attempt = self.state['attempts'][-1]
         attempt.update(status='rejected', output=None, output_hash=None, strategy_hash=None, metrics={}, warnings=['ValidationError'])
@@ -295,7 +295,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertIn('未通過結構驗證', preview_text(preview))
 
     def test_same_cosmetic_name_preserves_distinct_candidates_and_exact_oos_attribution(self):
-        from desktop_walk_forward import result_rows
+        from desktop_app.features.walk_forward.presenter import result_rows
         from quantlab.core import content_hash
         from quantlab.__main__ import config_from_json
         from quantlab.research import _campaign_config, validate_dsl
@@ -333,7 +333,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertEqual(rows[0]['候選'], rows[5]['候選'])
 
     def test_known_duplicate_trials_and_provider_failures_have_specific_plain_labels(self):
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
 
         preview = self.operation('preview')
         # Renderer-only generated view: the core independently verifies these
@@ -360,7 +360,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
             self.assertIn(code, preview_text(rejection, advanced=True))
 
     def test_duplicate_rejection_is_plain_and_does_not_repeat_untrusted_text(self):
-        from desktop_walk_forward import preview_text
+        from desktop_app.features.walk_forward.presenter import preview_text
         from quantlab.saved_candidate_pool import SavedCandidatePoolError
 
         with patch(
@@ -382,7 +382,7 @@ class SavedPoolTypedFormTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_exclusive_origin_and_explicit_budget_without_auto_increase(self):
-        from desktop_forms import WalkForwardForm
+        from desktop_app.components.forms import WalkForwardForm
 
         form = WalkForwardForm()
         self.addCleanup(form.close)
@@ -445,10 +445,10 @@ class SavedPoolHostTests(unittest.TestCase):
         w.walk_forward_campaign.setCurrentIndex(1)
         with self.assertRaises(ValidationError):
             w._walk_forward_input_key()
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=(str(source), '')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(source), '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(source.resolve()))
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=('', '')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=('', '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(source.resolve()))
         self.assertEqual((self.paths.state / 'dataset.json').read_bytes(), before)
@@ -481,10 +481,10 @@ class SavedPoolHostTests(unittest.TestCase):
         before = {path: path.read_bytes() for path in protected}
         w.walk_forward_form.fields['pool_origin'].setCurrentIndex(1)
         w.walk_forward_campaign.setCurrentIndex(1)
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=(str(alias), '')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=(str(alias), '')):
             w.pick_walk_forward_original()
         self.assertEqual(w.walk_forward_original.text(), str(canonical))
-        with patch('desktop_ui.QFileDialog.getOpenFileName', return_value=('', '')):
+        with patch('desktop_app.shell.main_window.QFileDialog.getOpenFileName', return_value=('', '')):
             w.pick_walk_forward_original()
         with patch.object(w.jobs, 'start', return_value='preview-job') as start:
             w.preview_walk_forward()
@@ -511,7 +511,7 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertIn('預覽已失效', w.walk_forward_status.text())
 
     def test_preview_local_status_and_rows_follow_pending_ready_rejected_and_stale(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         w, _ = self.prepare_source()
         w.walk_forward_results.set_rows([{'先前結果': '只屬於先前計畫'}])
@@ -574,7 +574,7 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertEqual(result['pool_admission']['real_model_status'], 'not_verified')
 
     def test_default_preview_hides_internal_binding_until_advanced_opened(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         w, _ = self.prepare_source()
         with patch.object(w.jobs, 'start', return_value='preview-job'):
@@ -600,8 +600,8 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertFalse(w.walk_forward_advanced.isHidden())
 
     def test_advanced_preview_round_trips_windows_backslashes_and_unicode(self):
-        from desktop_ui import execute_ui_operation
-        from desktop_walk_forward import preview_text
+        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.features.walk_forward.presenter import preview_text
         from quantlab.core import canonical_json
 
         w, _ = self.prepare_source()
@@ -664,7 +664,7 @@ class SavedPoolSpawnSmokeTests(unittest.TestCase):
 
 class SavedPoolDesktopStaticTests(unittest.TestCase):
     def test_legacy_compact_report_defaults_missing_pool_fields(self):
-        from desktop_walk_forward import compact_walk_forward, result_rows
+        from desktop_app.features.walk_forward.presenter import compact_walk_forward, result_rows
         from quantlab.walk_forward import run_walk_forward
         from tests.test_walk_forward import fake_worker
 
@@ -684,7 +684,12 @@ class SavedPoolDesktopStaticTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         from tools.quality_gate import python_findings, secret_findings
 
-        for name in ('desktop_forms.py', 'desktop_ui.py', 'desktop_walk_forward.py', 'quantlab/desktop_runtime.py'):
+        for name in (
+            'desktop_app/components/forms.py',
+            'desktop_app/shell/main_window.py',
+            'desktop_app/features/walk_forward/presenter.py',
+            'quantlab/desktop_runtime.py',
+        ):
             source = (root / name).read_text(encoding='utf-8')
             self.assertEqual(python_findings(source, name, research=name.startswith('quantlab/'), desktop=not name.startswith('quantlab/')), [])
             self.assertEqual(secret_findings(source, name), [])

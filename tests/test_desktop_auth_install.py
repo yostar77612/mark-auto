@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import desktop_chatgpt_provider as provider
+import quantlab.assistant.adapters.chatgpt.provider as provider
 from tools import install_desktop_auth as installer
 
 

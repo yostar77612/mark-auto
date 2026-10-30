@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from desktop_chatgpt_provider import _dependency_manifest, _dependency_target, implementation_provenance
+from quantlab.assistant.adapters.chatgpt.provider import _dependency_manifest, _dependency_target, implementation_provenance
 
 
 def requirements_text(manifest, target):

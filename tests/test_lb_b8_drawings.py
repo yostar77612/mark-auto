@@ -17,14 +17,15 @@ from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
-from desktop_charts import CandlestickChart
-import desktop_ui
+from desktop_app.components.charts import CandlestickChart
+import desktop_app.shell.main_window
 from quantlab import chart_drawings as cd
 from quantlab.chart_data import aggregate_bars
 from quantlab.core import content_hash, canonical_json
 from quantlab.research import _summary
 from tests.test_chart_data import bar, START
 from tests.test_backtest import bar as engine_bar, dataset, spec, run
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -219,11 +220,11 @@ class DrawingTests(unittest.TestCase):
 
     def test_public_name_oracle_and_class_size_unchanged(self):
         expected = json.loads((ROOT / 'tests/fixtures/desktop_ui_public_names.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(name for name in vars(desktop_ui) if not name.startswith('_')), expected)
-        source = (ROOT / 'desktop_charts.py').read_text(encoding='utf-8-sig')
+        self.assertEqual(sorted(name for name in vars(desktop_app.shell.main_window) if not name.startswith('_')), expected)
+        source = (ROOT / 'desktop_app/components/charts.py').read_text(encoding='utf-8-sig')
         chart = next(node for node in ast.parse(source).body if isinstance(node, ast.ClassDef) and node.name == 'CandlestickChart')
         self.assertLessEqual(chart.end_lineno - chart.lineno + 1, 500)
-        for path in (ROOT / 'desktop_ui.py', *sorted((ROOT / 'desktop_pages').glob('*.py'))):
+        for path in (ROOT / 'desktop_app/shell/main_window.py', *sorted((ROOT / 'desktop_app').rglob('*.py'))):
             for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
                 if isinstance(node, ast.ClassDef) and (node.name == 'MainWindow' or node.name.endswith('Page')):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 400 if node.name == 'MainWindow' else 500, node.name)

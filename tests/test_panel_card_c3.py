@@ -12,15 +12,16 @@ from PySide6.QtCore import QEvent, QObject
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
-from desktop_pages.widgets import PANEL_TITLE_HEIGHT, PanelCard
-from desktop_pages.market import MarketPage
-from desktop_pages.paper import PaperPage
-from desktop_pages.widgets import WidgetTools
-from desktop_strings import ui_text
-from desktop_theme import apply_theme, build_app_stylesheet, theme_colors
-import desktop_theme as theme_module
+from desktop_app.components.widgets import PANEL_TITLE_HEIGHT, PanelCard
+from desktop_app.features.market.market import MarketPage
+from desktop_app.features.paper.paper import PaperPage
+from desktop_app.components.widgets import WidgetTools
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import apply_theme, build_app_stylesheet, theme_colors
+import desktop_app.shell.theme as theme_module
 from quantlab.paper import RiskLimits
 from tests.test_b4_appearance import contrast_ratio
+# Source scans below use current physical paths.
 
 
 class PolishCounter(QObject):
@@ -75,7 +76,7 @@ class PanelCardTests(unittest.TestCase):
         panel.installEventFilter(observer)
         for theme in ('dark', 'light', 'dark'):
             panel.setProperty('appearanceTheme', theme)
-            with patch('desktop_theme.set_theme_property', wraps=theme_module.set_theme_property) as refresh:
+            with patch('desktop_app.shell.theme.set_theme_property', wraps=theme_module.set_theme_property) as refresh:
                 apply_theme(panel)
                 self.assertTrue(any(call.args[0] is panel for call in refresh.call_args_list))
             panel.ensurePolished()
@@ -140,7 +141,7 @@ class PanelCardTests(unittest.TestCase):
 
     def test_hosted_page_class_budgets(self):
         root = Path(__file__).resolve().parents[1]
-        for path in (root / 'desktop_pages').glob('*.py'):
+        for path in (root / 'desktop_app').rglob('*.py'):
             for node in ast.parse(path.read_text(encoding='utf-8')).body:
                 if isinstance(node, ast.ClassDef) and node.name.endswith('Page'):
                     self.assertLessEqual(node.end_lineno - node.lineno + 1, 500, node.name)

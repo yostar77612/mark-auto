@@ -9,7 +9,7 @@ import unittest
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
 from quantlab.core import canonical_json, to_dict
-from desktop_forms import BacktestSummaryCard, BacktestFillsTable, SummaryCard, ResultTable, backtest_summary_text
+from desktop_app.components.forms import BacktestSummaryCard, BacktestFillsTable, SummaryCard, ResultTable, backtest_summary_text
 from tests.test_performance_metrics import metric
 from tests import test_result_reference_layers as references
 
@@ -30,7 +30,7 @@ class BacktestPresentationTests(unittest.TestCase):
         )
         before = canonical_json(source)
         text = backtest_summary_text(source)
-        from desktop_presentation import display_number
+        from desktop_app.components.formatting import display_number
 
         self.assertIn('獲利因子：4', text)
         self.assertIn(display_number(source['sharpe']), text)

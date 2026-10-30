@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import time
 import unittest
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
@@ -24,7 +24,7 @@ class NativeDesktopTests(unittest.TestCase):
 
     def setUp(self):
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -193,7 +193,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertGreater(result['replay']['cursor'], 0)
         self.assertTrue(result['account']['kill_switch'])
         self.assertFalse(self.window.paper_confirm.isChecked())
-        with patch('desktop_pages.paper.stop_dialog') as factory:
+        with patch('desktop_app.features.paper.paper.stop_dialog') as factory:
             factory.return_value.clickedButton.return_value = factory.return_value.confirm_button
             self.click('paper_kill')
         self.wait_job()
@@ -217,7 +217,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertTrue((self.paths.state / 'desktop_safety.json').exists())
 
     def test_legacy_provider_settings_remain_inert_and_budget_identity_unchanged(self):
-        from desktop_ui import provider_binding_options
+        from desktop_app.shell.main_window import provider_binding_options
 
         old = {'mode': 'compatible', 'model': 'example', 'network_opt_in': True}
         self.assertEqual(provider_binding_options(old), provider_binding_options(dict(old, output_mode='json_object')))
@@ -299,7 +299,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse(self.jobs.active)
 
     def test_remote_free_assumption_and_secret_endpoint_rejected_before_files(self):
-        from desktop_ui import campaign_generator
+        from desktop_app.shell.main_window import campaign_generator
 
         opts = dict(
             mode='compatible',
@@ -334,7 +334,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.wait_job(60)
 
     def test_generated_candidate_picker_backtest_selection_and_persistence(self):
-        from desktop_ui import candidate_record
+        from desktop_app.shell.main_window import candidate_record
         from quantlab.reporting import load_result
 
         self.demo()
@@ -372,7 +372,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'active_candidate.json').exists())
 
     def test_generated_unqualified_candidate_research_only(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         self.demo()
         self.campaign('100000000')
@@ -475,7 +475,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((destination / 'state-v1' / 'dataset.json').exists())
 
     def test_candidate_edited_export_cannot_change_qualification(self):
-        from desktop_ui import candidate_record
+        from desktop_app.shell.main_window import candidate_record
         from quantlab.reporting import read_json, write_json
 
         self.demo()
@@ -551,7 +551,7 @@ class NativeDesktopTests(unittest.TestCase):
             window.backups.recover()
 
     def test_historical_provider_budget_survives_older_backup_and_workspace_change(self):
-        from desktop_ui import research_controls
+        from desktop_app.shell.main_window import research_controls
         from quantlab.research import CompatibleProvider
         from quantlab.provider import HTTPTransport
 
@@ -622,7 +622,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'campaigns' / '.holdout_registry.sqlite3').exists())
 
     def test_legacy_research_ledgers_fail_closed_without_migration(self):
-        from desktop_ui import campaign_generator
+        from desktop_app.shell.main_window import campaign_generator
 
         for relative in ['provider_budgets/legacy.sqlite3', 'campaigns/.holdout_registry.sqlite3']:
             path = self.paths.state / relative
@@ -662,7 +662,7 @@ class NativeDesktopTests(unittest.TestCase):
             self.window.jobs = original
 
     def test_service_rejects_unknown_code_and_network_without_consent(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         for op, payload in [('exec', {'code': '1+1'}), ('ui_refresh', {})]:
             with self.assertRaises(ValueError):

@@ -11,8 +11,8 @@ import shiboken6
 from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication
 
-from desktop_chart_memory import ChartMemory
-from desktop_market import DEFAULT_INDICATORS, MarketDashboard, _identity
+from desktop_app.features.market.chart_memory import ChartMemory
+from desktop_app.features.market.dashboard import DEFAULT_INDICATORS, MarketDashboard, _identity
 from quantlab.chart_data import TIMEFRAMES
 from quantlab.core import content_hash, to_dict
 from tests.test_desktop_market import series

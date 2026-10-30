@@ -11,11 +11,12 @@ from unittest.mock import Mock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QWidget
-from desktop_pages import MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage, PageHost
-from desktop_ui import MainWindow
+from desktop_app.shell.pages import MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage, PageHost
+from desktop_app.shell.main_window import MainWindow
 from quantlab.core import ValidationError
 from quantlab.core import content_hash
 from quantlab.desktop_runtime import AppPaths, JobManager
+from tests.layered_source_fixtures import page_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = (MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage)
@@ -90,7 +91,7 @@ def classes(path):
 
 class PageBoundaryTests(unittest.TestCase):
     def test_class_line_limits(self):
-        node = classes(ROOT / 'desktop_ui.py')['MainWindow']
+        node = classes(ROOT / 'desktop_app/shell/main_window.py')['MainWindow']
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
         for page in PAGES:
             import inspect
@@ -100,20 +101,20 @@ class PageBoundaryTests(unittest.TestCase):
             self.assertTrue(issubclass(page, QWidget))
 
     def test_mainwindow_has_no_moved_page_bodies(self):
-        node = classes(ROOT / 'desktop_ui.py')['MainWindow']
+        node = classes(ROOT / 'desktop_app/shell/main_window.py')['MainWindow']
         names = {n.name for n in node.body if isinstance(n, ast.FunctionDef)}
         forbidden = {'_dashboard', '_data_page', '_strategy_page', '_backtest_page', '_compare_page', '_paper_page', '_settings_page', 'refresh_views'}
         forbidden.update(name for group in MOVED.values() for name in group)
         self.assertFalse(names & forbidden)
 
     def test_pages_never_import_or_discover_shell(self):
-        for path in (ROOT / 'desktop_pages').rglob('*.py'):
+        for path in page_sources(ROOT):
             tree = ast.parse(path.read_text(encoding='utf-8-sig'), feature_version=(3, 11))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
-                    self.assertFalse(any(n.name == 'desktop_ui' for n in node.names))
+                    self.assertFalse(any(n.name == 'desktop_app.shell.main_window' for n in node.names))
                 if isinstance(node, ast.ImportFrom):
-                    self.assertNotEqual(node.module, 'desktop_ui')
+                    self.assertNotEqual(node.module, 'desktop_app.shell.main_window')
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                     self.assertNotIn(node.func.attr, ('window', 'parent', 'parentWidget', '__getattr__'))
 
@@ -281,7 +282,7 @@ class PageInteractionTests(unittest.TestCase):
             self.assertEqual(json.loads(w.comparison.toPlainText()), {'rows': []})
             self.assertEqual(json.loads(w.summary.toPlainText()), {'rows': []})
             notify.assert_called_once()
-        with patch('desktop_ui.saved_analysis_entries', side_effect=ValidationError('fixture')):
+        with patch('desktop_app.shell.main_window.saved_analysis_entries', side_effect=ValidationError('fixture')):
             w._refresh_analysis_saved()
             self.assertTrue(w.analysis_checkpoint_notice.text())
 
@@ -295,7 +296,7 @@ class PageInteractionTests(unittest.TestCase):
         with (
             patch.object(w.compare_page, '_analysis_request', return_value=request),
             patch.object(w.chatgpt_controller, 'set_account_status'),
-            patch('desktop_ui.analysis_preview_text', return_value='validated preview'),
+            patch('desktop_app.shell.main_window.analysis_preview_text', return_value='validated preview'),
         ):
             self.assertTrue(w._analysis_event({'type': 'result', 'result': result}))
         self.assertIs(w._analysis_preview, result)
@@ -331,7 +332,7 @@ class PageInteractionTests(unittest.TestCase):
 class PageSnapshotTests(unittest.TestCase):
     def test_all_seven_workspaces_have_accessible_task_focused_defaults(self):
         from tests.snapshot_cache import default_metrics
-        from desktop_strings import ui_text
+        from desktop_app.strings.catalog import ui_text
 
         actual = default_metrics()
         expected = json.loads((ROOT / 'tests/fixtures/desktop_pages_before/metrics.json').read_text(encoding='utf-8'))

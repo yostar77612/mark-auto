@@ -1,0 +1,154 @@
+"""Pinned historical adapter source bytes; current sources have separate tests."""
+
+import gzip
+import hashlib
+from pathlib import Path
+
+HASHES = {
+    'desktop_chatgpt_auth.py': '__FROZEN_AUTH_SHA__',
+    'desktop_chatgpt_provider.py': '__FROZEN_PROVIDER_SHA__',
+}
+NORMALIZATIONS = __MECHANICAL_NORMALIZATIONS__
+CURRENT_PATHS = __R0_RELOCATIONS__
+
+
+def physical_path(relative: str) -> str:
+    return CURRENT_PATHS.get(relative, relative)
+
+
+def reviewed_source_bytes(root: Path, name: str) -> bytes:
+    if name not in HASHES:
+        return (root / name).read_bytes()
+    path = Path(__file__).resolve().parent / 'fixtures' / 'layered_paths' / (name + '.gz')
+    raw = gzip.decompress(path.read_bytes())
+    if hashlib.sha256(raw).hexdigest() != HASHES[name]:
+        raise ValueError('Historical adapter source fixture changed')
+    return raw
+
+
+def original_adapter_text(path: str, source: str) -> str:
+    for current, original in NORMALIZATIONS[path]:
+        if source.count(current) != 1:
+            raise ValueError('Reviewed mechanical source rewrite changed')
+        source = source.replace(current, original, 1)
+    return source
+
+
+def page_sources(root: Path):
+    """Original page ownership projected to current paths, plus new desktop sources."""
+    moved = set(CURRENT_PATHS.values())
+    projected = {new for old, new in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
+    additions = {path.relative_to(root).as_posix() for path in (root / 'desktop_app').rglob('*.py')} - moved
+    return [root / name for name in sorted(projected | additions)]
+
+
+def historical_ui_environment():
+    """Preserve committed golden source identities while resolving their old imports.
+
+    This context is used only by the historical registry comparison. Runtime
+    provenance separately reads and verifies the actual relocated raw sources.
+    No original fixture bytes, source hashes or producer profiles are changed.
+    """
+    import builtins
+    from contextlib import contextmanager, nullcontext
+    import importlib
+    from unittest.mock import patch
+
+    if getattr(Path.read_text, '_layered_historical_projection', False):
+        return nullcontext()
+
+    @contextmanager
+    def environment():
+        root = Path(__file__).resolve().parents[1]
+        modules = {old.removesuffix('.py').replace('/', '.').removesuffix('.__init__'): new.removesuffix('.py').replace('/', '.').removesuffix('.__init__') for old, new in CURRENT_PATHS.items()}
+        source_keys = {root / name: name for name in HASHES}
+        source_keys.update({root / CURRENT_PATHS[name]: name for name in HASHES})
+        original_import, original_read, original_text = builtins.__import__, Path.read_bytes, Path.read_text
+
+        def projected_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if not level and name in modules:
+                if not fromlist and '.' in name:
+                    raise ValueError('Historical dotted import binding requires explicit review')
+                return importlib.import_module(modules[name])
+            return original_import(name, globals, locals, fromlist, level)
+
+        def source_bytes(path):
+            name = source_keys.get(path)
+            if name is not None:
+                return reviewed_source_bytes(root, name)
+            if path == root / 'desktop_chatgpt_dependency_manifest.json':
+                return original_read(root / 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json')
+            return original_read(path)
+
+        def source_text(path, *args, **kwargs):
+            source = original_text(path, *args, **kwargs)
+            return original_pool_text(source) if path == root / 'quantlab/saved_candidate_pool.py' else source
+
+        source_text._layered_historical_projection = True
+        with patch('builtins.__import__', projected_import), patch.object(Path, 'read_bytes', source_bytes), patch.object(Path, 'read_text', source_text):
+            yield
+
+    return environment()
+
+
+def original_pool_text(source: str) -> str:
+    """Undo only the reviewed additional producer literal and exact tuple entry."""
+    import ast
+    from quantlab.core import content_hash
+
+    marker = '\n# Reviewed mechanical-path producer; all earlier literal blocks remain exact.\n'
+    tail = 'ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, ATOMIC_REPLACE_SIWC_PROFILE_V1, LAYERED_PATHS_SIWC_PROFILE_V1)'
+    if source.count(marker) != 1 or source.count(tail) != 1:
+        raise ValueError('Reviewed producer insertion changed')
+    start = source.index(marker)
+    stop = source.index('SUPPORTED_PRODUCERS = (', start)
+    block = ast.parse(source[start:stop]).body
+    if len(block) != 1 or not isinstance(block[0], ast.Assign) or not isinstance(block[0].targets[0], ast.Name) or block[0].targets[0].id != 'LAYERED_PATHS_SIWC_PROFILE_V1':
+        raise ValueError('Unexpected source in the reviewed producer insertion')
+    inserted = ast.get_source_segment(source[start:stop], block[0])
+    if hashlib.sha256(inserted.encode('utf-8')).hexdigest() != '1bd303b3dacfa0c6abab813b238863dd6561ae5a8b92610d10cef021b4782ac7':
+        raise ValueError('Exact reviewed new producer literal changed')
+    restored = source[:start] + source[stop:]
+    restored = restored.replace(tail, 'ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, ATOMIC_REPLACE_SIWC_PROFILE_V1)', 1)
+    if content_hash(restored) != 'a98cf010989dbba963c5b5236553db94bcd809a298b3c94494307bc9f80e2b4f':
+        raise ValueError('Historical saved-pool source outside the added literal changed')
+    return restored
+
+
+def project_page_service_lines(result):
+    """Apply only the pinned line-location delta to all original patch identities."""
+    import json
+
+    path = Path(__file__).parent / 'fixtures/layered_paths/page_service_line_relocations.json'
+    table = json.loads(path.read_text(encoding='utf-8'))
+    canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    if hashlib.sha256(canonical).hexdigest() != 'a1b69b15bffb350df2ffc78aac0a902e3b99f5670c28991d75d079e8fbe2343c':
+        raise ValueError('Reviewed mechanical line-location table changed')
+    if len(result['patch_points']) != table['patch_points']:
+        raise ValueError('Historical patch inventory size changed')
+    rows = {tuple(sorted(row['original'].items())): row['current_line'] for row in table['line_relocations']}
+    used = set()
+    for point in result['patch_points']:
+        key = tuple(sorted(point.items()))
+        if key in rows:
+            used.add(key)
+            point['line'] = rows[key]
+    if used != rows.keys():
+        raise ValueError('A historical patch identity was removed or changed')
+    result['patch_points'].sort(key=lambda point: (point['file'], point['line'], point['name'], point['kind']))
+    return result
+
+
+def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> bytes:
+    """Read actual current bytes and undo only the reviewed B mechanical adapters."""
+    current = (root / physical_path(logical)).read_bytes()
+    if logical == 'desktop_chatgpt_provider.py':
+        return original_adapter_text(physical_path(logical), current.decode('utf-8')).encode('utf-8')
+    if logical == 'quantlab/saved_candidate_pool.py':
+        text = original_pool_text(current.decode('utf-8').replace('\r\n', '\n'))
+        canonical = baseline.replace(b'\r\n', b'\n')
+        eol = b'\r\n' if b'\r\n' in baseline else b'\n'
+        if b'\r' in canonical or canonical.replace(b'\n', eol) != baseline:
+            raise ValueError('Unknown historical checkout line-ending policy')
+        return text.encode('utf-8').replace(b'\n', eol)
+    return current

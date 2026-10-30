@@ -1,0 +1,14 @@
+
+
+> T2 location addendum (2026-10-30): The frozen contracts and verification records below
+> retain the paths used when recorded. Current page implementations are under
+> `desktop_app/features/`; MarketPage is in `desktop_app/features/market/market.py`,
+> EquityPlot is in
+> `desktop_app/components/equity.py`. The page aggregator is
+> `desktop_app/shell/pages.py`; MainWindow is `desktop_app/shell/main_window.py`.
+> Current directory scans use `desktop_app/`, including its trading feature directory
+> `desktop_app/features/trading/`.
+>
+> Current equivalents of the historical compile and SDK-search commands:
+> `py -3.11 -m compileall -q quantlab desktop_app tools tests desktop.py`
+> `rg -n '^\s*(import shioaji\b|from shioaji\b)' quantlab tests desktop_app/features/trading`

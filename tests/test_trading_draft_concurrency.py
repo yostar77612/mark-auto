@@ -9,9 +9,9 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from shiboken6 import isValid
 
-from desktop_strings import ui_text
-from desktop_trading import TradingWindow
-from desktop_trading.wizard import StrategyWizard
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import TradingWindow
+from desktop_app.features.trading.wizard import StrategyWizard
 from quantlab.trading.application.contracts import ContextOption, StrategyForm, UiAction, UiReceipt
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from decimal import Decimal

@@ -5,7 +5,7 @@ import os, unittest
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont, QFontMetrics
-from desktop_charts import _footer_items, ChartTrace
+from desktop_app.components.charts import _footer_items, ChartTrace
 from tests import test_result_reference_layers as references
 
 

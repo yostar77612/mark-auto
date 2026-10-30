@@ -8,8 +8,8 @@ import unittest
 from unittest.mock import patch
 
 from PySide6.QtWidgets import QApplication
-from desktop_pages.backtest_summary_card import ReportSummaryCard
-from desktop_strings import ui_text
+from desktop_app.features.backtest.backtest_summary_card import ReportSummaryCard
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, content_hash
 from quantlab.trade_statistics import THRESHOLDS, QUANTUM, describe, breakeven, red_flags
 from tests.test_backtest import bar, dataset, run

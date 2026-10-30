@@ -30,9 +30,11 @@ class DownloadImportContractTests(unittest.TestCase):
         self.assertEqual(digest(historical), '366408108c0ac5de96107c5f3129f1b28753e6e1a02ca0c69e5f1098a3ae82e6')
 
     def test_historical_characterization_and_service_inventory_are_not_regenerated(self):
+        # PR B: re-pin only reviewed path/module substitutions in the inventory
+        # and R7 path keys; both normalized diffs are empty (f05328b precedent).
         expected = {
-            'page_services_inventory.json': '931b91be8baaf6fe44f91bf22c05033fb3f666f47b40c442a340b5b0e6f0c36f',
-            'r7_base.json': '14252fdc502819d3860fee93b727f80103392f251934bb0083efd815aee0efa0',
+            'page_services_inventory.json': '39c5ca7d7e61cca59c62050fdef3b9c9eafd9dc9a04861849423616c3cca325c',
+            'r7_base.json': '4507e432e092fc2f1921468ceee4e5f2730f81aa96cf067ad3c5ce00b8c895ba',
             'ui_redesign_characterization_delta.json': 'b5fa49227f1ec94b22661aa5769e0183d84e207227f4ac90d24ac3c1e1ac96f5',
         }
         for name, sha in expected.items():

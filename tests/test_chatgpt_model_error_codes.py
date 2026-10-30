@@ -6,9 +6,9 @@ import unittest
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
-import desktop_chatgpt_ui as ui
-from desktop_chatgpt_auth import AuthError
-from desktop_chatgpt_provider import PlanError
+import desktop_app.features.assistant.connection as ui
+from quantlab.assistant.adapters.chatgpt.auth import AuthError
+from quantlab.assistant.adapters.chatgpt.provider import PlanError
 
 
 class ModelErrorCodeTests(unittest.TestCase):
@@ -57,7 +57,7 @@ class ModelErrorCodeTests(unittest.TestCase):
 
 class ModelCatalogLimitTests(unittest.TestCase):
     def test_catalog_limit_is_bounded_and_larger_than_previous_cap(self):
-        from desktop_chatgpt_provider import MODELS_MAX_RESPONSE_BYTES
+        from quantlab.assistant.adapters.chatgpt.provider import MODELS_MAX_RESPONSE_BYTES
 
         self.assertGreater(MODELS_MAX_RESPONSE_BYTES, 262144)
         self.assertLessEqual(MODELS_MAX_RESPONSE_BYTES, 16 * 1024 * 1024)

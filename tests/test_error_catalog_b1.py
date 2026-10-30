@@ -16,6 +16,7 @@ from quantlab.analysis_recovery import RecoveryError
 from quantlab.core import ValidationError
 from quantlab.desktop_errors import error_message, exception_code
 from quantlab.errors import ERROR_LABELS, ERROR_TABLE, ErrorCode
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -153,7 +154,23 @@ class ErrorCatalogTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest(), BASELINE_SHA256)
 
     def test_single_text_table_and_literal_display_codes(self):
-        paths = sorted((ROOT / 'quantlab').glob('*.py')) + sorted(ROOT.glob('desktop*.py')) + sorted((ROOT / 'desktop_pages').glob('*.py'))
+        paths = (
+            sorted((ROOT / 'quantlab').glob('*.py'))
+            + sorted(
+                [
+                    *ROOT.glob('desktop*.py'),
+                    *(
+                        ROOT / relative
+                        for relative in (
+                            'quantlab/assistant/adapters/chatgpt/auth.py',
+                            'quantlab/assistant/adapters/chatgpt/provider.py',
+                            'quantlab/research_core/adapters/market_layout.py',
+                        )
+                    ),
+                ]
+            )
+            + sorted((ROOT / 'desktop_app').rglob('*.py'))
+        )
         tables = []
         for path in paths:
             tree = ast.parse(path.read_text(encoding='utf-8-sig'))

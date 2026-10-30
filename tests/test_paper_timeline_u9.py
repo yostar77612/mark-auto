@@ -11,8 +11,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from shiboken6 import delete
 
-from desktop_pages.paper_tabs import build_tabs, existing_journal, refresh_tables
-from desktop_strings import ui_text
+from desktop_app.features.paper.paper_tabs import build_tabs, existing_journal, refresh_tables
+from desktop_app.strings.catalog import ui_text
 from quantlab.paper_tab_data import TIMELINE_LIMIT, event_type, timeline_rows
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,7 +91,7 @@ class TimelineWidgetTests(unittest.TestCase):
         self.tabs = build_tabs(self.page, QVBoxLayout(self.owner))
 
     def refresh(self, journal):
-        with patch('desktop_pages.paper_tabs.existing_journal', return_value=journal):
+        with patch('desktop_app.features.paper.paper_tabs.existing_journal', return_value=journal):
             refresh_tables(self.page, {}, [], [])
 
     def open(self):

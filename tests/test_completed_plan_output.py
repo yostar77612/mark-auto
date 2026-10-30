@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from desktop_chatgpt_provider import PlanError
+from quantlab.assistant.adapters.chatgpt.provider import PlanError
 from tests.test_chatgpt_plan import CANDIDATE, MockTransport, frame, provider
 from tests.test_response_output import events
 
@@ -16,8 +16,8 @@ class CompletedPlanOutputTests(unittest.TestCase):
     def generate(self, value):
         with tempfile.TemporaryDirectory() as temporary:
             with (
-                patch('desktop_chatgpt_provider.implementation_provenance', return_value={'offline_fixture': True}),
-                patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport),
+                patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value={'offline_fixture': True}),
+                patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', MockTransport),
                 patch.object(MockTransport, 'events', [frame(event) for event in value]),
                 patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP')),
             ):

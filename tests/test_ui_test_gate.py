@@ -84,8 +84,8 @@ class UiTestGateTests(unittest.TestCase):
     def test_context_binds_both_ui_packages_and_the_installed_streamlit_lock(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for package in ('desktop_pages', 'desktop_smoke'):
-                (root / package).mkdir()
+            for package in ('desktop_app/features/market', 'desktop_app/smoke'):
+                (root / package).mkdir(parents=True)
                 (root / package / 'fixture.py').write_text('VALUE = 1\n', encoding='utf-8')
             (root / 'requirements-ui.lock').write_text('streamlit==1.65.0\n', encoding='utf-8')
             with (
@@ -94,7 +94,7 @@ class UiTestGateTests(unittest.TestCase):
                 patch.object(gate.importlib.metadata, 'version', return_value='1.65.0') as installed,
             ):
                 original = gate.context()['source_sha256']
-                for package in ('desktop_pages', 'desktop_smoke'):
+                for package in ('desktop_app/features/market', 'desktop_app/smoke'):
                     (root / package / 'fixture.py').write_text('VALUE = 2\n', encoding='utf-8')
                     current = gate.context()['source_sha256']
                     self.assertNotEqual(current, original)

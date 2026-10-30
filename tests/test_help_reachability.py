@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from PySide6.QtWidgets import QLabel, QToolButton, QWidget
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from tests import test_t9_onboarding as onboarding
 from tests.snapshot_cache import default_metrics
 
@@ -54,7 +54,7 @@ class HelpReachabilityTests(unittest.TestCase):
             for hint in hints:
                 self.assertTrue(hint.objectName().endswith('_page_hint'))
                 self.assertTrue(0 < len(hint.text()) <= 30)
-            from desktop_help import MOVED_STRINGS, CAPTIONS
+            from desktop_app.components.help import MOVED_STRINGS, CAPTIONS
 
             expected = set(MOVED_STRINGS)
             expected.update(key for captions in CAPTIONS.values() for key, _ in captions)

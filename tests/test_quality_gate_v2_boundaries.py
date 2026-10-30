@@ -69,4 +69,4 @@ class V2ImportBoundaryTests(unittest.TestCase):
                 with self.subTest(label=label, source=source):
                     self.assertTrue(python_findings(source, label, research=True))
         self.assertTrue(python_findings('from PySide6.QtWidgets import QWidget', V2_SDK_LOADER, research=True))
-        self.assertTrue(python_findings('import shioaji', 'desktop_ui.py', desktop=True))
+        self.assertTrue(python_findings('import shioaji', 'desktop_app/shell/main_window.py', desktop=True))

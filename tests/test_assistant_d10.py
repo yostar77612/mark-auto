@@ -11,12 +11,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from desktop_chatgpt_provider import parse_models
-from desktop_chatgpt_ui import ConnectionController, ChatGPTConnectionPanel
-from desktop_pages.assistant import AssistantPanel
-from desktop_pages.assistant_models import context_usage
-from desktop_pages.assistant_runtime import chatgpt_reply
-from desktop_strings import ui_text
+from quantlab.assistant.adapters.chatgpt.provider import parse_models
+from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel
+from desktop_app.features.assistant.assistant import AssistantPanel
+from desktop_app.features.assistant.assistant_models import context_usage
+from desktop_app.features.assistant.worker import chatgpt_reply
+from desktop_app.strings.catalog import ui_text
 from quantlab.errors import ERROR_TABLE
 
 
@@ -212,7 +212,7 @@ class AssistantD10Tests(unittest.TestCase):
         self.assertFalse(controller.usage_known)
 
     def test_new_source_no_dynamic_execution_or_operator(self):
-        source = Path('desktop_pages/assistant_models.py').read_text(encoding='utf-8')
+        source = Path('desktop_app/features/assistant/assistant_models.py').read_text(encoding='utf-8')
         calls = [node.func.id for node in ast.walk(ast.parse(source)) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)]
         self.assertFalse(set(calls) & {'eval', 'exec', 'compile'})
 

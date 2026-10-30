@@ -17,8 +17,8 @@ from quantlab import analysis_recovery as r
 from quantlab import desktop_runtime as runtime
 from quantlab import research_analysis as a
 from quantlab.core import ValidationError, canonical_json, content_hash
-from desktop_chatgpt_auth import OAuthCredentialReference
-import desktop_chatgpt_provider as p
+from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
+import quantlab.assistant.adapters.chatgpt.provider as p
 from tests.test_research_analysis import source, prepare, PROVENANCE, AnalysisWire
 
 
@@ -95,7 +95,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             return a.reconcile_analysis(**args)
 
     def test_new_manager_admission_then_real_local_repair_preserves_provider_controls(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         self.stopped()
         manager = runtime.JobManager(self.paths)
@@ -202,7 +202,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertEqual(self.provider.read_receipts()[0]['status'], 'reserved_unknown')
 
     def test_restore_epoch_changed_after_adapter_precheck_is_rechecked_under_lock(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         self.stopped()
         original = a.reconcile_analysis
@@ -260,7 +260,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertFalse(self.analysis_folder.exists())
 
     def test_linux_durable_route_remains_rejected_at_every_product_boundary(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         self.stopped()
         payload = {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}
@@ -311,7 +311,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_corrupt_analysis_controls_preserve_independent_selection_and_paper_risk_gates(self):
         from datetime import timedelta
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from quantlab.core import to_dict
         from quantlab.reporting import save_dataset, demo_config
         from quantlab.paper import ReconciliationError, LiveBroker, LiveTradingDisabled
@@ -435,7 +435,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             self.assertTrue(finish.wait(5))
             return {}
 
-        with patch('desktop_ui.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
+        with patch('desktop_app.shell.main_window.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
             thread = threading.Thread(
                 target=runtime._job_worker, args=(sender, gate, 'ui_import', {}, str(self.paths.root), str(self.paths.bootstrap), 'f' * 32)
             )

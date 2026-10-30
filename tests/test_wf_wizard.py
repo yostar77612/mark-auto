@@ -8,8 +8,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QStackedWidget
 from tests import test_desktop_pages
-from desktop_pages.wf_wizard import preset_values
-from desktop_presentation import display_number
+from desktop_app.features.walk_forward.wf_wizard import preset_values
+from desktop_app.components.formatting import display_number
 from quantlab.core import ValidationError
 
 
@@ -24,14 +24,14 @@ class WizardTests(unittest.TestCase):
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
     def wizard(self, bars=960):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         execute_ui_operation('ui_demo', {'bars': bars}, self.paths)
         self.window.refresh_views()
         return self.window.strategy_page.wf_wizard
 
     def preview(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
 
         page = self.window.strategy_page
         with patch.object(page.host, 'start_job', return_value='preview-job'):
@@ -175,17 +175,17 @@ class WizardTests(unittest.TestCase):
         start.assert_called_once_with('ui_walk_forward_read', {'reference': 'a' * 64})
 
     def test_result_winner_wording_changes_only_display_projection(self):
-        from desktop_pages.wf_wizard import display_result_rows
+        from desktop_app.features.walk_forward.wf_wizard import display_result_rows
 
         rows = [{'贏家': '第 4 個', '最大回撤': None}]
         result = {'folds': [{'winner_pool_index': 3}]}
-        with patch('desktop_walk_forward.result_rows', return_value=rows):
+        with patch('desktop_app.features.walk_forward.presenter.result_rows', return_value=rows):
             displayed = display_result_rows(result)
         self.assertEqual(displayed[0]['贏家'], '候選 4')
         self.assertIsNone(displayed[0]['最大回撤'])
 
     def test_reopening_consumed_plan_never_retries_oos(self):
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from tests.test_desktop_walk_forward import fake_worker
 
         wizard = self.wizard(240)

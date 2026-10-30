@@ -122,8 +122,8 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QScrollArea, QTabWidget, QWidget
 
-    import desktop_theme
-    from desktop_ui import MainWindow
+    import desktop_app.shell.theme
+    from desktop_app.shell.main_window import MainWindow
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
 
     out = Path(out)
@@ -147,7 +147,7 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
                     for timer in window.findChildren(QTimer):
                         timer.stop()
                     window.setProperty('appearanceTheme', theme)
-                    desktop_theme.apply_theme(window)
+                    desktop_app.shell.theme.apply_theme(window)
                     window.setFixedSize(*size)
                     window.show()
                     app.processEvents()

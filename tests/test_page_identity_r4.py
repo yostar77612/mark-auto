@@ -10,13 +10,14 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
-from desktop_pages.onboarding import WORKFLOW_ORDER, install_onboarding
-from desktop_pages.palette_commands import DEFAULT_PAGE_ORDER, MOUNT_PAGE_ORDER, command_table, page_index, page_widget
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+from desktop_app.shell.onboarding import WORKFLOW_ORDER, install_onboarding
+from desktop_app.shell.palette_commands import DEFAULT_PAGE_ORDER, MOUNT_PAGE_ORDER, command_table, page_index, page_widget
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
+# Source scans below use current physical paths.
 
 
 def reverse_pages(window):
@@ -54,7 +55,7 @@ class PageIdentityTests(unittest.TestCase):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
             jobs = JobManager(paths)
             try:
-                with patch('desktop_pages.onboarding.install_onboarding', side_effect=onboarding):
+                with patch('desktop_app.shell.onboarding.install_onboarding', side_effect=onboarding):
                     window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'))
                 try:
                     for timer in window.findChildren(QTimer):
@@ -133,7 +134,7 @@ class PageIdentityTests(unittest.TestCase):
                 jobs.close()
 
     def test_no_numeric_page_identity_comparisons(self):
-        paths = [Path('desktop_ui.py'), *Path('desktop_pages').glob('*.py')]
+        paths = [Path('desktop_app/shell/main_window.py'), *Path('desktop_app').rglob('*.py')]
         for path in paths:
             for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
                 if not isinstance(node, ast.Compare):

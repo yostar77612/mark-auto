@@ -10,7 +10,7 @@ from unittest.mock import patch
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QWidget
 
-import desktop_icon
+import desktop_app.components.icon
 from tools.make_icon import SIZES, make_icon
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,13 +38,13 @@ class ApplicationIconTests(unittest.TestCase):
         self.assertEqual(make_icon(), data)
 
     def test_real_icon_and_missing_development_file_fallback_are_non_null(self):
-        icon = desktop_icon.application_icon(self.app)
+        icon = desktop_app.components.icon.application_icon(self.app)
         self.assertFalse(icon.isNull())
         self.assertEqual({s.width() for s in icon.availableSizes()}, set(SIZES))
         for size in SIZES:
             self.assertFalse(icon.pixmap(QSize(size, size)).isNull())
-        with patch.object(desktop_icon, '__file__', str(ROOT / 'absent-artwork/desktop_icon.py')):
-            fallback = desktop_icon.application_icon(self.app)
+        with patch.object(desktop_app.components.icon, '__file__', str(ROOT / 'absent-artwork/desktop_app/components/icon.py')):
+            fallback = desktop_app.components.icon.application_icon(self.app)
         self.assertFalse(fallback.isNull())
         previous = self.app.windowIcon()
         window = QWidget()
@@ -58,7 +58,7 @@ class ApplicationIconTests(unittest.TestCase):
             self.app.setWindowIcon(previous)
 
     def test_start_paths_apply_icon_and_freezer_installer_reference_same_artwork(self):
-        for name in ('desktop.py', 'desktop_ui.py'):
+        for name in ('desktop.py', 'desktop_app/shell/main_window.py'):
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8-sig'))
             self.assertTrue(
                 any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'setWindowIcon' for node in ast.walk(tree)), name

@@ -20,13 +20,13 @@
 
 Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/trading/runtime/` 組裝／process／IPC 支援範圍（不是准許其他服務任意移入該範圍）。`desktop_pages/mount.py:11` 僅掛載 UI 頁面，仍是 presentation。`tools/`、`packaging/`、獨立 smoke 與範例腳本均是 tooling；runtime 模組不得反向依賴 tooling，只有 composition 的顯式 smoke 入口可組裝它。
 
-目標路徑是本輪保留整檔或搬移整檔的落點，不代表當下已完成分層。研究套件採 **`quantlab/research_core/`**，避開 G3 的 `quantlab/research.py`；其子目錄使用 `domain/`、`application/`、`ports/`、`adapters/`。依 R4，只選擇已列違規或大於 600 行的研究檔案搬移，不為整齊搬動全部檔案。無觸發者列原路徑；G3 相依限制另見第 5 節。ChatGPT 非 UI 新抽出服務／port 使用 `quantlab/assistant/application/`，實作使用 `quantlab/assistant/adapters/chatgpt/`；G3 auth/provider 本體不搬。
+目標路徑須區分 B 的整檔搬移與 C/D/E 的責任抽取，不代表當下已完成分層；所有既有檔案的整檔搬移均在 B 完成。研究套件採 **`quantlab/research_core/`**，保留 `quantlab/research.py` 的模組身份；其子目錄使用 `domain/`、`application/`、`ports/`、`adapters/`。依 R4，E 只對已列違規或大於 600 行的研究檔案抽取責任，表內研究目標是抽取後的新落點，不是 E 的整檔搬移清單；無觸發者留原路徑。G3 依擁有者第 5 節決定可搬移及拆分，產品行為與歷史 producer profile bytes 必須不變。ChatGPT 非 UI 新抽出服務／port 使用 `quantlab/assistant/application/`，實作使用 `quantlab/assistant/adapters/chatgpt/`；G3 auth/provider 本體於 B 純搬至該 adapter 目錄的 `auth.py`／`provider.py`，D 再依責任拆分。
 
 桌面元件採 `desktop_app/shell/`、`features/<功能>/`、`components/`、`strings/`；所有 `quantlab/trading/` 檔案保持現有路徑。表中 shared 字串目錄是 3.2 明定的例外，雖在 `desktop_app/strings/`，不因此依賴 PySide6。尚未拆開的檔案只列一個主要落點；slice 2 再列拆分後各責任的子模組。
 
 ## 2 逐檔分層與目標路徑
 
-共 311 列：domain 29、application 57、infrastructure 41、presentation 97、composition 21、shared 8、tooling 58（含 R1 新增閘門）。表內行數是包含空白、註解的實體換行數；備註的來源定位是定義／匯入證據，不是宣稱該行涵蓋整檔所有責任。
+共 311 列：domain 29、application 57、infrastructure 41、presentation 97、composition 21、shared 8、tooling 58（含 R1 新增閘門）。表內行數是包含空白、註解的實體換行數，B 修改的列已更新至本輪工作樹；其他來源定位仍是 R0 基線證據；備註的來源定位是定義／匯入證據，不是宣稱該行涵蓋整檔所有責任。
 
 | path | lines | layer | target path | note |
 |---|---:|---|---|---|
@@ -49,7 +49,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_market_layout.py` | 114 | infrastructure | `quantlab/research_core/adapters/market_layout.py` | LayoutStore 寫檔；B 搬核心 adapter；`preset`，`desktop_market_layout.py:17` |
 | `desktop_market_workspace.py` | 324 | presentation | `desktop_app/features/market/workspace.py` | 可移動 UI panel 與 LayoutStore 使用者；匯入違規見第 3 節；`_button`，`desktop_market_workspace.py:17` |
 | `desktop_order_lines.py` | 155 | presentation | `desktop_app/features/paper/order_lines.py` | 紙上委託線與手勢投影；`tick_price`，`desktop_order_lines.py:12` |
-| `desktop_pages/__init__.py` | 13 | presentation | `desktop_app/shell/__init__.py` | 頁面／presenter 與顯示輔助：`__init__`；`desktop_pages/__init__.py:1` |
+| `desktop_pages/__init__.py` | 13 | presentation | `desktop_app/shell/pages.py` | 頁面／presenter 與顯示輔助：`__init__`；`desktop_pages/__init__.py:1` |
 | `desktop_pages/app_header.py` | 213 | presentation | `desktop_app/shell/app_header.py` | 頁面／presenter 與顯示輔助：`app_header`；`_CloseWatcher`，`desktop_pages/app_header.py:17` |
 | `desktop_pages/assistant.py` | 216 | presentation | `desktop_app/features/assistant/assistant.py` | 頁面／presenter 與顯示輔助：`assistant`；`AssistantPanel`，`desktop_pages/assistant.py:19` |
 | `desktop_pages/assistant_completion.py` | 161 | presentation | `desktop_app/features/assistant/assistant_completion.py` | 頁面／presenter 與顯示輔助：`assistant_completion`；匯入違規見第 3 節；`reference_catalog`，`desktop_pages/assistant_completion.py:21` |
@@ -57,7 +57,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_pages/assistant_manifest.py` | 144 | presentation | `desktop_app/features/assistant/assistant_manifest.py` | 頁面／presenter 與顯示輔助：`assistant_manifest`；`field_label`，`desktop_pages/assistant_manifest.py:12` |
 | `desktop_pages/assistant_models.py` | 163 | presentation | `desktop_app/features/assistant/assistant_models.py` | 頁面／presenter 與顯示輔助：`assistant_models`；`advertised_efforts`，`desktop_pages/assistant_models.py:12` |
 | `desktop_pages/assistant_permissions.py` | 77 | presentation | `desktop_app/features/assistant/assistant_permissions.py` | 頁面／presenter 與顯示輔助：`assistant_permissions`；`ResearchPermission`，`desktop_pages/assistant_permissions.py:17` |
-| `desktop_pages/assistant_runtime.py` | 208 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；D E1 才搬檔；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
+| `desktop_pages/assistant_runtime.py` | 208 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；B 已純搬至 desktop_app，D 抽取核心責任；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
 | `desktop_pages/async_status.py` | 78 | presentation | `desktop_app/components/async_status.py` | 頁面／presenter 與顯示輔助：`async_status`；`AsyncStatus`，`desktop_pages/async_status.py:12` |
 | `desktop_pages/backtest.py` | 284 | presentation | `desktop_app/features/backtest/backtest.py` | 頁面／presenter 與顯示輔助：`backtest`；匯入違規見第 3 節；`BacktestPage`，`desktop_pages/backtest.py:21` |
 | `desktop_pages/backtest_summary_card.py` | 115 | presentation | `desktop_app/features/backtest/backtest_summary_card.py` | 頁面／presenter 與顯示輔助：`backtest_summary_card`；`ReportSummaryCard`，`desktop_pages/backtest_summary_card.py:13` |
@@ -130,7 +130,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/window.py` | 598 | presentation | `desktop_app/features/trading/window.py` | 既有 v2 UI／row 投影：`window`；保留現行較嚴格交易閘門；`_Operation`，`desktop_trading/window.py:32` |
 | `desktop_trading/wizard.py` | 325 | presentation | `desktop_app/features/trading/wizard.py` | 既有 v2 UI／row 投影：`wizard`；保留現行較嚴格交易閘門；`StrategyWizard`，`desktop_trading/wizard.py:41` |
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
-| `desktop_ui.py` | 1890 | presentation | `desktop_app/shell/main_window.py` | 主視窗混合 worker dispatch；C/D 分離責任；匯入違規見第 3 節；`provider_binding_options`，`desktop_ui.py:77` |
+| `desktop_ui.py` | 1902 | presentation | `desktop_app/shell/main_window.py` | 主視窗混合 worker dispatch；C/D 分離責任；匯入違規見第 3 節；`provider_binding_options`，`desktop_ui.py:77` |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
 | `desktop_walk_forward.py` | 609 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
@@ -138,7 +138,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `packaging/broker_probe.py` | 120 | tooling | `packaging/broker_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_output`，`packaging/broker_probe.py:16` |
 | `packaging/broker_probe_runtime_hook.py` | 12 | tooling | `packaging/broker_probe_runtime_hook.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`packaging/broker_probe_runtime_hook.py:1` |
 | `packaging/build_broker_portable.py` | 205 | tooling | `packaging/build_broker_portable.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_run`，`packaging/build_broker_portable.py:23` |
-| `packaging/build_manifest.py` | 79 | tooling | `packaging/build_manifest.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`sha256`，`packaging/build_manifest.py:13` |
+| `packaging/build_manifest.py` | 82 | tooling | `packaging/build_manifest.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`sha256`，`packaging/build_manifest.py:13` |
 | `packaging/clean_windows_kit.py` | 97 | tooling | `packaging/clean_windows_kit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`digest`，`packaging/clean_windows_kit.py:16` |
 | `packaging/collect_licenses.py` | 90 | tooling | `packaging/collect_licenses.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_reject_reparse_ancestry`，`packaging/collect_licenses.py:25` |
 | `packaging/desktop_regression.py` | 283 | tooling | `packaging/desktop_regression.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`digest`，`packaging/desktop_regression.py:31` |
@@ -203,7 +203,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/research_analysis.py` | 545 | application | `quantlab/research_analysis.py` | 分析流程與 journal 混合；G3 provider 直接匯入；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_safe_path`，`quantlab/research_analysis.py:60` |
 | `quantlab/response_output.py` | 54 | infrastructure | `quantlab/response_output.py` | Responses wire 輸出重組；依賴 transport error；R4 無違規／超大觸發，原址保留；`CompletedOutput`，`quantlab/response_output.py:8` |
 | `quantlab/runtime_support.py` | 171 | infrastructure | `quantlab/runtime_support.py` | durable IO 與 Windows mutex；不是純 shared；保留本體與既有路徑，見 G3 相依限制；`RuntimeSafetyError`，`quantlab/runtime_support.py:14` |
-| `quantlab/saved_candidate_pool.py` | 2024 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
+| `quantlab/saved_candidate_pool.py` | 2063 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
 | `quantlab/significance.py` | 311 | domain | `quantlab/significance.py` | 純統計推論公式；R4 無違規／超大觸發，原址保留；`_decimal`，`quantlab/significance.py:33` |
 | `quantlab/sqlite_runtime.py` | 84 | infrastructure | `quantlab/sqlite_runtime.py` | 原生 SQLite 載入驗證與來源雜湊；R4 無違規／超大觸發，原址保留；`loaded_library`，`quantlab/sqlite_runtime.py:15` |
 | `quantlab/startup_timing.py` | 47 | shared | `quantlab/startup_timing.py` | 共用記憶體計時工具；R4 無違規／超大觸發，原址保留；`StartupTiming`，`quantlab/startup_timing.py:11` |
@@ -304,7 +304,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/windows_paths.py` | 54 | shared | `quantlab/windows_paths.py` | 跨層路徑拼寫工具；無讀寫副作用；保留本體與既有路徑，見 G3 相依限制；`canonical_path`，`quantlab/windows_paths.py:14` |
 | `tools/bench_backtest_scale.py` | 57 | tooling | `tools/bench_backtest_scale.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/bench_backtest_scale.py:17` |
 | `tools/bench_worker_latency.py` | 185 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
-| `tools/check_layers.py` | 186 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
+| `tools/check_layers.py` | 207 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
 | `tools/check_trading_architecture.py` | 276 | tooling | `tools/check_trading_architecture.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Finding`，`tools/check_trading_architecture.py:22` |
 | `tools/ci_changes.py` | 95 | tooling | `tools/ci_changes.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`is_doc_candidate`，`tools/ci_changes.py:23` |
 | `tools/diagnose_paper_replay.py` | 1070 | tooling | `tools/diagnose_paper_replay.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Timings`，`tools/diagnose_paper_replay.py:26` |
@@ -320,7 +320,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
-| `tools/quality_gate.py` | 222 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
+| `tools/quality_gate.py` | 235 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
 | `tools/research_campaign.py` | 95 | tooling | `tools/research_campaign.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`run_fixture_campaign`，`tools/research_campaign.py:21` |
 | `tools/run_test_group.py` | 620 | tooling | `tools/run_test_group.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`core_shard_for_module`，`tools/run_test_group.py:78` |
@@ -644,9 +644,9 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 
 擁有者已於 2026-10-29 明確批准本次重構搬移及拆分八個 G3 檔，前提是產品行為不變、QA 逐檔複核，並同步更新 CONTRIBUTING 鎖定清單。舊控制者的「全部保持原路徑與 bytes」裁定不再適用；A 不修改產品模組，B 只機械搬移與更新 import，D/E 依責任拆分。
 
-- 八個 G3：quantlab/research.py、provider.py、core.py、strategies.py、backtest.py、data.py，以及 desktop_chatgpt_auth.py、desktop_chatgpt_provider.py。後兩檔 B 搬至 quantlab/assistant/adapters/chatgpt/auth.py 與 provider.py；dependency manifest 同步到該 adapter 目錄。
+- 目前八個 G3：`quantlab/research.py`、`quantlab/provider.py`、`quantlab/core.py`、`quantlab/strategies.py`、`quantlab/backtest.py`、`quantlab/data.py`、`quantlab/assistant/adapters/chatgpt/auth.py`、`quantlab/assistant/adapters/chatgpt/provider.py`。後兩檔由根目錄的 `desktop_chatgpt_auth.py`／`desktop_chatgpt_provider.py` 於 B 搬入；dependency manifest 同步到該 adapter 目錄。歷史 producer 的舊檔名 hash keys 保留作為身份，不代表檔案仍在根目錄。
 - saved_candidate_pool 的歷史 producer profile 字面值原始 bytes、每個歷史 digest 與其安全判定逐位元保留，拆出資料模組時加原始 bytes 比對測試。不得重寫舊 profile 或讓新來源假冒歷史 producer；新來源用明確的新身份，舊結果仍以原 profile 驗證。
-- packaging/markauto.spec 把 auth/provider 與 engine 來源作為資料檔，是執行期來源 SHA-256/provenance 驗證的必要輸入。B 同步資料目的地、來源查找與測試路徑；不能只更新 import 或刪掉驗證。D 拆分後完整來源集合仍需被驗證。
+- `packaging/markauto.spec:22`、`packaging/markauto.spec:23` 將 auth/provider 來源資料複製到 `quantlab/assistant/adapters/chatgpt`（B 前目的地為 `.`）；同檔第 24 行將 dependency manifest 放在相同目錄。engine 來源仍複製到 `quantlab`。這些資料檔是執行期來源 SHA-256/provenance 驗證的必要輸入：`quantlab/backtest.py:370` 讀取 core/data/strategies/backtest 原始 bytes 並計算 SHA-256，第 371 行將 source_hashes 寫入 result manifest；`quantlab/research.py:824`、`quantlab/research.py:825` 對 research/provider/core/strategies/backtest 的 UTF-8 文字計算 engine source identity。B 同步資料目的地、來源查找與測試路徑；不能只更新 import 或刪掉驗證。D 拆分後完整來源集合仍需被驗證。
 - quantlab/research.py 保留該模組名稱，新的研究責任使用 quantlab/research_core/，避免同名檔案與套件衝突。E 按第 10 節抽取 domain、port 與 adapter；既有檔若保留須有實際的流程責任，不能成為 re-export shim。
 
 ## 6 PR 順序與相依關係
@@ -660,6 +660,8 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | C | B；與 D 在獨立 worktree 平行 | strings、shell/main window、forms、market、charts、idea UI 責任拆分；字串保留單一真正查詢入口。 |
 | D | B；與 C 平行 | desktop_runtime、ChatGPT UI/control/auth/provider、saved candidate pool、worker 的核心責任拆分；用 ports 和 composition 接線，歷史 profile bytes 不變。 |
 | E | C、D 合併 | R4 共用元件、R0 研究違規與過大檔的責任抽取；R5 死碼與過度防禦清理、刪 archives、更新架構與貢獻文件。E 不再拆成其他 PR。 |
+
+B 的唯一 R0 落點修正：desktop_pages/__init__.py 搬至 desktop_app/shell/pages.py；shell/__init__.py 必須為空 metadata，保留 worker guard 先於 Qt 載入。其餘 101 對映以原始 A fixture 逐項比對，102 來源與 92 債務身份不變。
 
 smoke 使用 desktop_app/smoke/，避免本機 packaging/ namespace 被已安裝 PyPI packaging 套件遮蔽。仍有 UI import 的 application worker 先純搬到 desktop_app/features/*/worker.py，D 再抽取核心責任；不在 B 引入 quantlab 反向依賴 UI。上述差異均是有證據的落點修正。
 
@@ -749,8 +751,8 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 | 原檔 | LF 行數 | owner | 責任 → 目標模組（基線證據） |
 |---|---:|---|---|
 | `desktop_strings.py` | 4316 | C | 查詢入口／locale fallback → `desktop_app/strings/catalog.py`（`desktop_strings.py:1755`）；按 key 第一段拆 catalog dictionaries → `desktop_app/strings/assistant.py`（`desktop_strings.py:12`）、`desktop_app/strings/market.py`（`desktop_strings.py:93`）及其他同名功能檔，所有後置 `ZH_TW.update` 保持覆蓋順序（`desktop_strings.py:1701`）；歷史文字 key aliases → `desktop_app/strings/aliases.py` 再依前綴分資料檔（`desktop_strings.py:2992`）；worker stage 錯誤顯示 → `desktop_app/components/job_messages.py`（`desktop_strings.py:1726`）。catalog 保留單一真正查詢實作，不是舊模組 shim。 |
-| `quantlab/saved_candidate_pool.py` | 2024 | D；frozen-data 大小例外 | producer profile 字面值留原檔原位元（`quantlab/saved_candidate_pool.py:1010`、`quantlab/saved_candidate_pool.py:1098`）；保留真正的 admission 協調與 profile 選擇本體（`quantlab/saved_candidate_pool.py:1426`、`quantlab/saved_candidate_pool.py:1777`），不是整檔搬走後 re-export。bounded JSON／read-only campaign IO → `quantlab/research_core/adapters/saved_pool_source.py`（`quantlab/saved_candidate_pool.py:1198`、`quantlab/saved_candidate_pool.py:1374`）；snapshot／attempt／selection 驗證 → `quantlab/research_core/application/saved_pool_validation.py`、`saved_pool_attempts.py`（`quantlab/saved_candidate_pool.py:1543`、`quantlab/saved_candidate_pool.py:1871`、`quantlab/saved_candidate_pool.py:1967`），profile 作明確參數傳入，避免回 import 造成循環。凍結資料本身已超過 600 行，故原檔不承諾 ≤400；逐位元比對 profile 與既有 producer 身份。 |
-| `desktop_ui.py` | 1890 | C（D 使用已協調契約） | 視窗／導航／掛載 → `desktop_app/shell/main_window.py`（`desktop_ui.py:1497`、`desktop_ui.py:1629`）；busy／poll／notification 投影 → `desktop_app/shell/job_presenter.py`（`desktop_ui.py:1687`、`desktop_ui.py:1715`）；分析／研究／paper handler 分別抽到 `quantlab/research_core/application/analysis_operations.py`、`research_operations.py`、`paper_operations.py`（`desktop_ui.py:489`、`desktop_ui.py:625`、`desktop_ui.py:938`），移除 UI 字串相依、只回錯誤碼／資料；provider/auth 的實體建立與 handler registry → `desktop_app/bootstrap.py`（`desktop_ui.py:121`、`desktop_ui.py:1284`）；分析顯示文字 → `desktop_app/features/analysis/presenter.py`（`desktop_ui.py:360`）。C 擁有此來源檔修改，D 不平行重寫同一組 handlers。 |
+| `quantlab/saved_candidate_pool.py` | 2063 | D；frozen-data 大小例外 | producer profile 字面值留原檔原位元（`quantlab/saved_candidate_pool.py:1010`、`quantlab/saved_candidate_pool.py:1098`）；保留真正的 admission 協調與 profile 選擇本體（`quantlab/saved_candidate_pool.py:1426`、`quantlab/saved_candidate_pool.py:1777`），不是整檔搬走後 re-export。bounded JSON／read-only campaign IO → `quantlab/research_core/adapters/saved_pool_source.py`（`quantlab/saved_candidate_pool.py:1198`、`quantlab/saved_candidate_pool.py:1374`）；snapshot／attempt／selection 驗證 → `quantlab/research_core/application/saved_pool_validation.py`、`saved_pool_attempts.py`（`quantlab/saved_candidate_pool.py:1543`、`quantlab/saved_candidate_pool.py:1871`、`quantlab/saved_candidate_pool.py:1967`），profile 作明確參數傳入，避免回 import 造成循環。凍結資料本身已超過 600 行，故原檔不承諾 ≤400；逐位元比對 profile 與既有 producer 身份。 |
+| `desktop_ui.py` | 1902 | C（D 使用已協調契約） | 視窗／導航／掛載 → `desktop_app/shell/main_window.py`（`desktop_ui.py:1497`、`desktop_ui.py:1629`）；busy／poll／notification 投影 → `desktop_app/shell/job_presenter.py`（`desktop_ui.py:1687`、`desktop_ui.py:1715`）；分析／研究／paper handler 分別抽到 `quantlab/research_core/application/analysis_operations.py`、`research_operations.py`、`paper_operations.py`（`desktop_ui.py:489`、`desktop_ui.py:625`、`desktop_ui.py:938`），移除 UI 字串相依、只回錯誤碼／資料；provider/auth 的實體建立與 handler registry → `desktop_app/bootstrap.py`（`desktop_ui.py:121`、`desktop_ui.py:1284`）；分析顯示文字 → `desktop_app/features/analysis/presenter.py`（`desktop_ui.py:360`）。C 擁有此來源檔修改，D 不平行重寫同一組 handlers。 |
 | `quantlab/desktop_runtime.py` | 1840 | D | 原路徑留必要的 workspace／credential 本體（`quantlab/desktop_runtime.py:229`、`quantlab/desktop_runtime.py:438`），及 G3 auth 所引用的 write 工具；不把它們搬走再用 shim 補回。備份 archive／restore IO → `quantlab/research_core/adapters/workspace_backup.py`（`quantlab/desktop_runtime.py:626`）；process-tree／spawn／IPC → `quantlab/research_core/adapters/job_process.py`、`job_worker.py`（`quantlab/desktop_runtime.py:1057`、`quantlab/desktop_runtime.py:972`）；launch request 準備 → `quantlab/research_core/application/job_requests.py`（`quantlab/desktop_runtime.py:1325`、`quantlab/desktop_runtime.py:1376`、`quantlab/desktop_runtime.py:1444`）；JobManager 的實際 admission／生命週期協調留本體並只依賴 process/storage port（`quantlab/desktop_runtime.py:1219`、`quantlab/desktop_runtime.py:1573`）；registry 接線交 composition（`quantlab/desktop_runtime.py:74`、`quantlab/desktop_runtime.py:83`）。剩餘本體若仍超標，須附具體職責與進一步抽取方案；不得弱化 credential 邊界以湊行數。 |
 | `desktop_chatgpt_ui.py` | 1462 | D | request/event/options 資料與驗證 → `quantlab/assistant/application/connection_contracts.py`（`desktop_chatgpt_ui.py:180`、`desktop_chatgpt_ui.py:237`、`desktop_chatgpt_ui.py:334`、`desktop_chatgpt_ui.py:400`）；連線狀態轉移 → `quantlab/assistant/application/connection_controller.py`（`desktop_chatgpt_ui.py:427`），拆 Qt signals／字串後才成核心服務；widget 與 render → `desktop_app/features/assistant/connection.py`、`connection_presenter.py`（`desktop_chatgpt_ui.py:826`、`desktop_chatgpt_ui.py:1117`）；執行 request 的外部 auth/provider 轉接 → `quantlab/assistant/adapters/chatgpt/connection_worker.py`（`desktop_chatgpt_ui.py:1300`），由 composition 注入，auth/provider 依下列方案抽取，provenance 驗證不得移除。 |
 | `desktop_chatgpt_provider.py` | 1460 | D | B 純搬至 assistant adapter；D 按 SSE/HTTP transport（原164、297行）→ transport.py、reservation/unknown receipt reconciliation（原459、748行）→ reservations.py、provider 執行與完整來源 provenance（原431、1127行）→ provider.py 拆分，路徑均在 quantlab/assistant/adapters/chatgpt/。application 以 Protocol 呼叫，歷史 profile digest 不改，新來源身份明確區分。 |

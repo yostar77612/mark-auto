@@ -18,11 +18,11 @@ Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
 | 即時訂閱 | 最多 20 檔、`quote_type='tick'`；同一商品被多個訂閱共用時依引用計數退訂 | 同上 |
 | tick 回呼 | `sdk_facade` 有 `set_on_tick_stk_v1_callback`／`set_on_tick_fop_v1_callback`，但**沒有任何程式碼註冊回呼**；已訂閱的 tick 不會進入引擎 | [sdk_facade.py](../../quantlab/trading/adapters/shioaji/sdk_facade.py) |
 | 最新報價 | `latest()` 以 `snapshots` 主動查詢，產生 `Quote`（bid/ask/last、交易日、盤別） | [market_data.py](../../quantlab/trading/adapters/shioaji/market_data.py) |
-| 報價到畫面 | `engine.quote()` 遞增 `quote_count` → `UiState.quote_revision`；視窗每 1 秒輪詢快照 | [engine.py](../../quantlab/trading/application/engine.py)、[window.py](../../desktop_trading/window.py) |
+| 報價到畫面 | `engine.quote()` 遞增 `quote_count` → `UiState.quote_revision`；視窗每 1 秒輪詢快照 | [engine.py](../../quantlab/trading/application/engine.py)、[window.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/window.py) |
 | 畫面資料 | `MarketView` 只有價格、報價時間、可交易狀態、來源；沒有 K 線、成交量、漲跌 | [contracts.py](../../quantlab/trading/application/contracts.py) |
-| 市場工作區 | 只有一張商品表格 | [workspaces.py](../../desktop_trading/workspaces.py) `_market_page` |
-| 總覽工作區 | 按鈕、兩段狀態文字、待處理清單、最近事件清單 | [workspaces.py](../../desktop_trading/workspaces.py) `_overview_page` |
-| K 線圖 | `CandlestickChart`：OHLCV、成交量、`1m`…`1w` 週期；週期切換只發出請求，不自行重組；`set_series` 每次驗證整個序列，上限 100,000 根，沒有增量更新 | [desktop_charts.py](../../desktop_charts.py) |
+| 市場工作區 | 只有一張商品表格 | [workspaces.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/workspaces.py) `_market_page` |
+| 總覽工作區 | 按鈕、兩段狀態文字、待處理清單、最近事件清單 | [workspaces.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/workspaces.py) `_overview_page` |
+| K 線圖 | `CandlestickChart`：OHLCV、成交量、`1m`…`1w` 週期；週期切換只發出請求，不自行重組；`set_series` 每次驗證整個序列，上限 100,000 根，沒有增量更新 | [desktop_charts.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_charts.py) |
 | 舊研究 UI | C5 市場停靠工作區：商品卡、自選清單、圖表、版面預設 | [c5-market-dock-workspace.md](c5-market-dock-workspace.md) |
 | 唯讀連線 | 已有 `UiAction.CONNECT_READ_ONLY` | [contracts.py](../../quantlab/trading/application/contracts.py) |
 
@@ -61,7 +61,7 @@ Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
   → Runtime IPC 快照 → 桌面每秒輪詢（沿用既有 1 秒 poll）
 ```
 
-- 桌面不接觸原始 tick，也不載入 SDK，符合 [desktop_trading/README.md](../../desktop_trading/README.md) 的分層原則。
+- 桌面不接觸原始 tick，也不載入 SDK，符合 [desktop_trading/README.md](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/README.md) 的分層原則。
 - 畫面更新頻率上限為每秒一次，與 tick 頻率無關。
 - 另設 `market_revision` 計數器；只有行情變動時，畫面只更新行情相關元件，不重建策略、部位等表格，做法與現有 `quote_revision` 相同。
 
@@ -161,7 +161,7 @@ Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
 | Adapters（`quantlab/trading/adapters/`） | 永豐：註冊回呼、SDK 資料 → `Tick`、有上限佇列、例外轉換；模擬：可重現的 tick 來源 | 不做 K 棒組成或新鮮度判斷（那是 Domain 的事） |
 | Application（`quantlab/trading/application/`） | 即時行情服務：持有各商品緩衝、分配訂閱名額、協調歷史補抓；把 Domain 結果組成唯讀檢視 | 不含 SDK 欄位細節；不直接開執行緒或連網 |
 | Runtime（`quantlab/trading/runtime/`） | 組裝：建立服務、注入連接器、啟動抽取 tick 的背景迴圈；IPC 新增欄位 | 不藏任何行情或交易規則 |
-| Presentation（`desktop_trading/`） | 看盤與總覽的 widget；把檢視轉成表格列與文字的**純函式**（沿用 [rendering.py](../../desktop_trading/rendering.py) 的做法） | 只能用 `application.contracts` 的公開型別；不計算損益、新鮮度或 K 棒 |
+| Presentation（`desktop_trading/`） | 看盤與總覽的 widget；把檢視轉成表格列與文字的**純函式**（沿用 [rendering.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/rendering.py) 的做法） | 只能用 `application.contracts` 的公開型別；不計算損益、新鮮度或 K 棒 |
 
 `desktop_charts.py` 是新舊 UI 共用的根層模組，只新增「替換最後一根／附加一根」這類顯示方法，不加入資料取得或計算。
 
@@ -238,9 +238,9 @@ tests/
 - [quantlab/trading/adapters/simulated/broker.py](../../quantlab/trading/adapters/simulated/broker.py)：模擬 tick 來源。
 - [quantlab/trading/application/engine.py](../../quantlab/trading/application/engine.py)、[contracts.py](../../quantlab/trading/application/contracts.py)、[views.py](../../quantlab/trading/application/views.py)：接上即時行情服務與新檢視。
 - [quantlab/trading/runtime/protocol.py](../../quantlab/trading/runtime/protocol.py)、[ipc.py](../../quantlab/trading/runtime/ipc.py)：快照新增欄位。
-- [desktop_trading/workspaces.py](../../desktop_trading/workspaces.py)、[window.py](../../desktop_trading/window.py)：兩個工作區的版面與 `market_revision` 局部更新。
-- [desktop_charts.py](../../desktop_charts.py)：增量更新方法。
-- [desktop_strings.py](../../desktop_strings.py)：所有新文字使用字面 `ui_text` 鍵。
+- [desktop_trading/workspaces.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/workspaces.py)、[window.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_trading/window.py)：兩個工作區的版面與 `market_revision` 局部更新。
+- [desktop_charts.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_charts.py)：增量更新方法。
+- [desktop_strings.py](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_strings.py)：所有新文字使用字面 `ui_text` 鍵。
 
 預計新增（尚不存在）：見 I.3。
 另外擴充 [tools/check_trading_architecture.py](../../tools/check_trading_architecture.py) 的測試案例，確認新模組受層次檢查涵蓋；不放寬任何既有規則。

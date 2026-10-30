@@ -35,7 +35,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
     _enable_backup = contract.RestartAvailabilityContractTests._enable_backup
 
     def setUp(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.research_analysis import _read_analysis_journal
 
         self.tmp = tempfile.TemporaryDirectory(prefix='markauto-recovery-ui-')
@@ -62,8 +62,8 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         for target in (
             'socket.create_connection',
             'http.client.HTTPSConnection',
-            'desktop_chatgpt_provider.PlanHTTPTransport',
-            'desktop_ui.analysis_provider_for',
+            'quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport',
+            'desktop_app.shell.main_window.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('No recovery UI network/provider')))
         self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
@@ -273,7 +273,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_other_workspace_keeps_non_ai_but_enforces_installation_source_conflict(self):
         from PySide6.QtWidgets import QPushButton
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.reporting import save_dataset
 
         original = _snapshot(self.paths.root)
@@ -334,7 +334,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def _assert_full_startup_and_close(self, *, unknown=False):
         import desktop
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from PySide6.QtCore import QTimer
 
         locator = WorkspaceLocator(self.paths.bootstrap)
@@ -373,7 +373,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
 
     def test_clean_legacy_startup_has_no_recovery_ledger_or_conflict(self):
         from desktop import _prepare_startup_workspace
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         clean = AppPaths(self.base / 'legacy-workspace', self.base / 'legacy-bootstrap').ensure()
         backups = BackupManager(clean)

@@ -13,9 +13,9 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from desktop_pages.design import section
-from desktop_pages.widgets import WidgetTools
-from desktop_strings import ui_text
+from desktop_app.components.design import section
+from desktop_app.components.widgets import WidgetTools
+from desktop_app.strings.catalog import ui_text
 from tests.test_t9_onboarding import sandbox_ui
 
 
@@ -151,7 +151,7 @@ class WindowDisclosurePersistenceTests(unittest.TestCase):
         self.store = SettingsStore(self.paths.state / 'settings.json')
 
     def open_window(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         window = MainWindow(self.paths, self.jobs, self.store)
         self.addCleanup(window.deleteLater)

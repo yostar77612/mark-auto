@@ -11,9 +11,9 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
-from desktop_pages.maintenance import MaintenancePanel
-from desktop_pages.settings import SettingsPage
-from desktop_strings import ui_text
+from desktop_app.features.settings.maintenance import MaintenancePanel
+from desktop_app.features.settings.settings import SettingsPage
+from desktop_app.strings.catalog import ui_text
 from quantlab.update_check import UpdateResult
 from tools.ui_redesign_preview import build_window, isolate
 
@@ -39,9 +39,9 @@ class PreviewAvailabilityTests(unittest.TestCase):
         panel = self.window.settings_page.maintenance_panel
         release = self.window.findChild(QPushButton, 'open_releases')
         with (
-            patch('desktop_pages.maintenance.Thread') as thread,
-            patch('desktop_pages.maintenance.check_for_update') as fetch,
-            patch('desktop_pages.settings.QDesktopServices.openUrl') as browser,
+            patch('desktop_app.features.settings.maintenance.Thread') as thread,
+            patch('desktop_app.features.settings.maintenance.check_for_update') as fetch,
+            patch('desktop_app.features.settings.settings.QDesktopServices.openUrl') as browser,
             patch('socket.create_connection') as connect,
             patch('urllib.request.OpenerDirector.open') as request,
         ):
@@ -67,7 +67,7 @@ class PreviewAvailabilityTests(unittest.TestCase):
         panel = MaintenancePanel()
         self.addCleanup(panel.deleteLater)
         self.addCleanup(panel.timer.stop)
-        with patch('desktop_pages.maintenance.Thread') as thread:
+        with patch('desktop_app.features.settings.maintenance.Thread') as thread:
             panel.check_updates()
             thread.assert_called_once()
             thread.return_value.start.assert_called_once()
@@ -77,7 +77,7 @@ class PreviewAvailabilityTests(unittest.TestCase):
         normal_page = QWidget()
         normal_page.status = QLabel()
         self.addCleanup(normal_page.deleteLater)
-        with patch('desktop_pages.settings.QDesktopServices.openUrl', return_value=True) as browser:
+        with patch('desktop_app.features.settings.settings.QDesktopServices.openUrl', return_value=True) as browser:
             SettingsPage.open_releases(normal_page)
             browser.assert_called_once()
 

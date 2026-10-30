@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch
 
-from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+from desktop_app.features.assistant.connection import ConnectionRequest, run_connection_request
 from tests.test_desktop_chatgpt_ui import authorization_url
 
 REF = 'a' * 32
@@ -134,7 +134,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
         self.assertIsNone(result.authorization_url)
 
     def test_failure_is_visible_and_controls_stay_locked_until_worker_join(self):
-        from desktop_chatgpt_ui import ConnectionController, ERROR_LABELS
+        from desktop_app.features.assistant.connection import ConnectionController, ERROR_LABELS
 
         controller = ConnectionController()
         controller.set_host_available(True)
@@ -151,7 +151,7 @@ class TerminalAttemptReportingTests(unittest.TestCase):
 
     def test_unrelated_invalid_request_keeps_real_listener_waiting_until_explicit_cancel(self):
         from unittest.mock import MagicMock
-        from desktop_chatgpt_auth import AuthSession, LoopbackListener
+        from quantlab.assistant.adapters.chatgpt.auth import AuthSession, LoopbackListener
         from tests.test_chatgpt_auth import FakeVault
 
         listeners = []

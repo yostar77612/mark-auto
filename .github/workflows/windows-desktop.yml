@@ -9,7 +9,7 @@ on:
       - 'tests/test_windows_recovery_feasibility.py'
       - 'requirements*.lock'
       - 'requirements*.txt'
-      - 'desktop_chatgpt_dependency_manifest.json'
+      - 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json'
       - '*.spec'
       - '*.iss'
       - 'tools/make_icon.py'

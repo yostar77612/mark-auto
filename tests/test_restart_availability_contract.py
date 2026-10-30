@@ -50,8 +50,8 @@ def _offline_worker(*args, **kwargs):
     with (
         patch('socket.create_connection', side_effect=AssertionError('TEST_ONLY: no network')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('TEST_ONLY: no HTTP')),
-        patch('desktop_chatgpt_provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
-        patch('desktop_ui.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
+        patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
+        patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
     ):
         return _job_worker(*args, **kwargs)
 
@@ -119,7 +119,7 @@ class _TestOnlyConflictPolicy:
 
 
 def _contract_window_type(policy):
-    from desktop_ui import MainWindow
+    from desktop_app.shell.main_window import MainWindow
 
     class TestOnlyContractWindow(MainWindow):
         def _busy(self, active, *, refresh_recovery=False):
@@ -154,8 +154,8 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         for target in (
             'socket.create_connection',
             'http.client.HTTPSConnection',
-            'desktop_chatgpt_provider.PlanHTTPTransport',
-            'desktop_ui.analysis_provider_for',
+            'quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport',
+            'desktop_app.shell.main_window.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('TEST_ONLY forbidden: ' + target)))
         self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
@@ -181,8 +181,8 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         from quantlab.core import canonical_json, content_hash
         from quantlab.reporting import save_dataset
         from tests.test_research_analysis import AnalysisWire, PROVENANCE, prepare, source
-        from desktop_chatgpt_auth import OAuthCredentialReference
-        import desktop_chatgpt_provider as provider
+        from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
+        import quantlab.assistant.adapters.chatgpt.provider as provider
         import quantlab.research_analysis as analysis
 
         self.data, state, self.campaign = source(self.paths.state / 'campaigns')
@@ -377,7 +377,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         rollback.rmdir()
 
     def test_other_workspace_non_ai_use_preserves_original_controls_and_state(self):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.reporting import save_dataset
 
         before = _snapshot(self.paths.root)

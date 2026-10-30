@@ -14,11 +14,11 @@ from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication, QPushButton, QToolButton
 
-from desktop_pages.palette_commands import page_index
-from desktop_strings import ui_text
-from desktop_theme import scale_window_fonts
-from desktop_ui import MainWindow, execute_ui_operation
-from desktop_smoke import _smoke_steps
+from desktop_app.shell.palette_commands import page_index
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import scale_window_fonts
+from desktop_app.shell.main_window import MainWindow, execute_ui_operation
+from desktop_app.smoke import _smoke_steps
 from quantlab.core import ValidationError, canonical_json, to_dict
 from quantlab.desktop_runtime import AppPaths, JobManager
 from quantlab.reporting import export_report, save_dataset, synthetic_dataset, write_json, read_json
@@ -33,7 +33,7 @@ class DataResultWorkflowTests(unittest.TestCase):
             return
         from tools.ui_snapshot import _save_png
         from PySide6.QtGui import QFontDatabase, QFont
-        from desktop_theme import apply_theme
+        from desktop_app.shell.theme import apply_theme
 
         target = self.window if window is None else window
         if os.name == 'nt':
@@ -239,7 +239,7 @@ class DataResultWorkflowTests(unittest.TestCase):
     def test_report_folder_opens_only_a_verified_workspace_result(self):
         page = self.window.backtest_page
         _, _, saved = self.load_fixture()
-        with patch('desktop_pages.backtest.QDesktopServices.openUrl', return_value=True) as opened:
+        with patch('desktop_app.features.backtest.backtest.QDesktopServices.openUrl', return_value=True) as opened:
             page.open_report()
             self.assertEqual(Path(opened.call_args.args[0].toLocalFile()), Path(saved['result']).parent)
             self.assertEqual(self.window.findChild(QPushButton, 'backtest_open_report').toolTip(), ui_text('privacy.exports_raw'))
@@ -352,7 +352,7 @@ class DataResultWorkflowTests(unittest.TestCase):
             fills = dict(paper._stop_account['fills'])
             choice = object()
             dialog = SimpleNamespace(confirm_button=choice, observe_button=object(), exec=lambda: None, clickedButton=lambda: choice)
-            with patch('desktop_pages.paper.stop_dialog', return_value=dialog):
+            with patch('desktop_app.features.paper.paper.stop_dialog', return_value=dialog):
                 paper.kill_paper()
             stopped = PaperBroker.read_snapshot(window.root / 'paper.sqlite3')
             self.assertTrue(stopped['manual_order_lock'])

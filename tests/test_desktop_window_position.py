@@ -8,10 +8,10 @@ import unittest
 from unittest.mock import Mock, patch
 
 from PySide6.QtCore import QPoint, QRect
-from desktop_pages.market import MarketPage
-from desktop_pages.settings import SettingsPage
-from desktop_pages.data import DataPage
-from desktop_pages.strategy import StrategyPage
+from desktop_app.features.market.market import MarketPage
+from desktop_app.features.settings.settings import SettingsPage
+from desktop_app.features.data.data import DataPage
+from desktop_app.features.strategy.strategy import StrategyPage
 from tests.t10_fixture import WindowFixture
 
 
@@ -79,7 +79,7 @@ class WindowPositionTests(unittest.TestCase):
         self.value = deepcopy(value)
 
     def load(self):
-        with patch('desktop_pages.settings.QApplication.screens', return_value=[self.screen]):
+        with patch('desktop_app.features.settings.settings.QApplication.screens', return_value=[self.screen]):
             SettingsPage.load_settings(self.page)
 
     def test_both_save_paths_round_trip_without_frame_drift(self):
@@ -111,14 +111,14 @@ class WindowPositionTests(unittest.TestCase):
 
     def test_shell_position_binding_uses_x_y_not_client_geometry(self):
         # Exercise the actual shell lambda with a decorated window double.
-        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_ui.py').read_text(encoding='utf-8-sig'))
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
         constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         binding = next(k.value for k in constructor.keywords if k.arg == 'window_position')
         callback = eval(compile(ast.Expression(binding), '<window_position>', 'eval'), {'self': self.window, 'QPoint': QPoint})
         self.assertEqual(callback(), QPoint(120, 140))
 
     def test_dialog_bindings_keep_shell_parent(self):
-        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_ui.py').read_text(encoding='utf-8-sig'))
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
         constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         dialogs = Mock()
         for name, factory in (('question', 'question'), ('open_file', 'getOpenFileName'), ('save_file', 'getSaveFileName'), ('market_history_dialog', None)):
@@ -169,7 +169,7 @@ class ProductionWindowMinimumTests(WindowFixture):
                     value['window'] = {'x': 0, 'y': 0, 'width': saved_size[0], 'height': saved_size[1]}
                     w.settings.save(value)
                     with (
-                        patch('desktop_pages.settings.QApplication.screens', return_value=[screen]),
+                        patch('desktop_app.features.settings.settings.QApplication.screens', return_value=[screen]),
                         patch.object(w.page_host, 'window_screen', return_value=screen),
                     ):
                         w.load_settings()

@@ -21,7 +21,7 @@ See [C5 example](c5-market-dock-workspace.md), [ADRs](../adr/),
 [Proposed behavior, state transitions, failure behavior and alternatives.]
 [List exact existing repository paths to touch with resolving links and reasons.
 Label any proposed new file as future rather than linking a nonexistent path.]
-For UI changes, use literal ui_text keys in [desktop_strings.py](../../desktop_strings.py)
+For UI changes, use literal ui_text keys in [desktop_strings.py](../../desktop_app/strings/catalog.py)
 and the B1 [ERROR_TABLE](../../quantlab/errors.py) for errors.
 
 ## Safety constraints (live trading disabled, G3, OOS/budget)

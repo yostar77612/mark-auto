@@ -57,9 +57,9 @@
 
 | 指標 | 數值 |
 |---|---|
-| `MainWindow`（[desktop_ui.py:686](../../desktop_ui.py)） | 92 個方法、1,684 行 |
+| `MainWindow`（[desktop_ui.py:686](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)） | 92 個方法、1,684 行 |
 | `desktop.main`（[desktop.py:571](../../desktop.py)） | 348 行 |
-| `execute_ui_operation`（[desktop_ui.py:264](../../desktop_ui.py)） | 329 行 |
+| `execute_ui_operation`（[desktop_ui.py:264](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)） | 329 行 |
 | desktop UI 內 `setToolTip` | 0 |
 | 鍵盤快捷鍵（`QShortcut`／`QKeySequence`） | 0 |
 | 以 `;` 串接多敘述的行數 | desktop_chatgpt_ui 88、desktop_ui 53、market_history 29、chatgpt_auth 27 |
@@ -91,7 +91,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：在乾淨環境執行輸出與第 2 節同格式的數字；附一個測試確認工具只使用暫存目錄。
 
 ### P0-01 畫面刷新會讓紙上帳戶「需要對帳」（真實 bug）
-- **問題**：每個背景作業完成後，畫面會刷新紙上帳戶卡片（[desktop_ui.py:1890](../../desktop_ui.py)，`_show_account(_paper(self.root).snapshot())`）。`_paper()` 每次都建立新的 `PaperBroker`，而 `PaperBroker` 開啟既有帳本時一定會寫入一筆 `restart` 事件（[quantlab/paper.py:270-271](../../quantlab/paper.py)）；`restart` 會把帳戶設成「需要對帳」（[quantlab/paper.py:226-227](../../quantlab/paper.py)）。
+- **問題**：每個背景作業完成後，畫面會刷新紙上帳戶卡片（[desktop_ui.py:1890](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)，`_show_account(_paper(self.root).snapshot())`）。`_paper()` 每次都建立新的 `PaperBroker`，而 `PaperBroker` 開啟既有帳本時一定會寫入一筆 `restart` 事件（[quantlab/paper.py:270-271](../../quantlab/paper.py)）；`restart` 會把帳戶設成「需要對帳」（[quantlab/paper.py:226-227](../../quantlab/paper.py)）。
   - 實測（隔離暫存工作區）：按「明確對帳紙上帳戶」後，作業結果的帳戶狀態是 `reconciliation_required: false`，但畫面卡片立刻顯示「需要對帳：是」。
   - 帳本出現使用者沒有做過的 `restart` 紀錄（例如對帳前就有 `restart:1`、`restart:2`），稽核紀錄失真。
 - **改法**：為「只讀顯示」提供不寫入事件的唯讀快照路徑（例如 `PaperBroker.read_snapshot()` 或唯讀開啟模式），畫面刷新改用它；`restart` 事件只在真正的程式啟動或 worker 接手時寫入。`quantlab/paper.py` 不是 G3 鎖定檔。重啟後必須對帳的安全規則不變（G2）。
@@ -112,13 +112,13 @@ P0（快速修正，含真實 bug）
 
 ### P0-04 修正頁面名稱與截斷
 - **問題**：
-  - 回測頁寫「使用『策略與版本』目前選定…」（[desktop_ui.py:1125](../../desktop_ui.py)），但側邊欄沒有這一頁，它叫「AI 策略中心」。README 的 Walk-forward 段落也引用「策略與版本」。
+  - 回測頁寫「使用『策略與版本』目前選定…」（[desktop_ui.py:1125](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)），但側邊欄沒有這一頁，它叫「AI 策略中心」。README 的 Walk-forward 段落也引用「策略與版本」。
   - 紙上交易頁兩個表格的表頭被截斷（「始 UTC」「結束 UTC」「交易E」）。
 - **改法**：統一頁面名稱；表格欄寬依表頭自動調整，或改用可換行的表頭；README 同步。
 - **驗收**：全專案搜尋不到已不存在的頁面名稱；截圖中表頭完整可讀。
 
 ### P0-05 使用者看得懂的錯誤訊息
-- **問題**：`MainWindow._safe`（[desktop_ui.py:1473](../../desktop_ui.py)）把 `str(exc)` 直接放進狀態列；desktop_ui 共 7 處、desktop_market 3 處、desktop_chatgpt_ui 1 處顯示原始例外文字。
+- **問題**：`MainWindow._safe`（[desktop_ui.py:1473](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)）把 `str(exc)` 直接放進狀態列；desktop_ui 共 7 處、desktop_market 3 處、desktop_chatgpt_ui 1 處顯示原始例外文字。
 - **改法**：建立錯誤代碼對照表（代碼 → 中文說明 → 建議動作）。狀態列只顯示中文說明與建議；「詳細資訊」展開後只顯示錯誤代碼與發生階段。**不得把原始例外文字寫進日誌**：既有 `RedactedEventLog`（[quantlab/desktop_runtime.py:466](../../quantlab/desktop_runtime.py)）只接受固定的操作與事件代碼，這個隱私設計要保留；若要記錄錯誤，只能新增固定的錯誤代碼欄位。不得顯示金鑰、路徑、token、回應內容。
 - **驗收**：新增測試餵入各類已知例外，狀態列文字都來自對照表；未知例外顯示通用中文訊息加錯誤代碼。
 
@@ -261,7 +261,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：截圖工具在 `--scale 1.5` 與 `--scale 2` 下沒有截斷文字或重疊元件；Tab 鍵順序符合視覺順序。
 
 ### P1-11 視窗最小尺寸與響應式版面
-- **問題**：目前最小尺寸 800×600（[desktop_ui.py:2240](../../desktop_ui.py)），在此尺寸下版面擁擠。
+- **問題**：目前最小尺寸 800×600（[desktop_ui.py:2240](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)），在此尺寸下版面擁擠。
 - **改法**：決定支援的最小尺寸（建議 1280×720），在此以下改用可捲動但不破版的配置；市場總覽右側面板可收合。
 - **驗收**：截圖工具在最小支援尺寸下無截斷、無重疊。
 
@@ -312,7 +312,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：desktop UI 檔內不再有使用者可見的中文字面字串（log、註解除外）；測試全數通過。
 
 #### P2-A2 主題與樣式獨立
-- **問題**：整份樣式寫死在 `MainWindow.__init__`（[desktop_ui.py:718](../../desktop_ui.py)），另有多處 inline `setStyleSheet`。
+- **問題**：整份樣式寫死在 `MainWindow.__init__`（[desktop_ui.py:718](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py)），另有多處 inline `setStyleSheet`。
 - **改法**：新增 `desktop_theme.py`：色彩 token、字級、間距、按鈕三級樣式、狀態色（成功、警告、危險）。元件只設 objectName／property，不寫 inline 樣式。
 - **驗收**：除主題模組外，desktop 檔案沒有 inline `setStyleSheet`（圖表繪製例外需註明）。
 
@@ -322,7 +322,7 @@ P0（快速修正，含真實 bug）
 - **驗收**：`MainWindow` ≤ 400 行；每個頁面類別 ≤ 500 行；既有 objectName 不變；全部 desktop 測試通過；smoke test 通過。
 
 #### P2-A4 拆分 execute_ui_operation
-- **問題**：[desktop_ui.py:264](../../desktop_ui.py) 一個 329 行的函式處理所有背景操作。
+- **問題**：[desktop_ui.py:264](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_ui.py) 一個 329 行的函式處理所有背景操作。
 - **改法**：改為「操作名稱 → 處理函式」的註冊表，每個處理函式獨立、可單測；未知操作照舊拒絕。
 - **驗收**：函式本體 ≤ 60 行；每個操作有對應測試；子程序／worker 入口行為不變。
 

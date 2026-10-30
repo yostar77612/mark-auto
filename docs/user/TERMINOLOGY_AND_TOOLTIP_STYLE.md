@@ -82,7 +82,7 @@ glossary rather than using the terms interchangeably.
 ## Current catalog examples
 
 Each quoted value below exists verbatim in
-[desktop_strings.py](../../desktop_strings.py). These are current text, not
+[desktop_app/strings/catalog.py](../../desktop_app/strings/catalog.py). These are current text, not
 proposed replacement strings.
 
 | Catalog key | Current value | Why it is useful |
@@ -109,7 +109,7 @@ snapshots. This item leaves the catalog and default views unchanged.
 
 ## Adding text and verifying it
 
-All new UI strings must be added through `desktop_strings.py` and referenced
+All new UI strings must be added through `desktop_app/strings/catalog.py` and referenced
 with literal `ui_text` keys. Error messages use the existing B1
 [`ERROR_TABLE`](../../quantlab/errors.py), without a second message table or raw
 exception text. Review the glossary pairing, rendered length after substitution,

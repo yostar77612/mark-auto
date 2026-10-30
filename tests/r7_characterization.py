@@ -14,19 +14,20 @@ from PySide6.QtGui import QImage, QPainter, QFont
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QAbstractButton, QTableWidget
 import shiboken6
 
-from desktop_charts import CandlestickChart, ChartTrace, ChartMarker, ReferenceLine
-from desktop_pages import mount, result_layers
+from desktop_app.components.charts import CandlestickChart, ChartTrace, ChartMarker, ReferenceLine
+from desktop_app.shell import mount
+from desktop_app.components import result_layers
 from tests.test_chart_data import bar, START
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from tests.test_t9_onboarding import sandbox_ui
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
-    'desktop_pages/mount.py': ('mount_pages', None),
-    'desktop_market.py': ('__init__', 'MarketDashboard'),
-    'desktop_charts.py': ('paintEvent', 'CandlestickChart'),
-    'desktop_pages/result_layers.py': ('result_snapshot_lines', None),
-    'desktop_pages/views.py': ('refresh_views', 'ViewCoordinator'),
+    'desktop_app/shell/mount.py': ('mount_pages', None),
+    'desktop_app/features/market/dashboard.py': ('__init__', 'MarketDashboard'),
+    'desktop_app/components/charts.py': ('paintEvent', 'CandlestickChart'),
+    'desktop_app/components/result_layers.py': ('result_snapshot_lines', None),
+    'desktop_app/shell/views.py': ('refresh_views', 'ViewCoordinator'),
 }
 
 
@@ -143,7 +144,7 @@ def chart_capture(kind):
                 )
         image = QImage(chart.size(), QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(0)
-        with patch('desktop_charts.QPainter', Painter):
+        with patch('desktop_app.components.charts.QPainter', Painter):
             chart.render(image)
         return [sha256(bytes(image.constBits())).hexdigest(), counts]
     finally:
@@ -187,7 +188,7 @@ def window_capture():
     import tempfile
 
     # Keep this dependency local to the stage that uses it.
-    from desktop_ui import MainWindow
+    from desktop_app.shell.main_window import MainWindow
 
     # Keep this dependency local to the stage that uses it.
     from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
@@ -203,7 +204,7 @@ def window_capture():
 
     with (
         sandbox_ui(),
-        patch('desktop_pages.app_header.CLOCK_OVERRIDE', lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)),
+        patch('desktop_app.shell.app_header.CLOCK_OVERRIDE', lambda: datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)),
         tempfile.TemporaryDirectory(prefix='r7-capture-') as folder,
     ):
         paths = AppPaths(Path(folder) / 'workspace').ensure()

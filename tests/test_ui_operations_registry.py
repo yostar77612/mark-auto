@@ -21,7 +21,9 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-import desktop_ui as ui
+from tests.layered_source_fixtures import historical_ui_environment
+
+import desktop_app.shell.main_window as ui
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.desktop_runtime import AppPaths
 from quantlab.reporting import demo_config, save_dataset, synthetic_dataset, write_json
@@ -58,11 +60,10 @@ def old_module():
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
         try:
-            spec.loader.exec_module(module)
-            # Source-hash lookups still refer to the unchanged dependency files
-            # beside desktop_ui.py; only the loaded module's name is isolated.
-            module.__file__ = ui.__file__
-            yield module
+            with historical_ui_environment():
+                spec.loader.exec_module(module)
+                module.__file__ = str(Path(__file__).resolve().parents[1] / 'desktop_ui.py')
+                yield module
         finally:
             sys.modules.pop(name, None)
 
@@ -163,9 +164,9 @@ def workspace():
                 locale.setlocale(locale.LC_ALL, 'C')
                 with (
                     patch.dict(os.environ, environment),
-                    patch('desktop_chatgpt_auth.DPAPIVault._prepare', prepare_empty_vault),
+                    patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare', prepare_empty_vault),
                     patch('quantlab.desktop_runtime.CredentialVault._crypt', side_effect=AssertionError('credential access forbidden')),
-                    patch('desktop_chatgpt_auth.OfficialTransport.request', side_effect=AssertionError('offline fixtures only')),
+                    patch('quantlab.assistant.adapters.chatgpt.auth.OfficialTransport.request', side_effect=AssertionError('offline fixtures only')),
                 ):
                     yield AppPaths(root / 'workspace', root / 'bootstrap').ensure()
             finally:
@@ -174,7 +175,7 @@ def workspace():
 
 def exercise(execute):
     """Real offline handlers, with the existing bounded-process scoring fixture."""
-    with workspace() as paths, patch('socket.socket', side_effect=AssertionError('offline fixtures only')):
+    with workspace() as paths, patch('socket.socket', side_effect=AssertionError('offline fixtures only')), historical_ui_environment():
         observations = {}
 
         def call(name, payload, **kwargs):
@@ -289,8 +290,8 @@ def exercise(execute):
         MockTransport.requests = []
         MockTransport.events = None
         with (
-            patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
-            patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport),
+            patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+            patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', MockTransport),
             patch('quantlab.research._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args), 'memory_limit_enforced': False}),
         ):
             _, binding = ui.plan_provider(paths, subscription_data, subscription_config, options, for_usage=True)
@@ -317,8 +318,8 @@ def exercise(execute):
         AnalysisWire.failure = AnalysisWire.mutate = None
         with (
             patch('quantlab.research_analysis._run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args)}),
-            patch('desktop_chatgpt_provider.implementation_provenance', return_value=PROVENANCE),
-            patch('desktop_chatgpt_provider.PlanHTTPTransport', AnalysisWire),
+            patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=PROVENANCE),
+            patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', AnalysisWire),
         ):
             preview = call('ui_analysis_preview', {'request': request})
             if preview:
@@ -367,7 +368,7 @@ def exercise(execute):
         call('ui_backup_restore', {'path': str(backup)})
         if 'ui_idea_research' in getattr(sys.modules.get(execute.__module__), 'UI_OPERATIONS', ()):
             # Offline: the fixture transport reports that the plan cannot use web search.
-            from desktop_chatgpt_provider import PlanError
+            from quantlab.assistant.adapters.chatgpt.provider import PlanError
 
             class Unsupported:
                 def stream(self, *args, **kwargs):
@@ -381,7 +382,7 @@ def exercise(execute):
                 'consent': {'network': True, 'plan_usage': True},
             }
             with (
-                patch('desktop_chatgpt_provider.PlanHTTPTransport', Unsupported),
+                patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', Unsupported),
                 patch('quantlab.idea_research.uuid.uuid4', return_value=uuid.UUID(int=1)),
                 patch('quantlab.idea_research.time.strftime', return_value='2026-01-05T00:00:00Z'),
             ):
@@ -404,7 +405,7 @@ class RegistryTests(unittest.TestCase):
         expected = portable_paths(golden_observations())
         original_environment = dict(os.environ)
         with old_module() as old, workspace() as host:
-            from desktop_chatgpt_auth import DPAPIVault
+            from quantlab.assistant.adapters.chatgpt.auth import DPAPIVault
 
             vault = DPAPIVault(str(host.bootstrap))
             vault.directory.mkdir(parents=True)

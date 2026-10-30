@@ -7,7 +7,7 @@ sections 0 and 0.1 and the first-part global limits apply.
 
 ## Implementation
 
-[MarketWorkspace](../../desktop_market_workspace.py) supplies equivalent dock
+[MarketWorkspace](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_market_workspace.py) supplies equivalent dock
 panels around the existing instrument cards, watchlist controls and chart
 controls. Stable panel IDs are `cards`, `watchlist`, `chart`; objectNames are
 `market_dock_<id>`. Public dashboard references and original content objectNames
@@ -31,7 +31,7 @@ live-disabled notice remain outside the collapsible panels.
 
 ## Persistence and validation
 
-[LayoutStore](../../desktop_market_layout.py) uses only
+[LayoutStore](https://github.com/yostar77612/mark-auto/blob/559025982afbeac8b473b42802d0a8340de90e88/desktop_market_layout.py) uses only
 `<settings parent>/display_profile/market-layout-v1.json`, beside DrawingStore.
 The mount reads persisted state once; a bare dashboard or missing settings path
 uses memory only. Only explicit named saves/deletes write the file. Preset,

@@ -46,7 +46,7 @@ MAX_FILES = 10000
 # UI-owned worker protocol, retained as the default for legacy JobManager(paths)
 # callers. This is the sole desktop registrar literal in quantlab. Resolution is
 # dynamic so the runtime has no static dependency on a desktop module.
-DEFAULT_OPERATION_REGISTRAR = 'desktop_ui:execute_ui_operation'
+DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
 
 
 class _OperationExecutorRegistry:
@@ -115,7 +115,7 @@ def _is_worker_registrar_import():
     Ordinary GUI imports keep their full public surface and Qt implementations.
     """
     # A direct registrar lookup in the GUI process must not poison its cached
-    # desktop_ui module with the child-only, nonconstructible GUI bases.
+    # desktop_app.shell.main_window module with the child-only, nonconstructible GUI bases.
     return _worker_registrar_import.get() and mp.parent_process() is not None
 
 

@@ -11,9 +11,9 @@ from unittest.mock import patch
 import unittest
 import tempfile
 from pathlib import Path
-from desktop_chatgpt_auth import OAuthCredentialReference
+from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
 from quantlab.core import ValidationError
-from desktop_chatgpt_provider import (
+from quantlab.assistant.adapters.chatgpt.provider import (
     ChatGPTPlanProvider,
     PlanError,
     SSEParser,
@@ -74,7 +74,7 @@ class MockTransport:
 
 
 def crash_after_reservation(path):
-    with patch('desktop_chatgpt_provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
+    with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
         p = provider(Path(path))
         p._reserve('0' * 64, 100)
     os._exit(0)  # Synthetic worker death, no network or remote operation.
@@ -82,7 +82,7 @@ def crash_after_reservation(path):
 
 def competing_reservation(path, queue):
     try:
-        with patch('desktop_chatgpt_provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
             queue.put(provider(Path(path))._reserve('0' * 64, 100))
     except PlanError:
         queue.put(None)
@@ -90,7 +90,7 @@ def competing_reservation(path, queue):
 
 def competing_distinct_registration(path, registration, filename, queue):
     root = Path(path)
-    with patch('desktop_chatgpt_provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
+    with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value={'source_sha256': {'offline_fixture': 'a' * 64}}):
         p = provider(
             root,
             credential_reference=OAuthCredentialReference(str(root / 'auth'), registration),
@@ -154,7 +154,7 @@ SYNTHETIC_PROVENANCE = {'source_sha256': {'offline_fixture': 'a' * 64}}
 
 class PlanTests(unittest.TestCase):
     def setUp(self):
-        patcher = patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE)
+        patcher = patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.temp = tempfile.TemporaryDirectory()
@@ -165,7 +165,7 @@ class PlanTests(unittest.TestCase):
         patcher = patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP'))
         patcher.start()
         self.addCleanup(patcher.stop)
-        patcher = patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport)
+        patcher = patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', MockTransport)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -196,7 +196,7 @@ class PlanTests(unittest.TestCase):
 
     # P2b: the pre-inference catalog check uses the catalog cap, never the inference cap.
     def test_p2_campaign_catalog_uses_catalog_limit(self):
-        from desktop_chatgpt_provider import MODELS_MAX_RESPONSE_BYTES
+        from quantlab.assistant.adapters.chatgpt.provider import MODELS_MAX_RESPONSE_BYTES
 
         seen = []
 
@@ -205,7 +205,7 @@ class PlanTests(unittest.TestCase):
                 seen.append(limits['max_response_bytes'])
                 return super().models(reference, limits, cancelled)
 
-        with patch('desktop_chatgpt_provider.PlanHTTPTransport', Capture):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', Capture):
             p = provider(self.tmp_path)
             assert p.generate({'family': 'trend'}) == CANDIDATE
         assert seen == [MODELS_MAX_RESPONSE_BYTES]
@@ -343,7 +343,7 @@ class PlanTests(unittest.TestCase):
                 assert len(MockTransport.requests) == 1
 
     def test_admission_diagnostics_do_not_interpret_or_retain_detail_text(self):
-        from desktop_chatgpt_provider import _remote_error
+        from quantlab.assistant.adapters.chatgpt.provider import _remote_error
 
         for value, status, expected, remote in (
             ({'detail': 'subscription_sharing_user_not_eligible'}, 403, 'grant_blocked', None),
@@ -443,7 +443,7 @@ class PlanTests(unittest.TestCase):
         expired = time.monotonic() + p.timeout + 1
 
         def slow_stream(*args):
-            with patch('desktop_chatgpt_provider.time.monotonic', return_value=expired):
+            with patch('quantlab.assistant.adapters.chatgpt.provider.time.monotonic', return_value=expired):
                 yield frame(terminal())
 
         with patch.object(MockTransport, 'stream', slow_stream):
@@ -581,7 +581,7 @@ class PlanTests(unittest.TestCase):
                 def models(self, reference, limits, cancelled):
                     return MockTransport().models(reference, limits, cancelled)
 
-            with patch('desktop_chatgpt_provider.PlanHTTPTransport', RealStream):
+            with patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', RealStream):
                 # The full provider path still parses strictly and records a completed receipt.
                 FakeResponse.chunks = [frame(terminal())]
                 self.assertEqual(p.generate({'family': 'trend'}), CANDIDATE)
@@ -786,7 +786,7 @@ class PlanTests(unittest.TestCase):
         import sqlite3
 
         p = provider(self.tmp_path)
-        with patch('desktop_chatgpt_provider.sqlite3.connect', side_effect=sqlite3.OperationalError('synthetic init crash')):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.sqlite3.connect', side_effect=sqlite3.OperationalError('synthetic init crash')):
             with self.assertRaises(PlanError):
                 p._reserve('a' * 64, 100)
         marker = Path(p.credential_reference.bootstrap) / 'chatgpt-plan-controls-v1.marker'
@@ -833,7 +833,7 @@ class PlanTests(unittest.TestCase):
         def connect(*args, **kwargs):
             return original(*args, **kwargs, factory=InterruptedInit)
 
-        with patch('desktop_chatgpt_provider.sqlite3.connect', connect):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.sqlite3.connect', connect):
             with self.assertRaises(PlanError):
                 p._reserve('a' * 64, 100)
         before = p.account_path.read_bytes()
@@ -1042,7 +1042,7 @@ class PlanTests(unittest.TestCase):
             except PlanError as exc:
                 errors.append(exc.code)
 
-        with patch('desktop_chatgpt_provider.PlanHTTPTransport', DelayedMetadata):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', DelayedMetadata):
             thread = threading.Thread(target=late_call, name='late_metadata')
             thread.start()
             try:
@@ -1072,7 +1072,7 @@ class PlanTests(unittest.TestCase):
         a = provider(self.tmp_path)
         a._reserve('a' * 64, 100)
         a._finish(1, 'completed')
-        with tracked_sqlite_connections() as opened, patch('desktop_chatgpt_provider.time.monotonic', side_effect=[0, 6]):
+        with tracked_sqlite_connections() as opened, patch('quantlab.assistant.adapters.chatgpt.provider.time.monotonic', side_effect=[0, 6]):
             with self.assertRaises(PlanError):
                 read_account_status(a.credential_reference, a.path.parent)
             self.assertTrue(opened)
@@ -1109,12 +1109,12 @@ class PlanTests(unittest.TestCase):
 
 def competing_unknown_resolution(path, ready, release, results):
     """Two fresh workers contend for one synthetic, already-aged receipt."""
-    from desktop_chatgpt_provider import ACKNOWLEDGEMENT_VERSION, resolve_unknown_request
+    from quantlab.assistant.adapters.chatgpt.provider import ACKNOWLEDGEMENT_VERSION, resolve_unknown_request
 
     root = Path(path)
     reference = OAuthCredentialReference(str(root / 'auth'), 'a' * 32)
     with (
-        patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+        patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP')),
         patch.object(OAuthCredentialReference, '__call__', side_effect=AssertionError('No credential access')),
     ):
@@ -1133,7 +1133,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
     """R1 offline reconciliation, including durable refusal and tamper checks."""
 
     def setUp(self):
-        import desktop_chatgpt_provider as module
+        import quantlab.assistant.adapters.chatgpt.provider as module
 
         self.module = module
         self.temp = tempfile.TemporaryDirectory()
@@ -1141,10 +1141,10 @@ class UnknownRequestResolutionTests(unittest.TestCase):
         self.tmp_path = Path(self.temp.name)
         for patcher in (
             patch.dict(os.environ, {'LOCALAPPDATA': str(self.tmp_path / 'local-appdata'), 'APPDATA': str(self.tmp_path / 'appdata')}),
-            patch('desktop_chatgpt_provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
+            patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=SYNTHETIC_PROVENANCE),
             patch('http.client.HTTPSConnection', side_effect=AssertionError('No live HTTP')),
             patch.object(OAuthCredentialReference, '__call__', side_effect=AssertionError('No credential access')),
-            patch('desktop_chatgpt_provider.PlanHTTPTransport', MockTransport),
+            patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', MockTransport),
         ):
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1289,7 +1289,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
             db.set_authorizer(authorizer)
             return db
 
-        with patch('desktop_chatgpt_provider.sqlite3.connect', connect):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.sqlite3.connect', connect):
             self.assertEqual(self.inspect(p), {'kind': 'k1_resolvable', 'sequence': 1, 'calls': 1, 'max_age_ok': True})
             reference = OAuthCredentialReference(p.credential_reference.bootstrap, 'b' * 32)
             result = self.module.inspect_unknown_request(reference, p.path.parent)
@@ -1535,7 +1535,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
                     return db
 
                 before = self.files()
-                with patch('desktop_chatgpt_provider.sqlite3.connect', connect), self.assertRaises(PlanError):
+                with patch('quantlab.assistant.adapters.chatgpt.provider.sqlite3.connect', connect), self.assertRaises(PlanError):
                     self.resolve(p)
                 self.assertTrue(denied, 'Fixture must reach the requested write failure')
                 self.assertEqual(self.files(), before)
@@ -1621,7 +1621,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
         p = self.aged_pending()
         boundary = p.path.stat().st_mtime + 300
         before = self.files()
-        with patch('desktop_chatgpt_provider.time.time', return_value=boundary):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.time.time', return_value=boundary):
             self.assertTrue(self.inspect(p)['max_age_ok'])
             self.assertEqual(self.files(), before)
             self.resolve(p)
@@ -1660,7 +1660,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
         p = self.aged_pending()
         original_binding = self.rows(p.account_path, 'SELECT binding FROM plan_ledgers')
         new_provenance = {'source_sha256': {'offline_fixture': 'b' * 64}}
-        with patch('desktop_chatgpt_provider.implementation_provenance', return_value=new_provenance):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value=new_provenance):
             self.assertEqual(self.inspect(p)['kind'], 'k1_resolvable')
             self.resolve(p)
             self.assertEqual(read_account_status(p.credential_reference, p.path.parent), {'state': 'user_confirmed_consumed', 'pending': False})
@@ -1670,7 +1670,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
 
     def test_provenance_failure_or_incompatible_audit_schema_cannot_partially_resolve(self):
         p = self.aged_pending()
-        with patch('desktop_chatgpt_provider.implementation_provenance', side_effect=PlanError('implementation_provenance_unavailable')):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', side_effect=PlanError('implementation_provenance_unavailable')):
             self.unchanged_refusal(lambda: self.resolve(p), 'implementation_provenance_unavailable')
         self.mutate(p.account_path, 'CREATE TABLE plan_resolutions (incompatible TEXT)')
         self.unchanged_refusal(lambda: self.resolve(p), 'account_controls_unavailable')
@@ -1700,7 +1700,7 @@ class UnknownRequestResolutionTests(unittest.TestCase):
         def connect(*args, **kwargs):
             return original(*args, **kwargs, factory=RecordWriteModes)
 
-        with patch('desktop_chatgpt_provider.sqlite3.connect', connect):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.sqlite3.connect', connect):
             self.resolve(p)
         self.assertEqual(modes, [('delete', 2), ('delete', 2)])
 
@@ -2073,7 +2073,7 @@ class FinishedRequestResolutionTests(unittest.TestCase):
 
         p = self.k2()
         before = self.files()
-        with patch('desktop_chatgpt_provider.implementation_provenance', side_effect=OSError('private')):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', side_effect=OSError('private')):
             with self.assertRaises(PlanError):
                 self.resolve(p)
         self.assertEqual(self.files(), before)
@@ -2083,7 +2083,7 @@ class FinishedRequestResolutionTests(unittest.TestCase):
             original(db)
             raise sqlite3.OperationalError('private')
 
-        with patch('desktop_chatgpt_provider._create_finished_resolution_audit', create_then_fail):
+        with patch('quantlab.assistant.adapters.chatgpt.provider._create_finished_resolution_audit', create_then_fail):
             with self.assertRaises(PlanError) as caught:
                 self.resolve(p)
         self.assertEqual(caught.exception.code, 'account_controls_unavailable')

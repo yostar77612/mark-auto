@@ -7,7 +7,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-import desktop_recovery_smoke as smoke
+import desktop_app.smoke.recovery as smoke
 from quantlab.analysis_recovery import plan_bindings, admission, register_launch, read_launch
 from quantlab.desktop_runtime import AppPaths
 from quantlab.reporting import synthetic_dataset, save_dataset
@@ -56,8 +56,8 @@ class RecoveryFrozenSmokeTests(unittest.TestCase):
             save_dataset(data, paths.state / 'dataset.json')
             with (
                 patch('socket.create_connection', side_effect=AssertionError('No network')),
-                patch('desktop_chatgpt_provider.analysis_provider', side_effect=AssertionError('No provider')),
-                patch('desktop_chatgpt_auth.OAuthCredentialReference', side_effect=AssertionError('No credentials')),
+                patch('quantlab.assistant.adapters.chatgpt.provider.analysis_provider', side_effect=AssertionError('No provider')),
+                patch('quantlab.assistant.adapters.chatgpt.auth.OAuthCredentialReference', side_effect=AssertionError('No credentials')),
             ):
                 plan, request = smoke._prepare_plan(paths, state, time.monotonic() + 10)
                 self.assertEqual(validate_analysis_plan(plan), plan)
@@ -111,8 +111,8 @@ class RecoveryFrozenSmokeTests(unittest.TestCase):
             save_dataset(data, dataset_path)
             with (
                 patch('socket.create_connection', side_effect=AssertionError('No network')),
-                patch('desktop_chatgpt_provider.analysis_provider', side_effect=AssertionError('No provider')),
-                patch('desktop_chatgpt_auth.OAuthCredentialReference', side_effect=AssertionError('No credentials')),
+                patch('quantlab.assistant.adapters.chatgpt.provider.analysis_provider', side_effect=AssertionError('No provider')),
+                patch('quantlab.assistant.adapters.chatgpt.auth.OAuthCredentialReference', side_effect=AssertionError('No credentials')),
             ):
                 plan, request = smoke._prepare_plan(paths, state, time.monotonic() + 10)
                 self.assertEqual(validate_analysis_plan(plan), plan)

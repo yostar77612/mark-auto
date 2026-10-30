@@ -76,7 +76,7 @@ class FixtureSession:
 
 def fixture_process(request, queue, cancelled, block=False):
     import time
-    from desktop_chatgpt_ui import run_connection_request
+    from desktop_app.features.assistant.connection import run_connection_request
 
     class BlockingSession(FixtureSession):
         def begin(self, registration=None):
@@ -98,7 +98,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        import desktop_chatgpt_ui as ui
+        import desktop_app.features.assistant.connection as ui
 
         self.ui = ui
         self.controller = ui.ConnectionController()
@@ -589,7 +589,7 @@ class ChatGPTConnectionUITests(unittest.TestCase):
 
         class LostHostSession(FirstUseSession):
             def initialize_host(self, *, first_use_only=False):
-                from desktop_chatgpt_auth import AuthError
+                from quantlab.assistant.adapters.chatgpt.auth import AuthError
 
                 raise AuthError('explicit_host_recovery_required')
 

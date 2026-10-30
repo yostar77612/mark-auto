@@ -6,8 +6,8 @@ import unittest
 from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 
-import desktop_chatgpt_auth as auth
-from desktop_chatgpt_ui import ConnectionRequest, run_connection_request
+import quantlab.assistant.adapters.chatgpt.auth as auth
+from desktop_app.features.assistant.connection import ConnectionRequest, run_connection_request
 from tests import test_chatgpt_auth as auth_fixtures
 
 

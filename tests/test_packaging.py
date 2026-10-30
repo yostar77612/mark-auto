@@ -1,6 +1,7 @@
 """Cross-platform static safeguards; Windows execution is a separate CI gate."""
 
 import ast
+import json
 import importlib.util
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ import types
 import subprocess
 import unittest
 from unittest.mock import patch
+# Source scans below use current physical paths.
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,22 +54,25 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('baseline/' + names[0], workflow)
 
     def test_manifest_includes_every_root_desktop_component(self):
-        source = (ROOT / 'packaging/build_manifest.py').read_text()
+        source = (ROOT / 'packaging/build_manifest.py').read_text(encoding='utf-8')
         self.assertIn("'desktop*.py'", source)
-        included = {path.name for path in ROOT.glob('desktop*.py')}
-        self.assertTrue({'desktop.py', 'desktop_ui.py', 'desktop_market.py', 'desktop_charts.py', 'desktop_forms.py'} <= included)
+        patterns = {node.value for node in ast.walk(ast.parse(source)) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
+        included = {path.relative_to(ROOT).as_posix() for pattern in patterns if '*' in pattern for path in ROOT.glob(pattern) if path.is_file()}
+        relocations = json.loads((ROOT / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
+        self.assertEqual(len(relocations), 102)
+        self.assertLessEqual(set(relocations.values()) | {'desktop.py'}, included)
 
     def test_manifest_includes_smoke_package(self):
         tree = ast.parse((ROOT / 'packaging/build_manifest.py').read_text(encoding='utf-8'))
         patterns = {node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
-        self.assertIn('desktop_smoke/*.py', patterns)
+        self.assertIn('desktop_app/smoke/**/*.py', patterns)
         included = {path for pattern in patterns if '*' in pattern for path in ROOT.glob(pattern) if path.is_file()}
-        self.assertTrue(set((ROOT / 'desktop_smoke').rglob('*.py')) <= included)
+        self.assertTrue(set((ROOT / 'desktop_app/smoke').rglob('*.py')) <= included)
 
     def test_build_inputs_are_committed_not_silently_gitignored(self):
         required = {
             'desktop.py',
-            'desktop_ui.py',
+            'desktop_app/shell/main_window.py',
             'requirements-desktop.lock',
             'packaging/markauto.spec',
             'packaging/markauto.iss',
@@ -75,10 +80,10 @@ class PackagingTests(unittest.TestCase):
             'packaging/collect_licenses.py',
             'packaging/THIRD_PARTY_NOTICES.md',
             'LICENSE',
-            'desktop_chatgpt_auth.py',
-            'desktop_chatgpt_provider.py',
-            'desktop_tls_smoke.py',
-            'desktop_chatgpt_dependency_manifest.json',
+            'quantlab/assistant/adapters/chatgpt/auth.py',
+            'quantlab/assistant/adapters/chatgpt/provider.py',
+            'desktop_app/smoke/tls.py',
+            'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json',
             'packaging/third_party/chatgpt-auth-native-notices.zip',
             'packaging/third_party/README.md',
             '.gitattributes',
@@ -131,8 +136,12 @@ class PackagingTests(unittest.TestCase):
         self.assertIn(str(ROOT / 'packaging/sqlite_runtime_hook.py'), captured['runtime_hooks'])
         datas = set(captured['datas'])
         self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
-        for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py', 'desktop_chatgpt_dependency_manifest.json'):
-            self.assertIn((str(ROOT / name), '.'), datas)
+        for name in (
+            'quantlab/assistant/adapters/chatgpt/auth.py',
+            'quantlab/assistant/adapters/chatgpt/provider.py',
+            'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json',
+        ):
+            self.assertIn((str(ROOT / name), 'quantlab/assistant/adapters/chatgpt'), datas)
         self.assertIn((str(ROOT / 'packaging/markauto.ico'), 'packaging'), datas)
         for name in ('jwt', 'cryptography.hazmat.bindings._rust', '_cffi_backend', 'pycparser'):
             self.assertIn(name, captured['hiddenimports'])
@@ -208,7 +217,7 @@ class PackagingTests(unittest.TestCase):
         import hashlib
 
         source = (ROOT / 'packaging/build_manifest.py').read_text()
-        for pattern in ('desktop*.py', 'desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*'):
+        for pattern in ('desktop*.py', 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json', 'packaging/third_party/*'):
             self.assertIn(pattern, source)
         archive = ROOT / 'packaging/third_party/chatgpt-auth-native-notices.zip'
         self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), 'cbf2c6123cd25e53b33e766fb27bea9c9b4d8d174deb5ae54519d07f62dc9b24')
@@ -230,11 +239,11 @@ class PackagingTests(unittest.TestCase):
             (root / 'dist/validation/sqlite-runtime.json').write_text(json.dumps({'runtime': 'test-only'}))
             shutil.copyfile(ROOT / 'packaging/build_manifest.py', root / 'packaging/build_manifest.py')
             names = (
-                'desktop_chatgpt_auth.py',
-                'desktop_chatgpt_provider.py',
-                'desktop_chatgpt_ui.py',
-                'desktop_chatgpt_dependency_manifest.json',
-                'desktop_icon.py',
+                'quantlab/assistant/adapters/chatgpt/auth.py',
+                'quantlab/assistant/adapters/chatgpt/provider.py',
+                'desktop_app/features/assistant/connection.py',
+                'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json',
+                'desktop_app/components/icon.py',
                 'trading_entry.py',
                 'packaging/markauto.ico',
                 'tools/make_icon.py',

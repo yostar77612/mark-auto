@@ -23,6 +23,11 @@ class RuffConfigTests(unittest.TestCase):
 
     def test_exact_g3_exclusions_derived_from_producer_hash_keys(self):
         tree = ast.parse((ROOT / "quantlab/saved_candidate_pool.py").read_text(encoding="utf-8-sig"))
+        # Producer keys are historical identities, independent of current paths.
+        moved = {
+            "desktop_chatgpt_auth.py": "quantlab/assistant/adapters/chatgpt/auth.py",
+            "desktop_chatgpt_provider.py": "quantlab/assistant/adapters/chatgpt/provider.py",
+        }
         pinned = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.Dict):
@@ -35,8 +40,23 @@ class RuffConfigTests(unittest.TestCase):
                         and isinstance(value.value, str)
                         and re.fullmatch(r"[0-9a-f]{64}", value.value)
                     ):
-                        pinned.add(key.value if key.value.startswith("desktop_") else "quantlab/" + key.value)
+                        pinned.add(moved.get(key.value, "quantlab/" + key.value))
         self.assertEqual(len(pinned), 8)
+        self.assertEqual(
+            pinned,
+            {
+                "quantlab/research.py",
+                "quantlab/provider.py",
+                "quantlab/core.py",
+                "quantlab/strategies.py",
+                "quantlab/backtest.py",
+                "quantlab/data.py",
+                "quantlab/assistant/adapters/chatgpt/auth.py",
+                "quantlab/assistant/adapters/chatgpt/provider.py",
+            },
+        )
+        for path in pinned:
+            self.assertTrue((ROOT / path).is_file(), path)
         self.assertEqual(set(self.config["exclude"]), pinned)
         self.assertEqual(len(self.config["exclude"]), 8)
 

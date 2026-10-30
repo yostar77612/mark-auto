@@ -9,13 +9,14 @@ from unittest.mock import Mock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtWidgets import QApplication, QComboBox, QMessageBox, QVBoxLayout, QWidget
-from desktop_pages.quick_start import QuickStart
-from desktop_pages.quick_start_chain import QuickStartChain
-from desktop_pages import notifications, job_progress
-from desktop_strings import ui_text
+from desktop_app.features.onboarding.quick_start import QuickStart
+from desktop_app.features.onboarding.quick_start_chain import QuickStartChain
+from desktop_app.shell import notifications
+from desktop_app.components import job_progress
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_errors import error_message
 from tests import test_backtest_summary_u4 as result_fixtures
-import desktop_privacy as privacy
+import desktop_app.components.privacy as privacy
 
 
 class SequencingTests(unittest.TestCase):
@@ -166,27 +167,30 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(self.host.start_job.call_count, 1)
 
     def test_executor_isolation_reuses_handlers(self):
-        import desktop_ui
+        import desktop_app.shell.main_window
 
         root = Path('synthetic-test-root')
         paths = SimpleNamespace()
         with (
-            patch.object(desktop_ui, '_root', return_value=root),
+            patch.object(desktop_app.shell.main_window, '_root', return_value=root),
             patch.object(Path, 'mkdir'),
-            patch.dict(desktop_ui._UI_OPERATION_HANDLERS, {'ui_demo': Mock(return_value={}), 'ui_backtest': Mock(return_value={})}),
+            patch.dict(desktop_app.shell.main_window._UI_OPERATION_HANDLERS, {'ui_demo': Mock(return_value={}), 'ui_backtest': Mock(return_value={})}),
         ):
             for operation in ('ui_demo', 'ui_backtest'):
-                desktop_ui.execute_ui_operation(operation, {'synthetic_quick_start': True}, paths)
-                self.assertEqual(desktop_ui._UI_OPERATION_HANDLERS[operation].call_args.args[2], root / 'synthetic-quick-start')
+                desktop_app.shell.main_window.execute_ui_operation(operation, {'synthetic_quick_start': True}, paths)
+                self.assertEqual(desktop_app.shell.main_window._UI_OPERATION_HANDLERS[operation].call_args.args[2], root / 'synthetic-quick-start')
             self.assertEqual(
-                desktop_ui._UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[0]['dataset'],
+                desktop_app.shell.main_window._UI_OPERATION_HANDLERS['ui_backtest'].call_args.args[0]['dataset'],
                 str(root / 'synthetic-quick-start' / 'synthetic-demo-dataset.json'),
             )
-            desktop_ui.execute_ui_operation('ui_demo', {}, paths)
-            self.assertEqual(desktop_ui._UI_OPERATION_HANDLERS['ui_demo'].call_args.args[2], root)
+            desktop_app.shell.main_window.execute_ui_operation('ui_demo', {}, paths)
+            self.assertEqual(desktop_app.shell.main_window._UI_OPERATION_HANDLERS['ui_demo'].call_args.args[2], root)
         data = SimpleNamespace(bars=(1,), manifest={})
-        with patch.object(desktop_ui, 'synthetic_dataset', return_value=data), patch.object(desktop_ui, 'save_dataset') as save:
-            output = desktop_ui._handle_ui_demo({'synthetic_quick_start': True}, paths, root / 'synthetic-quick-start')
+        with (
+            patch.object(desktop_app.shell.main_window, 'synthetic_dataset', return_value=data),
+            patch.object(desktop_app.shell.main_window, 'save_dataset') as save,
+        ):
+            output = desktop_app.shell.main_window._handle_ui_demo({'synthetic_quick_start': True}, paths, root / 'synthetic-quick-start')
             self.assertIn('synthetic-demo-dataset.json', output['dataset'])
             save.assert_called_once_with(data, root / 'synthetic-quick-start' / 'synthetic-demo-dataset.json')
 
@@ -217,7 +221,7 @@ class ResultTests(unittest.TestCase):
         result.manifest = {'dataset_manifest': {'source_type': 'synthetic'}}
         page = fixture.page
         page.privacy = SimpleNamespace(enabled=True)
-        with patch('desktop_pages.backtest.load_result', return_value=result):
+        with patch('desktop_app.features.backtest.backtest.load_result', return_value=result):
             page.show_result()
         self.assertFalse(page.synthetic_notice.isHidden())
         self.assertEqual(page.synthetic_notice.text(), ui_text('quick_start.disclaimer'))
@@ -226,6 +230,6 @@ class ResultTests(unittest.TestCase):
         self.assertNotIn('1,234.56', page.summary_card.label.text())
         self.assertNotIn('1,234.56', page.kpis.labels['net_pnl'].text())
         result.manifest = {}
-        with patch('desktop_pages.backtest.load_result', return_value=result):
+        with patch('desktop_app.features.backtest.backtest.load_result', return_value=result):
             page.show_result()
         self.assertTrue(page.synthetic_notice.isHidden())

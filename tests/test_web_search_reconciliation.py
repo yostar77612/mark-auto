@@ -15,8 +15,8 @@ class ReconciliationReadinessTests(unittest.TestCase):
             reference = {'registration': 'a' * 32, 'bootstrap': str(Path(directory))}
             transport, discover = Mock(), Mock()
             with (
-                patch('desktop_chatgpt_provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
-                patch('desktop_chatgpt_auth.AuthSession', side_effect=AssertionError('No vault access')),
+                patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'user_confirmed_consumed', 'pending': False}),
+                patch('quantlab.assistant.adapters.chatgpt.auth.AuthSession', side_effect=AssertionError('No vault access')),
                 patch('socket.socket', side_effect=AssertionError('No network')),
             ):
                 search = tool.run('offline-model', transport=transport, **reference)
@@ -34,7 +34,7 @@ class ReconciliationReadinessTests(unittest.TestCase):
             for state, pending in (('reserved_unknown', True), ('user_confirmed_consumed', True), ('quota_paused', False)):
                 with (
                     self.subTest(state=state, pending=pending),
-                    patch('desktop_chatgpt_provider.read_account_status', return_value={'state': state, 'pending': pending}),
+                    patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': state, 'pending': pending}),
                 ):
                     reference, error = tool._reference('a' * 32, directory)
                 self.assertIsNone(reference)

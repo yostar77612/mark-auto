@@ -14,7 +14,7 @@ import time
 import unittest
 from unittest.mock import Mock, patch
 
-import desktop_tls_smoke as tls
+import desktop_app.smoke.tls as tls
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTICE = ROOT / 'packaging' / 'qt_notices' / 'manifest.json'
@@ -374,7 +374,7 @@ class EvidenceGateTests(unittest.TestCase):
         self.assertIn("parser.add_argument('--tls-smoke'", source)
         self.assertIn('return write_report(args.tls_smoke)', source)
         self.assertNotIn('--local-ai-smoke', source)
-        source = (ROOT / 'desktop_tls_smoke.py').read_text(encoding='utf-8')
+        source = (ROOT / 'desktop_app/smoke/tls.py').read_text(encoding='utf-8')
         self.assertNotIn('quantlab.local_ai', source)
         self.assertIn('public trust-store, Qt Schannel, account and model acceptance not tested', tls.SCOPE)
 

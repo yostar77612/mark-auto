@@ -8,7 +8,7 @@ if __name__ == '__main__':
     # Frozen workers must dispatch before importing presentation/catalogue code.
     multiprocessing.freeze_support()
 
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_errors import error_message, startup_error_code
 from trading_entry import launch
 
@@ -16,7 +16,7 @@ import argparse
 from pathlib import Path
 import sys
 
-from desktop_smoke import (
+from desktop_app.smoke import (
     _SmokeSettingsView,
     _auth_smoke_dependencies,
     _smoke_steps,
@@ -196,7 +196,7 @@ def run_gui(args):
 
     state.startup_timing = StartupTiming()
     state.app = QApplication(sys.argv[:1])
-    from desktop_icon import application_icon
+    from desktop_app.components.icon import application_icon
 
     state.app.setWindowIcon(application_icon(state.app))
     state.app.setApplicationName('MarkAuto')
@@ -233,7 +233,7 @@ def run_gui(args):
         if not prepare_workspace(state):
             return 3
         state.startup_timing.mark('workspace')
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
 
         state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
         page_state = getattr(state.window, 'page_state', None)
@@ -420,7 +420,7 @@ def main(argv=None):
             **({'research_bootstrap': args.research_bootstrap} if args.research_bootstrap is not None else {}),
         )
     if args.tls_smoke is not None:
-        from desktop_tls_smoke import write_report
+        from desktop_app.smoke.tls import write_report
 
         return write_report(args.tls_smoke)
     return run_gui(args)

@@ -8,7 +8,7 @@ import re
 import unittest
 from unittest.mock import patch
 
-import desktop_strings as strings
+import desktop_app.strings.catalog as strings
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERIC = re.compile(r'(?:^|\.)text_\d+$')
@@ -20,8 +20,8 @@ FROZEN = {
     'quantlab/strategies.py',
     'quantlab/backtest.py',
     'quantlab/data.py',
-    'desktop_chatgpt_auth.py',
-    'desktop_chatgpt_provider.py',
+    'quantlab/assistant/adapters/chatgpt/auth.py',
+    'quantlab/assistant/adapters/chatgpt/provider.py',
     'quantlab/saved_candidate_pool.py',
 }
 
@@ -29,25 +29,25 @@ FROZEN = {
 # requires reviewing its suffix list, rather than exempting an entire scope.
 DYNAMIC_PREFIXES = {
     'job.stage.': (
-        'desktop_pages/job_progress.py',
+        'desktop_app/components/job_progress.py',
         ('unknown', 'prepare_operation', 'load_data', 'build_candidates', 'run_backtest', 'run_campaign', 'run_operation', 'write_result'),
     ),
-    'compare.': ('desktop_pages/compare_table.py', ('name', 'family', 'parameters', 'range', 'created')),
+    'compare.': ('desktop_app/features/compare/compare_table.py', ('name', 'family', 'parameters', 'range', 'created')),
     'results.': (
-        'desktop_pages/result_widgets.py',
+        'desktop_app/components/result_widgets.py',
         ('evaluations_reserved', 'evaluation_limit', 'folds', 'evaluated_oos_folds', 'orders', 'fills', 'positions', 'stop'),
     ),
-    'settings.': ('desktop_pages/settings_layout.py', ('general', 'connection', 'backup', 'about')),
-    'strategy.tabs.': ('desktop_pages/strategy_tabs.py', ('settings', 'research', 'walk_forward')),
-    'wf.': ('desktop_pages/wf_wizard.py', ('quick', 'standard', 'strict', 'custom', 'train', 'validation', 'oos', 'holdout')),
-    'wf.step.': ('desktop_pages/wf_wizard.py', ('0', '1', '2', '3', '4')),
+    'settings.': ('desktop_app/features/settings/settings_layout.py', ('general', 'connection', 'backup', 'about')),
+    'strategy.tabs.': ('desktop_app/features/strategy/strategy_tabs.py', ('settings', 'research', 'walk_forward')),
+    'wf.': ('desktop_app/features/walk_forward/wf_wizard.py', ('quick', 'standard', 'strict', 'custom', 'train', 'validation', 'oos', 'holdout')),
+    'wf.step.': ('desktop_app/features/walk_forward/wf_wizard.py', ('0', '1', '2', '3', '4')),
 }
 
 
 def source_paths():
     """Application/tool sources plus tests; exclude archived fixture code."""
     yield from ROOT.glob('*.py')
-    for package in ('desktop_pages', 'desktop_smoke', 'desktop_trading', 'quantlab', 'tools', 'tests'):
+    for package in ('desktop_app', 'quantlab', 'tools', 'tests'):
         for path in (ROOT / package).rglob('*.py'):
             if 'fixtures' not in path.relative_to(ROOT).parts:
                 yield path
@@ -55,7 +55,7 @@ def source_paths():
 
 def lane_catalog_additions():
     """Read literal Lane updates after the R3 catalog, before retained keys."""
-    source = (ROOT / 'desktop_strings.py').read_text(encoding='utf-8-sig')
+    source = (ROOT / 'desktop_app/strings/catalog.py').read_text(encoding='utf-8-sig')
     lines, tree = source.splitlines(), ast.parse(source)
     retained = next(
         node.lineno
@@ -177,7 +177,7 @@ class DesktopTextAliasTests(unittest.TestCase):
             if name in FROZEN or name == 'tests/test_desktop_text_aliases.py':
                 continue
             allowed_nodes = set()
-            if name == 'desktop_strings.py':
+            if name == 'desktop_app/strings/catalog.py':
                 alias = next(
                     node
                     for node in tree.body
@@ -203,7 +203,7 @@ class DesktopTextAliasTests(unittest.TestCase):
             if name in FROZEN or name.startswith('tests/'):
                 continue
             for node in ast.walk(tree):
-                if isinstance(node, ast.Constant) and isinstance(node.value, str) and name != 'desktop_strings.py':
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and name != 'desktop_app/strings/catalog.py':
                     referenced.add(node.value)
                 if isinstance(node, ast.Call) and (
                     (isinstance(node.func, ast.Name) and node.func.id == 'ui_text') or (isinstance(node.func, ast.Attribute) and node.func.attr == 'ui_text')
@@ -219,7 +219,7 @@ class DesktopTextAliasTests(unittest.TestCase):
         self.assertEqual(set(strings.ZH_TW) - referenced, set())
 
     def test_no_duplicate_catalog_dict_keys_and_frozen_alias_compatibility(self):
-        for node in ast.walk(self.trees['desktop_strings.py']):
+        for node in ast.walk(self.trees['desktop_app/strings/catalog.py']):
             if isinstance(node, ast.Dict):
                 keys = [key.value for key in node.keys if isinstance(key, ast.Constant)]
                 self.assertEqual(len(keys), len(set(keys)), f'duplicate dict key at {node.lineno}')
@@ -232,7 +232,7 @@ class DesktopTextAliasTests(unittest.TestCase):
 
     def test_help_widget_names_still_match_the_unchanged_baseline(self):
         from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
-        from desktop_help import MOVED_STRINGS, help_button
+        from desktop_app.components.help import MOVED_STRINGS, help_button
 
         app = QApplication.instance() or QApplication([])
         parent = QWidget()

@@ -15,7 +15,7 @@ HAS_QT = importlib.util.find_spec("PySide6") is not None
 if HAS_QT:
     from PySide6.QtWidgets import QApplication
     from PySide6.QtTest import QSignalSpy
-    from desktop_market import MarketDashboard
+    from desktop_app.features.market.dashboard import MarketDashboard
 from quantlab.market import InstrumentRef, MarketBar, MarketSeries, SourceProvenance
 
 
@@ -444,7 +444,7 @@ class IndicatorWorkBoundaryTests(unittest.TestCase):
 
         p = self.panel
         original = p.message.text()
-        with patch('desktop_market.indicators.sma', side_effect=ValueError('INTERNAL BUG SENTINEL')):
+        with patch('desktop_app.features.market.dashboard.indicators.sma', side_effect=ValueError('INTERNAL BUG SENTINEL')):
             with self.assertRaisesRegex(ValueError, 'INTERNAL BUG SENTINEL'):
                 p._apply_indicators()
         self.assertEqual(p.message.text(), original)

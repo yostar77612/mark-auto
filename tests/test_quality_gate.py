@@ -66,26 +66,28 @@ class QualityGateTests(unittest.TestCase):
         self.assertEqual(python_findings("import json", "quantlab/new.py", research=True), [])
 
     def test_desktop_boundary_allows_qt_but_rejects_legacy(self):
-        self.assertEqual(python_findings("from PySide6.QtWidgets import QWidget", "desktop_ui.py", desktop=True), [])
+        self.assertEqual(python_findings("from PySide6.QtWidgets import QWidget", "desktop_app/shell/main_window.py", desktop=True), [])
         for source in ("import trader", "import shioaji", "eval('1')"):
-            self.assertTrue(python_findings(source, "desktop_ui.py", desktop=True))
+            self.assertTrue(python_findings(source, "desktop_app/shell/main_window.py", desktop=True))
 
     def test_all_desktop_components_enforce_existing_execution_boundary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in (
-                "desktop_ui.py",
-                "desktop_charts.py",
-                "desktop_forms.py",
-                "desktop_market.py",
-                "desktop_chatgpt_auth.py",
-                "desktop_chatgpt_provider.py",
-                "desktop_chatgpt_ui.py",
-                "desktop_tls_smoke.py",
+                "desktop_app/shell/main_window.py",
+                "desktop_app/components/charts.py",
+                "desktop_app/components/forms.py",
+                "desktop_app/features/market/dashboard.py",
+                "quantlab/assistant/adapters/chatgpt/auth.py",
+                "quantlab/assistant/adapters/chatgpt/provider.py",
+                "desktop_app/features/assistant/connection.py",
+                "desktop_app/smoke/tls.py",
             ):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_text("import trader\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name + "\0").encode()):
                     self.assertTrue(scan(root), name)
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_text("from PySide6.QtWidgets import QWidget\n", encoding="utf-8")
                 with patch("tools.quality_gate.git", return_value=(name + "\0").encode()):
                     self.assertEqual(scan(root), [], name)
@@ -93,11 +95,13 @@ class QualityGateTests(unittest.TestCase):
     def test_automatic_backup_component_keeps_desktop_boundary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            name = 'desktop_automatic_backup.py'
+            name = 'desktop_app/features/settings/automatic_backup.py'
             for source in ('import trader', 'import shioaji', "eval('1')", "exec('1')"):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_text(source, encoding='utf-8')
                 with self.subTest(source=source), patch('tools.quality_gate.git', return_value=(name + '\0').encode()):
                     self.assertTrue(scan(root))
+            (root / name).parent.mkdir(parents=True, exist_ok=True)
             (root / name).write_text('from PySide6.QtWidgets import QWidget', encoding='utf-8')
             with patch('tools.quality_gate.git', return_value=(name + '\0').encode()):
                 self.assertEqual(scan(root), [])
@@ -109,10 +113,11 @@ class QualityGateTests(unittest.TestCase):
             self.assertEqual(python_findings(source, "quantlab/new.py", research=True), [])
 
     def test_desktop_runtime_bridge_is_narrow(self):
-        source = "from desktop_ui import execute_ui_operation"
+        source = "from desktop_app.shell.main_window import execute_ui_operation"
         self.assertEqual(python_findings(source, "quantlab/desktop_runtime.py", research=True), [])
         self.assertTrue(python_findings(source, "quantlab/core.py", research=True))
         self.assertTrue(python_findings("import PySide6", "quantlab/desktop_runtime.py", research=True))
+        self.assertTrue(python_findings("import desktop_app.features.market.dashboard", "quantlab/desktop_runtime.py", research=True))
 
     def test_cli_exits_nonzero_on_detection(self):
         secret = "ghp_" + "a" * 36

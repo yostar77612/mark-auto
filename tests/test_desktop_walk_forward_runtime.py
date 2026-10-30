@@ -375,7 +375,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             execute = Mock(return_value={'reference': REFERENCE})
             with (
                 patch('quantlab.desktop_runtime.os.setsid', create=True),
-                patch.dict('sys.modules', {'desktop_ui': SimpleNamespace(execute_ui_operation=execute)}),
+                patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(execute_ui_operation=execute)}),
             ):
                 _job_worker(
                     sender,

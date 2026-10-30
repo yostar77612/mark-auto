@@ -11,14 +11,15 @@ from PySide6.QtCore import QTimer, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QLineEdit, QListWidget, QPushButton, QStackedWidget, QWidget
 
-from desktop_pages.command_palette import CommandPalette
-from desktop_pages.palette_commands import command_table
-from desktop_pages.shortcuts import install_shortcuts
-from desktop_strings import ui_text
-from desktop_ui import MainWindow
+from desktop_app.components.command_palette import CommandPalette
+from desktop_app.shell.palette_commands import command_table
+from desktop_app.shell.shortcuts import install_shortcuts
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
+# Source scans below use current physical paths.
 
 
 ALLOW = {*(f'page_{i}' for i in range(1, 8)), 'refresh', 'cancel_job', 'theme', 'privacy', 'focus_import', 'focus_backtest'}
@@ -73,7 +74,7 @@ class PaletteTests(unittest.TestCase):
             self.assertEqual(command.label, ui_text(command.label_key))
             self.assertNotIn(command.label, ('', '???', command.label_key))
             self.assertFalse(command.id.startswith(('paper_', 'order', 'kill', 'submit', 'cancel_order', 'restore', 'chatgpt', 'analysis', 'walk_forward')))
-        tree = ast.parse(Path('desktop_pages/palette_commands.py').read_text())
+        tree = ast.parse(Path('desktop_app/shell/palette_commands.py').read_text())
         self.assertFalse(any(isinstance(n, ast.ImportFrom) and (n.module or '').startswith('PySide') for n in ast.walk(tree)))
 
     def test_all_page_commands_match_shortcuts(self):
@@ -200,7 +201,7 @@ class PaletteTests(unittest.TestCase):
                 self.assertNotIn(sentinel, item.text())
                 self.assertNotIn(sentinel, item.data(Qt.ItemDataRole.AccessibleTextRole))
         command = replace(command_table()[0], label='<b>x</b>')
-        with patch('desktop_pages.command_palette.command_table', return_value=(command,)):
+        with patch('desktop_app.components.command_palette.command_table', return_value=(command,)):
             self.palette.filter.setText('<b>x</b>')
             self.assertIn('<b>x</b>', self.palette.results.item(0).text())
             self.assertEqual(self.palette.filter.text(), '<b>x</b>')
@@ -222,8 +223,8 @@ class PaletteTests(unittest.TestCase):
         bare = CommandPalette(SimpleNamespace())
         self.addCleanup(bare.close)
         self.assertEqual(bare.commands(), ())
-        for path in ('command_palette.py', 'palette_commands.py'):
-            source = Path('desktop_pages', path).read_text()
+        for path in ('desktop_app/components/command_palette.py', 'desktop_app/shell/palette_commands.py'):
+            source = Path(path).read_text()
             tree = ast.parse(source)
             forbidden = {'deleteLater', 'installEventFilter', 'exec', 'eval', 'QTimer', 'save', 'start_job', 'place_order', 'open', 'read_text', 'write_text'}
             for node in ast.walk(tree):
@@ -249,10 +250,10 @@ class PaletteTests(unittest.TestCase):
                     patch.object(window, 'start_job') as start,
                     patch.object(window.widgets_page, '_confirm_button', return_value=None) as confirm,
                     patch('PySide6.QtWidgets.QMessageBox.question') as consent,
-                    patch('desktop_chatgpt_ui.ConnectionController.request') as connection,
-                    patch('desktop_chatgpt_provider.ChatGPTPlanProvider.generate') as generate,
-                    patch('desktop_chatgpt_provider.ChatGPTPlanProvider.analyze') as analyze,
-                    patch('desktop_chatgpt_provider.PlanHTTPTransport.__init__', return_value=None) as transport,
+                    patch('desktop_app.features.assistant.connection.ConnectionController.request') as connection,
+                    patch('quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider.generate') as generate,
+                    patch('quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider.analyze') as analyze,
+                    patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport.__init__', return_value=None) as transport,
                 ):
                     self.assertEqual({c.id for c in palette.commands()}, ALLOW)
                     for command in palette.commands():

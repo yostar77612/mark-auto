@@ -3,6 +3,7 @@
 import ast
 import json
 from pathlib import Path
+from tests.layered_source_fixtures import page_sources, project_page_service_lines
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / 'tests/fixtures/page_services_inventory.json'
@@ -33,13 +34,13 @@ def callback_reads(path):
 
 def registrations():
     result = []
-    for node in ast.walk(tree('desktop_pages/mount.py')):
+    for node in ast.walk(tree('desktop_app/shell/mount.py')):
         if not isinstance(node, ast.Assign):
             continue
         target = node.targets[0]
         if isinstance(target, ast.Subscript) and dotted(target.value) == 'host.callbacks':
             result.append({'name': target.slice.value, 'target': dotted(node.value.body.func), 'origin': 'mount', 'variadic': True})
-    method = next(n for n in ast.walk(tree('desktop_ui.py')) if isinstance(n, ast.FunctionDef) and n.name == 'page_services')
+    method = next(n for n in ast.walk(tree('desktop_app/shell/main_window.py')) if isinstance(n, ast.FunctionDef) and n.name == 'page_services')
     services = next(n.value for n in method.body if isinstance(n, ast.Return))
     for key, value in zip(services.keys, services.values):
         call = isinstance(value, ast.Lambda)
@@ -49,7 +50,7 @@ def registrations():
 
 def aliases_and_copies():
     aliases, copies = [], []
-    for node in ast.walk(tree('desktop_pages/mount.py')):
+    for node in ast.walk(tree('desktop_app/shell/mount.py')):
         if not isinstance(node, ast.Assign):
             continue
         left, right = dotted(node.targets[0]), dotted(node.value)
@@ -105,8 +106,8 @@ def patch_points(names, module_targets):
                         add(node, value, 'patch.object', dotted(receiver))
                 elif func.endswith('patch') and node.args and isinstance(node.args[0], ast.Constant):
                     target = node.args[0].value
-                    if isinstance(target, str) and target.startswith('desktop_ui.'):
-                        add(node, target.split('.')[1], 'patch', 'desktop_ui')
+                    if isinstance(target, str) and target.startswith('desktop_app.shell.main_window.'):
+                        add(node, target.removeprefix('desktop_app.shell.main_window.'), 'patch', 'desktop_app.shell.main_window')
                 elif func == 'setattr' and len(node.args) >= 2:
                     for value in expanded(node, node.args[1]):
                         add(node, value, 'setattr', dotted(node.args[0]))
@@ -126,7 +127,7 @@ def inventory():
     services = registrations()
     aliases, copies = aliases_and_copies()
     consumers = {}
-    for path in sorted((ROOT / 'desktop_pages').glob('*.py')):
+    for path in sorted(page_sources(ROOT)):
         relative = path.relative_to(ROOT).as_posix()
         for name, kind in callback_reads(relative):
             consumers.setdefault(name, []).append({'module': relative, 'kind': kind})
@@ -157,7 +158,7 @@ def reviewed_inventory(base, delta):
     for item in delta['patch_points']['added']:
         result['patch_points'].extend([item['row']] * item['count'])
     result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
-    return result
+    return project_page_service_lines(result)
 
 
 if __name__ == '__main__':

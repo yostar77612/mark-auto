@@ -179,7 +179,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         # Compile the actual worker adapter without importing optional Qt widgets.
         import ast
 
-        source = Path(__file__).resolve().parents[1] / 'desktop_ui.py'
+        source = Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py'
         tree = ast.parse(source.read_text(encoding='utf-8'))
         # Compile the entire replacement body, including every registered handler
         # and shared paper helper, so the constructor-order assertion stays real.
@@ -498,12 +498,12 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
 
     def test_direct_adapter_guards_only_new_journal_before_core_call(self):
         import sys
-        import desktop_walk_forward as adapter
+        import desktop_app.features.walk_forward.presenter as adapter
         from tests.test_desktop_walk_forward_runtime import plan_payload
 
         identity = 'b' * 64
         preview = {'preview_identity': identity, 'plan': plan_payload()}
-        fake_ui = types.ModuleType('desktop_presentation')
+        fake_ui = types.ModuleType('desktop_app.components.formatting')
         fake_ui._dataset = lambda *args: object()
         fake_ui.research_controls = lambda paths: paths.controls
 
@@ -512,7 +512,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             raise RuntimeError('reached core')
 
         with (
-            patch.dict(sys.modules, {'desktop_presentation': fake_ui}),
+            patch.dict(sys.modules, {'desktop_app.components.formatting': fake_ui}),
             patch.object(adapter, 'preview_walk_forward', return_value=preview),
             patch.object(adapter, 'run_walk_forward', side_effect=run),
         ):

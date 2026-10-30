@@ -5,7 +5,7 @@ from pathlib import Path
 import unittest
 
 from quantlab.paper_tab_data import EVENT_LIMIT, account_counts, event_rows, position_rows, scaled_fractions, working_order
-from desktop_strings import ZH_TW, ui_text
+from desktop_app.strings.catalog import ZH_TW, ui_text
 
 ROOT = Path(__file__).resolve().parents[1]
 CID = 'TAIFEX:TMF:202601'

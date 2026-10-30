@@ -14,7 +14,7 @@ from tests.test_t9_onboarding import sandbox_ui
 class WindowFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         cls.app = QApplication.instance() or QApplication([])

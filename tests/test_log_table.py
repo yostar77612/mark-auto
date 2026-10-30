@@ -10,8 +10,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QCheckBox
 from tests.test_t9_onboarding import sandbox_ui
-from desktop_pages.log_table import LogTable
-from desktop_strings import LOG_OPERATION_NAMES, LOG_EVENT_NAMES, ui_text
+from desktop_app.features.settings.log_table import LogTable
+from desktop_app.strings.catalog import LOG_OPERATION_NAMES, LOG_EVENT_NAMES, ui_text
 from quantlab.desktop_runtime import RedactedEventLog, OPERATIONS, UI_OPERATIONS, RuntimeSafetyError
 
 
@@ -61,12 +61,12 @@ class LogTableTests(unittest.TestCase):
         self.assertEqual(self.table.rowCount(), 1)
         self.assertEqual(self.table.item(0, 2).text(), ui_text('logs.event.error'))
         destination = Path(self.temp.name) / 'export.csv'
-        with patch('desktop_pages.log_table.choose_log_export', return_value=str(destination)):
+        with patch('desktop_app.features.settings.log_table.choose_log_export', return_value=str(destination)):
             self.table.export()
         with destination.open(encoding='utf-8-sig', newline='') as stream:
             rows = list(csv.reader(stream))
         self.assertEqual(rows[1:], [list(row) for row in self.table.visible_rows()])
-        with patch('desktop_pages.log_table.choose_log_export', return_value=''):
+        with patch('desktop_app.features.settings.log_table.choose_log_export', return_value=''):
             self.table.export()
         toggle.setChecked(False)
         self.assertEqual(self.table.rowCount(), 5)
@@ -79,7 +79,7 @@ class LogTableTests(unittest.TestCase):
                     self.log.append(*args, **kwargs)
         self.seed()
         destination = Path(self.temp.name) / 'safe.csv'
-        with patch('desktop_pages.log_table.choose_log_export', return_value=str(destination)):
+        with patch('desktop_app.features.settings.log_table.choose_log_export', return_value=str(destination)):
             self.table.export()
         displayed = str(self.table.visible_rows())
         exported = destination.read_text(encoding='utf-8-sig')

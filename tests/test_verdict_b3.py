@@ -8,8 +8,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from desktop_strings import ui_text
-from desktop_walk_forward import compact_walk_forward, oos_statistics_text
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.walk_forward.presenter import compact_walk_forward, oos_statistics_text
 from quantlab import significance as sig, verdict
 from quantlab.core import canonical_json, content_hash
 from quantlab.research import _eligible

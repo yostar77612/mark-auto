@@ -8,9 +8,9 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox, QWidget
 
-import desktop_ui as ui
-from desktop_pages.paper import PaperPage
-from desktop_strings import ui_text
+import desktop_app.shell.main_window as ui
+from desktop_app.features.paper.paper import PaperPage
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 from quantlab.desktop_errors import error_message, exception_code
 from quantlab.desktop_feedback import stop_presentation
@@ -38,7 +38,7 @@ class StopResumeTests(unittest.TestCase):
         self.page = self.make_page()
         self.dialog = SimpleNamespace(confirm_button=object(), observe_button=object(), exec=Mock())
         self.dialog.clickedButton = Mock(return_value=self.dialog.confirm_button)
-        dialog_patch = patch('desktop_pages.paper.stop_dialog', return_value=self.dialog)
+        dialog_patch = patch('desktop_app.features.paper.paper.stop_dialog', return_value=self.dialog)
         dialog_patch.start()
         self.addCleanup(dialog_patch.stop)
         prepare = patch.object(ui, '_prepare_paper_operation', side_effect=lambda *args: self.broker)

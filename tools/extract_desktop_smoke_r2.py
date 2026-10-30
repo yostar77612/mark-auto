@@ -25,12 +25,12 @@ def main():
     nodes = [node for node in ast.parse(source).body if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
     moved = [node for node in nodes if node.name not in PRODUCTION]
     lines = source.splitlines(keepends=True)
-    package = ROOT / 'desktop_smoke/__init__.py'
+    package = ROOT / 'desktop_app/smoke/__init__.py'
     if not package.exists():
         package.parent.mkdir(exist_ok=True)
         package.write_text(
             '"""Offline desktop smoke harness; production startup remains in desktop."""\n\n'
-            'from __future__ import annotations\n\nfrom pathlib import Path\nimport sys\n\nfrom desktop_strings import ui_text\n\n'
+            'from __future__ import annotations\n\nfrom pathlib import Path\nimport sys\n\nfrom desktop_app.strings.catalog import ui_text\n\n'
             + '\n\n'.join(''.join(lines[node.lineno - 1 : node.end_lineno]) for node in moved)
             + '\n',
             encoding='utf-8',
@@ -38,7 +38,7 @@ def main():
         removed = {line for node in moved for line in range(node.lineno - 1, node.end_lineno)}
         production = ''.join(line for index, line in enumerate(lines) if index not in removed)
         production = production.replace(
-            'import sys\n', 'import sys\n\nfrom desktop_smoke import (\n' + ''.join('    ' + node.name + ',\n' for node in moved) + ')\n', 1
+            'import sys\n', 'import sys\n\nfrom desktop_app.smoke import (\n' + ''.join('    ' + node.name + ',\n' for node in moved) + ')\n', 1
         )
         while '\n\n\n\n' in production:
             production = production.replace('\n\n\n\n', '\n\n\n')

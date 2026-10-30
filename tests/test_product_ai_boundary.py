@@ -24,10 +24,10 @@ class ProductAIBoundaryTests(unittest.TestCase):
             self.assertFalse((ROOT / name).exists(), name)
         for name in (
             'desktop.py',
-            'desktop_ui.py',
-            'desktop_automatic_backup.py',
+            'desktop_app/shell/main_window.py',
+            'desktop_app/features/settings/automatic_backup.py',
             'quantlab/desktop_runtime.py',
-            'desktop_tls_smoke.py',
+            'desktop_app/smoke/tls.py',
             'packaging/markauto.spec',
             'packaging/build_manifest.py',
         ):
@@ -55,7 +55,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec('PySide6'), 'Qt required for host adapter')
     def test_removed_worker_dispatch_does_not_create_workspace(self):
-        from desktop_ui import execute_ui_operation, campaign_generator
+        from desktop_app.shell.main_window import execute_ui_operation, campaign_generator
         from quantlab.desktop_runtime import AppPaths
         from quantlab.core import ValidationError
 
@@ -101,7 +101,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
     def test_static_gate_has_no_local_runtime_subprocess_exception(self):
         from tools.quality_gate import python_findings
 
-        for label in ('desktop_local_ai_runtime.py', 'desktop_ui.py'):
+        for label in ('desktop_local_ai_runtime.py', 'desktop_app/shell/main_window.py'):
             self.assertTrue(python_findings('import subprocess\nsubprocess.Popen([],shell=False)\n', label, desktop=True))
 
     def test_ci_retains_tls_and_unrelated_acceptance_gates(self):
@@ -134,11 +134,11 @@ class StandaloneTLSGateTests(unittest.TestCase):
     def test_cli_dispatches_tls_only_before_user_state_or_qt(self):
         import desktop
 
-        with patch('desktop_tls_smoke.write_report', return_value=0) as write, patch('quantlab.desktop_runtime.AppPaths.discover') as discover:
+        with patch('desktop_app.smoke.tls.write_report', return_value=0) as write, patch('quantlab.desktop_runtime.AppPaths.discover') as discover:
             self.assertEqual(desktop.main(['--tls-smoke', str(self.report)]), 0)
         write.assert_called_once_with(self.report)
         discover.assert_not_called()
-        with contextlib.redirect_stderr(io.StringIO()), patch('desktop_tls_smoke.write_report') as write:
+        with contextlib.redirect_stderr(io.StringIO()), patch('desktop_app.smoke.tls.write_report') as write:
             for args in (['--tls-smoke', 'relative.json'], ['--tls-smoke', str(self.report), '--smoke-test', str(self.root / 'smoke.json')]):
                 with self.assertRaises(SystemExit):
                     desktop.main(args)
@@ -171,7 +171,7 @@ class StandaloneTLSGateTests(unittest.TestCase):
 
     def test_tls_evidence_writer_preserves_existing_files_and_failure(self):
         import json
-        import desktop_tls_smoke as tls
+        import desktop_app.smoke.tls as tls
 
         failure = {'status': 'failed', 'scope': tls.SCOPE, 'error_category': 'validation'}
         with patch.object(tls, 'run', return_value=failure):
@@ -186,7 +186,7 @@ class StandaloneTLSGateTests(unittest.TestCase):
 
     def test_tls_paths_reject_relative_unc_symlink_and_hardlink(self):
         import os
-        import desktop_tls_smoke as tls
+        import desktop_app.smoke.tls as tls
 
         for path in ('relative', '//server/share/report'):
             with self.assertRaises(ValueError):

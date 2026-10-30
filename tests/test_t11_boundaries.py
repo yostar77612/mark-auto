@@ -24,7 +24,7 @@ class CoreBoundaryTests(unittest.TestCase):
         fake_path = Mock()
         fake_path.is_file.return_value = True
         fake_path.suffix = '.py'
-        fake_path.read_bytes.return_value = b'def f():\n    from desktop_ui import MainWindow\n'
+        fake_path.read_bytes.return_value = b'def f():\n    from desktop_app.shell.main_window import MainWindow\n'
         root = MagicMock()
         root.__truediv__.return_value = fake_path
         with patch('tools.quality_gate.git', return_value=b'quantlab/desktop_runtime.py\0'):
@@ -45,10 +45,10 @@ class CoreBoundaryTests(unittest.TestCase):
 
     def test_static_imports_including_function_local_are_rejected(self):
         for source in (
-            'import desktop_ui',
-            'from desktop_ui import execute_ui_operation',
-            'def f():\n    import desktop_walk_forward',
-            'def f():\n    from desktop_ui import MainWindow',
+            'import desktop_app.shell.main_window',
+            'from desktop_app.shell.main_window import execute_ui_operation',
+            'def f():\n    import desktop_app.features.walk_forward.presenter',
+            'def f():\n    from desktop_app.shell.main_window import MainWindow',
         ):
             self.assertTrue(core_import_findings(source, 'quantlab/fixture.py'))
 
@@ -57,12 +57,14 @@ class CoreBoundaryTests(unittest.TestCase):
             'from .desktop_errors import ERROR_TABLE',
             'from quantlab.desktop_runtime import JobManager',
             'import importlib\nimportlib.import_module(registrar)',
-            'text = "import desktop_ui"',
+            'text = "import desktop_app.shell.main_window"',
         ):
             self.assertEqual(core_import_findings(source, 'quantlab/fixture.py'), [])
-        self.assertTrue(core_import_findings('import importlib\nimportlib.import_module("desktop_ui")', 'quantlab/fixture.py'))
+        self.assertTrue(core_import_findings('import importlib\nimportlib.import_module("desktop_app.shell.main_window")', 'quantlab/fixture.py'))
         # QA finding: the `from importlib import import_module` spelling must be caught as well.
-        self.assertTrue(core_import_findings('from importlib import import_module' + chr(10) + 'import_module("desktop_ui")', 'quantlab/fixture.py'))
+        self.assertTrue(
+            core_import_findings('from importlib import import_module' + chr(10) + 'import_module("desktop_app.shell.main_window")', 'quantlab/fixture.py')
+        )
         self.assertEqual(core_import_findings('from importlib import import_module' + chr(10) + 'import_module(registrar)', 'quantlab/fixture.py'), [])
 
     def test_registry_is_fail_closed_and_identity_idempotent(self):

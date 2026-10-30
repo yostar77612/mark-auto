@@ -16,15 +16,16 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton
 import shiboken6
 
-import desktop_ui as ui
-from desktop_pages.bindings import HostMethod, PageContext, StateField
-from desktop_pages.host import PageServices, _page_services
-from desktop_pages import mount
-from desktop_pages.mount import _register_shell_callbacks
+import desktop_app.shell.main_window as ui
+from desktop_app.shell.bindings import HostMethod, PageContext, StateField
+from desktop_app.shell.host import PageServices, _page_services
+from desktop_app.shell import mount
+from desktop_app.shell.mount import _register_shell_callbacks
 from quantlab.core import ValidationError
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 from tests.page_services_inventory import ROOT, FIXTURE, callback_reads, inventory, reviewed_inventory, tree
 from tests.test_t9_onboarding import sandbox_ui
+from tests.layered_source_fixtures import page_sources
 
 BASE = json.loads(FIXTURE.read_text(encoding='utf-8'))
 SERVICES = BASE['services']
@@ -42,7 +43,7 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(len(BASE['state_copies']), 84)
 
     def test_type_members_and_annotations_match_source(self):
-        node = next(n for n in tree('desktop_pages/host.py').body if isinstance(n, ast.ClassDef) and n.name == 'PageServices')
+        node = next(n for n in tree('desktop_app/shell/host.py').body if isinstance(n, ast.ClassDef) and n.name == 'PageServices')
         declarations = [n.target.id for n in node.body if isinstance(n, ast.AnnAssign)]
         self.assertEqual(declarations, NAMES)
         self.assertEqual([field.name for field in fields(PageServices)], NAMES)
@@ -50,21 +51,21 @@ class InventoryTests(unittest.TestCase):
             self.assertIsNotNone(field.type)
 
     def test_every_host_method_and_callback_read_has_a_service(self):
-        for path in (ROOT / 'desktop_pages').glob('*.py'):
+        for path in page_sources(ROOT):
             for name, kind in callback_reads(path.relative_to(ROOT)):
                 with self.subTest(module=path.name, name=name, kind=kind):
                     self.assertIn(name, NAMES)
 
     def test_no_desktop_pages_module_imports_desktop_ui(self):
-        for path in (ROOT / 'desktop_pages').glob('*.py'):
+        for path in page_sources(ROOT):
             for node in ast.walk(tree(path.relative_to(ROOT))):
                 if isinstance(node, ast.Import):
-                    self.assertNotIn('desktop_ui', [alias.name for alias in node.names])
+                    self.assertNotIn('desktop_app.shell.main_window', [alias.name for alias in node.names])
                 elif isinstance(node, ast.ImportFrom):
-                    self.assertNotEqual(node.module, 'desktop_ui')
+                    self.assertNotEqual(node.module, 'desktop_app.shell.main_window')
 
     def test_main_window_stays_within_budget(self):
-        node = next(n for n in tree('desktop_ui.py').body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
+        node = next(n for n in tree('desktop_app/shell/main_window.py').body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
 
 

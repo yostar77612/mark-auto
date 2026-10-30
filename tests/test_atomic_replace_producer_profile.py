@@ -26,9 +26,9 @@ class AtomicReplaceProducerProfileTests(unittest.TestCase):
         )
         self.assertEqual(len(historical), 26)
         self.assertEqual([content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[:26]], historical)
-        self.assertEqual(pools.SUPPORTED_PRODUCERS[26:], (pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1))
+        self.assertEqual(pools.SUPPORTED_PRODUCERS[26:28], (pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1))
         self.assertEqual(
-            [content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[26:]],
+            [content_hash(profile) for profile in pools.SUPPORTED_PRODUCERS[26:28]],
             ['6fed4a54f7ae165d371c8de3f0342250ad2e2ef7ff73f4aa012eb553872340b9', '3695cb133b077a16c71de64f00b3ac1f02b123928d0245c6a64a69404c3b5825'],
         )
 

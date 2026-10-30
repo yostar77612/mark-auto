@@ -8,8 +8,8 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from desktop_pages.paper import PaperPage, stop_dialog, stop_exposure_text
-from desktop_strings import ui_text
+from desktop_app.features.paper.paper import PaperPage, stop_dialog, stop_exposure_text
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 
 
@@ -31,7 +31,7 @@ class StopTests(unittest.TestCase):
         self.account = {'positions': {'TMF:202611': 17, 'TMF:202612': -9, 'ZERO': 0}, 'cash': '912345'}
         self.page._stop_account = deepcopy(self.account)
         self.dialog = SimpleNamespace(confirm_button=object(), observe_button=object(), exec=Mock(), clickedButton=Mock(return_value=None))
-        self.factory = patch('desktop_pages.paper.stop_dialog', return_value=self.dialog)
+        self.factory = patch('desktop_app.features.paper.paper.stop_dialog', return_value=self.dialog)
         self.make_dialog = self.factory.start()
         self.addCleanup(self.factory.stop)
         self.exists = patch.object(Path, 'exists', return_value=False)
@@ -153,7 +153,7 @@ class StopTests(unittest.TestCase):
     def test_host_callback_routes_to_same_confirmation_without_consent(self):
         # Load startup helpers only for the real host dispatch regression.
         from PySide6.QtCore import QTimer
-        from desktop_ui import MainWindow
+        from desktop_app.shell.main_window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager
         from tests.test_desktop_ui_polish_b import disposable_directory
         from tests.test_t9_onboarding import sandbox_ui
@@ -220,7 +220,7 @@ class UnreadableJournalStopTests(unittest.TestCase):
         self.page.setup_context(self.host)
         self.page.replay_controls = SimpleNamespace(cancel=Mock())
         self.dialog = SimpleNamespace(confirm_button=object(), observe_button=object(), exec=Mock(), clickedButton=Mock(return_value=None))
-        factory = patch('desktop_pages.paper.stop_dialog', return_value=self.dialog)
+        factory = patch('desktop_app.features.paper.paper.stop_dialog', return_value=self.dialog)
         self.make_dialog = factory.start()
         self.addCleanup(factory.stop)
 

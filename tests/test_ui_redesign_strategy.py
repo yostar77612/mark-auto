@@ -11,8 +11,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QLabel, QPushButton, QToolButton
 
-from desktop_strings import ui_text
-from desktop_theme import scale_window_fonts
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import scale_window_fonts
 from quantlab.core import ValidationError
 from quantlab.strategies import builtin_strategies
 from tests import test_desktop_pages, test_idea_research_ui

@@ -105,7 +105,7 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
                     root = Path(temporary) / f"{profile['protocol']}-{index}"
                     folder, ref, original, _ = make_chatgpt_source(root, producer=profile, implementation=index, candidates=1)
                     before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
-                    with patch.dict(sys.modules, {'desktop_chatgpt_auth': None, 'desktop_chatgpt_provider': None}):
+                    with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                         admission = pools.admit_saved_campaign_pool(
                             source_campaign_dir=folder,
                             source_campaign_ref=ref,

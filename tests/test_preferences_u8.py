@@ -46,7 +46,7 @@ class WidgetTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def form(self):
-        from desktop_forms import StrategyForm
+        from desktop_app.components.forms import StrategyForm
 
         return StrategyForm()
 
@@ -87,7 +87,7 @@ class WidgetTests(unittest.TestCase):
 
     def shell(self, store):
         from PySide6.QtWidgets import QWidget, QHBoxLayout, QListWidget, QStackedWidget
-        from desktop_pages.preferences import install_sidebar
+        from desktop_app.features.settings.preferences import install_sidebar
 
         class Market(QWidget):
             pass
@@ -111,7 +111,7 @@ class WidgetTests(unittest.TestCase):
         return window, page
 
     def test_new_window_restore_sidebar_identity_unknown_and_privacy(self):
-        from desktop_pages.preferences import save_preferences, restore_preferences
+        from desktop_app.features.settings.preferences import save_preferences, restore_preferences
 
         window, page = self.shell(None)
         window.navigation.setCurrentRow(1)
@@ -139,7 +139,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_sidebar_width_and_market_splitter_round_trip(self):
         from PySide6.QtWidgets import QSplitter, QWidget
-        from desktop_pages.preferences import save_preferences, restore_preferences
+        from desktop_app.features.settings.preferences import save_preferences, restore_preferences
 
         window, page = self.shell(None)
         sidebar = page.host.state.preference_sidebar
@@ -164,8 +164,8 @@ class WidgetTests(unittest.TestCase):
         window.close()
 
     def test_none_bare_host_and_corrupt_file(self):
-        from desktop_pages.preferences import load_store, restore_preferences, save_preferences
-        from desktop_pages.settings import SettingsPage
+        from desktop_app.features.settings.preferences import load_store, restore_preferences, save_preferences
+        from desktop_app.features.settings.settings import SettingsPage
         from quantlab.desktop_runtime import SettingsStore
 
         page = SimpleNamespace(host=SimpleNamespace(), settings=None)
@@ -183,7 +183,7 @@ class WidgetTests(unittest.TestCase):
     def test_existing_settings_round_trip_and_corrupt_defaults(self):
         from PySide6.QtCore import QPoint, QRect
         from PySide6.QtWidgets import QCheckBox
-        from desktop_pages.settings import SettingsPage
+        from desktop_app.features.settings.settings import SettingsPage
         from quantlab.runtime_support import RuntimeSafetyError
 
         saved = {'unknown': {'keep': True}, 'advanced_sections': {'detail': True}, 'market': {'fixture': True}}
@@ -207,7 +207,7 @@ class WidgetTests(unittest.TestCase):
         page.read_logs = Mock()
         page.market = Mock()
         page.market.preferences.return_value = {'fixture': True}
-        with patch('desktop_pages.settings.QApplication.screens', return_value=[]):
+        with patch('desktop_app.features.settings.settings.QApplication.screens', return_value=[]):
             SettingsPage.load_settings(page)
         self.assertTrue(page._section_toggles['detail'].isChecked())
         page.market.restore_preferences.assert_called_once_with({'fixture': True})
@@ -219,7 +219,7 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(saved['window'], {'x': 10, 'y': 20, 'width': 900, 'height': 650})
         self.assertEqual(saved['advanced_sections'], {'detail': True})
         store.load.side_effect = RuntimeSafetyError('corrupt')
-        with patch('desktop_pages.settings.QApplication.screens', return_value=[]):
+        with patch('desktop_app.features.settings.settings.QApplication.screens', return_value=[]):
             SettingsPage.load_settings(page)
         self.assertEqual(window.navigation.currentRow(), 0)
         self.assertFalse(page._section_toggles['detail'].isChecked())
@@ -230,6 +230,6 @@ class WidgetTests(unittest.TestCase):
         from tests.test_no_hardcoded_ui_text import UI_PACKAGE_MODULES
         from tests.test_import_graph import TOUCHED
 
-        self.assertIn('desktop_pages/preferences.py', UI_PACKAGE_MODULES)
-        self.assertIn('desktop_pages/preferences.py', TOUCHED)
+        self.assertIn('desktop_app/features/settings/preferences.py', UI_PACKAGE_MODULES)
+        self.assertIn('desktop_app/features/settings/preferences.py', TOUCHED)
         self.assertIn('quantlab/ui_preferences.py', TOUCHED)

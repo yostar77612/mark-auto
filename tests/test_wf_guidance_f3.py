@@ -11,11 +11,11 @@ from unittest.mock import Mock, patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from desktop_pages.notification_log import NotificationLog
-from desktop_pages.strategy import StrategyPage
-from desktop_pages.wf_wizard import WalkForwardWizard, duration_estimate_text, failure_hint
-from desktop_presentation import display_number
-from desktop_strings import ui_text
+from desktop_app.shell.notification_log import NotificationLog
+from desktop_app.features.strategy.strategy import StrategyPage
+from desktop_app.features.walk_forward.wf_wizard import WalkForwardWizard, duration_estimate_text, failure_hint
+from desktop_app.components.formatting import display_number
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 from quantlab.errors import ERROR_TABLE
 from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
@@ -84,14 +84,17 @@ class GuidanceTests(unittest.TestCase):
         page.result_panel = Mock()
         page._refresh_walk_forward_references = Mock()
         event = {'type': 'result', 'result': {'status': 'failed', 'oos': 'OOS_SECRET', 'final_holdout': 'HOLDOUT_SECRET'}}
-        with patch('desktop_walk_forward.preview_text', return_value=''), patch('desktop_pages.wf_wizard.display_result_rows', return_value=[]):
+        with (
+            patch('desktop_app.features.walk_forward.presenter.preview_text', return_value=''),
+            patch('desktop_app.features.walk_forward.wf_wizard.display_result_rows', return_value=[]),
+        ):
             StrategyPage._walk_forward_event(page, event)
         notice = NotificationLog().accept_event(page.state.last_operation, event)
         self.assertEqual(page.wf_wizard.message.text(), failure_hint(notice.error_code))
         self.assertEqual(notice.error_code, 'operation_failed')
 
     def test_hint_label_has_explicit_catalogue_accessible_name(self):
-        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_pages/wf_wizard.py').read_text(encoding='utf-8'))
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/features/walk_forward/wf_wizard.py').read_text(encoding='utf-8'))
         calls = [
             node
             for node in ast.walk(tree)

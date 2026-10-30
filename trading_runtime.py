@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 import sys
 
-from desktop_strings import ui_text
+from desktop_app.strings.catalog import ui_text
 from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contextnavigation import CompositeFacade
 from quantlab.trading.application.errors import ERROR_TABLE
@@ -55,12 +55,12 @@ def _run_window(
     from PySide6.QtWidgets import QApplication, QMessageBox
 
     # Presentation is assembled here, not imported by the application core.
-    from desktop_trading import TradingWindow
-    from desktop_trading.market_watch import MarketWatchWidget
-    from desktop_charts import CandlestickChart
+    from desktop_app.features.trading import TradingWindow
+    from desktop_app.features.trading.market_watch import MarketWatchWidget
+    from desktop_app.components.charts import CandlestickChart
 
     # Share the installed product icon without starting its legacy runtime.
-    from desktop_icon import application_icon
+    from desktop_app.components.icon import application_icon
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
     from quantlab import __version__
@@ -86,7 +86,7 @@ def _run_window(
         return 1
     initial = facade.snapshot()
     window = TradingWindow(facade, initial, market_watch=MarketWatchWidget(facade, CandlestickChart(), initial))
-    from desktop_research_runtime import ResearchSession, UnifiedResearch
+    from desktop_app.research_bootstrap import ResearchSession, UnifiedResearch
 
     # One presenter/controller/session in the same Qt application. Explicit
     # test bootstraps never discover or restore the user's remembered login.

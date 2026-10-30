@@ -9,12 +9,12 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication, QFormLayout, QPushButton, QVBoxLayout, QWidget
 
-from desktop_forms import StrategyForm
-from desktop_pages.async_status import AsyncStatus
-from desktop_pages.error_guidance import NEXT_STEP_KEYS, clear_inline, next_step, run_inline, with_next_step
-from desktop_pages.job_progress import JobFeedback, JobProgress
-from desktop_pages.widgets import WidgetTools
-from desktop_strings import ui_text
+from desktop_app.components.forms import StrategyForm
+from desktop_app.components.async_status import AsyncStatus
+from desktop_app.components.error_guidance import NEXT_STEP_KEYS, clear_inline, next_step, run_inline, with_next_step
+from desktop_app.components.job_progress import JobFeedback, JobProgress
+from desktop_app.components.widgets import WidgetTools
+from desktop_app.strings.catalog import ui_text
 from quantlab.desktop_errors import error_message
 from quantlab.errors import ERROR_TABLE
 from tests.test_no_hardcoded_ui_text import UI_PACKAGE_MODULES
@@ -214,7 +214,7 @@ class ErrorGuidanceTests(unittest.TestCase):
         self.assertTrue(label.isHidden())
 
     def test_module_and_eager_name_are_registered(self):
-        name = 'desktop_pages/error_guidance.py'
+        name = 'desktop_app/components/error_guidance.py'
         self.assertIn(name, UI_PACKAGE_MODULES)
         self.assertEqual(stylesheet_calls((ROOT / name).read_text()), [])
         names = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text())

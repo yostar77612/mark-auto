@@ -13,7 +13,7 @@ import tempfile
 import time
 import unittest
 
-import desktop_chatgpt_auth as a
+import quantlab.assistant.adapters.chatgpt.auth as a
 
 WAIT_SECONDS = 40  # Preserve the production lock's full 30-second deadline.
 
@@ -170,8 +170,8 @@ def denied(*args, **kwargs):
     raise AssertionError('network is forbidden during source import')
 with patch.object(socket, 'socket', denied), patch.object(socket, 'create_connection', denied), patch.object(socket, 'getaddrinfo', denied):
     import quantlab
-    assert not any(name in sys.modules for name in ('jwt', 'cryptography', 'desktop_chatgpt_auth'))
-    import desktop_chatgpt_auth as auth
+    assert not any(name in sys.modules for name in ('jwt', 'cryptography', 'quantlab.assistant.adapters.chatgpt.auth'))
+    import quantlab.assistant.adapters.chatgpt.auth as auth
     session = auth.AuthSession(object())
     assert session.state == 'disconnected'
     assert not any(name in sys.modules for name in ('jwt', 'cryptography'))

@@ -12,7 +12,7 @@ class MarketAcceptanceLabels(unittest.TestCase):
     cleanup_window = support.NativeDesktopTests.cleanup_window
 
     def test_actual_paper_page_visible_readonly_limits_match_enforced_broker(self):
-        from desktop_ui import _paper, paper_risk_limits, write_json
+        from desktop_app.shell.main_window import _paper, paper_risk_limits, write_json
         from PySide6.QtWidgets import QLabel, QPushButton
 
         w = self.window

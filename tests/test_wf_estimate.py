@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from desktop_pages.wf_wizard import WalkForwardWizard, duration_estimate_text
-from desktop_strings import ui_text
+from desktop_app.features.walk_forward.wf_wizard import WalkForwardWizard, duration_estimate_text
+from desktop_app.strings.catalog import ui_text
 from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,7 +61,7 @@ class WorkerImportTests(unittest.TestCase):
             if name in seen:
                 continue
             seen.add(name)
-            self.assertFalse(name.startswith(('PySide6', 'desktop_ui', 'desktop_pages')), name)
+            self.assertFalse(name.startswith(('PySide6', 'desktop_app.shell.main_window', 'desktop_app.shell.pages')), name)
             path = ROOT / (name.replace('.', '/') + '.py')
             if not path.is_file():
                 continue

@@ -15,8 +15,8 @@ import unittest
 from uuid import uuid4
 from unittest.mock import patch
 
-from desktop_strings import ui_text
-from desktop_walk_forward import compact_walk_forward, oos_statistics_text
+from desktop_app.strings.catalog import ui_text
+from desktop_app.features.walk_forward.presenter import compact_walk_forward, oos_statistics_text
 from quantlab.core import canonical_json
 from quantlab import significance as sig
 
@@ -262,12 +262,12 @@ class OosProjectionTests(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
 
         # Load the UI panel only for the display-only case.
-        from desktop_pages.result_panels import WalkForwardResults
+        from desktop_app.components.result_panels import WalkForwardResults
 
         app = QApplication.instance() or QApplication([])
         panel = WalkForwardResults()
         self.assertFalse(hasattr(panel, '_oos_statistics'))
-        with patch('desktop_walk_forward.oos_statistics_text', side_effect=AssertionError('refresh computed stats')):
+        with patch('desktop_app.features.walk_forward.presenter.oos_statistics_text', side_effect=AssertionError('refresh computed stats')):
             panel.set_result({'oos_statistics_text': 'synthetic precomputed statistics'})
         self.assertEqual(panel._oos_statistics.text(), 'synthetic precomputed statistics')
         panel.set_result({})

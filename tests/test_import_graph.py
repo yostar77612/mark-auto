@@ -7,6 +7,7 @@ from pathlib import Path
 import pickle
 import unittest
 from unittest.mock import patch
+# Source scans below use current physical paths.
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,14 +16,14 @@ TOUCHED = (
     'quantlab/idea_search.py',
     'quantlab/idea_research.py',
     'quantlab/idea_sources.py',
-    'desktop_pages/idea_research.py',
+    'desktop_app/features/strategy/idea_research.py',
     'tests/idea_fixtures.py',
     'tests/test_web_fetch.py',
     'tests/test_idea_search.py',
     'tests/test_idea_research.py',
     'tests/test_idea_research_ui.py',
     'quantlab/capital_scenario.py',
-    'desktop_capital_scenario.py',
+    'desktop_app/features/capital_scenario/worker.py',
     'tests/test_capital_scenario_b5.py',
     'quantlab/verdict.py',
     'tests/test_verdict_b3.py',
@@ -31,95 +32,95 @@ TOUCHED = (
     'tests/test_significance_b2.py',
     'quantlab/trade_statistics.py',
     'tests/test_trade_statistics_b1.py',
-    'desktop_pages/host.py',
+    'desktop_app/shell/host.py',
     'tests/page_services_inventory.py',
     'tests/test_page_services_r1.py',
     'tests/test_r7_function_lengths.py',
     'tests/test_r7_characterization.py',
     'tests/r7_characterization.py',
-    'desktop_chart_memory.py',
-    'desktop_pages/backup_inspection.py',
+    'desktop_app/features/market/chart_memory.py',
+    'desktop_app/features/settings/backup_inspection.py',
     'quantlab/backup_inspection.py',
-    'desktop_pages/compare_equity.py',
-    'desktop_pages/data_gaps.py',
+    'desktop_app/features/compare/compare_equity.py',
+    'desktop_app/features/data/data_gaps.py',
     'quantlab/data_gap_report.py',
-    'desktop_pages/preferences.py',
+    'desktop_app/features/settings/preferences.py',
     'quantlab/ui_preferences.py',
-    'desktop_pages/quick_start.py',
-    'desktop_pages/quick_start_chain.py',
-    'desktop_pages/error_guidance.py',
-    'desktop_pages/backtest_summary_card.py',
+    'desktop_app/features/onboarding/quick_start.py',
+    'desktop_app/features/onboarding/quick_start_chain.py',
+    'desktop_app/components/error_guidance.py',
+    'desktop_app/features/backtest/backtest_summary_card.py',
     'quantlab/backtest_summary.py',
-    'desktop_pages/assistant_manifest.py',
+    'desktop_app/features/assistant/assistant_manifest.py',
     'quantlab/agent_manifest.py',
-    'desktop_pages/assistant_models.py',
-    'desktop_pages/assistant_completion.py',
-    'desktop_pages/connection_test.py',
-    'desktop_pages/assistant_permissions.py',
-    'desktop_pages/assistant_details.py',
-    'desktop_pages/assistant_runtime.py',
-    'desktop_pages/assistant.py',
+    'desktop_app/features/assistant/assistant_models.py',
+    'desktop_app/features/assistant/assistant_completion.py',
+    'desktop_app/features/assistant/connection_test.py',
+    'desktop_app/features/assistant/assistant_permissions.py',
+    'desktop_app/features/assistant/assistant_details.py',
+    'desktop_app/features/assistant/worker.py',
+    'desktop_app/features/assistant/assistant.py',
     'quantlab/assistant_chat.py',
-    'desktop_pages/paper_tabs.py',
+    'desktop_app/features/paper/paper_tabs.py',
     'quantlab/paper_tab_data.py',
     'tests/test_paper_tab_data_c6.py',
     'tests/test_paper_tabs_c6.py',
     'tests/test_paper_timeline_u9.py',
-    'desktop_pages/notifications.py',
-    'desktop_pages/notification_log.py',
+    'desktop_app/shell/notifications.py',
+    'desktop_app/shell/notification_log.py',
     'tests/test_notifications_c8.py',
-    'desktop_pages/command_palette.py',
-    'desktop_pages/palette_commands.py',
-    'desktop_pages/shortcuts.py',
+    'desktop_app/components/command_palette.py',
+    'desktop_app/shell/palette_commands.py',
+    'desktop_app/shell/shortcuts.py',
     'tests/test_command_palette_c7.py',
-    'desktop_pages/onboarding.py',
+    'desktop_app/shell/onboarding.py',
     'tests/test_page_identity_r4.py',
     'quantlab/agent_skills.py',
     'quantlab/agent_return.py',
     'quantlab/agent_read_tools.py',
     'quantlab/agent_tool_contract.py',
     'quantlab/agent_tools.py',
-    'desktop_pages/compare_table.py',
-    'desktop_pages/log_table.py',
+    'desktop_app/features/compare/compare_table.py',
+    'desktop_app/features/settings/log_table.py',
     'tests/test_table_readability_c9.py',
-    'desktop_pages/widgets.py',
+    'desktop_app/components/widgets.py',
     'tests/test_panel_card_c3.py',
-    'desktop_pages/async_status.py',
+    'desktop_app/components/async_status.py',
     'tests/test_async_status_c4.py',
-    'desktop_pages/app_header.py',
+    'desktop_app/shell/app_header.py',
     'tests/test_header_c1.py',
     'quantlab/replay_pacing.py',
     'quantlab/paper_replay.py',
-    'desktop_pages/replay_controls.py',
+    'desktop_app/features/paper/replay_controls.py',
     'tests/test_replay_b13.py',
     'quantlab/diagnostics.py',
-    'desktop_pages/diagnostics.py',
-    'desktop_pages/settings_layout.py',
+    'desktop_app/features/settings/diagnostics.py',
+    'desktop_app/features/settings/settings_layout.py',
     'tests/test_diagnostics_b12.py',
     'tests/test_paper_lock_b2.py',
     'quantlab/paper.py',
     'quantlab/desktop_feedback.py',
-    'desktop_pages/paper.py',
+    'desktop_app/features/paper/paper.py',
     'quantlab/errors.py',
-    'desktop_privacy.py',
-    'desktop_theme.py',
-    'desktop_pages/settings_layout.py',
-    'desktop_pages/result_widgets.py',
-    'desktop_order_lines.py',
+    'desktop_app/components/privacy.py',
+    'desktop_app/shell/theme.py',
+    'desktop_app/features/settings/settings_layout.py',
+    'desktop_app/components/result_widgets.py',
+    'desktop_app/features/paper/order_lines.py',
     'quantlab/paper_amend.py',
     'quantlab/product_keys.py',
     'quantlab/chart_drawings.py',
-    'desktop_market.py',
-    'desktop_market_layout.py',
-    'desktop_market_workspace.py',
-    'desktop_chart_popout.py',
+    'desktop_app/features/market/dashboard.py',
+    'quantlab/research_core/adapters/market_layout.py',
+    'desktop_app/features/market/workspace.py',
+    'desktop_app/features/market/chart_popout.py',
     'tests/test_market_workspace_c5.py',
-    'desktop_pages/market.py',
-    'desktop_chatgpt_states.py',
-    'desktop_pages/job_progress.py',
+    'desktop_app/features/market/market.py',
+    'desktop_app/features/assistant/states.py',
+    'desktop_app/components/job_progress.py',
     'quantlab/payload_cleanup.py',
     'quantlab/update_check.py',
-    'desktop_pages/maintenance.py',
+    'desktop_app/features/settings/maintenance.py',
     'quantlab/tls_trust.py',
     'quantlab/job_stages.py',
     'quantlab/wf_estimate.py',
@@ -137,32 +138,44 @@ TOUCHED = (
     'quantlab/value_bounds.py',
     'quantlab/configuration.py',
     'quantlab/__main__.py',
-    'desktop_ui.py',
-    'desktop_walk_forward.py',
-    'desktop_presentation.py',
+    'desktop_app/shell/main_window.py',
+    'desktop_app/features/walk_forward/presenter.py',
+    'desktop_app/components/formatting.py',
 )
 PAIRS = (
     ('quantlab.analysis_recovery_windows', 'quantlab.desktop_runtime'),
     ('quantlab.desktop_errors', 'quantlab.desktop_runtime'),
     ('quantlab.__main__', 'quantlab.reporting'),
-    ('desktop_pages.onboarding', 'desktop_pages.palette_commands'),
-    ('desktop_pages.shortcuts', 'desktop_pages.palette_commands'),
-    ('desktop_pages.command_palette', 'desktop_pages.palette_commands'),
+    ('desktop_app.shell.onboarding', 'desktop_app.shell.palette_commands'),
+    ('desktop_app.shell.shortcuts', 'desktop_app.shell.palette_commands'),
+    ('desktop_app.components.command_palette', 'desktop_app.shell.palette_commands'),
     ('quantlab.desktop_runtime', 'quantlab.analysis_recovery'),
     ('quantlab.analysis_recovery', 'quantlab.research_analysis'),
     ('quantlab.research_analysis', 'quantlab.saved_candidate_pool'),
     ('quantlab.research_analysis', 'quantlab.walk_forward'),
     ('quantlab.saved_candidate_pool', 'quantlab.walk_forward'),
-    ('desktop_ui', 'desktop_walk_forward'),
+    ('desktop_app.shell.main_window', 'desktop_app.features.walk_forward.presenter'),
 )
 
 
 def source_map():
     paths = (
         sorted((ROOT / 'quantlab').glob('*.py'))
-        + sorted(ROOT.glob('desktop*.py'))
-        + sorted((ROOT / 'desktop_pages').glob('*.py'))
-        + sorted((ROOT / 'desktop_smoke').glob('*.py'))
+        + sorted(
+            [
+                *ROOT.glob('desktop*.py'),
+                *(
+                    ROOT / relative
+                    for relative in (
+                        'quantlab/assistant/adapters/chatgpt/auth.py',
+                        'quantlab/assistant/adapters/chatgpt/provider.py',
+                        'quantlab/research_core/adapters/market_layout.py',
+                    )
+                ),
+            ]
+        )
+        + sorted((ROOT / 'desktop_app').rglob('*.py'))
+        + sorted((ROOT / 'desktop_app/smoke').glob('*.py'))
     )
     return {
         path.relative_to(ROOT).with_suffix('').as_posix().replace('/', '.').removesuffix('.__init__'): path.read_text(encoding='utf-8-sig') for path in paths
@@ -240,8 +253,8 @@ class ImportGraphTests(unittest.TestCase):
 
     def test_f5_inspection_uses_reader_without_shell_dependency(self):
         graph = import_graph(self.sources)
-        self.assertIn('quantlab.backup_inspection', graph['desktop_pages.backup_inspection'])
-        self.assertNotIn('desktop_ui', graph['desktop_pages.backup_inspection'])
+        self.assertIn('quantlab.backup_inspection', graph['desktop_app.features.settings.backup_inspection'])
+        self.assertNotIn('desktop_app.shell.main_window', graph['desktop_app.features.settings.backup_inspection'])
 
     def test_r5_leaf_dependencies_and_compatibility_exports(self):
         graph = import_graph(self.sources)
@@ -305,12 +318,14 @@ class ImportGraphTests(unittest.TestCase):
         self.assertEqual(import_graph(self.sources)['quantlab.paper_tab_data'], set())
 
     def test_quick_start_sequencer_is_pure(self):
-        self.assertEqual(module_imports('desktop_pages.quick_start_chain', self.sources['desktop_pages.quick_start_chain']), set())
+        self.assertEqual(
+            module_imports('desktop_app.features.onboarding.quick_start_chain', self.sources['desktop_app.features.onboarding.quick_start_chain']), set()
+        )
 
     def test_error_guidance_u7_has_only_display_dependencies(self):
         self.assertEqual(
-            import_graph(self.sources)['desktop_pages.error_guidance'],
-            {'desktop_privacy', 'desktop_strings', 'quantlab.desktop_errors'},
+            import_graph(self.sources)['desktop_app.components.error_guidance'],
+            {'desktop_app.components.privacy', 'desktop_app.strings.catalog', 'quantlab.desktop_errors'},
         )
 
     def test_backtest_summary_u4_is_pure(self):
@@ -319,7 +334,7 @@ class ImportGraphTests(unittest.TestCase):
     def test_manifest_d12_has_only_contract_edges(self):
         graph = import_graph(self.sources)
         self.assertEqual(graph['quantlab.agent_manifest'], {'quantlab.agent_tool_contract'})
-        self.assertIn('desktop_pages.assistant_manifest', graph['desktop_pages.assistant'])
+        self.assertIn('desktop_app.features.assistant.assistant_manifest', graph['desktop_app.features.assistant.assistant'])
 
     def test_d4_assistant_core_has_no_operator_or_ui_edges(self):
         graph = import_graph(self.sources)
@@ -327,8 +342,8 @@ class ImportGraphTests(unittest.TestCase):
             graph['quantlab.assistant_chat'],
             {'quantlab.agent_read_tools', 'quantlab.agent_tools', 'quantlab.agent_tool_contract'},
         )
-        self.assertIn('desktop_pages.assistant_runtime', graph['desktop_pages.assistant'])
-        self.assertNotIn('desktop_ui', graph['desktop_pages.assistant_runtime'])
+        self.assertIn('desktop_app.features.assistant.worker', graph['desktop_app.features.assistant.assistant'])
+        self.assertNotIn('desktop_app.shell.main_window', graph['desktop_app.features.assistant.worker'])
 
     def test_d7_skills_have_only_permitted_edges(self):
         self.assertEqual(
@@ -376,7 +391,9 @@ class ImportGraphTests(unittest.TestCase):
         self.assertFalse(any(target.startswith(('desktop', 'PySide6')) for target in imports))
         # Only the UI adapter resolves translated legacy disclosure keys; the
         # serialization core above remains free of Qt and application imports.
-        self.assertEqual(graph['desktop_pages.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support', 'desktop_strings'})
+        self.assertEqual(
+            graph['desktop_app.features.settings.preferences'], {'quantlab.ui_preferences', 'quantlab.runtime_support', 'desktop_app.strings.catalog'}
+        )
 
     def test_listed_cycles_are_absent(self):
         self.assertEqual(listed_cycles(self.sources), [])

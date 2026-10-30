@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 from quantlab import capital_scenario as capital
 from quantlab.core import ValidationError, canonical_json
-import desktop_capital_scenario as adapter
+import desktop_app.features.capital_scenario.worker as adapter
 
 D = Decimal
 ROOT = Path(__file__).resolve().parents[1]
@@ -225,7 +225,7 @@ class AdapterTests(unittest.TestCase):
         from quantlab.core import to_dict
 
         # Load integration dependencies only in the relevant test.
-        import desktop_ui as ui
+        import desktop_app.shell.main_window as ui
 
         with workspace() as paths:
             data, plan = inputs(process_start_method='spawn')
@@ -255,7 +255,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_lazy_run_validation_terminal_and_clear(self):
         # Load integration dependencies only in the relevant test.
-        from desktop_pages.result_panels import WalkForwardResults
+        from desktop_app.components.result_panels import WalkForwardResults
 
         # Load integration dependencies only in the relevant test.
         import shiboken6
@@ -296,7 +296,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_cancel_uses_worker_stop_without_paper_mutation(self):
         # Load only the cancellation boundary for this case.
-        from desktop_pages.job_progress import cancel_allowed
+        from desktop_app.components.job_progress import cancel_allowed
 
         shell = SimpleNamespace(
             last_operation='ui_capital_scenario',
@@ -317,7 +317,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_close_stops_scenario_without_reconcile_and_preserves_pending_walk_forward(self):
         # Exercise the real close branch with bounded fake process controls.
-        import desktop_ui as ui
+        import desktop_app.shell.main_window as ui
 
         # Only enum values are needed; no native dialogs are opened.
         from PySide6.QtWidgets import QMessageBox
@@ -362,7 +362,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_catalog_feedback_registry_and_ci_shard(self):
         # Load integration dependencies only in the relevant test.
-        from desktop_strings import ui_text
+        from desktop_app.strings.catalog import ui_text
 
         # Load integration dependencies only in the relevant test.
         from quantlab.desktop_feedback import completion_summary
@@ -374,7 +374,7 @@ class WidgetTests(unittest.TestCase):
         from quantlab.analysis_recovery import SAFE_OPERATIONS
 
         # Load integration dependencies only in the relevant test.
-        from desktop_pages.notification_log import safe_summary
+        from desktop_app.shell.notification_log import safe_summary
 
         # Load integration dependencies only in the relevant test.
         from tools.run_test_group import core_shard_for_module

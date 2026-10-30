@@ -52,7 +52,7 @@ def context(profile='ui'):
     core_source = portable_source_identity()
     digest = hashlib.sha256(core_source.encode('ascii'))
     # Include the UI packages as well as the existing portable core/test/workflow identity.
-    for package in ('desktop_pages', 'desktop_smoke'):
+    for package in ('desktop_app',):
         for path in sorted((ROOT / package).rglob('*.py')):
             digest.update(path.relative_to(ROOT).as_posix().encode('utf-8') + b'\0' + path.read_bytes() + b'\0')
     return {

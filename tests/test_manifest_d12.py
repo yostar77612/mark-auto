@@ -14,10 +14,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QAbstractItemView
 
-from desktop_pages.assistant import AssistantPanel
-from desktop_pages.assistant_manifest import ManifestDetails
-from desktop_pages.assistant_runtime import chatgpt_reply
-from desktop_strings import ui_text
+from desktop_app.features.assistant.assistant import AssistantPanel
+from desktop_app.features.assistant.assistant_manifest import ManifestDetails
+from desktop_app.features.assistant.worker import chatgpt_reply
+from desktop_app.strings.catalog import ui_text
 from quantlab import agent_manifest
 from quantlab.agent_read_tools import ReadContext, TOOL_NAMES, READ_REGISTRY, _row_schema
 from quantlab.agent_tool_contract import MAX_RETURN_BYTES, validate
@@ -174,8 +174,8 @@ class ManifestD12Tests(unittest.TestCase):
                     'quantlab.research.run_campaign',
                     'quantlab.walk_forward.run_walk_forward',
                     'quantlab.reporting.save_selection',
-                    'desktop_chatgpt_provider.ChatGPTPlanProvider._reserve',
-                    'desktop_chatgpt_provider.PlanHTTPTransport.stream',
+                    'quantlab.assistant.adapters.chatgpt.provider.ChatGPTPlanProvider._reserve',
+                    'quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport.stream',
                     'socket.socket',
                 )
             ]
@@ -194,7 +194,7 @@ class ManifestD12Tests(unittest.TestCase):
             assert_no_protected_values(self, 'TOKEN_SENTINEL')
         panel.reply('<b>literal</b>\n```danger```')
         self.assertIn('<b>literal</b>', panel.transcript.toPlainText())
-        for name in ('quantlab/agent_manifest.py', 'desktop_pages/assistant_manifest.py'):
+        for name in ('quantlab/agent_manifest.py', 'desktop_app/features/assistant/assistant_manifest.py'):
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
             self.assertFalse({n.id for n in ast.walk(tree) if isinstance(n, ast.Name)} & {'eval', 'exec', 'compile'})
 

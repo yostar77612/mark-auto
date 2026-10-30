@@ -6,6 +6,7 @@ import subprocess
 import unittest
 
 from tools.check_trading_architecture import check_source, scan
+from tests.layered_source_fixtures import mechanically_restored_source, physical_path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = '4095c3e9fdd2e91f1423d6d1bf76466834cdb417'
@@ -59,7 +60,7 @@ class TradingArchitectureTests(unittest.TestCase):
             ('quantlab/trading/application/subject.py', 'from sqlite3 import connect'),
             ('quantlab/trading/ports/subject.py', 'from ..application import engine'),
             ('quantlab/trading/ports/subject.py', 'from ..runtime import build'),
-            ('quantlab/trading/adapters/subject.py', 'from desktop_trading.window import TradingWindow'),
+            ('quantlab/trading/adapters/subject.py', 'from desktop_app.features.trading.window import TradingWindow'),
             ('quantlab/trading/adapters/subject.py', 'from ..application.engine import TradingEngine'),
         ):
             with self.subTest(path=path, source=source):
@@ -75,11 +76,11 @@ class TradingArchitectureTests(unittest.TestCase):
             'from quantlab.trading.ports.storage import Journal',
         ):
             with self.subTest(source=source):
-                self.assertTrue(check_source(source, 'desktop_trading/subject.py'))
+                self.assertTrue(check_source(source, 'desktop_app/features/trading/subject.py'))
         self.assertEqual(
             check_source(
                 'from quantlab.trading.application.contracts import UiState\nfrom quantlab.trading.domain.models import Market\nfrom .widgets import label\nfrom PySide6.QtWidgets import QLabel',
-                'desktop_trading/subject.py',
+                'desktop_app/features/trading/subject.py',
             ),
             (),
         )
@@ -121,8 +122,8 @@ class TradingArchitectureTests(unittest.TestCase):
         # while canonical Git blob identity is independently checked below.
         for path in LOCKED:
             with self.subTest(path=path):
-                baseline = subprocess.check_output(['git', 'cat-file', '--filters', f'{BASELINE}:{path}'], cwd=ROOT)
-                current = (ROOT / path).read_bytes()
+                baseline = subprocess.check_output(['git', 'cat-file', '--filters', '--path', physical_path(path), f'{BASELINE}:{path}'], cwd=ROOT)
+                current = mechanically_restored_source(ROOT, path, baseline)
                 self.assertEqual(sha256(current).digest(), sha256(baseline).digest())
                 expected_blob = subprocess.check_output(['git', 'rev-parse', f'{BASELINE}:{path}'], cwd=ROOT).strip()
                 current_blob = subprocess.check_output(['git', 'hash-object', '--stdin', '--path', path], input=current, cwd=ROOT).strip()

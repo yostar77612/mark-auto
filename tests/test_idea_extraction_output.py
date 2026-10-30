@@ -4,9 +4,9 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from desktop_chatgpt_provider import PlanError
-from desktop_chatgpt_auth import AuthError
-from desktop_ui import _idea_event_caller
+from quantlab.assistant.adapters.chatgpt.provider import PlanError
+from quantlab.assistant.adapters.chatgpt.auth import AuthError
+from desktop_app.shell.main_window import _idea_event_caller
 
 from quantlab.idea_research import _extraction_output, run_extraction
 from quantlab.idea_search import RemoteFailure

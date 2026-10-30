@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 # Directories consumed wholesale (globbed or contract-checked) by tests/runtime.
 PROTECTED_PREFIXES = ('docs/adr/', 'docs/agent/', 'docs/skills/', 'packaging/', 'tests/', 'archives/', 'quantlab/', 'tools/')
-SCAN_DIRECTORIES = ('tests', 'tools', 'packaging', 'quantlab', 'desktop_pages', 'desktop_smoke', '.github')
+SCAN_DIRECTORIES = ('tests', 'tools', 'packaging', 'quantlab', 'desktop_app', '.github')
 SCAN_SUFFIXES = {'.py', '.ps1', '.yml', '.yaml', '.json', '.toml', '.spec', '.iss', '.txt', '.md', '.cfg'}
 
 

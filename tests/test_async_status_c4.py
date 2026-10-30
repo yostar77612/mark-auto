@@ -10,16 +10,16 @@ from unittest.mock import Mock, patch
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
-from desktop_pages.async_status import AsyncStatus
-from desktop_pages.job_progress import JobProgress, JobFeedback
-from desktop_pages.log_table import LogTable
-from desktop_pages.maintenance import MaintenancePanel
-from desktop_strings import ui_text
-from desktop_theme import build_app_stylesheet
+from desktop_app.components.async_status import AsyncStatus
+from desktop_app.components.job_progress import JobProgress, JobFeedback
+from desktop_app.features.settings.log_table import LogTable
+from desktop_app.features.settings.maintenance import MaintenancePanel
+from desktop_app.strings.catalog import ui_text
+from desktop_app.shell.theme import build_app_stylesheet
 from quantlab.errors import ERROR_TABLE
 from quantlab.update_check import UpdateResult
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
-from desktop_ui import MainWindow
+from desktop_app.shell.main_window import MainWindow
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 
@@ -125,8 +125,8 @@ class AsyncStatusTests(unittest.TestCase):
         self.assertFalse(table.empty_status.isHidden())
         self.assertTrue(table.empty_status.action.isHidden())
         with (
-            patch('desktop_pages.maintenance.installed_payload_root', return_value=Path('unused')),
-            patch('desktop_pages.maintenance.plan_payload_cleanup', return_value=SimpleNamespace(reason=None, candidates=())),
+            patch('desktop_app.features.settings.maintenance.installed_payload_root', return_value=Path('unused')),
+            patch('desktop_app.features.settings.maintenance.plan_payload_cleanup', return_value=SimpleNamespace(reason=None, candidates=())),
         ):
             panel.check_payloads()
         self.assertEqual(panel.async_status.property('state'), 'empty')
@@ -138,7 +138,7 @@ class AsyncStatusTests(unittest.TestCase):
 
     def test_onboarding_and_result_use_shared_component(self):
         root = Path(__file__).resolve().parents[1]
-        source = (root / 'desktop_pages/onboarding.py').read_text(encoding='utf-8')
+        source = (root / 'desktop_app/shell/onboarding.py').read_text(encoding='utf-8')
         tree = ast.parse(source)
         install = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'install_onboarding')
         loop = next(node for node in ast.walk(install) if isinstance(node, ast.For) and isinstance(node.target, ast.Tuple) and len(node.target.elts) == 3)
@@ -146,7 +146,7 @@ class AsyncStatusTests(unittest.TestCase):
         self.assertIn('AsyncStatus', calls)
         self.assertNotIn('QLabel', calls)
         self.assertNotIn('QPushButton', calls)
-        result = (root / 'desktop_pages/backtest.py').read_text(encoding='utf-8')
+        result = (root / 'desktop_app/features/backtest/backtest.py').read_text(encoding='utf-8')
         self.assertIn('self.result_empty = AsyncStatus()', result)
 
     def test_real_pages_keep_names_guidance_and_use_shared_empty_states(self):

@@ -9,8 +9,8 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QApplication
 
-from desktop_pages.diagnostics import DiagnosticsPanel, snapshot_for_state
-from desktop_strings import ui_text
+from desktop_app.features.settings.diagnostics import DiagnosticsPanel, snapshot_for_state
+from desktop_app.strings.catalog import ui_text
 from quantlab.diagnostics import MAX_BYTES, build_diagnostics
 from quantlab.errors import ERROR_TABLE
 from quantlab.startup_timing import MAX_STAGES, STAGES, TRUNCATION_MARKER, StartupTiming

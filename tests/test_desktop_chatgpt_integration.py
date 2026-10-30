@@ -46,8 +46,8 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_json_event_roundtrip_restores_model_label_tuples(self):
         import json
-        from desktop_ui import connection_event_from_payload
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.shell.main_window import connection_event_from_payload
+        from desktop_app.features.assistant.connection import ConnectionEvent
 
         for event in (
             ConnectionEvent(1, 'result'),
@@ -65,7 +65,7 @@ class ChatGPTHostTests(unittest.TestCase):
             self.assertEqual(connection_event_from_payload(json.loads(json.dumps(asdict(event)))), event)
 
     def test_usage_and_campaign_binding_use_discovered_slug_not_display_label(self):
-        from desktop_ui import execute_ui_operation, _dataset, plan_provider, demo_config
+        from desktop_app.shell.main_window import execute_ui_operation, _dataset, plan_provider, demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import canonical_json
 
@@ -100,12 +100,12 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(p.included_usage_only.isChecked())
 
     def test_both_authorization_modes_require_managed_private_events(self):
-        from desktop_ui import execute_ui_operation
-        from desktop_chatgpt_ui import ConnectionRequest
+        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.features.assistant.connection import ConnectionRequest
 
         for action in ('begin', 'first_sign_in', 'enable_plan'):
             request = ConnectionRequest(1, action, REF if action == 'enable_plan' else None, user_confirmed=True)
-            with patch('desktop_chatgpt_ui.run_connection_request') as run:
+            with patch('desktop_app.features.assistant.connection.run_connection_request') as run:
                 with self.assertRaises(ValueError):
                     execute_ui_operation('ui_chatgpt_auth', {'request': request.payload()}, self.paths)
                 run.assert_not_called()
@@ -116,7 +116,7 @@ class ChatGPTHostTests(unittest.TestCase):
             request = w.chatgpt_controller.request('list')
         self.assertEqual(start.call_args.args, ('ui_chatgpt_auth', {'request': request.payload()}))
         self.assertIs(w.jobs, self.jobs)
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
 
         result = asdict(ConnectionEvent(request.request_id, 'result', 'host_initialization_required'))
         self.assertTrue(w._chatgpt_event({'job_id': 'fixture-job', 'type': 'result', 'result': {'auth_event': result}}))
@@ -183,11 +183,13 @@ class ChatGPTHostTests(unittest.TestCase):
         context.assert_not_called()
 
     def test_worker_local_status_dispatch_has_no_implicit_initialization(self):
-        from desktop_ui import execute_ui_operation
-        from desktop_chatgpt_ui import ConnectionRequest, ConnectionEvent
+        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.features.assistant.connection import ConnectionRequest, ConnectionEvent
 
         request = ConnectionRequest(1, 'list')
-        with patch('desktop_chatgpt_ui.run_connection_request', return_value=ConnectionEvent(1, 'result', 'host_initialization_required')) as run:
+        with patch(
+            'desktop_app.features.assistant.connection.run_connection_request', return_value=ConnectionEvent(1, 'result', 'host_initialization_required')
+        ) as run:
             result = execute_ui_operation('ui_chatgpt_auth', {'request': request.payload()}, self.paths)
         self.assertEqual(result['auth_event']['state'], 'host_initialization_required')
         self.assertEqual(run.call_args.args[0].action, 'list')
@@ -195,7 +197,7 @@ class ChatGPTHostTests(unittest.TestCase):
     def test_private_authorization_progress_is_not_persisted(self):
         import json
         from unittest.mock import Mock
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         manager = self.jobs
@@ -246,7 +248,7 @@ class ChatGPTHostTests(unittest.TestCase):
                 self.assertFalse(any(e['type'] == 'cancelled' for e in events))
 
     def test_plan_binding_stable_and_requires_current_usage_identity(self):
-        from desktop_ui import plan_provider, execute_ui_operation, _dataset, demo_config
+        from desktop_app.shell.main_window import plan_provider, execute_ui_operation, _dataset, demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import ValidationError
 
@@ -282,7 +284,7 @@ class ChatGPTHostTests(unittest.TestCase):
             )
 
     def test_sleep_freeze_clears_transient_authorization_and_consent(self):
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window
@@ -297,7 +299,7 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(w.chatgpt_controller.account_status_known)
 
     def test_shutdown_clears_transient_authorization(self):
-        from desktop_chatgpt_ui import ConnectionEvent
+        from desktop_app.features.assistant.connection import ConnectionEvent
         from tests.test_desktop_chatgpt_ui import authorization_url
 
         w = self.window
@@ -309,13 +311,13 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertIsNone(w.chatgpt_controller._authorization_url)
 
     def test_model_worker_rechecks_durable_account_before_network(self):
-        from desktop_chatgpt_ui import run_connection_request, ConnectionRequest
+        from desktop_app.features.assistant.connection import run_connection_request, ConnectionRequest
         from tests.test_desktop_chatgpt_ui import FixtureSession
 
         session = FixtureSession()
         with (
-            patch('desktop_chatgpt_provider.read_account_status', return_value={'state': 'reserved_unknown', 'pending': True}),
-            patch('desktop_chatgpt_provider.discover_models') as discover,
+            patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value={'state': 'reserved_unknown', 'pending': True}),
+            patch('quantlab.assistant.adapters.chatgpt.provider.discover_models') as discover,
         ):
             result = run_connection_request(
                 ConnectionRequest(1, 'models', REF, 120, True),
@@ -330,7 +332,7 @@ class ChatGPTHostTests(unittest.TestCase):
 
     def test_reconciliation_requires_same_manager_subtree_proof(self):
         from quantlab.desktop_runtime import RuntimeSafetyError
-        from desktop_ui import execute_ui_operation
+        from desktop_app.shell.main_window import execute_ui_operation
         from quantlab.core import ValidationError
 
         with self.assertRaises(RuntimeSafetyError):
@@ -354,7 +356,7 @@ class ChatGPTHostTests(unittest.TestCase):
             m.cancel()
 
     def test_plan_campaign_uses_exact_provider_and_local_reconcile_never_enables_network(self):
-        from desktop_ui import plan_provider, execute_ui_operation, _dataset, demo_config
+        from desktop_app.shell.main_window import plan_provider, execute_ui_operation, _dataset, demo_config
         from quantlab.research import demo_campaign_config
         from quantlab.core import to_dict
 
@@ -390,7 +392,7 @@ class ChatGPTHostTests(unittest.TestCase):
         self.assertFalse(local.included_usage_policy_confirmed)
         self.assertEqual(local.path, generator.path)
         self.assertTrue(reconcile.call_args.kwargs['descendants_stopped'])
-        with patch('desktop_chatgpt_provider.implementation_provenance', return_value={'fixture_only': True}):
+        with patch('quantlab.assistant.adapters.chatgpt.provider.implementation_provenance', return_value={'fixture_only': True}):
             self.assertEqual(local.provider_descriptor(), generator.provider_descriptor())
         self.assertEqual(reconcile.call_args.kwargs['output_dir'], run.call_args.kwargs['output_dir'])
         self.assertEqual(result['binding'], binding)

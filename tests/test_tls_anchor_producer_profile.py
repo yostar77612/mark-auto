@@ -3,6 +3,7 @@
 import hashlib
 from pathlib import Path
 import unittest
+from tests.layered_source_fixtures import reviewed_source_bytes
 
 from quantlab.core import content_hash, to_dict
 from quantlab import saved_candidate_pool as pools
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TlsAnchorProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 28)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 29)
         self.assertEqual(content_hash(PREVIOUS), 'ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[15], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[16], PROFILE)
@@ -36,7 +37,7 @@ class TlsAnchorProducerProfileTests(unittest.TestCase):
                 if name == 'desktop_chatgpt_provider.py':
                     # Provider bytes changed later (models limit); pin stays historical.
                     continue
-                raw = (ROOT / name).read_bytes().replace(b'\r\n', b'\n')
+                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
                 if index:
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest, name)

@@ -18,7 +18,7 @@ class DesktopFormsTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_policy_header_units_are_visible_and_have_full_tooltips(self):
-        from desktop_forms import _Rows
+        from desktop_app.components.forms import _Rows
 
         columns = [('margin', '保證金 TWD／口'), ('session', '盤別（日盤 day／夜盤 night）')]
         form = _Rows('header_fixture', columns)
@@ -29,7 +29,7 @@ class DesktopFormsTests(unittest.TestCase):
         form.close()
 
     def test_all_strategy_families_roundtrip(self):
-        from desktop_forms import StrategyForm
+        from desktop_app.components.forms import StrategyForm
         from quantlab.strategies import builtin_strategies, validate_strategy
         from quantlab.core import StrategySpec, to_dict
 
@@ -40,7 +40,7 @@ class DesktopFormsTests(unittest.TestCase):
             validate_strategy(StrategySpec(**form.build_payload()))
 
     def test_strategy_invalid_never_clamped(self):
-        from desktop_forms import StrategyForm
+        from desktop_app.components.forms import StrategyForm
         from quantlab.core import ValidationError
 
         form = StrategyForm()
@@ -53,7 +53,7 @@ class DesktopFormsTests(unittest.TestCase):
             form.build_payload()
 
     def test_config_dates_precision_and_schedules_roundtrip(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from quantlab.reporting import demo_config
         from quantlab.core import to_dict, ValidationError
         from quantlab.__main__ import config_from_json
@@ -75,7 +75,7 @@ class DesktopFormsTests(unittest.TestCase):
             form.build_payload()
 
     def test_campaign_contract_and_invalid_splits(self):
-        from desktop_forms import CampaignForm
+        from desktop_app.components.forms import CampaignForm
         from quantlab.research import demo_campaign_config, _campaign_config
         from quantlab.reporting import synthetic_dataset, demo_config
         from quantlab.core import to_dict, ValidationError
@@ -99,7 +99,7 @@ class DesktopFormsTests(unittest.TestCase):
             form.build_payload()
 
     def test_paper_intent_quote_and_explicit_confirmation(self):
-        from desktop_forms import PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, PaperActionForm
+        from desktop_app.components.forms import PaperIntentForm, PaperQuoteForm, PaperSnapshotForm, PaperActionForm
         from quantlab.core import ValidationError
 
         intent = dict(
@@ -143,7 +143,7 @@ class DesktopFormsTests(unittest.TestCase):
             PaperQuoteForm().build_payload()
 
     def test_paper_policy_roundtrip_backend_validation(self):
-        from desktop_forms import PaperPolicyForm
+        from desktop_app.components.forms import PaperPolicyForm
         from quantlab.paper import PaperBroker
         from quantlab.core import Instrument
 
@@ -161,7 +161,7 @@ class DesktopFormsTests(unittest.TestCase):
         broker._validate_policy()
 
     def test_result_table_readonly_and_named_fields(self):
-        from desktop_forms import ResultTable, StrategyForm
+        from desktop_app.components.forms import ResultTable, StrategyForm
         from PySide6.QtWidgets import QAbstractItemView
 
         table = ResultTable()
@@ -174,7 +174,7 @@ class DesktopFormsTests(unittest.TestCase):
             self.assertTrue(field.accessibleName())
 
     def test_paper_invalid_inputs_and_nested_records_preserved(self):
-        from desktop_forms import PaperIntentForm, PaperSnapshotForm, PaperPolicyForm
+        from desktop_app.components.forms import PaperIntentForm, PaperSnapshotForm, PaperPolicyForm
         from quantlab.core import ValidationError
         from quantlab.paper import PaperBroker
 
@@ -211,7 +211,7 @@ class DesktopFormsTests(unittest.TestCase):
             PaperPolicyForm().build_payload()
 
     def test_no_stale_backtest_defaults_after_loading_minimal_config(self):
-        from desktop_forms import BacktestForm
+        from desktop_app.components.forms import BacktestForm
         from quantlab.reporting import demo_config
         from quantlab.core import to_dict
 
@@ -227,7 +227,7 @@ class DesktopFormsTests(unittest.TestCase):
             self.assertEqual(form.build_payload()['config']['costs']['tax_rounding'], rounding)
 
     def test_decimal_precision_and_range_parser(self):
-        from desktop_forms import number
+        from desktop_app.components.forms import number
         from quantlab.core import ValidationError
 
         self.assertEqual(number('0.12345678901234567890123456789', '費用'), '0.12345678901234567890123456789')
@@ -236,7 +236,7 @@ class DesktopFormsTests(unittest.TestCase):
                 number(bad, '數量', integer=True)
 
     def test_campaign_deselection_and_confirm_reset(self):
-        from desktop_forms import CampaignForm, PaperActionForm
+        from desktop_app.components.forms import CampaignForm, PaperActionForm
         from quantlab.core import ValidationError, to_dict
         from quantlab.research import demo_campaign_config
         from quantlab.reporting import synthetic_dataset, demo_config

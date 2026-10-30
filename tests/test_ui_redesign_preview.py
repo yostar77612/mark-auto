@@ -12,8 +12,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton
 
-from desktop_pages.palette_commands import page_index
-from desktop_strings import ui_text
+from desktop_app.shell.palette_commands import page_index
+from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 from quantlab.desktop_runtime import JobManager
 from tools.ui_redesign_preview import build_window, isolate
@@ -69,8 +69,8 @@ class PreviewBoundaryTests(unittest.TestCase):
         self.assertEqual(panel.update_button.toolTip(), ui_text('redesign.preview.network_disabled'))
         self.assertEqual(release.toolTip(), ui_text('redesign.preview.network_disabled'))
         with (
-            patch('desktop_pages.maintenance.Thread') as thread,
-            patch('desktop_pages.maintenance.check_for_update') as fetch,
+            patch('desktop_app.features.settings.maintenance.Thread') as thread,
+            patch('desktop_app.features.settings.maintenance.check_for_update') as fetch,
             patch('socket.create_connection') as connect,
             patch('urllib.request.OpenerDirector.open') as request,
         ):

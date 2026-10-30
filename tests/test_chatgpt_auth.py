@@ -18,7 +18,7 @@ OPTIONAL_AUTH_DEPS = all(importlib.util.find_spec(name) is not None for name in 
 if OPTIONAL_AUTH_DEPS:
     import jwt
     from cryptography.hazmat.primitives.asymmetric import rsa
-import desktop_chatgpt_auth as a
+import quantlab.assistant.adapters.chatgpt.auth as a
 
 
 class FakeVault:
