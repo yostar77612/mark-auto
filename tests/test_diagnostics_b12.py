@@ -1,5 +1,7 @@
 """Cheap B12 privacy, bounded snapshot and clipboard contracts; no shown windows."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
@@ -210,14 +212,14 @@ class DiagnosticsTests(unittest.TestCase):
 
     def test_controls_are_hidden_until_existing_maintenance_toggle_opens(self):
         # Load the full shell only for the mounted-controls regression.
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         app = QApplication.instance() or QApplication([])
         with sandbox_ui():
             with tempfile.TemporaryDirectory(prefix='b12-maintenance-') as folder:
                 paths = AppPaths(Path(folder) / 'workspace').ensure()
                 jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
-                window = MainWindow(paths, jobs)
+                window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
                 try:
                     for timer in window.findChildren(QTimer):
                         timer.stop()

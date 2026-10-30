@@ -12,6 +12,8 @@ Run with the prepared cloud Qt interpreter, QT_QPA_PLATFORM=offscreen, and a
 
 from __future__ import annotations
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from contextlib import ExitStack, closing
 import importlib.util
 import json
@@ -51,7 +53,7 @@ def _offline_worker(*args, **kwargs):
         patch('socket.create_connection', side_effect=AssertionError('TEST_ONLY: no network')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('TEST_ONLY: no HTTP')),
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
-        patch('desktop_app.shell.main_window.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
+        patch('quantlab.research_core.application.analysis_operations.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
     ):
         return _job_worker(*args, **kwargs)
 
@@ -119,7 +121,7 @@ class _TestOnlyConflictPolicy:
 
 
 def _contract_window_type(policy):
-    from desktop_app.shell.main_window import MainWindow
+    from desktop_app.shell.window import MainWindow
 
     class TestOnlyContractWindow(MainWindow):
         def _busy(self, active, *, refresh_recovery=False):
@@ -155,7 +157,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
             'socket.create_connection',
             'http.client.HTTPSConnection',
             'quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport',
-            'desktop_app.shell.main_window.analysis_provider_for',
+            'quantlab.research_core.application.analysis_operations.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('TEST_ONLY forbidden: ' + target)))
         self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
@@ -377,7 +379,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         rollback.rmdir()
 
     def test_other_workspace_non_ai_use_preserves_original_controls_and_state(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.reporting import save_dataset
 
         before = _snapshot(self.paths.root)
@@ -389,7 +391,9 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.assertEqual(other.credentials, self.paths.credentials)
         save_dataset(self.data, other.state / 'dataset.json')
         jobs = JobManager(other)
-        window = MainWindow(other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs))
+        window = MainWindow(
+            other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         window.timer.stop()
         window.automatic_backup_panel.timer.stop()
         try:

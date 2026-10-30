@@ -7,7 +7,8 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication, QWidget
 import shiboken6
 
-from desktop_app.features.market.dashboard import DEFAULT_INDICATORS, MarketDashboard
+from desktop_app.features.market.indicator_presenter import DEFAULT_INDICATORS
+from desktop_app.features.market.dashboard import MarketDashboard
 from desktop_app.strings.catalog import ui_text
 from quantlab import indicators
 from tests.test_desktop_market import series

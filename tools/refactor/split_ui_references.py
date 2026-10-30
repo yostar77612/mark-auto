@@ -111,6 +111,36 @@ def rewrite_source(source, path, owners, module_names):
         changed = pattern.sub(lambda match: moved[match[0]], token.string)
         if changed != token.string:
             edits.append((start, stop, changed))
+    # patch.object(module_alias, 'member') must follow the same concrete owner
+    # as an ordinary module_alias.member access. Keep side-effect signatures.
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not expression_name(node.func).endswith('patch.object') or len(node.args) < 2:
+            continue
+        receiver, member = expression_name(node.args[0]), node.args[1]
+        if not isinstance(member, ast.Constant) or not isinstance(member.value, str):
+            continue
+        for prefix, module, imported, alias in aliases:
+            if receiver != prefix:
+                continue
+            target = owners.get(module + '.' + member.value)
+            if not target or target == module + '.' + member.value:
+                continue
+            changed = ast.parse(ast.unparse(node), mode='eval').body
+            changed.func = changed.func.value
+            changed.args = [ast.Constant(value=target), *changed.args[2:]]
+            for keyword in changed.keywords:
+                if (
+                    keyword.arg == 'side_effect'
+                    and isinstance(keyword.value, ast.Lambda)
+                    and keyword.value.args.args
+                    and target.startswith('quantlab.research_core.application.')
+                    and not keyword.value.args.vararg
+                ):
+                    keyword.value.args.args.insert(0, ast.arg(arg='ports'))
+            left, right = relocation.span(node, lines, starts)
+            edits.append((left, right, ast.unparse(ast.fix_missing_locations(changed))))
+            mapped_ranges.append((left, right))
+            break
     removed_aliases = defaultdict(set)
     for prefix, module, imported, alias in aliases:
         used = False
@@ -169,6 +199,9 @@ def main():
     owners = json.loads(args.owners.read_text(encoding='utf-8'))
     paths = subprocess.check_output(['git', 'ls-files', '-z', '--', '*.py'], cwd=root).decode().split('\0')
     modules = {relocation.module(path.relative_to(root).as_posix()) for path in (root / 'desktop_app').rglob('*.py')}
+    paths = sorted(
+        set(paths) | {path.relative_to(root).as_posix() for base in ('desktop_app', 'quantlab/research_core') for path in (root / base).rglob('*.py')}
+    )
     changed, unresolved = [], {}
     for name in paths:
         if not name or name.startswith(('archives/', 'tools/refactor/')):

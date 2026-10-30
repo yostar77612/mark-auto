@@ -1,5 +1,7 @@
 """Synthetic, offscreen pop-out sharing, isolation, lifetime and frame geometry."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -41,7 +43,7 @@ class PopoutTests(unittest.TestCase):
         return folder
 
     def test_real_main_close_and_atomic_settings_layout_isolation(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         with sandbox_ui():
@@ -49,7 +51,7 @@ class PopoutTests(unittest.TestCase):
             store = SettingsStore(paths.state / 'settings.json')
             store.save({'legacy': {'keep': True}})
             jobs = JobManager(paths)
-            w = MainWindow(paths, jobs, store)
+            w = MainWindow(paths, jobs, store, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in w.findChildren(QTimer):
                     timer.stop()

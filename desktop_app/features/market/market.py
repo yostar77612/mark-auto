@@ -4,7 +4,7 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError, content_hash, to_dict
 from quantlab.reporting import read_json, load_dataset, load_result, load_selection
 from quantlab.desktop_errors import error_message, exception_code
-from desktop_app.features.market.dashboard import MarketDashboard, sample_market_series
+from desktop_app.features.market.dashboard import MarketDashboard
 from quantlab.chart_drawings import DrawingStore
 from desktop_app.shell.host import PageHost
 
@@ -38,7 +38,7 @@ class MarketPage(MarketDashboard):
         """Read-only demo; do not persist or replace a research dataset/cache."""
         if self._series:
             return
-        series = sample_market_series()
+        series = self.host.sample_market_series()
         self._selected = series.instrument.contract_id
         self.set_quote_series(series, stale=True)
         self.set_market_series(series, stale=True)

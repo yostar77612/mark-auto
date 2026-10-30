@@ -251,3 +251,11 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+def read_source(root, original):
+    """Read the current post-B owner, including snapshots used for regeneration."""
+    import json
+
+    relocations = json.loads((root / 'tools/layer_relocations.json').read_text(encoding='utf-8'))
+    return (root / relocations.get(original, original)).read_text(encoding='utf-8-sig')

@@ -1,5 +1,7 @@
 """Seven-page boundaries, compatibility, host dispatch and pre-change visual contract."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 import json
 import os
@@ -12,7 +14,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QWidget
 from desktop_app.shell.pages import MarketPage, DataPage, StrategyPage, BacktestPage, ComparePage, PaperPage, SettingsPage, PageHost
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.core import ValidationError
 from quantlab.core import content_hash
 from quantlab.desktop_runtime import AppPaths, JobManager
@@ -91,7 +93,7 @@ def classes(path):
 
 class PageBoundaryTests(unittest.TestCase):
     def test_class_line_limits(self):
-        node = classes(ROOT / 'desktop_app/shell/main_window.py')['MainWindow']
+        node = classes(ROOT / 'desktop_app/shell/window.py')['MainWindow']
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
         for page in PAGES:
             import inspect
@@ -101,7 +103,7 @@ class PageBoundaryTests(unittest.TestCase):
             self.assertTrue(issubclass(page, QWidget))
 
     def test_mainwindow_has_no_moved_page_bodies(self):
-        node = classes(ROOT / 'desktop_app/shell/main_window.py')['MainWindow']
+        node = classes(ROOT / 'desktop_app/shell/window.py')['MainWindow']
         names = {n.name for n in node.body if isinstance(n, ast.FunctionDef)}
         forbidden = {'_dashboard', '_data_page', '_strategy_page', '_backtest_page', '_compare_page', '_paper_page', '_settings_page', 'refresh_views'}
         forbidden.update(name for group in MOVED.values() for name in group)
@@ -128,7 +130,7 @@ class PageInteractionTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='markauto-pages-test-')
         self.paths = AppPaths(Path(self.temp.name) / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs)
+        self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
 
@@ -282,7 +284,7 @@ class PageInteractionTests(unittest.TestCase):
             self.assertEqual(json.loads(w.comparison.toPlainText()), {'rows': []})
             self.assertEqual(json.loads(w.summary.toPlainText()), {'rows': []})
             notify.assert_called_once()
-        with patch('desktop_app.shell.main_window.saved_analysis_entries', side_effect=ValidationError('fixture')):
+        with patch('quantlab.reporting.saved_analysis_entries', side_effect=ValidationError('fixture')):
             w._refresh_analysis_saved()
             self.assertTrue(w.analysis_checkpoint_notice.text())
 
@@ -296,7 +298,7 @@ class PageInteractionTests(unittest.TestCase):
         with (
             patch.object(w.compare_page, '_analysis_request', return_value=request),
             patch.object(w.chatgpt_controller, 'set_account_status'),
-            patch('desktop_app.shell.main_window.analysis_preview_text', return_value='validated preview'),
+            patch('desktop_app.features.analysis.presenter.analysis_preview_text', return_value='validated preview'),
         ):
             self.assertTrue(w._analysis_event({'type': 'result', 'result': result}))
         self.assertIs(w._analysis_preview, result)

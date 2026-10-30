@@ -1,5 +1,7 @@
 """Actual instantiated host disclosures; synthetic offline engineering fixtures."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import unittest
 from unittest.mock import patch
 from tests import test_desktop_ui as support
@@ -12,7 +14,8 @@ class MarketAcceptanceLabels(unittest.TestCase):
     cleanup_window = support.NativeDesktopTests.cleanup_window
 
     def test_actual_paper_page_visible_readonly_limits_match_enforced_broker(self):
-        from desktop_app.shell.main_window import _paper, paper_risk_limits, write_json
+        from quantlab.research_core.application.paper_operations import _paper, paper_risk_limits
+        from quantlab.reporting import write_json
         from PySide6.QtWidgets import QLabel, QPushButton
 
         w = self.window
@@ -44,7 +47,7 @@ class MarketAcceptanceLabels(unittest.TestCase):
             self.assertIn(text, label.text())
         write_json(self.paths.state / 'paper_policy.json', {'contract_id': 'TAIFEX:TMF:202601', 'risk_sessions': [], 'margin_schedule': []})
         with patch('quantlab.paper.PaperBroker') as broker:
-            _paper(self.paths.state)
+            _paper(_c_create_operation_ports(), self.paths.state)
         self.assertEqual(broker.call_args.kwargs['limits'], limits)
 
     def test_actual_dashboard_chart_discloses_unscaled_macd_histogram(self):

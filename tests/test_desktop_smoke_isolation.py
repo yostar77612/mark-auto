@@ -5,6 +5,8 @@ preservation assertions. OS known-folder discovery is not verified here; native
 discovery and installed-package gates remain separate and unchanged.
 """
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 import importlib.util
 import json
 import os
@@ -95,7 +97,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 class SmokeUserStateIsolationTests(unittest.TestCase):
     def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
         from desktop import _smoke_steps
-        from desktop_app.shell.main_window import _paper
+        from quantlab.research_core.application.paper_operations import _paper
         from quantlab.desktop_runtime import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -110,7 +112,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
                 )
                 policy = _smoke_steps()[4][1]['policy']
                 (paths.state / 'paper_policy.json').write_text(json.dumps(policy))
-                broker = _paper(paths.state)
+                broker = _paper(_c_create_operation_ports(), paths.state)
                 broker.reconcile(_smoke_steps()[4][1]['snapshot'])
                 broker.set_kill_switch(False)
                 (paths.state / 'desktop_safety.json').write_text('{"reconciliation_required":false,"reason":"preserve exact sentinel bytes"}\n')

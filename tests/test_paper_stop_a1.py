@@ -1,5 +1,7 @@
 """Persistent user stops, reachable resume, and unchanged batch boundaries."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,6 +11,9 @@ from unittest.mock import Mock, patch
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox, QWidget
 
 import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_reconcile as _c_ui__handle_ui_paper_reconcile
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_submit as _c_ui__handle_ui_paper_submit
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_replay as _c_ui__handle_ui_paper_replay
 from desktop_app.features.paper.paper import PaperPage
 from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
@@ -41,8 +46,10 @@ class StopResumeTests(unittest.TestCase):
         dialog_patch = patch('desktop_app.features.paper.paper.stop_dialog', return_value=self.dialog)
         dialog_patch.start()
         self.addCleanup(dialog_patch.stop)
-        prepare = patch.object(ui, '_prepare_paper_operation', side_effect=lambda *args: self.broker)
-        finish = patch.object(ui, '_finish_paper_operation', side_effect=lambda root, broker, replay: broker.snapshot())
+        prepare = patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', side_effect=lambda *args: self.broker)
+        finish = patch(
+            'quantlab.research_core.application.paper_operations._finish_paper_operation', side_effect=lambda ports, root, broker, replay: broker.snapshot()
+        )
         prepare.start()
         finish.start()
         self.addCleanup(prepare.stop)
@@ -101,8 +108,8 @@ class StopResumeTests(unittest.TestCase):
             quote=self.fixture.quote(),
             now=paper_fixtures.NOW.isoformat(),
         )
-        with patch.object(ui, 'load_selection', return_value={'strategy_hash': 'synthetic-strategy'}):
-            return ui._handle_ui_paper_submit(payload, None, self.root)
+        with patch('quantlab.reporting.load_selection', return_value={'strategy_hash': 'synthetic-strategy'}):
+            return _c_ui__handle_ui_paper_submit(_c_create_operation_ports(), payload, None, self.root)
 
     def assert_stopped_submit(self):
         before = self.broker.snapshot()
@@ -122,14 +129,14 @@ class StopResumeTests(unittest.TestCase):
         self.assertEqual([e['payload'] for e in events if e['operation'] == 'kill'], [{'active': True}])
         self.assertTrue(PaperBroker.read_snapshot(self.broker.path)['manual_order_lock'])
         self.assertEqual(stop_presentation(self.broker.snapshot(), 'user', manual_lock_text=ui_text('paper.manual_locked'))[0], ui_text('paper.manual_locked'))
-        ui._handle_ui_paper_reconcile({'snapshot': self.broker.snapshot()}, None, self.root)
+        _c_ui__handle_ui_paper_reconcile(_c_create_operation_ports(), {'snapshot': self.broker.snapshot()}, None, self.root)
         self.assert_stopped_submit()
         self.assertTrue(self.page.page_state.manual_order_lock)
 
         def start(op, payload):
             self.assertEqual(op, 'ui_paper_reconcile')
             self.assertIs(payload['manual_order_lock'], False)
-            self.page._show_account(ui._handle_ui_paper_reconcile(payload, None, self.root))
+            self.page._show_account(_c_ui__handle_ui_paper_reconcile(_c_create_operation_ports(), payload, None, self.root))
 
         self.page.host.callbacks['start_job'].side_effect = start
         self.page.paper_job('reconcile', snapshot=self.broker.snapshot(), manual_order_lock=False)
@@ -141,7 +148,7 @@ class StopResumeTests(unittest.TestCase):
         # Mutation counter-test: the E2E rejection assertion detects the old bug.
         with patch.object(self.broker, 'set_manual_order_lock'):
             self.page.kill_paper()
-        ui._handle_ui_paper_reconcile({'snapshot': self.broker.snapshot()}, None, self.root)
+        _c_ui__handle_ui_paper_reconcile(_c_create_operation_ports(), {'snapshot': self.broker.snapshot()}, None, self.root)
         with self.assertRaises(AssertionError):
             self.assert_stopped_submit()
         self.assertEqual(self.broker.snapshot()['orders']['blocked']['status'], 'accepted')
@@ -223,7 +230,7 @@ class StopResumeTests(unittest.TestCase):
         cursor = fixture.replay.snapshot()['cursor']
         with patch.object(ui, '_dataset', return_value=fixture.data) as data:
             with self.assertRaises(ValidationError) as caught:
-                ui._handle_ui_paper_replay(dict(snapshot=before, reconcile_confirmed=True), Mock(), self.root)
+                _c_ui__handle_ui_paper_replay(_c_create_operation_ports(), dict(snapshot=before, reconcile_confirmed=True), Mock(), self.root)
         self.assertEqual(str(caught.exception), ui_text('paper.lock.rejected'))
         data.assert_not_called()
         self.assertEqual(fixture.replay.snapshot()['cursor'], cursor)

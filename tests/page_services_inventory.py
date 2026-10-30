@@ -32,6 +32,39 @@ def callback_reads(path):
     return sorted(set(result))
 
 
+def original_service_target(name, target):
+    expected = {
+        'ui_operations': 'self.services.operations',
+        '_paper': 'self.services.paper',
+        '_dataset': 'self.services.dataset',
+        'analysis_preview_text': '_analysis_rows.analysis_preview_text',
+        'analysis_record_text': '_analysis_rows.analysis_record_text',
+    }
+    assert target == expected.get(name, 'self.services.' + name), (name, target)
+    return 'UI_OPERATIONS' if name == 'ui_operations' else name
+
+
+def service_patch_target(window, entry):
+    target = entry['target'].removeprefix('shell.')
+    if entry['origin'] == 'mount':
+        return window, target
+    if target == '_dataset':
+        from quantlab.research_core.adapters.ui_repository import WorkerRepository
+
+        return WorkerRepository, target
+    if target in ('analysis_preview_text', 'analysis_record_text'):
+        from desktop_app.features.analysis import presenter
+
+        return presenter, target
+    if target == 'result_name':
+        from desktop_app.components import formatting
+
+        return formatting, target
+    from quantlab import reporting
+
+    return reporting, target
+
+
 def registrations():
     result = []
     for node in ast.walk(tree('desktop_app/shell/mount.py')):
@@ -40,11 +73,18 @@ def registrations():
         target = node.targets[0]
         if isinstance(target, ast.Subscript) and dotted(target.value) == 'host.callbacks':
             result.append({'name': target.slice.value, 'target': dotted(node.value.body.func), 'origin': 'mount', 'variadic': True})
-    method = next(n for n in ast.walk(tree('desktop_app/shell/main_window.py')) if isinstance(n, ast.FunctionDef) and n.name == 'page_services')
+    method = next(n for n in ast.walk(tree('desktop_app/shell/window.py')) if isinstance(n, ast.FunctionDef) and n.name == 'page_services')
     services = next(n.value for n in method.body if isinstance(n, ast.Return))
     for key, value in zip(services.keys, services.values):
         call = isinstance(value, ast.Lambda)
-        result.append({'name': key.value, 'target': dotted(value.body.func if call else value), 'origin': 'page_services', 'variadic': call})
+        result.append(
+            {
+                'name': key.value,
+                'target': original_service_target(key.value, dotted(value.body.func if call else value)),
+                'origin': 'page_services',
+                'variadic': call,
+            }
+        )
     return result
 
 
@@ -106,8 +146,16 @@ def patch_points(names, module_targets):
                         add(node, value, 'patch.object', dotted(receiver))
                 elif func.endswith('patch') and node.args and isinstance(node.args[0], ast.Constant):
                     target = node.args[0].value
-                    if isinstance(target, str) and target.startswith('desktop_app.shell.main_window.'):
-                        add(node, target.removeprefix('desktop_app.shell.main_window.'), 'patch', 'desktop_app.shell.main_window')
+                    if isinstance(target, str) and target.startswith(
+                        (
+                            'desktop_app.shell.main_window.',
+                            'quantlab.reporting.',
+                            'desktop_app.features.analysis.presenter.',
+                            'desktop_app.components.formatting.',
+                            'quantlab.research_core.adapters.ui_repository.WorkerRepository.',
+                        )
+                    ):
+                        add(node, target.rsplit('.', 1)[-1], 'patch', target.rsplit('.', 1)[0])
                 elif func == 'setattr' and len(node.args) >= 2:
                     for value in expanded(node, node.args[1]):
                         add(node, value, 'setattr', dotted(node.args[0]))

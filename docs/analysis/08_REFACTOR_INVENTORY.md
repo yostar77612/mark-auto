@@ -130,7 +130,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/window.py` | 598 | presentation | `desktop_app/features/trading/window.py` | 既有 v2 UI／row 投影：`window`；保留現行較嚴格交易閘門；`_Operation`，`desktop_trading/window.py:32` |
 | `desktop_trading/wizard.py` | 325 | presentation | `desktop_app/features/trading/wizard.py` | 既有 v2 UI／row 投影：`wizard`；保留現行較嚴格交易閘門；`StrategyWizard`，`desktop_trading/wizard.py:41` |
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
-| `desktop_ui.py` | 1902 | presentation | `desktop_app/shell/main_window.py` | 主視窗混合 worker dispatch；C/D 分離責任；匯入違規見第 3 節；`provider_binding_options`，`desktop_ui.py:77` |
+| `desktop_ui.py` | 1902 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
 | `desktop_walk_forward.py` | 609 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
@@ -472,6 +472,60 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `tools/refactor/split_ui_references.py` | 188 | tooling | `tools/refactor/split_ui_references.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `tools/refactor/split_ui_strings.py` | 276 | tooling | `tools/refactor/split_ui_strings.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `tools/refactor/split_ui_tests.py` | 103 | tooling | `tools/refactor/split_ui_tests.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+
+### 2.2 PR C slice 2 added responsibilities
+
+| Source | Lines | Layer | Target | Reason |
+| --- | ---: | --- | --- | --- |
+| `desktop_app/bootstrap.py` | 183 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/analysis/presenter.py` | 130 | presentation | `desktop_app/features/analysis/presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/chart_presenter.py` | 76 | presentation | `desktop_app/features/market/chart_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/history_dialog.py` | 254 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_controls.py` | 144 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_labels.py` | 49 | presentation | `desktop_app/features/strategy/idea_labels.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_layout.py` | 193 | presentation | `desktop_app/features/strategy/idea_layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_links.py` | 10 | presentation | `desktop_app/features/strategy/idea_links.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_presenter.py` | 182 | presentation | `desktop_app/features/strategy/idea_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/strategy/idea_rows.py` | 131 | presentation | `desktop_app/features/strategy/idea_rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/job_presenter.py` | 209 | presentation | `desktop_app/shell/job_presenter.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/navigation.py` | 34 | presentation | `desktop_app/shell/navigation.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/services.py` | 28 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/setup.py` | 173 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/window.py` | 157 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_files.py` | 49 | infrastructure | `quantlab/research_core/adapters/ui_files.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_idea_stream.py` | 47 | infrastructure | `quantlab/research_core/adapters/ui_idea_stream.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/adapters/ui_repository.py` | 93 | infrastructure | `quantlab/research_core/adapters/ui_repository.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/analysis_operations.py` | 126 | application | `quantlab/research_core/application/analysis_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/paper_operations.py` | 182 | application | `quantlab/research_core/application/paper_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/research_operations.py` | 110 | application | `quantlab/research_core/application/research_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/assistant.py` | 140 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/backup.py` | 15 | application | `quantlab/research_core/application/ui_operations/backup.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/binding_policy.py` | 9 | application | `quantlab/research_core/application/ui_operations/binding_policy.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/data.py` | 124 | application | `quantlab/research_core/application/ui_operations/data.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/derived.py` | 23 | application | `quantlab/research_core/application/ui_operations/derived.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/idea.py` | 68 | application | `quantlab/research_core/application/ui_operations/idea.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/lifecycle.py` | 23 | application | `quantlab/research_core/application/ui_operations/lifecycle.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/market.py` | 131 | application | `quantlab/research_core/application/ui_operations/market.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/registry.py` | 135 | application | `quantlab/research_core/application/ui_operations/registry.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/domain/market_sessions.py` | 107 | domain | `quantlab/research_core/domain/market_sessions.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/idea_records.py` | 9 | application | `quantlab/research_core/ports/idea_records.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/ui_operations.py` | 132 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_consumers.py` | 137 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_finish.py` | 76 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_idea.py` | 189 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_inputs.py` | 109 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_market.py` | 217 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_oracles.py` | 89 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_shell.py` | 316 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_slice2.py` | 264 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_verify.py` | 57 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_workers.py` | 430 | tooling | `tools/refactor/split_ui_workers.py` | PR C: slice 2 responsibility extraction |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import multiprocessing
 
 if __name__ == '__main__':
@@ -233,9 +235,16 @@ def run_gui(args):
         if not prepare_workspace(state):
             return 3
         state.startup_timing.mark('workspace')
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
-        state.window = MainWindow(state.paths, state.jobs, settings=state.settings, backups=state.backups, guard=state.guard)
+        state.window = MainWindow(
+            state.paths,
+            state.jobs,
+            settings=state.settings,
+            backups=state.backups,
+            guard=state.guard,
+            services=_c_create_ui_services(_c_create_operation_ports()),
+        )
         page_state = getattr(state.window, 'page_state', None)
         if page_state is not None:
             page_state.startup_timing = state.startup_timing

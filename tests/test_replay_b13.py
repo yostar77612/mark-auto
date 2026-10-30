@@ -1,5 +1,7 @@
 """Offline B13 pacing, durable pause and UI controller regressions."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from contextlib import closing
 from decimal import Decimal
@@ -16,6 +18,8 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 
 import desktop_app.shell.main_window as ui
+from quantlab.research_core.application.paper_operations import _handle_ui_paper_replay as _c_ui__handle_ui_paper_replay
+from desktop_app.shell.window import MainWindow as _c_ui_MainWindow
 from desktop_app.features.paper.paper import PaperPage
 from desktop_app.features.paper.replay_controls import ReplayControls
 from desktop_app.strings.catalog import ui_text
@@ -197,12 +201,12 @@ class ReplayB13Tests(unittest.TestCase):
         paths = SimpleNamespace(require_replay_wal=Mock())
         selection = {'strategy': to_dict(self.fixture.spec), 'strategy_hash': content_hash(self.fixture.spec)}
         with (
-            patch.object(ui, '_prepare_paper_operation', return_value=r.broker),
+            patch('quantlab.research_core.application.paper_operations._prepare_paper_operation', return_value=r.broker),
             patch.object(ui, '_dataset', return_value=self.fixture.data),
-            patch.object(ui, 'load_selection', return_value=selection),
+            patch('quantlab.reporting.load_selection', return_value=selection),
         ):
             payload = {'snapshot': r.broker.snapshot(), 'reconcile_confirmed': True, 'max_bars': 25}
-            result = ui._handle_ui_paper_replay(payload, paths, self.root)
+            result = _c_ui__handle_ui_paper_replay(_c_create_operation_ports(), payload, paths, self.root)
             self.assertNotIn('paused', result['replay'])
             self.assertNotIn('replay_action', payload)
             self.assertEqual(result['replay']['processed_bars'], 25)
@@ -210,12 +214,12 @@ class ReplayB13Tests(unittest.TestCase):
             self.assertTrue(result['account']['kill_switch'])
             payload['snapshot'] = result['account']
             for action, cursor, paused in (('tick', 26, False), ('pause', 26, True), ('inspect', 26, True), ('resume', 26, False), ('tick', 27, False)):
-                result = ui._handle_ui_paper_replay(dict(payload, replay_action=action), paths, self.root)
+                result = _c_ui__handle_ui_paper_replay(_c_create_operation_ports(), dict(payload, replay_action=action), paths, self.root)
                 self.assertEqual(result['replay']['cursor'], cursor)
                 self.assertEqual(result['replay'].get('paused', False), paused)
                 self.assertFalse(result['account']['kill_switch'])
                 payload['snapshot'] = result['account']
-            result = ui._handle_ui_paper_replay(dict(payload, replay_action='stop'), paths, self.root)
+            result = _c_ui__handle_ui_paper_replay(_c_create_operation_ports(), dict(payload, replay_action='stop'), paths, self.root)
             self.assertTrue(result['account']['kill_switch'])
             self.assertEqual(result['replay']['cursor'], 27)
 
@@ -311,7 +315,7 @@ class ReplayUITests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, root)
         with sandbox_ui():
             jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
-            window = ui.MainWindow(AppPaths(root).ensure(), jobs)
+            window = _c_ui_MainWindow(AppPaths(root).ensure(), jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             self.addCleanup(window.deleteLater)
             self.addCleanup(window.close)
             for timer in window.findChildren(QTimer):

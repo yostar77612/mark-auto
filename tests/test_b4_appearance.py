@@ -1,5 +1,7 @@
 """B4: bounded, offline presentation checks; no displayed windows or style resets."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import hashlib
 import json
 from pathlib import Path
@@ -159,7 +161,7 @@ class AppearanceTests(unittest.TestCase):
 class AppearanceWindowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         cls.app = QApplication.instance() or QApplication([])
         cls.context = sandbox_ui()
@@ -171,7 +173,7 @@ class AppearanceWindowTests(unittest.TestCase):
         cls.jobs = JobManager(cls.paths)
         cls.addClassCleanup(cls.jobs.close)
         cls.store = SettingsStore(cls.paths.state / 'settings.json')
-        cls.window = MainWindow(cls.paths, cls.jobs, cls.store)
+        cls.window = MainWindow(cls.paths, cls.jobs, cls.store, services=_c_create_ui_services(_c_create_operation_ports()))
         cls.addClassCleanup(cls.window.deleteLater)
         cls.addClassCleanup(cls.window.close)
         for timer in cls.window.findChildren(QTimer):
@@ -201,7 +203,7 @@ class AppearanceWindowTests(unittest.TestCase):
         RegistryTests().test_public_names_unchanged()
         expected = json.loads((ROOT / 'tests/fixtures/desktop_widget_names.json').read_text(encoding='utf-8'))
         self.assertEqual(sorted({w.objectName() for w in [self.window, *self.window.findChildren(QWidget)] if w.objectName()}), expected)
-        tree = ast.parse((ROOT / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'desktop_app/shell/window.py').read_text(encoding='utf-8'))
         window = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(window.end_lineno - window.lineno + 1, 400)
 

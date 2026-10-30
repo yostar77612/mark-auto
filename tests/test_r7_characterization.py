@@ -18,7 +18,7 @@ import shiboken6
 import desktop_app.components.charts as charts
 from desktop_app.components.chart_annotations import ReferenceLine as _c_charts_ReferenceLine
 from desktop_app.components.chart_paint import _paint_chart_references as _c_charts__paint_chart_references
-import desktop_app.features.market.dashboard as market
+from desktop_app.features.market.layout import _build_market_header as _c_market__build_market_header
 from desktop_app.shell import mount
 from desktop_app.components import result_layers
 from desktop_app.shell.host import PageHost
@@ -62,7 +62,7 @@ class CharacterizationTests(unittest.TestCase):
         self.assertEqual(self.actual['stub_callbacks'], STUB_CALLBACKS)
 
     def test_main_window_attribute_and_callback_sets(self):
-        self.assertEqual(self.actual['window']['attributes'], sorted(WINDOW_ATTRIBUTES + REDESIGN['added_window_attributes']))
+        self.assertEqual(self.actual['window']['attributes'], sorted(WINDOW_ATTRIBUTES + REDESIGN['added_window_attributes'] + ['services', 'job_presenter']))
         self.assertEqual(self.actual['window']['callbacks'], WINDOW_CALLBACKS)
 
     def test_mount_callbacks_dispatch_to_patched_shell(self):
@@ -80,6 +80,31 @@ class CharacterizationTests(unittest.TestCase):
         chart[0] = sorted((set(chart[0]) - moved_imports) | {'ChartInteraction'})
         annotation_classes = {name: value for name, value in chart[1].items() if name != 'CandlestickChart'}
         chart[1] = {'CandlestickChart': chart[1]['CandlestickChart']}
+        market = expected['desktop_app/features/market/dashboard.py']
+        history = market[1].pop('MarketHistoryDialog')
+        market[0] = sorted(
+            (
+                'ChartPresenter',
+                'DEFAULT_INDICATORS',
+                'IndicatorPresenter',
+                'MarketDashboard',
+                'MarketPreferences',
+                'MarketPresenter',
+                'MarketRows',
+                'QAbstractItemView',
+                'QHeaderView',
+                'QScrollArea',
+                'QTableWidget',
+                'QVBoxLayout',
+                'QWidget',
+                'Signal',
+                'apply_market_theme',
+                'deepcopy',
+                'ui_text',
+            )
+        )
+        history_owner = public_names((ROOT / 'desktop_app/features/market/history_dialog.py').read_text(encoding='utf-8'))
+        self.assertEqual(history_owner[1]['MarketHistoryDialog'], history)
         self.assertEqual(self.actual['public'], expected)
         annotations = public_names((ROOT / 'desktop_app/components/chart_annotations.py').read_text(encoding='utf-8'))
         self.assertEqual(annotations[1], annotation_classes)
@@ -133,7 +158,7 @@ class CharacterizationTests(unittest.TestCase):
         shell = SimpleNamespace(refresh_requested=SimpleNamespace(emit=Mock()))
         try:
             root = QVBoxLayout(parent)
-            header = market._build_market_header(shell, root)
+            header = _c_market__build_market_header(shell, root)
             self.assertEqual(header.count(), 4)
             self.assertEqual(shell.refresh_button.objectName(), 'market_refresh')
             shell.refresh_button.click()

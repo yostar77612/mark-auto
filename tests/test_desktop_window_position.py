@@ -111,14 +111,14 @@ class WindowPositionTests(unittest.TestCase):
 
     def test_shell_position_binding_uses_x_y_not_client_geometry(self):
         # Exercise the actual shell lambda with a decorated window double.
-        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/setup.py').read_text(encoding='utf-8-sig'))
         constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         binding = next(k.value for k in constructor.keywords if k.arg == 'window_position')
-        callback = eval(compile(ast.Expression(binding), '<window_position>', 'eval'), {'self': self.window, 'QPoint': QPoint})
+        callback = eval(compile(ast.Expression(binding), '<window_position>', 'eval'), {'window': self.window, 'QPoint': QPoint})
         self.assertEqual(callback(), QPoint(120, 140))
 
     def test_dialog_bindings_keep_shell_parent(self):
-        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/main_window.py').read_text(encoding='utf-8-sig'))
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'desktop_app/shell/setup.py').read_text(encoding='utf-8-sig'))
         constructor = next(n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'PageHost')
         dialogs = Mock()
         for name, factory in (('question', 'question'), ('open_file', 'getOpenFileName'), ('save_file', 'getSaveFileName'), ('market_history_dialog', None)):
@@ -127,7 +127,7 @@ class WindowPositionTests(unittest.TestCase):
                 history = Mock()
                 callback = eval(
                     compile(ast.Expression(binding), '<dialog>', 'eval'),
-                    {'self': self.window, 'QFileDialog': dialogs, 'QMessageBox': dialogs, 'MarketHistoryDialog': history},
+                    {'window': self.window, 'QFileDialog': dialogs, 'QMessageBox': dialogs, 'MarketHistoryDialog': history},
                 )
                 if factory:
                     callback('title')

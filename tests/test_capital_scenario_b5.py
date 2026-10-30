@@ -317,7 +317,6 @@ class WidgetTests(unittest.TestCase):
 
     def test_close_stops_scenario_without_reconcile_and_preserves_pending_walk_forward(self):
         # Exercise the real close branch with bounded fake process controls.
-        import desktop_app.shell.main_window as ui
 
         # Only enum values are needed; no native dialogs are opened.
         from PySide6.QtWidgets import QMessageBox
@@ -348,8 +347,10 @@ class WidgetTests(unittest.TestCase):
                 status=Mock(),
             )
             event = Mock()
-            with patch.object(ui.QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes) as question:
-                ui.MainWindow.closeEvent(shell, event)
+            with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes) as question:
+                from desktop_app.shell.window import MainWindow
+
+                MainWindow.closeEvent(shell, event)
             question.assert_called_once()
             jobs.close.assert_called_once()
             self.assertFalse(jobs.active)

@@ -51,12 +51,25 @@ class FunctionLengthTests(unittest.TestCase):
     def test_extracted_stages_are_private_descriptive_and_bounded(self):
         stages = dict.fromkeys(TARGETS)
         stages.update(
-            dict.fromkeys(('desktop_app/components/chart_geometry.py', 'desktop_app/components/chart_paint.py', 'desktop_app/components/chart_paint_footer.py'))
+            dict.fromkeys(
+                (
+                    'desktop_app/features/market/layout.py',
+                    'desktop_app/features/market/indicator_controls.py',
+                    'desktop_app/components/chart_geometry.py',
+                    'desktop_app/components/chart_paint.py',
+                    'desktop_app/components/chart_paint_footer.py',
+                )
+            )
         )
         for path in stages:
             tree = ast.parse((ROOT / path).read_text(encoding='utf-8-sig'))
-            baseline = BASE['functions'].get(path, BASE['functions']['desktop_app/components/charts.py'])
+            baseline = BASE['functions'].get(
+                path,
+                BASE['functions']['desktop_app/features/market/dashboard.py'] if '/market/' in path else BASE['functions']['desktop_app/components/charts.py'],
+            )
             added = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name not in baseline]
+            if path == 'desktop_app/features/market/dashboard.py':
+                continue  # Its existing stages are checked at both concrete layout owners above.
             self.assertTrue(added, path)
             for node in added:
                 with self.subTest(stage=node.name):

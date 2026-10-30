@@ -1,5 +1,7 @@
 """Offline integration checks for the source-to-result desktop workflow."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import csv
 from copy import deepcopy
 import os
@@ -17,7 +19,8 @@ from PySide6.QtWidgets import QApplication, QPushButton, QToolButton
 from desktop_app.shell.palette_commands import page_index
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import scale_window_fonts
-from desktop_app.shell.main_window import MainWindow, execute_ui_operation
+from desktop_app.shell.window import MainWindow
+from desktop_app.shell.main_window import execute_ui_operation
 from desktop_app.smoke import _smoke_steps
 from quantlab.core import ValidationError, canonical_json, to_dict
 from quantlab.desktop_runtime import AppPaths, JobManager
@@ -65,7 +68,7 @@ class DataResultWorkflowTests(unittest.TestCase):
         self.environment.start()
         self.paths = AppPaths(root / 'workspace').ensure()
         self.jobs = JobManager(self.paths)
-        self.window = MainWindow(self.paths, self.jobs)
+        self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.window.show()
@@ -368,7 +371,7 @@ class DataResultWorkflowTests(unittest.TestCase):
         self.assertIn('ui_paper_replay', operations)
         self.assertTrue(window.result_choice.count())
         window.close()
-        reopened = MainWindow(self.paths, self.jobs)
+        reopened = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         try:
             for timer in reopened.findChildren(QTimer):
                 timer.stop()

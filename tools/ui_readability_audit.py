@@ -12,6 +12,8 @@ Windows desktop.
 
 from __future__ import annotations
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import argparse
 from collections import Counter
 import json
@@ -123,7 +125,7 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
     from PySide6.QtWidgets import QApplication, QScrollArea, QTabWidget, QWidget
 
     import desktop_app.shell.theme
-    from desktop_app.shell.main_window import MainWindow
+    from desktop_app.shell.window import MainWindow
     from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
 
     out = Path(out)
@@ -142,7 +144,13 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
             with tempfile.TemporaryDirectory(prefix='markauto-readability-') as temporary:
                 paths = AppPaths(Path(temporary) / 'workspace', Path(temporary) / 'bootstrap').ensure()
                 jobs = JobManager(paths)
-                window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+                window = MainWindow(
+                    paths,
+                    jobs,
+                    SettingsStore(paths.state / 'settings.json'),
+                    BackupManager(paths, jobs),
+                    services=_c_create_ui_services(_c_create_operation_ports()),
+                )
                 try:
                     for timer in window.findChildren(QTimer):
                         timer.stop()

@@ -15,7 +15,10 @@
     "desktop_app/smoke/": "tooling",
     "quantlab/assistant/adapters/": "infrastructure",
     "quantlab/research_core/adapters/": "infrastructure",
-    "quantlab/shared/": "shared"
+    "quantlab/shared/": "shared",
+    "quantlab/research_core/application/": "application",
+    "quantlab/research_core/ports/": "application",
+    "quantlab/research_core/domain/": "domain"
   },
   "overrides": {
     "desktop.py": "composition",
@@ -47,7 +50,7 @@
     "desktop_app/shell/theme.py": "presentation",
     "desktop_app/components/timeinput.py": "presentation",
     "desktop_app/smoke/tls.py": "tooling",
-    "desktop_app/shell/main_window.py": "presentation",
+    "desktop_app/shell/main_window.py": "composition",
     "desktop_app/shell/polish.py": "presentation",
     "desktop_app/features/walk_forward/presenter.py": "presentation",
     "quantlab/__init__.py": "shared",
@@ -194,7 +197,8 @@
     "desktop_app/features/trading/workspaces.py": "presentation",
     "desktop_app/__init__.py": "presentation",
     "quantlab/assistant/__init__.py": "shared",
-    "quantlab/research_core/__init__.py": "shared"
+    "quantlab/research_core/__init__.py": "shared",
+    "desktop_app/bootstrap.py": "composition"
   },
   "ports": [
     "quantlab/trading/ports/"

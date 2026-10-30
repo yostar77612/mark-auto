@@ -1,5 +1,7 @@
 """T10 settings disclosures use a confined, credential-free desktop fixture."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import os
 from pathlib import Path
 import tempfile
@@ -19,7 +21,7 @@ class SettingsSectionsTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
 
         self.context = sandbox_ui()
@@ -31,7 +33,7 @@ class SettingsSectionsTests(unittest.TestCase):
         self.jobs = JobManager(self.paths)
         self.addCleanup(self.jobs.close)
         settings = SettingsStore(self.paths.state / 'settings.json')
-        self.window = MainWindow(self.paths, self.jobs, settings)
+        self.window = MainWindow(self.paths, self.jobs, settings, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()
         self.addCleanup(self.window.deleteLater)

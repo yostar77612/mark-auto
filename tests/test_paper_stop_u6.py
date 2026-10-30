@@ -1,5 +1,7 @@
 """Cheap stop confirmation evidence: automation claims only not broken."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
@@ -153,14 +155,14 @@ class StopTests(unittest.TestCase):
     def test_host_callback_routes_to_same_confirmation_without_consent(self):
         # Load startup helpers only for the real host dispatch regression.
         from PySide6.QtCore import QTimer
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, JobManager
         from tests.test_desktop_ui_polish_b import disposable_directory
         from tests.test_t9_onboarding import sandbox_ui
 
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace', Path(folder) / 'bootstrap').ensure()
-            window = MainWindow(paths, JobManager(paths))
+            window = MainWindow(paths, JobManager(paths), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

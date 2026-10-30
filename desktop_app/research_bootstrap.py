@@ -57,7 +57,7 @@ class ResearchSession(QObject):
             return self.window
         self._released = False
         from desktop import prepare_workspace
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
 
         owner = self

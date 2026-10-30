@@ -4,6 +4,8 @@ All embedded market-like bars are synthetic test fixtures. Actual-data smoke
 evidence is produced separately; these tests never run a campaign or a model.
 """
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from copy import deepcopy
 import importlib.util
 import os
@@ -185,7 +187,7 @@ class DesktopExpiryTests(unittest.TestCase):
         self.assertEqual(result.manifest['source_type'], 'proxy')
 
     def test_normal_window_sends_same_expiries_to_backtest_and_campaign(self):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
         from quantlab.core import to_dict, ValidationError
         from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
         from quantlab.reporting import demo_config, synthetic_dataset
@@ -194,7 +196,13 @@ class DesktopExpiryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             paths = AppPaths(Path(temporary) / 'workspace').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs))
+            window = MainWindow(
+                paths,
+                jobs,
+                SettingsStore(paths.state / 'settings.json'),
+                BackupManager(paths, jobs),
+                services=_c_create_ui_services(_c_create_operation_ports()),
+            )
             try:
                 window.provider_mode.setCurrentIndex(window.provider_mode.findData('fixture'))
                 window.campaign_form.from_payload(to_dict(demo_campaign_config(synthetic_dataset(160), demo_config())))

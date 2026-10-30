@@ -1,5 +1,7 @@
 """Default budgets and live help coverage through the redesigned task routes."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import json
 import os
 from pathlib import Path
@@ -14,7 +16,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QAbstractButton, QApplication, QGroupBox, QScrollArea, QToolButton, QWidget
 import desktop_app.shell.main_window
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.desktop_runtime import AppPaths
 from tests.test_t9_onboarding import sandbox_ui
 from tests.snapshot_cache import default_metrics
@@ -48,7 +50,7 @@ class TooltipCoverageTests(unittest.TestCase):
         self.addCleanup(folder.cleanup)
         paths = AppPaths(Path(folder.name) / 'workspace').ensure()
         jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
-        self.window = MainWindow(paths, jobs)
+        self.window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         self.addCleanup(self.window.deleteLater)
         self.addCleanup(self.window.close)
         for timer in self.window.findChildren(QTimer):

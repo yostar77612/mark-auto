@@ -1,5 +1,7 @@
 """R1 additive contract: AST inventory, mock equivalence and real offscreen binding."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import ast
 from dataclasses import FrozenInstanceError, fields
 import inspect
@@ -16,7 +18,10 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton
 import shiboken6
 
-import desktop_app.shell.main_window as ui
+from desktop_app.strings.catalog import ui_text as _c_ui_ui_text
+from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS as _c_ui_UI_OPERATIONS
+from quantlab.research_core.application.ui_operations.registry import _UI_OPERATION_HANDLERS as _c_ui__UI_OPERATION_HANDLERS
+from desktop_app.shell.window import MainWindow as _c_ui_MainWindow
 from desktop_app.shell.bindings import HostMethod, PageContext, StateField
 from desktop_app.shell.host import PageServices, _page_services
 from desktop_app.shell import mount
@@ -65,15 +70,36 @@ class InventoryTests(unittest.TestCase):
                     self.assertNotEqual(node.module, 'desktop_app.shell.main_window')
 
     def test_main_window_stays_within_budget(self):
-        node = next(n for n in tree('desktop_app/shell/main_window.py').body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
+        node = next(n for n in tree('desktop_app/shell/window.py').body if isinstance(n, ast.ClassDef) and n.name == 'MainWindow')
         self.assertLessEqual(node.end_lineno - node.lineno + 1, 400)
 
 
 class MockEquivalenceTests(unittest.TestCase):
     def test_every_service_has_identical_late_target_arguments_and_result(self):
         # All 80 keys; module services retain their actual MainWindow factory.
-        shell = SimpleNamespace(page_host=SimpleNamespace(callbacks={}))
-        shell.page_services = lambda: ui.MainWindow.page_services(shell)
+        shell = SimpleNamespace(
+            page_host=SimpleNamespace(callbacks={}),
+            services=SimpleNamespace(
+                **{
+                    name: Mock()
+                    for name in (
+                        'paper_risk_limits',
+                        'paper',
+                        'dataset',
+                        'plan_provider',
+                        'connection_event_from_payload',
+                        'saved_analysis_entries',
+                        'load_result',
+                        'result_name',
+                        'write_json',
+                        'read_json',
+                        'load_dataset',
+                    )
+                }
+            ),
+        )
+        shell.services.operations = _c_ui_UI_OPERATIONS
+        shell.page_services = lambda: _c_ui_MainWindow.page_services(shell)
         for entry in SERVICES:
             if entry['origin'] == 'mount':
                 setattr(shell, entry['name'], Mock(side_effect=AssertionError('early target')))
@@ -89,11 +115,17 @@ class MockEquivalenceTests(unittest.TestCase):
             with self.subTest(service=name):
                 if not entry['variadic']:
                     self.assertIs(getattr(typed, name), shell.page_host.callbacks[name])
-                    self.assertIs(getattr(typed, name), ui.UI_OPERATIONS)
+                    self.assertIs(getattr(typed, name), _c_ui_UI_OPERATIONS)
                     continue
                 result, first, second = object(), object(), object()
-                receiver = shell if entry['origin'] == 'mount' else ui
+                receiver = shell if entry['origin'] == 'mount' else shell.services
                 target = entry['target'].removeprefix('shell.')
+                if entry['origin'] == 'page_services':
+                    target = {'_paper': 'paper', '_dataset': 'dataset'}.get(target, target)
+                    if target in ('analysis_preview_text', 'analysis_record_text'):
+                        from desktop_app.features.analysis import presenter
+
+                        receiver = presenter
                 with patch.object(receiver, target, Mock(return_value=result)) as recording:
                     for callback in (shell.page_host.callbacks[name], getattr(typed, name)):
                         self.assertIs(callback(first, second, flag=first), result)
@@ -155,7 +187,9 @@ class RealWindowTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix='page-services-r1-')
         cls.paths = AppPaths(Path(cls.temp.name) / 'workspace').ensure()
         cls.jobs = JobManager(cls.paths)
-        cls.window = ui.MainWindow(cls.paths, cls.jobs, SettingsStore(cls.paths.state / 'settings.json'))
+        cls.window = _c_ui_MainWindow(
+            cls.paths, cls.jobs, SettingsStore(cls.paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports())
+        )
         # One startup walk, no recurring timer traversal or event loop.
         for timer in cls.window.findChildren(QTimer):
             timer.stop()
@@ -174,12 +208,12 @@ class RealWindowTests(unittest.TestCase):
         self.assertEqual(set(vars(self.typed)), set(self.window.page_host.callbacks))
         self.assertEqual(list(self.window.page_host.callbacks), NAMES)
         self.assertEqual([f.name for f in fields(type(self.typed))], NAMES)
-        self.assertIs(self.typed.ui_operations, ui.UI_OPERATIONS)
+        self.assertIs(self.typed.ui_operations, _c_ui_UI_OPERATIONS)
         self.assertIs(self.typed.ui_operations, self.window.page_host.callbacks['ui_operations'])
-        before = list(ui._UI_OPERATION_HANDLERS.items())
+        before = list(_c_ui__UI_OPERATION_HANDLERS.items())
         _page_services(self.window)
-        self.assertEqual(list(ui._UI_OPERATION_HANDLERS.items()), before)
-        self.assertTrue(all(ui._UI_OPERATION_HANDLERS[key] is value for key, value in before))
+        self.assertEqual(list(_c_ui__UI_OPERATION_HANDLERS.items()), before)
+        self.assertTrue(all(_c_ui__UI_OPERATION_HANDLERS[key] is value for key, value in before))
 
     def test_each_patch_sensitive_service_is_observed_after_mount(self):
         page = self.window.paper_page
@@ -188,8 +222,9 @@ class RealWindowTests(unittest.TestCase):
                 continue
             name = entry['name']
             with self.subTest(service=name):
-                receiver = self.window if entry['origin'] == 'mount' else ui
-                target = entry['target'].removeprefix('shell.')
+                from tests.page_services_inventory import service_patch_target
+
+                receiver, target = service_patch_target(self.window, entry)
                 with patch.object(receiver, target, Mock(return_value='patched')) as replacement:
                     # Exercise the same binding used by page code and the opt-in view.
                     observed = HostMethod(name).__get__(page) if entry['origin'] == 'mount' else page.host.callbacks[name]
@@ -254,7 +289,7 @@ class RealWindowTests(unittest.TestCase):
                         self.assertTrue(jobs.active)
                         with self.assertRaises(ValidationError) as refused:
                             second('ui_demo', {'bars': 100})
-                        self.assertEqual(str(refused.exception), ui.ui_text('ui.start_job.job_busy'))
+                        self.assertEqual(str(refused.exception), _c_ui_ui_text('ui.start_job.job_busy'))
                         start.assert_called_once_with('ui_demo', {'bars': 100})
                         self.assertEqual(launcher.call_count, 1)
                     finally:

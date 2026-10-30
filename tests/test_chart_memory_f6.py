@@ -12,7 +12,9 @@ from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication
 
 from desktop_app.features.market.chart_memory import ChartMemory
-from desktop_app.features.market.dashboard import DEFAULT_INDICATORS, MarketDashboard, _identity
+from desktop_app.features.market.indicator_presenter import DEFAULT_INDICATORS
+from desktop_app.features.market.dashboard import MarketDashboard
+from desktop_app.features.market.rows import _identity
 from quantlab.chart_data import TIMEFRAMES
 from quantlab.core import content_hash, to_dict
 from tests.test_desktop_market import series

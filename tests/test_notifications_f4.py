@@ -1,5 +1,7 @@
 """Audit real desktop dispatch sites against the existing C8 notification ingress."""
 
+from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
+
 import ast
 import os
 from pathlib import Path
@@ -17,7 +19,6 @@ from desktop_app.shell import notifications
 from desktop_app.shell.notification_log import safe_summary
 from desktop_app.shell.notifications import NotificationCenter
 from desktop_app.strings.catalog import ui_text
-from desktop_app.shell.main_window import MainWindow
 from quantlab.desktop_feedback import OPERATION_LABELS
 from quantlab.errors import ERROR_TABLE
 # Source scans below use current physical paths.
@@ -200,7 +201,7 @@ class NotificationAuditTests(unittest.TestCase):
                 panel = SimpleNamespace(archive=PRIVATE, job_id=17, scheduler=Mock(), status=Mock(), paused=False)
                 panel.handle_job_event = lambda packet: AutomaticBackupPanel.handle_job_event(panel, packet)
                 host.automatic_backup_panel = panel
-                MainWindow.poll_jobs(host)
+                _c_JobPresenter(host).poll_jobs()
                 panel.scheduler.complete.assert_called_once_with(archive=PRIVATE, status=status)
                 self.assertIsNone(panel.archive)
                 self.assertIsNone(panel.job_id)
@@ -226,7 +227,7 @@ class NotificationAuditTests(unittest.TestCase):
                 host.navigation = SimpleNamespace(setCurrentRow=Mock())
                 host.stack = SimpleNamespace(currentIndex=lambda: 5, widget=lambda _: SimpleNamespace(widget=lambda: None, ensureWidgetVisible=Mock()))
                 host.paper_card = object()
-                host._notification_link = lambda link: MainWindow._notification_link(host, link)
+                host._notification_link = lambda link: _c_JobPresenter(host)._notification_link(link)
                 self.terminal(host, {'type': 'result', 'job_id': 1, 'result': {}})
                 self.assertEqual(host.stack.currentIndex(), 5)
                 self.assertFalse(center.toasts[0].isHidden())

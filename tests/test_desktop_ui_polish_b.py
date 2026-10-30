@@ -1,5 +1,7 @@
 """Display-only T3-B contracts, using isolated workspaces and native widgets."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 from decimal import Decimal
 from pathlib import Path
 import copy
@@ -15,7 +17,7 @@ from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel
 from desktop_app.components.formatting import display_number, display_status, result_name
 from desktop_app.components.result_tables import SummaryCard, ResultTable
-from desktop_app.shell.main_window import MainWindow
+from desktop_app.shell.window import MainWindow
 from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
 from tests.snapshot_cache import default_metrics
 
@@ -86,7 +88,7 @@ class PresentationTests(unittest.TestCase):
             paths = AppPaths(Path(root) / 'workspace', Path(root) / 'bootstrap').ensure()
             settings = SettingsStore(paths.state / 'settings.json')
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs, settings, BackupManager(paths, jobs))
+            window = MainWindow(paths, jobs, settings, BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()
@@ -127,7 +129,7 @@ class PresentationTests(unittest.TestCase):
         with disposable_directory() as root:
             paths = AppPaths(Path(root) / 'workspace', Path(root) / 'bootstrap').ensure()
             jobs = JobManager(paths)
-            window = MainWindow(paths, jobs)
+            window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()
@@ -139,9 +141,9 @@ class PresentationTests(unittest.TestCase):
                     reports.append(path)
                 # Selector metadata comes from verified report loader; keep detail rendering separate.
                 with (
-                    patch('desktop_app.shell.main_window.load_result', return_value=result),
+                    patch('quantlab.reporting.load_result', return_value=result),
                     patch.object(window, 'show_result'),
-                    patch('desktop_app.shell.main_window.result_name', return_value=name),
+                    patch('desktop_app.components.formatting.result_name', return_value=name),
                 ):
                     window.refresh_views()
                 self.assertEqual(window.result_choice.itemText(1), name + '（2）')

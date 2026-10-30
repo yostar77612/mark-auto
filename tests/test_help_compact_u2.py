@@ -1,5 +1,7 @@
 """U2: cheap offscreen checks of the existing explanation controls."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
+
 import json
 from pathlib import Path
 import tempfile
@@ -16,7 +18,7 @@ from tests.test_t9_onboarding import sandbox_ui
 class CompactHelpTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop_app.shell.main_window import MainWindow
+        from desktop_app.shell.window import MainWindow
 
         cls.app = QApplication.instance() or QApplication([])
         cls.context = sandbox_ui()
@@ -27,7 +29,7 @@ class CompactHelpTests(unittest.TestCase):
         paths = AppPaths(Path(cls.folder.name) / 'workspace').ensure()
         cls.jobs = JobManager(paths)
         cls.addClassCleanup(cls.jobs.close)
-        cls.window = MainWindow(paths, cls.jobs, SettingsStore(paths.state / 'settings.json'))
+        cls.window = MainWindow(paths, cls.jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
         cls.addClassCleanup(cls.window.close)
         for timer in cls.window.findChildren(QTimer):
             timer.stop()

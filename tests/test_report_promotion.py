@@ -1,5 +1,7 @@
 """A transient directory rename must never replay the backtest computation."""
 
+from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
+
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
@@ -15,7 +17,7 @@ from tests.test_atomic_replace import denied
 
 class ReportPromotionTests(unittest.TestCase):
     def test_transient_and_persistent_directory_denial_preserve_computation_and_activation(self):
-        from desktop_app.shell.main_window import _handle_ui_backtest
+        from quantlab.research_core.application.research_operations import _handle_ui_backtest
 
         for persistent in (False, True):
             with self.subTest(persistent=persistent), tempfile.TemporaryDirectory() as directory:
@@ -45,11 +47,11 @@ class ReportPromotionTests(unittest.TestCase):
                 ):
                     if persistent:
                         with self.assertRaises(PermissionError):
-                            _handle_ui_backtest(payload, None, root)
+                            _handle_ui_backtest(_c_create_operation_ports(), payload, None, root)
                         self.assertEqual((root / 'active_result.json').read_bytes(), b'old active result reference')
                         self.assertEqual(list((root / 'reports').iterdir()), [])
                     else:
-                        result = _handle_ui_backtest(payload, None, root)
+                        result = _handle_ui_backtest(_c_create_operation_ports(), payload, None, root)
                         self.assertEqual(len(result['reports']), 1)
                         self.assertTrue(Path(result['reports'][0]['result']).exists())
                     compute.assert_called_once()
