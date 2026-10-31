@@ -98,6 +98,13 @@ def legacy_owner_name(name):
 
 def legacy_walk_forward_inputs(source):
     """Supply the required port to historical calls, retaining all fixture code."""
+    # The immutable oracle keeps its history call; compose its relocated storage port.
+    source = source.replace(
+        'from quantlab.market_history import import_history, session_from_dict',
+        'from desktop_app.research_bootstrap import create_history_service\n'
+        '        _history_service = create_history_service()\n'
+        '        import_history, session_from_dict = _history_service.import_history, _history_service.session_from_dict',
+    )
     tree = ast.parse(source)
     lines = source.splitlines(keepends=True)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'execute_walk_forward']

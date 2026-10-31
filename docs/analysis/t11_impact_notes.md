@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # T11 part A impact analysis
 
 Task override: GitNexus is unavailable in this sandbox. Used AST imports (including local imports), direct source reads, and repository/test caller searches. No commit is requested.

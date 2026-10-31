@@ -71,10 +71,8 @@ def display_status(value):
 
 def display_number(value, key=''):
     try:
-        if isinstance(value, bool) or len(str(value)) > 128:
-            raise ValueError
-        number = Decimal(str(value))
-        if not number.is_finite() or abs(number) > Decimal('1e100'):
+        number = finite_decimal(value)
+        if number is None or abs(number) > Decimal('1e100'):
             raise ValueError
         with localcontext() as context:
             context.prec = 110
@@ -120,3 +118,14 @@ def result_name(result, created_at):
     interval = ui_text('presentation.result_name.date_range').format(dates[0], dates[-1]) if dates else ui_text('presentation.result_name.dates_not_provided')
     instant = datetime.fromtimestamp(created_at, timezone.utc).astimezone(timezone(timedelta(hours=8)))
     return ui_text('presentation.result_name.strategy_parameters_dates_time').format(display_status(spec.get('family', '')), parameters, interval, instant)
+
+
+def finite_decimal(value):
+    """Parse bounded finite display numbers without applying rounding or units."""
+    if isinstance(value, bool) or len(str(value)) > 128:
+        return None
+    try:
+        number = Decimal(str(value))
+        return number if number.is_finite() else None
+    except (InvalidOperation, ValueError):
+        return None

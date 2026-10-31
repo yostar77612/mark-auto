@@ -68,7 +68,7 @@ class MarketPage(MarketDashboard):
 
     def load_market_cache(self):
         # Load this operation-specific dependency only when requested.
-        from quantlab.market_providers import load_cached
+        load_cached = self.host.market_data.load_cached
 
         # Load this operation-specific dependency only when requested.
         from desktop_app.components.expiry_inputs import show_research_dataset
@@ -109,7 +109,7 @@ class MarketPage(MarketDashboard):
                 errors.append(error_message(exception_code(exc)))
         try:
             # Load this operation-specific dependency only when requested.
-            from quantlab.market_history import list_history
+            list_history = self.host.history.list_history
 
             histories = list_history(self.state.root / 'market_history')
             # Keep immutable imports separate; newest received snapshot wins per

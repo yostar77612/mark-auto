@@ -31,7 +31,7 @@ from quantlab.research_core.application.ui_operations.registry import UI_OPERATI
 from quantlab.reporting import read_json as _c_ui_read_json
 from quantlab.research_core.application.ui_operations.assistant import plan_provider as _c_ui_plan_provider
 from quantlab.core import ValidationError, content_hash, to_dict
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab.reporting import demo_config, save_dataset, synthetic_dataset, write_json
 from tests.test_market import TWSE
 from tests.test_walk_forward import inputs, fake_worker
@@ -257,7 +257,7 @@ def exercise(execute):
         local = paths.root / 'official.json'
         local.write_bytes(TWSE)
         call('ui_market_refresh', {'local_path': str(local), 'provider': 'twse', 'format': 'json'})
-        from desktop import _history_smoke_fixture
+        from desktop_app.smoke.history import _history_smoke_fixture
 
         _, history_payload = _history_smoke_fixture(paths.root)
         call('history_import', history_payload, operation='ui_market_refresh')

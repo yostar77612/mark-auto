@@ -1,6 +1,7 @@
 """Concrete bindings and dispatcher selection for desktop worker operations."""
 
 from pathlib import Path
+from quantlab.research_core.ports.market_data import MarketDataProvider
 from desktop_app.strings.catalog import ui_text
 from quantlab.research_core.adapters.ui_repository import WorkerRepository
 from quantlab.research_core.adapters import ui_files
@@ -67,9 +68,9 @@ class DesktopOperationPorts:
 
     @property
     def history(self):
-        import quantlab.market_history as implementation
+        from desktop_app.research_bootstrap import create_history_service
 
-        return implementation
+        return create_history_service()
 
     @property
     def manual(self):
@@ -78,10 +79,10 @@ class DesktopOperationPorts:
         return implementation
 
     @property
-    def market(self):
-        import quantlab.market_providers as implementation
+    def market(self) -> MarketDataProvider:
+        from desktop_app.research_bootstrap import create_market_provider
 
-        return implementation
+        return create_market_provider()
 
     @property
     def recovery(self):
@@ -126,6 +127,8 @@ def create_ui_services(ports):
     from quantlab.research_core.application.ui_operations import assistant, data, market, lifecycle
 
     return UiServices(
+        market_data=ports.market,
+        history=ports.history,
         idea_records=create_idea_records,
         state_root=ports.files._root,
         operations=UI_OPERATIONS,

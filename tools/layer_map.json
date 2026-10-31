@@ -34,7 +34,14 @@
     "quantlab/research_core/application/job_requests.py": "quantlab/desktop_runtime.py",
     "quantlab/research_core/application/saved_pool_attempts.py": "quantlab/saved_candidate_pool.py",
     "quantlab/research_core/application/saved_pool_validation.py": "quantlab/saved_candidate_pool.py",
-    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py"
+    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py",
+    "quantlab/research_core/adapters/workspace_store.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/adapters/settings_store.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/adapters/state_json.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/adapters/runtime_safety.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/adapters/event_log.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/adapters/walk_forward_owner.py": "quantlab/desktop_runtime.py",
+    "quantlab/research_core/application/job_manager.py": "quantlab/desktop_runtime.py"
   },
   "overrides": {
     "desktop.py": "composition",
@@ -94,7 +101,7 @@
     "quantlab/data_gap_report.py": "application",
     "quantlab/desktop_errors.py": "presentation",
     "quantlab/desktop_feedback.py": "presentation",
-    "quantlab/desktop_runtime.py": "application",
+    "quantlab/desktop_runtime.py": "infrastructure",
     "quantlab/diagnostics.py": "application",
     "quantlab/download_import.py": "application",
     "quantlab/downloads.py": "infrastructure",
@@ -217,7 +224,7 @@
     "quantlab/research_core/adapters/job_process.py": "application",
     "quantlab/research_core/adapters/job_worker.py": "application",
     "quantlab/research_core/adapters/saved_pool_source.py": "application",
-    "quantlab/research_core/adapters/workspace_backup.py": "application",
+    "quantlab/research_core/adapters/workspace_backup.py": "infrastructure",
     "quantlab/research_core/adapters/__init__.py": "infrastructure",
     "quantlab/research_core/application/job_requests.py": "application",
     "quantlab/research_core/application/saved_pool_attempts.py": "application",
@@ -278,11 +285,36 @@
     "tools/refactor/replay_pr_c.py": "tooling",
     "tools/refactor/replay_pr_c_content.json": "tooling",
     "tools/refactor/replay_pr_c_mechanical.py": "tooling",
-    "tools/refactor/replay_pr_c_inventory.json": "tooling"
+    "tools/refactor/replay_pr_c_inventory.json": "tooling",
+    "desktop_app/components/tables.py": "presentation",
+    "desktop_app/components/fields.py": "presentation",
+    "desktop_app/components/validation_feedback.py": "presentation",
+    "quantlab/shared/time.py": "shared",
+    "tools/refactor/e_components.py": "tooling",
+    "tools/refactor/e7_references.py": "tooling",
+    "quantlab/research_core/adapters/workspace_store.py": "infrastructure",
+    "quantlab/research_core/adapters/settings_store.py": "infrastructure",
+    "quantlab/research_core/adapters/state_json.py": "infrastructure",
+    "quantlab/research_core/adapters/runtime_safety.py": "infrastructure",
+    "quantlab/research_core/adapters/event_log.py": "infrastructure",
+    "quantlab/research_core/adapters/walk_forward_owner.py": "infrastructure",
+    "quantlab/research_core/application/job_manager.py": "application",
+    "tools/refactor/e_runtime.py": "tooling",
+    "desktop_app/research_session.py": "composition",
+    "tools/refactor/scan_runtime_imports.py": "tooling",
+    "quantlab/research_core/domain/market_sessions.py": "domain",
+    "quantlab/research_core/adapters/history_decoder.py": "infrastructure",
+    "quantlab/research_core/adapters/market_history.py": "infrastructure",
+    "quantlab/research_core/application/history_import.py": "application",
+    "quantlab/research_core/ports/history.py": "application",
+    "quantlab/research_core/ports/market_data.py": "application",
+    "tools/refactor/e_market_history.py": "tooling",
+    "tools/refactor/scan_market_imports.py": "tooling"
   },
   "ports": [
     "quantlab/assistant/ports/",
     "quantlab/trading/ports/",
-    "quantlab/assistant/application/connection_contracts.py"
+    "quantlab/assistant/application/connection_contracts.py",
+    "quantlab/research_core/ports/"
   ]
 }

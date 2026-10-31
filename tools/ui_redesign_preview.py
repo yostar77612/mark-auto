@@ -27,7 +27,9 @@ def isolate(root):
 def build_window(root, *, populated=True):
     from PySide6.QtCore import QEvent, QObject, QTimer
     from quantlab.core import ValidationError
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from quantlab.research_core.application.job_manager import JobManager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
     from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.strings.catalog import ui_text
     from desktop_app.shell.window import MainWindow
@@ -64,7 +66,7 @@ def build_window(root, *, populated=True):
     paths = AppPaths(root / 'workspace').ensure()
     jobs = PreviewJobs(paths)
     if populated:
-        from desktop_app.smoke import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
 
         for operation, payload in _smoke_steps()[:2]:
             execute_ui_operation(operation, payload, paths)

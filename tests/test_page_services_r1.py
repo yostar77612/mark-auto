@@ -27,7 +27,9 @@ from desktop_app.shell.host import PageServices, _page_services
 from desktop_app.shell import mount
 from desktop_app.shell.mount import _register_shell_callbacks
 from quantlab.core import ValidationError
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from tests.page_services_inventory import ROOT, FIXTURE, callback_reads, inventory, reviewed_inventory, tree
 from tests.test_t9_onboarding import sandbox_ui
 from tests.layered_source_fixtures import page_sources
@@ -187,7 +189,7 @@ class RealWindowTests(unittest.TestCase):
         cls.context.__enter__()
         cls.temp = tempfile.TemporaryDirectory(prefix='page-services-r1-')
         cls.paths = AppPaths(Path(cls.temp.name) / 'workspace').ensure()
-        cls.jobs = JobManager(cls.paths)
+        cls.jobs = create_job_manager(cls.paths)
         cls.window = _c_ui_MainWindow(
             cls.paths, cls.jobs, SettingsStore(cls.paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports())
         )

@@ -19,6 +19,10 @@ def measure(root):
         text=True,
         encoding='utf-8',
     ).splitlines()
+    untracked = subprocess.check_output(
+        ['git', 'ls-files', '--others', '--exclude-standard', '--', 'desktop_app/*.py', 'desktop_app/**/*.py'], cwd=root, text=True
+    ).splitlines()
+    paths = sorted(set(paths + untracked))
     items = []
     for name in sorted(paths):
         if not name.endswith('.py'):
@@ -49,6 +53,13 @@ def check_inventory(root, items):
         return False
     pattern = r'^\| `([^`]+):(\d+)` \| `([^`]+)` \| (file|class|function) \| (\d+) \| (.+) \|$'
     listed = Counter((p, int(line), name, kind, int(size)) for p, line, name, kind, size, reason in re.findall(pattern, match[1], re.M) if reason.strip())
+    overlay = re.search(r'^### 10\.4 PR E size exceptions\n(.*?)(?=^## |^### |\Z)', source, re.M | re.S)
+    if overlay is not None:
+        rows = re.findall(r'^\| (file|class|function) \| `([^`]+):(\d+)` \| `([^`]+)` \| (\d+) \| (.+) \|$', overlay[1], re.M)
+        changed = subprocess.check_output(['git', 'diff', '--name-only', '909fc49', '--', 'desktop_app/'], cwd=root, text=True).splitlines()
+        replaced = set(changed) | {p for kind, p, line, name, size, reason in rows if p.startswith('desktop_app/')}
+        listed = Counter({row: count for row, count in listed.items() if row[0] not in replaced})
+        listed.update((p, int(line), name, kind, int(size)) for kind, p, line, name, size, reason in rows if p.startswith('desktop_app/'))
     measured = Counter((r['path'], r['line'], r['name'], r['kind'], r['lines']) for r in items)
     if listed != measured:
         print(json.dumps({'missing': list((measured - listed).elements()), 'extra': list((listed - measured).elements())}, indent=2))

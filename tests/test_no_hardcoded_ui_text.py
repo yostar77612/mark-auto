@@ -30,7 +30,7 @@ UI_MODULES = (
     'desktop_app/components/expiry_inputs.py',
     'desktop_app/components/formatting.py',
     'desktop_app/smoke/recovery.py',
-    'desktop_app/research_bootstrap.py',
+    'desktop_app/research_session.py',
     'desktop_app/shell/theme.py',
     'desktop_app/shell/main_window.py',
     'desktop_app/shell/polish.py',

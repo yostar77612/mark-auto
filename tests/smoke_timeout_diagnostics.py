@@ -13,7 +13,8 @@ import time
 import uuid
 from types import SimpleNamespace
 
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.desktop_runtime import RuntimeSafetyError
 from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 from quantlab.research_core.adapters.job_worker import _job_worker as _original_job_worker
 
@@ -163,7 +164,7 @@ def instrument_walk_forward(timings):
             setattr(owner, name, original)
 
 
-def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options):
+def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options, **runtime_options):
     """Spawnable test-only observer; no changes to the real worker or its jobs."""
     if operation in {'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'}:
         from tests.generic_smoke_phase_diagnostics import diagnosed_generic_worker

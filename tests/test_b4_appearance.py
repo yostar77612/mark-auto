@@ -16,7 +16,9 @@ from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QWidget, QScrollA
 import desktop_app.shell.theme as theme
 from desktop_app.components.charts import CandlestickChart
 from desktop_app.components.result_widgets import KpiCards, ResultTable
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from tests.test_t9_onboarding import sandbox_ui
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -170,7 +172,7 @@ class AppearanceWindowTests(unittest.TestCase):
         cls.folder = tempfile.TemporaryDirectory(prefix='b4-appearance-')
         cls.addClassCleanup(cls.folder.cleanup)
         cls.paths = AppPaths(Path(cls.folder.name) / 'workspace').ensure()
-        cls.jobs = JobManager(cls.paths)
+        cls.jobs = create_job_manager(cls.paths)
         cls.addClassCleanup(cls.jobs.close)
         cls.store = SettingsStore(cls.paths.state / 'settings.json')
         cls.window = MainWindow(cls.paths, cls.jobs, cls.store, services=_c_create_ui_services(_c_create_operation_ports()))

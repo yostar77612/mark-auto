@@ -28,7 +28,7 @@ def _paper(ports: UiOperationPorts, root):
     )
 
 
-def _prepare_paper_operation(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
+def _prepare_paper_operation(ports: UiOperationPorts, payload, root):
     if 'policy' in payload:
         policy = payload['policy']
         existing = root / 'paper_policy.json'
@@ -70,17 +70,17 @@ def _handle_ui_paper_cancel(ports: UiOperationPorts, payload, paths, root, *, em
         return _execute_amend(
             payload,
             root,
-            prepare=lambda: _prepare_paper_operation(ports, payload, paths, root),
+            prepare=lambda: _prepare_paper_operation(ports, payload, root),
             finish=lambda broker: _finish_paper_operation(ports, root, broker),
         )
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     broker.cancel(payload['order_id'], now=datetime.fromisoformat(payload['now'].replace('Z', '+00:00')))
     return _finish_paper_operation(ports, root, broker, replay_state)
 
 
 def _handle_ui_paper_cancel_all(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     now = datetime.fromisoformat(payload['now'].replace('Z', '+00:00'))
     targets = sorted((order_id for order_id, row in broker.snapshot()['orders'].items() if row['status'] not in ('filled', 'cancelled', 'rejected')))
     report = {'cancelled_order_ids': [], 'failed_order_ids': [], 'errors': {}}
@@ -98,7 +98,7 @@ def _handle_ui_paper_cancel_all(ports: UiOperationPorts, payload, paths, root, *
 
 
 def _handle_ui_paper_kill(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     if 'manual_order_lock' in payload:
         broker.set_manual_order_lock(payload['manual_order_lock'])
@@ -108,7 +108,7 @@ def _handle_ui_paper_kill(ports: UiOperationPorts, payload, paths, root, *, emit
 
 
 def _handle_ui_paper_reconcile(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     broker.reconcile(payload['snapshot'])
     if 'manual_order_lock' in payload:
@@ -117,7 +117,7 @@ def _handle_ui_paper_reconcile(ports: UiOperationPorts, payload, paths, root, *,
 
 
 def _handle_ui_paper_replay(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     if payload.get('reconcile_confirmed') is not True:
         raise ValidationError(ports.text('ui.execute_ui_operation.replay_confirmation_required'))
@@ -163,13 +163,13 @@ def _handle_ui_paper_replay(ports: UiOperationPorts, payload, paths, root, *, em
 
 
 def _handle_ui_paper_snapshot(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     return _finish_paper_operation(ports, root, broker, replay_state)
 
 
 def _handle_ui_paper_submit(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    broker = _prepare_paper_operation(ports, payload, paths, root)
+    broker = _prepare_paper_operation(ports, payload, root)
     replay_state = None
     if payload.get('reconcile_confirmed') is not True:
         raise ValidationError(ports.text('ui.execute_ui_operation.snapshot_confirmation_required'))

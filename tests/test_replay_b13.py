@@ -30,7 +30,7 @@ from quantlab.reporting import synthetic_dataset
 from quantlab.strategies import builtin_strategies
 from tests import test_paper_replay as fixtures
 from tests.test_t9_onboarding import sandbox_ui
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 # Source scans below use current physical paths.
 
 

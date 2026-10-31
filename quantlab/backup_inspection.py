@@ -13,7 +13,8 @@ import struct
 import zipfile
 
 from quantlab.research_core.adapters.workspace_backup import BackupManager
-from quantlab.desktop_runtime import MAX_BACKUP, MAX_FILES, MAX_JSON
+from quantlab.research_core.adapters.workspace_store import MAX_BACKUP, MAX_FILES
+from quantlab.research_core.adapters.state_json import MAX_JSON
 
 MAX_STATE_BYTES = 65536
 MAX_CENTRAL_BYTES = 4 * 1024 * 1024

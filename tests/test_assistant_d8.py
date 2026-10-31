@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from desktop_app.features.assistant.assistant_permissions import MODES, SETTING_KEY, ResearchPermission, install_menu
 from desktop_app.strings.catalog import ui_text
 from quantlab.agent_tools import Registry
-from quantlab.desktop_runtime import SettingsStore
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from tests import test_assistant_d4 as d4
 from tests.test_agent_harness_d1 import REFUSAL, assert_no_protected_values, declaration
 

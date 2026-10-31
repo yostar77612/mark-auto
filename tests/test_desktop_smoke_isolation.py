@@ -30,7 +30,7 @@ def snapshot(root):
 
 class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_default_does_not_create_user_directories(self):
-        from quantlab.desktop_runtime import WorkspaceLocator
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / 'absent-bootstrap'
@@ -38,7 +38,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
             self.assertFalse(root.exists())
 
     def test_read_only_redirect_validates_without_mkdir_or_probe(self):
-        from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
+        from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             bootstrap = Path(temporary).resolve() / 'bootstrap'
@@ -47,15 +47,16 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
             pointer = bootstrap / 'workspace-location.json'
             pointer.write_text(json.dumps({'schema_version': 1, 'root': str(workspace)}))
             locator = WorkspaceLocator(bootstrap)
-            with patch('quantlab.desktop_runtime.tempfile.mkstemp', side_effect=AssertionError('Write probe forbidden')):
+            with patch('quantlab.research_core.adapters.workspace_store.tempfile.mkstemp', side_effect=AssertionError('Write probe forbidden')):
                 self.assertEqual(locator.load(probe=False), AppPaths(workspace, bootstrap))
             self.assertFalse(workspace.exists())
-            with patch('quantlab.desktop_runtime.tempfile.mkstemp', side_effect=AssertionError('Normal startup still probes')):
+            with patch('quantlab.research_core.adapters.workspace_store.tempfile.mkstemp', side_effect=AssertionError('Normal startup still probes')):
                 with self.assertRaisesRegex(AssertionError, 'still probes'):
                     locator.load()
 
     def test_read_only_redirect_rejects_invalid_paths(self):
-        from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+        from quantlab.desktop_runtime import RuntimeSafetyError
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -73,7 +74,8 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
                     locator.load(probe=False)
 
     def test_read_only_redirect_rejects_symlink_when_supported(self):
-        from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+        from quantlab.desktop_runtime import RuntimeSafetyError
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -96,9 +98,9 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 @unittest.skipUnless(HAS_QT, 'Pinned Qt required for isolated desktop launch')
 class SmokeUserStateIsolationTests(unittest.TestCase):
     def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
-        from desktop import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
         from quantlab.research_core.application.paper_operations import _paper
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve()
@@ -156,7 +158,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
     raise AssertionError('Smoke attempted a user-state write')
 sys.addaudithook(audit)
 import desktop
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 # SHGetFolderPathW uses the registered profile, not necessarily LOCALAPPDATA.
 # Pin only discovery in this test subprocess; no runner profile is inspected.
 # The real Qt startup, Windows mutex, workers and application paths still run.
@@ -211,15 +213,15 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
                 self.smoke(redirected=redirected)
 
     def test_failure_preserves_user_state_and_pending_recovery(self):
-        self.smoke(injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
+        self.smoke(injected="sys.modules['quantlab.research_core.domain.market_sessions'] = None", expected_status='failed')
         self.smoke(
             redirected=True,
-            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing",
+            injected="original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture = missing",
             expected_status='failed',
         )
 
     def test_smoke_does_not_create_an_absent_user_workspace(self):
-        self.smoke(seeded=False, injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
+        self.smoke(seeded=False, injected="sys.modules['quantlab.research_core.domain.market_sessions'] = None", expected_status='failed')
 
     def test_isolated_long_temp_smoke_cannot_discover_or_read_user_state(self):
         self.smoke(

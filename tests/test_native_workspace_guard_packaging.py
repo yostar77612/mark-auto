@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import unittest
 
-from quantlab.desktop_runtime import _workspace_format
+from quantlab.research_core.adapters.workspace_store import _workspace_format
 
 ROOT = Path(__file__).resolve().parents[1]
 

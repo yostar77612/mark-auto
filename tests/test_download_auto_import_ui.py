@@ -14,7 +14,8 @@ from PySide6.QtWidgets import QApplication
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
 from quantlab.core import ValidationError
-from quantlab.desktop_runtime import AppPaths, JobManager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
 from quantlab.reporting import save_dataset, synthetic_dataset
 
 
@@ -35,7 +36,7 @@ class DownloadAutoImportUiTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {'LOCALAPPDATA': str(root / 'local'), 'APPDATA': str(root / 'roaming')})
         self.environment.start()
         self.paths = AppPaths(root / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()

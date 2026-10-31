@@ -7,7 +7,8 @@ import unittest
 from unittest.mock import patch
 
 import desktop
-import desktop_app.smoke
+import importlib
+import desktop_app.smoke.runner
 from tests.test_import_graph import import_graph, reaches, source_map
 # Source scans below use current physical paths.
 
@@ -41,6 +42,25 @@ HARNESS = {
 }
 
 
+OWNERS = {
+    '_SmokeSettingsView': 'desktop_app.smoke.fixtures',
+    '_smoke_steps': 'desktop_app.smoke.fixtures',
+    '_auth_smoke_dependencies': 'desktop_app.smoke.auth',
+    '_market_smoke_ui': 'desktop_app.smoke.market',
+    '_market_smoke_response': 'desktop_app.smoke.market',
+    '_check_market_worker_result': 'desktop_app.smoke.market',
+    '_history_smoke_fixture': 'desktop_app.smoke.history',
+    '_check_history_worker_result': 'desktop_app.smoke.history',
+    '_history_smoke_ui': 'desktop_app.smoke.history',
+    '_walk_forward_smoke_fixture': 'desktop_app.smoke.walk_forward',
+    '_check_walk_forward_smoke_result': 'desktop_app.smoke.walk_forward',
+    '_start_smoke_job': 'desktop_app.smoke.lifecycle',
+    '_close_smoke_worker': 'desktop_app.smoke.lifecycle',
+    '_retain_smoke_directory': 'desktop_app.smoke.lifecycle',
+    'run_smoke': 'desktop_app.smoke.runner',
+}
+
+
 class SmokePackageTests(unittest.TestCase):
     def test_entry_point_definitions_and_size(self):
         source = (ROOT / 'desktop.py').read_text(encoding='utf-8-sig')
@@ -48,15 +68,15 @@ class SmokePackageTests(unittest.TestCase):
         self.assertEqual(definitions, PRODUCTION)
         self.assertLessEqual(len(source.splitlines()), 590)
 
-    def test_compatibility_exports_are_identical(self):
+    def test_definitions_live_at_direct_owners(self):
         for name in HARNESS:
             with self.subTest(name=name):
-                self.assertIs(getattr(desktop, name), getattr(desktop_app.smoke, name))
+                self.assertEqual(getattr(importlib.import_module(OWNERS[name]), name).__module__, OWNERS[name])
 
     def test_injections_reach_the_harness_globals(self):
         for name in ('_check_history_worker_result', '_history_smoke_fixture', '_close_smoke_worker', '_check_walk_forward_smoke_result'):
             sentinel = object()
-            with self.subTest(name=name), patch.object(desktop_app.smoke, name, sentinel):
+            with self.subTest(name=name), patch.object(desktop_app.smoke.runner, name, sentinel):
                 self.assertIs(desktop.run_smoke.__globals__[name], sentinel)
 
     def test_all_package_modules_are_statically_reachable(self):

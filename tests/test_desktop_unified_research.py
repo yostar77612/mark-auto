@@ -13,10 +13,10 @@ from PySide6.QtCore import QCoreApplication, QEvent, QItemSelectionModel, QLockF
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from desktop_app.research_bootstrap import ResearchSession, ResearchUnavailable, UnifiedResearch
+from desktop_app.research_session import ResearchSession, ResearchUnavailable, UnifiedResearch
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading import TradingWindow
-from quantlab.desktop_runtime import WorkspaceLocator
+from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 from tests.test_trading_ui import RecordingFacade
 
 
@@ -187,7 +187,7 @@ class UnifiedResearchTests(unittest.TestCase):
         host.deleteLater()
 
     def test_embedded_resize_and_close_preserve_original_window_settings_and_business_preferences(self):
-        from quantlab.desktop_runtime import SettingsStore
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         host = self.session.window
         original = SettingsStore(host.paths.state / 'settings.json')

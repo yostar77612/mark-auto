@@ -16,7 +16,7 @@ import time
 import uuid
 
 from quantlab.analysis_recovery_windows import WindowsAnalysisRecoveryTree
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 
 CAP_SECONDS = 40
 PREP_SECONDS = 6

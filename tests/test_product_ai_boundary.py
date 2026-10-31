@@ -29,6 +29,13 @@ class ProductAIBoundaryTests(unittest.TestCase):
             'desktop_app/shell/main_window.py',
             'desktop_app/features/settings/automatic_backup.py',
             'quantlab/desktop_runtime.py',
+            'quantlab/research_core/adapters/workspace_store.py',
+            'quantlab/research_core/adapters/settings_store.py',
+            'quantlab/research_core/adapters/state_json.py',
+            'quantlab/research_core/adapters/runtime_safety.py',
+            'quantlab/research_core/adapters/event_log.py',
+            'quantlab/research_core/application/job_manager.py',
+            'quantlab/research_core/adapters/walk_forward_owner.py',
             'desktop_app/smoke/tls.py',
             'packaging/markauto.spec',
             'packaging/build_manifest.py',
@@ -38,11 +45,13 @@ class ProductAIBoundaryTests(unittest.TestCase):
                 self.assertNotIn(token, source, name)
 
     def test_removed_job_and_provider_requests_fail_before_spawn(self):
-        from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.desktop_runtime import RuntimeSafetyError
 
         with tempfile.TemporaryDirectory() as temp:
             paths = AppPaths(Path(temp) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             before = sorted(str(p.relative_to(paths.root)) for p in paths.root.rglob('*'))
             with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 for action in ('download', 'install', 'serve', 'probe'):
@@ -59,7 +68,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
     def test_removed_worker_dispatch_does_not_create_workspace(self):
         from desktop_app.shell.main_window import execute_ui_operation
         from quantlab.research_core.application.research_operations import campaign_generator
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
         from quantlab.core import ValidationError
 
         with tempfile.TemporaryDirectory() as temp:
@@ -74,7 +83,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
     def test_removed_cli_flags_refuse_before_user_workspace_access(self):
         import desktop
 
-        with patch('quantlab.desktop_runtime.AppPaths.discover') as discover, contextlib.redirect_stderr(io.StringIO()):
+        with patch('quantlab.research_core.adapters.workspace_store.AppPaths.discover') as discover, contextlib.redirect_stderr(io.StringIO()):
             for flag in ('--local-ai-smoke', '--local-ai-model', '--local-ai-runtime-archive', '--local-ai-root'):
                 with self.assertRaises(SystemExit) as caught:
                     desktop.main([flag, '/unused'])
@@ -137,7 +146,10 @@ class StandaloneTLSGateTests(unittest.TestCase):
     def test_cli_dispatches_tls_only_before_user_state_or_qt(self):
         import desktop
 
-        with patch('desktop_app.smoke.tls.write_report', return_value=0) as write, patch('quantlab.desktop_runtime.AppPaths.discover') as discover:
+        with (
+            patch('desktop_app.smoke.tls.write_report', return_value=0) as write,
+            patch('quantlab.research_core.adapters.workspace_store.AppPaths.discover') as discover,
+        ):
             self.assertEqual(desktop.main(['--tls-smoke', str(self.report)]), 0)
         write.assert_called_once_with(self.report)
         discover.assert_not_called()

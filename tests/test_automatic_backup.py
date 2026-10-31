@@ -8,7 +8,8 @@ from unittest.mock import Mock, patch
 import zipfile
 
 from quantlab.automatic_backup import AutomaticBackup, MAX_ARCHIVES
-from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.desktop_runtime import RuntimeSafetyError
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -145,7 +146,7 @@ class AutomaticBackupTests(unittest.TestCase):
     def test_real_archive_write_failure_leaves_no_success_or_temp(self):
         self.enable()
         archive = self.auto.claim_due(quiescent=True)['path']
-        with patch('quantlab.desktop_runtime.os.replace', side_effect=OSError('failed archive write')):
+        with patch('quantlab.runtime_support.os.replace', side_effect=OSError('failed archive write')):
             with self.assertRaises(OSError):
                 BackupManager(self.paths).create(archive)
         self.auto.complete(archive=archive, status='error')

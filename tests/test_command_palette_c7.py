@@ -18,7 +18,9 @@ from desktop_app.shell.palette_commands import command_table
 from desktop_app.shell.shortcuts import install_shortcuts
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 # Source scans below use current physical paths.
@@ -237,7 +239,7 @@ class PaletteTests(unittest.TestCase):
     def test_real_controls_consent_providers_and_settings_stay_confined(self):
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             self.addCleanup(jobs.close)
             window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
             try:

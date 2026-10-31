@@ -11,16 +11,18 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = 'docs/analysis/08_REFACTOR_INVENTORY.md'
 DEFAULT_BASE = '3429f2c'
+PR_E_BASE = '909fc49'
 
 
 def changed_paths(root, base):
-    """Match the controller's A/M set relative to the committed PR head."""
+    """Measure the A/M set at the current worktree (also works after staging)."""
     output = subprocess.check_output(
-        ['git', 'diff', '--name-only', '--diff-filter=AM', '-z', base, 'HEAD', '--'],
+        ['git', 'diff', '--name-only', '--diff-filter=AM', '-z', base, '--'],
         cwd=root,
     ).decode('utf-8')
+    untracked = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '-z', '--', '*.py'], cwd=root).decode('utf-8')
     # Test code is outside the product size rules; migration tooling is measured.
-    return sorted(p for p in output.split('\0') if p.endswith('.py') and not p.startswith('tests/'))
+    return sorted({p for p in (output + untracked).split('\0') if p.endswith('.py') and not p.startswith('tests/')})
 
 
 def measure(root, base=DEFAULT_BASE):
@@ -51,6 +53,13 @@ def check_inventory(root, items):
         return False
     pattern = r'^\| (file|class|function) \| `([^`]+):(\d+)` \| `([^`]+)` \| (\d+) \| (.+) \|$'
     listed = Counter((path, int(line), name, kind, int(size)) for kind, path, line, name, size, reason in re.findall(pattern, match[1], re.M) if reason.strip())
+    # E documents changed/inherited spans separately; C/D rows stay historical.
+    overlay = re.search(r'^### 10\.4 PR E size exceptions\n(.*?)(?=^## |^### |\Z)', source, re.M | re.S)
+    if overlay is not None:
+        rows = re.findall(pattern, overlay[1], re.M)
+        replaced = {path for kind, path, line, name, size, reason in rows if reason.strip()} | set(changed_paths(root, PR_E_BASE))
+        listed = Counter({row: count for row, count in listed.items() if row[0] not in replaced})
+        listed.update((path, int(line), name, kind, int(size)) for kind, path, line, name, size, reason in rows if reason.strip())
     measured = Counter((r['path'], r['line'], r['name'], r['kind'], r['lines']) for r in items)
     if listed != measured:
         print(json.dumps({'missing': list((measured - listed).elements()), 'extra': list((listed - measured).elements())}, indent=2))

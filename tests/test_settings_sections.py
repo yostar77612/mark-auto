@@ -22,7 +22,9 @@ class SettingsSectionsTests(unittest.TestCase):
 
     def setUp(self):
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         self.context = sandbox_ui()
         self.context.__enter__()
@@ -30,7 +32,7 @@ class SettingsSectionsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='t10-settings-')
         self.addCleanup(self.temp.cleanup)
         self.paths = AppPaths(Path(self.temp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.addCleanup(self.jobs.close)
         settings = SettingsStore(self.paths.state / 'settings.json')
         self.window = MainWindow(self.paths, self.jobs, settings, services=_c_create_ui_services(_c_create_operation_ports()))
@@ -89,10 +91,10 @@ class SettingsSectionsTests(unittest.TestCase):
         self.assertEqual(self.window.strategy_page.connection_status.text(), ui_text('logs.event.error'))
 
     def test_log_controls_read_filter_and_export_existing_reader(self):
-        from quantlab.desktop_runtime import RedactedEventLog
+        from desktop_app.research_bootstrap import create_event_log
 
-        log = RedactedEventLog(self.paths.logs / 'desktop-events.jsonl')
-        with patch('quantlab.desktop_runtime.time.time', return_value=1704067200):
+        log = create_event_log(self.paths.logs / 'desktop-events.jsonl')
+        with patch('quantlab.research_core.adapters.event_log.time.time', return_value=1704067200):
             log.append('ui_demo', 'result')
             log.append('ui_import', 'error')
         self.window.findChild(QPushButton, 'read_logs').click()

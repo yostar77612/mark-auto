@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # TMF AI 研究平台實作路線與固定驗收
 
 <!-- CURRENT_STATUS_START -->

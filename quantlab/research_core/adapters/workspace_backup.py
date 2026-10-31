@@ -15,19 +15,17 @@ from quantlab.windows_paths import canonical_path, native_path
 from quantlab.shared.runtime_errors import RuntimeSafetyError
 from quantlab.runtime_support import atomic_write, _durable_replace
 from quantlab.research_core.domain.job_protocol import MAX_JSON
-from quantlab.desktop_runtime import (
-    SettingsStore,
-    _read_json,
-    _json_bytes,
+from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.research_core.adapters.state_json import _read_json, _json_bytes, STATE_VERSION
+from quantlab.research_core.adapters.workspace_store import (
     _workspace_format,
     _write_workspace_format,
-    _verify_replay_runtime,
     WORKSPACE_FORMAT,
     GUARDED_BACKUP_VERSION,
-    STATE_VERSION,
     MAX_BACKUP,
     MAX_FILES,
 )
+from quantlab.research_core.adapters.runtime_safety import _verify_replay_runtime
 
 
 class BackupManager:
@@ -300,3 +298,37 @@ class WorkspaceJobStorage:
     @staticmethod
     def recover(paths):
         return BackupManager(paths).recover()
+
+    @staticmethod
+    def validate_payload(payload):
+        return _json_bytes(payload)
+
+    @staticmethod
+    def _walk_forward_owner_path(paths, reference):
+        from .walk_forward_owner import WalkForwardOwner
+
+        return WalkForwardOwner(paths, BackupManager._check_regular_path)._walk_forward_owner_path(reference)
+
+    @staticmethod
+    def _claim_walk_forward(paths, reference, job_id):
+        from .walk_forward_owner import WalkForwardOwner
+
+        return WalkForwardOwner(paths, BackupManager._check_regular_path)._claim_walk_forward(reference, job_id)
+
+    @staticmethod
+    def _check_walk_forward_owner(paths, job_id, reference):
+        from .walk_forward_owner import WalkForwardOwner
+
+        return WalkForwardOwner(paths, BackupManager._check_regular_path)._check_walk_forward_owner(job_id, reference)
+
+    @staticmethod
+    def worker_paths(root, bootstrap):
+        from .workspace_store import AppPaths
+
+        return AppPaths(root, bootstrap)
+
+    @staticmethod
+    def configure_workspace(paths, destination):
+        from .workspace_store import WorkspaceLocator
+
+        return WorkspaceLocator(getattr(paths, 'bootstrap', None) or paths.root).configure(destination)

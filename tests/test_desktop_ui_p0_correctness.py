@@ -15,7 +15,11 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from quantlab.desktop_errors import ERROR_TABLE, error_message, exception_code, startup_error_code
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeSafetyError, RedactedEventLog
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.desktop_runtime import RuntimeSafetyError
+from desktop_app.research_bootstrap import create_event_log
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -36,7 +40,7 @@ class CorrectnessTests(unittest.TestCase):
         from desktop_app.shell.window import MainWindow
 
         paths = AppPaths(self.root).ensure()
-        jobs = JobManager(paths)
+        jobs = create_job_manager(paths)
         window = MainWindow(
             paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
         )
@@ -173,11 +177,11 @@ class CorrectnessTests(unittest.TestCase):
         )
         self.assertEqual(emitted[-1].error_code, 'authorization_cleanup_failed')
         w._record_connection_error(emitted[-1].error_code)
-        records = RedactedEventLog(w.paths.logs / 'desktop-events.jsonl').tail()
+        records = create_event_log(w.paths.logs / 'desktop-events.jsonl').tail()
         self.assertEqual([json.loads(x)['error_code'] for x in records], ['restore_refresh_failed', 'authorization_cleanup_failed'])
         self.assertNotIn('secret', ''.join(records))
         with self.assertRaises(RuntimeSafetyError):
-            RedactedEventLog(self.root / 'invalid.jsonl').append('ui_chatgpt_auth', 'error', error_code='secret')
+            create_event_log(self.root / 'invalid.jsonl').append('ui_chatgpt_auth', 'error', error_code='secret')
 
 
 if __name__ == '__main__':

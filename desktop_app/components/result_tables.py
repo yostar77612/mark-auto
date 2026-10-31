@@ -1,5 +1,7 @@
 """desktop_app components result_tables responsibilities."""
 
+from desktop_app.components.tables import fill_table, resize_columns
+
 from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
 from desktop_app.shell.theme import FINANCIAL_FIELDS, set_financial_item
@@ -97,18 +99,18 @@ class ResultTable(QTableWidget):
         self.setColumnCount(len(columns))
         self.setRowCount(len(rows))
         self.setHorizontalHeaderLabels([RESULT_LABELS.get(key, key) for key in columns])
-        for i, row in enumerate(rows):
-            for j, key in enumerate(columns):
-                text = readable(row.get(key), key)
-                item = QTableWidgetItem(text)
-                item.setToolTip(str(row.get(key)))
-                if key in FINANCIAL_FIELDS:
-                    set_financial_item(self, item, row.get(key))
-                _privacy.item_display(self, item, key)
-                self.setItem(i, j, item)
-        self.resizeColumnsToContents()
-        for j in range(len(columns)):
-            self.setColumnWidth(j, min(self.columnWidth(j), 340))
+
+        def make_item(row, key):
+            text = readable(row.get(key), key)
+            item = QTableWidgetItem(text)
+            item.setToolTip(str(row.get(key)))
+            if key in FINANCIAL_FIELDS:
+                set_financial_item(self, item, row.get(key))
+            _privacy.item_display(self, item, key)
+            return item
+
+        fill_table(self, rows, columns, make_item)
+        resize_columns(self)
 
 
 class SummaryCard(QWidget):

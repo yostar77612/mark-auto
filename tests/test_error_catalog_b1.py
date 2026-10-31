@@ -1,5 +1,7 @@
 """B1 catalogue and worker/log contract; no Qt windows or child processes."""
 
+from desktop_app.research_bootstrap import create_job_manager
+
 from quantlab.research_core.adapters import job_worker
 
 
@@ -221,7 +223,7 @@ class WorkerLogTests(unittest.TestCase):
     def manager(self, directory, packets):
         paths = SimpleNamespace(logs=Path(directory))
         paths.ensure = lambda: paths
-        manager = runtime.JobManager(paths)
+        manager = create_job_manager(paths)
         manager._operation = 'ui_campaign'
         manager.job_id = 'b1-offline'
         manager.process = SimpleNamespace(is_alive=lambda: True)

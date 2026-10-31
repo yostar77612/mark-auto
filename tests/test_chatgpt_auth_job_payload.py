@@ -6,7 +6,8 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 import unittest
 
 from quantlab.assistant.application.connection_contracts import ConnectionRequest
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 REF = 'a' * 32
 

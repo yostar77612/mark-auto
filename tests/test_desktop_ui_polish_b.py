@@ -18,7 +18,9 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLabel
 from desktop_app.components.formatting import display_number, display_status, result_name
 from desktop_app.components.result_tables import SummaryCard, ResultTable
 from desktop_app.shell.window import MainWindow
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 from tests.snapshot_cache import default_metrics
 
@@ -88,7 +90,7 @@ class PresentationTests(unittest.TestCase):
         with disposable_directory() as root:
             paths = AppPaths(Path(root) / 'workspace', Path(root) / 'bootstrap').ensure()
             settings = SettingsStore(paths.state / 'settings.json')
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(paths, jobs, settings, BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
@@ -129,7 +131,7 @@ class PresentationTests(unittest.TestCase):
         self.assertIn('趨勢・fast=5、slow=20・2026-01-01～2026-01-31・1970-01-01 08:00:00（台北）', name)
         with disposable_directory() as root:
             paths = AppPaths(Path(root) / 'workspace', Path(root) / 'bootstrap').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):

@@ -4,7 +4,7 @@ Uses the existing atomic SettingsStore, retaining unrelated preferences. The
 Application service owns subscription allocation and strategy priority.
 """
 
-from quantlab.desktop_runtime import SettingsStore
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.contracts import UiReceipt
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.validation import DomainError

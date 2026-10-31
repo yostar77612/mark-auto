@@ -8,7 +8,12 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from quantlab.desktop_runtime import AppPaths, CredentialVault, JobManager, RuntimeGuard, RuntimeSafetyError, SettingsStore, WorkspaceLocator, RedactedEventLog
+from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
+from quantlab.desktop_runtime import CredentialVault, RuntimeSafetyError
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
+from quantlab.research_core.adapters.settings_store import SettingsStore
+from desktop_app.research_bootstrap import create_event_log
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -116,7 +121,7 @@ class RuntimeTests(unittest.TestCase):
                 self.assertEqual(len(list(root.glob('state-v1.interrupted-*'))), 0 if matching else 1)
 
     def test_cancelled_restore_release_recovers_before_freeze_write(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         (self.paths.state / 'original').write_text('safe')
         self.paths.state.rename(self.paths.root / 'state-v1.rollback')
         (self.paths.root / 'restore-transaction.json').write_text(json.dumps({'id': 'a' * 32, 'phase': 'prepared'}))
@@ -251,7 +256,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(guard.marker.exists())
 
     def test_job_whitelist_and_cancel(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         self.addCleanup(manager.close)
         with self.assertRaises(RuntimeSafetyError):
             manager.start('eval', {'code': 'anything'})
@@ -265,7 +270,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(manager.poll()[0]['type'], 'cancelled')
 
     def test_terminal_result_waits_for_child_exit(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         manager.job_id = 'fixture-job'
         manager._operation = 'demo'
 
@@ -303,7 +308,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(manager.active)
 
     def test_terminal_error_is_not_relabelled_cancelled_during_cleanup(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         manager.job_id = 'fixture-error'
         manager._operation = 'ui_import'
 
@@ -339,7 +344,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(manager.active)
 
     def test_windows_closed_pipe_after_terminal_preserves_result(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         manager.job_id, manager._operation = 'windows-pipe', 'demo'
 
         class Process:
@@ -379,7 +384,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(manager.poll(), [])
 
     def test_windows_pipe_eof_without_terminal_is_crash_not_malformed(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         manager.job_id, manager._operation = 'windows-eof', 'demo'
 
         class Process:
@@ -418,7 +423,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(manager.active)
 
     def test_non_eof_windows_pipe_error_still_rejected(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         manager.job_id, manager._operation = 'invalid-pipe', 'demo'
 
         class Process:
@@ -443,7 +448,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(manager.active)
 
     def test_spawn_job_completes_and_can_restart(self):
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         self.addCleanup(manager.close)
         manager.start('demo', {'bars': 30})
         events = []
@@ -467,7 +472,7 @@ class RuntimeTests(unittest.TestCase):
 class EventLogTests(unittest.TestCase):
     def test_only_fixed_codes_saved_and_rotation_bounded(self):
         with tempfile.TemporaryDirectory() as temp:
-            log = RedactedEventLog(Path(temp) / 'events.jsonl')
+            log = create_event_log(Path(temp) / 'events.jsonl')
             log.MAX_BYTES = 256
             for _ in range(20):
                 log.append('ui_demo', 'result')
@@ -545,7 +550,7 @@ class WorkspaceTests(unittest.TestCase):
         first = self.base / 'first'
         self.locator.configure(first)
         original = self.locator.pointer.read_bytes()
-        with patch('quantlab.desktop_runtime.os.replace', side_effect=OSError('injected')):
+        with patch('quantlab.runtime_support.os.replace', side_effect=OSError('injected')):
             with self.assertRaises(OSError):
                 self.locator.configure(self.base / 'second')
         self.assertEqual(self.locator.pointer.read_bytes(), original)

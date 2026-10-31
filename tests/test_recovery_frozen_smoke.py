@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import desktop_app.smoke.recovery as smoke
 from quantlab.analysis_recovery import plan_bindings, admission, register_launch, read_launch
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab.reporting import synthetic_dataset, save_dataset
 from quantlab.research_analysis import validate_analysis_plan
 from tests.test_research_analysis import source, write_source

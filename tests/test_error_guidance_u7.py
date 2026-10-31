@@ -11,7 +11,8 @@ from PySide6.QtWidgets import QApplication, QFormLayout, QPushButton, QVBoxLayou
 
 from desktop_app.features.strategy.forms import StrategyForm
 from desktop_app.components.async_status import AsyncStatus
-from desktop_app.components.error_guidance import NEXT_STEP_KEYS, clear_inline, next_step, run_inline, with_next_step
+from desktop_app.components.error_guidance import clear_inline, run_inline
+from desktop_app.components.validation_feedback import NEXT_STEP_KEYS, next_step, with_next_step
 from desktop_app.components.job_progress import JobFeedback, JobProgress
 from desktop_app.components.widgets import WidgetTools
 from desktop_app.strings.catalog import ui_text

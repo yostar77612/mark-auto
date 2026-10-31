@@ -25,14 +25,16 @@ class NativeDesktopTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
         from desktop_app.shell.window import MainWindow
 
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.window = MainWindow(
             self.paths,
             self.jobs,
@@ -580,7 +582,7 @@ class NativeDesktopTests(unittest.TestCase):
                 timeout_seconds=options["timeout_seconds"],
             )
 
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
         from quantlab.core import canonical_json
         from quantlab.strategies import builtin_strategies
 
@@ -660,6 +662,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.timer.stop()
         original = self.window.jobs
         self.window.jobs = SlowErrorExit()
+        self.window.jobs.event_log = original.event_log
         self.window.last_operation = 'ui_import'
         try:
             self.window.poll_jobs()

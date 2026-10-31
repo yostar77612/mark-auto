@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class HistorySmokeFixtureTests(unittest.TestCase):
     def test_tiny_explicit_fixture_contract_and_dates(self):
-        from desktop import _history_smoke_fixture
-        from quantlab.market_history import COLUMNS
+        from desktop_app.smoke.history import _history_smoke_fixture
+        from quantlab.research_core.adapters.history_decoder import COLUMNS
         from quantlab.research_core.domain.market_sessions import PRODUCT_SOURCES, session_from_dict
         import csv
 
@@ -52,9 +52,9 @@ class HistorySmokeFixtureTests(unittest.TestCase):
                 self.assertFalse(session.include_end)
 
     def test_omitted_history_module_cannot_prepare_smoke(self):
-        from desktop import _history_smoke_fixture
+        from desktop_app.smoke.history import _history_smoke_fixture
 
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.market_history': None}):
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.research_core.domain.market_sessions': None}):
             with self.assertRaises(ImportError):
                 _history_smoke_fixture(Path(temporary))
 
@@ -68,9 +68,9 @@ class HistorySmokeResultTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from desktop import _history_smoke_fixture
+        from desktop_app.smoke.history import _history_smoke_fixture
         from desktop_app.connection_composition import execute_ui_operation
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
 
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -84,12 +84,12 @@ class HistorySmokeResultTests(unittest.TestCase):
             self.result = execute_ui_operation('ui_market_refresh', self.payload, self.paths)
 
     def check(self, result=None):
-        from desktop import _check_history_worker_result
+        from desktop_app.smoke.history import _check_history_worker_result
 
         return _check_history_worker_result(self.result if result is None else result, self.paths, self.payload, self.report['fixture_sha256'])
 
     def test_reloads_actual_cache_and_renders_all_three_products_eight_timeframes(self):
-        from desktop import _history_smoke_ui
+        from desktop_app.smoke.history import _history_smoke_ui
 
         series, evidence = self.check()
         self.assertTrue(evidence['cache_reloaded'])
@@ -148,9 +148,9 @@ class HistorySmokeResultTests(unittest.TestCase):
     @unittest.skipIf(sys.platform == 'win32', 'Frozen installer harness owns isolated Windows profile smoke')
     def test_missing_module_bad_result_and_worker_failure_fail_overall(self):
         variants = {
-            'missing_module': "sys.modules['quantlab.market_history'] = None\n",
-            'bad_result': "original = desktop._check_history_worker_result\ndef bad(result, *args):\n return original(dict(result, contracts=2), *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_history_worker_result = bad\n",
-            'worker_failure': "original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing\n",
+            'missing_module': "sys.modules['quantlab.research_core.domain.market_sessions'] = None\n",
+            'bad_result': "original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_history_worker_result\ndef bad(result, *args):\n return original(dict(result, contracts=2), *args)\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_history_worker_result = bad\n",
+            'worker_failure': "original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture = missing\n",
         }
         for name, injected in variants.items():
             with self.subTest(failure=name), tempfile.TemporaryDirectory() as temporary:

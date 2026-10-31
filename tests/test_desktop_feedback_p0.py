@@ -13,7 +13,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 from quantlab.desktop_feedback import OPERATION_LABELS, completion_summary, stop_presentation
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -33,7 +35,7 @@ class FeedbackTests(unittest.TestCase):
         from desktop_app.shell.window import MainWindow
 
         paths = AppPaths(self.root).ensure()
-        jobs = JobManager(paths)
+        jobs = create_job_manager(paths)
         w = MainWindow(
             paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())
         )

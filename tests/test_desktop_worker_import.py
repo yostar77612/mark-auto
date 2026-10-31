@@ -1,5 +1,8 @@
 """Real source-worker imports preserve parent GUI and operation isolation."""
 
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+
 from quantlab.research_core.adapters import job_worker
 
 
@@ -13,7 +16,6 @@ import time
 import unittest
 from unittest.mock import patch
 
-import quantlab.desktop_runtime as runtime
 from tests.layered_source_fixtures import CURRENT_PATHS
 
 FORMER_PAGE_MODULES = {current.removesuffix('.py').replace('/', '.') for old, current in CURRENT_PATHS.items() if old.startswith('desktop_pages/')}
@@ -23,7 +25,7 @@ WORKSPACE = ROOT.parent
 ORIGINAL_WORKER = job_worker._job_worker
 
 
-def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *extra):
+def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *extra, **runtime_options):
     """Observe the real one-job worker without substituting any operation."""
     try:
         ORIGINAL_WORKER(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *extra)
@@ -49,7 +51,7 @@ class SourceWorkerImportTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
 
     def test_actual_spawned_operation_worker_runs_real_demo_without_qt_or_pages(self):
-        manager = runtime.JobManager(runtime.AppPaths(self.root).ensure())
+        manager = create_job_manager(AppPaths(self.root).ensure())
         self.addCleanup(manager.close)
         with patch('quantlab.research_core.adapters.job_worker._job_worker', observed_worker):
             manager.start('ui_demo', {'bars': 120})
@@ -68,14 +70,18 @@ class SourceWorkerImportTests(unittest.TestCase):
     def test_first_parent_registrar_lookup_cannot_poison_real_mainwindow_or_public_aliases(self):
         code = '''from pathlib import Path
 import sys
-from quantlab.research_core.adapters.job_worker import _worker_operation_executor, _is_worker_registrar_import; from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeGuard; from quantlab.research_core.adapters.workspace_backup import BackupManager
+from quantlab.research_core.adapters.job_worker import _worker_operation_executor, _is_worker_registrar_import; from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.research_core.adapters.runtime_safety import RuntimeGuard; from quantlab.research_core.adapters.workspace_backup import BackupManager
+from desktop_app.research_bootstrap import create_job_manager
 executor = _worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
 assert not _is_worker_registrar_import()
 import desktop_app.shell.main_window
 from PySide6.QtWidgets import QApplication, QMainWindow
 app = QApplication([])
 paths = AppPaths(Path(sys.argv[1])).ensure()
-manager = JobManager(paths)
+manager = create_job_manager(paths)
 window = desktop_app.shell.main_window.create_window(paths, manager, SettingsStore(paths.state / "settings.json"), BackupManager(paths, manager), RuntimeGuard(paths))
 assert isinstance(window, QMainWindow)
 assert executor is desktop_app.shell.main_window.execute_ui_operation

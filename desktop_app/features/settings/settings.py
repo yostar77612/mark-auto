@@ -149,10 +149,9 @@ class SettingsPage(PageContext, QWidget):
 
     def _record_connection_error(self, code):
         from quantlab.desktop_errors import ERROR_TABLE
-        from quantlab.desktop_runtime import RedactedEventLog
 
         fixed = code if code in ERROR_TABLE else 'operation_failed'
-        RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').append('ui_chatgpt_auth', 'error', error_code=fixed)
+        self.jobs.event_log.append('ui_chatgpt_auth', 'error', error_code=fixed)
 
     def _chatgpt_event(self, event):
         operation = self.last_operation
@@ -274,7 +273,6 @@ class SettingsPage(PageContext, QWidget):
 
     def configure_workspace(self):
         self.chatgpt_panel.abandon_primary_sign_in()
-        from quantlab.desktop_runtime import WorkspaceLocator
 
         if self.jobs.active:
             raise ValidationError(ui_text('ui.configure_workspace.job_busy'))
@@ -282,7 +280,7 @@ class SettingsPage(PageContext, QWidget):
         self._invalidate_analysis_preview()
         self.chatgpt_controller.invalidate_campaign_usage()
         self._plan_usage_binding = None
-        root = WorkspaceLocator(getattr(self.paths, 'bootstrap', None) or self.paths.root).configure(Path(self.workspace_path.text().strip()))
+        root = self.jobs.storage_port.configure_workspace(self.paths, Path(self.workspace_path.text().strip()))
         self.status.setText(ui_text('ui.configure_workspace.next_workspace').format(str(root)))
 
     def open_releases(self):
@@ -299,9 +297,8 @@ class SettingsPage(PageContext, QWidget):
         self.read_logs()
 
     def read_logs(self):
-        from quantlab.desktop_runtime import RedactedEventLog
 
-        self.log_view.load(RedactedEventLog(self.paths.logs / 'desktop-events.jsonl').tail())
+        self.log_view.load(self.jobs.event_log.tail())
 
     def backup(self, restore):
         self.chatgpt_panel.abandon_primary_sign_in()

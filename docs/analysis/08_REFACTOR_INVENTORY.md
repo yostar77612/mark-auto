@@ -30,22 +30,22 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 
 | path | lines | layer | target path | note |
 |---|---:|---|---|---|
-| `desktop.py` | 430 | composition | `desktop.py` | 啟動入口；C/D 抽出非 launcher 組裝至 desktop_app/bootstrap.py；`_prepare_startup_workspace`，`desktop.py:38` |
+| `desktop.py` | 422 | composition | `desktop.py` | 啟動入口；C/D 抽出非 launcher 組裝至 desktop_app/bootstrap.py；`_prepare_startup_workspace`，`desktop.py:38` |
 | `desktop_accessibility.py` | 150 | presentation | `desktop_app/shell/accessibility.py` | 語意名稱與鍵盤導覽；`semantic_name`，`desktop_accessibility.py:25` |
 | `desktop_automatic_backup.py` | 155 | presentation | `desktop_app/features/settings/automatic_backup.py` | 備份設定 UI，直接依賴 adapter；匯入違規見第 3 節；`AutomaticBackupPanel`，`desktop_automatic_backup.py:9` |
-| `desktop_capital_scenario.py` | 51 | application | `desktop_app/features/capital_scenario/worker.py` | worker 用例混入 UI；B 先純搬，D 抽取核心責任；匯入違規見第 3 節；`execute`，`desktop_capital_scenario.py:13` |
+| `desktop_capital_scenario.py` | 22 | application | `desktop_app/features/capital_scenario/worker.py` | worker 用例混入 UI；B 先純搬，D 抽取核心責任；匯入違規見第 3 節；`execute`，`desktop_capital_scenario.py:13` |
 | `desktop_chart_memory.py` | 96 | presentation | `desktop_app/features/market/chart_memory.py` | 記憶體圖表偏好；`ChartMemory`，`desktop_chart_memory.py:6` |
 | `desktop_chart_popout.py` | 190 | presentation | `desktop_app/features/market/chart_popout.py` | 唯讀圖表浮窗；`save_position`，`desktop_chart_popout.py:11` |
-| `desktop_charts.py` | 765 | presentation | `desktop_app/components/charts.py` | Qt 圖表；直接引用持久化 drawings 模組；匯入違規見第 3 節；`_paint_drawings`，`desktop_charts.py:25` |
-| `desktop_chatgpt_auth.py` | 881 | infrastructure | `quantlab/assistant/adapters/chatgpt/auth.py` | OAuth、DPAPI 與 JWT adapter；匯入違規見第 3 節；`AuthError`，`desktop_chatgpt_auth.py:51` |
-| `desktop_chatgpt_provider.py` | 1460 | infrastructure | `quantlab/assistant/adapters/chatgpt/provider.py` | ChatGPT HTTP、stream 與 receipt adapter；匯入違規見第 3 節；`PlanError`，`desktop_chatgpt_provider.py:68` |
+| `desktop_charts.py` | 349 | presentation | `desktop_app/components/charts.py` | Qt 圖表；直接引用持久化 drawings 模組；匯入違規見第 3 節；`_paint_drawings`，`desktop_charts.py:25` |
+| `desktop_chatgpt_auth.py` | 337 | infrastructure | `quantlab/assistant/adapters/chatgpt/auth.py` | OAuth、DPAPI 與 JWT adapter；匯入違規見第 3 節；`AuthError`，`desktop_chatgpt_auth.py:51` |
+| `desktop_chatgpt_provider.py` | 591 | infrastructure | `quantlab/assistant/adapters/chatgpt/provider.py` | ChatGPT HTTP、stream 與 receipt adapter；匯入違規見第 3 節；`PlanError`，`desktop_chatgpt_provider.py:68` |
 | `desktop_chatgpt_states.py` | 63 | presentation | `desktop_app/features/assistant/states.py` | 固定連線狀態文案；`outcome_state`，`desktop_chatgpt_states.py:20` |
-| `desktop_chatgpt_ui.py` | 1462 | presentation | `desktop_app/features/assistant/connection.py` | Qt 連線 UI 混合 OAuth 及 provider 控制；匯入違規見第 3 節；`_ref`，`desktop_chatgpt_ui.py:119` |
+| `desktop_chatgpt_ui.py` | 449 | presentation | `desktop_app/features/assistant/connection.py` | Qt 連線 UI 混合 OAuth 及 provider 控制；匯入違規見第 3 節；`_ref`，`desktop_chatgpt_ui.py:119` |
 | `desktop_expiry_inputs.py` | 112 | presentation | `desktop_app/components/expiry_inputs.py` | 到期日輸入元件與資料讀取混合；匯入違規見第 3 節；`ExpiryPicker`，`desktop_expiry_inputs.py:10` |
-| `desktop_forms.py` | 1361 | presentation | `desktop_app/components/forms.py` | 研究與 paper 表單；C 按責任拆分；匯入違規見第 3 節；`number`，`desktop_forms.py:65` |
+| `desktop_forms.py` | 148 | presentation | `desktop_app/components/forms.py` | 研究與 paper 表單；C 按責任拆分；匯入違規見第 3 節；`number`，`desktop_forms.py:65` |
 | `desktop_help.py` | 200 | presentation | `desktop_app/components/help.py` | 漸進提示與展開狀態；`help_button`，`desktop_help.py:29` |
 | `desktop_icon.py` | 14 | presentation | `desktop_app/components/icon.py` | Qt artwork 載入；`application_icon`，`desktop_icon.py:9` |
-| `desktop_market.py` | 1314 | presentation | `desktop_app/features/market/dashboard.py` | 行情畫面混合資料投影；匯入違規見第 3 節；`_identity`，`desktop_market.py:66` |
+| `desktop_market.py` | 229 | presentation | `desktop_app/features/market/dashboard.py` | 行情畫面混合資料投影；匯入違規見第 3 節；`_identity`，`desktop_market.py:66` |
 | `desktop_market_layout.py` | 114 | infrastructure | `quantlab/research_core/adapters/market_layout.py` | LayoutStore 寫檔；B 搬核心 adapter；`preset`，`desktop_market_layout.py:17` |
 | `desktop_market_workspace.py` | 324 | presentation | `desktop_app/features/market/workspace.py` | 可移動 UI panel 與 LayoutStore 使用者；匯入違規見第 3 節；`_button`，`desktop_market_workspace.py:17` |
 | `desktop_order_lines.py` | 155 | presentation | `desktop_app/features/paper/order_lines.py` | 紙上委託線與手勢投影；`tick_price`，`desktop_order_lines.py:12` |
@@ -55,11 +55,11 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_pages/assistant_completion.py` | 161 | presentation | `desktop_app/features/assistant/assistant_completion.py` | 頁面／presenter 與顯示輔助：`assistant_completion`；匯入違規見第 3 節；`reference_catalog`，`desktop_pages/assistant_completion.py:21` |
 | `desktop_pages/assistant_details.py` | 154 | presentation | `desktop_app/features/assistant/assistant_details.py` | 頁面／presenter 與顯示輔助：`assistant_details`；`redacted`，`desktop_pages/assistant_details.py:22` |
 | `desktop_pages/assistant_manifest.py` | 144 | presentation | `desktop_app/features/assistant/assistant_manifest.py` | 頁面／presenter 與顯示輔助：`assistant_manifest`；`field_label`，`desktop_pages/assistant_manifest.py:12` |
-| `desktop_pages/assistant_models.py` | 163 | presentation | `desktop_app/features/assistant/assistant_models.py` | 頁面／presenter 與顯示輔助：`assistant_models`；`advertised_efforts`，`desktop_pages/assistant_models.py:12` |
+| `desktop_pages/assistant_models.py` | 150 | presentation | `desktop_app/features/assistant/assistant_models.py` | 頁面／presenter 與顯示輔助：`assistant_models`；`advertised_efforts`，`desktop_pages/assistant_models.py:12` |
 | `desktop_pages/assistant_permissions.py` | 77 | presentation | `desktop_app/features/assistant/assistant_permissions.py` | 頁面／presenter 與顯示輔助：`assistant_permissions`；`ResearchPermission`，`desktop_pages/assistant_permissions.py:17` |
-| `desktop_pages/assistant_runtime.py` | 208 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；B 已純搬至 desktop_app，D 抽取核心責任；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
+| `desktop_pages/assistant_runtime.py` | 214 | application | `desktop_app/features/assistant/worker.py` | 對話 worker 與 process 協調，沒有 Qt 物件；B 已純搬至 desktop_app，D 抽取核心責任；匯入違規見第 3 節；`host_context`，`desktop_pages/assistant_runtime.py:21` |
 | `desktop_pages/async_status.py` | 78 | presentation | `desktop_app/components/async_status.py` | 頁面／presenter 與顯示輔助：`async_status`；`AsyncStatus`，`desktop_pages/async_status.py:12` |
-| `desktop_pages/backtest.py` | 284 | presentation | `desktop_app/features/backtest/backtest.py` | 頁面／presenter 與顯示輔助：`backtest`；匯入違規見第 3 節；`BacktestPage`，`desktop_pages/backtest.py:21` |
+| `desktop_pages/backtest.py` | 285 | presentation | `desktop_app/features/backtest/backtest.py` | 頁面／presenter 與顯示輔助：`backtest`；匯入違規見第 3 節；`BacktestPage`，`desktop_pages/backtest.py:21` |
 | `desktop_pages/backtest_summary_card.py` | 115 | presentation | `desktop_app/features/backtest/backtest_summary_card.py` | 頁面／presenter 與顯示輔助：`backtest_summary_card`；`ReportSummaryCard`，`desktop_pages/backtest_summary_card.py:13` |
 | `desktop_pages/backup_inspection.py` | 85 | presentation | `desktop_app/features/settings/backup_inspection.py` | 頁面／presenter 與顯示輔助：`backup_inspection`；匯入違規見第 3 節；`BackupInspectionPanel`，`desktop_pages/backup_inspection.py:12` |
 | `desktop_pages/bindings.py` | 276 | presentation | `desktop_app/shell/bindings.py` | 頁面／presenter 與顯示輔助：`bindings`；`StateField`，`desktop_pages/bindings.py:4` |
@@ -68,51 +68,51 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_pages/compare.py` | 457 | presentation | `desktop_app/features/compare/compare.py` | 頁面／presenter 與顯示輔助：`compare`；匯入違規見第 3 節；`ComparePage`，`desktop_pages/compare.py:33` |
 | `desktop_pages/compare_equity.py` | 269 | presentation | `desktop_app/features/compare/compare_equity.py` | 頁面／presenter 與顯示輔助：`compare_equity`；`series_pen`，`desktop_pages/compare_equity.py:25` |
 | `desktop_pages/compare_table.py` | 161 | presentation | `desktop_app/features/compare/compare_table.py` | 頁面／presenter 與顯示輔助：`compare_table`；`safe_text`，`desktop_pages/compare_table.py:19` |
-| `desktop_pages/connection_test.py` | 146 | presentation | `desktop_app/features/assistant/connection_test.py` | 頁面／presenter 與顯示輔助：`connection_test`；匯入違規見第 3 節；`ConnectionTest`，`desktop_pages/connection_test.py:15` |
+| `desktop_pages/connection_test.py` | 73 | presentation | `desktop_app/features/assistant/connection_test.py` | 頁面／presenter 與顯示輔助：`connection_test`；匯入違規見第 3 節；`ConnectionTest`，`desktop_pages/connection_test.py:15` |
 | `desktop_pages/data.py` | 290 | presentation | `desktop_app/features/data/data.py` | 頁面／presenter 與顯示輔助：`data`；`DataPage`，`desktop_pages/data.py:15` |
 | `desktop_pages/data_gaps.py` | 109 | presentation | `desktop_app/features/data/data_gaps.py` | 頁面／presenter 與顯示輔助：`data_gaps`；`segment_text`，`desktop_pages/data_gaps.py:17` |
 | `desktop_pages/design.py` | 64 | presentation | `desktop_app/components/design.py` | 頁面／presenter 與顯示輔助：`design`；`card`，`desktop_pages/design.py:10` |
 | `desktop_pages/diagnostics.py` | 76 | presentation | `desktop_app/features/settings/diagnostics.py` | 頁面／presenter 與顯示輔助：`diagnostics`；`snapshot_for_state`，`desktop_pages/diagnostics.py:11` |
 | `desktop_pages/download_import.py` | 66 | presentation | `desktop_app/features/data/download_import.py` | 頁面／presenter 與顯示輔助：`download_import`；`DownloadImportControls`，`desktop_pages/download_import.py:10` |
 | `desktop_pages/equity.py` | 147 | presentation | `desktop_app/components/equity.py` | 頁面／presenter 與顯示輔助：`equity`；`EquityPlot`，`desktop_pages/equity.py:15` |
-| `desktop_pages/error_guidance.py` | 82 | presentation | `desktop_app/components/error_guidance.py` | 頁面／presenter 與顯示輔助：`error_guidance`；`next_step`，`desktop_pages/error_guidance.py:27` |
-| `desktop_pages/host.py` | 230 | presentation | `desktop_app/shell/host.py` | 頁面／presenter 與顯示輔助：`host`；`PageState`，`desktop_pages/host.py:8` |
-| `desktop_pages/idea_research.py` | 617 | presentation | `desktop_app/features/strategy/idea_research.py` | 頁面／presenter 與顯示輔助：`idea_research`；`open_url`，`desktop_pages/idea_research.py:83` |
-| `desktop_pages/job_progress.py` | 181 | presentation | `desktop_app/components/job_progress.py` | 頁面／presenter 與顯示輔助：`job_progress`；`JobProgress`，`desktop_pages/job_progress.py:19` |
+| `desktop_pages/error_guidance.py` | 47 | presentation | `desktop_app/components/error_guidance.py` | 頁面／presenter 與顯示輔助：`error_guidance`；`next_step`，`desktop_pages/error_guidance.py:27` |
+| `desktop_pages/host.py` | 234 | presentation | `desktop_app/shell/host.py` | 頁面／presenter 與顯示輔助：`host`；`PageState`，`desktop_pages/host.py:8` |
+| `desktop_pages/idea_research.py` | 110 | presentation | `desktop_app/features/strategy/idea_research.py` | 頁面／presenter 與顯示輔助：`idea_research`；`open_url`，`desktop_pages/idea_research.py:83` |
+| `desktop_pages/job_progress.py` | 182 | presentation | `desktop_app/components/job_progress.py` | 頁面／presenter 與顯示輔助：`job_progress`；`JobProgress`，`desktop_pages/job_progress.py:19` |
 | `desktop_pages/log_table.py` | 79 | presentation | `desktop_app/features/settings/log_table.py` | 頁面／presenter 與顯示輔助：`log_table`；`choose_log_export`，`desktop_pages/log_table.py:14` |
 | `desktop_pages/maintenance.py` | 115 | presentation | `desktop_app/features/settings/maintenance.py` | 頁面／presenter 與顯示輔助：`maintenance`；匯入違規見第 3 節；`installed_payload_root`，`desktop_pages/maintenance.py:19` |
-| `desktop_pages/market.py` | 226 | presentation | `desktop_app/features/market/market.py` | 頁面／presenter 與顯示輔助：`market`；匯入違規見第 3 節；`MarketPage`，`desktop_pages/market.py:12` |
+| `desktop_pages/market.py` | 227 | presentation | `desktop_app/features/market/market.py` | 頁面／presenter 與顯示輔助：`market`；匯入違規見第 3 節；`MarketPage`，`desktop_pages/market.py:12` |
 | `desktop_pages/mount.py` | 361 | presentation | `desktop_app/shell/mount.py` | 僅組合 UI 頁面，沒有 adapter 接線；屬 presentation；`mount_pages`，`desktop_pages/mount.py:11` |
 | `desktop_pages/notification_log.py` | 146 | presentation | `desktop_app/shell/notification_log.py` | 頁面／presenter 與顯示輔助：`notification_log`；`safe_operation`，`desktop_pages/notification_log.py:20` |
 | `desktop_pages/notifications.py` | 318 | presentation | `desktop_app/shell/notifications.py` | 頁面／presenter 與顯示輔助：`notifications`；`Toast`，`desktop_pages/notifications.py:16` |
 | `desktop_pages/onboarding.py` | 217 | presentation | `desktop_app/shell/onboarding.py` | 頁面／presenter 與顯示輔助：`onboarding`；`GettingStarted`，`desktop_pages/onboarding.py:19` |
 | `desktop_pages/palette_commands.py` | 67 | presentation | `desktop_app/shell/palette_commands.py` | 頁面／presenter 與顯示輔助：`palette_commands`；`register_pages`，`desktop_pages/palette_commands.py:14` |
 | `desktop_pages/paper.py` | 383 | presentation | `desktop_app/features/paper/paper.py` | 頁面／presenter 與顯示輔助：`paper`；匯入違規見第 3 節；`pending_orders`，`desktop_pages/paper.py:20` |
-| `desktop_pages/paper_layout.py` | 198 | presentation | `desktop_app/features/paper/paper_layout.py` | 頁面／presenter 與顯示輔助：`paper_layout`；匯入違規見第 3 節；`wrapped`，`desktop_pages/paper_layout.py:19` |
+| `desktop_pages/paper_layout.py` | 200 | presentation | `desktop_app/features/paper/paper_layout.py` | 頁面／presenter 與顯示輔助：`paper_layout`；匯入違規見第 3 節；`wrapped`，`desktop_pages/paper_layout.py:19` |
 | `desktop_pages/paper_readiness.py` | 41 | presentation | `desktop_app/features/paper/paper_readiness.py` | 頁面／presenter 與顯示輔助：`paper_readiness`；匯入違規見第 3 節；`refresh_readiness`，`desktop_pages/paper_readiness.py:8` |
 | `desktop_pages/paper_tabs.py` | 248 | presentation | `desktop_app/features/paper/paper_tabs.py` | 頁面／presenter 與顯示輔助：`paper_tabs`；匯入違規見第 3 節；`PnlDelegate`，`desktop_pages/paper_tabs.py:22` |
 | `desktop_pages/preferences.py` | 106 | presentation | `desktop_app/features/settings/preferences.py` | 頁面／presenter 與顯示輔助：`preferences`；匯入違規見第 3 節；`disclosure_value`，`desktop_pages/preferences.py:9` |
 | `desktop_pages/quick_start.py` | 87 | presentation | `desktop_app/features/onboarding/quick_start.py` | 頁面／presenter 與顯示輔助：`quick_start`；匯入違規見第 3 節；`QuickStart`，`desktop_pages/quick_start.py:12` |
 | `desktop_pages/quick_start_chain.py` | 53 | presentation | `desktop_app/features/onboarding/quick_start_chain.py` | 頁面／presenter 與顯示輔助：`quick_start_chain`；`QuickStartChain`，`desktop_pages/quick_start_chain.py:4` |
-| `desktop_pages/redesign_strategy_layout.py` | 362 | presentation | `desktop_app/features/strategy/redesign_strategy_layout.py` | 頁面／presenter 與顯示輔助：`redesign_strategy_layout`；`note`，`desktop_pages/redesign_strategy_layout.py:26` |
+| `desktop_pages/redesign_strategy_layout.py` | 365 | presentation | `desktop_app/features/strategy/redesign_strategy_layout.py` | 頁面／presenter 與顯示輔助：`redesign_strategy_layout`；`note`，`desktop_pages/redesign_strategy_layout.py:26` |
 | `desktop_pages/replay_controls.py` | 142 | presentation | `desktop_app/features/paper/replay_controls.py` | 頁面／presenter 與顯示輔助：`replay_controls`；`ReplayControls`，`desktop_pages/replay_controls.py:11` |
 | `desktop_pages/result_layers.py` | 201 | presentation | `desktop_app/components/result_layers.py` | 頁面／presenter 與顯示輔助：`result_layers`；`result_snapshot_lines`，`desktop_pages/result_layers.py:7` |
-| `desktop_pages/result_panels.py` | 137 | presentation | `desktop_app/components/result_panels.py` | 頁面／presenter 與顯示輔助：`result_panels`；`WalkForwardResults`，`desktop_pages/result_panels.py:10` |
-| `desktop_pages/result_widgets.py` | 258 | presentation | `desktop_app/components/result_widgets.py` | 頁面／presenter 與顯示輔助：`result_widgets`；匯入違規見第 3 節；`numeric`，`desktop_pages/result_widgets.py:40` |
-| `desktop_pages/settings.py` | 320 | presentation | `desktop_app/features/settings/settings.py` | 頁面／presenter 與顯示輔助：`settings`；匯入違規見第 3 節；`SettingsPage`，`desktop_pages/settings.py:13` |
+| `desktop_pages/result_panels.py` | 141 | presentation | `desktop_app/components/result_panels.py` | 頁面／presenter 與顯示輔助：`result_panels`；`WalkForwardResults`，`desktop_pages/result_panels.py:10` |
+| `desktop_pages/result_widgets.py` | 252 | presentation | `desktop_app/components/result_widgets.py` | 頁面／presenter 與顯示輔助：`result_widgets`；匯入違規見第 3 節；`numeric`，`desktop_pages/result_widgets.py:40` |
+| `desktop_pages/settings.py` | 317 | presentation | `desktop_app/features/settings/settings.py` | 頁面／presenter 與顯示輔助：`settings`；匯入違規見第 3 節；`SettingsPage`，`desktop_pages/settings.py:13` |
 | `desktop_pages/settings_layout.py` | 165 | presentation | `desktop_app/features/settings/settings_layout.py` | 頁面／presenter 與顯示輔助：`settings_layout`；`open_folder`，`desktop_pages/settings_layout.py:13` |
 | `desktop_pages/shortcuts.py` | 57 | presentation | `desktop_app/shell/shortcuts.py` | 頁面／presenter 與顯示輔助：`shortcuts`；`install_shortcuts`，`desktop_pages/shortcuts.py:10` |
-| `desktop_pages/strategy.py` | 440 | presentation | `desktop_app/features/strategy/strategy.py` | 頁面／presenter 與顯示輔助：`strategy`；匯入違規見第 3 節；`StrategyPage`，`desktop_pages/strategy.py:13` |
+| `desktop_pages/strategy.py` | 441 | presentation | `desktop_app/features/strategy/strategy.py` | 頁面／presenter 與顯示輔助：`strategy`；匯入違規見第 3 節；`StrategyPage`，`desktop_pages/strategy.py:13` |
 | `desktop_pages/strategy_tabs.py` | 40 | presentation | `desktop_app/features/strategy/strategy_tabs.py` | 頁面／presenter 與顯示輔助：`strategy_tabs`；`strategy_tabs`，`desktop_pages/strategy_tabs.py:8` |
 | `desktop_pages/views.py` | 236 | presentation | `desktop_app/shell/views.py` | 頁面／presenter 與顯示輔助：`views`；匯入違規見第 3 節；`ViewCoordinator`，`desktop_pages/views.py:14` |
 | `desktop_pages/wf_wizard.py` | 368 | presentation | `desktop_app/features/walk_forward/wf_wizard.py` | 頁面／presenter 與顯示輔助：`wf_wizard`；`failure_hint`，`desktop_pages/wf_wizard.py:14` |
 | `desktop_pages/widgets.py` | 160 | presentation | `desktop_app/components/widgets.py` | 頁面／presenter 與顯示輔助：`widgets`；匯入違規見第 3 節；`PanelCard`，`desktop_pages/widgets.py:29` |
-| `desktop_presentation.py` | 158 | presentation | `desktop_app/components/formatting.py` | 顯示格式化混入 dataset 讀取；匯入違規見第 3 節；`display_status`，`desktop_presentation.py:62` |
+| `desktop_presentation.py` | 131 | presentation | `desktop_app/components/formatting.py` | 顯示格式化混入 dataset 讀取；匯入違規見第 3 節；`display_status`，`desktop_presentation.py:62` |
 | `desktop_privacy.py` | 175 | presentation | `desktop_app/components/privacy.py` | 遮罩與隱私顯示元件；`mask_money`，`desktop_privacy.py:34` |
 | `desktop_recovery_smoke.py` | 265 | tooling | `desktop_app/smoke/recovery.py` | 可選打包驗證腳本，非 runtime layer；`_remaining`，`desktop_recovery_smoke.py:26` |
-| `desktop_research_runtime.py` | 377 | composition | `desktop_app/research_bootstrap.py` | 既有研究 session 與 v2 視窗接線；`ResearchUnavailable`，`desktop_research_runtime.py:16` |
-| `desktop_smoke/__init__.py` | 961 | tooling | `desktop_app/smoke/__init__.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_SmokeSettingsView`，`desktop_smoke/__init__.py:11` |
-| `desktop_strings.py` | 4316 | shared | `desktop_app/strings/catalog.py` | 字串查詢入口；C 依功能拆分，呼叫入口固定；`stage_error_message`，`desktop_strings.py:1726` |
+| `desktop_research_runtime.py` | 69 | composition | `desktop_app/research_bootstrap.py` | 既有研究 session 與 v2 視窗接線；`ResearchUnavailable`，`desktop_research_runtime.py:16` |
+| `desktop_smoke/__init__.py` | 1 | tooling | `desktop_app/smoke/__init__.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_SmokeSettingsView`，`desktop_smoke/__init__.py:11` |
+| `desktop_strings.py` | 207 | shared | `desktop_app/strings/catalog.py` | 字串查詢入口；C 依功能拆分，呼叫入口固定；`stage_error_message`，`desktop_strings.py:1726` |
 | `desktop_theme.py` | 441 | presentation | `desktop_app/shell/theme.py` | QSS 與 UI 外觀套用；`load_appearance`，`desktop_theme.py:110` |
 | `desktop_timeinput.py` | 205 | presentation | `desktop_app/components/timeinput.py` | 日期／時間輸入元件；`taipei_to_utc_iso`，`desktop_timeinput.py:19` |
 | `desktop_tls_smoke.py` | 369 | tooling | `desktop_app/smoke/tls.py` | 可選打包 TLS 驗證腳本；`safe_path`，`desktop_tls_smoke.py:36` |
@@ -130,7 +130,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/window.py` | 598 | presentation | `desktop_app/features/trading/window.py` | 既有 v2 UI／row 投影：`window`；保留現行較嚴格交易閘門；`_Operation`，`desktop_trading/window.py:32` |
 | `desktop_trading/wizard.py` | 325 | presentation | `desktop_app/features/trading/wizard.py` | 既有 v2 UI／row 投影：`wizard`；保留現行較嚴格交易閘門；`StrategyWizard`，`desktop_trading/wizard.py:41` |
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
-| `desktop_ui.py` | 1902 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
+| `desktop_ui.py` | 30 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
 | `desktop_walk_forward.py` | 314 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
@@ -161,12 +161,12 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/agent_tools.py` | 141 | application | `quantlab/agent_tools.py` | 記憶體工具註冊與授權流程；R4 無違規／超大觸發，原址保留；`_refusal`，`quantlab/agent_tools.py:13` |
 | `quantlab/analysis_contracts.py` | 363 | domain | `quantlab/research_core/domain/analysis_contracts.py` | 純分析 wire grammar；仍從 research 服務取得驗證規則；E 按責任抽取；匯入違規見第 3 節；`_fail`，`quantlab/analysis_contracts.py:42` |
 | `quantlab/analysis_recovery.py` | 768 | infrastructure | `quantlab/research_core/adapters/analysis_recovery.py` | SQLite 復原日誌與作業鎖；E 按責任抽取；`_fail`，`quantlab/analysis_recovery.py:86` |
-| `quantlab/analysis_recovery_windows.py` | 423 | infrastructure | `quantlab/analysis_recovery_windows.py` | Windows handle 與復原 helper；R4 無違規／超大觸發，原址保留；`_kernel`，`quantlab/analysis_recovery_windows.py:25` |
+| `quantlab/analysis_recovery_windows.py` | 424 | infrastructure | `quantlab/analysis_recovery_windows.py` | Windows handle 與復原 helper；R4 無違規／超大觸發，原址保留；`_kernel`，`quantlab/analysis_recovery_windows.py:25` |
 | `quantlab/assistant_chat.py` | 49 | application | `quantlab/assistant_chat.py` | 唯讀對話分派用例；R4 無違規／超大觸發，原址保留；`ChatDispatcher`，`quantlab/assistant_chat.py:10` |
-| `quantlab/automatic_backup.py` | 179 | infrastructure | `quantlab/research_core/adapters/automatic_backup.py` | 備份排程與檔案實作混合；E 按責任抽取；匯入違規見第 3 節；`AutomaticBackup`，`quantlab/automatic_backup.py:28` |
+| `quantlab/automatic_backup.py` | 183 | infrastructure | `quantlab/research_core/adapters/automatic_backup.py` | 備份排程與檔案實作混合；E 按責任抽取；匯入違規見第 3 節；`AutomaticBackup`，`quantlab/automatic_backup.py:28` |
 | `quantlab/backtest.py` | 374 | application | `quantlab/backtest.py` | 回測執行；含來源檔雜湊，非純 domain；`_performance_metrics`，`quantlab/backtest.py:21` |
 | `quantlab/backtest_summary.py` | 14 | domain | `quantlab/backtest_summary.py` | 樣本警告規則；R4 無違規／超大觸發，原址保留；`warning_keys`，`quantlab/backtest_summary.py:7` |
-| `quantlab/backup_inspection.py` | 156 | infrastructure | `quantlab/research_core/adapters/backup_inspection.py` | ZIP 與備份 metadata 讀取；E 按責任抽取；匯入違規見第 3 節；`ArchiveMetadata`，`quantlab/backup_inspection.py:24` |
+| `quantlab/backup_inspection.py` | 158 | infrastructure | `quantlab/research_core/adapters/backup_inspection.py` | ZIP 與備份 metadata 讀取；E 按責任抽取；匯入違規見第 3 節；`ArchiveMetadata`，`quantlab/backup_inspection.py:24` |
 | `quantlab/capital_scenario.py` | 113 | application | `quantlab/capital_scenario.py` | 抽樣計算與取消／deadline 協調；使用 monotonic；R4 無違規／超大觸發，原址保留；`empty_result`，`quantlab/capital_scenario.py:19` |
 | `quantlab/chart_data.py` | 285 | domain | `quantlab/chart_data.py` | OHLCV 聚合規則；R4 無違規／超大觸發，原址保留；`AggregationResult`，`quantlab/chart_data.py:28` |
 | `quantlab/chart_drawings.py` | 253 | infrastructure | `quantlab/chart_drawings.py` | 圖形值物件混合 DrawingStore 檔案儲存；R4 無違規／超大觸發，原址保留；`Anchor`，`quantlab/chart_drawings.py:24` |
@@ -176,7 +176,15 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/data_gap_report.py` | 100 | application | `quantlab/research_core/application/data_gap_report.py` | 匯入品質投影；混入 desktop 錯誤呈現；E 按責任抽取；匯入違規見第 3 節；`Gap`，`quantlab/data_gap_report.py:15` |
 | `quantlab/desktop_errors.py` | 38 | presentation | `desktop_app/components/desktop_errors.py` | 桌面例外分類；混入 runtime 依賴；E 按責任抽取；匯入違規見第 3 節；`error_message`，`quantlab/desktop_errors.py:7` |
 | `quantlab/desktop_feedback.py` | 171 | presentation | `quantlab/desktop_feedback.py` | 無 Qt 的 UI 完成／停止文案投影；R4 無違規／超大觸發，原址保留；`stop_presentation`，`quantlab/desktop_feedback.py:77` |
-| `quantlab/desktop_runtime.py` | 1840 | application | `quantlab/desktop_runtime.py` | 工作管理用例混合路徑、vault、備份與 process IO；不是整檔 composition；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_OperationExecutorRegistry`，`quantlab/desktop_runtime.py:52` |
+| `quantlab/desktop_runtime.py` | 119 | infrastructure | `quantlab/desktop_runtime.py` | 工作管理用例混合路徑、vault、備份與 process IO；不是整檔 composition；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_OperationExecutorRegistry`，`quantlab/desktop_runtime.py:52` |
+| `quantlab/research_core/adapters/workspace_store.py` | 297 | infrastructure | `quantlab/research_core/adapters/workspace_store.py` | E3 done: Workspace discovery and durable compatibility markers; moved bodies retain safety ordering. |
+| `quantlab/research_core/adapters/settings_store.py` | 28 | infrastructure | `quantlab/research_core/adapters/settings_store.py` | E3 done: Versioned settings IO; moved bodies retain safety ordering. |
+| `quantlab/research_core/adapters/state_json.py` | 30 | infrastructure | `quantlab/research_core/adapters/state_json.py` | E3 done: Bounded state JSON codec and reader; moved bodies retain safety ordering. |
+| `quantlab/research_core/adapters/runtime_safety.py` | 58 | infrastructure | `quantlab/research_core/adapters/runtime_safety.py` | E3 done: WAL admission and session clock guard; moved bodies retain safety ordering. |
+| `quantlab/research_core/adapters/event_log.py` | 77 | infrastructure | `quantlab/research_core/adapters/event_log.py` | E3 done: Bounded redacted status log with injected error catalog; moved bodies retain safety ordering. |
+| `quantlab/research_core/adapters/walk_forward_owner.py` | 50 | infrastructure | `quantlab/research_core/adapters/walk_forward_owner.py` | E3 done: Durable original-writer claim and verification; moved bodies retain safety ordering. |
+| `quantlab/research_core/application/job_manager.py` | 282 | application | `quantlab/research_core/application/job_manager.py` | E3 done: Port-driven admission, deadlines, cancellation and recovery proof; moved bodies retain safety ordering. |
+| `desktop_app/research_session.py` | 378 | composition | `desktop_app/research_session.py` | E3 done: Qt session separated from Qt-free adapter defaults; moved bodies retain safety ordering. |
 | `quantlab/diagnostics.py` | 127 | application | `quantlab/research_core/application/diagnostics.py` | 診斷組合用例；混有讀檔與 UI 標籤；E 按責任抽取；匯入違規見第 3 節；`fixed`，`quantlab/diagnostics.py:21` |
 | `quantlab/download_import.py` | 177 | application | `quantlab/research_core/application/download_import.py` | 下載與嚴格匯入流程協調；E 按責任抽取；匯入違規見第 3 節；`import_settings`，`quantlab/download_import.py:18` |
 | `quantlab/downloads.py` | 250 | infrastructure | `quantlab/downloads.py` | 官方 HTTP 與 archive 下載；R4 無違規／超大觸發，原址保留；`official_url`，`quantlab/downloads.py:38` |
@@ -188,7 +196,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/job_stages.py` | 31 | shared | `quantlab/job_stages.py` | 固定工作階段標籤；R4 無違規／超大觸發，原址保留；`normalize_stage`，`quantlab/job_stages.py:6` |
 | `quantlab/manual_exchange.py` | 326 | infrastructure | `quantlab/research_core/adapters/manual_exchange.py` | 手動交換檔案與 generator adapter；E 按責任抽取；匯入違規見第 3 節；`_strict`，`quantlab/manual_exchange.py:37` |
 | `quantlab/market.py` | 265 | domain | `quantlab/market.py` | 不可變行情資料值；R4 無違規／超大觸發，原址保留；`MarketValidationError`，`quantlab/market.py:13` |
-| `quantlab/market_history.py` | 675 | infrastructure | `quantlab/research_core/adapters/market_history.py` | 本地行情匯入與 cache 檔案鎖；E 按責任抽取；`_fail`，`quantlab/market_history.py:50` |
+| `quantlab/market_history.py` | 1 | infrastructure | `quantlab/market_history.py` | T5-E4 DONE: metadata only; all implementation and consumers moved directly to the four research_core owners; no imports or exports. |
 | `quantlab/market_providers.py` | 520 | infrastructure | `quantlab/market_providers.py` | 官方行情 HTTP 與 cache 實作；R4 無違規／超大觸發，原址保留；`official_url`，`quantlab/market_providers.py:60` |
 | `quantlab/paper.py` | 969 | application | `quantlab/research_core/application/paper.py` | 紙上交易狀態與風控服務；混有 SQLite journal；E 按責任抽取；`JournalConflict`，`quantlab/paper.py:47` |
 | `quantlab/paper_amend.py` | 46 | application | `quantlab/paper_amend.py` | 既有 paper 修改用例；R4 無違規／超大觸發，原址保留；`execute`，`quantlab/paper_amend.py:10` |
@@ -199,11 +207,11 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/provider.py` | 146 | infrastructure | `quantlab/provider.py` | 預設關閉 HTTP transport；匯入違規見第 3 節；`HTTPTransport`，`quantlab/provider.py:18` |
 | `quantlab/replay_pacing.py` | 52 | application | `quantlab/replay_pacing.py` | 回播 pacing 與 monotonic 時鐘協調；R4 無違規／超大觸發，原址保留；`ReplayPacer`，`quantlab/replay_pacing.py:13` |
 | `quantlab/reporting.py` | 358 | infrastructure | `quantlab/research_core/adapters/reporting.py` | 結果檔、CSV 匯出與資料持久化；E 按責任抽取；匯入違規見第 3 節；`saved_analysis_entries`，`quantlab/reporting.py:24` |
-| `quantlab/research.py` | 1093 | application | `quantlab/research.py` | 研究 campaign 協調與 SQLite 預算混合；匯入違規見第 3 節；`registry_json_schema`，`quantlab/research.py:51` |
+| `quantlab/research.py` | 1038 | application | `quantlab/research.py` | 研究 campaign 協調與 SQLite 預算混合；匯入違規見第 3 節；`registry_json_schema`，`quantlab/research.py:51` |
 | `quantlab/research_analysis.py` | 545 | application | `quantlab/research_analysis.py` | 分析流程與 journal 混合；G3 provider 直接匯入；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_safe_path`，`quantlab/research_analysis.py:60` |
 | `quantlab/response_output.py` | 54 | infrastructure | `quantlab/response_output.py` | Responses wire 輸出重組；依賴 transport error；R4 無違規／超大觸發，原址保留；`CompletedOutput`，`quantlab/response_output.py:8` |
-| `quantlab/runtime_support.py` | 171 | infrastructure | `quantlab/runtime_support.py` | durable IO 與 Windows mutex；不是純 shared；保留本體與既有路徑，見 G3 相依限制；`RuntimeSafetyError`，`quantlab/runtime_support.py:14` |
-| `quantlab/saved_candidate_pool.py` | 2063 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
+| `quantlab/runtime_support.py` | 170 | infrastructure | `quantlab/runtime_support.py` | durable IO 與 Windows mutex；不是純 shared；保留本體與既有路徑，見 G3 相依限制；`RuntimeSafetyError`，`quantlab/runtime_support.py:14` |
+| `quantlab/saved_candidate_pool.py` | 1439 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
 | `quantlab/significance.py` | 311 | domain | `quantlab/significance.py` | 純統計推論公式；R4 無違規／超大觸發，原址保留；`_decimal`，`quantlab/significance.py:33` |
 | `quantlab/sqlite_runtime.py` | 84 | infrastructure | `quantlab/sqlite_runtime.py` | 原生 SQLite 載入驗證與來源雜湊；R4 無違規／超大觸發，原址保留；`loaded_library`，`quantlab/sqlite_runtime.py:15` |
 | `quantlab/startup_timing.py` | 47 | shared | `quantlab/startup_timing.py` | 共用記憶體計時工具；R4 無違規／超大觸發，原址保留；`StartupTiming`，`quantlab/startup_timing.py:11` |
@@ -298,19 +306,19 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/update_check.py` | 86 | infrastructure | `quantlab/update_check.py` | 使用者觸發的 HTTP 版本查詢；R4 無違規／超大觸發，原址保留；`UpdateResult`，`quantlab/update_check.py:28` |
 | `quantlab/value_bounds.py` | 71 | domain | `quantlab/value_bounds.py` | 依賴 core 的數值／metadata 規則；不是 shared；R4 無違規／超大觸發，原址保留；`_bounded_number`，`quantlab/value_bounds.py:11` |
 | `quantlab/verdict.py` | 109 | domain | `quantlab/verdict.py` | 純 OOS 顯示判定規則；R4 無違規／超大觸發，原址保留；`_number`，`quantlab/verdict.py:19` |
-| `quantlab/walk_forward.py` | 810 | application | `quantlab/research_core/application/walk_forward.py` | 固定候選池選擇協調與 SQLite state；E 按責任抽取；匯入違規見第 3 節；`_bounds`，`quantlab/walk_forward.py:39` |
+| `quantlab/walk_forward.py` | 814 | application | `quantlab/research_core/application/walk_forward.py` | 固定候選池選擇協調與 SQLite state；E 按責任抽取；匯入違規見第 3 節；`_bounds`，`quantlab/walk_forward.py:39` |
 | `quantlab/web_fetch.py` | 368 | infrastructure | `quantlab/web_fetch.py` | 公開 HTTPS 文件擷取 adapter；R4 無違規／超大觸發，原址保留；`FetchBlocked`，`quantlab/web_fetch.py:54` |
 | `quantlab/wf_estimate.py` | 21 | presentation | `quantlab/wf_estimate.py` | 畫面時間估計；R4 無違規／超大觸發，原址保留；`estimated_seconds`，`quantlab/wf_estimate.py:11` |
 | `quantlab/windows_paths.py` | 54 | shared | `quantlab/windows_paths.py` | 跨層路徑拼寫工具；無讀寫副作用；保留本體與既有路徑，見 G3 相依限制；`canonical_path`，`quantlab/windows_paths.py:14` |
 | `tools/bench_backtest_scale.py` | 57 | tooling | `tools/bench_backtest_scale.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/bench_backtest_scale.py:17` |
-| `tools/bench_worker_latency.py` | 185 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
-| `tools/check_layers.py` | 207 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
+| `tools/bench_worker_latency.py` | 189 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
+| `tools/check_layers.py` | 218 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
 | `tools/check_trading_architecture.py` | 276 | tooling | `tools/check_trading_architecture.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Finding`，`tools/check_trading_architecture.py:22` |
 | `tools/ci_changes.py` | 95 | tooling | `tools/ci_changes.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`is_doc_candidate`，`tools/ci_changes.py:23` |
-| `tools/diagnose_paper_replay.py` | 1070 | tooling | `tools/diagnose_paper_replay.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Timings`，`tools/diagnose_paper_replay.py:26` |
+| `tools/diagnose_paper_replay.py` | 1071 | tooling | `tools/diagnose_paper_replay.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Timings`，`tools/diagnose_paper_replay.py:26` |
 | `tools/diagnose_research_phases.py` | 401 | tooling | `tools/diagnose_research_phases.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`source_key`，`tools/diagnose_research_phases.py:36` |
 | `tools/diagnose_wfo_storage.py` | 472 | tooling | `tools/diagnose_wfo_storage.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`canonical`，`tools/diagnose_wfo_storage.py:39` |
-| `tools/extract_desktop_smoke_r2.py` | 66 | tooling | `tools/extract_desktop_smoke_r2.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/extract_desktop_smoke_r2.py:23` |
+| `tools/extract_desktop_smoke_r2.py` | 51 | tooling | `tools/extract_desktop_smoke_r2.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/extract_desktop_smoke_r2.py:23` |
 | `tools/generate_significance_goldens.py` | 24 | tooling | `tools/generate_significance_goldens.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`generate`，`tools/generate_significance_goldens.py:10` |
 | `tools/generate_welch_goldens.py` | 28 | tooling | `tools/generate_welch_goldens.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`generate`，`tools/generate_welch_goldens.py:9` |
 | `tools/install_desktop_auth.py` | 114 | tooling | `tools/install_desktop_auth.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`requirements_text`，`tools/install_desktop_auth.py:26` |
@@ -320,41 +328,41 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
-| `tools/quality_gate.py` | 235 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
+| `tools/quality_gate.py` | 244 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
 | `tools/research_campaign.py` | 95 | tooling | `tools/research_campaign.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`run_fixture_campaign`，`tools/research_campaign.py:21` |
 | `tools/run_test_group.py` | 620 | tooling | `tools/run_test_group.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`core_shard_for_module`，`tools/run_test_group.py:78` |
 | `tools/trading_load_probe.py` | 494 | tooling | `tools/trading_load_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`process_memory`，`tools/trading_load_probe.py:42` |
 | `tools/trading_load_report.py` | 10 | tooling | `tools/trading_load_report.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`write_report`，`tools/trading_load_report.py:9` |
-| `tools/ui_readability_audit.py` | 209 | tooling | `tools/ui_readability_audit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_luminance`，`tools/ui_readability_audit.py:26` |
-| `tools/ui_redesign_preview.py` | 202 | tooling | `tools/ui_redesign_preview.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`isolate`，`tools/ui_redesign_preview.py:15` |
-| `tools/ui_snapshot.py` | 383 | tooling | `tools/ui_snapshot.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`parse_size`，`tools/ui_snapshot.py:19` |
+| `tools/ui_readability_audit.py` | 217 | tooling | `tools/ui_readability_audit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_luminance`，`tools/ui_readability_audit.py:26` |
+| `tools/ui_redesign_preview.py` | 210 | tooling | `tools/ui_redesign_preview.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`isolate`，`tools/ui_redesign_preview.py:15` |
+| `tools/ui_snapshot.py` | 391 | tooling | `tools/ui_snapshot.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`parse_size`，`tools/ui_snapshot.py:19` |
 | `tools/ui_test_gate.py` | 252 | tooling | `tools/ui_test_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`producer_assignments`，`tools/ui_test_gate.py:26` |
 | `tools/ui_theme_diff.py` | 63 | tooling | `tools/ui_theme_diff.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`compare`，`tools/ui_theme_diff.py:14` |
 | `tools/update_taifex_expiries.py` | 107 | tooling | `tools/update_taifex_expiries.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`SettlementTable`，`tools/update_taifex_expiries.py:17` |
 | `tools/validate_core_shards.py` | 282 | tooling | `tools/validate_core_shards.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`read_core_report`，`tools/validate_core_shards.py:70` |
-| `tools/validate_market_download.py` | 57 | tooling | `tools/validate_market_download.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_download.py:17` |
-| `tools/validate_market_history_import.py` | 99 | tooling | `tools/validate_market_history_import.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_history_import.py:23` |
+| `tools/validate_market_download.py` | 58 | tooling | `tools/validate_market_download.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_download.py:17` |
+| `tools/validate_market_history_import.py` | 101 | tooling | `tools/validate_market_history_import.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_history_import.py:23` |
 | `tools/validate_official_history.py` | 408 | tooling | `tools/validate_official_history.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`verified_oct8_calendar`，`tools/validate_official_history.py:35` |
 | `tools/validate_real_ai.py` | 396 | tooling | `tools/validate_real_ai.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`sha256_file`，`tools/validate_real_ai.py:110` |
-| `tools/validate_web_search.py` | 160 | tooling | `tools/validate_web_search.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/validate_web_search.py:31` |
+| `tools/validate_web_search.py` | 164 | tooling | `tools/validate_web_search.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/validate_web_search.py:31` |
 | `tools/verify_format_equivalence.py` | 104 | tooling | `tools/verify_format_equivalence.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`equivalent`，`tools/verify_format_equivalence.py:26` |
 | `trading_entry.py` | 11 | composition | `trading_entry.py` | 根目錄 launcher／桌面接線；保留路徑；`launch`，`trading_entry.py:6` |
 | `trading_runtime.py` | 103 | composition | `trading_runtime.py` | 根目錄 launcher／桌面接線；保留路徑；`default_root`，`trading_runtime.py:18` |
 
 | `quantlab/research_core/__init__.py` | 0 | shared | `quantlab/research_core/__init__.py` | PR D; slice 2a responsibility owner |
-| `quantlab/research_core/adapters/job_process.py` | 325 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/adapters/job_worker.py` | 188 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/job_process.py` | 326 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/job_worker.py` | 198 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/saved_pool_source.py` | 297 | application | `quantlab/research_core/adapters/saved_pool_source.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/adapters/workspace_backup.py` | 302 | application | `quantlab/research_core/adapters/workspace_backup.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/workspace_backup.py` | 334 | infrastructure | `quantlab/research_core/adapters/workspace_backup.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/__init__.py` | 0 | infrastructure | `quantlab/research_core/adapters/__init__.py` | PR D; slice 2a owner; extracted orchestration retains application classification |
 | `quantlab/research_core/application/job_requests.py` | 264 | application | `quantlab/research_core/application/job_requests.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/saved_pool_attempts.py` | 302 | application | `quantlab/research_core/application/saved_pool_attempts.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/saved_pool_validation.py` | 442 | application | `quantlab/research_core/application/saved_pool_validation.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/__init__.py` | 1 | application | `quantlab/research_core/application/__init__.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/domain/job_protocol.py` | 51 | domain | `quantlab/research_core/domain/job_protocol.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/domain/saved_pool.py` | 50 | domain | `quantlab/research_core/domain/saved_pool.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/ports/jobs.py` | 15 | application | `quantlab/research_core/ports/jobs.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/job_protocol.py` | 53 | domain | `quantlab/research_core/domain/job_protocol.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/saved_pool.py` | 52 | domain | `quantlab/research_core/domain/saved_pool.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/ports/jobs.py` | 26 | application | `quantlab/research_core/ports/jobs.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/ports/__init__.py` | 1 | application | `quantlab/research_core/ports/__init__.py` | PR D; slice 2a real owner |
 | `tools/refactor/split_core_runtime.py` | 626 | tooling | `tools/refactor/split_core_runtime.py` | PR D reproducible repair |
 | `tools/refactor/split_core_controller_fixes.py` | 136 | tooling | `tools/refactor/split_core_controller_fixes.py` | PR D reproducible repair |
@@ -364,14 +372,14 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/assistant/application/context_usage.py` | 9 | application | `quantlab/assistant/application/context_usage.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/domain/connection_errors.py` | 15 | domain | `quantlab/assistant/domain/connection_errors.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/ports/connection.py` | 21 | application | `quantlab/assistant/ports/connection.py` | PR D slice 2b responsibility owner |
-| `desktop_app/connection_composition.py` | 15 | composition | `desktop_app/connection_composition.py` | PR D slice 2b responsibility owner |
+| `desktop_app/connection_composition.py` | 17 | composition | `desktop_app/connection_composition.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/assistant/connection_presenter.py` | 233 | presentation | `desktop_app/features/assistant/connection_presenter.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/capital_scenario/presenter.py` | 29 | presentation | `desktop_app/features/capital_scenario/presenter.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/walk_forward/rows.py` | 56 | presentation | `desktop_app/features/walk_forward/rows.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | 189 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | 72 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_operations.py` | 206 | application | `quantlab/research_core/application/walk_forward_operations.py` | PR D slice 2b responsibility owner |
-| `quantlab/research_core/application/walk_forward_projection.py` | 72 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_projection.py` | 74 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_inputs.py` | 15 | application | `quantlab/research_core/application/walk_forward_inputs.py` | PR D slice 2b responsibility owner |
 
 | `quantlab/assistant/adapters/chatgpt/account_paths.py` | 26 | infrastructure | `quantlab/assistant/adapters/chatgpt/account_paths.py` | T4 extracted owner; behaviour preserved. |
@@ -395,7 +403,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/research_core/domain/receipts.py` | 65 | domain | `quantlab/research_core/domain/receipts.py` | T4 extracted owner; behaviour preserved. |
 | `quantlab/shared/runtime_errors.py` | 5 | shared | `quantlab/shared/runtime_errors.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/adapt_test_paths.py` | 352 | tooling | `tools/refactor/adapt_test_paths.py` | T4 extracted owner; behaviour preserved. |
-| `tools/refactor/extract_runtime_error.py` | 138 | tooling | `tools/refactor/extract_runtime_error.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/extract_runtime_error.py` | 139 | tooling | `tools/refactor/extract_runtime_error.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/move_desktop_app.py` | 394 | tooling | `tools/refactor/move_desktop_app.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/repair_paths.py` | 283 | tooling | `tools/refactor/repair_paths.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/split_core_assistant.py` | 200 | tooling | `tools/refactor/split_core_assistant.py` | PR D reproducible repair |
@@ -450,9 +458,9 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/components/chart_paint_footer.py` | 51 | presentation | `desktop_app/components/chart_paint_footer.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/components/form_values.py` | 48 | presentation | `desktop_app/components/form_values.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/components/job_messages.py` | 20 | presentation | `desktop_app/components/job_messages.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `desktop_app/components/result_tables.py` | 141 | presentation | `desktop_app/components/result_tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/result_tables.py` | 143 | presentation | `desktop_app/components/result_tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/backtest/forms.py` | 126 | presentation | `desktop_app/features/backtest/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `desktop_app/features/backtest/summary.py` | 196 | presentation | `desktop_app/features/backtest/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/backtest/summary.py` | 193 | presentation | `desktop_app/features/backtest/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/paper/forms.py` | 198 | presentation | `desktop_app/features/paper/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/paper/policy_form.py` | 64 | presentation | `desktop_app/features/paper/policy_form.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/research/forms.py` | 90 | presentation | `desktop_app/features/research/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
@@ -570,15 +578,15 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | Source | Lines | Layer | Target | Reason |
 | --- | ---: | --- | --- | --- |
-| `desktop_app/bootstrap.py` | 148 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/bootstrap.py` | 151 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/analysis/presenter.py` | 130 | presentation | `desktop_app/features/analysis/presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/chart_presenter.py` | 76 | presentation | `desktop_app/features/market/chart_presenter.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/history_dialog.py` | 254 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/indicator_controls.py` | 144 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/history_dialog.py` | 257 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_controls.py` | 145 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/layout.py` | 165 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/rows.py` | 158 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_labels.py` | 49 | presentation | `desktop_app/features/strategy/idea_labels.py` | PR C: slice 2 responsibility extraction |
@@ -588,16 +596,16 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/features/strategy/idea_rows.py` | 131 | presentation | `desktop_app/features/strategy/idea_rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/shell/job_presenter.py` | 209 | presentation | `desktop_app/shell/job_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/shell/navigation.py` | 34 | presentation | `desktop_app/shell/navigation.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/services.py` | 27 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/setup.py` | 172 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/window.py` | 157 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/services.py` | 31 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/setup.py` | 174 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/window.py` | 158 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_files.py` | 49 | infrastructure | `quantlab/research_core/adapters/ui_files.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_idea_stream.py` | 47 | infrastructure | `quantlab/research_core/adapters/ui_idea_stream.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_repository.py` | 93 | infrastructure | `quantlab/research_core/adapters/ui_repository.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/analysis_operations.py` | 126 | application | `quantlab/research_core/application/analysis_operations.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/paper_operations.py` | 182 | application | `quantlab/research_core/application/paper_operations.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/research_operations.py` | 110 | application | `quantlab/research_core/application/research_operations.py` | PR C: slice 2 responsibility extraction |
-| `quantlab/research_core/application/ui_operations/assistant.py` | 140 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/assistant.py` | 138 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/backup.py` | 15 | application | `quantlab/research_core/application/ui_operations/backup.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/binding_policy.py` | 9 | application | `quantlab/research_core/application/ui_operations/binding_policy.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/data.py` | 124 | application | `quantlab/research_core/application/ui_operations/data.py` | PR C: slice 2 responsibility extraction |
@@ -606,15 +614,15 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `quantlab/research_core/application/ui_operations/lifecycle.py` | 23 | application | `quantlab/research_core/application/ui_operations/lifecycle.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/market.py` | 131 | application | `quantlab/research_core/application/ui_operations/market.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/registry.py` | 135 | application | `quantlab/research_core/application/ui_operations/registry.py` | PR C: slice 2 responsibility extraction |
-| `quantlab/research_core/domain/market_sessions.py` | 107 | domain | `quantlab/research_core/domain/market_sessions.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/domain/market_sessions.py` | 136 | domain | `quantlab/research_core/domain/market_sessions.py` | T5-E4 DONE: authoritative session values/policy and canonical digests; shared by UI and history pipeline. |
 | `quantlab/research_core/ports/idea_records.py` | 9 | application | `quantlab/research_core/ports/idea_records.py` | PR C: slice 2 responsibility extraction |
-| `quantlab/research_core/ports/ui_operations.py` | 132 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/ui_operations.py` | 128 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_consumers.py` | 174 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_finish.py` | 77 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_idea.py` | 190 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_inputs.py` | 110 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_inputs.py` | 117 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_market.py` | 218 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_oracles.py` | 92 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_oracles.py` | 96 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_shell.py` | 318 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_slice2.py` | 268 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_verify.py` | 56 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
@@ -628,8 +636,8 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | `tools/refactor/split_ui_r3f.py` | 81 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
 
-| `tools/refactor/measure_ui_sizes.py` | 70 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
-| `tools/refactor/measure_core_sizes.py` | 74 | tooling | `tools/refactor/measure_core_sizes.py` | PR D r5: complete base-relative size measurement including migration tooling and exact section 10.3 exception gate. |
+| `tools/refactor/measure_ui_sizes.py` | 81 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
+| `tools/refactor/measure_core_sizes.py` | 83 | tooling | `tools/refactor/measure_core_sizes.py` | PR D r5: complete base-relative size measurement including migration tooling and exact section 10.3 exception gate. |
 
 | `tools/refactor/check_ui_scripts.py` | 59 | tooling | `tools/refactor/check_ui_scripts.py` | PR C r4b: audit every historical UI script for byte-identical reruns. |
 
@@ -645,6 +653,49 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | `tools/refactor/split_core_r8.py` | 33 | tooling | `tools/refactor/split_core_r8.py` | C/D merged source inventory; existing layer assignment. |
 | `tools/refactor/split_core_r10.py` | 58 | tooling | `tools/refactor/split_core_r10.py` | T4-r10 reproducible integration repair; existing tools/ layer assignment. |
+
+PR E shared-component owners (content-only):
+
+| path | lines | layer | target path | note |
+|---|---:|---|---|---|
+| `desktop_app/components/tables.py` | 17 | presentation | `desktop_app/components/tables.py` | T5-E1 section 7 consolidation; no move. |
+| `desktop_app/components/fields.py` | 10 | presentation | `desktop_app/components/fields.py` | T5-E1 section 7 consolidation; no move. |
+| `desktop_app/components/validation_feedback.py` | 46 | presentation | `desktop_app/components/validation_feedback.py` | T5-E1 section 7 consolidation; no move. |
+| `quantlab/shared/time.py` | 11 | shared | `quantlab/shared/time.py` | T5-E1 section 7 consolidation; no move. |
+| `tools/refactor/e_components.py` | 341 | tooling | `tools/refactor/e_components.py` | T5-E1 section 7 consolidation; no move. |
+
+PR E4 market/history owners (content-only):
+
+| path | lines | layer | target path | note |
+|---|---:|---|---|---|
+| `quantlab/research_core/adapters/history_decoder.py` | 241 | infrastructure | `quantlab/research_core/adapters/history_decoder.py` | T5-E4 DONE: bounded CSV/tick decoding and bar/provenance projection. |
+| `quantlab/research_core/adapters/market_history.py` | 306 | infrastructure | `quantlab/research_core/adapters/market_history.py` | T5-E4 DONE: bounded cache IO, advisory lock and exclusive publication. |
+| `quantlab/research_core/application/history_import.py` | 43 | application | `quantlab/research_core/application/history_import.py` | T5-E4 DONE: import sequencing through explicit HistoryStorage port. |
+| `quantlab/research_core/ports/history.py` | 16 | application | `quantlab/research_core/ports/history.py` | T5-E4 DONE: local history storage capabilities. |
+| `quantlab/research_core/ports/market_data.py` | 30 | application | `quantlab/research_core/ports/market_data.py` | T5-E4 DONE: official daily MarketDataProvider and result Protocols. |
+| `tools/refactor/e_market_history.py` | 158 | tooling | `tools/refactor/e_market_history.py` | T5-E4 DONE: reproducible E4 extraction and direct reference edits. |
+| `tools/refactor/scan_market_imports.py` | 100 | tooling | `tools/refactor/scan_market_imports.py` | T5-E4 DONE: import and patch-target resolution without running tests. |
+| `tools/refactor/e_market_history_references.json` | 257 | tooling | `tools/refactor/e_market_history_references.json` | T5-E4 DONE: anchored mechanical reference recipes and port definitions. |
+
+| `tools/refactor/cleanup_e2.py` | 75 | tooling | `tools/refactor/cleanup_e2.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
+| `tools/refactor/e_runtime.py` | 416 | tooling | `tools/refactor/e_runtime.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
+| `tools/refactor/scan_runtime_imports.py` | 118 | tooling | `tools/refactor/scan_runtime_imports.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
+
+| `desktop_app/smoke/auth.py` | 99 | tooling | `desktop_app/smoke/auth.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/fixtures.py` | 60 | tooling | `desktop_app/smoke/fixtures.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/history.py` | 184 | tooling | `desktop_app/smoke/history.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/lifecycle.py` | 43 | tooling | `desktop_app/smoke/lifecycle.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/market.py` | 173 | tooling | `desktop_app/smoke/market.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/runner.py` | 276 | tooling | `desktop_app/smoke/runner.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/walk_forward.py` | 176 | tooling | `desktop_app/smoke/walk_forward.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `tools/refactor/e_smoke.py` | 257 | tooling | `tools/refactor/e_smoke.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+
+| `tools/refactor/e6_references.py` | 31 | tooling | `tools/refactor/e6_references.py` | T5-E6: exact mechanical reference replay; assertions preserved. |
+
+| `tests/fixtures/layered_paths/e6_service_relocations.json` | 1357 | tooling | `tests/fixtures/layered_paths/e6_service_relocations.json` | T5-E6: reviewed service relocation fixture; excluded from runtime layer scanning. |
+| `tests/legacy_history.py` | 32 | tooling | `tests/legacy_history.py` | T5-E6: test-only legacy history interface fixture; excluded from runtime layer scanning. |
+| `tools/refactor/e6_references.json` | 1821 | tooling | `tools/refactor/e6_references.json` | T5-E6: anchored mechanical reference recipes. |
+| `tools/refactor/e7_references.py` | 60 | tooling | `tools/refactor/e7_references.py` | T5-E7: exact owner-reference and fixture-interface correction replay. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -994,10 +1045,28 @@ GitNexus 先查詢 table/row/form/chart/async/provider 流程，再讀表列來�
 | 驗證提示顯示／`extract`（3 處） | `desktop_ui.py:1662` 的 `form_feedback`；`desktop_pages/error_guidance.py:54` 的 `run_inline`；`desktop_market.py:1000` 的 `accept_import` 錯誤 label | `desktop_app/components/validation_feedback.py`：固定錯誤碼到 label／下一步的呈現。各入口的驗證與 confirm 保留；不把 exception 原文、路徑或憑證傳給共用 renderer。 | E |
 | 圖表 widget／`tolerate`（2 個 candlestick host，已共用實作） | `desktop_market.py:1160` 的 dashboard chart；`desktop_chart_popout.py:56` 的 popout chart | 既有 `CandlestickChart` 到 `desktop_app/components/charts.py`，C 的內部拆分見第 10 節。兩處都已用同一 class，不再抽 ChartFactory／基底階層；`desktop_pages/compare_equity.py:94` 是 equity overlay，不能冒充第三個 candlestick 實作。 | E（保留既有共用，無新增抽取） |
 | 非同步狀態顯示／`extract`（3 處） | `desktop_pages/async_status.py:35` 的 loading/empty/error/stale；`desktop_market.py:271` 的 loading 標籤；`desktop_pages/idea_research.py:544` 的工作結果標籤 | `desktop_app/components/async_status.py`：狀態文字、錯誤碼與 action 可見性。各 presenter 把自己的狀態映射到顯示值；`desktop_pages/job_progress.py:38` 的取消防重入、worker deadline、unknown 不重試等仍由原 owner 控制。 | E |
-| 外部行情服務 port／`tolerate`（2 個官方日資料來源） | `quantlab/market_providers.py:146` 的 TWSE parser；`quantlab/market_providers.py:202` 的 TAIFEX parser；共用 transport 已在 `quantlab/market_providers.py:504` 注入 | 若第三種同契約 transport 出現，純 `str -> bytes` 契約候選落點為 `quantlab/shared/http_types.py`（只依賴標準函式庫）；本輪保留注入點，不新增通用 HTTP 基底類。行情 `MarketSeries` 等業務型別的 port 應由 `quantlab/research_core/ports/` 擁有，不能放進 shared 後反向 import domain。ChatGPT G3 與 v2 broker 契約不是第三個相同 port，不能為共用而改它們。 | E（保留／檢查 port 邊界） |
+| 外部行情服務 port／`tolerate`（2 個官方日資料來源） | `quantlab/market_providers.py:146` 的 TWSE parser；`quantlab/market_providers.py:202` 的 TAIFEX parser；共用 transport 已在 `quantlab/market_providers.py:504` 注入 | 若第三種同契約 transport 出現，純 `str -> bytes` 契約候選落點為 `quantlab/shared/http_types.py`（只依賴標準函式庫）；本輪保留注入點，不新增通用 HTTP 基底類。行情 `MarketSeries` 等業務型別的 port 應由 `quantlab/research_core/ports/` 擁有，不能放進 shared 後反向 import domain。ChatGPT G3 與 v2 broker 契約不是第三個相同 port，不能為共用而改它們。 | E — DONE (T5-E4): `MarketDataProvider(Protocol)` in `quantlab/research_core/ports/market_data.py`; `create_market_provider(config)` in `desktop_app/research_bootstrap.py`; transport/consent checks unchanged. |
 | aware timestamp 轉換／`extract`（3 處） | `desktop_forms.py:1231` 的 ISO/Z 解析；`desktop_pages/result_widgets.py:61` 的 ISO/Z 解析；`quantlab/market_history.py:66` 的 session ISO/Z 解析 | `quantlab/shared/time.py`：純 aware ISO 解析／UTC 正規化，不依賴 UI 或 domain。各入口仍保留自己的長度、timezone、錯誤型別檢查；UTC 與 Taipei 的最後格式化留在 presentation。不得把 naive timestamp 默認成任何時區。 | E |
 
 不同 JSON 設定不視為可直接合併：`quantlab/market_history.py:55` 使用 `ensure_ascii=False, allow_nan=False`，`quantlab/chart_drawings.py:103` 的 Unicode 預設不同，`quantlab/market_providers.py:472` 的 cache 編碼設定也不同。它們會影響 bytes／digest，不能只因都呼叫 `json.dumps` 就共用同一預設；G3 的 canonical/hash 更不在抽取範圍。
+
+### 7.1 PR E outcome (T5-E1)
+
+Content-only extraction against main `909fc49`; no files renamed. Counts below are static production call expressions, excluding tests and migration scripts. Caller-specific schemas, ordering, raw/financial roles, privacy, timestamp display zones, precision, validation and lifecycle remain with their existing owners. `tools/refactor/e_components.py` reproduces all mechanical caller/import edits.
+
+| Section 7 candidate | Outcome | Final owner and production call sites / boundary |
+|---|---|---|
+| Table fill / widths | merged | `desktop_app/components/tables.py`: `fill_table` has 3 callers (`components/forms.py`, `components/result_tables.py`, `components/result_widgets.py` under `desktop_app/`); `resize_columns` has 3 (`components/result_tables.py`, `components/result_widgets.py`, `features/backtest/summary.py`). Fills reuse ResultTable filling. Header schemas and exact tooltip/raw-role construction remain in the adapters; the shared fill mechanism installs their items unchanged. |
+| Row amount / missing-value formatting | merged | `desktop_app/components/formatting.py:finite_decimal` unifies bounded finite parsing used by `display_number`, `features/backtest/summary.py:_report_number`, and `components/result_widgets.py` display/sort adapters (3 responsibility owners; 8 call expressions). Missing/undefined/zero/diagnostics_required, report type admission, units, percent and precision remain unchanged in callers. |
+| Form fields | merged | `desktop_app/components/fields.py:named_field`: base `components/forms.py`, `features/data/data.py`, and market `history_dialog.py`, `dashboard.py`, `layout.py`, `indicator_controls.py` (6 caller modules; 36 call expressions). Data file fields retain their unnamed object identity; date/Decimal/choice validation stays local. |
+| Validation feedback | merged | `desktop_app/components/validation_feedback.py`: catalogue and next-step text copied verbatim from `components/error_guidance.py`; `show_feedback` has 4 call sites across 3 modules (`shell/window.py:form_feedback`, `components/error_guidance.py:run_inline`, `features/market/history_dialog.py:add_session` and `accept_import`). Privacy masking precedes rendering, and only the existing inline caller adds guidance/accessibility text. Exception classification, confirmation and highlight timers stay local. |
+| Chart widget | tolerated | Already merged in `desktop_app/components/charts.py:CandlestickChart`, used by `features/market/layout.py` and `features/market/chart_popout.py` (2 hosts). Equity overlay is a distinct responsibility; no new chart abstraction. |
+| Async status | already merged | `desktop_app/components/async_status.py:AsyncStatus` has 4 construction sites: `features/backtest/backtest.py`, `features/settings/log_table.py`, `features/settings/maintenance.py`, `shell/onboarding.py`. Market `watchlist_presenter.py:set_loading` controls refresh-button state/text; strategy job state is already delegated to its presenter and shared job components. Their distinct text/lifecycle remains local, with no new generic state machine. |
+| External market service port | implemented (T5-E4) | `quantlab/research_core/ports/market_data.py:MarketDataProvider` is the Protocol port; `desktop_app/research_bootstrap.py:create_market_provider(config)` selects from the dict registry, backed by `quantlab/market_providers.py`. Existing transport and consent checks remain unchanged; ChatGPT/broker contracts remain distinct. |
+| Aware ISO timestamp conversion | merged | `quantlab/shared/time.py:aware_iso_utc` has 3 callers: `desktop_app/features/backtest/summary.py`, `desktop_app/components/result_widgets.py`, `quantlab/research_core/domain/market_sessions.py`. String ISO/Z parsing normalizes to UTC and rejects naive input. Each caller keeps its previous length/timezone checks, exception handling and final UTC/Taipei formatting. |
+| JSON encoding / canonicalization boundary | tolerated | `quantlab/research_core/domain/market_sessions.py`, `quantlab/research_core/adapters/market_history.py`, `quantlab/chart_drawings.py`, `quantlab/market_providers.py` retain distinct Unicode/allow_nan/cache byte policies. G3 canonical/hash code untouched. |
+
+Existing tests changed only by mechanical imports: `tests/test_accessibility_walk.py`, `tests/test_error_guidance_u7.py`, `tests/test_strict_json_a3.py`; reasons are recorded under slice `T5-E1` in `.tmp-layered/test-edit-reasons.json`. No assertions changed. The requested prohibition on GitNexus/unittest/commits supersedes the older common workflow for this round; controller owns full tests, packaging, CI and commits.
 
 ## 8 死碼候選
 
@@ -1027,6 +1096,20 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 
 以上 **10 個候選全部 kept**；本次沒有足以列為 **confirmed dead (text-search: 0 refs)** 的產品符號。這是逐項反證後的結果，不是宣稱全 repo 沒有死碼。E 的 archives 刪除是第 6 節已指定的範圍，與這些 callback、範例的存廢分開；真正刪除前仍需重新確認當時圖與文字參照。
 
+### 8.1 PR E outcome
+
+All ten section-8 candidates remain **kept**; no dead-code candidate was removed in E.
+Final owners: `_order` — `quantlab/chart_data.py`; `_training_packet` —
+`quantlab/research_analysis.py`; `_training_status` — `quantlab/agent_tools.py`;
+`local_time` — `quantlab/backup_inspection.py`; `WorkspacePanel.dragEnterEvent` —
+`desktop_app/features/market/workspace.py`; the two StrategyConfig example methods and
+example module — `docs/script samples/strategy_sample.py` (non-runnable historical
+example, intentionally excluded from the product legacy-import ban).
+The old `_worker_gui_unavailable` and `_WorkerBindings` symbols were already absent
+at E's starting head after C's worker/UI separation. E removes nothing for them;
+the retained worker boundary lives in `quantlab/research_core/adapters/job_worker.py`,
+and the UI binding owner is `desktop_app/shell/bindings.py`.
+
 ## 9 過度防禦程式碼
 
 依規格 4.3，以下是 **E 的內容清理清單**。需要先形成明確內部型別／presenter 邊界的項目已寫出前置條件；不能在 R0 或搬檔 PR 順手刪除，也不能把「內部呼叫」當成可以刪除反序列化驗證的理由。
@@ -1046,6 +1129,25 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 
 另外保留 OOS／holdout 隔離、不可逆預算、deadline／timeout、取消後未知結果的 fail-closed 行為、來源 SHA-256／producer profile、路徑 reparse/symlink 與 WAL／restore／process-tree 證據。重複驗證若跨越了 IPC、磁碟或不可信 payload，仍是兩個邊界；不能拿本節的內部型別清理去刪除它。G3 八檔須遵循第 5 節逐檔 QA；frozen profiles 的 bytes 不受本節 removal note 授權。
 
+### 9.1 PR E outcome
+
+| Inventory item | Outcome | Final path and reason |
+|---|---|---|
+| shown duplicate None test | removed | `desktop_app/components/result_widgets.py`: only the second condition removed; MISSING/None/zero and numeric checks retained. |
+| AppPaths bootstrap fallback | removed | `quantlab/research_core/application/ui_operations/idea.py`, `quantlab/research_core/application/ui_operations/assistant.py`, `quantlab/research_core/application/analysis_operations.py`: former desktop_ui operation owners now read `paths.bootstrap or paths.root`; actual worker input is AppPaths, constructed in `quantlab/research_core/adapters/job_worker.py`. Credential/path checks retained. Unlisted uses stay untouched, including assistant/recovery and the SettingsPage workspace bootstrap fallback (`getattr(paths, 'bootstrap', None) or paths.root`) behind its storage port. |
+| marker-index fallback | removed | `desktop_app/components/charts.py` and `desktop_app/components/chart_geometry.py`: constructor already initializes the index before any paint; both reads now access the field. |
+| market TypeError catch | precondition not met | `desktop_app/features/market/chart_presenter.py`: aggregation still validates source and timeframe itself; no complete presenter/adapter admission contract exists. Keep ValueError/TypeError handling and invalid-data display. |
+| prepare-paper unused parameters | removed | `quantlab/research_core/application/paper_operations.py`: remove paths, emit and descendants_stopped only from the private helper; all eight private call sites updated; dispatcher/recovery signatures and policy validation retained. |
+| geometry painter parameter | removed | `desktop_app/components/chart_geometry.py` and private call in `desktop_app/components/charts.py`: font metrics, geometry and text callback retained. |
+| async exception parameter | kept | `desktop_app/components/async_status.py`: sensitive exception discard contract unchanged. |
+| fault injection / polymorphic / Qt arguments | kept | `quantlab/paper.py`, `desktop_app/components/result_tables.py` and Qt overrides: fault seam, set_rows columns argument and event signatures unchanged. |
+| Explicit safety boundaries and following paragraph | kept | User/API/file/serialization/IPC checks, Shioaji loader, pickle/eval/dynamic-execution bans, live/credential/TLS guards, OOS/holdout isolation, irreversible budgets, deadline/timeout, unknown-result fail-closed, producer profiles, reparse/symlink/WAL/restore/process evidence unchanged. |
+
+No GitNexus or unittest execution in E2, per owner instruction. Mechanical private
+calls/import-reference edits are reproducible with `tools/refactor/cleanup_e2.py`.
+The archive is retired from the tracked tree. The obsolete quality-gate missing-file exception is removed in T5-E9.
+Tests read fixed historical blobs at main `909fc49`; no security assertion is dropped.
+
 ## 10 大於 600 行的責任拆分方案
 
 以 `git ls-files -z '*.py'` 為全集，排除 `tests/`、`archives/` 前綴，逐檔 `Path(path).read_bytes().count(b'\n')`，等同 `wc -l` 的 LF 計數（不以 `splitlines()` 計數）。結果 **實測 21 檔，下面列出 21 檔，measured count = listed count = 21**；每個行數都與題定基線及第 2 節相同。
@@ -1057,7 +1159,7 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 | `desktop_strings.py` | 4316 | C | 查詢入口／locale fallback → `desktop_app/strings/catalog.py`（`desktop_strings.py:1755`）；按 key 第一段拆 catalog dictionaries → `desktop_app/strings/assistant.py`（`desktop_strings.py:12`）、`desktop_app/strings/market.py`（`desktop_strings.py:93`）及其他同名功能檔，所有後置 `ZH_TW.update` 保持覆蓋順序（`desktop_strings.py:1701`）；歷史文字 key aliases → `desktop_app/strings/aliases.py` 再依前綴分資料檔（`desktop_strings.py:2992`）；worker stage 錯誤顯示 → `desktop_app/components/job_messages.py`（`desktop_strings.py:1726`）。catalog 保留單一真正查詢實作，不是舊模組 shim。 |
 | `quantlab/saved_candidate_pool.py` | 2063 | D；frozen-data 大小例外 | producer profile 字面值留原檔原位元（`quantlab/saved_candidate_pool.py:1010`、`quantlab/saved_candidate_pool.py:1098`）；保留真正的 admission 協調與 profile 選擇本體（`quantlab/saved_candidate_pool.py:1426`、`quantlab/saved_candidate_pool.py:1777`），不是整檔搬走後 re-export。bounded JSON／read-only campaign IO → `quantlab/research_core/adapters/saved_pool_source.py`（`quantlab/saved_candidate_pool.py:1198`、`quantlab/saved_candidate_pool.py:1374`）；snapshot／attempt／selection 驗證 → `quantlab/research_core/application/saved_pool_validation.py`、`saved_pool_attempts.py`（`quantlab/saved_candidate_pool.py:1543`、`quantlab/saved_candidate_pool.py:1871`、`quantlab/saved_candidate_pool.py:1967`），profile 作明確參數傳入，避免回 import 造成循環。凍結資料本身已超過 600 行，故原檔不承諾 ≤400；逐位元比對 profile 與既有 producer 身份。 |
 | `desktop_ui.py` | 1902 | C（D 使用已協調契約） | 視窗／導航／掛載 → `desktop_app/shell/main_window.py`（`desktop_ui.py:1497`、`desktop_ui.py:1629`）；busy／poll／notification 投影 → `desktop_app/shell/job_presenter.py`（`desktop_ui.py:1687`、`desktop_ui.py:1715`）；分析／研究／paper handler 分別抽到 `quantlab/research_core/application/analysis_operations.py`、`research_operations.py`、`paper_operations.py`（`desktop_ui.py:489`、`desktop_ui.py:625`、`desktop_ui.py:938`），移除 UI 字串相依、只回錯誤碼／資料；provider/auth 的實體建立與 handler registry → `desktop_app/bootstrap.py`（`desktop_ui.py:121`、`desktop_ui.py:1284`）；分析顯示文字 → `desktop_app/features/analysis/presenter.py`（`desktop_ui.py:360`）。C 擁有此來源檔修改，D 不平行重寫同一組 handlers。 |
-| `quantlab/desktop_runtime.py` | 1840 | D | 原路徑留必要的 workspace／credential 本體（`quantlab/desktop_runtime.py:229`、`quantlab/desktop_runtime.py:438`），及 G3 auth 所引用的 write 工具；不把它們搬走再用 shim 補回。備份 archive／restore IO → `quantlab/research_core/adapters/workspace_backup.py`（`quantlab/desktop_runtime.py:626`）；process-tree／spawn／IPC → `quantlab/research_core/adapters/job_process.py`、`job_worker.py`（`quantlab/desktop_runtime.py:1057`、`quantlab/desktop_runtime.py:972`）；launch request 準備 → `quantlab/research_core/application/job_requests.py`（`quantlab/desktop_runtime.py:1325`、`quantlab/desktop_runtime.py:1376`、`quantlab/desktop_runtime.py:1444`）；JobManager 的實際 admission／生命週期協調留本體並只依賴 process/storage port（`quantlab/desktop_runtime.py:1219`、`quantlab/desktop_runtime.py:1573`）；registry 接線交 composition（`quantlab/desktop_runtime.py:74`、`quantlab/desktop_runtime.py:83`）。剩餘本體若仍超標，須附具體職責與進一步抽取方案；不得弱化 credential 邊界以湊行數。  PR E (R4 research-core layering) further-extraction plan for the current 860-line residue (all ranges below refer to current `quantlab/desktop_runtime.py`): workspace schema/marker IO (65-86, 109-154) and AppPaths/WorkspaceLocator discovery, bootstrap pointer and path admission (167-360) -> `quantlab/research_core/adapters/workspace_store.py`; SettingsStore version validation and persistence (363-380) -> `quantlab/research_core/adapters/settings_store.py`, with bounded JSON encoding/reading (58-62, 157-164) -> `quantlab/research_core/adapters/state_json.py` for workspace, settings and event-log consumers; runtime-safety checks: SQLite WAL admission (89-106) and RuntimeGuard startup/session-marker, clock discontinuity and reconciliation-required state (549-574) -> `quantlab/research_core/adapters/runtime_safety.py` (an adapter because it performs SQLite/filesystem IO); bounded redacted event-log rotation/validation (484-546) -> `quantlab/research_core/adapters/event_log.py`, with an injected fixed error-code catalog; JobManager admission, walk-forward ownership proof, deadlines, cancellation and quiescence/release orchestration (577-860) -> `quantlab/research_core/application/job_manager.py`, using the existing `ports/jobs.py` process/storage ports and request service; walk-forward ownership-file IO (626-663) -> `quantlab/research_core/adapters/walk_forward_owner.py` behind the storage port, so application orchestration does not import storage adapters; default adapter construction (38-45) -> composition in `desktop_app/research_bootstrap.py`. Credential handling (CredentialVault 383-464, DesktopCredentialReference 467-481) -> kept: `quantlab/desktop_runtime.py` in PR E; ChatGPT G3 vault imports CredentialVault._crypt and atomic_write here (`quantlab/assistant/adapters/chatgpt/vault.py:132-172`), and the pickle-safe reference must continue resolving secrets only in the HTTP child. Retain that DPAPI/bootstrap credential boundary and the runtime_support atomic_write binding (23-28) until a separately reviewed auth/provenance migration can update all consumers without a re-export shim or historical-profile changes. PR E must update consumers directly, preserve workspace/WAL write ordering, fixed error codes and process-local recovery proofs, and measure every new owner against the section 4 size targets; no code moves in r11. |
+| `quantlab/desktop_runtime.py` | 1840 | D; E3 DONE | 原路徑留必要的 workspace／credential 本體（`quantlab/desktop_runtime.py:229`、`quantlab/desktop_runtime.py:438`），及 G3 auth 所引用的 write 工具；不把它們搬走再用 shim 補回。備份 archive／restore IO → `quantlab/research_core/adapters/workspace_backup.py`（`quantlab/desktop_runtime.py:626`）；process-tree／spawn／IPC → `quantlab/research_core/adapters/job_process.py`、`job_worker.py`（`quantlab/desktop_runtime.py:1057`、`quantlab/desktop_runtime.py:972`）；launch request 準備 → `quantlab/research_core/application/job_requests.py`（`quantlab/desktop_runtime.py:1325`、`quantlab/desktop_runtime.py:1376`、`quantlab/desktop_runtime.py:1444`）；JobManager 的實際 admission／生命週期協調留本體並只依賴 process/storage port（`quantlab/desktop_runtime.py:1219`、`quantlab/desktop_runtime.py:1573`）；registry 接線交 composition（`quantlab/desktop_runtime.py:74`、`quantlab/desktop_runtime.py:83`）。剩餘本體若仍超標，須附具體職責與進一步抽取方案；不得弱化 credential 邊界以湊行數。  PR E (R4 research-core layering) further-extraction plan for the current 860-line residue (all ranges below refer to current `quantlab/desktop_runtime.py`): workspace schema/marker IO (65-86, 109-154) and AppPaths/WorkspaceLocator discovery, bootstrap pointer and path admission (167-360) -> `quantlab/research_core/adapters/workspace_store.py`; SettingsStore version validation and persistence (363-380) -> `quantlab/research_core/adapters/settings_store.py`, with bounded JSON encoding/reading (58-62, 157-164) -> `quantlab/research_core/adapters/state_json.py` for workspace, settings and event-log consumers; runtime-safety checks: SQLite WAL admission (89-106) and RuntimeGuard startup/session-marker, clock discontinuity and reconciliation-required state (549-574) -> `quantlab/research_core/adapters/runtime_safety.py` (an adapter because it performs SQLite/filesystem IO); bounded redacted event-log rotation/validation (484-546) -> `quantlab/research_core/adapters/event_log.py`, with an injected fixed error-code catalog; JobManager admission, walk-forward ownership proof, deadlines, cancellation and quiescence/release orchestration (577-860) -> `quantlab/research_core/application/job_manager.py`, using the existing `ports/jobs.py` process/storage ports and request service; walk-forward ownership-file IO (626-663) -> `quantlab/research_core/adapters/walk_forward_owner.py` behind the storage port, so application orchestration does not import storage adapters; default adapter construction (38-45) -> composition in `desktop_app/research_bootstrap.py`. Credential handling (CredentialVault 383-464, DesktopCredentialReference 467-481) -> kept: `quantlab/desktop_runtime.py` in PR E; ChatGPT G3 vault imports CredentialVault._crypt and atomic_write here (`quantlab/assistant/adapters/chatgpt/vault.py:132-172`), and the pickle-safe reference must continue resolving secrets only in the HTTP child. Retain that DPAPI/bootstrap credential boundary and the runtime_support atomic_write binding (23-28) until a separately reviewed auth/provenance migration can update all consumers without a re-export shim or historical-profile changes. PR E must update consumers directly, preserve workspace/WAL write ordering, fixed error codes and process-local recovery proofs, and measure every new owner against the section 4 size targets; no code moves in r11. |
 | `desktop_chatgpt_ui.py` | 1462 | D | request/event/options 資料與驗證 → `quantlab/assistant/application/connection_contracts.py`（`desktop_chatgpt_ui.py:180`、`desktop_chatgpt_ui.py:237`、`desktop_chatgpt_ui.py:334`、`desktop_chatgpt_ui.py:400`）；連線狀態轉移 → `quantlab/assistant/application/connection_controller.py`（`desktop_chatgpt_ui.py:427`），拆 Qt signals／字串後才成核心服務；widget 與 render → `desktop_app/features/assistant/connection.py`、`connection_presenter.py`（`desktop_chatgpt_ui.py:826`、`desktop_chatgpt_ui.py:1117`）；執行 request 的外部 auth/provider 轉接 → `quantlab/assistant/adapters/chatgpt/connection_worker.py`（`desktop_chatgpt_ui.py:1300`），由 composition 注入，auth/provider 依下列方案抽取，provenance 驗證不得移除。 |
 | `desktop_chatgpt_provider.py` | 1460 | D | B 純搬至 assistant adapter；D 按 SSE/HTTP transport（原164、297行）→ transport.py、reservation/unknown receipt reconciliation（原459、748行）→ provider.py (_reserve transaction), account_store.py (account-control barriers), unknown_reconciliation.py (unknown-request snapshots), finished_reconciliation.py (finished-request evidence), resolution_audit.py (registration/digest/audit binding), campaign_receipts.py (campaign receipt projection)、provider 執行與完整來源 provenance（原431、1127行）→ provider.py 拆分，路徑均在 quantlab/assistant/adapters/chatgpt/。application 以 Protocol 呼叫，歷史 profile digest 不改，新來源身份明確區分。 |
 | `desktop_forms.py` | 1361 | C | 通用欄位與數字／日期輸入 → `desktop_app/components/forms.py`、`form_values.py`（`desktop_forms.py:65`、`desktop_forms.py:107`）；策略／回測／campaign／walk-forward payload 表單 → 各自的 `desktop_app/features/strategy/forms.py`、`backtest/forms.py`、`research/forms.py`、`walk_forward/forms.py`（`desktop_forms.py:161`、`desktop_forms.py:280`、`desktop_forms.py:382`、`desktop_forms.py:463`）；paper intent/quote/snapshot/action 與 policy editor → `desktop_app/features/paper/forms.py`、`policy_form.py`（`desktop_forms.py:611`、`desktop_forms.py:798`、`desktop_forms.py:866`）；結果表／summary text → `desktop_app/components/result_tables.py`、`desktop_app/features/backtest/summary.py`、`desktop_app/features/strategy/summary.py`（`desktop_forms.py:1000`、`desktop_forms.py:1105`、`desktop_forms.py:1255`）。E 再做第 7 節跨實作合併。 |
@@ -1065,12 +1167,12 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 | `quantlab/research.py` | 1093 | E | DSL validation/fingerprint（原174、197行）→ quantlab/research_core/domain/strategy_validation.py；provider/bounded worker（原259、418行）→ quantlab/research_core/adapters/research_worker.py，介面到 ports/；campaign/holdout/reconciliation（原581、806、1024行）留有實際協調責任的 application 服務。保留歷史 producer profiles、資料隔離、OOS/holdout消耗與deadline；不建立與 quantlab/research.py 同名套件。 |
 | `tools/diagnose_paper_replay.py` | 1070 | E | CLI 與 child-mode dispatch 留 `tools/diagnose_paper_replay.py`（`tools/diagnose_paper_replay.py:1027`）；timing／connect instrumentation → `tools/paper_replay_diagnostics/timing.py`（`tools/diagnose_paper_replay.py:26`、`tools/diagnose_paper_replay.py:74`）；UI/worker observation → `worker_probe.py`（`tools/diagnose_paper_replay.py:160`、`tools/diagnose_paper_replay.py:438`）；persistence/journal mode → `persistence.py`（`tools/diagnose_paper_replay.py:329`、`tools/diagnose_paper_replay.py:540`）；connection cases／orchestration → `connection_cases.py`、`connections.py`（`tools/diagnose_paper_replay.py:636`、`tools/diagnose_paper_replay.py:810`、`tools/diagnose_paper_replay.py:966`）。子程序 CLI 參數、timeout 與證據格式保留，不把診斷用 180 秒冒充產品 30 秒 gate。 |
 | `quantlab/paper.py` | 969 | E | 純資料與 reducer → `quantlab/research_core/domain/paper_state.py`（`quantlab/paper.py:99`、`quantlab/paper.py:152`、`quantlab/paper.py:251`）；risk 計算 → `quantlab/research_core/domain/paper_risk.py`（`quantlab/paper.py:546`、`quantlab/paper.py:636`、`quantlab/paper.py:661`）；SQLite transaction／append／restore → `quantlab/research_core/adapters/paper_journal.py`（`quantlab/paper.py:411`、`quantlab/paper.py:441`、`quantlab/paper.py:477`）；paper-only command／reconcile 協調留 `quantlab/research_core/application/paper.py`（`quantlab/paper.py:689`、`quantlab/paper.py:891`），依賴 `quantlab/research_core/ports/paper_journal.py`。`quantlab/paper.py:960` 的 LiveBroker 禁用行為保持，絕不趁拆分引入真實 broker。 |
-| `desktop_smoke/__init__.py` | 961 | E（B 先純搬至 desktop_app/smoke） | orchestrator → `desktop_app/smoke/runner.py`（`desktop_smoke/__init__.py:701`）；auth fixture → `auth.py`（`desktop_smoke/__init__.py:32`）；market UI/result → `market.py`（`desktop_smoke/__init__.py:154`、`desktop_smoke/__init__.py:277`）；history fixture/result → `history.py`（`desktop_smoke/__init__.py:315`、`desktop_smoke/__init__.py:361`）；walk-forward fixture/result → `walk_forward.py`（`desktop_smoke/__init__.py:493`、`desktop_smoke/__init__.py:551`）；worker teardown → `lifecycle.py`（`desktop_smoke/__init__.py:663`、`desktop_smoke/__init__.py:673`）。`desktop_app/smoke/__init__.py` 僅 package metadata；所有 callers 指向真正 runner，不 re-export 舊入口，保留 smoke deadline／證據。 |
+| `desktop_smoke/__init__.py` | 961 | E（B 先純搬至 desktop_app/smoke） | **DONE (T5-E5)**: orchestrator → `desktop_app/smoke/runner.py`（`desktop_smoke/__init__.py:701`）；auth fixture → `auth.py`（`desktop_smoke/__init__.py:32`）；market UI/result → `market.py`（`desktop_smoke/__init__.py:154`、`desktop_smoke/__init__.py:277`）；history fixture/result → `history.py`（`desktop_smoke/__init__.py:315`、`desktop_smoke/__init__.py:361`）；walk-forward fixture/result → `walk_forward.py`（`desktop_smoke/__init__.py:493`、`desktop_smoke/__init__.py:551`）；worker teardown → `lifecycle.py`（`desktop_smoke/__init__.py:663`、`desktop_smoke/__init__.py:673`）。`desktop_app/smoke/__init__.py` 僅 package metadata；所有 callers 指向真正 runner，不 re-export 舊入口，保留 smoke deadline／證據。 `_SmokeSettingsView`、`_smoke_steps` → `desktop_app/smoke/fixtures.py`；所有原函式完整搬移，沒有拆分函式。 |
 | `desktop_chatgpt_auth.py` | 881 | D | B 純搬；D 將 TLS/JWT/identity verification（原111、206行）→ identity.py、DPAPI vault（原337行）→ vault.py、loopback/OAuth lifecycle（原489、536行）→ auth.py。路徑均在 quantlab/assistant/adapters/chatgpt/。來源 bytes 全集合納入原有驗證，保留 callback/state/nonce/PKCE/JWT/TLS、vault 與執行緒終止閘門。 |
 | `quantlab/walk_forward.py` | 810 | E | fold／plan／bounds → `quantlab/research_core/domain/walk_forward_plan.py`（`quantlab/walk_forward.py:51`、`quantlab/walk_forward.py:62`、`quantlab/walk_forward.py:160`）；state 讀寫／驗證／SQLite → `quantlab/research_core/adapters/walk_forward_state.py`（`quantlab/walk_forward.py:286`、`quantlab/walk_forward.py:339`、`quantlab/walk_forward.py:360`）；fold scoring → `quantlab/research_core/application/walk_forward_scoring.py`（`quantlab/walk_forward.py:695`）；run／cancel／reconcile 留 `quantlab/research_core/application/walk_forward.py`（`quantlab/walk_forward.py:518`、`quantlab/walk_forward.py:565`、`quantlab/walk_forward.py:746`）。OOS reservation（`quantlab/walk_forward.py:663`）經原有 ledger 契約，不改 budget／source provenance 或 frozen profiles。 |
 | `quantlab/analysis_recovery.py` | 768 | E | disposition／launch/receipt 值驗證 → `quantlab/research_core/domain/analysis_recovery.py`（`quantlab/analysis_recovery.py:418`、`quantlab/analysis_recovery.py:536`）；admission OS lock → `quantlab/research_core/adapters/analysis_admission.py`（`quantlab/analysis_recovery.py:186`）；SQLite read/replay/append → `quantlab/research_core/adapters/analysis_recovery.py`（`quantlab/analysis_recovery.py:260`、`quantlab/analysis_recovery.py:319`、`quantlab/analysis_recovery.py:460`）；inspect/register/restore-epoch 協調 → `quantlab/research_core/application/analysis_recovery.py`（`quantlab/analysis_recovery.py:548`、`quantlab/analysis_recovery.py:610`、`quantlab/analysis_recovery.py:747`）。停機 receipt publisher 的受限能力仍封裝在 adapter（`quantlab/analysis_recovery.py:707`），不放進 shared。 |
 | `desktop_charts.py` | 765 | C | Qt widget／事件／viewport → `desktop_app/components/charts.py`（`desktop_charts.py:217`、`desktop_charts.py:444`）；ChartTrace／Marker／ReferenceLine 與 annotation setters → `chart_annotations.py`（`desktop_charts.py:97`、`desktop_charts.py:126`、`desktop_charts.py:175`）；geometry → `chart_geometry.py`（`desktop_charts.py:565`）；bars/references/panes/footer paint → `chart_paint.py`、`chart_footer.py`（`desktop_charts.py:598`、`desktop_charts.py:627`、`desktop_charts.py:672`、`desktop_charts.py:724`）。短名均在 `desktop_app/components/`；renderer 接收資料／投影，不擁有 drawing storage，避免用 mixin 數量掩飾原 class 責任。 |
-| `quantlab/market_history.py` | 675 | E | session 值與政策驗證 → `quantlab/research_core/domain/market_sessions.py`（`quantlab/market_history.py:75`、`quantlab/market_history.py:121`）；CSV/tick decode／bar projection → `quantlab/research_core/adapters/history_decoder.py`（`quantlab/market_history.py:220`、`quantlab/market_history.py:265`、`quantlab/market_history.py:371`）；bounded local IO／cache entries／locking 留 `quantlab/research_core/adapters/market_history.py`（`quantlab/market_history.py:428`、`quantlab/market_history.py:512`、`quantlab/market_history.py:563`）；import 協調 → `quantlab/research_core/application/history_import.py`（`quantlab/market_history.py:622`）。檔案與時間驗證仍在入境處，不把 local data 標成即時或可信行情。 |
+| `quantlab/market_history.py` | 675 | E — DONE (T5-E4) | session 值與政策驗證 → `quantlab/research_core/domain/market_sessions.py`（`quantlab/market_history.py:75`、`quantlab/market_history.py:121`）；CSV/tick decode／bar projection → `quantlab/research_core/adapters/history_decoder.py`（`quantlab/market_history.py:220`、`quantlab/market_history.py:265`、`quantlab/market_history.py:371`）；bounded local IO／cache entries／locking 留 `quantlab/research_core/adapters/market_history.py`（`quantlab/market_history.py:428`、`quantlab/market_history.py:512`、`quantlab/market_history.py:563`）；import 協調 → `quantlab/research_core/application/history_import.py`（`quantlab/market_history.py:622`）。檔案與時間驗證仍在入境處，不把 local data 標成即時或可信行情。 |
 | `quantlab/idea_research.py` | 662 | E | task／候選證據與採用驗證 → `quantlab/research_core/domain/idea_candidates.py`（`quantlab/idea_research.py:98`、`quantlab/idea_research.py:179`、`quantlab/idea_research.py:613`）；extraction request/output → `quantlab/research_core/application/idea_extraction.py`（`quantlab/idea_research.py:242`、`quantlab/idea_research.py:290`）；records/temp/cache → `quantlab/research_core/adapters/idea_store.py`（`quantlab/idea_research.py:341`）；search/fetch/extract 流程留 `quantlab/research_core/application/idea_research.py`（`quantlab/idea_research.py:407`），並依 `quantlab/research_core/ports/idea_sources.py` 注入 caller/fetcher/store；thread pool 排程可獨立到 adapter（`quantlab/idea_research.py:545`），不改取消、費用或來源引述驗證。 |
 | `tools/run_test_group.py` | 620 | E | CLI／unittest 執行入口留 `tools/run_test_group.py`（`tools/run_test_group.py:479`）；discovery／partition／固定 shard assignment → `tools/test_group_partition.py`（`tools/run_test_group.py:78`、`tools/run_test_group.py:192`、`tools/run_test_group.py:445`）；source/runtime identity 與 manifest 校驗 → `tools/test_group_evidence.py`（`tools/run_test_group.py:135`、`tools/run_test_group.py:204`、`tools/run_test_group.py:261`）；owned process tree／parallel worker → `tools/test_group_workers.py`（`tools/run_test_group.py:298`、`tools/run_test_group.py:319`）；RecordingResult 留 runner（`tools/run_test_group.py:462`）。拆分不得改 discovery 集合、skip 條件、timeout、run-attempt identity 或聚合成功定義。 |
 | `desktop_pages/idea_research.py` | 617 | C | dialog widget／layout → `desktop_app/features/strategy/idea_research.py`（`desktop_pages/idea_research.py:96`）；consent/start/retry/adopt／event 投影 → `idea_presenter.py`（`desktop_pages/idea_research.py:295`、`desktop_pages/idea_research.py:306`、`desktop_pages/idea_research.py:367`、`desktop_pages/idea_research.py:566`）；search/source/candidate rows 與明細 → `idea_rows.py`（`desktop_pages/idea_research.py:440`、`desktop_pages/idea_research.py:464`、`desktop_pages/idea_research.py:500`）。短名均在 `desktop_app/features/strategy/`；網路／storage 操作走 application，不進 widget。 |
@@ -1081,6 +1183,9 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 G3 拆分以第 5 節授權為準；saved-pool frozen-data 只有資料字面值 bytes 例外。E 涉及 paper、recovery、test runner 的結構修改須跑各自的故障／deadline／provenance 與 coverage 測試，不能只跑文件 gate。後續各 PR 仍依第 6 節重做 symbol impact、完整 detect_changes、全測試及打包 smoke；本次只更新盤點文件。
 
 ### 10.1 PR C size exceptions
+
+T5-E5 smoke rows: **DONE**. `desktop_app/smoke/__init__.py` is metadata only;
+final definition paths are listed below and current size exceptions are in 10.4.
 
 Measurements include both PR C UI extraction and PR D presentation residues after integration. Behavior and responsibility boundaries are unchanged.
 
@@ -1096,16 +1201,16 @@ Measurements include both PR C UI extraction and PR D presentation residues afte
 | `desktop_app/features/backtest/backtest.py:222` | `show_result` | function | 64 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/backtest/backtest_summary_card.py:55` | `_set_structure` | function | 61 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/backtest/forms.py:14` | `__init__` | function | 59 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/backtest/summary.py:52` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/backtest/summary.py:51` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/compare/compare.py:1` | `<module>` | file | 457 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:33` | `ComparePage` | class | 425 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:83` | `_analysis_section` | function | 56 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:308` | `_refresh_recovery_controls` | function | 66 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:375` | `_analysis_event` | function | 51 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
-| `desktop_app/features/data/data.py:16` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/data/data.py:17` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/market/chart_presenter.py:11` | `_render_chart` | function | 66 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/market/history_dialog.py:28` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/market/indicator_controls.py:26` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/history_dialog.py:31` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
+| `desktop_app/features/market/indicator_controls.py:27` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/market/indicator_presenter.py:69` | `_apply_indicators` | function | 89 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
 | `desktop_app/features/market/market.py:69` | `load_market_cache` | function | 75 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/market/market.py:145` | `bind_result_layers` | function | 83 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
@@ -1126,18 +1231,17 @@ Measurements include both PR C UI extraction and PR D presentation residues afte
 | `desktop_app/features/walk_forward/wf_wizard.py:146` | `__init__` | function | 88 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/research_bootstrap.py:55` | `open` | function | 73 | Retained as one ordered Qt construction sequence; preserves dialog lifetime and signal wiring. |
 | `desktop_app/shell/host.py:143` | `_page_services` | function | 88 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
-| `desktop_app/shell/window.py:95` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/smoke/__init__.py:1` | `<module>` | file | 978 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:34` | `_auth_smoke_dependencies` | function | 90 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:162` | `_market_smoke_ui` | function | 118 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:375` | `_check_history_worker_result` | function | 74 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:451` | `_history_smoke_ui` | function | 54 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:507` | `_walk_forward_smoke_fixture` | function | 56 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:565` | `_check_walk_forward_smoke_result` | function | 113 | body unchanged except the inputs-port integration; decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:718` | `run_smoke` | function | 261 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/__init__.py:762` | `complete_smoke` | function | 175 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
-| `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | function | 58 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
-| `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | function | 147 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
+| `desktop_app/shell/window.py:96` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
+| `desktop_app/smoke/auth.py:10` | `_auth_smoke_dependencies` | function | 90 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/market.py:9` | `_market_smoke_ui` | function | 118 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/history.py:55` | `_check_history_worker_result` | function | 74 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/history.py:131` | `_history_smoke_ui` | function | 54 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/walk_forward.py:6` | `_walk_forward_smoke_fixture` | function | 56 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/walk_forward.py:64` | `_check_walk_forward_smoke_result` | function | 113 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/runner.py:15` | `run_smoke` | function | 262 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/runner.py:60` | `complete_smoke` | function | 175 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | function | 58 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. T5-E5 DONE: final recovery owner retained verbatim, including its 40-second cap and reserve. |
+| `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | function | 147 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. T5-E5 DONE: final recovery owner retained verbatim, including its 40-second cap and reserve. |
 
 ### 10.2 PR C ordered replay contract
 
@@ -1174,6 +1278,20 @@ operator reports. `check_ui_scripts.py` validates replay in an isolated base
 checkout and requires unchanged bytes and status in the audited PR tree.
 
 ### 10.3 PR D size exceptions
+
+T5-E5 smoke rows: **DONE**. `desktop_app/smoke/__init__.py` is metadata only;
+final definition paths are listed below and current size exceptions are in 10.4.
+
+E3 completion annotation for the section 10.3 `quantlab/desktop_runtime.py:1`
+plan row: **DONE**. Workspace, settings, JSON state, WAL/session safety, redacted
+logs and durable walk-forward ownership now live in the six named
+`quantlab/research_core/adapters/` owners; lifecycle coordination lives in
+`quantlab/research_core/application/job_manager.py`, with process/storage ports.
+`desktop_app/research_bootstrap.py` composes defaults without Qt imports;
+`desktop_app/research_session.py` owns the unchanged Qt session. CredentialVault,
+DesktopCredentialReference and the atomic_write binding stay in desktop_runtime.
+The historical 10.3 sizes/locations below remain evidence of PR D, not E3's head.
+
 
 Run `python -B tools/refactor/measure_core_sizes.py --check` (default `--base 3429f2c`).
 The path set is exactly `git diff --name-only --diff-filter=AM 3429f2c HEAD`:
@@ -1232,17 +1350,16 @@ and ordered validation across modules during this extraction.
 | function | `desktop_app/features/walk_forward/presenter.py:170` | `preview_text` | 121 | Moved/reformatted from base `desktop_app/features/walk_forward/presenter.py:435` (121 lines); AST identical (including literals), 0 fewer physical lines. Retain ordered Qt construction or report rendering and its existing lifecycle. |
 | function | `desktop_app/features/walk_forward/rows.py:5` | `result_rows` | 52 | Grew from base `desktop_app/features/walk_forward/presenter.py:558` (50 lines) by 2 lines solely through formatting/spacing; AST identical (including literals). Retain ordered Qt construction or report rendering and its existing lifecycle. |
 | function | `desktop_app/features/walk_forward/wf_wizard.py:146` | `__init__` | 88 | Pre-existing definition, verbatim vs base `desktop_app/features/walk_forward/wf_wizard.py:146` (88 lines). Retain ordered Qt construction or report rendering and its existing lifecycle. |
-| file | `desktop_app/smoke/__init__.py:1` | `<module>` | 978 | Grew from base `desktop_app/smoke/__init__.py:1` (969 lines) by 9 lines: relocated auth imports and expanded synthetic claims (+8), plus split walk-forward imports (+1); provenance expectation now includes receipts.py. Existing smoke orchestration retained for PR E. |
-| function | `desktop_app/smoke/__init__.py:34` | `_auth_smoke_dependencies` | 90 | Grew from base `desktop_app/smoke/__init__.py:32` (84 lines) by 6 lines: synthetic claims expanded across lines while auth constants/IdentityValidator/provenance imports address their new owners. Keep the same ordered synthetic JWT rejection checks; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:162` | `_market_smoke_ui` | 118 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:154` (118 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:375` | `_check_history_worker_result` | 74 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:367` (74 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:451` | `_history_smoke_ui` | 54 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:443` (54 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:507` | `_walk_forward_smoke_fixture` | 56 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:499` (56 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:565` | `_check_walk_forward_smoke_result` | 113 | Grew from base `desktop_app/smoke/__init__.py:557` (112 lines) by 1 line solely to split compact_walk_forward and preview_walk_forward imports. Existing smoke assertion sequence retained for PR E. |
-| function | `desktop_app/smoke/__init__.py:718` | `run_smoke` | 261 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:709` (261 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/__init__.py:762` | `complete_smoke` | 175 | Pre-existing definition, verbatim vs base `desktop_app/smoke/__init__.py:753` (175 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | 58 | Pre-existing definition (58 lines at base `desktop_app/smoke/recovery.py:59`); only the saved-pool source adapter import target changed. Keep recovery-fixture preparation order; PR E owns smoke decomposition. |
-| function | `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | 147 | Pre-existing definition, verbatim vs base `desktop_app/smoke/recovery.py:119` (147 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. |
+| function | `desktop_app/smoke/auth.py:10` | `_auth_smoke_dependencies` | 90 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/market.py:9` | `_market_smoke_ui` | 118 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/history.py:55` | `_check_history_worker_result` | 74 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/history.py:131` | `_history_smoke_ui` | 54 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/walk_forward.py:6` | `_walk_forward_smoke_fixture` | 56 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/walk_forward.py:64` | `_check_walk_forward_smoke_result` | 113 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/runner.py:15` | `run_smoke` | 262 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/runner.py:60` | `complete_smoke` | 175 | T5-E5 DONE: complete definition moved verbatim to its final owner; justified exception in 10.4. |
+| function | `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | 58 | Pre-existing definition (58 lines at base `desktop_app/smoke/recovery.py:59`); only the saved-pool source adapter import target changed. Keep recovery-fixture preparation order; PR E owns smoke decomposition. T5-E5 DONE: final recovery owner retained verbatim, including its 40-second cap and reserve. |
+| function | `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | 147 | Pre-existing definition, verbatim vs base `desktop_app/smoke/recovery.py:119` (147 lines). Retain the existing smoke verification sequence; PR E owns smoke decomposition. T5-E5 DONE: final recovery owner retained verbatim, including its 40-second cap and reserve. |
 | function | `quantlab/assistant/adapters/chatgpt/account_store.py:25` | `_open_account_controls` | 58 | Grew from base `quantlab/assistant/adapters/chatgpt/provider.py:459` (45 lines) by 13 lines solely through formatting/spacing; AST identical (including literals). Keep control-store transaction/locking and failure cleanup together. |
 | function | `quantlab/assistant/adapters/chatgpt/account_store.py:106` | `_installation_barrier` | 74 | Grew from base `quantlab/assistant/adapters/chatgpt/provider.py:525` (57 lines) by 17 lines solely through formatting/spacing; AST identical (including literals). Keep control-store transaction/locking and failure cleanup together. |
 | function | `quantlab/assistant/adapters/chatgpt/auth.py:137` | `accept_callback` | 71 | Pre-existing definition, verbatim vs base `quantlab/assistant/adapters/chatgpt/auth.py:630` (71 lines). Keep OAuth callback validation and session admission together. |
@@ -1258,7 +1375,7 @@ and ordered validation across modules during this extraction.
 | function | `quantlab/assistant/adapters/chatgpt/transport.py:31` | `_response` | 86 | Grew from base `quantlab/assistant/adapters/chatgpt/provider.py:300` (62 lines) by 24 lines solely through formatting/spacing; AST identical (including literals). Keep the bounded HTTP response/close lifecycle together. |
 | file | `quantlab/assistant/application/connection_contracts.py:1` | `<module>` | 420 | Assembled inherited request/event/subscription contracts and allowlisted constants from base `desktop_app/features/assistant/connection.py:1` (1462-line source module; contracts precede ConnectionController at line 427). 420-line Qt-free contract owner keeps payload validation and its schemas together; presentation-dependent mask lookup is an explicit literal here. |
 | function | `quantlab/assistant/application/connection_contracts.py:128` | `official_authorization_url` | 51 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:126` (51 lines); AST identical (including literals), 0 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
-| function | `quantlab/assistant/application/connection_contracts.py:248` | `__post_init__` | 66 | Moved from base `desktop_app/features/assistant/connection.py:250` (66 lines); expressions parenthesized and the localized masked-account pattern inlined as its literal to remove a presentation dependency. Keep the complete ConnectionEvent validation contract; no span growth. |
+| function | `quantlab/assistant/application/connection_contracts.py:248` | `__post_init__` | 66 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:344` (53 lines); AST identical (including literals), 1 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
 | function | `quantlab/assistant/application/connection_contracts.py:341` | `__post_init__` | 52 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:344` (53 lines); AST identical (including literals), 1 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
 | class | `quantlab/assistant/application/connection_controller.py:34` | `ConnectionStateMachine` | 354 | Extracted/renamed from ConnectionController at base `desktop_app/features/assistant/connection.py:427` (397 lines). Qt signals and localized text moved behind emit/present callbacks, leaving a 354-line application state machine. Keep request/quiescence/terminal/account state transitions in one owner. |
 | function | `quantlab/assistant/application/connection_controller.py:91` | `request` | 76 | Moved from base `desktop_app/features/assistant/connection.py:488` (80 lines); text/signal mutations routed through present/emit callbacks and expressions parenthesized (76 lines now). Keep request admission, quiescence and dispatch as one transition. |
@@ -1339,3 +1456,171 @@ and ordered validation across modules during this extraction.
 | function | `tools/ui_redesign_preview.py:88` | `capture` | 82 | Pre-existing definition, verbatim vs base `tools/ui_redesign_preview.py:87` (82 lines). Existing diagnostic/test-orchestration tooling; retain its ordered operation and cleanup outside runtime decomposition. |
 | function | `tools/ui_snapshot.py:85` | `page_metrics` | 53 | Pre-existing definition, verbatim vs base `tools/ui_snapshot.py:85` (53 lines). Existing diagnostic/test-orchestration tooling; retain its ordered operation and cleanup outside runtime decomposition. |
 | function | `tools/ui_snapshot.py:206` | `capture` | 137 | Grew from base `tools/ui_snapshot.py:206` (136 lines) by 1 line solely to split the BackupManager import to the extracted adapter. Keep snapshot widget traversal/capture/cleanup together. |
+
+### 10.4 PR E size exceptions
+
+E5 smoke plan: **DONE**. Direct owners: fixtures, auth, market, history,
+walk_forward, lifecycle and runner under desktop_app/smoke/. Package metadata
+exports no implementation names. All moved definitions retain exact source bytes;
+runner callbacks, recovery helper, timeouts and terminal evidence remain whole.
+
+E3 desktop_runtime and E4 market_history plans: DONE. The history domain owns
+session values, policy checks and canonical digests; decoder owns tick parsing and
+bar/provenance projection; cache adapter owns bounded local IO, locks and atomic
+publication; application owns import sequencing through HistoryStorage. The old
+market_history location contains metadata only, no imports or re-exported names.
+Every other consumer uses its direct owner. MarketDataProvider is wired by a plain
+composition registry; market widgets receive typed services through PageHost.
+
+Measurements retain the existing C/D bases and replace their rows for E changes
+since `909fc49`. All current exceptions are listed with exact AST spans.
+
+| kind | path | name | lines | justification |
+|---|---|---|---:|---|
+| file | `desktop.py:1` | `<module>` | 422 | Inherited frozen composition root; E9 removes unused class imports only. Construction still imports the same class through create_job_manager; startup, shutdown and side effects are preserved. |
+| function | `desktop.py:171` | `run_gui` | 208 | Inherited frozen composition root; E9 removes unused class imports only. Construction still imports the same class through create_job_manager; startup, shutdown and side effects are preserved. |
+| function | `desktop_app/features/assistant/chatgpt_reconciliation.py:10` | `__init__` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `desktop_app/features/assistant/connection.py:1` | `<module>` | 449 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| class | `desktop_app/features/assistant/connection.py:11` | `ChatGPTConnectionPanel` | 439 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/assistant/connection.py:14` | `__init__` | 109 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/assistant/connection.py:294` | `_render` | 101 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/assistant/worker.py:35` | `_chatgpt_reply` | 99 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/backtest/summary.py:51` | `backtest_summary_text` | 71 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `desktop_app/features/compare/compare.py:1` | `<module>` | 457 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| class | `desktop_app/features/compare/compare.py:33` | `ComparePage` | 425 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/compare/compare.py:83` | `_analysis_section` | 56 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/compare/compare.py:308` | `_refresh_recovery_controls` | 66 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/compare/compare.py:375` | `_analysis_event` | 51 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/data/data.py:17` | `__init__` | 124 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/market/history_dialog.py:31` | `__init__` | 103 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/market/indicator_controls.py:27` | `_build_market_indicators` | 57 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/market/market.py:69` | `load_market_cache` | 75 | Inherited existing lifecycle or tooling responsibility; E4 changes only direct owner references or composed ports; preserve ordered validation and cleanup. |
+| function | `desktop_app/features/market/market.py:145` | `bind_result_layers` | 83 | Inherited existing lifecycle or tooling responsibility; E4 changes only direct owner references or composed ports; preserve ordered validation and cleanup. |
+| class | `desktop_app/features/settings/settings.py:13` | `SettingsPage` | 305 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/settings/settings.py:156` | `_chatgpt_event` | 61 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/strategy/redesign_strategy_layout.py:171` | `build_strategy` | 68 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/strategy/redesign_strategy_layout.py:241` | `build_research` | 125 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `desktop_app/features/strategy/strategy.py:1` | `<module>` | 441 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| class | `desktop_app/features/strategy/strategy.py:13` | `StrategyPage` | 429 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/strategy/strategy.py:40` | `_walk_forward_section` | 65 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/strategy/strategy.py:246` | `_walk_forward_event` | 85 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/walk_forward/presenter.py:84` | `oos_statistics_text` | 62 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/walk_forward/presenter.py:170` | `preview_text` | 121 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/walk_forward/rows.py:5` | `result_rows` | 52 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/features/walk_forward/wf_wizard.py:146` | `__init__` | 88 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/research_session.py:55` | `open` | 73 | Existing Qt session moved verbatim from research_bootstrap to keep default runtime composition Qt-free; preserve construction, shutdown and signal order. |
+| function | `desktop_app/shell/host.py:147` | `_page_services` | 88 | Inherited existing lifecycle or tooling responsibility; E4 changes only direct owner references or composed ports; preserve ordered validation and cleanup. |
+| function | `desktop_app/shell/window.py:96` | `closeEvent` | 61 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `desktop_app/smoke/auth.py:10` | `_auth_smoke_dependencies` | 90 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/history.py:55` | `_check_history_worker_result` | 74 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/history.py:131` | `_history_smoke_ui` | 54 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/market.py:9` | `_market_smoke_ui` | 118 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | 58 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | 147 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/runner.py:15` | `run_smoke` | 262 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/runner.py:60` | `complete_smoke` | 175 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/walk_forward.py:6` | `_walk_forward_smoke_fixture` | 56 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/walk_forward.py:64` | `_check_walk_forward_smoke_result` | 113 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `quantlab/assistant/adapters/chatgpt/account_store.py:25` | `_open_account_controls` | 58 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/account_store.py:106` | `_installation_barrier` | 74 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/auth.py:137` | `accept_callback` | 71 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/connection_probe.py:7` | `run_probe` | 66 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/connection_worker.py:35` | `run_connection_request` | 155 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/finished_reconciliation.py:21` | `_finished_request_snapshot` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/identity.py:63` | `request` | 64 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/identity.py:164` | `verify` | 58 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/assistant/adapters/chatgpt/provider.py:1` | `<module>` | 591 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/provider.py:257` | `_execute` | 82 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/provider.py:465` | `resolve_finished_unknown_request` | 86 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/resolution_audit.py:134` | `_confirmed_registration` | 62 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/adapters/chatgpt/transport.py:31` | `_response` | 86 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/assistant/application/connection_contracts.py:1` | `<module>` | 420 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/application/connection_contracts.py:128` | `official_authorization_url` | 51 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/application/connection_contracts.py:248` | `__post_init__` | 66 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/application/connection_contracts.py:341` | `__post_init__` | 52 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| class | `quantlab/assistant/application/connection_controller.py:34` | `ConnectionStateMachine` | 354 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/application/connection_controller.py:91` | `request` | 76 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/application/connection_controller.py:183` | `apply_event` | 61 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/assistant/domain/auth_protocol.py:115` | `_validate_record` | 72 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/backup_inspection.py:90` | `inspect_archive` | 69 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/research.py:1` | `<module>` | 1038 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research.py:308` | `generate` | 66 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research.py:493` | `_campaign_config` | 54 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research.py:582` | `_reserve_holdout` | 80 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research.py:751` | `run_campaign` | 216 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research.py:969` | `reconcile_interrupted_campaign` | 70 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/research_analysis.py:1` | `<module>` | 545 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_analysis.py:125` | `build_analysis_packet` | 136 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_analysis.py:390` | `run_analysis` | 70 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_analysis.py:480` | `_reconcile_analysis` | 66 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/history_decoder.py:90` | `_decode` | 104 | Moved verbatim from market_history: bounded tick decoding, schema validation, source mutation checks and minute projection form one atomic validation pass; retain ordering and error messages. |
+| function | `quantlab/research_core/adapters/job_process.py:20` | `__init__` | 64 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/job_process.py:128` | `_launch_job_process` | 65 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/job_process.py:264` | `_drain` | 60 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/job_worker.py:105` | `_job_worker` | 94 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/market_history.py:84` | `load_history` | 82 | Moved verbatim from market_history: cache schema/digest/session/counter validation must complete before accepting a cached snapshot; preserve fail-closed checks and error messages. |
+| function | `quantlab/research_core/adapters/saved_pool_source.py:230` | `_validate_source_registry` | 68 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/workspace_backup.py:61` | `_recover` | 55 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/workspace_backup.py:150` | `_create` | 54 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/workspace_backup.py:213` | `_restore` | 80 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/adapters/workspace_store.py:204` | `_validate` | 63 | Verbatim inherited path admission and write-probe checks; preserve ordered symlink, system-directory, compatibility and permission checks. |
+| function | `quantlab/research_core/application/job_requests.py:132` | `_prepare_analysis_job` | 67 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/job_requests.py:201` | `_prepare_other_job` | 64 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/saved_pool_attempts.py:101` | `_admit_source_attempt` | 120 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/research_core/application/saved_pool_validation.py:1` | `<module>` | 442 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/saved_pool_validation.py:48` | `_validate_provider` | 56 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/saved_pool_validation.py:106` | `validate_admission_snapshot` | 166 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/saved_pool_validation.py:285` | `_validate_chatgpt_provider` | 113 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/application/walk_forward_operations.py:150` | `execute_walk_forward` | 57 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/research_core/domain/receipts.py:9` | `_validated_receipt_snapshot` | 57 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/saved_candidate_pool.py:1` | `<module>` | 1439 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/saved_candidate_pool.py:1322` | `admit_saved_campaign_pool` | 65 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `quantlab/walk_forward.py:1` | `<module>` | 814 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/walk_forward.py:81` | `__post_init__` | 78 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/walk_forward.py:361` | `_validate_state` | 122 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `quantlab/walk_forward.py:569` | `run_walk_forward` | 56 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/bench_worker_latency.py:115` | `main` | 71 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `tools/diagnose_paper_replay.py:1` | `<module>` | 1071 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:76` | `_instrument_connect` | 57 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:162` | `_diagnosed_worker` | 89 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:331` | `_journal_mode_probe` | 69 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:440` | `observe` | 99 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:637` | `_connection_probe` | 172 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:811` | `_connection_case` | 145 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/diagnose_paper_replay.py:967` | `observe_connections` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/quality_gate.py:137` | `scan` | 88 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `tools/refactor/e_runtime.py:1` | `<module>` | 416 | One-shot E3 migration: ordered owner extraction and mechanical import/patch/fixture rewrites remain together for replay; never imported by product code. |
+| function | `tools/refactor/e_runtime.py:292` | `repair_references` | 62 | One-shot E3 migration: ordered owner extraction and mechanical import/patch/fixture rewrites remain together for replay; never imported by product code. |
+| function | `tools/refactor/e_runtime.py:356` | `worker_calls` | 55 | One-shot E3 migration: ordered owner extraction and mechanical import/patch/fixture rewrites remain together for replay; never imported by product code. |
+| function | `tools/refactor/e_smoke.py:195` | `inventory` | 54 | T5-E5 one-shot mechanical migration: keep ordered owner/reference and exact-size inventory updates together for idempotent replay; not product runtime. |
+| function | `tools/refactor/split_core_assistant.py:105` | `references` | 85 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_controller_fixes.py:18` | `rewrite` | 115 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_lock_paths.py:42` | `update` | 52 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_profile.py:32` | `emit` | 64 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_r3c.py:80` | `repair_profiles` | 66 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_r4.py:108` | `repair` | 107 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_r4.py:269` | `scan_desktop_r7` | 98 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| file | `tools/refactor/split_core_runtime.py:1` | `<module>` | 626 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_runtime.py:46` | `saved_pool` | 74 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_runtime.py:122` | `runtime` | 141 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_runtime.py:265` | `references` | 84 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_runtime.py:351` | `finalize_patch_targets` | 57 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_runtime.py:470` | `repair_r3a` | 147 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_test_paths.py:20` | `rewrite` | 71 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| file | `tools/refactor/split_core_ui.py:1` | `<module>` | 692 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_ui.py:26` | `extract_connection` | 139 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_ui.py:167` | `extract_walk_forward` | 95 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_ui.py:285` | `migrate_references` | 58 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_ui.py:350` | `finish_boundaries` | 158 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/refactor/split_core_ui.py:607` | `repair_r3b_references` | 71 | Ordered migration or exact size/import verification sequence; retain its reviewable check and reporting steps; no product behavior or size threshold changed. |
+| function | `tools/research_campaign.py:21` | `run_fixture_campaign` | 75 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| file | `tools/run_test_group.py:1` | `<module>` | 620 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/run_test_group.py:319` | `run_parallel` | 116 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/run_test_group.py:479` | `main` | 138 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/ui_readability_audit.py:120` | `run` | 79 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/ui_redesign_preview.py:27` | `build_window` | 61 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/ui_redesign_preview.py:90` | `capture` | 82 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/ui_snapshot.py:85` | `page_metrics` | 53 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/ui_snapshot.py:206` | `capture` | 139 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+| function | `tools/validate_market_history_import.py:25` | `validate` | 63 | Inherited existing lifecycle or tooling responsibility; E4 changes only direct owner references or composed ports; preserve ordered validation and cleanup. |
+| function | `trading_runtime.py:45` | `_run_window` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |

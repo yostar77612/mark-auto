@@ -11,10 +11,11 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from quantlab.market_providers import refresh_daily
+from desktop_app.research_bootstrap import create_market_provider
 
 
-def validate(output, *, loader=refresh_daily):
+def validate(output, *, loader=None):
+    loader = loader if loader is not None else create_market_provider().refresh_daily
     rows = []
     with tempfile.TemporaryDirectory(prefix='markauto-public-history-') as temporary:
         for provider, required in (('twse', {'TAIEX'}), ('taifex', {'TX', 'MXF', 'TMF'})):

@@ -106,7 +106,7 @@ class StartupTests(unittest.TestCase):
         functions.update(
             {
                 node.name: node
-                for node in ast.parse((ROOT / 'desktop_app/smoke/__init__.py').read_text(encoding='utf-8-sig')).body
+                for node in ast.parse((ROOT / 'desktop_app/smoke/runner.py').read_text(encoding='utf-8-sig')).body
                 if isinstance(node, ast.FunctionDef)
             }
         )
@@ -188,8 +188,8 @@ class StartupTests(unittest.TestCase):
             stack.enter_context(patch('PySide6.QtCore.QTimer', return_value=timer))
             stack.enter_context(patch('PySide6.QtWidgets.QApplication', return_value=app))
             stack.enter_context(patch('desktop_app.components.icon.application_icon', return_value=None))
-            stack.enter_context(patch('quantlab.desktop_runtime.AppPaths.discover', return_value=SimpleNamespace(root=MagicMock())))
-            stack.enter_context(patch('quantlab.desktop_runtime.WorkspaceLocator'))
+            stack.enter_context(patch('quantlab.research_core.adapters.workspace_store.AppPaths.discover', return_value=SimpleNamespace(root=MagicMock())))
+            stack.enter_context(patch('quantlab.research_core.adapters.workspace_store.WorkspaceLocator'))
             stack.enter_context(patch('desktop.acquire_instance_lock', return_value=lock))
             stack.enter_context(patch('desktop.prepare_workspace', side_effect=prepare))
             stack.enter_context(patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(create_window=Mock(return_value=window))}))
@@ -212,7 +212,8 @@ class SharedErrorTests(unittest.TestCase):
                 self.assertEqual(exception_code(SimpleNamespace(code=code.value)), code.value)
 
     def test_wrappers_preserve_exact_exception_contract(self):
-        from quantlab import analysis_contracts, analysis_recovery, chart_data, market_history, saved_candidate_pool
+        from quantlab import analysis_contracts, analysis_recovery, chart_data, saved_candidate_pool
+        from quantlab.research_core.domain import market_sessions as market_history
         from quantlab.core import ValidationError
         from quantlab.market import MarketValidationError
 
@@ -261,8 +262,8 @@ class SharedErrorTests(unittest.TestCase):
         self.assertEqual(error_message('unknown'), error_message('operation_failed'))
 
 
-# PR B: run_smoke changes only the recovery import to desktop_app.smoke.recovery.
+# T5-E6: E3 composition imports and E5 smoke owner extraction change source only.
 # Re-pin the exact body; retain all control-flow, metadata and cleanup checks.
-SMOKE_DIGEST = '848805a32a50d5298c4c53e42fdf12a09e101c3665fe87b78bcf585fd93b9a68'
+SMOKE_DIGEST = 'b69ea4fa50829c6303ea9b8ba46c2f84d52a74948d828b8fadd46e54ea4e70cc'
 HANDLERS_DIGEST = '538ec585bef484789b7e1bc9a05b942234dee1b82f84bacc2c849cf28ead39de'
 FINALLY_DIGEST = '4ce33993e38dae10a54cda3424e0d354b09a4b8c460af84f4bd4883b6ae9a851'

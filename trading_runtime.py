@@ -86,7 +86,7 @@ def _run_window(
         return 1
     initial = facade.snapshot()
     window = TradingWindow(facade, initial, market_watch=MarketWatchWidget(facade, CandlestickChart(), initial))
-    from desktop_app.research_bootstrap import ResearchSession, UnifiedResearch
+    from desktop_app.research_session import ResearchSession, UnifiedResearch
 
     # One presenter/controller/session in the same Qt application. Explicit
     # test bootstraps never discover or restore the user's remembered login.

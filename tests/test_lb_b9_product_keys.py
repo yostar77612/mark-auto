@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 from desktop_app.features.market.dashboard import MarketDashboard
 from quantlab.chart_drawings import DrawingStore, HorizontalLine
 from quantlab.core import content_hash, canonical_json
-from quantlab.desktop_runtime import SettingsStore
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.product_keys import converge_key, MONTH_CODES, PRODUCT_KEYS
 from quantlab.research import _summary
 from quantlab.taifex_expiries import load_expiries, lookup_expiry

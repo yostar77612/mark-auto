@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # mark-auto 原始功能總表與可重用性
 
 <!-- CURRENT_STATUS_START -->

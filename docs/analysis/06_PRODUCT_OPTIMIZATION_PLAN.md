@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # MarkAuto 正式產品化優化計畫（P0–P2）
 
 > 建立：2026-10-17。依據：main `f988241` 的三輪唯讀分析：第一輪為空白狀態的 1366×768 離屏截圖、GitNexus 圖譜與原始碼量測；第二輪在隔離暫存工作區建立示範資料、實際跑完回測後截圖，另做效能量測、死碼檢查，並檢視安裝程式與日誌隱私；第三輪實際操作紙上交易、Walk-forward 與官方資料下載。

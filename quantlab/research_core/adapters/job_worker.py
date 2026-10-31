@@ -11,8 +11,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from quantlab.job_stages import normalize_stage, stage_from_traceback
 from quantlab.shared.runtime_errors import RuntimeSafetyError
-from quantlab.research_core.domain.job_protocol import DEFAULT_OPERATION_REGISTRAR, UI_OPERATIONS
-from quantlab.desktop_runtime import AppPaths, _json_bytes
+from quantlab.research_core.domain.job_protocol import DEFAULT_OPERATION_REGISTRAR, DEFAULT_WORKER_STORAGE_FACTORY, UI_OPERATIONS
 
 
 class _OperationExecutorRegistry:
@@ -104,13 +103,24 @@ def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
 
 
 def _job_worker(
-    sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, helper_nonce=None, operation_registrar=DEFAULT_OPERATION_REGISTRAR
+    sender,
+    gate,
+    operation,
+    payload,
+    root,
+    bootstrap,
+    job_id,
+    reconciliation_admitted=False,
+    helper_nonce=None,
+    operation_registrar=DEFAULT_OPERATION_REGISTRAR,
 ):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
         return
 
+    module, name = DEFAULT_WORKER_STORAGE_FACTORY.split(':')
+    storage_port = getattr(importlib.import_module(module), name)()
     failure_stage = 'prepare_operation'
 
     def emit(kind, **values):
@@ -118,11 +128,11 @@ def _job_worker(
         if 'stage' in values:
             failure_stage = normalize_stage(values['stage'])
             values['stage'] = failure_stage
-        sender.send_bytes(_json_bytes({'job_id': job_id, 'type': kind, **values}))
+        sender.send_bytes(storage_port.validate_payload({'job_id': job_id, 'type': kind, **values}))
 
     try:
         emit('progress', message='Working', progress=0)
-        paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
+        paths = storage_port.worker_paths(Path(root), Path(bootstrap) if bootstrap else None)
         with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
             if operation in UI_OPERATIONS:
                 executor = _worker_operation_executor(operation_registrar)
@@ -162,7 +172,7 @@ def _job_worker(
         failure_stage = 'write_result'
         result = to_dict(result)
         try:
-            _json_bytes(result)
+            storage_port.validate_payload(result)
         except RuntimeSafetyError:
             result = {'output': str(paths.state), 'summary': 'Completed; detailed results exceed the IPC display limit and remain on disk'}
         emit('result', result=result, message='Completed', progress=100)

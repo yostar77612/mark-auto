@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication, QPushButton
 from desktop_app.shell.palette_commands import page_index
 from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
-from quantlab.desktop_runtime import JobManager
+from quantlab.research_core.application.job_manager import JobManager
 from tools.ui_redesign_preview import build_window, isolate
 
 

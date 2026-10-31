@@ -370,6 +370,13 @@ class LayerGateTests(unittest.TestCase):
                 'quantlab/research_core/application/saved_pool_attempts.py': 'quantlab/saved_candidate_pool.py',
                 'quantlab/research_core/application/saved_pool_validation.py': 'quantlab/saved_candidate_pool.py',
                 'desktop_app/features/capital_scenario/presenter.py': 'desktop_capital_scenario.py',
+                'quantlab/research_core/adapters/workspace_store.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/settings_store.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/state_json.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/runtime_safety.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/event_log.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/walk_forward_owner.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/application/job_manager.py': 'quantlab/desktop_runtime.py',
             },
         )
         entry = dict(
@@ -519,6 +526,16 @@ class LayerGateTests(unittest.TestCase):
         self.assertEqual({case.id() for case in groups.cases(partitions['core'])}, expected)
         self.assertEqual(groups.core_shard_for_module('test_layer_gate'), 'remaining')
         self.assertEqual(groups.linux_core_slice_for_module('test_layer_gate'), 'paper-remaining')
+
+
+class RetiredLegacyImportTests(unittest.TestCase):
+    def test_legacy_ban_is_independent_of_files_and_layer(self):
+        mapping = gate.load_map(ROOT / 'tools/layer_map.json')
+        for path in ('quantlab/core.py', 'quantlab/research_core/adapters/new.py', 'desktop.py', 'tools/new.py'):
+            for source in ('import legacy_autotrading.trader', 'from archives.legacy_autotrading import gui', 'import trader', 'import gui', 'import run'):
+                with self.subTest(path=path, source=source):
+                    findings = gate.check_source(source, path, mapping, {})
+                    self.assertTrue(any(item.rule == 'forbidden-legacy-import' for item in findings))
 
 
 if __name__ == '__main__':

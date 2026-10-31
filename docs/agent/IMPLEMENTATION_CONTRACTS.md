@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # mark-auto implementation contracts v1 — frozen development baseline
 
 > T2 location addendum (2026-10-30): The frozen contracts and verification records below

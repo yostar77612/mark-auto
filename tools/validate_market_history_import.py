@@ -13,9 +13,10 @@ import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from desktop_app.research_bootstrap import create_history_storage
 from quantlab.market import InstrumentRef
-from quantlab.market_history import MarketSession, PRODUCT_SOURCES
-from quantlab.market_history import import_history
+from quantlab.research_core.domain.market_sessions import MarketSession, PRODUCT_SOURCES
+from quantlab.research_core.application.history_import import import_history
 from quantlab.chart_data import aggregate_bars, TIMEFRAMES
 
 EXPECTED_HASH = '6807f4c3b7f977cb7e5109b1135fe69bbfe18d7c6b71a445e6576bb6be6163a8'
@@ -36,7 +37,7 @@ def validate(source, daily, cache):
         for n in ('TX', 'MTX', 'TMF')
     )
     started = time.monotonic()
-    result = import_history(source, cache, sessions=sessions)
+    result = import_history(source, cache, sessions=sessions, storage=create_history_storage())
     if result.source_hash != EXPECTED_HASH:
         raise ValueError('This experiment requires the independently recorded Oct8 source hash')
     with Path(daily).open('rb') as stream:

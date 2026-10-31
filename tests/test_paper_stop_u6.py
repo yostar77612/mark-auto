@@ -156,13 +156,14 @@ class StopTests(unittest.TestCase):
         # Load startup helpers only for the real host dispatch regression.
         from PySide6.QtCore import QTimer
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
         from tests.test_desktop_ui_polish_b import disposable_directory
         from tests.test_t9_onboarding import sandbox_ui
 
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace', Path(folder) / 'bootstrap').ensure()
-            window = MainWindow(paths, JobManager(paths), services=_c_create_ui_services(_c_create_operation_ports()))
+            window = MainWindow(paths, create_job_manager(paths), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):
                     timer.stop()

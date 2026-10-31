@@ -1,5 +1,10 @@
 """In-memory characterization captured before the Part C extractions."""
 
+from quantlab.research_core.application import job_manager
+
+
+from quantlab.research_core.application.job_manager import JobManager
+
 from quantlab.research_core.adapters import job_process
 
 from quantlab.research_core.domain import saved_pool
@@ -17,7 +22,7 @@ from unittest.mock import Mock, patch
 from quantlab import chart_data, paper, saved_candidate_pool, walk_forward
 from quantlab import desktop_runtime
 from quantlab.core import content_hash, to_dict
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.desktop_runtime import RuntimeSafetyError
 from tests.test_chart_data import START, bar
 from tests import saved_pool_fixtures
 from tests.test_walk_forward import inputs, fake_worker
@@ -35,7 +40,7 @@ def runtime_oracle():
     for registrar in (None, 'fixture:registrar'):
         for operation, payload in cases:
             paths = SimpleNamespace(root=Path('fixture'), bootstrap=None, state=Path('fixture-state'))
-            manager = desktop_runtime.JobManager.__new__(desktop_runtime.JobManager)
+            manager = JobManager.__new__(JobManager)
             manager.paths, manager.process, manager.tree = paths, None, None
             manager._log = Mock()
             context = Mock()
@@ -43,8 +48,8 @@ def runtime_oracle():
             with (
                 patch('quantlab.analysis_recovery.require_operation'),
                 patch.object(job_process.mp, 'get_context', return_value=context),
-                patch.object(desktop_runtime.uuid, 'uuid4', return_value=SimpleNamespace(hex='job')),
-                patch.object(desktop_runtime.time, 'monotonic', return_value=100.0),
+                patch.object(job_manager.uuid, 'uuid4', return_value=SimpleNamespace(hex='job')),
+                patch.object(job_manager.time, 'monotonic', return_value=100.0),
                 patch.object(desktop_runtime.sys, 'platform', 'linux'),
                 patch('quantlab.research_core.adapters.job_worker._executor_registrar', registrar),
             ):

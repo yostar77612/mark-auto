@@ -13,7 +13,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 from desktop_app.shell.window import MainWindow
 from tests.snapshot_cache import default_metrics
@@ -28,7 +30,7 @@ class DesktopPolishATests(unittest.TestCase):
         self.root = Path(tempfile.gettempdir()) / ('markauto-polish-' + uuid.uuid4().hex)
         self.root.mkdir()
         self.paths = AppPaths(self.root / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.window = MainWindow(
             self.paths,
             self.jobs,

@@ -219,7 +219,7 @@ class HistoryHostTests(unittest.TestCase):
             self.window._closing = False
 
     def test_worker_repeat_restart_no_network_and_no_research_write(self):
-        from quantlab.market_history import list_history
+        from quantlab.research_core.adapters.market_history import list_history
 
         payload = request(self.source())
         with patch('socket.socket', side_effect=AssertionError('unexpected network')):
@@ -239,10 +239,11 @@ class HistoryHostTests(unittest.TestCase):
         self.assertIn('部分區間完整性尚未確認', self.window.market.message.text())
         # A fresh host reloads only the persisted bounded history cache.
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import JobManager, SettingsStore
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
 
-        jobs = JobManager(self.paths)
+        jobs = create_job_manager(self.paths)
         restarted = MainWindow(
             self.paths,
             jobs,
@@ -281,7 +282,7 @@ class HistoryHostTests(unittest.TestCase):
         self.wait_job()
 
     def test_cancel_real_running_worker_retains_cache_and_repeats(self):
-        from quantlab.market_history import list_history
+        from quantlab.research_core.adapters.market_history import list_history
 
         payload = request(self.source())
         execute_ui_operation('ui_market_refresh', payload, self.paths)
@@ -315,7 +316,7 @@ class HistoryHostTests(unittest.TestCase):
         with (
             patch('quantlab.market_providers.refresh_daily', side_effect=AssertionError('history must never dispatch network')) as network,
             patch('quantlab.market_providers.import_daily', side_effect=AssertionError('history must never dispatch daily')) as daily,
-            patch('quantlab.market_history.import_history') as importer,
+            patch('quantlab.research_core.application.history_import.import_history') as importer,
         ):
             for value in variants:
                 with self.subTest(payload=value):
@@ -328,7 +329,7 @@ class HistoryHostTests(unittest.TestCase):
     def test_unconfirmed_adapter_rejected_before_file_io(self):
         payload = request(self.source())
         payload['dated_policy_confirmed'] = False
-        with patch('quantlab.market_history.import_history') as importer:
+        with patch('quantlab.research_core.application.history_import.import_history') as importer:
             with self.assertRaises(ValueError):
                 execute_ui_operation('ui_market_refresh', payload, self.paths)
             importer.assert_not_called()

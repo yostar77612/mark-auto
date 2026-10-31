@@ -805,7 +805,7 @@ class AuthTests(unittest.TestCase):
         import tempfile
         import zipfile
         from pathlib import Path
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
         from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         with tempfile.TemporaryDirectory() as temporary:

@@ -15,24 +15,10 @@ from trading_entry import launch
 import argparse
 from pathlib import Path
 import sys
-
-from desktop_app.smoke import (
-    _SmokeSettingsView,
-    _auth_smoke_dependencies,
-    _smoke_steps,
-    _market_smoke_ui,
-    _market_smoke_response,
-    _check_market_worker_result,
-    _history_smoke_fixture,
-    _check_history_worker_result,
-    _history_smoke_ui,
-    _walk_forward_smoke_fixture,
-    _check_walk_forward_smoke_result,
-    _start_smoke_job,
-    _close_smoke_worker,
-    _retain_smoke_directory,
-    run_smoke,
-)
+import desktop_app.smoke  # Static package edge for the frozen entry point.
+from desktop_app.smoke.fixtures import _SmokeSettingsView
+from desktop_app.smoke.lifecycle import _close_smoke_worker, _retain_smoke_directory
+from desktop_app.smoke.runner import run_smoke
 
 
 from desktop_app.connection_composition import configure as configure_connection
@@ -151,7 +137,11 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
 
 def prepare_workspace(state):
     from quantlab.research_core.adapters.workspace_backup import BackupManager
-    from quantlab.desktop_runtime import JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
+    from quantlab.desktop_runtime import WindowsAppMutex
 
     state.installation_guard = WindowsAppMutex()
     state.paths = state.locator.load(probe=False)
@@ -173,7 +163,7 @@ def prepare_workspace(state):
     state.validated_settings = state.settings.load()  # Fail closed on incompatible/corrupt state.
     if state.args.smoke_test:
         state.settings = _SmokeSettingsView(state.validated_settings)  # Smoke must preserve saved user bytes.
-    state.jobs = JobManager(state.paths)
+    state.jobs = create_job_manager(state.paths)
     state.backups.jobs = state.jobs
     return True
 
@@ -185,7 +175,12 @@ def run_gui(args):
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
     from PySide6.QtWidgets import QApplication, QMessageBox
     from quantlab import __version__
-    from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
+    from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.desktop_runtime import WindowsAppMutex, atomic_write
+    from quantlab.research_core.adapters.state_json import _json_bytes
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     # Keep existing dependency imports in place; measure only GUI initialization.

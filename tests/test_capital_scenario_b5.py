@@ -371,7 +371,7 @@ class WidgetTests(unittest.TestCase):
         from quantlab.desktop_feedback import completion_summary
 
         # Load integration dependencies only in the relevant test.
-        from quantlab.desktop_runtime import UI_OPERATIONS
+        from quantlab.research_core.domain.job_protocol import UI_OPERATIONS
 
         # Load integration dependencies only in the relevant test.
         from quantlab.analysis_recovery import SAFE_OPERATIONS

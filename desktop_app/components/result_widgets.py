@@ -1,7 +1,10 @@
 """Display-only result components; source records and metric semantics stay intact."""
 
+from quantlab.shared.time import aware_iso_utc
+
+from desktop_app.components.tables import fill_table, resize_columns
+
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, InvalidOperation
 from shiboken6 import isValid
 
 from PySide6.QtCore import Qt
@@ -10,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, Q
 from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
 from desktop_app.shell.theme import FINANCIAL_FIELDS, set_financial_item, set_financial_label
-from desktop_app.components.formatting import display_number, display_value, RATIOS, AMOUNTS
+from desktop_app.components.formatting import display_number, display_value, RATIOS, AMOUNTS, finite_decimal
 from desktop_app.components.result_tables import ResultTable as LegacyTable, RESULT_LABELS
 from desktop_app.features.backtest.summary import BacktestFillsTable, _report_text
 
@@ -38,18 +41,8 @@ NUMERIC_FIELDS = (
 )
 
 
-def numeric(value):
-    if isinstance(value, bool) or len(str(value)) > 128:
-        return None
-    try:
-        number = Decimal(str(value))
-        return number if number.is_finite() else None
-    except (InvalidOperation, ValueError):
-        return None
-
-
 def position_text(value):
-    number = numeric(value)
+    number = finite_decimal(value)
     if number is None:
         return ui_text('forms.metric.not_provided')
     if number == 0:
@@ -59,7 +52,7 @@ def position_text(value):
 
 def taipei_time(value):
     try:
-        parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value.replace('Z', '+00:00'))
+        parsed = value if isinstance(value, datetime) else aware_iso_utc(value)
         if parsed.tzinfo is None:
             raise ValueError('timezone required')
         return parsed.astimezone(timezone(timedelta(hours=8))).isoformat(sep=' ', timespec='seconds').removesuffix('+08:00')
@@ -72,16 +65,16 @@ def shown(value=MISSING, key=''):
         return ui_text('forms.metric.not_provided')
     if value is None:
         return ui_text('forms.metric.undefined')
-    if key.endswith(('_id', '_hash')) and value is not None:
+    if key.endswith(('_id', '_hash')):
         return str(value)
     if key in ('open_position', 'position'):
         return position_text(value)
     if key == 'timestamp':
         return taipei_time(value)
-    number = numeric(value)
+    number = finite_decimal(value)
     if number is not None:
         text = display_number(value, key)
-        if key not in RATIOS and key not in AMOUNTS and numeric(text) is not None:
+        if key not in RATIOS and key not in AMOUNTS and finite_decimal(text) is not None:
             whole, dot, fraction = text.partition('.')
             text = format(int(whole), ',') + (dot + fraction if dot else '')
         return text
@@ -163,23 +156,23 @@ class ResultTable(CopyTable, LegacyTable):
         self.setColumnCount(len(columns))
         self.setRowCount(len(rows))
         self.setHorizontalHeaderLabels([column_label(key) for key in columns])
-        for r, row in enumerate(rows):
-            for c, key in enumerate(columns):
-                value = row.get(key, MISSING)
-                item = SortItem(shown(value, (formats or {}).get(key, key)))
-                number = numeric(value)
-                item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
-                item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.not_provided'))
-                if key in FINANCIAL_FIELDS:
-                    set_financial_item(self, item, value)
-                _privacy.item_display(self, item, (formats or {}).get(key, key))
-                self.setItem(r, c, item)
+
+        def make_item(row, key):
+            value = row.get(key, MISSING)
+            item = SortItem(shown(value, (formats or {}).get(key, key)))
+            number = finite_decimal(value)
+            item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
+            item.setToolTip(str(value) if value is not MISSING else ui_text('forms.metric.not_provided'))
+            if key in FINANCIAL_FIELDS:
+                set_financial_item(self, item, value)
+            _privacy.item_display(self, item, (formats or {}).get(key, key))
+            return item
+
+        fill_table(self, rows, columns, make_item)
         # Enable header sorting without reordering a newly loaded report.
         self.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         self.setSortingEnabled(True)
-        self.resizeColumnsToContents()
-        for c in range(self.columnCount()):
-            self.setColumnWidth(c, min(self.columnWidth(c), 340))
+        resize_columns(self)
 
 
 class TaipeiFillsTable(CopyTable, BacktestFillsTable):
@@ -201,9 +194,9 @@ class TaipeiFillsTable(CopyTable, BacktestFillsTable):
                 item.setToolTip(roles[0])
                 if key == 'timestamp':
                     item.setText(taipei_time(row.get(key)))
-                elif numeric(row.get(key)) is not None:
+                elif finite_decimal(row.get(key)) is not None:
                     item.setText(shown(row[key], key))
-                number = numeric(row.get(key))
+                number = finite_decimal(row.get(key))
                 item.setData(Qt.ItemDataRole.UserRole, (0, number) if number is not None else (1, item.text()))
                 _privacy.item_display(self, item, key)
                 self.setItem(r, c, item)

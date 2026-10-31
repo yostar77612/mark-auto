@@ -4,7 +4,7 @@ from desktop_app.strings.catalog import ui_text
 from PySide6.QtCore import Qt
 
 
-def _prepare_chart_geometry(self, p, fm, text, start, end, visible, r):
+def _prepare_chart_geometry(self, fm, text, start, end, visible, r):
     idx = self.crosshair_index if self.crosshair_index is not None else end - 1
     d = self.bar_details(idx)
     detail = ui_text('charts.paint_event.ohlcv').format(
@@ -22,7 +22,7 @@ def _prepare_chart_geometry(self, p, fm, text, start, end, visible, r):
     extras = [float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
     references = self.visible_reference_lines()
     extras.extend(float(line.price) for line in references)
-    marker_index = getattr(self, '_marker_index', {})
+    marker_index = self._marker_index
     extras.extend(float(m.price) for i in range(start, end) for m in marker_index.get(i, ()) if m.kind == 'fill' and self.layer_visibility['fill'])
     if extras:
         low = min(low, min(extras))

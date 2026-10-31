@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # T13 part A lint decisions
 
 No source cleanup or bulk formatting was performed. `fix = false` and no fix command is used.

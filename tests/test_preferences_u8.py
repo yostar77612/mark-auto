@@ -166,7 +166,7 @@ class WidgetTests(unittest.TestCase):
     def test_none_bare_host_and_corrupt_file(self):
         from desktop_app.features.settings.preferences import load_store, restore_preferences, save_preferences
         from desktop_app.features.settings.settings import SettingsPage
-        from quantlab.desktop_runtime import SettingsStore
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         page = SimpleNamespace(host=SimpleNamespace(), settings=None)
         restore_preferences(page, {})
@@ -175,7 +175,7 @@ class WidgetTests(unittest.TestCase):
         self.assertEqual(load_store(None), {})
         path = Path('corrupt-settings-fixture.json')
         with (
-            patch('quantlab.desktop_runtime._read_json', side_effect=json.JSONDecodeError('invalid', '{broken', 1)),
+            patch('quantlab.research_core.adapters.state_json._read_json', side_effect=json.JSONDecodeError('invalid', '{broken', 1)),
             patch.object(Path, 'exists', return_value=True),
         ):
             self.assertEqual(load_store(SettingsStore(path)), {})

@@ -59,7 +59,7 @@ class CoreBoundaryTests(unittest.TestCase):
     def test_negative_control_and_dynamic_literal(self):
         for source in (
             'from .desktop_errors import ERROR_TABLE',
-            'from quantlab.desktop_runtime import JobManager',
+            'from quantlab.research_core.application.job_manager import JobManager',
             'import importlib\nimportlib.import_module(registrar)',
             'text = "import desktop_app.shell.main_window"',
         ):
@@ -107,12 +107,21 @@ class CoreBoundaryTests(unittest.TestCase):
             gate.wait.return_value = True
             executor = Mock(return_value={'reference': 'fixture'})
             with (
-                patch.object(runtime.os, 'setsid', create=True),
-                patch.object(job_worker, 'AppPaths', return_value=object()),
+                patch.object(job_worker.os, 'setsid', create=True),
+                patch('quantlab.research_core.adapters.workspace_store.AppPaths', return_value=object()),
                 patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
                 patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=executor),
             ):
-                job_worker._job_worker(sender, gate, 'ui_walk_forward_reconcile', {'descendants_stopped': True}, 'unused', None, 'fixture', admitted)
+                job_worker._job_worker(
+                    sender,
+                    gate,
+                    'ui_walk_forward_reconcile',
+                    {'descendants_stopped': True},
+                    'unused',
+                    None,
+                    'fixture',
+                    admitted,
+                )
             self.assertIs(executor.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once_with()
 
@@ -120,13 +129,16 @@ class CoreBoundaryTests(unittest.TestCase):
         sender, gate = Mock(), Mock()
         gate.wait.return_value = True
         with (
-            patch.object(runtime.os, 'setsid', create=True),
-            patch.object(job_worker, 'AppPaths', return_value=object()),
+            patch.object(job_worker.os, 'setsid', create=True),
+            patch('quantlab.research_core.adapters.workspace_store.AppPaths', return_value=object()),
             patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
-            patch.object(job_worker.importlib, 'import_module') as load,
+            patch(
+                'quantlab.research_core.adapters.job_worker._worker_operation_executor',
+                side_effect=runtime.RuntimeSafetyError('No operation executor is registered'),
+            ) as load,
         ):
             job_worker._job_worker(sender, gate, 'ui_demo', {}, 'unused', None, 'fixture', operation_registrar=None)
-        load.assert_not_called()
+        load.assert_called_once_with(None)
         self.assertIn(b'"type": "error"', sender.send_bytes.call_args.args[0])
         self.assertIn(b'"error_type": "RuntimeSafetyError"', sender.send_bytes.call_args.args[0])
 

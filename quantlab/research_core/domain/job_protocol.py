@@ -1,5 +1,7 @@
 """Bounded desktop operation grammar and IPC constants."""
 
+DEFAULT_WORKER_STORAGE_FACTORY = 'desktop_app.research_bootstrap:create_worker_storage'
+DEFAULT_JOB_PORT_FACTORY = 'desktop_app.research_bootstrap:create_job_ports'
 DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
 MAX_JSON = 1024 * 1024
 

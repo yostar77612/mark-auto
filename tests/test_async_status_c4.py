@@ -20,7 +20,9 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import build_app_stylesheet
 from quantlab.errors import ERROR_TABLE
 from quantlab.update_check import UpdateResult
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from desktop_app.shell.window import MainWindow
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
@@ -154,7 +156,7 @@ class AsyncStatusTests(unittest.TestCase):
     def test_real_pages_keep_names_guidance_and_use_shared_empty_states(self):
         with sandbox_ui(), disposable_directory() as folder:
             paths = AppPaths(Path(folder) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):

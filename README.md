@@ -48,11 +48,11 @@ TMF 合約，通過既有完整時段與品質檢查後更新研究資料。日�
 - [架構](docs/analysis/01_PROJECT_ARCHITECTURE.md)、[既有功能](docs/analysis/02_EXISTING_FEATURES.md)、[目前品質與風險](docs/analysis/03_CODE_QUALITY_AND_RISKS.md)
 - [AI 目標設計](docs/analysis/04_AI_QUANT_TARGET_DESIGN.md)、[路線圖](docs/analysis/05_IMPLEMENTATION_ROADMAP.md)、[優化計畫](docs/analysis/06_PRODUCT_OPTIMIZATION_PLAN.md)
 - [封裝指南](packaging/README.md)、[分層前 README 全文](docs/agent/history/README_before_layering.md)
-- [舊碼來源與封存說明](archives/legacy_autotrading/README.md)
+- [舊碼來源與封存說明](https://github.com/yostar77612/mark-auto/blob/909fc49/archives/legacy_autotrading/README.md)
 
 ## Provenance
 
-MarkAuto derives from Li Kuei-Wei's Apache-2.0 AutoTradingPlatform. Disabled upstream code, provenance and copyright details are preserved in the [legacy archive](archives/legacy_autotrading/); the product never imports or bundles this code.
+MarkAuto derives from Li Kuei-Wei's Apache-2.0 AutoTradingPlatform. Disabled upstream code, provenance and copyright details remain in [git history](https://github.com/yostar77612/mark-auto/tree/909fc49/archives/legacy_autotrading/); PR E removes the archived tree. The product never imports or bundles this code; the root LICENSE and upstream attribution remain.
 
 ## 授權
 

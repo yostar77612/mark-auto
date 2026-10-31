@@ -11,7 +11,7 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab import analysis_recovery as r
 from quantlab import research_analysis as a
 from tests.test_research_analysis import source, prepare, PROVENANCE

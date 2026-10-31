@@ -179,7 +179,7 @@ class UiSnapshotTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             return
         from tools import ui_snapshot
-        from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
+        from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
         import desktop_app.shell.main_window
 
         # Read-only evidence for the actual bootstrap and redirected workspace.

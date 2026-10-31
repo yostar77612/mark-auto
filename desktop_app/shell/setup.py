@@ -125,6 +125,8 @@ def _mount_window_pages(window):
 
 def _create_page_host(window):
     return PageHost(
+        market_data=window.services.market_data,
+        history=window.services.history,
         state=window.page_state,
         callbacks={},
         find_child=window.findChild,

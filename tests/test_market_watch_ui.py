@@ -28,7 +28,7 @@ from desktop_app.features.trading.market_watch_rows import (
     series_bars,
     watch_rows,
 )
-from quantlab.desktop_runtime import SettingsStore
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.contracts import (
     MarketHealthView,
     MarketSeriesPage,

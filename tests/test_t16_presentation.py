@@ -1,5 +1,7 @@
 """T16 fixed-code presentation and progress with in-memory workers only."""
 
+from quantlab.research_core.adapters.workspace_store import AppPaths
+
 from quantlab.research_core.adapters import job_worker
 
 from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
@@ -153,7 +155,7 @@ class PresentationWidgetTests(unittest.TestCase):
 
     def test_real_window_mount_preserves_names_and_uses_shared_progress_for_all_jobs(self):
         with sandbox_ui(), tempfile.TemporaryDirectory(prefix='t16-host-') as temp:
-            paths = runtime.AppPaths(Path(temp) / 'workspace').ensure()
+            paths = AppPaths(Path(temp) / 'workspace').ensure()
             jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:

@@ -12,7 +12,7 @@ import uuid
 
 from PySide6.QtWidgets import QApplication, QLineEdit, QPlainTextEdit, QVBoxLayout, QWidget
 
-from desktop_app.components.error_guidance import with_next_step
+from desktop_app.components.validation_feedback import with_next_step
 from desktop_app.features.paper.paper_tabs import existing_journal
 from desktop_app.components.widgets import WidgetTools
 from quantlab import strict_json

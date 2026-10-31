@@ -2,10 +2,14 @@
 
 from dataclasses import dataclass
 from typing import Any, Callable
+from quantlab.research_core.ports.market_data import MarketDataProvider
+from quantlab.research_core.ports.ui_operations import HistoryPort
 
 
 @dataclass(frozen=True)
 class UiServices:
+    history: HistoryPort
+    market_data: MarketDataProvider
     candidate_record: Callable[..., Any]
     connection_event_from_payload: Callable[..., Any]
     dataset: Callable[..., Any]

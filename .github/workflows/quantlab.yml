@@ -88,7 +88,7 @@ jobs:
       - name: Install pinned offline auth smoke runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete desktop smoke runtime before tests
-        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+        run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Preserve hash-locked authentication runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -164,7 +164,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
       - run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
-      - run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Run original Linux partition without changing test limits
         run: python tools/ui_test_gate.py --profile offline --python-profile ${{ matrix.python }} --group ${{ matrix.group }} ${{ matrix.core_slice && format('--core-slice {0}', matrix.core_slice) || '' }} --manifest dist/validation/linux-test-inventory.json
       - name: Preserve exact-attempt Linux inventory and runtime evidence
@@ -208,7 +208,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libopengl0 libxkbcommon0
       - run: 'python -m pip --isolated install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json -r requirements-qt-ci.lock'
       - run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
-      - run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+      - run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Download matching Linux profile reports from this exact attempt
         if: always()
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -266,7 +266,7 @@ jobs:
       - name: Install matching pinned offline auth discovery runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete desktop runtime before independent discovery
-        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+        run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Download only this run attempt's original core shard evidence
         if: always()
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -329,7 +329,7 @@ jobs:
       - name: Install pinned offline auth smoke runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete desktop smoke runtime before tests
-        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+        run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Preserve hash-locked authentication runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -380,7 +380,7 @@ jobs:
       - name: Install matching pinned offline auth discovery runtime
         run: python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json
       - name: Verify complete UI runtime before independent discovery
-        run: python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
+        run: python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"
       - name: Download only this run attempt's UI case reports
         if: always()
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -485,7 +485,7 @@ jobs:
           cache: pip
           cache-dependency-path: ${{ matrix.requirements }}
       # Keep the selected runtime closure separate from audit tooling. Legacy
-      # archives/legacy_autotrading/requirements.txt is outside this audit and is NOT certified.
+      # Historical legacy dependencies (removed in PR E) are outside this audit and is NOT certified.
       - name: Resolve complete UI runtime dependency closure
         if: matrix.profile == 'ui'
         run: python -m pip install --ignore-installed --target audit-runtime -r ${{ matrix.requirements }}

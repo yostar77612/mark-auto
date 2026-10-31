@@ -94,7 +94,7 @@ def instrument_generic_operations(timings):
         yield
 
 
-def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options):
+def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options, **runtime_options):
     """Keep the actual ownership gate and worker; retain its failure-time phases."""
     if operation not in OPERATIONS:
         return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)

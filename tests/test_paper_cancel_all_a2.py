@@ -220,10 +220,10 @@ class CancelAllUiTests(unittest.TestCase):
         import shiboken6
         from tests.test_t9_onboarding import sandbox_ui
         from tests.test_ui_operations_registry import workspace
-        from quantlab.desktop_runtime import JobManager
+        from desktop_app.research_bootstrap import create_job_manager
 
         with sandbox_ui(), workspace() as paths:
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = _c_ui_MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):

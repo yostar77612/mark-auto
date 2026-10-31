@@ -19,7 +19,8 @@ from desktop_app.components.job_progress import JobFeedback, JobProgress
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
 from desktop_app.shell.polish import DisabledHint
-from quantlab.desktop_runtime import AppPaths, JobManager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
 
@@ -108,7 +109,7 @@ class IdleHintTests(unittest.TestCase):
     def test_main_window_idle_labels_accessibility_palette_and_privacy(self):
         with disposable_directory() as folder, sandbox_ui():
             paths = AppPaths(Path(folder) / 'workspace', Path(folder) / 'bootstrap').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):

@@ -17,7 +17,8 @@ from desktop_app.shell.pages import MarketPage, DataPage, StrategyPage, Backtest
 from desktop_app.shell.window import MainWindow
 from quantlab.core import ValidationError
 from quantlab.core import content_hash
-from quantlab.desktop_runtime import AppPaths, JobManager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
 from tests.layered_source_fixtures import page_sources
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,7 +130,7 @@ class PageInteractionTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='markauto-pages-test-')
         self.paths = AppPaths(Path(self.temp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()

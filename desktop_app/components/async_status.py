@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import set_theme_property
 from quantlab.errors import ERROR_TABLE
-from desktop_app.components.error_guidance import with_next_step
+from desktop_app.components.validation_feedback import with_next_step
 
 
 class AsyncStatus(QWidget):

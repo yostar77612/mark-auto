@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QAbstractButton, QApplication, QGroupBox, QScrollA
 import desktop_app.shell.main_window
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from tests.test_t9_onboarding import sandbox_ui
 from tests.snapshot_cache import default_metrics
 from tools.ui_snapshot import _has_label, _input_widgets
